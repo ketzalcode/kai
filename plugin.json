@@ -1,0 +1,24 @@
+{
+  "name": "kai",
+  "description": "Open-source Copilot plugin: senior-engineer principles, framework style guides, reviewer personas, and workflow automations that travel across any codebase.",
+  "version": "0.1.0",
+  "author": {
+    "name": "RubenSaucedo",
+    "url": "https://github.com/RubenSaucedo"
+  },
+  "license": "MIT",
+  "keywords": [
+    "copilot",
+    "copilot-cli",
+    "copilot-plugin",
+    "engineering-principles",
+    "code-review",
+    "senior-engineer",
+    "architect",
+    "typescript",
+    "react",
+    "workflow-automation"
+  ],
+  "agents": "agents/",
+  "skills": "skills/"
+}

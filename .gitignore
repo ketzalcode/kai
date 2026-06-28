@@ -1,0 +1,52 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (in case any future skill ships helper scripts)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (same rationale)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local-only overrides
+.env
+.env.local
+*.local
+
+# >>> ketzal-swe workspace (managed by workflow-workspace-init) >>>
+# Four-root model (see skills/workspace-conventions):
+#   .ketzal/   = working root  — ephemeral, regenerable — NEVER committed
+#   knowledge/ = knowledge root — durable work outcomes — committed (text only)
+#   initiatives/  = initiatives root  — standing intent (north stars) — committed (text only)
+#   self/      = self root      — portable career/learning — NEVER committed into a work repo
+# Working + self roots: ignore wholesale.
+/.ketzal/
+/self/
+# Heavy binaries stay ignored even inside the committed knowledge + initiatives roots.
+knowledge/**/*.mp3
+knowledge/**/*.har
+knowledge/**/*.zip
+knowledge/**/*.log
+knowledge/**/audio/
+knowledge/**/raw/
+knowledge/**/screenshots/
+knowledge/**/feed.xml
+knowledge/**/episodes.json
+# <<< ketzal-swe workspace <<<
+
+# persona-self: writing-style profile (intimate; never shared, never promoted)
+.persona-self/
+
+# Playwright MCP scratch directory (snapshots, console logs)
+.playwright-mcp/
