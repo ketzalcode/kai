@@ -269,10 +269,19 @@ Before substantial work on a project/feature, glance at `initiatives/ACTIVE.md`
    different feature, or the user flagged it quick/unrelated → operate
    context-free. An initiative you don't load can't pollute unrelated work.
 3. **When loaded, steer toward it.** Frame proposals, prioritization, and
-   scoping toward the north star. Note in your output which initiative it
-   served, and stamp `initiative: <slug>` in the frontmatter of any promoted
-   knowledge so the decision trail links back to the objective.
-4. **Ambiguous? Ask once.** If you can't tell whether the work belongs to a
+   scoping toward the north star. Read its `mission`, `scope.current`, and
+   `principles.non_negotiable[]` — this is the committed intent your work
+   must respect. Note in your output which initiative it served, and stamp
+   `initiative: <slug>` in the frontmatter of any promoted knowledge so the
+   decision trail links back to the objective.
+4. **Before you change anything, run the classify gate.** If you *act* on a
+   product or codebase (not just review it), you inherit the
+   `scope-discipline` contract: classify each change as
+   `refine-in-scope` (implement) or `expands-scope` (emit a `PROPOSAL` and
+   halt that thread — don't build it). Anything that adds a step, gate,
+   surface, or new capability, or violates a `non_negotiable`, is
+   `expands-scope` by default. When unsure, propose.
+5. **Ambiguous? Ask once.** If you can't tell whether the work belongs to a
    initiative, ask the operator rather than guessing.
 
 ### Initiative frontmatter (`northstar.md`)
@@ -284,21 +293,48 @@ title: <human title>
 slug: <kebab-slug>
 status: active        # active | paused | shipped | archived
 horizon: <e.g. 2026-Q3>
+mission: <one line — what the product is for>
+vision: <one line — where it's headed>
 scope:
   repos: []           # repo names this initiative governs
   targets: []         # target-slugs (features/components) in scope
   keywords: []        # words in a request that signal this initiative
+  current: []         # active goals/milestones + any blocking state
+  out_of_scope: []    # explicitly not doing (with a word on why)
+  deferred: []        # parked-for-later ideas (pointer to proposals)
+principles:
+  non_negotiable: []  # hard rules; e.g. "Minimize friction to program
+                      #   creation. Any new step, gate, or screen is
+                      #   out-of-scope by default."
+proposal_channel: ""  # where out-of-scope ideas go instead of into code
+                      #   (a repo issue, a board, or a path). Empty =>
+                      #   default <working-root>/proposals/<target-slug>.md
 created: <YYYY-MM-DD>
 owner: <operator>
 related: []           # knowledge/ + self/ slugs this initiative draws on
 ---
 ```
 
+The **thin core** (`mission`, `vision`, `scope.current`,
+`principles.non_negotiable`, `proposal_channel`) is what the
+`scope-discipline` contract reads before an agent acts. Keep it to a
+handful of well-chosen lines — five fields that get read beat a
+comprehensive doc nobody consults.
+
 `ACTIVE.md` is a thin pointer — a list of the currently-active initiative
 slug(s) and one line each on why. Lifecycle: an initiative moves
 `active → paused → shipped → archived`; `log.md` is the append-only trail of
 decisions made under it. The `initiatives/README.md` (written by the init
 workflow) holds the full schema.
+
+**Proposals — where out-of-scope ideas land.** When the `scope-discipline`
+contract classifies a finding as `expands-scope`, the resulting `PROPOSAL`
+goes to the initiative's `proposal_channel`. If that's unset (or no
+initiative is loaded), the default sink is a flat `proposals/` folder in
+the working root: `<working-root>/proposals/<target-slug>.md` (e.g.
+`.ketzal/proposals/<target-slug>.md`). It's a working-root artifact —
+gitignored like the rest of the working root — so good ideas are captured
+and reviewable without being committed as code.
 
 ## Knowledge-entry frontmatter
 

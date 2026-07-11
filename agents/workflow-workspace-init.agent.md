@@ -120,9 +120,14 @@ gitignored (portable, personal — never lands in a work repo's git). Drop a
   and how `related` cross-links form the graph. Pull the schema straight
   from `workspace-conventions`.
 - **`initiatives/README.md`** — what an initiative is (a scope-gated north star),
-  the `northstar.md` frontmatter, the gating rule (load only when the target
-  matches `scope`), and the `active → paused → shipped → archived`
-  lifecycle. Pull it straight from the skill's *North star — initiatives*.
+  the `northstar.md` frontmatter (including the thin core the
+  `scope-discipline` contract reads before an agent acts: `mission`,
+  `vision`, `scope.current`, `principles.non_negotiable[]`, and
+  `proposal_channel` — plus `scope.out_of_scope`/`deferred`), the gating
+  rule (load only when the target matches `scope`, then read mission +
+  principles and run the classify-before-act gate), and the
+  `active → paused → shipped → archived` lifecycle. Pull it straight from
+  the skill's *North star — initiatives*.
 - **`initiatives/ACTIVE.md`** — the focus pointer. Seed it empty with a one-line
   explanation: list active initiative slug(s) here so agents know what to load.
 - **`self/README.md`** — what `self/` is: your portable, personal,

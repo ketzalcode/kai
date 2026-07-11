@@ -167,11 +167,12 @@ kai/
 
 ### Skills
 
-**Workspace** — the contract every output-producing agent inherits:
+**Workspace & scope** — the shared contracts every acting agent inherits (where work goes, and what it may change):
 
 | Name | Purpose |
 | ---- | ------- |
 | `workspace-conventions` | The shared **where-things-go** contract. Owns the four-root model (gitignored working root `.ketzal/` for ephemeral artifacts; committed `knowledge/` for shareable work outcomes; committed `initiatives/` for scope-gated north stars; gitignored `self/` for portable career/learning), the path grammar (`<root>/<area>/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/<artifact>`), slug/timestamp rules, the area registry, the zone-default table + `--share`/`--local` override, the initiative gating rule, the manifest format, and the knowledge frontmatter schema. Not a trigger skill — agents read it instead of inventing paths; `workflow-workspace-init` materializes it. |
+| `scope-discipline` | The shared **behavioral contract** every acting head agent inherits before it changes anything — the classify-before-act gate that separates *refining within scope* from *expanding it*. A change that adds a step, gate, surface, or new capability (even a mission-aligned one) is out-of-scope by default: the agent emits a structured `PROPOSAL` and halts that thread instead of building it. Reads the initiative's thin core (`mission`, `scope.current`, `principles.non_negotiable[]`); routes proposals to the initiative's `proposal_channel` (default `.ketzal/proposals/`). Not a trigger skill — pulled in by the persona evaluators and `principal-swe-*` builders, the way `review-*` lenses pull in `doc-review-rigor`. |
 
 **Engineering craft** — per-change discipline every `principal-swe-*` agent inherits:
 
