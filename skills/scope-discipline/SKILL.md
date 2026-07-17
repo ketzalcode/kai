@@ -1,23 +1,41 @@
 ---
 name: scope-discipline
-description: "The shared behavioral contract every acting head agent inherits before it changes anything. Separates refining within scope from expanding it: an agent may implement a refinement that stays inside the product's committed scope, but anything that adds a step, gate, surface, or new capability is out-of-scope by default — it is emitted as a structured PROPOSAL and that thread halts, rather than being built. Owns the classify-before-act gate (refine-in-scope / expands-scope / unsure), the PROPOSAL payload, and where proposals land (the initiative's proposal_channel, default the working root's proposals/ folder). Exists because mission context alone gets rationalized away — the rule has to ride with the agent, not just the facts. NOT a standalone trigger skill — it is pulled in from inside an acting agent (a persona evaluator or a principal-swe builder), the same way review-* skills pull in doc-review-rigor. Never suppresses good ideas; it reroutes them."
+description: "The shared behavioral contract governing the seam between honest assessment and unilateral action. Splits three roles so the scope gate lands on the decide/act roles and never on the assess role: ASSESSORS (persona-* evaluators, principal-qa-ui, principal-seo) surface findings honestly and are NOT gated — biasing an assessor into pre-judging its findings against scope muzzles the very signal it exists to produce; the SCOPE-OWNER (principal-product-manager) OWNS the classify-before-adopt gate, triaging each finding against mission / scope.current / non_negotiables into build vs a deferred PROPOSAL; ACTING BUILDERS (principal-swe-* and the architect) carry it as restraint-on-diff — they assess honestly but never unilaterally ship a change that adds a step, gate, surface, or new capability, escalating it as a PROPOSAL instead. Owns the classify gate (refine-in-scope / expands-scope / unsure), the PROPOSAL payload, and where proposals land (the initiative's proposal_channel, default the working root's proposals/ folder). Exists because mission context alone gets rationalized away at the moment of action — the rule has to ride with the agent that can act. NOT a standalone trigger skill — pulled in from inside the scope-owner and the acting builders, the same way review-* skills pull in doc-review-rigor. Never suppresses good ideas and never muzzles honest assessment; it reroutes scope-expanding changes to a decision instead of a silent diff."
 tools: [bash, view, grep, glob]
 ---
 
 # Scope Discipline
 
-This skill is the **shared behavioral contract** — the rule every acting
-head agent runs *before* it modifies a product, a codebase, or a surface.
-It owns the seam where "I found a gap" turns into either "I fix it" or "I
-propose it." The incident this exists to prevent: an agent finds a
-genuinely good improvement, decides it's mission-aligned, and **builds**
-it — quietly expanding scope past what the product committed to.
+This skill governs the seam where "I found a gap" turns into either "I
+fix it," "I propose it," or "I hand it up." The incident it exists to
+prevent: an agent that *can act* finds a genuinely good improvement,
+decides it's mission-aligned, and **builds** it — quietly expanding
+scope past what the product committed to.
 
-It is **not** a standalone trigger skill. You don't invoke it directly.
-An acting agent (`persona-professional-trainer`,
-`persona-professional-nutritionist`, a `principal-swe-*` builder, …)
-pulls it in to stay honest, the same way each `review-*` lens pulls in
-`doc-review-rigor`.
+The fix is a **division of labor across three roles**, not a filter
+smeared over everyone. The scope gate lands on the *decide* and *act*
+roles — never on the *assess* role.
+
+- **Assessors** (`persona-*` evaluators, `principal-qa-ui`,
+  `principal-seo`) — surface findings **honestly and unfiltered.** They
+  are **not** gated by this contract. Biasing an assessor into
+  pre-judging its own findings against scope muzzles the very signal it
+  exists to produce. An assessor may *note* a scope implication, but
+  never suppresses a finding to stay in scope.
+- **The scope-owner** (`principal-product-manager`) — **owns** the
+  classify-before-adopt gate. It is the single, consistent place where
+  each finding is judged against `mission`, `scope.current`, and
+  `principles.non_negotiable[]` and dispositioned into build vs a
+  deferred `PROPOSAL`.
+- **Acting builders** (`principal-swe-*`, `principal-swe-architect`) —
+  carry the gate as **restraint on the diff, not on judgment.** They
+  assess honestly, but at implementation time — where no triage layer is
+  in the loop — they never unilaterally ship a scope-expanding change;
+  they escalate it as a `PROPOSAL`.
+
+It is **not** a standalone trigger skill. You don't invoke it directly —
+the scope-owner and the acting builders pull it in, the same way each
+`review-*` lens pulls in `doc-review-rigor`.
 
 ## Why the contract, not just the context
 
@@ -114,7 +132,7 @@ built.
    point; unilateral scope expansion is the problem.
 6. **Halt the thread, not the run.** After emitting a proposal, continue
    with the rest of your in-scope work. One out-of-scope finding doesn't
-   stop the evaluation.
+   stop the rest of the triage or the build.
 
 ## Anti-patterns
 
