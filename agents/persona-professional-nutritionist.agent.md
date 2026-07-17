@@ -194,7 +194,7 @@ Following the **`web-evaluation`** skill:
 
 - Resolve `<target-slug>`.
 - Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<timestamp>-nutritionist/`.
+- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-nutritionist/`.
 - Stub `report.md` from the friction-points scaffold with header
   populated.
 

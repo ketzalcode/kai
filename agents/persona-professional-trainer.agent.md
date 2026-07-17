@@ -173,7 +173,7 @@ Following the **`web-evaluation`** skill:
 
 - Resolve `<target-slug>`.
 - Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<timestamp>-trainer/`.
+- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-trainer/`.
 - Stub `report.md` from the friction-points scaffold (same shape as
   the UX agent's) with header populated.
 

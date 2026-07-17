@@ -260,7 +260,7 @@ Restate what you're scoping and confirm the inputs:
 Scoping: <the committed action, one line>
 Source: <which strategist bet / PM-triaged change, with path>
 Constraints I'm assuming: <deadlines, tech constraints, surfaces in/out of scope>
-Output folder I'll create: <repo>/.ketzal/eng/<target>/<timestamp>-scope/plan.md
+Output folder I'll create: <repo>/.ketzal/eng/<target>/<YYYY-MM-DD-HHMM>-scope/plan.md
 Before I scope — anything to anchor me?
   (hard deadline, must-reuse systems, surfaces off-limits, team capacity)
 ```

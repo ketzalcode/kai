@@ -233,7 +233,7 @@ Restate the investigation back to the user and confirm scope:
 Investigating: <the question, in one line>
 Product context as I understand it: <2–3 lines>
 Candidate-action space I'll explore: <the kinds of actions in scope>
-Output folder I'll create: <repo>/.ketzal/product/<target>/<timestamp>-strategy/catalog.md
+Output folder I'll create: <repo>/.ketzal/product/<target>/<YYYY-MM-DD-HHMM>-strategy/catalog.md
 Before I research — anything to anchor me?
   (strategy you're protecting, surfaces or actions deliberately off-limits,
    target user, data you can share)

@@ -199,7 +199,7 @@ Findings I'll triage (numbered, mirrored from source):
   #2  "<short restatement>"
   …
 Dominant theme I see across them: <one line>
-Output folder I'll create: <repo>/.ketzal/qa/<target>/<timestamp>-pm/triage.md
+Output folder I'll create: <repo>/.ketzal/qa/<target>/<YYYY-MM-DD-HHMM>-pm/triage.md
 Anything you want me to flag in your product context before I triage?
   (e.g. strategy you're protecting, things that are deliberately off-limits to change)
 ```

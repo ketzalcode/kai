@@ -128,7 +128,7 @@ If the user gives you a URL and no other context:
   a per-viewport audit. But verify viewport meta is set correctly
   and check the **mobile rendering as Googlebot Mobile** sees it
   (since 2019 Google indexes mobile-first).
-- **Output:** `<repo>/.ketzal/qa/<target-slug>/<timestamp>-qa/` with
+- **Output:** `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-seo/` with
   `report.md` (defect table + summary + coverage + standards-delta).
   Same folder convention as `principal-qa-ui`.
 
@@ -290,7 +290,7 @@ Following the **`web-evaluation`** skill:
 
 - Resolve the `<target-slug>` from the URL.
 - Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<timestamp>-qa/`.
+- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-seo/`.
 - Stub `report.md` from the **SEO flavor scaffold** in
   `web-evaluation/SKILL.md` (it's the QA base + Standards delta
   section + Citation column).

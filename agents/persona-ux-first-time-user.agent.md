@@ -106,7 +106,7 @@ Following the **`web-evaluation`** skill:
 
 - Resolve `<target-slug>`.
 - Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<timestamp>-ux/`.
+- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-ux/`.
 - Stub `report.md` from the **UX scaffold** (not the QA one) with
   header populated.
 

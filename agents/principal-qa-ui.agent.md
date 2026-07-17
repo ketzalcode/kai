@@ -108,7 +108,7 @@ Following the **`web-evaluation`** skill:
 - Resolve the `<target-slug>` from URL or user-supplied feature
   name.
 - Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<timestamp>-qa/`.
+- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-qa/`.
 - Stub `report.md` from the QA scaffold with header populated.
 
 ### 3. Walk the surface — desktop first

@@ -82,6 +82,13 @@ All output for a single run lives in:
   (principal-seo). New auditing agents pick a short kebab slug.
 - The timestamp is local time, 24-hour, e.g. `2026-06-17-1823`.
 
+**One folder per run — never collapse the path.** It is always
+`.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` — three nested
+segments. Never fuse them into a top-level `.ketzal/qa-<flavor>/`, and
+never drop the target to `.ketzal/qa/<flavor>/`. Same agent, same target →
+same shape every run, so a target's audits group under one
+`qa/<target-slug>/` tree.
+
 ## Zone, gitignore & promotion
 
 Runs land in the **working root** — `.ketzal/qa/` — which

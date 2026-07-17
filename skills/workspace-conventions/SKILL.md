@@ -157,6 +157,16 @@ Inside the working root, every area follows one shape:
 Some areas use a lighter shape (no `<flavor>`, or a different second level)
 — see the registry. Slug + timestamp rules are universal.
 
+**One folder per agent-run — never collapse the segments.** `<area>` and
+`<flavor>` are **separate path segments**. A run is always
+`<root>/<area>/<target-slug>/<ts>-<flavor>/` — never a fused top-level
+folder like `.ketzal/qa-trainer/`, and never dropping the target to
+`.ketzal/qa/trainer/`. Every run of the *same* agent on the *same* target
+uses the *same* shape, so a target's work groups under one
+`<area>/<target-slug>/` tree and each agent's runs sit side by side as
+`<ts>-<flavor>/`. Resolve the path once, from this grammar — don't
+paraphrase it into a new folder.
+
 ### Slug rules
 
 - Lowercase, kebab-case, ASCII. Spaces and `/` → `-`. Strip trailing
@@ -167,8 +177,8 @@ Some areas use a lighter shape (no `<flavor>`, or a different second level)
 
 | `<area>` | Owners | Second level | Flavors |
 |----------|--------|--------------|---------|
-| `qa` | qa-ui, product-manager, persona-* | `<target-slug>/<ts>-<flavor>/` | `pm`, `qa`, `ux`, `trainer`, `nutritionist` |
-| `eng` | swe-architect, swe-manager | `<target-slug>/<ts>-<flavor>/` | `arch`, `scope` |
+| `qa` | qa-ui, seo, product-manager, persona-* | `<target-slug>/<ts>-<flavor>/` | `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
+| `eng` | swe-architect, swe-manager, swe-frontend, swe-backend, swe-infra | `<target-slug>/<ts>-<flavor>/` | `arch`, `scope`, `frontend`, `backend`, `infra` |
 | `product` | product-strategist | `<target-slug>/<ts>-strategy/` | `strategy` |
 | `review` | workflow-doc-review | `<doc-slug>/<ts>-doc/` | `doc` |
 | `ai` | ai-researcher, ai-applied-engineer | `<slug>/<ts>-<flavor>/` | `research`, `applied` |
@@ -179,13 +189,19 @@ Some areas use a lighter shape (no `<flavor>`, or a different second level)
 New area? Add a row here first, then use it. Never spin up an unregistered
 area folder.
 
-**Area-less agents.** Not every agent owns an area. The **builder/reviewer
-engineers** (`swe-frontend`, `swe-backend`, `swe-infra`) are hands-on: they
-edit code and return findings to chat. They write **no standalone file** —
-when a reviewer, the architect, or `workflow-doc-review` solicits their
-feedback, it **folds into that caller's artifact** (`decision.md`,
-`review.md`). Never create a `frontend/` / `backend/` / `infra/` folder for
-them.
+**Domain engineers — code first, fold findings, one home for design.** The
+domain engineers (`swe-frontend`, `swe-backend`, `swe-infra`) are hands-on:
+their primary output is **code** (it lands in the repo) and **review
+findings** (which fold into the caller's artifact — the architect's
+`decision.md`, a reviewer's `review.md`, or chat). They do **not** scatter
+`.md` files. When one is **commissioned to produce a standalone design or
+lock a domain-local decision**, it writes exactly one file to the shared
+`eng` area with its own flavor:
+`.ketzal/eng/<target-slug>/<ts>-<flavor>/design.md` (`<flavor>` =
+`frontend` | `backend` | `infra`). This sits parallel to the architect's
+`<ts>-arch/decision.md` and the eng-manager's `<ts>-scope/plan.md`, so all
+engineering artifacts for a target group under one `eng/<target-slug>/`
+tree. Never spin up a top-level `frontend/` / `backend/` / `infra/` area.
 
 **The personal/career lane.** The career agents (`engineer-tutor`,
 `course-to-audio`, `career-mentor`) draft in the `.ketzal/learn` and

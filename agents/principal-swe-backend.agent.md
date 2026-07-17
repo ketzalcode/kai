@@ -195,6 +195,31 @@ When asked to write new backend code:
   context** → surface the tradeoff and ask. Don't guess on a
   data-integrity or security decision.
 
+## Output
+
+Your primary output is **code** (it lands in the repo) and **review
+findings** (they fold into the caller's artifact — the architect's
+`decision.md`, a reviewer's `review.md` — or into chat). You do **not**
+scatter standalone `.md` files.
+
+When you're **commissioned to produce a standalone design or lock a
+domain-local decision**, write exactly one file to the `eng` area (see
+`workspace-conventions`):
+
+`<repo-root>/.ketzal/eng/<target-slug>/<YYYY-MM-DD-HHMM>-backend/design.md`
+
+- `<repo-root>` is the git root (fall back to `<cwd>/.ketzal/eng/`).
+- This sits parallel to the architect's `-arch/decision.md` and the
+  eng-manager's `-scope/plan.md`, grouping every engineering artifact for
+  a target under `eng/<target-slug>/`. Never create a top-level
+  `backend/` folder.
+
+**Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
+the gitignored `.ketzal/` working root. Promote it to
+`knowledge/dev-designs/<target-slug>/design.md` with the knowledge
+frontmatter only when it's a durable decision worth sharing via
+`git pull`; keep it local-only otherwise.
+
 ## Tone
 
 - **Direct, specific, no filler.** You're working alongside a peer
