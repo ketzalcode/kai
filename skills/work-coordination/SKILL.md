@@ -88,13 +88,13 @@ proposed ─► ready ─► in-progress ─► in-review ─► shipped
 
 | state | means | who moves it |
 |-------|-------|--------------|
-| **proposed** | An idea/finding worth doing, not yet committed to. | anyone; the PM/owner promotes it |
-| **ready** | Committed and unblocked — waiting for an owner to start. | the scope-owner (`principal-product-manager`) / operator |
+| **proposed** | An idea/finding worth doing, not yet committed to. | anyone adds it; the **steward** (`initiative-stewardship`) promotes it |
+| **ready** | Committed and unblocked — waiting for an owner to start. | the **steward** (`principal-product-manager` by default) |
 | **in-progress** | An owner is actively working it. | the owning agent, on entry |
 | **in-review** | Built; awaiting verification / review / QA. | the builder, on handoff |
 | **blocked** | Can't proceed until a `blocked-by` item or a blocking QUESTION resolves. | any agent that hits the block |
 | **shipped** | Passed the `definition-of-done` gate and the human deployed; done. | the ship path (`workflow-ship`) |
-| **dropped** | Won't do (moved to a backlog with a reason). | the scope-owner / operator |
+| **dropped** | Won't do (moved to a backlog with a reason). | the **steward** / operator |
 
 The `in-review → shipped` edge is a **gate, not a rename**: `workflow-ship`
 runs the `definition-of-done` contract before the state flips, and either
@@ -117,9 +117,12 @@ team. **Every acting agent, on every run:**
    the **next role** and why. Never leave an item silently `in-progress`
    with no handoff — that's how work stalls.
 
-The operator (or a future dispatcher) reads the board's `ready` and
-`blocked` rows to decide what fires next — but because every handoff names
-its `next` role explicitly, the chain routes itself even with no runtime.
+The **steward** (`initiative-stewardship`, the initiative's `owner` —
+`principal-product-manager` by default) reads the board's `ready` and
+`blocked` rows to decide what fires next and in what order — and because
+every handoff names its `next` role explicitly, the chain still routes
+itself even with no runtime. The steward owns *what's next*; each acting
+agent owns *how* its own item gets built.
 
 ## HANDOFF — the packet you leave for the next role
 
@@ -215,10 +218,11 @@ board pointer:
 - board:            <work-item id once promoted to `proposed`, or "—">
 ```
 
-Promoting a backlog entry = adding it to `BOARD.md` as `proposed` and
-linking back. This closes the loop: findings are grounded (scope-owner),
-parked ideas persist (committed backlog), and picked-up ideas re-enter the
-board — nothing is silently built and nothing is silently lost.
+Promoting a backlog entry = the **steward** (`initiative-stewardship`)
+adding it to `BOARD.md` as `proposed` and linking back. This closes the
+loop: findings are grounded (scope-owner), parked ideas persist (committed
+backlog), and the steward re-enters the ones that now fit — nothing is
+silently built and nothing is silently lost.
 
 ## Hard rules
 

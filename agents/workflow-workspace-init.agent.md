@@ -126,9 +126,12 @@ gitignored (portable, personal — never lands in a work repo's git). Drop a
   `vision`, `scope.current`, `principles.non_negotiable[]`, and
   `proposal_channel` — plus `scope.out_of_scope`/`deferred`), the gating
   rule (load only when the target matches `scope`, then read mission +
-  principles and run the classify-before-act gate), and the
-  `active → paused → shipped → archived` lifecycle. Pull it straight from
-  the skill's *North star — initiatives*.
+  principles and run the classify-before-act gate), the
+  `active → paused → shipped → archived` lifecycle, and the **steward** who
+  drives it (the `owner` — `principal-product-manager` by default — per the
+  `initiative-stewardship` contract: grooms the backlog, promotes parked
+  items to `ready`, prioritizes, and calls the initiative shipped). Pull it
+  straight from the skill's *North star — initiatives*.
 - **`initiatives/ACTIVE.md`** — the focus pointer. Seed it empty with a one-line
   explanation: list active initiative slug(s) here so agents know what to load.
 - **`initiatives/BOARD.md`** — the cross-effort WIP ledger from the

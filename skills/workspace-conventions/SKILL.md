@@ -335,7 +335,9 @@ proposal_channel: ""  # where out-of-scope ideas go instead of into code
                       #   (a repo issue, a board, or a path). Empty =>
                       #   default initiatives/<slug>/backlog.md (committed)
 created: <YYYY-MM-DD>
-owner: <operator>
+owner: <operator>     # the steward accountable for this initiative
+                      #   (initiative-stewardship): a role or a human,
+                      #   defaults to principal-product-manager
 related: []           # knowledge/ + self/ slugs this initiative draws on
 ---
 ```
@@ -348,7 +350,9 @@ comprehensive doc nobody consults.
 
 `ACTIVE.md` is a thin pointer — a list of the currently-active initiative
 slug(s) and one line each on why. Lifecycle: an initiative moves
-`active → paused → shipped → archived`; `log.md` is the append-only trail of
+`active → paused → shipped → archived`, driven by its **steward** (the
+`owner` below — `principal-product-manager` by default — per the
+`initiative-stewardship` contract); `log.md` is the append-only trail of
 decisions made under it. The `initiatives/README.md` (written by the init
 workflow) holds the full schema.
 

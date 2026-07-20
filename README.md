@@ -130,7 +130,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Defends the working product — smallest change that addresses each finding's underlying need rather than rubber-stamping redesigns. Six-verdict taxonomy (Apply / Reframe / Minimize / Defer / Reject / Investigate). |
+| `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Defends the working product — smallest change that addresses each finding's underlying need rather than rubber-stamping redesigns. Six-verdict taxonomy (Apply / Reframe / Minimize / Defer / Reject / Investigate). Owns two contracts: **`scope-discipline`** (the classify-before-adopt scope gate) and, as the default **steward**, **`initiative-stewardship`** (grooms the backlog, promotes work to `ready`, prioritizes, and calls an initiative shipped). |
 | `principal-product-strategist` | Generative discovery counterpart to the PM. Drives a forward-looking product investigation and proposes a prioritized, evidence-backed catalog of net-new actions (web research + supplied data; no live data queries). Every candidate names the job it serves and its smallest validating experiment. Six-tier taxonomy (Lead / Fast-follow / Bet / Explore / Park / Pass). |
 
 ### AI research → product
@@ -182,6 +182,7 @@ kai/
 | `work-coordination` | The shared **how-the-team-coordinates** contract — the committed connective tissue that lets many single-shot agents run several efforts at once without a standing lead. Owns `initiatives/BOARD.md` (the cross-effort WIP ledger), the work-item lifecycle (`proposed → ready → in-progress → in-review → blocked → shipped/dropped`), the append-only `initiatives/threads/<item-id>.md` log with its `HANDOFF` and `QUESTION`/`ANSWER` packets (peer-to-peer messaging that survives a session), the committed backlog, and the collision/dependency scan an agent runs before it starts. The only constantly-committed mutable state — so a fresh session or a cloud agent picks up where the last one stopped. Not a trigger skill — inherited through the `workspace-conventions` gating rule by any agent that starts, hands off, or finishes work. |
 | `definition-of-done` | The shared **what-'done'-means** contract — the gate between an item's `in-review` and `shipped` states. Owns the six-dimension Definition-of-Done check (**scope-true** · **verified** · **reviewed** · **shippable-safely** · **documented** · **coordination-closed**), reusing `review-rollout-operability` for the rollout/reversibility dimension. Each dimension resolves Clear / Gap / Waived-with-reason; all-clear ships, any Gap **bounces** the item back with the owner role — never a silent pass. Proportional to blast radius. Enforces the kai invariant that nothing auto-deploys: it produces a ship record + the exact deploy steps, and the human runs them. Not a trigger skill — owned and run by `workflow-ship`, self-checked by acting agents before they hand off to review. |
 | `peer-communication` | The shared **how-agents-ask-each-other-things** contract — reconciles the three ways a peer question can travel into one protocol. One packet (`QUESTION`/`ANSWER`, addressed to a **role**) carried by one of three transports: **inline consult** (load the peer's agent file and answer in its voice — cheap, but a *simulation*), **live peer** (where the host exposes background agents — e.g. the Copilot CLI's `task`/`write_agent`/`read_agent` — spawn/message the *real* peer for its independent judgment), and the **durable thread** (append to `initiatives/threads/`, the async cross-session system of record). Bridging rule: transport is a performance choice, the thread is the correctness choice — anything blocking, cross-session, or decision-changing lands on the thread. Bias guard: don't inline-simulate a peer when independent judgment is the point (an assessment, a scope call) — get the real peer. Host-aware: no live agents → inline for facts, thread for durability. Not a trigger skill — pulled in by `work-coordination` (as its durable transport) and by any agent consulting a sister lane. |
+| `initiative-stewardship` | The shared **who-drives-an-initiative** contract — the layer above a single work item. `work-coordination` lets agents self-route *within* an item; stewardship owns the initiative *across* items. Defines the **steward** (the northstar's `owner`, `principal-product-manager` by default — the same role that owns `scope-discipline`) and its five duties: own the north star's state (`active → paused → shipped → archived`), **groom the backlog** and **promote** parked items to `ready` (the one-way valve scope-discipline defers *into* and only the steward opens *out*), **prioritize** the `ready` queue by value-to-mission (pulling `principal-swe-manager` to sequence large/parallel work), keep the board honest (stalled / blocked / orphaned sweep), and **call the initiative shipped** once every `scope.current` milestone clears `definition-of-done`. The steward owns *what's next*, not *how it's built* — so no single agent owns the execution chain. Not a trigger skill — inherited by the initiative owner, run as an on-demand steward pass. |
 
 **Engineering craft** — per-change discipline every `principal-swe-*` agent inherits:
 
@@ -284,6 +285,15 @@ independent judgment), or a **durable thread** `QUESTION`/`ANSWER` — into
 one rule: transport is a performance choice, the thread is the record.
 Anything that blocks a board item, crosses a session, or changes a
 decision lands on the thread, whichever transport carried it live.
+
+The board doesn't run itself. The **`initiative-stewardship`** contract
+names a **steward** — the initiative's `owner`, `principal-product-manager`
+by default — who grooms the backlog, **promotes** parked ideas onto the
+board as work becomes `ready`, prioritizes the `ready` queue by
+value-to-mission, sweeps stalled/blocked/orphaned rows, and **calls the
+initiative shipped** once its milestones clear the definition-of-done. The
+steward owns *what's next*; each acting agent still owns *how* its own item
+gets built — so there's still no single lead that owns the whole chain.
 
 Each artifact has a **default zone** by type — the rubric: **knowledge** for
 durable work decisions/inputs meant to be inherited; **local** for
@@ -450,6 +460,7 @@ ship and hands you the exact steps; the merge/deploy is yours to run.
 | Install the plugin into a fresh repo / re-assert structure | `workflow-workspace-init` (once) |
 | Net-new opportunity, "what should we build?" | `principal-product-strategist` |
 | Feedback/report to turn into decisions | `principal-product-manager` |
+| "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
 | Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |
 | A decision spans FE+BE+infra, or services/repos | `principal-swe-architect` |
