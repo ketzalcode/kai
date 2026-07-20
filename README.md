@@ -172,7 +172,8 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `workspace-conventions` | The shared **where-things-go** contract. Owns the four-root model (gitignored working root `.ketzal/` for ephemeral artifacts; committed `knowledge/` for shareable work outcomes; committed `initiatives/` for scope-gated north stars; gitignored `self/` for portable career/learning), the path grammar (`<root>/<area>/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/<artifact>`), slug/timestamp rules, the area registry, the zone-default table + `--share`/`--local` override, the initiative gating rule, the manifest format, and the knowledge frontmatter schema. Not a trigger skill — agents read it instead of inventing paths; `workflow-workspace-init` materializes it. |
-| `scope-discipline` | The shared **behavioral contract** governing the seam between honest assessment and unilateral action — the classify-before-adopt gate that separates *refining within scope* from *expanding it*. Splits three roles: **assessors** (the `persona-*` evaluators, `principal-qa-ui`) surface findings honestly and are deliberately **not** gated (biasing them corrupts the signal); the **scope-owner** (`principal-product-manager`) *owns* the gate, triaging each finding against the initiative's thin core (`mission`, `scope.current`, `principles.non_negotiable[]`) into build vs a deferred `PROPOSAL`; **acting builders** (`principal-swe-*` + architect) carry it as restraint-on-diff — assess honestly, but never unilaterally ship a change that adds a step, gate, surface, or new capability, escalating it as a `PROPOSAL` instead. Proposals route to the initiative's `proposal_channel` (default `.ketzal/proposals/`). Not a trigger skill — pulled in by the scope-owner and the acting builders, the way `review-*` lenses pull in `doc-review-rigor`. |
+| `scope-discipline` | The shared **behavioral contract** governing the seam between honest assessment and unilateral action — the classify-before-adopt gate that separates *refining within scope* from *expanding it*. Splits three roles: **assessors** (the `persona-*` evaluators, `principal-qa-ui`) surface findings honestly and are deliberately **not** gated (biasing them corrupts the signal); the **scope-owner** (`principal-product-manager`) *owns* the gate, triaging each finding against the initiative's thin core (`mission`, `scope.current`, `principles.non_negotiable[]`) into build vs a deferred `PROPOSAL`; **acting builders** (`principal-swe-*` + architect) carry it as restraint-on-diff — assess honestly, but never unilaterally ship a change that adds a step, gate, surface, or new capability, escalating it as a `PROPOSAL` instead. Proposals route to the initiative's `proposal_channel` (default the committed backlog `initiatives/<slug>/backlog.md`). Not a trigger skill — pulled in by the scope-owner and the acting builders, the way `review-*` lenses pull in `doc-review-rigor`. |
+| `work-coordination` | The shared **how-the-team-coordinates** contract — the committed connective tissue that lets many single-shot agents run several efforts at once without a standing lead. Owns `initiatives/BOARD.md` (the cross-effort WIP ledger), the work-item lifecycle (`proposed → ready → in-progress → in-review → blocked → shipped/dropped`), the append-only `initiatives/threads/<item-id>.md` log with its `HANDOFF` and `QUESTION`/`ANSWER` packets (peer-to-peer messaging that survives a session), the committed backlog, and the collision/dependency scan an agent runs before it starts. The only constantly-committed mutable state — so a fresh session or a cloud agent picks up where the last one stopped. Not a trigger skill — inherited through the `workspace-conventions` gating rule by any agent that starts, hands off, or finishes work. |
 
 **Engineering craft** — per-change discipline every `principal-swe-*` agent inherits:
 
@@ -234,7 +235,10 @@ it applies) and *git* (whether it travels via `git pull`):
 │      qa-findings/ lessons/ digests/ learnings/ playbooks/
 ├─ initiatives/     ← standing intent: north stars, committed, scope-gated
 │   ├─ ACTIVE.md                 ← which initiative(s) are the current focus
-│   └─ <initiative-slug>/northstar.md · log.md · references.md
+│   ├─ BOARD.md                  ← cross-effort WIP ledger (items · state · owner · blockers)
+│   ├─ backlog.md                ← deferred proposals with no initiative
+│   ├─ threads/<item-id>.md      ← append-only HANDOFF + QUESTION/ANSWER per work item
+│   └─ <initiative-slug>/northstar.md · log.md · references.md · backlog.md
 └─ self/         ← portable career/learning: yours, gitignored
     └─ lessons/ courses/ certs/ growth/
 ```
@@ -253,6 +257,16 @@ it applies) and *git* (whether it travels via `git pull`):
 - **Self root (`self/`)** holds your **portable career/learning** — certs,
   courses, lessons you authored to learn. Gitignored, so it never lands in a
   work repo's git; it's about *you*, not the workspace, and travels with you.
+
+Inside `initiatives/` there is also the **coordination surface** (the
+`work-coordination` skill): `BOARD.md` is the cross-effort WIP ledger,
+`threads/<item-id>.md` carries the append-only `HANDOFF` and
+`QUESTION`/`ANSWER` peer messages for one work item, and `backlog.md` holds
+deferred proposals. It's the only constantly-committed *mutable* state in
+the workspace — committed on purpose so a fresh session, a peer agent, or a
+cloud agent can read the board, see what's in flight and who owns it, and
+pick up an effort where the last agent left off. `ACTIVE.md` says which
+initiatives matter; `BOARD.md` says what work is moving through them.
 
 Each artifact has a **default zone** by type — the rubric: **knowledge** for
 durable work decisions/inputs meant to be inherited; **local** for

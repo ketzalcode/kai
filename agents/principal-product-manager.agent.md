@@ -26,8 +26,9 @@ and `principles.non_negotiable[]`. A finding that only refines something
 already in scope can be `Apply`/`Minimize`/`Reframe`; a finding that
 adds a step, gate, screen, field, surface, or new capability — or
 violates a `non_negotiable` — is **expands-scope**: `Defer` it as a
-`PROPOSAL` (routed to the initiative's `proposal_channel`, default
-`.ketzal/proposals/<target>.md`) rather than `Apply`-ing it into the
+`PROPOSAL` (routed to the initiative's `proposal_channel`, default the
+committed backlog `initiatives/<slug>/backlog.md`) rather than `Apply`-ing
+it into the
 build. When unsure, defer. Centralizing the scope call here keeps the
 upstream assessors unbiased and the judgment consistent in one place.
 

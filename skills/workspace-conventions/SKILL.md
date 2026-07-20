@@ -297,7 +297,13 @@ Before substantial work on a project/feature, glance at `initiatives/ACTIVE.md`
    halt that thread — don't build it). Anything that adds a step, gate,
    surface, or new capability, or violates a `non_negotiable`, is
    `expands-scope` by default. When unsure, propose.
-5. **Ambiguous? Ask once.** If you can't tell whether the work belongs to a
+5. **Coordinate through the board.** If you *start, hand off, or finish* a
+   unit of work, you inherit the `work-coordination` contract: claim your
+   item on `initiatives/BOARD.md` and set it `in-progress` on entry; on
+   exit, advance its `state` and append a `HANDOFF` to its thread naming
+   the next role. Scan the board for a same-`target` collision before you
+   start. Deferred proposals land in the committed backlog, not scratch.
+6. **Ambiguous? Ask once.** If you can't tell whether the work belongs to a
    initiative, ask the operator rather than guessing.
 
 ### Initiative frontmatter (`northstar.md`)
@@ -324,7 +330,7 @@ principles:
                       #   out-of-scope by default."
 proposal_channel: ""  # where out-of-scope ideas go instead of into code
                       #   (a repo issue, a board, or a path). Empty =>
-                      #   default <working-root>/proposals/<target-slug>.md
+                      #   default initiatives/<slug>/backlog.md (committed)
 created: <YYYY-MM-DD>
 owner: <operator>
 related: []           # knowledge/ + self/ slugs this initiative draws on
@@ -345,12 +351,37 @@ workflow) holds the full schema.
 
 **Proposals — where out-of-scope ideas land.** When the `scope-discipline`
 contract classifies a finding as `expands-scope`, the resulting `PROPOSAL`
-goes to the initiative's `proposal_channel`. If that's unset (or no
-initiative is loaded), the default sink is a flat `proposals/` folder in
-the working root: `<working-root>/proposals/<target-slug>.md` (e.g.
-`.ketzal/proposals/<target-slug>.md`). It's a working-root artifact —
-gitignored like the rest of the working root — so good ideas are captured
-and reviewable without being committed as code.
+goes to the initiative's `proposal_channel`. If that's unset, the default
+sink is the **committed backlog** owned by the `work-coordination`
+contract: `initiatives/<slug>/backlog.md` when an initiative is loaded,
+`initiatives/backlog.md` when none is. Committed on purpose — a parked
+idea that lands in the gitignored working root dies at the next cleanup;
+the backlog survives via `git` and can be promoted back onto the board.
+(Only if the workspace was never onboarded, `initiatives/` is absent, fall
+back to `<working-root>/proposals/<target-slug>.md` and say so.)
+
+## Coordinating work across efforts
+
+The `initiatives/` root also holds the **committed coordination surface**
+owned by the `work-coordination` contract — how many single-shot agents
+act like one team running several efforts at once:
+
+```
+initiatives/
+  ACTIVE.md              # which initiative(s) are the focus
+  BOARD.md               # the cross-effort WIP ledger (items · state · owner · blockers)
+  backlog.md             # deferred proposals with no initiative
+  threads/<item-id>.md   # append-only HANDOFF + QUESTION/ANSWER per work item
+  <slug>/backlog.md      # deferred proposals for that initiative
+```
+
+`ACTIVE.md` says which initiatives matter; `BOARD.md` says what work is in
+flight. Any agent that starts, hands off, or finishes work claims a board
+item, leaves a `HANDOFF` on its thread, and routes to the next role — see
+`work-coordination` for the lifecycle, packet formats, and rules. This is
+the *only* mutable, constantly-committed state in the workspace; it's
+committed so a fresh session or a cloud agent can pick up where the last
+one stopped.
 
 ## Knowledge-entry frontmatter
 

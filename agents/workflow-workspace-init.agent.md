@@ -130,6 +130,20 @@ gitignored (portable, personal — never lands in a work repo's git). Drop a
   the skill's *North star — initiatives*.
 - **`initiatives/ACTIVE.md`** — the focus pointer. Seed it empty with a one-line
   explanation: list active initiative slug(s) here so agents know what to load.
+- **`initiatives/BOARD.md`** — the cross-effort WIP ledger from the
+  `work-coordination` contract. Seed it with the ledger table header and
+  column legend (`id · title · initiative · state · owner · target ·
+  blocked-by · updated`) and a one-line note on the lifecycle
+  (`proposed → ready → in-progress → in-review → blocked →
+  shipped/dropped`). Pull the format straight from `work-coordination`.
+- **`initiatives/threads/README.md`** — explains the append-only thread
+  log: one `threads/<item-id>.md` per board item, carrying `HANDOFF` and
+  `QUESTION`/`ANSWER` packets so a role-to-role handoff or a peer question
+  survives across sessions. Pull the packet shapes from `work-coordination`.
+- **`initiatives/backlog.md`** — the committed default sink for deferred,
+  unaffiliated `PROPOSAL`s (per-initiative proposals go to
+  `initiatives/<slug>/backlog.md`). Seed with a one-line header explaining
+  it holds parked, out-of-scope ideas promotable back onto `BOARD.md`.
 - **`self/README.md`** — what `self/` is: your portable, personal,
   gitignored career/learning lane (lessons, courses, certs, growth notes)
   that never auto-commits into a work repo.
