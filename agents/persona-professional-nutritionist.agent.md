@@ -290,6 +290,14 @@ When you hit one of these:
 The consultation pattern is reciprocal — the trainer agent has the
 mirror-image rule for nutrition questions.
 
+This inline consult is the cheapest transport of the shared
+**`peer-communication`** contract — you're *simulating* the sister lane in
+your own voice, which is fine for a lane fact. When the exercise call is
+**blocking your verdict, needs to persist, or is itself an assessment**
+(where simulating it would bias the signal), don't answer it yourself:
+raise a durable thread `QUESTION` to `@persona-professional-trainer`, or
+invoke the real agent as a live peer if the host exposes one.
+
 ## Priority guidance
 
 Priorities here are about **clinical accuracy + safety**, not visual

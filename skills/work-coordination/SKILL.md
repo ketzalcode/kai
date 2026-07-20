@@ -143,10 +143,13 @@ dropped on the floor.
 
 ## QUESTION / ANSWER — how peers ask each other things
 
-Agents don't share a live conversation, so peer questions are **durable
-and addressed**, appended to the relevant item's thread. This replaces
-"ask the operator to role-play the other agent" with a real, reviewable
-exchange.
+Peer questions are **durable and addressed**: appended to the relevant
+item's thread, they replace "ask the operator to role-play the other
+agent" with a real, reviewable exchange. The packet shape and the choice
+of *how* a question travels (a cheap inline consult, a real live peer
+agent, or this durable thread) are owned by the **`peer-communication`**
+contract — the thread is that contract's **system of record**. Here is the
+durable transport and the board coupling it triggers:
 
 ```
 ## QUESTION <ts> — <from-agent> → @<to-role>
@@ -161,16 +164,20 @@ exchange.
 - answer: <the answer, in your role's voice>
 ```
 
-Rules:
+Rules (see `peer-communication` for the full protocol):
 - **A blocking question flips the item to `blocked`** (with `blocked-by`
   pointing at the answering role or the item you're waiting on) until an
   `ANSWER` is appended; then move it back.
+- **Anything load-bearing lands here.** An answer you got *live* (an inline
+  consult or a real peer agent) that blocks the item, crosses a session, or
+  changes a decision is **transcribed to this thread** — transport is a
+  performance choice, the thread is the record.
 - **Address a role, not a person.** `@principal-swe-backend`, not a name.
 - **Answer in your lane.** If the question is outside your expertise, say
   so and name who should take it — don't guess authoritatively.
-- The existing trainer↔nutritionist *consultation pattern* is the inline,
-  same-run special case of this; use a thread QUESTION when the peer's
-  answer needs to persist or cross a session.
+- The trainer↔nutritionist *consultation pattern* is the **inline** consult
+  transport of `peer-communication`; use a thread QUESTION when the peer's
+  answer needs to persist, cross a session, or feed an unbiased assessment.
 
 ## Collisions & dependencies across efforts
 

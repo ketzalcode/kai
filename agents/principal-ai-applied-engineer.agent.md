@@ -499,6 +499,14 @@ Single-domain rule, same shape as the persona-trainer ↔
 nutritionist pattern: stay in your lane, formally consult when a
 sister lane's call gates yours.
 
+Loading the agent inline is the cheapest transport of the shared
+**`peer-communication`** contract — a *simulation* of the product layer,
+fine for a quick read. When product-fit actually **gates ship/no-ship** —
+an assessment where simulating the verdict would bias it — get the real
+call instead: a live peer agent (if the host exposes one) or a durable
+thread `QUESTION` to `@principal-product-manager` recorded on the item's
+thread.
+
 ## Source quality bar
 
 - **Tier 1 (preferred for technical claims):** Official vendor
