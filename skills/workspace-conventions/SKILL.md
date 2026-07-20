@@ -74,6 +74,7 @@ decisions, reviews, and learnings other repos and people get when they
 ├─ lessons/              # team-shareable lessons (personal learning goes to self/)
 ├─ digests/              # weekly pulse digests
 ├─ learnings/            # atomic, reusable learnings
+├─ releases/             # ship records: what shipped, DoD evidence, rollback plan
 └─ playbooks/            # reusable how-tos
 ```
 
@@ -181,6 +182,7 @@ paraphrase it into a new folder.
 | `eng` | swe-architect, swe-manager, swe-frontend, swe-backend, swe-infra | `<target-slug>/<ts>-<flavor>/` | `arch`, `scope`, `frontend`, `backend`, `infra` |
 | `product` | product-strategist | `<target-slug>/<ts>-strategy/` | `strategy` |
 | `review` | workflow-doc-review | `<doc-slug>/<ts>-doc/` | `doc` |
+| `ship` | workflow-ship | `<target-slug>/<ts>-ship/` | `ship` |
 | `ai` | ai-researcher, ai-applied-engineer | `<slug>/<ts>-<flavor>/` | `research`, `applied` |
 | `learn` | course-to-audio, teacher | `<source-slug>/<ts>/` | — (sub-tree) |
 | `lessons` | engineer-tutor | `<tutor>/<theme>/<NN>_<slug>/` | — |
@@ -238,6 +240,7 @@ work) to **initiatives/**. When in doubt, **local** — promotion is one
 | eng: `decision.md`, `plan.md` | **knowledge** | `knowledge/dev-designs/` |
 | product: `catalog.md` | **knowledge** | `knowledge/investigations/` |
 | review: `review.md` | **knowledge** | `knowledge/reviews/` |
+| ship: `ship-record.md` | **knowledge** (auditable release record) | `knowledge/releases/` |
 | ai: `briefing.md` | **knowledge** | `knowledge/briefings/` |
 | ai: `design.md` | **knowledge** | `knowledge/dev-designs/` |
 | initiatives: `northstar.md`, `log.md` | **initiatives** (committed intent) | — (lives in `initiatives/`) |
@@ -390,7 +393,7 @@ findable and cross-link into a graph:
 
 ```yaml
 ---
-type: <reviews|dev-designs|investigations|briefings|qa-findings|lessons|digests|learnings|playbooks>
+type: <reviews|dev-designs|investigations|briefings|qa-findings|lessons|digests|learnings|releases|playbooks>
 title: <human title>
 slug: <kebab-slug>
 created: <YYYY-MM-DD>

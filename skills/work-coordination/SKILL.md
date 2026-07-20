@@ -93,8 +93,14 @@ proposed ─► ready ─► in-progress ─► in-review ─► shipped
 | **in-progress** | An owner is actively working it. | the owning agent, on entry |
 | **in-review** | Built; awaiting verification / review / QA. | the builder, on handoff |
 | **blocked** | Can't proceed until a `blocked-by` item or a blocking QUESTION resolves. | any agent that hits the block |
-| **shipped** | Merged/deployed/verified; done. Update the initiative. | the ship path |
+| **shipped** | Passed the `definition-of-done` gate and the human deployed; done. | the ship path (`workflow-ship`) |
 | **dropped** | Won't do (moved to a backlog with a reason). | the scope-owner / operator |
+
+The `in-review → shipped` edge is a **gate, not a rename**: `workflow-ship`
+runs the `definition-of-done` contract before the state flips, and either
+ships (writes a ship record, advances the row, records the deploy steps
+for the human) or bounces the item back to `in-progress`/`blocked` with the
+named gap. Nothing reaches `shipped` on optimism.
 
 ## The self-routing rule
 

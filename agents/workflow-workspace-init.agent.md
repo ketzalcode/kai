@@ -70,7 +70,8 @@ Create, if missing:
 ```
 knowledge/
 ├─ reviews/        dev-designs/    investigations/   briefings/
-├─ qa-findings/    lessons/        digests/          learnings/   playbooks/
+├─ qa-findings/    lessons/        digests/          learnings/
+├─ releases/       playbooks/
 ```
 
 ### 4. Scaffold the initiatives + self roots
@@ -115,7 +116,7 @@ gitignored (portable, personal — never lands in a work repo's git). Drop a
   }
   ```
 
-- **`knowledge/README.md`** — the knowledge schema: the nine types, the
+- **`knowledge/README.md`** — the knowledge schema: the ten types, the
   frontmatter every entry carries, the "commit text, not binaries" rule,
   and how `related` cross-links form the graph. Pull the schema straight
   from `workspace-conventions`.
