@@ -132,7 +132,7 @@ Set canonical artifact targets automatically:
   `initiatives/<slug>/artifacts/product-map.md`;
 - product marketing intelligence (bundle directory):
   `initiatives/<slug>/artifacts/marketing/`;
-- LinkedIn / social content pack (bundle directory):
+- content / creative pack (bundle directory):
   `initiatives/<slug>/artifacts/content/<item-id>/`;
 - PM brief:
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`;

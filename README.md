@@ -173,6 +173,7 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `principal-linkedin-strategist` | Turns `principal-product-marketing`'s `product_context.json` into credible, platform-native LinkedIn content — post variants across launch / build-in-public / technical / founder / problem-solution / lessons / user-value angles, a content-angle matrix, and optional calendars and carousels. Grounds every claim in a product-context id; never fabricates traction/revenue/users; routes founder-voice polish to `persona-self`. LinkedIn-only, bilingual-capable, **never auto-publishes**. |
+| `principal-video-director` | Turns `product_context.json` + `media_manifest.json` into a synchronized video creative-direction package — `creative_brief.md`, timestamped `storyboard.md`, structured `edit_decision_list.json`, `voiceover_script.md` with cut/audio-cue markers, and provider-agnostic `ai_video_prompts.json` for missing scenes. Grounds the script via `content-grounding`, distinguishes existing from generated assets, keeps cuts and audio in sync, flags every timing assumption. **Plans, never renders**; no AI provider hard-coded. |
 
 ### Personal (your voice & career)
 
@@ -233,7 +234,9 @@ kai/
 | ---- | ------- |
 | `web-evaluation` | Shared plumbing for browser-based audit runs (folder layout, screenshots, login-pause, `.gitignore` patching, priority scheme, report scaffold). Invoked by `principal-qa-ui`, `principal-seo`, and `persona-ux-first-time-user`. |
 | `web-content-extraction` | Standardises a Playwright MCP walkthrough of a *readable* site (course modules, docs, articles) and writes clean markdown for downstream use. Owns folder layout, slugs, `.gitignore`, login-pause, knowledge-check detection. Invoked by `workflow-course-to-audio`. |
+| `content-grounding` | Shared claim-safety contract every content/creative agent inherits: the `product_context.json` reference scheme, the per-item claim ledger, the provenance treatment table, never-fabricate rules, and locked-facts voicing. Keeps grounding identical across LinkedIn, video, and future platforms. |
 | `linkedin-content` | The method behind `principal-linkedin-strategist`: turns `product_context.json` into grounded LinkedIn post variants, a content-angle matrix, and optional calendars/carousels under `.kai/runs/content/…-linkedin/`. Claim-safety by product-context id; never fabricates metrics; never publishes. |
+| `video-direction` | The method behind `principal-video-director`: turns `product_context.json` + `media_manifest.json` into `creative_brief.md`, timestamped `storyboard.md`, `edit_decision_list.json`, `voiceover_script.md`, and provider-agnostic `ai_video_prompts.json`. Inherits `content-grounding`; plans, never renders. |
 | `pulse-digest` | Plumbing behind `workflow-weekly-pulse`; private bindings and output live under `.kai/runs/pulse/`. |
 
 **Lessons & writing:**
@@ -517,6 +520,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Feedback/report to turn into decisions | `principal-product-manager` |
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
+| Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `principal-video-director` |
 | "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
 | Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |

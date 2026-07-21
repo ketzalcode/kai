@@ -24,78 +24,23 @@ produces **LinkedIn** content only — other platforms are separate agents.
 
 | Input | Role |
 |---|---|
-| `product_context.json` | **sole factual authority** — the grounded, typed product intelligence; every claim maps here |
-| `product_exploration_report.md` | **phrasing nuance only** — never a source of facts the JSON doesn't carry |
+| `product_context.json` | **sole factual authority** — every claim maps here (see `content-grounding`) |
+| `product_exploration_report.md` | **phrasing nuance only** — never a source of facts the JSON lacks |
 | `media_manifest.json` (optional) | assets a carousel or post can reference |
 | operator brief | goal (awareness, launch, waitlist, recruitment, feedback, fundraising, community, technical credibility…), audience, tone/style, language, output mode, confirmed speaker identity |
 
-`product_context.json` is the **only** place facts come from. If it is absent or
-too thin for the goal, stop and route the operator to
-`principal-product-marketing` to produce or extend it — never reconstruct product
-facts from the chat or the report, and never let an operator aside become a
-stated result without first landing it in the JSON (see Claim-safety).
+## Grounding and claim-safety
 
-## The product_context id scheme (what you ground against)
+**Inherits `content-grounding`** — the product_context reference scheme, the
+per-item claim ledger, the provenance treatment table, the never-fabricate rules,
+`needs_confirmation` handling, the JSON-is-sole-authority rule, bilingual
+grounding, and locked-facts voicing apply here verbatim.
 
-`product_context.json` carries typed, id'd assertions. A **grounding reference**
-is either a list-item `id` or a `product`-field path:
-
-| Reference | Kind | Usable as a stated fact? |
-|---|---|---|
-| `product.name`, `product.summary`, `product.category` | fact | yes (respect `source`) |
-| `product.stage`, `product.main_user_problem` | inference | no — perspective/hedged |
-| `features[].id` (`f-1`), `flows[].id` (`fl-1`) | fact | yes |
-| `claims[].id` (`c-1`) | fact · `source: product-claim` | **attributed only** ("the product is built to…") |
-| `personas[].id` (`p-1`), `value_propositions[].id` (`v-1`), `differentiators[].id` (`d-1`), `objections[].id` (`o-1`) | inference | no — perspective/hedged |
-| `content_angles[].id` (`a-1`) | recommendation | angle inspiration only, never a proof point |
-| `evidence[].id` (`e-001`) | supporting evidence | backs a fact/claim; not itself a claim |
-
-Resolve every reference before using it, and let its `kind`/`source`/`proof` and
-`confidence` decide the treatment. A reference that doesn't semantically support
-the sentence is not grounding — it's a mislabel.
-
-## Claim-safety (the core discipline)
-
-LinkedIn credibility dies on one invented number. So **every factual sentence in
-every post is entered in a per-variant claim ledger** that maps the sentence to
-the assertion that backs it:
-
-```yaml
-claim_map:
-  - text: "<the exact claimful span from the post>"
-    ref: "f-1 | c-2 | product.summary"          # a grounding reference
-    ref_kind: fact | inference | recommendation
-    ref_source: observed | operator-provided | product-claim | external | analyst
-    proof_status: proven | partial | unproven | n/a
-    evidence_ids: ["e-001"]                        # from the referenced entry's basis
-    treatment: plain-fact | attributed-claim | qualified | perspective
-```
-
-Treatment by source/kind:
-
-- **`observed` fact** → `plain-fact`: state it directly.
-- **`product-claim`** → `attributed-claim`: *"built to…"*, *"designed to…"* —
-  never an independently verified outcome.
-- **`operator-provided`** → `attributed-claim` (attributed to the operator/company)
-  and never presented as independently verified; if it is a metric/result it must
-  be an already-public, operator-confirmed figure.
-- **`external`** → cited, and **never** extrapolated into a product outcome.
-- **`inference`** → `perspective`: frame as a point of view, hedged to its
-  `confidence`; never a hard metric or result.
-- **`proof_status: partial`** → `qualified` to the proven scope only.
-- **`proof_status: unproven`** → may inspire a build-in-public or problem/solution
-  *angle*, but must **not** appear as result copy.
-
-**Never invent** traction, revenue, user counts, growth, funding, partnerships,
-awards, benchmarks, or outcomes. If it isn't in `product_context.json`, it does
-not go in a post.
-
-Anything the operator would need to confirm goes in `needs_confirmation` and is
-**excluded from the postable copy** (or shown as an explicit `<confirm: …>`
-placeholder) — never silently published as fact.
-
-Run the claim-safety pass on the finished copy, and **re-run it after any
-voicing** (see Voicing): the final approved copy is what the ledger must match.
+LinkedIn specifics on top of that contract: the claim ledger is **per variant**;
+run the claim-safety pass on the finished postable copy and **re-run it after any
+voicing** (see Voicing). `needs_confirmation` items are excluded from the postable
+copy. A matrix `proof_point` must resolve to a `kind: fact` reference; an
+inference/recommendation may only be an `angle_source`, never the proof.
 
 ## Angles
 

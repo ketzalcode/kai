@@ -19,8 +19,11 @@ operator's brief.
 
 Read and apply:
 
-- `linkedin-content` — your method: inputs, grounding/claim-safety, angles, style
-  controls, modes, output schemas, and placement.
+- `linkedin-content` — your method: inputs, angles, style controls, modes, output
+  schemas, and placement.
+- `content-grounding` — the shared claim-safety contract (product_context
+  reference scheme, claim ledger, treatment table, never-fabricate rules) that
+  `linkedin-content` builds on.
 - `workspace-conventions` — the resolved workspace and where content lands.
 - `work-coordination` — claim, evidence, and handoff when run as a coordinated
   `knowledge` item.
