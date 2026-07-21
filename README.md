@@ -161,6 +161,7 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `workflow-product-explore` | Produces neutral, reusable product-navigation facts for other agents; it is not QA, UX evaluation, or design. |
+| `principal-product-marketing` | Product researcher + marketing analyst. Turns a product surface (public marketing pages, screenshots, recordings, notes, or a product-map) into a reusable, product-agnostic intelligence layer — a human report plus `product_context.json` + `media_manifest.json` — that downstream content/creative agents consume cold. Types every assertion fact / inference / recommendation with source, confidence, and basis. Generic; no product hard-coded. |
 | `principal-qa-ui` | Senior QA engineer doing deep manual UI testing via Playwright MCP. Hunts objectively broken things — overlap, overflow, broken buttons, console/network errors, focus order, viewport breakage. Defect report via `web-evaluation`. |
 | `principal-seo` | SEO + agentic-search auditor — technical SEO, content-SEO alignment, and agentic-search readiness (llms.txt, schema density, AI-bot directives, JS-blind extractability). Carries a 2026 baseline and refreshes against the live spec each run. Report via `web-evaluation`. |
 | `persona-ux-first-time-user` | Simulates a first-time customer walking a surface via Playwright MCP. Subjective friction + concrete proposals — not a defect log. Report via `web-evaluation`. |
@@ -189,6 +190,7 @@ kai/
 | `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `coordination/` for team state, initiative-owned `artifacts/`, promoted `library/`, and the personal `personal/` lane. |
 | `workspace-onboarding` | Idempotent initialization and validation method used by `workflow-workspace-init`. |
 | `product-exploration` | Neutral live-product mapping method with canonical `initiatives/<slug>/artifacts/product-map.md` placement. |
+| `product-marketing-intelligence` | The method behind `principal-product-marketing`: turns a product surface into reusable `product_exploration_report.md` + `product_context.json` + `media_manifest.json` under `initiatives/<slug>/artifacts/marketing/`. Types every assertion fact / inference / recommendation with source, confidence, and basis; downstream-consumable without chat. |
 | `scope-discipline` | The classify-before-adopt gate. Assessors report honestly; `principal-product-manager` owns scope decisions; `principal-product-designer` and engineering acting roles may refine approved scope but route expanded surfaces, flows, capabilities, or implementation as durable proposals. |
 | `work-coordination` | Authoritative item state under `coordination/items/`, derived board, typed dependencies, leases, durable threads, revision-bound reviews, and truthful completion/shipping. |
 | `definition-of-done` | The shared release-readiness contract. Its six dimensions gate `in-review → release-ready`; production deployment and verification are evidenced afterward before `shipped`. Each dimension resolves Clear / Gap / Waived-with-reason, and gaps bounce with a named owner. |
@@ -506,6 +508,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Drive an item or initiative end to end / resume the team | `director-chief-of-staff` |
 | Net-new opportunity, "what should we build?" | `principal-product-strategist` |
 | Feedback/report to turn into decisions | `principal-product-manager` |
+| Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
 | Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |
