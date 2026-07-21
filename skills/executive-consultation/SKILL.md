@@ -86,7 +86,8 @@ Apply `peer-communication`:
 
 The bridge copies only the canonical QUESTION/ANSWER fields, sanitized
 team-relevant context, necessary evidence paths, and provenance. It must not
-copy the private operator-intent paragraph, personal context, pal-home path, or
+copy the private operator-intent paragraph, personal context, current workspace's
+private paths, or
 `personal/consultations/` path into committed coordination.
 
 ## Private record
@@ -172,4 +173,4 @@ Your move: <one operator choice, or the owning role's next step>
 5. Bridge only the sanitized canonical QUESTION/ANSWER packet; private envelope
    fields never enter committed coordination.
 6. Preserve provenance, uncertainty, and disagreement.
-7. Save private records only under the resolved pal home.
+7. Save private records only under the resolved current Kai workspace.

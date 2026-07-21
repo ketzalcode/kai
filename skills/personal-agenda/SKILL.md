@@ -1,6 +1,6 @@
 ---
 name: personal-agenda
-description: "Assembles the operator's cross-workspace forward 'what needs you' agenda. Reads enabled roots from the pal home's personal/workspaces.md, owns the personal/inbox.md and derived personal/agenda.md schemas, maps explicit @operator decision/reply/action questions plus release-ready items, cadence nudges, ranking, and the never-autonomous output contract. Invoked by director-executive-assistant; not invoked directly."
+description: "Assembles the operator's forward 'what needs you' agenda in the current Kai workspace, optionally including enabled roots from personal/workspaces.md. Owns the personal/inbox.md and derived personal/agenda.md schemas, maps explicit @operator decision/reply/action questions plus release-ready items, cadence nudges, ranking, and the never-autonomous output contract."
 tools: [bash, view, edit, create, grep, glob]
 ---
 
@@ -19,8 +19,8 @@ overlap — the agenda surfaces open loops, not a week's narrative.
 
 ## The two files
 
-Personal operational state lives in the ignored `personal/` lane of your pal
-home base (see `workspace-conventions`). Two files, mirroring how
+Personal operational state lives in the ignored `personal/` lane of the current
+Kai workspace (see `workspace-conventions`). Two files, mirroring how
 `coordination/` separates authoritative items from the derived board:
 
 | File | Role | Analogue |
@@ -33,22 +33,21 @@ commit them, and you never write agenda/inbox state anywhere else.
 
 ## Anchoring
 
-The agenda belongs to the **pal home base** — the personal workspace you run
-sessions from (`kc-pal`, `ms-pal`), where `personal/` and `.persona-self/`
-live. Resolve it through `workspace-conventions` (`.kai/manifest.json`
-sentinel). `personal/inbox.md`, the nudges, and the rendered `personal/agenda.md`
-always resolve against that home base.
+The agenda belongs to the **current Kai workspace** resolved through
+`workspace-conventions` and its `.kai/manifest.json` sentinel.
+`personal/inbox.md`, identity/cadence sources, and the rendered
+`personal/agenda.md` always resolve against that workspace.
 
-Coordination **signals** come from the home base's own `coordination/` plus every
+Coordination **signals** come from the current workspace's `coordination/` plus every
 enabled root in `personal/workspaces.md`. Resolve and validate the registry per
 `workspace-conventions`; label every surfaced line with its workspace. When the
-operator names an additional product root, the calling assistant confirms its
+operator names an additional Kai root, the calling assistant confirms its
 label and records it in the registry before scanning it. Never write into a
-product workspace from here.
+linked workspace from here.
 
 ## Sources
 
-Three categories, with workspace discovery supplied by the pal registry:
+Three categories, with optional linked-workspace discovery:
 
 ### A. Derived team signals (read-only, from `coordination/`)
 
@@ -85,13 +84,13 @@ everything else is derived. Schema below.
 
 ### C. Cadence nudges
 
-Freshness checks against the home base, each a gentle "you're due":
+Freshness checks against the current workspace, each a gentle "you're due":
 
 - **Weekly pulse** — newest `.kai/runs/pulse/<YYYY-Www>/` older than 7 days →
   nudge `workflow-weekly-pulse`.
-- **Career check-in** — the cadence stated in `.persona-self/career-goals.md`
+- **Career check-in** — the cadence stated in `personal/identity/career-goals.md`
   (or last career run) overdue → nudge `principal-engineer-career-mentor`.
-- **Voice profile** — `.persona-self/voice.md` missing or stale → nudge
+- **Voice profile** — `personal/identity/voice.md` missing or stale → nudge
   `extract-writing-style`.
 
 Nudges are awareness, never auto-runs. Skip any whose source doesn't exist.
@@ -175,14 +174,14 @@ The agenda is a **view**, not a trigger. This skill and its caller:
 - write only two paths: `personal/agenda.md` (rendered) and `personal/inbox.md`
   (explicit task capture) — both in the ignored personal lane;
 - never promote personal state to `library/` or commit it;
-- read `coordination/`, `.kai/runs/pulse/`, and `.persona-self/` strictly
+- read `coordination/`, `.kai/runs/pulse/`, and `personal/identity/` strictly
   read-only.
 
 ## Output contract
 
 When a render finishes:
 
-1. `personal/agenda.md` exists at the home base with a generated timestamp and
+1. `personal/agenda.md` exists in the current workspace with a generated timestamp and
    the ranked sections above.
 2. Every line names its source, an exact workspace-root-relative path, and one
    next action.

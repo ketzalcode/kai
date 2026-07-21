@@ -138,7 +138,7 @@ landscape:                    # optional — external watch via web_search, not 
 
 career:                       # optional — enables Page 3
   enabled: true
-  persona_self: true          # read .persona-self/ for voice + promo rubric
+  persona_self: true          # read personal/identity/ for voice + promo rubric
   target_level: senior
 ```
 ````
@@ -167,7 +167,7 @@ One run per week:
 
 ## Gitignore — privacy first
 
-A weekly pulse of internal chat is **sensitive**, like `.persona-self/`. It
+A weekly pulse of internal chat is **sensitive**, like `personal/identity/`. It
 stays in the **run root** — `.kai/runs/pulse/` — which
 `workflow-workspace-init` gitignores **wholesale** (see
 `workspace-conventions`). You do **not** patch `.gitignore` yourself; the
@@ -316,7 +316,7 @@ Keep it small — a map, not a mural.>
 ### Promotion signal (toward <target_level>)
 
 <2–4 lines: which of this week's items map to the rubric in
-`.persona-self/career-goals.md`, and the one gap worth closing. Honest, not
+`personal/identity/career-goals.md`, and the one gap worth closing. Honest, not
 cheerleading. Defer the real review to the career mentor.>
 
 ---

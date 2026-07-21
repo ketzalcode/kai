@@ -116,15 +116,15 @@ for career, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
 retrospective catch-up), consults real roles via `executive-consultation`, and
 assembles the forward "what needs you" agenda via `personal-agenda`.
 
-Personal state resolves to one manifest-marked `workspace_kind: pal` home using
-an explicit path, `KAI_HOME`, or the current product workspace's ignored
-`.kai/local.json`. The assistant scans enabled roots from the pal's
-`personal/workspaces.md`; it does not depend on the operator naming every
-product workspace on every run.
+Personal state resolves against the current Kai workspace. Every onboarded
+repository or durable folder contains its own ignored `personal/` lane,
+including `personal/identity/`, inbox, agenda, linked-workspace registry, and
+consultation records. Additional workspaces are optional read-only sources
+listed in the current workspace's `personal/workspaces.md`.
 
 It is **proactive-surface, never autonomous**: it reads team state read-only,
-writes private inbox/agenda/workspace-registry/consultation records plus an
-approved ignored pal-home pointer, and never answers a team thread, approves
-scope, sends a message, or deploys on the operator's behalf. Load-bearing peer
+writes private inbox/agenda/workspace-registry/consultation records, and never
+answers a team thread, approves scope, sends a message, or deploys on the
+operator's behalf. Load-bearing peer
 answers are bridged into the authoritative item thread by the Chief of Staff or
 owning role. The operator presses every send, approve, and deploy button.
