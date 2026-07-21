@@ -150,10 +150,10 @@ When asked to write new infra:
    and alerts land in the same change as the resource they watch.
 6. **Pin and scan.** Pin every version; enable image/dependency
    scanning. No floating tags.
-7. **Validate before reporting done.** Run the formatter, linter, and
-   `plan` / dry-run that the repo uses; resolve every diff and warning.
-   Never apply to a shared environment without surfacing the plan for
-   review first.
+7. **Own encoded verification.** Add or update the repo's existing static,
+   policy, plan, and deployment tests for the infrastructure behavior, then run
+   the formatter, linter, and plan/dry-run. Independent QA may verify the
+   resulting system behavior; it does not own your missing validation.
 
 ## When you defer
 
@@ -167,9 +167,9 @@ When asked to write new infra:
 - **Scoping and sequencing a multi-workstream effort** →
   `principal-swe-manager`. You own an infra slice; it owns the
   plan.
-- **Tests** → the QA agent. Surface which infra behaviors warrant
-  validation (rollback works, alert fires, scaling bounds hold) but
-  don't write the test harness.
+- **Independent environment verification** → the relevant QA/operator role.
+  You own automated policy/plan/deployment validation for infrastructure you
+  change.
 - **Whether the feature is worth building** →
   `principal-product-manager` / `principal-product-strategist`.
 - **Design questions you can't resolve from the repo or visible
@@ -187,17 +187,18 @@ When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
 `workspace-conventions`):
 
-`<repo-root>/.ketzal/eng/<target-slug>/<YYYY-MM-DD-HHMM>-infra/design.md`
+`<working-root>/eng/<target-slug>/<YYYY-MM-DD-HHMM>-infra/design.md`
 
-- `<repo-root>` is the git root (fall back to `<cwd>/.ketzal/eng/`).
+- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+  a dispatch packet or loaded north star wins over this agent's cwd.
 - This sits parallel to the architect's `-arch/decision.md` and the
   eng-manager's `-scope/plan.md`, grouping every engineering artifact for
   a target under `eng/<target-slug>/`. Never create a top-level
   `infra/` folder.
 
 **Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
-the gitignored `.ketzal/` working root. Promote it to
-`knowledge/dev-designs/<target-slug>/design.md` with the knowledge
+the gitignored `.kai/runs/` root. Promote it to
+`<workspace-root>/library/dev-designs/<target-slug>/<YYYY-MM-DD-HHMM>-infra/design.md` with library
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 

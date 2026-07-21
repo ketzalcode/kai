@@ -1,6 +1,6 @@
 ---
 name: definition-of-done
-description: "The shared behavioral contract that defines what 'done / shippable' means for a unit of work, so an item never reaches the board's shipped state on vibes. Owns the six-dimension Definition-of-Done gate — scope-true (the diff matches the item's acceptance and stayed inside scope.current; any expansion was rerouted as a PROPOSAL, not smuggled in), verified (tests/build green and the relevant QA/UX check actually ran and passed, not assumed), reviewed (engineering/review findings addressed or explicitly deferred, none silently dropped), shippable-safely (a rollout + reversibility story proportional to blast radius: staged/flagged where risky, a rollback or kill switch, monitoring, a named owner), documented (durable decisions promoted to knowledge/, operational docs updated, the initiative log stamped), and coordination-closed (board advanced, thread handed off, dependents unblocked). Each dimension resolves to Clear / Gap / Waived-with-reason. All Clear-or-Waived => ship; any Gap => bounce the item back with the specific gap and the owner role who fixes it — never a silent pass. Proportional: match rigor to blast radius, never invent org requirements the repo doesn't have. kai NEVER auto-deploys, merges, tags, or pushes to production — the gate produces a ship record and the exact deploy steps, and the human runs them. NOT a standalone trigger skill: it is owned and run by workflow-ship at the in-review -> shipped transition, and any acting agent self-checks against it before handing an item to review — the way review-* lenses inherit doc-review-rigor and scope-discipline rides with the acting roles. Reuses the review-rollout-operability lens for the shippable-safely dimension."
+description: "The shared behavioral contract defining release readiness and production completion. Its six-dimension gate moves an item from in-review to release-ready only when scope, verification, review, safe rollout, documentation, and coordination are clear or honestly waived. `shipped` is a later claim: the human deployed and proportional production verification passed. Any readiness or production gap bounces/blocks with a named owner. Kai never performs the irreversible deployment itself."
 tools: [bash, view, grep, glob, web_search, web_fetch]
 ---
 
@@ -8,12 +8,13 @@ tools: [bash, view, grep, glob, web_search, web_fetch]
 
 An item reaches `shipped` on the board only when it is **actually done** —
 not when the code compiles and someone feels good about it. This contract
-is the **gate** between `in-review` and `shipped`: the fixed, minimal set
+is the **gate** between `in-review` and `release-ready`: the fixed, minimal set
 of things that must be true before a slice goes to production, and the
 rule for what happens when one of them isn't.
 
 It is **not** a standalone trigger skill. The `workflow-ship` agent
-**owns and runs** this gate at the `in-review → shipped` transition. Every
+**owns and runs** this gate at the `in-review -> release-ready` transition,
+then confirms deployment and production verification before `shipped`. Every
 acting agent also **self-checks** against it before moving its own item to
 `in-review`, the same way `review-*` lenses inherit `doc-review-rigor` and
 `scope-discipline` rides with the roles that can act.
@@ -45,34 +46,33 @@ doesn't apply to this change is waived, not faked-Clear).
 | # | Dimension | The question | Clear when… |
 |---|-----------|--------------|-------------|
 | 1 | **scope-true** | Did we build the thing we agreed to, and only that? | The diff satisfies the item's `needs`/acceptance from its thread and stays inside the initiative's `scope.current`. Anything scope-expanding was rerouted as a `PROPOSAL` (per `scope-discipline`), not smuggled into this diff. |
-| 2 | **verified** | Do we *know* it works, or do we assume it? | Tests + build are green; the relevant `principal-qa-ui` check ran and passed; for a user-facing surface, `persona-ux-first-time-user` walked it. Evidence is linked, not asserted. |
-| 3 | **reviewed** | Were the review findings actually resolved? | Engineering/review findings (`principal-swe-*`, `principal-swe-architect`, any `review-*`) are addressed, or explicitly deferred as `PROPOSAL`s. **Nothing silently dropped.** |
+| 2 | **verified** | Do we *know* it works, or do we assume it? | Implementing principals' automated tests + build are green; relevant independent QA/system checks ran when applicable; for a user-facing surface, UI/UX validation is linked rather than assumed. |
+| 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. |
 | 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. Run the `review-rollout-operability` lens here. |
-| 5 | **documented** | Will the next person understand what shipped? | Durable decisions/designs are promoted to `knowledge/`; user-facing / operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
-| 6 | **coordination-closed** | Did we close the loop for the team? | The `work-coordination` bookkeeping is done: board row advanced, a closing `HANDOFF` on the thread, dependents' `blocked-by` cleared, parked ideas in the committed backlog. |
+| 5 | **documented** | Will the next person understand what shipped? | Reusable decisions/designs are promoted to `library/`; user-facing / operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
+| 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, and parked ideas are in the committed backlog. |
 
 Dimension 4 **reuses `review-rollout-operability`** — don't re-derive the
 rollout/reversibility questions; apply that lens and record its verdict.
 
-## The gate rule
+## The readiness gate rule
 
 ```
-all six dimensions Clear or Waived-with-reason  ─►  SHIP
+all six dimensions Clear or Waived-with-reason  ─►  RELEASE-READY
 any dimension is a Gap                           ─►  BOUNCE
 ```
 
-- **SHIP** — every dimension is Clear or explicitly Waived. Produce the
-  **ship record** (the `workflow-ship` agent's output), advance the board
-  row to `shipped`, and hand the operator the exact deploy steps. Never a
-  pass without a record; never a `shipped` with an open Gap.
-- **BOUNCE** — at least one Gap. Set the board row back to `in-progress`
-  (or `blocked` if it waits on a `blocked-by` item), append a `HANDOFF`
+- **RELEASE-READY** — every dimension is Clear or explicitly Waived. Produce
+  the ship record, move the item to `release-ready`, and hand the operator the
+  exact deploy plus production-verification steps.
+- **BOUNCE** — at least one Gap. Set the item back to `in-progress`
+  (or `blocked` if it has an unresolved dependency/question), append a `HANDOFF`
   naming **the specific gap and the role that owns the fix**, and stop.
   A bounce is a normal, healthy outcome — it's the gate doing its job.
 
-**Never a silent pass.** An item does not become `shipped` by omission,
-optimism, or the operator asking nicely. Either the record exists and
-every dimension cleared, or it bounced with a named gap.
+**Production completion is separate.** After the human deploys, `workflow-ship`
+records deployment evidence, moves through `production-verification`, and
+marks `shipped` only after the proportional checks pass.
 
 ## kai never deploys
 
@@ -101,7 +101,8 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
 1. **Run all six; resolve each to Clear / Gap / Waived-with-reason.** No
    dimension is skipped silently.
 2. **Any Gap bounces the item.** Name the gap and the owner role; set the
-   board state back. Never mark `shipped` over an open Gap.
+   authoritative item state back. Never mark `release-ready` or `shipped` over
+   an open Gap.
 3. **Evidence, not assertion.** "Tests pass" links to the run; "reversible"
    points at the flag/rollback; "QA passed" links the report. An unbacked
    Clear is a Gap.
@@ -109,8 +110,8 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
    `PROPOSAL` in the backlog, not a deleted comment.
 5. **Proportional, never invented.** Match rigor to blast radius; don't
    demand controls the repo doesn't have and doesn't need.
-6. **kai never ships the change.** Produce the record and the deploy steps;
-   the human executes. No auto-merge/deploy/tag/push.
+6. **kai never performs the deployment.** Produce the record and steps; the
+   human executes. Kai may record safe read-only verification afterward.
 
 ## Anti-patterns
 

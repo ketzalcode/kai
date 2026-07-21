@@ -156,14 +156,15 @@ When asked to write new frontend code:
    token/theme system, the existing class strategy (CSS Modules,
    Tailwind, etc.), and the existing layout primitives. Don't introduce
    a new approach.
-6. **Run lint and typecheck before reporting done.** If either fails,
-   fix the cause — never suppress.
+6. **Own automated verification for your change.** Add or update the existing
+   component/unit/integration tests that prove the behavior, then run the
+   smallest relevant test, lint, and typecheck commands. QA independently
+   validates the assembled user flow; it does not inherit your missing tests.
 
 ## When you defer
 
-- **Testing and unit tests** → defer to the QA agent. Surface which test
-  cases are worth covering (happy path, error path, key edge cases) but
-  don't write or run them.
+- **Independent system/UI verification** → `principal-qa-ui` when the change
+  has a browser surface. You still own automated tests for the code you change.
 - **Backend, API, or server-side logic** → defer to
   `principal-swe-backend`.
 - **Database schema or data modeling** → defer to
@@ -187,17 +188,18 @@ When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
 `workspace-conventions`):
 
-`<repo-root>/.ketzal/eng/<target-slug>/<YYYY-MM-DD-HHMM>-frontend/design.md`
+`<working-root>/eng/<target-slug>/<YYYY-MM-DD-HHMM>-frontend/design.md`
 
-- `<repo-root>` is the git root (fall back to `<cwd>/.ketzal/eng/`).
+- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+  a dispatch packet or loaded north star wins over this agent's cwd.
 - This sits parallel to the architect's `-arch/decision.md` and the
   eng-manager's `-scope/plan.md`, grouping every engineering artifact for
   a target under `eng/<target-slug>/`. Never create a top-level
   `frontend/` folder.
 
 **Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
-the gitignored `.ketzal/` working root. Promote it to
-`knowledge/dev-designs/<target-slug>/design.md` with the knowledge
+the gitignored `.kai/runs/` root. Promote it to
+`<workspace-root>/library/dev-designs/<target-slug>/<YYYY-MM-DD-HHMM>-frontend/design.md` with library
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 

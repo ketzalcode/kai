@@ -410,7 +410,7 @@ on creation. The skill must:
 
 If the user explicitly says they want the profile git-tracked
 (e.g., a personal private repo they sync between machines), the
-agent can move the file to `knowledge/persona-self/voice.md` and
+agent can move the file to `library/persona-self/voice.md` and
 remove from `.gitignore` — but only on explicit request.
 
 ## Insufficient-data handling
@@ -447,7 +447,7 @@ Don't bluff confident attributes on a thin corpus.
   context. Sample broadly.
 - ❌ Auto-running on every session. This is a rare-extraction skill;
   re-run is user-triggered.
-- ❌ Storing the profile in `knowledge/` by default. The default is
+- ❌ Storing the profile in `library/` by default. The default is
   `.persona-self/` (gitignored) for privacy.
 - ❌ Generating prose sections that read like marketing
   descriptions ("a thoughtful and articulate communicator"). Be

@@ -1,6 +1,6 @@
 ---
 name: scope-discipline
-description: "The shared behavioral contract governing the seam between honest assessment and unilateral action. Splits three roles so the scope gate lands on the decide/act roles and never on the assess role: ASSESSORS (persona-* evaluators, principal-qa-ui, principal-seo) surface findings honestly and are NOT gated — biasing an assessor into pre-judging its findings against scope muzzles the very signal it exists to produce; the SCOPE-OWNER (principal-product-manager) OWNS the classify-before-adopt gate, triaging each finding against mission / scope.current / non_negotiables into build vs a deferred PROPOSAL; ACTING BUILDERS (principal-swe-* and the architect) carry it as restraint-on-diff — they assess honestly but never unilaterally ship a change that adds a step, gate, surface, or new capability, escalating it as a PROPOSAL instead. Owns the classify gate (refine-in-scope / expands-scope / unsure), the PROPOSAL payload, and where proposals land (the initiative's proposal_channel, default the committed backlog initiatives/<slug>/backlog.md). Exists because mission context alone gets rationalized away at the moment of action — the rule has to ride with the agent that can act. NOT a standalone trigger skill — pulled in from inside the scope-owner and the acting builders, the same way review-* skills pull in doc-review-rigor. Never suppresses good ideas and never muzzles honest assessment; it reroutes scope-expanding changes to a decision instead of a silent diff."
+description: "The shared behavioral contract governing the seam between honest assessment and unilateral action. Assessors report honestly; principal-product-manager owns the scope gate; principal-product-designer and principal-swe acting roles may refine approved scope but must route expanded surfaces, flows, capabilities, or implementation as durable proposals instead of silently adopting them."
 tools: [bash, view, grep, glob]
 ---
 
@@ -27,14 +27,14 @@ roles — never on the *assess* role.
   each finding is judged against `mission`, `scope.current`, and
   `principles.non_negotiable[]` and dispositioned into build vs a
   deferred `PROPOSAL`.
-- **Acting builders** (`principal-swe-*`, `principal-swe-architect`) —
-  carry the gate as **restraint on the diff, not on judgment.** They
-  assess honestly, but at implementation time — where no triage layer is
-  in the loop — they never unilaterally ship a scope-expanding change;
-  they escalate it as a `PROPOSAL`.
+- **Acting designers/builders** (`principal-product-designer`,
+  `principal-swe-*`, `principal-swe-architect`) — carry the gate as
+  **restraint on the proposed design or diff, not on judgment.** They assess
+  honestly, but never unilaterally add a scope-expanding surface, flow,
+  capability, or implementation; they escalate it as a `PROPOSAL`.
 
 It is **not** a standalone trigger skill. You don't invoke it directly —
-the scope-owner and the acting builders pull it in, the same way each
+the scope-owner and acting designers/builders pull it in, the same way each
 `review-*` lens pulls in `doc-review-rigor`.
 
 ## Why the contract, not just the context
@@ -51,12 +51,12 @@ it.
 ## Ground yourself first — read the initiative
 
 Before you classify, load the product's committed intent (via the
-`workspace-conventions` gating rule — `initiatives/ACTIVE.md` →
+`workspace-conventions` gating rule — `coordination/ACTIVE.md` →
 the active `northstar.md`):
 
 - **`mission` / `vision`** — what the product is for.
-- **`scope.current`** — the active goals/milestones, and any blocking
-  state (e.g. "quality gate blocks new feature work").
+- **`scope.current`** — the active milestone IDs; read their matching
+  `milestones` entries for outcome, acceptance, and success measures.
 - **`principles.non_negotiable[]`** — the hard rules. These are the ones
   most often violated by a "helpful" addition (e.g. *"Minimize friction
   to program creation. Any new step, gate, or screen is out-of-scope by
@@ -106,17 +106,22 @@ Route the `PROPOSAL` to the active initiative's **`proposal_channel`**.
 Resolution order:
 
 1. `proposal_channel` set in the active `northstar.md` → use it (a repo
-   issue, a board, a path).
-2. Not set → **default: the committed backlog** owned by
+   issue, a board, or a path). Resolve relative filesystem paths against the
+   north star's `workspace.root`. Reject session-state, temp, working-root, and
+   incidental-cwd destinations; ask the steward/operator for a durable channel
+   instead.
+2. Not set → **default: the durable backlog** owned by
    `work-coordination` — `initiatives/<initiative-slug>/backlog.md` when an
-   initiative is loaded, `initiatives/backlog.md` when none is.
-3. Workspace never onboarded (`initiatives/` absent) → last-resort
-   `<working-root>/proposals/<target-slug>.md`, and say so.
+   initiative is loaded, `coordination/backlog.md` when none is.
+3. Workspace never onboarded (`initiatives/` absent) → stop and onboard the
+   confirmed target workspace before recording the proposal.
 
-The backlog is **committed** on purpose: a parked idea dropped in the
+The backlog is durable on purpose (committed in repository mode, persistent
+local in external mode): a parked idea dropped in the
 gitignored working root dies at the next cleanup, so good-but-out-of-scope
-findings go somewhere that survives via `git` and can be promoted back
-onto `BOARD.md`. Then tell the operator, in one line, that you emitted a
+findings go somewhere persistent and can be promoted into an
+authoritative work-item record (and therefore the derived `BOARD.md`). Then
+tell the operator, in one line, that you emitted a
 proposal instead of building — name the finding and where it landed. The
 idea is **preserved and reviewable**, never silently dropped and never
 silently built.

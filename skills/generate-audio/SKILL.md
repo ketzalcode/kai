@@ -10,7 +10,7 @@ argument-hint: [optional source path or single .md file]
 
 Convert markdown into narrated audio in English + Spanish so the user
 can listen while moving. Sister to bongo's `generate-audio` skill — but
-bongo bakes in Microsoft-work paths (`knowledge/dev-designs/`); this one
+bongo bakes in Microsoft-work paths (`library/dev-designs/`); this one
 stays **cwd-relative** so you can run it from any project.
 
 Wraps the [lectoria](https://github.com/RubenSaucedo/lectoria) CLI
@@ -32,7 +32,7 @@ fix in lectoria's repo; until then the global install is the working path.
 
 **Use bongo's `generate-audio` skill instead when:**
 - The user is working in `C:\src\bongo` and means their dev-designs.
-  bongo's defaults (`knowledge/dev-designs/` -> `knowledge/audio/`) are
+  bongo's defaults (`library/dev-designs/` -> `library/audio/`) are
   more convenient there.
 
 ## Examples
@@ -60,7 +60,7 @@ assistant: [runs: pwsh C:\src\kai\scripts\generate-audio.ps1 -Source ./chapter-3
 Context: User finished extracting a Microsoft Learn learning path and
 wants per-unit Spanish audio (one mp3 per unit file, not one giant audio).
 user: "generate audio for the new learn run, spanish only"
-assistant: [runs: pwsh C:\src\kai\scripts\generate-audio.ps1 -Source .ketzal/learn/<slug>/<timestamp>/raw -Lang es]
+assistant: [runs: pwsh C:\src\kai\scripts\generate-audio.ps1 -Source .kai/runs/learn/<slug>/<timestamp>/raw -Lang es]
 </example>
 
 ## How
@@ -86,9 +86,9 @@ assistant: [runs: pwsh C:\src\kai\scripts\generate-audio.ps1 -Source .ketzal/lea
    default to `-Style verbatim` (less LLM expansion) or `-Lang en` only.
    Use `-DryRun` first when in doubt.
 6. **Tell the user where the audio landed**: by default `./audio/`
-   relative to their cwd. Audio is heavy and regenerable — the `.ketzal/`
+   relative to their cwd. Audio is heavy and regenerable — the `.kai/runs/`
    working root is gitignored wholesale, and `*.mp3`/`audio/` stay ignored
-   even inside `knowledge/`, so audio never bloats the repo (see
+   even inside `library/`, so audio never bloats the repo (see
    `workspace-conventions`).
 
 ## Failure modes

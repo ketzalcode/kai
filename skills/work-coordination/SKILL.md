@@ -1,254 +1,381 @@
 ---
 name: work-coordination
-description: "The shared coordination contract that lets many single-shot agents behave like one team running several efforts at once. Owns the committed coordination surface under initiatives/: BOARD.md (the cross-effort WIP ledger — every work item, its state, its owner agent, its blockers), threads/<item-id>.md (the append-only handoff + peer-question channel between agents), and backlog.md (the committed home for deferred proposals, replacing the gitignored working-root sink so grounded-but-parked ideas survive). Defines the work-item lifecycle (proposed → ready → in-progress → in-review → blocked → shipped / dropped), the HANDOFF packet an agent leaves for the next role, the QUESTION/ANSWER packets peers use to ask each other things, collision + dependency detection across efforts, and the self-routing rule (every acting agent claims its item on entry and, on exit, advances the state and names the next role). NOT a standalone trigger skill — it is inherited via the workspace-conventions gating rule by every agent that starts, hands off, or finishes a unit of work, the way review-* lenses inherit doc-review-rigor. Committed on purpose: the board and threads are shared team state that must survive across sessions, machines, and cloud agents."
-tools: [bash, view, grep, glob]
+description: "The shared coordination contract that lets many single-shot agents behave like one team across several concurrent efforts. Owns the durable coordination/ surface: authoritative per-item state, derived BOARD.md, append-only threads, and unaffiliated backlog, while initiatives retain strategic context and deliverable indexes. Defines lifecycle, leases, versions, dependencies, touch collisions, handoffs, questions, canonical artifact targets, and exact evidence paths."
+tools: [bash, view, edit, create, grep, glob]
 ---
 
 # Work Coordination
 
-kai's agents are **single-shot and stateless** — each fires, produces its
-artifact, and forgets. That's fine for one task, but a *team* running
-several efforts at once needs three things a pile of one-shot agents
-doesn't have on its own: **shared state** (what's in flight and who owns
-it), **communication** (handing work off and asking peers questions), and
-a way to **finish** (move an item to shipped). This skill is that
-connective tissue — a small, **git-committed** coordination surface any
-agent reads and writes.
+kai's agents are single-shot and stateless. A real team running several
+efforts needs durable state, safe parallel ownership, communication, and a
+truthful path from idea to production. This contract provides that connective
+tissue without pretending markdown is a continuously running service.
 
-It is **not** a standalone trigger skill. You don't invoke it directly —
-every agent that **starts, hands off, or finishes a unit of work** pulls
-it in via the `workspace-conventions` gating rule, the same way each
-`review-*` lens pulls in `doc-review-rigor`.
+It is not a standalone trigger skill. Acting agents use it whenever they start,
+hand off, block, review, or finish work. `director-chief-of-staff` uses it to
+dispatch and reconcile work across the team.
 
-## Why committed
+## Why durable, per-item state
 
-The board and the handoff threads are **team state**, not scratch. They
-must survive across sessions, across machines, and across the CLI ↔ cloud
-agent boundary — an agent in a fresh session (or a cloud coding agent)
-has to be able to read what's in flight and pick up where the last one
-left off. So the coordination surface lives in the **committed
-`initiatives/` root**, not the gitignored working root. It is the *only*
-mutable, constantly-updated committed state in the workspace; that churn
-is the price of a team that remembers.
+Coordination must survive sessions, machines, CLI/cloud boundaries, and branch
+handoffs, so it lives under the target workspace's `coordination/`. In a
+repository workspace this surface is committed. In an operator-confirmed
+external workspace it is durable local state and must not be described as
+committed unless that directory is actually version-controlled.
 
-## The coordination surface
+A single mutable board is not safe as the authoritative store: two agents
+working in parallel would edit the same file and create conflicts or overwrite
+each other. Therefore:
 
-```
-initiatives/
-  ACTIVE.md                 # which initiative(s) are the current focus (existing)
-  BOARD.md                  # the cross-effort WIP ledger  ← this skill
-  backlog.md                # deferred proposals with no initiative  ← this skill
+- `items/<item-id>.md` is the **authoritative state** for one work item.
+- `threads/<item-id>.md` is that item's append-only communication log.
+- `BOARD.md` is a **derived human index**, refreshed by the director after
+  reconciliation. Agents never treat an out-of-date board row as authority.
+
+Parallel agents normally touch different item and thread files.
+
+## Coordination surface
+
+```text
+coordination/
+  ACTIVE.md
+  BOARD.md                    # derived index; director-maintained
+  items/
+    <item-id>.md              # authoritative state + acceptance
   threads/
-    <work-item-id>.md       # append-only handoff + Q&A per item  ← this skill
+    <item-id>.md              # HANDOFF + QUESTION/ANSWER history
+  backlog.md
+initiatives/
+  INDEX.md
   <initiative-slug>/
-    northstar.md            # the north star (existing)
-    log.md                  # decision trail (existing)
-    backlog.md              # deferred proposals for this initiative  ← this skill
+    northstar.md
+    log.md
+    backlog.md
 ```
 
-`ACTIVE.md` says *which initiatives matter now*; `BOARD.md` says *what work
-is actually in flight*. They are different: a board item may serve an
-initiative, or be unaffiliated side work.
+## Work-item record
 
-## BOARD.md — the WIP ledger
+Every unit of executable work has one record:
 
-One table. Every unit of work is a row. This is the answer to "what is the
-team doing right now, who owns each piece, and what's stuck?"
+```yaml
+---
+type: work-item
+id: checkout-async-fe
+title: Loading UI for async checkout
+initiative: payments-q3
+milestone: async-checkout
+delivery_class: product-change
+state: ready
+resume_state: null
+priority: 20
+owner: null
+next_role: principal-swe-frontend
+target: checkout-flow
+artifact_target: null
+context_artifacts: []
+touches:
+  - web/src/checkout/**
+depends_on:
+  - item: checkout-async-api
+    requires: in-review
+waiting_on_questions: []
+required_for_milestone: true
+review_requirements:
+  - role: principal-swe-frontend
+    kind: independent-code
+  - role: principal-qa-ui
+    kind: ui-system
+completed_reviews: []
+change_ref: null
+version: 3
+lease:
+  holder: null
+  acquired: null
+  expires: null
+updated: 2026-07-20-1415
+---
+
+## Outcome
+<One observable outcome this item must produce.>
+
+## Acceptance
+- [ ] <Verifiable criterion>
+
+## Evidence
+- <Filled as work progresses: diff, tests, reviews, deployment run>
+```
+
+Rules:
+
+- **`id`** is stable and unique.
+- **`milestone`** references a stable milestone ID in the initiative
+  north star, or `—` for unaffiliated work.
+- **`delivery_class`** is `knowledge`, `product-change`, or `operational`.
+  Research, plans, and product decisions complete without pretending they were
+  deployed; product changes must follow the release path.
+- **`priority`** is steward-owned; lower numbers run first. Equal priority is
+  ordered by dependencies, then `updated`.
+- **`next_role`** is the role the director should dispatch when the item is
+  ready. It is not necessarily the current owner.
+- **`artifact_target`** is the exact workspace-root-relative or absolute output
+  path for a file-producing item. Initiative items default to the canonical
+  location from `workspace-conventions`:
+  `initiatives/<slug>/artifacts/product-map.md`,
+  `initiatives/<slug>/artifacts/briefs/<item-id>.md`,
+  `initiatives/<slug>/artifacts/research/<item-id>.md`,
+  `initiatives/<slug>/artifacts/designs/<item-id>.md`, or
+  `initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
+  override is allowed only inside the resolved workspace and must be recorded.
+- **`context_artifacts`** lists exact paths to required factual maps, product
+  briefs, designs, decisions, and other inputs. Peers read these instead of
+  rediscovering context.
+- **`touches`** names repository paths, services, schemas, environments, or
+  other exclusive resources the work expects to modify.
+- **`depends_on`** contains typed item dependencies: `item` plus the minimum
+  required upstream state (`in-review`, `completed`, `release-ready`, or
+  `shipped`). Default to `completed` for an upstream `knowledge` item and
+  `shipped` otherwise. `completed` is valid only for `knowledge`; `release-ready`
+  and `shipped` are valid only for production/operational delivery. Use
+  `in-review` only when a stable reviewed artifact/contract is enough for safe
+  downstream work.
+- **`waiting_on_questions`** contains open question IDs only.
+- **`resume_state`** records the exact lifecycle state an item held before it
+  became `blocked`; it is cleared only after an authorized restore.
+- **`required_for_milestone`** is advisory visibility. The authoritative
+  completion mapping is the milestone's `required_items` list.
+- **`review_requirements`** is the steward/plan-approved list of independent
+  review roles and review kinds required before release readiness.
+- **`completed_reviews`** records role, kind, evidence path, verdict, and
+  timestamp, all bound to the exact `change_ref`. A chat assertion does not
+  complete a review.
+- **`change_ref`** identifies the implementation revision under review: commit
+  SHA, PR head SHA, or deterministic diff hash. It is required before
+  `in-review`.
+- **`version`** increments on every state-changing edit.
+- **`lease`** protects active ownership. A lease is coordination, not a
+  substitute for git conflict detection.
+- **Artifact/evidence paths** are workspace-root-relative in durable records.
+  Repository metadata stores `workspace.root: .`; external mode may store an
+  absolute root. Dispatch packets carry the resolved runtime absolute root.
+  Never write session-state-relative, incidental-cwd, or abbreviated `.../`
+  paths.
+
+## BOARD.md
+
+`BOARD.md` is the concise cross-effort view generated or refreshed by
+`director-chief-of-staff` from the item records:
 
 ```markdown
 # Board
 
-| id | title | initiative | state | owner | target | blocked-by | updated |
-|----|-------|-----------|-------|-------|--------|-----------|---------|
-| checkout-async-01 | Move checkout to async job | payments-q3 | in-progress | principal-swe-backend | checkout-flow | — | 2026-07-17-1530 |
-| checkout-async-01-fe | Loading/optimistic UI for async checkout | payments-q3 | ready | — | checkout-flow | checkout-async-01 | 2026-07-17-1530 |
-| seo-llms-txt | Add llms.txt + schema density | — | in-review | principal-seo | contoso-site | — | 2026-07-16-0910 |
+| id | title | initiative | milestone | priority | state | owner | next | depends-on | waiting-on | updated |
+|----|-------|------------|-----------|----------|-------|-------|------|------------|------------|---------|
+| checkout-async-api | Async checkout API | payments-q3 | async-checkout | 10 | in-progress | principal-swe-backend | principal-swe-backend | — | — | 2026-07-20-1415 |
 ```
 
-- **`id`** — a stable kebab slug, unique on the board. Its thread lives at
-  `initiatives/threads/<id>.md`.
-- **`title`** — one human line.
-- **`initiative`** — the initiative slug it serves, or `—` if unaffiliated.
-- **`state`** — the lifecycle value (below).
-- **`owner`** — the agent (or human) currently responsible, or `—` if
-  unclaimed / `ready`.
-- **`target`** — the `<target-slug>` from `workspace-conventions`, so the
-  board links straight to the run artifacts under
-  `<area>/<target-slug>/…`.
-- **`blocked-by`** — the `id` of another item this one waits on, or `—`.
-- **`updated`** — canonical `<YYYY-MM-DD-HHMM>` of the last change.
+The board is useful for humans and selection, but the director re-reads the
+corresponding item file before dispatching or changing state.
 
-## The work-item lifecycle
+## Lifecycle
 
-```
-proposed ─► ready ─► in-progress ─► in-review ─► shipped
-                          │             │
-                          └──► blocked ◄┘        (any state can ─► dropped)
-```
+```text
+proposed -> ready -> in-progress -> in-review -> release-ready
+                    |               |              |
+                    |               +-----> completed (knowledge)
+                    +---- blocked <-+              v
+                                              deploying
+                                                  |
+                                                  v
+                                       production-verification
+                                                  |
+                                                  v
+                                               shipped
 
-| state | means | who moves it |
-|-------|-------|--------------|
-| **proposed** | An idea/finding worth doing, not yet committed to. | anyone adds it; the **steward** (`initiative-stewardship`) promotes it |
-| **ready** | Committed and unblocked — waiting for an owner to start. | the **steward** (`principal-product-manager` by default) |
-| **in-progress** | An owner is actively working it. | the owning agent, on entry |
-| **in-review** | Built; awaiting verification / review / QA. | the builder, on handoff |
-| **blocked** | Can't proceed until a `blocked-by` item or a blocking QUESTION resolves. | any agent that hits the block |
-| **shipped** | Passed the `definition-of-done` gate and the human deployed; done. | the ship path (`workflow-ship`) |
-| **dropped** | Won't do (moved to a backlog with a reason). | the **steward** / operator |
-
-The `in-review → shipped` edge is a **gate, not a rename**: `workflow-ship`
-runs the `definition-of-done` contract before the state flips, and either
-ships (writes a ship record, advances the row, records the deploy steps
-for the human) or bounces the item back to `in-progress`/`blocked` with the
-named gap. Nothing reaches `shipped` on optimism.
-
-## The self-routing rule
-
-This is what turns a human-scheduled pile of agents into a self-routing
-team. **Every acting agent, on every run:**
-
-1. **On entry — claim your item.** Find your work item on `BOARD.md` (by
-   `target` + intent). If it exists, set `owner` to yourself and `state`
-   to `in-progress`. If it doesn't, add a row (usually `in-progress`, or
-   `proposed` if you're only surfacing an idea). Read its thread first so
-   you inherit context instead of re-deriving it.
-2. **On exit — advance and route.** Update the row's `state` and
-   `updated`, then append a **HANDOFF** packet to the item's thread naming
-   the **next role** and why. Never leave an item silently `in-progress`
-   with no handoff — that's how work stalls.
-
-The **steward** (`initiative-stewardship`, the initiative's `owner` —
-`principal-product-manager` by default) reads the board's `ready` and
-`blocked` rows to decide what fires next and in what order — and because
-every handoff names its `next` role explicitly, the chain still routes
-itself even with no runtime. The steward owns *what's next*; each acting
-agent owns *how* its own item gets built.
-
-## HANDOFF — the packet you leave for the next role
-
-Appended to `initiatives/threads/<item-id>.md`. This is the standard
-handoff every agent produces instead of burying the baton in prose:
-
-```
-## HANDOFF <YYYY-MM-DD-HHMM> — <from-agent> → <to-role>
-- did:      <what you completed or decided>
-- state:    <the board state you just set>
-- needs:    <what the next role must do — the acceptance criteria>
-- artifacts:<paths/links: report.md, decision.md, design.md, the diff/PR>
-- questions:<blocking questions, or "none">
-- next:     <the role that should pick this up, and why>
+any non-terminal state -> dropped
 ```
 
-Every field is required. `artifacts` links to the real outputs under the
-`workspace-conventions` path grammar — the thread **indexes** work, it
-doesn't duplicate it. A HANDOFF with an empty `needs` or `next` is a baton
-dropped on the floor.
+| State | Meaning | Who moves it |
+|-------|---------|--------------|
+| `proposed` | Worth considering, not committed. | anyone proposes; steward evaluates |
+| `ready` | Committed, acceptance defined, dependencies clear. | steward |
+| `in-progress` | A role holds a live lease and is acting. | owning agent/director |
+| `in-review` | Implementation complete; review and verification underway. | builder |
+| `blocked` | Cannot proceed because of item dependencies or blocking questions. | any acting role |
+| `completed` | A non-production knowledge/decision item passed its acceptance, required reviews, and coordination close. | owning principal/workflow |
+| `release-ready` | DoD is clear for deployment; not yet production-shipped. | `workflow-ship` prepare mode |
+| `deploying` | Human/operator confirmed deployment started; successful completion is not yet established. | `workflow-ship` CONFIRM-START |
+| `production-verification` | Successful deployment completion is evidenced; smoke/health checks pending. | `workflow-ship` CONFIRM-COMPLETE |
+| `shipped` | Production deployment and required verification are evidenced. | `workflow-ship` |
+| `dropped` | Explicitly declined with a reason and backlog/log link. | steward/operator |
 
-## QUESTION / ANSWER — how peers ask each other things
+`completed` is the truthful terminal state for research, plans, and decisions.
+`shipped` is reserved for production/operational delivery and never means
+“commands were prepared.”
 
-Peer questions are **durable and addressed**: appended to the relevant
-item's thread, they replace "ask the operator to role-play the other
-agent" with a real, reviewable exchange. The packet shape and the choice
-of *how* a question travels (a cheap inline consult, a real live peer
-agent, or this durable thread) are owned by the **`peer-communication`**
-contract — the thread is that contract's **system of record**. Here is the
-durable transport and the board coupling it triggers:
+## Claiming work safely
 
-```
-## QUESTION <ts> — <from-agent> → @<to-role>
-- blocking: <yes | no>
-- context:  <what you're doing and why this gates it>
-- ask:      <the specific question>
-```
+Before acting, an agent or the director:
 
-```
-## ANSWER <ts> — <from-agent> → @<asker>
-- re:     <the question, quoted or referenced>
-- answer: <the answer, in your role's voice>
-```
+1. Reads the authoritative item record and notes `version`.
+2. Confirms every dependency reached its declared required state and questions
+   are clear.
+3. Confirms no unexpired lease belongs to another owner.
+4. Checks active item `touches` sets for overlap.
+5. Writes its owner + lease and increments `version`. Only a `ready` item
+   transitions to `in-progress` when claimed. Review/release roles lease
+   `in-review`, `release-ready`, `deploying`, or `production-verification`
+   without regressing the lifecycle state. Re-read immediately; if the
+   expected version/lease is absent, stop and record a collision.
 
-Rules (see `peer-communication` for the full protocol):
-- **A blocking question flips the item to `blocked`** (with `blocked-by`
-  pointing at the answering role or the item you're waiting on) until an
-  `ANSWER` is appended; then move it back.
-- **Anything load-bearing lands here.** An answer you got *live* (an inline
-  consult or a real peer agent) that blocks the item, crosses a session, or
-  changes a decision is **transcribed to this thread** — transport is a
-  performance choice, the thread is the record.
-- **Address a role, not a person.** `@principal-swe-backend`, not a name.
-- **Answer in your lane.** If the question is outside your expertise, say
-  so and name who should take it — don't guess authoritatively.
-- The trainer↔nutritionist *consultation pattern* is the **inline** consult
-  transport of `peer-communication`; use a thread QUESTION when the peer's
-  answer needs to persist, cross a session, or feed an unbiased assessment.
+Default lease duration is the current agent run. A timestamp expiry is a stale
+work recovery signal, not permission to overwrite blindly: the director checks
+the thread and repository state before reclaiming it. If an agent crashed
+without a HANDOFF, the director may clear the stale lease only after this
+reconciliation, append a `RECOVERY` HANDOFF describing observed partial work,
+and redispatch the appropriate role. Conflicting or unsafe partial work
+requires operator escalation.
 
-## Collisions & dependencies across efforts
+## Parallel work and collisions
 
-Running several efforts at once means catching where they touch:
+Several items may share one `target`; FE, BE, QA, and infra slices often should
+run together. Parallelism is safe when:
 
-- **Collision.** Before you start, scan `BOARD.md` for another **active**
-  item with the *same `target`*. If one exists, you may be about to step
-  on parallel work — note it in your thread and raise a QUESTION to that
-  item's owner rather than editing blind.
-- **Dependency.** If your item can't finish until another does, set
-  `blocked-by` to that item's `id` and state `blocked`. When the upstream
-  item hits `shipped`/`in-review`, the downstream owner is cleared to go.
+- item IDs are distinct;
+- typed dependency requirements permit it;
+- `touches` sets do not overlap;
+- no item requires an unanswered blocking question from the other.
 
-## Backlog — where deferred work survives (committed)
+An overlapping target alone is not a collision. An overlapping path, schema,
+service contract, environment, or other exclusive resource is. When overlap is
+uncertain, ask the owning peer and serialize until resolved.
 
-When `scope-discipline` classifies a finding as `expands-scope`, or the
-scope-owner `Defer`s an item, the proposal lands in a **committed**
-backlog so it isn't lost when the working root is cleaned:
+## Review routing
 
-1. Initiative loaded → `initiatives/<initiative-slug>/backlog.md`.
-2. No initiative → `initiatives/backlog.md`.
-3. Workspace not onboarded (`initiatives/` absent) → last-resort
-   `<working-root>/proposals/<target-slug>.md`, and say so.
+When a builder moves an item to `in-review`, it sets `next_role` to the first
+unmet `review_requirements` entry, records the exact `change_ref`, and clears
+its lease. Each independent
+reviewer:
 
-A backlog entry carries the `scope-discipline` PROPOSAL payload plus a
-board pointer:
+1. leases the item without changing `in-review`;
+2. records its verdict, evidence, and matching `change_ref` in
+   `completed_reviews`;
+3. appends a HANDOFF;
+4. sets `next_role` to the next unmet reviewer, or `workflow-ship` when all
+   requirements are satisfied for a `product-change` or `operational` item;
+   for `knowledge`, the owning role verifies acceptance and moves the item to
+   `completed`.
+
+Only reviews matching the current `change_ref` count. Whenever implementation
+changes, update `change_ref`; earlier reviews remain historical but become
+superseded and must not satisfy the gate. The director follows the unmet list.
+`workflow-ship` treats any unmatched required review as a DoD Gap.
+
+A DESIGN item owned by `principal-product-designer` must include
+`principal-product-manager` with kind `product-design-acceptance` in
+`review_requirements` before promotion to `ready`. The designer writes the
+artifact and `change_ref`; the PM/steward records acceptance against that
+revision; only then may the owning designer close it as `completed`.
+
+## HANDOFF packet
+
+Append every handoff to `coordination/threads/<item-id>.md`:
 
 ```markdown
-### <title>  ·  <YYYY-MM-DD>  ·  proposed-by: <agent>
-- problem:          <the gap>
-- proposed_change:  <what to do>
-- friction_cost:    <steps/gates/screens/fields it adds>
-- mission_tradeoff: <vs mission + non_negotiables>
-- scope_target:     <the milestone it belongs to if adopted>
-- board:            <work-item id once promoted to `proposed`, or "—">
+## HANDOFF <YYYY-MM-DD-HHMM> — <from-role> -> <to-role>
+- did:       <completed work or decision>
+- state:     <state written to the item record>
+- needs:     <next acceptance criteria>
+- artifacts: <paths, diff, PR, reports>
+- evidence:  <workspace-root-relative paths + source/tool + capture timestamp>
+- questions: <open question IDs or "none">
+- next:      <role and why>
 ```
 
-Promoting a backlog entry = the **steward** (`initiative-stewardship`)
-adding it to `BOARD.md` as `proposed` and linking back. This closes the
-loop: findings are grounded (scope-owner), parked ideas persist (committed
-backlog), and the steward re-enters the ones that now fit — nothing is
-silently built and nothing is silently lost.
+The handing-off agent updates `next_role`, clears its lease unless it still
+owns follow-up work, increments `version`, and appends the packet. A handoff
+with no `needs` or `next` is incomplete.
+
+## QUESTION / ANSWER protocol
+
+Questions use stable IDs so blocking state can be reconciled:
+
+```markdown
+## QUESTION Q-<item-id>-<NN> <ts> — <from-role> -> @<to-role>
+- status: open
+- blocking: yes | no
+- context: <why this matters>
+- ask: <one specific question>
+- answer_by: <timestamp or "next-dispatch">
+```
+
+```markdown
+## ANSWER Q-<item-id>-<NN> <ts> — <from-role> -> @<asker>
+- status: answered
+- answer: <answer in the role's lane>
+- lane: in-lane | out-of-lane: <correct role>
+- provenance: live-peer | durable-thread | operator
+```
+
+For a blocking question:
+
+- add the question ID to `waiting_on_questions`;
+- when the item first enters `blocked`, copy its current lifecycle state to
+  `resume_state`; additional blocking questions never overwrite it;
+- set the item `blocked`;
+- keep `depends_on` limited to typed work-item dependencies;
+- the director dispatches the addressed role or escalates at `answer_by`;
+- after an answer lands, remove only that question ID. Restore the exact
+  `resume_state` and clear it only when **all** blocking question IDs have
+  answers. Restoration must still be performed by a role authorized for that
+  transition: a `proposed` item stays proposed until the steward promotes it;
+  release/deployment states remain owned by `workflow-ship`.
+
+Anything decision-changing or cross-session lands on the thread even if it was
+answered live.
+
+## Dispatch responsibilities
+
+`director-chief-of-staff` owns orchestration, not domain judgment:
+
+- resolve one target workspace root and propagate its absolute paths to every
+  dispatched peer;
+- select `ready` items by initiative focus, steward priority, dependencies,
+  touch collisions, and WIP limits;
+- dispatch the named `next_role` with a self-contained work packet;
+- reconcile agent results into item records and threads;
+- refresh `BOARD.md`;
+- maintain the initiative deliverables index and cross-initiative `INDEX.md`;
+- dispatch blocking questions to real peers;
+- stop at human, product-scope, architecture, security, or production approval
+  boundaries rather than impersonating the decision owner.
+
+An acting agent invoked directly may claim and work its own item, but it still
+uses the same record, lease, handoff, and evidence rules.
+
+## Backlog
+
+Scope-expanding proposals remain committed:
+
+1. Active initiative: `initiatives/<initiative-slug>/backlog.md`.
+2. No initiative: `coordination/backlog.md`.
+
+If the target workspace is not onboarded, stop and onboard it before recording
+a coordinated proposal. Durable proposals never fall back to the ephemeral
+working root.
+
+Promotion is steward-owned. The steward creates an item record in `proposed`,
+links it from the backlog, then promotes it to `ready` only after scope and
+acceptance are explicit.
 
 ## Hard rules
 
-1. **Claim on entry, hand off on exit.** No acting agent touches product
-   work without a board row it owns and a HANDOFF when it stops.
-2. **Committed, not scratch.** Board, threads, and backlog live in
-   `initiatives/` and travel via `git`. Never move coordination state into
-   the gitignored working root.
-3. **Index, don't duplicate.** Threads link to artifacts under the path
-   grammar; they don't re-paste reports.
-4. **Address roles, resolve questions.** Every blocking QUESTION blocks its
-   item until an ANSWER lands. Never let a blocking ask sit silent.
-5. **One target, one active owner.** Two active items on the same `target`
-   is a collision to raise, not to ignore.
-6. **Name the next role.** Every HANDOFF ends by pointing at who's next —
-   that's what makes the team self-routing.
-
-## Anti-patterns
-
-- ❌ Doing product work with no board row — invisible work the team can't
-  see, schedule around, or pick up.
-- ❌ Burying the handoff in prose ("findings back to the PM") instead of a
-  structured HANDOFF the next role can act on deterministically.
-- ❌ Asking the operator to relay a question you could address to a role in
-  a thread.
-- ❌ Parking a good idea in the gitignored working root, where it dies at
-  the next cleanup. Deferred work goes to the committed backlog.
-- ❌ Editing a target another active item already owns without raising the
-  collision.
+1. Per-item files are authoritative; `BOARD.md` is derived.
+2. Claim with a version check and lease before acting.
+   Claiming changes `ready -> in-progress` only; later-phase leases preserve
+   their lifecycle state.
+3. Parallel work is controlled by dependencies and `touches`, not target name.
+4. `depends_on` contains typed item dependencies; questions have their own IDs.
+5. Every acting run ends with updated state, evidence, and a HANDOFF.
+6. `shipped` requires confirmed production deployment and verification.
+7. Directors orchestrate; stewards prioritize; principals judge and act in
+   their lanes.

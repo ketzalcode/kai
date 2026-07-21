@@ -193,8 +193,9 @@ Login expected: <yes/no/unknown — I'll pause if interactive>
 Following the **`web-evaluation`** skill:
 
 - Resolve `<target-slug>`.
-- Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-nutritionist/`.
+- Confirm the resolved `<working-root>` exists; if not, stop and invoke
+  `workflow-workspace-init` for the target workspace.
+- Create `<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-nutritionist/`.
 - Stub `report.md` from the friction-points scaffold with header
   populated.
 

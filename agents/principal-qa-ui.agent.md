@@ -45,6 +45,8 @@ failure mode; honest signal is the whole point of running you.
 
 - Subjective flow clarity, copy quality, or "does this product make
   sense" — that's `persona-ux-first-time-user`'s job.
+- Choosing the intended interaction model — that's
+  `principal-product-designer`; QA validates what was approved and built.
 - Pure backend correctness (data values, business rules) unless
   they surface as a visible UI bug.
 - Load/perf benchmarks. Note slowness if it's user-visible, but
@@ -107,8 +109,9 @@ Following the **`web-evaluation`** skill:
 
 - Resolve the `<target-slug>` from URL or user-supplied feature
   name.
-- Confirm the workspace is onboarded (`.ketzal/` exists; if not, suggest `workflow-workspace-init`).
-- Create `<repo>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-qa/`.
+- Confirm the resolved `<working-root>` exists; if not, stop and invoke
+  `workflow-workspace-init` for the target workspace.
+- Create `<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-qa/`.
 - Stub `report.md` from the QA scaffold with header populated.
 
 ### 3. Walk the surface — desktop first

@@ -67,7 +67,7 @@ this one is for harvesting the words on a UI.
 All output for a single run lives in:
 
 ```
-<repo-root>/.ketzal/learn/<source-slug>/<YYYY-MM-DD-HHMM>/
+<workspace-root>/.kai/runs/learn/<source-slug>/<YYYY-MM-DD-HHMM>/
   module.md          ← narration content, all units concatenated
   questions.md       ← knowledge-check questions, for self-testing
   source.md          ← metadata: original URL, walked URLs, timings, failures
@@ -78,7 +78,7 @@ All output for a single run lives in:
 ```
 
 - `<repo-root>` is the current working directory's git root. If not
-  in a git repo, fall back to `<cwd>/.ketzal/learn/`.
+  in a git repo, fall back to `<cwd>/.kai/runs/learn/`.
 - `<source-slug>` is a kebab-case slug. Derivation rules:
   - **Microsoft Learn module:** the segment after `/training/modules/`
     (e.g. `get-started-ai-fundamentals`).
@@ -90,7 +90,7 @@ All output for a single run lives in:
 
 ## Zone, gitignore & promotion
 
-Runs land in the **working root** — `.ketzal/learn/` — which
+Runs land in the **run root** — `.kai/runs/learn/` — which
 `workflow-workspace-init` gitignores **wholesale** (see
 `workspace-conventions`). You do **not** patch `.gitignore` per folder; the
 working root is ephemeral. The extracted markdown (`module.md`,
@@ -101,7 +101,7 @@ path.
 These lesson deliverables default to the **working (local)** zone. To
 **share** them — so they travel via `git pull` — the operator passes
 `--share` and the calling agent promotes the markdown to
-`knowledge/lessons/<source-slug>/` with frontmatter (raw snapshots and
+`library/lessons/<source-slug>/` with frontmatter (raw snapshots and
 audio never promote — regenerable).
 
 ## Login pause pattern
@@ -366,9 +366,9 @@ If the agent hits a cap, it should:
 - ❌ Capturing correct-answer markings in `questions.md`.
 - ❌ Leaving raw HTML tags in the markdown output — clean it or drop
   it.
-- ❌ Auto-committing anything, or hand-patching `.gitignore`. The `.ketzal/`
+- ❌ Auto-committing anything, or hand-patching `.gitignore`. The `.kai/runs/`
   working root is ignored centrally; markdown is local by default and shared
-  by promotion to `knowledge/lessons/`. The agent never runs git.
+  by promotion to `library/lessons/`. The agent never runs git.
 - ❌ Bypassing the login-pause pattern by guessing creds.
 - ❌ Inferring content for sections that didn't render. Always write
   `_Content not extracted: <reason>_`.
@@ -381,9 +381,9 @@ When the skill finishes a run:
    run-folder path.
 2. Every unit referenced in `source.md` either contributed to
    `module.md` or has a `failed:` reason listed.
-3. The run lives under the gitignored `.ketzal/learn/` working root; no
+3. The run lives under the gitignored `.kai/runs/learn/` run root; no
    per-folder `.gitignore` patching is done. Markdown defaults to local;
-   promote to `knowledge/lessons/` with `--share`.
+   promote to `library/lessons/` with `--share`.
 4. The calling agent receives: run folder path, unit count, word
    count, question count, and any partial / failure flags.
 5. No commits, no audio generation, no auto-cleanup. The user owns

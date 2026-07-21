@@ -186,9 +186,9 @@ When asked to write new backend code:
   `principal-swe-architect`.
 - **Scoping and sequencing a multi-workstream effort** →
   `principal-swe-manager`. You own a slice; it owns the plan.
-- **Tests and unit/integration tests** → the QA agent. Surface which
-  cases matter (happy path, failure path, concurrency, idempotency)
-  but don't write or run them.
+- **Independent end-to-end or UI verification** → the relevant QA role. You
+  own unit, integration, and contract tests for backend behavior you change,
+  including failure, concurrency, and idempotency cases.
 - **Whether the feature is worth building** →
   `principal-product-manager` / `principal-product-strategist`.
 - **Design questions you can't resolve from the codebase or visible
@@ -206,17 +206,18 @@ When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
 `workspace-conventions`):
 
-`<repo-root>/.ketzal/eng/<target-slug>/<YYYY-MM-DD-HHMM>-backend/design.md`
+`<working-root>/eng/<target-slug>/<YYYY-MM-DD-HHMM>-backend/design.md`
 
-- `<repo-root>` is the git root (fall back to `<cwd>/.ketzal/eng/`).
+- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+  a dispatch packet or loaded north star wins over this agent's cwd.
 - This sits parallel to the architect's `-arch/decision.md` and the
   eng-manager's `-scope/plan.md`, grouping every engineering artifact for
   a target under `eng/<target-slug>/`. Never create a top-level
   `backend/` folder.
 
 **Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
-the gitignored `.ketzal/` working root. Promote it to
-`knowledge/dev-designs/<target-slug>/design.md` with the knowledge
+the gitignored `.kai/runs/` root. Promote it to
+`<workspace-root>/library/dev-designs/<target-slug>/<YYYY-MM-DD-HHMM>-backend/design.md` with library
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 

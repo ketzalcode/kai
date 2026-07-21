@@ -1,6 +1,6 @@
 ---
 name: peer-communication
-description: "The shared contract for how kai's agents ask each other things — reconciling the three ways a peer question can travel into one protocol so they stop competing. One canonical packet (QUESTION {from-role, to-role, blocking?, context, ask} / ANSWER {re, answer, lane-confidence}) carried by one of three transports: INLINE CONSULT (the asking agent loads the peer's agent file and answers in that voice — cheap, same-context, but a *simulation* of the peer), LIVE PEER (when the host exposes background agents — e.g. the Copilot CLI's task/write_agent/read_agent — spawn or message the real peer agent and get its *independent* judgment), and DURABLE THREAD (append the QUESTION/ANSWER to initiatives/threads/<item-id>.md — the async, cross-session system of record owned by work-coordination). The bridging rule: transport is a performance choice, the thread is the correctness choice — any exchange that blocks a board item, crosses a session, or changes a decision MUST land on the thread whichever live transport carried it, and a blocking question flips the board item to blocked until an ANSWER lands. The bias guard: inline consult is you *playing* the peer, fine for lane facts but wrong when independent judgment is the whole point (an assessment, a scope call) — then use the live peer or a real thread QUESTION the actual role answers, so you don't bias the signal by answering your own question. Host-aware: the live transport exists only where the host exposes peer agents; otherwise use inline for lane facts and the thread for anything durable or blocking. Address a role, not a person; answer only in your lane. NOT a standalone trigger skill — pulled in by work-coordination (as the durable transport) and by any agent that consults a sister lane (the persona trainer/nutritionist consult, the ai-applied-engineer product-fit consult), the way review-* lenses inherit doc-review-rigor."
+description: "The shared peer-question contract: one stable-ID QUESTION/ANSWER packet over inline consult, real live peer, or durable item thread transports. Blocking or decision-changing exchanges are recorded in the thread and coupled to the authoritative work item through waiting_on_questions; item dependencies remain separately typed. Independent judgments cannot be self-simulated."
 tools: [bash, view, grep, glob]
 ---
 
@@ -21,18 +21,22 @@ in `doc-review-rigor`.
 
 ## The one packet
 
-Every peer exchange, on any transport, is the same shape:
+Every peer exchange, on any transport, is the same shape. Durable or blocking
+questions also carry the stable ID allocated in the work item's thread:
 
 ```
-QUESTION — <from-role> → @<to-role>
+QUESTION [Q-<item-id>-<NN>] — <from-role> → @<to-role>
+- status:   <open | answered | escalated>
 - blocking: <yes | no>
 - context:  <what you're doing and why this gates it>
 - ask:      <the one specific question>
+- answer_by:<timestamp or "next-dispatch">
 
-ANSWER — <from-role> → @<asker>
+ANSWER [Q-<item-id>-<NN>] — <from-role> → @<asker>
 - re:     <the question, quoted or referenced>
 - answer: <the answer, in the answering role's voice>
 - lane:   <in-lane | out-of-lane: who should really take it>
+- provenance: <live-peer | durable-thread | operator>
 ```
 
 Address a **role**, not a person (`@principal-swe-backend`). Answer only
@@ -45,7 +49,7 @@ don't guess authoritatively.
 |-----------|-----------|:--------------------------:|:---------:|------|-------|
 | **Inline consult** | You load the peer's `*.agent.md`, adopt its mental model, and answer the packet *in that voice* yourself. | **No — you're simulating the peer.** | No (unless transcribed) | Cheapest | Same run, same context |
 | **Live peer** | The host exposes background agents (the Copilot CLI's `task` / `write_agent` / `read_agent`): spawn or message the *real* peer agent, loaded with its agent file, and read its reply. | **Yes — the peer's own reasoning.** | No (unless transcribed) | Medium (a real agent turn) | Same session, separate context |
-| **Durable thread** | Append the QUESTION and its ANSWER to `initiatives/threads/<item-id>.md`. | Whoever answers (a real role, later) | **Yes — committed** | Async latency | Across sessions, machines, cloud |
+| **Durable thread** | Append the QUESTION and its ANSWER to `coordination/threads/<item-id>.md`. | Whoever answers (a real role, later) | **Yes — committed** | Async latency | Across sessions, machines, cloud |
 
 The packet is identical across all three. What differs is **who really
 answers** and **whether it survives**.
@@ -57,7 +61,7 @@ Need only the peer's lane knowledge / mental model, quick, this run,
    and the answer isn't decision-grade?            ──►  INLINE CONSULT
 Need the peer's real independent judgment, host has
    peer agents, same session?                      ──►  LIVE PEER
-Does it block a board item, cross a session,
+Does it block a work item, cross a session,
    or change a decision?                            ──►  DURABLE THREAD (always, as the record)
 ```
 
@@ -70,14 +74,17 @@ durable are not either/or — see the bridging rule.
 **How you get the answer fast is a performance choice. Where a load-bearing
 answer lives is a correctness choice.** So:
 
-1. **Any exchange that blocks a board item, crosses a session, or changes
+1. **Any exchange that blocks a work item, crosses a session, or changes
    a decision MUST land on the thread** — whichever live transport carried
    it. Transcribe the packet (a one-line "answered live via <transport>" is
-   enough provenance) into `initiatives/threads/<item-id>.md`.
-2. **A blocking QUESTION flips the board item to `blocked`** (per
-   `work-coordination`), with `blocked-by` pointing at the answering role
-   or the item you're waiting on, until an `ANSWER` is on the thread — then
-   move it back.
+   enough provenance) into `coordination/threads/<item-id>.md`.
+2. **A blocking QUESTION flips the item to `blocked`** (per
+   `work-coordination`), copying the current state to `resume_state` only when
+   first entering blocked, and adds the ID to `waiting_on_questions`.
+   Additional questions never overwrite the saved state. As answers land,
+   remove their IDs one by one; the lifecycle-authorized role restores and
+   clears `resume_state` only after every blocking question is answered. Never
+   infer the prior state from an older handoff.
 3. **A non-blocking, purely-informational, same-run consult** (a lane fact
    that doesn't change the decision) can stay inline — attribute it in your
    output and move on. If it turns out to change the decision, it just
@@ -123,7 +130,7 @@ agent, a restricted runner) expose none. So:
    address a role, answer in your lane.
 2. **Load-bearing ⇒ thread.** Anything that blocks, crosses a session, or
    changes a decision is transcribed to the item's thread, whatever carried
-   it live. A blocking question sets the board item `blocked`.
+   it live. A blocking question gets a stable ID and sets the item `blocked`.
 3. **Don't fake independence.** When independent judgment is the point,
    don't inline-simulate the peer — get the real peer (live) or a real
    thread answer.

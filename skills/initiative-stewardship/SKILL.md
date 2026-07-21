@@ -1,16 +1,17 @@
 ---
 name: initiative-stewardship
-description: "The shared contract for who keeps an initiative healthy and moving between work items — the steward role and its lifecycle duties. work-coordination lets agents self-route within one item; scope-discipline keeps scope honest at the moment of action; but something has to own the initiative across items: decide what's ready next, groom the backlog, keep ACTIVE.md and the board honest, and call the initiative shipped. That owner is the steward — NOT a new agent and NOT a lead that owns execution (agents still self-route their own items), but the role accountable for prioritization and initiative health. The steward is the northstar's `owner`; by default that is principal-product-manager, which already owns the scope gate. Five duties: (1) own the north star's state — drive active -> paused -> shipped -> archived, keep ACTIVE.md honest, log decisions; (2) groom the backlog — review parked proposals against the thin core and promote the ones that now fit; (3) prioritize what's ready — the dispatcher the board's self-routing points at, ordering ready items by value-to-mission and pulling principal-swe-manager for delivery sequencing when work is large/parallel; (4) keep the board honest — sweep stalled in-progress, stuck blocked, and orphaned items; (5) call the initiative done — when every scope.current milestone is shipped per definition-of-done, move the northstar shipped then archived. The backlog -> board promotion is the mirror of scope-discipline: that contract routes expands-scope findings INTO the backlog; stewardship is the only thing that promotes them OUT, so scope never creeps in through the backlog by default. Run as an on-demand steward pass, not a standing meeting. NOT a standalone trigger skill — inherited by the initiative owner (principal-product-manager by default), the way scope-discipline and review-* contracts ride with the roles that own them."
+description: "The shared contract for the initiative steward: own north-star state, groom proposals, approve and prioritize ready work, keep authoritative item records honest, and close the initiative only after every current milestone is production-shipped. The steward (principal-product-manager by default) owns what/priority; director-chief-of-staff dispatches the approved queue; principal-swe-manager sequences large multi-owner delivery. This preserves one accountable scope owner without making the steward the execution lead."
 tools: [bash, view, edit, grep, glob, ask_user]
 ---
 
 # Initiative Stewardship
 
-kai's team can now **self-route within a work item** (`work-coordination`),
+kai's team can now **preserve and hand off work within an item**
+(`work-coordination`),
 **stay honest at the moment of action** (`scope-discipline`), and **ship a
 finished slice** (`definition-of-done` + `workflow-ship`). What's still
 unowned is the layer *above* a single item: someone has to decide **what
-becomes `ready` next**, groom the backlog, keep `ACTIVE.md` and the board
+becomes `ready` next**, groom the backlog, keep `ACTIVE.md` and the item/index state
 honest, and eventually **call the whole initiative shipped**. That is the
 **steward**.
 
@@ -25,8 +26,9 @@ honest* and *keep the initiative moving*.
 - **Is:** the role accountable for the initiative's **health and
   prioritization** — the backlog, the `proposed → ready` promotion, the
   order of `ready` work, and the north star's own lifecycle.
-- **Is not** a lead that owns the execution chain. Agents still self-route
-  their own items (claim on entry, hand off on exit). The steward doesn't
+- **Is not** a lead that owns the execution chain. Acting agents still own
+  their item state and handoffs, while `director-chief-of-staff` dispatches the
+  approved queue. The steward doesn't
   write the diff, doesn't run the build, doesn't do the review. It decides
   **what's worth doing next and whether the initiative is done** — not
   *how* any item gets built.
@@ -53,16 +55,22 @@ Only **one** steward per initiative — accountability doesn't split.
 
 ### 1. Own the north star's state
 
-Drive the northstar `status` through `active → paused → shipped →
-archived`. Keep `ACTIVE.md` truthful — it should list exactly the
-initiatives that are actually the focus, no stale slugs. Append each
+Drive the northstar `status` through
+`proposed -> active -> paused -> completed|shipped -> archived`.
+Use `completed` when every milestone is knowledge/decision work; use `shipped`
+when any milestone requires production delivery. `proposed -> active` requires
+an accepted thin core, milestones, and success measures. Keep
+`coordination/ACTIVE.md`
+truthful — it should list exactly the initiatives that are actually the focus,
+no stale slugs. Keep `initiatives/INDEX.md` as the all-status catalog with
+workspace, summary, and deliverable pointers. Append each
 steering decision (promote, reprioritize, pause, ship) to the
 initiative's `log.md` so the trail survives.
 
 ### 2. Groom the backlog
 
 Review the committed backlog (`initiatives/<slug>/backlog.md` and the
-unaffiliated `initiatives/backlog.md`) against the **thin core** (`mission`,
+unaffiliated `coordination/backlog.md`) against the **thin core** (`mission`,
 `scope.current`, `principles.non_negotiable[]`). For each parked entry:
 
 - **Fits the current scope and matters now** → promote it (duty 3).
@@ -71,14 +79,16 @@ unaffiliated `initiatives/backlog.md`) against the **thin core** (`mission`,
 - **Now in scope because scope moved** → update `scope.current`, then
   promote.
 
-### 3. Prioritize what's `ready` — the dispatcher
+### 3. Prioritize what's `ready` — the steward's queue
 
-This is the "future dispatcher" `work-coordination` points at. The steward
-turns the backlog and `proposed` items into an **ordered** set of `ready`
-work:
+The steward turns the backlog and `proposed` items into an **ordered** set of
+`ready` work. `director-chief-of-staff` dispatches that queue; it does not
+invent or override the priority:
 
 - Promote a `proposed`/backlog item to `ready` only when it **fits
-  `scope.current`** and is **unblocked** (no open `blocked-by`).
+  `scope.current`**, has acceptance criteria, and is unblocked (all
+  `depends_on` items are sufficiently complete and no blocking question is
+  open).
 - Order `ready` by **value-to-mission**, not by who filed it or what's
   easiest.
 - When the next work is **large, parallel, multi-owner, or
@@ -86,25 +96,33 @@ work:
   it before it starts — stewardship decides *what's next*, the manager
   decides *how it's sliced*.
 
-### 4. Keep the board honest
+### 4. Keep coordination state honest
 
-Sweep `BOARD.md` for the failure modes self-routing can't catch alone:
+Sweep authoritative `coordination/items/*.md` records, using
+`coordination/BOARD.md` as the
+human index, for the failure modes self-routing can't catch alone:
 
 - **Stalled `in-progress`** — an item sitting with no recent `updated` and
   no `HANDOFF`. Ping the owner role (a thread `QUESTION`) or reclaim it.
-- **Stuck `blocked`** — a `blocked-by` that resolved, or a blocking
-  `QUESTION` nobody answered. Unblock or escalate.
+- **Stuck `blocked`** — a completed `depends_on` item or a blocking question
+  nobody answered. Unblock or escalate.
 - **Orphaned items** — work with no `owner` and no `initiative`. Adopt,
   reassign, or drop it.
 
 ### 5. Call the initiative done
 
-An initiative is **shipped** when every milestone in `scope.current` has a
-board item at `shipped` (each having passed the `definition-of-done`
-gate) — not when it feels finished. Then:
+An initiative reaches its declared outcome only when every milestone ID in
+`scope.current` has a non-empty typed `required_items` list and every listed
+item reached its declared terminal state: `completed` for research/decision
+work or `shipped` for production delivery. Planning items and unlisted optional
+work do not satisfy the milestone. Then:
 
-- Move the northstar `status` to `shipped`, write the closing `log.md`
-  entry, and drop the slug from `ACTIVE.md`.
+- Move the northstar to `completed` for research/decision initiatives or
+  `shipped` for production-delivery initiatives, write the closing `log.md`
+  entry, and drop the slug from `coordination/ACTIVE.md`.
+- Require a non-empty `deliverables.md`, a stable
+  `initiatives/<slug>/director-summary.md`, and exact workspace paths before
+  closure; update `initiatives/INDEX.md` with their locations.
 - Archive (`status: archived`) once it's no longer a live reference.
 - **`paused`** when priorities shift — the scope is still valid, just not
   now; say why in the log so a later steward can resume it.
@@ -130,9 +148,10 @@ it when:
 
 A pass, in order: **groom** the backlog → **promote** the fits to `ready`
 → **reprioritize** `ready` by value-to-mission → **sweep** stalled/blocked/
-orphaned rows → **update** `ACTIVE.md` and the northstar `status` →
-**log** a one-line summary. Keep it light: the output is an ordered board
-and a truthful north star, not a document.
+orphaned item records → **update** `coordination/ACTIVE.md`, `INDEX.md`,
+deliverables, and
+the northstar `status` → **log** a one-line summary. The Chief of Staff may
+invoke this pass, but the steward remains the decision owner.
 
 ## Hard rules
 
@@ -144,12 +163,14 @@ and a truthful north star, not a document.
 3. **Prioritize by value-to-mission**, not by age, ease, or who asked.
 4. **Steward, don't build.** The steward orders and prunes work; it doesn't
    write, review, or ship the diff — the acting agents own that.
-5. **Done is earned.** An initiative ships only when its `scope.current`
-   milestones are all `shipped` per `definition-of-done`. Update the state
-   and `ACTIVE.md` when it does — a shipped initiative left `active` lies
-   to the board.
+5. **Done is earned.** Every current milestone must have a non-empty typed
+   required-item mapping and every item must reach its declared `completed` or
+   `shipped` terminal state. Update the initiative and
+   `coordination/ACTIVE.md` only then.
 6. **Leave a trail.** Every promote / reprioritize / pause / ship is one
    line in `log.md`.
+7. **Leave a findable outcome.** Do not close an initiative until its summary
+   and deliverable index exist at exact paths under the recorded workspace.
 
 ## Anti-patterns
 
@@ -159,8 +180,8 @@ and a truthful north star, not a document.
   `principal-swe-manager`'s call; hand it over.
 - ❌ Prioritizing the easy or the loudest item over the one that moves the
   mission.
-- ❌ Leaving an initiative `active` after its milestones all shipped, or
-  `ACTIVE.md` pointing at a slug nobody's working.
+- ❌ Leaving an initiative `active` after all milestone requirements are met, or
+  `coordination/ACTIVE.md` pointing at a slug nobody's working.
 - ❌ Turning the steward into a bottleneck that owns execution — it owns
   what's-next, not how-it's-built.
 - ❌ Splitting stewardship across two roles so no one is accountable.

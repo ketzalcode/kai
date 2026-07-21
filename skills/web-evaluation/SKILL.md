@@ -1,26 +1,26 @@
 ---
 name: web-evaluation
-description: "Standardises a manual Playwright MCP walkthrough of a target website or app surface. Owns per-run folder layout, screenshot discipline, .gitignore patching, the login-pause pattern, the priority scheme, and the report scaffold for any auditing flavor (QA, UX, SEO, and future ones). Invoked by principal-qa-ui, persona-ux-first-time-user, and principal-seo; not invoked directly by the user."
+description: "Shared Playwright plumbing for live-product walkthroughs: safe-action rules, login pause, local run folders, screenshot discipline, and evaluation report scaffolds. QA/UX/SEO use the full evaluation contract; workflow-product-explore reuses only safety/login/evidence plumbing and supplies its own neutral product-map schema."
 tools: [playwright, bash, edit, view, ask_user]
 ---
 
 # Web Evaluation
 
-This skill is the **plumbing** that any auditing agent reuses
-(`principal-qa-ui`, `persona-ux-first-time-user`, `principal-seo`,
-and any future evaluation persona). It owns everything that should
+This skill is the **plumbing** that auditing agents and the neutral product
+explorer reuse (`principal-qa-ui`, `persona-ux-first-time-user`,
+`principal-seo`, `workflow-product-explore`, and future web agents). It owns
+everything that should
 look identical across them: where output goes, how screenshots
 are named, how login pauses work, how the report is shaped.
 
-The mindset / heuristics / what-to-look-for belong to the calling
-agent. This skill does not decide what to test — only how to record
-it.
+The mindset, map/evaluation schema, and what-to-look-for belong to the calling
+agent. This skill does not decide what to explore or judge.
 
 ## When to apply
 
-- A calling agent (`principal-qa-ui`, `persona-ux-first-time-user`,
-  `principal-seo`, or a future evaluation agent) is asked to walk a
-  website or app surface and produce a structured evaluation report.
+- A calling agent is asked to walk a website/app and produce either a
+  structured evaluation report or, for `workflow-product-explore`, neutral
+  browser evidence supporting a product map.
 - The user has provided a **URL** and, optionally, a sentence or two
   of focus (e.g. "concentrate on the checkout flow").
 
@@ -45,22 +45,24 @@ it.
    "Submit payment", "Send invitation" → stop and ask.
 3. **No credentials in chat.** If the surface requires login, use
    the login-pause pattern below.
-4. **Screenshots are deliberate.** A screenshot is only worth
-   taking if it will be cited from a row in the report. No bulk
-   dumps.
+4. **Screenshots are deliberate.** A screenshot is only worth taking if it
+   will be cited from the produced report or map. No bulk dumps.
 5. **Stay in scope.** If the user asked for "the checkout flow",
    don't roam into account settings. Surface the temptation and
    ask.
-6. **Cite locations.** Every finding cites either a screenshot
-   filename, a URL + selector path, or both. "Something seems off
-   on the homepage" without a citation is not allowed.
+6. **Cite locations.** Every finding or mapped product fact cites a screenshot,
+   URL/route, selector path, or combination appropriate to the claim.
+
+For `workflow-product-explore`, use the folder/login/safety/evidence sections
+only. Its schema and completion rules come from `product-exploration`; do not
+force it into the QA/UX findings scaffold below.
 
 ## Folder layout
 
 All output for a single run lives in:
 
 ```
-<repo-root>/.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/
+<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/
   report.md
   screenshots/
     01-<short-slug>.png
@@ -69,8 +71,14 @@ All output for a single run lives in:
   trace.zip        (optional, if Playwright trace recording was on)
 ```
 
-- `<repo-root>` is the current working directory's git root. If not
-  in a git repo, fall back to `<cwd>/.ketzal/qa/`.
+For `workflow-product-explore`, the run folder contains only raw local evidence
+such as `screenshots/`, trace, and non-secret capture metadata. It must not
+create `report.md` or the product map there; the map goes only to the
+canonical initiative `artifact_target`.
+
+- Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
+  loaded north star, or `workspace-conventions`. Never substitute the calling
+  agent's repository/cwd for a different target workspace.
 - `<target-slug>` is a kebab-case slug derived from the target URL
   or the feature name the user gave you. Examples:
   - `https://app.contoso.com/checkout` → `contoso-checkout`
@@ -83,15 +91,15 @@ All output for a single run lives in:
 - The timestamp is local time, 24-hour, e.g. `2026-06-17-1823`.
 
 **One folder per run — never collapse the path.** It is always
-`.ketzal/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` — three nested
-segments. Never fuse them into a top-level `.ketzal/qa-<flavor>/`, and
-never drop the target to `.ketzal/qa/<flavor>/`. Same agent, same target →
+`<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` — three nested
+segments. Never fuse them into `.kai/runs/qa-<flavor>/`, and
+never drop the target to `.kai/runs/qa/<flavor>/`. Same agent, same target →
 same shape every run, so a target's audits group under one
 `qa/<target-slug>/` tree.
 
 ## Zone, gitignore & promotion
 
-Runs land in the **working root** — `.ketzal/qa/` — which
+Runs land in the resolved **working root** under `qa/`, which
 `workflow-workspace-init` gitignores **wholesale** (see
 `workspace-conventions`). You do **not** patch `.gitignore` per folder
 anymore: the whole working root is ephemeral by design. A run's
@@ -99,15 +107,16 @@ anymore: the whole working root is ephemeral by design. A run's
 logs) are all working output that lives there.
 
 To **share** a defect report, the calling agent promotes the curated
-markdown to `knowledge/qa-findings/<target-slug>/report.md` with the
-knowledge frontmatter — that committed copy is what travels via `git pull`.
+markdown to
+`<workspace-root>/library/qa-findings/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/report.md`
+with library frontmatter — that committed copy is what travels via `git pull`.
 Screenshots stay in the working root as local evidence, referenced by their
 run path; promote the text, not the binaries.
 
-If the workspace was never onboarded (`.ketzal/manifest.json` missing),
-note it and suggest `workflow-workspace-init`, then fall back to the default
-`.ketzal/qa/` path so the run isn't blocked. Playwright MCP's scratch
-directory (`.playwright-mcp/`) is gitignored too.
+If the target workspace was never onboarded, stop and invoke
+`workflow-workspace-init` for that exact root before a coordinated run.
+Playwright MCP's scratch directory (`.playwright-mcp/`) remains scratch only
+and is never the durable report/evidence location.
 
 ## Login pause pattern
 
@@ -345,8 +354,8 @@ If the agent is approaching any cap, it should:
 
 ## Anti-patterns
 
-- ❌ Writing the report straight into the repo root or session
-  folder. Always use `<repo>/.ketzal/qa/<target>/<run>/`.
+- ❌ Writing the report straight into the repo root or session folder. Always
+  use `<working-root>/qa/<target>/<run>/`.
 - ❌ Taking a screenshot per page just to "have coverage". Each
   screenshot must be referenced.
 - ❌ Reporting a finding without a viewport (QA flavor) or without
@@ -362,8 +371,8 @@ If the agent is approaching any cap, it should:
 - ❌ Recommending fixes the agent can't justify. Speculation
   belongs in `## Next steps`, not in a finding row.
 - ❌ Auto-committing anything, or hand-patching `.gitignore`. The whole
-  `.ketzal/` working root is ignored centrally by `workflow-workspace-init`;
-  sharing happens by **promoting** the report to `knowledge/qa-findings/`
+  `.kai/runs/` root is ignored centrally by `workflow-workspace-init`;
+  sharing happens by **promoting** the report to `library/qa-findings/`
   (the calling agent's call), never by committing inside the working root.
   The agent never runs git.
 
@@ -375,9 +384,9 @@ When the skill (and the calling agent) finishes a run:
 2. Every row in the findings/friction tables has at least:
    priority, title, observation, and either a screenshot or a
    URL + selector citation.
-3. The run lives under the gitignored `.ketzal/qa/` working root; no
+3. The run lives under the resolved working root's `qa/` area; no
    per-folder `.gitignore` patching is done. Sharing is via promotion of
-   `report.md` to `knowledge/qa-findings/`.
+   `report.md` to `library/qa-findings/`.
 4. The agent posts back to the user: run folder path, finding
    count by priority, and a one-line top-line verdict.
 5. No commits, no pushes. The user owns git.

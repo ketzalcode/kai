@@ -1,6 +1,6 @@
 ---
 name: pulse-digest
-description: "Standardises how a weekly catch-up digest is collected, structured, and written to disk. Owns the source-adapter contract (messages, docs, code-watch, work-items → one normalized record shape), the local `.ketzal/pulse/sources.md` binding config, folder layout, .gitignore patching, week-window resolution, signal prioritization, and the page output shapes — Page 1 (narratable Brief), Page 2 (visual Board), optional Page 3 (Career & Visibility), and overflow pages. Produces a committed-private digest plus a narration-clean `brief.md` ready for `generate-audio`. Invoked by `workflow-weekly-pulse`; not invoked directly by the user. The judgment about which sources matter and how to read the week belongs to the calling agent — this skill owns only how the digest is collected and recorded."
+description: "Standardises how a weekly catch-up digest is collected, structured, and written to disk. Owns the source-adapter contract, local `.kai/runs/pulse/sources.md` binding config, run layout, privacy, week resolution, signal prioritization, and page output shapes. Invoked by workflow-weekly-pulse; not invoked directly."
 tools: [bash, view, edit, create, grep, glob, ask_user]
 ---
 
@@ -23,7 +23,7 @@ demand; this one aggregates many small signals across a time window into a brief
 `kai` ships **no employer-specific services or MCP servers**. So this
 skill defines sources **abstractly** and binds them through a local, gitignored
 config. The committed contract never names a specific tenant, channel, repo, or
-MCP server — those live only in the user's local `.ketzal/pulse/sources.md`.
+MCP server — those live only in the user's local `.kai/runs/pulse/sources.md`.
 
 ### The four adapters
 
@@ -58,7 +58,7 @@ required):
 If a host has no binding for an adapter, the digest **skips that adapter and
 says so** in `sources-pulled.md` — it never fabricates a section.
 
-## Local config: `.ketzal/pulse/sources.md`
+## Local config: `.kai/runs/pulse/sources.md`
 
 The user's private wiring. **Gitignored.** The calling agent scaffolds it on
 first run (one question at a time) and reads it every run after.
@@ -150,7 +150,7 @@ Keep it terse. The agent edits the YAML block in place; never overwrites silentl
 One run per week:
 
 ```
-<repo-root>/.ketzal/pulse/<YYYY-Www>/        ← ISO week, e.g. 2026-W26
+<workspace-root>/.kai/runs/pulse/<YYYY-Www>/        ← ISO week, e.g. 2026-W26
   pulse.md            ← the full digest: Brief + Board + (Career) + overflow
   brief.md            ← Page 1 ONLY, narration-clean — the generate-audio input
   sources-pulled.md   ← provenance: what was pulled, windows, counts, gaps
@@ -159,7 +159,8 @@ One run per week:
     code.json
 ```
 
-- `<repo-root>` is the cwd's git root; fall back to `<cwd>/.ketzal/pulse/`.
+- `<workspace-root>` is the resolved target root; explicitly ephemeral
+  one-shot work may fall back to `<cwd>/.kai/runs/pulse/`.
 - `<YYYY-Www>` is the **ISO-8601 week** of the window's end date.
 - A second run in the same week appends a suffix: `2026-W26-run2`. Never
   overwrite a prior run.
@@ -167,7 +168,7 @@ One run per week:
 ## Gitignore — privacy first
 
 A weekly pulse of internal chat is **sensitive**, like `.persona-self/`. It
-stays in the **working root** — `.ketzal/pulse/` — which
+stays in the **run root** — `.kai/runs/pulse/` — which
 `workflow-workspace-init` gitignores **wholesale** (see
 `workspace-conventions`). You do **not** patch `.gitignore` yourself; the
 whole working root is ignored, so the digest is private by default.
@@ -175,7 +176,7 @@ whole working root is ignored, so the digest is private by default.
 Unlike other curated outputs, the pulse digest defaults to the **local**
 zone, not knowledge — privacy wins. To share a specific week, the operator
 explicitly passes `--share`, and only then does the calling agent promote
-that week's `brief.md` to `knowledge/digests/<YYYY-Www>/` with frontmatter.
+that week's `brief.md` to `library/digests/<YYYY-Www>/` with frontmatter.
 The skill never promotes or commits on its own.
 
 ## Window resolution
@@ -379,13 +380,13 @@ agent offers the exact command:
 pwsh C:\src\kai\scripts\generate-audio.ps1 -Source <abs path>\brief.md -Style verbatim -Lang en
 ```
 
-`.ketzal/pulse/` is gitignored as a whole, so any audio generated under it is
+`.kai/runs/pulse/` is gitignored, so any audio generated under it is
 private by default too.
 
 ## Anti-patterns
 
 - ❌ Naming a specific tenant, channel id, repo, or MCP server in this committed
-  skill. Concrete wiring lives only in the gitignored `.ketzal/pulse/sources.md`.
+  skill. Concrete wiring lives only in the gitignored `.kai/runs/pulse/sources.md`.
 - ❌ Writing tables, links, or IDs into Page 1 / `brief.md`. It must narrate clean.
 - ❌ Flattening threads into a wall of individual messages.
 - ❌ Fetching every linked doc. Resolve only links above the weight bar.
@@ -403,7 +404,7 @@ When a run finishes:
 2. `brief.md` is exactly Page 1's prose — no tables/links/IDs.
 3. Every source in `sources-pulled.md` either contributed records or has a
    `skipped:` / `failed:` reason.
-4. `.ketzal/pulse/` is gitignored; nothing was committed or force-added.
+4. `.kai/runs/pulse/` is gitignored; nothing was committed or force-added.
 5. The calling agent receives: week-folder path, pulled counts, the resolved
    window, any partial/failure flags, and whether Page 3 (career) was produced.
 6. No audio generated, no messages sent, no items edited.

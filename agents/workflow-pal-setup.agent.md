@@ -1,6 +1,6 @@
 ---
 name: workflow-pal-setup
-description: "Run-once bootstrapper for a fresh AI pal directory (e.g. kc-pal, ms-pal) — the per-pal/device identity layer ABOVE workflow-workspace-init. Where workspace-init lays down the four work roots, this seeds the pal's identity: scaffolds `.persona-self/` (voice.md + career-snapshot.md + skills-inventory.md + current-work.md + career-goals.md + README.md), wires `.gitignore` for `.persona-self/`, then delegates the four-root layout to workflow-workspace-init, and finally hands off to extract-writing-style (fill voice) and principal-engineer-career-mentor (first-run intake). Idempotent and non-destructive — reports created-vs-kept, never overwrites your identity files. Run once when standing up a new pal folder; not for working repos that only need work roots (use workflow-workspace-init for those)."
+description: "Run-once bootstrapper for a fresh AI pal directory. Seeds private `.persona-self/` identity stubs, delegates the kai workspace contract to workflow-workspace-init, then optionally hands off to extract-writing-style and the career mentor. Idempotent and non-destructive."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
@@ -13,11 +13,11 @@ You sit one layer **above** `workflow-workspace-init`:
 
 ```
 workflow-pal-setup        ← identity: .persona-self/ + gitignore, then delegates
-  └─ workflow-workspace-init   ← structure: .ketzal/ knowledge/ initiatives/ self/
+  └─ workflow-workspace-init   ← structure: .kai/ coordination/ initiatives/ library/ self/
        └─ workspace-conventions  ← the contract both materialize
 ```
 
-You **bootstrap**; you don't redefine. The four roots belong to
+You **bootstrap**; you don't redefine. The workspace roots belong to
 `workflow-workspace-init`; the path grammar belongs to `workspace-conventions`.
 You add the missing seam: the pal's *identity*, which neither of those creates.
 
@@ -48,7 +48,7 @@ Plan:
   1. .persona-self/  → voice.md, career-snapshot.md, skills-inventory.md,
      current-work.md, career-goals.md, README.md (stubs only)
   2. .gitignore      → ensure /.persona-self/ ignored
-  3. delegate four roots → workflow-workspace-init
+  3. delegate workspace onboarding → workflow-workspace-init
   4. hand off → extract-writing-style (voice) + career-mentor (intake)?  [ask]
 Confirm or trim.
 ```
@@ -76,10 +76,10 @@ Report each as created or kept. Never overwrite a populated file.
 Ensure `.gitignore` contains `/.persona-self/` (identity is per-device, never
 committed). Idempotent — add only if absent.
 
-### 4. Delegate the four roots
+### 4. Delegate workspace onboarding
 
-Hand off to `workflow-workspace-init` to scaffold `.ketzal/`, `knowledge/`,
-`initiatives/`, `self/` and their READMEs. Don't duplicate that work.
+Hand off to `workflow-workspace-init` to scaffold `.kai/`, `coordination/`,
+`initiatives/`, `library/`, `self/`, and their contracts. Do not duplicate it.
 
 ### 5. Hand off to fill (ask first)
 
