@@ -78,6 +78,7 @@ when the operator explicitly requested a local throwaway run.
    ├─ inbox.md         agenda.md          # workspace-local assistant state
    ├─ workspaces.md                       # optional linked-workspace registry
    ├─ consultations/                     # private peer-consultation records
+   ├─ decisions/                         # private operator decision briefs
    ├─ identity/
    │  ├─ README.md     voice.md
    │  └─ career-snapshot.md  skills-inventory.md
@@ -330,9 +331,9 @@ An expansion discovered inside an initiative goes to
 ## Personal material
 
 Personal operational state — your `inbox.md` task list, derived `agenda.md`,
-optional linked-workspace registry, private consultation records, voice profile,
-and career context — plus courses, certification notes, and private learning
-live under `personal/`. `personal/identity/voice.md` is consumed by
+optional linked-workspace registry, private consultation records, private
+decision briefs, voice profile, and career context — plus courses, certification
+notes, and private learning live under `personal/`. `personal/identity/voice.md` is consumed by
 `persona-self`; the career files under `personal/identity/` are owned by
 `principal-engineer-career-mentor`. `workflow-workspace-init` seeds every stub
 idempotently so the assistant is ready in any Kai workspace. Team-relevant

@@ -48,6 +48,7 @@ personal/
   agenda.md
   workspaces.md
   consultations/
+  decisions/
   identity/
     README.md
     voice.md
@@ -178,9 +179,9 @@ promotion, provenance, and text-only commit rules.
 
 Document the ignored workspace-local personal lane: operational
 `inbox.md`/`agenda.md`, optional linked-workspace registry, consultation
-records, identity/career files, and learning material. Explain that linked
-workspaces contribute read-only coordination signals and that personal material
-is never promoted automatically.
+records, decision briefs, identity/career files, and learning material. Explain
+that linked workspaces contribute read-only coordination signals and that
+personal material is never promoted automatically.
 
 ### Personal operational and identity stubs
 
@@ -190,6 +191,7 @@ Create only when missing:
 - `personal/agenda.md` — derived on demand; not hand-maintained.
 - `personal/workspaces.md` — fenced YAML with `workspaces: []`.
 - `personal/consultations/` — private consultation records.
+- `personal/decisions/` — private operator decision briefs.
 - `personal/identity/README.md` — ownership and privacy of the identity files.
 - `personal/identity/voice.md` — stub owned by `extract-writing-style`, with
   frontmatter `status: stub`.

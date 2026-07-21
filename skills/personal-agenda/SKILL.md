@@ -17,6 +17,10 @@ Sister skill to `pulse-digest`: that one is **retrospective** ("what happened
 this week"); this one is **forward** ("what needs you next"). They never
 overlap — the agenda surfaces open loops, not a week's narrative.
 
+A ⛔ decision line only *names* the pending choice. When the operator wants to
+actually decide it, the calling assistant packages the full decision — options,
+per-role positions, and a sourced recommendation — through `decision-brief`.
+
 ## The two files
 
 Personal operational state lives in the ignored `personal/` lane of the current
@@ -128,7 +132,7 @@ first, then your own commitments, then cadence. Each line = source + exact path
 **Signals from:** <workspace label(s)>  ·  **Open tasks:** <N>
 
 ## ⛔ Decisions blocking others
-- <item-id> (<workspace>) — <one-line decision> → **<next action>** · `coordination/items/<id>.md`
+- <item-id> (<workspace>) — <one-line decision> [Q-<item-id>-NN] → **assemble a decision brief** (`decision-brief`) · `coordination/threads/<id>.md`
 
 ## ✉️ Awaiting your reply
 - <item-id> — <question in one line> → **draft a reply** (persona-self) · `coordination/threads/<id>.md`

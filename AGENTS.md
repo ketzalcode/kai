@@ -109,22 +109,23 @@ itself.
 
 ## Personal front door
 
-`director-executive-assistant` is the operator's personal front door — distinct
-from `director-chief-of-staff`, which drives team delivery. It routes intent to
-the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
+`director-executive-assistant` is the operator's **single, default** front door
+— distinct from `director-chief-of-staff`, which drives team delivery. It routes
+intent to the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
 for career, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
-retrospective catch-up), consults real roles via `executive-consultation`, and
-assembles the forward "what needs you" agenda via `personal-agenda`.
+retrospective catch-up), consults real roles via `executive-consultation`,
+packages pending operator decisions via `decision-brief`, and assembles the
+forward "what needs you" agenda via `personal-agenda`.
 
 Personal state resolves against the current Kai workspace. Every onboarded
 repository or durable folder contains its own ignored `personal/` lane,
-including `personal/identity/`, inbox, agenda, linked-workspace registry, and
-consultation records. Additional workspaces are optional read-only sources
-listed in the current workspace's `personal/workspaces.md`.
+including `personal/identity/`, inbox, agenda, linked-workspace registry,
+consultation records, and decision records. Additional workspaces are optional
+read-only sources listed in the current workspace's `personal/workspaces.md`.
 
 It is **proactive-surface, never autonomous**: it reads team state read-only,
-writes private inbox/agenda/workspace-registry/consultation records, and never
-answers a team thread, approves scope, sends a message, or deploys on the
+writes private inbox/agenda/workspace-registry/consultation/decision records, and
+never answers a team thread, approves scope, sends a message, or deploys on the
 operator's behalf. Load-bearing peer
 answers are bridged into the authoritative item thread by the Chief of Staff or
 owning role. The operator presses every send, approve, and deploy button.

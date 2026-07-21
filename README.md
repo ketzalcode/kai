@@ -108,7 +108,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `director-executive-assistant` | Your **personal front door** in the current Kai workspace. Optionally scans linked workspaces, routes delivery, consults real roles with provenance, captures tasks, and renders the forward agenda. **Never autonomous** — you press every send/approve/deploy button. |
+| `director-executive-assistant` | Your **single, default front door** in the current Kai workspace. Optionally scans linked workspaces, routes delivery, consults real roles with provenance, packages pending decisions into briefs, captures tasks, and renders the forward agenda. **Never autonomous** — you press every send/approve/deploy button. |
 | `director-chief-of-staff` | Human-facing team director. Resolves one visible target workspace, dispatches real principal/workflow agents with that exact root, reconciles handoffs/evidence, maintains board and deliverable indexes, and closes with a stable director summary and exact operator-facing paths. |
 
 ### Engineering (`principal-swe-*`)
@@ -241,6 +241,7 @@ kai/
 | ---- | ------- |
 | `personal-agenda` | The method behind `director-executive-assistant`: assembles your forward "what needs you" agenda from `coordination/` signals, `personal/inbox.md`, and cadence nudges into a ranked `personal/agenda.md`. Forward complement to `pulse-digest`; never autonomous. |
 | `executive-consultation` | Private method for "ask the team and brief me": sends a minimal read-only packet to real roles, records attributed answers under `personal/consultations/`, preserves disagreement/provenance, and bridges load-bearing team answers to the owning coordination thread. |
+| `decision-brief` | Private method for "give me what I need to decide, in one place": turns a decision already waiting on you — an `@operator` `kind: decision` thread question or a `release-ready` deploy gate — into a brief with options, per-role positions, tradeoffs, and a sourced recommendation under `personal/decisions/`. Fills only missing positions via `executive-consultation`; never decides. |
 
 More skills and agents are queued; see the roadmap below.
 
@@ -271,7 +272,7 @@ every agent resolves the same paths:
 └─ personal/                               ignored personal ops + growth
    ├─ inbox.md + agenda.md + workspaces.md
    ├─ identity/{voice.md,career-*.md}
-   └─ consultations/ + lessons/ + courses/ + certs/ + growth/
+   └─ consultations/ + decisions/ + lessons/ + courses/ + certs/ + growth/
 ```
 
 - `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
@@ -279,7 +280,8 @@ every agent resolves the same paths:
 - `initiatives/` holds strategic intent and outputs owned by one initiative.
 - `library/` holds explicitly promoted outcomes reusable across initiatives.
 - `personal/` holds ignored workspace-local assistant state, optional linked
-  workspaces, consultation records, identity/career context, and learning.
+  workspaces, consultation records, decision briefs, identity/career context,
+  and learning.
 
 Initiative work defaults to its own `artifacts/` tree. Promotion to `library/`
 is explicit, steward-approved, recorded in `deliverables.md`, and one-way:
@@ -483,6 +485,7 @@ weekly pulse (what happened).
          (current workspace + links)     ├─► principal-engineer-career-mentor  (career)
                                          ├─► director-chief-of-staff   (team delivery)
                                          ├─► executive-consultation ──► real roles + private attributed brief
+                                         ├─► decision-brief ──► private brief: options + positions + recommendation
                                          ├─► workflow-weekly-pulse      (what happened)
                                          └─► personal-agenda ──► personal/agenda.md
                                              (all enabled workspaces + inbox + nudges)
@@ -516,6 +519,7 @@ weekly pulse (what happened).
 | Course / cert / long page → narrated audio | `workflow-course-to-audio` |
 | Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
 | Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `executive-consultation`) |
+| Package a decision waiting on me into options + a recommendation | `director-executive-assistant` (via `decision-brief`) |
 | Capture a task or reminder | `director-executive-assistant` (→ `personal/inbox.md`) |
 | Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
