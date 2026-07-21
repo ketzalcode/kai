@@ -162,7 +162,7 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
 | `eng` | SWE architect, manager, frontend, backend, infra | `arch`, `scope`, `frontend`, `backend`, `infra` |
 | `product` | product strategist, product marketing | `strategy`, `marketing` |
-| `content` | linkedin strategist, future platform agents | `linkedin` |
+| `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
 | `ship` | workflow-ship | `ship` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |
@@ -181,7 +181,7 @@ that initiative:
 |---|---|
 | Product surface map | `initiatives/<slug>/artifacts/product-map.md` |
 | Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
-| LinkedIn / social content pack | `initiatives/<slug>/artifacts/content/<item-id>/` |
+| Content / creative pack (LinkedIn, video, …) | `initiatives/<slug>/artifacts/content/<item-id>/` |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |
