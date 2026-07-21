@@ -1,7 +1,7 @@
 ---
 name: onboard-to-codebase
 description: "Map an unfamiliar codebase fast: stack, build/test/lint commands, directory architecture, conventions, patterns, gotchas. Saves a structured report you can re-read in future sessions."
-tools: [read, search, grep, glob, bash, edit]
+tools: [view, grep, glob, bash, edit]
 user-invocable: true
 argument-hint: [optional focus, e.g. "frontend only" or "auth subsystem"]
 ---

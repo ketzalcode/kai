@@ -1,7 +1,8 @@
 name: validate
 
-# Guards the plugin contract on every PR and on pushes to main: valid agent /
-# skill frontmatter, name-to-path agreement, and resolvable cross-references.
+# Guards the plugin contract on every PR and on pushes to main: frontmatter and
+# name-to-path agreement, resolvable cross-references, the host-tool allowlist,
+# workspace-contract consistency, and the fixture manifest schema.
 # Dependency-free — no install step, so it stays fast.
 
 on:

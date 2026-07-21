@@ -1,0 +1,14 @@
+{
+  "plugin": "kai",
+  "version": "0.1.0",
+  "scaffolded": "2026-01-01",
+  "workspace_mode": "repository",
+  "workspace_root": ".",
+  "kai": ".kai",
+  "runs": ".kai/runs",
+  "coordination": "coordination",
+  "initiatives": "initiatives",
+  "library": "library",
+  "personal": "personal",
+  "areas": ["qa", "eng", "product", "review", "ship", "ai", "learn", "lessons", "pulse", "content"]
+}
