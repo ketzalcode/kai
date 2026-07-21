@@ -109,9 +109,11 @@ itself.
 
 ## Personal front door
 
-`director-executive-assistant` is the operator's **single, default** front door
-— distinct from `director-chief-of-staff`, which drives team delivery. It routes
-intent to the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
+`director-executive-assistant` is the operator's default starting point for
+**personal or unclear** intent — distinct from `director-chief-of-staff`, which
+drives team delivery and is invoked directly for a delivery request. A direct
+review, design, or exploration request goes straight to that specialist. It
+routes intent to the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
 for career, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
 retrospective catch-up), consults real roles via `executive-consultation`,
 packages pending operator decisions via `decision-brief`, and assembles the

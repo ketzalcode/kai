@@ -108,7 +108,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `director-executive-assistant` | Your **single, default front door** in the current Kai workspace. Optionally scans linked workspaces, routes delivery, consults real roles with provenance, packages pending decisions into briefs, captures tasks, and renders the forward agenda. **Never autonomous** — you press every send/approve/deploy button. |
+| `director-executive-assistant` | Your **default start for personal or unclear intent** in the current Kai workspace (direct delivery goes to the Chief of Staff; direct specialist work to the specialist). Optionally scans linked workspaces, routes delivery, consults real roles with provenance, packages pending decisions into briefs, captures tasks, and renders the forward agenda. **Never autonomous** — you press every send/approve/deploy button. |
 | `director-chief-of-staff` | Human-facing team director. Resolves one visible target workspace, dispatches real principal/workflow agents with that exact root, reconciles handoffs/evidence, maintains board and deliverable indexes, and closes with a stable director summary and exact operator-facing paths. |
 
 ### Engineering (`principal-swe-*`)
@@ -332,9 +332,11 @@ The agents fall into a handful of independent flows. The biggest is
 into it or stand on their own. Each diagram is a *scenario*, not a
 mandatory pipeline.
 
-For personal sessions, `director-executive-assistant` (flow 8) is the single
-front door in the current Kai workspace. It routes into these flows, consults
-real roles, and optionally includes linked-workspace signals in the agenda.
+For personal sessions, `director-executive-assistant` (flow 8) is the default
+start for personal or unclear intent in the current Kai workspace. It routes
+into these flows, consults real roles, and optionally includes linked-workspace
+signals in the agenda. A direct delivery request goes to the Chief of Staff, and
+direct review/design/exploration to that specialist.
 
 **0 · Onboarding (run once per workspace)** — `workflow-workspace-init`
 validates the full workspace contract for either a repository or a durable
@@ -476,9 +478,10 @@ production before using the `shipped` state.
                 (writes via pulse-digest; read-only)                      └─► career-mentor (weigh promotion)
 ```
 
-**8 · Personal front door** — one place to start; it routes into every flow
-above and keeps your forward agenda (what needs you), the complement to the
-weekly pulse (what happened).
+**8 · Personal front door** — the default start when intent is personal or
+unclear (direct delivery goes to the Chief of Staff, direct specialist work to
+the specialist); it routes into every flow above and keeps your forward agenda
+(what needs you), the complement to the weekly pulse (what happened).
 
 ```
  you ──► director-executive-assistant ──┬─► persona-self             (draft in your voice)
