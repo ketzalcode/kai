@@ -13,6 +13,9 @@ lives in `agents/*.agent.md`; shared procedures live in `skills/*/SKILL.md`.
 For product work:
 
 - `workflow-product-explore` owns neutral current-product navigation facts;
+- `principal-product-marketing` owns reusable product-marketing intelligence
+  (personas, positioning, differentiators, objections, content angles) built on
+  those facts, for downstream content and creative agents;
 - `principal-product-manager` owns user need, product fit, scope, priority, and
   success;
 - `principal-product-designer` owns interaction design for approved needs;

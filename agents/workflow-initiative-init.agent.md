@@ -54,6 +54,7 @@ initiatives/<slug>/log.md
 initiatives/<slug>/backlog.md
 initiatives/<slug>/deliverables.md
 initiatives/<slug>/artifacts/
+  marketing/
   briefs/
   research/
   designs/
@@ -128,6 +129,8 @@ Set canonical artifact targets automatically:
 
 - product exploration:
   `initiatives/<slug>/artifacts/product-map.md`;
+- product marketing intelligence (bundle directory):
+  `initiatives/<slug>/artifacts/marketing/`;
 - PM brief:
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`;
 - research:

@@ -64,6 +64,7 @@ when the operator explicitly requested a local throwaway run.
 │     ├─ director-summary.md
 │     └─ artifacts/
 │        ├─ product-map.md
+│        ├─ marketing/
 │        ├─ briefs/
 │        ├─ research/
 │        ├─ designs/
@@ -159,7 +160,7 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 |---|---|---|
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
 | `eng` | SWE architect, manager, frontend, backend, infra | `arch`, `scope`, `frontend`, `backend`, `infra` |
-| `product` | product strategist | `strategy` |
+| `product` | product strategist, product marketing | `strategy`, `marketing` |
 | `review` | workflow-doc-review | `doc` |
 | `ship` | workflow-ship | `ship` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |
@@ -177,6 +178,7 @@ that initiative:
 | Artifact | Canonical default |
 |---|---|
 | Product surface map | `initiatives/<slug>/artifacts/product-map.md` |
+| Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |
