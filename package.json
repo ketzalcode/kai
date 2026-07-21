@@ -4,6 +4,7 @@
   "description": "Skills + scripts wired in this repo. Node deps power web-content-extraction; lectoria (used by generate-audio) is installed globally — see skills/generate-audio/SKILL.md.",
   "private": true,
   "scripts": {
+    "validate": "node scripts/validate-plugin.mjs",
     "extract:path": "node scripts/extract-learn-path.js",
     "extract:module": "node scripts/extract-learn-path.js --module"
   },

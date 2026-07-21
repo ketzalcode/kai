@@ -502,6 +502,10 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
+Before opening a PR, run `npm run validate` — a dependency-free structural
+check (valid agent/skill frontmatter, `name`-to-path agreement, and resolvable
+agent/skill cross-references) that also runs in CI on every pull request.
+
 ## License
 
 [MIT](./LICENSE)
