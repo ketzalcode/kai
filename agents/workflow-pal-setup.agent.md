@@ -1,6 +1,6 @@
 ---
 name: workflow-pal-setup
-description: "Run-once bootstrapper for a fresh AI pal directory. Seeds private `.persona-self/` identity stubs and personal operational stubs (`personal/inbox.md`, `personal/agenda.md`), delegates the kai workspace contract to workflow-workspace-init, then optionally hands off to extract-writing-style and the career mentor. Idempotent and non-destructive."
+description: "Run-once bootstrapper for a fresh AI pal directory. Seeds private `.persona-self/` identity stubs and personal operational stubs (`personal/inbox.md`, `personal/agenda.md`, `personal/workspaces.md`, `personal/consultations/`), delegates workflow-workspace-init with workspace_kind: pal, then optionally hands off to extract-writing-style and the career mentor. Idempotent and non-destructive."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
@@ -20,8 +20,9 @@ workflow-pal-setup        ← identity: .persona-self/ + gitignore, then delegat
 You **bootstrap**; you don't redefine. The workspace roots belong to
 `workflow-workspace-init`; the path grammar belongs to `workspace-conventions`.
 You add the missing seams neither of those creates: the pal's *identity*
-(`.persona-self/`) and its *personal operational stubs* (`personal/inbox.md`
-and `personal/agenda.md`, per `personal-agenda`).
+(`.persona-self/`) and its *personal operational stubs* (`personal/inbox.md`,
+`personal/agenda.md`, `personal/workspaces.md`, and
+`personal/consultations/`).
 
 You are a **careful librarian**, not an author. You create empty stubs, wire
 git, and call the agents that fill them. You never invent a user's voice,
@@ -51,7 +52,8 @@ Plan:
      current-work.md, career-goals.md, README.md (stubs only)
   2. .gitignore      → ensure /.persona-self/ ignored
   3. delegate workspace onboarding → workflow-workspace-init
-  4. personal/       → inbox.md, agenda.md (empty operational stubs)
+     with workspace_kind: pal
+  4. personal/       → inbox.md, agenda.md, workspaces.md, consultations/
   5. hand off → extract-writing-style (voice) + career-mentor (intake)?  [ask]
 Confirm or trim.
 ```
@@ -81,20 +83,35 @@ committed). Idempotent — add only if absent.
 
 ### 4. Delegate workspace onboarding
 
-Hand off to `workflow-workspace-init` to scaffold `.kai/`, `coordination/`,
-`initiatives/`, `library/`, `personal/`, and their contracts. Do not duplicate it.
+Hand off to `workflow-workspace-init` with `workspace_kind: pal` to scaffold
+`.kai/`, `coordination/`, `initiatives/`, `library/`, `personal/`, and their
+contracts. Do not duplicate it or onboard as `product` and patch afterward.
 
-### 4b. Seed personal operational stubs (`personal/`)
+### 4b. Verify the confirmed pal home
 
-After onboarding materializes the `personal/` lane, seed two empty operational
-stubs **only if missing** (created-vs-kept — never clobber a populated file):
+After onboarding, verify the manifest says `workspace_kind: pal`. If the
+manifest is missing or divergent, stop and repair through
+`workflow-workspace-init`; do not patch it ad hoc or create a second sentinel.
+
+This marker is what lets the executive assistant distinguish the personal home
+from an ordinary product workspace. Never put the absolute pal-home path in the
+committed manifest.
+
+### 4c. Seed personal operational stubs (`personal/`)
+
+After onboarding materializes the `personal/` lane, seed these operational
+files/directories **only if missing** (created-vs-kept — never clobber):
 
 - `personal/inbox.md` — your task/reminder list; the stub carries the
   `personal-agenda` schema header so your first capture has a home.
 - `personal/agenda.md` — the derived "what needs you" view; the stub notes it is
   rendered on demand by `director-executive-assistant`, not hand-edited.
+- `personal/workspaces.md` — a fenced-YAML registry with `workspaces: []`; the
+  executive assistant adds confirmed product roots and labels.
+- `personal/consultations/` — private records of real peer consultations,
+  including request, role answers, evidence, and provenance.
 
-Both stay gitignored with the rest of `personal/` and hold no personal content
+All stay gitignored with the rest of `personal/` and hold no personal content
 until you use them. Report each as created or kept.
 
 ### 5. Hand off to fill (ask first)
@@ -114,4 +131,6 @@ Use `ask_user` for the fork; the user may want a bare pal and fill later.
 - **Always gitignore** `.persona-self/` — identity stays per-device.
 - **Delegate, don't duplicate** — roots are workspace-init's job; contract is
   workspace-conventions'.
+- **One pal marker** — the confirmed home manifest declares
+  `workspace_kind: pal`; product workspaces remain `product`.
 - Idempotent and safe to re-run — report what existed vs what you created.

@@ -1,6 +1,6 @@
 ---
 name: workflow-workspace-init
-description: "Run-once kai workspace onboarding workflow. Applies workspace-onboarding and workspace-conventions to create or validate .kai/manifest.json, ignored .kai/runs, global coordination registries, initiative catalog, promoted library, and personal self lane in a target repository or operator-confirmed external root. Idempotent, non-destructive, and intentionally does not create legacy .ketzal or knowledge roots."
+description: "Run-once kai workspace onboarding workflow. Applies workspace-onboarding and workspace-conventions to create or validate a typed .kai/manifest.json (workspace_kind: product by default, pal only when explicitly delegated by workflow-pal-setup), ignored .kai/runs and .kai/local.json, coordination registries, initiative catalog, promoted library, and personal lane. Idempotent and non-destructive."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
@@ -19,14 +19,18 @@ paths. You materialize `workspace-conventions` by executing
 
 1. Resolve the target repository root when available. Otherwise require an
    operator-confirmed durable absolute external directory.
-2. Never use session-state, temp, or incidental cwd for coordinated work.
-3. In a non-empty workspace, show the exact create/keep/migrate plan and confirm
+2. Accept `workspace_kind: product|pal` for a new manifest; default a new one to
+   `product`. Preserve an existing valid kind unless an explicit authorized
+   migration is requested. Only `workflow-pal-setup` may create or migrate to
+   `pal`.
+3. Never use session-state, temp, or incidental cwd for coordinated work.
+4. In a non-empty workspace, show the exact create/keep/migrate plan and confirm
    before writing.
-4. Create missing structure idempotently; never overwrite, delete, stage,
+5. Create missing structure idempotently; never overwrite, delete, stage,
    commit, or push user content.
-5. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata.
-   `.kai/runs/` and `personal/` are ignored.
-6. Do not create `.ketzal/`, `knowledge/`, or coordination files inside
+6. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata.
+   `.kai/runs/`, `.kai/local.json`, and `personal/` are ignored.
+7. Do not create `.ketzal/`, `knowledge/`, or coordination files inside
    `initiatives/`.
 
 ## Workflow
@@ -34,6 +38,8 @@ paths. You materialize `workspace-conventions` by executing
 ### 1. Resolve and inspect
 
 - Resolve absolute `workspace_root` and `workspace_mode`.
+- Resolve `workspace_kind`: preserve an existing valid manifest value; for a
+  new manifest use `product` unless `workflow-pal-setup` supplied `pal`.
 - Read `plugin.json` for the kai version.
 - Inspect `.kai/manifest.json`, the required roots, `.gitignore`, and legacy
   paths identified by `workspace-onboarding`.
@@ -81,7 +87,7 @@ is already a Git repository.
 
 Verify that:
 
-- `.kai/runs/` and `personal/` are ignored;
+- `.kai/runs/`, `.kai/local.json`, and `personal/` are ignored;
 - `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
   `initiatives/`, and textual `library/` entries are trackable.
 
@@ -91,7 +97,8 @@ On failure, report `Contract: blocked` and do not claim onboarding succeeded.
 
 Confirm:
 
-- `.kai/manifest.json` matches the current fixed schema;
+- `.kai/manifest.json` matches the current fixed schema and declares the
+  requested `workspace_kind`;
 - every coordination registry exists;
 - `initiatives/INDEX.md` contains missing discovered initiative rows without
   duplicate slugs;

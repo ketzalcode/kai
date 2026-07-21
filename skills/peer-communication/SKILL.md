@@ -27,6 +27,7 @@ questions also carry the stable ID allocated in the work item's thread:
 ```
 QUESTION [Q-<item-id>-<NN>] — <from-role> → @<to-role>
 - status:   <open | answered | escalated>
+- kind:     <fact | decision | reply | action>
 - blocking: <yes | no>
 - context:  <what you're doing and why this gates it>
 - ask:      <the one specific question>
@@ -39,9 +40,22 @@ ANSWER [Q-<item-id>-<NN>] — <from-role> → @<asker>
 - provenance: <live-peer | durable-thread | operator>
 ```
 
-Address a **role**, not a person (`@principal-swe-backend`). Answer only
-in **your lane** — if the ask is outside it, say so and name who owns it;
-don't guess authoritatively.
+Address a **role**, not a person (`@principal-swe-backend`). The one reserved
+human endpoint is `@operator`, used only when a business/scope choice, requested
+reply, credential, or irreversible action truly requires the human. Answer only
+in **your lane** — if the ask is outside it, say so and name who owns it; don't
+guess authoritatively.
+
+`kind` is required:
+
+- `fact` — a role-owned factual clarification;
+- `decision` — a judgment or approval the addressee owns;
+- `reply` — words or information the addressee must provide;
+- `action` — an explicit operation only the addressee can perform.
+
+For `@operator`, never use `fact`: ask the owning role first. Operator questions
+must be `decision`, `reply`, or `action`, and `answer_by` must be a real
+timestamp or `next-dispatch`.
 
 ## The three transports
 
@@ -139,6 +153,9 @@ agent, a restricted runner) expose none. So:
 5. **Attribute.** An inline consult is marked as such in your output
    (`peer consult (inline): …`); a live answer names the peer; a thread
    answer is signed by the role.
+6. **Reserve the human boundary.** `@operator` is not a catch-all escalation.
+   Use it only for a decision, reply, credential, or irreversible action no kai
+   role owns; classify it with `kind`.
 
 ## Anti-patterns
 
@@ -149,6 +166,7 @@ agent, a restricted runner) expose none. So:
 - ❌ Assuming `write_agent`/background agents exist and stalling when they
   don't. Fall back to inline + thread.
 - ❌ Messaging a *person* or a specific model instead of a **role**.
+- ❌ Addressing `@operator` for a fact a principal or workflow role owns.
 - ❌ Answering out of your lane with false confidence instead of naming who
   owns the call.
 - ❌ Opening a durable thread QUESTION for a trivial same-run lane fact that

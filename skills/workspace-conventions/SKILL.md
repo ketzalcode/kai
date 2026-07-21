@@ -46,6 +46,7 @@ when the operator explicitly requested a local throwaway run.
 ├─ .kai/
 │  ├─ manifest.json                  # committed bootstrap and root map
 │  ├─ CONVENTIONS.md                 # committed human-readable contract
+│  ├─ local.json                     # optional ignored pal-home pointer
 │  └─ runs/                          # ignored raw evidence and scratch
 ├─ coordination/
 │  ├─ ACTIVE.md                      # active initiative pointer
@@ -76,6 +77,8 @@ when the operator explicitly requested a local throwaway run.
 └─ personal/
    ├─ README.md
    ├─ inbox.md         agenda.md          # home base; seeded by pal-setup
+   ├─ workspaces.md                       # enabled product-workspace registry
+   ├─ consultations/                     # private peer-consultation records
    └─ lessons/        courses/            certs/            growth/
 ```
 
@@ -84,6 +87,7 @@ when the operator explicitly requested a local throwaway run.
 | Location | Meaning | Git in repository mode |
 |---|---|---|
 | `.kai/manifest.json`, `.kai/CONVENTIONS.md` | kai bootstrap and contract | committed |
+| `.kai/local.json` | machine-local pointer from a product workspace to the pal home | ignored |
 | `.kai/runs/` | raw, regenerable, heavy, or scratch evidence | ignored |
 | `coordination/` | operational state shared across concurrent efforts | committed |
 | `initiatives/<slug>/` | strategic context and outputs owned by one initiative | committed |
@@ -94,6 +98,71 @@ when the operator explicitly requested a local throwaway run.
 are we doing this, and what did this effort produce?” Work items and threads
 stay flat because dependencies, handoffs, and collisions can cross initiatives;
 each item records its `initiative:` membership.
+
+## Pal home and workspace discovery
+
+Every manifest declares a `workspace_kind`:
+
+- `product` — an ordinary repository or external product workspace;
+- `pal` — the operator's one personal home base, created or marked by
+  `workflow-pal-setup`.
+
+The committed manifest never stores a machine-specific path to the pal home.
+When an agent needs personal state, collect candidates in this order:
+
+1. an explicit absolute path supplied by the operator;
+2. the absolute `KAI_HOME` environment variable;
+3. the current workspace's ignored `.kai/local.json`;
+4. the current root itself, only when its manifest says
+   `"workspace_kind": "pal"`;
+5. otherwise ask once for the absolute pal-home path.
+
+Canonicalize every candidate to an absolute normalized path and validate its
+pal manifest. If two valid candidates resolve to different homes, stop and ask
+the operator which is canonical; never silently choose by precedence or merge
+personal state. Invalid candidates are reported and skipped only when one
+unambiguous valid home remains.
+
+`.kai/local.json` is machine-local and always ignored:
+
+```json
+{
+  "pal_home": "C:\\absolute\\path\\to\\pal",
+  "paired": "<YYYY-MM-DD>"
+}
+```
+
+Validate that `pal_home/.kai/manifest.json` exists and declares
+`workspace_kind: pal` before reading or writing personal state.
+
+The pal home owns `personal/workspaces.md`, the private registry of product
+workspaces that contribute coordination signals:
+
+````markdown
+# Product workspaces (local · gitignored)
+
+```yaml
+workspaces:
+  - label: kai
+    root: C:\src\kai
+    enabled: true
+```
+````
+
+Roots are absolute local paths. The executive assistant validates each enabled
+root's manifest, skips invalid or unavailable roots with an explicit gap, and
+labels every surfaced signal with the registry label. When the operator names a
+new product workspace, the assistant may pair it only after confirming the
+label and root. Pairing is two-sided and atomic from the operator's perspective:
+
+1. write/update the product root's ignored `.kai/local.json` to the canonical
+   pal home;
+2. add/update the canonical product root in `personal/workspaces.md`, deduped by
+   normalized absolute path with one unique label.
+
+If either side cannot be written, report `pairing: partial` and the missing
+side; do not claim the workspace will appear in cross-workspace agendas. The
+assistant never writes personal paths into committed product metadata.
 
 ## Raw run grammar
 
@@ -288,13 +357,16 @@ An expansion discovered inside an initiative goes to
 
 ## Personal material
 
-Personal operational state — your `inbox.md` task list and the derived
-`agenda.md` — plus courses, certification notes, career reflections, and
-private learning live under `personal/`. `personal/inbox.md` holds the tasks
-and reminders you own; `personal/agenda.md` is the derived "what needs you"
-view assembled by `personal-agenda`. Both are seeded in the pal home base by
-`workflow-pal-setup`. Team-relevant material may be promoted explicitly to
-`library/lessons/`; it is never promoted automatically.
+Personal operational state — your `inbox.md` task list, derived `agenda.md`,
+enabled product-workspace registry, and private consultation records — plus
+courses, certification notes, career reflections, and private learning live
+under `personal/`. `personal/inbox.md` holds the tasks and reminders you own;
+`personal/agenda.md` is the derived "what needs you" view assembled by
+`personal-agenda`; `personal/workspaces.md` selects the product roots it reads;
+and `personal/consultations/` preserves private peer answers with provenance.
+They are seeded in the pal home base by `workflow-pal-setup`. Team-relevant
+material may be promoted explicitly to `library/lessons/`; it is never promoted
+automatically.
 
 ## Manifest
 
@@ -305,6 +377,7 @@ view assembled by `personal-agenda`. Both are seeded in the pal home base by
   "plugin": "kai",
   "version": "<plugin version at scaffold time>",
   "scaffolded": "<YYYY-MM-DD>",
+  "workspace_kind": "<product|pal>",
   "workspace_mode": "<repository|external>",
   "workspace_root": "<'.' in repository mode | absolute external root>",
   "kai": ".kai",
@@ -330,5 +403,7 @@ create legacy `.ketzal/` or `knowledge/` roots.
 5. Use the canonical initiative artifact path for initiative-owned output.
 6. Promote to `library/` only through the explicit promotion rule.
 7. Use `personal/` only for personal material.
-8. Record exact workspace-root-relative paths; never abbreviate with `.../`.
-9. Never create a root or artifact lane outside this contract.
+8. Resolve personal state through the pal-home rules; never assume a product
+   workspace is the pal merely because it has a manifest.
+9. Record exact workspace-root-relative paths; never abbreviate with `.../`.
+10. Never create a root or artifact lane outside this contract.

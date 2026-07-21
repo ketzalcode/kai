@@ -100,7 +100,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `workflow-pal-setup` | Run-once bootstrapper for a fresh AI pal folder. Seeds private `.persona-self/` stubs, delegates workspace onboarding, then hands off to writing-style and career agents. |
+| `workflow-pal-setup` | Run-once bootstrapper for a fresh AI pal folder. Seeds private `.persona-self/` and personal operational stubs, marks the manifest `workspace_kind: pal`, delegates workspace onboarding, then hands off to writing-style and career agents. |
 | `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/self-check/<date>/report.md`. |
 | `workflow-workspace-init` | Idempotent onboarding workflow for `.kai/`, `coordination/`, `initiatives/`, `library/`, and `personal/`, including exact ignore validation and legacy-layout detection. |
 | `workflow-initiative-init` | Bounded intake workflow that resolves the target workspace, then turns mission + vision into a proposed north star with stable milestones, success measures, deliverable index, and initial proposed item records. |
@@ -109,7 +109,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `director-executive-assistant` | Your **personal front door**. Routes any intent to the right specialist (drafting → `persona-self`, career → `principal-engineer-career-mentor`, team delivery → `director-chief-of-staff`, weekly catch-up → `workflow-weekly-pulse`), captures tasks to `personal/inbox.md`, and renders your forward "what needs you" agenda via `personal-agenda`. Proactive-surface, **never autonomous** — you press every send/approve/deploy button. |
+| `director-executive-assistant` | Your **personal front door**. Resolves one typed pal home from explicit path, `KAI_HOME`, or an ignored product-workspace pointer; scans enabled product roots; routes delivery; consults real roles with provenance; captures tasks; and renders the forward agenda. **Never autonomous** — you press every send/approve/deploy button. |
 | `director-chief-of-staff` | Human-facing team director. Resolves one visible target workspace, dispatches real principal/workflow agents with that exact root, reconciles handoffs/evidence, maintains board and deliverable indexes, and closes with a stable director summary and exact operator-facing paths. |
 
 ### Engineering (`principal-swe-*`)
@@ -241,6 +241,7 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `personal-agenda` | The method behind `director-executive-assistant`: assembles your forward "what needs you" agenda from `coordination/` signals, `personal/inbox.md`, and cadence nudges into a ranked `personal/agenda.md`. Forward complement to `pulse-digest`; never autonomous. |
+| `executive-consultation` | Private method for "ask the team and brief me": sends a minimal read-only packet to real roles, records attributed answers under `personal/consultations/`, preserves disagreement/provenance, and bridges load-bearing team answers to the owning coordination thread. |
 
 More skills and agents are queued; see the roadmap below.
 
@@ -254,6 +255,7 @@ every agent resolves the same paths:
 <workspace>/
 ├─ .kai/
 │  ├─ manifest.json + CONVENTIONS.md       committed bootstrap
+│  ├─ local.json                           ignored pal-home pointer
 │  └─ runs/<area>/<target>/<run>/          ignored raw evidence and scratch
 ├─ coordination/
 │  ├─ ACTIVE.md + BOARD.md + backlog.md
@@ -269,13 +271,18 @@ every agent resolves the same paths:
 │  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
 │     lessons/ digests/ learnings/ releases/ playbooks/
 └─ personal/                               ignored personal ops + growth
+   ├─ inbox.md + agenda.md + workspaces.md
+   └─ consultations/ + lessons/ + courses/ + certs/ + growth/
 ```
 
 - `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
+- `.kai/local.json` is an ignored machine-local pointer from a product
+  workspace to the manifest-marked pal home.
 - `coordination/` holds high-churn cross-effort operational state.
 - `initiatives/` holds strategic intent and outputs owned by one initiative.
 - `library/` holds explicitly promoted outcomes reusable across initiatives.
-- `personal/` holds ignored personal ops (`inbox.md`/`agenda.md`), learning, and career material.
+- `personal/` holds ignored personal ops (`inbox.md`/`agenda.md`), enabled
+  product-workspace roots, consultation records, learning, and career material.
 
 Initiative work defaults to its own `artifacts/` tree. Promotion to `library/`
 is explicit, steward-approved, recorded in `deliverables.md`, and one-way:
@@ -327,7 +334,8 @@ into it or stand on their own. Each diagram is a *scenario*, not a
 mandatory pipeline.
 
 For personal sessions, `director-executive-assistant` (flow 8) is the single
-front door — it routes into these flows and keeps your forward agenda.
+front door — it resolves the pal home, routes into these flows, consults real
+roles, and keeps a cross-workspace forward agenda.
 
 **0 · Onboarding (run once per workspace)** — `workflow-workspace-init`
 validates the full workspace contract. For a fresh pal folder,
@@ -335,7 +343,8 @@ validates the full workspace contract. For a fresh pal folder,
 
 ```
  new pal folder ──► workflow-pal-setup ──► .persona-self/  (identity, gitignored)
- (kc-pal/ms-pal)     (seeds identity)       └─► workflow-workspace-init
+ (kc-pal/ms-pal)     (seeds identity)       ├─► workflow-workspace-init
+                                             └─► manifest workspace_kind: pal
  install plugin ──► workflow-workspace-init ──► .kai/ + coordination/
  into a repo                                   + initiatives/ + library/ + personal/
 ```
@@ -476,11 +485,12 @@ weekly pulse (what happened).
 
 ```
  you ──► director-executive-assistant ──┬─► persona-self             (draft in your voice)
-         (routes + keeps your agenda)    ├─► principal-engineer-career-mentor  (career)
+         (pal home + workspace registry)├─► principal-engineer-career-mentor  (career)
                                          ├─► director-chief-of-staff   (team delivery)
+                                         ├─► executive-consultation ──► real roles + private attributed brief
                                          ├─► workflow-weekly-pulse      (what happened)
                                          └─► personal-agenda ──► personal/agenda.md
-                                             (coordination signals + personal/inbox.md + nudges)
+                                             (all enabled workspaces + inbox + nudges)
                                                   │  ranked "what needs you"
                                                   ▼
                                              you decide the next move   (never auto)
@@ -510,6 +520,7 @@ weekly pulse (what happened).
 | Author a brand-new lesson from a topic | `principal-engineer-tutor` |
 | Course / cert / long page → narrated audio | `workflow-course-to-audio` |
 | Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
+| Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `executive-consultation`) |
 | Capture a task or reminder | `director-executive-assistant` (→ `personal/inbox.md`) |
 | Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |

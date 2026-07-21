@@ -252,6 +252,12 @@ Artifacts: <absolute director-summary path; absolute deliverables index path>
 Next automatic action: <what will run when resumed>
 ```
 
+When stopping for the human boundary, append a classified
+`QUESTION ... -> @operator` to the item's thread, add its ID to
+`waiting_on_questions` when blocking, and use `kind: decision`, `reply`, or
+`action`. Do not rely on free-form `Blocked:` prose: the executive assistant
+derives the operator's agenda from these authoritative packets.
+
 ## Hard rules
 
 1. **Direct; do not do the principals' work.** No production code, product

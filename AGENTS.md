@@ -102,18 +102,29 @@ architecture, review, or ship question and call it independent. Blocking and
 decision-changing exchanges receive stable question IDs and land in the
 committed item thread.
 
+`@operator` is the reserved human endpoint, not a general fallback. Use it only
+for a classified `decision`, `reply`, or `action` question no kai role owns.
+Proposed-item promotion remains steward work; it does not alert the operator by
+itself.
+
 ## Personal front door
 
 `director-executive-assistant` is the operator's personal front door — distinct
 from `director-chief-of-staff`, which drives team delivery. It routes intent to
 the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
 for career, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
-retrospective catch-up) and assembles the forward "what needs you" agenda via
-`personal-agenda` from `coordination/` signals, `personal/inbox.md`, and cadence
-nudges.
+retrospective catch-up), consults real roles via `executive-consultation`, and
+assembles the forward "what needs you" agenda via `personal-agenda`.
+
+Personal state resolves to one manifest-marked `workspace_kind: pal` home using
+an explicit path, `KAI_HOME`, or the current product workspace's ignored
+`.kai/local.json`. The assistant scans enabled roots from the pal's
+`personal/workspaces.md`; it does not depend on the operator naming every
+product workspace on every run.
 
 It is **proactive-surface, never autonomous**: it reads team state read-only,
-writes only `personal/inbox.md` and `personal/agenda.md` in the ignored
-`personal/` lane, and never answers a thread, approves scope, sends a message,
-or deploys on the operator's behalf. The operator presses every send, approve,
-and deploy button.
+writes private inbox/agenda/workspace-registry/consultation records plus an
+approved ignored pal-home pointer, and never answers a team thread, approves
+scope, sends a message, or deploys on the operator's behalf. Load-bearing peer
+answers are bridged into the authoritative item thread by the Chief of Staff or
+owning role. The operator presses every send, approve, and deploy button.

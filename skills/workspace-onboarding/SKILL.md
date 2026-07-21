@@ -13,6 +13,8 @@ may use the validation checks, but they do not scaffold partial structures.
 ## Inputs
 
 - exact runtime absolute `workspace_root`;
+- `workspace_kind`: for a new manifest, `product` by default and `pal` only when
+  invoked by `workflow-pal-setup`; preserve an existing valid kind on reruns;
 - `workspace_mode`: `repository` or `external`;
 - plugin version from `plugin.json`;
 - operator approval before changing a non-empty workspace.
@@ -57,6 +59,7 @@ Install or replace exactly one managed block:
 ```gitignore
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 /.kai/runs/
+/.kai/local.json
 /personal/
 library/**/*.mp3
 library/**/*.har
@@ -72,6 +75,7 @@ library/**/screenshots/
 writing the block, verify:
 
 - `.kai/runs/` is ignored;
+- `.kai/local.json` is ignored;
 - `personal/` is ignored;
 - `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
   `initiatives/`, and textual `library/` files are not ignored.
@@ -86,8 +90,12 @@ external directory is already a Git repository.
 
 ### `.kai/manifest.json`
 
-Use the exact schema from `workspace-conventions`, including fixed roots for
-`.kai/runs`, `coordination`, `initiatives`, `library`, and `personal`.
+Use the exact schema from `workspace-conventions`, including `workspace_kind`
+and fixed roots for `.kai/runs`, `coordination`, `initiatives`, `library`, and
+`personal`. New ordinary onboarding writes `workspace_kind: product`;
+`workflow-pal-setup` writes `pal` for a new confirmed home base. A rerun
+preserves the existing valid kind unless the operator explicitly approves an
+authorized product↔pal migration; never relabel by default.
 Repository mode persists `workspace_root: "."`; external mode persists the
 operator-confirmed absolute root.
 
@@ -151,8 +159,9 @@ promotion, provenance, and text-only commit rules.
 
 ### `personal/README.md`
 
-Document the ignored personal lane — operational `inbox.md`/`agenda.md` plus
-learning material — and explicit promotion to `library/lessons/`.
+Document the ignored personal lane — operational `inbox.md`/`agenda.md`, the
+home-base `workspaces.md` registry, private consultation records, and learning
+material — plus explicit promotion to `library/lessons/`.
 
 ## Legacy and partial-layout handling
 
@@ -192,5 +201,6 @@ Kept: <paths>
 Legacy detected: <paths or none>
 Conflicts: <paths or none>
 Ignore checks: <pass/fail details>
+Workspace kind: <product|pal>
 Next: <workspace ready or exact blocking action>
 ```

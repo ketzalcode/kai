@@ -1,6 +1,6 @@
 ---
 name: personal-agenda
-description: "Assembles the operator's forward 'what needs you' agenda. Owns the personal/inbox.md (tasks you own) and personal/agenda.md (derived view) schemas, the coordination-signal taxonomy, cadence nudges, ranking, and the never-autonomous output contract. The forward complement to pulse-digest (retrospective). Invoked by director-executive-assistant; not invoked directly."
+description: "Assembles the operator's cross-workspace forward 'what needs you' agenda. Reads enabled roots from the pal home's personal/workspaces.md, owns the personal/inbox.md and derived personal/agenda.md schemas, maps explicit @operator decision/reply/action questions plus release-ready items, cadence nudges, ranking, and the never-autonomous output contract. Invoked by director-executive-assistant; not invoked directly."
 tools: [bash, view, edit, create, grep, glob]
 ---
 
@@ -39,34 +39,44 @@ live. Resolve it through `workspace-conventions` (`.kai/manifest.json`
 sentinel). `personal/inbox.md`, the nudges, and the rendered `personal/agenda.md`
 always resolve against that home base.
 
-Coordination **signals** may come from more than one place: the home base's own
-`coordination/`, plus any product workspace the operator names. Default to the
-currently resolved workspace's `coordination/`; when the operator points at
-additional product roots, read each one's `coordination/` read-only and label
-every surfaced line with its workspace. Never write into a product workspace
-from here.
+Coordination **signals** come from the home base's own `coordination/` plus every
+enabled root in `personal/workspaces.md`. Resolve and validate the registry per
+`workspace-conventions`; label every surfaced line with its workspace. When the
+operator names an additional product root, the calling assistant confirms its
+label and records it in the registry before scanning it. Never write into a
+product workspace from here.
 
 ## Sources
 
-Three, and only three:
+Three categories, with workspace discovery supplied by the pal registry:
 
 ### A. Derived team signals (read-only, from `coordination/`)
 
 Surface only what genuinely needs **the operator** — the human who owns vision,
-scope approval, business decisions, and the deploy button. Map each coordination
+final business boundaries, requested replies/actions, and the deploy button.
+Routine scope promotion and priority remain steward-owned. Map each coordination
 fact to exactly one agenda section:
 
 | Signal (from `coordination/`) | Detection | Section |
 |---|---|---|
-| Decision awaiting you | a `proposed` item awaiting steward/operator approval, or a `blocked` item whose open `waiting_on_questions` QUESTION is addressed to the operator/steward-as-human | ⛔ Decisions |
-| Question addressed to you | a `coordination/threads/<item>.md` `QUESTION` addressed to the operator with no matching `ANSWER` | ✉️ Awaiting reply |
+| Decision awaiting you | a thread `QUESTION` addressed to `@operator` with `kind: decision` and no matching answered `ANSWER`; if blocking, its ID must also appear in the item's `waiting_on_questions` | ⛔ Decisions |
+| Question addressed to you | an open thread `QUESTION` addressed to `@operator` with `kind: reply` and no matching `ANSWER` | ✉️ Awaiting reply |
+| Action only you can perform | a thread `QUESTION` addressed to `@operator` with `kind: action` and no matching answered `ANSWER`; if blocking, its ID appears in `waiting_on_questions` | ⚡ Actions |
 | Ready for you to ship | an item in `release-ready` (the human deploy gate — only the operator presses go) | 🚀 Ready to ship |
-| Blocked on you | a `blocked` item whose `waiting_on` names the operator and isn't a peer-answerable question | ⛔ or ✉️ as fits |
-| Drift you own | an expired `lease` on an item the operator owns, or contradictory authoritative state worth a glance | 🔔 Nudges |
+| Blocked on you | a `blocked` item whose `waiting_on_questions` contains an open `@operator` question; classify it by that question's `kind` | ⛔, ✉️, or ⚡ |
+| Overdue operator request | an unanswered `@operator` question whose `answer_by` timestamp passed | raise within its existing section |
 
 Read items and threads as authoritative; never infer a decision the records
 don't show. If `coordination/` is absent (no team workspace), skip section A and
 say so — never fabricate team signals.
+
+Because threads are append-only, "open" always means **no matching answered
+ANSWER packet exists for that question ID**. Do not trust the original
+QUESTION's `status: open` after an ANSWER has been appended.
+
+A `proposed` item by itself is **not** an operator signal. The initiative
+steward owns promotion and priority. Surface a proposed item only when its
+thread contains an explicit open `@operator` question under the rules above.
 
 ### B. Personal inbox (`personal/inbox.md`)
 
@@ -124,6 +134,9 @@ first, then your own commitments, then cadence. Each line = source + exact path
 ## ✉️ Awaiting your reply
 - <item-id> — <question in one line> → **draft a reply** (persona-self) · `coordination/threads/<id>.md`
 
+## ⚡ Actions blocking others
+- <item-id> — <operator-only action> → **perform the action, then answer Q-…** · `coordination/threads/<id>.md`
+
 ## 🚀 Ready for you to ship
 - <item-id> — <what's release-ready> → **deploy, then workflow-ship CONFIRM-START** · `coordination/items/<id>.md`
 
@@ -144,7 +157,8 @@ needs the operator, say exactly that — an empty agenda is a valid, good result
 ## Ranking
 
 1. **Blocks others first.** A decision or reply that unblocks a teammate or a
-   dependent item outranks anything private.
+   dependent item outranks anything private; operator-only actions follow the
+   same rule.
 2. **Time-sensitive next.** Nearer due dates and older unanswered questions rise.
 3. **Your tasks** by `due`, undated last.
 4. **Nudges** last — context, not obligations.
