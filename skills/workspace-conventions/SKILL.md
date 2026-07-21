@@ -65,6 +65,7 @@ when the operator explicitly requested a local throwaway run.
 │     └─ artifacts/
 │        ├─ product-map.md
 │        ├─ marketing/
+│        ├─ content/
 │        ├─ briefs/
 │        ├─ research/
 │        ├─ designs/
@@ -73,7 +74,7 @@ when the operator explicitly requested a local throwaway run.
 │  ├─ README.md
 │  ├─ reviews/        dev-designs/    investigations/   briefings/
 │  ├─ qa-findings/    lessons/        digests/          learnings/
-│  └─ releases/       playbooks/
+│  └─ releases/       playbooks/      content/
 └─ personal/
    ├─ README.md
    ├─ inbox.md         agenda.md          # workspace-local assistant state
@@ -161,6 +162,7 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
 | `eng` | SWE architect, manager, frontend, backend, infra | `arch`, `scope`, `frontend`, `backend`, `infra` |
 | `product` | product strategist, product marketing | `strategy`, `marketing` |
+| `content` | linkedin strategist, future platform agents | `linkedin` |
 | `review` | workflow-doc-review | `doc` |
 | `ship` | workflow-ship | `ship` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |
@@ -179,6 +181,7 @@ that initiative:
 |---|---|
 | Product surface map | `initiatives/<slug>/artifacts/product-map.md` |
 | Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
+| LinkedIn / social content pack | `initiatives/<slug>/artifacts/content/<item-id>/` |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |
@@ -231,6 +234,7 @@ Rules:
 | Atomic reusable learning | `library/learnings/` |
 | Release record | `library/releases/` |
 | Reusable procedure | `library/playbooks/` |
+| Reusable content pack | `library/content/` |
 
 Heavy binaries remain ignored even below `library/`: `*.mp3`, `*.har`,
 `*.zip`, `audio/`, `raw/`, and `screenshots/`.
@@ -359,7 +363,7 @@ automatically.
   "initiatives": "initiatives",
   "library": "library",
   "personal": "personal",
-  "areas": ["qa", "eng", "product", "review", "ship", "ai", "learn", "lessons", "pulse"]
+  "areas": ["qa", "eng", "product", "review", "ship", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
 

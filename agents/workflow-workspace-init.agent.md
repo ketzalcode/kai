@@ -60,12 +60,12 @@ Apply the required structure from `workspace-onboarding`:
 
 ```text
 .kai/{manifest.json,CONVENTIONS.md,runs/{qa/,eng/,product/,review/,ship/,
-                                      ai/,learn/,lessons/,pulse/}}
+                                      ai/,learn/,lessons/,pulse/,content/}}
 coordination/{ACTIVE.md,BOARD.md,backlog.md,
              items/README.md,threads/README.md}
 initiatives/{README.md,INDEX.md}
 library/{README.md,reviews/,dev-designs/,investigations/,briefings/,
-         qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/}
+         qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/,content/}
 personal/{README.md,inbox.md,agenda.md,workspaces.md,consultations/,decisions/,
           identity/{README.md,voice.md,career-snapshot.md,skills-inventory.md,
                     current-work.md,career-goals.md},

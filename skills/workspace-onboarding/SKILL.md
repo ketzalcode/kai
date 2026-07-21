@@ -28,7 +28,7 @@ Create missing paths without overwriting existing content:
   manifest.json
   CONVENTIONS.md
   runs/
-    qa/ eng/ product/ review/ ship/ ai/ learn/ lessons/ pulse/
+    qa/ eng/ product/ review/ ship/ ai/ learn/ lessons/ pulse/ content/
 coordination/
   ACTIVE.md
   BOARD.md
@@ -41,7 +41,7 @@ initiatives/
 library/
   README.md
   reviews/ dev-designs/ investigations/ briefings/ qa-findings/
-  lessons/ digests/ learnings/ releases/ playbooks/
+  lessons/ digests/ learnings/ releases/ playbooks/ content/
 personal/
   README.md
   inbox.md

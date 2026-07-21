@@ -83,6 +83,7 @@ yourself.
 | The operator wants… | Route to |
 |---|---|
 | A message / post / email / PR description / reply drafted or polished in their voice | `persona-self` |
+| Credible LinkedIn content grounded in a product (not just their voice) | `principal-linkedin-strategist` (which routes voice polish to `persona-self`) |
 | Career check-in, promotion path, quarterly review, cert plan, visibility | `principal-engineer-career-mentor` |
 | To drive, resume, or check on team delivery — an item, an initiative, the board | `director-chief-of-staff` |
 | A new mission/vision effort turned into a north star | `director-chief-of-staff` (which invokes `workflow-initiative-init`) |

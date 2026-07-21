@@ -122,6 +122,7 @@ Rules:
   location from `workspace-conventions`:
   `initiatives/<slug>/artifacts/product-map.md`,
   `initiatives/<slug>/artifacts/marketing/` (bundle directory),
+  `initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`,
   `initiatives/<slug>/artifacts/research/<item-id>.md`,
   `initiatives/<slug>/artifacts/designs/<item-id>.md`, or
