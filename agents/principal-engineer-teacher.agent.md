@@ -206,7 +206,7 @@ Before declaring done:
 ### 6. Report back
 
 **Zone & promotion (see `workspace-conventions`).** Lesson bundles are
-**personal learning** — default them under **`self/lessons/`** (gitignored,
+**personal learning** — default them under **`personal/lessons/`** (gitignored,
 portable) rather than `library/`. Only `--share` a bundle into
 `library/lessons/` when it's team-relevant work knowledge. (Audio MP3s stay
 gitignored everywhere; they regenerate on demand.)

@@ -27,7 +27,10 @@ __pycache__/
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 # Raw kai runs and personal material are local-only.
 /.kai/runs/
-/self/
+/personal/
+# Retired local state stays private during explicit migration.
+/.persona-self/
+/.kai/local.json
 # Heavy binaries stay ignored inside the committed library.
 library/**/*.mp3
 library/**/*.har
@@ -37,9 +40,6 @@ library/**/raw/
 library/**/screenshots/
 **/storageState*.json
 # <<< kai workspace <<<
-
-# persona-self: writing-style profile (intimate; never shared, never promoted)
-.persona-self/
 
 # Playwright MCP scratch directory (snapshots, console logs)
 .playwright-mcp/

@@ -73,9 +73,17 @@ when the operator explicitly requested a local throwaway run.
 │  ├─ reviews/        dev-designs/    investigations/   briefings/
 │  ├─ qa-findings/    lessons/        digests/          learnings/
 │  └─ releases/       playbooks/
-└─ self/
+└─ personal/
    ├─ README.md
-   └─ lessons/        courses/        certs/            growth/
+   ├─ inbox.md         agenda.md          # workspace-local assistant state
+   ├─ workspaces.md                       # optional linked-workspace registry
+   ├─ consultations/                     # private peer-consultation records
+   ├─ decisions/                         # private operator decision briefs
+   ├─ identity/
+   │  ├─ README.md     voice.md
+   │  └─ career-snapshot.md  skills-inventory.md
+   │     current-work.md      career-goals.md
+   └─ lessons/        courses/            certs/            growth/
 ```
 
 ## Placement model
@@ -87,12 +95,47 @@ when the operator explicitly requested a local throwaway run.
 | `coordination/` | operational state shared across concurrent efforts | committed |
 | `initiatives/<slug>/` | strategic context and outputs owned by one initiative | committed |
 | `library/` | curated outcomes intentionally reusable across initiatives | committed text |
-| `self/` | portable personal career and learning material | ignored |
+| `personal/` | portable personal operational, career, and learning material | ignored |
 
 `coordination/` answers “what is happening now?” `initiatives/` answers “why
 are we doing this, and what did this effort produce?” Work items and threads
 stay flat because dependencies, handoffs, and collisions can cross initiatives;
 each item records its `initiative:` membership.
+
+## Current workspace and optional linked workspaces
+
+Kai has no special home workspace. Any repository or operator-confirmed durable
+folder can be a complete Kai workspace. The current workspace — the root whose
+`.kai/manifest.json` was resolved for this session — owns its coordination,
+initiatives, library, assistant state, identity, and personal material.
+
+If the manifest is missing, invoke `workflow-workspace-init` for the current
+repository or confirmed folder before using the assistant. Do not search for a
+global home, machine-specific pointer, or special workspace kind.
+
+`personal/workspaces.md` is an optional registry of additional Kai workspaces
+whose coordination signals should be included in the current workspace's
+agenda:
+
+````markdown
+# Linked Kai workspaces (local · gitignored)
+
+```yaml
+workspaces:
+  - label: payments
+    root: C:\src\payments
+    enabled: true
+```
+````
+
+The current workspace is always included implicitly and never needs a registry
+row. Linked roots are absolute local paths, deduped by normalized path, and
+carry unique labels. The executive assistant validates each enabled root's
+manifest, reads its `coordination/` state read-only, skips invalid or unavailable
+roots with an explicit gap, and labels surfaced signals with the registry label.
+When the operator names another workspace, confirm its label and root before
+adding or updating the local registry. No back-pointer or pairing file is
+written into the linked workspace.
 
 ## Raw run grammar
 
@@ -287,9 +330,15 @@ An expansion discovered inside an initiative goes to
 
 ## Personal material
 
-Personal courses, certification notes, career reflections, and private learning
-live under `self/`. Team-relevant material may be promoted explicitly to
-`library/lessons/`; it is never promoted automatically.
+Personal operational state — your `inbox.md` task list, derived `agenda.md`,
+optional linked-workspace registry, private consultation records, private
+decision briefs, voice profile, and career context — plus courses, certification
+notes, and private learning live under `personal/`. `personal/identity/voice.md` is consumed by
+`persona-self`; the career files under `personal/identity/` are owned by
+`principal-engineer-career-mentor`. `workflow-workspace-init` seeds every stub
+idempotently so the assistant is ready in any Kai workspace. Team-relevant
+material may be promoted explicitly to `library/lessons/`; it is never promoted
+automatically.
 
 ## Manifest
 
@@ -307,7 +356,7 @@ live under `self/`. Team-relevant material may be promoted explicitly to
   "coordination": "coordination",
   "initiatives": "initiatives",
   "library": "library",
-  "self": "self",
+  "personal": "personal",
   "areas": ["qa", "eng", "product", "review", "ship", "ai", "learn", "lessons", "pulse"]
 }
 ```
@@ -324,6 +373,8 @@ create legacy `.ketzal/` or `knowledge/` roots.
 4. Use `.kai/runs/` for raw evidence and scratch.
 5. Use the canonical initiative artifact path for initiative-owned output.
 6. Promote to `library/` only through the explicit promotion rule.
-7. Use `self/` only for personal material.
-8. Record exact workspace-root-relative paths; never abbreviate with `.../`.
-9. Never create a root or artifact lane outside this contract.
+7. Use `personal/` only for personal material.
+8. Resolve personal state against the current Kai workspace; linked workspaces
+   contribute coordination signals read-only.
+9. Record exact workspace-root-relative paths; never abbreviate with `.../`.
+10. Never create a root or artifact lane outside this contract.

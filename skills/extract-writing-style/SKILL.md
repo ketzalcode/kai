@@ -1,7 +1,7 @@
 ---
 name: extract-writing-style
-description: "Extracts the user's personal writing style from a corpus of their past messages (primarily the session-store chat history, optionally GitHub PR/issue comments, optionally pasted samples) and writes a portable plain-text profile to `.persona-self/voice.md`. Designed for the `persona-self` agent to consume on every draft. Run rarely — once on initial setup, then occasionally when voice drifts (new vocabulary adopted, new contexts, etc.). Idempotent on re-run: refreshes the profile with new data while preserving any `manual_overrides:` block the user added by hand. Privacy-first: the profile lives in a gitignored folder by default."
-tools: [bash, view, edit, ask_user]
+description: "Extracts the user's writing style from past messages and writes the current Kai workspace's portable profile to `personal/identity/voice.md`. Designed for persona-self to consume on every draft. Run initially and when voice drifts; idempotently preserves manual_overrides. Privacy-first and gitignored."
+tools: [bash, view, edit, ask_user, session_store_sql]
 ---
 
 # Extract Writing Style
@@ -33,7 +33,7 @@ invocation.
 
 ## What this skill produces
 
-A single file: `.persona-self/voice.md`.
+A single file: `personal/identity/voice.md`.
 
 The folder is gitignored by default (see Privacy below). The profile
 is plain markdown with YAML frontmatter — inspectable, hand-editable,
@@ -239,11 +239,21 @@ Beyond raw samples, the skill should derive:
 
 ## Workflow
 
-### 1. Confirm scope
+### 1. Resolve the workspace and confirm scope
 
-If a profile already exists at `.persona-self/voice.md`:
+Resolve the current Kai workspace root through `workspace-conventions` and its
+`.kai/manifest.json` sentinel. The output path is the absolute
+`<workspace-root>/personal/identity/voice.md`; never resolve it from an
+incidental or nested cwd. If the workspace is not initialized, route to
+`workflow-workspace-init`. Also route there when required personal paths are
+missing or when legacy `.persona-self/`, `.kai/local.json`, or manifest
+`workspace_kind` state is unresolved. This skill never scaffolds or migrates
+workspace structure itself.
 
-- Read it. Note the `last_extracted` date and existing sources.
+If a profile already exists at `personal/identity/voice.md`:
+
+- Read it. If its frontmatter says `status: stub`, treat it as no profile.
+- Otherwise note the `last_extracted` date and existing sources.
 - Ask the user: refresh fully (re-extract everything), incremental
   (only new data since `last_extracted`), or add a new source to
   the existing profile?
@@ -256,27 +266,51 @@ If no profile exists:
 - Confirm the user's display name and primary language(s) — these
   go into the frontmatter.
 
-### 2. Pull the corpus
+### 2. Pull the workspace-scoped corpus
 
-For session-store:
+For session-store, first identify sessions whose `cwd` is the resolved workspace
+root or a descendant, or whose `repository` matches the current repository.
+Then query turns only for those session IDs and the requested time window.
+Never scan all recent turns by default.
 
 ```sql
-SELECT user_message, timestamp
-FROM turns
-WHERE user_message IS NOT NULL
-  AND length(user_message) > 50
-  AND timestamp > now() - INTERVAL '90 days'
-ORDER BY timestamp DESC
+WITH scoped_sessions AS (
+  SELECT id
+  FROM sessions
+  WHERE created_at > now() - INTERVAL '90 days'
+    AND (
+      lower(COALESCE(cwd, '')) = '<normalized-absolute-workspace-root>'
+      OR starts_with(
+        lower(COALESCE(cwd, '')),
+        '<normalized-absolute-workspace-root><separator>'
+      )
+      OR lower(COALESCE(repository, '')) = '<normalized-current-repository>'
+    )
+)
+SELECT t.user_message, t.timestamp
+FROM turns t
+WHERE t.session_id IN (SELECT id FROM scoped_sessions)
+  AND t.user_message IS NOT NULL
+  AND length(t.user_message) > 50
+  AND t.timestamp > now() - INTERVAL '90 days'
+ORDER BY t.timestamp DESC
 ```
+
+Normalize path separators/case for the host before comparing. Guard nullable
+`cwd` and `repository` values. If the scoped corpus is too small, ask before
+including named additional workspaces or broader session history; record that
+consent and every included workspace in `sources:`.
 
 Cap the corpus at ~50K-100K words. More than that is diminishing
 returns and slows analysis. If the corpus is larger, sample randomly
 across time buckets rather than truncating chronologically.
 
-For GitHub:
+For GitHub, default to the current repository:
 
-- Use `gh` CLI commands listed above. Capture title + body + any
+- Use `gh pr list --repo <owner/repo> --author @me ...` and the equivalent
+  issue/comment commands. Capture title + body + any
   comments authored by the user.
+- Ask before adding another repository.
 
 For pasted samples:
 
@@ -343,9 +377,8 @@ Pick samples that:
 
 ### 7. Write the profile
 
-Render the markdown to `.persona-self/voice.md`. Create the
-`.persona-self/` folder if it doesn't exist. Set the `last_extracted`
-date.
+Render the markdown to `personal/identity/voice.md` only after onboarding
+validated that the directory exists. Set the `last_extracted` date.
 
 If a previous profile existed, **preserve the `manual_overrides:`
 block** verbatim by reading the prior file before writing the new
@@ -361,8 +394,8 @@ one.
   mapping key.
 - After writing, **validate the frontmatter parses as YAML**. Quick
   options (pick what's available on the host):
-    - Node: `node -e "require('js-yaml').load(require('fs').readFileSync('.persona-self/voice.md','utf8').split(/^---\s*$/m)[1])"`
-    - Python: `python -c "import yaml; yaml.safe_load(open('.persona-self/voice.md').read().split('---')[1])"`
+    - Node: `node -e "require('js-yaml').load(require('fs').readFileSync('personal/identity/voice.md','utf8').split(/^---\s*$/m)[1])"`
+    - Python: `python -c "import yaml; yaml.safe_load(open('personal/identity/voice.md').read().split('---')[1])"`
     - PowerShell + ConvertFrom-Yaml (if installed): equivalent
   If validation fails, fix the offending line (usually convert to
   `|` block scalar) and re-validate before reporting back to the user.
@@ -376,7 +409,7 @@ Tell the user:
 - Top 3-5 distinctive style signals found (so they can sanity-check
   the extraction).
 - Whether the `manual_overrides:` block was preserved (if pre-existing).
-- The exact next step: *"Open `.persona-self/voice.md`, skim it,
+- The exact next step: *"Open `personal/identity/voice.md`, skim it,
   edit the `manual_overrides:` block if anything looks wrong, and
   you're ready to invoke `persona-self` for drafting."*
 
@@ -397,21 +430,21 @@ Re-running on an existing profile should be safe. The skill must:
 ## Privacy
 
 The profile contains intimate writing patterns of a specific human.
-Default storage location is `.persona-self/voice.md` — gitignored
+Default storage location is `personal/identity/voice.md` — gitignored
 on creation. The skill must:
 
-- **Create `.persona-self/` if missing** and ensure it's in
-  `.gitignore` (add it if absent).
+- **Require the initialized `personal/identity/` path and privacy contract.**
+  If missing or invalid, route to `workflow-workspace-init`; do not create paths
+  or edit `.gitignore` from this skill.
 - **Never upload the profile** anywhere. No telemetry, no remote
   sync, no LLM training opt-in.
 - **Never include credentials, private business data, or personal
   identifiers** in verbatim samples. Filter aggressively.
 - **Surface borderline samples** to the user before including them.
 
-If the user explicitly says they want the profile git-tracked
-(e.g., a personal private repo they sync between machines), the
-agent can move the file to `library/persona-self/voice.md` and
-remove from `.gitignore` — but only on explicit request.
+Do not offer a tracked-profile escape hatch. `persona-self` consumes only the
+workspace-local ignored path, and removing `/personal/` protection could expose
+unrelated private state.
 
 ## Insufficient-data handling
 
@@ -448,7 +481,7 @@ Don't bluff confident attributes on a thin corpus.
 - ❌ Auto-running on every session. This is a rare-extraction skill;
   re-run is user-triggered.
 - ❌ Storing the profile in `library/` by default. The default is
-  `.persona-self/` (gitignored) for privacy.
+  `personal/identity/` (gitignored) for privacy.
 - ❌ Generating prose sections that read like marketing
   descriptions ("a thoughtful and articulate communicator"). Be
   specific and actionable.

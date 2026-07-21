@@ -101,3 +101,33 @@ requires a real peer when available; do not answer your own scope, assessment,
 architecture, review, or ship question and call it independent. Blocking and
 decision-changing exchanges receive stable question IDs and land in the
 committed item thread.
+
+`@operator` is the reserved human endpoint, not a general fallback. Use it only
+for a classified `decision`, `reply`, or `action` question no kai role owns.
+Proposed-item promotion remains steward work; it does not alert the operator by
+itself.
+
+## Personal front door
+
+`director-executive-assistant` is the operator's default starting point for
+**personal or unclear** intent — distinct from `director-chief-of-staff`, which
+drives team delivery and is invoked directly for a delivery request. A direct
+review, design, or exploration request goes straight to that specialist. It
+routes intent to the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
+for career, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
+retrospective catch-up), consults real roles via `executive-consultation`,
+packages pending operator decisions via `decision-brief`, and assembles the
+forward "what needs you" agenda via `personal-agenda`.
+
+Personal state resolves against the current Kai workspace. Every onboarded
+repository or durable folder contains its own ignored `personal/` lane,
+including `personal/identity/`, inbox, agenda, linked-workspace registry,
+consultation records, and decision records. Additional workspaces are optional
+read-only sources listed in the current workspace's `personal/workspaces.md`.
+
+It is **proactive-surface, never autonomous**: it reads team state read-only,
+writes private inbox/agenda/workspace-registry/consultation/decision records, and
+never answers a team thread, approves scope, sends a message, or deploys on the
+operator's behalf. Load-bearing peer
+answers are bridged into the authoritative item thread by the Chief of Staff or
+owning role. The operator presses every send, approve, and deploy button.

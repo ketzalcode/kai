@@ -109,7 +109,7 @@ If the config doesn't exist, build it **one question at a time** (don't bulk-ask
 3. Which codebase modules to watch, and *what counts as critical* there
    (contract change / new boundary / migration / breaking change)?
 4. Track work items? If yes, which project/area.
-5. Turn on the career page? If yes, confirm `.persona-self/` exists and the
+5. Turn on the career page? If yes, confirm `personal/identity/` exists and the
    target level.
 
 Write the file incrementally (per the skill's schema), confirm the gitignore
@@ -201,7 +201,7 @@ Ask only when it changes the run materially:
 - The window is ambiguous and the cost differs a lot (a day vs. a month).
 - A high-priority channel 404'd or hit auth — surface and ask whether to skip or
   pause.
-- The career page is on but `.persona-self/` is missing — offer to skip Page 3
+- The career page is on but `personal/identity/` is missing — offer to skip Page 3
   or to run career-mentor intake first.
 
 Don't ask: whether to run audio (always offer, never run); whether to commit

@@ -302,6 +302,7 @@ Questions use stable IDs so blocking state can be reconciled:
 ```markdown
 ## QUESTION Q-<item-id>-<NN> <ts> — <from-role> -> @<to-role>
 - status: open
+- kind: fact | decision | reply | action
 - blocking: yes | no
 - context: <why this matters>
 - ask: <one specific question>
@@ -332,6 +333,13 @@ For a blocking question:
 
 Anything decision-changing or cross-session lands on the thread even if it was
 answered live.
+
+`@operator` is the reserved human endpoint. Use it only for `decision`, `reply`,
+or `action` questions that no kai role owns. A `proposed` item does not need the
+operator merely because it awaits promotion: the initiative steward owns
+`proposed -> ready`. The operator appears on the agenda only when an open
+thread question is explicitly addressed to `@operator`, or when
+`workflow-ship` has moved an item to `release-ready`.
 
 ## Dispatch responsibilities
 

@@ -42,8 +42,20 @@ library/
   README.md
   reviews/ dev-designs/ investigations/ briefings/ qa-findings/
   lessons/ digests/ learnings/ releases/ playbooks/
-self/
+personal/
   README.md
+  inbox.md
+  agenda.md
+  workspaces.md
+  consultations/
+  decisions/
+  identity/
+    README.md
+    voice.md
+    career-snapshot.md
+    skills-inventory.md
+    current-work.md
+    career-goals.md
   lessons/ courses/ certs/ growth/
 ```
 
@@ -56,8 +68,13 @@ Install or replace exactly one managed block:
 
 ```gitignore
 # >>> kai workspace (managed by workflow-workspace-init) >>>
+# Raw kai runs and personal material are local-only.
 /.kai/runs/
-/self/
+/personal/
+# Retired local state stays private during explicit migration.
+/.persona-self/
+/.kai/local.json
+# Heavy binaries stay ignored inside the committed library.
 library/**/*.mp3
 library/**/*.har
 library/**/*.zip
@@ -72,24 +89,33 @@ library/**/screenshots/
 writing the block, verify:
 
 - `.kai/runs/` is ignored;
-- `self/` is ignored;
+- `personal/` is ignored;
+- a legacy `.persona-self/` is ignored until migration completes;
+- a legacy `.kai/local.json` is ignored until deletion is approved;
 - `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
   `initiatives/`, and textual `library/` files are not ignored.
 
 If these checks fail, onboarding fails. Do not allow browser or evidence runs
 to write credentials or raw state before ignore validation succeeds.
 
-External mode uses the same structure but modifies `.gitignore` only when the
-external directory is already a Git repository.
+External mode uses the same structure but modifies and verifies `.gitignore`
+only when the external directory is already a Git repository. For a non-Git
+external workspace, report ignore checks as `n/a (not version-controlled)`;
+do not fail onboarding or claim the paths are gitignored.
 
 ## Seed files
 
 ### `.kai/manifest.json`
 
 Use the exact schema from `workspace-conventions`, including fixed roots for
-`.kai/runs`, `coordination`, `initiatives`, `library`, and `self`.
+`.kai/runs`, `coordination`, `initiatives`, `library`, and `personal`.
 Repository mode persists `workspace_root: "."`; external mode persists the
 operator-confirmed absolute root.
+
+If an existing manifest contains the retired `workspace_kind` field, plan an
+idempotent schema migration that removes **only** that field and preserves every
+other value. In a non-empty workspace, show the exact manifest diff with the
+rest of the onboarding plan before applying it.
 
 ### `.kai/CONVENTIONS.md`
 
@@ -149,15 +175,39 @@ milestones, `artifacts/` defaults, deliverable index, and closure summary.
 Document allowed types, required frontmatter, one-way steward-approved
 promotion, provenance, and text-only commit rules.
 
-### `self/README.md`
+### `personal/README.md`
 
-Document the ignored personal lane and explicit promotion to
-`library/lessons/`.
+Document the ignored workspace-local personal lane: operational
+`inbox.md`/`agenda.md`, optional linked-workspace registry, consultation
+records, decision briefs, identity/career files, and learning material. Explain
+that linked workspaces contribute read-only coordination signals and that
+personal material is never promoted automatically.
+
+### Personal operational and identity stubs
+
+Create only when missing:
+
+- `personal/inbox.md` — the `personal-agenda` task/reminder schema.
+- `personal/agenda.md` — derived on demand; not hand-maintained.
+- `personal/workspaces.md` — fenced YAML with `workspaces: []`.
+- `personal/consultations/` — private consultation records.
+- `personal/decisions/` — private operator decision briefs.
+- `personal/identity/README.md` — ownership and privacy of the identity files.
+- `personal/identity/voice.md` — stub owned by `extract-writing-style`, with
+  frontmatter `status: stub`.
+- `personal/identity/career-snapshot.md`,
+  `personal/identity/skills-inventory.md`,
+  `personal/identity/current-work.md`, and
+  `personal/identity/career-goals.md` — stubs owned by
+  `principal-engineer-career-mentor`; each carries `status: stub`.
+
+Never invent identity or career content and never overwrite populated files.
 
 ## Legacy and partial-layout handling
 
 The new contract does not preserve or write legacy roots. If `.ketzal/`,
-`knowledge/`, or operational files under `initiatives/items`,
+`knowledge/`, `.persona-self/`, `.kai/local.json`, or operational files under
+`initiatives/items`,
 `initiatives/threads`, `initiatives/ACTIVE.md`, or `initiatives/BOARD.md`
 exist:
 
@@ -166,6 +216,14 @@ exist:
 3. ask before moving or rewriting user content;
 4. never create both layouts as a compatibility strategy;
 5. never delete the legacy source automatically.
+
+For `.persona-self/`, propose file-for-file moves into `personal/identity/`.
+Do not create fresh identity stubs alongside populated legacy files; migration
+must be explicit so the user's private profile is not forked.
+
+For `.kai/local.json`, report that the pointer is retired and propose deletion.
+Keep it ignored until the operator approves deletion; never expose its
+machine-local absolute path through `git status`.
 
 If a required new path conflicts with an existing file or incompatible
 directory, stop with the exact conflict.

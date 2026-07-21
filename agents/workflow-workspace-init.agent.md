@@ -1,6 +1,6 @@
 ---
 name: workflow-workspace-init
-description: "Run-once kai workspace onboarding workflow. Applies workspace-onboarding and workspace-conventions to create or validate .kai/manifest.json, ignored .kai/runs, global coordination registries, initiative catalog, promoted library, and personal self lane in a target repository or operator-confirmed external root. Idempotent, non-destructive, and intentionally does not create legacy .ketzal or knowledge roots."
+description: "Run-once kai workspace onboarding workflow for any repository or durable standalone folder. Applies workspace-onboarding and workspace-conventions to create or validate .kai/manifest.json, ignored .kai/runs, coordination registries, initiative catalog, promoted library, and complete workspace-local personal/assistant state including identity stubs. Idempotent and non-destructive."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
@@ -25,8 +25,8 @@ paths. You materialize `workspace-conventions` by executing
 4. Create missing structure idempotently; never overwrite, delete, stage,
    commit, or push user content.
 5. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata.
-   `.kai/runs/` and `self/` are ignored.
-6. Do not create `.ketzal/`, `knowledge/`, or coordination files inside
+   `.kai/runs/` and `personal/` are ignored.
+6. Do not create `.ketzal/`, `knowledge/`, `.persona-self/`, or coordination files inside
    `initiatives/`.
 
 ## Workflow
@@ -66,7 +66,10 @@ coordination/{ACTIVE.md,BOARD.md,backlog.md,
 initiatives/{README.md,INDEX.md}
 library/{README.md,reviews/,dev-designs/,investigations/,briefings/,
          qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/}
-self/{README.md,lessons/,courses/,certs/,growth/}
+personal/{README.md,inbox.md,agenda.md,workspaces.md,consultations/,decisions/,
+          identity/{README.md,voice.md,career-snapshot.md,skills-inventory.md,
+                    current-work.md,career-goals.md},
+          lessons/,courses/,certs/,growth/}
 ```
 
 This is a summary; `workspace-onboarding` is authoritative for every seeded
@@ -81,9 +84,11 @@ is already a Git repository.
 
 Verify that:
 
-- `.kai/runs/` and `self/` are ignored;
-- `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
-  `initiatives/`, and textual `library/` entries are trackable.
+- in a Git workspace, `.kai/runs/`, `personal/`, and retired local-state paths
+  are ignored while `.kai/manifest.json`, `.kai/CONVENTIONS.md`,
+  `coordination/`, `initiatives/`, and textual `library/` entries are trackable;
+- in a non-Git external workspace, ignore checks are reported as `n/a` and do
+  not block the structural contract.
 
 On failure, report `Contract: blocked` and do not claim onboarding succeeded.
 
@@ -92,11 +97,16 @@ On failure, report `Contract: blocked` and do not claim onboarding succeeded.
 Confirm:
 
 - `.kai/manifest.json` matches the current fixed schema;
+- a retired manifest `workspace_kind` field was removed without changing other
+  metadata;
 - every coordination registry exists;
 - `initiatives/INDEX.md` contains missing discovered initiative rows without
   duplicate slugs;
 - `library/README.md` contains promotion and provenance rules;
 - no new legacy root was created;
+- a legacy `.kai/local.json` remains ignored until approved deletion;
+- personal operational and identity stubs exist without overwriting populated
+  content;
 - no seeded file was silently overwritten.
 
 ### 6. Report
