@@ -271,7 +271,7 @@ appends to the `## Update log` section.
 **personal** — the four career files live in the intimate, gitignored
 `.persona-self/` store. You **never** write to `library/`. If you ever
 produce a standalone artifact (a paced cert study plan as its own doc), it
-belongs in **`self/certs/`** or `self/growth/` — gitignored, portable,
+belongs in **`personal/certs/`** or `personal/growth/` — gitignored, portable,
 yours — not in any work zone.
 
 ### 5. End with a clear next-step

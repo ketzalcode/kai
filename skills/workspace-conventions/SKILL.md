@@ -73,9 +73,10 @@ when the operator explicitly requested a local throwaway run.
 │  ├─ reviews/        dev-designs/    investigations/   briefings/
 │  ├─ qa-findings/    lessons/        digests/          learnings/
 │  └─ releases/       playbooks/
-└─ self/
+└─ personal/
    ├─ README.md
-   └─ lessons/        courses/        certs/            growth/
+   ├─ inbox.md         agenda.md          # home base; seeded by pal-setup
+   └─ lessons/        courses/            certs/            growth/
 ```
 
 ## Placement model
@@ -87,7 +88,7 @@ when the operator explicitly requested a local throwaway run.
 | `coordination/` | operational state shared across concurrent efforts | committed |
 | `initiatives/<slug>/` | strategic context and outputs owned by one initiative | committed |
 | `library/` | curated outcomes intentionally reusable across initiatives | committed text |
-| `self/` | portable personal career and learning material | ignored |
+| `personal/` | portable personal operational, career, and learning material | ignored |
 
 `coordination/` answers “what is happening now?” `initiatives/` answers “why
 are we doing this, and what did this effort produce?” Work items and threads
@@ -287,8 +288,12 @@ An expansion discovered inside an initiative goes to
 
 ## Personal material
 
-Personal courses, certification notes, career reflections, and private learning
-live under `self/`. Team-relevant material may be promoted explicitly to
+Personal operational state — your `inbox.md` task list and the derived
+`agenda.md` — plus courses, certification notes, career reflections, and
+private learning live under `personal/`. `personal/inbox.md` holds the tasks
+and reminders you own; `personal/agenda.md` is the derived "what needs you"
+view assembled by `personal-agenda`. Both are seeded in the pal home base by
+`workflow-pal-setup`. Team-relevant material may be promoted explicitly to
 `library/lessons/`; it is never promoted automatically.
 
 ## Manifest
@@ -307,7 +312,7 @@ live under `self/`. Team-relevant material may be promoted explicitly to
   "coordination": "coordination",
   "initiatives": "initiatives",
   "library": "library",
-  "self": "self",
+  "personal": "personal",
   "areas": ["qa", "eng", "product", "review", "ship", "ai", "learn", "lessons", "pulse"]
 }
 ```
@@ -324,6 +329,6 @@ create legacy `.ketzal/` or `knowledge/` roots.
 4. Use `.kai/runs/` for raw evidence and scratch.
 5. Use the canonical initiative artifact path for initiative-owned output.
 6. Promote to `library/` only through the explicit promotion rule.
-7. Use `self/` only for personal material.
+7. Use `personal/` only for personal material.
 8. Record exact workspace-root-relative paths; never abbreviate with `.../`.
 9. Never create a root or artifact lane outside this contract.

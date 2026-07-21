@@ -187,7 +187,7 @@ trip-up section.
 Folder: `.kai/runs/lessons/<tutor>/<theme>/<NN>_<slug>/`
 
 **Zone & promotion (see `workspace-conventions`).** A lesson is **personal
-growth**, so it drafts ephemeral here and graduates to **`self/lessons/`**
+growth**, so it drafts ephemeral here and graduates to **`personal/lessons/`**
 (gitignored, yours across machines) when worth keeping — *not* to
 `library/`. Only `--share` it into `library/lessons/` when the lesson is
 genuinely team-relevant work knowledge.

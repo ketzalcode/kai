@@ -27,7 +27,7 @@ __pycache__/
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 # Raw kai runs and personal material are local-only.
 /.kai/runs/
-/self/
+/personal/
 # Heavy binaries stay ignored inside the committed library.
 library/**/*.mp3
 library/**/*.har

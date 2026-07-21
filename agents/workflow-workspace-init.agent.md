@@ -25,7 +25,7 @@ paths. You materialize `workspace-conventions` by executing
 4. Create missing structure idempotently; never overwrite, delete, stage,
    commit, or push user content.
 5. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata.
-   `.kai/runs/` and `self/` are ignored.
+   `.kai/runs/` and `personal/` are ignored.
 6. Do not create `.ketzal/`, `knowledge/`, or coordination files inside
    `initiatives/`.
 
@@ -66,7 +66,7 @@ coordination/{ACTIVE.md,BOARD.md,backlog.md,
 initiatives/{README.md,INDEX.md}
 library/{README.md,reviews/,dev-designs/,investigations/,briefings/,
          qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/}
-self/{README.md,lessons/,courses/,certs/,growth/}
+personal/{README.md,lessons/,courses/,certs/,growth/}
 ```
 
 This is a summary; `workspace-onboarding` is authoritative for every seeded
@@ -81,7 +81,7 @@ is already a Git repository.
 
 Verify that:
 
-- `.kai/runs/` and `self/` are ignored;
+- `.kai/runs/` and `personal/` are ignored;
 - `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
   `initiatives/`, and textual `library/` entries are trackable.
 

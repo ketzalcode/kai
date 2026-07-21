@@ -102,13 +102,14 @@ kai/
 | ---- | ------- |
 | `workflow-pal-setup` | Run-once bootstrapper for a fresh AI pal folder. Seeds private `.persona-self/` stubs, delegates workspace onboarding, then hands off to writing-style and career agents. |
 | `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/self-check/<date>/report.md`. |
-| `workflow-workspace-init` | Idempotent onboarding workflow for `.kai/`, `coordination/`, `initiatives/`, `library/`, and `self/`, including exact ignore validation and legacy-layout detection. |
+| `workflow-workspace-init` | Idempotent onboarding workflow for `.kai/`, `coordination/`, `initiatives/`, `library/`, and `personal/`, including exact ignore validation and legacy-layout detection. |
 | `workflow-initiative-init` | Bounded intake workflow that resolves the target workspace, then turns mission + vision into a proposed north star with stable milestones, success measures, deliverable index, and initial proposed item records. |
 
-### Team direction (`director-*`)
+### Direction (`director-*`)
 
 | Name | Purpose |
 | ---- | ------- |
+| `director-executive-assistant` | Your **personal front door**. Routes any intent to the right specialist (drafting → `persona-self`, career → `principal-engineer-career-mentor`, team delivery → `director-chief-of-staff`, weekly catch-up → `workflow-weekly-pulse`), captures tasks to `personal/inbox.md`, and renders your forward "what needs you" agenda via `personal-agenda`. Proactive-surface, **never autonomous** — you press every send/approve/deploy button. |
 | `director-chief-of-staff` | Human-facing team director. Resolves one visible target workspace, dispatches real principal/workflow agents with that exact root, reconciles handoffs/evidence, maintains board and deliverable indexes, and closes with a stable director summary and exact operator-facing paths. |
 
 ### Engineering (`principal-swe-*`)
@@ -186,7 +187,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `coordination/` for team state, initiative-owned `artifacts/`, promoted `library/`, and personal `self/`. |
+| `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `coordination/` for team state, initiative-owned `artifacts/`, promoted `library/`, and the personal `personal/` lane. |
 | `workspace-onboarding` | Idempotent initialization and validation method used by `workflow-workspace-init`. |
 | `product-exploration` | Neutral live-product mapping method with canonical `initiatives/<slug>/artifacts/product-map.md` placement. |
 | `scope-discipline` | The classify-before-adopt gate. Assessors report honestly; `principal-product-manager` owns scope decisions; `principal-product-designer` and engineering acting roles may refine approved scope but route expanded surfaces, flows, capabilities, or implementation as durable proposals. |
@@ -235,6 +236,12 @@ kai/
 | `generate-html-lesson` | Turns a markdown source into a self-contained offline `index.html` lesson — prose + HTML/CSS diagrams + embedded audio player when available. English visual / Spanish audio by default. Orchestrated by `principal-engineer-teacher`. |
 | `extract-writing-style` | Extracts your writing style from chat history / PR comments / pasted samples into a portable `.persona-self/voice.md` profile for `persona-self`. Idempotent; privacy-first (gitignored by default). |
 
+**Personal:**
+
+| Name | Purpose |
+| ---- | ------- |
+| `personal-agenda` | The method behind `director-executive-assistant`: assembles your forward "what needs you" agenda from `coordination/` signals, `personal/inbox.md`, and cadence nudges into a ranked `personal/agenda.md`. Forward complement to `pulse-digest`; never autonomous. |
+
 More skills and agents are queued; see the roadmap below.
 
 ## Workspace
@@ -261,14 +268,14 @@ every agent resolves the same paths:
 ├─ library/                                promoted cross-initiative outcomes
 │  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
 │     lessons/ digests/ learnings/ releases/ playbooks/
-└─ self/                                   ignored personal growth
+└─ personal/                               ignored personal ops + growth
 ```
 
 - `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
 - `coordination/` holds high-churn cross-effort operational state.
 - `initiatives/` holds strategic intent and outputs owned by one initiative.
 - `library/` holds explicitly promoted outcomes reusable across initiatives.
-- `self/` holds ignored personal learning and career material.
+- `personal/` holds ignored personal ops (`inbox.md`/`agenda.md`), learning, and career material.
 
 Initiative work defaults to its own `artifacts/` tree. Promotion to `library/`
 is explicit, steward-approved, recorded in `deliverables.md`, and one-way:
@@ -319,6 +326,9 @@ The agents fall into a handful of independent flows. The biggest is
 into it or stand on their own. Each diagram is a *scenario*, not a
 mandatory pipeline.
 
+For personal sessions, `director-executive-assistant` (flow 8) is the single
+front door — it routes into these flows and keeps your forward agenda.
+
 **0 · Onboarding (run once per workspace)** — `workflow-workspace-init`
 validates the full workspace contract. For a fresh pal folder,
 `workflow-pal-setup` seeds `.persona-self/` first and delegates onboarding.
@@ -327,7 +337,7 @@ validates the full workspace contract. For a fresh pal folder,
  new pal folder ──► workflow-pal-setup ──► .persona-self/  (identity, gitignored)
  (kc-pal/ms-pal)     (seeds identity)       └─► workflow-workspace-init
  install plugin ──► workflow-workspace-init ──► .kai/ + coordination/
- into a repo                                   + initiatives/ + library/ + self/
+ into a repo                                   + initiatives/ + library/ + personal/
 ```
 
 **0b · North star (optional, spans weeks/months)** — run
@@ -460,6 +470,22 @@ production before using the `shipped` state.
                 (writes via pulse-digest; read-only)                      └─► career-mentor (weigh promotion)
 ```
 
+**8 · Personal front door** — one place to start; it routes into every flow
+above and keeps your forward agenda (what needs you), the complement to the
+weekly pulse (what happened).
+
+```
+ you ──► director-executive-assistant ──┬─► persona-self             (draft in your voice)
+         (routes + keeps your agenda)    ├─► principal-engineer-career-mentor  (career)
+                                         ├─► director-chief-of-staff   (team delivery)
+                                         ├─► workflow-weekly-pulse      (what happened)
+                                         └─► personal-agenda ──► personal/agenda.md
+                                             (coordination signals + personal/inbox.md + nudges)
+                                                  │  ranked "what needs you"
+                                                  ▼
+                                             you decide the next move   (never auto)
+```
+
 **Trigger rules of thumb:**
 
 | Situation | Who fires |
@@ -483,6 +509,8 @@ production before using the `shipped` state.
 | Package existing markdown into HTML + audio lessons | `principal-engineer-teacher` |
 | Author a brand-new lesson from a topic | `principal-engineer-tutor` |
 | Course / cert / long page → narrated audio | `workflow-course-to-audio` |
+| Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
+| Capture a task or reminder | `director-executive-assistant` (→ `personal/inbox.md`) |
 | Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `pulse-digest`) |

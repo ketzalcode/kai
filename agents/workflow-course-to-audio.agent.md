@@ -138,7 +138,7 @@ re-run; audio is paid + slow + worth thinking about before pressing go.
 
 **Zone & promotion (see `workspace-conventions`).** Course extraction is
 **personal learning**: the draft lives ephemeral in `.kai/runs/learn/`, and if
-the user keeps it, it graduates to **`self/courses/`** (gitignored, yours) —
+the user keeps it, it graduates to **`personal/courses/`** (gitignored, yours) —
 *not* to `library/`. Only `--share` into `library/lessons/` when the
 material is team-relevant work knowledge rather than personal study.
 

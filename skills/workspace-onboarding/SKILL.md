@@ -42,7 +42,7 @@ library/
   README.md
   reviews/ dev-designs/ investigations/ briefings/ qa-findings/
   lessons/ digests/ learnings/ releases/ playbooks/
-self/
+personal/
   README.md
   lessons/ courses/ certs/ growth/
 ```
@@ -57,7 +57,7 @@ Install or replace exactly one managed block:
 ```gitignore
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 /.kai/runs/
-/self/
+/personal/
 library/**/*.mp3
 library/**/*.har
 library/**/*.zip
@@ -72,7 +72,7 @@ library/**/screenshots/
 writing the block, verify:
 
 - `.kai/runs/` is ignored;
-- `self/` is ignored;
+- `personal/` is ignored;
 - `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
   `initiatives/`, and textual `library/` files are not ignored.
 
@@ -87,7 +87,7 @@ external directory is already a Git repository.
 ### `.kai/manifest.json`
 
 Use the exact schema from `workspace-conventions`, including fixed roots for
-`.kai/runs`, `coordination`, `initiatives`, `library`, and `self`.
+`.kai/runs`, `coordination`, `initiatives`, `library`, and `personal`.
 Repository mode persists `workspace_root: "."`; external mode persists the
 operator-confirmed absolute root.
 
@@ -149,10 +149,10 @@ milestones, `artifacts/` defaults, deliverable index, and closure summary.
 Document allowed types, required frontmatter, one-way steward-approved
 promotion, provenance, and text-only commit rules.
 
-### `self/README.md`
+### `personal/README.md`
 
-Document the ignored personal lane and explicit promotion to
-`library/lessons/`.
+Document the ignored personal lane — operational `inbox.md`/`agenda.md` plus
+learning material — and explicit promotion to `library/lessons/`.
 
 ## Legacy and partial-layout handling
 
