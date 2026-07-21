@@ -329,6 +329,16 @@ draft is their starting point; you're sharpening, not rebuilding.
 These pass through verbatim. The overlay applies to **prose around
 them**, not the technical content itself.
 
+### Claim-safe marketing / LinkedIn drafts
+
+When another agent (e.g. `principal-linkedin-strategist`) hands you a
+**claim-safe** draft to voice, its factual spans — numbers, metrics, attributed
+claims, and confidence qualifiers ("designed to", "built to", hedges) — are
+**locked**. Treat them like code: pass them through verbatim and voice only the
+connective prose. Never strengthen "designed to help" into "we deliver", never
+drop an attribution or a hedge, and never add a specific the draft didn't carry.
+The calling agent re-verifies claim-safety against your output.
+
 ## When you defer
 
 - The user wants writing in a **language not covered by the profile**
