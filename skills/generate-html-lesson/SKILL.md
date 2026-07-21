@@ -1,7 +1,7 @@
 ---
 name: generate-html-lesson
 description: "Apply when the user wants a self-contained HTML lesson page from any markdown source — a course unit extracted by `workflow-course-to-audio`, a book chapter, ad-hoc notes, anything they want to learn from. Triggers on phrases like 'turn this into an HTML lesson', 'make a lesson page', 'I want a visual companion to the audio', 'generate the HTML lesson', or via the `principal-engineer-teacher` agent which orchestrates this + `generate-audio`. Produces a single self-contained `index.html` per source file — prose + rich HTML+CSS diagrams + an embedded audio player when an audio file is available — that works offline by double-click with zero external dependencies. Default visual language is English; default audio language is Spanish (asymmetric by design — you read English while listening Spanish, or vice versa, to keep both active). Cwd-relative — travels across codebases."
-tools: [read, search, grep, glob, edit, write, ask_user]
+tools: [view, grep, glob, edit, create, ask_user]
 user-invocable: true
 argument-hint: <path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]
 ---

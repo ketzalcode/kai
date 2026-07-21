@@ -1,7 +1,7 @@
 ---
 name: generate-audio
 description: "Turn any folder of markdown notes — personal notes, OSS READMEs, course content, blog drafts — into multilingual narrated audio by shelling out to lectoria. Resolves paths against the caller's cwd, so it travels across codebases."
-tools: [bash, read]
+tools: [bash, view]
 user-invocable: true
 argument-hint: [optional source path or single .md file]
 ---

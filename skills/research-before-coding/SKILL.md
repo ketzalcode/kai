@@ -1,7 +1,7 @@
 ---
 name: research-before-coding
 description: "Apply before making any non-trivial code change. Enforces the user's research discipline: investigate the codebase first, identify module ownership (own/partner/shared), look for reusable code, and surface tradeoffs before writing."
-tools: [read, search, grep, glob, bash]
+tools: [view, grep, glob, bash]
 user-invocable: true
 argument-hint: [optional task or area description]
 ---
