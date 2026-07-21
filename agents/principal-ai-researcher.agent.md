@@ -93,7 +93,7 @@ to build the running covered set in memory.
 
 Concretely, at the start of every run:
 
-1. List the files in `knowledge/briefings/` matching
+1. List the files in `library/briefings/` matching
    `*-briefing.md`.
 2. Read the YAML frontmatter of each. Collect every URL in their
    `sources:` blocks into a `covered_urls` set. Collect every paper
@@ -115,10 +115,10 @@ from the set, but you do not prune on your own.
 
 ## Output shape — briefing mode (the one-pager)
 
-File path (promoted): `knowledge/briefings/<YYYY-MM-DD>-briefing.md`.
+File path (promoted): `library/briefings/<YYYY-MM-DD>-briefing.md`.
 
 **Initiative gating (see `workspace-conventions`).** Before researching, glance
-at `initiatives/ACTIVE.md`. If this topic serves the active initiative's `scope`
+at `coordination/ACTIVE.md`. If this topic serves the active initiative's `scope`
 (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and angle the briefing toward what the initiative needs — then
 stamp `initiative: <slug>` in the promoted frontmatter. If it's general
@@ -127,10 +127,10 @@ context-free.
 
 **Workspace contract (see `workspace-conventions`).** The briefing is a
 **knowledge-default** artifact in the `ai` area. Compose the working draft
-under `.ketzal/ai/landscape/<YYYY-MM-DD-HHMM>-research/briefing.md` (the
-`.ketzal/` working root is gitignored wholesale by `workflow-workspace-init`
+under `<working-root>/ai/landscape/<YYYY-MM-DD-HHMM>-research/briefing.md` (the
+resolved working root is managed by `workflow-workspace-init`
 — you never touch `.gitignore`), then promote the finished one-pager to
-`knowledge/briefings/` carrying the knowledge frontmatter (`type: briefings`
+`<workspace-root>/library/briefings/` carrying library frontmatter (`type: briefings`
 on top of the briefing's own fields). The committed copy is what the next
 run's covered-set ledger reads and what travels via `git pull`.
 
@@ -197,7 +197,7 @@ prose — Lectoria can't pronounce slashes.]
 
 ## Output shape — expanded mode (the deep-dive)
 
-File path: `knowledge/briefings/<YYYY-MM-DD>-expanded-<topic-slug>.md`.
+File path: `library/briefings/<YYYY-MM-DD>-expanded-<topic-slug>.md`.
 
 Triggered when the operator says: *"expand on item N from the
 briefing dated DATE"* or *"deep-dive on <paper title>"* or *"write
@@ -372,13 +372,13 @@ Restate the run in one line and confirm:
 ```
 Mode: briefing
 Covers window: <YYYY-MM-DD to YYYY-MM-DD>  (since last briefing, or last 7 days)
-Output: knowledge/briefings/<YYYY-MM-DD>-briefing.md
+Output: library/briefings/<YYYY-MM-DD>-briefing.md
 Anything you want me to include or exclude this run?
 ```
 
 ### 2. Build the covered set
 
-Glob `knowledge/briefings/*-briefing.md`. For each, read YAML
+Glob `library/briefings/*-briefing.md`. For each, read YAML
 frontmatter. Build `covered_urls` + `covered_ids` sets. Note the
 date of the most recent prior briefing — that anchors your
 covers_window unless the operator overrode it.
@@ -431,12 +431,12 @@ Fix all four before saving.
 
 ### 8. Save and report back
 
-Promote the finished briefing to `knowledge/briefings/<YYYY-MM-DD>-briefing.md`
-(it was drafted under `.ketzal/ai/...`; add the `type: briefings` knowledge
+Promote the finished briefing to `library/briefings/<YYYY-MM-DD>-briefing.md`
+(it was drafted under `<working-root>/ai/...`; add the `type: briefings` knowledge
 frontmatter on promotion). Post back to the operator:
 
 ```
-Briefing saved: knowledge/briefings/<YYYY-MM-DD>-briefing.md
+Briefing saved: library/briefings/<YYYY-MM-DD>-briefing.md
 Window: <YYYY-MM-DD to YYYY-MM-DD>
 Headlines: <count>  ·  Sources: <count>
 Worth expanding into a deep-dive: <item number or "none">
@@ -458,7 +458,7 @@ dated DATE"* or *"deep-dive on <topic/title/URL>"*.
    results, limitations the authors acknowledged.
 4. **Write to the expanded template.** Two to four pages. Same
    Lectoria-friendly rules apply.
-5. **Save** to `knowledge/briefings/<YYYY-MM-DD>-expanded-<topic-slug>.md`.
+5. **Save** to `library/briefings/<YYYY-MM-DD>-expanded-<topic-slug>.md`.
 6. **Add the expanded file's source URL to the covered set** by
    listing it in the file's frontmatter `source:` block — that's
    how it joins the ledger.

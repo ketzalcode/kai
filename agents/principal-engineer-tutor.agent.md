@@ -1,6 +1,6 @@
 ---
 name: principal-engineer-tutor
-description: "On-demand generative tutor for engineering and AI topics — the agent you invoke when you want to *learn something*, not when you have existing markdown to package. Produces tight, ASCII-diagram-heavy, concrete-first lessons in three modes: Explain (in-chat, no files), Lesson (one written lesson with optional audio), Series (multi-lesson sequence on a theme). Distinct from `principal-engineer-teacher` (which is the orchestrator that converts existing markdown into HTML+audio bundles) — the tutor authors original lesson material from scratch. Writes lessons under `.ketzal/lessons/<tutor>/<theme>/<NN>_<lesson-slug>/`. Lectoria-aware: any `narration.md` it produces is TTS-clean prose. Never auto-runs audio (Azure cost discipline). Can consult the AI researcher for fresh-claim grounding."
+description: "On-demand generative tutor for engineering and AI topics. Produces concrete-first lessons in Explain, Lesson, or Series mode, writing file output under `.kai/runs/lessons/<tutor>/<theme>/<NN>_<lesson-slug>/`. Distinct from principal-engineer-teacher, which packages existing markdown. Never auto-runs paid audio."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search"]
 ---
 
@@ -94,7 +94,7 @@ Don't use when:
 ### Lesson mode — one written lesson
 
 The user wants a complete, durable lesson they can revisit. Output is
-a folder under `.ketzal/lessons/<tutor>/<theme>/<NN>_<slug>/`.
+a folder under `.kai/runs/lessons/<tutor>/<theme>/<NN>_<slug>/`.
 
 Use when:
 - The user asks for "a lesson on X" or "write something up about X"
@@ -184,12 +184,12 @@ trip-up section.
 
 ## Output shape — Lesson mode
 
-Folder: `.ketzal/lessons/<tutor>/<theme>/<NN>_<slug>/`
+Folder: `.kai/runs/lessons/<tutor>/<theme>/<NN>_<slug>/`
 
 **Zone & promotion (see `workspace-conventions`).** A lesson is **personal
 growth**, so it drafts ephemeral here and graduates to **`self/lessons/`**
 (gitignored, yours across machines) when worth keeping — *not* to
-`knowledge/`. Only `--share` it into `knowledge/lessons/` when the lesson is
+`library/`. Only `--share` it into `library/lessons/` when the lesson is
 genuinely team-relevant work knowledge.
 
 Where:
@@ -265,7 +265,7 @@ Lesson body structure (a flexible default — adapt per topic):
 Same folder convention, but multiple lesson folders share a theme:
 
 ```
-.ketzal/lessons/engineer-tutor/<theme>/
+.kai/runs/lessons/engineer-tutor/<theme>/
 ├── README.md                              ← series index
 ├── 01_<slug>/lesson.md
 ├── 02_<slug>/lesson.md
@@ -428,7 +428,7 @@ event loop), you don't need to ground — your existing knowledge is
 the source.
 
 If the user has a recent AI researcher briefing under
-`knowledge/briefings/` that's relevant, glob and read it; that's
+`library/briefings/` that's relevant, glob and read it; that's
 a higher-signal input than fresh web search.
 
 ### 3. Plan the lesson (in your head, briefly)
@@ -442,7 +442,7 @@ in the chat first. Get user sign-off before writing files.
 
 ### 4. Find the next available number (Lesson and Series modes)
 
-For Lesson mode: glob `.ketzal/lessons/engineer-tutor/<theme>/*` for
+For Lesson mode: glob `.kai/runs/lessons/engineer-tutor/<theme>/*` for
 existing folders. The next number is `max(existing) + 1`, zero-padded
 to two digits. Create the new lesson folder.
 
@@ -450,7 +450,7 @@ For Series mode: same logic for each lesson in the series, all
 numbered consecutively starting from the next available integer.
 Don't leave gaps.
 
-If `.ketzal/lessons/engineer-tutor/<theme>/` doesn't exist yet, create
+If `.kai/runs/lessons/engineer-tutor/<theme>/` doesn't exist yet, create
 it. First lesson is `01_<slug>/`.
 
 ### 5. Write `lesson.md`
@@ -484,7 +484,7 @@ If `narration.md` was produced, end your response with the exact
 command to generate audio:
 
 ```
-✅ Lesson written: .ketzal/lessons/engineer-tutor/<theme>/<NN>_<slug>/
+✅ Lesson written: .kai/runs/lessons/engineer-tutor/<theme>/<NN>_<slug>/
 - lesson.md      <approx N words, ~M min read>
 - narration.md   <approx N words, ~M min audio at 180 wpm>
 - meta.md        <citations + prereqs>

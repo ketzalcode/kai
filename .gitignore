@@ -24,26 +24,19 @@ __pycache__/
 .env.local
 *.local
 
-# >>> ketzal-swe workspace (managed by workflow-workspace-init) >>>
-# Four-root model (see skills/workspace-conventions):
-#   .ketzal/   = working root  — ephemeral, regenerable — NEVER committed
-#   knowledge/ = knowledge root — durable work outcomes — committed (text only)
-#   initiatives/  = initiatives root  — standing intent (north stars) — committed (text only)
-#   self/      = self root      — portable career/learning — NEVER committed into a work repo
-# Working + self roots: ignore wholesale.
-/.ketzal/
+# >>> kai workspace (managed by workflow-workspace-init) >>>
+# Raw kai runs and personal material are local-only.
+/.kai/runs/
 /self/
-# Heavy binaries stay ignored even inside the committed knowledge + initiatives roots.
-knowledge/**/*.mp3
-knowledge/**/*.har
-knowledge/**/*.zip
-knowledge/**/*.log
-knowledge/**/audio/
-knowledge/**/raw/
-knowledge/**/screenshots/
-knowledge/**/feed.xml
-knowledge/**/episodes.json
-# <<< ketzal-swe workspace <<<
+# Heavy binaries stay ignored inside the committed library.
+library/**/*.mp3
+library/**/*.har
+library/**/*.zip
+library/**/audio/
+library/**/raw/
+library/**/screenshots/
+**/storageState*.json
+# <<< kai workspace <<<
 
 # persona-self: writing-style profile (intimate; never shared, never promoted)
 .persona-self/

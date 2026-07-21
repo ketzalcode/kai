@@ -1,6 +1,6 @@
 ---
 name: workflow-doc-review
-description: "On-demand orchestrator for a substance review of a document a teammate or the operator wrote — design docs, PRDs, RFCs, technical-direction docs, strategy docs, dev-design proposals. Reads the doc, detects its type, decides which review-* dimension skills apply (rationale, alternatives, risks-scope, success-metrics, security-privacy, performance-scale, dependencies, rollout-operability, ux-accessibility), dispatches the relevant ones in parallel, then aggregates their findings into ONE consolidated review at .ketzal/review/<slug>/<run>-doc/review.md with per-finding draft comments. Every dimension inherits the shared doc-review-rigor method (extract load-bearing claims, ground each, classify Holds/Unproven/Inference/Contradicted/Dropped/Noise, run the two value filters). Picky on rationale, assumptions, and success metrics; lets phrasing slide. Partner before critic; verifies before asserting; NEVER auto-posts anywhere. Invoke when you want a thorough multi-lens review of a document before it ships or gets shared."
+description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<slug>/<run>-doc/review.md`; promoted reusable reviews go to library/reviews. Verifies before asserting and never auto-posts."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
@@ -90,24 +90,26 @@ Each is a lens onto the same doc, all sharing `doc-review-rigor`:
 
 ## Output location and shape
 
-Output to: `<repo-root>/.ketzal/review/<doc-slug>/<YYYY-MM-DD-HHMM>-doc/review.md`
+Output to: `<working-root>/review/<doc-slug>/<YYYY-MM-DD-HHMM>-doc/review.md`
 
 - `<doc-slug>` is a slug of the reviewed document.
-- `<repo-root>` is the git root (fall back to `<cwd>/.ketzal/review/`).
+- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+  a dispatch packet or loaded north star wins over this agent's cwd.
 - Timestamp is local 24-hour, e.g. `2026-06-26-1849`.
 
 **Initiative gating (see `workspace-conventions`).** Before reviewing, glance
-at `initiatives/ACTIVE.md`. If the doc under review concerns the active
+at `coordination/ACTIVE.md`. If the doc under review concerns the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and test the doc's argument against it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's an unrelated doc,
 load nothing and review context-free.
 
-**Zone & promotion (see `workspace-conventions`):** `review.md` defaults to
-the **knowledge** zone. Write the working draft at the path above — the
-`.ketzal/` working root is gitignored wholesale by `workflow-workspace-init`,
+**Zone & promotion (see `workspace-conventions`):** reusable `review.md`
+outputs default to the **library** zone. Write the working draft at the path above — the
+`.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated review
-to `knowledge/reviews/<doc-slug>/review.md` with the knowledge frontmatter
+to `library/reviews/<doc-slug>/<YYYY-MM-DD-HHMM>-doc/review.md` with library
+frontmatter
 so it travels via `git pull`. Keep it local-only if the operator passes
 `--local`.
 

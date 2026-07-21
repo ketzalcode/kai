@@ -90,7 +90,7 @@ surprised you — e.g., you expected a module and got a path index).
 
 Hand off to the `web-content-extraction` skill with the resolved
 scope. It will create
-`<repo>/.ketzal/learn/<source-slug>/<timestamp>/` with `module.md`,
+`<workspace>/.kai/runs/learn/<source-slug>/<timestamp>/` with `module.md`,
 `questions.md`, and `source.md`.
 
 Do not duplicate the skill's work. Don't re-extract pages it already
@@ -118,7 +118,7 @@ Post back to the user, in this shape:
 
 ```
 ✅ Extracted: <Module title>
-Folder: <repo>/.ketzal/learn/<source-slug>/<timestamp>/
+Folder: <workspace>/.kai/runs/learn/<source-slug>/<timestamp>/
 - module.md     <N units, ~M words, ~K minutes of audio at 180 wpm>
 - questions.md  <Q questions across U units>
 - source.md     <Status: ok | partial | …>
@@ -137,9 +137,9 @@ Azure tokens. The pattern is: extraction is free + fast + safe to
 re-run; audio is paid + slow + worth thinking about before pressing go.
 
 **Zone & promotion (see `workspace-conventions`).** Course extraction is
-**personal learning**: the draft lives ephemeral in `.ketzal/learn/`, and if
+**personal learning**: the draft lives ephemeral in `.kai/runs/learn/`, and if
 the user keeps it, it graduates to **`self/courses/`** (gitignored, yours) —
-*not* to `knowledge/`. Only `--share` into `knowledge/lessons/` when the
+*not* to `library/`. Only `--share` into `library/lessons/` when the
 material is team-relevant work knowledge rather than personal study.
 
 ### 6. Handle the unhappy paths

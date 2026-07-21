@@ -100,9 +100,16 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `workflow-pal-setup` | Run-once bootstrapper for a fresh AI pal folder (kc-pal/ms-pal) — the identity layer above workspace-init. Seeds `.persona-self/` stubs (voice + career files), gitignores them, delegates the four roots to `workflow-workspace-init`, then hands off to `extract-writing-style` + `principal-engineer-career-mentor` to fill. Idempotent; never overwrites identity. |
-| `workflow-self-check` | On-demand structural-health auditor for the plugin. Read-only — walks `agents/`, `skills/`, and top-level docs and produces one tiered findings report (`.ketzal/self-check/<date>/report.md`): inventory drift, naming, description drift, broken refs, overlap, single-responsibility, discoverability. Never auto-restructures — surfaces findings, the user decides. |
-| `workflow-workspace-init` | Run-once onboarding orchestrator. Scaffolds the four-root layout (`.ketzal/` working · `knowledge/` work outcomes · `initiatives/` north stars · `self/` career), seeds `CONVENTIONS.md` + `manifest.json` + `knowledge/README.md` + `initiatives/README.md` + `ACTIVE.md` + `self/README.md`, and wires `.gitignore`. Idempotent and non-destructive — reports created-vs-kept, never clobbers. Materializes the `workspace-conventions` contract into a fresh repo so no agent has to improvise a path. |
+| `workflow-pal-setup` | Run-once bootstrapper for a fresh AI pal folder. Seeds private `.persona-self/` stubs, delegates workspace onboarding, then hands off to writing-style and career agents. |
+| `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/self-check/<date>/report.md`. |
+| `workflow-workspace-init` | Idempotent onboarding workflow for `.kai/`, `coordination/`, `initiatives/`, `library/`, and `self/`, including exact ignore validation and legacy-layout detection. |
+| `workflow-initiative-init` | Bounded intake workflow that resolves the target workspace, then turns mission + vision into a proposed north star with stable milestones, success measures, deliverable index, and initial proposed item records. |
+
+### Team direction (`director-*`)
+
+| Name | Purpose |
+| ---- | ------- |
+| `director-chief-of-staff` | Human-facing team director. Resolves one visible target workspace, dispatches real principal/workflow agents with that exact root, reconciles handoffs/evidence, maintains board and deliverable indexes, and closes with a stable director summary and exact operator-facing paths. |
 
 ### Engineering (`principal-swe-*`)
 
@@ -114,6 +121,12 @@ kai/
 | `principal-swe-architect` | Owns the decisions that fall *between* the domain engineers — system shape, boundaries, contracts, cross-cutting NFRs. Two modes: single-app approach calls spanning FE+BE+infra (e.g. sync-vs-async), and multi-service/repo boundaries. Investigation-first; owns seams, not domains. Six-disposition taxonomy (Endorse / Reshape / Relocate / Decouple / Defer / Spike). Scarce and surgical. |
 | `principal-swe-manager` | Build-feasibility layer between product intent and the engineers. Turns a committed action into a scoped, sequenced delivery plan — owned, sized workstreams; dependency-driven critical path; spikes for unknowns; scope pushback when cost outruns value. Writes no code. Six-disposition taxonomy (Ship / Slice / Spike / Sequence / Split / Pushback). **Situational** — skip for small or already-sequenced work. |
 
+### Delivery
+
+| Name | Purpose |
+| ---- | ------- |
+| `workflow-ship` | Release orchestrator with explicit PREPARE, CONFIRM-START, and CONFIRM-COMPLETE phases. It gates `release-ready`, records deployment start and successful completion separately, performs/records production verification, and only then marks `shipped`. Kai never performs deployment. |
+
 ### Document review
 
 | Name | Purpose |
@@ -124,7 +137,8 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Defends the working product — smallest change that addresses each finding's underlying need rather than rubber-stamping redesigns. Six-verdict taxonomy (Apply / Reframe / Minimize / Defer / Reject / Investigate). |
+| `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Owns the scope gate and, as default steward, grooms the backlog, promotes and prioritizes work, and truthfully closes initiatives as `completed` or `shipped` after their deliverables are indexed. |
+| `principal-product-designer` | Owns interaction design for PM-approved user needs. Converts the product brief, current product map, and research into the smallest coherent interaction model, states, responsive behavior, accessibility intent, and design acceptance; independently reviews implementations against the approved design. |
 | `principal-product-strategist` | Generative discovery counterpart to the PM. Drives a forward-looking product investigation and proposes a prioritized, evidence-backed catalog of net-new actions (web research + supplied data; no live data queries). Every candidate names the job it serves and its smallest validating experiment. Six-tier taxonomy (Lead / Fast-follow / Bet / Explore / Park / Pass). |
 
 ### AI research → product
@@ -139,13 +153,14 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `principal-engineer-teacher` | Pedagogy orchestrator — turns chaptered/sectioned markdown (course units, book chapters, humanized docs, notes) into paired HTML-visual + audio-narration lessons per source file. Orchestrates `generate-html-lesson` (English visual) + `generate-audio` (Spanish narration). |
-| `principal-engineer-tutor` | Generative tutor for engineering/AI topics — authors original, ASCII-diagram-heavy, concrete-first lessons in three modes (Explain in-chat / Lesson / Series). Distinct from the teacher (which packages existing markdown). Writes under `.ketzal/lessons/`; never auto-runs audio. |
+| `principal-engineer-tutor` | Generative tutor for engineering/AI topics. Writes original lessons under `.kai/runs/lessons/`; never auto-runs audio. |
 | `workflow-course-to-audio` | Turns a course, cert module, or long readable web page into local markdown ready for `generate-audio`. Wraps `web-content-extraction` for the crawl, then offers an explicit audio handoff (never auto-runs — Azure cost). Knowledge-checks split into a separate file so narration stays clean. |
 
-### Web evaluation
+### Product exploration and web evaluation
 
 | Name | Purpose |
 | ---- | ------- |
+| `workflow-product-explore` | Produces neutral, reusable product-navigation facts for other agents; it is not QA, UX evaluation, or design. |
 | `principal-qa-ui` | Senior QA engineer doing deep manual UI testing via Playwright MCP. Hunts objectively broken things — overlap, overflow, broken buttons, console/network errors, focus order, viewport breakage. Defect report via `web-evaluation`. |
 | `principal-seo` | SEO + agentic-search auditor — technical SEO, content-SEO alignment, and agentic-search readiness (llms.txt, schema density, AI-bot directives, JS-blind extractability). Carries a 2026 baseline and refreshes against the live spec each run. Report via `web-evaluation`. |
 | `persona-ux-first-time-user` | Simulates a first-time customer walking a surface via Playwright MCP. Subjective friction + concrete proposals — not a defect log. Report via `web-evaluation`. |
@@ -163,15 +178,22 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `workflow-weekly-pulse` | Turns a week of activity into one short, digestible catch-up digest. Pulls chat/channel messages, the docs posted in them, and critical architectural changes in watched codebase modules across a window, prioritizes by signal, and writes a paged digest via `pulse-digest`: Page 1 (a 100%-narratable Brief, Lectoria-clean), Page 2 (a visual Board — docs-worth-reading table with Read/Skim/Skip, code-watch table, thread-map diagram), optional Page 3 (Career & Visibility — post candidates + senior-promotion signal). Source-agnostic: binds abstract message/doc/code/work-item adapters to whatever connectors the host exposes, with concrete wiring kept in a private, gitignored `.ketzal/pulse/sources.md`. Read-only on every source; never posts/edits/pushes; never auto-runs audio. Hands drafting to `persona-self`, promotion judgment to `principal-engineer-career-mentor`. |
+| `workflow-weekly-pulse` | Produces a privacy-first weekly digest; source bindings stay in ignored `.kai/runs/pulse/sources.md`. |
 
 ### Skills
 
-**Workspace** — the contract every output-producing agent inherits:
+**Workspace & scope** — the shared contracts every acting agent inherits (where work goes, and what it may change):
 
 | Name | Purpose |
 | ---- | ------- |
-| `workspace-conventions` | The shared **where-things-go** contract. Owns the four-root model (gitignored working root `.ketzal/` for ephemeral artifacts; committed `knowledge/` for shareable work outcomes; committed `initiatives/` for scope-gated north stars; gitignored `self/` for portable career/learning), the path grammar (`<root>/<area>/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/<artifact>`), slug/timestamp rules, the area registry, the zone-default table + `--share`/`--local` override, the initiative gating rule, the manifest format, and the knowledge frontmatter schema. Not a trigger skill — agents read it instead of inventing paths; `workflow-workspace-init` materializes it. |
+| `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `coordination/` for team state, initiative-owned `artifacts/`, promoted `library/`, and personal `self/`. |
+| `workspace-onboarding` | Idempotent initialization and validation method used by `workflow-workspace-init`. |
+| `product-exploration` | Neutral live-product mapping method with canonical `initiatives/<slug>/artifacts/product-map.md` placement. |
+| `scope-discipline` | The classify-before-adopt gate. Assessors report honestly; `principal-product-manager` owns scope decisions; `principal-product-designer` and engineering acting roles may refine approved scope but route expanded surfaces, flows, capabilities, or implementation as durable proposals. |
+| `work-coordination` | Authoritative item state under `coordination/items/`, derived board, typed dependencies, leases, durable threads, revision-bound reviews, and truthful completion/shipping. |
+| `definition-of-done` | The shared release-readiness contract. Its six dimensions gate `in-review → release-ready`; production deployment and verification are evidenced afterward before `shipped`. Each dimension resolves Clear / Gap / Waived-with-reason, and gaps bounce with a named owner. |
+| `peer-communication` | One role-addressed QUESTION/ANSWER protocol over inline, live-peer, and durable `coordination/threads/` transports. |
+| `initiative-stewardship` | The shared initiative-ownership contract. The steward approves scope and priority; the Chief of Staff dispatches; principals execute. Milestones require `completed` for knowledge work or `shipped` for production; the initiative ends with the matching truthful status. |
 
 **Engineering craft** — per-change discipline every `principal-swe-*` agent inherits:
 
@@ -203,7 +225,7 @@ kai/
 | ---- | ------- |
 | `web-evaluation` | Shared plumbing for browser-based audit runs (folder layout, screenshots, login-pause, `.gitignore` patching, priority scheme, report scaffold). Invoked by `principal-qa-ui`, `principal-seo`, and `persona-ux-first-time-user`. |
 | `web-content-extraction` | Standardises a Playwright MCP walkthrough of a *readable* site (course modules, docs, articles) and writes clean markdown for downstream use. Owns folder layout, slugs, `.gitignore`, login-pause, knowledge-check detection. Invoked by `workflow-course-to-audio`. |
-| `pulse-digest` | Plumbing behind `workflow-weekly-pulse`. Owns the source-adapter contract (messages / docs / code-watch / work-items → one normalized record shape), the local `.ketzal/pulse/sources.md` binding config, folder layout, privacy-first `.gitignore` (whole tree), week-window resolution, the 0–3 signal-weight rubric, and the page output shapes (narratable Brief / visual Board / optional Career page / overflow) plus a narration-clean `brief.md` for `generate-audio`. Source-agnostic by design. |
+| `pulse-digest` | Plumbing behind `workflow-weekly-pulse`; private bindings and output live under `.kai/runs/pulse/`. |
 
 **Lessons & writing:**
 
@@ -215,53 +237,67 @@ kai/
 
 More skills and agents are queued; see the roadmap below.
 
-## Workspace & knowledge
+## Workspace
 
 Install this plugin into any repo and run **`workflow-workspace-init`** once.
-It lays down a structure every agent then respects, so work never lands in
-random folders. There are **four roots** (defined by the
-`workspace-conventions` skill), split across two axes — *scope* (how broadly
-it applies) and *git* (whether it travels via `git pull`):
+It applies the `workspace-onboarding` and `workspace-conventions` contracts so
+every agent resolves the same paths:
 
 ```
-<repo>/
-├─ .ketzal/      ← working root: ephemeral, regenerable, gitignored
-│   └─ qa/ eng/ product/ review/ ai/ learn/ lessons/ pulse/
-│       └─ <target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/<artifact>
-├─ knowledge/    ← work outcomes: durable, committed, shareable via git
-│   └─ reviews/ dev-designs/ investigations/ briefings/
-│      qa-findings/ lessons/ digests/ learnings/ playbooks/
-├─ initiatives/     ← standing intent: north stars, committed, scope-gated
-│   ├─ ACTIVE.md                 ← which initiative(s) are the current focus
-│   └─ <initiative-slug>/northstar.md · log.md · references.md
-└─ self/         ← portable career/learning: yours, gitignored
-    └─ lessons/ courses/ certs/ growth/
+<workspace>/
+├─ .kai/
+│  ├─ manifest.json + CONVENTIONS.md       committed bootstrap
+│  └─ runs/<area>/<target>/<run>/          ignored raw evidence and scratch
+├─ coordination/
+│  ├─ ACTIVE.md + BOARD.md + backlog.md
+│  ├─ items/<item-id>.md                   authoritative work state
+│  └─ threads/<item-id>.md                 durable handoffs and peer questions
+├─ initiatives/
+│  ├─ INDEX.md
+│  └─ <slug>/
+│     ├─ northstar.md + log.md + backlog.md
+│     ├─ deliverables.md + director-summary.md
+│     └─ artifacts/{product-map.md,briefs/,research/,designs/,decisions/}
+├─ library/                                promoted cross-initiative outcomes
+│  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
+│     lessons/ digests/ learnings/ releases/ playbooks/
+└─ self/                                   ignored personal growth
 ```
 
-- **Working root (`.ketzal/`, configurable)** holds the raw and the scratch
-  — HAR, logs, screenshots, audio, intermediate drafts. Gitignored
-  wholesale; nobody needs to pull your captures.
-- **Knowledge root (`knowledge/`)** holds the curated **work** outcomes worth
-  distributing. Committed, so `git pull` carries the knowledge to other
-  repos and people. Text only — binaries stay ignored even here.
-- **Initiatives root (`initiatives/`)** holds the **north stars** — the durable
-  objectives steering a project over weeks/months. Committed, but
-  **scope-gated**: an agent loads an initiative *only when the current work
-  matches its scope*, so side investigations stay clean. This is how a long
-  effort keeps its strategic context across many sessions.
-- **Self root (`self/`)** holds your **portable career/learning** — certs,
-  courses, lessons you authored to learn. Gitignored, so it never lands in a
-  work repo's git; it's about *you*, not the workspace, and travels with you.
+- `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
+- `coordination/` holds high-churn cross-effort operational state.
+- `initiatives/` holds strategic intent and outputs owned by one initiative.
+- `library/` holds explicitly promoted outcomes reusable across initiatives.
+- `self/` holds ignored personal learning and career material.
 
-Each artifact has a **default zone** by type — the rubric: **knowledge** for
-durable work decisions/inputs meant to be inherited; **local** for
-observational, surface-snapshot output that decays with the moment;
-**self/** for personal growth; **initiatives/** for standing intent. Override
-per run with `--share` / `--local`. Agents resolve every path from this
-contract instead of improvising — that's what keeps a workspace clean across
-both a Microsoft repo and a ketzalcode repo. The boundary (company vs
-personal) is **implicit by placement** — the repo you're in defines it, so
-there's no policy engine, just clear lanes.
+Initiative work defaults to its own `artifacts/` tree. Promotion to `library/`
+is explicit, steward-approved, recorded in `deliverables.md`, and one-way:
+the library path becomes canonical for cross-initiative use while the
+initiative copy remains provenance.
+
+When one agent needs something from another, the **`peer-communication`**
+contract reconciles the three ways that question can travel — a cheap
+**inline consult** (simulate the peer's lane), a **live peer** agent (the
+Copilot CLI's background `task`/`write_agent` messaging, for real
+independent judgment), or a **durable thread** `QUESTION`/`ANSWER` — into
+one rule: transport is a performance choice, the thread is the record.
+Anything that blocks an item, crosses a session, or changes a
+decision lands on the thread, whichever transport carried it live.
+
+The state does not run itself. The **`initiative-stewardship`** contract
+names a **steward** — the initiative's `owner`, `principal-product-manager`
+by default — who approves scope and priority. `director-chief-of-staff`
+dispatches that approved queue, reconciles handoffs, and escalates decisions;
+it does not replace the steward or principals.
+
+For an external product without an accessible repository, intake asks for a
+durable absolute workspace directory before dispatch. Every peer receives that
+same path. Completed initiatives remain discoverable through `INDEX.md`,
+`deliverables.md`, and `director-summary.md`; final reports print exact paths.
+
+Canonical product paths are built in: `artifacts/product-map.md`,
+`artifacts/briefs/<item-id>.md`, `artifacts/research/<item-id>.md`,
+`artifacts/designs/<item-id>.md`, and `artifacts/decisions/<item-id>.md`.
 
 ## How the agents chain
 
@@ -283,37 +319,46 @@ The agents fall into a handful of independent flows. The biggest is
 into it or stand on their own. Each diagram is a *scenario*, not a
 mandatory pipeline.
 
-**0 · Onboarding (run once per workspace)** — before any flow, `workflow-workspace-init` lays down the structure every agent then writes into. For a fresh **pal folder** (kc-pal/ms-pal), `workflow-pal-setup` wraps it: seeds your `.persona-self/` identity first, then delegates the four roots.
+**0 · Onboarding (run once per workspace)** — `workflow-workspace-init`
+validates the full workspace contract. For a fresh pal folder,
+`workflow-pal-setup` seeds `.persona-self/` first and delegates onboarding.
 
 ```
  new pal folder ──► workflow-pal-setup ──► .persona-self/  (identity, gitignored)
- (kc-pal/ms-pal)     (seeds identity,        └─► workflow-workspace-init ──► four roots
-                      delegates roots)
- install plugin ──► workflow-workspace-init ──► .ketzal/   (working root, gitignored)
- into a repo        (scaffolds four roots,     + knowledge/ (committed work outcomes)
-                     seeds CONVENTIONS.md +     + initiatives/  (committed north stars)
-                     READMEs + ACTIVE.md +      + self/      (gitignored career)
-                     reads workspace-conventions)   every later agent resolves paths from here
+ (kc-pal/ms-pal)     (seeds identity)       └─► workflow-workspace-init
+ install plugin ──► workflow-workspace-init ──► .kai/ + coordination/
+ into a repo                                   + initiatives/ + library/ + self/
 ```
 
-**0b · North star (optional, spans weeks/months)** — when you start a long effort, drop an initiative in `initiatives/<slug>/northstar.md` and point `ACTIVE.md` at it. From then on, steering agents load it **only when the work matches its `scope`** — so a side investigation or an unrelated feature never inherits it. The initiative steers prioritization and scoping, and every promoted decision stamps `initiative: <slug>` to keep the trail linked.
+**0b · North star (optional, spans weeks/months)** — run
+`workflow-initiative-init` to turn mission + vision into a proposed north star,
+stable milestones, success measures, and initial items. The steward approves
+and activates it; later agents load it only when work matches its scope.
 
 ```
- start a project ──► initiatives/<slug>/northstar.md ──► ACTIVE.md points here
- (weeks–months)      (goal · non-goals · scope gate)        │
+ mission + vision ──► workflow-initiative-init ──► proposed north star + milestone items
+                                                       │
+                                      PM/steward approves + activates
+                                                       ▼
+                                      coordination/ACTIVE.md points to the north star
                                                             ▼
    any later agent, before substantial work:  target in scope? ──yes──► load + steer toward it
                                                             └──no──► work context-free (no pollution)
 ```
 
-**1 · Product → engineering** — idea or feedback all the way to a shipped, verified slice.
+**1 · Directed product → engineering** — talk to the Chief of Staff; it
+coordinates the triggered graph without taking over specialist decisions.
 
 ```
-            ┌─ principal-product-strategist ─┐   (net-new: propose & prioritize bets)
- idea ──────┤                                ├──► committed action
-            └─ principal-product-manager ────┘   (feedback: triage to smallest change)
-                                                        │
-                                                        ▼
+ operator ─► director-chief-of-staff
+                  │
+                  ├─► workflow-product-explore (when current map absent/stale)
+                  │                 │
+                  ├─► principal-product-manager BRIEF / steward
+                  │                 │ approved need + scope
+                  └─► principal-product-designer
+                                    │ PM acceptance, or explicit design waiver
+                                    ▼
                         principal-swe-architect  ── only when a decision spans
                         (approach / seams / system NFRs)  FE+BE+infra or services
                                                         │
@@ -326,8 +371,20 @@ mandatory pipeline.
                                                         │
                                                         ▼
               principal-qa-ui · persona-ux-first-time-user       (verify, observe)
-                                                        └──────► findings back to the PM
+                                                       │
+                                    findings back to the PM ◄────┤
+                                                       ▼
+              workflow-ship PREPARE ── DoD clear ─► `release-ready` + deploy steps
+                                      gap ─────────► bounce to owner
+                                                       │ human deploys
+                                                       ▼
+              workflow-ship CONFIRM-START ─► `deploying`
+              workflow-ship CONFIRM-COMPLETE ─► production verification ─► `shipped`
 ```
+
+The ship workflow never performs deployment. It prepares the release, then a
+later confirmation pass records your deployment evidence and verifies
+production before using the `shipped` state.
 
 **2 · AI research → applied product** — turn a live-landscape finding into a ticket-grade design, then hand slices to the engineers.
 
@@ -364,7 +421,7 @@ mandatory pipeline.
  chaptered ──► principal-engineer-teacher ──┬─► generate-html-lesson ──► index.html  (English visual)
  markdown      (packages existing source)   └─► generate-audio ────────► MP3         (Spanish narration)
 
- a topic ──► principal-engineer-tutor ──► original lesson written from scratch  (.ketzal/lessons/)
+ a topic ──► principal-engineer-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
             (Explain-in-chat / Lesson / Series modes)
 ```
 
@@ -408,8 +465,11 @@ mandatory pipeline.
 | Situation | Who fires |
 |-----------|-----------|
 | Install the plugin into a fresh repo / re-assert structure | `workflow-workspace-init` (once) |
+| Start a new mission/vision initiative | `workflow-initiative-init`, then PM/steward approval |
+| Drive an item or initiative end to end / resume the team | `director-chief-of-staff` |
 | Net-new opportunity, "what should we build?" | `principal-product-strategist` |
 | Feedback/report to turn into decisions | `principal-product-manager` |
+| "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
 | Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |
 | A decision spans FE+BE+infra, or services/repos | `principal-swe-architect` |
@@ -417,6 +477,7 @@ mandatory pipeline.
 | Small or already-sequenced work | straight to the domain engineer(s) |
 | Build a slice in one domain | `principal-swe-frontend` / `-backend` / `-infra` |
 | Verify a surface objectively / walk it as a customer | `principal-qa-ui` / `persona-ux-first-time-user` |
+| Prepare a built slice / record deployment start / confirm production shipment | `workflow-ship` PREPARE / CONFIRM-START / CONFIRM-COMPLETE |
 | Audit SEO + agentic-search readiness | `principal-seo` |
 | Domain-expert audit of a fitness / nutrition product | `persona-professional-trainer` / `-nutritionist` |
 | Package existing markdown into HTML + audio lessons | `principal-engineer-teacher` |
@@ -427,8 +488,8 @@ mandatory pipeline.
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `pulse-digest`) |
 | Pressure-test the substance of a doc | `workflow-doc-review` (fans out to `review-*`) |
 
-The orchestrating agent (or you) routes — there is no single "lead"
-agent that owns the whole chain.
+`director-chief-of-staff` owns orchestration only. Scope, technical judgment,
+implementation, review, and release approval remain with their named roles.
 
 
 ## Contributing

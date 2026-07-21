@@ -14,7 +14,7 @@ You are invoked deliberately, usually **after** the source markdown
 already exists. Common upstreams:
 
 - **`workflow-course-to-audio`** has just extracted a Microsoft Learn / Coursera
-  / docs module into `.ketzal/learn/<slug>/<timestamp>/raw/<NN-unit>.md`
+  / docs module into `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md`
   — each raw unit is a chapter you can turn into a lesson.
 - The user has pasted or extracted **book chapters** into a folder.
 - The user has **humanized design docs** or other long-form prose they
@@ -100,9 +100,9 @@ to the source set:
 
 Common locations:
 
-- `.ketzal/learn/<slug>/<timestamp>/raw/<NN-unit>.md` (a single module
+- `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md` (a single module
   extracted as separate units)
-- `.ketzal/learn/<slug>/<timestamp>/raw/<NN-module>/<NN-unit>.md` (a
+- `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-module>/<NN-unit>.md` (a
   multi-module learning path; each module is its own folder of units)
 - `<project>/<area>/humanized/chapter-N-*.md` (humanized design docs,
   bongo-style — supported but not required)
@@ -207,8 +207,8 @@ Before declaring done:
 
 **Zone & promotion (see `workspace-conventions`).** Lesson bundles are
 **personal learning** — default them under **`self/lessons/`** (gitignored,
-portable) rather than `knowledge/`. Only `--share` a bundle into
-`knowledge/lessons/` when it's team-relevant work knowledge. (Audio MP3s stay
+portable) rather than `library/`. Only `--share` a bundle into
+`library/lessons/` when it's team-relevant work knowledge. (Audio MP3s stay
 gitignored everywhere; they regenerate on demand.)
 
 Summarize:
@@ -318,11 +318,11 @@ back to this lesson once before moving on"* when that's the truth.
 - Example complete chain:
   ```
   user → workflow-course-to-audio "extract this Learn module"
-       → writes .ketzal/learn/<slug>/<timestamp>/raw/<NN-unit>.md
+       → writes .kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md
 
   user → principal-engineer-teacher "turn it into lessons"
        → invokes generate-audio on raw/ (Spanish, conversational)
        → invokes generate-html-lesson × N (English visual, audio embedded)
-       → produces .ketzal/learn/<slug>/<timestamp>/lessons/<NN-unit>/index.html
+       → produces .kai/runs/learn/<slug>/<timestamp>/lessons/<NN-unit>/index.html
          + audio.mp3 references
   ```
