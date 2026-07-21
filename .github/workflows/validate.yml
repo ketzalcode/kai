@@ -1,0 +1,24 @@
+name: validate
+
+# Guards the plugin contract on every PR and on pushes to main: valid agent /
+# skill frontmatter, name-to-path agreement, and resolvable cross-references.
+# Dependency-free — no install step, so it stays fast.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate plugin contract
+        run: node scripts/validate-plugin.mjs
