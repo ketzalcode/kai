@@ -18,7 +18,9 @@ For product work:
   those facts, for downstream content and creative agents;
 - `principal-product-manager` owns user need, product fit, scope, priority, and
   success;
-- `principal-product-designer` owns interaction design for approved needs;
+- `principal-product-designer` owns interaction design for approved needs,
+  grounded in the app's design system (`design-grounding`) and presented as
+  human-confirmable mockups (`ui-mockup`);
 - `principal-swe-*` own technical design and implementation;
 - `principal-qa-ui` owns independent implementation/system validation.
 
@@ -40,6 +42,10 @@ milestones, success measures, and non-negotiables.
 Any agent that changes product/code inherits `scope-discipline`: implement
 `refine-in-scope`; route `expands-scope` or uncertain changes to the committed
 backlog as a PROPOSAL. Assessors report honestly and do not suppress findings.
+
+Design and frontend agents also inherit `design-grounding`, and the designer
+inherits `ui-mockup`, so visual proposals stay grounded in the app's design
+system and load-bearing options are shown as human-confirmable mockups.
 
 ## Acting-agent loop
 

@@ -138,7 +138,7 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Owns the scope gate and, as default steward, grooms the backlog, promotes and prioritizes work, and truthfully closes initiatives as `completed` or `shipped` after their deliverables are indexed. |
-| `principal-product-designer` | Owns interaction design for PM-approved user needs. Converts the product brief, current product map, and research into the smallest coherent interaction model, states, responsive behavior, accessibility intent, and design acceptance; independently reviews implementations against the approved design. |
+| `principal-product-designer` | Owns interaction design for PM-approved user needs. Converts the product brief, current product map, and research into the smallest coherent interaction model, states, responsive behavior, accessibility intent, and design acceptance; independently reviews implementations against the approved design. Grounds proposals in the app's design system (`design-grounding`) and presents load-bearing options as human-confirmable, offline mockups with a pick-one gate (`ui-mockup`). |
 | `principal-product-strategist` | Generative discovery counterpart to the PM. Drives a forward-looking product investigation and proposes a prioritized, evidence-backed catalog of net-new actions (web research + supplied data; no live data queries). Every candidate names the job it serves and its smallest validating experiment. Six-tier taxonomy (Lead / Fast-follow / Bet / Explore / Park / Pass). |
 
 ### AI research → product
@@ -248,6 +248,13 @@ assistant) is the default; *pushed* updates need an external runner you host.
 | `video-direction` | The method behind `principal-video-director`: turns `product_context.json` + `media_manifest.json` into `creative_brief.md`, timestamped `storyboard.md`, `edit_decision_list.json`, `voiceover_script.md`, and provider-agnostic `ai_video_prompts.json`. Inherits `content-grounding`; plans, never renders. |
 | `pulse-digest` | Plumbing behind `workflow-weekly-pulse`; private bindings and output live under `.kai/runs/pulse/`. |
 
+**Product design** — grounding + human-confirmable mockups behind `principal-product-designer`, with the frontend seam:
+
+| Name | Purpose |
+| ---- | ------- |
+| `design-grounding` | Shared design-system grounding contract for `principal-product-designer` and `principal-swe-frontend`: the human-readable `design-system.md` reference, the consume-vs-derive rule, the neutral `design-system-extract.md` that `workflow-product-explore` fills, the propose-missing-scale bubble-up wired to `scope-discipline`, and the designer/frontend ownership split. |
+| `ui-mockup` | Turns a load-bearing design choice into human-confirmable visual mockups: the ASCII/HTML fidelity ladder, an offline self-contained token-driven mock kit (no CDN/npm, like `generate-html-lesson`), 3–4 options with a recommended pick, and an `ask_user` confirmation gate reachable from DESIGN and REVIEW. |
+
 **Lessons & writing:**
 
 | Name | Purpose |
@@ -287,7 +294,7 @@ every agent resolves the same paths:
 │  └─ <slug>/
 │     ├─ northstar.md + log.md + backlog.md
 │     ├─ deliverables.md + director-summary.md
-│     └─ artifacts/{product-map.md,briefs/,research/,designs/,decisions/}
+│     └─ artifacts/{product-map.md,design-system.md,briefs/,research/,designs/,decisions/}
 ├─ library/                                promoted cross-initiative outcomes
 │  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
 │     lessons/ digests/ learnings/ releases/ playbooks/
@@ -331,8 +338,9 @@ same path. Completed initiatives remain discoverable through `INDEX.md`,
 `deliverables.md`, and `director-summary.md`; final reports print exact paths.
 
 Canonical product paths are built in: `artifacts/product-map.md`,
-`artifacts/briefs/<item-id>.md`, `artifacts/research/<item-id>.md`,
-`artifacts/designs/<item-id>.md`, and `artifacts/decisions/<item-id>.md`.
+`artifacts/design-system.md`, `artifacts/briefs/<item-id>.md`,
+`artifacts/research/<item-id>.md`, `artifacts/designs/<item-id>.md`, and
+`artifacts/decisions/<item-id>.md`.
 
 ## How the agents chain
 
