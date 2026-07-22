@@ -251,7 +251,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `personal-agenda` | The method behind `director-executive-assistant`: assembles your forward "what needs you" agenda from `coordination/` signals, `personal/inbox.md`, and cadence nudges into a ranked `personal/agenda.md`. Forward complement to `pulse-digest`; never autonomous. |
+| `personal-agenda` | The method behind `director-executive-assistant`: owns the `personal/inbox.md` task lifecycle (proposed/open/waiting/snoozed/done with recurrence, reminders, dedup, and least-privilege field sharing) and assembles the ranked forward "what needs you" `personal/agenda.md` from `coordination/` signals, the inbox, and cadence nudges. Forward complement to `pulse-digest`; never autonomous. |
 | `executive-consultation` | Private method for "ask the team and brief me": sends a minimal read-only packet to real roles, records attributed answers under `personal/consultations/`, preserves disagreement/provenance, and bridges load-bearing team answers to the owning coordination thread. |
 | `decision-brief` | Private method for "give me what I need to decide, in one place": turns a decision already waiting on you — an `@operator` `kind: decision` thread question or a `release-ready` deploy gate — into a brief with options, per-role positions, tradeoffs, and a sourced recommendation under `personal/decisions/`. Fills only missing positions via `executive-consultation`; never decides. |
 

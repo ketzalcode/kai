@@ -1,6 +1,6 @@
 ---
 name: personal-agenda
-description: "Assembles the operator's forward 'what needs you' agenda in the current Kai workspace, optionally including enabled roots from personal/workspaces.md. Owns the personal/inbox.md and derived personal/agenda.md schemas, maps explicit @operator decision/reply/action questions plus release-ready items, cadence nudges, ranking, and the never-autonomous output contract."
+description: "Assembles the operator's forward 'what needs you' agenda in the current Kai workspace, optionally including enabled roots from personal/workspaces.md. Owns the personal/inbox.md task lifecycle (proposed/open/waiting/snoozed/done with recurrence, reminders, and deduplication) and the derived personal/agenda.md schema, maps explicit @operator decision/reply/action questions plus release-ready items, cadence nudges, ranking, least-privilege personal-field sharing, and the never-autonomous output contract."
 tools: [bash, view, edit, create, grep, glob]
 ---
 
@@ -101,24 +101,123 @@ Nudges are awareness, never auto-runs. Skip any whose source doesn't exist.
 
 ## `personal/inbox.md` schema
 
-Human-first markdown; the machine part is the checklist. Keep it terse.
+Human-first markdown; a task's **state is the section it sits in**. Keep it terse.
 
 ```markdown
 # Inbox — personal tasks & reminders (local · gitignored)
 
 ## Open
-- [ ] (t-2026-0142) Reply to the design-review invite · due:2026-06-18 · tag:follow-up · link:—
-- [ ] (t-2026-0143) Book the NSCA recert exam · due:2026-07-01 · tag:career · link:—
+- [ ] (t-2026-0142) Reply to the design-review invite · due:2026-06-18 · prio:20 · tag:follow-up · src:manual · link:—
+- [ ] (t-2026-0151) Book the NSCA recert exam · due:2027-07-01 · tag:career · recur:yearly · src:manual · link:—
+
+## Waiting
+- [ ] (t-2026-0144) Legal to approve the contract redline · waiting_on:legal · since:2026-06-10 · remind_at:2026-06-20 · link:—
+
+## Snoozed
+- [ ] (t-2026-0145) Revisit the Q4 planning doc · snooze_until:2026-07-15 · tag:work · link:—
+
+## Proposed   (personal proposals — acknowledge to commit)
+- [ ] (t-2026-0146) Prep for "Roadmap sync" · src:calendar · remind_at:2026-06-18-0900 · ack:no · link:cal:evt-8831
 
 ## Done
 - [x] (t-2026-0140) Send the offsite agenda · done:2026-06-10
+- [x] (t-2026-0143) Book the NSCA recert exam · due:2026-07-01 · tag:career · recur:yearly · done:2026-06-30 · next:t-2026-0151
+- [x] (t-2026-0147) "Vendor demo" invite · src:calendar · resolution:dismissed · closed:2026-06-12
 ```
 
-- `id` is a stable `t-<YYYY>-<NNNN>`; never reuse.
-- `due` / `link` are optional (`—` when absent).
-- `tag` is a free label (`work` · `personal` · `follow-up` · `career` · …).
-- Completing a task moves the line to `## Done` with a `done:` date; never
-  delete history.
+Fields (all except `id` optional; `—` when absent):
+
+- `id` — stable `t-<YYYY>-<NNNN>`; never reused.
+- `due` — target date. `remind_at` — when to resurface (date or `YYYY-MM-DD-HHMM`).
+- `snooze_until` — hidden until this date (required for Snoozed).
+- `prio` — integer, lower runs first (unranked by default).
+- `tag` — free label (`work` · `personal` · `career` · `private` · …).
+- `recur` — `daily` · `weekdays` · `weekly` · `monthly` · `yearly` · `every:<n>d|w|m`.
+- `src` — `manual` (default) · `calendar` · `message` · other adapter.
+- `waiting_on` — the owner a Waiting task is blocked on (required for Waiting);
+  `since` — when it started.
+- `ack` — `no|yes`, required for a Proposed item.
+- `link` — a stable ref: `<workspace>:<item-id>` for a coordination mirror, a URL,
+  or an adapter's external key. It is the task's canonical dedup identity.
+- `next` — on a Done recurring line, the id of the rolled-forward occurrence.
+- `resolution` — on a Done line, `completed` (default) or `dismissed`; `closed` —
+  the dismissal date.
+
+## Task lifecycle
+
+Five states, section-denoted, each with a required field:
+
+- **proposed** — a suggestion (needs `src:` + `ack:no`) from an operator-forwarded
+  or explicitly-configured calendar/message adapter. **Not a commitment**: the
+  operator acknowledges it (→ open) or dismisses it. Never an obligation, and
+  distinct from a coordination `state: proposed` work item (steward-owned).
+- **open** — an active commitment you own; surfaces normally.
+- **waiting** — the underlying deliverable is someone else's (`waiting_on:<owner>`
+  required); only the **chase** is yours, due at `remind_at`.
+- **snoozed** — deferred until `snooze_until` (required); fully excluded from the
+  agenda until then.
+- **done** — closed in `## Done` with `done:` (completed) or `resolution:dismissed`
+  + `closed:` (dismissed proposal). History is append-only.
+
+The skill changes state only in two deterministic, operator-visible ways: an
+explicit operator instruction, and the snooze maturation below. There is **no
+background wake-up** — a snooze matures only when the operator next renders the
+agenda.
+
+### Snooze maturation
+
+On the first render where `now >= snooze_until`, move the task from Snoozed to
+Open (an explicitly permitted housekeeping write) and surface it. Until then it
+is invisible everywhere, including "Cleared since last render".
+
+## Recurrence
+
+A `recur:` task must carry a `due` or `remind_at`. It rolls forward **only on
+completion**:
+
+1. Move the current occurrence to `## Done`, preserving its original fields, and
+   stamp `next:<new-id>`.
+2. Append **exactly one** fresh `open` occurrence with a new id and the next
+   `due`/`remind_at` computed from the rule.
+
+Guards: if the done line already carries a `next:`, the roll-forward already
+happened — do not create another (idempotent). If the schedule is overdue,
+advance to the **first future** slot rather than materializing every missed
+occurrence. Never open a second live occurrence before the current one is done.
+
+## Deduplication and history
+
+- **`link` is identity.** A task's `link` (coordination ref / URL / adapter key)
+  is its canonical dedup key. Never add a task whose `link` already matches a live
+  (proposed/open/waiting/snoozed) line; a matching adapter import updates that
+  line instead. A matching title alone is a **duplicate warning**, not proof.
+- **Suppress a coordination mirror only when it's actually surfaced.** A personal
+  task that `link`s a coordination item is hidden **only if that exact item or
+  question is emitted by Source A in this render** (so it isn't shown twice). If
+  Source A does *not* surface it (e.g. an in-progress item with no open
+  `@operator` question), the personal reminder shows normally — it never silently
+  disappears. Prefer tracking team work in `coordination/`; a personal mirror is
+  for a reminder the team records don't already carry.
+- **Append-only history.** Completing or dismissing moves a line to `## Done`;
+  recurrence rolls forward via `next:`; nothing is deleted.
+
+## Sharing personal fields (least privilege)
+
+Personal fields are private by default. When the assistant delegates a task or
+shares context with a subagent, the disclosed set is **approved ∩ necessary** —
+never the whole inbox, and never more than the role needs to act:
+
+- Default to a **sanitized intent** (what the role must do), not the raw title —
+  a title or date can itself be sensitive.
+- Withheld unless necessary *and* approved: `tag`, `src`, `waiting_on`, `link`,
+  and every unrelated task.
+- A `tag:private` task adds a per-disclosure confirmation gate on top of the
+  above; it is an extra guard, not the only sensitivity control.
+- Record the exact shared fields in the delegation packet so the disclosure is
+  auditable.
+
+This mirrors `executive-consultation`'s minimize-personal-context rule: opt-in
+per field, minimum necessary.
 
 ## `personal/agenda.md` schema
 
@@ -129,7 +228,7 @@ first, then your own commitments, then cadence. Each line = source + exact path
 ```markdown
 # Agenda — what needs you
 **Generated:** <YYYY-MM-DD HH:MM local> · `director-executive-assistant`
-**Signals from:** <workspace label(s)>  ·  **Open tasks:** <N>
+**Signals from:** <workspace label(s)>  ·  **Open:** <N> · **Waiting:** <N> · **Proposed:** <N>
 
 ## ⛔ Decisions blocking others
 - <item-id> (<workspace>) — <one-line decision> [Q-<item-id>-NN] → **assemble a decision brief** (`decision-brief`) · `coordination/threads/<id>.md`
@@ -144,15 +243,27 @@ first, then your own commitments, then cadence. Each line = source + exact path
 - <item-id> — <what's release-ready> → **deploy, then workflow-ship CONFIRM-START** · `coordination/items/<id>.md`
 
 ## ✅ Your tasks
-- [ ] (t-2026-0142) <title> · due:<date> · `personal/inbox.md`
+- [ ] (t-2026-0142) <title> · due:<date> → **<next action>** · `personal/inbox.md`
+
+## 📥 Proposed — acknowledge to commit
+- (t-2026-0146) <title> · src:<calendar|message> · <remind_at> → **accept or dismiss** · `personal/inbox.md`
+
+## ⏳ Waiting — follow-up due
+- (t-2026-0144) <title> · waiting_on:<owner> · chase:<remind_at> → **nudge <owner>** (their deliverable; your follow-up) · `personal/inbox.md`
 
 ## 🔔 Nudges
 - Weekly pulse due (last run <YYYY-Www>) → `workflow-weekly-pulse`
 - Career check-in overdue → `principal-engineer-career-mentor`
 
 ## Cleared since last render   (optional)
-- <what dropped off and why — shipped, answered, done>
+- <what dropped off and why — shipped, answered, done, dismissed>
 ```
+
+Only Source A populates ⛔/✉️/⚡/🚀 (coordination). **Snoozed** tasks never
+appear until `snooze_until` matures them into ✅ Your tasks. A **waiting** task's
+underlying deliverable is *theirs* — only the due chase is your follow-up, and it
+rises only at its `remind_at`. A **proposed** task is a suggestion, never a
+commitment, cleared by an explicit accept or dismiss.
 
 Omit an empty section rather than printing a hollow heading. When nothing
 needs the operator, say exactly that — an empty agenda is a valid, good result.
@@ -163,8 +274,13 @@ needs the operator, say exactly that — an empty agenda is a valid, good result
    dependent item outranks anything private; operator-only actions follow the
    same rule.
 2. **Time-sensitive next.** Nearer due dates and older unanswered questions rise.
-3. **Your tasks** by `due`, undated last.
-4. **Nudges** last — context, not obligations.
+3. **Your tasks** by `prio` then `due`, undated last. Exclude `snoozed` tasks
+   until their `snooze_until`.
+4. **Proposed** items need a quick accept/dismiss — surfaced, but never counted
+   as commitments.
+5. **Waiting on others** is awareness — below your own actions — and rises only
+   at its `remind_at` chase date.
+6. **Nudges** last — context, not obligations.
 
 Rank by *who's blocked and by when*, never by raw recency.
 
@@ -176,7 +292,8 @@ The agenda is a **view**, not a trigger. This skill and its caller:
   the operator's behalf — every item lists the action for the operator (or a
   specialist) to take, and stops there;
 - write only two paths: `personal/agenda.md` (rendered) and `personal/inbox.md`
-  (explicit task capture) — both in the ignored personal lane;
+  (operator-driven capture, acknowledgement, state change, recurrence
+  roll-forward, and snooze maturation) — both in the ignored personal lane;
 - never promote personal state to `library/` or commit it;
 - read `coordination/`, `.kai/runs/pulse/`, and `personal/identity/` strictly
   read-only.
@@ -189,12 +306,14 @@ When a render finishes:
    the ranked sections above.
 2. Every line names its source, an exact workspace-root-relative path, and one
    next action.
-3. Nothing was sent, committed, deployed, or answered; no coordination record
-   changed.
-4. `personal/inbox.md` is unchanged except for an explicit operator task capture.
-5. The caller receives: the agenda path, per-section counts, the single top
-   item, and whether any source (coordination / pulse / persona-self) was
-   absent and skipped.
+3. `snoozed` tasks are absent; `waiting` tasks are shown as others' move, not
+   operator actions; `proposed` tasks are shown as suggestions, not commitments.
+4. No personal task duplicates a coordination signal, and no coordination record
+   changed. Nothing was sent, committed, deployed, or answered.
+5. `personal/inbox.md` is unchanged except for an explicit operator task capture,
+   acknowledgement, state change, or recurrence roll-forward.
+6. The caller receives: the agenda path, per-section counts (open / waiting /
+   proposed), the single top item, and whether any source was absent and skipped.
 
 ## Anti-patterns
 
@@ -204,5 +323,11 @@ When a render finishes:
 - ❌ Inventing a decision or question the `coordination/` records don't show.
 - ❌ Re-narrating the week — that's `pulse-digest`; the agenda is open loops only.
 - ❌ Ordering by recency instead of who's-blocked-and-by-when.
+- ❌ Surfacing a `snoozed` task before its `snooze_until`, or a `proposed` task
+  as if it were a commitment.
+- ❌ Echoing a coordination item as a personal task, or opening a second live
+  occurrence of a recurring task.
+- ❌ Sharing more personal fields with a subagent than the task requires, or
+  sharing a `tag:private` task without explicit go-ahead.
 - ❌ Printing empty sections, or claiming team signals when no `coordination/`
   workspace is resolved.
