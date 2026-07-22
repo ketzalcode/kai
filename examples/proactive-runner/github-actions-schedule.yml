@@ -1,0 +1,88 @@
+# TEMPLATE — copy into YOUR repository's .github/workflows/ (NOT into the kai plugin).
+# kai ships no active workflow; this file lives under examples/ and never runs here.
+#
+# It gives kai a heartbeat: on a cadence it runs `workflow-proactive-scan` (scan
+# phase) against a selected Kai workspace, delivers the emitted payload to your
+# consented channel, then runs the ack phase so the same signal isn't re-sent.
+# kai does the read-only scan + dedupe; this runner schedules, persists state,
+# delivers, and acks.
+
+name: kai-proactive
+
+on:
+  schedule:
+    # Every 30 min, 09:00–18:00 UTC, Mon–Fri. Adjust to your cadence/timezone.
+    - cron: "*/30 9-18 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kai-proactive
+  cancel-in-progress: false
+
+jobs:
+  scan-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Hosted runners start clean and `personal/` is gitignored, so the dedup
+      # ledger MUST be persisted across runs or every signal looks new. Cache it.
+      - name: Restore proactive ledger
+        uses: actions/cache@v4
+        with:
+          path: personal/proactive
+          key: kai-proactive-${{ github.repository }}
+
+      # 1) SCAN (read-only). Replace the placeholder with your host's actual
+      #    non-interactive invocation of workflow-proactive-scan. It writes
+      #    personal/proactive/outbox/<ts>.json and returns the notification_id.
+      - name: kai proactive scan
+        id: scan
+        run: |
+          echo "Invoke your Copilot host here, e.g.:"
+          echo "  copilot --agent workflow-proactive-scan \\"
+          echo "    --input 'phase: scan; selected workspace root: ${{ github.workspace }}'"
+          payload=$(ls -t personal/proactive/outbox/*.json 2>/dev/null | head -n1 || true)
+          if [ -z "$payload" ]; then echo "::error::scan produced no payload"; exit 1; fi
+          echo "payload=$payload" >> "$GITHUB_OUTPUT"
+
+      # 2) DELIVER — only on explicit consent, and fail loudly on HTTP errors.
+      #    channels.md stores a secret_ref (a NAME); the real secret is here.
+      - name: Deliver notification
+        id: deliver
+        env:
+          KAI_NOTIFY_WEBHOOK: ${{ secrets.KAI_NOTIFY_WEBHOOK }}
+        run: |
+          payload="${{ steps.scan.outputs.payload }}"
+          status=$(python3 -c "import json;print(json.load(open('$payload')).get('status',''))")
+          case "$status" in
+            error)   echo "::error::scan status=error"; exit 1 ;;
+            none)    echo "nothing to deliver"; echo "delivered=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            signals|partial) : ;;
+            *)       echo "::error::unexpected status '$status'"; exit 1 ;;
+          esac
+          if grep -Eiq 'consent:[[:space:]]*yes' personal/proactive/channels.md; then :; else
+            echo "no consented channel; leaving payload in outbox"; echo "delivered=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          curl --fail-with-body -sS -X POST -H 'Content-Type: application/json' \
+               --data @"$payload" "$KAI_NOTIFY_WEBHOOK"
+          echo "delivered=true" >> "$GITHUB_OUTPUT"
+
+      # 3) ACK — only after confirmed delivery, so the ledger advances exactly once.
+      - name: kai proactive ack
+        if: steps.deliver.outputs.delivered == 'true'
+        run: |
+          nid=$(python3 -c "import json;print(json.load(open('${{ steps.scan.outputs.payload }}')).get('notification_id',''))")
+          echo "Invoke your host: copilot --agent workflow-proactive-scan \\"
+          echo "  --input 'phase: ack; selected workspace root: ${{ github.workspace }}; notification_id: $nid'"
+
+      # Persist the advanced ledger for the next run.
+      - name: Save proactive ledger
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: personal/proactive
+          key: kai-proactive-${{ github.repository }}

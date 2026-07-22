@@ -49,6 +49,7 @@ personal/
   workspaces.md
   consultations/
   decisions/
+  proactive/
   identity/
     README.md
     voice.md
@@ -192,6 +193,9 @@ Create only when missing:
 - `personal/workspaces.md` — fenced YAML with `workspaces: []`.
 - `personal/consultations/` — private consultation records.
 - `personal/decisions/` — private operator decision briefs.
+- `personal/proactive/` — proactive-scan delivery ledger (`snapshot.json`),
+  `outbox/`, and a `channels.md` stub with `consent: no` by default. Used by an
+  external runner; see `proactive-scan`. Never committed.
 - `personal/identity/README.md` — ownership and privacy of the identity files.
 - `personal/identity/voice.md` — stub owned by `extract-writing-style`, with
   frontmatter `status: stub`.

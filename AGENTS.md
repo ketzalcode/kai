@@ -134,3 +134,10 @@ never answers a team thread, approves scope, sends a message, or deploys on the
 operator's behalf. Load-bearing peer
 answers are bridged into the authoritative item thread by the Chief of Staff or
 owning role. The operator presses every send, approve, and deploy button.
+
+Proactive *delivery* — pushing an update the moment a signal appears — is not
+something a declarative plugin can do itself. It requires an external runner
+(cron, Task Scheduler, a `schedule:` CI job) invoking `workflow-proactive-scan`
+on a cadence; the scan is read-only, deduplicates against a gitignored snapshot,
+and emits a notification for the runner to deliver — never acting. See
+`skills/proactive-scan` and `examples/proactive-runner/`.

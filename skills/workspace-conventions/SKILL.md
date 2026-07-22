@@ -81,6 +81,7 @@ when the operator explicitly requested a local throwaway run.
    ├─ workspaces.md                       # optional linked-workspace registry
    ├─ consultations/                     # private peer-consultation records
    ├─ decisions/                         # private operator decision briefs
+   ├─ proactive/                         # scan snapshot + outbox + channel config (runner)
    ├─ identity/
    │  ├─ README.md     voice.md
    │  └─ career-snapshot.md  skills-inventory.md
