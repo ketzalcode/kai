@@ -109,14 +109,21 @@ do not fail onboarding or claim the paths are gitignored.
 ### `.kai/manifest.json`
 
 Use the exact schema from `workspace-conventions`, including fixed roots for
-`.kai/runs`, `coordination`, `initiatives`, `library`, and `personal`.
-Repository mode persists `workspace_root: "."`; external mode persists the
-operator-confirmed absolute root.
+`.kai/runs`, `coordination`, `initiatives`, `library`, and `personal`, and the
+current `areas` list. Repository mode persists `workspace_root: "."`; external
+mode persists the operator-confirmed absolute root.
 
-If an existing manifest contains the retired `workspace_kind` field, plan an
-idempotent schema migration that removes **only** that field and preserves every
-other value. In a non-empty workspace, show the exact manifest diff with the
-rest of the onboarding plan before applying it.
+**Reconcile an existing manifest to the current schema** rather than patching a
+single field. Plan one idempotent migration that:
+
+- adds any missing fixed-root keys and any `areas` entries the current schema
+  defines but the file lacks (e.g. a workspace predating the `content` area);
+- removes retired fields (e.g. `workspace_kind`);
+- preserves every other value and the operator-confirmed root verbatim.
+
+In a non-empty workspace, show the exact manifest diff with the rest of the
+onboarding plan before applying it. This reconciliation is what "matches the
+current fixed schema" means — a re-run brings an old manifest fully up to date.
 
 ### `.kai/CONVENTIONS.md`
 
@@ -228,6 +235,22 @@ must be explicit so the user's private profile is not forked.
 For `.kai/local.json`, report that the pointer is retired and propose deletion.
 Keep it ignored until the operator approves deletion; never expose its
 machine-local absolute path through `git status`.
+
+For `knowledge/` (an earlier root that mixed research, decisions, and notes),
+**never bulk-move it** — the whole point of the current contract is to split it.
+Classify each artifact and propose a per-item destination, operator-confirmed:
+
+- initiative-scoped research or decisions → `initiatives/<slug>/artifacts/research/`
+  or `initiatives/<slug>/artifacts/decisions/`;
+- cross-initiative reusable outcomes → the matching `library/<type>/`;
+- raw or regenerable scratch → `.kai/runs/`.
+
+An item whose classification is ambiguous stays put until the operator decides;
+do not guess a destination.
+
+For `.ketzal/` (a retired kai home/runs root), propose moving its raw runs and
+evidence under `.kai/runs/` and any committed contract/metadata under `.kai/`,
+operator-confirmed; never recreate `.ketzal/`.
 
 If a required new path conflicts with an existing file or incompatible
 directory, stop with the exact conflict.

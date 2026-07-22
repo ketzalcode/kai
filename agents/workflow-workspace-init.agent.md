@@ -96,9 +96,9 @@ On failure, report `Contract: blocked` and do not claim onboarding succeeded.
 
 Confirm:
 
-- `.kai/manifest.json` matches the current fixed schema;
-- a retired manifest `workspace_kind` field was removed without changing other
-  metadata;
+- `.kai/manifest.json` was reconciled to the current fixed schema — missing
+  fixed roots and `areas` (e.g. `content`) added, retired fields (e.g.
+  `workspace_kind`) removed, and all other values preserved;
 - every coordination registry exists;
 - `initiatives/INDEX.md` contains missing discovered initiative rows without
   duplicate slugs;
