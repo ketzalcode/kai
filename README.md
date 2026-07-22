@@ -175,6 +175,15 @@ kai/
 | `principal-linkedin-strategist` | Turns `principal-product-marketing`'s `product_context.json` into credible, platform-native LinkedIn content — post variants across launch / build-in-public / technical / founder / problem-solution / lessons / user-value angles, a content-angle matrix, and optional calendars and carousels. Grounds every claim in a product-context id; never fabricates traction/revenue/users; routes founder-voice polish to `persona-self`. LinkedIn-only, bilingual-capable, **never auto-publishes**. |
 | `principal-video-director` | Turns `product_context.json` + `media_manifest.json` into a synchronized video creative-direction package — `creative_brief.md`, timestamped `storyboard.md`, structured `edit_decision_list.json`, `voiceover_script.md` with cut/audio-cue markers, and provider-agnostic `ai_video_prompts.json` for missing scenes. Grounds the script via `content-grounding`, distinguishes existing from generated assets, keeps cuts and audio in sync, flags every timing assumption. **Plans, never renders**; no AI provider hard-coded. |
 
+### Proactive delivery (optional external runtime)
+
+kai is declarative and cannot wake itself. On-demand synthesis (the executive
+assistant) is the default; *pushed* updates need an external runner you host.
+
+| Name | Purpose |
+| ---- | ------- |
+| `workflow-proactive-scan` | The bounded workflow an **external runner** (cron / Task Scheduler / a `schedule:` CI job — see `examples/proactive-runner/`) invokes on a cadence. Read-only scans a selected workspace + linked roots for newly-actionable `@operator` signals and release-ready items, diffs against a gitignored `personal/proactive/snapshot.json`, deduplicates, and **emits** a notification payload for the runner to deliver. Takes no action beyond the configured notification. |
+
 ### Personal (your voice & career)
 
 | Name | Purpose |
@@ -254,6 +263,7 @@ kai/
 | `personal-agenda` | The method behind `director-executive-assistant`: owns the `personal/inbox.md` task lifecycle (proposed/open/waiting/snoozed/done with recurrence, reminders, dedup, and least-privilege field sharing) and assembles the ranked forward "what needs you" `personal/agenda.md` from `coordination/` signals, the inbox, and cadence nudges. Forward complement to `pulse-digest`; never autonomous. |
 | `executive-consultation` | Private method for "ask the team and brief me": sends a minimal read-only packet to real roles, records attributed answers under `personal/consultations/`, preserves disagreement/provenance, and bridges load-bearing team answers to the owning coordination thread. |
 | `decision-brief` | Private method for "give me what I need to decide, in one place": turns a decision already waiting on you — an `@operator` `kind: decision` thread question or a `release-ready` deploy gate — into a brief with options, per-role positions, tradeoffs, and a sourced recommendation under `personal/decisions/`. Fills only missing positions via `executive-consultation`; never decides. |
+| `proactive-scan` | The contract behind `workflow-proactive-scan`: the runtime boundary (declarative plugin vs external runner), the read-only signal scan, the `personal/proactive/snapshot.json` diff/dedup (new/changed/overdue), the notification payload, and channels/consent kept gitignored. kai emits; your runner delivers. |
 
 More skills and agents are queued; see the roadmap below.
 
@@ -284,7 +294,7 @@ every agent resolves the same paths:
 └─ personal/                               ignored personal ops + growth
    ├─ inbox.md + agenda.md + workspaces.md
    ├─ identity/{voice.md,career-*.md}
-   └─ consultations/ + decisions/ + lessons/ + courses/ + certs/ + growth/
+   └─ consultations/ + decisions/ + proactive/ + lessons/ + courses/ + certs/ + growth/
 ```
 
 - `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
@@ -292,7 +302,7 @@ every agent resolves the same paths:
 - `initiatives/` holds strategic intent and outputs owned by one initiative.
 - `library/` holds explicitly promoted outcomes reusable across initiatives.
 - `personal/` holds ignored workspace-local assistant state, optional linked
-  workspaces, consultation records, decision briefs, identity/career context,
+  workspaces, consultation records, decision briefs, proactive-scan state, identity/career context,
   and learning.
 
 Initiative work defaults to its own `artifacts/` tree. Promotion to `library/`
@@ -521,6 +531,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
 | Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `principal-video-director` |
+| Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
 | "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
 | Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |
