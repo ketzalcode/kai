@@ -581,6 +581,28 @@ Before opening a PR, run `npm run validate` — a dependency-free structural
 check (valid agent/skill frontmatter, `name`-to-path agreement, and resolvable
 agent/skill cross-references) that also runs in CI on every pull request.
 
+### Versioning & releases
+
+kai follows [semantic versioning](https://semver.org). Updates reach users via
+`/plugin update kai` (or a new session) — Copilot loads the plugin from the repo,
+so the version is descriptive metadata, **not** an update gate. Keep it honest:
+any change to shipped plugin behavior bumps the version **in the same PR**.
+
+| Change | Pre-1.0 (`0.x`) | Post-1.0 |
+| ------ | --------------- | -------- |
+| Breaking (remove/rename an agent or skill, change a consumed contract) | minor (`0.Y.0`) | major (`X.0.0`) |
+| New feature (new agent/skill, additive capability) | minor (`0.Y.0`) | minor (`x.Y.0`) |
+| Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
+| Docs- or test-only | no bump (or patch) | no bump (or patch) |
+
+Cutting `1.0.0` is a deliberate stability milestone, not automatic. Release steps
+(also summarized for agents in `AGENTS.md` → **Releasing this plugin**):
+
+1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in `plugin.json`.
+2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed); refresh the README status stamp.
+3. `npm run validate`, open the PR, merge on green.
+4. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
+
 ## License
 
 [MIT](./LICENSE)
