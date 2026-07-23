@@ -64,6 +64,7 @@ when the operator explicitly requested a local throwaway run.
 │     ├─ director-summary.md
 │     └─ artifacts/
 │        ├─ product-map.md
+│        ├─ design-system.md
 │        ├─ marketing/
 │        ├─ content/
 │        ├─ briefs/
@@ -160,9 +161,9 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 
 | Area | Owners | Flavors |
 |---|---|---|
-| `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
+| `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `extract`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
 | `eng` | SWE architect, manager, frontend, backend, infra | `arch`, `scope`, `frontend`, `backend`, `infra` |
-| `product` | product strategist, product marketing | `strategy`, `marketing` |
+| `product` | product strategist, product marketing, product designer | `strategy`, `marketing`, `mockups` |
 | `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
 | `ship` | workflow-ship | `ship` |
@@ -181,6 +182,9 @@ that initiative:
 | Artifact | Canonical default |
 |---|---|
 | Product surface map | `initiatives/<slug>/artifacts/product-map.md` |
+| Product design system | `initiatives/<slug>/artifacts/design-system.md` |
+| Design-system extract (observed visual facts) | `initiatives/<slug>/artifacts/design-system-extract.md` |
+| Design option mockups | `initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html` |
 | Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
 | Content / creative pack (LinkedIn, video, …) | `initiatives/<slug>/artifacts/content/<item-id>/` |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
