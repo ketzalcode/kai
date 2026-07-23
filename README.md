@@ -15,7 +15,7 @@ services, or MCP servers.
 
 ## Status
 
-`v0.1.0` — the roster spans a full software-engineering org (frontend /
+`v0.2.0` — the roster spans a full software-engineering org (frontend /
 backend / infra / architect / manager), a product pair, an AI
 research-to-product pair, a learning track, a web-evaluation suite, a
 personal voice/career pair, a fan-out **document-review workflow**

@@ -1,7 +1,7 @@
 {
   "name": "kai",
   "description": "Open-source Copilot plugin: senior-engineer principles, framework style guides, reviewer personas, and workflow automations that travel across any codebase.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "RubenSaucedo",
     "url": "https://github.com/RubenSaucedo"
