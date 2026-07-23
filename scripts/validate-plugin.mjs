@@ -2,6 +2,7 @@
 // Contract validator for the kai plugin. Guards what the plugin sells:
 //   • structure — frontmatter, name==path, SKILL.md presence, resolvable
 //     agent/skill and `inherit` references, and plugin.json paths;
+//   • release hygiene — plugin.json and package.json declare the same version;
 //   • host-tool allowlist — every declared `tools:` entry is a real host tool;
 //   • workspace-contract consistency — the managed .gitignore block, the
 //     .kai/runs areas, and the library/<type> set stay in sync across the
@@ -174,6 +175,21 @@ if (!existsSync(pjPath)) {
       if (!pj[key]) err('plugin.json', `missing "${key}" path`);
       else if (!existsSync(join(ROOT, pj[key]))) {
         err('plugin.json', `"${key}" path "${pj[key]}" does not exist`);
+      }
+    }
+    // plugin.json and package.json must carry the same version — a release
+    // bumps both together (see AGENTS.md -> "Releasing this plugin").
+    const pkgPath = join(ROOT, 'package.json');
+    if (existsSync(pkgPath)) {
+      let pkg;
+      try { pkg = JSON.parse(readFileSync(pkgPath, 'utf8')); }
+      catch (e) { err('package.json', `invalid JSON: ${e.message}`); }
+      if (pkg) {
+        if (!pj.version) err('plugin.json', 'missing "version"');
+        if (!pkg.version) err('package.json', 'missing "version"');
+        if (pj.version && pkg.version && pj.version !== pkg.version) {
+          err('plugin.json', `version "${pj.version}" must equal package.json version "${pkg.version}" (bump both together on release)`);
+        }
       }
     }
   }
