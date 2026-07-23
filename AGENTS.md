@@ -103,6 +103,29 @@ at `completed` after acceptance, required reviews, and coordination close.
 Research-only initiatives likewise end at `status: completed`. Never label
 non-production work `shipped`.
 
+## Releasing this plugin
+
+These steps apply **only when your change modifies the kai plugin repo itself**
+(`agents/`, `skills/`, `scripts/`, or `plugin.json`) — never to work done in a
+consumer workspace. Users pull updates with `/plugin update kai`, so the version
+is descriptive metadata, not an update gate; keep it honest anyway.
+
+Any PR that changes shipped plugin behavior must, in the **same PR**:
+
+1. Bump the version in **`plugin.json`** and **`package.json`** together
+   (`npm version <x.y.z> --no-git-tag-version`, then set `plugin.json` to match).
+2. Add a dated **`CHANGELOG.md`** entry under the new version
+   (Added / Changed / Fixed / Removed) and refresh the README status stamp.
+3. Run `npm run validate`, then open the PR.
+
+After it merges to `main`, tag `vX.Y.Z` and cut the matching GitHub release from
+that changelog entry.
+
+Pick the number by semver (full table in README → **Versioning & releases**):
+while pre-1.0, both features and breaking changes are a **minor** bump and fixes
+are a **patch**; after 1.0, breaking changes are **major**, features **minor**,
+fixes **patch**. Docs- or test-only changes need no bump.
+
 ## Communication
 
 Use `peer-communication`. Address roles, not people. Decision-grade judgment
