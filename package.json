@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Skills + scripts wired in this repo. Node deps power web-content-extraction; lectoria (used by generate-audio) is installed globally — see skills/generate-audio/SKILL.md.",
   "private": true,
   "scripts": {
