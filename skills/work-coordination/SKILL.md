@@ -123,6 +123,7 @@ Rules:
   `initiatives/<slug>/artifacts/product-map.md`,
   `initiatives/<slug>/artifacts/marketing/` (bundle directory),
   `initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
+  `initiatives/<slug>/artifacts/customer-success/<item-id>.md` (de-identified signal),
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`,
   `initiatives/<slug>/artifacts/research/<item-id>.md`,
   `initiatives/<slug>/artifacts/designs/<item-id>.md`, or

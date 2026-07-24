@@ -5,8 +5,8 @@
 //   • release hygiene — plugin.json and package.json declare the same version;
 //   • host-tool allowlist — every declared `tools:` entry is a real host tool;
 //   • workspace-contract consistency — the managed .gitignore block, the
-//     .kai/runs areas, and the library/<type> set stay in sync across the
-//     manifest schema and both scaffolds;
+//     .kai/runs areas, initiative artifact directories, and the library/<type>
+//     set stay in sync across the manifest schema and scaffolds;
 //   • fixtures — the sample repository-mode manifest matches the schema.
 // Dependency-free (Node built-ins only) so CI runs it with no install step.
 //
@@ -237,6 +237,7 @@ const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
 const conventions = readIf(join(ROOT, 'skills/workspace-conventions/SKILL.md'));
 const onboarding = readIf(join(ROOT, 'skills/workspace-onboarding/SKILL.md'));
 const wsInit = readIf(join(ROOT, 'agents/workflow-workspace-init.agent.md'));
+const initiativeInit = readIf(join(ROOT, 'agents/workflow-initiative-init.agent.md'));
 const gitignore = readIf(join(ROOT, '.gitignore'));
 
 const toSet = (arr) => new Set(arr);
@@ -304,6 +305,22 @@ if (tableLib && obLib && !setEq(tableLib, obLib)) {
 }
 if (tableLib && wiLib && !setEq(tableLib, wiLib)) {
   err('agents/workflow-workspace-init.agent.md', `library/ types ${JSON.stringify([...wiLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
+}
+
+// 4. Initiative artifact directories must match between the canonical workspace
+//    tree and the bounded workflow that creates an initiative.
+const conventionArtifactsM = conventions && conventions.match(/artifacts\/\r?\n([\s\S]*?)\r?\n├─ library\//);
+const conventionArtifacts = conventionArtifactsM ? dirTokens(conventionArtifactsM[1]) : null;
+const wiArtifactsM = initiativeInit && initiativeInit.match(/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\ncoordination\//);
+const wiArtifacts = wiArtifactsM ? dirTokens(wiArtifactsM[1]) : null;
+if (!conventionArtifacts) {
+  err('skills/workspace-conventions/SKILL.md', 'could not locate the initiative artifacts/ scaffold');
+}
+if (!wiArtifacts) {
+  err('agents/workflow-initiative-init.agent.md', 'could not locate the initiative artifacts/ scaffold');
+}
+if (conventionArtifacts && wiArtifacts && !setEq(conventionArtifacts, wiArtifacts)) {
+  err('agents/workflow-initiative-init.agent.md', `initiative artifact directories ${JSON.stringify([...wiArtifacts].sort())} differ from workspace conventions ${JSON.stringify([...conventionArtifacts].sort())}`);
 }
 
 // ---------------------------------------------------------------------------

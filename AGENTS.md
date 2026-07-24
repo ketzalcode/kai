@@ -18,6 +18,9 @@ For product work:
   those facts, for downstream content and creative agents;
 - `principal-product-manager` owns user need, product fit, scope, priority, and
   success;
+- `principal-customer-success` owns post-sale customer outcomes, adoption,
+  account health, churn/renewal risk, and success plans; it routes product gaps
+  to the PM and never owns pricing, contracts, or customer commitments;
 - `principal-product-designer` owns interaction design for approved needs,
   grounded in the app's design system (`design-grounding`) and presented as
   human-confirmable mockups (`ui-mockup`);
