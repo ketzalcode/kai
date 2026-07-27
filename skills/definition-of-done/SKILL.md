@@ -56,10 +56,13 @@ Dimension 4 **reuses `review-rollout-operability`** — don't re-derive the
 rollout/reversibility questions; apply that lens and record its verdict.
 
 Document lenses are not formal approvals. When `review_requirements` names
-`principal-security` (`independent-security`) or `principal-sre`
-(`reliability-operability`), only their evidence against the exact current
-`change_ref` clears dimensions 3/4. A waived BLOCK/NOT-READY remains visible as
-waived residual risk; it is never relabeled Clear/Ready.
+`principal-security` (`independent-security`), `principal-sre`
+(`reliability-operability`), `principal-privacy-compliance`
+(`privacy-compliance`), or `workflow-experiment-review`
+(`experiment-integrity`), only that owner's evidence against the exact current
+`change_ref` clears the relevant dimension. A waived BLOCK/NOT-READY/GAP/
+COMPROMISED remains visible as waived residual risk; it is never relabeled
+Clear/Ready/Compliant/Sound.
 
 ## The readiness gate rule
 

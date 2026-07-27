@@ -89,7 +89,11 @@ yourself.
 | A support ticket/queue needs incident screening, deduplication, urgency, or owner routing | `workflow-support-triage` |
 | Funnel/activation/retention diagnosis or a bounded growth experiment | `principal-growth` |
 | Metric definition, funnel/cohort analysis, experiment design/readout, or instrumentation gap | `principal-data-analytics` |
+| Independent integrity check of an experiment design or readout before it drives a decision | `workflow-experiment-review` |
+| Pricing model, packaging/tiering, a price change, discount policy, or a monetization experiment | `principal-pricing-monetization` |
+| Synthesizing surveys, NPS/CSAT, reviews, interviews, or feature requests into de-identified signals | `workflow-customer-feedback` |
 | Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
+| Privacy/compliance obligation, DPIA, data-subject rights, retention/consent policy, or framework review | `principal-privacy-compliance` |
 | SLO, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |
 | An active outage, degradation, security/data event, or incident status/recovery decision | `workflow-incident-response` |
 | Career check-in, promotion path, quarterly review, cert plan, visibility | `principal-engineer-career-mentor` |

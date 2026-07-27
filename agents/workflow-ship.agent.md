@@ -56,8 +56,9 @@ match rigor to blast radius.
 1. **Run the whole DoD gate — all six dimensions.** Resolve each to
    **Clear**, **Gap**, or **Waived-with-reason**. Never skip one silently.
    Reuse `review-rollout-operability` for dimension 4, and require the exact
-   revision-bound SRE/security review when the item's `review_requirements` names
-   one.
+   revision-bound review evidence (e.g. `independent-security`,
+   `reliability-operability`, `privacy-compliance`, `experiment-integrity`) for
+   every `review_requirements` entry the item names.
 2. **Any Gap → BOUNCE.** Set the authoritative item back to `in-progress`; if
    it must become `blocked`, first capture its current lifecycle state in
    `resume_state`. Append a `HANDOFF` naming the specific gap and owner, then

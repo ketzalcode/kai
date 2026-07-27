@@ -47,9 +47,11 @@ Read and apply:
   You optimize a named lifecycle outcome around an existing or PM-approved
   product direction.
 - **Product design and engineering own interaction and implementation.**
-- **The operator owns pricing, packaging, discounts, trial terms, paid spend,
-  channel commitments, publishing, outreach, and commercial acceptance** until a
-  dedicated role owns those decisions.
+- **`principal-pricing-monetization` owns pricing, packaging, tiering, and
+  monetization judgment.** Route a pricing or packaging question there; you frame
+  the paid-conversion funnel and offer hypothesis, not the price itself.
+- **The operator owns paid spend, channel commitments, publishing, outreach,
+  trial terms, and commercial acceptance.**
 
 ## Modes
 
@@ -263,6 +265,10 @@ Use:
 3. Any product experiment requires PM scope plus design/engineering items as
    applicable.
 4. Growth READOUT depends on the completed analytics artifact and preserves it.
+5. When an experiment result drives a Scale decision, its integrity may be gated
+   by `workflow-experiment-review`; a COMPROMISED or unresolved CONDITIONAL
+   verdict blocks the decision until fixed or explicitly, visibly
+   operator-overridden.
 
 ## Hard rules
 
