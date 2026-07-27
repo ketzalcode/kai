@@ -1,7 +1,7 @@
 {
   "name": "kai",
-  "description": "Open-source Copilot plugin for coordinated product, engineering, customer-success, review, delivery, and personal workflows across codebases.",
-  "version": "0.3.0",
+  "description": "Open-source Copilot plugin for coordinated product, growth, customer operations, engineering, trust, delivery, and personal workflows across codebases.",
+  "version": "0.4.0",
   "author": {
     "name": "RubenSaucedo",
     "url": "https://github.com/RubenSaucedo"
@@ -13,6 +13,12 @@
     "copilot-plugin",
     "saas",
     "customer-success",
+    "support",
+    "growth",
+    "product-analytics",
+    "security",
+    "sre",
+    "incident-response",
     "engineering-principles",
     "code-review",
     "senior-engineer",

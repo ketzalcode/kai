@@ -10,22 +10,34 @@ lives in `agents/*.agent.md`; shared procedures live in `skills/*/SKILL.md`.
 - **`principal-*`** agents own domain judgment and act within their lane.
 - **`workflow-*`** agents run bounded procedures with a defined start and end.
 
-For product work:
+For product and SaaS operations:
 
 - `workflow-product-explore` owns neutral current-product navigation facts;
 - `principal-product-marketing` owns reusable product-marketing intelligence
   (personas, positioning, differentiators, objections, content angles) built on
   those facts, for downstream content and creative agents;
 - `principal-product-manager` owns user need, product fit, scope, priority, and
-  success;
+  product success measures;
 - `principal-customer-success` owns post-sale customer outcomes, adoption,
   account health, churn/renewal risk, and success plans; it routes product gaps
   to the PM and never owns pricing, contracts, or customer commitments;
+- `workflow-support-triage` owns bounded ticket intake, incident screening,
+  classification, deduplication, urgency, and routing; humans own replies and
+  ticket resolution;
+- `principal-growth` owns aggregate lifecycle diagnosis and bounded growth
+  hypotheses; `principal-data-analytics` owns metric contracts, analytical
+  validity, uncertainty, and causal-status labels;
 - `principal-product-designer` owns interaction design for approved needs,
   grounded in the app's design system (`design-grounding`) and presented as
   human-confirmable mockups (`ui-mockup`);
 - `principal-swe-*` own technical design and implementation;
+- `principal-security` owns security/threat judgment and revision-bound security
+  review; only the operator accepts residual risk;
+- `principal-sre` owns reliability objectives, production readiness, and
+  revision-bound operability review; it does not own release state;
 - `principal-qa-ui` owns independent implementation/system validation.
+- `workflow-incident-response` owns incident declaration, SEV, command, timeline,
+  and recovery coordination; humans execute production actions and send updates.
 
 Do not collapse those judgments into the PM, explorer, or director.
 

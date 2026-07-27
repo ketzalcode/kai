@@ -124,11 +124,20 @@ Rules:
   `initiatives/<slug>/artifacts/marketing/` (bundle directory),
   `initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
   `initiatives/<slug>/artifacts/customer-success/<item-id>.md` (de-identified signal),
+  `initiatives/<slug>/artifacts/support/<item-id>.md` (de-identified signal),
+  `initiatives/<slug>/artifacts/growth/<item-id>.md`,
+  `initiatives/<slug>/artifacts/analytics/<item-id>.md`,
+  `initiatives/<slug>/artifacts/security/<item-id>.md`,
+  `initiatives/<slug>/artifacts/reliability/<item-id>.md`,
+  `initiatives/<slug>/artifacts/incidents/<item-id>.md`,
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`,
   `initiatives/<slug>/artifacts/research/<item-id>.md`,
   `initiatives/<slug>/artifacts/designs/<item-id>.md`, or
   `initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
   override is allowed only inside the resolved workspace and must be recorded.
+  An unaffiliated incident-command item uses
+  `library/investigations/<incident-id>/incident-record.md` for its sanitized
+  closure record; raw incident evidence remains in `.kai/runs/`.
 - **`context_artifacts`** lists exact paths to required factual maps, product
   briefs, designs, decisions, and other inputs. Peers read these instead of
   rediscovering context.
@@ -362,6 +371,22 @@ thread question is explicitly addressed to `@operator`, or when
 
 An acting agent invoked directly may claim and work its own item, but it still
 uses the same record, lease, handoff, and evidence rules.
+
+**Active-incident command exception.** Explicit operator invocation or an
+evidence-backed active-impact handoff from `workflow-support-triage`,
+`workflow-ship`, `principal-security`, or `principal-sre` may create an
+incident-command `knowledge` item directly as `ready`, with
+`priority: 0`, `required_for_milestone: false`, `next_role:
+workflow-incident-response`, and a unique
+`touches: [incident-command:<environment>:<target>]`. This exception authorizes
+only command, evidence, and operator-decision coordination. Mitigations, fixes,
+security controls, or follow-up product/operational changes remain separate
+`proposed` items until their normal owner/steward promotes them.
+
+An abort/rollback already approved in an active `workflow-ship` record remains
+on that original item and lifecycle; incident command may coordinate the
+decision and evidence but must not create a duplicate rollback item. New
+persistent remediation or a novel production change remains proposed scope.
 
 ## Backlog
 

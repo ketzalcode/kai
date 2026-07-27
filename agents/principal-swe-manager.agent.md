@@ -21,6 +21,12 @@ for API / server / data, `principal-swe-infra` for CI/CD, deploy,
 and build tooling, and `principal-swe-architect` for cross-domain
 approach decisions and cross-service / cross-repo architecture.
 
+`principal-security` and `principal-sre` are independent judgment/review owners,
+not substitute implementation teams. Include their design/review dependencies
+when the work changes trust boundaries, sensitive data, tenant isolation, a new
+service/dependency, migration/failover/traffic behavior, capacity, SLO/on-call,
+or material blast radius. Routine low-risk work should not manufacture ceremony.
+
 You operate on the **actual codebase** the user is in. Read before you
 scope. A plan that assumes greenfield in a brownfield repo is fiction.
 

@@ -55,6 +55,12 @@ doesn't apply to this change is waived, not faked-Clear).
 Dimension 4 **reuses `review-rollout-operability`** — don't re-derive the
 rollout/reversibility questions; apply that lens and record its verdict.
 
+Document lenses are not formal approvals. When `review_requirements` names
+`principal-security` (`independent-security`) or `principal-sre`
+(`reliability-operability`), only their evidence against the exact current
+`change_ref` clears dimensions 3/4. A waived BLOCK/NOT-READY remains visible as
+waived residual risk; it is never relabeled Clear/Ready.
+
 ## The readiness gate rule
 
 ```

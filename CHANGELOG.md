@@ -4,6 +4,35 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.4.0] - 2026-07-27
+
+Kai's Core SaaS operating team is complete. The roster now contains **40 agents
+and 38 skills**.
+
+### Added
+- **Support triage workflow**: `workflow-support-triage` screens incident and
+  security candidates first, classifies/deduplicates supplied tickets, assigns
+  impact-based urgency, and routes each item without replying, resolving, or
+  leaking account material.
+- **Growth and decision analytics principals**: `principal-growth` owns bounded
+  lifecycle hypotheses and readout recommendations;
+  `principal-data-analytics` owns metric contracts, data quality, uncertainty,
+  causal-status labels, supplied-data analysis, and instrumentation gaps.
+- **Security, SRE, and incident command**: `principal-security` owns defensive
+  threat/control judgment, `principal-sre` owns reliability/readiness evidence,
+  and `workflow-incident-response` coordinates one SEV/timeline with real domain
+  leads and human-executed action packets.
+
+### Changed
+- Added the `support` raw-run area plus canonical initiative lanes for support,
+  growth, analytics, security, reliability, and sanitized incident records.
+- Director, PM, product/customer, engineering, QA, ship, DoD, and review
+  contracts now preserve the new ownership seams and revision-bound
+  security/SRE evidence.
+- Active incident command may create a priority-zero knowledge item directly,
+  but remediation and follow-up scope still follow normal stewardship and ship
+  gates.
+
 ## [0.3.0] - 2026-07-24
 
 Kai's SaaS operating team gains its first customer-operations principal. The
@@ -79,6 +108,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[0.3.0]: https://github.com/RubenSaucedo/kai/compare/v0.2.0...v0.3.0
+[0.4.0]: https://github.com/RubenSaucedo/kai/compare/14281b3c80bd8c06f22ee3ca4ab81a6b89dc7aee...v0.4.0
+[0.3.0]: https://github.com/RubenSaucedo/kai/commit/14281b3c80bd8c06f22ee3ca4ab81a6b89dc7aee
 [0.2.0]: https://github.com/RubenSaucedo/kai/releases/tag/v0.2.0
 [0.1.0]: https://github.com/RubenSaucedo/kai/commit/d85cf51

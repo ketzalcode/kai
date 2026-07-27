@@ -68,6 +68,12 @@ when the operator explicitly requested a local throwaway run.
 │        ├─ marketing/
 │        ├─ content/
 │        ├─ customer-success/
+│        ├─ support/
+│        ├─ growth/
+│        ├─ analytics/
+│        ├─ security/
+│        ├─ reliability/
+│        ├─ incidents/
 │        ├─ briefs/
 │        ├─ research/
 │        ├─ designs/
@@ -163,11 +169,12 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | Area | Owners | Flavors |
 |---|---|---|
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `extract`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
-| `eng` | SWE architect, manager, frontend, backend, infra | `arch`, `scope`, `frontend`, `backend`, `infra` |
-| `product` | product strategist, product marketing, product designer, customer success | `strategy`, `marketing`, `mockups`, `customer-success` |
+| `eng` | SWE architect, manager, frontend, backend, infra, security, SRE | `arch`, `scope`, `frontend`, `backend`, `infra`, `security`, `sre` |
+| `product` | product strategist, product marketing, product designer, customer success, growth, data analytics | `strategy`, `marketing`, `mockups`, `customer-success`, `growth`, `analytics` |
+| `support` | workflow-support-triage | `triage` |
 | `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
-| `ship` | workflow-ship | `ship` |
+| `ship` | workflow-ship, workflow-incident-response | `ship`, `incident` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |
 | `learn` | course-to-audio and teacher | target-specific |
 | `lessons` | engineer tutor | tutor/theme-specific |
@@ -189,6 +196,12 @@ that initiative:
 | Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
 | Content / creative pack (LinkedIn, video, …) | `initiatives/<slug>/artifacts/content/<item-id>/` |
 | De-identified customer-success signal | `initiatives/<slug>/artifacts/customer-success/<item-id>.md` |
+| De-identified support signal | `initiatives/<slug>/artifacts/support/<item-id>.md` |
+| Growth diagnosis / experiment brief | `initiatives/<slug>/artifacts/growth/<item-id>.md` |
+| Analytics metric contract / readout | `initiatives/<slug>/artifacts/analytics/<item-id>.md` |
+| Sanitized security assessment / control brief | `initiatives/<slug>/artifacts/security/<item-id>.md` |
+| Sanitized reliability assessment / SLO brief | `initiatives/<slug>/artifacts/reliability/<item-id>.md` |
+| Sanitized incident record | `initiatives/<slug>/artifacts/incidents/<item-id>.md` |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |
@@ -202,6 +215,11 @@ resolved workspace and the item records the reason.
 
 Unaffiliated durable work goes to the matching `library/<type>/` location
 rather than creating an artificial initiative.
+
+A sanitized unaffiliated incident closure record uses
+`library/investigations/<incident-id>/incident-record.md`. This is the explicit
+exception to initiative-first promotion because emergency command may have no
+initiative; the raw incident dossier still remains in `.kai/runs/`.
 
 ## Promotion to the library
 
@@ -233,7 +251,7 @@ Rules:
 |---|---|
 | Document review | `library/reviews/` |
 | Engineering or architecture decision | `library/dev-designs/` |
-| Product/strategy investigation | `library/investigations/` |
+| Product/strategy investigation or sanitized unaffiliated incident record | `library/investigations/` |
 | AI landscape briefing | `library/briefings/` |
 | Promoted QA/persona finding | `library/qa-findings/` |
 | Team-shareable lesson | `library/lessons/` |
@@ -370,7 +388,7 @@ automatically.
   "initiatives": "initiatives",
   "library": "library",
   "personal": "personal",
-  "areas": ["qa", "eng", "product", "review", "ship", "ai", "learn", "lessons", "pulse", "content"]
+  "areas": ["qa", "eng", "product", "support", "review", "ship", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
 

@@ -14,6 +14,11 @@ Inherits **`doc-review-rigor`** — extract load-bearing claims, ground
 each, classify, run the two value filters. This skill adds *what to hunt
 for* in shipping and running the thing.
 
+> Scope note: this is a document/release lens, not formal SRE approval. New
+> services/dependencies, migrations, failover/traffic changes, capacity/SLO/
+> on-call changes, or materially changed blast radius may require an exact
+> revision-bound `principal-sre` review.
+
 ## When this lens applies
 
 Any doc that proposes putting something into production: a new service
