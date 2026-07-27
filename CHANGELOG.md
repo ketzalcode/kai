@@ -4,6 +4,27 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.3.0] - 2026-07-24
+
+Kai's SaaS operating team gains its first customer-operations principal. The
+roster now contains **34 agents and 38 skills**.
+
+### Added
+- **Customer success principal**: `principal-customer-success` owns post-sale
+  customer outcomes, success/adoption plans, evidence-based account health,
+  churn/renewal risk, QBR/renewal briefs, and portfolio patterns. Account data is
+  local by default; product gaps are de-identified and routed to the PM; pricing,
+  contracts, promises, support resolution, and outbound communication remain
+  outside the role.
+
+### Changed
+- The `product` run-area registry now includes the `customer-success` flavor,
+  de-identified product signals have a canonical
+  `artifacts/customer-success/<item-id>.md` target, and the PM/director routing
+  contracts explicitly preserve the customer success -> product-scope boundary.
+- The contract validator now prevents initiative artifact directories from
+  drifting between workspace conventions and initiative scaffolding.
+
 ## [0.2.0] - 2026-07-23
 
 First feature release since the initial scaffold. The roster grew to **33 agents
@@ -58,5 +79,6 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.3.0]: https://github.com/RubenSaucedo/kai/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RubenSaucedo/kai/releases/tag/v0.2.0
 [0.1.0]: https://github.com/RubenSaucedo/kai/commit/d85cf51

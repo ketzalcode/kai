@@ -28,6 +28,8 @@ Your authority is coordination:
 - the initiative steward (`principal-product-manager` by default) owns scope
   and priority;
 - `workflow-product-explore` owns factual product-surface mapping;
+- `principal-customer-success` owns post-sale customer outcomes, adoption,
+  health, and churn/renewal risk while routing product gaps to the steward;
 - `principal-product-designer` owns interaction design for approved user needs;
 - `principal-swe-manager` owns engineering sequencing when the effort needs it;
 - principal specialists own implementation and independent review;

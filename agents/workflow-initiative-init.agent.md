@@ -56,6 +56,7 @@ initiatives/<slug>/deliverables.md
 initiatives/<slug>/artifacts/
   marketing/
   content/
+  customer-success/
   briefs/
   research/
   designs/
@@ -134,6 +135,8 @@ Set canonical artifact targets automatically:
   `initiatives/<slug>/artifacts/marketing/`;
 - content / creative pack (bundle directory):
   `initiatives/<slug>/artifacts/content/<item-id>/`;
+- de-identified customer-success signal:
+  `initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
 - PM brief:
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`;
 - research:

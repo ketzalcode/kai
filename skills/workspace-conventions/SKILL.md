@@ -67,6 +67,7 @@ when the operator explicitly requested a local throwaway run.
 │        ├─ design-system.md
 │        ├─ marketing/
 │        ├─ content/
+│        ├─ customer-success/
 │        ├─ briefs/
 │        ├─ research/
 │        ├─ designs/
@@ -163,7 +164,7 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 |---|---|---|
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `extract`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
 | `eng` | SWE architect, manager, frontend, backend, infra | `arch`, `scope`, `frontend`, `backend`, `infra` |
-| `product` | product strategist, product marketing, product designer | `strategy`, `marketing`, `mockups` |
+| `product` | product strategist, product marketing, product designer, customer success | `strategy`, `marketing`, `mockups`, `customer-success` |
 | `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
 | `ship` | workflow-ship | `ship` |
@@ -187,6 +188,7 @@ that initiative:
 | Design option mockups | `initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html` |
 | Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
 | Content / creative pack (LinkedIn, video, …) | `initiatives/<slug>/artifacts/content/<item-id>/` |
+| De-identified customer-success signal | `initiatives/<slug>/artifacts/customer-success/<item-id>.md` |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |

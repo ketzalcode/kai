@@ -15,17 +15,13 @@ services, or MCP servers.
 
 ## Status
 
-`v0.2.0` — the roster spans a full software-engineering org (frontend /
-backend / infra / architect / manager), a product pair, an AI
-research-to-product pair, a learning track, a web-evaluation suite, a
-personal voice/career pair, a fan-out **document-review workflow**
-(`workflow-doc-review`) backed by a shared rigor method and nine
-`review-*` dimension skills, and a **weekly catch-up workflow**
-(`workflow-weekly-pulse`) backed by the `pulse-digest` skill — plus the
-shared skills they all lean on. Underpinning all of it is a **workspace
-contract** (`workspace-conventions` + `workflow-workspace-init`) so agents
-write to known places, not random folders. Full inventory below; the
-roadmap lists what's queued next.
+`v0.3.0` — **34 agents and 38 skills**, now including
+`principal-customer-success` as the first SaaS customer-operations role:
+evidence-based success plans, adoption and health reviews, churn/renewal risk,
+and QBR briefs with strict product-scope, privacy, commercial, and outbound
+boundaries. The broader roster spans product, engineering, QA, delivery,
+research, content, learning, and personal workflows, all grounded in the shared
+workspace and coordination contracts below.
 
 ## Install
 
@@ -140,6 +136,12 @@ kai/
 | `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Owns the scope gate and, as default steward, grooms the backlog, promotes and prioritizes work, and truthfully closes initiatives as `completed` or `shipped` after their deliverables are indexed. |
 | `principal-product-designer` | Owns interaction design for PM-approved user needs. Converts the product brief, current product map, and research into the smallest coherent interaction model, states, responsive behavior, accessibility intent, and design acceptance; independently reviews implementations against the approved design. Grounds proposals in the app's design system (`design-grounding`) and presents load-bearing options as human-confirmable, offline mockups with a pick-one gate (`ui-mockup`). |
 | `principal-product-strategist` | Generative discovery counterpart to the PM. Drives a forward-looking product investigation and proposes a prioritized, evidence-backed catalog of net-new actions (web research + supplied data; no live data queries). Every candidate names the job it serves and its smallest validating experiment. Six-tier taxonomy (Lead / Fast-follow / Bet / Explore / Park / Pass). |
+
+### Customer success
+
+| Name | Purpose |
+| ---- | ------- |
+| `principal-customer-success` | Post-sale SaaS customer-outcomes principal. Produces evidence-based success/adoption plans, health and churn/renewal risk reviews, QBR briefs, and portfolio patterns. Keeps account-specific material local, routes de-identified product gaps to the PM, and never owns support resolution, pricing, contracts, promises, or outbound communication. |
 
 ### AI research → product
 
@@ -294,7 +296,7 @@ every agent resolves the same paths:
 │  └─ <slug>/
 │     ├─ northstar.md + log.md + backlog.md
 │     ├─ deliverables.md + director-summary.md
-│     └─ artifacts/{product-map.md,design-system.md,briefs/,research/,designs/,decisions/}
+│     └─ artifacts/{product-map.md,design-system.md,customer-success/,briefs/,research/,designs/,decisions/}
 ├─ library/                                promoted cross-initiative outcomes
 │  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
 │     lessons/ digests/ learnings/ releases/ playbooks/
@@ -338,9 +340,9 @@ same path. Completed initiatives remain discoverable through `INDEX.md`,
 `deliverables.md`, and `director-summary.md`; final reports print exact paths.
 
 Canonical product paths are built in: `artifacts/product-map.md`,
-`artifacts/design-system.md`, `artifacts/briefs/<item-id>.md`,
-`artifacts/research/<item-id>.md`, `artifacts/designs/<item-id>.md`, and
-`artifacts/decisions/<item-id>.md`.
+`artifacts/design-system.md`, `artifacts/customer-success/<item-id>.md`,
+`artifacts/briefs/<item-id>.md`, `artifacts/research/<item-id>.md`,
+`artifacts/designs/<item-id>.md`, and `artifacts/decisions/<item-id>.md`.
 
 ## How the agents chain
 
@@ -460,6 +462,24 @@ production before using the `shipped` state.
                                                          principal-product-manager ──► decisions
 ```
 
+**3b · Customer success → product** — protect customer outcomes without turning
+every account request into roadmap scope.
+
+```
+ customer goals + usage + support + sentiment
+                         │
+                         ▼
+          principal-customer-success
+          (success · adoption · health · risk)
+                    │                 │
+                    │                 └─► local success / recovery / QBR brief
+                    ▼
+        de-identified customer signal
+                    │
+                    ▼
+        principal-product-manager ──► scope decision
+```
+
 **4 · Learning & content** — three independent ways to produce lessons or audio.
 
 ```
@@ -536,6 +556,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Drive an item or initiative end to end / resume the team | `director-chief-of-staff` |
 | Net-new opportunity, "what should we build?" | `principal-product-strategist` |
 | Feedback/report to turn into decisions | `principal-product-manager` |
+| Customer onboarding, adoption, health, churn/renewal risk, success plan, or QBR | `principal-customer-success` |
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
 | Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `principal-video-director` |
