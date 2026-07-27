@@ -125,7 +125,7 @@ simulate a load-bearing technical/security decision and label it independent.
 Create a stable non-sensitive incident ID and local run:
 
 ```text
-.kai/runs/ship/<target-slug>/<YYYY-MM-DD-HHMM>-incident/
+.kai/runs/incident/<target-slug>/<YYYY-MM-DD-HHMM>-incident/
   incident-record.md
   evidence/
   action-packets/

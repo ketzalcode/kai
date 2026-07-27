@@ -174,7 +174,8 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | `support` | workflow-support-triage | `triage` |
 | `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
-| `ship` | workflow-ship, workflow-incident-response | `ship`, `incident` |
+| `ship` | workflow-ship | `ship` |
+| `incident` | workflow-incident-response | `incident` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |
 | `learn` | course-to-audio and teacher | target-specific |
 | `lessons` | engineer tutor | tutor/theme-specific |
@@ -388,7 +389,7 @@ automatically.
   "initiatives": "initiatives",
   "library": "library",
   "personal": "personal",
-  "areas": ["qa", "eng", "product", "support", "review", "ship", "ai", "learn", "lessons", "pulse", "content"]
+  "areas": ["qa", "eng", "product", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
 

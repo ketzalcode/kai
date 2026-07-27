@@ -24,8 +24,9 @@ and 38 skills**.
   leads and human-executed action packets.
 
 ### Changed
-- Added the `support` raw-run area plus canonical initiative lanes for support,
-  growth, analytics, security, reliability, and sanitized incident records.
+- Added dedicated `support` and `incident` raw-run areas plus canonical
+  initiative lanes for support, growth, analytics, security, reliability, and
+  sanitized incident records.
 - Director, PM, product/customer, engineering, QA, ship, DoD, and review
   contracts now preserve the new ownership seams and revision-bound
   security/SRE evidence.
