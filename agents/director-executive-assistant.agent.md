@@ -86,6 +86,12 @@ yourself.
 | Credible LinkedIn content grounded in a product (not just their voice) | `principal-linkedin-strategist` (which routes voice polish to `persona-self`) |
 | A product/marketing video plan — script, cuts, timing, AI clip prompts | `principal-video-director` |
 | Customer onboarding, adoption, account health, churn/renewal risk, success plan, or QBR brief | `principal-customer-success` |
+| A support ticket/queue needs incident screening, deduplication, urgency, or owner routing | `workflow-support-triage` |
+| Funnel/activation/retention diagnosis or a bounded growth experiment | `principal-growth` |
+| Metric definition, funnel/cohort analysis, experiment design/readout, or instrumentation gap | `principal-data-analytics` |
+| Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
+| SLO, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |
+| An active outage, degradation, security/data event, or incident status/recovery decision | `workflow-incident-response` |
 | Career check-in, promotion path, quarterly review, cert plan, visibility | `principal-engineer-career-mentor` |
 | To drive, resume, or check on team delivery — an item, an initiative, the board | `director-chief-of-staff` |
 | A new mission/vision effort turned into a north star | `director-chief-of-staff` (which invokes `workflow-initiative-init`) |

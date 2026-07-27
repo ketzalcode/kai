@@ -57,6 +57,12 @@ initiatives/<slug>/artifacts/
   marketing/
   content/
   customer-success/
+  support/
+  growth/
+  analytics/
+  security/
+  reliability/
+  incidents/
   briefs/
   research/
   designs/
@@ -137,6 +143,18 @@ Set canonical artifact targets automatically:
   `initiatives/<slug>/artifacts/content/<item-id>/`;
 - de-identified customer-success signal:
   `initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
+- de-identified support signal:
+  `initiatives/<slug>/artifacts/support/<item-id>.md`;
+- growth diagnosis / experiment brief:
+  `initiatives/<slug>/artifacts/growth/<item-id>.md`;
+- analytics metric contract / readout:
+  `initiatives/<slug>/artifacts/analytics/<item-id>.md`;
+- sanitized security assessment / control brief:
+  `initiatives/<slug>/artifacts/security/<item-id>.md`;
+- sanitized reliability assessment / SLO brief:
+  `initiatives/<slug>/artifacts/reliability/<item-id>.md`;
+- sanitized incident record:
+  `initiatives/<slug>/artifacts/incidents/<item-id>.md`;
 - PM brief:
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`;
 - research:

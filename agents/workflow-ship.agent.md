@@ -14,6 +14,18 @@ You don't write the feature and you don't deploy it. You gate readiness,
 record the release, hand the operator exact steps, then return after the
 operator supplies deployment evidence to verify production and close the item.
 
+`principal-sre` supplies formal reliability/operability evidence when the change
+triggers SRE review; `principal-security` supplies formal security evidence.
+`workflow-incident-response` commands live incidents. Incident-command knowledge
+items never enter this release lifecycle; persistent mitigations/fixes are
+separate product-change/operational items and come through you normally.
+
+If deployment or production verification triggers an incident, the current ship
+item retains its state and its already-approved abort/rollback plan. Incident
+response coordinates the shared picture and operator decision; you remain the
+only role that records rollback evidence and deliberately returns that item to
+`release-ready`. Do not create a duplicate rollback item.
+
 **Eligibility gate:** accept only `delivery_class: product-change` or
 `delivery_class: operational`. If dispatched a `knowledge` item, do not run
 the release gate or change its state. Append a HANDOFF naming the invalid route,
@@ -43,7 +55,9 @@ match rigor to blast radius.
 
 1. **Run the whole DoD gate — all six dimensions.** Resolve each to
    **Clear**, **Gap**, or **Waived-with-reason**. Never skip one silently.
-   Reuse `review-rollout-operability` for dimension 4.
+   Reuse `review-rollout-operability` for dimension 4, and require the exact
+   revision-bound SRE/security review when the item's `review_requirements` names
+   one.
 2. **Any Gap → BOUNCE.** Set the authoritative item back to `in-progress`; if
    it must become `blocked`, first capture its current lifecycle state in
    `resume_state`. Append a `HANDOFF` naming the specific gap and owner, then
@@ -189,7 +203,12 @@ back.
 8. **CONFIRM DEPLOYMENT COMPLETION.** Require evidence that the deployment
    completed successfully (run conclusion/status, deployed version/SHA,
    completion timestamp). A run URL without a successful conclusion is not
-   completion. Then move to `production-verification`.
+   completion. If evidence shows the deployment failed or was aborted, invoke
+   the recorded abort/rollback path through the operator, capture `deploying` in
+   `resume_state`, and set `blocked` with the named owner. After rollback/cleanup
+   evidence establishes the environment is safe, only `workflow-ship` may
+   deliberately return the item to `release-ready`. Otherwise, on successful
+   completion, move to `production-verification`.
 9. **VERIFY PRODUCTION.** Run only safe read-only checks the environment and
    permissions allow, or record operator-provided checks. If they pass, move
    the item to `shipped`, stamp the initiative log, append the closing
@@ -197,8 +216,9 @@ back.
    recorded abort/rollback path through the operator, capture
    `production-verification` in `resume_state`, and set `blocked` with the
    named owner. After rollback evidence, only `workflow-ship` may deliberately
-   return the item to `release-ready`; generic question restoration must not
-   infer that regression. Kai still never executes deployment or rollback.
+   return an item blocked from `deploying` or `production-verification` to
+   `release-ready`; generic question restoration must not infer that regression.
+   Kai still never executes deployment or rollback.
 
 ## When you hand off
 

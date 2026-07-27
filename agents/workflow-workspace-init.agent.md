@@ -59,8 +59,8 @@ onboarding request.
 Apply the required structure from `workspace-onboarding`:
 
 ```text
-.kai/{manifest.json,CONVENTIONS.md,runs/{qa/,eng/,product/,review/,ship/,
-                                      ai/,learn/,lessons/,pulse/,content/}}
+.kai/{manifest.json,CONVENTIONS.md,runs/{qa/,eng/,product/,support/,review/,ship/,
+                                      incident/,ai/,learn/,lessons/,pulse/,content/}}
 coordination/{ACTIVE.md,BOARD.md,backlog.md,
              items/README.md,threads/README.md}
 initiatives/{README.md,INDEX.md}

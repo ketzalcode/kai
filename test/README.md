@@ -27,6 +27,8 @@ Behavioral-contract and host compatibility (this suite):
   - the `.kai/runs` **areas** match across the manifest schema
     (`workspace-conventions`), the onboarding scaffold, and
     `workflow-workspace-init`;
+  - the initiative `artifacts/` directories match between
+    `workspace-conventions` and `workflow-initiative-init`;
   - the `library/<type>/` set matches across the conventions "Library types"
     table and both library scaffolds.
 - **Fixture manifest schema.** `test/fixtures/repo-workspace/.kai/manifest.json`
@@ -52,6 +54,13 @@ Copilot host (CLI or coding agent) against a scratch workspace:
   manifest `workspace_kind`) without exposing private local paths;
 - workspace-scoped identity extraction and `status: stub` handling;
 - content-grounding claim-safety end to end on a real `product_context.json`.
+- support triage redaction, grounded deduplication, and incident-first routing;
+- growth/data metric-contract, causal-status, small-cell, and scope-boundary
+  behavior;
+- security/SRE non-mutating review, exact-`change_ref` evidence, and explicit
+  operator risk waivers;
+- incident SEV/lifecycle transitions, operator decision/action split, unsent
+  communication, recovery evidence, and release/incident separation.
 
 When adding a new run area, `library/` type, or host tool, update the manifest
 schema/scaffolds/allowlist together — the consistency checks above will fail

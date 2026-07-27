@@ -15,13 +15,12 @@ services, or MCP servers.
 
 ## Status
 
-`v0.3.0` — **34 agents and 38 skills**, now including
-`principal-customer-success` as the first SaaS customer-operations role:
-evidence-based success plans, adoption and health reviews, churn/renewal risk,
-and QBR briefs with strict product-scope, privacy, commercial, and outbound
-boundaries. The broader roster spans product, engineering, QA, delivery,
-research, content, learning, and personal workflows, all grounded in the shared
-workspace and coordination contracts below.
+`v0.4.0` — **40 agents and 38 skills**. The Core SaaS team is complete:
+customer success + support triage, growth + decision analytics, security + SRE,
+and bounded incident command. The new roles preserve strict product-scope,
+causality, privacy, risk-acceptance, production-action, and outbound boundaries
+while integrating with the existing product, engineering, QA, delivery, and
+workspace contracts below.
 
 ## Install
 
@@ -123,6 +122,14 @@ kai/
 | ---- | ------- |
 | `workflow-ship` | Release orchestrator with explicit PREPARE, CONFIRM-START, and CONFIRM-COMPLETE phases. It gates `release-ready`, records deployment start and successful completion separately, performs/records production verification, and only then marks `shipped`. Kai never performs deployment. |
 
+### Trust & reliability
+
+| Name | Purpose |
+| ---- | ------- |
+| `principal-security` | Security judgment owner for threat models, security designs, revision-bound change reviews, vulnerability triage, privacy engineering, and incident-security guidance. Defensive and authorization-bound; never exploits, mutates production, accepts residual risk, certifies compliance, or discloses. |
+| `principal-sre` | Reliability and production-readiness principal for SLI/SLO/error-budget contracts, service readiness, failure/recovery design, capacity, observability, runbooks, and revision-bound operability review. Supplies evidence; never deploys, commands incidents, or moves release state. |
+| `workflow-incident-response` | Bounded incident commander for declaration/SEV, one timeline, real technical/security leads, operator decision/action packets, unsent status briefs, recovery verification, and sanitized closure records. Never performs production actions or lets emergency command promote remediation scope. |
+
 ### Document review
 
 | Name | Purpose |
@@ -137,11 +144,19 @@ kai/
 | `principal-product-designer` | Owns interaction design for PM-approved user needs. Converts the product brief, current product map, and research into the smallest coherent interaction model, states, responsive behavior, accessibility intent, and design acceptance; independently reviews implementations against the approved design. Grounds proposals in the app's design system (`design-grounding`) and presents load-bearing options as human-confirmable, offline mockups with a pick-one gate (`ui-mockup`). |
 | `principal-product-strategist` | Generative discovery counterpart to the PM. Drives a forward-looking product investigation and proposes a prioritized, evidence-backed catalog of net-new actions (web research + supplied data; no live data queries). Every candidate names the job it serves and its smallest validating experiment. Six-tier taxonomy (Lead / Fast-follow / Bet / Explore / Park / Pass). |
 
-### Customer success
+### Customer operations
 
 | Name | Purpose |
 | ---- | ------- |
 | `principal-customer-success` | Post-sale SaaS customer-outcomes principal. Produces evidence-based success/adoption plans, health and churn/renewal risk reviews, QBR briefs, and portfolio patterns. Keeps account-specific material local, routes de-identified product gaps to the PM, and never owns support resolution, pricing, contracts, promises, or outbound communication. |
+| `workflow-support-triage` | Privacy-first bounded support intake. Screens incidents first, classifies and deduplicates supplied tickets, assigns urgency by impact rather than account value, and routes to incident/security/SRE/QA/SWE/customer-success/PM/commercial owners. Never replies, closes tickets, fixes code, or promises timelines. |
+
+### Growth & analytics
+
+| Name | Purpose |
+| ---- | ------- |
+| `principal-growth` | Aggregate SaaS lifecycle-growth principal across acquisition, activation, engagement, retention, reactivation, referral, and paid conversion. Diagnoses binding constraints, defines safe bounded hypotheses, and consumes analytics readouts without upgrading causal claims. Never launches experiments, spends, publishes, messages users, or bypasses PM scope. |
+| `principal-data-analytics` | Decision-analytics principal for metric contracts, supplied-data analysis, experiment design/readout, funnels/cohorts/retention, data quality, uncertainty, causal-status labeling, and instrumentation gaps. Never implies live data access, invents results, implements telemetry, or chooses the product/growth action. |
 
 ### AI research → product
 
@@ -296,7 +311,9 @@ every agent resolves the same paths:
 │  └─ <slug>/
 │     ├─ northstar.md + log.md + backlog.md
 │     ├─ deliverables.md + director-summary.md
-│     └─ artifacts/{product-map.md,design-system.md,customer-success/,briefs/,research/,designs/,decisions/}
+│     └─ artifacts/{product-map.md,design-system.md,customer-success/,support/,
+│                    growth/,analytics/,security/,reliability/,incidents/,
+│                    briefs/,research/,designs/,decisions/}
 ├─ library/                                promoted cross-initiative outcomes
 │  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
 │     lessons/ digests/ learnings/ releases/ playbooks/
@@ -339,10 +356,12 @@ durable absolute workspace directory before dispatch. Every peer receives that
 same path. Completed initiatives remain discoverable through `INDEX.md`,
 `deliverables.md`, and `director-summary.md`; final reports print exact paths.
 
-Canonical product paths are built in: `artifacts/product-map.md`,
-`artifacts/design-system.md`, `artifacts/customer-success/<item-id>.md`,
-`artifacts/briefs/<item-id>.md`, `artifacts/research/<item-id>.md`,
-`artifacts/designs/<item-id>.md`, and `artifacts/decisions/<item-id>.md`.
+Canonical initiative paths are built in: `artifacts/product-map.md`,
+`artifacts/design-system.md`, customer-success/support signals, growth and
+analytics briefs, security/reliability assessments, sanitized incident records,
+PM briefs, research, designs, and decisions under their named artifact folders.
+Sanitized unaffiliated incident records use
+`library/investigations/<incident-id>/incident-record.md`.
 
 ## How the agents chain
 
@@ -480,6 +499,64 @@ every account request into roadmap scope.
         principal-product-manager ──► scope decision
 ```
 
+**3c · Support triage → real owner** — screen safety first, then route without
+replying, fixing, or converting the support queue directly into product scope.
+
+```
+ supplied tickets / chats / escalations
+                    │
+                    ▼
+       workflow-support-triage
+       (screen · classify · dedupe · urgency)
+        │       │       │       │       │
+        │       │       │       │       └─► principal-product-manager
+        │       │       │       └─────────► principal-customer-success
+        │       │       └─────────────────► QA / relevant SWE
+        │       └─────────────────────────► principal-security / principal-sre
+        └─────────────────────────────────► workflow-incident-response
+```
+
+**3d · Growth ↔ analytics → scoped experiment** — separate the behavior
+hypothesis from metric/causal validity and from the PM's scope decision.
+
+```
+ product + customer + support signals
+                    │
+                    ▼
+          principal-growth DIAGNOSE
+                    │ analytics request
+                    ▼
+       principal-data-analytics ──► metric contract / evidence status
+                    │
+                    ▼
+       principal-product-manager ──► accepted scope/design/engineering
+                    │
+                    ▼
+       principal-data-analytics READOUT
+                    │ preserves causal status
+                    ▼
+          principal-growth ──► Scale / Iterate / Hold / Stop / Investigate
+```
+
+**3e · Incident command → recovery** — one commander coordinates real domain
+leads; the operator performs every production action.
+
+```
+ support / telemetry / security report
+                    │
+                    ▼
+      workflow-incident-response
+      (declare · SEV · timeline · decisions)
+        │               │                │
+        ├─► principal-sre                ├─► principal-security
+        └─► relevant SWE / QA            └─► operator action + unsent update
+                    │
+                    ▼
+       recovery evidence ──► resolved/closed + sanitized record
+                    │
+                    └─► proposed persistent fixes through normal PM/ship flow
+```
+
 **4 · Learning & content** — three independent ways to produce lessons or audio.
 
 ```
@@ -557,6 +634,12 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Net-new opportunity, "what should we build?" | `principal-product-strategist` |
 | Feedback/report to turn into decisions | `principal-product-manager` |
 | Customer onboarding, adoption, health, churn/renewal risk, success plan, or QBR | `principal-customer-success` |
+| Triage a support ticket/queue, deduplicate, assess urgency, or route an escalation | `workflow-support-triage` |
+| Diagnose acquisition/activation/retention or plan/read a bounded growth experiment | `principal-growth` |
+| Define metrics, analyze supplied data, design/read an experiment, or specify instrumentation | `principal-data-analytics` |
+| Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
+| SLOs, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |
+| Active outage, degradation, security/data event, status update, recovery, or post-incident close | `workflow-incident-response` |
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
 | Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `principal-video-director` |
