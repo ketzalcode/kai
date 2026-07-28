@@ -4,6 +4,39 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.6.0] - 2026-07-27
+
+Kai's Revenue phase adds pre-sale go-to-market judgment: deal execution and
+technical solution fit. The roster now contains **46 agents and 38 skills**.
+
+### Added
+- **Sales principal**: `principal-sales` owns pre-sale deal qualification,
+  discovery, deal strategy and competitive positioning, objection handling,
+  proposal structure, forecast/pipeline hygiene, and win/loss synthesis. Applies
+  approved pricing/discount policy and escalates exceptions; keeps prospect PII
+  and deal terms local. Never fabricates pipeline, promises capability or dates,
+  sets price, asserts technical fit, contacts real prospects, or accepts
+  contracts.
+- **Solutions-architect principal**: `principal-solutions-architect` owns
+  pre-sale technical discovery, requirement-to-capability fit, integration
+  feasibility, POC/pilot scope with exit criteria, technical objection handling,
+  and security/compliance questionnaire drafts. Grounds fit in shipped capability;
+  routes gaps to the PM and attestations to the security/privacy owners. Never
+  invents capability, commits roadmap or dates, certifies compliance, prices,
+  implements, or touches a customer's live systems or data.
+
+### Changed
+- Added a dedicated `revenue` run area (flavors `sales`, `solutions-architect`)
+  and canonical initiative artifact lanes `sales/` and `solutions/`, keeping
+  sensitive pre-sale deal and prospect data separate from post-sale `product` and
+  technical `eng` work.
+- Reciprocal routing updated across the Chief of Staff and AGENTS taxonomy:
+  sales applies pricing's discount policy and escalates exceptions; the solutions
+  architect routes questionnaire claims to security/privacy-compliance for
+  confirmation and capability gaps to the PM; customer-success takes the post-sale
+  handoff at close; and product-marketing supplies claim-safe positioning to both
+  revenue roles.
+
 ## [0.5.0] - 2026-07-27
 
 Kai's Expansion phase adds monetization, privacy/compliance, feedback synthesis,
@@ -147,6 +180,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.6.0]: https://github.com/RubenSaucedo/kai/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/RubenSaucedo/kai/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/RubenSaucedo/kai/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/RubenSaucedo/kai/compare/v0.2.0...v0.3.0

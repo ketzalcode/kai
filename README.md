@@ -15,14 +15,15 @@ services, or MCP servers.
 
 ## Status
 
-`v0.5.0` — **44 agents and 38 skills**. The Core SaaS team is complete and the
-Expansion phase adds monetization, privacy/compliance, feedback synthesis, and
-independent experiment-integrity review: pricing + packaging judgment,
-`principal-privacy-compliance`, `workflow-customer-feedback`, and
-`workflow-experiment-review`. The new roles preserve strict product-scope,
-causality, privacy, legal-risk, commercial, production-action, and outbound
-boundaries while integrating with the existing product, engineering, QA,
-delivery, and workspace contracts below.
+`v0.6.0` — **46 agents and 38 skills**. The Core and Expansion SaaS teams are
+complete and the Revenue phase adds pre-sale go-to-market: `principal-sales`
+(deal qualification, discovery, deal strategy, objection handling, forecast
+hygiene, win/loss) and `principal-solutions-architect` (technical discovery,
+solution fit, feasibility, POC scope, security/compliance questionnaire drafts).
+The new roles preserve strict product-scope, pricing, capability-commitment,
+security, compliance, legal-risk, live-system, and outbound-contact boundaries
+while integrating with the existing product, engineering, QA, delivery, and
+workspace contracts below.
 
 ## Install
 
@@ -153,6 +154,13 @@ kai/
 | ---- | ------- |
 | `principal-customer-success` | Post-sale SaaS customer-outcomes principal. Produces evidence-based success/adoption plans, health and churn/renewal risk reviews, QBR briefs, and portfolio patterns. Keeps account-specific material local, routes de-identified product gaps to the PM, and never owns support resolution, pricing, contracts, promises, or outbound communication. |
 | `workflow-support-triage` | Privacy-first bounded support intake. Screens incidents first, classifies and deduplicates supplied tickets, assigns urgency by impact rather than account value, and routes to incident/security/SRE/QA/SWE/customer-success/PM/commercial owners. Never replies, closes tickets, fixes code, or promises timelines. |
+
+### Revenue & go-to-market
+
+| Name | Purpose |
+| ---- | ------- |
+| `principal-sales` | Pre-sale revenue principal for deal qualification, discovery, deal strategy and competitive positioning, objection handling, proposal structure, forecast/pipeline hygiene, and win/loss synthesis. Applies approved pricing/discount policy and routes exceptions; keeps prospect PII and deal terms local. Never fabricates pipeline, promises capability/dates, sets price, asserts technical fit, contacts real prospects, or accepts contracts. |
+| `principal-solutions-architect` | Pre-sale solutions-architecture principal for technical discovery, requirement-to-capability fit, integration feasibility, POC/pilot scope with exit criteria, technical objection handling, and security/compliance questionnaire drafts. Grounds fit in shipped capability, routes gaps to the PM and attestations to security/privacy owners. Never invents capability, commits roadmap/dates, certifies compliance, prices, implements, or touches a customer's live systems or data. |
 
 ### Growth, analytics & monetization
 
@@ -646,6 +654,8 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Independently check an experiment's integrity before its result drives a decision | `workflow-experiment-review` |
 | Set a pricing model, package/tier, plan a price change, discount policy, or monetization test | `principal-pricing-monetization` |
 | Synthesize surveys, NPS/CSAT, reviews, interviews, or feature requests into de-identified signals | `workflow-customer-feedback` |
+| Qualify a deal, plan discovery/deal strategy, handle an objection, review a forecast, or run win/loss | `principal-sales` |
+| Assess technical fit, integration feasibility, scope a POC, or draft a security/compliance questionnaire response | `principal-solutions-architect` |
 | Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
 | DPIA, data inventory, data-subject rights, retention/consent policy, or compliance-framework review | `principal-privacy-compliance` |
 | SLOs, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |

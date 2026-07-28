@@ -63,6 +63,8 @@ initiatives/<slug>/artifacts/
   analytics/
   experiments/
   pricing/
+  sales/
+  solutions/
   security/
   reliability/
   incidents/
@@ -159,6 +161,10 @@ Set canonical artifact targets automatically:
   `initiatives/<slug>/artifacts/experiments/<item-id>.md`;
 - pricing / packaging brief:
   `initiatives/<slug>/artifacts/pricing/<item-id>.md`;
+- de-identified sales / deal brief:
+  `initiatives/<slug>/artifacts/sales/<item-id>.md`;
+- sanitized pre-sale solution / POC brief:
+  `initiatives/<slug>/artifacts/solutions/<item-id>.md`;
 - sanitized security assessment / control brief:
   `initiatives/<slug>/artifacts/security/<item-id>.md`;
 - sanitized reliability assessment / SLO brief:

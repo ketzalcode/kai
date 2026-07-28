@@ -32,6 +32,12 @@ For product and SaaS operations:
   judgment; only the operator accepts commercial terms;
 - `workflow-customer-feedback` synthesizes solicited feedback (surveys, NPS,
   reviews, interviews) into de-identified product/CS/growth signals;
+- `principal-sales` owns pre-sale deal qualification, discovery, deal strategy,
+  objection handling, forecast hygiene, and win/loss; only the operator contacts
+  prospects and accepts commercial terms;
+- `principal-solutions-architect` owns pre-sale technical solution fit,
+  feasibility, POC scope, and security/compliance questionnaire drafts; the PM
+  owns capability commitments and security/privacy owners own their attestations;
 - `principal-product-designer` owns interaction design for approved needs,
   grounded in the app's design system (`design-grounding`) and presented as
   human-confirmable mockups (`ui-mockup`);

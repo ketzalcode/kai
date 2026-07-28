@@ -74,6 +74,8 @@ when the operator explicitly requested a local throwaway run.
 │        ├─ analytics/
 │        ├─ experiments/
 │        ├─ pricing/
+│        ├─ sales/
+│        ├─ solutions/
 │        ├─ security/
 │        ├─ reliability/
 │        ├─ incidents/
@@ -175,6 +177,7 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `extract`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
 | `eng` | SWE architect, manager, frontend, backend, infra, security, SRE, privacy-compliance | `arch`, `scope`, `frontend`, `backend`, `infra`, `security`, `sre`, `compliance` |
 | `product` | product strategist, product marketing, product designer, customer success, growth, data analytics, pricing-monetization, customer-feedback, experiment-review | `strategy`, `marketing`, `mockups`, `customer-success`, `growth`, `analytics`, `pricing`, `feedback`, `experiment-review` |
+| `revenue` | sales, solutions-architect | `sales`, `solutions-architect` |
 | `support` | workflow-support-triage | `triage` |
 | `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
@@ -207,6 +210,8 @@ that initiative:
 | Analytics metric contract / readout | `initiatives/<slug>/artifacts/analytics/<item-id>.md` |
 | Experiment integrity certificate | `initiatives/<slug>/artifacts/experiments/<item-id>.md` |
 | Pricing / packaging brief | `initiatives/<slug>/artifacts/pricing/<item-id>.md` |
+| De-identified sales / deal brief | `initiatives/<slug>/artifacts/sales/<item-id>.md` |
+| Sanitized pre-sale solution / POC brief | `initiatives/<slug>/artifacts/solutions/<item-id>.md` |
 | Sanitized security assessment / control brief | `initiatives/<slug>/artifacts/security/<item-id>.md` |
 | Sanitized reliability assessment / SLO brief | `initiatives/<slug>/artifacts/reliability/<item-id>.md` |
 | Sanitized incident record | `initiatives/<slug>/artifacts/incidents/<item-id>.md` |
@@ -397,7 +402,7 @@ automatically.
   "initiatives": "initiatives",
   "library": "library",
   "personal": "personal",
-  "areas": ["qa", "eng", "product", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
+  "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
 
