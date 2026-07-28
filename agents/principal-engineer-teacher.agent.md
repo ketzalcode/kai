@@ -153,7 +153,7 @@ count, skip a source), honour and re-plan.
 ### 3. Generate audio for sources that need it (parallelize where safe)
 
 For each source whose audio doesn't already exist, invoke the
-`generate-audio` skill via `pwsh C:\src\kai\scripts\generate-audio.ps1`.
+`generate-audio` skill via `pwsh <kai-plugin>/scripts/generate-audio.ps1`.
 Pass `-Lang es` (Spanish default) and `-Style conversational` unless
 the user overrode.
 

@@ -13,17 +13,44 @@ Designed to work in **both**:
 `kai` deliberately contains no employer-specific knowledge,
 services, or MCP servers.
 
+### Host capabilities
+
+kai is declarative, so its **record** — agents, skills, coordination files — is
+identical on every host. What differs is the **live tooling** each host exposes.
+The two hosts are **not** feature-identical; workflows degrade gracefully when a
+capability is absent, and a few features simply require the richer host.
+
+| Capability | Copilot CLI | Copilot coding agent (cloud) |
+|---|---|---|
+| Agents + skills (the declarative core) | ✅ | ✅ |
+| File-based coordination (BOARD, threads, initiatives) | ✅ | ✅ |
+| Live peer sub-agents (`task` / `write_agent` / `read_agent`) | ✅ | ❌ — fall back to durable threads |
+| Web search / fetch | ✅ built-in | ⚠️ only if the repo configures a web MCP tool |
+| Browser automation (Playwright: `web-evaluation`, `extract-learn-path`) | ✅ local + localhost targets | ⚠️ public URLs only; no localhost |
+| Local shell scripts (`generate-audio`, extractors) | ✅ | ⚠️ depends on the runner's toolchain |
+
+**Rule of thumb:** multi-agent brainstorming, local-app QA, and audio generation
+are richest in the **CLI**; single-agent review, design, and planning run well in
+**both**. Where a workflow needs a capability the host lacks, the agent announces
+the degraded mode and either takes the file-based fallback or fails fast naming
+what's missing — it never silently pretends the capability is present.
+
 ## Status
 
-`v0.7.0` — **53 agents and 38 skills**. The Core, Expansion, and Revenue SaaS
-teams are complete and the Enablement & Operations phase closes the remaining
-go-to-market and operations gaps: `principal-technical-writer` (docs, how-tos,
-references, release notes), `principal-revenue-operations` (SaaS metric model,
+`v0.7.1` — **53 agents and 38 skills**. This patch remediates the four P0
+audit findings (#23–#26): the contract validator now rejects the `argument-hint`
+frontmatter shape the Copilot CLI silently drops and enforces run-area usage
+against the registry; shipped scripts and prompts drop author-machine paths for a
+portable `<kai-plugin>/…` reference; and the Host capabilities matrix above
+documents where the CLI and cloud coding-agent hosts differ. The Core, Expansion,
+Revenue, and Enablement & Operations SaaS teams remain complete:
+`principal-technical-writer` (docs, how-tos, references, release notes),
+`principal-revenue-operations` (SaaS metric model,
 forecast/pipeline hygiene, billing ops), `principal-demand-generation`
 (campaigns, lifecycle programs, lead handoff), `principal-partnerships` (partner
 strategy and program design), `workflow-localization` (i18n readiness and locale
 QA), `principal-data-engineer` (pipelines, data models, contracts), and
-`principal-brand-designer` (visual brand identity). The new roles preserve strict
+`principal-brand-designer` (visual brand identity). The roles preserve strict
 product-scope, positioning/claim, pricing, capability-commitment, metric-validity,
 privacy, legal-risk, live-system, spend, and outbound-contact boundaries while
 integrating with the existing product, engineering, QA, delivery, and workspace
@@ -102,7 +129,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/self-check/<date>/report.md`. |
+| `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/review/kai/<YYYY-MM-DD>-self-check/report.md`. |
 | `workflow-workspace-init` | Idempotent onboarding for any repository or durable standalone folder. Creates `.kai/`, coordination, initiatives, library, and complete ignored `personal/` assistant/identity state, including migration guidance for legacy `.persona-self/`. |
 | `workflow-initiative-init` | Bounded intake workflow that resolves the target workspace, then turns mission + vision into a proposed north star with stable milestones, success measures, deliverable index, and initial proposed item records. |
 

@@ -377,7 +377,7 @@ The skill leaves `brief.md` narration-ready. It never runs audio. The calling
 agent offers the exact command:
 
 ```
-pwsh C:\src\kai\scripts\generate-audio.ps1 -Source <abs path>\brief.md -Style verbatim -Lang en
+pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <abs path>\brief.md -Style verbatim -Lang en
 ```
 
 `.kai/runs/pulse/` is gitignored, so any audio generated under it is

@@ -39,7 +39,11 @@ agent. This skill does not decide what to explore or judge.
    Edge is preinstalled and works well (`--browser msedge`); installing
    Chrome there often needs admin. On macOS/Linux, Chromium or Chrome
    is fine. If the user's MCP setup doesn't specify, ask once at the
-   start of the run rather than guessing.
+   start of the run rather than guessing. **Host reach differs:** the CLI
+   host can drive both `localhost` and public URLs; a cloud coding-agent
+   host typically reaches only public URLs. If the target is `localhost`
+   and the host can't reach it, say so and fail fast — don't pretend to
+   have evaluated a page you never loaded.
 2. **Never trigger destructive actions** on a real site without
    explicit user confirmation per action. "Delete account",
    "Submit payment", "Send invitation" → stop and ask.
