@@ -4,6 +4,42 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.7.1] - 2026-07-28
+
+Audit remediation for the four P0 findings (#23, #24, #25, #26): the contract
+validator now catches the frontmatter shape that the Copilot CLI rejects,
+shipped scripts and prompts no longer hard-code an author's checkout, run-area
+usage is enforced against the registry, and the README documents where CLI and
+cloud hosts differ. No roster change — still **53 agents and 38 skills**.
+
+### Fixed
+- **`argument-hint` frontmatter (#23)**: five user-invocable skills
+  (`coding-style`, `generate-audio`, `onboard-to-codebase`, `pr-sizing`,
+  `research-before-coding`) declared `argument-hint` as an inline array, which
+  the Copilot CLI silently rejects at load. They are now quoted scalars.
+- **Author-machine paths (#24)**: `generate-audio.ps1`, `extract-learn-path.js`,
+  and the six prompts that call them no longer embed `C:\src\kai\…` /
+  `C:\src\ketzal-swe\…`. Prompts reference a portable `<kai-plugin>/scripts/…`
+  path; the extractor now writes to the caller's `.kai/runs/learn/<slug>/<run>/`
+  (not the retired `.ketzal-learn/`), defaults to Playwright's bundled Chromium
+  (override via `LEARN_BROWSER_CHANNEL`), and drops the stale
+  `npm run generate-audio` recommendation.
+
+### Changed
+- **Contract validator (#23, #26)**: the hand-rolled frontmatter parser now
+  reads hyphenated keys (`argument-hint`, `user-invocable`, `allowed-tools`),
+  rejects an array-shaped `argument-hint`, validates `user-invocable` as a
+  boolean, separates agent vs. skill schemas (skill-only keys are invalid on an
+  agent), and scans every agent/skill for concrete `.kai/runs/<area>/` literals,
+  failing any area not in the manifest registry.
+- **Self-check output (#26)**: `workflow-self-check` writes under the registered
+  `review/` area (`.kai/runs/review/kai/<date>-self-check/report.md`) instead of
+  the unregistered `.kai/runs/self-check/`.
+- **Host-capability docs (#25)**: the README adds a CLI-vs-cloud capability
+  matrix and stops implying feature parity; `web-evaluation` notes the
+  localhost-reachability boundary and fails fast when the host can't reach the
+  target.
+
 ## [0.7.0] - 2026-07-28
 
 Kai's Enablement & Operations phase closes the remaining go-to-market and
@@ -243,6 +279,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.7.1]: https://github.com/RubenSaucedo/kai/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/RubenSaucedo/kai/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/RubenSaucedo/kai/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/RubenSaucedo/kai/compare/v0.4.0...v0.5.0

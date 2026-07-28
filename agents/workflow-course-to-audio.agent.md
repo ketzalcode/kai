@@ -124,7 +124,7 @@ Folder: <workspace>/.kai/runs/learn/<source-slug>/<timestamp>/
 - source.md     <Status: ok | partial | …>
 
 Ready when you are. To narrate:
-  pwsh C:\src\kai\scripts\generate-audio.ps1 -Source <full path to module.md> -Style verbatim -Lang en
+  pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <full path to module.md> -Style verbatim -Lang en
 
 (Add -Lang en,es if you want both. -DryRun first if you want to see the cost shape.)
 

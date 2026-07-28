@@ -40,20 +40,20 @@
 
 .EXAMPLE
     cd ~/Documents/notes
-    pwsh C:\src\ketzal-swe\scripts\generate-audio.ps1
+    pwsh <kai-plugin>/scripts/generate-audio.ps1
     # Narrates everything under ~/Documents/notes -> ~/Documents/notes/audio/
 
 .EXAMPLE
-    pwsh C:\src\ketzal-swe\scripts\generate-audio.ps1 -Source ./README.md -Lang es
+    pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source ./README.md -Lang es
     # Single file, Spanish only
 
 .EXAMPLE
-    pwsh C:\src\ketzal-swe\scripts\generate-audio.ps1 -Style verbatim -DryRun
+    pwsh <kai-plugin>/scripts/generate-audio.ps1 -Style verbatim -DryRun
     # Preview the command without spending money
 
 .NOTES
-    Lectoria is pinned in this repo's package.json. Install once with `npm install`
-    in C:\src\ketzal-swe and the wrapper will prefer the local copy (via npx).
+    Lectoria is pinned in this plugin's package.json. Install once with `npm install`
+    at the kai plugin root and the wrapper will prefer the local copy (via npx).
     Falls back to a global `lectoria` install if one is on PATH. Azure credentials
     are loaded from this repo's `.env` so callers don't need them exported.
 #>

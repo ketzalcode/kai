@@ -74,7 +74,7 @@ function parseFrontmatter(raw) {
   if (end === -1) return { ok: false, reason: 'no closing `---` for frontmatter' };
   const fm = {};
   for (const line of lines.slice(1, end)) {
-    const m = line.match(/^([A-Za-z0-9_]+):\s?(.*)$/);
+    const m = line.match(/^([A-Za-z0-9_-]+):\s?(.*)$/);
     if (m) fm[m[1]] = m[2];
   }
   return { ok: true, fm };
@@ -87,6 +87,16 @@ const stripQuotes = (s) => {
   }
   return t;
 };
+
+const isInlineArray = (v) => {
+  const t = (v ?? '').trim();
+  return t.startsWith('[') && t.endsWith(']');
+};
+const isEmptyInlineArray = (v) => (v ?? '').replace(/[[\]\s]/g, '') === '';
+// A scalar frontmatter value must not begin an inline array. Checking only the
+// leading `[` catches YAML-valid variants a strict `[...]` match would miss,
+// e.g. `[foo] # comment` or a multiline flow array — all rejected by the host.
+const startsInlineArray = (v) => (v ?? '').trim().startsWith('[');
 
 for (const f of allFiles) {
   const raw = readFileSync(f.path, 'utf8');
@@ -103,14 +113,42 @@ for (const f of allFiles) {
 
   if (!stripQuotes(fm.description)) err(rel(f.path), 'frontmatter `description` is missing or empty');
 
+  // tools: required on every agent and skill, must be a non-empty inline array.
   if (fm.tools === undefined) {
     err(rel(f.path), 'frontmatter is missing `tools`');
-  } else {
-    const t = fm.tools.trim();
-    if (!(t.startsWith('[') && t.endsWith(']'))) {
-      err(rel(f.path), 'frontmatter `tools` must be an inline array like [a, b]');
-    } else if (t.replace(/[[\]\s]/g, '') === '') {
-      err(rel(f.path), 'frontmatter `tools` array is empty');
+  } else if (!isInlineArray(fm.tools)) {
+    err(rel(f.path), 'frontmatter `tools` must be an inline array like [a, b]');
+  } else if (isEmptyInlineArray(fm.tools)) {
+    err(rel(f.path), 'frontmatter `tools` array is empty');
+  }
+
+  // argument-hint is a user-invocation affordance (skills). It must be a single
+  // quoted/plain scalar — an inline array is silently rejected by the Copilot
+  // CLI host when it loads the skill, so fail fast here rather than at runtime.
+  if (fm['argument-hint'] !== undefined) {
+    if (startsInlineArray(fm['argument-hint'])) {
+      err(rel(f.path), 'frontmatter `argument-hint` must be a quoted scalar string, not an inline array');
+    } else if (!stripQuotes(fm['argument-hint'])) {
+      err(rel(f.path), 'frontmatter `argument-hint` is present but empty');
+    }
+  }
+
+  // user-invocable, when present, must be a boolean literal.
+  if (fm['user-invocable'] !== undefined) {
+    const uv = fm['user-invocable'].trim();
+    if (uv !== 'true' && uv !== 'false') {
+      err(rel(f.path), 'frontmatter `user-invocable` must be `true` or `false`');
+    }
+  }
+
+  // Schema separation: argument-hint / user-invocable / allowed-tools are
+  // skill-only affordances. Their presence on an agent signals a copy-paste
+  // error and is rejected.
+  if (f.kind === 'agent') {
+    for (const k of ['argument-hint', 'user-invocable', 'allowed-tools']) {
+      if (fm[k] !== undefined) {
+        err(rel(f.path), `frontmatter key \`${k}\` is skill-only and not valid on an agent`);
+      }
     }
   }
 }
@@ -279,6 +317,26 @@ if (mAreas && obAreas && !setEq(mAreas, obAreas)) {
 }
 if (mAreas && wiAreas && !setEq(mAreas, wiAreas)) {
   err('agents/workflow-workspace-init.agent.md', `runs/ areas ${JSON.stringify([...wiAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
+}
+
+// 2b. Every concrete `.kai/runs/<area>/` literal in a shipped agent or skill must
+//     resolve to a registered run area. Placeholder segments like
+//     `.kai/runs/<area>/` never match — the capture requires a lowercase letter,
+//     not `<` — so only real, hard-coded area names are checked. The trailing
+//     lookahead accepts a path separator or any word boundary (backtick, quote,
+//     whitespace, punctuation, end), so `.kai/runs/self-check` without a trailing
+//     slash is still caught. This flags an agent inventing an unregistered area.
+if (mAreas) {
+  const AREA_LITERAL = /\.kai[/\\]runs[/\\]([a-z][a-z0-9-]+)(?=[/\\`'"\s.,;:)\]]|$)/g;
+  for (const f of allFiles) {
+    const raw = readFileSync(f.path, 'utf8');
+    const seen = new Set();
+    for (const m of raw.matchAll(AREA_LITERAL)) {
+      if (mAreas.has(m[1]) || seen.has(m[1])) continue;
+      seen.add(m[1]);
+      err(rel(f.path), `references unregistered run area \`.kai/runs/${m[1]}/\` (add it to the manifest areas list or use a registered area)`);
+    }
+  }
 }
 
 // 3. The library/<type>/ set must match across the conventions "Library types"

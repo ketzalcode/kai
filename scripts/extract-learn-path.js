@@ -13,7 +13,7 @@
 //
 // Output:
 //
-//   .ketzal-learn/<path-or-module-slug>/<YYYY-MM-DD-HHMM>/
+//   <workspace>/.kai/runs/learn/<path-or-module-slug>/<YYYY-MM-DD-HHMM>/
 //     raw/                          ← per-unit markdown, audio-ready
 //       NN-<module-slug>/           (omitted in single-module mode)
 //         NN-<unit-slug>.md
@@ -38,7 +38,9 @@ function writeText(filePath, content) {
 }
 
 const BASE = 'https://learn.microsoft.com/en-us/training';
-const REPO_ROOT = path.resolve(__dirname, '..');
+// Extractions land in the caller's workspace under the canonical learn run area,
+// never inside the plugin checkout — so runs travel with the user's project.
+const WORKDIR = process.cwd();
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -372,7 +374,7 @@ function sourceMarkdown(courseTitle, rootUrl, startedAt, finishedAt, perModules,
     '',
     '## Notes',
     '',
-    `Walked via direct Playwright (Edge channel, headless). Run \`npm run generate-audio -- run <run-dir>/raw --lang es\` to narrate the per-unit files.`,
+    `Walked via Playwright (headless). To narrate the per-unit files, run the \`generate-audio\` skill on \`<run-dir>/raw\` — e.g. \`pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <run-dir>/raw -Lang es\`.`,
     ''
   ].join('\n');
 }
@@ -380,10 +382,13 @@ function sourceMarkdown(courseTitle, rootUrl, startedAt, finishedAt, perModules,
 (async () => {
   const args = parseArgs(process.argv);
   const stamp = timestampDir();
-  const runRoot = path.join(REPO_ROOT, '.ketzal-learn', args.slug, stamp);
+  const runRoot = path.join(WORKDIR, '.kai', 'runs', 'learn', args.slug, stamp);
   fs.mkdirSync(runRoot, { recursive: true });
 
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  // Default to Playwright's bundled Chromium so the extractor runs on any host.
+  // Override with LEARN_BROWSER_CHANNEL=msedge|chrome to use an installed browser.
+  const channel = process.env.LEARN_BROWSER_CHANNEL;
+  const browser = await chromium.launch(channel ? { channel, headless: true } : { headless: true });
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
 
@@ -394,7 +399,7 @@ function sourceMarkdown(courseTitle, rootUrl, startedAt, finishedAt, perModules,
   try {
     if (args.mode === 'module') {
       const rawDir = path.join(runRoot, 'raw');
-      console.log(`Extracting module ${args.slug} → ${path.relative(REPO_ROOT, runRoot)}`);
+      console.log(`Extracting module ${args.slug} → ${path.relative(WORKDIR, runRoot)}`);
       const pm = await extractModule(page, args.slug, rawDir, null);
       // Pull the human title off the first unit's <title> or the module index.
       await page.goto(`${BASE}/modules/${args.slug}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -474,7 +479,7 @@ function sourceMarkdown(courseTitle, rootUrl, startedAt, finishedAt, perModules,
     const totalUnits = perModules.reduce((a, pm) => a + pm.results.length, 0);
     const totalWords = perModules.reduce((a, pm) => a + pm.results.reduce((b, r) => b + r.word_count, 0), 0);
     const totalQs = perModules.reduce((a, pm) => a + pm.results.reduce((b, r) => b + r.questions.length, 0), 0);
-    console.log(`\nWrote ${totalUnits} unit file(s) under ${path.relative(REPO_ROOT, runRoot)} (${totalWords} words, ${totalQs} questions).`);
+    console.log(`\nWrote ${totalUnits} unit file(s) under ${path.relative(WORKDIR, runRoot)} (${totalWords} words, ${totalQs} questions).`);
     console.log(`Run dir: ${runRoot}`);
   } finally {
     await browser.close();

@@ -490,7 +490,7 @@ command to generate audio:
 - meta.md        <citations + prereqs>
 
 To narrate (Spanish default, conversational):
-  pwsh C:\src\kai\scripts\generate-audio.ps1 -Source <full path to narration.md> -Style conversational -Lang es
+  pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <full path to narration.md> -Style conversational -Lang es
 
 To package as HTML lesson (with embedded audio if generated):
   <invocation of generate-html-lesson skill>

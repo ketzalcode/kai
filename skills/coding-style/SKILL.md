@@ -3,7 +3,7 @@ name: coding-style
 description: "Apply when writing, editing, or refactoring code. Encodes the user's coding preferences: simplicity over cleverness, human-readable names and messages, composition, disciplined comments, and matching repo conventions before imposing taste."
 tools: [view, grep, glob, edit]
 user-invocable: true
-argument-hint: [optional file or area to apply to]
+argument-hint: "optional file or area to apply to"
 ---
 
 # Coding Style

@@ -184,7 +184,7 @@ Top 3 this week:
 What needs you: <one line>
 
 To listen to the Brief:
-  pwsh C:\src\kai\scripts\generate-audio.ps1 -Source <abs>\brief.md -Style verbatim -Lang en
+  pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <abs>\brief.md -Style verbatim -Lang en
 
 {If career page on:} Want me to hand <post candidate> to persona-self to draft,
 or have the career-mentor weigh the promotion signal?
