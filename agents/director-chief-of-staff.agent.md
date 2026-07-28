@@ -43,6 +43,13 @@ Your authority is coordination:
 - `principal-privacy-compliance` owns privacy/compliance obligations; the operator and counsel own legal decisions;
 - `principal-sre` owns reliability and production-readiness judgment;
 - `workflow-incident-response` owns incident command and recovery coordination;
+- `principal-technical-writer` owns product/developer documentation and release notes; the operator publishes;
+- `principal-revenue-operations` owns the SaaS metric model, forecasting, and billing ops; analytics owns metric validity;
+- `principal-demand-generation` owns demand-gen campaigns and lifecycle programs; only the operator spends or sends;
+- `principal-partnerships` owns partnership strategy and program design; the operator and counsel own agreements;
+- `workflow-localization` owns bounded i18n-readiness and locale QA; translators own translation;
+- `principal-data-engineer` owns data pipelines, models, and contracts; analytics owns metric meaning;
+- `principal-brand-designer` owns visual brand identity; the product designer owns interaction;
 - `principal-swe-manager` owns engineering sequencing when the effort needs it;
 - principal specialists own implementation and independent review;
 - `workflow-ship` owns the release gate;

@@ -4,6 +4,69 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.7.0] - 2026-07-28
+
+Kai's Enablement & Operations phase closes the remaining go-to-market and
+operations gaps with seven roles spanning documentation, revenue operations,
+demand generation, partnerships, localization, data engineering, and brand. The
+roster now contains **53 agents and 38 skills**.
+
+### Added
+- **Technical-writer principal**: `principal-technical-writer` owns product and
+  developer documentation — doc plans, how-tos, references, concept guides,
+  release notes, and doc audits. Grounds every instruction in shipped behavior;
+  routes product scope to the PM, ground truth to engineering, UX copy to the
+  designer, and claims to marketing. Never invents a capability, ships an
+  unverified instruction, or publishes without operator approval.
+- **Revenue-operations principal**: `principal-revenue-operations` owns the SaaS
+  metric model (MRR/ARR, churn, NRR, CAC, LTV, magic number), forecast
+  operations, pipeline hygiene, billing operations, and comp/territory structure.
+  Routes metric validity to analytics, price to pricing, per-deal to sales, and
+  financial decisions to the operator; preserves analytics causal status. Never
+  touches a live billing system or invents a metric result.
+- **Demand-generation principal**: `principal-demand-generation` owns campaign
+  strategy, campaign briefs, lifecycle/nurture email programs, channel mix, and
+  lead-handoff (MQL/SQL) definitions. Inherits `content-grounding`; routes
+  positioning and claims to marketing, PLG lifecycle to growth, channel content to
+  the content agents, and measurement to analytics. Never fabricates leads or
+  metrics, ships an unbacked claim, spends, or sends.
+- **Partnerships principal**: `principal-partnerships` owns partner strategy,
+  partner-fit assessment, integration-partnership design, channel/reseller
+  programs, and co-sell/co-marketing framing. Routes customer deals to sales,
+  feasibility to the solutions architect, economics to pricing/revops, and
+  agreements to the operator and counsel. Never signs, commits revenue share,
+  promises an unbuilt integration, or contacts a real partner.
+- **Localization workflow**: `workflow-localization` runs a bounded i18n-readiness
+  and locale-QA procedure — audits externalized strings, formatting,
+  pluralization, RTL, and encoding; assesses locale readiness; routes translation
+  to translators/services; and QAs a localized build. Never translates content,
+  edits product code, or publishes a localized build.
+- **Data-engineer principal**: `principal-data-engineer` owns data-pipeline and
+  data-shape engineering — ingestion/ELT design, warehouse/lakehouse modeling,
+  data contracts, event-instrumentation specs, and pipeline-layer data quality and
+  lineage. Routes metric meaning to analytics, provisioning to infra, and
+  PII/retention to privacy-compliance. Never pulls real production data or PII into
+  the workspace, deploys a pipeline, or defines what a business metric means.
+- **Brand-designer principal**: `principal-brand-designer` owns visual brand
+  identity — logo/color/typography/iconography systems, brand guidelines, and
+  visual-asset direction and critique. Grounds work in the app's design system,
+  presents load-bearing directions as human-confirmable option boards, and routes
+  interaction to the product designer and claims to marketing. Never implements
+  UI, originates a product claim, or imitates a protected mark.
+
+### Changed
+- Added canonical initiative artifact lanes `docs/`, `revops/`, `campaigns/`,
+  `partnerships/`, `localization/`, `data-engineering/`, and `brand/`, kept in
+  parity across `workspace-conventions`, `workflow-initiative-init`, and
+  `work-coordination`. Registered the new run-area flavors (`docs`, `localization`,
+  `brand` under `product`; `data-eng` under `eng`; `revops`, `partnerships` under
+  `revenue`; `demand-gen` under `content`).
+- Extended the role taxonomy in `AGENTS.md`, `director-chief-of-staff`, and the
+  README (status stamp, agent tables, trigger table) for the seven new roles, and
+  added reciprocal seam bullets to `principal-data-analytics`,
+  `principal-product-marketing`, `principal-pricing-monetization`,
+  `principal-sales`, `principal-growth`, and `principal-product-designer`.
+
 ## [0.6.0] - 2026-07-27
 
 Kai's Revenue phase adds pre-sale go-to-market judgment: deal execution and
@@ -180,6 +243,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.7.0]: https://github.com/RubenSaucedo/kai/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/RubenSaucedo/kai/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/RubenSaucedo/kai/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/RubenSaucedo/kai/compare/v0.3.0...v0.4.0

@@ -1,6 +1,6 @@
 ---
 name: design-grounding
-description: "Shared design-system grounding contract for kai's design and frontend agents. Owns the human-readable design-system.md reference shape, the consume-vs-derive decision, the neutral design-system-extract.md contract that workflow-product-explore fills, the propose-missing-scale bubble-up wired to scope-discipline, and the designer/frontend ownership split. principal-product-designer and principal-swe-frontend inherit it so design proposals stay grounded in the app's settled visual language instead of inventing a look."
+description: "Shared design-system grounding contract for kai's design and frontend agents. Owns the human-readable design-system.md reference shape, the consume-vs-derive decision, the neutral design-system-extract.md contract that workflow-product-explore fills, the propose-missing-scale bubble-up wired to scope-discipline, and the designer/frontend/brand ownership split. principal-product-designer, principal-swe-frontend, and principal-brand-designer inherit it so design and brand proposals stay grounded in the app's settled visual language instead of inventing a look."
 tools: [view, create, edit, grep, glob]
 ---
 
@@ -22,6 +22,11 @@ the `review-*` lenses inherit `doc-review-rigor` — by:
 - **`principal-swe-frontend`** — owns *implementation truth* (the real tokens,
   component primitives, styling architecture) and the feasibility of any
   proposed token/component.
+- **`principal-brand-designer`** — owns the *brand-identity layer* (logo/wordmark,
+  color palette, typographic and iconography style, brand voice-visual) that the
+  design system expresses. It grounds identity work in the current brand and
+  design system before evolving it; the applied design-system content stays with
+  the product designer.
 - **`workflow-product-explore`** — the neutral extraction contract **only**
   (observed visual facts, never design proposals).
 
@@ -188,6 +193,7 @@ owns the scope of a system addition.
 
 | Concern | Owner |
 |---|---|
+| Brand-identity layer — logo/wordmark, color palette, typographic and iconography **style**, brand guidelines | `principal-brand-designer` |
 | Visual language, hierarchy, component **shape/semantics**, states, usage rules, `design-system.md` content | `principal-product-designer` |
 | **Implementation truth** — CSS variables / Tailwind config / component primitives, token naming feasibility, mapping decisions to the repo's styling architecture, co-signing new/changed tokens | `principal-swe-frontend` |
 | Scope of a system-level addition | `principal-product-manager` / steward |

@@ -15,15 +15,19 @@ services, or MCP servers.
 
 ## Status
 
-`v0.6.0` — **46 agents and 38 skills**. The Core and Expansion SaaS teams are
-complete and the Revenue phase adds pre-sale go-to-market: `principal-sales`
-(deal qualification, discovery, deal strategy, objection handling, forecast
-hygiene, win/loss) and `principal-solutions-architect` (technical discovery,
-solution fit, feasibility, POC scope, security/compliance questionnaire drafts).
-The new roles preserve strict product-scope, pricing, capability-commitment,
-security, compliance, legal-risk, live-system, and outbound-contact boundaries
-while integrating with the existing product, engineering, QA, delivery, and
-workspace contracts below.
+`v0.7.0` — **53 agents and 38 skills**. The Core, Expansion, and Revenue SaaS
+teams are complete and the Enablement & Operations phase closes the remaining
+go-to-market and operations gaps: `principal-technical-writer` (docs, how-tos,
+references, release notes), `principal-revenue-operations` (SaaS metric model,
+forecast/pipeline hygiene, billing ops), `principal-demand-generation`
+(campaigns, lifecycle programs, lead handoff), `principal-partnerships` (partner
+strategy and program design), `workflow-localization` (i18n readiness and locale
+QA), `principal-data-engineer` (pipelines, data models, contracts), and
+`principal-brand-designer` (visual brand identity). The new roles preserve strict
+product-scope, positioning/claim, pricing, capability-commitment, metric-validity,
+privacy, legal-risk, live-system, spend, and outbound-contact boundaries while
+integrating with the existing product, engineering, QA, delivery, and workspace
+contracts below.
 
 ## Install
 
@@ -118,6 +122,7 @@ kai/
 | `principal-swe-infra` | Principal-level infrastructure/platform reviewer/builder for CI/CD, deployment, IaC, containerization, build tooling, secrets, and observability. Uncompromising on safety, reversibility, and secret hygiene; plan-before-apply, gated rollouts, pinned/scanned supply chain. P0–P2 finding scale. |
 | `principal-swe-architect` | Owns the decisions that fall *between* the domain engineers — system shape, boundaries, contracts, cross-cutting NFRs. Two modes: single-app approach calls spanning FE+BE+infra (e.g. sync-vs-async), and multi-service/repo boundaries. Investigation-first; owns seams, not domains. Six-disposition taxonomy (Endorse / Reshape / Relocate / Decouple / Defer / Spike). Scarce and surgical. |
 | `principal-swe-manager` | Build-feasibility layer between product intent and the engineers. Turns a committed action into a scoped, sequenced delivery plan — owned, sized workstreams; dependency-driven critical path; spikes for unknowns; scope pushback when cost outruns value. Writes no code. Six-disposition taxonomy (Ship / Slice / Spike / Sequence / Split / Pushback). **Situational** — skip for small or already-sequenced work. |
+| `principal-data-engineer` | Data-engineering principal for pipeline/ingestion design, warehouse/lakehouse modeling, data contracts, event-instrumentation specs, and pipeline-layer data quality and lineage. Routes metric meaning to analytics, provisioning to infra, PII/retention to privacy-compliance. Never pulls real production data/PII into the workspace, deploys a pipeline, or defines what a business metric means. |
 
 ### Delivery
 
@@ -147,6 +152,9 @@ kai/
 | `principal-product-manager` | Judgment layer that triages UX/feedback reports into concrete product decisions. Owns the scope gate and, as default steward, grooms the backlog, promotes and prioritizes work, and truthfully closes initiatives as `completed` or `shipped` after their deliverables are indexed. |
 | `principal-product-designer` | Owns interaction design for PM-approved user needs. Converts the product brief, current product map, and research into the smallest coherent interaction model, states, responsive behavior, accessibility intent, and design acceptance; independently reviews implementations against the approved design. Grounds proposals in the app's design system (`design-grounding`) and presents load-bearing options as human-confirmable, offline mockups with a pick-one gate (`ui-mockup`). |
 | `principal-product-strategist` | Generative discovery counterpart to the PM. Drives a forward-looking product investigation and proposes a prioritized, evidence-backed catalog of net-new actions (web research + supplied data; no live data queries). Every candidate names the job it serves and its smallest validating experiment. Six-tier taxonomy (Lead / Fast-follow / Bet / Explore / Park / Pass). |
+| `principal-technical-writer` | Documentation principal for doc plans, how-tos, references, concept guides, release notes, and doc audits. Grounds every instruction in shipped behavior, routes product scope to the PM, ground truth to engineering, UX copy to the designer, and claims to marketing. Never invents a capability, ships an unverified instruction, or publishes without operator approval. |
+| `principal-brand-designer` | Visual brand-identity principal for logo/color/typography/iconography systems, brand guidelines, and visual-asset direction and critique. Grounds work in the app's design system, presents load-bearing directions as human-confirmable option boards, and routes interaction to the product designer and claims to marketing. Never implements UI, originates a product claim, or imitates a protected mark. |
+| `workflow-localization` | Bounded i18n-readiness and locale-QA workflow: audits a surface for externalized strings, formatting, pluralization, RTL, and encoding, assesses locale readiness, routes translation to translators/services, and QAs a localized build. Never translates content, edits product code, or publishes a localized build. |
 
 ### Customer operations
 
@@ -161,6 +169,9 @@ kai/
 | ---- | ------- |
 | `principal-sales` | Pre-sale revenue principal for deal qualification, discovery, deal strategy and competitive positioning, objection handling, proposal structure, forecast/pipeline hygiene, and win/loss synthesis. Applies approved pricing/discount policy and routes exceptions; keeps prospect PII and deal terms local. Never fabricates pipeline, promises capability/dates, sets price, asserts technical fit, contacts real prospects, or accepts contracts. |
 | `principal-solutions-architect` | Pre-sale solutions-architecture principal for technical discovery, requirement-to-capability fit, integration feasibility, POC/pilot scope with exit criteria, technical objection handling, and security/compliance questionnaire drafts. Grounds fit in shipped capability, routes gaps to the PM and attestations to security/privacy owners. Never invents capability, commits roadmap/dates, certifies compliance, prices, implements, or touches a customer's live systems or data. |
+| `principal-revenue-operations` | Revenue-operations principal for the SaaS metric model (MRR/ARR, churn, NRR, CAC, LTV, magic number), forecast operations, pipeline hygiene, billing operations, and comp/territory structure. Routes metric validity to analytics, price to pricing, per-deal to sales, and financial decisions to the operator; preserves analytics causal status. Never touches a live billing system or invents a metric result. |
+| `principal-partnerships` | Partnerships and alliances principal for partner strategy, partner-fit assessment, integration-partnership design, channel/reseller programs, and co-sell/co-marketing framing. Routes customer deals to sales, feasibility to the SA, economics to pricing/revops, and agreements to the operator and counsel. Never signs, commits revenue share, promises an unbuilt integration, or contacts a real partner. |
+| `principal-demand-generation` | Demand-generation principal for campaign strategy, campaign briefs, lifecycle/nurture email programs, channel mix, lead-handoff (MQL/SQL) definitions, and demand diagnosis. Inherits `content-grounding`; routes positioning/claims to marketing, PLG lifecycle to growth, channel content to content agents, and measurement to analytics. Never fabricates leads/metrics, ships an unbacked claim, spends, or sends. |
 
 ### Growth, analytics & monetization
 
@@ -656,6 +667,13 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Synthesize surveys, NPS/CSAT, reviews, interviews, or feature requests into de-identified signals | `workflow-customer-feedback` |
 | Qualify a deal, plan discovery/deal strategy, handle an objection, review a forecast, or run win/loss | `principal-sales` |
 | Assess technical fit, integration feasibility, scope a POC, or draft a security/compliance questionnaire response | `principal-solutions-architect` |
+| Model SaaS metrics (MRR/ARR, churn, NRR, CAC/LTV), run a forecast, clean pipeline, or plan billing ops | `principal-revenue-operations` |
+| Plan a campaign, lifecycle/nurture emails, channel mix, or define MQL/SQL lead handoff | `principal-demand-generation` |
+| Assess a partner, design an integration/channel program, or frame a co-sell/co-marketing motion | `principal-partnerships` |
+| Write docs, a how-to/reference/concept guide, or release notes | `principal-technical-writer` |
+| Design a data pipeline, warehouse model, data contract, or event-instrumentation spec | `principal-data-engineer` |
+| Define a visual brand identity, brand guidelines, or critique a visual asset | `principal-brand-designer` |
+| Audit i18n readiness, assess a locale, route translation, or QA a localized build | `workflow-localization` |
 | Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
 | DPIA, data inventory, data-subject rights, retention/consent policy, or compliance-framework review | `principal-privacy-compliance` |
 | SLOs, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |

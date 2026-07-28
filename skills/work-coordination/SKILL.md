@@ -138,7 +138,14 @@ Rules:
   `initiatives/<slug>/artifacts/compliance/<item-id>.md`,
   `initiatives/<slug>/artifacts/briefs/<item-id>.md`,
   `initiatives/<slug>/artifacts/research/<item-id>.md`,
-  `initiatives/<slug>/artifacts/designs/<item-id>.md`, or
+  `initiatives/<slug>/artifacts/designs/<item-id>.md`,
+  `initiatives/<slug>/artifacts/docs/<item-id>.md` (technical writing / docs),
+  `initiatives/<slug>/artifacts/revops/<item-id>.md` (revenue-operations brief),
+  `initiatives/<slug>/artifacts/campaigns/<item-id>.md` (demand-gen campaign plan),
+  `initiatives/<slug>/artifacts/partnerships/<item-id>.md` (de-identified partnership brief),
+  `initiatives/<slug>/artifacts/localization/<item-id>.md` (localization report),
+  `initiatives/<slug>/artifacts/data-engineering/<item-id>.md` (data-engineering design),
+  `initiatives/<slug>/artifacts/brand/<item-id>.md` (brand / visual-identity system), or
   `initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
   override is allowed only inside the resolved workspace and must be recorded.
   An unaffiliated incident-command item uses

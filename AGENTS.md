@@ -51,6 +51,26 @@ For product and SaaS operations:
 - `principal-qa-ui` owns independent implementation/system validation.
 - `workflow-incident-response` owns incident declaration, SEV, command, timeline,
   and recovery coordination; humans execute production actions and send updates.
+- `principal-technical-writer` owns product/developer documentation and release
+  notes; the PM owns scope, engineering owns ground truth, and the operator
+  publishes;
+- `principal-revenue-operations` owns the SaaS metric model, forecast/pipeline
+  hygiene, and billing operations; analytics owns metric validity, pricing owns
+  price, and the operator owns financial decisions;
+- `principal-demand-generation` owns demand-generation strategy, campaigns, and
+  lifecycle programs; it inherits `content-grounding`, routes positioning/claims
+  to marketing, and only the operator spends or sends;
+- `principal-partnerships` owns partnership strategy and program design; sales
+  owns customer deals, the SA owns integration feasibility, and the operator and
+  counsel own agreements;
+- `workflow-localization` owns bounded i18n-readiness and locale QA; translators
+  own translation, frontend/design own layout, and the operator publishes;
+- `principal-data-engineer` owns data pipelines, models, and contracts; analytics
+  owns metric meaning, infra owns provisioning, and no real data or PII enters the
+  workspace;
+- `principal-brand-designer` owns visual brand identity grounded in the design
+  system; the product designer owns interaction, marketing owns claims, and the
+  operator adopts.
 
 Do not collapse those judgments into the PM, explorer, or director.
 
