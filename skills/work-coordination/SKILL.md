@@ -130,6 +130,8 @@ Rules:
   `initiatives/<slug>/artifacts/analytics/<item-id>.md`,
   `initiatives/<slug>/artifacts/experiments/<item-id>.md`,
   `initiatives/<slug>/artifacts/pricing/<item-id>.md`,
+  `initiatives/<slug>/artifacts/sales/<item-id>.md` (de-identified deal brief),
+  `initiatives/<slug>/artifacts/solutions/<item-id>.md` (sanitized solution brief),
   `initiatives/<slug>/artifacts/security/<item-id>.md`,
   `initiatives/<slug>/artifacts/reliability/<item-id>.md`,
   `initiatives/<slug>/artifacts/incidents/<item-id>.md`,
