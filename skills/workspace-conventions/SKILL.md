@@ -83,7 +83,14 @@ when the operator explicitly requested a local throwaway run.
 │        ├─ briefs/
 │        ├─ research/
 │        ├─ designs/
-│        └─ decisions/
+│        ├─ decisions/
+│        ├─ docs/
+│        ├─ revops/
+│        ├─ campaigns/
+│        ├─ partnerships/
+│        ├─ localization/
+│        ├─ data-engineering/
+│        └─ brand/
 ├─ library/
 │  ├─ README.md
 │  ├─ reviews/        dev-designs/    investigations/   briefings/
@@ -175,11 +182,11 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | Area | Owners | Flavors |
 |---|---|---|
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `extract`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
-| `eng` | SWE architect, manager, frontend, backend, infra, security, SRE, privacy-compliance | `arch`, `scope`, `frontend`, `backend`, `infra`, `security`, `sre`, `compliance` |
-| `product` | product strategist, product marketing, product designer, customer success, growth, data analytics, pricing-monetization, customer-feedback, experiment-review | `strategy`, `marketing`, `mockups`, `customer-success`, `growth`, `analytics`, `pricing`, `feedback`, `experiment-review` |
-| `revenue` | sales, solutions-architect | `sales`, `solutions-architect` |
+| `eng` | SWE architect, manager, frontend, backend, infra, security, SRE, privacy-compliance, data-engineer | `arch`, `scope`, `frontend`, `backend`, `infra`, `security`, `sre`, `compliance`, `data-eng` |
+| `product` | product strategist, product marketing, product designer, customer success, growth, data analytics, pricing-monetization, customer-feedback, experiment-review, technical-writer, localization, brand-designer | `strategy`, `marketing`, `mockups`, `customer-success`, `growth`, `analytics`, `pricing`, `feedback`, `experiment-review`, `docs`, `localization`, `brand` |
+| `revenue` | sales, solutions-architect, revenue-operations, partnerships | `sales`, `solutions-architect`, `revops`, `partnerships` |
 | `support` | workflow-support-triage | `triage` |
-| `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
+| `content` | linkedin strategist, video director, demand-generation, future platform agents | `linkedin`, `video`, `demand-gen` |
 | `review` | workflow-doc-review | `doc` |
 | `ship` | workflow-ship | `ship` |
 | `incident` | workflow-incident-response | `incident` |
@@ -219,6 +226,13 @@ that initiative:
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |
+| Technical writing / docs artifact | `initiatives/<slug>/artifacts/docs/<item-id>.md` |
+| Revenue-operations metric model / forecast brief | `initiatives/<slug>/artifacts/revops/<item-id>.md` |
+| Demand-generation campaign plan | `initiatives/<slug>/artifacts/campaigns/<item-id>.md` |
+| De-identified partnership brief | `initiatives/<slug>/artifacts/partnerships/<item-id>.md` |
+| Localization readiness / locale-QA report | `initiatives/<slug>/artifacts/localization/<item-id>.md` |
+| Data-engineering design / data contract | `initiatives/<slug>/artifacts/data-engineering/<item-id>.md` |
+| Brand / visual-identity system | `initiatives/<slug>/artifacts/brand/<item-id>.md` |
 | Initiative decision/ADR | `initiatives/<slug>/artifacts/decisions/<item-id>.md` |
 | Director closure summary | `initiatives/<slug>/director-summary.md` |
 | Deliverable index | `initiatives/<slug>/deliverables.md` |

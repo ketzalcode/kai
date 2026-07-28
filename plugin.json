@@ -1,7 +1,7 @@
 {
   "name": "kai",
   "description": "Open-source Copilot plugin for coordinated product, growth, customer operations, engineering, trust, delivery, and personal workflows across codebases.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "author": {
     "name": "RubenSaucedo",
     "url": "https://github.com/RubenSaucedo"
@@ -20,6 +20,13 @@
     "monetization",
     "sales",
     "solutions-architecture",
+    "revenue-operations",
+    "demand-generation",
+    "partnerships",
+    "documentation",
+    "data-engineering",
+    "localization",
+    "branding",
     "go-to-market",
     "privacy",
     "compliance",

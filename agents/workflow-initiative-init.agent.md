@@ -73,6 +73,13 @@ initiatives/<slug>/artifacts/
   research/
   designs/
   decisions/
+  docs/
+  revops/
+  campaigns/
+  partnerships/
+  localization/
+  data-engineering/
+  brand/
 coordination/items/<initiative-slug>-<milestone-id>.md
 coordination/threads/<initiative-slug>-<milestone-id>.md
 initiatives/INDEX.md
@@ -179,6 +186,20 @@ Set canonical artifact targets automatically:
   `initiatives/<slug>/artifacts/research/<item-id>.md`;
 - product design:
   `initiatives/<slug>/artifacts/designs/<item-id>.md`;
+- technical writing / docs artifact:
+  `initiatives/<slug>/artifacts/docs/<item-id>.md`;
+- revenue-operations metric model / forecast brief:
+  `initiatives/<slug>/artifacts/revops/<item-id>.md`;
+- demand-generation campaign plan:
+  `initiatives/<slug>/artifacts/campaigns/<item-id>.md`;
+- de-identified partnership brief:
+  `initiatives/<slug>/artifacts/partnerships/<item-id>.md`;
+- localization readiness / locale-QA report:
+  `initiatives/<slug>/artifacts/localization/<item-id>.md`;
+- data-engineering design / data contract:
+  `initiatives/<slug>/artifacts/data-engineering/<item-id>.md`;
+- brand / visual-identity system:
+  `initiatives/<slug>/artifacts/brand/<item-id>.md`;
 - initiative decision:
   `initiatives/<slug>/artifacts/decisions/<item-id>.md`.
 
