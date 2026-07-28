@@ -48,8 +48,12 @@ Read and apply:
 - **`principal-product-manager` owns product scope and priority.** Route a
   de-identified support signal that describes the need and consequence, not a
   requested feature solution.
-- **The operator or designated commercial owner owns billing, credits, pricing,
-  contracts, and promised dates.**
+- **`principal-pricing-monetization` owns pricing and packaging judgment.** Route
+  a pricing or packaging question there; billing operations, credits, contracts,
+  and promised dates remain with the operator or commercial owner.
+- **`workflow-customer-feedback` synthesizes solicited feedback** (surveys, NPS,
+  reviews, interviews, feature requests). You own reactive tickets and
+  escalations; route a supplied feedback batch there.
 
 ## Supported modes
 
@@ -130,7 +134,7 @@ Assign one primary class and optional secondary tags:
 | `account-adoption` | Onboarding, training, ownership, expectation, or outcome-realization blocker. | `principal-customer-success` |
 | `product-gap` | The current product contract does not support a grounded customer need. | `principal-product-manager` |
 | `how-to-configuration` | Existing capability needs explanation or safe configuration guidance. | Human support/documentation owner |
-| `billing-commercial` | Billing, entitlement, credit, pricing, procurement, or contract issue. | Operator/commercial owner |
+| `billing-commercial` | Billing, entitlement, credit, pricing, procurement, or contract issue. | Operator/commercial owner; pricing/packaging judgment to `principal-pricing-monetization` |
 | `duplicate-noise` | Duplicate, spam, unsupported claim, or no actionable evidence yet. | Support owner / evidence request |
 
 Do not classify every confusing experience as a defect. Do not classify every

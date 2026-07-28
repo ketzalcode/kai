@@ -69,11 +69,15 @@ when the operator explicitly requested a local throwaway run.
 │        ├─ content/
 │        ├─ customer-success/
 │        ├─ support/
+│        ├─ feedback/
 │        ├─ growth/
 │        ├─ analytics/
+│        ├─ experiments/
+│        ├─ pricing/
 │        ├─ security/
 │        ├─ reliability/
 │        ├─ incidents/
+│        ├─ compliance/
 │        ├─ briefs/
 │        ├─ research/
 │        ├─ designs/
@@ -169,8 +173,8 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | Area | Owners | Flavors |
 |---|---|---|
 | `qa` | product-explore, qa-ui, seo, PM, persona agents | `explore`, `extract`, `pm`, `qa`, `ux`, `seo`, `trainer`, `nutritionist` |
-| `eng` | SWE architect, manager, frontend, backend, infra, security, SRE | `arch`, `scope`, `frontend`, `backend`, `infra`, `security`, `sre` |
-| `product` | product strategist, product marketing, product designer, customer success, growth, data analytics | `strategy`, `marketing`, `mockups`, `customer-success`, `growth`, `analytics` |
+| `eng` | SWE architect, manager, frontend, backend, infra, security, SRE, privacy-compliance | `arch`, `scope`, `frontend`, `backend`, `infra`, `security`, `sre`, `compliance` |
+| `product` | product strategist, product marketing, product designer, customer success, growth, data analytics, pricing-monetization, customer-feedback, experiment-review | `strategy`, `marketing`, `mockups`, `customer-success`, `growth`, `analytics`, `pricing`, `feedback`, `experiment-review` |
 | `support` | workflow-support-triage | `triage` |
 | `content` | linkedin strategist, video director, future platform agents | `linkedin`, `video` |
 | `review` | workflow-doc-review | `doc` |
@@ -198,11 +202,15 @@ that initiative:
 | Content / creative pack (LinkedIn, video, …) | `initiatives/<slug>/artifacts/content/<item-id>/` |
 | De-identified customer-success signal | `initiatives/<slug>/artifacts/customer-success/<item-id>.md` |
 | De-identified support signal | `initiatives/<slug>/artifacts/support/<item-id>.md` |
+| De-identified customer-feedback signal | `initiatives/<slug>/artifacts/feedback/<item-id>.md` |
 | Growth diagnosis / experiment brief | `initiatives/<slug>/artifacts/growth/<item-id>.md` |
 | Analytics metric contract / readout | `initiatives/<slug>/artifacts/analytics/<item-id>.md` |
+| Experiment integrity certificate | `initiatives/<slug>/artifacts/experiments/<item-id>.md` |
+| Pricing / packaging brief | `initiatives/<slug>/artifacts/pricing/<item-id>.md` |
 | Sanitized security assessment / control brief | `initiatives/<slug>/artifacts/security/<item-id>.md` |
 | Sanitized reliability assessment / SLO brief | `initiatives/<slug>/artifacts/reliability/<item-id>.md` |
 | Sanitized incident record | `initiatives/<slug>/artifacts/incidents/<item-id>.md` |
+| Sanitized privacy/compliance assessment | `initiatives/<slug>/artifacts/compliance/<item-id>.md` |
 | PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
 | Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
 | Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |

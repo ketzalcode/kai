@@ -27,12 +27,19 @@ For product and SaaS operations:
 - `principal-growth` owns aggregate lifecycle diagnosis and bounded growth
   hypotheses; `principal-data-analytics` owns metric contracts, analytical
   validity, uncertainty, and causal-status labels;
+  `workflow-experiment-review` independently certifies experiment integrity;
+- `principal-pricing-monetization` owns pricing, packaging, and monetization
+  judgment; only the operator accepts commercial terms;
+- `workflow-customer-feedback` synthesizes solicited feedback (surveys, NPS,
+  reviews, interviews) into de-identified product/CS/growth signals;
 - `principal-product-designer` owns interaction design for approved needs,
   grounded in the app's design system (`design-grounding`) and presented as
   human-confirmable mockups (`ui-mockup`);
 - `principal-swe-*` own technical design and implementation;
 - `principal-security` owns security/threat judgment and revision-bound security
   review; only the operator accepts residual risk;
+- `principal-privacy-compliance` owns privacy/compliance obligations and
+  revision-bound framework review; counsel and the operator own legal decisions;
 - `principal-sre` owns reliability objectives, production readiness, and
   revision-bound operability review; it does not own release state;
 - `principal-qa-ui` owns independent implementation/system validation.

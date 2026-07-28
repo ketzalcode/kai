@@ -4,6 +4,44 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.5.0] - 2026-07-27
+
+Kai's Expansion phase adds monetization, privacy/compliance, feedback synthesis,
+and independent experiment-integrity review. The roster now contains **44 agents
+and 38 skills**.
+
+### Added
+- **Pricing & monetization principal**: `principal-pricing-monetization` owns
+  pricing models, packaging/tiering, price-change and migration design,
+  discount/deal-desk policy, willingness-to-pay analysis, and monetization
+  experiments. Preserves analytics causal status; never changes a live
+  price/quote/billing system, drafts contracts, or uses deceptive or
+  discriminatory pricing.
+- **Privacy & compliance principal**: `principal-privacy-compliance` owns DPIAs,
+  data inventories and lawful-basis maps, data-subject-rights process design,
+  consent/retention/notice policy, framework-mapped reviews, and breach-obligation
+  analysis. Not legal advice; never ingests real personal data, files, notifies,
+  certifies, or accepts legal risk.
+- **Customer-feedback synthesis workflow**: `workflow-customer-feedback` turns
+  solicited feedback (surveys, NPS/CSAT, reviews, interviews, feature requests)
+  into de-identified themes with grounded denominators and representativeness
+  caveats, routed to product/CS/growth/pricing/marketing owners.
+- **Experiment-integrity gate**: `workflow-experiment-review` independently
+  certifies experiment design and readout integrity (pre-registration, power,
+  SRM, exposure, peeking, multiplicity, guardrails, causal-status) against the
+  exact analysis revision.
+
+### Changed
+- Reused the `product` and `eng` run areas with new `pricing`, `feedback`,
+  `experiment-review`, and `compliance` flavors, and added canonical initiative
+  lanes for pricing, feedback, experiments, and compliance.
+- Registered `privacy-compliance` and `experiment-integrity` as revision-bound
+  `review_requirements` in `definition-of-done`.
+- Growth now routes pricing to the monetization owner and gates Scale decisions
+  through experiment-integrity; security routes legal/compliance to the privacy
+  owner; support-triage and customer-success route pricing and solicited feedback
+  to their new owners; directors and AGENTS taxonomy reflect the new seams.
+
 ## [0.4.0] - 2026-07-27
 
 Kai's Core SaaS operating team is complete. The roster now contains **40 agents
@@ -109,7 +147,8 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[0.4.0]: https://github.com/RubenSaucedo/kai/compare/14281b3c80bd8c06f22ee3ca4ab81a6b89dc7aee...v0.4.0
-[0.3.0]: https://github.com/RubenSaucedo/kai/commit/14281b3c80bd8c06f22ee3ca4ab81a6b89dc7aee
+[0.5.0]: https://github.com/RubenSaucedo/kai/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/RubenSaucedo/kai/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/RubenSaucedo/kai/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/RubenSaucedo/kai/releases/tag/v0.2.0
 [0.1.0]: https://github.com/RubenSaucedo/kai/commit/d85cf51

@@ -270,7 +270,9 @@ Write `analysis-report.md` locally and the sanitized coordinated artifact with:
 1. Growth or another decision owner creates the analytics request.
 2. Metric contract/design completes before experiment/product implementation.
 3. Analytics readout is independent from the growth/product action call.
-4. Downstream artifacts cite metric IDs and preserve the causal-status label.
+4. `workflow-experiment-review` may independently certify design/readout
+   integrity; you supply the evidence and honor a required re-analysis.
+5. Downstream artifacts cite metric IDs and preserve the causal-status label.
 
 All analytics work is `delivery_class: knowledge` and ends `completed`.
 

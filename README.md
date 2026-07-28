@@ -15,12 +15,14 @@ services, or MCP servers.
 
 ## Status
 
-`v0.4.0` — **40 agents and 38 skills**. The Core SaaS team is complete:
-customer success + support triage, growth + decision analytics, security + SRE,
-and bounded incident command. The new roles preserve strict product-scope,
-causality, privacy, risk-acceptance, production-action, and outbound boundaries
-while integrating with the existing product, engineering, QA, delivery, and
-workspace contracts below.
+`v0.5.0` — **44 agents and 38 skills**. The Core SaaS team is complete and the
+Expansion phase adds monetization, privacy/compliance, feedback synthesis, and
+independent experiment-integrity review: pricing + packaging judgment,
+`principal-privacy-compliance`, `workflow-customer-feedback`, and
+`workflow-experiment-review`. The new roles preserve strict product-scope,
+causality, privacy, legal-risk, commercial, production-action, and outbound
+boundaries while integrating with the existing product, engineering, QA,
+delivery, and workspace contracts below.
 
 ## Install
 
@@ -127,6 +129,7 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `principal-security` | Security judgment owner for threat models, security designs, revision-bound change reviews, vulnerability triage, privacy engineering, and incident-security guidance. Defensive and authorization-bound; never exploits, mutates production, accepts residual risk, certifies compliance, or discloses. |
+| `principal-privacy-compliance` | Privacy/compliance judgment owner for DPIAs, data inventories and lawful-basis maps, data-subject-rights process design, consent/retention/notice policy, framework-mapped reviews, and breach-obligation analysis. Not legal advice; never ingests real personal data, files, notifies, certifies, or accepts legal risk. |
 | `principal-sre` | Reliability and production-readiness principal for SLI/SLO/error-budget contracts, service readiness, failure/recovery design, capacity, observability, runbooks, and revision-bound operability review. Supplies evidence; never deploys, commands incidents, or moves release state. |
 | `workflow-incident-response` | Bounded incident commander for declaration/SEV, one timeline, real technical/security leads, operator decision/action packets, unsent status briefs, recovery verification, and sanitized closure records. Never performs production actions or lets emergency command promote remediation scope. |
 
@@ -151,12 +154,15 @@ kai/
 | `principal-customer-success` | Post-sale SaaS customer-outcomes principal. Produces evidence-based success/adoption plans, health and churn/renewal risk reviews, QBR briefs, and portfolio patterns. Keeps account-specific material local, routes de-identified product gaps to the PM, and never owns support resolution, pricing, contracts, promises, or outbound communication. |
 | `workflow-support-triage` | Privacy-first bounded support intake. Screens incidents first, classifies and deduplicates supplied tickets, assigns urgency by impact rather than account value, and routes to incident/security/SRE/QA/SWE/customer-success/PM/commercial owners. Never replies, closes tickets, fixes code, or promises timelines. |
 
-### Growth & analytics
+### Growth, analytics & monetization
 
 | Name | Purpose |
 | ---- | ------- |
 | `principal-growth` | Aggregate SaaS lifecycle-growth principal across acquisition, activation, engagement, retention, reactivation, referral, and paid conversion. Diagnoses binding constraints, defines safe bounded hypotheses, and consumes analytics readouts without upgrading causal claims. Never launches experiments, spends, publishes, messages users, or bypasses PM scope. |
 | `principal-data-analytics` | Decision-analytics principal for metric contracts, supplied-data analysis, experiment design/readout, funnels/cohorts/retention, data quality, uncertainty, causal-status labeling, and instrumentation gaps. Never implies live data access, invents results, implements telemetry, or chooses the product/growth action. |
+| `workflow-experiment-review` | Independent experiment-integrity gate over growth + analytics: pre-registration and readout checks (falsifiability, power, SRM, exposure, peeking, multiplicity, guardrails) and causal-status verification against the exact analysis revision. Certifies integrity; never designs, recomputes, upgrades a label, or chooses the action. |
+| `principal-pricing-monetization` | Pricing and packaging principal for pricing models, tiering/packaging, price-change and migration design, discount/deal-desk policy, willingness-to-pay analysis, and monetization experiments. Preserves analytics causal status; never changes a live price/quote/billing system, drafts contracts, or uses deceptive or discriminatory pricing. |
+| `workflow-customer-feedback` | Privacy-first synthesis of solicited feedback (surveys, NPS/CSAT, reviews, interviews, feature requests) into de-identified themes with grounded denominators and representativeness caveats, routed to product/CS/growth/pricing/marketing. Never replies, promises, fabricates quotes or frequencies, or turns a request into product scope. |
 
 ### AI research → product
 
@@ -637,7 +643,11 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Triage a support ticket/queue, deduplicate, assess urgency, or route an escalation | `workflow-support-triage` |
 | Diagnose acquisition/activation/retention or plan/read a bounded growth experiment | `principal-growth` |
 | Define metrics, analyze supplied data, design/read an experiment, or specify instrumentation | `principal-data-analytics` |
+| Independently check an experiment's integrity before its result drives a decision | `workflow-experiment-review` |
+| Set a pricing model, package/tier, plan a price change, discount policy, or monetization test | `principal-pricing-monetization` |
+| Synthesize surveys, NPS/CSAT, reviews, interviews, or feature requests into de-identified signals | `workflow-customer-feedback` |
 | Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
+| DPIA, data inventory, data-subject rights, retention/consent policy, or compliance-framework review | `principal-privacy-compliance` |
 | SLOs, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |
 | Active outage, degradation, security/data event, status update, recovery, or post-incident close | `workflow-incident-response` |
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
