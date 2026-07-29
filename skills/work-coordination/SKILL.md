@@ -241,6 +241,13 @@ any non-terminal state -> dropped
 
 Before acting, an agent or the director:
 
+0. Confirms the workspace is **schema-compatible**: `.kai/manifest.json` exists
+   and its `schema_version` equals the current contract. If it is behind (or the
+   manifest is missing), stop and report the exact repair — run the workspace
+   doctor (`node <kai-plugin>/scripts/workspace-doctor.mjs`) and apply the
+   migration ladder in `workspace-onboarding` — rather than claiming against
+   state the contract can't guarantee. Never claim an item in an incompatible or
+   doctor-failing workspace.
 1. Reads the authoritative item record and notes `version`.
 2. Confirms every dependency reached its declared required state and questions
    are clear.

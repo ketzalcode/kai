@@ -407,6 +407,7 @@ automatically.
 {
   "plugin": "kai",
   "version": "<plugin version at scaffold time>",
+  "schema_version": 1,
   "scaffolded": "<YYYY-MM-DD>",
   "workspace_mode": "<repository|external>",
   "workspace_root": "<'.' in repository mode | absolute external root>",
@@ -419,6 +420,15 @@ automatically.
   "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
+
+`version` is the plugin build stamped at scaffold time; **`schema_version`** is the
+independent workspace-contract version and is what upgrades key off. They move
+separately: a plugin release only bumps `schema_version` when it changes the
+generated workspace contract. The current contract is **schema version 1**. After
+`/plugin update kai`, run the workspace doctor (`node <kai-plugin>/scripts/workspace-doctor.mjs`)
+from the workspace root; if its `schema_version` is behind, the doctor prints the
+deterministic migration plan and coordinated agents refuse to claim work until the
+workspace is migrated and re-validates clean.
 
 Root names are contract constants. Do not add compatibility aliases or silently
 create legacy `.ketzal/` or `knowledge/` roots.
