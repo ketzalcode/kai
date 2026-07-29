@@ -3,7 +3,9 @@ name: validate
 # Guards the plugin contract on every PR and on pushes to main: frontmatter and
 # name-to-path agreement, resolvable cross-references, the host-tool allowlist,
 # workspace-contract consistency, and the fixture manifest schema. It also runs
-# the workspace-doctor self-test (healthy + broken generated-workspace fixtures).
+# the workspace-doctor self-test (healthy + broken generated-workspace fixtures)
+# and the host-loader acceptance mirror (discoverable inventory matches the
+# golden snapshot; malformed frontmatter fixtures are rejected).
 # Dependency-free — no install step, so it stays fast.
 
 on:
@@ -26,3 +28,5 @@ jobs:
         run: node scripts/validate-plugin.mjs
       - name: Workspace-doctor self-test
         run: node scripts/workspace-doctor.mjs --self-test
+      - name: Host-loader acceptance
+        run: node scripts/host-contract.mjs --self-test

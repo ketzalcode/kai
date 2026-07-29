@@ -4,6 +4,41 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.9.0] - 2026-07-28
+
+Host-loader **acceptance** testing (#33). CI now proves not just that the source
+is internally consistent, but that a Copilot host could actually *load* the
+advertised inventory — and that malformed frontmatter is rejected before release,
+closing the gap that let five skills ship with a shape the CLI silently drops
+(#23). No roster change — still **53 agents and 38 skills**.
+
+### Added
+- **Host-loader acceptance mirror (#33)**: `scripts/host-contract.mjs` loads
+  every agent/skill exactly as a host would and asserts the discoverable
+  inventory — agent roster, skill roster, and the user-invocable skill surface
+  (name + `argument-hint`) — matches a committed golden snapshot
+  (`test/fixtures/inventory.json`), so a roster or invocation-surface change is
+  explicit and reviewable in the PR. Run via `npm run host-contract`; regenerate
+  the golden with `npm run host-contract:update`.
+- **Malformed-frontmatter fixtures (#33)**: `test/fixtures/host-loader/invalid/`
+  reproduces real load-time failure classes (the #23 `argument-hint`-as-array
+  bug, a non-array `tools`, an unsupported tool, a skill-only key on an agent, a
+  name/id mismatch); the mirror's `--self-test` asserts each is rejected for the
+  expected reason. Wired into `.github/workflows/validate.yml` and `npm test`.
+- **README quickstart drift guard (#33)**: the mirror asserts the README status
+  stamp (`**N agents and M skills**`) equals the live loadable inventory and that
+  every `npm run <script>` the README documents exists in `package.json`.
+
+### Changed
+- **Shared loader contract (#33)**: the host-loader parsing rules (frontmatter
+  parse, tool allowlist, `argument-hint`/`user-invocable` shape, skill-only-key
+  separation) moved to `scripts/lib/loader-contract.mjs`, imported by both
+  `validate-plugin.mjs` and `host-contract.mjs` so the validator and the
+  acceptance mirror can never drift.
+- **Docs (#33)**: `test/README.md` documents the new host-loader acceptance layer
+  and reframes the remaining live-host work as the #33 follow-up; README
+  Contributing/release steps run `npm test` (all three guards).
+
 ## [0.8.0] - 2026-07-28
 
 Workspace **schema versioning** and a dependency-light **workspace doctor**
@@ -321,6 +356,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.9.0]: https://github.com/RubenSaucedo/kai/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/RubenSaucedo/kai/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/RubenSaucedo/kai/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/RubenSaucedo/kai/compare/v0.6.0...v0.7.0

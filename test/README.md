@@ -1,15 +1,19 @@
 # kai plugin tests
 
-Two dependency-free, CI-enforced guards protect the plugin. Both run on every PR
-and push to `main` and must stay fast:
+Three dependency-free, CI-enforced guards protect the plugin. All run on every
+PR and push to `main` and must stay fast:
 
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
   contract.
 - **`npm run doctor:self-test`** (`scripts/workspace-doctor.mjs --self-test`) —
   the generated **consumer-workspace** contract, exercised against committed
   golden fixtures.
+- **`npm run host-contract`** (`scripts/host-contract.mjs --self-test`) — the
+  **host-loader acceptance** mirror: the discoverable inventory a host would
+  expose matches a committed golden snapshot, and malformed frontmatter fixtures
+  are rejected.
 
-`npm test` runs both.
+`npm test` runs all three.
 
 ## Deterministic checks (in CI)
 
@@ -74,11 +78,36 @@ secrets (repository-mode roots are relative). The broken fixture's one
 deliberate machine-absolute path lives inside a value the doctor is expected to
 reject, not in a shipped manifest.
 
+### Host-loader acceptance — `host-contract.mjs`
+
+Mirrors the Copilot host loader to take the acceptance view of the shipped
+inventory. The shared loader contract lives in `scripts/lib/loader-contract.mjs`
+and is imported by **both** this mirror and `validate-plugin.mjs`, so the two
+can never drift. `--self-test` asserts:
+
+- **The discoverable inventory is host-loadable and matches a golden snapshot.**
+  Every agent/skill is loaded exactly as a host would; any loader rejection is a
+  failure (a broken entry never silently drops from the roster). The resulting
+  inventory — agent roster, skill roster, and the user-invocable skill surface
+  (name + `argument-hint`) — is diffed against `test/fixtures/inventory.json`, so
+  a roster or invocation-surface change is explicit and reviewable in the PR.
+  Regenerate the golden with `npm run host-contract:update` when the change is
+  intended.
+- **Malformed frontmatter is rejected before release.** The fixtures under
+  `test/fixtures/host-loader/invalid/` each reproduce a real load-time failure
+  class — the #23 `argument-hint`-as-inline-array bug, a non-array `tools`, an
+  unsupported tool, a skill-only key on an agent, and a name/id mismatch — and
+  the loader must reject each for the expected reason.
+- **The README quickstart mirrors a passing scenario.** The README status stamp
+  (`**N agents and M skills**`) must equal the live loadable inventory, and every
+  `npm run <script>` the README documents must exist in `package.json`.
+
 ## Host-backed checks (not yet automated)
 
-An acceptance layer that mounts the plugin in a real Copilot host — asserting the
-agent/skill inventory is loadable, scaffolding a scratch workspace against a
-golden contract, and exercising degraded CLI/cloud paths — is tracked in #33. It
+The mirror above is deterministic — it reproduces the host's *loader contract*,
+not a live host. Mounting the plugin in a **real** Copilot host (asserting the
+inventory loads in-process, scaffolding a scratch workspace, and exercising
+degraded CLI/cloud paths) is the remaining host-backed layer, tracked in #33. It
 belongs in a separate, possibly release-gated, job so the checks above stay fast.
 
 ## Manual-only coverage (needs a host)
@@ -108,4 +137,6 @@ When adding a new run area, `library/` type, or host tool, update the manifest
 schema/scaffolds/allowlist together — the consistency checks above will fail
 until they agree. When changing the generated workspace contract, bump
 `schema_version`, append a migration step to the `workspace-onboarding` ladder,
-and update the doctor + fixtures together.
+and update the doctor + fixtures together. When adding, removing, or renaming an
+agent/skill (or changing a user-invocable skill's `argument-hint`), regenerate
+the golden inventory with `npm run host-contract:update` and commit it.

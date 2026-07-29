@@ -1,13 +1,15 @@
 {
   "name": "kai",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Skills + scripts wired in this repo. Node deps power web-content-extraction; lectoria (used by generate-audio) is installed globally — see skills/generate-audio/SKILL.md.",
   "private": true,
   "scripts": {
     "validate": "node scripts/validate-plugin.mjs",
     "doctor": "node scripts/workspace-doctor.mjs",
     "doctor:self-test": "node scripts/workspace-doctor.mjs --self-test",
-    "test": "node scripts/validate-plugin.mjs && node scripts/workspace-doctor.mjs --self-test",
+    "host-contract": "node scripts/host-contract.mjs --self-test",
+    "host-contract:update": "node scripts/host-contract.mjs --update",
+    "test": "node scripts/validate-plugin.mjs && node scripts/workspace-doctor.mjs --self-test && node scripts/host-contract.mjs --self-test",
     "extract:path": "node scripts/extract-learn-path.js",
     "extract:module": "node scripts/extract-learn-path.js --module"
   },
