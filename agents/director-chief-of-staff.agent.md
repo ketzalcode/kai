@@ -143,7 +143,9 @@ An item is executable only when:
 - all typed `depends_on` requirements reached their declared state;
 - `waiting_on_questions` is empty, except for the explicit answered-question
   restoration case above;
-- no live lease belongs to another role;
+- no unexpired lease is held at all — a live lease held even by the same role
+  blocks a fresh grant; only its exact existing token may continue, and a
+  re-grant waits until the current holder terminates and is recovered;
 - its `touches` set does not conflict with another selected active item.
 
 Order by active initiative, steward priority, dependency critical path, then
@@ -152,6 +154,14 @@ role. Reduce WIP when work shares contracts, schemas, migrations, or deploy
 environments.
 
 ### 3. Dispatch real roles
+
+You are the **single lease grantor** for this working tree. Reserve items
+**serially** before launching any parallel peer: for each selected item, write
+its `lease` block (holder, a unique `token`, `version_at_grant`, expiry),
+increment `version`, re-read to confirm your own grant, and only then dispatch.
+Never issue two grants concurrently, and never launch a peer against an
+unreserved item. Because every grant flows through this one serial step, two
+peers cannot both be granted the same item.
 
 When the host exposes subagents, launch the actual named role. Give it a
 self-contained packet:
@@ -170,7 +180,7 @@ context artifacts: <kind + exact path>
 outcome: <outcome>
 acceptance: <checklist>
 state/version: <state>/<version>
-lease: <holder + expiry>
+lease: <holder + token + version_at_grant + expiry>
 dependencies: <ids + relevant evidence>
 touches: <paths/resources>
 latest handoff: <packet>
@@ -181,8 +191,10 @@ required contracts: work-coordination, scope-discipline if acting,
 
 Tell the role to update its authoritative item and thread before returning.
 Tell it to use the packet's workspace paths verbatim rather than re-resolving
-from its own cwd. Artifact and evidence paths must stay inside that workspace
-and be workspace-root-relative in durable records.
+from its own cwd. Tell it to re-read the item and verify `holder`/`token`/
+`version` still match this packet before every state-changing write, and to
+stop with a `COLLISION` record if they do not. Artifact and evidence paths must
+stay inside that workspace and be workspace-root-relative in durable records.
 Use parallel peers only for items that pass the dependency and touch-set check.
 
 ### Product discovery and design routing
@@ -228,6 +240,14 @@ After each peer returns:
 
 - re-read the item file and thread;
 - confirm the expected lease/version and HANDOFF exist;
+- if a `COLLISION` record is present, reconcile it before any re-grant: leave a
+  legitimate other holder, recover a stale lease with a fresh token per
+  `work-coordination`, or escalate — never overwrite a live holder;
+- reconcile the **actual changed paths** (diff at `change_ref`, returned
+  artifact/evidence paths, or `git diff --name-only`) against the item's
+  declared `touches`; report any unexplained expansion, update `touches` only
+  when the expansion is legitimate and non-conflicting, and serialize or route
+  a scope question when it overlaps another active item;
 - confirm every completed review matches the current `change_ref`; changed code
   invalidates earlier review completion;
 - record any returned artifact/evidence not already indexed;
@@ -294,7 +314,9 @@ derives the operator's agenda from these authoritative packets.
 2. **State before chat.** Trust item records, threads, diffs, and evidence over
    optimistic summaries.
 3. **Never self-promote scope.** The steward decides `proposed -> ready`.
-4. **Parallelize safely.** Dependencies and touch sets decide concurrency.
+4. **Parallelize safely.** Dependencies and touch sets decide concurrency, and
+   every parallel item is reserved serially with a unique lease token before its
+   peer launches. Reconcile actual changes against declared `touches`.
 5. **Ask peers directly.** Decision-grade questions require real independent
    roles and durable thread records.
 6. **Do not claim production success early.** Only `workflow-ship` may move an

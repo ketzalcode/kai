@@ -65,13 +65,24 @@ Validates a scaffolded consumer workspace (not the plugin source). The
 - `test/fixtures/broken-workspace/` — a workspace the doctor **must reject**:
   a pre-schema manifest (migration required), an `in-review` item with no
   `change_ref`, a dangling dependency, and a machine-absolute `artifact_target`.
+- `test/fixtures/concurrency-workspace/` — a **lease-safety** fixture backing
+  the collision-safe lease contract from #30. Three item records exercise the
+  guard: a held lease with **no grant token / `version_at_grant`** (the racy
+  pre-token shape), a tokened grant whose **`version_at_grant` equals the item
+  `version`** (a grant that skipped the increment — the double-write shape), and
+  a well-formed tokened lease whose **expiry has passed** (surfaced as a
+  stale-work recovery signal, not silently reclaimed). `threads/stale-recovery.md`
+  narrates the full HANDOFF → `COLLISION` → `RECOVERY` flow so the fixture
+  demonstrates the behavior, not only the static schema.
 
 The doctor checks manifest presence/JSON/keys, `schema_version` compatibility
 (emitting the migration ladder when behind), item `type`/`id`/lifecycle state,
-`change_ref`-bound review states, typed dependencies + cycles, lease shape and
-expiry, durable-path containment, and `BOARD.md` drift. Run it against a real
-workspace with `npm run doctor` (or `node scripts/workspace-doctor.mjs --root
-<dir>`).
+`change_ref`-bound review states, typed dependencies + cycles, lease shape —
+including that a held lease carries a unique `token` bound to a
+`version_at_grant` that is strictly less than the item `version` — expiry,
+durable-path containment, and `BOARD.md` drift.
+Run it against a real workspace with `npm run doctor` (or `node
+scripts/workspace-doctor.mjs --root <dir>`).
 
 Fixtures are self-contained and committed with **no** machine-specific paths or
 secrets (repository-mode roots are relative). The broken fixture's one

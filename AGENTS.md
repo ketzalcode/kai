@@ -105,8 +105,11 @@ Before acting:
 1. Read the item, its latest thread HANDOFF, relevant initiative context, and
    every `context_artifacts` path.
 2. Confirm acceptance, dependencies, open questions, touch-set safety, version,
-   and lease.
-3. Claim the item according to `work-coordination`.
+   and lease — including the dispatched lease `token` and `version_at_grant`.
+3. Claim the item according to `work-coordination`. Leases are granted serially
+   by a single grantor; before every state-changing write, re-verify your
+   `holder`/`token`/`version` still match the dispatch and stop with a
+   `COLLISION` record if they do not.
 
 Before stopping:
 
@@ -115,7 +118,8 @@ Before stopping:
    older ref no longer count.
 3. When implementation completes, move to `in-review` and route `next_role`
    through the item's unmet `review_requirements`; never skip directly to ship.
-4. Update item state, evidence, version, next role, and lease.
+4. Update item state, evidence, version, next role, and lease. Keep the actual
+   changed paths inside the declared `touches` set, or report the expansion.
 5. Append a structured HANDOFF to the item thread.
 
 Never leave coordinated work silently in progress.
