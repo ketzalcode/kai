@@ -1,0 +1,7 @@
+# kai keeps its dependency-free tooling scripts and the generated golden fixtures
+# at LF line endings so the workspace-doctor and host-contract snapshots compare
+# deterministically across platforms (and `--update` output matches what's
+# committed regardless of the contributor's OS).
+scripts/**/*.mjs text eol=lf
+scripts/**/*.js text eol=lf
+test/fixtures/** text eol=lf

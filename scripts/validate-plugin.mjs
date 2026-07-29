@@ -16,6 +16,9 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  parseFrontmatter, stripQuotes, loaderErrors,
+} from './lib/loader-contract.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
@@ -62,95 +65,14 @@ const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
 
 // ---------------------------------------------------------------------------
-// Frontmatter checks
+// Frontmatter + host-loader contract (shared with host-contract.mjs)
 // ---------------------------------------------------------------------------
-function parseFrontmatter(raw) {
-  const lines = raw.split(/\r?\n/);
-  if (lines[0] !== '---') return { ok: false, reason: 'file does not start with `---`' };
-  let end = -1;
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i] === '---') { end = i; break; }
-  }
-  if (end === -1) return { ok: false, reason: 'no closing `---` for frontmatter' };
-  const fm = {};
-  for (const line of lines.slice(1, end)) {
-    const m = line.match(/^([A-Za-z0-9_-]+):\s?(.*)$/);
-    if (m) fm[m[1]] = m[2];
-  }
-  return { ok: true, fm };
-}
-
-const stripQuotes = (s) => {
-  const t = (s ?? '').trim();
-  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
-    return t.slice(1, -1);
-  }
-  return t;
-};
-
-const isInlineArray = (v) => {
-  const t = (v ?? '').trim();
-  return t.startsWith('[') && t.endsWith(']');
-};
-const isEmptyInlineArray = (v) => (v ?? '').replace(/[[\]\s]/g, '') === '';
-// A scalar frontmatter value must not begin an inline array. Checking only the
-// leading `[` catches YAML-valid variants a strict `[...]` match would miss,
-// e.g. `[foo] # comment` or a multiline flow array — all rejected by the host.
-const startsInlineArray = (v) => (v ?? '').trim().startsWith('[');
-
 for (const f of allFiles) {
   const raw = readFileSync(f.path, 'utf8');
   const pf = parseFrontmatter(raw);
   if (!pf.ok) { err(rel(f.path), `invalid frontmatter: ${pf.reason}`); continue; }
-  const { fm } = pf;
-  f.fm = fm;
-
-  const name = stripQuotes(fm.name);
-  if (!name) err(rel(f.path), 'frontmatter is missing `name`');
-  else if (name !== f.id) {
-    err(rel(f.path), `frontmatter name "${name}" must equal ${f.kind} id "${f.id}"`);
-  }
-
-  if (!stripQuotes(fm.description)) err(rel(f.path), 'frontmatter `description` is missing or empty');
-
-  // tools: required on every agent and skill, must be a non-empty inline array.
-  if (fm.tools === undefined) {
-    err(rel(f.path), 'frontmatter is missing `tools`');
-  } else if (!isInlineArray(fm.tools)) {
-    err(rel(f.path), 'frontmatter `tools` must be an inline array like [a, b]');
-  } else if (isEmptyInlineArray(fm.tools)) {
-    err(rel(f.path), 'frontmatter `tools` array is empty');
-  }
-
-  // argument-hint is a user-invocation affordance (skills). It must be a single
-  // quoted/plain scalar — an inline array is silently rejected by the Copilot
-  // CLI host when it loads the skill, so fail fast here rather than at runtime.
-  if (fm['argument-hint'] !== undefined) {
-    if (startsInlineArray(fm['argument-hint'])) {
-      err(rel(f.path), 'frontmatter `argument-hint` must be a quoted scalar string, not an inline array');
-    } else if (!stripQuotes(fm['argument-hint'])) {
-      err(rel(f.path), 'frontmatter `argument-hint` is present but empty');
-    }
-  }
-
-  // user-invocable, when present, must be a boolean literal.
-  if (fm['user-invocable'] !== undefined) {
-    const uv = fm['user-invocable'].trim();
-    if (uv !== 'true' && uv !== 'false') {
-      err(rel(f.path), 'frontmatter `user-invocable` must be `true` or `false`');
-    }
-  }
-
-  // Schema separation: argument-hint / user-invocable / allowed-tools are
-  // skill-only affordances. Their presence on an agent signals a copy-paste
-  // error and is rejected.
-  if (f.kind === 'agent') {
-    for (const k of ['argument-hint', 'user-invocable', 'allowed-tools']) {
-      if (fm[k] !== undefined) {
-        err(rel(f.path), `frontmatter key \`${k}\` is skill-only and not valid on an agent`);
-      }
-    }
-  }
+  f.fm = pf.fm;
+  for (const msg of loaderErrors(f.kind, f.id, f.fm)) err(rel(f.path), msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -234,37 +156,10 @@ if (!existsSync(pjPath)) {
 }
 
 // ---------------------------------------------------------------------------
-// Host-tool allowlist — every declared tool must be a name the Copilot host
-// actually exposes. Adding a genuinely new host tool is a deliberate edit here;
-// a typo or an unsupported generic alias (read / search / write) is caught
-// before release, so a shipped agent never silently loses a capability.
+// Host-tool allowlist is enforced per entry by `loaderErrors` (shared contract).
+// Adding a genuinely new host tool is a deliberate edit to SUPPORTED_TOOLS in
+// scripts/lib/loader-contract.mjs.
 // ---------------------------------------------------------------------------
-const SUPPORTED_TOOLS = new Set([
-  'view', 'create', 'edit', 'grep', 'glob', // files & content
-  'bash',                                    // shell (host maps per-OS)
-  'ask_user',                                // operator interaction
-  'task', 'read_agent', 'write_agent',       // sub-agents / peer transport
-  'web_fetch', 'web_search',                 // web
-  'session_store_sql',                       // session store
-  'playwright',                              // browser MCP
-]);
-
-function parseToolList(rawTools) {
-  const t = (rawTools ?? '').trim();
-  if (!(t.startsWith('[') && t.endsWith(']'))) return null;
-  return t.slice(1, -1).split(',').map((x) => stripQuotes(x)).filter(Boolean);
-}
-
-for (const f of allFiles) {
-  if (!f.fm || f.fm.tools === undefined) continue; // shape already checked above
-  const tools = parseToolList(f.fm.tools);
-  if (tools === null) continue;
-  for (const tool of tools) {
-    if (!SUPPORTED_TOOLS.has(tool)) {
-      err(rel(f.path), `declares unsupported tool "${tool}" (not in the host allowlist)`);
-    }
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Contract consistency — the workspace contract is described in several files

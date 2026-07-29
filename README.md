@@ -37,15 +37,15 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.8.0` — **53 agents and 38 skills**. This release adds workspace **schema
-versioning**: `.kai/manifest.json` now carries a `schema_version` independent of
-the plugin `version`, with a deterministic migration ladder in
-`workspace-onboarding` and a claim-time compatibility gate in `work-coordination`.
-A dependency-light **workspace doctor** (`scripts/workspace-doctor.mjs`, run via
-`npm run doctor`) validates a generated consumer workspace — manifest schema,
-item lifecycle, `change_ref`-bound reviews, typed dependencies and cycles, lease
-shape/expiry, path containment, and `BOARD.md` drift — and its `--self-test`
-runs in CI against committed healthy/broken fixtures. The Core, Expansion,
+`v0.9.0` — **53 agents and 38 skills**. This release adds a **host-loader
+acceptance** layer: a dependency-free mirror (`scripts/host-contract.mjs`, run via
+`npm run host-contract`) loads every agent/skill exactly as a Copilot host would,
+asserts the discoverable inventory (rosters + the user-invocable skill surface)
+matches a committed golden snapshot, and rejects malformed-frontmatter fixtures —
+the exact class of bug (#23) that once shipped while CI stayed green. The shared
+loader contract now lives in `scripts/lib/loader-contract.mjs`, imported by both
+the validator and the mirror so they can't drift, and the README status stamp is
+checked against the live inventory. The Core, Expansion,
 Revenue, and Enablement & Operations SaaS teams remain complete:
 `principal-technical-writer` (docs, how-tos, references, release notes),
 `principal-revenue-operations` (SaaS metric model,
@@ -779,9 +779,15 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
-Before opening a PR, run `npm run validate` — a dependency-free structural
-check (valid agent/skill frontmatter, `name`-to-path agreement, and resolvable
-agent/skill cross-references) that also runs in CI on every pull request.
+Before opening a PR, run `npm test` — three dependency-free checks that also run
+in CI on every pull request: `npm run validate` (source contract — valid
+agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references,
+host-tool allowlist, workspace-contract consistency), `npm run doctor:self-test`
+(generated-workspace contract), and `npm run host-contract` (host-loader
+acceptance — the discoverable inventory matches the golden snapshot and malformed
+frontmatter is rejected). When you add, remove, or rename an agent/skill (or
+change a user-invocable skill's `argument-hint`), regenerate the golden with
+`npm run host-contract:update` and commit `test/fixtures/inventory.json`.
 
 ### Versioning & releases
 
@@ -802,7 +808,7 @@ Cutting `1.0.0` is a deliberate stability milestone, not automatic. Release step
 
 1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in `plugin.json`.
 2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed); refresh the README status stamp.
-3. `npm run validate`, open the PR, merge on green.
+3. `npm test`, open the PR, merge on green.
 4. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
 
 ## License
