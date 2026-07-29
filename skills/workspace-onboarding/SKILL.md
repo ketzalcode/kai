@@ -125,6 +125,22 @@ In a non-empty workspace, show the exact manifest diff with the rest of the
 onboarding plan before applying it. This reconciliation is what "matches the
 current fixed schema" means — a re-run brings an old manifest fully up to date.
 
+**Schema-version migration ladder.** `schema_version` (independent of the plugin
+`version`) drives upgrades deterministically. The current contract is
+**schema version 1**. Migrations are an ordered, idempotent ladder — apply each
+step whose version is above the manifest's `schema_version`, in order, then set
+`schema_version` to the current value:
+
+- **→ 1 (baseline / pre-schema):** a manifest with no `schema_version` (or `0`)
+  is a pre-schema workspace. Add `schema_version: 1`, apply the fixed-root/`areas`
+  reconciliation above, and remove retired fields. No coordination-record changes.
+
+When a future release changes the generated workspace contract it appends the
+next numbered step here and bumps the current version; it never rewrites an
+existing step. Re-running a completed migration is a no-op. The workspace doctor
+(`node <kai-plugin>/scripts/workspace-doctor.mjs`) reports which steps a workspace
+still needs; coordinated agents refuse to claim work until the ladder is applied.
+
 ### `.kai/CONVENTIONS.md`
 
 Render the current workspace layout, routing table, initiative artifact

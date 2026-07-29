@@ -37,12 +37,15 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.7.1` — **53 agents and 38 skills**. This patch remediates the four P0
-audit findings (#23–#26): the contract validator now rejects the `argument-hint`
-frontmatter shape the Copilot CLI silently drops and enforces run-area usage
-against the registry; shipped scripts and prompts drop author-machine paths for a
-portable `<kai-plugin>/…` reference; and the Host capabilities matrix above
-documents where the CLI and cloud coding-agent hosts differ. The Core, Expansion,
+`v0.8.0` — **53 agents and 38 skills**. This release adds workspace **schema
+versioning**: `.kai/manifest.json` now carries a `schema_version` independent of
+the plugin `version`, with a deterministic migration ladder in
+`workspace-onboarding` and a claim-time compatibility gate in `work-coordination`.
+A dependency-light **workspace doctor** (`scripts/workspace-doctor.mjs`, run via
+`npm run doctor`) validates a generated consumer workspace — manifest schema,
+item lifecycle, `change_ref`-bound reviews, typed dependencies and cycles, lease
+shape/expiry, path containment, and `BOARD.md` drift — and its `--self-test`
+runs in CI against committed healthy/broken fixtures. The Core, Expansion,
 Revenue, and Enablement & Operations SaaS teams remain complete:
 `principal-technical-writer` (docs, how-tos, references, release notes),
 `principal-revenue-operations` (SaaS metric model,
@@ -110,6 +113,36 @@ After editing any file in this directory, reload from inside the CLI:
 ```
 
 Plugins are cached per session — changes only appear in **new** sessions.
+
+## Upgrading a workspace after a plugin update
+
+A kai *workspace* (the `.kai/`, `coordination/`, `initiatives/`, `library/`, and
+`personal/` state a repo or folder gets when onboarded) carries its own
+**`schema_version`** in `.kai/manifest.json`, independent of the plugin
+`version`. Most `/plugin update kai` releases don't change it; when one does, an
+existing workspace needs a one-time migration.
+
+After updating the plugin, from the workspace root run the **workspace doctor**:
+
+```text
+node <kai-plugin>/scripts/workspace-doctor.mjs
+```
+
+(`<kai-plugin>` is the plugin's install directory — your clone root, or the
+`/plugin` install path.) The doctor is read-only and dependency-free. It:
+
+- verifies `.kai/manifest.json` is present, well-formed, and schema-compatible;
+- if `schema_version` is behind, prints the **deterministic migration ladder**
+  to apply (defined in `workspace-onboarding`);
+- validates generated coordination state — item schemas, lifecycle states,
+  `change_ref`-bound reviews, typed dependencies and cycles, lease shape/expiry,
+  path containment, and `BOARD.md` drift.
+
+If it reports **migration required** or errors, run `workflow-workspace-init`
+(idempotent) to reconcile, then re-run the doctor until it reports the workspace
+healthy. Coordinated agents refuse to claim work in a workspace that fails the
+doctor, so the upgrade path is explicit rather than silent. Re-running a
+completed migration is a no-op.
 
 ## Layout
 

@@ -1,0 +1,340 @@
+#!/usr/bin/env node
+// workspace-doctor — dependency-light validator for a kai *consumer* workspace.
+//
+// `validate-plugin.mjs` proves the plugin SOURCE is internally consistent.
+// This doctor proves a GENERATED workspace (a repo or external folder a user
+// onboarded) is well-formed and schema-compatible before coordinated agents act
+// on it. It uses only Node built-ins so any host can run it.
+//
+// Usage:
+//   node scripts/workspace-doctor.mjs [--root <dir>]   validate a workspace
+//   node scripts/workspace-doctor.mjs --self-test      run against bundled fixtures
+//
+// Exit code: 0 = healthy (claimable); non-zero = errors or migration required.
+
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { join, resolve, dirname, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// --- Contract constants the current plugin generates -----------------------
+const CURRENT_SCHEMA_VERSION = 1;
+const REQUIRED_MANIFEST_KEYS = [
+  'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode',
+  'workspace_root', 'kai', 'runs', 'coordination', 'initiatives', 'library',
+  'personal', 'areas',
+];
+const CANONICAL_AREAS = new Set([
+  'qa', 'eng', 'product', 'revenue', 'support', 'review', 'ship', 'incident',
+  'ai', 'learn', 'lessons', 'pulse', 'content',
+]);
+const LIFECYCLE = new Set([
+  'proposed', 'ready', 'in-progress', 'in-review', 'blocked', 'completed',
+  'release-ready', 'deploying', 'production-verification', 'shipped', 'dropped',
+]);
+// States at or past in-review require a change_ref bound to the implementation.
+const NEEDS_CHANGE_REF = new Set([
+  'in-review', 'release-ready', 'deploying', 'production-verification', 'shipped',
+]);
+// Valid typed-dependency "requires" gates (see work-coordination).
+const REQUIRES_STATES = new Set(['in-review', 'completed', 'release-ready', 'shipped']);
+const WORKSPACE_MODES = new Set(['repository', 'external']);
+
+// --- tiny frontmatter helpers (built-ins only) -----------------------------
+function frontmatter(raw) {
+  const lines = raw.split(/\r?\n/);
+  if (lines[0] !== '---') return null;
+  let end = -1;
+  for (let i = 1; i < lines.length; i++) { if (lines[i] === '---') { end = i; break; } }
+  if (end === -1) return null;
+  return lines.slice(1, end);
+}
+const scalar = (fmLines, key) => {
+  for (const l of fmLines) {
+    const m = l.match(new RegExp(`^${key}:\\s?(.*)$`));
+    if (m) return cleanScalar(m[1]);
+  }
+  return undefined;
+};
+// Normalize a raw YAML scalar: unwrap surrounding quotes, else strip a trailing
+// ` # comment`. (Comments inside a quoted value are preserved.)
+function cleanScalar(raw) {
+  let s = (raw ?? '').trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    return s.slice(1, -1);
+  }
+  const h = s.indexOf(' #');
+  if (h !== -1) s = s.slice(0, h).trim();
+  return s;
+}
+const isNull = (v) => v === undefined || v === '' || v === 'null' || v === '~' || v === '—';
+const unquote = (s) => {
+  const t = (s ?? '').trim();
+  return (t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))
+    ? t.slice(1, -1) : t;
+};
+// Extract typed dependencies ({item, requires}) under a top-level `depends_on:`.
+function dependsOn(fmLines) {
+  const out = [];
+  let inBlock = false;
+  let cur = null;
+  for (const l of fmLines) {
+    if (/^depends_on:\s*(\[\])?\s*$/.test(l)) { inBlock = true; continue; }
+    if (inBlock) {
+      if (/^\S/.test(l)) break; // dedented to next top-level key
+      const mi = l.match(/^\s*-\s*item:\s*(.+?)\s*$/);
+      if (mi) { cur = { item: cleanScalar(mi[1]), requires: undefined }; out.push(cur); continue; }
+      const mr = l.match(/^\s*requires:\s*(.+?)\s*$/);
+      if (mr && cur) cur.requires = cleanScalar(mr[1]);
+    }
+  }
+  return out;
+}
+// Read holder/expires from the `lease:` block.
+function lease(fmLines) {
+  const out = { holder: undefined, expires: undefined };
+  let inBlock = false;
+  for (const l of fmLines) {
+    if (/^lease:\s*$/.test(l)) { inBlock = true; continue; }
+    if (inBlock) {
+      if (/^\S/.test(l)) break;
+      const h = l.match(/^\s*holder:\s?(.*)$/);
+      const e = l.match(/^\s*expires:\s?(.*)$/);
+      if (h) out.holder = h[1].trim();
+      if (e) out.expires = e[1].trim();
+    }
+  }
+  return out;
+}
+// A durable path must be workspace-root-relative: no machine-absolute root,
+// no UNC share, no session-state, no parent-escape, no abbreviated `.../`.
+function badPath(p) {
+  const t = unquote(p);
+  if (isNull(t) || t === '[]') return null;
+  const norm = t.replace(/\\/g, '/');
+  if (t.startsWith('\\\\') || norm.startsWith('//')) return 'UNC / share path';
+  if (/^[A-Za-z]:\//.test(norm) || norm.startsWith('/')) return 'machine-absolute path';
+  if (t.includes('.../')) return 'abbreviated `.../` path';
+  if (norm.split('/').some((seg) => seg === '..')) return 'path escaping the workspace root';
+  if (/session-state/i.test(t)) return 'session-state-relative path';
+  return null;
+}
+
+// --- validation ------------------------------------------------------------
+function checkWorkspace(root) {
+  const errors = [];
+  const warnings = [];
+  const migrations = [];
+  const err = (m) => errors.push(m);
+  const warn = (m) => warnings.push(m);
+
+  // 1. Manifest -------------------------------------------------------------
+  const manifestPath = join(root, '.kai', 'manifest.json');
+  if (!existsSync(manifestPath)) {
+    err('.kai/manifest.json is missing — the workspace is not onboarded. Run workflow-workspace-init.');
+    return { errors, warnings, migrations };
+  }
+  let m;
+  try { m = JSON.parse(readFileSync(manifestPath, 'utf8')); }
+  catch (e) { err(`.kai/manifest.json is not valid JSON: ${e.message}`); return { errors, warnings, migrations }; }
+
+  for (const k of REQUIRED_MANIFEST_KEYS) {
+    if (!(k in m)) {
+      if (k === 'schema_version') continue; // handled by migration logic below
+      err(`.kai/manifest.json missing required key "${k}"`);
+    }
+  }
+  if (m.plugin !== undefined && m.plugin !== 'kai') err('.kai/manifest.json "plugin" must be "kai"');
+  if (m.workspace_mode !== undefined && !WORKSPACE_MODES.has(m.workspace_mode)) {
+    err(`.kai/manifest.json "workspace_mode" must be "repository" or "external" (found ${JSON.stringify(m.workspace_mode)})`);
+  }
+  if (m.workspace_mode === 'repository' && m.workspace_root !== '.') {
+    err('.kai/manifest.json repository-mode "workspace_root" must be "."');
+  }
+  if (Array.isArray(m.areas)) {
+    const a = new Set(m.areas);
+    for (const x of a) if (!CANONICAL_AREAS.has(x)) err(`.kai/manifest.json declares unknown run area "${x}"`);
+    for (const x of CANONICAL_AREAS) if (!a.has(x)) err(`.kai/manifest.json is missing run area "${x}"`);
+  }
+
+  // schema_version compatibility + migration plan
+  const sv = m.schema_version;
+  if (sv === undefined || sv === 0) {
+    migrations.push(`schema_version absent → migrate to ${CURRENT_SCHEMA_VERSION} (add schema_version, reconcile fixed roots/areas, drop retired fields).`);
+    err(`workspace schema is pre-versioned; migration to schema_version ${CURRENT_SCHEMA_VERSION} required before claiming work.`);
+  } else if (!Number.isInteger(sv)) {
+    err(`.kai/manifest.json "schema_version" must be an integer (found ${JSON.stringify(sv)}).`);
+  } else if (sv < CURRENT_SCHEMA_VERSION) {
+    for (let v = sv + 1; v <= CURRENT_SCHEMA_VERSION; v++) migrations.push(`apply migration step → ${v} (see workspace-onboarding ladder).`);
+    err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_SCHEMA_VERSION}; migration required before claiming work.`);
+  } else if (sv > CURRENT_SCHEMA_VERSION) {
+    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update the plugin (/plugin update kai) before claiming work.`);
+  }
+
+  // 2. Coordination items ---------------------------------------------------
+  const itemsDir = join(root, 'coordination', 'items');
+  const itemIds = new Set();
+  const deps = new Map(); // id -> [depId]
+  if (existsSync(itemsDir)) {
+    const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md'));
+    for (const f of files) {
+      const id = basename(f, '.md');
+      const rel = `coordination/items/${f}`;
+      const fm = frontmatter(readFileSync(join(itemsDir, f), 'utf8'));
+      if (!fm) { err(`${rel}: missing YAML frontmatter`); continue; }
+      itemIds.add(id);
+
+      if (scalar(fm, 'type') !== 'work-item') err(`${rel}: frontmatter "type" must be "work-item"`);
+      const fid = scalar(fm, 'id');
+      if (fid !== id) err(`${rel}: frontmatter id "${fid}" must equal filename id "${id}"`);
+
+      const state = scalar(fm, 'state');
+      if (!LIFECYCLE.has(state)) err(`${rel}: invalid lifecycle state "${state}"`);
+      if (NEEDS_CHANGE_REF.has(state) && isNull(scalar(fm, 'change_ref'))) {
+        err(`${rel}: state "${state}" requires a non-null change_ref`);
+      }
+
+      const ver = scalar(fm, 'version');
+      if (!/^\d+$/.test(ver ?? '')) err(`${rel}: "version" must be an integer (found ${JSON.stringify(ver)})`);
+
+      const lz = lease(fm);
+      if (!isNull(lz.holder) && isNull(lz.expires)) {
+        err(`${rel}: lease held by ${lz.holder} but has no expiry`);
+      }
+      if (!isNull(lz.expires)) {
+        const ts = parseStamp(lz.expires);
+        if (ts === null) {
+          warn(`${rel}: lease expires "${lz.expires}" is not a recognizable timestamp`);
+        } else if (ts < Date.now()) {
+          warn(`${rel}: lease expired at ${lz.expires} (stale-work recovery signal; the director should reconcile before reclaiming)`);
+        }
+      }
+
+      for (const key of ['artifact_target']) {
+        const reason = badPath(scalar(fm, key));
+        if (reason) err(`${rel}: ${key} is a ${reason}; durable paths must be workspace-root-relative`);
+      }
+
+      const dlist = dependsOn(fm);
+      for (const d of dlist) {
+        if (isNull(d.requires)) warn(`${rel}: depends_on "${d.item}" has no required upstream state`);
+        else if (!REQUIRES_STATES.has(d.requires)) err(`${rel}: depends_on "${d.item}" has invalid requires "${d.requires}" (expected in-review|completed|release-ready|shipped)`);
+      }
+      deps.set(id, dlist.map((d) => d.item));
+    }
+  }
+
+  // dangling dependencies
+  for (const [id, list] of deps) {
+    for (const d of list) if (!itemIds.has(d)) err(`coordination/items/${id}.md: depends_on references unknown item "${d}"`);
+  }
+  // dependency cycles (DFS)
+  const cycle = findCycle(deps);
+  if (cycle) err(`coordination dependency cycle: ${cycle.join(' -> ')}`);
+
+  // 3. BOARD drift ----------------------------------------------------------
+  const boardPath = join(root, 'coordination', 'BOARD.md');
+  if (existsSync(boardPath) && itemIds.size > 0) {
+    const board = readFileSync(boardPath, 'utf8');
+    const rowIds = new Set(
+      [...board.matchAll(/^\|\s*([a-z][a-z0-9-]+)\s*\|/gm)].map((x) => x[1]).filter((x) => x !== 'id'),
+    );
+    for (const id of itemIds) if (!rowIds.has(id)) warn(`coordination/BOARD.md is missing a row for item "${id}" (derived index is stale)`);
+    for (const id of rowIds) if (!itemIds.has(id)) warn(`coordination/BOARD.md row "${id}" has no item record (derived index is stale)`);
+  } else if (!existsSync(boardPath) && itemIds.size > 0) {
+    warn('coordination/BOARD.md is absent though coordination items exist (derived index missing)');
+  }
+
+  return { errors, warnings, migrations };
+}
+
+// Parse a `YYYY-MM-DD-HHMM` (or `YYYY-MM-DD`) stamp to epoch ms, else null.
+function parseStamp(s) {
+  const t = unquote(s);
+  let mm = t.match(/^(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})$/);
+  if (mm) return Date.UTC(+mm[1], +mm[2] - 1, +mm[3], +mm[4], +mm[5]);
+  mm = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (mm) return Date.UTC(+mm[1], +mm[2] - 1, +mm[3]);
+  const d = Date.parse(t);
+  return Number.isNaN(d) ? null : d;
+}
+
+function findCycle(deps) {
+  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const color = new Map();
+  const stack = [];
+  let found = null;
+  const visit = (n) => {
+    if (found) return;
+    color.set(n, GRAY); stack.push(n);
+    for (const d of deps.get(n) || []) {
+      if (!deps.has(d)) continue;
+      const c = color.get(d) || WHITE;
+      if (c === GRAY) { found = [...stack.slice(stack.indexOf(d)), d]; return; }
+      if (c === WHITE) { visit(d); if (found) return; }
+    }
+    color.set(n, BLACK); stack.pop();
+  };
+  for (const n of deps.keys()) if ((color.get(n) || WHITE) === WHITE) { visit(n); if (found) break; }
+  return found;
+}
+
+// --- reporting -------------------------------------------------------------
+function report(root, res) {
+  const rel = root === process.cwd() ? '.' : root;
+  for (const m of res.migrations) console.log(`  ↑ migration: ${m}`);
+  for (const w of res.warnings) console.log(`  ! ${w}`);
+  for (const e of res.errors) console.log(`  ✗ ${e}`);
+  if (res.errors.length === 0) {
+    console.log(`✓ workspace healthy — claimable (${rel})${res.warnings.length ? ` — ${res.warnings.length} warning(s)` : ''}`);
+    return 0;
+  }
+  console.log(`✗ workspace not claimable: ${res.errors.length} error(s)${res.migrations.length ? `, migration required` : ''} (${rel})`);
+  return 1;
+}
+
+// --- self-test -------------------------------------------------------------
+function selfTest() {
+  const fx = join(__dirname, '..', 'test', 'fixtures');
+  let ok = true;
+  const good = checkWorkspace(join(fx, 'repo-workspace'));
+  if (good.errors.length !== 0) {
+    ok = false; console.log('✗ self-test: healthy fixture reported errors:'); good.errors.forEach((e) => console.log(`    ${e}`));
+  } else if (good.warnings.length !== 0) {
+    ok = false; console.log('✗ self-test: healthy fixture reported warnings:'); good.warnings.forEach((w) => console.log(`    ${w}`));
+  } else {
+    console.log('✓ self-test: healthy fixture passes (0 errors, 0 warnings)');
+  }
+
+  const bad = checkWorkspace(join(fx, 'broken-workspace'));
+  const expected = [
+    { label: 'pre-schema migration', re: /pre-versioned|migration required/i },
+    { label: 'missing change_ref', re: /change_ref/i },
+    { label: 'dangling dependency', re: /unknown item/i },
+    { label: 'machine-absolute artifact path', re: /machine-absolute/i },
+  ];
+  if (bad.errors.length === 0) {
+    ok = false; console.log('✗ self-test: broken fixture was NOT rejected');
+  } else {
+    const joined = bad.errors.join('\n');
+    const missing = expected.filter((x) => !x.re.test(joined));
+    if (missing.length) {
+      ok = false; console.log(`✗ self-test: broken fixture missing expected error class(es): ${missing.map((x) => x.label).join(', ')}`);
+    } else {
+      console.log(`✓ self-test: broken fixture rejected with all ${expected.length} expected error classes (${bad.errors.length} error(s))`);
+    }
+  }
+
+  return ok ? 0 : 1;
+}
+
+// --- main ------------------------------------------------------------------
+const argv = process.argv.slice(2);
+if (argv.includes('--self-test')) {
+  process.exit(selfTest());
+} else {
+  const ri = argv.indexOf('--root');
+  const root = ri !== -1 && argv[ri + 1] ? resolve(argv[ri + 1]) : process.cwd();
+  process.exit(report(root, checkWorkspace(root)));
+}

@@ -4,6 +4,48 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.8.0] - 2026-07-28
+
+Workspace **schema versioning** and a dependency-light **workspace doctor**
+(#27). A generated workspace now declares its contract version independently of
+the plugin build, upgrades follow a deterministic migration ladder, and a
+read-only validator gates whether coordinated agents may claim work — so a
+workspace produced by an older plugin can no longer silently drift out of
+contract. No roster change — still **53 agents and 38 skills**.
+
+### Added
+- **`schema_version` in the workspace manifest (#27)**: `.kai/manifest.json`
+  carries a `schema_version` integer (currently `1`) separate from the plugin
+  `version` stamp. `workspace-conventions` documents the version-vs-schema
+  distinction and the post-update flow; the contract validator requires it in
+  the manifest and fixture.
+- **Schema-version migration ladder (#27)**: `workspace-onboarding` defines an
+  append-only ladder (baseline `1`, `→ 1` from a pre-schema workspace) so each
+  future contract change ships a discrete, idempotent migration step.
+- **Claim-time schema gate (#27)**: `work-coordination` adds a step-0
+  compatibility + doctor check to "Claiming work safely"; agents refuse to claim
+  work in an incompatible or unmigrated workspace.
+- **`scripts/workspace-doctor.mjs` (#27)**: a dependency-free (Node built-ins
+  only) validator for a *consumer* workspace — manifest schema and
+  `schema_version` compatibility (emitting the migration plan when behind), item
+  `type`/`id`/lifecycle state, `change_ref`-bound review states, typed
+  dependencies and cycle detection, lease shape/expiry, durable-path
+  containment, and `BOARD.md` drift. Run via `npm run doctor` (`--root <dir>`,
+  default cwd); errors block, warnings (stale lease, board drift) don't.
+- **Doctor self-test in CI (#27)**: `npm run doctor:self-test`
+  (`--self-test`) asserts committed golden fixtures — a healthy
+  `test/fixtures/repo-workspace/` and a `test/fixtures/broken-workspace/` that
+  must be rejected (pre-schema manifest, `in-review` item without `change_ref`,
+  dangling dependency, machine-absolute `artifact_target`). Wired into
+  `.github/workflows/validate.yml` and `npm test`.
+
+### Changed
+- **Contract validator (#27)**: the fixture-manifest check now requires an
+  integer `schema_version`.
+- **Docs (#27)**: README gains an "Upgrading a workspace after a plugin update"
+  section and `test/README.md` separates deterministic (CI), host-backed
+  (tracked in #33), and manual-only coverage.
+
 ## [0.7.1] - 2026-07-28
 
 Audit remediation for the four P0 findings (#23, #24, #25, #26): the contract
@@ -279,6 +321,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.8.0]: https://github.com/RubenSaucedo/kai/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/RubenSaucedo/kai/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/RubenSaucedo/kai/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/RubenSaucedo/kai/compare/v0.5.0...v0.6.0

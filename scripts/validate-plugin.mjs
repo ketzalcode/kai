@@ -385,7 +385,7 @@ if (conventionArtifacts && wiArtifacts && !setEq(conventionArtifacts, wiArtifact
 // Fixtures — a self-contained repository-mode workspace manifest that must match
 // the documented schema and canonical areas, with no machine-specific paths.
 // ---------------------------------------------------------------------------
-const REQUIRED_MANIFEST_KEYS = ['plugin', 'version', 'scaffolded', 'workspace_mode', 'workspace_root', 'kai', 'runs', 'coordination', 'initiatives', 'library', 'personal', 'areas'];
+const REQUIRED_MANIFEST_KEYS = ['plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode', 'workspace_root', 'kai', 'runs', 'coordination', 'initiatives', 'library', 'personal', 'areas'];
 const fixtureManifest = join(ROOT, 'test/fixtures/repo-workspace/.kai/manifest.json');
 if (existsSync(fixtureManifest)) {
   const fr = 'test/fixtures/repo-workspace/.kai/manifest.json';
@@ -397,6 +397,9 @@ if (existsSync(fixtureManifest)) {
       if (!(k in fx)) err(fr, `manifest missing required key "${k}"`);
     }
     if (fx.plugin !== 'kai') err(fr, 'manifest "plugin" must be "kai"');
+    if (!Number.isInteger(fx.schema_version)) {
+      err(fr, 'manifest "schema_version" must be an integer');
+    }
     if (fx.workspace_mode === 'repository' && fx.workspace_root !== '.') {
       err(fr, 'repository-mode "workspace_root" must be "."');
     }

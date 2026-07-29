@@ -1,7 +1,6 @@
 {
   "plugin": "kai",
   "version": "0.1.0",
-  "schema_version": 1,
   "scaffolded": "2026-01-01",
   "workspace_mode": "repository",
   "workspace_root": ".",
