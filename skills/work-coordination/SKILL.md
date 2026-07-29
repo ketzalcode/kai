@@ -90,6 +90,8 @@ change_ref: null
 version: 3
 lease:
   holder: null
+  token: null
+  version_at_grant: null
   acquired: null
   expires: null
 updated: 2026-07-20-1415
@@ -178,7 +180,12 @@ Rules:
   `in-review`.
 - **`version`** increments on every state-changing edit.
 - **`lease`** protects active ownership. A lease is coordination, not a
-  substitute for git conflict detection.
+  substitute for git conflict detection. `holder` is the owning role; `token`
+  is the unique grant identifier; `version_at_grant` is the item `version` the
+  grant was bound to; `acquired`/`expires` bound its lifetime. A held lease
+  (non-null `holder`) must carry a non-null `token` and `version_at_grant`.
+  Grants are issued serially by a single grantor (see *Claiming work safely*),
+  never raced for by parallel peers.
 - **Artifact/evidence paths** are workspace-root-relative in durable records.
   Repository metadata stores `workspace.root: .`; external mode may store an
   absolute root. Dispatch packets carry the resolved runtime absolute root.
@@ -239,7 +246,32 @@ any non-terminal state -> dropped
 
 ## Claiming work safely
 
-Before acting, an agent or the director:
+Markdown records give no atomic compare-and-swap: two parallel peers could each
+read `version: N`, each write `N+1` with a different lease, and each re-read
+before the other's write is visible — both then believe they hold the item.
+kai closes that race by making lease **granting serial** and lease **holding
+verifiable**, rather than pretending a file write is a mutex.
+
+### Single grantor
+
+Within one synchronized working tree there is exactly one lease grantor per
+item at a time: `director-chief-of-staff` (or, when a role acts without a
+director, that single acting agent for its own item). The grantor reserves items
+**one at a time** — it never issues two grants concurrently — so no two writers
+race the same record. Parallel peers are launched **only after** their items are
+already reserved; a peer never self-acquires the top-level lease it was
+dispatched for.
+
+This guarantee is **conditional on exactly one active grantor per item per
+tree**. kai has no runtime lock, so it cannot stop a second director run, or a
+second standalone agent, from targeting the same item concurrently — that is the
+multi-writer case and must be serialized by the host/operator (one coordination
+session per tree) or resolved as the cross-tree case below. When acting without
+a director, an agent may self-grant its own item only if it is the sole active
+worker on that item; concurrent same-item invocation is unsupported and must be
+serialized rather than raced.
+
+To reserve an item, the grantor:
 
 0. Confirms the workspace is **schema-compatible**: `.kai/manifest.json` exists
    and its `schema_version` equals the current contract. If it is behind (or the
@@ -251,21 +283,71 @@ Before acting, an agent or the director:
 1. Reads the authoritative item record and notes `version`.
 2. Confirms every dependency reached its declared required state and questions
    are clear.
-3. Confirms no unexpired lease belongs to another owner.
+3. Confirms **no unexpired lease is held at all** — not merely that none belongs
+   to another role. An unexpired lease held even by the same role blocks a new
+   grant: only the exact existing token may continue that work, and a re-grant
+   happens solely after the current holder terminates and is recovered (see
+   *Collision and stale-lease recovery*). This prevents a second instance of one
+   role from being granted a live item.
 4. Checks active item `touches` sets for overlap.
-5. Writes its owner + lease and increments `version`. Only a `ready` item
-   transitions to `in-progress` when claimed. Review/release roles lease
+5. Writes the `lease` block — `holder`, a unique `token`, `version_at_grant`
+   set to the `version` just read, `acquired`, `expires` — and increments
+   `version`. Because the grant increments the version, a held lease always has
+   `version_at_grant` strictly less than the item `version`. Only a `ready` item
+   transitions to `in-progress` when reserved. Review/release roles lease
    `in-review`, `release-ready`, `deploying`, or `production-verification`
-   without regressing the lifecycle state. Re-read immediately; if the
-   expected version/lease is absent, stop and record a collision.
+   without regressing the lifecycle state.
+6. Re-reads immediately. If `holder`, `token`, and `version` are not exactly
+   what it just wrote, another writer intervened: stop, do not dispatch, and
+   record a collision (see below).
+
+The `token` is a short unique value (for example a timestamp-plus-random
+suffix such as `9f3a-2026-07-29-1506`) that identifies this specific grant. It
+is the packet's authority to act, and it is carried into every dispatch.
+
+### Verify before every state-changing write
+
+A dispatched role receives `lease.holder`, `lease.token`, and the item
+`version` in its packet. Before **each** write that changes product, code, or
+durable coordination state, it re-reads the authoritative record and confirms
+`holder` is itself, `token` equals the dispatched token, and `version` equals
+the dispatched version (or the value it last wrote). If any differ, its grant
+was lost or overwritten: it **stops before modifying product state**, appends a
+collision record, and returns to the grantor without acting. This makes a lost
+lease a hard stop, not a silent double-write.
+
+### Collision and stale-lease recovery
+
+A collision is recorded as a `COLLISION` note in the item thread naming the
+observed vs expected `holder`/`token`/`version`; the item is left untouched for
+the grantor to reconcile.
 
 Default lease duration is the current agent run. A timestamp expiry is a stale
-work recovery signal, not permission to overwrite blindly: the director checks
+work recovery signal, not permission to overwrite blindly: the grantor checks
 the thread and repository state before reclaiming it. If an agent crashed
-without a HANDOFF, the director may clear the stale lease only after this
-reconciliation, append a `RECOVERY` HANDOFF describing observed partial work,
-and redispatch the appropriate role. Conflicting or unsafe partial work
-requires operator escalation.
+without a HANDOFF, the grantor may clear the stale lease only after this
+reconciliation — it writes a fresh `token` and `version_at_grant`, increments
+`version`, appends a `RECOVERY` HANDOFF describing observed partial work, and
+redispatches the appropriate role. The new token invalidates the crashed run's
+token, so a resurrected stale peer fails its verify step and stops. Conflicting
+or unsafe partial work requires operator escalation.
+
+### Multi-machine and cross-branch scope
+
+Serial granting is only atomic **within one synchronized working tree**. Across
+machines, clones, or unmerged branches the committed lease state is not shared
+until synchronization, so two trees can grant the same item independently. kai
+does **not** claim to prevent that; the supported model is:
+
+- run coordinated parallel work in a **single synchronized working tree**, with
+  one grantor per tree;
+- treat git (branch protection, merge-conflict detection, and review) as the
+  cross-tree backstop that surfaces divergent leases at integration time;
+- when work must span trees, serialize at the initiative level — one tree owns
+  an item at a time — rather than relying on the lease field alone.
+
+A host that exposes an atomic lock primitive may layer it under this protocol,
+but the contract does not require one.
 
 ## Parallel work and collisions
 
@@ -275,11 +357,48 @@ run together. Parallelism is safe when:
 - item IDs are distinct;
 - typed dependency requirements permit it;
 - `touches` sets do not overlap;
-- no item requires an unanswered blocking question from the other.
+- no item requires an unanswered blocking question from the other;
+- each item was reserved serially by the single grantor before dispatch.
 
 An overlapping target alone is not a collision. An overlapping path, schema,
 service contract, environment, or other exclusive resource is. When overlap is
 uncertain, ask the owning peer and serialize until resolved.
+
+## Touch-set reconciliation
+
+`touches` is a **claim**, not a proof. A declared touch set prevents two items
+from being dispatched over the same exclusive resource, but nothing forces the
+actual diff to stay inside it. When a role hands back implemented work, the
+grantor reconciles the **actual changed paths/resources** against the item's
+declared `touches`.
+
+The changed-path set must be **attributable to this item**, not the whole
+working tree. A bare `git diff --name-only` conflates concurrent peers and omits
+untracked files, so it is not sufficient during parallel work. Use, in order of
+preference:
+
+- the file list of the item's own commit(s)/PR at `change_ref`
+  (`git show --name-only <change_ref>` or `git diff --name-only <base>..<head>`
+  scoped to that ref, **plus** untracked additions the role reports); or
+- when `change_ref` is a deterministic diff hash (not a commit), the returned
+  artifact/evidence path manifest the role must supply — the hash itself cannot
+  be diffed; or
+- an isolated per-item ref/commit dispatched from an immutable base.
+
+Then:
+
+- Every changed path must match a declared `touches` glob or resource.
+- A change outside the declared set is reported as an **unexplained touch-set
+  expansion**: the grantor does not silently accept it. It either updates
+  `touches` (and re-checks overlap against other active items before doing so)
+  when the expansion is legitimate and non-conflicting, or routes the item back
+  as a scope question under `scope-discipline`.
+- Expansion that overlaps another active item's exclusive resource is a
+  collision: serialize the items before proceeding.
+
+This keeps the parallel-safety guarantee honest — an item can only be
+considered non-conflicting for what it actually changed, not only for what it
+promised to change.
 
 ## Review routing
 
@@ -288,7 +407,10 @@ unmet `review_requirements` entry, records the exact `change_ref`, and clears
 its lease. Each independent
 reviewer:
 
-1. leases the item without changing `in-review`;
+1. holds the item under a grant issued by the single grantor (the director
+   reserves the item and dispatches the reviewer with its token, exactly as for
+   any acting role) without changing `in-review`; a no-director reviewer
+   self-grants per *Single grantor*;
 2. records its verdict, evidence, and matching `change_ref` in
    `completed_reviews`;
 3. appends a HANDOFF;
@@ -326,6 +448,24 @@ Append every handoff to `coordination/threads/<item-id>.md`:
 The handing-off agent updates `next_role`, clears its lease unless it still
 owns follow-up work, increments `version`, and appends the packet. A handoff
 with no `needs` or `next` is incomplete.
+
+## COLLISION record
+
+When a role's verify step fails — its `holder`, `token`, or `version` no longer
+matches what it was dispatched with — it appends this note and stops before
+changing product state:
+
+```markdown
+## COLLISION <YYYY-MM-DD-HHMM> — <role> lost lease on <item-id>
+- expected: holder=<self> token=<dispatched> version=<dispatched>
+- observed: holder=<current> token=<current> version=<current>
+- action:   stopped before writing product state; returned to grantor
+```
+
+The grantor reconciles the record before any re-grant: it decides whether the
+other holder is legitimate (leave it), the item is stale (recover per
+*Collision and stale-lease recovery*), or the situation needs operator
+escalation. A COLLISION note never authorizes overwriting another live holder.
 
 ## QUESTION / ANSWER protocol
 

@@ -91,17 +91,21 @@ function dependsOn(fmLines) {
   }
   return out;
 }
-// Read holder/expires from the `lease:` block.
+// Read holder/token/version_at_grant/expires from the `lease:` block.
 function lease(fmLines) {
-  const out = { holder: undefined, expires: undefined };
+  const out = { holder: undefined, token: undefined, versionAtGrant: undefined, expires: undefined };
   let inBlock = false;
   for (const l of fmLines) {
     if (/^lease:\s*$/.test(l)) { inBlock = true; continue; }
     if (inBlock) {
       if (/^\S/.test(l)) break;
       const h = l.match(/^\s*holder:\s?(.*)$/);
+      const t = l.match(/^\s*token:\s?(.*)$/);
+      const v = l.match(/^\s*version_at_grant:\s?(.*)$/);
       const e = l.match(/^\s*expires:\s?(.*)$/);
       if (h) out.holder = h[1].trim();
+      if (t) out.token = t[1].trim();
+      if (v) out.versionAtGrant = v[1].trim();
       if (e) out.expires = e[1].trim();
     }
   }
@@ -199,8 +203,20 @@ function checkWorkspace(root) {
       if (!/^\d+$/.test(ver ?? '')) err(`${rel}: "version" must be an integer (found ${JSON.stringify(ver)})`);
 
       const lz = lease(fm);
-      if (!isNull(lz.holder) && isNull(lz.expires)) {
-        err(`${rel}: lease held by ${lz.holder} but has no expiry`);
+      if (!isNull(lz.holder)) {
+        if (isNull(lz.expires)) {
+          err(`${rel}: lease held by ${lz.holder} but has no expiry`);
+        }
+        if (isNull(lz.token)) {
+          err(`${rel}: lease held by ${lz.holder} but has no token (a held lease must carry a unique grant token — see work-coordination "Claiming work safely")`);
+        }
+        if (isNull(lz.versionAtGrant)) {
+          err(`${rel}: lease held by ${lz.holder} but has no version_at_grant (the grant must be bound to the item version it was issued against)`);
+        } else if (!/^\d+$/.test(lz.versionAtGrant)) {
+          err(`${rel}: lease version_at_grant must be an integer (found ${JSON.stringify(lz.versionAtGrant)})`);
+        } else if (/^\d+$/.test(ver ?? '') && Number(lz.versionAtGrant) >= Number(ver)) {
+          err(`${rel}: lease version_at_grant ${lz.versionAtGrant} must be strictly less than the item version ${ver} — granting increments the version, so version_at_grant >= version signals a grant that skipped the increment (a racy or tampered lease)`);
+        }
       }
       if (!isNull(lz.expires)) {
         const ts = parseStamp(lz.expires);
@@ -324,6 +340,27 @@ function selfTest() {
     } else {
       console.log(`✓ self-test: broken fixture rejected with all ${expected.length} expected error classes (${bad.errors.length} error(s))`);
     }
+  }
+
+  // Concurrency fixture: collision detection (un-tokened held lease and a grant
+  // that skipped the version increment are rejected) and stale-lease recovery
+  // (an expired but tokened lease is surfaced as a warning).
+  const conc = checkWorkspace(join(fx, 'concurrency-workspace'));
+  const concErr = conc.errors.join('\n');
+  const concWarn = conc.warnings.join('\n');
+  const tokenErr = /lease held by .* but has no token/i.test(concErr);
+  const vagErr = /lease held by .* but has no version_at_grant/i.test(concErr);
+  const racyErr = /version_at_grant \d+ must be strictly less than the item version/i.test(concErr);
+  const staleWarn = /stale-work recovery signal/i.test(concWarn);
+  if (tokenErr && vagErr && racyErr && staleWarn) {
+    console.log(`✓ self-test: concurrency fixture detects un-tokened + racy (increment-skipping) grants as collisions (${conc.errors.length} error(s)) and the stale-lease recovery signal (${conc.warnings.length} warning(s))`);
+  } else {
+    ok = false;
+    console.log('✗ self-test: concurrency fixture did not surface the expected lease findings:');
+    if (!tokenErr) console.log('    missing error: un-tokened held lease');
+    if (!vagErr) console.log('    missing error: held lease without version_at_grant');
+    if (!racyErr) console.log('    missing error: version_at_grant >= version (increment-skipping grant)');
+    if (!staleWarn) console.log('    missing warning: expired lease stale-work recovery signal');
   }
 
   return ok ? 0 : 1;

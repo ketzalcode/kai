@@ -37,15 +37,17 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.9.0` — **53 agents and 38 skills**. This release adds a **host-loader
-acceptance** layer: a dependency-free mirror (`scripts/host-contract.mjs`, run via
-`npm run host-contract`) loads every agent/skill exactly as a Copilot host would,
-asserts the discoverable inventory (rosters + the user-invocable skill surface)
-matches a committed golden snapshot, and rejects malformed-frontmatter fixtures —
-the exact class of bug (#23) that once shipped while CI stayed green. The shared
-loader contract now lives in `scripts/lib/loader-contract.mjs`, imported by both
-the validator and the mirror so they can't drift, and the README status stamp is
-checked against the live inventory. The Core, Expansion,
+`v0.10.0` — **53 agents and 38 skills**. This release makes coordination
+**lease acquisition collision-safe** (#30): lease *granting* is now serial
+through a single grantor (`director-chief-of-staff`) and lease *holding* is
+verifiable via a unique `token` bound to the item `version`, so two parallel
+peers can never both hold the same item — an acting role re-verifies its grant
+and stops with a `COLLISION` record before any state-changing write if it was
+lost. Reconciliation compares an item's actual changed paths against its
+declared `touches`, the multi-machine model is made explicit (serial granting is
+atomic only within one synchronized working tree; git is the cross-tree
+backstop), and `workspace-doctor` plus a new `concurrency-workspace` fixture
+prove collision detection and stale-lease recovery. The Core, Expansion,
 Revenue, and Enablement & Operations SaaS teams remain complete:
 `principal-technical-writer` (docs, how-tos, references, release notes),
 `principal-revenue-operations` (SaaS metric model,

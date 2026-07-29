@@ -26,6 +26,8 @@ change_ref: abc1234
 version: 4
 lease:
   holder: null
+  token: null
+  version_at_grant: null
   acquired: null
   expires: null
 updated: 2026-07-20-1415

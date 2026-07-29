@@ -28,6 +28,8 @@ change_ref: null
 version: 2
 lease:
   holder: null
+  token: null
+  version_at_grant: null
   acquired: null
   expires: null
 updated: 2026-07-20-1415

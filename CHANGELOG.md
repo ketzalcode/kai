@@ -4,6 +4,50 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.10.0] - 2026-07-29
+
+**Collision-safe lease acquisition (#30).** Coordination leases were
+read-check-write-reread, which is not atomic in a markdown store: two parallel
+peers could each read the same `version`, each write it back with a different
+lease, and each re-read before the other's write landed — both then believed
+they held the item. This release makes lease *granting* serial and lease
+*holding* verifiable, and reconciles what an item actually changed against what
+it claimed. No roster change — still **53 agents and 38 skills**.
+
+### Added
+- **Unique lease token bound to the item version (#30)**: the `lease` block gains
+  `token` and `version_at_grant`. A held lease (non-null `holder`) must carry a
+  unique grant `token` bound to the `version` it was issued against; the token
+  travels in the dispatch packet and is the acting role's authority to write.
+- **Verify-before-write + collision stop (#30)**: `work-coordination` requires an
+  acting role to re-read and confirm its `holder`/`token`/`version` before every
+  state-changing write, and to **stop before modifying product state** with a new
+  `COLLISION` thread record if the grant was lost or overwritten. A re-grant
+  writes a fresh token, so a resurrected stale peer fails verification and stops.
+- **Concurrency fixture (#30)**: `test/fixtures/concurrency-workspace/` plus a
+  `workspace-doctor` self-test case demonstrate collision detection (an
+  un-tokened held lease is rejected) and stale-lease recovery (an expired but
+  properly tokened lease is surfaced as a recovery signal, not silently
+  reclaimed).
+
+### Changed
+- **Single-grantor protocol (#30)**: `director-chief-of-staff` is the sole lease
+  grantor for a working tree — it reserves items **serially** (write lease +
+  token, increment `version`, re-read to confirm) *before* launching any parallel
+  peer, so two peers can never be granted the same item. `AGENTS.md` and the
+  hard-rules reflect the serialized grant.
+- **Touch-set reconciliation (#30)**: reconciliation now compares an item's
+  **actual changed paths** (diff at `change_ref` / `git diff --name-only`)
+  against its declared `touches` and reports unexplained expansion instead of
+  trusting the declaration; overlap with another active item forces
+  serialization.
+- **Multi-machine scope made explicit (#30)**: serial granting is atomic only
+  within one synchronized working tree; `work-coordination` documents the
+  single-tree model and git conflict detection as the cross-tree backstop.
+- **Doctor lease checks (#30)**: `workspace-doctor.mjs` now errors when a held
+  lease lacks a `token` or an integer `version_at_grant`, alongside the existing
+  expiry checks.
+
 ## [0.9.0] - 2026-07-28
 
 Host-loader **acceptance** testing (#33). CI now proves not just that the source
@@ -356,6 +400,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.10.0]: https://github.com/RubenSaucedo/kai/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/RubenSaucedo/kai/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/RubenSaucedo/kai/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/RubenSaucedo/kai/compare/v0.7.0...v0.7.1
