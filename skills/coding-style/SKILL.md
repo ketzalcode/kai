@@ -62,7 +62,7 @@ added.
   tradeoff (single-pass vs. second-pass, why a dependency was or wasn't
   added, alternatives considered) goes in the design/decision artifact or
   the PR/handoff description — **never** a multi-paragraph doc comment in a
-  source file. A source comment states the non-obvious *why* in ≤1–2 lines
+  source file. A rationale comment states the non-obvious *why* in ≤1–2 lines
   and points to the artifact if more is needed.
 - `TODO` / `FIXME` / `HACK` earn their place but must include enough
   context to be actionable later.
@@ -96,7 +96,9 @@ When asked to write or change code:
 
 - Generated code (formatter / codegen output)
 - Files explicitly marked as compatibility shims or vendored copies
-- Configuration files (different cohesion rules)
+- Configuration files — the composition/cohesion rules differ, but
+  comment discipline still applies to hand-written config (IaC, pipelines,
+  build files)
 
 ## Rules
 

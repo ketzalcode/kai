@@ -40,7 +40,7 @@ reads: simplicity over cleverness, human-readable names and messages,
 composition, and **comment restraint**. Design rationale (a data-model
 tradeoff, why a dependency was or wasn't added, alternatives considered)
 belongs in the design/decision artifact or the PR/handoff — **not** a
-multi-paragraph doc comment in the source. A source comment states the
+multi-paragraph doc comment in the source. A rationale comment states the
 non-obvious *why* in ≤1–2 lines. Match the repo's existing conventions
 before imposing taste.
 

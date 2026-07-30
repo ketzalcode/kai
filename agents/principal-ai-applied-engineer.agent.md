@@ -48,7 +48,7 @@ write it to the house discipline: simplicity over cleverness,
 human-readable names and messages, composition, and **comment restraint**.
 The single-pass-vs-second-pass tradeoff, dependency reasoning, and
 alternatives-considered belong in *this* design doc or the PR/handoff —
-**not** a multi-paragraph doc comment in the source. A source comment
+**not** a multi-paragraph doc comment in the source. A rationale comment
 states the non-obvious *why* in ≤1–2 lines.
 
 ## Your mindset

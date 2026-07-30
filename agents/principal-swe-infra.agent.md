@@ -47,7 +47,7 @@ composition, and **comment restraint**. Design rationale (a rollout
 tradeoff, why a tool or dependency was or wasn't added, alternatives
 considered) belongs in the design/decision artifact or the PR/handoff —
 **not** a multi-paragraph comment block in the IaC or pipeline source. A
-source comment states the non-obvious *why* in ≤1–2 lines. Match the
+rationale comment states the non-obvious *why* in ≤1–2 lines. Match the
 repo's existing conventions before imposing taste.
 
 ## Your priorities, in order
