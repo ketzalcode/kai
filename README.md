@@ -37,16 +37,24 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.15.0` — **54 agents and 38 skills**. This release makes CI **enforce the
-release policy** (#35): `validate-plugin` now statically checks semantic-version
-format, a dated CHANGELOG section + reference link for the current version, the
-README status stamp, `package.json` ↔ `package-lock.json` consistency, and a git
--dependency allowlist (only `lectoria`, pinned to a commit SHA); a new
-`release-guard` gate diffs each PR against its base and blocks a behavior-sensitive
-change that lacks a version bump plus changelog/README updates (docs/test-only
-changes stay exempt), and a `check-syntax` step parses every shipped `.mjs`/`.js`
-and the PowerShell helper. It builds on the prior release, which added **voice
-presets** to the narrated-audio path: `generate-audio` gains a `-Voice` option
+`v0.16.0` — **54 agents and 38 skills**. This release wires the house
+**comment discipline** into the code-writing agents (#39): `coding-style` — the
+skill that already encoded "no comments restating the code," "inline comments
+≤1 line," and "≤2–3 line doc blocks" — was orphaned (no agent inherited it), so
+`principal-swe-backend`, `principal-swe-frontend`, `principal-swe-infra`, and
+`principal-ai-applied-engineer` now inherit it, and §4 gains an explicit rule
+that design rationale and alternatives-considered belong in the design artifact
+or PR/handoff, **not** a multi-paragraph doc comment in the source. It builds on
+the prior release, which made CI **enforce the release policy** (#35):
+`validate-plugin` statically checks semantic-version format, a dated CHANGELOG
+section + reference link for the current version, the README status stamp,
+`package.json` ↔ `package-lock.json` consistency, and a git-dependency allowlist
+(only `lectoria`, pinned to a commit SHA); a `release-guard` gate diffs each PR
+against its base and blocks a behavior-sensitive change that lacks a version bump
+plus changelog/README updates (docs/test-only changes stay exempt), and a
+`check-syntax` step parses every shipped `.mjs`/`.js` and the PowerShell helper.
+An earlier release added **voice presets** to the narrated-audio path:
+`generate-audio` gains a `-Voice` option
 (`emprendedor` | `latino` | `intermedio`), and the default Spanish narration is
 now a warm, measured, Castilian read suited to study content. An earlier release
 wired **lectoria** as a git dependency built on install, so

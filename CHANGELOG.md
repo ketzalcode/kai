@@ -4,6 +4,32 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.16.0] - 2026-07-30
+
+**Wire the house comment discipline into the code-writing agents (#39).** The
+`coding-style` skill already encoded the right rule — no comments restating the
+code, inline comments ≤1 line, doc blocks ≤2–3 lines — but **no agent inherited
+it**, so it reached none of the agents that actually write code and they
+over-commented (essay-length JSDoc rationale in source files). This wires the
+skill into every code-writing agent and reinforces the rationale-goes-in-the-
+artifact boundary. No roster change — still **54 agents and 38 skills**.
+
+### Added
+- **`coding-style` §4 (#39):** an explicit rule that design rationale and
+  alternatives-considered (a single-pass-vs-second-pass tradeoff, why a
+  dependency was or wasn't added) belong in the design/decision artifact or the
+  PR/handoff description — **not** a multi-paragraph doc comment in a source
+  file; a source comment states the non-obvious *why* in ≤1–2 lines.
+
+### Changed
+- **`principal-swe-backend`, `principal-swe-frontend`, `principal-swe-infra`,
+  and `principal-ai-applied-engineer` now inherit `coding-style` (#39).** The
+  three domain SWE builders and the applied-AI engineer that authors FE/BE code
+  each gained the inherited-skill reference, so the comment discipline (and the
+  rest of the house code style) is enforced where code is actually written.
+  `principal-ai-applied-engineer`, which previously had no inherited-contract
+  line, now carries one.
+
 ## [0.15.0] - 2026-07-30
 
 **Enforce release hygiene and dependency consistency in CI (#35).** The release
@@ -557,6 +583,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.16.0]: https://github.com/RubenSaucedo/kai/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/RubenSaucedo/kai/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/RubenSaucedo/kai/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/RubenSaucedo/kai/compare/v0.12.0...v0.13.0

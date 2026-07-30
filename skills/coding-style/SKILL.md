@@ -58,6 +58,12 @@ added.
 - **Function / method / class docs: ≤2–3 lines.** Cover purpose and
   any non-obvious contract. Don't enumerate every parameter unless
   the type signature is genuinely unclear.
+- **Design rationale belongs in the artifact, not the source.** A design
+  tradeoff (single-pass vs. second-pass, why a dependency was or wasn't
+  added, alternatives considered) goes in the design/decision artifact or
+  the PR/handoff description — **never** a multi-paragraph doc comment in a
+  source file. A source comment states the non-obvious *why* in ≤1–2 lines
+  and points to the artifact if more is needed.
 - `TODO` / `FIXME` / `HACK` earn their place but must include enough
   context to be actionable later.
 
