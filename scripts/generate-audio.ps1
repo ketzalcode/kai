@@ -78,12 +78,16 @@ $ErrorActionPreference = 'Stop'
 $callerCwd = (Get-Location).Path
 
 # Verify lectoria is available — prefer the local npm install (so the wrapper
-# travels with this repo), fall back to a global install if needed.
+# travels with this repo), fall back to a global install if needed. The local
+# bin is `lectoria.cmd` on Windows and `lectoria` (no extension) on macOS/Linux,
+# so check both.
 $repoRoot      = Split-Path -Parent $PSScriptRoot
-$repoLectoria  = Join-Path $repoRoot 'node_modules\.bin\lectoria.cmd'
+$repoBinDir    = Join-Path $repoRoot 'node_modules' '.bin'
+$repoLectoria  = Join-Path $repoBinDir 'lectoria.cmd'
+$repoLectoriaP = Join-Path $repoBinDir 'lectoria'
 $useNpx        = $false
 
-if (Test-Path $repoLectoria) {
+if ((Test-Path $repoLectoria) -or (Test-Path $repoLectoriaP)) {
     $useNpx = $true
 }
 else {

@@ -1,7 +1,7 @@
 {
   "name": "kai",
-  "version": "0.12.0",
-  "description": "Skills + scripts wired in this repo. Node deps power web-content-extraction; lectoria (used by generate-audio) is installed globally — see skills/generate-audio/SKILL.md.",
+  "version": "0.13.0",
+  "description": "Skills + scripts wired in this repo. Node deps power web-content-extraction; lectoria (used by generate-audio) is pinned as a git dependency and built on install via its prepare hook — run `npm install` at the plugin root. See skills/generate-audio/SKILL.md.",
   "private": true,
   "scripts": {
     "validate": "node scripts/validate-plugin.mjs",
@@ -15,5 +15,8 @@
   },
   "devDependencies": {
     "playwright": "^1.49.0"
+  },
+  "dependencies": {
+    "lectoria": "github:RubenSaucedo/lectoria"
   }
 }

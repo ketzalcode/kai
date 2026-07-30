@@ -4,6 +4,26 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.13.0] - 2026-07-29
+
+**Lectoria wired for repo-local installs (no global install needed).** Makes the
+`generate-audio` skill / instructor-* audio path work from a fresh plugin install.
+No roster change — still **54 agents and 38 skills**.
+
+### Changed
+- Pin **`lectoria`** as a git dependency (`github:RubenSaucedo/lectoria`) in
+  `package.json`, so a one-time `npm install` at the plugin root fetches and
+  **builds** it — paired with lectoria's new `prepare` hook that compiles
+  `dist/` on install. A global install is no longer required (still supported as
+  a fallback).
+- Fix `scripts/generate-audio.ps1` local-bin detection to work on macOS/Linux,
+  not just Windows: it now checks both `node_modules/.bin/lectoria` (POSIX) and
+  `lectoria.cmd` (Windows) before falling back to a global install.
+
+### Added
+- `.env.example` at the plugin root documenting the Azure Speech / OpenAI
+  credentials the `generate-audio` wrapper loads from `.env`.
+
 ## [0.12.0] - 2026-07-29
 
 Introduces the **`instructor-*` learning collection** — a subject-agnostic

@@ -16,10 +16,11 @@ stays **cwd-relative** so you can run it from any project.
 Wraps the [lectoria](https://github.com/RubenSaucedo/lectoria) CLI
 through `scripts/generate-audio.ps1` (at the kai plugin root). The wrapper prefers
 a locally-installed lectoria (`node_modules/.bin/lectoria`) and falls back to a
-global install on PATH. **Today lectoria must be installed globally** — `npm install`
-from its git URL ships the `package.json` but not the built `dist/` (no `prepare` hook
-upstream), so a plain repo-local install can't execute. Track the upstream
-fix in lectoria's repo; until then the global install is the working path.
+global install on PATH. **Lectoria is pinned as a git dependency in this plugin's
+`package.json`**, so a one-time `npm install` at the plugin root fetches and builds
+it (lectoria's `prepare` hook compiles `dist/`) — no global install needed. A
+global `npm install -g git+https://github.com/RubenSaucedo/lectoria.git` still
+works as a fallback.
 
 **Resolving the script path.** `<kai-plugin>` below is the directory this
 plugin was installed to — the folder that contains `agents/`, `skills/`, and
