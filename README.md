@@ -104,6 +104,32 @@ Then inside the CLI: `/plugin install .`
 > Plugins are cached per session — changes appear only in new sessions. Run
 > `/plugin` anytime to list, enable, or update plugins.
 
+### Audio setup (optional — only for `generate-audio` / `instructor-*` lessons)
+
+The `generate-audio` skill and the `instructor-*` learning agents narrate
+markdown into MP3s via [lectoria](https://github.com/RubenSaucedo/lectoria).
+Everything else works without this. To enable audio, do this **once** at the
+plugin root (the folder that contains `agents/`, `skills/`, `scripts/`):
+
+1. Build the audio engine — pulls and compiles lectoria via its `prepare` hook:
+   ```bash
+   npm install
+   ```
+   This creates `node_modules/.bin/lectoria`; no global install is needed.
+2. Add Azure credentials — the wrapper loads them from `.env`:
+   ```bash
+   cp .env.example .env
+   # then edit .env with your Azure Speech + OpenAI values
+   ```
+   (Or sign in with `az login` instead of setting `AZURE_SPEECH_KEY`.)
+3. Install **PowerShell 7+** (`pwsh`) if you don't have it — the wrapper
+   `scripts/generate-audio.ps1` runs on `pwsh` (Windows, macOS, and Linux).
+
+Verify with a no-cost dry run (prints the command without spending money):
+```bash
+pwsh scripts/generate-audio.ps1 -Source ./README.md -DryRun
+```
+
 ### Copilot coding agent (cloud)
 
 Add `RubenSaucedo/kai` to the repository's coding-agent plugin configuration
