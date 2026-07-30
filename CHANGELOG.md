@@ -4,6 +4,50 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.11.0] - 2026-07-29
+
+**Coordination lifecycle + durable record schemas (#31).** Three contracts
+disagreed on what `ready` meant — the steward promoted to `ready`, the director
+dispatched from `ready`, and stewardship prose implied `ready` had to be
+runnable — so a `ready` item with an undelivered-but-declared dependency looked
+both dispatchable and not, producing non-deterministic dispatch and steward
+re-promotion churn. This release fixes the contradiction (decision **A**) and
+standardizes the records the lifecycle already relied on but never pinned down.
+No roster change — still **53 agents and 38 skills**.
+
+### Changed
+- **`ready` means committed, not runnable (#31, decision A)**: `ready` is a
+  steward commitment — scope fits, acceptance is defined, dependencies are
+  *declared* — and no longer requires those dependencies to be complete. The
+  director computes a derived **`executable`** predicate at dispatch (deps in
+  their required state, lease-free, unblocked, touch-safe); `executable` is never
+  stored on the item. A `ready` downstream item simply waits at the director; the
+  steward never re-promotes it per upstream completion.
+- **`change_ref` must be a git SHA (#31, decision A1)**: an item's `change_ref`
+  must be a commit or PR-head SHA (7–40 hex) — the only reproducible-across-machines
+  form — not a bespoke diff digest. Touch-set reconciliation derives the changed
+  path set from `git show --name-only <change_ref>` plus reported untracked files.
+  `workspace-doctor` now rejects a non-SHA `change_ref`.
+
+### Added
+- **RECOVERY record (#31)**: a parseable packet the grantor appends when it
+  reclaims a stale lease — `reclaimed`, `stale_lease`, `observed`, `disposition`,
+  `new_lease`, `state`, `next` — documenting the observed partial work and the
+  fresh grant that invalidates the crashed run's token.
+- **Design-waiver (WAIVER) record (#31)**: a durable structured record — `kind`,
+  `grantor`, `reason`, `change_ref`, `scope`, `expires` — that replaces free-form
+  design-step waivers, binds the waiver to an exact `change_ref`, and is
+  referenced from the item's `completed_reviews`. Distinct from the
+  definition-of-done "Waived-with-reason" release concept.
+- **`director-summary` minimum scaffold (#31)**: the director summary now has a
+  required section skeleton (Outcome, Milestones, Decisions, Deliverables,
+  Open/deferred, What needs the operator).
+- **Lifecycle fixtures (#31)**: the healthy fixture now includes a `ready`
+  downstream item whose dependency is only `in-review` (proving `ready` ≠
+  `executable` is healthy), the broken fixture exercises the non-SHA `change_ref`
+  rejection, and the concurrency thread demonstrates the structured RECOVERY and
+  WAIVER records.
+
 ## [0.10.0] - 2026-07-29
 
 **Collision-safe lease acquisition (#30).** Coordination leases were
@@ -400,6 +444,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.11.0]: https://github.com/RubenSaucedo/kai/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/RubenSaucedo/kai/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/RubenSaucedo/kai/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/RubenSaucedo/kai/compare/v0.7.1...v0.8.0

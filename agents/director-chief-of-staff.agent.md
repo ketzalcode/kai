@@ -118,7 +118,14 @@ conflicting product or technical claims instead of choosing one yourself.
 
 ### 2. Select executable work
 
-An item is executable only when:
+`executable` is a **derived predicate you compute here** — it is never stored on
+the item. `ready` means only that the steward committed the item and declared
+its dependencies; it does not mean the item is runnable this instant. This is
+the authoritative definition of *executable* that `work-coordination` refers to.
+A downstream `ready` item simply waits here until its dependencies clear — never
+send it back to the steward for re-promotion.
+
+An item is executable only when its lifecycle state is dispatchable:
 
 - state is `ready`;
 - or state is `in-progress` with no live lease and either a valid resumption
@@ -136,6 +143,9 @@ An item is executable only when:
 - or state is `blocked` with `resume_state: deploying` or
   `production-verification` and rollback/recovery evidence is pending, in which
   case dispatch `workflow-ship`;
+
+**and** every runtime gate holds:
+
 - the steward has approved its priority and scope;
 - acceptance is explicit;
 - any file-producing item's required `artifact_target` is explicit and inside
@@ -146,7 +156,8 @@ An item is executable only when:
 - no unexpired lease is held at all — a live lease held even by the same role
   blocks a fresh grant; only its exact existing token may continue, and a
   re-grant waits until the current holder terminates and is recovered;
-- its `touches` set does not conflict with another selected active item.
+- its `touches` set does not conflict with any already-leased or in-progress
+  item, nor with another item selected in this dispatch batch.
 
 Order by active initiative, steward priority, dependency critical path, then
 age. Default WIP is three concurrent items and one active item per specialist
@@ -220,7 +231,10 @@ For work involving an existing live user journey:
    `review_requirements`.
 6. Do not route that change to engineering readiness until the design item
    reaches `completed` with PM acceptance bound to its current `change_ref`, or
-   the steward/operator records an explicit product-design waiver.
+   the steward/operator records an explicit product-design waiver as a `WAIVER`
+   record (grantor, reason, `applies_at` item version, scope, expiry — see the
+   Design-waiver record in `work-coordination`) in the item thread; the waiver is
+   confirmed against the implementation `change_ref` at design-conformance review.
 7. When implementation is based on an approved design, include
    `principal-product-designer` as an independent design-conformance reviewer
    for the exact `change_ref`; QA remains separately required where applicable.
@@ -283,7 +297,37 @@ Continue until one of these is true:
 
 When all milestone-required items have reached their required terminal states,
 but before the steward changes the initiative status, write
-`initiatives/<slug>/director-summary.md` as the stable operator entry point.
+`initiatives/<slug>/director-summary.md` as the stable operator entry point,
+using this minimum scaffold (sections may add detail but none may be omitted):
+
+```markdown
+# Director summary — <initiative-slug>
+
+- initiative: <slug>
+- workspace root: <absolute target workspace root>
+- status: <milestones-complete | partial>
+- generated: <YYYY-MM-DD-HHMM>
+
+## Outcome
+<what was delivered against the mission/milestones, in plain terms>
+
+## Milestones
+| milestone | required items | terminal state | evidence |
+|-----------|----------------|----------------|----------|
+
+## Decisions
+<links to principals' decision records — indexed, not restated>
+
+## Deliverables
+<workspace-root-relative path to initiatives/<slug>/deliverables.md and the key artifacts>
+
+## Open / deferred
+<remaining questions, PROPOSALs, waived residual risk, or "none">
+
+## What needs the operator
+<the precise decision(s) awaiting a human, or "none">
+```
+
 It may summarize and index principals' decisions but must not replace their
 judgment. Ensure `deliverables.md` links the summary, decisions, research, and
 local evidence, then dispatch the steward to perform closure.

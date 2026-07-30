@@ -37,17 +37,18 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.10.0` — **53 agents and 38 skills**. This release makes coordination
-**lease acquisition collision-safe** (#30): lease *granting* is now serial
-through a single grantor (`director-chief-of-staff`) and lease *holding* is
-verifiable via a unique `token` bound to the item `version`, so two parallel
-peers can never both hold the same item — an acting role re-verifies its grant
-and stops with a `COLLISION` record before any state-changing write if it was
-lost. Reconciliation compares an item's actual changed paths against its
-declared `touches`, the multi-machine model is made explicit (serial granting is
-atomic only within one synchronized working tree; git is the cross-tree
-backstop), and `workspace-doctor` plus a new `concurrency-workspace` fixture
-prove collision detection and stale-lease recovery. The Core, Expansion,
+`v0.11.0` — **53 agents and 38 skills**. This release resolves the coordination
+lifecycle contradiction over what `ready` means (#31): `ready` is now a steward
+**commitment** (scope fits, acceptance defined, dependencies *declared*) and no
+longer implies runnable, while the `director-chief-of-staff` computes a derived
+**`executable`** predicate at dispatch (deps satisfied, lease-free, unblocked,
+touch-safe) that is never stored — so a `ready` item with an undelivered-but-declared
+dependency is healthy and simply waits, and the steward never re-promotes it. An
+item's `change_ref` must now be a git commit/PR-head SHA (the only
+reproducible-across-machines form), enforced by `workspace-doctor`. The lifecycle
+also pins down the durable records it relied on: a parseable **RECOVERY** record
+for stale-lease reclaim, a structured design-step **WAIVER** record bound to a
+`change_ref`, and a minimum director-summary scaffold. The Core, Expansion,
 Revenue, and Enablement & Operations SaaS teams remain complete:
 `principal-technical-writer` (docs, how-tos, references, release notes),
 `principal-revenue-operations` (SaaS metric model,

@@ -175,9 +175,14 @@ Rules:
 - **`completed_reviews`** records role, kind, evidence path, verdict, and
   timestamp, all bound to the exact `change_ref`. A chat assertion does not
   complete a review.
-- **`change_ref`** identifies the implementation revision under review: commit
-  SHA, PR head SHA, or deterministic diff hash. It is required before
-  `in-review`.
+- **`change_ref`** identifies the implementation revision under review. It must
+  be a git object that content-addresses the exact reviewed tree: a **commit
+  SHA** or a **PR head SHA** (full 40-hex, or an unambiguous ≥7-hex short form).
+  There is no bespoke "diff hash" — git already hashes trees reproducibly across
+  machines. To review work that is not yet on a branch, stage it and record the
+  SHA of a commit (a throwaway/amendable commit is fine) or `git stash create`
+  object, so the reference is reproducible rather than an ad hoc digest. It is
+  required before `in-review`.
 - **`version`** increments on every state-changing edit.
 - **`lease`** protects active ownership. A lease is coordination, not a
   substitute for git conflict detection. `holder` is the owning role; `token`
@@ -229,10 +234,10 @@ any non-terminal state -> dropped
 | State | Meaning | Who moves it |
 |-------|---------|--------------|
 | `proposed` | Worth considering, not committed. | anyone proposes; steward evaluates |
-| `ready` | Committed, acceptance defined, dependencies clear. | steward |
+| `ready` | Steward-committed: fits scope, acceptance defined, dependencies **declared**. Not necessarily runnable this instant — see *executable* below. | steward |
 | `in-progress` | A role holds a live lease and is acting. | owning agent/director |
 | `in-review` | Implementation complete; review and verification underway. | builder |
-| `blocked` | Cannot proceed because of item dependencies or blocking questions. | any acting role |
+| `blocked` | Cannot proceed because a declared dependency **failed/was dropped** or a blocking question is unresolved — an *exceptional* stall, not an on-track pending dependency (that stays `ready`). | any acting role |
 | `completed` | A non-production knowledge/decision item passed its acceptance, required reviews, and coordination close. | owning principal/workflow |
 | `release-ready` | DoD is clear for deployment; not yet production-shipped. | `workflow-ship` prepare mode |
 | `deploying` | Human/operator confirmed deployment started; successful completion is not yet established. | `workflow-ship` CONFIRM-START |
@@ -243,6 +248,31 @@ any non-terminal state -> dropped
 `completed` is the truthful terminal state for research, plans, and decisions.
 `shipped` is reserved for production/operational delivery and never means
 “commands were prepared.”
+
+### `ready` vs `executable`
+
+`ready` and *executable* are deliberately separate concepts, and every contract
+uses them the same way:
+
+- **`ready`** is a **steward commitment**: the item fits `scope.current`, has
+  acceptance criteria, and its `depends_on` links are **declared** (the upstream
+  items exist in the plan). `ready` does **not** require the dependencies to
+  have reached their required states yet. The steward promotes a whole
+  dependency chain to `ready` in one pass and does not re-promote a downstream
+  item every time an upstream one completes.
+- **`executable`** is a **derived predicate** the director computes at dispatch —
+  it is never stored on the item. An item is executable when it is `ready` (or a
+  review/release state the lifecycle authorizes), **and** every `depends_on`
+  requirement has reached its declared state, **and** no unexpired lease is held,
+  **and** `waiting_on_questions` is empty (except the answered-restoration case),
+  **and** its `touches` set is conflict-free. The director's *Select executable
+  work* step is the authoritative definition; `BOARD.md` may surface it as a
+  column but the item record never stores it.
+
+So `ready` means "committed and planned," not "runnable right now." Blocked-by-a
+-pending-dependency is the normal, expected condition of a `ready` downstream
+item; it becomes executable the moment its upstream reaches the required state,
+with no steward round-trip.
 
 ## Claiming work safely
 
@@ -327,7 +357,8 @@ work recovery signal, not permission to overwrite blindly: the grantor checks
 the thread and repository state before reclaiming it. If an agent crashed
 without a HANDOFF, the grantor may clear the stale lease only after this
 reconciliation — it writes a fresh `token` and `version_at_grant`, increments
-`version`, appends a `RECOVERY` HANDOFF describing observed partial work, and
+`version`, appends a `RECOVERY` record (see *RECOVERY record* for the required
+shape) describing observed partial work, and
 redispatches the appropriate role. The new token invalidates the crashed run's
 token, so a resurrected stale peer fails its verify step and stops. Conflicting
 or unsafe partial work requires operator escalation.
@@ -374,16 +405,16 @@ declared `touches`.
 
 The changed-path set must be **attributable to this item**, not the whole
 working tree. A bare `git diff --name-only` conflates concurrent peers and omits
-untracked files, so it is not sufficient during parallel work. Use, in order of
-preference:
+untracked files, so it is not sufficient during parallel work. Because
+`change_ref` is always a git commit/PR SHA (see the record rules), derive the
+set from that object:
 
-- the file list of the item's own commit(s)/PR at `change_ref`
-  (`git show --name-only <change_ref>` or `git diff --name-only <base>..<head>`
-  scoped to that ref, **plus** untracked additions the role reports); or
-- when `change_ref` is a deterministic diff hash (not a commit), the returned
-  artifact/evidence path manifest the role must supply — the hash itself cannot
-  be diffed; or
-- an isolated per-item ref/commit dispatched from an immutable base.
+- the item's **cumulative** branch diff, not a single commit: the file list of
+  `git diff --name-only $(git merge-base <integration-branch> <change_ref>)..<change_ref>`
+  (so every commit on a multi-commit branch is covered, never just the head),
+  **plus** any untracked additions the role reports; or
+- an isolated per-item commit dispatched from an immutable base, when peers run
+  in one tree.
 
 Then:
 
@@ -466,6 +497,59 @@ The grantor reconciles the record before any re-grant: it decides whether the
 other holder is legitimate (leave it), the item is stale (recover per
 *Collision and stale-lease recovery*), or the situation needs operator
 escalation. A COLLISION note never authorizes overwriting another live holder.
+
+## RECOVERY record
+
+When the grantor reclaims a stale lease (an expired grant whose holder ended
+without a completion HANDOFF), it appends this parseable packet before
+redispatching. It documents the observed partial work and the fresh grant that
+invalidates the crashed run's token:
+
+```markdown
+## RECOVERY <YYYY-MM-DD-HHMM> — <grantor> -> <redispatched-role | @operator>
+- reclaimed:   <item-id>
+- stale_lease: holder=<prior> token=<prior-token> expired=<timestamp>
+- observed:    <partial product/coordination work found, or "none">
+- disposition: safe-to-resume | conflicting-partial-work (escalated to @operator)
+- new_lease:   holder=<role> token=<fresh-token> version_at_grant=<n>   # safe-to-resume only; use "none — no re-grant until the operator resolves" for conflicting-partial-work
+- state:       <lifecycle state written to the item record>
+- next:        <role and why, or "@operator — awaiting conflict resolution">
+```
+
+A RECOVERY is valid only after the grantor verified the repository/thread state,
+not on a timer alone. `disposition: safe-to-resume` carries a fresh `new_lease`
+and a redispatched role; `disposition: conflicting-partial-work` instead sets
+`new_lease: none`, routes `next` to `@operator`, and re-grants nothing until the
+operator resolves it. The fresh `token` differs from `stale_lease.token`, so a
+resurrected stale peer fails its verify step and stops.
+
+## Design-waiver record
+
+Routing an interaction-affecting change to engineering normally requires a
+completed `principal-product-designer` item with PM `product-design-acceptance`.
+When the steward or operator instead **waives** that design step, the waiver is
+a durable structured record — never a free-form aside — appended to the affected
+item's thread and referenced from the item's `completed_reviews` in place of the
+skipped acceptance:
+
+```markdown
+## WAIVER <YYYY-MM-DD-HHMM> — design-step waived on <item-id>
+- kind:       product-design
+- grantor:    <steward-role | @operator>
+- reason:     <why the interaction change is safe without a design pass>
+- applies_at: version <n>   # the item version when the waiver was granted; no implementation SHA exists yet
+- confirmed:  change_ref <SHA> | pending   # set to the implementation SHA at design-conformance review
+- scope:      <what is waived; what still requires design if it changes>
+- expires:    <revision/condition that voids the waiver, or "this change_ref only">
+```
+
+A design waiver is granted **before** engineering starts, so it binds to the
+item `version` at issuance (`applies_at`), not to an implementation `change_ref`
+that does not exist yet. At the design-conformance review the reviewer sets
+`confirmed` to the actual implementation `change_ref`; a later revision that
+changes interaction, hierarchy, flow, navigation, or a user-visible state model
+needs a fresh waiver or a real design pass. A waiver records that design judgment
+was consciously skipped — it never asserts the design was done.
 
 ## QUESTION / ANSWER protocol
 

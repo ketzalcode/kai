@@ -84,7 +84,8 @@ in the item. Otherwise use the canonical design path without asking.
 9. Record unresolved product, domain, technical, or operator questions to the
    correct role.
 10. Write the decision at the exact `artifact_target`, update the item/thread,
-    set `change_ref` to the artifact revision/hash, move to `in-review`, and hand
+    set `change_ref` to the commit SHA of the artifact revision, move to
+    `in-review`, and hand
     off to `principal-product-manager` for the required
     `product-design-acceptance` review.
 

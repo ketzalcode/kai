@@ -62,9 +62,15 @@ Validates a scaffolded consumer workspace (not the plugin source). The
 
 - `test/fixtures/repo-workspace/` — a **healthy** workspace the doctor passes:
   a schema-compatible manifest plus a clean `coordination/` set (items, BOARD).
+  Includes `sample-downstream` — a `ready` item whose dependency is only
+  `in-review` (not its required `shipped`) — to prove the revised lifecycle from
+  #31: `ready` means committed with *declared* dependencies, not runnable, so
+  this item is healthy and simply waits for the derived `executable` predicate.
 - `test/fixtures/broken-workspace/` — a workspace the doctor **must reject**:
   a pre-schema manifest (migration required), an `in-review` item with no
-  `change_ref`, a dangling dependency, and a machine-absolute `artifact_target`.
+  `change_ref`, an `in-review` item whose `change_ref` is a **non-SHA** label
+  (rejected per #31 — only a git commit/PR-head SHA is allowed), a dangling
+  dependency, and a machine-absolute `artifact_target`.
 - `test/fixtures/concurrency-workspace/` — a **lease-safety** fixture backing
   the collision-safe lease contract from #30. Three item records exercise the
   guard: a held lease with **no grant token / `version_at_grant`** (the racy
@@ -72,7 +78,8 @@ Validates a scaffolded consumer workspace (not the plugin source). The
   `version`** (a grant that skipped the increment — the double-write shape), and
   a well-formed tokened lease whose **expiry has passed** (surfaced as a
   stale-work recovery signal, not silently reclaimed). `threads/stale-recovery.md`
-  narrates the full HANDOFF → `COLLISION` → `RECOVERY` flow so the fixture
+  narrates the full HANDOFF → `COLLISION` → `RECOVERY` flow and includes the
+  structured #31 `RECOVERY` and design-step `WAIVER` records, so the fixture
   demonstrates the behavior, not only the static schema.
 
 The doctor checks manifest presence/JSON/keys, `schema_version` compatibility
