@@ -4,6 +4,24 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.14.0] - 2026-07-29
+
+**Voice presets for narrated audio.** Refreshes the pinned `lectoria` to the
+release that adds named voice presets, and exposes them through the
+`generate-audio` wrapper. No roster change — still **54 agents and 38 skills**.
+
+### Added
+- `scripts/generate-audio.ps1` gains a **`-Voice <preset>`** parameter
+  (`emprendedor` | `latino` | `intermedio`) that selects the narrator voices +
+  pace per language, passed through to `lectoria run --voice`.
+
+### Changed
+- Bumped the pinned `lectoria` git dependency to the voice-presets release. The
+  default Spanish narration is now **`emprendedor`** — a warm, measured,
+  peninsular-Castilian read (`es-ES-AlvaroNeural`) suited to study/learning
+  content — instead of the previous single fixed voice. Run `lectoria voices`
+  (at the plugin root) to list presets.
+
 ## [0.13.0] - 2026-07-29
 
 **Lectoria wired for repo-local installs (no global install needed).** Makes the

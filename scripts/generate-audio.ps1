@@ -29,6 +29,11 @@
     Script style: podcast | conversational | verbatim | dialogue.
     Default: conversational (best balance of fidelity vs. listenability).
 
+.PARAMETER Voice
+    Voice preset: emprendedor | latino | intermedio. Sets the narrator voices
+    and pace per language. Default (unset): lectoria's own default, emprendedor
+    (warm, measured, Castilian Spanish). Run `lectoria voices` to see them.
+
 .PARAMETER NoDistribute
     Skip RSS feed + episodes.json generation; produce audio only.
 
@@ -65,6 +70,8 @@ param(
     [string]$Lang = "en,es",
     [ValidateSet("podcast", "conversational", "verbatim", "dialogue")]
     [string]$Style = "conversational",
+    [ValidateSet("emprendedor", "latino", "intermedio")]
+    [string]$Voice,
     [switch]$NoDistribute,
     [switch]$NoRecursive,
     [switch]$DryRun
@@ -144,6 +151,7 @@ $lectoriaArgs = @(
 )
 if ($NoDistribute) { $lectoriaArgs += '--no-distribute' }
 if ($NoRecursive)  { $lectoriaArgs += '--no-recursive' }
+if ($Voice)        { $lectoriaArgs += @('--voice', $Voice) }
 
 $cmdLine = if ($useNpx) {
     "npx --no-install lectoria $($lectoriaArgs -join ' ')"

@@ -85,7 +85,7 @@ assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source .kai/runs
    how it travels across codebases.
 3. **Run from wherever the user is**, with the plugin-relative path to the script:
    ```powershell
-   pwsh <kai-plugin>/scripts/generate-audio.ps1 [-Source <path>] [-Lang <list>] [-Style <kind>] [-DryRun]
+   pwsh <kai-plugin>/scripts/generate-audio.ps1 [-Source <path>] [-Lang <list>] [-Style <kind>] [-Voice <preset>] [-DryRun]
    ```
 4. **If `-Source` is a folder, audio output mirrors its tree.** A folder
    with subfolders becomes one feed per subfolder. Single-file input
@@ -122,3 +122,4 @@ assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source .kai/runs
 | `-Out`     | `./audio`          | Right next to the source, easy to find                  |
 | `-Lang`    | `en,es`            | User listens in both                                    |
 | `-Style`   | `conversational`   | ~70% fidelity; balanced for most prose                  |
+| `-Voice`   | (lectoria default) | `emprendedor` — warm, measured, Castilian Spanish       |
