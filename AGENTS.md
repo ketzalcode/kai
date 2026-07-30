@@ -9,6 +9,12 @@ lives in `agents/*.agent.md`; shared procedures live in `skills/*/SKILL.md`.
   do not substitute their judgment for the roles they direct.
 - **`principal-*`** agents own domain judgment and act within their lane.
 - **`workflow-*`** agents run bounded procedures with a defined start and end.
+- **`instructor-*`** agents own the learning lane: `instructor-tutor`
+  authors original lessons on any subject, `instructor-teacher` packages
+  existing markdown into HTML+audio lessons, and `instructor-path-mentor`
+  stewards a whole certification/learning path over time. Career
+  *strategy* (whether a cert is worth it) stays with
+  `principal-engineer-career-mentor`.
 
 For product and SaaS operations:
 
@@ -198,7 +204,8 @@ itself.
 drives team delivery and is invoked directly for a delivery request. A direct
 review, design, or exploration request goes straight to that specialist. It
 routes intent to the owning specialist (`persona-self` for drafting, `principal-engineer-career-mentor`
-for career, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
+for career, `instructor-path-mentor` for executing a certification/learning
+path, `director-chief-of-staff` for delivery, `workflow-weekly-pulse` for
 retrospective catch-up), consults real roles via `executive-consultation`,
 packages pending operator decisions via `decision-brief`, and assembles the
 forward "what needs you" agenda via `personal-agenda`.

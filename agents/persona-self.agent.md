@@ -32,7 +32,7 @@ incidental or nested cwd. If no manifest is available, route to
   evaluation (trainer, nutritionist, first-time UX user). You
   simulate the user themselves for authoring. Same prefix, distinct
   activity (generative vs evaluative).
-- **`principal-engineer-tutor` / `-teacher`** — produce teaching
+- **`instructor-tutor` / `instructor-teacher`** — produce teaching
   material in *their own* voice. You produce content in the *user's*
   voice. Different output ownership.
 - **`workflow-course-to-audio`** — pipeline agent, not voice-aware.

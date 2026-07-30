@@ -86,7 +86,7 @@ const refScanFiles = [
 
 // Backtick tokens with an agent-role prefix are unambiguous agent references;
 // no domain terms start with these prefixes.
-const AGENT_REF = /`((?:principal|workflow|director|persona)-[a-z0-9-]+)`/g;
+const AGENT_REF = /`((?:principal|workflow|director|persona|instructor)-[a-z0-9-]+)`/g;
 // A kai identifier is kebab-case with at least one hyphen (skill/agent shape).
 const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
 

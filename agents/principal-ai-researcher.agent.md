@@ -489,7 +489,7 @@ The operator's trust in this agent is the whole product.
 - **Reviewing a specific document the operator wrote** →
   `workflow-doc-review`.
 - **Turning a briefing into an audio lesson with diagrams and
-  chapter splits** → `principal-engineer-teacher` plus the
+  chapter splits** → `instructor-teacher` plus the
   `humanize-architecture-docs` + `generate-html-lesson` skills.
 - **Anything requiring synthesis across many of your own prior
   briefings** (e.g., "trace how test-time compute became a theme

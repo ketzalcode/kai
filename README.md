@@ -37,18 +37,19 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.11.0` — **53 agents and 38 skills**. This release resolves the coordination
-lifecycle contradiction over what `ready` means (#31): `ready` is now a steward
-**commitment** (scope fits, acceptance defined, dependencies *declared*) and no
-longer implies runnable, while the `director-chief-of-staff` computes a derived
-**`executable`** predicate at dispatch (deps satisfied, lease-free, unblocked,
-touch-safe) that is never stored — so a `ready` item with an undelivered-but-declared
-dependency is healthy and simply waits, and the steward never re-promotes it. An
-item's `change_ref` must now be a git commit/PR-head SHA (the only
-reproducible-across-machines form), enforced by `workspace-doctor`. The lifecycle
-also pins down the durable records it relied on: a parseable **RECOVERY** record
-for stale-lease reclaim, a structured design-step **WAIVER** record bound to a
-`change_ref`, and a minimum director-summary scaffold. The Core, Expansion,
+`v0.12.0` — **54 agents and 38 skills**. This release adds the subject-agnostic
+**`instructor-*` learning collection** — `instructor-tutor` (authors lessons on
+any subject), `instructor-teacher` (packages existing markdown into HTML+audio
+lessons), and `instructor-path-mentor` (stewards a whole certification/learning
+path: plan, progress, spaced review) — replacing the engineering-scoped
+teacher/tutor. The prior release resolved the coordination lifecycle
+contradiction over what `ready` means (#31): `ready` is a steward **commitment**
+(scope fits, acceptance defined, dependencies *declared*) and no longer implies
+runnable, while the `director-chief-of-staff` computes a derived **`executable`**
+predicate at dispatch (deps satisfied, lease-free, unblocked, touch-safe) that is
+never stored; an item's `change_ref` must be a git commit/PR-head SHA enforced by
+`workspace-doctor`, and the lifecycle pins down its durable **RECOVERY** and
+**WAIVER** records and a minimum director-summary scaffold. The Core, Expansion,
 Revenue, and Enablement & Operations SaaS teams remain complete:
 `principal-technical-writer` (docs, how-tos, references, release notes),
 `principal-revenue-operations` (SaaS metric model,
@@ -257,8 +258,9 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `principal-engineer-teacher` | Pedagogy orchestrator — turns chaptered/sectioned markdown (course units, book chapters, humanized docs, notes) into paired HTML-visual + audio-narration lessons per source file. Orchestrates `generate-html-lesson` (English visual) + `generate-audio` (Spanish narration). |
-| `principal-engineer-tutor` | Generative tutor for engineering/AI topics. Writes original lessons under `.kai/runs/lessons/`; never auto-runs audio. |
+| `instructor-tutor` | Generative tutor for **any subject** — a cert objective, a language, engineering/AI, finance. Writes original concrete-first lessons (Explain / Lesson / Series modes) under `.kai/runs/lessons/instructor-tutor/`; never auto-runs audio. |
+| `instructor-teacher` | Pedagogy orchestrator — turns chaptered/sectioned markdown (course units, book chapters, humanized docs, notes) into paired HTML-visual + audio-narration lessons per source file. Orchestrates `generate-html-lesson` (English visual) + `generate-audio` (Spanish narration). Subject-agnostic. |
+| `instructor-path-mentor` | Stewards a whole certification/learning path over time — plan, schedule against a target date, per-objective progress, and spaced review in `personal/learning/<slug>.md`. Dispatches `workflow-course-to-audio`, `instructor-teacher`, and `instructor-tutor`; never auto-runs audio. Executes a chosen path (career *strategy* stays with `principal-engineer-career-mentor`). |
 | `workflow-course-to-audio` | Turns a course, cert module, or long readable web page into local markdown ready for `generate-audio`. Wraps `web-content-extraction` for the crawl, then offers an explicit audio handoff (never auto-runs — Azure cost). Knowledge-checks split into a separate file so narration stays clean. |
 
 ### Product exploration and web evaluation
@@ -365,7 +367,7 @@ assistant) is the default; *pushed* updates need an external runner you host.
 | Name | Purpose |
 | ---- | ------- |
 | `generate-audio` | Turns a folder of markdown into multilingual narrated audio via lectoria. Cwd-relative — travels across codebases. |
-| `generate-html-lesson` | Turns a markdown source into a self-contained offline `index.html` lesson — prose + HTML/CSS diagrams + embedded audio player when available. English visual / Spanish audio by default. Orchestrated by `principal-engineer-teacher`. |
+| `generate-html-lesson` | Turns a markdown source into a self-contained offline `index.html` lesson — prose + HTML/CSS diagrams + embedded audio player when available. English visual / Spanish audio by default. Orchestrated by `instructor-teacher`. |
 | `extract-writing-style` | Extracts your writing style from chat history / PR comments / pasted samples into the current workspace's portable `personal/identity/voice.md` profile. Idempotent and privacy-first. |
 
 **Personal:**
@@ -645,17 +647,20 @@ leads; the operator performs every production action.
                     └─► proposed persistent fixes through normal PM/ship flow
 ```
 
-**4 · Learning & content** — three independent ways to produce lessons or audio.
+**4 · Learning & content** — author, package, or steward a whole path.
 
 ```
  course / cert / ──► workflow-course-to-audio ──► clean markdown ──► generate-audio ──► narrated audio
  long web page        (wraps web-content-extraction)               (explicit handoff — never auto)
 
- chaptered ──► principal-engineer-teacher ──┬─► generate-html-lesson ──► index.html  (English visual)
- markdown      (packages existing source)   └─► generate-audio ────────► MP3         (Spanish narration)
+ chaptered ──► instructor-teacher ──┬─► generate-html-lesson ──► index.html  (English visual)
+ markdown      (packages existing source)  └─► generate-audio ──► MP3         (Spanish narration)
 
- a topic ──► principal-engineer-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
-            (Explain-in-chat / Lesson / Series modes)
+ a topic ──► instructor-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
+            (Explain-in-chat / Lesson / Series modes — any subject)
+
+ a whole cert ──► instructor-path-mentor ──► personal/learning/<slug>.md  (plan · progress · review)
+                 (dispatches the three above per objective; tracks where you are)
 ```
 
 **5 · Writing & career (`personal/identity/`)** — one workspace-local profile folder powers both your voice and career track.
@@ -756,8 +761,9 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Prepare a built slice / record deployment start / confirm production shipment | `workflow-ship` PREPARE / CONFIRM-START / CONFIRM-COMPLETE |
 | Audit SEO + agentic-search readiness | `principal-seo` |
 | Domain-expert audit of a fitness / nutrition product | `persona-professional-trainer` / `-nutritionist` |
-| Package existing markdown into HTML + audio lessons | `principal-engineer-teacher` |
-| Author a brand-new lesson from a topic | `principal-engineer-tutor` |
+| Package existing markdown into HTML + audio lessons | `instructor-teacher` |
+| Author a brand-new lesson from a topic (any subject) | `instructor-tutor` |
+| Plan + track a whole certification/learning path | `instructor-path-mentor` |
 | Course / cert / long page → narrated audio | `workflow-course-to-audio` |
 | Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
 | Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `executive-consultation`) |

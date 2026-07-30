@@ -4,6 +4,40 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.12.0] - 2026-07-29
+
+Introduces the **`instructor-*` learning collection** — a subject-agnostic
+teaching lane that replaces the engineering-scoped teacher/tutor. The roster is
+now **54 agents and 38 skills**. Updates reach users via `/plugin update kai`.
+
+### Added
+- **`instructor-path-mentor`** — new agent that stewards a whole
+  certification/learning path over time: plan, schedule against a target/exam
+  date, per-objective progress, and spaced review, persisted in the workspace's
+  gitignored `personal/learning/<slug>.md`. Dispatches `workflow-course-to-audio`
+  (extract), `instructor-teacher` (package), and `instructor-tutor` (author a gap
+  topic); never auto-runs paid audio. Executes a chosen path — career *strategy*
+  (whether a cert is worth it) stays with `principal-engineer-career-mentor`.
+
+### Changed
+- **Generalized the learning agents into the `instructor-*` family.**
+  `principal-engineer-tutor` → **`instructor-tutor`** (now authors concrete-first
+  lessons on any subject — cert objectives, languages, finance, engineering/AI —
+  not just engineering), and `principal-engineer-teacher` → **`instructor-teacher`**
+  (subject-agnostic packaging of existing markdown). Pedagogy, Lectoria-friendly
+  narration rules, and the audio-cost discipline are preserved.
+- Retargeted every cross-reference (`principal-engineer-career-mentor`,
+  `persona-self`, `principal-ai-researcher`, `generate-html-lesson`, README,
+  AGENTS.md) to the new agent ids, and registered the `instructor-*` family in
+  the AGENTS.md role taxonomy and personal-front-door routing.
+- Extended `scripts/validate-plugin.mjs` cross-reference integrity to cover the
+  `instructor-` prefix.
+
+### Removed
+- **BREAKING:** `principal-engineer-tutor` and `principal-engineer-teacher`
+  agent ids — superseded by `instructor-tutor` and `instructor-teacher`. Update
+  any direct invocations.
+
 ## [0.11.0] - 2026-07-29
 
 **Coordination lifecycle + durable record schemas (#31).** Three contracts

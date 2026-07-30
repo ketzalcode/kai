@@ -1,6 +1,6 @@
 ---
 name: generate-html-lesson
-description: "Apply when the user wants a self-contained HTML lesson page from any markdown source — a course unit extracted by `workflow-course-to-audio`, a book chapter, ad-hoc notes, anything they want to learn from. Triggers on phrases like 'turn this into an HTML lesson', 'make a lesson page', 'I want a visual companion to the audio', 'generate the HTML lesson', or via the `principal-engineer-teacher` agent which orchestrates this + `generate-audio`. Produces a single self-contained `index.html` per source file — prose + rich HTML+CSS diagrams + an embedded audio player when an audio file is available — that works offline by double-click with zero external dependencies. Default visual language is English; default audio language is Spanish (asymmetric by design — you read English while listening Spanish, or vice versa, to keep both active). Cwd-relative — travels across codebases."
+description: "Apply when the user wants a self-contained HTML lesson page from any markdown source — a course unit extracted by `workflow-course-to-audio`, a book chapter, ad-hoc notes, anything they want to learn from. Triggers on phrases like 'turn this into an HTML lesson', 'make a lesson page', 'I want a visual companion to the audio', 'generate the HTML lesson', or via the `instructor-teacher` agent which orchestrates this + `generate-audio`. Produces a single self-contained `index.html` per source file — prose + rich HTML+CSS diagrams + an embedded audio player when an audio file is available — that works offline by double-click with zero external dependencies. Default visual language is English; default audio language is Spanish (asymmetric by design — you read English while listening Spanish, or vice versa, to keep both active). Cwd-relative — travels across codebases."
 tools: [view, grep, glob, edit, create, ask_user]
 user-invocable: true
 argument-hint: <path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]
@@ -463,7 +463,7 @@ Surface:
   is derived. Edit the source if you need content changes, then
   regenerate.
 - ❌ Generating audio inline. Use the existing `generate-audio` skill
-  or `principal-engineer-teacher` to orchestrate. This skill consumes
+  or `instructor-teacher` to orchestrate. This skill consumes
   audio; it doesn't produce it.
 - ❌ Hard-coding the title. Pull it from frontmatter or the first H1
   so the HTML and source stay in sync if the user retitles.
@@ -472,14 +472,14 @@ Surface:
 
 - **From `workflow-course-to-audio`** — after it writes per-unit markdown to
   `.kai/runs/learn/<slug>/<timestamp>/raw/`, the natural next step is
-  the `principal-engineer-teacher` agent, which uses this skill plus
+  the `instructor-teacher` agent, which uses this skill plus
   `generate-audio` to produce paired lessons.
 - **From the user directly** — they can also invoke this skill
   standalone on any markdown file that has matching audio.
 
 ## See also
 
-- `principal-engineer-teacher.agent.md` — the agent that orchestrates
+- `instructor-teacher.agent.md` — the agent that orchestrates
   this skill + `generate-audio` to produce complete lessons.
 - `workflow-course-to-audio.agent.md` — extracts course/cert/docs pages into the
   per-unit markdown this skill can consume.
