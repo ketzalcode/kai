@@ -1,11 +1,14 @@
 {
   "counts": {
-    "agents": 53,
+    "agents": 54,
     "skills": 38
   },
   "agents": [
     "director-chief-of-staff",
     "director-executive-assistant",
+    "instructor-path-mentor",
+    "instructor-teacher",
+    "instructor-tutor",
     "persona-professional-nutritionist",
     "persona-professional-trainer",
     "persona-self",
@@ -18,8 +21,6 @@
     "principal-data-engineer",
     "principal-demand-generation",
     "principal-engineer-career-mentor",
-    "principal-engineer-teacher",
-    "principal-engineer-tutor",
     "principal-growth",
     "principal-linkedin-strategist",
     "principal-partnerships",

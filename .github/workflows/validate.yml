@@ -2,10 +2,13 @@ name: validate
 
 # Guards the plugin contract on every PR and on pushes to main: frontmatter and
 # name-to-path agreement, resolvable cross-references, the host-tool allowlist,
-# workspace-contract consistency, and the fixture manifest schema. It also runs
-# the workspace-doctor self-test (healthy + broken generated-workspace fixtures)
-# and the host-loader acceptance mirror (discoverable inventory matches the
-# golden snapshot; malformed frontmatter fixtures are rejected).
+# workspace-contract consistency, the fixture manifest schema, and release
+# hygiene (semver, changelog/README stamp for the current version, dependency/
+# lockfile consistency, sanctioned git deps). It also runs the workspace-doctor
+# self-test, the host-loader acceptance mirror, the release-guard self-test, and
+# a syntax/parse check of shipped helper scripts. On pull requests it additionally
+# runs the release-guard gate: a behavior-sensitive change must carry a version
+# bump plus changelog/README updates.
 # Dependency-free — no install step, so it stays fast.
 
 on:
@@ -21,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -30,3 +35,10 @@ jobs:
         run: node scripts/workspace-doctor.mjs --self-test
       - name: Host-loader acceptance
         run: node scripts/host-contract.mjs --self-test
+      - name: Release-guard self-test
+        run: node scripts/release-guard.mjs --self-test
+      - name: Check helper script syntax
+        run: node scripts/check-syntax.mjs
+      - name: Release-guard (behavior change requires a bump + release notes)
+        if: github.event_name == 'pull_request'
+        run: node scripts/release-guard.mjs --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }}

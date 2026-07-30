@@ -172,9 +172,19 @@ Any PR that changes shipped plugin behavior must, in the **same PR**:
 
 1. Bump the version in **`plugin.json`** and **`package.json`** together
    (`npm version <x.y.z> --no-git-tag-version`, then set `plugin.json` to match).
+   Run `npm install` if you touched dependencies so `package-lock.json` stays in
+   sync.
 2. Add a dated **`CHANGELOG.md`** entry under the new version
-   (Added / Changed / Fixed / Removed) and refresh the README status stamp.
-3. Run `npm run validate`, then open the PR.
+   (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
+   refresh the README `## Status` stamp.
+3. Run `npm test`, then open the PR.
+
+CI **enforces** all of this: a behavior-sensitive change (`agents/`, `skills/`,
+`scripts/`, or the dependency manifests) that lacks a version bump plus
+changelog/README updates fails the `release-guard` gate, and the static checks
+reject a missing changelog section/link, a stale README stamp, or a
+`package.json` ↔ `package-lock.json` mismatch. Docs- and test-only changes are
+exempt.
 
 After it merges to `main`, tag `vX.Y.Z` and cut the matching GitHub release from
 that changelog entry.
