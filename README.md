@@ -37,11 +37,19 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.14.0` — **54 agents and 38 skills**. This release adds **voice presets** to
-the narrated-audio path: `generate-audio` gains a `-Voice` option
+`v0.15.0` — **54 agents and 38 skills**. This release makes CI **enforce the
+release policy** (#35): `validate-plugin` now statically checks semantic-version
+format, a dated CHANGELOG section + reference link for the current version, the
+README status stamp, `package.json` ↔ `package-lock.json` consistency, and a git
+-dependency allowlist (only `lectoria`, pinned to a commit SHA); a new
+`release-guard` gate diffs each PR against its base and blocks a behavior-sensitive
+change that lacks a version bump plus changelog/README updates (docs/test-only
+changes stay exempt), and a `check-syntax` step parses every shipped `.mjs`/`.js`
+and the PowerShell helper. It builds on the prior release, which added **voice
+presets** to the narrated-audio path: `generate-audio` gains a `-Voice` option
 (`emprendedor` | `latino` | `intermedio`), and the default Spanish narration is
-now a warm, measured, Castilian read suited to study content. It builds on the
-prior release, which wired **lectoria** as a git dependency built on install, so
+now a warm, measured, Castilian read suited to study content. An earlier release
+wired **lectoria** as a git dependency built on install, so
 the `generate-audio` skill and the instructor-* audio path work from a fresh
 plugin install (`npm install` at the plugin root — no global install needed).
 An earlier release added the subject-agnostic
@@ -821,13 +829,20 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
-Before opening a PR, run `npm test` — three dependency-free checks that also run
+Before opening a PR, run `npm test` — five dependency-free checks that also run
 in CI on every pull request: `npm run validate` (source contract — valid
 agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references,
-host-tool allowlist, workspace-contract consistency), `npm run doctor:self-test`
-(generated-workspace contract), and `npm run host-contract` (host-loader
-acceptance — the discoverable inventory matches the golden snapshot and malformed
-frontmatter is rejected). When you add, remove, or rename an agent/skill (or
+host-tool allowlist, workspace-contract consistency, **and release hygiene**:
+semver, current-version changelog section + link, README status stamp,
+`package.json` ↔ `package-lock.json` consistency, and the git-dependency
+allowlist), `npm run doctor:self-test` (generated-workspace contract),
+`npm run host-contract` (host-loader acceptance — the discoverable inventory
+matches the golden snapshot and malformed frontmatter is rejected),
+`npm run release-guard:self-test` (the behavior-change-requires-a-bump decision
+core), and `npm run check-syntax` (`node --check` on shipped JS + a PowerShell
+parse). On pull requests CI additionally runs `release-guard --base <sha>
+--head <sha>` to block a behavior-sensitive change that lacks a version bump plus
+changelog/README updates. When you add, remove, or rename an agent/skill (or
 change a user-invocable skill's `argument-hint`), regenerate the golden with
 `npm run host-contract:update` and commit `test/fixtures/inventory.json`.
 
@@ -836,7 +851,10 @@ change a user-invocable skill's `argument-hint`), regenerate the golden with
 kai follows [semantic versioning](https://semver.org). Updates reach users via
 `/plugin update kai` (or a new session) — Copilot loads the plugin from the repo,
 so the version is descriptive metadata, **not** an update gate. Keep it honest:
-any change to shipped plugin behavior bumps the version **in the same PR**.
+any change to shipped plugin behavior bumps the version **in the same PR**. CI
+**enforces** this — a change under `agents/`, `skills/`, `scripts/`, or the
+dependency manifests that lacks a version bump plus changelog/README updates
+fails the `release-guard` gate; docs- and test-only changes stay exempt.
 
 | Change | Pre-1.0 (`0.x`) | Post-1.0 |
 | ------ | --------------- | -------- |
@@ -849,7 +867,7 @@ Cutting `1.0.0` is a deliberate stability milestone, not automatic. Release step
 (also summarized for agents in `AGENTS.md` → **Releasing this plugin**):
 
 1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in `plugin.json`.
-2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed); refresh the README status stamp.
+2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all three for the current version.)
 3. `npm test`, open the PR, merge on green.
 4. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
 

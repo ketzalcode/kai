@@ -4,6 +4,47 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.15.0] - 2026-07-30
+
+**Enforce release hygiene and dependency consistency in CI (#35).** The release
+policy (bump `plugin.json` + `package.json`, add a dated changelog section,
+refresh the README status stamp) was documented but CI only checked version
+parity, so a behavior change could merge green with no bump, changelog, or README
+update — and dependency metadata could drift (the lockfile had gone stale at a
+different version and carried an unpinned view of the `lectoria` git dependency).
+This wires the full policy into CI. No roster change — still **54 agents and 38
+skills**.
+
+### Added
+- **Static release-hygiene checks in `validate-plugin.mjs` (#35)** (run by
+  `npm test`, so they hold locally and in CI): semantic-version format; a dated
+  `## [<version>]` CHANGELOG section **and** a `[<version>]:` reference link for
+  the current version; a README `## Status` stamp that names the current
+  `v<version>`; `package.json` ↔ `package-lock.json` agreement (declarations and
+  root version); and a git-dependency allowlist that sanctions `lectoria` while
+  rejecting any other git-sourced dependency or a git dep not pinned to a 40-hex
+  commit SHA.
+- **`scripts/release-guard.mjs` (#35)**: a CI gate that diffs a PR against its
+  base and, when a behavior-sensitive path (`agents/`, `skills/`, `scripts/`,
+  `plugin.json`, `package.json`, `package-lock.json`) changed, requires a version
+  bump plus `CHANGELOG.md` and `README.md` updates. Docs/test-only changes are
+  exempt. Its decision core is covered by a fixtureless `--self-test`.
+- **`scripts/check-syntax.mjs` (#35)**: `node --check` on every shipped
+  `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1` (skipped
+  cleanly where `pwsh` is absent).
+- The `validate` workflow now checks out full history (`fetch-depth: 0`) and runs
+  the release-guard self-test, the syntax check, and the PR-only release-guard
+  gate.
+
+### Fixed
+- Resynced `package-lock.json` (was stuck at an older version than
+  `package.json`) and backfilled the missing `[0.12.0]`–`[0.14.0]` CHANGELOG
+  reference links surfaced by the new checks.
+- Regenerated the host-loader golden inventory snapshot
+  (`test/fixtures/inventory.json`), which had gone stale when the
+  `instructor-*` collection replaced the engineering teacher/tutor agents —
+  `npm test` was red on `main` before this.
+
 ## [0.14.0] - 2026-07-29
 
 **Voice presets for narrated audio.** Refreshes the pinned `lectoria` to the
@@ -516,6 +557,10 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.15.0]: https://github.com/RubenSaucedo/kai/compare/v0.14.0...v0.15.0
+[0.14.0]: https://github.com/RubenSaucedo/kai/compare/v0.13.0...v0.14.0
+[0.13.0]: https://github.com/RubenSaucedo/kai/compare/v0.12.0...v0.13.0
+[0.12.0]: https://github.com/RubenSaucedo/kai/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/RubenSaucedo/kai/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/RubenSaucedo/kai/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/RubenSaucedo/kai/compare/v0.8.0...v0.9.0

@@ -1,10 +1,12 @@
 # kai plugin tests
 
-Three dependency-free, CI-enforced guards protect the plugin. All run on every
+Five dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
-  contract.
+  contract, including **release hygiene** (semver, current-version changelog
+  section + link, README status stamp, `package.json` ↔ `package-lock.json`
+  consistency, git-dependency allowlist).
 - **`npm run doctor:self-test`** (`scripts/workspace-doctor.mjs --self-test`) —
   the generated **consumer-workspace** contract, exercised against committed
   golden fixtures.
@@ -12,8 +14,16 @@ PR and push to `main` and must stay fast:
   **host-loader acceptance** mirror: the discoverable inventory a host would
   expose matches a committed golden snapshot, and malformed frontmatter fixtures
   are rejected.
+- **`npm run release-guard:self-test`** (`scripts/release-guard.mjs --self-test`)
+  — the decision core of the release gate: a behavior-sensitive change must carry
+  a version bump plus changelog/README updates; docs/test-only changes are exempt.
+  On pull requests CI also runs `release-guard --base <sha> --head <sha>`, which
+  diffs the PR against its base and enforces the same rule for real.
+- **`npm run check-syntax`** (`scripts/check-syntax.mjs`) — `node --check` on
+  every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
+  (skipped cleanly where `pwsh` is unavailable).
 
-`npm test` runs all three.
+`npm test` runs all five.
 
 ## Deterministic checks (in CI)
 

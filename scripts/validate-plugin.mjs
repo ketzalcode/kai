@@ -310,6 +310,102 @@ if (existsSync(fixtureManifest)) {
 }
 
 // ---------------------------------------------------------------------------
+// Release hygiene (#35): a released version must be well-formed and fully
+// documented, and dependency metadata must stay internally consistent. These
+// are static, git-free checks so `npm test` runs them everywhere; the
+// "behavior change requires a bump" gate lives in scripts/release-guard.mjs.
+// ---------------------------------------------------------------------------
+const SANCTIONED_GIT_DEPS = new Map([
+  // name -> the repository identity its lockfile `resolved` URL must contain, so
+  // a dep merely *named* lectoria pointing at another repo is still rejected.
+  ['lectoria', 'github.com/RubenSaucedo/lectoria'],
+]);
+
+(() => {
+  const readJSON = (p, label) => {
+    if (!existsSync(p)) { err(label, 'missing'); return null; }
+    try { return JSON.parse(readFileSync(p, 'utf8')); }
+    catch (e) { err(label, `invalid JSON: ${e.message}`); return null; }
+  };
+  const pj = readJSON(join(ROOT, 'plugin.json'), 'plugin.json');
+  const pkg = readJSON(join(ROOT, 'package.json'), 'package.json');
+  const lock = readJSON(join(ROOT, 'package-lock.json'), 'package-lock.json');
+  const version = pj?.version;
+  if (!version) return; // missing/parity already reported by the plugin.json block
+
+  // 1. Semantic version format (strict semver: no leading zeros).
+  if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(version)) {
+    err('plugin.json', `version "${version}" is not valid semver (x.y.z)`);
+  }
+  const esc = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // 2. CHANGELOG carries a dated section and a reference link for this version.
+  const changelog = readIf(join(ROOT, 'CHANGELOG.md'));
+  if (changelog === null) err('CHANGELOG.md', 'missing');
+  else {
+    if (!new RegExp(`^##\\s*\\[${esc}\\]\\s*-\\s*\\d{4}-\\d{2}-\\d{2}`, 'm').test(changelog)) {
+      err('CHANGELOG.md', `missing a dated "## [${version}] - YYYY-MM-DD" section for the current version`);
+    }
+    if (!new RegExp(`^\\[${esc}\\]:\\s*https?://`, 'm').test(changelog)) {
+      err('CHANGELOG.md', `missing a reference link "[${version}]: <url>" for the current version`);
+    }
+  }
+
+  // 3. README "## Status" stamp references the current version.
+  const readme = readIf(join(ROOT, 'README.md'));
+  if (readme === null) err('README.md', 'missing');
+  else {
+    const idx = readme.indexOf('## Status');
+    if (idx === -1) {
+      err('README.md', 'missing a "## Status" heading carrying the current-version stamp');
+    } else if (!readme.slice(idx, idx + 400).includes(`\`v${version}\``)) {
+      err('README.md', `the "## Status" stamp must reference the current version as \`v${version}\``);
+    }
+  }
+
+  // 4. Dependency consistency: package.json and the lockfile root agree.
+  if (pkg && lock) {
+    const lockRoot = lock.packages?.[''] ?? {};
+    if (pkg.version) {
+      if (lock.version !== pkg.version) {
+        err('package-lock.json', `top-level "version" (${lock.version ?? 'missing'}) must equal package.json version "${pkg.version}" (run \`npm install\` after a version bump)`);
+      }
+      if (lockRoot.version !== pkg.version) {
+        err('package-lock.json', `packages[""].version (${lockRoot.version ?? 'missing'}) must equal package.json version "${pkg.version}" (run \`npm install\` after a version bump)`);
+      }
+    }
+    for (const field of ['dependencies', 'devDependencies']) {
+      const declared = pkg[field] ?? {};
+      const locked = lockRoot[field] ?? {};
+      for (const [name, spec] of Object.entries(declared)) {
+        if (!(name in locked)) err('package-lock.json', `"${name}" is declared in package.json (${field}) but absent from the lockfile root (run \`npm install\`)`);
+        else if (locked[name] !== spec) err('package-lock.json', `"${name}" spec "${locked[name]}" in the lockfile disagrees with package.json "${spec}"`);
+      }
+      for (const name of Object.keys(locked)) {
+        if (!(name in declared)) err('package-lock.json', `lockfile root ${field} lists "${name}" but package.json does not declare it (stale lockfile — run \`npm install\`)`);
+      }
+    }
+
+    // 5. Git dependency allowlist (name + repository identity) + immutable pin.
+    for (const [key, node] of Object.entries(lock.packages ?? {})) {
+      if (key === '') continue;
+      const resolved = node?.resolved ?? '';
+      if (!/^git\+|^git:|\.git(#|$)/.test(resolved)) continue;
+      const name = key.replace(/^.*node_modules\//, '');
+      const expectedRepo = SANCTIONED_GIT_DEPS.get(name);
+      if (expectedRepo === undefined) {
+        err('package-lock.json', `unsanctioned git dependency "${name}" resolves to "${resolved}" — only [${[...SANCTIONED_GIT_DEPS.keys()].join(', ')}] may be git-sourced`);
+      } else if (!resolved.includes(expectedRepo)) {
+        err('package-lock.json', `git dependency "${name}" resolves to "${resolved}" but must come from ${expectedRepo}`);
+      }
+      if (!/#[0-9a-f]{40}$/.test(resolved)) {
+        err('package-lock.json', `git dependency "${name}" is not pinned to a 40-hex commit SHA ("${resolved}") — a floating git ref is not reproducible`);
+      }
+    }
+  }
+})();
+
+// ---------------------------------------------------------------------------
 // Report
 // ---------------------------------------------------------------------------
 const counts = `${agentFiles.length} agents, ${skillFiles.length} skills`;
