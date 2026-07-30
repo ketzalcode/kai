@@ -204,7 +204,10 @@ HANDOFF, and return the item to the designer when revisions are needed.
    unless the milestone explicitly requires that knowledge output.
    A user-facing interaction change is not engineering-ready until its current
    product map and accepted product-design artifact are in `context_artifacts`,
-   or the steward/operator records an explicit design waiver.
+   or the steward/operator records an explicit design waiver as a `WAIVER`
+   record bound to the item `version` at issuance and confirmed against the
+   implementation `change_ref` at review (see the Design-waiver record in
+   `work-coordination`).
 6. Pull `principal-swe-manager` for large/parallel sequencing rather than
    inventing an engineering plan.
 7. Sweep stalled leases, unanswered product-scope questions, orphaned records,

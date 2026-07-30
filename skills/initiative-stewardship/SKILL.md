@@ -86,9 +86,13 @@ The steward turns the backlog and `proposed` items into an **ordered** set of
 invent or override the priority:
 
 - Promote a `proposed`/backlog item to `ready` only when it **fits
-  `scope.current`**, has acceptance criteria, and is unblocked (all
-  `depends_on` items are sufficiently complete and no blocking question is
-  open).
+  `scope.current`** and has acceptance criteria. Its `depends_on` links must be
+  **declared** (the upstream items exist in the plan) — they need **not** be
+  complete yet. `ready` is a commitment, not a claim of immediate runnability:
+  the director computes the derived *executable* predicate (dependencies in
+  their required states, lease-free, unblocked, touch-safe) at dispatch. Promote
+  a whole dependency chain once; do **not** re-promote a downstream item each
+  time an upstream one completes.
 - Order `ready` by **value-to-mission**, not by who filed it or what's
   easiest.
 - When the next work is **large, parallel, multi-owner, or
@@ -158,8 +162,9 @@ invoke this pass, but the steward remains the decision owner.
 1. **One steward per initiative** — the northstar `owner` (default
    `principal-product-manager`). Accountability doesn't split.
 2. **Promotion is deliberate and owned.** Only the steward moves an item
-   `proposed`/backlog → `ready`, only when it fits `scope.current` and is
-   unblocked. Nothing self-promotes.
+   `proposed`/backlog → `ready`, only when it fits `scope.current`, has
+   acceptance, and its `depends_on` links are **declared** (not necessarily
+   complete). Nothing self-promotes.
 3. **Prioritize by value-to-mission**, not by age, ease, or who asked.
 4. **Steward, don't build.** The steward orders and prunes work; it doesn't
    write, review, or ship the diff — the acting agents own that.

@@ -195,8 +195,14 @@ function checkWorkspace(root) {
 
       const state = scalar(fm, 'state');
       if (!LIFECYCLE.has(state)) err(`${rel}: invalid lifecycle state "${state}"`);
-      if (NEEDS_CHANGE_REF.has(state) && isNull(scalar(fm, 'change_ref'))) {
+      const changeRef = scalar(fm, 'change_ref');
+      if (NEEDS_CHANGE_REF.has(state) && isNull(changeRef)) {
         err(`${rel}: state "${state}" requires a non-null change_ref`);
+      }
+      // change_ref must content-address a git object (commit/PR-head SHA), not an
+      // ad hoc digest — the only reproducible-across-machines form (see #31).
+      if (!isNull(changeRef) && !/^[0-9a-f]{7,40}$/i.test(changeRef)) {
+        err(`${rel}: change_ref "${changeRef}" must be a git commit/PR-head SHA (7–40 hex chars); bespoke diff hashes are not allowed`);
       }
 
       const ver = scalar(fm, 'version');
@@ -326,7 +332,8 @@ function selfTest() {
   const bad = checkWorkspace(join(fx, 'broken-workspace'));
   const expected = [
     { label: 'pre-schema migration', re: /pre-versioned|migration required/i },
-    { label: 'missing change_ref', re: /change_ref/i },
+    { label: 'missing change_ref', re: /requires a non-null change_ref/i },
+    { label: 'non-SHA change_ref', re: /must be a git commit\/PR-head SHA/i },
     { label: 'dangling dependency', re: /unknown item/i },
     { label: 'machine-absolute artifact path', re: /machine-absolute/i },
   ];
