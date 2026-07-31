@@ -37,19 +37,13 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.15.0` — **54 agents and 38 skills**. This release makes CI **enforce the
-release policy** (#35): `validate-plugin` now statically checks semantic-version
-format, a dated CHANGELOG section + reference link for the current version, the
-README status stamp, `package.json` ↔ `package-lock.json` consistency, and a git
--dependency allowlist (only `lectoria`, pinned to a commit SHA); a new
-`release-guard` gate diffs each PR against its base and blocks a behavior-sensitive
-change that lacks a version bump plus changelog/README updates (docs/test-only
-changes stay exempt), and a `check-syntax` step parses every shipped `.mjs`/`.js`
-and the PowerShell helper. It builds on the prior release, which added **voice
-presets** to the narrated-audio path: `generate-audio` gains a `-Voice` option
-(`emprendedor` | `latino` | `intermedio`), and the default Spanish narration is
-now a warm, measured, Castilian read suited to study content. An earlier release
-wired **lectoria** as a git dependency built on install, so
+`v0.16.0` — **54 agents and 38 skills**. This release **renames the default
+voice preset** to `espana` and retunes pacing: `generate-audio`'s `-Voice`
+option is now `espana | latino | intermedio` (with a faster `latino`), and an
+unset `-Voice` still uses lectoria's default (`espana`). It builds on prior
+releases that made CI **enforce the release policy** (#35) and added **voice
+presets** to the narrated-audio path, and on the one that wired **lectoria** as
+a git dependency built on install, so
 the `generate-audio` skill and the instructor-* audio path work from a fresh
 plugin install (`npm install` at the plugin root — no global install needed).
 An earlier release added the subject-agnostic

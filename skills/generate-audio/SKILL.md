@@ -122,4 +122,4 @@ assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source .kai/runs
 | `-Out`     | `./audio`          | Right next to the source, easy to find                  |
 | `-Lang`    | `en,es`            | User listens in both                                    |
 | `-Style`   | `conversational`   | ~70% fidelity; balanced for most prose                  |
-| `-Voice`   | (lectoria default) | `emprendedor` — warm, measured, Castilian Spanish       |
+| `-Voice`   | (lectoria default) | `espana` — warm, measured, Castilian Spanish            |
