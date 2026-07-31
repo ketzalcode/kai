@@ -4,6 +4,18 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.17.0] - 2026-07-30
+
+**Default narration voice → `intermedio`.** The `generate-audio` wrapper now
+defaults `-Voice` to **`intermedio`** (a less regionally-marked, international
+Spanish read) instead of falling through to lectoria's `espana` default. Pass
+`-Voice espana` or `-Voice latino` to override. No roster change — still
+**54 agents and 38 skills**.
+
+### Changed
+- `scripts/generate-audio.ps1`: `-Voice` now defaults to `intermedio` (was
+  unset → lectoria default `espana`).
+
 ## [0.16.0] - 2026-07-30
 
 **Voice-preset tuning.** Refreshes the pinned `lectoria` to the release that
@@ -572,6 +584,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.17.0]: https://github.com/RubenSaucedo/kai/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/RubenSaucedo/kai/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/RubenSaucedo/kai/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/RubenSaucedo/kai/compare/v0.13.0...v0.14.0
