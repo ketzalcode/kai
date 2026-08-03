@@ -16,9 +16,9 @@ adds a point-of-use reminder. No roster change — still **54 agents and 38 skil
 ### Added
 - **README → "Browser automation setup (optional)" (#40):** an Install subsection
   listing the browser-driving agents/skills with a copy-paste `~/.copilot/mcp-config.json`
-  `playwright` server block (key must be `playwright`), a `/mcp` verify step, and the
-  equivalent note for the Copilot coding agent (cloud). Documentation-only; kai ships
-  no MCP servers.
+  `playwright` server block (key must be `playwright`), a `/mcp` verify step, and a
+  note that the Copilot coding agent (cloud) has the Playwright MCP server enabled
+  by default. Documentation-only; kai ships no MCP servers.
 - **Point-of-use reminder (#40):** each of the nine browser-driving agents
   (`principal-qa-ui`, `persona-ux-first-time-user`, `persona-professional-trainer`,
   `persona-professional-nutritionist`, `principal-product-designer`,

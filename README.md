@@ -187,10 +187,12 @@ Restart the CLI so the server loads, then confirm with `/mcp` (you should see
 `playwright` listed). `@playwright/mcp` is fetched on demand by `npx` — no global
 install needed.
 
-**Copilot coding agent (cloud).** Register the same `playwright` MCP server in the
-repository's coding-agent MCP configuration so cloud sessions can drive a browser.
+**Copilot coding agent (cloud).** No setup needed — the
+[Playwright MCP server is enabled by default](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers)
+for the cloud coding agent (and Copilot code review), so browser-driving agents
+work there out of the box.
 
-
+### Copilot coding agent (cloud)
 
 Add `RubenSaucedo/kai` to the repository's coding-agent plugin configuration
 so its skills and agents load into cloud sessions. The plugin is
