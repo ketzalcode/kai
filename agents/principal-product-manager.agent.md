@@ -285,20 +285,21 @@ the smallest change that addresses the need.
 
 ## Output location and shape
 
-Output to: `<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-pm/triage.md`
+Output to: `<working-root>/qa/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md`
 
-- `<target-slug>` mirrors the slug of the source UX run.
+- `<descriptor>` mirrors the descriptor/slug of the source UX run.
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- The timestamp is local time, 24-hour, e.g. `2026-06-17-2132`.
+- `<YYYY-MM-DD>` is the local date; `<NN>` is the next free per-day run index
+  under `qa/<today>/` (see `web-evaluation` / `workspace-conventions`).
 
-Folder layout (parallel to `-ux` and `-qa` runs):
+Folder layout (parallel to `-ux` and `-qa` runs, all under the day's folder):
 
 ```
-<working-root>/qa/<target>/
-  2026-06-17-1919-ux/report.md       ← source (you read this)
-  2026-06-17-2104-qa/report.md
-  2026-06-17-2132-pm/triage.md       ← you write this
+<working-root>/qa/2026-06-17/
+  01-ux-progress-page/report.md       ← source (you read this)
+  02-qa-progress-page/report.md
+  03-pm-progress-page/triage.md       ← you write this
 ```
 
 **Initiative gating (see `workspace-conventions`).** Before triaging, glance at
@@ -315,7 +316,7 @@ the `.kai/runs/` root is gitignored by
 `workflow-workspace-init`, so you never manage `.gitignore` yourself. If a
 triage is worth distributing, the operator passes `--share` and you promote
 the curated copy to
-`library/qa-findings/<target-slug>/<YYYY-MM-DD-HHMM>-pm/triage.md` with library
+`library/qa-findings/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md` with library
 frontmatter.
 
 ## Report scaffold
@@ -397,7 +398,7 @@ Findings I'll triage (numbered, mirrored from source):
   #2  "<short restatement>"
   …
 Dominant theme I see across them: <one line>
-Output folder I'll create: <working-root>/qa/<target>/<YYYY-MM-DD-HHMM>-pm/triage.md
+Output folder I'll create: <working-root>/qa/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md
 Anything you want me to flag in your product context before I triage?
   (e.g. strategy you're protecting, things that are deliberately off-limits to change)
 ```

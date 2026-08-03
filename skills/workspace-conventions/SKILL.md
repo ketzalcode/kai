@@ -177,6 +177,52 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 - One agent run owns one timestamped folder.
 - Raw credentials, cookies, tokens, and browser state never leave `.kai/runs/`.
 
+### QA area run grammar (date-first)
+
+The `qa` area is the **one exception** to the target-slug-first grammar above.
+The `<target-slug>` is model-generated and drifts — the same surface gets a
+slightly different slug from one run to the next — so grouping QA runs by slug
+scatters a feature's evidence and makes runs hard to find. The `qa` area
+therefore anchors on the **date**, which is deterministic:
+
+```text
+<workspace-root>/.kai/runs/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/<artifact>
+```
+
+- `<YYYY-MM-DD>` is the local date — the deterministic top anchor. Every QA,
+  UX, SEO, PM-triage, persona, explore/extract, and stress run for a day lives
+  under it, so "what did I evaluate today" is one folder.
+- `<NN>` is a **zero-padded, per-day sequential run index**. Pick it by listing
+  `.kai/runs/qa/<today>/` and taking the next free index (`01` if the folder is
+  empty); runs then sort in the order they ran. If the computed folder already
+  exists, take the next free index — never reuse or overwrite a folder.
+- `<flavor>` is the lens: `qa`, `ux`, `seo`, `pm`, `explore`, `extract`,
+  `trainer`, `nutritionist`, `stress`, or a new short kebab flavor.
+- `<descriptor>` is descriptive only — **not** the grouping key. Use the
+  work-item/epic key when the run has one (e.g. `kai-59`) so same-epic runs stay
+  greppable (`grep -rl kai-59 .kai/runs/qa/*/`); otherwise a kebab slug for the
+  surface. Never block a run waiting on the descriptor — the date + index
+  already locate the run.
+
+Example:
+
+```text
+.kai/runs/qa/2026-08-03/
+  01-qa-progress-page/        report.md  screenshots/
+  02-ux-progress-page/        report.md  screenshots/
+  03-pm-progress-page/        triage.md
+  04-stress-progress-page/    report.md  evidence/
+```
+
+**Placement is mandatory.** QA / evaluation / stress artifacts always land under
+`.kai/runs/qa/`. Never write them to Copilot session-state, a temp directory, or
+the calling agent's cwd. When a browser or stress harness takes an output dir
+(`OUT`), it MUST resolve under `.kai/runs/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`;
+reject or rewrite any `OUT` that resolves elsewhere. This holds **even when a
+non-QA agent** (e.g. an orchestrator running a harness) drives the run — the
+canonical qa path is mandatory regardless of caller. A promoted QA finding
+mirrors this shape: `library/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`.
+
 ### Area registry
 
 | Area | Owners | Flavors |

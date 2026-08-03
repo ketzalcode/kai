@@ -113,7 +113,7 @@ Following the **`web-evaluation`** skill:
 - Resolve `<target-slug>`.
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
   `workflow-workspace-init` for the target workspace.
-- Create `<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-ux/`.
+- Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-ux-<descriptor>/`.
 - Stub `report.md` from the **UX scaffold** (not the QA one) with
   header populated.
 

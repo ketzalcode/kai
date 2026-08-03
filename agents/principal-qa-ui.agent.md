@@ -114,11 +114,15 @@ focus says "checkout"), `ask_user`.
 
 Following the **`web-evaluation`** skill:
 
-- Resolve the `<target-slug>` from URL or user-supplied feature
-  name.
+- Resolve the `<target-slug>` (descriptor) from URL or user-supplied
+  feature name.
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
   `workflow-workspace-init` for the target workspace.
-- Create `<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-qa/`.
+- Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-qa-<descriptor>/` (date-first,
+  per-day `<NN>` run index — see `web-evaluation` / `workspace-conventions`).
+  Output MUST land under `<working-root>/qa/`; if a browser/stress harness takes
+  an `OUT` dir, point it inside this folder — never Copilot session-state or a
+  temp dir.
 - Stub `report.md` from the QA scaffold with header populated.
 
 ### 3. Walk the surface — desktop first

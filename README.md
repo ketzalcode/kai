@@ -37,12 +37,22 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.19.0` — **54 agents and 38 skills**. This release documents the **Playwright
-MCP prerequisite** for browser-driving agents (#40): nine agents and five skills
-declare `tools: [..., playwright]` and drive a real browser, but Install never said
-you must register a `playwright` MCP server in your host — so on a fresh install they
-were silently inert. A new *"Browser automation setup"* Install subsection gives a
-copy-paste `~/.copilot/mcp-config.json` block and a `/mcp` verify step, and each
+`v0.20.0` — **54 agents and 38 skills**. This release makes **QA runs date-first
+and canonical-path-enforced** (#59). QA / UX / SEO / PM / persona / explore /
+stress artifacts sometimes landed in ephemeral Copilot session-state instead of
+`.kai/runs/qa/`, and the run folder led with a **model-generated `<target-slug>`**
+that drifted run to run — so the same surface scattered across sibling slug folders
+and runs were hard to find. The `qa` area now anchors on the **date** (deterministic)
+with a per-day sequential run index — `qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/` —
+so runs sort as they ran and today's work is one folder; the canonical path is
+mandatory even when a non-QA agent or a browser/stress harness (`OUT`) drives the
+run. It also resolves a screenshot-policy contradiction (screenshots are local
+evidence, not committed). It builds on the prior release, which documented the
+**Playwright MCP prerequisite** for browser-driving agents (#40): nine agents and
+five skills declare `tools: [..., playwright]` and drive a real browser, but Install
+never said you must register a `playwright` MCP server in your host — so on a fresh
+install they were silently inert. A *"Browser automation setup"* Install subsection
+gives a copy-paste `~/.copilot/mcp-config.json` block and a `/mcp` verify step, and each
 browser-driving agent/skill now carries a one-line reminder pointing to it (kai still
 ships no MCP servers). It builds on the prior release, which wired the house
 **comment discipline** into the code-writing agents (#39): `coding-style` — the

@@ -68,7 +68,7 @@ force it into the QA/UX findings scaffold below.
 All output for a single run lives in:
 
 ```
-<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/
+<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/
   report.md
   screenshots/
     01-<short-slug>.png
@@ -85,23 +85,40 @@ canonical initiative `artifact_target`.
 - Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
   loaded north star, or `workspace-conventions`. Never substitute the calling
   agent's repository/cwd for a different target workspace.
-- `<target-slug>` is a kebab-case slug derived from the target URL
-  or the feature name the user gave you. Examples:
+- `<YYYY-MM-DD>` is the **local date** — the deterministic anchor. Every QA, UX,
+  SEO, PM, persona, and explore/extract run for a day lives under it. The date is
+  never model-generated, so a run is always where you expect it.
+- `<NN>` is a **zero-padded, per-day sequential run index**. Pick it by listing
+  `<working-root>/qa/<today>/` and taking the next free index (`01` if empty);
+  runs then sort in the order they ran. If the folder already exists, take the
+  next free index — never reuse or overwrite one.
+- `<flavor>` identifies the calling agent's lens — typical values: `qa`
+  (principal-qa-ui), `ux` (persona-ux-first-time-user), `seo` (principal-seo),
+  `pm`, `explore`, `extract`, `stress`. New auditing agents pick a short kebab
+  slug.
+- `<descriptor>` is descriptive only, **not** the grouping key. Use the
+  work-item/epic key when the run has one (e.g. `kai-59`) so same-epic runs stay
+  greppable; otherwise a kebab slug for the surface (derived from the target URL
+  or feature name). Examples:
   - `https://app.contoso.com/checkout` → `contoso-checkout`
   - User said "the new onboarding flow" → `onboarding-flow`
-  - When in doubt, ask the user for the slug before creating the
-    folder.
-- `<flavor>` identifies the calling agent's lens — typical values:
-  `qa` (principal-qa-ui), `ux` (persona-ux-first-time-user), `seo`
-  (principal-seo). New auditing agents pick a short kebab slug.
-- The timestamp is local time, 24-hour, e.g. `2026-06-17-1823`.
+  - When in doubt, use a short slug — never block the run on it; the date + index
+    already locate the run.
+
+**Placement is mandatory — never write elsewhere.** QA / evaluation / stress
+output always lands under `<working-root>/qa/`. Never write it to Copilot
+session-state, a temp directory, or the calling agent's cwd. When a browser or
+stress harness takes an output dir (`OUT`), it MUST resolve under
+`<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`; reject or rewrite
+any `OUT` that resolves elsewhere. This holds **even when a non-QA agent** (e.g.
+an orchestrator running a stress harness) drives the run — the canonical qa path
+is mandatory regardless of caller.
 
 **One folder per run — never collapse the path.** It is always
-`<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` — three nested
-segments. Never fuse them into `.kai/runs/qa-<flavor>/`, and
-never drop the target to `.kai/runs/qa/<flavor>/`. Same agent, same target →
-same shape every run, so a target's audits group under one
-`qa/<target-slug>/` tree.
+`<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/` — never fuse the
+segments and never drop the date or index. Same agent, same day → same shape
+every run, so a day's audits group under one `qa/<YYYY-MM-DD>/` tree, ordered as
+they ran.
 
 ## Zone, gitignore & promotion
 
@@ -114,7 +131,7 @@ logs) are all working output that lives there.
 
 To **share** a defect report, the calling agent promotes the curated
 markdown to
-`<workspace-root>/library/qa-findings/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/report.md`
+`<workspace-root>/library/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`
 with library frontmatter — that committed copy is what travels via `git pull`.
 Screenshots stay in the working root as local evidence, referenced by their
 run path; promote the text, not the binaries.
@@ -168,11 +185,12 @@ mode** if `ask_user` is available; otherwise default to headless.
   take a 16th, it must justify why in the report.
 - Take the screenshot at the viewport where the issue is
   reproducible. Note the viewport in the report row.
-- **Screenshots are committed alongside reports.** They're part of
-  the deliverable, not local-only artifacts — PR reviewers, future
-  agents, and the calling user all benefit from seeing the visual
-  evidence inline with the markdown. Keep filenames stable so links
-  from the report don't break across renames.
+- **Screenshots stay local evidence — not committed.** They live in the run
+  folder under the ignored `.kai/runs/` root; heavy binaries (including
+  `screenshots/`) remain ignored even below `library/` (see
+  `workspace-conventions`). When you promote a report, promote the **text** and
+  reference the evidence by its run path — never copy binaries into `library/`.
+  Keep filenames stable so the report's local links don't break across renames.
 
 ## Priority scheme
 
@@ -360,8 +378,10 @@ If the agent is approaching any cap, it should:
 
 ## Anti-patterns
 
-- ❌ Writing the report straight into the repo root or session folder. Always
-  use `<working-root>/qa/<target>/<run>/`.
+- ❌ Writing the report into the repo root, Copilot session-state, a temp
+  directory, or the calling agent's cwd. Always use
+  `<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`, even when a
+  non-QA agent or a browser/stress harness (`OUT`) drives the run.
 - ❌ Taking a screenshot per page just to "have coverage". Each
   screenshot must be referenced.
 - ❌ Reporting a finding without a viewport (QA flavor) or without
@@ -390,7 +410,7 @@ When the skill (and the calling agent) finishes a run:
 2. Every row in the findings/friction tables has at least:
    priority, title, observation, and either a screenshot or a
    URL + selector citation.
-3. The run lives under the resolved working root's `qa/` area; no
+3. The run lives under the resolved working root's `qa/<YYYY-MM-DD>/` area; no
    per-folder `.gitignore` patching is done. Sharing is via promotion of
    `report.md` to `library/qa-findings/`.
 4. The agent posts back to the user: run folder path, finding

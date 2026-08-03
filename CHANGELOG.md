@@ -4,6 +4,43 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.20.0] - 2026-08-03
+
+**QA runs are now date-first and canonical-path-enforced (#59).** QA / UX / SEO /
+PM / persona / explore / stress artifacts sometimes landed in ephemeral Copilot
+session-state instead of `.kai/runs/qa/`, and the run-folder name led with a
+**model-generated `<target-slug>`** that drifted from run to run — so the same
+surface scattered across sibling slug folders and runs were hard to find. The
+`qa` area now anchors on the **date** (deterministic, never model-generated) with
+a per-day sequential run index, and the canonical path is mandatory even when a
+non-QA agent or a browser/stress harness (`OUT`) drives the run. No roster change
+— still **54 agents and 38 skills**.
+
+### Changed
+- **QA run grammar → date-first (#59):** the `qa` area moves from
+  `qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` to
+  `qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`, where `<NN>` is a zero-padded,
+  per-day sequential run index (next-free under today's folder) so runs sort in
+  the order they ran, and `<descriptor>` (work-item/epic key when present, else a
+  slug) is descriptive only — not the grouping key. Documented as the single
+  exception to the target-slug-first grammar in `workspace-conventions`, and
+  applied across `web-evaluation`, `principal-qa-ui`, `principal-seo`,
+  `principal-product-manager`, `persona-ux-first-time-user`,
+  `persona-professional-trainer`, `persona-professional-nutritionist`,
+  `workflow-product-explore`, and `product-exploration`. Promotion mirrors the
+  shape: `library/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`.
+
+### Fixed
+- **Canonical-path enforcement (#59):** QA/evaluation/stress output must resolve
+  under `.kai/runs/qa/`; any harness `OUT` pointing at session-state, a temp dir,
+  or the caller's cwd is rejected/rewritten — enforced **even when a non-QA agent
+  orchestrates the run**.
+- **Screenshot-policy contradiction:** `web-evaluation` said screenshots are
+  "committed alongside reports," contradicting its own promotion rule and
+  `workspace-conventions` (heavy binaries stay ignored even below `library/`).
+  Resolved to the authoritative policy — screenshots are **local evidence, not
+  committed**; promote the text and reference evidence by run path.
+
 ## [0.19.0] - 2026-08-03
 
 **Document the Playwright MCP prerequisite for browser-driving agents (#40).**
@@ -634,6 +671,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.20.0]: https://github.com/RubenSaucedo/kai/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/RubenSaucedo/kai/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/RubenSaucedo/kai/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/RubenSaucedo/kai/compare/v0.16.0...v0.17.0
