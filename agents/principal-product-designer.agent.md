@@ -72,20 +72,34 @@ in the item. Otherwise use the canonical design path without asking.
    `workflow-product-explore` design-system extraction) when absent. State
    inferred design assumptions explicitly, and emit a `PROPOSAL` for any missing
    scale/token instead of inventing one.
-4. For a load-bearing layout/interaction choice, present 3–4 materially different
+4. **For a load-bearing layout/interaction choice with container or placement
+   implications, challenge the container/placement framing before generating
+   options.** Treat any container, placement, or host surface named in the brief as
+   a **hypothesis, not authority**. Enumerate the alternative host surfaces that
+   **already exist** in the app — grep the codebase per `design-grounding` for
+   existing modals, sheets, panels, drawers, and detail/list views — and record why
+   each is in or out of scope. For a crowding / visual-weight / context / space /
+   discoverability problem, this step MUST surface at least one relocation,
+   progressive-disclosure, or removal candidate to carry into the option set; a
+   candidate that expands scope is a `PROPOSAL` per `scope-discipline`, not a silent
+   pick. (A trivial or pure-copy decision with no container implication skips this —
+   see `ui-mockup` "When it applies — and when to skip".)
+5. For a load-bearing layout/interaction choice, present 3–4 materially different
    options as human-confirmable mockups per `ui-mockup` — each grounded in the
-   design system, one marked Recommended with a short why — and pause for the
-   human's pick unless they explicitly delegated the decision.
-5. Select the smallest coherent option that satisfies the approved outcome and
+   design system, one marked Recommended with a short why, and (for a crowding /
+   visual-weight / context / space / discoverability problem) at least one that
+   challenges the container — and pause for the human's pick unless they explicitly
+   delegated the decision.
+6. Select the smallest coherent option that satisfies the approved outcome and
    non-negotiables (the human-picked option when the gate applied).
-6. Define hierarchy, entry/exit behavior, states, errors/empty/loading,
+7. Define hierarchy, entry/exit behavior, states, errors/empty/loading,
    responsive behavior, keyboard/focus intent, accessibility semantics, and
    content behavior.
-7. Name what remains unchanged and any proposal that would expand scope.
-8. Give engineering design acceptance criteria without prescribing code.
-9. Record unresolved product, domain, technical, or operator questions to the
-   correct role.
-10. Write the decision at the exact `artifact_target`, update the item/thread,
+8. Name what remains unchanged and any proposal that would expand scope.
+9. Give engineering design acceptance criteria without prescribing code.
+10. Record unresolved product, domain, technical, or operator questions to the
+    correct role.
+11. Write the decision at the exact `artifact_target`, update the item/thread,
     set `change_ref` to the commit SHA of the artifact revision, move to
     `in-review`, and hand
     off to `principal-product-manager` for the required
@@ -129,6 +143,12 @@ Review only the exact item `change_ref`.
   that item, record the human-picked option, and rerun the PM
   `product-design-acceptance` review against the new design `change_ref` before
   engineering implements it. Route to the PM/steward and `principal-swe-frontend`.
+  When the finding is about crowding / visual weight / context / space /
+  discoverability, first **challenge the container**: treat the implemented host
+  surface as a hypothesis, enumerate existing alternative surfaces per
+  `design-grounding`, and carry at least one relocation / progressive-disclosure /
+  removal candidate into the escalated option set — never escalate an option set
+  that stays inside the surface the finding is about.
 - Set the next unmet reviewer, or route onward according to
   `work-coordination`.
 
@@ -154,4 +174,8 @@ release gate.
    component, or scale; a missing one is a `PROPOSAL`, not a silent addition.
 9. Present load-bearing layout/interaction options as human-confirmable mockups
    per `ui-mockup` and pause for a human pick unless the decision was explicitly
-   delegated; this gate is reachable from DESIGN and from a REVIEW fork.
+   delegated; this gate is reachable from DESIGN and from a REVIEW fork. For a
+   crowding / visual-weight / context / space / discoverability problem, the
+   option set must include at least one option that challenges the container
+   (relocation / progressive disclosure / removal), grounded in an existing app
+   surface — not only within-container variants.

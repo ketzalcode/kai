@@ -77,7 +77,25 @@ app can't do that.
 ## The option set and the recommendation
 
 Produce **3-4 materially different options** (A / B / C [/ D]) — genuinely
-different approaches, not the same layout recolored. For each option, record:
+different approaches, not the same layout recolored. **"Materially different"
+includes a materially different container, placement, or host surface — not only
+within-container layout.**
+
+**Container-challenge rule.** When the triggering problem is about **crowding,
+visual weight, context, space, or discoverability**, at least **one** of the
+options MUST challenge the container/placement framing itself — relocating the
+affordance to a **different existing surface**, using **progressive disclosure**
+into an existing modal / sheet / panel / detail view, or **removing** it — not
+merely a within-container variant. Options that all share the same host surface
+are "option theater" for these problems: the actually-correct answer (move it out
+of the crowded box) never reaches the human. Ground the alternative surface(s) in
+ones that **already exist** in the app (per `design-grounding`), not invented
+screens. A container-challenge option that **expands scope** is recorded as a
+`PROPOSAL` per hard rule 6 (`scope-discipline`) — it is offered and reviewable, but
+is never the silent default and cannot be the Recommended pick until the PM/steward
+promotes it into scope.
+
+For each option, record:
 
 - the **mock** (an ASCII block inline, or a labeled section in `options.html`);
 - a **one-line concept**;
@@ -158,6 +176,10 @@ pattern as `web-evaluation`.
    neutral defaults with explicitly labeled assumptions — never present an
    invented look as on-brand.
 3. **3-4 options, exactly one Recommended + why.** Real alternatives, not reskins.
+   For a crowding / context / space / visual-weight / discoverability problem,
+   **≥1 option must challenge the container** (relocation / progressive disclosure
+   / removal), and "materially different" covers container/placement, not just
+   within-container layout.
 4. **Pause for a human pick** unless the human explicitly delegated; record the
    options either way.
 5. **Reachable from DESIGN and REVIEW.** A REVIEW fork with real options escalates
@@ -181,3 +203,7 @@ pattern as `web-evaluation`.
   reusable renderers. Static mocks only.
 - ❌ Four "options" that are one layout recolored. Options must be materially
   different.
+- ❌ All options share the same container/placement assumption when the complaint
+  is about crowding / visual weight / context / space / discoverability (container
+  tunnel-vision). At least one option must relocate the affordance, use progressive
+  disclosure into an existing surface, or remove it.

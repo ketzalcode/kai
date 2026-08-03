@@ -37,8 +37,23 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.21.0` — **54 agents and 38 skills**. This release makes **net-new
-user-facing UI require designer sign-off before it can ship** (#54). An
+`v0.22.0` — **54 agents and 38 skills**. This release closes an **"option
+theater"** gap in the design flow (#38). `ui-mockup`'s "3-4 materially different
+options" rule was satisfiable while **every option kept the same container** — so
+for a crowding / visual-weight / context / space / discoverability problem, the
+correct answer (move the affordance out of the crowded box, progressively disclose
+it into an existing surface, or remove it) was never generated, and the human
+picked the least-bad within-container variant. Now, for those problems, **at least
+one option must challenge the container** — relocate to an existing surface,
+progressively disclose, or remove — and "materially different" explicitly covers
+container/placement, not just within-container layout (a new *container
+tunnel-vision* anti-pattern names the trap). `principal-product-designer` gains a
+pre-option **"challenge the framing"** step in both DESIGN and REVIEW: treat any
+given container as a hypothesis, enumerate existing host surfaces via
+`design-grounding`, and carry at least one relocation / progressive-disclosure /
+removal candidate into the option set. No roster change. It builds on the prior
+release, which made **net-new user-facing UI require designer sign-off before it
+can ship** (#54). An
 engineering agent could author a brand-new surface — a new component, or a changed
 layout/placement/prominence/flow — and reach `release-ready` with **zero designer
 involvement**, because every gate that pulls the designer in was conditioned on a
