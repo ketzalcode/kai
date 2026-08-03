@@ -37,13 +37,25 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.17.0` — **54 agents and 38 skills**. This release sets the `generate-audio`
-default voice to **`intermedio`** (a less regionally-marked, international
-Spanish read); pass `-Voice espana` or `-Voice latino` to override. It builds on
-prior releases that added **voice presets** to the narrated-audio path (with the
-`espana`/`latino`/`intermedio` set and a faster `latino`), made CI **enforce the
-release policy** (#35), and wired **lectoria** as a git dependency built on
-install, so
+`v0.18.0` — **54 agents and 38 skills**. This release wires the house
+**comment discipline** into the code-writing agents (#39): `coding-style` — the
+skill that already encoded "no comments restating the code," "inline comments
+≤1 line," and "≤2–3 line doc blocks" — was orphaned (no agent inherited it), so
+`principal-swe-backend`, `principal-swe-frontend`, `principal-swe-infra`, and
+`principal-ai-applied-engineer` now inherit it, and §4 gains an explicit rule
+that design rationale and alternatives-considered belong in the design artifact
+or PR/handoff, **not** a multi-paragraph doc comment in the source. It builds on
+prior releases that set the `generate-audio` default voice to **`intermedio`** (a
+less regionally-marked, international Spanish read; pass `-Voice espana` or
+`-Voice latino` to override), added the **voice presets** to the narrated-audio
+path, made CI **enforce the release policy** (#35) — `validate-plugin` statically
+checks semantic-version format, a dated CHANGELOG section + reference link, the
+README status stamp, `package.json` ↔ `package-lock.json` consistency, and a
+git-dependency allowlist (only `lectoria`, pinned to a commit SHA), while a
+`release-guard` gate blocks a behavior-sensitive change that lacks a version bump
+plus changelog/README updates and a `check-syntax` step parses every shipped
+`.mjs`/`.js` and the PowerShell helper — and wired **lectoria** as a git
+dependency built on install, so
 the `generate-audio` skill and the instructor-* audio path work from a fresh
 plugin install (`npm install` at the plugin root — no global install needed).
 An earlier release added the subject-agnostic
