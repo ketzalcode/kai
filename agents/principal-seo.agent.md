@@ -303,7 +303,7 @@ open the target site.**
 
 Following the **`web-evaluation`** skill:
 
-- Resolve the `<target-slug>` from the URL.
+- Resolve the `<descriptor>` (target slug from the URL, or work-item key).
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
   `workflow-workspace-init` for the target workspace.
 - Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-seo-<descriptor>/`.

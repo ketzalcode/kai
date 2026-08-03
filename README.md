@@ -269,7 +269,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/review/kai/<YYYY-MM-DD>-self-check/report.md`. |
+| `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/review/<YYYY-MM-DD>/<NN>-self-check-kai/report.md`. |
 | `workflow-workspace-init` | Idempotent onboarding for any repository or durable standalone folder. Creates `.kai/`, coordination, initiatives, library, and complete ignored `personal/` assistant/identity state, including migration guidance for legacy `.persona-self/`. |
 | `workflow-initiative-init` | Bounded intake workflow that resolves the target workspace, then turns mission + vision into a proposed north star with stable milestones, success measures, deliverable index, and initial proposed item records. |
 

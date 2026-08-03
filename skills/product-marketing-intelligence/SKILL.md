@@ -232,7 +232,7 @@ Resolve the workspace via `workspace-conventions`.
   `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/`, then promote
   the curated set to
   `library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (the same
-  timestamped promotion path as `principal-product-strategist`). Library
+  date-first promotion path as `principal-product-strategist`). Library
   frontmatter goes on the Markdown report/index only; the JSON files stay valid
   JSON and are indexed by the report and `deliverables.md`.
 - **Media** always stays under `.kai/runs/.../media/` (ignored), referenced by

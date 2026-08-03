@@ -89,9 +89,9 @@ canonical initiative `artifact_target`.
   SEO, PM, persona, and explore/extract run for a day lives under it. The date is
   never model-generated, so a run is always where you expect it.
 - `<NN>` is a **zero-padded, per-day sequential run index**. Pick it by listing
-  `<working-root>/qa/<today>/` and taking the next free index (`01` if empty);
-  runs then sort in the order they ran. If the folder already exists, take the
-  next free index — never reuse or overwrite one.
+  `<working-root>/qa/<today>/` and taking the highest existing index + 1 (`01` if
+  empty); runs then sort in the order they ran. Never fill a lower gap and never
+  reuse or overwrite an index.
 - `<flavor>` identifies the calling agent's lens — typical values: `qa`
   (principal-qa-ui), `ux` (persona-ux-first-time-user), `seo` (principal-seo),
   `pm`, `explore`, `extract`, `stress`. New auditing agents pick a short kebab

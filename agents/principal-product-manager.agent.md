@@ -290,8 +290,9 @@ Output to: `<working-root>/qa/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md`
 - `<descriptor>` mirrors the descriptor/slug of the source UX run.
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- `<YYYY-MM-DD>` is the local date; `<NN>` is the next free per-day run index
-  under `qa/<today>/` (see `web-evaluation` / `workspace-conventions`).
+- `<YYYY-MM-DD>` is the local date; `<NN>` is the highest existing per-day run
+  index under `qa/<today>/` + 1 — never fill gaps (see `web-evaluation` /
+  `workspace-conventions`).
 
 Folder layout (parallel to `-ux` and `-qa` runs, all under the day's folder):
 

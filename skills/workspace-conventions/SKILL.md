@@ -221,6 +221,11 @@ snapshots:
   certification stays together.
 - `pulse` — grouped by **ISO week** (`<YYYY-Www>`); its weekly-window resolution
   depends on the week folder.
+- `library/briefings/` — the AI researcher's daily one-pager is a **date-keyed
+  cadence** artifact: exactly one `library/briefings/<YYYY-MM-DD>-briefing.md` per
+  day, glob-read (`*-briefing.md`) to rebuild the covered-source ledger. The date
+  is already deterministic, so it stays a flat date-stamped file (its raw working
+  draft under `.kai/runs/ai/` still uses the date-first run shape above).
 
 These keep their own grammar; every other area uses the date-first shape above.
 
@@ -234,7 +239,7 @@ These keep their own grammar; every other area uses the date-first shape above.
 | `revenue` | sales, solutions-architect, revenue-operations, partnerships | `sales`, `solutions-architect`, `revops`, `partnerships` |
 | `support` | workflow-support-triage | `triage` |
 | `content` | linkedin strategist, video director, demand-generation, future platform agents | `linkedin`, `video`, `demand-gen` |
-| `review` | workflow-doc-review | `doc` |
+| `review` | workflow-doc-review, workflow-self-check | `doc`, `self-check` |
 | `ship` | workflow-ship | `ship` |
 | `incident` | workflow-incident-response | `incident` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |

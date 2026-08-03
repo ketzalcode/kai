@@ -154,7 +154,7 @@ Resolve the workspace via `workspace-conventions`.
   `workspace-conventions` library flow (steward-approved, recorded in
   `deliverables.md`) to `library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
   Library frontmatter goes on the Markdown index only; the JSON matrix stays
-  valid JSON. Never overwrite a prior pack — new runs get a new timestamp.
+  valid JSON. Never overwrite a prior pack — new runs get the next per-day index.
 
 Nothing here is ever committed as "published," and the method touches no network.
 
