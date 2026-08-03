@@ -4,6 +4,43 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.22.0] - 2026-08-03
+
+**The design-options flow no longer accepts "option theater" for crowding
+problems (#38).** `ui-mockup` required "3-4 materially different options" — but
+that was satisfiable while **every option kept the same container/placement**. For
+a crowding / visual-weight / context / space / discoverability problem, that means
+the actually-correct answer (relocate the affordance to another surface,
+progressively disclose it, or remove it) is **never generated**, and the human
+picks the least-bad within-container variant. Real incident: `exercise-demo-videos`
+offered 4 in-row options, all rejected — "host the demo in the existing LogModal"
+only surfaced after a human re-framed it. This makes the container itself a
+first-class variable in option generation. No roster change — still **54 agents and
+38 skills**.
+
+### Added
+- **Container-challenge rule in `ui-mockup` (#38):** for a crowding / visual-weight
+  / context / space / discoverability problem, **≥1 option must challenge the
+  container/placement framing** — relocate to a **different existing surface**, use
+  **progressive disclosure** into an existing modal/sheet/panel/detail view, or
+  **remove** it — not merely a within-container variant. "Materially different" now
+  explicitly covers a different container/placement, not only within-container
+  layout. Hard rule 3 restated to match.
+- **`container tunnel-vision` anti-pattern in `ui-mockup` (#38):** all options
+  sharing the same container/placement assumption when the complaint is about
+  crowding / context / space / discoverability is now a named anti-pattern.
+- **A pre-option "challenge the framing" step for `principal-product-designer`
+  (#38):** a dedicated DESIGN-workflow step (before option generation) treats any
+  container/placement/host surface named in the brief as a **hypothesis, not
+  authority** — it enumerates the alternative host surfaces that **already exist**
+  in the app (grep the codebase per `design-grounding` for existing
+  modals/sheets/panels/drawers/detail views), records why each is in or out, and
+  MUST carry ≥1 relocation / progressive-disclosure / removal candidate into the
+  option set for a crowding-class problem. The designer's REVIEW fork and hard rule
+  9 enforce the same container challenge, so an escalated review option set never
+  stays inside the surface the finding is about. This operationalizes the existing
+  "treat placement as a hypothesis" principle into an actual option-generation step.
+
 ## [0.21.0] - 2026-08-03
 
 **Net-new user-facing UI now needs designer sign-off before it can ship (#54).**
@@ -719,6 +756,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.22.0]: https://github.com/RubenSaucedo/kai/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/RubenSaucedo/kai/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/RubenSaucedo/kai/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/RubenSaucedo/kai/compare/v0.18.0...v0.19.0
