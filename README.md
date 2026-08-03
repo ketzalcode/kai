@@ -37,7 +37,14 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.18.0` — **54 agents and 38 skills**. This release wires the house
+`v0.19.0` — **54 agents and 38 skills**. This release documents the **Playwright
+MCP prerequisite** for browser-driving agents (#40): nine agents and five skills
+declare `tools: [..., playwright]` and drive a real browser, but Install never said
+you must register a `playwright` MCP server in your host — so on a fresh install they
+were silently inert. A new *"Browser automation setup"* Install subsection gives a
+copy-paste `~/.copilot/mcp-config.json` block and a `/mcp` verify step, and each
+browser-driving agent/skill now carries a one-line reminder pointing to it (kai still
+ships no MCP servers). It builds on the prior release, which wired the house
 **comment discipline** into the code-writing agents (#39): `coding-style` — the
 skill that already encoded "no comments restating the code," "inline comments
 ≤1 line," and "≤2–3 line doc blocks" — was orphaned (no agent inherited it), so
@@ -148,7 +155,42 @@ Verify with a no-cost dry run (prints the command without spending money):
 pwsh scripts/generate-audio.ps1 -Source ./README.md -DryRun
 ```
 
-### Copilot coding agent (cloud)
+### Browser automation setup (optional — for browser-driving agents)
+
+Several agents and skills drive a real browser **via a Playwright MCP server**:
+`principal-qa-ui`, `persona-ux-first-time-user`, `persona-professional-trainer`,
+`persona-professional-nutritionist`, `principal-product-designer`,
+`principal-product-marketing`, `principal-seo`, `workflow-product-explore`, and
+`workflow-course-to-audio` (plus the `web-evaluation`, `web-content-extraction`,
+`product-exploration`, `product-marketing-intelligence`, and `ui-mockup` skills).
+They declare `tools: [..., playwright]`, but **kai ships no MCP servers** — you
+register one in your host. Everything else works without this; only these
+browser-driving agents need it.
+
+**Copilot CLI.** Add a `playwright` server to `~/.copilot/mcp-config.json` (the
+server key **must** be `playwright` to match the agents' `tools`):
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium"],
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Restart the CLI so the server loads, then confirm with `/mcp` (you should see
+`playwright` listed). `@playwright/mcp` is fetched on demand by `npx` — no global
+install needed.
+
+**Copilot coding agent (cloud).** Register the same `playwright` MCP server in the
+repository's coding-agent MCP configuration so cloud sessions can drive a browser.
+
+
 
 Add `RubenSaucedo/kai` to the repository's coding-agent plugin configuration
 so its skills and agents load into cloud sessions. The plugin is

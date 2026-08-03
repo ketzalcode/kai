@@ -4,6 +4,8 @@ description: "Bounded neutral explorer for a live product. Uses Playwright and p
 tools: ["playwright", "bash", "view", "edit", "grep", "glob", "ask_user"]
 ---
 
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
+
 # Workflow — Product Explore
 
 You are a neutral product cartographer. Your bounded job is to make a live

@@ -4,6 +4,30 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.19.0] - 2026-08-03
+
+**Document the Playwright MCP prerequisite for browser-driving agents (#40).**
+Nine agents and five skills declare `tools: [..., playwright]` and drive a real
+browser, but Install/Prerequisites never told you a **Playwright MCP server** must
+be registered in your host — so on a fresh install every browser-driving agent was
+silently inert. kai still ships no MCP servers; this documents the prerequisite and
+adds a point-of-use reminder. No roster change — still **54 agents and 38 skills**.
+
+### Added
+- **README → "Browser automation setup (optional)" (#40):** an Install subsection
+  listing the browser-driving agents/skills with a copy-paste `~/.copilot/mcp-config.json`
+  `playwright` server block (key must be `playwright`), a `/mcp` verify step, and the
+  equivalent note for the Copilot coding agent (cloud). Documentation-only; kai ships
+  no MCP servers.
+- **Point-of-use reminder (#40):** each of the nine browser-driving agents
+  (`principal-qa-ui`, `persona-ux-first-time-user`, `persona-professional-trainer`,
+  `persona-professional-nutritionist`, `principal-product-designer`,
+  `principal-product-marketing`, `principal-seo`, `workflow-product-explore`,
+  `workflow-course-to-audio`) and five skills (`web-evaluation`,
+  `web-content-extraction`, `product-exploration`, `product-marketing-intelligence`,
+  `ui-mockup`) now carries a one-line note that a `playwright` MCP server is required,
+  pointing to the README subsection — surfaced only for the agents that need it.
+
 ## [0.18.0] - 2026-07-30
 
 **Wire the house comment discipline into the code-writing agents (#39).** The
@@ -610,6 +634,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.19.0]: https://github.com/RubenSaucedo/kai/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/RubenSaucedo/kai/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/RubenSaucedo/kai/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/RubenSaucedo/kai/compare/v0.15.0...v0.16.0
