@@ -4,7 +4,7 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.16.0] - 2026-07-30
+## [0.18.0] - 2026-07-30
 
 **Wire the house comment discipline into the code-writing agents (#39).** The
 `coding-style` skill already encoded the right rule — no comments restating the
@@ -19,7 +19,7 @@ artifact boundary. No roster change — still **54 agents and 38 skills**.
   alternatives-considered (a single-pass-vs-second-pass tradeoff, why a
   dependency was or wasn't added) belong in the design/decision artifact or the
   PR/handoff description — **not** a multi-paragraph doc comment in a source
-  file; a source comment states the non-obvious *why* in ≤1–2 lines.
+  file; a rationale comment states the non-obvious *why* in ≤1–2 lines.
 
 ### Changed
 - **`principal-swe-backend`, `principal-swe-frontend`, `principal-swe-infra`,
@@ -29,6 +29,33 @@ artifact boundary. No roster change — still **54 agents and 38 skills**.
   rest of the house code style) is enforced where code is actually written.
   `principal-ai-applied-engineer`, which previously had no inherited-contract
   line, now carries one.
+
+## [0.17.0] - 2026-07-30
+
+**Default narration voice → `intermedio`.** The `generate-audio` wrapper now
+defaults `-Voice` to **`intermedio`** (a less regionally-marked, international
+Spanish read) instead of falling through to lectoria's `espana` default. Pass
+`-Voice espana` or `-Voice latino` to override. No roster change — still
+**54 agents and 38 skills**.
+
+### Changed
+- `scripts/generate-audio.ps1`: `-Voice` now defaults to `intermedio` (was
+  unset → lectoria default `espana`).
+
+## [0.16.0] - 2026-07-30
+
+**Voice-preset tuning.** Refreshes the pinned `lectoria` to the release that
+renames the default narration preset and retunes pacing. No roster change —
+still **54 agents and 38 skills**.
+
+### Changed
+- Renamed the default voice preset **`emprendedor` → `espana`** (peninsular
+  Castilian). The `generate-audio` `-Voice` set is now
+  `espana | latino | intermedio`, and unset still uses lectoria's default
+  (`espana`).
+- Bumped the pinned `lectoria` git dependency to pick up the rename plus a
+  faster **`latino`** preset (Mexican voices sped to +5%/+7% so they no longer
+  feel slow next to `espana`).
 
 ## [0.15.0] - 2026-07-30
 
@@ -583,6 +610,8 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.18.0]: https://github.com/RubenSaucedo/kai/compare/v0.17.0...v0.18.0
+[0.17.0]: https://github.com/RubenSaucedo/kai/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/RubenSaucedo/kai/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/RubenSaucedo/kai/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/RubenSaucedo/kai/compare/v0.13.0...v0.14.0

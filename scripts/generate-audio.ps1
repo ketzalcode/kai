@@ -30,9 +30,9 @@
     Default: conversational (best balance of fidelity vs. listenability).
 
 .PARAMETER Voice
-    Voice preset: emprendedor | latino | intermedio. Sets the narrator voices
-    and pace per language. Default (unset): lectoria's own default, emprendedor
-    (warm, measured, Castilian Spanish). Run `lectoria voices` to see them.
+    Voice preset: espana | latino | intermedio. Sets the narrator voices
+    and pace per language. Default: intermedio (a less regionally-marked,
+    international Spanish). Run `lectoria voices` to see them all.
 
 .PARAMETER NoDistribute
     Skip RSS feed + episodes.json generation; produce audio only.
@@ -70,8 +70,8 @@ param(
     [string]$Lang = "en,es",
     [ValidateSet("podcast", "conversational", "verbatim", "dialogue")]
     [string]$Style = "conversational",
-    [ValidateSet("emprendedor", "latino", "intermedio")]
-    [string]$Voice,
+    [ValidateSet("espana", "latino", "intermedio")]
+    [string]$Voice = "intermedio",
     [switch]$NoDistribute,
     [switch]$NoRecursive,
     [switch]$DryRun
