@@ -46,8 +46,8 @@ doesn't apply to this change is waived, not faked-Clear).
 | # | Dimension | The question | Clear when… |
 |---|-----------|--------------|-------------|
 | 1 | **scope-true** | Did we build the thing we agreed to, and only that? | The diff satisfies the item's `needs`/acceptance from its thread and stays inside the initiative's `scope.current`. Anything scope-expanding was rerouted as a `PROPOSAL` (per `scope-discipline`), not smuggled into this diff. |
-| 2 | **verified** | Do we *know* it works, or do we assume it? | Implementing principals' automated tests + build are green; relevant independent QA/system checks ran when applicable; for a user-facing surface, UI/UX validation is linked rather than assumed. |
-| 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. |
+| 2 | **verified** | Do we *know* it works, or do we assume it? | Implementing principals' automated tests + build are green; relevant independent QA/system checks ran when applicable; for a user-facing surface, UI/UX validation is linked rather than assumed, and a **net-new or materially-changed** surface additionally carries **design sign-off** (see the sub-gate below). |
+| 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. For a net-new/materially-changed user-facing surface, that set **must include** a `principal-product-designer` design-conformance verdict (see the sub-gate below). |
 | 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. Run the `review-rollout-operability` lens here. |
 | 5 | **documented** | Will the next person understand what shipped? | Reusable decisions/designs are promoted to `library/`; user-facing / operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
 | 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, and parked ideas are in the committed backlog. |
@@ -63,6 +63,40 @@ Document lenses are not formal approvals. When `review_requirements` names
 `change_ref` clears the relevant dimension. A waived BLOCK/NOT-READY/GAP/
 COMPROMISED remains visible as waived residual risk; it is never relabeled
 Clear/Ready/Compliant/Sound.
+
+## Design sign-off sub-gate — net-new user-facing UI
+
+Engineering can author user-facing UI directly. When it does, QA-walk and a
+green build are gated but **design authorship/sign-off is not** — so a net-new
+surface with an over-weighted layout can reach `release-ready` with zero designer
+input. This sub-gate closes that hole. It sits **inside Dim 2 (verified) and
+Dim 3 (reviewed)** — not a seventh dimension.
+
+**Trigger — detect it from the diff, don't wait for an upstream requirement.**
+Fires whenever the change introduces or materially changes a **user-facing
+surface**: a new UI component, or a changed layout, placement, prominence,
+hierarchy, flow, navigation, or user-visible state model. A token-compliant copy
+tweak, or a like-for-like refactor of an existing surface, does **not** trigger
+it.
+
+When it triggers, readiness requires **one** of:
+
+- an **approved design artifact** for this surface **plus** a
+  `principal-product-designer` REVIEW-mode design-conformance verdict whose
+  `change_ref` matches the current item; **or**
+- an explicit **Waived-with-reason** — the change is trivial / token-compliant /
+  copy-only, or the operator explicitly waived design for this item.
+
+Absent both, it is a **Gap → bounce**: set the item back, name
+**`principal-product-designer`** as the owning role, and emit the bounce message
+*"consult the designer before this is passed."* The engineer having built it, QA
+having walked it, and the build being green do **not** substitute for design
+sign-off on a net-new surface.
+
+Detection is **independent**: DoD and `workflow-ship` decide the trigger from the
+surface itself, so a net-new surface is caught **even when no
+`principal-product-designer` entry was ever added to `review_requirements`** —
+that missing entry is the failure, not an exemption.
 
 ## The readiness gate rule
 
@@ -121,6 +155,11 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
    demand controls the repo doesn't have and doesn't need.
 6. **kai never performs the deployment.** Produce the record and steps; the
    human executes. Kai may record safe read-only verification afterward.
+7. **Design sign-off on net-new user-facing UI.** A net-new or materially-changed
+   user-facing surface needs an approved design + a `principal-product-designer`
+   conformance verdict on the current `change_ref`, or an explicit proportional
+   waiver. Missing both is a Gap owned by `principal-product-designer`; a green
+   build and a QA/UX-walk do not satisfy it.
 
 ## Anti-patterns
 
@@ -133,3 +172,9 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
   theater; waive dims 4–5 and say why.
 - ❌ Auto-deploying "to be helpful." kai records; the human ships.
 - ❌ Dropping a review finding to clear dim-3. Defer it as a proposal.
+- ❌ Shipping a net-new user-facing surface (new component, changed
+  layout/placement/prominence) that QA walked but **no designer signed off** —
+  the design sub-gate is a Gap owned by `principal-product-designer`, not a
+  Clear.
+- ❌ Manufacturing design review for a one-line token-compliant copy fix — waive
+  the sub-gate with a reason instead.

@@ -4,6 +4,45 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.21.0] - 2026-08-03
+
+**Net-new user-facing UI now needs designer sign-off before it can ship (#54).**
+An engineering agent could author a brand-new user-facing surface — a new
+component, or a changed layout/placement/prominence/flow — and reach
+`release-ready` with **zero designer involvement**: every existing gate that pulls
+the designer in was conditioned on a design *already* existing, so when design was
+skipped entirely, nothing bounced it (QA-walk + green build satisfied the gate).
+This adds a proportional **design sign-off sub-gate** to the readiness contract.
+No roster change — still **54 agents and 38 skills**.
+
+### Added
+- **Design sign-off sub-gate in `definition-of-done` (#54):** for a **net-new or
+  materially-changed user-facing surface**, Dim 2 (verified) + Dim 3 (reviewed)
+  now require **either** an approved design artifact **plus** a
+  `principal-product-designer` conformance verdict on the current `change_ref`,
+  **or** an explicit **Waived-with-reason** (trivial / token-compliant / operator
+  waiver). Absent both → **Gap → bounce**, owner `principal-product-designer`,
+  message *"consult the designer before this is passed."* Detection is
+  **independent** — DoD and `workflow-ship` decide the trigger from the surface
+  itself, so it fires **even when no designer entry was ever added to
+  `review_requirements`** (that missing entry is the failure, not an exemption).
+  It stays proportional: a token-compliant copy fix waives the sub-gate, no design
+  theater.
+
+### Changed
+- **`workflow-ship` Dim 2 gate (#54):** the `in-review → release-ready` gate now
+  confirms design sign-off for a net-new/materially-changed user-facing surface,
+  and routes an unsigned surface to `principal-product-designer` on bounce.
+- **`director-chief-of-staff` dispatch (#54):** added a catch rule so that **even
+  when engineering built the surface directly** (no design routed up front), a
+  net-new user-facing surface arriving at readiness with no design + conformance
+  verdict (or waiver) is bounced to the designer rather than silently sequenced
+  toward release.
+- **`principal-swe-frontend` pre-handoff self-check (#54):** before moving
+  net-new/materially-changed user-facing UI to `in-review`, the frontend engineer
+  stops and routes to `principal-product-designer` when no approved design exists
+  — it is the last guardrail before an unreviewed layout reaches the ship gate.
+
 ## [0.20.0] - 2026-08-03
 
 **All run areas are now date-first, with canonical-path enforcement (#59).** The
@@ -680,6 +719,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.21.0]: https://github.com/RubenSaucedo/kai/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/RubenSaucedo/kai/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/RubenSaucedo/kai/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/RubenSaucedo/kai/compare/v0.17.0...v0.18.0
