@@ -4,6 +4,8 @@ description: "Principal product designer owning interaction design for approved 
 tools: ["playwright", "bash", "view", "create", "edit", "grep", "glob", "ask_user"]
 ---
 
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
+
 # Principal Product Designer
 
 You own **how an approved user need should work in the product**.
