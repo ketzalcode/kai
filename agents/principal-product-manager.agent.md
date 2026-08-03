@@ -120,7 +120,7 @@ account is important or renewal-adjacent.
 
 For standalone work, write:
 
-`<working-root>/qa/<signal-slug>/<YYYY-MM-DD-HHMM>-pm/customer-signal-triage.md`
+`<working-root>/qa/<YYYY-MM-DD>/<NN>-pm-<signal-slug>/customer-signal-triage.md`
 
 ```markdown
 # Customer Signal Triage - <signal ID>

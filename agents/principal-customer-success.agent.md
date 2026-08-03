@@ -67,7 +67,7 @@ Resolve the current workspace through `.kai/manifest.json`. Account-specific
 customer-success work is confidential by default:
 
 - write standalone work under
-  `.kai/runs/product/<account-or-segment-slug>/<YYYY-MM-DD-HHMM>-customer-success/`;
+  `.kai/runs/product/<YYYY-MM-DD>/<NN>-customer-success-<account-or-segment-slug>/`;
 - keep raw usage exports, ticket extracts, meeting notes, contact details,
   contract dates, and commercial context inside that ignored run folder;
 - never put credentials, session tokens, full CRM exports, or unnecessary

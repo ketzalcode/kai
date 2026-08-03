@@ -37,16 +37,18 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.20.0` — **54 agents and 38 skills**. This release makes **QA runs date-first
-and canonical-path-enforced** (#59). QA / UX / SEO / PM / persona / explore /
-stress artifacts sometimes landed in ephemeral Copilot session-state instead of
-`.kai/runs/qa/`, and the run folder led with a **model-generated `<target-slug>`**
-that drifted run to run — so the same surface scattered across sibling slug folders
-and runs were hard to find. The `qa` area now anchors on the **date** (deterministic)
-with a per-day sequential run index — `qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/` —
-so runs sort as they ran and today's work is one folder; the canonical path is
-mandatory even when a non-QA agent or a browser/stress harness (`OUT`) drives the
-run. It also resolves a screenshot-policy contradiction (screenshots are local
+`v0.20.0` — **54 agents and 38 skills**. This release makes **all run areas
+date-first and canonical-path-enforced** (#59). The run folder led with a
+**model-generated `<target-slug>`** that drifted run to run — so the same feature
+scattered across sibling slug folders and runs were hard to find — and artifacts
+sometimes landed in ephemeral Copilot session-state, a temp dir, or the caller's
+cwd instead of `.kai/runs/`. Every snapshot-run area now anchors on the **date**
+(deterministic, never model-generated) with a per-day sequential run index —
+`<area>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/` — so runs sort as they ran and a
+day's work is one folder; the canonical path is mandatory even when a non-owning
+agent or a browser/stress harness (`OUT`) drives the run. Goal- and period-keyed
+areas (`learn`/`lessons`, `pulse`) keep their own grammar (learn redesign tracked
+in #61). It also resolves a screenshot-policy contradiction (screenshots are local
 evidence, not committed). It builds on the prior release, which documented the
 **Playwright MCP prerequisite** for browser-driving agents (#40): nine agents and
 five skills declare `tools: [..., playwright]` and drive a real browser, but Install
@@ -492,7 +494,7 @@ every agent resolves the same paths:
 <workspace>/
 ├─ .kai/
 │  ├─ manifest.json + CONVENTIONS.md       committed bootstrap
-│  └─ runs/<area>/<target>/<run>/          ignored raw evidence and scratch
+│  └─ runs/<area>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/   ignored raw evidence and scratch
 ├─ coordination/
 │  ├─ ACTIVE.md + BOARD.md + backlog.md
 │  ├─ items/<item-id>.md                   authoritative work state

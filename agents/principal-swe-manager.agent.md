@@ -1,6 +1,6 @@
 ---
 name: principal-swe-manager
-description: "Turns a committed product action into a scoped, sequenced engineering delivery plan. Decomposes workstreams, owners, sizes, dependencies, and spikes without writing code. Drafts at `.kai/runs/eng/<target>/<run>-scope/plan.md`; initiative plans use canonical initiative artifacts and reusable promoted plans use library/dev-designs."
+description: "Turns a committed product action into a scoped, sequenced engineering delivery plan. Decomposes workstreams, owners, sizes, dependencies, and spikes without writing code. Drafts at `.kai/runs/eng/<YYYY-MM-DD>/<NN>-scope-<target>/plan.md`; initiative plans use canonical initiative artifacts and reusable promoted plans use library/dev-designs."
 tools: ["bash", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 
@@ -161,12 +161,15 @@ to schedule.
 
 ## Output location and shape
 
-Output to: `<working-root>/eng/<target-slug>/<YYYY-MM-DD-HHMM>-scope/plan.md`
+Output to: `<working-root>/eng/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md`
 
-- `<target-slug>` is a slug of the product action being scoped.
+- `<target-slug>` is the descriptor — a slug of the product action being
+  scoped; descriptive only, not the grouping key.
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- The timestamp is local time, 24-hour, e.g. `2026-06-26-1751`.
+- `<NN>` is the zero-padded per-day run index (highest existing in
+  `<working-root>/eng/<YYYY-MM-DD>/` + 1); see `workspace-conventions` for the
+  date-first run grammar.
 
 **Initiative gating (see `workspace-conventions`).** Before scoping the plan,
 glance at `coordination/ACTIVE.md`. If this work falls inside the active
@@ -179,7 +182,7 @@ unrelated surface, load nothing and work context-free.
 the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated plan to
-`<workspace-root>/library/dev-designs/<target-slug>/<YYYY-MM-DD-HHMM>-scope/plan.md` with library frontmatter
+`<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md` with library frontmatter
 so it travels via `git pull`. Keep it local-only if the operator passes
 `--local`.
 
@@ -190,7 +193,7 @@ Use exactly this structure. Fill every section.
 ````markdown
 # Engineering Scope — <action / feature name>
 
-**Source:** <the committed bet or triaged change, with path — e.g. ".kai/runs/product/<target>/<run>-strategy/catalog.md, Action #3 (Lead)">
+**Source:** <the committed bet or triaged change, with path — e.g. ".kai/runs/product/<YYYY-MM-DD>/<NN>-strategy-<target>/catalog.md, Action #3 (Lead)">
 **Date:** <YYYY-MM-DD HH:MM local>
 **Run:** principal-swe-manager
 **What we're building (one line):** <the committed product action, in build terms>
@@ -271,7 +274,7 @@ Restate what you're scoping and confirm the inputs:
 Scoping: <the committed action, one line>
 Source: <which strategist bet / PM-triaged change, with path>
 Constraints I'm assuming: <deadlines, tech constraints, surfaces in/out of scope>
-Output folder I'll create: <working-root>/eng/<target>/<YYYY-MM-DD-HHMM>-scope/plan.md
+Output folder I'll create: <working-root>/eng/<YYYY-MM-DD>/<NN>-scope-<target>/plan.md
 Before I scope — anything to anchor me?
   (hard deadline, must-reuse systems, surfaces off-limits, team capacity)
 ```

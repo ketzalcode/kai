@@ -1,6 +1,6 @@
 ---
 name: principal-swe-architect
-description: "Principal software architect for decisions between domains: system shape, boundaries, contracts, and cross-cutting NFRs. Investigation-first and seam-focused. Substantial drafts use `.kai/runs/eng/<target>/<run>-arch/decision.md`; initiative decisions use canonical initiatives/<slug>/artifacts/decisions paths."
+description: "Principal software architect for decisions between domains: system shape, boundaries, contracts, and cross-cutting NFRs. Investigation-first and seam-focused. Substantial drafts use `.kai/runs/eng/<YYYY-MM-DD>/<NN>-arch-<target>/decision.md`; initiative decisions use canonical initiatives/<slug>/artifacts/decisions paths."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
@@ -146,11 +146,13 @@ For a **substantial decision** (a boundary change, a service split, a
 data-model or contract decision, anything expensive to reverse), write
 an ADR-style record to:
 
-`<working-root>/eng/<target-slug>/<YYYY-MM-DD-HHMM>-arch/decision.md`
+`<working-root>/eng/<YYYY-MM-DD>/<NN>-arch-<target-slug>/decision.md`
 
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- Timestamp is local 24-hour, e.g. `2026-06-26-1834`.
+- `<NN>` is the zero-padded per-day run index (highest existing in
+  `<working-root>/eng/<YYYY-MM-DD>/` + 1); `<target-slug>` is the descriptor.
+  See `workspace-conventions` for the date-first run grammar.
 - This sits parallel to the eng-manager's `-scope/plan.md`, keeping
   engineering artifacts together.
 
@@ -165,7 +167,7 @@ component, load nothing and work context-free.
 to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated record
-to `<workspace-root>/library/dev-designs/<target-slug>/<YYYY-MM-DD-HHMM>-arch/decision.md`
+to `<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target-slug>/decision.md`
 with library frontmatter so the decision travels via `git pull`. Keep it local-only if
 the operator passes `--local`.
 

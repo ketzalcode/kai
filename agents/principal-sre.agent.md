@@ -193,7 +193,7 @@ A waiver never changes your verdict to READY.
 Write detailed local evidence under:
 
 ```text
-.kai/runs/eng/<target-slug>/<YYYY-MM-DD-HHMM>-sre/
+.kai/runs/eng/<YYYY-MM-DD>/<NN>-sre-<target-slug>/
   reliability-assessment.md
   evidence/
 ```

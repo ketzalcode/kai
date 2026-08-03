@@ -1,6 +1,6 @@
 ---
 name: workflow-doc-review
-description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<slug>/<run>-doc/review.md`; promoted reusable reviews go to library/reviews. Verifies before asserting and never auto-posts."
+description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<YYYY-MM-DD>/<NN>-doc-<slug>/review.md`; promoted reusable reviews go to library/reviews. Verifies before asserting and never auto-posts."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
@@ -90,12 +90,15 @@ Each is a lens onto the same doc, all sharing `doc-review-rigor`:
 
 ## Output location and shape
 
-Output to: `<working-root>/review/<doc-slug>/<YYYY-MM-DD-HHMM>-doc/review.md`
+Output to: `<working-root>/review/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md`
 
-- `<doc-slug>` is a slug of the reviewed document.
+- `<doc-slug>` is the descriptor — a slug of the reviewed document;
+  descriptive only, not the grouping key.
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- Timestamp is local 24-hour, e.g. `2026-06-26-1849`.
+- `<NN>` is the zero-padded per-day run index (highest existing in
+  `<working-root>/review/<YYYY-MM-DD>/` + 1); see `workspace-conventions` for
+  the date-first run grammar.
 
 **Initiative gating (see `workspace-conventions`).** Before reviewing, glance
 at `coordination/ACTIVE.md`. If the doc under review concerns the active
@@ -108,7 +111,7 @@ load nothing and review context-free.
 outputs default to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated review
-to `library/reviews/<doc-slug>/<YYYY-MM-DD-HHMM>-doc/review.md` with library
+to `library/reviews/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md` with library
 frontmatter
 so it travels via `git pull`. Keep it local-only if the operator passes
 `--local`.

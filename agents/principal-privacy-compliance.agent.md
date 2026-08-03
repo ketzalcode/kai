@@ -184,7 +184,7 @@ to COMPLIANT.
 Write detailed local analysis under:
 
 ```text
-.kai/runs/eng/<target-slug>/<YYYY-MM-DD-HHMM>-compliance/
+.kai/runs/eng/<YYYY-MM-DD>/<NN>-compliance-<target-slug>/
   compliance-assessment.md
   evidence/
 ```

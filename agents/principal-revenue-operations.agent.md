@@ -154,7 +154,7 @@ Close with one:
 
 Write the full local working brief to:
 
-`.kai/runs/revenue/<target-slug>/<YYYY-MM-DD-HHMM>-revops/revops-brief.md`
+`.kai/runs/revenue/<YYYY-MM-DD>/<NN>-revops-<target-slug>/revops-brief.md`
 
 Keep raw billing exports, account-level revenue, and named-account terms local.
 For coordinated work, write the aggregate brief to:

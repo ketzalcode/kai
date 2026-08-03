@@ -6,35 +6,44 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
 ## [0.20.0] - 2026-08-03
 
-**QA runs are now date-first and canonical-path-enforced (#59).** QA / UX / SEO /
-PM / persona / explore / stress artifacts sometimes landed in ephemeral Copilot
-session-state instead of `.kai/runs/qa/`, and the run-folder name led with a
-**model-generated `<target-slug>`** that drifted from run to run — so the same
-surface scattered across sibling slug folders and runs were hard to find. The
-`qa` area now anchors on the **date** (deterministic, never model-generated) with
-a per-day sequential run index, and the canonical path is mandatory even when a
-non-QA agent or a browser/stress harness (`OUT`) drives the run. No roster change
-— still **54 agents and 38 skills**.
+**All run areas are now date-first, with canonical-path enforcement (#59).** The
+run-folder grammar led with a **model-generated `<target-slug>`** that drifted
+from run to run — so the same feature scattered across sibling slug folders and
+runs were hard to find — and artifacts sometimes landed in ephemeral Copilot
+session-state, a temp dir, or the caller's cwd instead of `.kai/runs/`. Every
+snapshot-run area now anchors on the **date** (deterministic, never
+model-generated) with a per-day sequential run index, and the canonical path is
+mandatory even when a non-owning agent or a browser/stress harness (`OUT`) drives
+the run. Goal- and period-keyed areas (`learn`/`lessons`, `pulse`) keep their own
+grammar (learn redesign tracked in #61). No roster change — still **54 agents and
+38 skills**.
 
 ### Changed
-- **QA run grammar → date-first (#59):** the `qa` area moves from
-  `qa/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` to
-  `qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`, where `<NN>` is a zero-padded,
-  per-day sequential run index (next-free under today's folder) so runs sort in
-  the order they ran, and `<descriptor>` (work-item/epic key when present, else a
-  slug) is descriptive only — not the grouping key. Documented as the single
-  exception to the target-slug-first grammar in `workspace-conventions`, and
-  applied across `web-evaluation`, `principal-qa-ui`, `principal-seo`,
-  `principal-product-manager`, `persona-ux-first-time-user`,
-  `persona-professional-trainer`, `persona-professional-nutritionist`,
-  `workflow-product-explore`, and `product-exploration`. Promotion mirrors the
-  shape: `library/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`.
+- **Universal run grammar → date-first (#59):** every snapshot-run area moves from
+  `<area>/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/` to
+  `<area>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`, where `<NN>` is a zero-padded
+  per-day run index (highest existing + 1, never fill gaps, never reuse) so runs
+  sort in the order they ran, and `<descriptor>` (work-item/epic key when present,
+  else a slug) is descriptive only — **not** the grouping key. `workspace-conventions`
+  now documents date-first as *the* rule, with `learn`/`lessons` (goal slug) and
+  `pulse` (ISO week) named as the deliberate goal/period-keyed exceptions. Applied
+  across the qa, eng, product, revenue, content, ship, incident, review, and ai
+  areas — `web-evaluation`, `principal-qa-ui`, `principal-seo`,
+  `principal-product-manager`, the persona evaluators, `workflow-product-explore`,
+  `product-exploration`, `principal-swe-*` (architect/manager/backend/frontend/infra),
+  `principal-product-strategist`, `principal-sales`, `principal-partnerships`,
+  `principal-security`/`sre`/`data-*`, `workflow-doc-review`, `workflow-ship`,
+  `workflow-incident-response`, `principal-ai-*`, `linkedin-content`,
+  `video-direction`, `ui-mockup`, `product-marketing-intelligence`, and more.
+  Library promotion mirrors the shape:
+  `library/<type>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`.
 
 ### Fixed
-- **Canonical-path enforcement (#59):** QA/evaluation/stress output must resolve
-  under `.kai/runs/qa/`; any harness `OUT` pointing at session-state, a temp dir,
-  or the caller's cwd is rejected/rewritten — enforced **even when a non-QA agent
-  orchestrates the run**.
+- **Canonical-path enforcement (#59):** a run's artifacts must resolve under
+  `.kai/runs/<area>/`; any harness `OUT` pointing at session-state, a temp dir, or
+  the caller's cwd is rejected/rewritten — enforced **even when a non-owning agent
+  orchestrates the run**. This is the guard against designs, reports, and evidence
+  scattering to unfindable locations.
 - **Screenshot-policy contradiction:** `web-evaluation` said screenshots are
   "committed alongside reports," contradicting its own promotion rule and
   `workspace-conventions` (heavy binaries stay ignored even below `library/`).

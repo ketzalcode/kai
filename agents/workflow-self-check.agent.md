@@ -31,7 +31,7 @@ Lead with the few findings that change behavior; let cosmetic noise come last.
 
 ### 1. Triage (always)
 
-Read the latest self-check report (if any) under `.kai/runs/review/kai/` (newest `<YYYY-MM-DD>-self-check/`) for context.
+Read the latest self-check report (if any) — the newest `<NN>-self-check-kai/report.md` across the `.kai/runs/review/<YYYY-MM-DD>/` date folders — for context.
 
 ```
 Self-check scope: <full | agents | skills | docs>
@@ -44,7 +44,7 @@ Detection categories I'll run:
   [x] Single-responsibility
   [x] Discoverability
   [x] Structural proposals
-Output: .kai/runs/review/kai/<YYYY-MM-DD>-self-check/report.md
+Output: .kai/runs/review/<YYYY-MM-DD>/<NN>-self-check-kai/report.md
 Confirm or trim.
 ```
 

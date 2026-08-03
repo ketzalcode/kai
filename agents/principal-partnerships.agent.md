@@ -149,7 +149,7 @@ Close with one:
 
 Write the full local working brief to:
 
-`.kai/runs/revenue/<target-slug>/<YYYY-MM-DD-HHMM>-partnerships/partner-brief.md`
+`.kai/runs/revenue/<YYYY-MM-DD>/<NN>-partnerships-<target-slug>/partner-brief.md`
 
 Keep raw partner terms, named-account material, and private economics local. For
 coordinated work, write the aggregate brief to:

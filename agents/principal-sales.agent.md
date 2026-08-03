@@ -191,7 +191,7 @@ Close with one:
 
 Write the full local working brief to:
 
-`.kai/runs/revenue/<target-slug>/<YYYY-MM-DD-HHMM>-sales/deal-brief.md`
+`.kai/runs/revenue/<YYYY-MM-DD>/<NN>-sales-<target-slug>/deal-brief.md`
 
 Keep raw deal notes, prospect PII, named-account terms, exact quotes, and
 correspondence local. For coordinated work, write the minimum de-identified brief

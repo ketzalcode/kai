@@ -157,7 +157,7 @@ Close with one:
 
 Write the full local working brief to:
 
-`.kai/runs/content/<target-slug>/<YYYY-MM-DD-HHMM>-demand-gen/campaign-brief.md`
+`.kai/runs/content/<YYYY-MM-DD>/<NN>-demand-gen-<target-slug>/campaign-brief.md`
 
 Keep raw audience lists, PII, and account-level targeting local. For coordinated
 work, write the campaign plan to:

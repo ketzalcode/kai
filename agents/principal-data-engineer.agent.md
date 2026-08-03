@@ -154,7 +154,7 @@ Close with one:
 
 Write the full local working design to:
 
-`.kai/runs/eng/<target-slug>/<YYYY-MM-DD-HHMM>-data-eng/data-design.md`
+`.kai/runs/eng/<YYYY-MM-DD>/<NN>-data-eng-<target-slug>/data-design.md`
 
 Never place real data, extracts, or credentials in the workspace. For coordinated
 work, write the design to:

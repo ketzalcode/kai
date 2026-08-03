@@ -131,10 +131,10 @@ and then **re-run the claim-safety pass** on the voiced copy, rejecting any chan
 to a locked span; if it cannot, return `voice: pending persona-self` and do not
 claim completion.
 
-Write ad-hoc drafts to `.kai/runs/content/<target-slug>/<run>-linkedin/`;
+Write ad-hoc drafts to `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`;
 coordinated work writes to `initiatives/<slug>/artifacts/content/<item-id>/` with
 a `work-coordination` handoff; a reusable pack promotes to
-`library/content/<target-slug>/<YYYY-MM-DD-HHMM>-linkedin/` through the standard
+`library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/` through the standard
 steward-approved library flow. Return the paths and claim-safety summary. Never
 post.
 

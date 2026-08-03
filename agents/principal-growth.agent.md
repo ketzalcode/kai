@@ -229,7 +229,7 @@ approves channel spend, publishing, outreach, price/trial changes, and launch.
 
 Write the full local working brief to:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-growth/growth-brief.md`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-growth-<target-slug>/growth-brief.md`
 
 Keep raw exports, user/account/channel identifiers, exact confidential spend,
 and small-cell details local. For coordinated work, write the minimum aggregate

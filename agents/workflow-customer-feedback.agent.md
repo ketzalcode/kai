@@ -114,7 +114,7 @@ themes separate rather than inflating one.
 
 Require `.kai/manifest.json` for coordinated work. Write the full run under:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-feedback/`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-feedback-<target-slug>/`
 
 The target slug must not contain a customer or person's name. Use a product,
 survey, or operator-supplied alias.

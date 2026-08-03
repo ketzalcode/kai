@@ -197,7 +197,7 @@ Close with one:
 
 Write the full local working brief to:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-pricing/pricing-brief.md`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-pricing-<target-slug>/pricing-brief.md`
 
 Keep raw cost models, deal-level terms, named-account discounts, exact confidential
 margins, and contract text local. For coordinated work, write the minimum
