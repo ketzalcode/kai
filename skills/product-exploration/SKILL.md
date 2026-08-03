@@ -54,7 +54,7 @@ recorded. Unaffiliated exploration requires an explicit target under
 `library/investigations/`; never infer an initiative.
 
 Raw browser evidence uses:
-`.kai/runs/qa/<target-slug>/<YYYY-MM-DD-HHMM>-explore/`.
+`.kai/runs/qa/<YYYY-MM-DD>/<NN>-explore-<descriptor>/`.
 
 ## Hard rules
 

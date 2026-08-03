@@ -139,7 +139,7 @@ Close with one:
 
 Write the full local working exploration to:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-brand/brand-exploration.md`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-brand-<target-slug>/brand-exploration.md`
 
 For coordinated work, write the brand system/guidelines to:
 

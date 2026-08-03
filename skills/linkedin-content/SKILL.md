@@ -146,15 +146,15 @@ slide, and its own `Grounded:` refs. Never imply an asset exists when it doesn't
 Resolve the workspace via `workspace-conventions`.
 
 - **Ad-hoc / standalone** review-then-post drafts default to the ignored run
-  area: `.kai/runs/content/<target-slug>/<YYYY-MM-DD-HHMM>-linkedin/`.
+  area: `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
 - **Coordinated (initiative) work** writes the bundle to
   `initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
   knowledge` and the normal `work-coordination` handoff.
 - **A reusable pack** the operator wants to keep is promoted through the standard
   `workspace-conventions` library flow (steward-approved, recorded in
-  `deliverables.md`) to `library/content/<target-slug>/<YYYY-MM-DD-HHMM>-linkedin/`.
+  `deliverables.md`) to `library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
   Library frontmatter goes on the Markdown index only; the JSON matrix stays
-  valid JSON. Never overwrite a prior pack — new runs get a new timestamp.
+  valid JSON. Never overwrite a prior pack — new runs get the next per-day index.
 
 Nothing here is ever committed as "published," and the method touches no network.
 

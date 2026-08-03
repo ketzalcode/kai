@@ -96,7 +96,7 @@ notes** — plus reading what a map already established.
 - Use the `web-evaluation` login-pause pattern; keep cookies, tokens, and
   `storageState*.json` local and unindexed.
 - Every media asset is **copied into**
-  `.kai/runs/product/<target-slug>/<run>-marketing/media/` and referenced by a
+  `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/media/` and referenced by a
   workspace-root-relative path. Never persist an external absolute path or a
   session-upload location, and never inline heavy binaries into the committed
   artifacts.
@@ -229,10 +229,10 @@ Resolve the workspace via `workspace-conventions`.
   Paths stay inside the recorded workspace. `delivery_class: knowledge` — it
   completes, it does not ship.
 - **Unaffiliated one-off:** draft under
-  `.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-marketing/`, then promote
+  `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/`, then promote
   the curated set to
-  `library/investigations/<target-slug>/<YYYY-MM-DD-HHMM>-marketing/` (the same
-  timestamped promotion path as `principal-product-strategist`). Library
+  `library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (the same
+  date-first promotion path as `principal-product-strategist`). Library
   frontmatter goes on the Markdown report/index only; the JSON files stay valid
   JSON and are indexed by the report and `deliverables.md`.
 - **Media** always stays under `.kai/runs/.../media/` (ignored), referenced by

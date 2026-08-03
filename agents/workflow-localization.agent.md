@@ -96,7 +96,7 @@ Close with one:
 
 Write the full local working report to:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-localization/localization-report.md`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-localization-<target-slug>/localization-report.md`
 
 Keep raw locale data and untranslated exports local. For coordinated work, write
 the readiness/QA report to:

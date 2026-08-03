@@ -70,7 +70,7 @@ Define the metric/data contract or instrumentation gap.
 Use only explicitly supplied paths and authorized sources. Default local run:
 
 ```text
-.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-analytics/
+.kai/runs/product/<YYYY-MM-DD>/<NN>-analytics-<target-slug>/
   analysis-report.md
   source-register.md
   raw/

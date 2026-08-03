@@ -162,7 +162,7 @@ when this is a named review.
 
 Write the local review under:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-experiment-review/review.md`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-experiment-review-<target-slug>/review.md`
 
 Keep any referenced raw/user-level detail local. For coordinated work, write the
 sanitized certificate to:

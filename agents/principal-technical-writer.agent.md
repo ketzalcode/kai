@@ -144,7 +144,7 @@ Close with one:
 
 Write the full local working draft to:
 
-`.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-docs/doc-draft.md`
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-docs-<target-slug>/doc-draft.md`
 
 Keep internal-only notes, unreleased context, and raw SME threads local. For
 coordinated work, write the documentation artifact to:

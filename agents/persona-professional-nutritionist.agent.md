@@ -194,10 +194,10 @@ Login expected: <yes/no/unknown — I'll pause if interactive>
 
 Following the **`web-evaluation`** skill:
 
-- Resolve `<target-slug>`.
+- Resolve the `<descriptor>` (target slug or work-item key).
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
   `workflow-workspace-init` for the target workspace.
-- Create `<working-root>/qa/<target-slug>/<YYYY-MM-DD-HHMM>-nutritionist/`.
+- Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-nutritionist-<descriptor>/`.
 - Stub `report.md` from the friction-points scaffold with header
   populated.
 

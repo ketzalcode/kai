@@ -215,12 +215,12 @@ Keep prompts compatible with common AI video tools without naming a provider.
 
 Resolve the workspace via `workspace-conventions`.
 
-- **Ad-hoc / standalone**: `.kai/runs/content/<target-slug>/<YYYY-MM-DD-HHMM>-video/`.
+- **Ad-hoc / standalone**: `.kai/runs/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
 - **Coordinated (initiative)**: the bundle writes to
   `initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
   knowledge` and a `work-coordination` handoff.
 - **Reusable direction** promotes through the standard steward-approved library
-  flow to `library/content/<target-slug>/<YYYY-MM-DD-HHMM>-video/`. Existing media
+  flow to `library/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`. Existing media
   is referenced from `media_manifest.json`, never copied into the committed
   bundle; heavy binaries stay under ignored `.kai/runs/`.
 

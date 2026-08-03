@@ -122,7 +122,7 @@ For coordinated work, resolve the workspace root from the packet, claim the
 `knowledge` item, and confirm `artifact_target` is the bundle **directory**
 `initiatives/<slug>/artifacts/marketing/` inside the recorded workspace (its
 three contract files are the mandatory contents). For a standalone run, draft
-under `.kai/runs/product/<target-slug>/<run>-marketing/`.
+under `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/`.
 
 ### 2. Gather facts
 
@@ -131,7 +131,7 @@ is missing or stale, route a mapping item to `workflow-product-explore` rather
 than re-walking the app. Directly inspect only public marketing surfaces
 (landing, pricing, marketing pages) read-only, capture indexed screenshots, and
 extract copy. Copy every asset into
-`.kai/runs/product/<target-slug>/<run>-marketing/media/` and catalog it into
+`.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/media/` and catalog it into
 `media_manifest.json`. Record each auth-gated or unavailable area in
 `coverage.not_inspectable`. Optionally pull public category/competitive context
 with `web_search`/`web_fetch`, cited as `source: external`.
@@ -158,7 +158,7 @@ load-bearing lives only in the report.
 Record evidence, update item state/version/lease, and append a HANDOFF naming
 the exact artifact paths, coverage, confidence spread, and open questions. For a
 standalone run, promote the curated set to
-`library/investigations/<target-slug>/<YYYY-MM-DD-HHMM>-marketing/` (frontmatter
+`library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (frontmatter
 on the Markdown report only).
 
 ## Boundaries

@@ -202,18 +202,18 @@ When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
 `workspace-conventions`):
 
-`<working-root>/eng/<target-slug>/<YYYY-MM-DD-HHMM>-infra/design.md`
+`<working-root>/eng/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md`
 
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- This sits parallel to the architect's `-arch/decision.md` and the
-  eng-manager's `-scope/plan.md`, grouping every engineering artifact for
-  a target under `eng/<target-slug>/`. Never create a top-level
+- This sits parallel to the architect's `-arch-` and the
+  eng-manager's `-scope-` runs, keeping every engineering artifact under
+  the dated `eng/<YYYY-MM-DD>/` area. Never create a top-level
   `infra/` folder.
 
 **Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
 the gitignored `.kai/runs/` root. Promote it to
-`<workspace-root>/library/dev-designs/<target-slug>/<YYYY-MM-DD-HHMM>-infra/design.md` with library
+`<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md` with library
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 

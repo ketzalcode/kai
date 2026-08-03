@@ -63,7 +63,7 @@ initiative from cwd.
    destructive-action approval, or an invalid/non-canonical destination.
 4. Explore with Playwright using `product-exploration`.
 5. Write the map at the exact `artifact_target`; keep raw browser evidence at
-   `.kai/runs/qa/<target-slug>/<YYYY-MM-DD-HHMM>-explore/`.
+   `.kai/runs/qa/<YYYY-MM-DD>/<NN>-explore-<descriptor>/`.
 6. Verify each documented happy-path journey once from the written steps.
 7. Update item evidence, version, next role, and lease.
 8. Append a HANDOFF naming exact map/evidence paths, coverage, freshness, and
@@ -84,7 +84,7 @@ reviewable design system — not to design one.
    component shapes and states, responsive behavior, repeated patterns, and
    unknowns — **observed facts only**.
 4. Cite every row to a screenshot, route, or selector; keep raw browser evidence
-   at `.kai/runs/qa/<target-slug>/<YYYY-MM-DD-HHMM>-extract/`.
+   at `.kai/runs/qa/<YYYY-MM-DD>/<NN>-extract-<descriptor>/`.
 5. Update item evidence, version, next role, and lease, and append a HANDOFF
    naming the exact extract/evidence paths, coverage, viewports, and unknowns.
 

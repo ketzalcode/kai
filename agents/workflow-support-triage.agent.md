@@ -179,7 +179,7 @@ rather than collapsing evidence.
 
 Require `.kai/manifest.json` for coordinated work. Write the full run under:
 
-`.kai/runs/support/<queue-or-product-slug>/<YYYY-MM-DD-HHMM>-triage/`
+`.kai/runs/support/<YYYY-MM-DD>/<NN>-triage-<queue-or-product-slug>/`
 
 The target slug must not contain a customer or person's name. Use a queue,
 product, or operator-supplied alias.

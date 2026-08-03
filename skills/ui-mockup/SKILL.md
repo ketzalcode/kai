@@ -124,7 +124,7 @@ Drafts render in the gitignored working root, reusing the existing `product` run
 area — **no new run area, no new library type**:
 
 ```text
-.kai/runs/product/<target-slug>/<YYYY-MM-DD-HHMM>-mockups/
+.kai/runs/product/<YYYY-MM-DD>/<NN>-mockups-<target-slug>/
   options.html
   screenshots/            # optional grounding evidence (heavy — stays here)
 ```

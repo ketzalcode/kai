@@ -163,19 +163,71 @@ written into the linked workspace.
 
 ## Raw run grammar
 
-All ephemeral runs use:
+All ephemeral runs use a **date-first** shape:
 
 ```text
-<workspace-root>/.kai/runs/<area>/<target-slug>/<YYYY-MM-DD-HHMM>-<flavor>/<artifact>
+<workspace-root>/.kai/runs/<area>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/<artifact>
 ```
 
 Within existing agent prompts, `<working-root>` is an alias for the fixed
 `<workspace-root>/.kai/runs` path. It is not configurable.
 
-- Slugs are lowercase ASCII kebab-case and stable for the same target.
-- Timestamps use local 24-hour `YYYY-MM-DD-HHMM`.
-- One agent run owns one timestamped folder.
+- `<YYYY-MM-DD>` is the local date — the deterministic top anchor. It is never
+  model-generated (unlike a target slug, which drifts run to run), so a run is
+  always where you expect it and a day's runs in an area group under one folder.
+- `<NN>` is a **zero-padded, per-day sequential run index** within the area.
+  Pick it by listing `.kai/runs/<area>/<today>/` and taking `the highest existing
+  index + 1` (`01` if empty) — never fill a lower gap and never reuse an index,
+  so runs always sort in the order they ran.
+- `<flavor>` is the calling agent's lens (`arch`, `backend`, `qa`, `ux`, `seo`,
+  `strategy`, `linkedin`, `ship`, `incident`, …).
+- `<descriptor>` is descriptive only — **not** the grouping key. Prefer the
+  work-item/epic key when the run has one (e.g. `kai-59`) so same-epic runs stay
+  greppable (`grep -rl kai-59 .kai/runs/*/*/`); otherwise a stable kebab slug for
+  the target. Never block a run waiting on the descriptor — the date + index
+  already locate the run.
+- One agent run owns one dated run folder.
 - Raw credentials, cookies, tokens, and browser state never leave `.kai/runs/`.
+
+Example (the `qa` area on one day):
+
+```text
+.kai/runs/qa/2026-08-03/
+  01-qa-progress-page/        report.md  screenshots/
+  02-ux-progress-page/        report.md  screenshots/
+  03-pm-progress-page/        triage.md
+  04-stress-progress-page/    report.md  evidence/
+```
+
+**Placement is mandatory.** A run's artifacts always land under
+`.kai/runs/<area>/`. Never write them to Copilot session-state, a temp
+directory, or the calling agent's cwd — this is the guard against designs,
+reports, and evidence scattering to unfindable locations. When a browser or
+other harness takes an output dir (`OUT`), it MUST resolve under the run folder
+above; reject or rewrite any `OUT` that resolves elsewhere. This holds **even
+when a non-owning agent** (e.g. an orchestrator, or a QA/stress harness driven
+by a director) runs the work — the canonical path is mandatory regardless of
+caller. A promoted outcome mirrors the shape:
+`library/<type>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/<artifact>`.
+
+### Goal- and period-keyed areas (the exception)
+
+A few areas deliberately group by a **durable key instead of the date**, because
+their runs accrete toward one goal or period rather than being point-in-time
+snapshots:
+
+- `learn` / `lessons` — grouped by a descriptive **goal slug**
+  (`learn-react`, `prep-for-interview-vercel`), so everything toward one goal or
+  certification stays together.
+- `pulse` — grouped by **ISO week** (`<YYYY-Www>`); its weekly-window resolution
+  depends on the week folder.
+- `library/briefings/` — the AI researcher's daily one-pager is a **date-keyed
+  cadence** artifact: exactly one `library/briefings/<YYYY-MM-DD>-briefing.md` per
+  day, glob-read (`*-briefing.md`) to rebuild the covered-source ledger. The date
+  is already deterministic, so it stays a flat date-stamped file (its raw working
+  draft under `.kai/runs/ai/` still uses the date-first run shape above).
+
+These keep their own grammar; every other area uses the date-first shape above.
 
 ### Area registry
 
@@ -187,7 +239,7 @@ Within existing agent prompts, `<working-root>` is an alias for the fixed
 | `revenue` | sales, solutions-architect, revenue-operations, partnerships | `sales`, `solutions-architect`, `revops`, `partnerships` |
 | `support` | workflow-support-triage | `triage` |
 | `content` | linkedin strategist, video director, demand-generation, future platform agents | `linkedin`, `video`, `demand-gen` |
-| `review` | workflow-doc-review | `doc` |
+| `review` | workflow-doc-review, workflow-self-check | `doc`, `self-check` |
 | `ship` | workflow-ship | `ship` |
 | `incident` | workflow-incident-response | `incident` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |

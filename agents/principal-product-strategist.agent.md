@@ -1,6 +1,6 @@
 ---
 name: principal-product-strategist
-description: "Drives a forward-looking product investigation and proposes a prioritized catalog of candidate product actions. Researches analogous products and patterns, scores product fit, and names the smallest validating experiment. Drafts under `.kai/runs/product/<target>/<run>-strategy/catalog.md`; initiative-owned research uses the canonical initiative artifact path."
+description: "Drives a forward-looking product investigation and proposes a prioritized catalog of candidate product actions. Researches analogous products and patterns, scores product fit, and names the smallest validating experiment. Drafts under `.kai/runs/product/<YYYY-MM-DD>/<NN>-strategy-<target>/catalog.md`; initiative-owned research uses the canonical initiative artifact path."
 tools: ["bash", "edit", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
@@ -139,12 +139,15 @@ as **High / Medium / Low** and let the pattern drive the tier.
 
 ## Output location and shape
 
-Output to: `<working-root>/product/<target-slug>/<YYYY-MM-DD-HHMM>-strategy/catalog.md`
+Output to: `<working-root>/product/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`
 
-- `<target-slug>` is a slug of the product or investigation subject.
+- `<target-slug>` is the descriptor — the work-item key or a slug of the
+  product or investigation subject; descriptive only, not the grouping key.
 - Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
-- The timestamp is local time, 24-hour, e.g. `2026-06-25-1447`.
+- `<NN>` is the zero-padded per-day run index (highest existing in
+  `<working-root>/product/<YYYY-MM-DD>/` + 1); see `workspace-conventions` for
+  the date-first run grammar.
 
 **Initiative gating (see `workspace-conventions`).** Before cataloging bets,
 glance at `coordination/ACTIVE.md`. If this product area falls inside the active
@@ -158,7 +161,7 @@ to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated catalog
 to
-`library/investigations/<target-slug>/<YYYY-MM-DD-HHMM>-strategy/catalog.md`
+`library/investigations/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`
 with library frontmatter so it travels via `git pull`. Keep it local-only if the operator
 passes `--local`.
 
@@ -238,7 +241,7 @@ Restate the investigation back to the user and confirm scope:
 Investigating: <the question, in one line>
 Product context as I understand it: <2–3 lines>
 Candidate-action space I'll explore: <the kinds of actions in scope>
-Output folder I'll create: <working-root>/product/<target>/<YYYY-MM-DD-HHMM>-strategy/catalog.md
+Output folder I'll create: <working-root>/product/<YYYY-MM-DD>/<NN>-strategy-<target>/catalog.md
 Before I research — anything to anchor me?
   (strategy you're protecting, surfaces or actions deliberately off-limits,
    target user, data you can share)

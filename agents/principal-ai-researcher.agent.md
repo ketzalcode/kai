@@ -127,7 +127,7 @@ context-free.
 
 **Workspace contract (see `workspace-conventions`).** The briefing is a
 **knowledge-default** artifact in the `ai` area. Compose the working draft
-under `<working-root>/ai/landscape/<YYYY-MM-DD-HHMM>-research/briefing.md` (the
+under `<working-root>/ai/<YYYY-MM-DD>/<NN>-research-landscape/briefing.md` (the
 resolved working root is managed by `workflow-workspace-init`
 — you never touch `.gitignore`), then promote the finished one-pager to
 `<workspace-root>/library/briefings/` carrying library frontmatter (`type: briefings`

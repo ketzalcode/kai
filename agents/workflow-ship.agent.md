@@ -98,10 +98,10 @@ The full contract lives in `definition-of-done`. In one glance:
 ## Output location and shape
 
 Output to:
-`<working-root>/ship/<target-slug>/<YYYY-MM-DD-HHMM>-<item-id>-ship/ship-record.md`
+`<working-root>/ship/<YYYY-MM-DD>/<NN>-ship-<item-id>/ship-record.md`
 
-- `<target-slug>` matches the work item's `target`, so the ship record
-  groups with that target's other work.
+- `<item-id>` is the descriptor and matches the work item's id, so the ship
+  record stays greppable by item.
 - Resolve `<workspace-root>` and `<working-root>` from the item dispatch packet
   or loaded north star; never re-resolve from this agent's cwd.
 - `ship` is a registered area (see `workspace-conventions`); flavor `ship`.
@@ -118,7 +118,7 @@ defaults to the **library** zone — a record of what shipped, the DoD
 evidence, and the rollback plan is durable and auditable. Write the draft
 under `.kai/runs/ship/…` (gitignored run root), then on PREPARE promote the
 curated record to
-`<workspace-root>/library/releases/<target-slug>/<YYYY-MM-DD-HHMM>-<item-id>/ship-record.md`
+`<workspace-root>/library/releases/<YYYY-MM-DD>/<NN>-ship-<item-id>/ship-record.md`
 with library frontmatter (`type: releases`, `initiative: <slug>`), so the
 team can `git pull` "what shipped and how to reverse it." Keep it local
 with `--local`.

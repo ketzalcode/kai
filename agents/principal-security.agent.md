@@ -187,7 +187,7 @@ explicit waiver. A waiver never changes your verdict to CLEAR.
 Write detailed local evidence under:
 
 ```text
-.kai/runs/eng/<target-slug>/<YYYY-MM-DD-HHMM>-security/
+.kai/runs/eng/<YYYY-MM-DD>/<NN>-security-<target-slug>/
   security-assessment.md
   evidence/
 ```

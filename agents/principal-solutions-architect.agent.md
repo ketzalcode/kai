@@ -174,7 +174,7 @@ Close with one:
 
 Write the full local working brief to:
 
-`.kai/runs/revenue/<target-slug>/<YYYY-MM-DD-HHMM>-solutions-architect/solution-brief.md`
+`.kai/runs/revenue/<YYYY-MM-DD>/<NN>-solutions-architect-<target-slug>/solution-brief.md`
 
 Keep raw customer environment detail, architecture diagrams with identifying
 information, and questionnaire source material local. For coordinated work, write
