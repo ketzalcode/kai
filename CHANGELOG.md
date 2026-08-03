@@ -20,14 +20,14 @@ No roster change — still **54 agents and 38 skills**.
   materially-changed user-facing surface**, Dim 2 (verified) + Dim 3 (reviewed)
   now require **either** an approved design artifact **plus** a
   `principal-product-designer` conformance verdict on the current `change_ref`,
-  **or** an explicit **Waived-with-reason** (trivial / token-compliant / operator
-  waiver). Absent both → **Gap → bounce**, owner `principal-product-designer`,
-  message *"consult the designer before this is passed."* Detection is
-  **independent** — DoD and `workflow-ship` decide the trigger from the surface
-  itself, so it fires **even when no designer entry was ever added to
-  `review_requirements`** (that missing entry is the failure, not an exemption).
-  It stays proportional: a token-compliant copy fix waives the sub-gate, no design
-  theater.
+  **or** a steward/operator-recorded product-design waiver bound to that
+  `change_ref` (a self-declared "it's minor" is not a waiver). Absent both → **Gap
+  → bounce**, owner `principal-product-designer`, message *"consult the designer
+  before this is passed."* Detection is **independent** — DoD and `workflow-ship`
+  decide the trigger from the surface itself, so it fires **even when no designer
+  entry was ever added to `review_requirements`** (that missing entry is the
+  failure, not an exemption). It stays proportional: a token-compliant copy fix or
+  a like-for-like refactor doesn't trigger the sub-gate at all — no design theater.
 
 ### Changed
 - **`workflow-ship` Dim 2 gate (#54):** the `in-review → release-ready` gate now

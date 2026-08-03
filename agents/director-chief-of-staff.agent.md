@@ -238,15 +238,18 @@ For work involving an existing live user journey:
 7. When implementation is based on an approved design, include
    `principal-product-designer` as an independent design-conformance reviewer
    for the exact `change_ref`; QA remains separately required where applicable.
-8. **Even when engineering built the surface directly** (no design was routed up
-   front), a net-new or materially-changed user-facing surface must not be
-   sequenced toward `release-ready` without design sign-off — an approved design
-   plus a `principal-product-designer` conformance verdict on the current
-   `change_ref`, or a recorded product-design waiver. If it arrives at readiness
-   with neither, **bounce it**: route it to `principal-product-designer` and state
-   *"consult the designer before this is passed."* This mirrors
-   `definition-of-done`'s design sign-off sub-gate; a QA/UX-walk and a green build
-   do not substitute.
+
+**Design sign-off is unconditional for any user-facing surface — existing journey
+or brand-new.** Even when engineering built the surface directly with no design
+routed up front (and even when it starts a wholly new journey outside the block
+above), a net-new or materially-changed user-facing surface must not be sequenced
+toward `release-ready` without design sign-off: an approved design plus a
+`principal-product-designer` conformance verdict on the current `change_ref`, or a
+steward/operator-recorded product-design `WAIVER` bound to that `change_ref`. If it
+arrives at readiness with neither, **bounce it** — route it to
+`principal-product-designer` and state *"consult the designer before this is
+passed."* This mirrors `definition-of-done`'s design sign-off sub-gate; a QA/UX-walk
+and a green build do not substitute.
 
 The explorer supplies facts. The PM decides product fit. The designer decides
 the interaction model. The director only sequences those owners.
