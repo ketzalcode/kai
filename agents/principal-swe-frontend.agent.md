@@ -195,6 +195,17 @@ When asked to write new frontend code:
   to `principal-swe-architect`.
 - **Design questions you cannot resolve from the codebase or visible
   context** → surface the tradeoff and ask the user. Don't guess.
+- **Net-new or materially-changed user-facing UI without design sign-off** (a new
+  component, or a changed layout/placement/prominence/flow — not a token-compliant
+  copy tweak) → **stop before handoff** and route to `principal-product-designer`,
+  stating *"consult the designer before this is passed."* This fires when **either**
+  sign-off component is missing: no approved design, **or** a design with no
+  `principal-product-designer` conformance verdict on your current `change_ref`
+  (and no steward/operator-recorded product-design waiver). Per
+  `definition-of-done`'s design sign-off sub-gate, moving such a surface to
+  `in-review` is a Gap that bounces back to you; a QA-walk and a green build do
+  **not** substitute. You are the last guardrail before an unreviewed layout
+  reaches the ship gate.
 
 ## Output
 

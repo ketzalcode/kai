@@ -37,8 +37,24 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.20.0` — **54 agents and 38 skills**. This release makes **all run areas
-date-first and canonical-path-enforced** (#59). The run folder led with a
+`v0.21.0` — **54 agents and 38 skills**. This release makes **net-new
+user-facing UI require designer sign-off before it can ship** (#54). An
+engineering agent could author a brand-new surface — a new component, or a changed
+layout/placement/prominence/flow — and reach `release-ready` with **zero designer
+involvement**, because every gate that pulls the designer in was conditioned on a
+design *already* existing; when design was skipped entirely, a QA-walk + green
+build satisfied the gate and nothing bounced it. `definition-of-done` now carries
+a proportional **design sign-off sub-gate**: a net-new/materially-changed
+user-facing surface needs an approved design **plus** a `principal-product-designer`
+conformance verdict on the current `change_ref`, or an explicit
+Waived-with-reason — absent both it is a **Gap** that bounces to the designer with
+*"consult the designer before this is passed."* Detection is **independent** (DoD
+and `workflow-ship` read the trigger from the surface itself, so it fires even when
+no designer entry was ever added to `review_requirements`), and it stays
+proportional — a token-compliant copy fix waives it. `workflow-ship`,
+`director-chief-of-staff`, and `principal-swe-frontend` enforce the same sub-gate
+at their handoff points. It builds on the prior release, which made **all run areas
+date-first and canonical-path-enforced** (#59): the run folder led with a
 **model-generated `<target-slug>`** that drifted run to run — so the same feature
 scattered across sibling slug folders and runs were hard to find — and artifacts
 sometimes landed in ephemeral Copilot session-state, a temp dir, or the caller's

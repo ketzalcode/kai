@@ -89,8 +89,8 @@ The full contract lives in `definition-of-done`. In one glance:
 | # | Dimension | You confirm… | Evidence you cite |
 |---|-----------|--------------|-------------------|
 | 1 | **scope-true** | diff = the item's `needs`/acceptance, inside `scope.current`; expansions rerouted as PROPOSALs | the thread's acceptance, the diff, any backlog entry |
-| 2 | **verified** | tests/build green; `principal-qa-ui` ran; UX walked if user-facing | the test run, the qa report path |
-| 3 | **reviewed** | review findings resolved or deferred | the review artifact, the resolutions |
+| 2 | **verified** | tests/build green; `principal-qa-ui` ran; UX walked if user-facing; **an approved design exists if the surface is net-new/materially-changed** (its designer conformance verdict is confirmed under dim-3), unless a recorded product-design waiver applies | the test run, the qa report path, the approved design artifact |
+| 3 | **reviewed** | review findings resolved or deferred; **designer conformance verdict on this `change_ref` for a net-new/materially-changed user-facing surface**, or a recorded product-design waiver | the review artifact, the resolutions, the designer verdict or waiver |
 | 4 | **shippable-safely** | rollout + reversibility proportional to blast radius | the flag/canary, the rollback/kill switch, the alerts/owner |
 | 5 | **documented** | durable decisions promoted, ops docs updated, initiative `log.md` stamped | the `library/` paths, the log entry |
 | 6 | **coordination-closed** | item record and thread are ready for deployment handoff | the item version, thread, and open dependencies/questions |
@@ -139,8 +139,8 @@ with `--local`.
 | # | Dimension | Status | Evidence |
 |---|-----------|--------|----------|
 | 1 | scope-true | Clear / Gap / Waived | <link/quote> |
-| 2 | verified | Clear / Gap / Waived | <test run · qa report path> |
-| 3 | reviewed | Clear / Gap / Waived | <review artifact · resolutions> |
+| 2 | verified | Clear / Gap / Waived | <test run · qa report path · approved design if net-new/materially-changed UI> |
+| 3 | reviewed | Clear / Gap / Waived | <review artifact · resolutions · designer conformance verdict on this change_ref, or recorded product-design waiver, if net-new/materially-changed UI> |
 | 4 | shippable-safely | Clear / Gap / Waived | <flag · rollback · alerts · owner> |
 | 5 | documented | Clear / Gap / Waived | <library paths · log entry> |
 | 6 | coordination-closed | Clear / Gap / Waived | <item version · thread · dependencies/questions> |
@@ -227,6 +227,10 @@ back.
   bounce `HANDOFF` (`principal-swe-*` for a code/verify/rollback gap,
   `principal-qa-ui` for a verification gap, `principal-product-manager` for
   a scope-true gap).
+- **A net-new/materially-changed user-facing surface that no designer signed
+  off on** (the design sub-gate under dim-2 — see `definition-of-done`) →
+  `principal-product-designer`, with the bounce message *"consult the designer
+  before this is passed."* A green build and a QA-walk do not substitute.
 - **A rollout/operability design that dim-4 exposed as thin** →
   `principal-swe-infra` / `principal-swe-architect`.
 - **Whether a scope-expanding change riding along should ship at all** →
