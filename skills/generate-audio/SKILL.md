@@ -22,6 +22,10 @@ it (lectoria's `prepare` hook compiles `dist/`) — no global install needed. A
 global `npm install -g git+https://github.com/RubenSaucedo/lectoria.git` still
 works as a fallback.
 
+**Node requirement.** Because `npm install` compiles lectoria from source, it
+needs a Node version lectoria supports: `^22.22.2 || ^24.15.0 || >=26.0.0`.
+On an older Node, `npm install` reports `EBADENGINE` and the build may fail.
+
 Voice presets are `espana`, `latino`, `intermedio`, and
 `intermedio-femenino`; the wrapper defaults to `intermedio`.
 

@@ -37,9 +37,18 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.23.0` — **54 agents and 38 skills**. This release refreshes the pinned
+`v0.24.0` — **54 agents and 38 skills**. This release refreshes the pinned
 [Lectoria](https://github.com/RubenSaucedo/lectoria) build behind
-`generate-audio` and, importantly, **re-pins it to an exact commit**: the
+`generate-audio` to pick up a dependency-modernization pass, one part of which
+directly affects audio quality: lectoria moved to `pdf-parse` 2.x, which
+inserts a `-- N of M --` marker between pages by default — text that flows into
+the generated script, so **every page break in a PDF lesson would have been read
+aloud**. That is suppressed now. Lectoria's PDF parser also releases its
+pdf.js document on every exit path, so a long batch of PDFs no longer leaks one
+per file. Because `npm install` compiles lectoria from source here, this raises
+the Node floor to `^22.22.2 || ^24.15.0 || >=26.0.0`, now declared in `engines`
+and documented in the skill. No roster change. It builds on the prior release,
+which **re-pinned Lectoria to an exact commit**: the
 dependency had drifted to an unpinned `github:RubenSaucedo/lectoria`, which
 floats to whatever that repository's default branch is at install time. The
 refreshed build brings two reliability fixes that matter here — concurrent runs

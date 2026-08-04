@@ -4,7 +4,38 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.23.0] - 2026-08-04
+## [0.24.0] - 2026-08-04
+
+**Refreshes the pinned Lectoria build to pick up a dependency-modernization
+pass — including one fix that directly affects narrated audio quality.**
+
+Lectoria upgraded `pdf-parse` from 1.x to 2.x. Version 2 inserts a
+`-- N of M --` marker between pages by default, and that text flows straight
+into the generated script — meaning **every page break in a PDF lesson would
+have been read aloud**. Lectoria suppresses it now, so PDF-sourced audio no
+longer narrates page separators. Its PDF parser also releases the underlying
+pdf.js document on every exit path, so a long batch of PDFs no longer leaks
+one document per file.
+
+This raises the Node floor: lectoria is compiled from source by `npm install`
+here, and it now requires `^22.22.2 || ^24.15.0 || >=26.0.0`. That range is
+declared in this plugin's `engines` and documented in the skill. No roster
+change — still **54 agents and 38 skills**.
+
+### Changed
+- **Re-pinned `lectoria` to `84e4c11db31f26f9be62db67bb398e93534ff18f`**, which
+  upgrades `openai` to 7.x, `jsdom` to 30.x, `zod` to 4.x, and `pdf-parse` to
+  2.x, and adds the first test coverage for lectoria's PDF path.
+- **Declared `engines.node` as `^22.22.2 || ^24.15.0 || >=26.0.0`** and
+  documented the requirement in `skills/generate-audio/SKILL.md`, so an
+  incompatible Node fails at `npm install` with a clear reason instead of a
+  confusing build error.
+
+### Fixed
+- **PDF lessons no longer narrate `-- N of M --` page separators**, via the
+  refreshed lectoria pin.
+
+
 
 **Refreshes the pinned Lectoria release and re-pins it to an exact commit.**
 Lectoria shipped two reliability fixes that matter for `generate-audio`:
@@ -785,6 +816,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.24.0]: https://github.com/RubenSaucedo/kai/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/RubenSaucedo/kai/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/RubenSaucedo/kai/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/RubenSaucedo/kai/compare/v0.20.0...v0.21.0
