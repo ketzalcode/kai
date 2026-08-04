@@ -77,7 +77,7 @@ assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source ./chapter
 Context: User finished extracting a Microsoft Learn learning path and
 wants per-unit Spanish audio (one mp3 per unit file, not one giant audio).
 user: "generate audio for the new learn run, spanish only"
-assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source .kai/runs/learn/<slug>/<timestamp>/raw -Lang es]
+assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source .kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw -Lang es]
 </example>
 
 ## How

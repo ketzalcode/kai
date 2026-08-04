@@ -216,9 +216,23 @@ A few areas deliberately group by a **durable key instead of the date**, because
 their runs accrete toward one goal or period rather than being point-in-time
 snapshots:
 
-- `learn` / `lessons` — grouped by a descriptive **goal slug**
-  (`learn-react`, `prep-for-interview-vercel`), so everything toward one goal or
-  certification stays together.
+- `learn` / `lessons` — keyed by a descriptive **goal slug**, then the same
+  order-sorted run tail as every other area:
+  `<area>/<goal-slug>/<NN>-<flavor>-<descriptor>/`. The `<goal-slug>` is the
+  durable learning goal (`learn-react`, `az-204`, `prep-for-interview-vercel`),
+  chosen once and **reused across runs** so everything toward one goal or
+  certification stays in one folder. `<NN>` is the next index **within the goal**
+  (highest existing + 1, never filling gaps) — so `learn`/`lessons` simply swap
+  the date for the goal and otherwise keep the universal `<NN>-<flavor>-<descriptor>`
+  tail and its run-order sort. Flavors: `learn` uses `extract` (course/page
+  extraction; `instructor-teacher` writes its packaged `lessons/` subfolder
+  **inside** the extraction run it built from);   `lessons` uses `tutor`. An artifact in a **separate** run that points back to
+  another records that link in its **frontmatter** (a `produced_from:` path)
+  rather than by baking another run's path into its own folder name, so the
+  goal-first layout stays stable and hand-off is not path-coupled. Output
+  **co-located inside** a run — e.g. the teacher's `lessons/` subfolder written
+  into the extraction run it packages — is simply part of that run, not a
+  cross-reference.
 - `pulse` — grouped by **ISO week** (`<YYYY-Www>`); its weekly-window resolution
   depends on the week folder.
 - `library/briefings/` — the AI researcher's daily one-pager is a **date-keyed
@@ -243,8 +257,8 @@ These keep their own grammar; every other area uses the date-first shape above.
 | `ship` | workflow-ship | `ship` |
 | `incident` | workflow-incident-response | `incident` |
 | `ai` | AI researcher and applied engineer | `research`, `applied` |
-| `learn` | course-to-audio and teacher | target-specific |
-| `lessons` | engineer tutor | tutor/theme-specific |
+| `learn` | course-to-audio and teacher | `extract` (goal-keyed) |
+| `lessons` | engineer tutor | `tutor` (goal-keyed) |
 | `pulse` | weekly pulse | week-specific |
 
 Add a registry entry before creating a new area.

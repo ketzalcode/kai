@@ -91,9 +91,16 @@ surprised you — e.g., you expected a module and got a path index).
 ### 3. Run the extraction
 
 Hand off to the `web-content-extraction` skill with the resolved
-scope. It will create
-`<workspace>/.kai/runs/learn/<source-slug>/<timestamp>/` with `module.md`,
-`questions.md`, and `source.md`.
+scope. First resolve the **goal slug** — the durable learning goal this
+extraction belongs to (`learn-react`, `az-204`, `prep-for-interview-vercel`) so
+everything toward one goal lands in one folder. Take it from what the operator
+said they're studying; if they didn't say and you're mid-flow, ask once, or
+default it to the source slug. Reuse an existing `learn/<goal-slug>/` folder
+rather than minting a near-duplicate. The skill (and `extract-learn-path.js` via
+`--goal <goal-slug>`) will create
+`<workspace>/.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/` with
+`module.md`, `questions.md`, and `source.md` (`<NN>` = the next run index within
+the goal).
 
 Do not duplicate the skill's work. Don't re-extract pages it already
 captured. Don't second-guess its output mid-run.
@@ -120,7 +127,7 @@ Post back to the user, in this shape:
 
 ```
 ✅ Extracted: <Module title>
-Folder: <workspace>/.kai/runs/learn/<source-slug>/<timestamp>/
+Folder: <workspace>/.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/
 - module.md     <N units, ~M words, ~K minutes of audio at 180 wpm>
 - questions.md  <Q questions across U units>
 - source.md     <Status: ok | partial | …>

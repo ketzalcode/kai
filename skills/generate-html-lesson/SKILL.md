@@ -17,7 +17,7 @@ play on the embedded audio, and follow along.
 The source can be anything the user wants to learn from:
 
 - A Microsoft Learn / Coursera / docs page extracted by `workflow-course-to-audio`
-  (lives under `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md`).
+  (lives under `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/<NN-unit>.md`).
 - A book chapter the user pasted or extracted into markdown.
 - A humanized internal design doc.
 - Their own ad-hoc study notes.
@@ -102,7 +102,7 @@ Resolve the source path from the user's request:
 
 - If they named a specific file, use it.
 - If they referenced a recent extraction (e.g., "the AI-901 module 3
-  intro"), glob the matching `.kai/runs/learn/<slug>/<timestamp>/raw/`
+  intro"), glob the matching `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/`
   folder.
 - If they said "make a lesson from this" referring to recent tool
   output, pull the path from the previous turn.
@@ -128,7 +128,7 @@ this order:
   file).
 - **`<source-dir>/../../audio/<source-folder>/<source-slug>-<lang>.mp3`**
   (the convention when the parent folder was passed to `generate-audio`
-  recursively — e.g. `.kai/runs/learn/<slug>/<timestamp>/audio/raw/<module>/`).
+  recursively — e.g. `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/audio/raw/<module>/`).
 - **`<source-dir>/audio.mp3`** (already-staged sibling).
 
 If no audio is found and the user didn't specify, **ask** whether to:
@@ -471,7 +471,7 @@ Surface:
 ## Hand-offs
 
 - **From `workflow-course-to-audio`** — after it writes per-unit markdown to
-  `.kai/runs/learn/<slug>/<timestamp>/raw/`, the natural next step is
+  `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/`, the natural next step is
   the `instructor-teacher` agent, which uses this skill plus
   `generate-audio` to produce paired lessons.
 - **From the user directly** — they can also invoke this skill

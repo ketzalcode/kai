@@ -4,6 +4,44 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.25.0] - 2026-08-04
+
+**`learn`/`lessons` runs are now goal-first and deterministic, closing the last
+run-grammar gap from #59 (#61).** These two areas were deliberately excluded from
+the date-first migration because a learner's runs accrete toward one durable goal,
+not a point-in-time snapshot — but their *implementations* didn't group by a
+durable goal either. `learn` wrote `learn/<source-slug>/<YYYY-MM-DD-HHMM>/`, where
+the slug was the auto-derived Microsoft-Learn artifact slug and **every run spawned
+a fresh timestamp folder**, so studying one subject across a few paths/re-runs
+scattered into unrelated, timestamp-named folders. `lessons` keyed under the agent
+name and a coarse free-text `<theme>` bucket (`certifications`), so `az-204` and
+`aws-saa` collided in one folder. Both now use a durable **goal slug** plus the
+same order-sorted run tail as every other area. No roster change — still **54
+agents and 38 skills**.
+
+### Changed
+- **Goal-keyed run grammar unified (#61):** `learn` and `lessons` now follow
+  `<area>/<goal-slug>/<NN>-<flavor>-<descriptor>/` — the `<goal-slug>` is the
+  durable learning goal (`learn-react`, `az-204`, `prep-for-interview-vercel`),
+  reused across runs, and `<NN>` is the next index **within the goal** (highest
+  existing + 1, never filling gaps). It simply swaps the date for the goal and
+  keeps the universal `<NN>-<flavor>-<descriptor>` tail and run-order sort. Flavors:
+  `learn` → `extract`, `lessons` → `tutor`. Updated in `workspace-conventions`
+  (grammar + area registry), `web-content-extraction`, `workflow-course-to-audio`,
+  `instructor-teacher`, `instructor-tutor`, `generate-html-lesson`, and
+  `generate-audio`.
+- **`extract-learn-path.js` writes the new shape:** it accepts an optional
+  `--goal <goal-slug>` (defaulting to the source slug), computes the next `<NN>`
+  by scanning the goal folder, and writes
+  `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/` — the timestamp folder
+  is gone.
+- **Cross-references move to frontmatter, not paths:** an artifact derived from
+  another run (e.g. a teacher lesson built from an extraction) records a
+  `produced_from:` path in its frontmatter, so the goal-first layout stays stable
+  and agent-to-agent hand-off is never coupled to folder nesting. (`instructor-teacher`
+  still writes its packaged `lessons/` subfolder inside the extraction run it built
+  from — that parent folder is the natural cross-reference.)
+
 ## [0.24.0] - 2026-08-04
 
 **Refreshes the pinned Lectoria build to pick up a dependency-modernization
@@ -37,6 +75,8 @@ change — still **54 agents and 38 skills**.
 
 
 
+## [0.23.0] - 2026-08-04
+
 **Refreshes the pinned Lectoria release and re-pins it to an exact commit.**
 Lectoria shipped two reliability fixes that matter for `generate-audio`:
 concurrent runs no longer duplicate paid Azure work (each document's paid work
@@ -65,6 +105,7 @@ default branch happens to be at install time. It is pinned back to an exact
   output directory no longer pay Azure twice for the same document.
 
 
+## [0.22.0] - 2026-08-03
 
 **The design-options flow no longer accepts "option theater" for crowding
 problems (#38).** `ui-mockup` required "3-4 materially different options" — but
@@ -816,6 +857,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.25.0]: https://github.com/RubenSaucedo/kai/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/RubenSaucedo/kai/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/RubenSaucedo/kai/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/RubenSaucedo/kai/compare/v0.21.0...v0.22.0

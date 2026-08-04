@@ -13,7 +13,7 @@
 //
 // Output:
 //
-//   <workspace>/.kai/runs/learn/<path-or-module-slug>/<YYYY-MM-DD-HHMM>/
+//   <workspace>/.kai/runs/learn/<goal-slug>/<NN>-extract-<path-or-module-slug>/
 //     raw/                          ← per-unit markdown, audio-ready
 //       NN-<module-slug>/           (omitted in single-module mode)
 //         NN-<unit-slug>.md
@@ -44,23 +44,58 @@ const WORKDIR = process.cwd();
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  if (args.length === 0) {
+  let goal = null;
+  const rest = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--goal') {
+      goal = args[++i];
+      if (!goal || goal.startsWith('--')) { console.error('--goal requires a slug'); process.exit(2); }
+      continue;
+    }
+    rest.push(args[i]);
+  }
+  if (rest.length === 0) {
     console.error('Usage:');
-    console.error('  node scripts/extract-learn-path.js <path-slug>');
-    console.error('  node scripts/extract-learn-path.js --module <module-slug>');
+    console.error('  node scripts/extract-learn-path.js [--goal <goal-slug>] <path-slug>');
+    console.error('  node scripts/extract-learn-path.js [--goal <goal-slug>] --module <module-slug>');
+    console.error('  --goal groups runs toward one durable learning goal (e.g. learn-react);');
+    console.error('         defaults to the source slug when omitted.');
     process.exit(2);
   }
-  if (args[0] === '--module') {
-    if (!args[1]) { console.error('--module requires a slug'); process.exit(2); }
-    return { mode: 'module', slug: args[1] };
+  let out;
+  if (rest[0] === '--module') {
+    if (!rest[1]) { console.error('--module requires a slug'); process.exit(2); }
+    out = { mode: 'module', slug: rest[1], goal: goal || rest[1] };
+  } else {
+    out = { mode: 'path', slug: rest[0], goal: goal || rest[0] };
   }
-  return { mode: 'path', slug: args[0] };
+  // Both the goal and the source slug become path segments; reject anything that
+  // isn't a plain kebab slug so a value like `..` can't escape the learn area.
+  validateSlug('goal', out.goal);
+  validateSlug('source slug', out.slug);
+  return out;
 }
 
-function timestampDir() {
-  const d = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/;
+function validateSlug(label, value) {
+  if (!SLUG_RE.test(value)) {
+    console.error(`invalid ${label} "${value}": use a lowercase kebab-case slug (a-z, 0-9, -)`);
+    process.exit(2);
+  }
+}
+
+// Next sequential run index under a goal folder: highest existing NN + 1, never
+// filling gaps — mirrors the date-first run grammar's <NN> rule so goal runs sort
+// in the order they ran.
+function nextRunIndex(goalDir) {
+  let max = 0;
+  try {
+    for (const name of fs.readdirSync(goalDir)) {
+      const m = name.match(/^(\d{2,})-/);
+      if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
+    }
+  } catch { /* goal dir doesn't exist yet → first run is 01 */ }
+  return String(max + 1).padStart(2, '0');
 }
 
 // Walk the path index and return the ordered list of module slugs.
@@ -381,9 +416,20 @@ function sourceMarkdown(courseTitle, rootUrl, startedAt, finishedAt, perModules,
 
 (async () => {
   const args = parseArgs(process.argv);
-  const stamp = timestampDir();
-  const runRoot = path.join(WORKDIR, '.kai', 'runs', 'learn', args.slug, stamp);
-  fs.mkdirSync(runRoot, { recursive: true });
+  const goalDir = path.join(WORKDIR, '.kai', 'runs', 'learn', args.goal);
+  fs.mkdirSync(goalDir, { recursive: true });
+  // Reserve the run folder atomically: non-recursive mkdir fails if the computed
+  // <NN> was taken by a concurrent run, so recompute and retry rather than share.
+  let runRoot;
+  for (let attempt = 0; ; attempt++) {
+    const nn = nextRunIndex(goalDir);
+    runRoot = path.join(goalDir, `${nn}-extract-${args.slug}`);
+    try { fs.mkdirSync(runRoot); break; }
+    catch (e) {
+      if (e.code === 'EEXIST' && attempt < 20) continue;
+      throw e;
+    }
+  }
 
   // Default to Playwright's bundled Chromium so the extractor runs on any host.
   // Override with LEARN_BROWSER_CHANNEL=msedge|chrome to use an installed browser.
