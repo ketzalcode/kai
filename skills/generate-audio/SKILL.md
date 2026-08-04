@@ -22,6 +22,9 @@ it (lectoria's `prepare` hook compiles `dist/`) — no global install needed. A
 global `npm install -g git+https://github.com/RubenSaucedo/lectoria.git` still
 works as a fallback.
 
+Voice presets are `espana`, `latino`, `intermedio`, and
+`intermedio-femenino`; the wrapper defaults to `intermedio`.
+
 **Resolving the script path.** `<kai-plugin>` below is the directory this
 plugin was installed to — the folder that contains `agents/`, `skills/`, and
 `scripts/`. Resolve it from where this skill was loaded, never a hard-coded
@@ -122,4 +125,4 @@ assistant: [runs: pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source .kai/runs
 | `-Out`     | `./audio`          | Right next to the source, easy to find                  |
 | `-Lang`    | `en,es`            | User listens in both                                    |
 | `-Style`   | `conversational`   | ~70% fidelity; balanced for most prose                  |
-| `-Voice`   | `intermedio`       | Less regionally-marked, international Spanish            |
+| `-Voice`   | `intermedio`       | Less regionally-marked; use `intermedio-femenino` for its female counterpart |

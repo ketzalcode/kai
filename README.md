@@ -37,9 +37,19 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.22.0` — **54 agents and 38 skills**. This release closes an **"option
-theater"** gap in the design flow (#38). `ui-mockup`'s "3-4 materially different
-options" rule was satisfiable while **every option kept the same container** — so
+`v0.23.0` — **54 agents and 38 skills**. This release refreshes the pinned
+[Lectoria](https://github.com/RubenSaucedo/lectoria) build behind
+`generate-audio` and, importantly, **re-pins it to an exact commit**: the
+dependency had drifted to an unpinned `github:RubenSaucedo/lectoria`, which
+floats to whatever that repository's default branch is at install time. The
+refreshed build brings two reliability fixes that matter here — concurrent runs
+no longer pay Azure twice for the same document, and a batch run that hit an
+error now exits non-zero instead of reporting success to CI — plus a new
+`intermedio-femenino` voice, the female counterpart to the default `intermedio`
+pacing. No roster change. It builds on the prior release, which closed an
+**"option theater"** gap in the design flow (#38). `ui-mockup`'s "3-4 materially
+different options" rule was satisfiable while **every option kept the same
+container** — so
 for a crowding / visual-weight / context / space / discoverability problem, the
 correct answer (move the affordance out of the crowded box, progressively disclose
 it into an existing surface, or remove it) was never generated, and the human
@@ -51,7 +61,7 @@ tunnel-vision* anti-pattern names the trap). `principal-product-designer` gains 
 pre-option **"challenge the framing"** step in both DESIGN and REVIEW: treat any
 given container as a hypothesis, enumerate existing host surfaces via
 `design-grounding`, and carry at least one relocation / progressive-disclosure /
-removal candidate into the option set. No roster change. It builds on the prior
+removal candidate into the option set. It builds on the prior
 release, which made **net-new user-facing UI require designer sign-off before it
 can ship** (#54). An
 engineering agent could author a brand-new surface — a new component, or a changed

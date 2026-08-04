@@ -30,9 +30,10 @@
     Default: conversational (best balance of fidelity vs. listenability).
 
 .PARAMETER Voice
-    Voice preset: espana | latino | intermedio. Sets the narrator voices
-    and pace per language. Default: intermedio (a less regionally-marked,
-    international Spanish). Run `lectoria voices` to see them all.
+    Voice preset: espana | latino | intermedio | intermedio-femenino. Sets
+    the narrator voices and pace per language. Default: intermedio (a less
+    regionally-marked, international Spanish). Run `lectoria voices` to see
+    them all.
 
 .PARAMETER NoDistribute
     Skip RSS feed + episodes.json generation; produce audio only.
@@ -70,7 +71,7 @@ param(
     [string]$Lang = "en,es",
     [ValidateSet("podcast", "conversational", "verbatim", "dialogue")]
     [string]$Style = "conversational",
-    [ValidateSet("espana", "latino", "intermedio")]
+    [ValidateSet("espana", "latino", "intermedio", "intermedio-femenino")]
     [string]$Voice = "intermedio",
     [switch]$NoDistribute,
     [switch]$NoRecursive,

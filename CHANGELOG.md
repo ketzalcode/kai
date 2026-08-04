@@ -4,7 +4,36 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.22.0] - 2026-08-03
+## [0.23.0] - 2026-08-04
+
+**Refreshes the pinned Lectoria release and re-pins it to an exact commit.**
+Lectoria shipped two reliability fixes that matter for `generate-audio`:
+concurrent runs no longer duplicate paid Azure work (each document's paid work
+is now locked and its checkpoint re-read inside the lock), and
+`--continue-on-error` now exits non-zero when a source failed instead of
+reporting success to CI. It also adds `intermedio-femenino`, the female
+counterpart to the default `intermedio` voice.
+
+Separately, the `lectoria` dependency had drifted to an **unpinned**
+`github:RubenSaucedo/lectoria`, which floats to whatever that repository's
+default branch happens to be at install time. It is pinned back to an exact
+40-hex commit. No roster change — still **54 agents and 38 skills**.
+
+### Added
+- **`intermedio-femenino` voice for `generate-audio`:** a female host/guest pair
+  matched to the pacing of the default `intermedio` preset, for lessons that
+  want a different narrator without changing cadence. Accepted by
+  `scripts/generate-audio.ps1 -Voice` and documented in the skill.
+
+### Changed
+- **Pinned `lectoria` to `5dba356f51c8ec9fe2e191d27fc170a917e843ad`** instead of
+  tracking its default branch, so an upstream push cannot silently change what
+  `npm install` builds here.
+- **Picked up Lectoria's reliability fixes:** batch runs that hit an error now
+  surface a failing exit code, and two `generate-audio` runs over the same
+  output directory no longer pay Azure twice for the same document.
+
+
 
 **The design-options flow no longer accepts "option theater" for crowding
 problems (#38).** `ui-mockup` required "3-4 materially different options" — but
@@ -756,6 +785,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.23.0]: https://github.com/RubenSaucedo/kai/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/RubenSaucedo/kai/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/RubenSaucedo/kai/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/RubenSaucedo/kai/compare/v0.19.0...v0.20.0
