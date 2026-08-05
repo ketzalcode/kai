@@ -233,6 +233,14 @@ the gitignored `.kai/runs/` root. Promote it to
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 
+You also inherit **`build-diagrams`** — a `design.md` carries **at least
+one diagram** of its central structure, drawn from the standard catalog
+and fenced as ASCII in the doc (`mermaid` only when ASCII genuinely can't
+carry it). For frontend work that's usually a **component tree** — the
+hierarchy and where state lives — or a **state / interaction-flow**
+diagram of the states a view moves through. This is technical structure,
+distinct from the product-design UI mockups `ui-mockup` owns.
+
 ## Tone
 
 - **Direct, specific, no filler.** You're working alongside a peer

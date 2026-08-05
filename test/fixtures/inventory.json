@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 54,
-    "skills": 38
+    "skills": 39
   },
   "agents": [
     "director-chief-of-staff",
@@ -60,6 +60,7 @@
     "workflow-workspace-init"
   ],
   "skills": [
+    "build-diagrams",
     "coding-style",
     "content-grounding",
     "decision-brief",

@@ -217,6 +217,14 @@ the gitignored `.kai/runs/` root. Promote it to
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 
+You also inherit **`build-diagrams`** — a `design.md` carries **at least
+one diagram** of its central structure, drawn from the standard catalog
+and fenced as ASCII in the doc (`mermaid` only when ASCII genuinely can't
+carry it). For infra work that's usually a **deployment / topology**
+diagram — nodes, subnets, availability zones, managed services, and the
+trust boundaries you're changing. Don't describe a topology in prose when
+one catalog shape makes it obvious.
+
 ## Tone
 
 - **Direct, specific, no filler.** Peer-to-peer with a principal

@@ -4,6 +4,36 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.26.0] - 2026-08-04
+
+**Dev designs now come with diagrams, drawn from a shared, standard
+vocabulary (#62).** Engineering design artifacts — the architect's
+`decision.md` and the backend/frontend/infra `design.md` — described
+system shape, data models, flows, and topologies in prose, with no
+expectation of a picture and no common way to draw one. A new
+`build-diagrams` method skill fixes both: it owns the *how* (an
+ASCII-first format rule and a catalog of familiar shapes), and each
+engineering agent brings the domain judgment about *which* diagram its
+design needs. Roster grows to **54 agents and 39 skills**.
+
+### Added
+- **`build-diagrams` skill:** the shared diagram vocabulary for technical
+  and dev-design artifacts. Format rule — **at least one diagram, ASCII
+  fenced in the Markdown by default**; `mermaid` only when ASCII genuinely
+  can't carry it; embedded SVG/HTML only when the artifact is itself HTML.
+  Ships a standard catalog (component/boundary, sequence/flow, data-model
+  ER, state machine, deployment/topology, tree/hierarchy) plus a shared
+  ASCII-convention block so every team diagram reads the same. Scoped as
+  the technical counterpart to `ui-mockup` (which owns UI screens).
+
+### Changed
+- **The four dev-design producers now inherit `build-diagrams`:**
+  `principal-swe-architect` (component/boundary; a new `## Diagram` slot in
+  the decision-record scaffold), `principal-swe-backend` (data-model /
+  sequence), `principal-swe-frontend` (component tree / state), and
+  `principal-swe-infra` (deployment / topology). Each carries at least one
+  diagram of its central structure.
+
 ## [0.25.0] - 2026-08-04
 
 **`learn`/`lessons` runs are now goal-first and deterministic, closing the last
@@ -857,6 +887,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.26.0]: https://github.com/RubenSaucedo/kai/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/RubenSaucedo/kai/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/RubenSaucedo/kai/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/RubenSaucedo/kai/compare/v0.22.0...v0.23.0
