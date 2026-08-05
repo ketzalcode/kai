@@ -37,28 +37,27 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.24.0` — **54 agents and 38 skills**. This release refreshes the pinned
-[Lectoria](https://github.com/RubenSaucedo/lectoria) build behind
-`generate-audio` to pick up a dependency-modernization pass, one part of which
-directly affects audio quality: lectoria moved to `pdf-parse` 2.x, which
-inserts a `-- N of M --` marker between pages by default — text that flows into
-the generated script, so **every page break in a PDF lesson would have been read
-aloud**. That is suppressed now. Lectoria's PDF parser also releases its
-pdf.js document on every exit path, so a long batch of PDFs no longer leaks one
-per file. Because `npm install` compiles lectoria from source here, this raises
-the Node floor to `^22.22.2 || ^24.15.0 || >=26.0.0`, now declared in `engines`
-and documented in the skill. No roster change. It builds on the prior release,
-which **re-pinned Lectoria to an exact commit**: the
-dependency had drifted to an unpinned `github:RubenSaucedo/lectoria`, which
-floats to whatever that repository's default branch is at install time. The
-refreshed build brings two reliability fixes that matter here — concurrent runs
-no longer pay Azure twice for the same document, and a batch run that hit an
-error now exits non-zero instead of reporting success to CI — plus a new
-`intermedio-femenino` voice, the female counterpart to the default `intermedio`
-pacing. No roster change. It builds on the prior release, which closed an
-**"option theater"** gap in the design flow (#38). `ui-mockup`'s "3-4 materially
-different options" rule was satisfiable while **every option kept the same
-container** — so
+`v0.25.0` — **54 agents and 38 skills**. This release makes the `learn` and
+`lessons` run areas **goal-first and deterministic** (#61), closing the last
+run-grammar gap from the #59 date-first unification. Those two areas were excluded
+from date-first because a learner's runs accrete toward a durable goal, not a
+snapshot — but their implementations didn't group by a goal either: `learn` wrote
+`learn/<source-slug>/<YYYY-MM-DD-HHMM>/` (auto-derived artifact slug + a fresh
+timestamp folder every run, so one subject scattered), and `lessons` keyed under
+the agent name and a coarse `<theme>` bucket. Both now use a durable **goal slug**
+plus the universal order-sorted tail — `<area>/<goal-slug>/<NN>-<flavor>-<descriptor>/`
+(`<goal-slug>` = `learn-react`/`az-204`/`prep-for-interview-vercel`, reused across
+runs; `<NN>` = next-within-goal). `extract-learn-path.js` takes an optional
+`--goal` and computes `<NN>`, and inter-run references move into `produced_from:`
+frontmatter so the layout stays stable. It builds on the prior release, which
+refreshed the pinned [Lectoria](https://github.com/RubenSaucedo/lectoria) build
+behind `generate-audio` (#68/v0.24.0) — moving to `pdf-parse` 2.x so PDF lessons
+no longer narrate `-- N of M --` page separators, and raising the Node floor to
+`^22.22.2 || ^24.15.0 || >=26.0.0` — after re-pinning lectoria to an exact commit
+with two reliability fixes and a new `intermedio-femenino` voice (#67/v0.23.0).
+Earlier still, it closed an **"option theater"** gap in the design flow (#38).
+`ui-mockup`'s "3-4 materially different options" rule was satisfiable while
+**every option kept the same container** — so
 for a crowding / visual-weight / context / space / discoverability problem, the
 correct answer (move the affordance out of the crowded box, progressively disclose
 it into an existing surface, or remove it) was never generated, and the human
@@ -411,7 +410,7 @@ kai/
 
 | Name | Purpose |
 | ---- | ------- |
-| `instructor-tutor` | Generative tutor for **any subject** — a cert objective, a language, engineering/AI, finance. Writes original concrete-first lessons (Explain / Lesson / Series modes) under `.kai/runs/lessons/instructor-tutor/`; never auto-runs audio. |
+| `instructor-tutor` | Generative tutor for **any subject** — a cert objective, a language, engineering/AI, finance. Writes original concrete-first lessons (Explain / Lesson / Series modes) under `.kai/runs/lessons/<goal-slug>/`; never auto-runs audio. |
 | `instructor-teacher` | Pedagogy orchestrator — turns chaptered/sectioned markdown (course units, book chapters, humanized docs, notes) into paired HTML-visual + audio-narration lessons per source file. Orchestrates `generate-html-lesson` (English visual) + `generate-audio` (Spanish narration). Subject-agnostic. |
 | `instructor-path-mentor` | Stewards a whole certification/learning path over time — plan, schedule against a target date, per-objective progress, and spaced review in `personal/learning/<slug>.md`. Dispatches `workflow-course-to-audio`, `instructor-teacher`, and `instructor-tutor`; never auto-runs audio. Executes a chosen path (career *strategy* stays with `principal-engineer-career-mentor`). |
 | `workflow-course-to-audio` | Turns a course, cert module, or long readable web page into local markdown ready for `generate-audio`. Wraps `web-content-extraction` for the crawl, then offers an explicit audio handoff (never auto-runs — Azure cost). Knowledge-checks split into a separate file so narration stays clean. |

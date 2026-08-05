@@ -15,8 +15,8 @@ already exists. Common upstreams:
 
 - **`workflow-course-to-audio`** has just extracted a Microsoft Learn /
   Coursera / cert / docs module into
-  `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md` — each raw unit
-  is a chapter you can turn into a lesson.
+  `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/<NN-unit>.md` — each
+  raw unit is a chapter you can turn into a lesson.
 - **`instructor-path-mentor`** points you at the units for the next
   objective in a certification path and asks you to package them.
 - The operator has pasted or extracted **book chapters** into a folder.
@@ -123,10 +123,10 @@ source set:
 
 Common locations:
 
-- `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md` (a single module
-  extracted as separate units)
-- `.kai/runs/learn/<slug>/<timestamp>/raw/<NN-module>/<NN-unit>.md` (a
-  multi-module learning path; each module is its own folder of units)
+- `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/<NN-unit>.md` (a
+  single module extracted as separate units)
+- `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/<NN-module>/<NN-unit>.md`
+  (a multi-module learning path; each module is its own folder of units)
 - `<project>/<area>/humanized/chapter-N-*.md` (humanized design docs,
   supported but not required)
 - `<book>/chapter-NN.md` (book chapters)
@@ -350,11 +350,13 @@ back to this lesson once before moving on"* when that's the truth.
 - Example complete chain:
   ```
   user → workflow-course-to-audio "extract this Learn module"
-       → writes .kai/runs/learn/<slug>/<timestamp>/raw/<NN-unit>.md
+       → writes .kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/<NN-unit>.md
 
   user → instructor-teacher "turn it into lessons"
        → invokes generate-audio on raw/ (Spanish, conversational)
        → invokes generate-html-lesson × N (English visual, audio embedded)
-       → produces .kai/runs/learn/<slug>/<timestamp>/lessons/<NN-unit>/index.html
-         + audio.mp3 references
+       → produces .kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/lessons/<NN-unit>/index.html
+         + audio.mp3 references (the lessons/ subfolder sits inside the extraction
+         run it was built from — co-located output, part of that run, not a
+         separate cross-referenced run)
   ```

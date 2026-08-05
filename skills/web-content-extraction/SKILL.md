@@ -52,7 +52,8 @@ this one is for harvesting the words on a UI.
    login-pause pattern below. Never type a password on the user's
    behalf, even if it's saved in their browser.
 4. **One run, one output folder.** Do not overwrite a prior run's
-   markdown; create a new timestamped folder. Re-runs are explicit.
+   markdown; create a new `<NN>`-indexed run folder under the goal
+   (`<NN>` = highest existing + 1, never filling gaps). Re-runs are explicit.
 5. **Cite the source.** Every generated markdown file lists the
    original URL(s) it was extracted from. The user must always be one
    click away from the source of truth.
@@ -69,7 +70,7 @@ this one is for harvesting the words on a UI.
 All output for a single run lives in:
 
 ```
-<workspace-root>/.kai/runs/learn/<source-slug>/<YYYY-MM-DD-HHMM>/
+<workspace-root>/.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/
   module.md          ← narration content, all units concatenated
   questions.md       ← knowledge-check questions, for self-testing
   source.md          ← metadata: original URL, walked URLs, timings, failures
@@ -81,14 +82,28 @@ All output for a single run lives in:
 
 - `<repo-root>` is the current working directory's git root. If not
   in a git repo, fall back to `<cwd>/.kai/runs/learn/`.
-- `<source-slug>` is a kebab-case slug. Derivation rules:
+- `<goal-slug>` is the **durable learning goal** this run belongs to — a
+  descriptive kebab-case slug like `learn-react`, `az-204`, or
+  `prep-for-interview-vercel` — so every run toward one goal stays in one
+  folder. The calling agent resolves it from the operator's intent; when none
+  is given it **defaults to `<source-slug>`**. Reuse an existing goal folder
+  rather than minting a near-duplicate.
+- `<NN>` is the two-digit run index **within the goal**: the highest existing
+  index + 1, never filling gaps, so runs sort in the order they ran (the same
+  rule as the date-first areas — `learn`/`lessons` swap the date for the goal).
+- `<source-slug>` is a kebab-case slug for what was extracted. Derivation rules:
   - **Microsoft Learn module:** the segment after `/training/modules/`
     (e.g. `get-started-ai-fundamentals`).
   - **Microsoft Learn learning path:** the segment after `/training/paths/`.
   - **Coursera / edX / Udemy course:** the course slug from the URL.
   - **Generic article / doc page:** the last path segment, lowercased.
   - **When ambiguous:** ask the user once.
-- The timestamp is local time, 24-hour, e.g. `2026-06-18-1657`.
+- When an artifact in a **separate** run needs to point back to this one, it
+  records the link in its **frontmatter** (a `produced_from:` path) rather than
+  baking this run's path into its own folder name — keeping the goal-first layout
+  stable and inter-agent hand-off independent of folder nesting. Output
+  co-located inside this run (like a teacher's `lessons/` subfolder) is simply
+  part of the run, not a cross-reference.
 
 ## Zone, gitignore & promotion
 
@@ -103,7 +118,7 @@ path.
 These lesson deliverables default to the **working (local)** zone. To
 **share** them — so they travel via `git pull` — the operator passes
 `--share` and the calling agent promotes the markdown to
-`library/lessons/<source-slug>/` with frontmatter (raw snapshots and
+`library/lessons/<goal-slug>/<source-slug>/` with frontmatter (raw snapshots and
 audio never promote — regenerable).
 
 ## Login pause pattern
