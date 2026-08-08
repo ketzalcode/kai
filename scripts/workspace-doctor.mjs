@@ -232,7 +232,8 @@ function checkWorkspace(root) {
   const itemIds = new Set();
   const deps = new Map(); // id -> [depId]
   if (existsSync(itemsDir)) {
-    const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md'));
+    // README.md is the lane's own scaffold file, not a work item.
+    const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md') && f !== 'README.md');
     for (const f of files) {
       const id = basename(f, '.md');
       const rel = `${coordinationRoot}/items/${f}`;
@@ -421,6 +422,30 @@ function selfTest() {
     console.log('✓ self-test: product-owned root-level library/ and personal/ are not mistaken for retired kai roots');
   }
 
+
+  // Spine-only fixture: a freshly onboarded workspace with the full spine
+  // committed and no output lane yet materialized. `.kai/runs/<area>/` and
+  // `kai/library/<type>/` are created on first write, so this is the normal
+  // state between onboarding and first use — and must be claimable.
+  const spine = checkWorkspace(join(fx, 'spine-workspace'));
+  if (spine.errors.length === 0 && spine.migrations.length === 0) {
+    console.log('✓ self-test: spine-only workspace with no materialized lanes is healthy');
+  } else {
+    ok = false;
+    console.log(`✗ self-test: spine-only workspace was rejected (${spine.errors.length} error(s), ${spine.migrations.length} migration(s))`);
+    for (const e of [...spine.errors, ...spine.migrations]) console.log(`    ${e}`);
+  }
+
+  // Committed end-to-end example: the shipped documentation must stay a valid
+  // workspace, or a new user's first reference is wrong.
+  const example = checkWorkspace(join(__dirname, '..', 'examples', 'e2e-feature-delivery'));
+  if (example.errors.length === 0 && example.migrations.length === 0) {
+    console.log('✓ self-test: examples/e2e-feature-delivery is a healthy, claimable workspace');
+  } else {
+    ok = false;
+    console.log(`✗ self-test: examples/e2e-feature-delivery is not healthy (${example.errors.length} error(s))`);
+    for (const e of [...example.errors, ...example.migrations]) console.log(`    ${e}`);
+  }
 
   // that skipped the version increment are rejected) and stale-lease recovery
   // (an expired but tokened lease is surfaced as a warning).
