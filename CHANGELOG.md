@@ -4,6 +4,46 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.28.0] - 2026-08-07
+
+### Added
+
+- `team-operating-rules` skill — the portable operating contract every agent
+  inherits: role taxonomy and ownership boundaries, target-workspace-root
+  resolution and initiative grounding, the acting-agent claim/handoff loop,
+  test ownership, the truthful completion/shipping ladder, role-addressed
+  communication, and the reserved `@operator` endpoint. It ships as a skill
+  because a plugin's own root `AGENTS.md` is never loaded as custom
+  instructions in a consumer workspace (#34).
+- A single `**Inherits:**` line as the first body line of all 54 agents,
+  declaring the skills that bind each role, followed by a verbatim directive to
+  load them that also inlines the non-negotiables which must hold even if a
+  skill is not loaded.
+- Validator rules enforcing that declaration: exactly one `**Inherits:**` line
+  per agent, positioned first and carrying the canonical directive; every named
+  skill must exist and appear once; every agent must inherit
+  `team-operating-rules`; every `director-*` / `principal-*` / `workflow-*` role
+  must also inherit `workspace-conventions`; and every skill claimed by a
+  profile's "Contracts you inherit" section or by inheritance prose must appear
+  on the line.
+
+### Changed
+
+- `AGENTS.md` is scoped to contributing to the kai plugin repo itself. It keeps
+  the release procedure, adds a map of where each rule now lives, and states
+  why plugin-root instructions do not propagate.
+- README documents how shared rules actually reach a session (the skill and the
+  `Inherits:` line), how to check what a host discovered (`copilot plugins list`
+  or `/skills`, with `/instructions` for the separate custom-instruction set),
+  and lists `team-operating-rules` in the skills table.
+
+### Fixed
+
+- README no longer claims `AGENTS.md` holds "house rules carried into every
+  repo". A Copilot plugin manifest has no instruction component type, and the
+  host discovers custom instructions only from the user's repository root and
+  working directory, `$HOME/.copilot/`, and `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`.
+
 ## [0.27.0] - 2026-08-07
 
 **The kai working corpus moves out of your repository root and under a
@@ -944,6 +984,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.28.0]: https://github.com/RubenSaucedo/kai/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/RubenSaucedo/kai/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/RubenSaucedo/kai/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/RubenSaucedo/kai/compare/v0.24.0...v0.25.0

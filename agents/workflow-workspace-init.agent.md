@@ -4,6 +4,17 @@ description: "Run-once kai workspace onboarding workflow for any repository or d
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `workspace-onboarding`
+
+> Load and apply every skill listed above before you act — they are part of your
+> instructions, not background reading. If one cannot be loaded, these
+> non-negotiables still bind you: resolve a durable target workspace root before
+> creating state, never Copilot session-state or a temp directory; stay in your
+> lane and route work outside it as a proposal instead of doing it; keep
+> coordinated work claimed, evidenced, and handed off rather than silently in
+> progress; never call something `shipped` that a human has not deployed and
+> verified; and escalate to `@operator` only for a decision no kai role owns.
+
 # Workflow — Workspace Init
 
 Onboard or validate one target workspace so every kai agent resolves the same

@@ -103,6 +103,7 @@ for (const p of refScanFiles) {
   // Only tokens after the verb are checked, so lifecycle states like
   // `in-review` that merely share the line are not misread as references.
   for (const line of raw.split(/\r?\n/)) {
+    if (/^\*\*Inherits:\*\*/.test(line)) continue;
     const verb = line.match(/inherits?\b/i);
     if (!verb) continue;
     const after = verb.index + verb[0].length;
@@ -113,6 +114,99 @@ for (const p of refScanFiles) {
       if (!skillIds.has(tok) && !agentIds.has(tok)) {
         err(r, `"inherit" line references unknown skill/agent \`${tok}\``);
       }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inherited-contract declarations
+//
+// A plugin's own root AGENTS.md is never loaded as custom instructions in a
+// consumer workspace, so shared rules only reach a session through a skill the
+// agent names. The `**Inherits:**` line is that machine-checkable declaration.
+// ---------------------------------------------------------------------------
+const BASELINE_SKILL = 'team-operating-rules';
+const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
+const CONTRACT_HEADING = /^## (?:Contracts you inherit|Inherited contracts)[^\n]*\n/gm;
+const blockPath = join(ROOT, 'scripts/lib/inherits-block.txt');
+const inheritsBlock = existsSync(blockPath)
+  ? readFileSync(blockPath, 'utf8').replace(/\r\n/g, '\n').trimEnd()
+  : null;
+if (!inheritsBlock) err('scripts/lib/inherits-block.txt', 'missing (canonical inherited-contract directive)');
+
+for (const agent of agentFiles) {
+  const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
+  const r = rel(agent.path);
+  const all = raw.split('\n');
+  const lines = all.filter((l) => /^\*\*Inherits:\*\*/.test(l));
+
+  if (lines.length === 0) {
+    err(r, 'missing a `**Inherits:** ...` line declaring its inherited skills');
+    continue;
+  }
+  if (lines.length > 1) {
+    err(r, `has ${lines.length} \`**Inherits:**\` lines; exactly one is allowed`);
+    continue;
+  }
+
+  // The declaration must be the first body line so it is read before anything
+  // else, not buried where a model may never reach it.
+  const fm = raw.match(/^---\n[\s\S]*?\n---\n\n/);
+  const body = fm ? raw.slice(fm[0].length) : raw;
+  if (!/^\*\*Inherits:\*\*/.test(body)) {
+    err(r, '`**Inherits:**` must be the first line of the body, directly under the frontmatter');
+  }
+
+  // A skill named in the profile is inert unless the agent is told to load it,
+  // so the declaration carries a verbatim, CI-pinned directive.
+  if (inheritsBlock && !body.replace(/\r\n/g, '\n').includes(inheritsBlock)) {
+    err(r, 'missing the verbatim inherited-contract directive from scripts/lib/inherits-block.txt');
+  }
+
+  const declared = [...lines[0].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+  if (declared.length === 0) {
+    err(r, '`**Inherits:**` line lists no backticked skills');
+    continue;
+  }
+
+  const seen = new Set();
+  for (const tok of declared) {
+    if (!skillIds.has(tok)) err(r, `inherits unknown skill \`${tok}\``);
+    if (seen.has(tok)) err(r, `inherits \`${tok}\` more than once`);
+    seen.add(tok);
+  }
+
+  if (!seen.has(BASELINE_SKILL)) {
+    err(r, `must inherit \`${BASELINE_SKILL}\` (the shared operating contract)`);
+  }
+  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('workspace-conventions')) {
+    err(r, 'coordinating roles must inherit `workspace-conventions`');
+  }
+
+  // A structured "Contracts you inherit" section is the profile's own claim
+  // about what binds it; the declaration must cover all of it.
+  for (const h of raw.matchAll(CONTRACT_HEADING)) {
+    const start = h.index + h[0].length;
+    const next = raw.indexOf('\n## ', start);
+    const section = raw.slice(start, next === -1 ? raw.length : next);
+    for (const t of section.matchAll(/`([^`]+)`/g)) {
+      if (skillIds.has(t[1]) && !seen.has(t[1])) {
+        err(r, `"Contracts you inherit" names \`${t[1]}\` but the \`**Inherits:**\` line omits it`);
+      }
+    }
+  }
+
+  // Freeform prose that claims an inherited contract must match too.
+  for (const line of all) {
+    if (/^\*\*Inherits:\*\*/.test(line)) continue;
+    const verb = line.match(/\binherits?\b/i);
+    if (!verb) continue;
+    const after = verb.index + verb[0].length;
+    for (const m of line.matchAll(/`([^`]+)`/g)) {
+      if (m.index < after) continue;
+      const tok = m[1];
+      if (!skillIds.has(tok) || seen.has(tok)) continue;
+      err(r, `prose says it inherits \`${tok}\` but the \`**Inherits:**\` line omits it`);
     }
   }
 }

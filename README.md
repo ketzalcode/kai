@@ -37,28 +37,31 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.27.0` — **54 agents and 39 skills**. This release ends the **root-level
-clutter** that made kai painful to adopt in an existing repository (#70). A
-<!-- kai:allow-legacy-roots -->
-kai workspace used to scatter four generic top-level directories — the now
-retired `coordination/`, `initiatives/`, `library/`, `personal/` — across the
-root of whatever repo you onboarded, colliding with product folders and burying
-kai state in the file tree.
-<!-- /kai:allow-legacy-roots -->
-The workspace now splits on one honest axis: **`.kai/`
-is the hidden control plane** (the `manifest.json` discovery anchor, the
-contract, and ignored `runs/` evidence — machine state) and the new visible
-**`kai/` root is the working corpus** (everything humans browse, search, and
-edit). The four roots move to `kai/<root>/`; `.kai/` does not move, so the
-bootstrap sentinel is unchanged. This is **`schema_version` 2**, a mandatory
-migration: the workspace doctor now resolves roots from the manifest instead
-of assuming a layout, refuses a workspace still on schema 1, and hard-fails a
-**split-brain** workspace where a retired bare root coexists with its `kai/`
-counterpart. Because ~520 path literals across 73 declarative prompts had to
-move together, the plugin validator gained a rule that rejects any bare-root
-literal in a shipped agent or skill — a single stale prompt is exactly how a
-workspace would silently fork. There is one supported layout and no
-per-workspace layout switch. It builds on the prior release, which gave dev
+`v0.28.0` — **54 agents and 40 skills**. This release fixes a **silent
+propagation gap**: kai's shared operating rules lived in the plugin's own root
+`AGENTS.md`, and that file is never loaded in a consumer workspace (#34). A
+Copilot plugin manifest has no instruction component type, and the host
+discovers custom instructions only from *your* repo root and working directory,
+`$HOME/.copilot/`, and `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`. So role taxonomy,
+workspace-root resolution, the acting-agent loop, test ownership, the completion
+ladder, and the `@operator` boundary reached kai's own contributors and nobody
+else — while the README claimed they were "carried into every repo". Those rules
+now ship as the `team-operating-rules` **skill**, on the one channel that does
+reach a session, and every agent opens with a machine-checkable
+`**Inherits:**` line plus a verbatim directive to load what it names — which
+also inlines the non-negotiables that must hold even if a skill is not loaded,
+since skills load on demand rather than automatically. `npm test`
+enforces that all 54 agents carry the line first in the body, that every skill
+named exists, that every agent inherits `team-operating-rules`, that each
+`director-*` / `principal-*` / `workflow-*` role also inherits
+`workspace-conventions`, and that nothing a profile's own "Contracts you
+inherit" section claims is missing from the declaration. `AGENTS.md` is now
+scoped honestly to contributing to this repo. It builds on the prior release,
+which ended the **root-level clutter** that made kai painful to adopt in an
+existing repository (#70/v0.27.0): a kai workspace now splits on one honest axis
+— the hidden `.kai/` control plane and the visible `kai/` working corpus —
+under a mandatory `schema_version` 2 migration enforced by the workspace
+doctor. Before that, dev
 designs **diagrams from a shared, standard vocabulary** (#62/v0.26.0).
 Engineering design
 artifacts — the architect's `decision.md` and the backend/frontend/infra
@@ -340,11 +343,42 @@ completed migration is a no-op.
 kai/
 ├── plugin.json         # plugin manifest (name, version, paths)
 ├── README.md           # this file
-├── AGENTS.md           # house rules carried into every repo
+├── AGENTS.md           # contributor rules for this repo only (see note below)
 ├── LICENSE             # MIT
 ├── agents/             # one .agent.md per persona
 └── skills/             # one folder per skill (each with SKILL.md)
 ```
+
+### How shared rules reach your session
+
+A plugin's own root `AGENTS.md` is **not** loaded in your workspace. The host
+discovers custom instructions from *your* repository root and working directory
+(`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`,
+`.github/instructions/**`), from `$HOME/.copilot/`, and from
+`COPILOT_CUSTOM_INSTRUCTIONS_DIRS` — never from an installed plugin's folder,
+because `plugin.json` has no instruction component type.
+
+So kai's shared operating contract ships as a **skill**,
+[`team-operating-rules`](skills/team-operating-rules/SKILL.md), and every agent
+opens with an `**Inherits:**` line naming its contracts plus a verbatim
+directive to load them:
+
+```markdown
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+```
+
+`npm test` enforces that declaration for all 54 agents — it must be the first
+body line, carry the canonical directive, name only real skills, always include
+`team-operating-rules`, and cover everything the profile's own "Contracts you
+inherit" section claims — so a contract can never be silently dropped. Because a
+skill loads on demand rather than automatically, the directive also inlines the
+handful of non-negotiables that must hold even if the skill is not loaded.
+
+To check what a host actually discovered, run `copilot plugins list` (or
+`/skills` in a session) for kai's skills, and `/instructions` for the separate
+set of custom-instruction files. Discovery is necessary but not sufficient —
+only the agent naming a skill causes it to be applied.
+Kai's `AGENTS.md` therefore holds only rules for contributing to this repo.
 
 ## What it ships
 
@@ -496,6 +530,7 @@ assistant) is the default; *pushed* updates need an external runner you host.
 
 | Name | Purpose |
 | ---- | ------- |
+| `team-operating-rules` | The portable operating contract every agent inherits: role taxonomy and ownership boundaries, target-workspace-root resolution, the acting-agent claim/handoff loop, test ownership, the truthful completion ladder, role-addressed communication, and the reserved `@operator` endpoint. Ships as a skill because a plugin's own `AGENTS.md` never loads in a consumer workspace. |
 | `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `kai/coordination/` for team state, initiative-owned `artifacts/`, promoted `kai/library/`, and the personal `kai/personal/` lane. |
 | `workspace-onboarding` | Idempotent initialization and validation method used by `workflow-workspace-init`. |
 | `product-exploration` | Neutral live-product mapping method with canonical `kai/initiatives/<slug>/artifacts/product-map.md` placement. |
@@ -1028,7 +1063,7 @@ fails the `release-guard` gate; docs- and test-only changes stay exempt.
 | Docs- or test-only | no bump (or patch) | no bump (or patch) |
 
 Cutting `1.0.0` is a deliberate stability milestone, not automatic. Release steps
-(also summarized for agents in `AGENTS.md` → **Releasing this plugin**):
+(also in `AGENTS.md` → **Releasing this plugin**):
 
 1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in `plugin.json`.
 2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all three for the current version.)

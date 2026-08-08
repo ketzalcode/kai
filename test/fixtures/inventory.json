@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 54,
-    "skills": 39
+    "skills": 40
   },
   "agents": [
     "director-chief-of-staff",
@@ -92,6 +92,7 @@
     "review-success-metrics",
     "review-ux-accessibility",
     "scope-discipline",
+    "team-operating-rules",
     "ui-mockup",
     "video-direction",
     "web-content-extraction",
