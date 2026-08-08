@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **54 agents** and **40 skills** (6 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **55 agents** and **41 skills** (6 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -53,10 +53,11 @@ Technical design and implementation. The architect and manager are situational.
 
 ### Delivery
 
-The release gate. kai never performs the deployment itself.
+Getting one change from the workspace to a merged PR, then to production. kai never merges or deploys itself.
 
 | Name | What it owns |
 | ---- | ------------ |
+| [`workflow-pull-request`](../../agents/workflow-pull-request.agent.md) | Bounded delivery agent that takes one finished change from workspace to a mergeable pull request: branch, commits, PR narrative, version bump, and merge readiness. Its distinct job is investigating live branch protection and required checks, then reporting honestly when a rule cannot be satisfied instead of bypassing it. Drafts and validates only — the human presses merge, tag, and release. |
 | [`workflow-ship`](../../agents/workflow-ship.agent.md) | Release orchestrator with three explicit phases. PREPARE gates in-review to release-ready and writes versioned deploy/rollback/verification steps. CONFIRM-START records evidence that human deployment began and moves to deploying. CONFIRM-COMPLETE requires successful completion evidence before production-verification, then records proportional smoke checks and marks shipped. Kai never performs deployment. |
 
 ### Trust & reliability
@@ -209,6 +210,7 @@ Per-change discipline every `principal-swe-*` agent inherits.
 | [`coding-style`](../../skills/coding-style/SKILL.md) | Apply when writing, editing, or refactoring code. Encodes the user's coding preferences: simplicity over cleverness, human-readable names and messages, composition, disciplined comments, and matching repo conventions before imposing taste. |
 | [`research-before-coding`](../../skills/research-before-coding/SKILL.md) | Apply before making any non-trivial code change. Enforces the user's research discipline: investigate the codebase first, identify module ownership (own/partner/shared), look for reusable code, and surface tradeoffs before writing. |
 | [`pr-sizing`](../../skills/pr-sizing/SKILL.md) | Apply when planning a feature, large refactor, or any change spanning multiple files. Helps break work into shippable, reviewable increments — neither massive nor micro — each shippable independently. |
+| [`pr-delivery`](../../skills/pr-delivery/SKILL.md) | The shared contract for how one finished change physically leaves the workspace: branch naming from a three-rung anchor ladder, conventional-commit title, and a core-plus-triggered PR body whose Verification names the exact command that ran. Owns delivery hygiene only — sizing stays with pr-sizing, readiness with definition-of-done, deployment with workflow-ship, code judgment with the principal-swe roles. Never bypasses branch protection and never presses merge. |
 | [`onboard-to-codebase`](../../skills/onboard-to-codebase/SKILL.md) | Map an unfamiliar codebase fast: stack, build/test/lint commands, directory architecture, conventions, patterns, gotchas. Saves a structured report you can re-read in future sessions. |
 | [`build-diagrams`](../../skills/build-diagrams/SKILL.md) | The shared diagram vocabulary for technical and dev-design artifacts. Apply when authoring a design.md, decision.md, or any engineering write-up that describes system shape, data, flow, state, or topology. Owns the HOW — the format rule (ASCII fenced in Markdown by default; `mermaid` only when ASCII can't carry it; embedded SVG/HTML only when the artifact is itself HTML) and a standard catalog of familiar diagram shapes — so every team diagram reads the same. The authoring agent owns WHICH diagram its domain needs. |
 

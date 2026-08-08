@@ -4,7 +4,7 @@ description: Principal-level backend reviewer and builder for APIs, server-side 
 tools: ["bash", "view", "edit", "create", "grep", "glob"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `build-diagrams`, `coding-style`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `coding-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
