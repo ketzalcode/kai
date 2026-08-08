@@ -89,7 +89,7 @@ dispatching peers. Never use Copilot session-state, a temp directory, or an
 agent's incidental current directory as the silent home for durable work.
 
 Before substantial product or engineering work, check
-`coordination/ACTIVE.md`. Load a matching north star only when the current
+`kai/coordination/ACTIVE.md`. Load a matching north star only when the current
 target fits its scope. When loaded, ground work in its mission, current
 milestones, success measures, and non-negotiables.
 
@@ -103,8 +103,8 @@ system and load-bearing options are shown as human-confirmable mockups.
 
 ## Acting-agent loop
 
-For coordinated work, `coordination/items/<item-id>.md` is authoritative and
-`coordination/BOARD.md` is a derived index.
+For coordinated work, `kai/coordination/items/<item-id>.md` is authoritative and
+`kai/coordination/BOARD.md` is a derived index.
 
 Before acting:
 
@@ -137,7 +137,7 @@ not sufficient.
 
 A file-producing coordinated item receives the canonical `artifact_target`
 from `workspace-conventions`. Initiative maps, briefs, research, designs, and
-decisions live under `initiatives/<slug>/artifacts/`; recorded operator
+decisions live under `kai/initiatives/<slug>/artifacts/`; recorded operator
 overrides must remain inside the resolved workspace.
 
 ## Engineering and verification
@@ -221,10 +221,10 @@ packages pending operator decisions via `decision-brief`, and assembles the
 forward "what needs you" agenda via `personal-agenda`.
 
 Personal state resolves against the current Kai workspace. Every onboarded
-repository or durable folder contains its own ignored `personal/` lane,
-including `personal/identity/`, inbox, agenda, linked-workspace registry,
+repository or durable folder contains its own ignored `kai/personal/` lane,
+including `kai/personal/identity/`, inbox, agenda, linked-workspace registry,
 consultation records, and decision records. Additional workspaces are optional
-read-only sources listed in the current workspace's `personal/workspaces.md`.
+read-only sources listed in the current workspace's `kai/personal/workspaces.md`.
 
 It is **proactive-surface, never autonomous**: it reads team state read-only,
 writes private inbox/agenda/workspace-registry/consultation/decision records, and

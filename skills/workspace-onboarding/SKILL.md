@@ -67,6 +67,7 @@ Initiative slug directories and their `artifacts/` subtrees are created by
 
 Install or replace exactly one managed block:
 
+<!-- kai:allow-legacy-roots -->
 ```gitignore
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 # Raw kai runs and personal material are local-only.
@@ -98,6 +99,7 @@ writing the block, verify:
 - a legacy `.kai/local.json` is ignored until deletion is approved;
 - `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `kai/coordination/`,
   `kai/initiatives/`, and textual `kai/library/` files are not ignored.
+<!-- /kai:allow-legacy-roots -->
 
 If these checks fail, onboarding fails. Do not allow browser or evidence runs
 to write credentials or raw state before ignore validation succeeds.
@@ -137,19 +139,33 @@ step whose version is above the manifest's `schema_version`, in order, then set
 - **→ 1 (baseline / pre-schema):** a manifest with no `schema_version` (or `0`)
   is a pre-schema workspace. Add `schema_version: 1`, apply the fixed-root/`areas`
   reconciliation above, and remove retired fields. No coordination-record changes.
+<!-- kai:allow-legacy-roots -->
 - **→ 2 (working corpus moves under `kai/`):** a schema-1 workspace keeps
   `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
   root. Move each to `kai/<root>/` **preserving history** (`git mv` when the path
-  is tracked, a plain move otherwise), add the `corpus` root and the `kai/`-prefixed
+  is tracked; the `personal/` lane is gitignored and therefore untracked, so move
+  it with a plain filesystem move), add the `corpus` root and the `kai/`-prefixed
   root values to the manifest, and re-install the managed ignore block so
   `kai/personal/` is ignored. `.kai/` does not move — the sentinel path is
-  unchanged. Content is **not** rewritten wholesale: relative links inside moved
-  files still resolve because the four roots move together, but any *absolute*
-  workspace-root-relative reference to a bare retired root (for example
-  `initiatives/<slug>/…` written into a work item) is repointed to `kai/…`.
-  Report every moved path. If a bare root and its `kai/` counterpart both exist,
-  stop with a split-brain error and let the operator reconcile — never merge
-  silently.
+  unchanged. Then repoint references:
+  1. relative links **inside** moved files still resolve, because the four roots
+     move together;
+  2. every reference **from outside** the moved roots — a workspace-root-relative
+     path recorded in a work item, an `artifact_target`, a `context_artifacts`
+     entry, a README link — is rewritten to `kai/…`. Scan all tracked text in the
+     workspace, not just the moved trees;
+  3. regenerate `.kai/CONVENTIONS.md`, which documents the schema-1 layout and is
+     guaranteed stale.
+
+  Show every move and every rewrite before applying, and report them after.
+  The migration is **idempotent and resumable**: bump `schema_version` to `2`
+  **last**, only after the moves and rewrites verify clean, so an interrupted
+  run re-enters at → 2 and finishes rather than declaring success. If a bare root
+  and its `kai/` counterpart both exist, stop with a split-brain error and let
+  the operator reconcile — never merge silently. A root-level directory that
+  merely shares a name but holds no kai content (a product's own `library/` or
+  `personal/`) is **not** kai state: leave it alone.
+<!-- /kai:allow-legacy-roots -->
 
 When a future release changes the generated workspace contract it appends the
 next numbered step here and bumps the current version; it never rewrites an
@@ -248,6 +264,7 @@ Never invent identity or career content and never overwrite populated files.
 
 ## Legacy and partial-layout handling
 
+<!-- kai:allow-legacy-roots -->
 The new contract does not preserve or write legacy roots. If `.ketzal/`,
 `knowledge/`, `.persona-self/`, `.kai/local.json`, a **schema-1 root-level
 `coordination/`, `initiatives/`, `library/`, or `personal/`**, or operational
@@ -261,6 +278,17 @@ exist:
 3. ask before moving or rewriting user content;
 4. never create both layouts as a compatibility strategy;
 5. never delete the legacy source automatically.
+
+A root-level directory only counts as **retired kai state** when it actually
+holds kai content — `coordination/` with `items/`, `threads/`, `BOARD.md`,
+`ACTIVE.md`, or `backlog.md`; `initiatives/` with `INDEX.md`; `library/` with
+one of the canonical library types; `personal/` with `inbox.md`, `agenda.md`,
+`identity/`, `consultations/`, or `decisions/`. A product's own root-level
+`library/`, `personal/`, or `docs`-style folder that shares a generic name but
+holds none of those markers is **not** kai state. Do not touch it, do not report
+it as legacy, and do not treat it as split-brain — avoiding exactly that
+collision is why the corpus moved under `kai/`.
+<!-- /kai:allow-legacy-roots -->
 
 For `.persona-self/`, propose file-for-file moves into `kai/personal/identity/`.
 Do not create fresh identity stubs alongside populated legacy files; migration

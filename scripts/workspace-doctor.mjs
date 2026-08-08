@@ -35,6 +35,15 @@ const DEFAULT_ROOTS = {
   library: 'kai/library',
   personal: 'kai/personal',
 };
+// Files that only kai creates. A bare root directory is treated as retired kai
+// content — rather than an unrelated product folder of the same generic name —
+// only when at least one of these is present inside it.
+const KAI_ROOT_MARKERS = {
+  coordination: ['items', 'threads', 'BOARD.md', 'ACTIVE.md', 'backlog.md'],
+  initiatives: ['INDEX.md'],
+  library: ['dev-designs', 'qa-findings', 'briefings', 'investigations', 'learnings', 'playbooks'],
+  personal: ['inbox.md', 'agenda.md', 'identity', 'consultations', 'decisions'],
+};
 const CANONICAL_AREAS = new Set([
   'qa', 'eng', 'product', 'revenue', 'support', 'review', 'ship', 'incident',
   'ai', 'learn', 'lessons', 'pulse', 'content',
@@ -136,6 +145,12 @@ function badPath(p) {
 }
 
 // --- validation ------------------------------------------------------------
+function looksLikeKaiRoot(root, key) {
+  const dir = join(root, key);
+  if (!existsSync(dir)) return false;
+  return (KAI_ROOT_MARKERS[key] || []).some((marker) => existsSync(join(dir, marker)));
+}
+
 function checkWorkspace(root) {
   const errors = [];
   const warnings = [];
@@ -156,6 +171,9 @@ function checkWorkspace(root) {
   for (const k of REQUIRED_MANIFEST_KEYS) {
     if (!(k in m)) {
       if (k === 'schema_version') continue; // handled by migration logic below
+      // `corpus` arrived with schema 2; a schema-1 manifest is legitimately
+      // missing it and is already told to migrate.
+      if (k === 'corpus' && Number.isInteger(m.schema_version) && m.schema_version < 2) continue;
       err(`.kai/manifest.json missing required key "${k}"`);
     }
   }
@@ -197,10 +215,15 @@ function checkWorkspace(root) {
       err(`.kai/manifest.json "${key}" must be "${DEFAULT_ROOTS[key]}" (found "${declared}"); the layout is a contract constant, not a per-workspace setting.`);
     }
     // Split-brain guard: a leftover schema-1 root alongside its schema-2 home
-    // silently forks the workspace, so refuse to certify it.
-    if (existsSync(join(root, key)) && existsSync(join(root, ...DEFAULT_ROOTS[key].split('/')))) {
-      err(`split-brain layout: both "${key}/" and "${DEFAULT_ROOTS[key]}/" exist; finish the schema 1 → 2 migration and remove the retired root before claiming work.`);
+    // silently forks the workspace. A bare directory only counts when it holds
+    // kai's own marker files — a product repository is entitled to its own
+    // `library/` or `personal/` folder, which is precisely why kai moved.
+    if (looksLikeKaiRoot(root, key) && existsSync(join(root, ...DEFAULT_ROOTS[key].split('/')))) {
+      err(`split-brain layout: a retired schema-1 "${key}/" holding kai content coexists with "${DEFAULT_ROOTS[key]}/"; finish the schema 1 → 2 migration and remove the retired root before claiming work.`);
     }
+  }
+  if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION && rootOf('corpus') !== DEFAULT_ROOTS.corpus) {
+    err(`.kai/manifest.json "corpus" must be "${DEFAULT_ROOTS.corpus}" (found "${rootOf('corpus')}"); the layout is a contract constant, not a per-workspace setting.`);
   }
   const coordinationRoot = rootOf('coordination');
 
@@ -378,13 +401,24 @@ function selfTest() {
   }
 
   // Split-brain fixture: an incomplete schema 1 -> 2 migration that left a bare
-  // root alongside its kai/ counterpart must be refused, not silently merged.
+  // root holding kai content alongside its kai/ counterpart must be refused.
   const split = checkWorkspace(join(fx, 'splitbrain-workspace'));
   if (/split-brain layout/i.test(split.errors.join('\n'))) {
     console.log(`✓ self-test: split-brain fixture rejected (${split.errors.length} error(s))`);
   } else {
     ok = false;
     console.log('✗ self-test: split-brain fixture was NOT rejected (coexisting coordination/ and kai/coordination/)');
+  }
+
+  // Product-collision fixture: a healthy schema-2 workspace whose *product*
+  // owns unrelated root-level library/ and personal/ directories must NOT be
+  // mistaken for a half-migrated workspace.
+  const collide = checkWorkspace(join(fx, 'product-collision-workspace'));
+  if (/split-brain layout/i.test(collide.errors.join('\n'))) {
+    ok = false;
+    console.log('✗ self-test: product-collision fixture false-positived on product-owned library/ or personal/');
+  } else {
+    console.log('✓ self-test: product-owned root-level library/ and personal/ are not mistaken for retired kai roots');
   }
 
 

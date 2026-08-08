@@ -39,7 +39,8 @@ Roster is unchanged at **54 agents and 39 skills**.
   than hardcoding a path, so a workspace is validated as it is actually
   laid out.
 - **All 54 agents and 39 skills:** ~520 path literals across 73 files
-  repointed to the `kai/` prefix in one atomic change.
+  repointed to the `kai/` prefix in one atomic change, plus `AGENTS.md`
+  and the distributed `examples/proactive-runner/` templates.
 
 ### Added
 - **Schema 1 → 2 migration step** in the `workspace-onboarding` ladder:
@@ -47,13 +48,18 @@ Roster is unchanged at **54 agents and 39 skills**.
   ignore-block reinstall, and repointing of absolute root-relative
   references recorded inside work items.
 - **Split-brain guard (`workspace-doctor`):** a workspace where a retired
-  bare root and its `kai/` counterpart both exist is a hard error, with a
-  new `splitbrain-workspace` self-test fixture proving it.
+  bare root **holding kai marker files** and its `kai/` counterpart both
+  exist is a hard error. A product's own root-level `library/` or
+  `personal/` is explicitly *not* kai state and is left alone — avoiding
+  that collision is the point of the move. New `splitbrain-workspace` and
+  `product-collision-workspace` self-test fixtures prove both directions.
 - **Bare-root literal rule (`validate-plugin`):** CI rejects any shipped
-  agent or skill that still names `coordination/`, `initiatives/`,
-  `library/`, or `personal/` without the `kai/` prefix — one stale prompt
-  is exactly how a workspace would silently fork. Tree diagrams and
-  deliberate legacy/migration prose are exempt.
+  agent, skill, `AGENTS.md`, `README.md`, or distributed `examples/` file
+  that names `coordination/`, `initiatives/`, `library/`, or `personal/`
+  without the `kai/` parent — one stale prompt is exactly how a workspace
+  would silently fork. Deliberate legacy text must opt out explicitly with
+  a `<!-- kai:allow-legacy-roots -->` region, so every exemption is a
+  decision on the record; an unclosed region is itself an error.
 
 ## [0.26.0] - 2026-08-04
 

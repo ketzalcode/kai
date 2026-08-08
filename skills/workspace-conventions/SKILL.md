@@ -518,6 +518,7 @@ workspace is migrated and re-validates clean.
 Root names are contract constants. Do not add compatibility aliases or silently
 create legacy `.ketzal/` or `knowledge/` roots.
 
+<!-- kai:allow-legacy-roots -->
 **Schema 2 moved the working corpus under `kai/`.** A schema-1 workspace put
 `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
 root. There is exactly one supported layout — never write to a bare root path,
@@ -525,6 +526,7 @@ and never honor a per-workspace layout switch. If both a bare root and its
 `kai/` counterpart exist, the workspace is **split-brain**: stop and migrate
 before claiming work. `.kai/` itself did not move, so the discovery anchor
 `.kai/manifest.json` is identical in both schema versions.
+<!-- /kai:allow-legacy-roots -->
 
 ## Agent checklist
 

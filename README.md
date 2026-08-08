@@ -39,10 +39,13 @@ what's missing — it never silently pretends the capability is present.
 
 `v0.27.0` — **54 agents and 39 skills**. This release ends the **root-level
 clutter** that made kai painful to adopt in an existing repository (#70). A
-kai workspace used to scatter four generic top-level directories —
-`coordination/`, `initiatives/`, `library/`, `personal/` — across the root of
-whatever repo you onboarded, colliding with product folders and burying kai
-state in the file tree. The workspace now splits on one honest axis: **`.kai/`
+<!-- kai:allow-legacy-roots -->
+kai workspace used to scatter four generic top-level directories — the now
+retired `coordination/`, `initiatives/`, `library/`, `personal/` — across the
+root of whatever repo you onboarded, colliding with product folders and burying
+kai state in the file tree.
+<!-- /kai:allow-legacy-roots -->
+The workspace now splits on one honest axis: **`.kai/`
 is the hidden control plane** (the `manifest.json` discovery anchor, the
 contract, and ignored `runs/` evidence — machine state) and the new visible
 **`kai/` root is the working corpus** (everything humans browse, search, and
@@ -618,6 +621,7 @@ Initiative work defaults to its own `artifacts/` tree. Promotion to
 and one-way: the library path becomes canonical for cross-initiative use while
 the initiative copy remains provenance.
 
+<!-- kai:allow-legacy-roots -->
 > **Upgrading from schema 1?** Workspaces onboarded before v0.27.0 keep
 > `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
 > root. Run `node <kai-plugin>/scripts/workspace-doctor.mjs` from the workspace
@@ -625,6 +629,7 @@ the initiative copy remains provenance.
 > coordinated work until the four roots move under `kai/`. `.kai/` stays where
 > it is. Never leave both layouts in place: that is a split-brain workspace and
 > the doctor refuses it.
+<!-- /kai:allow-legacy-roots -->
 
 When one agent needs something from another, the **`peer-communication`**
 contract reconciles the three ways that question can travel — a cheap
