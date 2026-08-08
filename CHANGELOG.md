@@ -15,13 +15,17 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   communication, and the reserved `@operator` endpoint. It ships as a skill
   because a plugin's own root `AGENTS.md` is never loaded as custom
   instructions in a consumer workspace (#34).
-- A single `**Inherits:**` line under the frontmatter of all 54 agents,
-  declaring the skills that bind each role.
+- A single `**Inherits:**` line as the first body line of all 54 agents,
+  declaring the skills that bind each role, followed by a verbatim directive to
+  load them that also inlines the non-negotiables which must hold even if a
+  skill is not loaded.
 - Validator rules enforcing that declaration: exactly one `**Inherits:**` line
-  per agent, every named skill must exist and appear once, every agent must
-  inherit `team-operating-rules`, every `director-*` / `principal-*` /
-  `workflow-*` role must also inherit `workspace-conventions`, and prose that
-  claims an inherited contract must be backed by the declaration.
+  per agent, positioned first and carrying the canonical directive; every named
+  skill must exist and appear once; every agent must inherit
+  `team-operating-rules`; every `director-*` / `principal-*` / `workflow-*` role
+  must also inherit `workspace-conventions`; and every skill claimed by a
+  profile's "Contracts you inherit" section or by inheritance prose must appear
+  on the line.
 
 ### Changed
 
@@ -29,9 +33,9 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   the release procedure, adds a map of where each rule now lives, and states
   why plugin-root instructions do not propagate.
 - README documents how shared rules actually reach a session (the skill and the
-  `Inherits:` line), how to verify it (`/instructions`, or
-  `copilot plugins list --kind instruction`), and lists `team-operating-rules`
-  in the skills table.
+  `Inherits:` line), how to check what a host discovered (`copilot plugins list`
+  or `/skills`, with `/instructions` for the separate custom-instruction set),
+  and lists `team-operating-rules` in the skills table.
 
 ### Fixed
 

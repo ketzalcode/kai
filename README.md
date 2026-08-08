@@ -47,12 +47,15 @@ workspace-root resolution, the acting-agent loop, test ownership, the completion
 ladder, and the `@operator` boundary reached kai's own contributors and nobody
 else — while the README claimed they were "carried into every repo". Those rules
 now ship as the `team-operating-rules` **skill**, on the one channel that does
-reach a session, and every agent declares its contracts on a single
-machine-checkable `**Inherits:**` line under its frontmatter. `npm test`
-enforces that all 54 agents carry the line, that every skill named exists, that
-every agent inherits `team-operating-rules`, that each `director-*` /
-`principal-*` / `workflow-*` role also inherits `workspace-conventions`, and
-that inheritance prose never drifts from the declaration. `AGENTS.md` is now
+reach a session, and every agent opens with a machine-checkable
+`**Inherits:**` line plus a verbatim directive to load what it names — which
+also inlines the non-negotiables that must hold even if a skill is not loaded,
+since skills load on demand rather than automatically. `npm test`
+enforces that all 54 agents carry the line first in the body, that every skill
+named exists, that every agent inherits `team-operating-rules`, that each
+`director-*` / `principal-*` / `workflow-*` role also inherits
+`workspace-conventions`, and that nothing a profile's own "Contracts you
+inherit" section claims is missing from the declaration. `AGENTS.md` is now
 scoped honestly to contributing to this repo. It builds on the prior release,
 which ended the **root-level clutter** that made kai painful to adopt in an
 existing repository (#70/v0.27.0): a kai workspace now splits on one honest axis
@@ -357,15 +360,24 @@ because `plugin.json` has no instruction component type.
 
 So kai's shared operating contract ships as a **skill**,
 [`team-operating-rules`](skills/team-operating-rules/SKILL.md), and every agent
-names it on an `**Inherits:**` line directly under its frontmatter:
+opens with an `**Inherits:**` line naming its contracts plus a verbatim
+directive to load them:
 
 ```markdown
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
 ```
 
-`npm test` enforces that declaration for all 54 agents, so a contract can never
-be silently dropped. Verify what your host actually loaded with `/instructions`
-inside a session, or `copilot plugins list --kind instruction` from a shell.
+`npm test` enforces that declaration for all 54 agents — it must be the first
+body line, carry the canonical directive, name only real skills, always include
+`team-operating-rules`, and cover everything the profile's own "Contracts you
+inherit" section claims — so a contract can never be silently dropped. Because a
+skill loads on demand rather than automatically, the directive also inlines the
+handful of non-negotiables that must hold even if the skill is not loaded.
+
+To check what a host actually discovered, run `copilot plugins list` (or
+`/skills` in a session) for kai's skills, and `/instructions` for the separate
+set of custom-instruction files. Discovery is necessary but not sufficient —
+only the agent naming a skill causes it to be applied.
 Kai's `AGENTS.md` therefore holds only rules for contributing to this repo.
 
 ## What it ships

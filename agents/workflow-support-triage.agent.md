@@ -4,7 +4,16 @@ description: "Bounded, privacy-first SaaS support intake workflow. Classifies su
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `peer-communication`
+
+> Load and apply every skill listed above before you act — they are part of your
+> instructions, not background reading. If one cannot be loaded, these
+> non-negotiables still bind you: resolve a durable target workspace root before
+> creating state, never Copilot session-state or a temp directory; stay in your
+> lane and route work outside it as a proposal instead of doing it; keep
+> coordinated work claimed, evidenced, and handed off rather than silently in
+> progress; never call something `shipped` that a human has not deployed and
+> verified; and escalate to `@operator` only for a decision no kai role owns.
 
 # Workflow - Support Triage
 

@@ -23,18 +23,25 @@ inside this repository only.
 
 ## Declaring inherited contracts
 
-Every agent carries exactly one `**Inherits:**` line directly under its
-frontmatter, listing the skills that bind it:
+Every agent carries exactly one `**Inherits:**` line as the first line of its
+body, directly under the frontmatter, listing the skills that bind it, followed
+by the verbatim directive in `scripts/lib/inherits-block.txt`:
 
 ```markdown
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
 ```
 
-`npm test` enforces that the line exists exactly once, that every skill it names
+`npm test` enforces that the line exists exactly once and comes first, that the
+directive matches the canonical text byte for byte, that every skill it names
 exists, that every agent inherits `team-operating-rules`, that every
 `director-*` / `principal-*` / `workflow-*` agent also inherits
-`workspace-conventions`, and that prose claiming an inherited contract is backed
-by the declaration.
+`workspace-conventions`, and that every skill claimed by a profile's
+"Contracts you inherit" section or by inheritance prose appears on the line.
+
+The directive is deliberately duplicated into every agent rather than
+referenced, because a skill loads on demand: an agent that never names it never
+receives it. Keeping the text in one file and pinning it in CI is what stops the
+copies from drifting.
 
 ## Releasing this plugin
 

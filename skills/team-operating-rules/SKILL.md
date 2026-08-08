@@ -219,19 +219,29 @@ Proactive *delivery* — pushing an update the moment a signal appears — is no
 something a declarative plugin can do itself. It requires an external runner
 (cron, Task Scheduler, a `schedule:` CI job) invoking `workflow-proactive-scan`
 on a cadence; the scan is read-only, deduplicates against a gitignored snapshot,
-and emits a notification for the runner to deliver — never acting.
+and emits a notification for the runner to deliver — never acting. See the
+`proactive-scan` skill and the plugin's `examples/proactive-runner/`.
 
 ## Declaring what you inherit
 
-Every kai agent carries exactly one **Inherits** line near the top of its
-profile, listing the skills that bind its behavior:
+Every kai agent opens its profile with exactly one **Inherits** line listing the
+skills that bind its behaviour, followed by a verbatim directive to load them:
 
 ```markdown
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
 ```
 
 That line is the machine-checkable contract. CI verifies that every agent has
-one, that every skill it names exists, that every agent inherits
-`team-operating-rules`, and that every coordinating role also inherits
-`workspace-conventions`. Prose elsewhere in a profile explains *how* a contract
-applies; the Inherits line is what proves it was not forgotten.
+one as its first body line, that it carries the canonical load directive, that
+every skill it names exists, that every agent inherits `team-operating-rules`,
+that every coordinating role also inherits `workspace-conventions`, and that any
+skill claimed by a profile's "Contracts you inherit" section or by inheritance
+prose also appears on the line.
+
+This skill states the cross-cutting invariants only. Where a rule has a
+canonical owner, that owner is authoritative and holds the detail: load
+`workspace-conventions` for root resolution and artifact placement,
+`work-coordination` for item state, leases, dependencies, and handoffs,
+`scope-discipline` for the classify-before-adopt gate, `definition-of-done` for
+the release gate, and `peer-communication` for message shape. When this summary
+and an owning skill disagree, the owning skill wins.

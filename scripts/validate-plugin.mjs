@@ -103,6 +103,7 @@ for (const p of refScanFiles) {
   // Only tokens after the verb are checked, so lifecycle states like
   // `in-review` that merely share the line are not misread as references.
   for (const line of raw.split(/\r?\n/)) {
+    if (/^\*\*Inherits:\*\*/.test(line)) continue;
     const verb = line.match(/inherits?\b/i);
     if (!verb) continue;
     const after = verb.index + verb[0].length;
@@ -126,11 +127,18 @@ for (const p of refScanFiles) {
 // ---------------------------------------------------------------------------
 const BASELINE_SKILL = 'team-operating-rules';
 const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
+const CONTRACT_HEADING = /^## (?:Contracts you inherit|Inherited contracts)[^\n]*\n/gm;
+const blockPath = join(ROOT, 'scripts/lib/inherits-block.txt');
+const inheritsBlock = existsSync(blockPath)
+  ? readFileSync(blockPath, 'utf8').replace(/\r\n/g, '\n').trimEnd()
+  : null;
+if (!inheritsBlock) err('scripts/lib/inherits-block.txt', 'missing (canonical inherited-contract directive)');
 
 for (const agent of agentFiles) {
-  const raw = readFileSync(agent.path, 'utf8');
+  const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
   const r = rel(agent.path);
-  const lines = raw.split(/\r?\n/).filter((l) => /^\*\*Inherits:\*\*/.test(l));
+  const all = raw.split('\n');
+  const lines = all.filter((l) => /^\*\*Inherits:\*\*/.test(l));
 
   if (lines.length === 0) {
     err(r, 'missing a `**Inherits:** ...` line declaring its inherited skills');
@@ -139,6 +147,20 @@ for (const agent of agentFiles) {
   if (lines.length > 1) {
     err(r, `has ${lines.length} \`**Inherits:**\` lines; exactly one is allowed`);
     continue;
+  }
+
+  // The declaration must be the first body line so it is read before anything
+  // else, not buried where a model may never reach it.
+  const fm = raw.match(/^---\n[\s\S]*?\n---\n\n/);
+  const body = fm ? raw.slice(fm[0].length) : raw;
+  if (!/^\*\*Inherits:\*\*/.test(body)) {
+    err(r, '`**Inherits:**` must be the first line of the body, directly under the frontmatter');
+  }
+
+  // A skill named in the profile is inert unless the agent is told to load it,
+  // so the declaration carries a verbatim, CI-pinned directive.
+  if (inheritsBlock && !body.replace(/\r\n/g, '\n').includes(inheritsBlock)) {
+    err(r, 'missing the verbatim inherited-contract directive from scripts/lib/inherits-block.txt');
   }
 
   const declared = [...lines[0].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
@@ -161,9 +183,21 @@ for (const agent of agentFiles) {
     err(r, 'coordinating roles must inherit `workspace-conventions`');
   }
 
-  // Prose that claims an inherited contract must be backed by the declaration,
-  // so the two cannot drift apart.
-  for (const line of raw.split(/\r?\n/)) {
+  // A structured "Contracts you inherit" section is the profile's own claim
+  // about what binds it; the declaration must cover all of it.
+  for (const h of raw.matchAll(CONTRACT_HEADING)) {
+    const start = h.index + h[0].length;
+    const next = raw.indexOf('\n## ', start);
+    const section = raw.slice(start, next === -1 ? raw.length : next);
+    for (const t of section.matchAll(/`([^`]+)`/g)) {
+      if (skillIds.has(t[1]) && !seen.has(t[1])) {
+        err(r, `"Contracts you inherit" names \`${t[1]}\` but the \`**Inherits:**\` line omits it`);
+      }
+    }
+  }
+
+  // Freeform prose that claims an inherited contract must match too.
+  for (const line of all) {
     if (/^\*\*Inherits:\*\*/.test(line)) continue;
     const verb = line.match(/\binherits?\b/i);
     if (!verb) continue;
