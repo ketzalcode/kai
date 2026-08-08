@@ -6,12 +6,23 @@
 # consented channel, then runs the ack phase so the same signal isn't re-sent.
 # kai does the read-only scan + dedupe; this runner schedules, persists state,
 # delivers, and acks.
+#
+# Two secrets are required (Settings -> Secrets and variables -> Actions):
+#   COPILOT_GITHUB_TOKEN  a fine-grained PAT with "Copilot Requests: Read".
+#                         The built-in GITHUB_TOKEN does NOT carry Copilot
+#                         permissions and will not work.
+#   KAI_NOTIFY_WEBHOOK    your channel's real URL/token. Its NAME must match the
+#                         `secret_ref` in kai/personal/proactive/channels.md
+#                         exactly, or the run fails rather than delivering.
+#
+# Paths below assume you copied examples/proactive-runner/runner.mjs into your
+# repo at that same path. Adjust if you put it elsewhere.
 
 name: kai-proactive
 
 on:
   schedule:
-    # Every 30 min, 09:00–18:00 UTC, Mon–Fri. Adjust to your cadence/timezone.
+    # Every 30 min, 09:00-18:00 UTC, Mon-Fri. Adjust to your cadence/timezone.
     - cron: "*/30 9-18 * * 1-5"
   workflow_dispatch: {}
 
@@ -28,61 +39,155 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Hosted runners start clean and `kai/personal/` is gitignored, so the dedup
-      # ledger MUST be persisted across runs or every signal looks new. Cache it.
-      - name: Restore proactive ledger
-        uses: actions/cache@v4
+      - uses: actions/setup-node@v4
         with:
-          path: kai/personal/proactive
-          key: kai-proactive-${{ github.repository }}
+          node-version: "22"
 
-      # 1) SCAN (read-only). Replace the placeholder with your host's actual
-      #    non-interactive invocation of workflow-proactive-scan. It writes
-      #    kai/personal/proactive/outbox/<ts>.json and returns the notification_id.
+      # Hosted runners start clean and `kai/personal/` is gitignored, so the dedup
+      # ledger MUST be persisted across runs or every signal looks new.
+      #
+      # Cache ONLY snapshot.json. The outbox holds notification summaries — real
+      # personal content — and GitHub advises against putting sensitive data in
+      # Actions caches, since a pull request with read access can read caches on
+      # the base branch. The ledger is all that dedup needs.
+      - name: Restore proactive ledger
+        uses: actions/cache/restore@v4
+        with:
+          path: kai/personal/proactive/snapshot.json
+          key: kai-proactive-${{ github.repository }}
+          restore-keys: kai-proactive-${{ github.repository }}
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      # 1) SCAN (read-only). Real non-interactive invocation: -p runs a single
+      #    prompt and exits. Tools are granted narrowly rather than with
+      #    --allow-all-tools: the scan is specified read-only, so it needs to read
+      #    the workspace and write only under kai/personal/proactive/.
       - name: kai proactive scan
         id: scan
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
-          echo "Invoke your Copilot host here, e.g.:"
-          echo "  copilot --agent workflow-proactive-scan \\"
-          echo "    --input 'phase: scan; selected workspace root: ${{ github.workspace }}'"
+          set -euo pipefail
+          mkdir -p kai/personal/proactive/outbox
+          copilot -p "phase: scan; selected workspace root: ${GITHUB_WORKSPACE}" \
+            --agent workflow-proactive-scan \
+            --allow-tool 'view' --allow-tool 'grep' --allow-tool 'glob' \
+            --allow-tool 'create' --allow-tool 'edit' \
+            --deny-tool 'bash' \
+            --no-color --log-level error
           payload=$(ls -t kai/personal/proactive/outbox/*.json 2>/dev/null | head -n1 || true)
           if [ -z "$payload" ]; then echo "::error::scan produced no payload"; exit 1; fi
           echo "payload=$payload" >> "$GITHUB_OUTPUT"
 
-      # 2) DELIVER — only on explicit consent, and fail loudly on HTTP errors.
+      # 2) GATE — parse channels.md structurally and decide.
+      #    `deliver` = consented and configured; `skip` = correctly nothing to
+      #    send; `fail` = broken config or a scan error, which exits non-zero so a
+      #    misconfigured channel never looks like a quiet week.
+      #    Every value that came from the scan is passed through `env:` rather
+      #    than interpolated into the script with `${{ }}`. `${{ }}` substitutes
+      #    the raw string before the shell runs, so a payload path or a reason
+      #    containing $(...) would execute on the runner.
+      - name: Evaluate consent
+        id: gate
+        env:
+          PAYLOAD: ${{ steps.scan.outputs.payload }}
+        run: |
+          node examples/proactive-runner/runner.mjs plan \
+            --payload "$PAYLOAD" \
+            --channels kai/personal/proactive/channels.md \
+            --secret KAI_NOTIFY_WEBHOOK
+
+      # 3) DELIVER — only when the gate said so, and fail loudly on HTTP errors.
       #    channels.md stores a secret_ref (a NAME); the real secret is here.
       - name: Deliver notification
         id: deliver
+        if: steps.gate.outputs.decision == 'deliver'
         env:
           KAI_NOTIFY_WEBHOOK: ${{ secrets.KAI_NOTIFY_WEBHOOK }}
+          PAYLOAD: ${{ steps.scan.outputs.payload }}
         run: |
-          payload="${{ steps.scan.outputs.payload }}"
-          status=$(python3 -c "import json;print(json.load(open('$payload')).get('status',''))")
-          case "$status" in
-            error)   echo "::error::scan status=error"; exit 1 ;;
-            none)    echo "nothing to deliver"; echo "delivered=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
-            signals|partial) : ;;
-            *)       echo "::error::unexpected status '$status'"; exit 1 ;;
-          esac
-          if grep -Eiq 'consent:[[:space:]]*yes' kai/personal/proactive/channels.md; then :; else
-            echo "no consented channel; leaving payload in outbox"; echo "delivered=false" >> "$GITHUB_OUTPUT"; exit 0
-          fi
+          set -euo pipefail
           curl --fail-with-body -sS -X POST -H 'Content-Type: application/json' \
-               --data @"$payload" "$KAI_NOTIFY_WEBHOOK"
+               --data @"$PAYLOAD" "$KAI_NOTIFY_WEBHOOK"
           echo "delivered=true" >> "$GITHUB_OUTPUT"
 
-      # 3) ACK — only after confirmed delivery, so the ledger advances exactly once.
+      # 4) ACK — only after confirmed delivery, so the ledger advances exactly
+      #    once. Re-running ack with the same notification_id is a no-op.
+      #    `acked` is recorded separately because ack can fail AFTER delivery
+      #    succeeded, and retention must not delete a payload whose ledger entry
+      #    never advanced.
       - name: kai proactive ack
+        id: ack
         if: steps.deliver.outputs.delivered == 'true'
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          NOTIFICATION_ID: ${{ steps.gate.outputs.notification_id }}
         run: |
-          nid=$(python3 -c "import json;print(json.load(open('${{ steps.scan.outputs.payload }}')).get('notification_id',''))")
-          echo "Invoke your host: copilot --agent workflow-proactive-scan \\"
-          echo "  --input 'phase: ack; selected workspace root: ${{ github.workspace }}; notification_id: $nid'"
+          set -euo pipefail
+          copilot -p "phase: ack; selected workspace root: ${GITHUB_WORKSPACE}; notification_id: ${NOTIFICATION_ID}" \
+            --agent workflow-proactive-scan \
+            --allow-tool 'view' --allow-tool 'grep' --allow-tool 'glob' \
+            --allow-tool 'create' --allow-tool 'edit' \
+            --deny-tool 'bash' \
+            --no-color --log-level error
+          echo "acked=true" >> "$GITHUB_OUTPUT"
 
-      # Persist the advanced ledger for the next run.
+      # 5) RETENTION — the ledger is the durable record, so an ACKED payload has
+      #    served its purpose. If ack did not confirm, the payload is KEPT: the
+      #    ledger has not advanced, the next run will re-emit that signal, and
+      #    deleting the evidence would lose the only copy. Pruning to --keep
+      #    runs either way, bounding how much personal content sits on disk.
+      - name: Apply outbox retention
+        if: always()
+        env:
+          NOTIFICATION_ID: ${{ steps.gate.outputs.notification_id }}
+        run: |
+          if [ "${{ steps.ack.outputs.acked }}" = "true" ]; then
+            node examples/proactive-runner/runner.mjs retain \
+              --outbox kai/personal/proactive/outbox \
+              --acked "$NOTIFICATION_ID" --keep 5
+          else
+            node examples/proactive-runner/runner.mjs retain \
+              --outbox kai/personal/proactive/outbox --keep 5
+          fi
+
+      # 6) DIAGNOSTICS — on any failure, upload a redacted summary. It carries
+      #    the shape of the failure (status, counts, gap reasons) and none of the
+      #    signal summaries, item paths, or workspace labels.
+      - name: Collect redacted diagnostics
+        if: failure()
+        env:
+          PAYLOAD: ${{ steps.scan.outputs.payload }}
+          DECISION: ${{ steps.gate.outputs.decision }}
+          STATUS: ${{ steps.gate.outputs.status }}
+          REASON: ${{ steps.gate.outputs.reason }}
+        run: |
+          mkdir -p diagnostics
+          if [ -n "$PAYLOAD" ]; then
+            node examples/proactive-runner/runner.mjs redact \
+              --payload "$PAYLOAD" > diagnostics/redacted.json || true
+          fi
+          {
+            echo "decision: $DECISION"
+            echo "status:   $STATUS"
+            echo "reason:   $REASON"
+          } > diagnostics/gate.txt
+
+      - name: Publish diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kai-proactive-diagnostics
+          path: diagnostics/
+          retention-days: 7
+
+      # Persist the advanced ledger for the next run. Only the ledger.
+      # The key is run-unique because a cache entry is immutable once written.
       - name: Save proactive ledger
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: kai/personal/proactive
-          key: kai-proactive-${{ github.repository }}
+          path: kai/personal/proactive/snapshot.json
+          key: kai-proactive-${{ github.repository }}-${{ github.run_id }}

@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.31.0` — **55 agents and 41 skills**, for the **Copilot CLI** and the
+`v0.32.0` — **55 agents and 41 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 This release splits this README — which had grown past 1,100 lines — into a

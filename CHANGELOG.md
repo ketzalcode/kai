@@ -4,6 +4,65 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.32.0] - 2026-08-08
+
+### Added
+
+- `examples/proactive-runner/runner.mjs` — the delivery-side logic the scheduled
+  runner calls, dependency-free Node ESM with a 33-check fixture suite wired into
+  `npm test`. Three commands: `plan` (decide `deliver` / `skip` / `fail`),
+  `retain` (apply the retention policy, idempotently), and `redact` (a diagnostic
+  carrying no personal content).
+- Real non-interactive host invocation for both phases. `copilot -p "<prompt>"
+  --agent workflow-proactive-scan` replaces the two `echo` placeholders that made
+  the shipped runner non-executable end to end. Tools are granted **narrowly**
+  (`--allow-tool view/grep/glob/create/edit`, `--deny-tool bash`) rather than with
+  `--allow-all-tools`, because the scan is specified read-only apart from writing
+  under `kai/personal/proactive/`.
+- Documented authentication: a fine-grained PAT with **Copilot Requests: Read**
+  in `COPILOT_GITHUB_TOKEN`. The built-in Actions `GITHUB_TOKEN` does not carry
+  Copilot permissions.
+- Redacted failure diagnostics uploaded as an artifact — status, signal counts by
+  kind and state, and gap reasons **classified** to `unreadable` / `invalid` /
+  `unspecified`. Gap reasons are model-authored free text that can name a file,
+  and a CI artifact is readable by anyone with Actions read access, so they are
+  classified rather than copied. Signal summaries, item paths, workspace labels,
+  and root ids are omitted by policy.
+- A retention policy: an **acked** payload is deleted and the outbox is pruned to
+  the five most recent, because the ledger and not the outbox is the durable
+  record. Deletion is gated on the ack rather than the delivery: ack can fail
+  after a successful send, and a payload whose ledger entry never advanced will
+  be needed again on the next run.
+- `check-syntax` now parses `examples/` as well as `scripts/`. Shipped examples
+  are copied verbatim into consumer repos, so their executable helpers earn the
+  same gate.
+
+### Fixed
+
+- **Consent was checked with a grep.** `grep -Eiq 'consent:[[:space:]]*yes'`
+  matches that string **anywhere** in `channels.md` — including the prose that
+  documents the format, and including a block whose `enabled: false`. It never
+  checked `enabled`, the channel `type`, or that `secret_ref` named the secret
+  actually being spent. `plan` now parses only the fenced yaml block and requires
+  all four, honoring `secret_ref` exactly; a `secret_ref` the runner does not hold
+  fails loudly rather than delivering down an unconsented path. A fixture asserts
+  the naive grep would have been fooled by the same input the parser refuses.
+- **The Actions cache held personal content.** It persisted all of
+  `kai/personal/proactive/`, including the outbox's notification summaries;
+  GitHub advises against sensitive data in caches, since a pull request with read
+  access can read base-branch caches. Only `snapshot.json` — all that dedup needs
+  — is cached now.
+- A misconfigured channel no longer resembles a quiet week: broken configuration
+  and a scan `status: error` exit non-zero, while "nothing to send" and "no
+  consent" exit zero.
+- **Scan-derived values were interpolated into `run:` blocks with `${{ }}`.**
+  That substitutes the raw string before the shell parses it, so a model-authored
+  gap reason containing `$(...)` would have executed on the runner. Every such
+  value now reaches the shell through `env:`.
+- A signal-bearing status carrying an empty `signals` array now skips instead of
+  delivering a hollow notification.
+- A `#` inside a quoted yaml value is no longer stripped as a comment.
+
 ## [0.31.0] - 2026-08-08
 
 ### Added
@@ -1127,6 +1186,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.32.0]: https://github.com/RubenSaucedo/kai/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/RubenSaucedo/kai/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/RubenSaucedo/kai/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/RubenSaucedo/kai/compare/v0.28.0...v0.29.0

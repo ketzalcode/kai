@@ -27,9 +27,16 @@ function collect(dir, re) {
 }
 
 const scriptsDir = join(ROOT, 'scripts');
+// Shipped examples are copied verbatim into consumer repos, so their executable
+// helpers get the same parse gate as scripts/.
+const examplesDir = join(ROOT, 'examples');
+
+const sourceDirs = [scriptsDir, examplesDir].filter((d) => {
+  try { return statSync(d).isDirectory(); } catch { return false; }
+});
 
 // 1. JavaScript / ESM — node --check parses without executing.
-const jsFiles = collect(scriptsDir, /\.(mjs|js)$/);
+const jsFiles = sourceDirs.flatMap((d) => collect(d, /\.(mjs|js)$/));
 for (const f of jsFiles) {
   try {
     execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' });
@@ -40,7 +47,7 @@ for (const f of jsFiles) {
 
 // 2. PowerShell — parse via the language parser (no execution). Skip cleanly
 //    when pwsh is not installed.
-const psFiles = collect(scriptsDir, /\.ps1$/);
+const psFiles = sourceDirs.flatMap((d) => collect(d, /\.ps1$/));
 let pwsh = null;
 try {
   execFileSync('pwsh', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.Major'], { stdio: 'pipe' });
