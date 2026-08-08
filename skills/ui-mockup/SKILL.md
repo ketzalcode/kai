@@ -4,7 +4,7 @@ description: "Shared method for turning a load-bearing pre-implementation design
 tools: [view, create, edit, grep, glob, ask_user, playwright]
 ---
 
-> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.
 
 # UI Mockup
 

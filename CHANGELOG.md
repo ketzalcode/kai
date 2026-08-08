@@ -45,8 +45,15 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 - The agent/skill catalog was hand-maintained in the README, so every new agent
   needed a second, easily-forgotten edit and the prose had drifted from the
   descriptions the host actually reads.
+- `workflow-self-check` audited an inventory table in `README.md` that no longer
+  exists; it now checks what generation cannot — that the editorial grouping in
+  `scripts/generate-catalog.mjs` still matches what each agent does.
+- Five browser-driving skills pointed at a "Browser automation setup" section in
+  `README.md` that had moved to `docs/getting-started.md`.
+- `docs/host-capabilities.md` named `extract-learn-path` as a browser-driven
+  skill; the skill is `web-content-extraction` (`extract-learn-path` is a script).
 
-
+## [0.29.0] - 2026-08-08
 
 ### Added
 

@@ -4,7 +4,7 @@ description: "Reusable method for turning a product surface (public marketing pa
 tools: [playwright, bash, view, edit, create, grep, glob, ask_user, web_search, web_fetch]
 ---
 
-> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.
 
 # Product Marketing Intelligence
 

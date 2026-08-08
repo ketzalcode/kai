@@ -4,7 +4,7 @@ description: "Shared method for neutrally mapping how a live product works so PM
 tools: [playwright, view, edit, ask_user]
 ---
 
-> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.
 
 # Product Exploration
 
