@@ -78,10 +78,33 @@ for (const f of allFiles) {
 // ---------------------------------------------------------------------------
 // Cross-reference integrity
 // ---------------------------------------------------------------------------
+
+// Prose kai ships to readers. Splitting the README into docs/ moved the most
+// reference-dense content (the agent catalog, the flow walkthroughs, the
+// workspace contract) out of the one file these checks used to cover, so the
+// whole docs/ tree is scanned too — otherwise an extracted page could name a
+// deleted agent, or write `library/` without its `kai/` parent, and no test
+// would notice. CHANGELOG.md is deliberately excluded: historical entries
+// legitimately describe retired layouts and removed agents.
+const publicDocFiles = () => {
+  const out = [];
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.md')) out.push(p);
+    }
+  };
+  walk(join(ROOT, 'docs'));
+  return out;
+};
+
 const refScanFiles = [
   ...allFiles.map((f) => f.path),
   join(ROOT, 'AGENTS.md'),
   join(ROOT, 'README.md'),
+  ...publicDocFiles(),
 ].filter(existsSync);
 
 // Backtick tokens with an agent-role prefix are unambiguous agent references;
@@ -341,7 +364,7 @@ const ROOT_SEGMENT = /(coordination|initiatives|library|personal)[/\\]/g;
 const LEGACY_OPEN = /<!--\s*kai:allow-legacy-roots\s*-->/;
 const LEGACY_CLOSE = /<!--\s*\/kai:allow-legacy-roots\s*-->/;
 const TREE_LINE = /[├└│]/;
-const corpusScanFiles = [...allFiles.map((f) => f.path)];
+const corpusScanFiles = [...allFiles.map((f) => f.path), ...publicDocFiles()];
 for (const extra of ['AGENTS.md', 'README.md']) {
   const p = join(ROOT, extra);
   if (existsSync(p)) corpusScanFiles.push(p);

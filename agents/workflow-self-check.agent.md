@@ -66,7 +66,10 @@ Wait for confirmation. Trim categories per user input.
 Read once, top to bottom — keep results in memory for cross-referencing:
 
 - `plugin.json` (declared structure — `agents`, `skills`, MCP paths).
-- `README.md` (inventory table, identity, chain diagrams, layout block).
+- `README.md` (landing page — pitch, routes, `## Status` stamp).
+- `docs/` (the documentation set — `docs/reference/agents-and-skills.md` is the
+  generated inventory; `docs/how-kai-works.md` holds the chain diagrams;
+  `docs/reference/plugin-structure.md` holds the layout block).
 - `AGENTS.md` (house rules).
 - `package.json` (version, metadata).
 - `.gitignore` (zone rules).
@@ -77,21 +80,22 @@ Read once, top to bottom — keep results in memory for cross-referencing:
 
 For each enabled category, produce raw findings inline with full evidence. Tier later.
 
-**3.1 Inventory drift.** Reconcile the `README.md` inventory table against the filesystem: every agent file should have a row; every skill directory should have a row; anything in README that doesn't exist on disk (and vice versa) is a finding.
+**3.1 Inventory drift.** The inventory in `docs/reference/agents-and-skills.md` is **generated** from frontmatter by `scripts/generate-catalog.mjs`, and `npm run docs:check` fails when it drifts — so do not hand-reconcile rows. Instead check what generation cannot: that the editorial `CATEGORIES` grouping in that script still files every agent and skill under a heading that matches what it actually does, and that no category has silently become a dumping ground.
 
 **3.2 Naming convention.** Canonical patterns: agents are `principal-<area>`, `workflow-<flow>`, or `persona-<role>`; skills are `skills/<kebab-case>/SKILL.md`. Anything off-pattern is a finding (severity depends on whether other files reference the off-pattern name).
 
 **3.3 Description drift.** Compare each agent's frontmatter `description` (and each skill's first-paragraph summary) against the actual workflow body. Drift in the produced-artifact list is high-signal; voice/wording drift is cosmetic.
 
-**3.4 Reference drift.** Walk every internal link in agents/skills/README and verify the target exists. Unresolved references are findings — Critical if in shipping behavior, Important otherwise.
+**3.4 Reference drift.** Walk every internal link in agents, skills, `README.md`, and `docs/` and verify the target exists. Unresolved references are findings — Critical if in shipping behavior, Important otherwise.
 
 **3.5 Duplication and overlap.** Pairwise scan agents and skills: flag pairs producing the same artifact class or doing the same transformation. Describe the boundary so it's clear when each is the right tool.
 
 **3.6 Single-responsibility.** Heuristic, surface as Cosmetic unless egregious: descriptions with *"and"* joining two distinct verbs, tools lists over ~5 entries, more than ~3 non-composing phases. Name the seam; never propose a split blind.
 
-**3.7 Discoverability.** All agents/skills present in README inventory?
-AGENTS.md referenced from README? Current workspace model documented? Most
-discoverability findings are Cosmetic.
+**3.7 Discoverability.** Is every documentation page reachable from
+`docs/README.md`, and does each carry a route back? Does `README.md` still route
+to the guide that owns each topic? Is the current workspace model documented?
+Most discoverability findings are Cosmetic.
 
 **3.8 Structural proposals.** No severity. Phrase as *"consider X if/when Y"* — opt-in for later judgment (e.g. nesting `skills/review-*` once past N dimensions).
 

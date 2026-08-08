@@ -4,7 +4,7 @@ description: "Shared Playwright plumbing for live-product walkthroughs: safe-act
 tools: [playwright, bash, edit, view, ask_user]
 ---
 
-> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.
 
 # Web Evaluation
 

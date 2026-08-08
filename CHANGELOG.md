@@ -4,6 +4,55 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.30.0] - 2026-08-08
+
+### Added
+
+- `docs/` — the README split into five task-oriented guides plus a reference:
+  [getting-started](docs/getting-started.md), [how-kai-works](docs/how-kai-works.md),
+  [workspaces](docs/workspaces.md), [host-capabilities](docs/host-capabilities.md),
+  `docs/reference/agents-and-skills.md`, and `docs/reference/plugin-structure.md`,
+  indexed by `docs/README.md`. Every page opens with a breadcrumb and closes with
+  a "Next / Related" row, so no page is reachable only by scrolling (#63).
+- `scripts/generate-catalog.mjs` plus `npm run docs:generate` and
+  `npm run docs:check` (wired into `npm test`). The agent/skill catalog is now
+  **generated** from each agent's and skill's own shipped `description:` — the
+  exact text the host reads — so the catalog cannot describe a capability the
+  plugin does not declare. Grouping stays editorial in a `CATEGORIES` table, and
+  coverage is enforced: a new agent or skill fails the build until it is filed
+  under exactly one heading.
+
+### Changed
+
+- **README is a landing page, not a manual** — 1,167 lines down to ~150. It
+  keeps the pitch, a route table, the CI-checked `## Status` stamp, a three-step
+  first five minutes, what you actually get, and one flow diagram; everything
+  else links out. Compatibility headings (`## Install`, `## Workspace`,
+  `## What it ships`, `## How the agents chain`, `## Contributing`) remain and
+  point at their new homes.
+- `## Status` is now a version stamp plus one paragraph on the current release.
+  The chained multi-release narrative it used to carry lives in this changelog,
+  which was always its real home.
+- `scripts/validate-plugin.mjs` scans every `docs/**/*.md` for both unresolvable
+  agent references and workspace paths written without their `kai/` parent —
+  the same two checks it already ran over `README.md`. Without this, extracting
+  the most reference-dense prose would have silently dropped both guarantees.
+  `CHANGELOG.md` stays excluded, since historical entries legitimately describe
+  retired layouts.
+
+### Fixed
+
+- The agent/skill catalog was hand-maintained in the README, so every new agent
+  needed a second, easily-forgotten edit and the prose had drifted from the
+  descriptions the host actually reads.
+- `workflow-self-check` audited an inventory table in `README.md` that no longer
+  exists; it now checks what generation cannot — that the editorial grouping in
+  `scripts/generate-catalog.mjs` still matches what each agent does.
+- Five browser-driving skills pointed at a "Browser automation setup" section in
+  `README.md` that had moved to `docs/getting-started.md`.
+- `docs/host-capabilities.md` named `extract-learn-path` as a browser-driven
+  skill; the skill is `web-content-extraction` (`extract-learn-path` is a script).
+
 ## [0.29.0] - 2026-08-08
 
 ### Added
@@ -1027,6 +1076,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.30.0]: https://github.com/RubenSaucedo/kai/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/RubenSaucedo/kai/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/RubenSaucedo/kai/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/RubenSaucedo/kai/compare/v0.26.0...v0.27.0
