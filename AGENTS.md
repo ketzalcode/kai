@@ -59,19 +59,24 @@ Any PR that changes shipped plugin behavior must, in the **same PR**:
 2. Add a dated **`CHANGELOG.md`** entry under the new version
    (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
    refresh the README `## Status` stamp.
-3. Run `npm test`, then open the PR.
+3. If you added, removed, or renamed an agent or skill, file it in `CATEGORIES`
+   in `scripts/generate-catalog.mjs`, then run `npm run docs:generate` and
+   commit `docs/reference/agents-and-skills.md`. `npm test` fails until both are
+   done.
+4. Run `npm test`, then open the PR.
 
 CI **enforces** all of this: a behavior-sensitive change (`agents/`, `skills/`,
 `scripts/`, or the dependency manifests) that lacks a version bump plus
 changelog/README updates fails the `release-guard` gate, and the static checks
-reject a missing changelog section/link, a stale README stamp, or a
-`package.json` ↔ `package-lock.json` mismatch. Docs- and test-only changes are
-exempt.
+reject a missing changelog section/link, a stale README stamp, a stale generated
+catalog, or a `package.json` ↔ `package-lock.json` mismatch. Docs- and test-only
+changes are exempt.
 
 After it merges to `main`, tag `vX.Y.Z` and cut the matching GitHub release from
 that changelog entry.
 
-Pick the number by semver (full table in README → **Versioning & releases**):
+Pick the number by semver (full table in
+`docs/reference/plugin-structure.md` → **Versioning & releases**):
 while pre-1.0, both features and breaking changes are a **minor** bump and fixes
 are a **patch**; after 1.0, breaking changes are **major**, features **minor**,
 fixes **patch**. Docs- or test-only changes need no bump.
