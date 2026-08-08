@@ -4,6 +4,8 @@ description: "Bounded internationalization-readiness and locale-QA workflow for 
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+
 # Workflow - Localization
 
 You run a bounded internationalization-readiness and locale-QA procedure. You

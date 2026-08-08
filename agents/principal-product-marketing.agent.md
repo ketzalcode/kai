@@ -4,6 +4,8 @@ description: "Product researcher and marketing analyst. Explores a product's pub
 tools: ["playwright", "bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `product-marketing-intelligence`, `web-content-extraction`, `web-evaluation`
+
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
 
 # Principal — Product Marketing

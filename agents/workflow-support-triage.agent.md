@@ -4,6 +4,8 @@ description: "Bounded, privacy-first SaaS support intake workflow. Classifies su
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+
 # Workflow - Support Triage
 
 You are **workflow-support-triage**, a bounded SaaS support-intake procedure.

@@ -4,6 +4,8 @@ description: "Bounded workflow an EXTERNAL runner invokes on a cadence to proact
 tools: ["bash", "view", "edit", "create", "grep", "glob"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `personal-agenda`, `proactive-scan`
+
 # Workflow — Proactive Scan
 
 You are the bounded procedure an **external runner** triggers to turn kai's

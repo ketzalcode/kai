@@ -118,6 +118,66 @@ for (const p of refScanFiles) {
 }
 
 // ---------------------------------------------------------------------------
+// Inherited-contract declarations
+//
+// A plugin's own root AGENTS.md is never loaded as custom instructions in a
+// consumer workspace, so shared rules only reach a session through a skill the
+// agent names. The `**Inherits:**` line is that machine-checkable declaration.
+// ---------------------------------------------------------------------------
+const BASELINE_SKILL = 'team-operating-rules';
+const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
+
+for (const agent of agentFiles) {
+  const raw = readFileSync(agent.path, 'utf8');
+  const r = rel(agent.path);
+  const lines = raw.split(/\r?\n/).filter((l) => /^\*\*Inherits:\*\*/.test(l));
+
+  if (lines.length === 0) {
+    err(r, 'missing a `**Inherits:** ...` line declaring its inherited skills');
+    continue;
+  }
+  if (lines.length > 1) {
+    err(r, `has ${lines.length} \`**Inherits:**\` lines; exactly one is allowed`);
+    continue;
+  }
+
+  const declared = [...lines[0].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+  if (declared.length === 0) {
+    err(r, '`**Inherits:**` line lists no backticked skills');
+    continue;
+  }
+
+  const seen = new Set();
+  for (const tok of declared) {
+    if (!skillIds.has(tok)) err(r, `inherits unknown skill \`${tok}\``);
+    if (seen.has(tok)) err(r, `inherits \`${tok}\` more than once`);
+    seen.add(tok);
+  }
+
+  if (!seen.has(BASELINE_SKILL)) {
+    err(r, `must inherit \`${BASELINE_SKILL}\` (the shared operating contract)`);
+  }
+  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('workspace-conventions')) {
+    err(r, 'coordinating roles must inherit `workspace-conventions`');
+  }
+
+  // Prose that claims an inherited contract must be backed by the declaration,
+  // so the two cannot drift apart.
+  for (const line of raw.split(/\r?\n/)) {
+    if (/^\*\*Inherits:\*\*/.test(line)) continue;
+    const verb = line.match(/\binherits?\b/i);
+    if (!verb) continue;
+    const after = verb.index + verb[0].length;
+    for (const m of line.matchAll(/`([^`]+)`/g)) {
+      if (m.index < after) continue;
+      const tok = m[1];
+      if (!skillIds.has(tok) || seen.has(tok)) continue;
+      err(r, `prose says it inherits \`${tok}\` but the \`**Inherits:**\` line omits it`);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // plugin.json
 // ---------------------------------------------------------------------------
 const pjPath = join(ROOT, 'plugin.json');

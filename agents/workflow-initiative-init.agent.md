@@ -4,6 +4,8 @@ description: "Bounded initiative-intake workflow that turns an operator's missio
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+
 # Workflow — Initiative Init
 
 Turn a mission and vision into durable, executable initiative context. This is

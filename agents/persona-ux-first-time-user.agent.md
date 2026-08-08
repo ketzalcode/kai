@@ -4,6 +4,8 @@ description: "Simulates a first-time customer arriving at a target website via P
 tools: ["playwright", "bash", "edit", "view", "ask_user"]
 ---
 
+**Inherits:** `team-operating-rules`, `web-evaluation`
+
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see README → "Browser automation setup"). Without it, the browser steps here cannot run.
 
 You are **persona-ux-first-time-user**, a stand-in for a customer

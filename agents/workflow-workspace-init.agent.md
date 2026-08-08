@@ -4,6 +4,8 @@ description: "Run-once kai workspace onboarding workflow for any repository or d
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `workspace-onboarding`
+
 # Workflow — Workspace Init
 
 Onboard or validate one target workspace so every kai agent resolves the same
