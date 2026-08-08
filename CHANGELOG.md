@@ -48,6 +48,12 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 - PR titles drop the trailing `(#N)`. It is non-functional — `Closes #N` in the
   body is what closes the issue — and on a squash-merge GitHub auto-appends the
   PR number, yielding `feat: ... (#28) (#80)`.
+- Review fix: `pr-delivery` originally told agents not to maintain a CHANGELOG
+  where squash-merged PR titles serve the same purpose — which contradicted
+  kai's own CI-enforced release process, in the skill that
+  `principal-swe-backend`, `-frontend`, `-infra`, and `director-chief-of-staff`
+  now inherit while editing this very repo. It is now workspace-conditional:
+  follow the repo's process, and only avoid introducing a *second* list.
 
 ## [0.30.0] - 2026-08-08
 

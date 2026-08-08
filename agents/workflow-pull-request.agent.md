@@ -110,7 +110,13 @@ Two you must actively check for rather than wait to be told:
 
 ### 5 — Investigate merge readiness
 
-This is the part only you do. Establish, from the live repository:
+This is the part only you do. Establish, from the live repository — not from
+assumption. On GitHub that generally means shelling out to `gh` (for example
+`gh api repos/{owner}/{repo}/branches/{branch}/protection`, `gh pr checks`,
+`gh repo view --json mergeCommitAllowed,squashMergeAllowed,rebaseMergeAllowed`);
+on another host, use its equivalent. If you cannot read the configuration at all,
+**say so** rather than assuming there is none — an unread rule is not an absent
+rule.
 
 | Check | What you are looking for |
 |---|---|

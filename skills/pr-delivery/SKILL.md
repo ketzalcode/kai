@@ -189,8 +189,12 @@ README.md  1,167 lines   ──►    README.md   ~150 lines (route map)
 
 ### Before / after — always screenshot a UI change
 
-**A user-visible surface changed, the PR shows it. No exceptions.** Reading a
-diff to guess what moved is exactly the work a screenshot removes.
+**A user-visible surface changed, the PR shows it.** Reading a diff to guess what
+moved is exactly the work a screenshot removes. The bar is deliberately low:
+proportionality applies to *effort*, not to *whether you show it* — a cropped
+before/after of the one element that moved is enough for a copy tweak, and a
+full-surface pair is warranted for a layout change. What is not acceptable is a
+reviewer having to run the branch locally to find out what changed.
 
 This is not only for the reviewer. QA's evidence lives under `.kai/runs/` and
 `kai/library/**/screenshots/`, both **gitignored and local-only** — so it dies
@@ -199,8 +203,9 @@ evidence, and putting it there means the next person reads the PR instead of
 re-running Playwright.
 
 Because those paths are not committed, screenshots **cannot be linked by repo
-path**. Upload them as GitHub attachments (`github-pr-media`). Label each pair
-`before` / `after` and name the surface and state.
+path**. Upload them as GitHub attachments (the `github-pr-media` builtin skill,
+when the host provides it). Label each pair `before` / `after` and name the
+surface and state.
 
 ### Verification — name the command
 
@@ -235,8 +240,11 @@ When the repo carries a version:
    default change that alters behavior for every consumer is not.
 4. **Refuse a bump that contradicts the change** and say why.
 
-Do not invent a CHANGELOG where squash-merged PR titles already serve that
-purpose. A second hand-maintained list drifts from the first.
+If the repo maintains a CHANGELOG, update it per **its** release process — kai's
+own, for instance, is CI-enforced and requires a dated section plus a compare
+link on every behavior-changing PR. What to avoid is introducing a *second*
+hand-maintained changelog where squash-merged PR titles already serve that
+purpose; two lists drift apart.
 
 ## 6 — Pre-flight
 
@@ -261,7 +269,8 @@ Before opening the PR:
 4. **The human presses merge.** Draft and validate; never merge, tag, or
    release. Consistent with every other kai role.
 5. **Verification names the command.** An unnamed claim is not verification.
-6. **A changed user-visible surface ships before/after screenshots.**
+6. **A changed user-visible surface ships before/after screenshots**, scaled to
+   the change — a cropped pair for a copy tweak, a full pair for a layout change.
 7. **Read conventions from the workspace, not from memory.** A repo with a
    single `package.json`, a Go module, and a plugin manifest all differ; so do
    their default branch names.
