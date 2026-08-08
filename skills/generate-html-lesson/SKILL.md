@@ -27,7 +27,7 @@ audio↔visual auto-sync. You scroll yourself while listening. Tier B
 (section-scrolled, audio-driven highlight) is a future extension.
 
 Sister to bongo's `generate-html-lesson` skill, but bongo bakes in
-Microsoft-work paths (`humanized/`, `library/audio/`); this one stays
+Microsoft-work paths (`humanized/`, `kai/library/audio/`); this one stays
 **cwd-relative** so you can run it from any project.
 
 ## Output shape

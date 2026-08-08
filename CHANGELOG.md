@@ -4,6 +4,57 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.27.0] - 2026-08-07
+
+**The kai working corpus moves out of your repository root and under a
+single visible `kai/` parent (#70).** Onboarding a repository used to
+scatter four generic top-level directories — `coordination/`,
+`initiatives/`, `library/`, `personal/` — across its root, where they
+collide with product folders and bury kai state. The workspace now splits
+on one axis: `.kai/` is the **hidden control plane** (the `manifest.json`
+discovery anchor, the contract, and ignored `runs/` evidence) and the new
+visible `kai/` root is the **working corpus** humans browse, search, and
+edit. `.kai/` does not move, so the bootstrap sentinel every agent
+resolves is unchanged. This is a **mandatory `schema_version` 2
+migration**, guarded end to end: the doctor resolves roots from the
+manifest instead of assuming a layout and refuses a split-brain workspace,
+and the plugin validator rejects any bare-root literal in a shipped prompt.
+Roster is unchanged at **54 agents and 39 skills**.
+
+### Changed
+- **Workspace layout (breaking, migration required):** `coordination/`,
+  `initiatives/`, `library/`, and `personal/` now live at
+  `kai/<root>/`. `.kai/` and `.kai/runs/` are unchanged. There is exactly
+  one supported layout — no per-workspace layout switch and no
+  compatibility aliases.
+- **`workspace-conventions`:** the canonical tree re-nests the four roots
+  under `kai/`, the placement model is restated as *control plane vs
+  working corpus*, and the manifest schema declares `schema_version: 2`
+  plus a new `corpus` root and `kai/`-prefixed root values.
+- **`workspace-onboarding`:** scaffold, managed `.gitignore` block, and
+  legacy detection target the new layout; a schema-1 root-level
+  `personal/` stays ignored until migration completes.
+- **`workspace-doctor`:** `CURRENT_SCHEMA_VERSION` is `2`, and it resolves
+  `coordination/` (items and BOARD) **from the manifest roots map** rather
+  than hardcoding a path, so a workspace is validated as it is actually
+  laid out.
+- **All 54 agents and 39 skills:** ~520 path literals across 73 files
+  repointed to the `kai/` prefix in one atomic change.
+
+### Added
+- **Schema 1 → 2 migration step** in the `workspace-onboarding` ladder:
+  history-preserving moves of the four roots, manifest reconciliation,
+  ignore-block reinstall, and repointing of absolute root-relative
+  references recorded inside work items.
+- **Split-brain guard (`workspace-doctor`):** a workspace where a retired
+  bare root and its `kai/` counterpart both exist is a hard error, with a
+  new `splitbrain-workspace` self-test fixture proving it.
+- **Bare-root literal rule (`validate-plugin`):** CI rejects any shipped
+  agent or skill that still names `coordination/`, `initiatives/`,
+  `library/`, or `personal/` without the `kai/` prefix — one stale prompt
+  is exactly how a workspace would silently fork. Tree diagrams and
+  deliberate legacy/migration prose are exempt.
+
 ## [0.26.0] - 2026-08-04
 
 **Dev designs now come with diagrams, drawn from a shared, standard
@@ -887,6 +938,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.27.0]: https://github.com/RubenSaucedo/kai/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/RubenSaucedo/kai/compare/v0.25.0...v0.26.0
 [0.25.0]: https://github.com/RubenSaucedo/kai/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/RubenSaucedo/kai/compare/v0.23.0...v0.24.0

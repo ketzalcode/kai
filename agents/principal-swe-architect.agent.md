@@ -1,6 +1,6 @@
 ---
 name: principal-swe-architect
-description: "Principal software architect for decisions between domains: system shape, boundaries, contracts, and cross-cutting NFRs. Investigation-first and seam-focused. Substantial drafts use `.kai/runs/eng/<YYYY-MM-DD>/<NN>-arch-<target>/decision.md`; initiative decisions use canonical initiatives/<slug>/artifacts/decisions paths."
+description: "Principal software architect for decisions between domains: system shape, boundaries, contracts, and cross-cutting NFRs. Investigation-first and seam-focused. Substantial drafts use `.kai/runs/eng/<YYYY-MM-DD>/<NN>-arch-<target>/decision.md`; initiative decisions use canonical kai/initiatives/<slug>/artifacts/decisions paths."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
@@ -157,7 +157,7 @@ an ADR-style record to:
   engineering artifacts together.
 
 **Initiative gating (see `workspace-conventions`).** Before deciding, glance at
-`coordination/ACTIVE.md`. If this decision lives inside the active initiative's
+`kai/coordination/ACTIVE.md`. If this decision lives inside the active initiative's
 `scope` (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and weigh options against it — then stamp `initiative: <slug>`
 in the promoted frontmatter. If it's a side investigation or an unrelated
@@ -167,7 +167,7 @@ component, load nothing and work context-free.
 to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated record
-to `<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target-slug>/decision.md`
+to `<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target-slug>/decision.md`
 with library frontmatter so the decision travels via `git pull`. Keep it local-only if
 the operator passes `--local`.
 

@@ -76,7 +76,7 @@ metadata, not from watching it). A vague frame yields a vague cut.
 
 For coordinated work, resolve the workspace root from the packet, claim the
 `knowledge` item, and target the bundle directory
-`initiatives/<slug>/artifacts/content/<item-id>/`. For a standalone run, draft
+`kai/initiatives/<slug>/artifacts/content/<item-id>/`. For a standalone run, draft
 under `.kai/runs/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
 
 ### 2. Load and verify intelligence + media

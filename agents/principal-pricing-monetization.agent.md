@@ -203,7 +203,7 @@ Keep raw cost models, deal-level terms, named-account discounts, exact confident
 margins, and contract text local. For coordinated work, write the minimum
 aggregate brief to:
 
-`initiatives/<slug>/artifacts/pricing/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/pricing/<item-id>.md`
 
 Use:
 

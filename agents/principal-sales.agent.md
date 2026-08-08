@@ -51,7 +51,7 @@ Read and apply:
   rules revops sets and do not redefine the aggregate process.
 - **`principal-product-manager` owns product scope, roadmap, and commitments.** A
   buyer must-have the product lacks is a scope-discipline `PROPOSAL` to the
-  initiative proposal channel (or `coordination/backlog.md`) for the PM steward to
+  initiative proposal channel (or `kai/coordination/backlog.md`) for the PM steward to
   groom - never a promised date or feature from you.
 - **`principal-product-marketing` owns positioning, differentiators, and public
   claims.** You use its claim-safe messaging; you never invent a capability,
@@ -197,7 +197,7 @@ Keep raw deal notes, prospect PII, named-account terms, exact quotes, and
 correspondence local. For coordinated work, write the minimum de-identified brief
 to:
 
-`initiatives/<slug>/artifacts/sales/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/sales/<item-id>.md`
 
 Use:
 
@@ -231,7 +231,7 @@ Use:
    operator) decision; a technical fit question is a separate
    `principal-solutions-architect` item.
 3. A buyer-driven missing capability or date is a scope-discipline `PROPOSAL` to
-   the initiative proposal channel (or `coordination/backlog.md`) for the PM
+   the initiative proposal channel (or `kai/coordination/backlog.md`) for the PM
    steward, never a commitment in your brief.
 4. Actual quotes, discounts, contracts, and CRM changes are operator actions, not
    deliverables of this role.

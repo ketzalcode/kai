@@ -234,6 +234,32 @@ if (mAreas) {
   }
 }
 
+// 2c. Schema 2 moved the working corpus under `kai/`. A single shipped prompt
+//     still naming a bare root would silently recreate the retired schema-1
+//     layout beside the real one (split-brain), so reject bare-root literals.
+//     Lines that explicitly discuss the retired layout (legacy detection,
+//     migration ladder, retired ignore rules) are exempt.
+const BARE_ROOT = /(?<![\w./\\-])(coordination|initiatives|library|personal)[/\\]/g;
+const LEGACY_CONTEXT = /legacy|retired|schema-1|schema 1|split-brain|migrat|workspace root/i;
+const TREE_LINE = /[├└│]/;
+for (const f of allFiles) {
+  const lines = readFileSync(f.path, 'utf8').split(/\r?\n/);
+  const seen = new Set();
+  lines.forEach((line, i) => {
+    // Tree diagrams show the roots as indented children of `kai/`, and legacy
+    // prose names the retired roots on purpose. Legacy framing often opens the
+    // paragraph, so scan a short lookback window rather than the line alone.
+    if (TREE_LINE.test(line)) return;
+    if (lines.slice(Math.max(0, i - 2), i + 1).some((l) => LEGACY_CONTEXT.test(l))) return;
+    for (const m of line.matchAll(BARE_ROOT)) {
+      const key = `${m[1]}:${i}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      err(rel(f.path), `line ${i + 1} references the retired schema-1 root \`${m[1]}/\` — the working corpus lives at \`kai/${m[1]}/\` (a bare root forks the workspace)`);
+    }
+  });
+}
+
 // 3. The library/<type>/ set must match across the conventions "Library types"
 //    table and the two library scaffolds.
 function libTypesFromTable(text) {
@@ -243,9 +269,9 @@ function libTypesFromTable(text) {
   const rest = text.slice(start + 1);
   const nextHeading = rest.search(/\n#{2,3} /);
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
-  return toSet([...section.matchAll(/`library\/([a-z0-9-]+)\/`/g)].map((m) => m[1]));
+  return toSet([...section.matchAll(/`kai\/library\/([a-z0-9-]+)\/`/g)].map((m) => m[1]));
 }
-const obLibM = onboarding && onboarding.match(/\nlibrary\/\r?\n([\s\S]*?)\r?\npersonal\//);
+const obLibM = onboarding && onboarding.match(/\nkai\/library\/\r?\n([\s\S]*?)\r?\nkai\/personal\//);
 const obLib = obLibM ? dirTokens(obLibM[1]) : null;
 const wiLibM = wsInit && wsInit.match(/library\/\{([^}]*)\}/s);
 const wiLib = wiLibM ? dirTokens(wiLibM[1]) : null;
@@ -262,9 +288,9 @@ if (tableLib && wiLib && !setEq(tableLib, wiLib)) {
 
 // 4. Initiative artifact directories must match between the canonical workspace
 //    tree and the bounded workflow that creates an initiative.
-const conventionArtifactsM = conventions && conventions.match(/artifacts\/\r?\n([\s\S]*?)\r?\n├─ library\//);
+const conventionArtifactsM = conventions && conventions.match(/artifacts\/\r?\n([\s\S]*?)\r?\n   ├─ library\//);
 const conventionArtifacts = conventionArtifactsM ? dirTokens(conventionArtifactsM[1]) : null;
-const wiArtifactsM = initiativeInit && initiativeInit.match(/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\ncoordination\//);
+const wiArtifactsM = initiativeInit && initiativeInit.match(/kai\/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\nkai\/coordination\//);
 const wiArtifacts = wiArtifactsM ? dirTokens(wiArtifactsM[1]) : null;
 if (!conventionArtifacts) {
   err('skills/workspace-conventions/SKILL.md', 'could not locate the initiative artifacts/ scaffold');

@@ -1,6 +1,6 @@
 ---
 name: proactive-scan
-description: "Contract for runner-invoked proactive notification of the operator. kai is a declarative prompt plugin and cannot wake itself; this skill defines the two-phase, read-only behavior an EXTERNAL runner triggers on a cadence — a scan phase that reuses personal-agenda's operator-signal detection to find newly-actionable decisions/replies/actions/release-ready items across a selected workspace and its linked roots, diffs them against a gitignored delivery ledger, deduplicates (new/changed/overdue), and emits an idempotent notification payload; and an ack phase the runner calls after confirmed delivery to advance the ledger. Coordination is read-only, local writes are limited to personal/proactive/, and the only external effect is the configured notification the runner delivers."
+description: "Contract for runner-invoked proactive notification of the operator. kai is a declarative prompt plugin and cannot wake itself; this skill defines the two-phase, read-only behavior an EXTERNAL runner triggers on a cadence — a scan phase that reuses personal-agenda's operator-signal detection to find newly-actionable decisions/replies/actions/release-ready items across a selected workspace and its linked roots, diffs them against a gitignored delivery ledger, deduplicates (new/changed/overdue), and emits an idempotent notification payload; and an ack phase the runner calls after confirmed delivery to advance the ledger. Coordination is read-only, local writes are limited to kai/personal/proactive/, and the only external effect is the configured notification the runner delivers."
 tools: [bash, view, edit, create, grep, glob]
 ---
 
@@ -40,7 +40,7 @@ The runner drives two explicit phases, so a signal is neither lost nor spammed:
 ## What the scan reads
 
 Coordination is **read-only**. Against the **selected workspace** plus every
-enabled, validated root in its `personal/workspaces.md` (per
+enabled, validated root in its `kai/personal/workspaces.md` (per
 `workspace-conventions`), reuse `personal-agenda`'s **Source A** detection —
 nothing new is invented:
 
@@ -71,7 +71,7 @@ The last successfully delivered state lives in a gitignored local ledger,
 separate from the transient scan observation:
 
 ```text
-personal/proactive/snapshot.json
+kai/personal/proactive/snapshot.json
 ```
 
 ```json
@@ -114,7 +114,7 @@ signals the runner confirmed. Nothing advances on `scan` alone.
 ## Notification payload
 
 `scan` emits one immutable payload and writes it to the gitignored outbox
-`personal/proactive/outbox/<YYYY-MM-DD-HHMM>.json`:
+`kai/personal/proactive/outbox/<YYYY-MM-DD-HHMM>.json`:
 
 ```json
 {
@@ -133,7 +133,7 @@ signals the runner confirmed. Nothing advances on `scan` alone.
       "state": "new|changed|overdue",
       "summary": "<one line — what needs the operator>",
       "workspace": "<label>",
-      "path": "coordination/threads/<id>.md  (release-ready → coordination/items/<id>.md)",
+      "path": "kai/coordination/threads/<id>.md  (release-ready → kai/coordination/items/<id>.md)",
       "answer_by": "<ts or —>"
     }
   ],
@@ -151,7 +151,7 @@ Channel bindings and consent are **operator-owned local config**, gitignored,
 never part of the committed plugin:
 
 ```text
-personal/proactive/channels.md      # channel type + secret_ref + consent + enabled
+kai/personal/proactive/channels.md      # channel type + secret_ref + consent + enabled
 ```
 
 - **kai emits; the runner delivers.** kai's declarative contract carries no
@@ -168,7 +168,7 @@ personal/proactive/channels.md      # channel type + secret_ref + consent + enab
 ## Read-only and no external action
 
 - **Coordination/source is read-only**; the only local writes are under
-  `personal/proactive/` (outbox + ledger).
+  `kai/personal/proactive/` (outbox + ledger).
 - The scan and its workflow **never** reply to a thread, approve scope, send a
   peer message, commit, or deploy. The **only** external effect is the configured
   notification, and the **runner** performs the delivery. Everything the operator
@@ -194,7 +194,7 @@ Proactive scan: <root label> — <signals N | none | partial | error>
 Notification: <notification_id>  ·  based on revision <N>
 Roots: <selected + linked labels; gaps noted>
 New: <n> · Changed: <n> · Overdue: <n> · Suppressed: <n>
-Payload: <absolute personal/proactive/outbox/<ts>.json path>
+Payload: <absolute kai/personal/proactive/outbox/<ts>.json path>
 Ledger: unchanged (advances only on ack)
 Action taken: none (coordination read-only)
 ```
@@ -217,4 +217,4 @@ Ledger: revision <N+1>
   change); keying on the mutable display label instead of a stable `root-id`.
 - ❌ Storing a real credential/channel ID in `channels.md` instead of a `secret_ref`.
 - ❌ Replying, approving, committing, or deploying — the scan is read-only.
-- ❌ Committing `personal/proactive/`.
+- ❌ Committing `kai/personal/proactive/`.

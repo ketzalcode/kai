@@ -1,6 +1,6 @@
 ---
 name: principal-swe-manager
-description: "Turns a committed product action into a scoped, sequenced engineering delivery plan. Decomposes workstreams, owners, sizes, dependencies, and spikes without writing code. Drafts at `.kai/runs/eng/<YYYY-MM-DD>/<NN>-scope-<target>/plan.md`; initiative plans use canonical initiative artifacts and reusable promoted plans use library/dev-designs."
+description: "Turns a committed product action into a scoped, sequenced engineering delivery plan. Decomposes workstreams, owners, sizes, dependencies, and spikes without writing code. Drafts at `.kai/runs/eng/<YYYY-MM-DD>/<NN>-scope-<target>/plan.md`; initiative plans use canonical initiative artifacts and reusable promoted plans use kai/library/dev-designs."
 tools: ["bash", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 
@@ -172,7 +172,7 @@ Output to: `<working-root>/eng/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md`
   date-first run grammar.
 
 **Initiative gating (see `workspace-conventions`).** Before scoping the plan,
-glance at `coordination/ACTIVE.md`. If this work falls inside the active
+glance at `kai/coordination/ACTIVE.md`. If this work falls inside the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and sequence the plan toward it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's a side effort or an
@@ -182,7 +182,7 @@ unrelated surface, load nothing and work context-free.
 the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated plan to
-`<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md` with library frontmatter
+`<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md` with library frontmatter
 so it travels via `git pull`. Keep it local-only if the operator passes
 `--local`.
 

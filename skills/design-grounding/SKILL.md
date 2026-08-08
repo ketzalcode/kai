@@ -39,7 +39,7 @@ language?" so a design proposal can cite it.
 Canonical location (the initiative's applied snapshot):
 
 ```text
-initiatives/<slug>/artifacts/design-system.md
+kai/initiatives/<slug>/artifacts/design-system.md
 ```
 
 A reference that outgrows one initiative — a durable, cross-initiative design
@@ -129,7 +129,7 @@ packet; the explorer fills a **facts-only** extract. The explorer must walk the
 DESIGN SYSTEM EXTRACTION REQUEST
 target:                 <URL / environment>
 initiative:
-artifact_target:        initiatives/<slug>/artifacts/design-system-extract.md
+artifact_target:        kai/initiatives/<slug>/artifacts/design-system-extract.md
 surfaces in scope:      <the full set of screens to walk — not just the landing page>
 viewports:              <desktop + mobile at minimum>
 roles/auth:
@@ -137,7 +137,7 @@ known token sources:    <repo paths if any>
 needed by:              <the design decision this grounds>
 ```
 
-The explorer writes, at `initiatives/<slug>/artifacts/design-system-extract.md`,
+The explorer writes, at `kai/initiatives/<slug>/artifacts/design-system-extract.md`,
 **observed visual facts only — no recommendations**:
 
 ```markdown

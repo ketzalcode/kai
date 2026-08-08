@@ -19,12 +19,22 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // --- Contract constants the current plugin generates -----------------------
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 const REQUIRED_MANIFEST_KEYS = [
   'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode',
-  'workspace_root', 'kai', 'runs', 'coordination', 'initiatives', 'library',
-  'personal', 'areas',
+  'workspace_root', 'kai', 'runs', 'corpus', 'coordination', 'initiatives',
+  'library', 'personal', 'areas',
 ];
+// Schema 2 moved the working corpus under kai/. Roots are resolved from the
+// manifest so the doctor never assumes a layout the workspace does not have.
+const CORPUS_ROOTS = ['coordination', 'initiatives', 'library', 'personal'];
+const DEFAULT_ROOTS = {
+  corpus: 'kai',
+  coordination: 'kai/coordination',
+  initiatives: 'kai/initiatives',
+  library: 'kai/library',
+  personal: 'kai/personal',
+};
 const CANONICAL_AREAS = new Set([
   'qa', 'eng', 'product', 'revenue', 'support', 'review', 'ship', 'incident',
   'ai', 'learn', 'lessons', 'pulse', 'content',
@@ -176,15 +186,33 @@ function checkWorkspace(root) {
     err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update the plugin (/plugin update kai) before claiming work.`);
   }
 
+  // Resolve corpus roots from the manifest rather than assuming a layout.
+  const rootOf = (key) => {
+    const v = m[key];
+    return typeof v === 'string' && v.trim() ? v.trim().replace(/\/+$/, '') : DEFAULT_ROOTS[key];
+  };
+  for (const key of CORPUS_ROOTS) {
+    const declared = rootOf(key);
+    if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION && declared !== DEFAULT_ROOTS[key]) {
+      err(`.kai/manifest.json "${key}" must be "${DEFAULT_ROOTS[key]}" (found "${declared}"); the layout is a contract constant, not a per-workspace setting.`);
+    }
+    // Split-brain guard: a leftover schema-1 root alongside its schema-2 home
+    // silently forks the workspace, so refuse to certify it.
+    if (existsSync(join(root, key)) && existsSync(join(root, ...DEFAULT_ROOTS[key].split('/')))) {
+      err(`split-brain layout: both "${key}/" and "${DEFAULT_ROOTS[key]}/" exist; finish the schema 1 → 2 migration and remove the retired root before claiming work.`);
+    }
+  }
+  const coordinationRoot = rootOf('coordination');
+
   // 2. Coordination items ---------------------------------------------------
-  const itemsDir = join(root, 'coordination', 'items');
+  const itemsDir = join(root, ...coordinationRoot.split('/'), 'items');
   const itemIds = new Set();
   const deps = new Map(); // id -> [depId]
   if (existsSync(itemsDir)) {
     const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md'));
     for (const f of files) {
       const id = basename(f, '.md');
-      const rel = `coordination/items/${f}`;
+      const rel = `${coordinationRoot}/items/${f}`;
       const fm = frontmatter(readFileSync(join(itemsDir, f), 'utf8'));
       if (!fm) { err(`${rel}: missing YAML frontmatter`); continue; }
       itemIds.add(id);
@@ -249,23 +277,23 @@ function checkWorkspace(root) {
 
   // dangling dependencies
   for (const [id, list] of deps) {
-    for (const d of list) if (!itemIds.has(d)) err(`coordination/items/${id}.md: depends_on references unknown item "${d}"`);
+    for (const d of list) if (!itemIds.has(d)) err(`${coordinationRoot}/items/${id}.md: depends_on references unknown item "${d}"`);
   }
   // dependency cycles (DFS)
   const cycle = findCycle(deps);
   if (cycle) err(`coordination dependency cycle: ${cycle.join(' -> ')}`);
 
   // 3. BOARD drift ----------------------------------------------------------
-  const boardPath = join(root, 'coordination', 'BOARD.md');
+  const boardPath = join(root, ...coordinationRoot.split('/'), 'BOARD.md');
   if (existsSync(boardPath) && itemIds.size > 0) {
     const board = readFileSync(boardPath, 'utf8');
     const rowIds = new Set(
       [...board.matchAll(/^\|\s*([a-z][a-z0-9-]+)\s*\|/gm)].map((x) => x[1]).filter((x) => x !== 'id'),
     );
-    for (const id of itemIds) if (!rowIds.has(id)) warn(`coordination/BOARD.md is missing a row for item "${id}" (derived index is stale)`);
-    for (const id of rowIds) if (!itemIds.has(id)) warn(`coordination/BOARD.md row "${id}" has no item record (derived index is stale)`);
+    for (const id of itemIds) if (!rowIds.has(id)) warn(`${coordinationRoot}/BOARD.md is missing a row for item "${id}" (derived index is stale)`);
+    for (const id of rowIds) if (!itemIds.has(id)) warn(`${coordinationRoot}/BOARD.md row "${id}" has no item record (derived index is stale)`);
   } else if (!existsSync(boardPath) && itemIds.size > 0) {
-    warn('coordination/BOARD.md is absent though coordination items exist (derived index missing)');
+    warn(`${coordinationRoot}/BOARD.md is absent though coordination items exist (derived index missing)`);
   }
 
   return { errors, warnings, migrations };
@@ -349,7 +377,17 @@ function selfTest() {
     }
   }
 
-  // Concurrency fixture: collision detection (un-tokened held lease and a grant
+  // Split-brain fixture: an incomplete schema 1 -> 2 migration that left a bare
+  // root alongside its kai/ counterpart must be refused, not silently merged.
+  const split = checkWorkspace(join(fx, 'splitbrain-workspace'));
+  if (/split-brain layout/i.test(split.errors.join('\n'))) {
+    console.log(`✓ self-test: split-brain fixture rejected (${split.errors.length} error(s))`);
+  } else {
+    ok = false;
+    console.log('✗ self-test: split-brain fixture was NOT rejected (coexisting coordination/ and kai/coordination/)');
+  }
+
+
   // that skipped the version increment are rejected) and stale-lease recovery
   // (an expired but tokened lease is surfaced as a warning).
   const conc = checkWorkspace(join(fx, 'concurrency-workspace'));

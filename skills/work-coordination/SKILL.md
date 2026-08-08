@@ -1,6 +1,6 @@
 ---
 name: work-coordination
-description: "The shared coordination contract that lets many single-shot agents behave like one team across several concurrent efforts. Owns the durable coordination/ surface: authoritative per-item state, derived BOARD.md, append-only threads, and unaffiliated backlog, while initiatives retain strategic context and deliverable indexes. Defines lifecycle, leases, versions, dependencies, touch collisions, handoffs, questions, canonical artifact targets, and exact evidence paths."
+description: "The shared coordination contract that lets many single-shot agents behave like one team across several concurrent efforts. Owns the durable kai/coordination/ surface: authoritative per-item state, derived BOARD.md, append-only threads, and unaffiliated backlog, while initiatives retain strategic context and deliverable indexes. Defines lifecycle, leases, versions, dependencies, touch collisions, handoffs, questions, canonical artifact targets, and exact evidence paths."
 tools: [bash, view, edit, create, grep, glob]
 ---
 
@@ -18,7 +18,7 @@ dispatch and reconcile work across the team.
 ## Why durable, per-item state
 
 Coordination must survive sessions, machines, CLI/cloud boundaries, and branch
-handoffs, so it lives under the target workspace's `coordination/`. In a
+handoffs, so it lives under the target workspace's `kai/coordination/`. In a
 repository workspace this surface is committed. In an operator-confirmed
 external workspace it is durable local state and must not be described as
 committed unless that directory is actually version-controlled.
@@ -37,7 +37,7 @@ Parallel agents normally touch different item and thread files.
 ## Coordination surface
 
 ```text
-coordination/
+kai/coordination/
   ACTIVE.md
   BOARD.md                    # derived index; director-maintained
   items/
@@ -45,7 +45,7 @@ coordination/
   threads/
     <item-id>.md              # HANDOFF + QUESTION/ANSWER history
   backlog.md
-initiatives/
+kai/initiatives/
   INDEX.md
   <initiative-slug>/
     northstar.md
@@ -122,36 +122,36 @@ Rules:
 - **`artifact_target`** is the exact workspace-root-relative or absolute output
   path for a file-producing item. Initiative items default to the canonical
   location from `workspace-conventions`:
-  `initiatives/<slug>/artifacts/product-map.md`,
-  `initiatives/<slug>/artifacts/marketing/` (bundle directory),
-  `initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
-  `initiatives/<slug>/artifacts/customer-success/<item-id>.md` (de-identified signal),
-  `initiatives/<slug>/artifacts/support/<item-id>.md` (de-identified signal),
-  `initiatives/<slug>/artifacts/feedback/<item-id>.md` (de-identified signal),
-  `initiatives/<slug>/artifacts/growth/<item-id>.md`,
-  `initiatives/<slug>/artifacts/analytics/<item-id>.md`,
-  `initiatives/<slug>/artifacts/experiments/<item-id>.md`,
-  `initiatives/<slug>/artifacts/pricing/<item-id>.md`,
-  `initiatives/<slug>/artifacts/sales/<item-id>.md` (de-identified deal brief),
-  `initiatives/<slug>/artifacts/solutions/<item-id>.md` (sanitized solution brief),
-  `initiatives/<slug>/artifacts/security/<item-id>.md`,
-  `initiatives/<slug>/artifacts/reliability/<item-id>.md`,
-  `initiatives/<slug>/artifacts/incidents/<item-id>.md`,
-  `initiatives/<slug>/artifacts/compliance/<item-id>.md`,
-  `initiatives/<slug>/artifacts/briefs/<item-id>.md`,
-  `initiatives/<slug>/artifacts/research/<item-id>.md`,
-  `initiatives/<slug>/artifacts/designs/<item-id>.md`,
-  `initiatives/<slug>/artifacts/docs/<item-id>.md` (technical writing / docs),
-  `initiatives/<slug>/artifacts/revops/<item-id>.md` (revenue-operations brief),
-  `initiatives/<slug>/artifacts/campaigns/<item-id>.md` (demand-gen campaign plan),
-  `initiatives/<slug>/artifacts/partnerships/<item-id>.md` (de-identified partnership brief),
-  `initiatives/<slug>/artifacts/localization/<item-id>.md` (localization report),
-  `initiatives/<slug>/artifacts/data-engineering/<item-id>.md` (data-engineering design),
-  `initiatives/<slug>/artifacts/brand/<item-id>.md` (brand / visual-identity system), or
-  `initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
+  `kai/initiatives/<slug>/artifacts/product-map.md`,
+  `kai/initiatives/<slug>/artifacts/marketing/` (bundle directory),
+  `kai/initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
+  `kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md` (de-identified signal),
+  `kai/initiatives/<slug>/artifacts/support/<item-id>.md` (de-identified signal),
+  `kai/initiatives/<slug>/artifacts/feedback/<item-id>.md` (de-identified signal),
+  `kai/initiatives/<slug>/artifacts/growth/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/analytics/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/experiments/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/pricing/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/sales/<item-id>.md` (de-identified deal brief),
+  `kai/initiatives/<slug>/artifacts/solutions/<item-id>.md` (sanitized solution brief),
+  `kai/initiatives/<slug>/artifacts/security/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/reliability/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/incidents/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/compliance/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/briefs/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/research/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`,
+  `kai/initiatives/<slug>/artifacts/docs/<item-id>.md` (technical writing / docs),
+  `kai/initiatives/<slug>/artifacts/revops/<item-id>.md` (revenue-operations brief),
+  `kai/initiatives/<slug>/artifacts/campaigns/<item-id>.md` (demand-gen campaign plan),
+  `kai/initiatives/<slug>/artifacts/partnerships/<item-id>.md` (de-identified partnership brief),
+  `kai/initiatives/<slug>/artifacts/localization/<item-id>.md` (localization report),
+  `kai/initiatives/<slug>/artifacts/data-engineering/<item-id>.md` (data-engineering design),
+  `kai/initiatives/<slug>/artifacts/brand/<item-id>.md` (brand / visual-identity system), or
+  `kai/initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
   override is allowed only inside the resolved workspace and must be recorded.
   An unaffiliated incident-command item uses
-  `library/investigations/<incident-id>/incident-record.md` for its sanitized
+  `kai/library/investigations/<incident-id>/incident-record.md` for its sanitized
   closure record; raw incident evidence remains in `.kai/runs/`.
 - **`context_artifacts`** lists exact paths to required factual maps, product
   briefs, designs, decisions, and other inputs. Peers read these instead of
@@ -463,7 +463,7 @@ revision; only then may the owning designer close it as `completed`.
 
 ## HANDOFF packet
 
-Append every handoff to `coordination/threads/<item-id>.md`:
+Append every handoff to `kai/coordination/threads/<item-id>.md`:
 
 ```markdown
 ## HANDOFF <YYYY-MM-DD-HHMM> — <from-role> -> <to-role>
@@ -636,8 +636,8 @@ persistent remediation or a novel production change remains proposed scope.
 
 Scope-expanding proposals remain committed:
 
-1. Active initiative: `initiatives/<initiative-slug>/backlog.md`.
-2. No initiative: `coordination/backlog.md`.
+1. Active initiative: `kai/initiatives/<initiative-slug>/backlog.md`.
+2. No initiative: `kai/coordination/backlog.md`.
 
 If the target workspace is not onboarded, stop and onboard it before recording
 a coordinated proposal. Durable proposals never fall back to the ephemeral

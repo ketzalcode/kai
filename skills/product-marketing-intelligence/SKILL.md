@@ -68,7 +68,7 @@ not inspectable. Prefer reusing existing facts over rediscovering them.
 
 | Mode | Source | How |
 |---|---|---|
-| **A · Existing map** | a current `initiatives/<slug>/artifacts/product-map.md` | consume its observed facts directly; cite, do not re-walk |
+| **A · Existing map** | a current `kai/initiatives/<slug>/artifacts/product-map.md` | consume its observed facts directly; cite, do not re-walk |
 | **B · Public marketing surface** | a public landing, pricing, or marketing URL | walk it read-only via `web-evaluation`; harvest copy via `web-content-extraction` — marketing surfaces only |
 | **C · Provided media** | screenshots, screen recordings, uploaded assets | copy into the run media folder and catalog into `media_manifest.json`; extract facts from what is visible |
 | **D · Notes only** | operator product notes | record as `source: operator-provided`; verify nothing, flag as unverified |
@@ -223,7 +223,7 @@ Media handling rules:
 Resolve the workspace via `workspace-conventions`.
 
 - **Initiative work:** the three artifacts live in the bundle directory
-  `initiatives/<slug>/artifacts/marketing/`. The work item's `artifact_target`
+  `kai/initiatives/<slug>/artifacts/marketing/`. The work item's `artifact_target`
   is that **directory**; the three contract files (`product_exploration_report.md`,
   `product_context.json`, `media_manifest.json`) are its mandatory contents.
   Paths stay inside the recorded workspace. `delivery_class: knowledge` — it
@@ -231,7 +231,7 @@ Resolve the workspace via `workspace-conventions`.
 - **Unaffiliated one-off:** draft under
   `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/`, then promote
   the curated set to
-  `library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (the same
+  `kai/library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (the same
   date-first promotion path as `principal-product-strategist`). Library
   frontmatter goes on the Markdown report/index only; the JSON files stay valid
   JSON and are indexed by the report and `deliverables.md`.

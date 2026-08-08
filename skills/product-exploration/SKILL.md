@@ -48,10 +48,10 @@ or when a current map already covers the exact surfaces and state.
 - destructive or irreversible actions that must not be crossed.
 
 **Storage boundary:** for initiative work, the canonical product map is
-`initiatives/<slug>/artifacts/product-map.md`. The work item's
+`kai/initiatives/<slug>/artifacts/product-map.md`. The work item's
 `artifact_target` must name that path unless an operator-approved override is
 recorded. Unaffiliated exploration requires an explicit target under
-`library/investigations/`; never infer an initiative.
+`kai/library/investigations/`; never infer an initiative.
 
 Raw browser evidence uses:
 `.kai/runs/qa/<YYYY-MM-DD>/<NN>-explore-<descriptor>/`.

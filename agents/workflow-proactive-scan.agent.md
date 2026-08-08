@@ -47,7 +47,7 @@ permission to act.
 
 1. **Resolve.** Resolve the selected workspace via `workspace-conventions` and
    its `.kai/manifest.json`; compute its stable `root_id`. Read enabled,
-   validated linked roots from `personal/workspaces.md` read-only. A missing
+   validated linked roots from `kai/personal/workspaces.md` read-only. A missing
    sentinel or unreadable selected workspace → emit `status: error`; advance
    nothing. An unreadable linked root → `status: partial` + a `gaps[]` entry, and
    preserve that root's ledger signals (never treat them as cleared).
@@ -56,12 +56,12 @@ permission to act.
    `ANSWER`, `release-ready` items, and overdue `@operator` questions. Compute
    each signal's deterministic `key` and `hash` per `proactive-scan`. Change no
    record.
-3. **Diff.** Load `personal/proactive/snapshot.json`; classify each signal
+3. **Diff.** Load `kai/personal/proactive/snapshot.json`; classify each signal
    `new` / `changed` / `overdue` / `unchanged`, and `cleared` only from
    fully-read roots. Suppress unchanged already-delivered signals.
 4. **Emit.** Write the immutable payload (with `notification_id`, per-signal
    `hash`, `based_on_revision`) to
-   `personal/proactive/outbox/<YYYY-MM-DD-HHMM>.json` and return it. Empty →
+   `kai/personal/proactive/outbox/<YYYY-MM-DD-HHMM>.json` and return it. Empty →
    `status: none`. **Do not touch the ledger.**
 
 ## Workflow — ack
@@ -75,12 +75,12 @@ put and the next scan re-emits.
 
 ## Boundaries
 
-- **Coordination read-only; local writes only under `personal/proactive/`.** You
+- **Coordination read-only; local writes only under `kai/personal/proactive/`.** You
   never reply to a thread, approve scope, send a peer message, commit, or deploy.
   The only external effect is the configured notification, delivered by the runner.
 - **No self-scheduling.** You carry no cadence; the runner owns the heartbeat.
 - **No channels or credentials.** You emit a payload; a `secret_ref`, channel
-  IDs, and webhooks stay in the operator's gitignored `personal/proactive/`
+  IDs, and webhooks stay in the operator's gitignored `kai/personal/proactive/`
   config and the runner's secret store — never in the plugin.
 - **One workspace per run**, plus its explicitly linked roots. Never scan an
   unregistered root.
@@ -94,7 +94,7 @@ Proactive scan: <root label> — <signals N | none | partial | error>
 Notification: <notification_id> · based on revision <N>
 Roots: <selected + linked labels; gaps noted>
 New: <n> · Changed: <n> · Overdue: <n> · Suppressed: <n>
-Payload: <absolute personal/proactive/outbox/<ts>.json path>
+Payload: <absolute kai/personal/proactive/outbox/<ts>.json path>
 Ledger: unchanged (advances only on ack)
 Action taken: none (coordination read-only)
 ```
@@ -109,4 +109,4 @@ Action taken: none (coordination read-only)
   `overdue_notified` already covers.
 - ❌ Treating a signal missing because its root failed to read as `cleared`.
 - ❌ Acting on a signal (reply/approve/commit/deploy) instead of surfacing it.
-- ❌ Scanning an unregistered workspace, or committing `personal/proactive/`.
+- ❌ Scanning an unregistered workspace, or committing `kai/personal/proactive/`.

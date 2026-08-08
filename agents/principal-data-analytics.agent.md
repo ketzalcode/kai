@@ -91,7 +91,7 @@ Use only explicitly supplied paths and authorized sources. Default local run:
 
 For coordinated work, write only aggregate, de-identified evidence to:
 
-`initiatives/<slug>/artifacts/analytics/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/analytics/<item-id>.md`
 
 ## Metric contract
 

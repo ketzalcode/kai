@@ -49,8 +49,8 @@ latest handoff:
 ```
 
 For initiative work, `artifact_target` defaults by mode:
-`initiatives/<slug>/artifacts/product-map.md` for MAP, and
-`initiatives/<slug>/artifacts/design-system-extract.md` for
+`kai/initiatives/<slug>/artifacts/product-map.md` for MAP, and
+`kai/initiatives/<slug>/artifacts/design-system-extract.md` for
 DESIGN-SYSTEM-EXTRACT. It must remain inside the recorded workspace; if the
 packet differs, require the recorded operator-approved override. Do not infer an
 initiative from cwd.
@@ -79,7 +79,7 @@ reviewable design system — not to design one.
    viewports, and browser/login mode.
 2. Walk the **whole in-scope app, not just the home page**, at the requested
    viewports (desktop + mobile at minimum).
-3. Write `initiatives/<slug>/artifacts/design-system-extract.md` using the
+3. Write `kai/initiatives/<slug>/artifacts/design-system-extract.md` using the
    extract schema in `design-grounding`: colors, typography, spacing/layout,
    component shapes and states, responsive behavior, repeated patterns, and
    unknowns — **observed facts only**.

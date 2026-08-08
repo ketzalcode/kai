@@ -1,6 +1,6 @@
 ---
 name: workflow-initiative-init
-description: "Bounded initiative-intake workflow that turns an operator's mission, vision, constraints, and desired outcomes into a scope-gated north star with stable milestones, canonical initiative artifact paths, and initial proposed work records. Creates initiatives/<slug>/ plus artifacts/, updates the initiative index, and seeds coordination/items and threads. PM approves scope before the Chief of Staff dispatches work."
+description: "Bounded initiative-intake workflow that turns an operator's mission, vision, constraints, and desired outcomes into a scope-gated north star with stable milestones, canonical initiative artifact paths, and initial proposed work records. Creates kai/initiatives/<slug>/ plus artifacts/, updates the initiative index, and seeds kai/coordination/items and threads. PM approves scope before the Chief of Staff dispatches work."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
@@ -49,11 +49,11 @@ Do not create initiative files until onboarding completes.
 Create:
 
 ```text
-initiatives/<slug>/northstar.md
-initiatives/<slug>/log.md
-initiatives/<slug>/backlog.md
-initiatives/<slug>/deliverables.md
-initiatives/<slug>/artifacts/
+kai/initiatives/<slug>/northstar.md
+kai/initiatives/<slug>/log.md
+kai/initiatives/<slug>/backlog.md
+kai/initiatives/<slug>/deliverables.md
+kai/initiatives/<slug>/artifacts/
   marketing/
   content/
   customer-success/
@@ -80,9 +80,9 @@ initiatives/<slug>/artifacts/
   localization/
   data-engineering/
   brand/
-coordination/items/<initiative-slug>-<milestone-id>.md
-coordination/threads/<initiative-slug>-<milestone-id>.md
-initiatives/INDEX.md
+kai/coordination/items/<initiative-slug>-<milestone-id>.md
+kai/coordination/threads/<initiative-slug>-<milestone-id>.md
+kai/initiatives/INDEX.md
 ```
 
 Use this north-star shape:
@@ -111,7 +111,7 @@ scope:
   deferred: []
 principles:
   non_negotiable: []
-proposal_channel: initiatives/<slug>/backlog.md
+proposal_channel: kai/initiatives/<slug>/backlog.md
 created: <YYYY-MM-DD>
 owner: principal-product-manager
 related: []
@@ -149,59 +149,59 @@ becomes `ready` or milestone-required until the steward approves it.
 Set canonical artifact targets automatically:
 
 - product exploration:
-  `initiatives/<slug>/artifacts/product-map.md`;
+  `kai/initiatives/<slug>/artifacts/product-map.md`;
 - product marketing intelligence (bundle directory):
-  `initiatives/<slug>/artifacts/marketing/`;
+  `kai/initiatives/<slug>/artifacts/marketing/`;
 - content / creative pack (bundle directory):
-  `initiatives/<slug>/artifacts/content/<item-id>/`;
+  `kai/initiatives/<slug>/artifacts/content/<item-id>/`;
 - de-identified customer-success signal:
-  `initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
 - de-identified support signal:
-  `initiatives/<slug>/artifacts/support/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/support/<item-id>.md`;
 - de-identified customer-feedback signal:
-  `initiatives/<slug>/artifacts/feedback/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/feedback/<item-id>.md`;
 - growth diagnosis / experiment brief:
-  `initiatives/<slug>/artifacts/growth/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/growth/<item-id>.md`;
 - analytics metric contract / readout:
-  `initiatives/<slug>/artifacts/analytics/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/analytics/<item-id>.md`;
 - experiment integrity certificate:
-  `initiatives/<slug>/artifacts/experiments/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/experiments/<item-id>.md`;
 - pricing / packaging brief:
-  `initiatives/<slug>/artifacts/pricing/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/pricing/<item-id>.md`;
 - de-identified sales / deal brief:
-  `initiatives/<slug>/artifacts/sales/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/sales/<item-id>.md`;
 - sanitized pre-sale solution / POC brief:
-  `initiatives/<slug>/artifacts/solutions/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/solutions/<item-id>.md`;
 - sanitized security assessment / control brief:
-  `initiatives/<slug>/artifacts/security/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/security/<item-id>.md`;
 - sanitized reliability assessment / SLO brief:
-  `initiatives/<slug>/artifacts/reliability/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/reliability/<item-id>.md`;
 - sanitized incident record:
-  `initiatives/<slug>/artifacts/incidents/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/incidents/<item-id>.md`;
 - sanitized privacy/compliance assessment:
-  `initiatives/<slug>/artifacts/compliance/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/compliance/<item-id>.md`;
 - PM brief:
-  `initiatives/<slug>/artifacts/briefs/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/briefs/<item-id>.md`;
 - research:
-  `initiatives/<slug>/artifacts/research/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/research/<item-id>.md`;
 - product design:
-  `initiatives/<slug>/artifacts/designs/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`;
 - technical writing / docs artifact:
-  `initiatives/<slug>/artifacts/docs/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/docs/<item-id>.md`;
 - revenue-operations metric model / forecast brief:
-  `initiatives/<slug>/artifacts/revops/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/revops/<item-id>.md`;
 - demand-generation campaign plan:
-  `initiatives/<slug>/artifacts/campaigns/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/campaigns/<item-id>.md`;
 - de-identified partnership brief:
-  `initiatives/<slug>/artifacts/partnerships/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/partnerships/<item-id>.md`;
 - localization readiness / locale-QA report:
-  `initiatives/<slug>/artifacts/localization/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/localization/<item-id>.md`;
 - data-engineering design / data contract:
-  `initiatives/<slug>/artifacts/data-engineering/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/data-engineering/<item-id>.md`;
 - brand / visual-identity system:
-  `initiatives/<slug>/artifacts/brand/<item-id>.md`;
+  `kai/initiatives/<slug>/artifacts/brand/<item-id>.md`;
 - initiative decision:
-  `initiatives/<slug>/artifacts/decisions/<item-id>.md`.
+  `kai/initiatives/<slug>/artifacts/decisions/<item-id>.md`.
 
 An operator override must remain within the resolved workspace and be recorded
 in the item. Missing initiative ownership or an artifact type not covered by
@@ -216,15 +216,15 @@ research, design, or decision is not.
 2. Draft the thin core and milestones.
 3. Present the scope boundary and success measures for operator confirmation.
 4. Write the initiative files with `status: proposed`, seed
-   `deliverables.md`, and add the initiative to `initiatives/INDEX.md`.
-5. Seed proposed planning items in `coordination/items/` and empty threads in
-   `coordination/threads/`. Do not count them as
+   `deliverables.md`, and add the initiative to `kai/initiatives/INDEX.md`.
+5. Seed proposed planning items in `kai/coordination/items/` and empty threads in
+   `kai/coordination/threads/`. Do not count them as
    milestone-completion items.
 6. Append the creation entry to `log.md`.
 7. Hand off to `principal-product-manager` as steward:
    - confirm mission/scope/non-negotiables;
    - accept or revise milestones;
-   - set `status: active` and update `coordination/ACTIVE.md`;
+   - set `status: active` and update `kai/coordination/ACTIVE.md`;
    - approve an explicit non-empty typed `required_items` mapping after
      decomposition (`completed` for research/decision outputs, `shipped` for
      production changes);

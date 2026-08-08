@@ -213,7 +213,7 @@ domain-local decision**, write exactly one file to the `eng` area (see
 
 **Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
 the gitignored `.kai/runs/` root. Promote it to
-`<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md` with library
+`<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md` with library
 frontmatter only when it's a durable decision worth sharing via
 `git pull`; keep it local-only otherwise.
 

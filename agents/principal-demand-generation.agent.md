@@ -162,7 +162,7 @@ Write the full local working brief to:
 Keep raw audience lists, PII, and account-level targeting local. For coordinated
 work, write the campaign plan to:
 
-`initiatives/<slug>/artifacts/campaigns/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/campaigns/<item-id>.md`
 
 Use:
 
