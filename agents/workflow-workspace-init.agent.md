@@ -1,6 +1,6 @@
 ---
 name: workflow-workspace-init
-description: "Run-once kai workspace onboarding workflow for any repository or durable standalone folder. Applies workspace-onboarding and workspace-conventions to create or validate .kai/manifest.json, ignored .kai/runs, coordination registries, initiative catalog, promoted library, and complete workspace-local personal/assistant state including identity stubs. Idempotent and non-destructive."
+description: "Run-once kai workspace onboarding workflow for any repository or durable standalone folder. Applies workspace-onboarding and workspace-conventions to create or validate .kai/manifest.json, ignored .kai/runs, coordination registries, initiative catalog, promoted library, and complete workspace-local kai/personal/assistant state including identity stubs. Idempotent and non-destructive."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
@@ -25,9 +25,9 @@ paths. You materialize `workspace-conventions` by executing
 4. Create missing structure idempotently; never overwrite, delete, stage,
    commit, or push user content.
 5. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata.
-   `.kai/runs/` and `personal/` are ignored.
+   `.kai/runs/` and `kai/personal/` are ignored.
 6. Do not create `.ketzal/`, `knowledge/`, `.persona-self/`, or coordination files inside
-   `initiatives/`.
+   `kai/initiatives/`.
 
 ## Workflow
 
@@ -61,12 +61,12 @@ Apply the required structure from `workspace-onboarding`:
 ```text
 .kai/{manifest.json,CONVENTIONS.md,runs/{qa/,eng/,product/,revenue/,support/,review/,ship/,
                                       incident/,ai/,learn/,lessons/,pulse/,content/}}
-coordination/{ACTIVE.md,BOARD.md,backlog.md,
+kai/coordination/{ACTIVE.md,BOARD.md,backlog.md,
              items/README.md,threads/README.md}
-initiatives/{README.md,INDEX.md}
-library/{README.md,reviews/,dev-designs/,investigations/,briefings/,
+kai/initiatives/{README.md,INDEX.md}
+kai/library/{README.md,reviews/,dev-designs/,investigations/,briefings/,
          qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/,content/}
-personal/{README.md,inbox.md,agenda.md,workspaces.md,consultations/,decisions/,proactive/,
+kai/personal/{README.md,inbox.md,agenda.md,workspaces.md,consultations/,decisions/,proactive/,
           identity/{README.md,voice.md,career-snapshot.md,skills-inventory.md,
                     current-work.md,career-goals.md},
           lessons/,courses/,certs/,growth/}
@@ -84,9 +84,9 @@ is already a Git repository.
 
 Verify that:
 
-- in a Git workspace, `.kai/runs/`, `personal/`, and retired local-state paths
+- in a Git workspace, `.kai/runs/`, `kai/personal/`, and retired local-state paths
   are ignored while `.kai/manifest.json`, `.kai/CONVENTIONS.md`,
-  `coordination/`, `initiatives/`, and textual `library/` entries are trackable;
+  `kai/coordination/`, `kai/initiatives/`, and textual `kai/library/` entries are trackable;
 - in a non-Git external workspace, ignore checks are reported as `n/a` and do
   not block the structural contract.
 
@@ -100,9 +100,9 @@ Confirm:
   fixed roots and `areas` (e.g. `content`) added, retired fields (e.g.
   `workspace_kind`) removed, and all other values preserved;
 - every coordination registry exists;
-- `initiatives/INDEX.md` contains missing discovered initiative rows without
+- `kai/initiatives/INDEX.md` contains missing discovered initiative rows without
   duplicate slugs;
-- `library/README.md` contains promotion and provenance rules;
+- `kai/library/README.md` contains promotion and provenance rules;
 - no new legacy root was created;
 - a legacy `.kai/local.json` remains ignored until approved deletion;
 - personal operational and identity stubs exist without overwriting populated

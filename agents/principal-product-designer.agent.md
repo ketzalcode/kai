@@ -54,7 +54,7 @@ You inherit `scope-discipline`, `design-grounding`, `ui-mockup`,
 - relevant UX/domain/QA research;
 - target viewports, accessibility requirements, and known platform constraints;
 - canonical `artifact_target`:
-  `initiatives/<slug>/artifacts/designs/<item-id>.md`.
+  `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`.
 
 If an existing product surface has no sufficient/current map, ask the director
 for `workflow-product-explore`. Do not rediscover the app yourself or design

@@ -218,7 +218,7 @@ The full `triage.md` remains ignored and account-specific. For a repeated,
 decision-relevant pattern, write a separately sanitized `support-signal.md` and,
 when coordinated, copy only that packet to:
 
-`initiatives/<slug>/artifacts/support/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/support/<item-id>.md`
 
 The committed packet contains no account alias, contact, commercial value,
 contract/SLA detail, raw ticket text, raw source path, credential, or

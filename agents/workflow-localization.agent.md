@@ -101,7 +101,7 @@ Write the full local working report to:
 Keep raw locale data and untranslated exports local. For coordinated work, write
 the readiness/QA report to:
 
-`initiatives/<slug>/artifacts/localization/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/localization/<item-id>.md`
 
 Use:
 

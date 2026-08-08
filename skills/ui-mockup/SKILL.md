@@ -150,10 +150,10 @@ area — **no new run area, no new library type**:
 The human-reviewed mock is committed **alongside the design artifact**:
 
 ```text
-initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html
+kai/initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html
 ```
 
-and referenced from `initiatives/<slug>/artifacts/designs/<item-id>.md`:
+and referenced from `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`:
 
 ```markdown
 ## Options considered

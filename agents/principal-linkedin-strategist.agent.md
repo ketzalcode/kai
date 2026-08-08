@@ -132,9 +132,9 @@ to a locked span; if it cannot, return `voice: pending persona-self` and do not
 claim completion.
 
 Write ad-hoc drafts to `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`;
-coordinated work writes to `initiatives/<slug>/artifacts/content/<item-id>/` with
+coordinated work writes to `kai/initiatives/<slug>/artifacts/content/<item-id>/` with
 a `work-coordination` handoff; a reusable pack promotes to
-`library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/` through the standard
+`kai/library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/` through the standard
 steward-approved library flow. Return the paths and claim-safety summary. Never
 post.
 

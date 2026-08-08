@@ -47,81 +47,99 @@ when the operator explicitly requested a local throwaway run.
 │  ├─ manifest.json                  # committed bootstrap and root map
 │  ├─ CONVENTIONS.md                 # committed human-readable contract
 │  └─ runs/                          # ignored raw evidence and scratch
-├─ coordination/
-│  ├─ ACTIVE.md                      # active initiative pointer
-│  ├─ BOARD.md                       # derived cross-effort view
-│  ├─ backlog.md                     # unaffiliated proposals
-│  ├─ items/<item-id>.md             # authoritative work state
-│  └─ threads/<item-id>.md           # append-only handoffs and Q&A
-├─ initiatives/
-│  ├─ README.md                      # initiative contract and schema
-│  ├─ INDEX.md                       # durable all-status catalog
-│  └─ <slug>/
-│     ├─ northstar.md
-│     ├─ log.md
-│     ├─ backlog.md
-│     ├─ deliverables.md
-│     ├─ director-summary.md
-│     └─ artifacts/
-│        ├─ product-map.md
-│        ├─ design-system.md
-│        ├─ marketing/
-│        ├─ content/
-│        ├─ customer-success/
-│        ├─ support/
-│        ├─ feedback/
-│        ├─ growth/
-│        ├─ analytics/
-│        ├─ experiments/
-│        ├─ pricing/
-│        ├─ sales/
-│        ├─ solutions/
-│        ├─ security/
-│        ├─ reliability/
-│        ├─ incidents/
-│        ├─ compliance/
-│        ├─ briefs/
-│        ├─ research/
-│        ├─ designs/
-│        ├─ decisions/
-│        ├─ docs/
-│        ├─ revops/
-│        ├─ campaigns/
-│        ├─ partnerships/
-│        ├─ localization/
-│        ├─ data-engineering/
-│        └─ brand/
-├─ library/
-│  ├─ README.md
-│  ├─ reviews/        dev-designs/    investigations/   briefings/
-│  ├─ qa-findings/    lessons/        digests/          learnings/
-│  └─ releases/       playbooks/      content/
-└─ personal/
-   ├─ README.md
-   ├─ inbox.md         agenda.md          # workspace-local assistant state
-   ├─ workspaces.md                       # optional linked-workspace registry
-   ├─ consultations/                     # private peer-consultation records
-   ├─ decisions/                         # private operator decision briefs
-   ├─ proactive/                         # scan snapshot + outbox + channel config (runner)
-   ├─ identity/
-   │  ├─ README.md     voice.md
-   │  └─ career-snapshot.md  skills-inventory.md
-   │     current-work.md      career-goals.md
-   └─ lessons/        courses/            certs/            growth/
+└─ kai/                              # visible human working corpus
+   ├─ coordination/
+   │  ├─ ACTIVE.md                      # active initiative pointer
+   │  ├─ BOARD.md                       # derived cross-effort view
+   │  ├─ backlog.md                     # unaffiliated proposals
+   │  ├─ items/<item-id>.md             # authoritative work state
+   │  └─ threads/<item-id>.md           # append-only handoffs and Q&A
+   ├─ initiatives/
+   │  ├─ README.md                      # initiative contract and schema
+   │  ├─ INDEX.md                       # durable all-status catalog
+   │  └─ <slug>/
+   │     ├─ northstar.md
+   │     ├─ log.md
+   │     ├─ backlog.md
+   │     ├─ deliverables.md
+   │     ├─ director-summary.md
+   │     └─ artifacts/
+   │        ├─ product-map.md
+   │        ├─ design-system.md
+   │        ├─ marketing/
+   │        ├─ content/
+   │        ├─ customer-success/
+   │        ├─ support/
+   │        ├─ feedback/
+   │        ├─ growth/
+   │        ├─ analytics/
+   │        ├─ experiments/
+   │        ├─ pricing/
+   │        ├─ sales/
+   │        ├─ solutions/
+   │        ├─ security/
+   │        ├─ reliability/
+   │        ├─ incidents/
+   │        ├─ compliance/
+   │        ├─ briefs/
+   │        ├─ research/
+   │        ├─ designs/
+   │        ├─ decisions/
+   │        ├─ docs/
+   │        ├─ revops/
+   │        ├─ campaigns/
+   │        ├─ partnerships/
+   │        ├─ localization/
+   │        ├─ data-engineering/
+   │        └─ brand/
+   ├─ library/
+   │  ├─ README.md
+   │  ├─ reviews/        dev-designs/    investigations/   briefings/
+   │  ├─ qa-findings/    lessons/        digests/          learnings/
+   │  └─ releases/       playbooks/      content/
+   └─ personal/
+      ├─ README.md
+      ├─ inbox.md         agenda.md          # workspace-local assistant state
+      ├─ workspaces.md                       # optional linked-workspace registry
+      ├─ consultations/                     # private peer-consultation records
+      ├─ decisions/                         # private operator decision briefs
+      ├─ proactive/                         # scan snapshot + outbox + channel config (runner)
+      ├─ identity/
+      │  ├─ README.md     voice.md
+      │  └─ career-snapshot.md  skills-inventory.md
+      │     current-work.md      career-goals.md
+      └─ lessons/        courses/            certs/            growth/
 ```
 
 ## Placement model
+
+kai state splits on one axis: **control plane vs working corpus.**
+
+- **`.kai/`** is the hidden control plane — the bootstrap sentinel, the
+  contract, and regenerable raw evidence. It is machine state; a dotfolder
+  is the right signal, and `.kai/manifest.json` stays the single, stable
+  discovery anchor for every agent.
+- **`kai/`** is the visible working corpus — northstars, decisions, work
+  items, and curated outcomes that **humans browse, search, and edit.**
+  This material is closer to `docs/` than to `.vscode/`, so it must not be
+  hidden. Keeping it under one `kai/` parent also stops the generic retired
+  root names from colliding with product directories at the repository root.
 
 | Location | Meaning | Git in repository mode |
 |---|---|---|
 | `.kai/manifest.json`, `.kai/CONVENTIONS.md` | kai bootstrap and contract | committed |
 | `.kai/runs/` | raw, regenerable, heavy, or scratch evidence | ignored |
-| `coordination/` | operational state shared across concurrent efforts | committed |
-| `initiatives/<slug>/` | strategic context and outputs owned by one initiative | committed |
-| `library/` | curated outcomes intentionally reusable across initiatives | committed text |
-| `personal/` | portable personal operational, career, and learning material | ignored |
+| `kai/coordination/` | operational state shared across concurrent efforts | committed |
+| `kai/initiatives/<slug>/` | strategic context and outputs owned by one initiative | committed |
+| `kai/library/` | curated outcomes intentionally reusable across initiatives | committed text |
+| `kai/personal/` | portable personal operational, career, and learning material | ignored |
 
-`coordination/` answers “what is happening now?” `initiatives/` answers “why
+`.kai/runs/` stays hidden deliberately: it is bulky, regenerable, and may
+hold raw or sensitive evidence, so it should not pollute everyday search.
+`kai/personal/` is the mirror case — **visible but gitignored**, because
+privacy and discoverability are separate concerns.
+
+`kai/coordination/` answers “what is happening now?” `kai/initiatives/` answers “why
 are we doing this, and what did this effort produce?” Work items and threads
 stay flat because dependencies, handoffs, and collisions can cross initiatives;
 each item records its `initiative:` membership.
@@ -137,7 +155,7 @@ If the manifest is missing, invoke `workflow-workspace-init` for the current
 repository or confirmed folder before using the assistant. Do not search for a
 global home, machine-specific pointer, or special workspace kind.
 
-`personal/workspaces.md` is an optional registry of additional Kai workspaces
+`kai/personal/workspaces.md` is an optional registry of additional Kai workspaces
 whose coordination signals should be included in the current workspace's
 agenda:
 
@@ -155,7 +173,7 @@ workspaces:
 The current workspace is always included implicitly and never needs a registry
 row. Linked roots are absolute local paths, deduped by normalized path, and
 carry unique labels. The executive assistant validates each enabled root's
-manifest, reads its `coordination/` state read-only, skips invalid or unavailable
+manifest, reads its `kai/coordination/` state read-only, skips invalid or unavailable
 roots with an explicit gap, and labels surfaced signals with the registry label.
 When the operator names another workspace, confirm its label and root before
 adding or updating the local registry. No back-pointer or pairing file is
@@ -208,7 +226,7 @@ above; reject or rewrite any `OUT` that resolves elsewhere. This holds **even
 when a non-owning agent** (e.g. an orchestrator, or a QA/stress harness driven
 by a director) runs the work — the canonical path is mandatory regardless of
 caller. A promoted outcome mirrors the shape:
-`library/<type>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/<artifact>`.
+`kai/library/<type>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/<artifact>`.
 
 ### Goal- and period-keyed areas (the exception)
 
@@ -235,8 +253,8 @@ snapshots:
   cross-reference.
 - `pulse` — grouped by **ISO week** (`<YYYY-Www>`); its weekly-window resolution
   depends on the week folder.
-- `library/briefings/` — the AI researcher's daily one-pager is a **date-keyed
-  cadence** artifact: exactly one `library/briefings/<YYYY-MM-DD>-briefing.md` per
+- `kai/library/briefings/` — the AI researcher's daily one-pager is a **date-keyed
+  cadence** artifact: exactly one `kai/library/briefings/<YYYY-MM-DD>-briefing.md` per
   day, glob-read (`*-briefing.md`) to rebuild the covered-source ledger. The date
   is already deterministic, so it stays a flat date-stamped file (its raw working
   draft under `.kai/runs/ai/` still uses the date-first run shape above).
@@ -270,66 +288,66 @@ that initiative:
 
 | Artifact | Canonical default |
 |---|---|
-| Product surface map | `initiatives/<slug>/artifacts/product-map.md` |
-| Product design system | `initiatives/<slug>/artifacts/design-system.md` |
-| Design-system extract (observed visual facts) | `initiatives/<slug>/artifacts/design-system-extract.md` |
-| Design option mockups | `initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html` |
-| Product marketing intelligence | `initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
-| Content / creative pack (LinkedIn, video, …) | `initiatives/<slug>/artifacts/content/<item-id>/` |
-| De-identified customer-success signal | `initiatives/<slug>/artifacts/customer-success/<item-id>.md` |
-| De-identified support signal | `initiatives/<slug>/artifacts/support/<item-id>.md` |
-| De-identified customer-feedback signal | `initiatives/<slug>/artifacts/feedback/<item-id>.md` |
-| Growth diagnosis / experiment brief | `initiatives/<slug>/artifacts/growth/<item-id>.md` |
-| Analytics metric contract / readout | `initiatives/<slug>/artifacts/analytics/<item-id>.md` |
-| Experiment integrity certificate | `initiatives/<slug>/artifacts/experiments/<item-id>.md` |
-| Pricing / packaging brief | `initiatives/<slug>/artifacts/pricing/<item-id>.md` |
-| De-identified sales / deal brief | `initiatives/<slug>/artifacts/sales/<item-id>.md` |
-| Sanitized pre-sale solution / POC brief | `initiatives/<slug>/artifacts/solutions/<item-id>.md` |
-| Sanitized security assessment / control brief | `initiatives/<slug>/artifacts/security/<item-id>.md` |
-| Sanitized reliability assessment / SLO brief | `initiatives/<slug>/artifacts/reliability/<item-id>.md` |
-| Sanitized incident record | `initiatives/<slug>/artifacts/incidents/<item-id>.md` |
-| Sanitized privacy/compliance assessment | `initiatives/<slug>/artifacts/compliance/<item-id>.md` |
-| PM product brief | `initiatives/<slug>/artifacts/briefs/<item-id>.md` |
-| Research memo | `initiatives/<slug>/artifacts/research/<item-id>.md` |
-| Product design | `initiatives/<slug>/artifacts/designs/<item-id>.md` |
-| Technical writing / docs artifact | `initiatives/<slug>/artifacts/docs/<item-id>.md` |
-| Revenue-operations metric model / forecast brief | `initiatives/<slug>/artifacts/revops/<item-id>.md` |
-| Demand-generation campaign plan | `initiatives/<slug>/artifacts/campaigns/<item-id>.md` |
-| De-identified partnership brief | `initiatives/<slug>/artifacts/partnerships/<item-id>.md` |
-| Localization readiness / locale-QA report | `initiatives/<slug>/artifacts/localization/<item-id>.md` |
-| Data-engineering design / data contract | `initiatives/<slug>/artifacts/data-engineering/<item-id>.md` |
-| Brand / visual-identity system | `initiatives/<slug>/artifacts/brand/<item-id>.md` |
-| Initiative decision/ADR | `initiatives/<slug>/artifacts/decisions/<item-id>.md` |
-| Director closure summary | `initiatives/<slug>/director-summary.md` |
-| Deliverable index | `initiatives/<slug>/deliverables.md` |
+| Product surface map | `kai/initiatives/<slug>/artifacts/product-map.md` |
+| Product design system | `kai/initiatives/<slug>/artifacts/design-system.md` |
+| Design-system extract (observed visual facts) | `kai/initiatives/<slug>/artifacts/design-system-extract.md` |
+| Design option mockups | `kai/initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html` |
+| Product marketing intelligence | `kai/initiatives/<slug>/artifacts/marketing/` (`product_exploration_report.md` + `product_context.json` + `media_manifest.json`) |
+| Content / creative pack (LinkedIn, video, …) | `kai/initiatives/<slug>/artifacts/content/<item-id>/` |
+| De-identified customer-success signal | `kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md` |
+| De-identified support signal | `kai/initiatives/<slug>/artifacts/support/<item-id>.md` |
+| De-identified customer-feedback signal | `kai/initiatives/<slug>/artifacts/feedback/<item-id>.md` |
+| Growth diagnosis / experiment brief | `kai/initiatives/<slug>/artifacts/growth/<item-id>.md` |
+| Analytics metric contract / readout | `kai/initiatives/<slug>/artifacts/analytics/<item-id>.md` |
+| Experiment integrity certificate | `kai/initiatives/<slug>/artifacts/experiments/<item-id>.md` |
+| Pricing / packaging brief | `kai/initiatives/<slug>/artifacts/pricing/<item-id>.md` |
+| De-identified sales / deal brief | `kai/initiatives/<slug>/artifacts/sales/<item-id>.md` |
+| Sanitized pre-sale solution / POC brief | `kai/initiatives/<slug>/artifacts/solutions/<item-id>.md` |
+| Sanitized security assessment / control brief | `kai/initiatives/<slug>/artifacts/security/<item-id>.md` |
+| Sanitized reliability assessment / SLO brief | `kai/initiatives/<slug>/artifacts/reliability/<item-id>.md` |
+| Sanitized incident record | `kai/initiatives/<slug>/artifacts/incidents/<item-id>.md` |
+| Sanitized privacy/compliance assessment | `kai/initiatives/<slug>/artifacts/compliance/<item-id>.md` |
+| PM product brief | `kai/initiatives/<slug>/artifacts/briefs/<item-id>.md` |
+| Research memo | `kai/initiatives/<slug>/artifacts/research/<item-id>.md` |
+| Product design | `kai/initiatives/<slug>/artifacts/designs/<item-id>.md` |
+| Technical writing / docs artifact | `kai/initiatives/<slug>/artifacts/docs/<item-id>.md` |
+| Revenue-operations metric model / forecast brief | `kai/initiatives/<slug>/artifacts/revops/<item-id>.md` |
+| Demand-generation campaign plan | `kai/initiatives/<slug>/artifacts/campaigns/<item-id>.md` |
+| De-identified partnership brief | `kai/initiatives/<slug>/artifacts/partnerships/<item-id>.md` |
+| Localization readiness / locale-QA report | `kai/initiatives/<slug>/artifacts/localization/<item-id>.md` |
+| Data-engineering design / data contract | `kai/initiatives/<slug>/artifacts/data-engineering/<item-id>.md` |
+| Brand / visual-identity system | `kai/initiatives/<slug>/artifacts/brand/<item-id>.md` |
+| Initiative decision/ADR | `kai/initiatives/<slug>/artifacts/decisions/<item-id>.md` |
+| Director closure summary | `kai/initiatives/<slug>/director-summary.md` |
+| Deliverable index | `kai/initiatives/<slug>/deliverables.md` |
 
 The creator sets `artifact_target` to this canonical workspace-root-relative
 path. An operator-supplied path may override it only when it remains within the
 resolved workspace and the item records the reason.
 
-Unaffiliated durable work goes to the matching `library/<type>/` location
+Unaffiliated durable work goes to the matching `kai/library/<type>/` location
 rather than creating an artificial initiative.
 
 A sanitized unaffiliated incident closure record uses
-`library/investigations/<incident-id>/incident-record.md`. This is the explicit
+`kai/library/investigations/<incident-id>/incident-record.md`. This is the explicit
 exception to initiative-first promotion because emergency command may have no
 initiative; the raw incident dossier still remains in `.kai/runs/`.
 
 ## Promotion to the library
 
-`library/` is not a general output folder. It contains **promoted,
+`kai/library/` is not a general output folder. It contains **promoted,
 cross-initiative outcomes** that another effort can intentionally reuse.
 
 The flow is one-way:
 
 ```text
-.kai/runs/ -> initiatives/<slug>/artifacts/ -> library/<type>/
+.kai/runs/ -> kai/initiatives/<slug>/artifacts/ -> kai/library/<type>/
 ```
 
 Rules:
 
 1. Initiative work defaults to its `artifacts/` tree.
-2. Agents never write directly to `library/` merely because a destination is
+2. Agents never write directly to `kai/library/` merely because a destination is
    unclear.
 3. Promotion is steward-approved and recorded in `deliverables.md`.
 4. The promoted entry records source initiative, source artifact, owner, and
@@ -343,19 +361,19 @@ Rules:
 
 | Outcome | Library destination |
 |---|---|
-| Document review | `library/reviews/` |
-| Engineering or architecture decision | `library/dev-designs/` |
-| Product/strategy investigation or sanitized unaffiliated incident record | `library/investigations/` |
-| AI landscape briefing | `library/briefings/` |
-| Promoted QA/persona finding | `library/qa-findings/` |
-| Team-shareable lesson | `library/lessons/` |
-| Weekly digest | `library/digests/` |
-| Atomic reusable learning | `library/learnings/` |
-| Release record | `library/releases/` |
-| Reusable procedure | `library/playbooks/` |
-| Reusable content pack | `library/content/` |
+| Document review | `kai/library/reviews/` |
+| Engineering or architecture decision | `kai/library/dev-designs/` |
+| Product/strategy investigation or sanitized unaffiliated incident record | `kai/library/investigations/` |
+| AI landscape briefing | `kai/library/briefings/` |
+| Promoted QA/persona finding | `kai/library/qa-findings/` |
+| Team-shareable lesson | `kai/library/lessons/` |
+| Weekly digest | `kai/library/digests/` |
+| Atomic reusable learning | `kai/library/learnings/` |
+| Release record | `kai/library/releases/` |
+| Reusable procedure | `kai/library/playbooks/` |
+| Reusable content pack | `kai/library/content/` |
 
-Heavy binaries remain ignored even below `library/`: `*.mp3`, `*.har`,
+Heavy binaries remain ignored even below `kai/library/`: `*.mp3`, `*.har`,
 `*.zip`, `audio/`, `raw/`, and `screenshots/`.
 
 ### Library frontmatter
@@ -380,8 +398,8 @@ evidence:
 
 ## Initiatives
 
-Before substantial project or feature work, read `coordination/ACTIVE.md`. For
-each active slug, load `initiatives/<slug>/northstar.md` only when the target
+Before substantial project or feature work, read `kai/coordination/ACTIVE.md`. For
+each active slug, load `kai/initiatives/<slug>/northstar.md` only when the target
 matches its repositories, targets, keywords, or the operator's stated goal.
 Unrelated work remains context-free.
 
@@ -390,8 +408,8 @@ When loaded:
 1. Read `mission`, `vision`, `scope.current`, the referenced milestones, and
    `principles.non_negotiable`.
 2. Apply `scope-discipline` before acting.
-3. Claim and update `coordination/items/<item-id>.md`.
-4. Append handoffs and questions to `coordination/threads/<item-id>.md`.
+3. Claim and update `kai/coordination/items/<item-id>.md`.
+4. Append handoffs and questions to `kai/coordination/threads/<item-id>.md`.
 5. Add durable outputs and local evidence to `deliverables.md`.
 
 ### North-star frontmatter
@@ -419,7 +437,7 @@ scope:
   deferred: []
 principles:
   non_negotiable: []
-proposal_channel: initiatives/<slug>/backlog.md
+proposal_channel: kai/initiatives/<slug>/backlog.md
 created: <YYYY-MM-DD>
 owner: principal-product-manager
 related: []
@@ -437,8 +455,8 @@ Milestone `required_items` is authoritative and typed:
 `[{item: <id>, state: completed|shipped}]`. Research and decisions complete;
 production changes ship. An empty mapping is incomplete.
 
-`coordination/ACTIVE.md` is the operational focus pointer.
-`initiatives/INDEX.md` is the permanent all-status catalog:
+`kai/coordination/ACTIVE.md` is the operational focus pointer.
+`kai/initiatives/INDEX.md` is the permanent all-status catalog:
 
 ```markdown
 | slug | status | workspace | summary | deliverables | updated |
@@ -450,19 +468,19 @@ undiscoverable.
 ## Proposals
 
 An expansion discovered inside an initiative goes to
-`initiatives/<slug>/backlog.md`. An unaffiliated proposal goes to
-`coordination/backlog.md`. Proposals never fall back to `.kai/runs/`.
+`kai/initiatives/<slug>/backlog.md`. An unaffiliated proposal goes to
+`kai/coordination/backlog.md`. Proposals never fall back to `.kai/runs/`.
 
 ## Personal material
 
 Personal operational state — your `inbox.md` task list, derived `agenda.md`,
 optional linked-workspace registry, private consultation records, private
 decision briefs, voice profile, and career context — plus courses, certification
-notes, and private learning live under `personal/`. `personal/identity/voice.md` is consumed by
-`persona-self`; the career files under `personal/identity/` are owned by
+notes, and private learning live under `kai/personal/`. `kai/personal/identity/voice.md` is consumed by
+`persona-self`; the career files under `kai/personal/identity/` are owned by
 `principal-engineer-career-mentor`. `workflow-workspace-init` seeds every stub
 idempotently so the assistant is ready in any Kai workspace. Team-relevant
-material may be promoted explicitly to `library/lessons/`; it is never promoted
+material may be promoted explicitly to `kai/library/lessons/`; it is never promoted
 automatically.
 
 ## Manifest
@@ -473,16 +491,17 @@ automatically.
 {
   "plugin": "kai",
   "version": "<plugin version at scaffold time>",
-  "schema_version": 1,
+  "schema_version": 2,
   "scaffolded": "<YYYY-MM-DD>",
   "workspace_mode": "<repository|external>",
   "workspace_root": "<'.' in repository mode | absolute external root>",
   "kai": ".kai",
   "runs": ".kai/runs",
-  "coordination": "coordination",
-  "initiatives": "initiatives",
-  "library": "library",
-  "personal": "personal",
+  "corpus": "kai",
+  "coordination": "kai/coordination",
+  "initiatives": "kai/initiatives",
+  "library": "kai/library",
+  "personal": "kai/personal",
   "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
@@ -490,7 +509,7 @@ automatically.
 `version` is the plugin build stamped at scaffold time; **`schema_version`** is the
 independent workspace-contract version and is what upgrades key off. They move
 separately: a plugin release only bumps `schema_version` when it changes the
-generated workspace contract. The current contract is **schema version 1**. After
+generated workspace contract. The current contract is **schema version 2**. After
 `/plugin update kai`, run the workspace doctor (`node <kai-plugin>/scripts/workspace-doctor.mjs`)
 from the workspace root; if its `schema_version` is behind, the doctor prints the
 deterministic migration plan and coordinated agents refuse to claim work until the
@@ -499,16 +518,26 @@ workspace is migrated and re-validates clean.
 Root names are contract constants. Do not add compatibility aliases or silently
 create legacy `.ketzal/` or `knowledge/` roots.
 
+<!-- kai:allow-legacy-roots -->
+**Schema 2 moved the working corpus under `kai/`.** A schema-1 workspace put
+`coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
+root. There is exactly one supported layout — never write to a bare root path,
+and never honor a per-workspace layout switch. If both a bare root and its
+`kai/` counterpart exist, the workspace is **split-brain**: stop and migrate
+before claiming work. `.kai/` itself did not move, so the discovery anchor
+`.kai/manifest.json` is identical in both schema versions.
+<!-- /kai:allow-legacy-roots -->
+
 ## Agent checklist
 
 1. Resolve the runtime absolute `<workspace-root>`; committed repository
    metadata stores `.` rather than a machine-specific clone path.
 2. Require `.kai/manifest.json` for coordinated work.
-3. Check `coordination/ACTIVE.md` and load only matching initiatives.
+3. Check `kai/coordination/ACTIVE.md` and load only matching initiatives.
 4. Use `.kai/runs/` for raw evidence and scratch.
 5. Use the canonical initiative artifact path for initiative-owned output.
-6. Promote to `library/` only through the explicit promotion rule.
-7. Use `personal/` only for personal material.
+6. Promote to `kai/library/` only through the explicit promotion rule.
+7. Use `kai/personal/` only for personal material.
 8. Resolve personal state against the current Kai workspace; linked workspaces
    contribute coordination signals read-only.
 9. Record exact workspace-root-relative paths; never abbreviate with `.../`.

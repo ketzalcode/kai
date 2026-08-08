@@ -1,6 +1,6 @@
 ---
 name: executive-consultation
-description: "Private consultation method for director-executive-assistant. Defines how the assistant asks one or more real kai roles for facts or independent judgment, minimizes personal context, records request/answer provenance under personal/consultations/, bridges load-bearing team answers into the owning coordination thread through director-chief-of-staff, and returns an attributed synthesis without impersonating a principal."
+description: "Private consultation method for director-executive-assistant. Defines how the assistant asks one or more real kai roles for facts or independent judgment, minimizes personal context, records request/answer provenance under kai/personal/consultations/, bridges load-bearing team answers into the owning coordination thread through director-chief-of-staff, and returns an attributed synthesis without impersonating a principal."
 tools: [bash, view, edit, create, grep, glob]
 ---
 
@@ -25,7 +25,7 @@ insight from one or more roles.
 - **Active-item decision:** if the answer blocks or changes coordinated work,
   use a real peer and require the Chief of Staff or owning role to transcribe the
   load-bearing `QUESTION`/`ANSWER` into
-  `coordination/threads/<item-id>.md` per `peer-communication`.
+  `kai/coordination/threads/<item-id>.md` per `peer-communication`.
 
 The private consultation record is useful to the operator, but it never replaces
 the committed thread when team correctness depends on the answer.
@@ -88,14 +88,14 @@ The bridge copies only the canonical QUESTION/ANSWER fields, sanitized
 team-relevant context, necessary evidence paths, and provenance. It must not
 copy the private operator-intent paragraph, personal context, current workspace's
 private paths, or
-`personal/consultations/` path into committed coordination.
+`kai/personal/consultations/` path into committed coordination.
 
 ## Private record
 
 Write one gitignored record:
 
 ```text
-personal/consultations/<c-YYYY-NNNN>.md
+kai/personal/consultations/<c-YYYY-NNNN>.md
 ```
 
 Shape:
@@ -155,7 +155,7 @@ Return:
 Consultation: <id + complete|partial|dispatch-queue>
 Roles: <consulted roles + provenance>
 Workspaces: <validated labels>
-Record: <absolute personal/consultations/<id>.md path>
+Record: <absolute kai/personal/consultations/<id>.md path>
 Agreement: <one line>
 Disagreement: <one line or none>
 Team bridge: <thread path/question IDs or not required>

@@ -29,20 +29,20 @@ Create missing paths without overwriting existing content:
   CONVENTIONS.md
   runs/
     qa/ eng/ product/ revenue/ support/ review/ ship/ incident/ ai/ learn/ lessons/ pulse/ content/
-coordination/
+kai/coordination/
   ACTIVE.md
   BOARD.md
   backlog.md
   items/README.md
   threads/README.md
-initiatives/
+kai/initiatives/
   README.md
   INDEX.md
-library/
+kai/library/
   README.md
   reviews/ dev-designs/ investigations/ briefings/ qa-findings/
   lessons/ digests/ learnings/ releases/ playbooks/ content/
-personal/
+kai/personal/
   README.md
   inbox.md
   agenda.md
@@ -67,21 +67,24 @@ Initiative slug directories and their `artifacts/` subtrees are created by
 
 Install or replace exactly one managed block:
 
+<!-- kai:allow-legacy-roots -->
 ```gitignore
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 # Raw kai runs and personal material are local-only.
 /.kai/runs/
-/personal/
+/kai/personal/
 # Retired local state stays private during explicit migration.
 /.persona-self/
 /.kai/local.json
+# Retired schema-1 root-level personal lane stays private until migration completes.
+/personal/
 # Heavy binaries stay ignored inside the committed library.
-library/**/*.mp3
-library/**/*.har
-library/**/*.zip
-library/**/audio/
-library/**/raw/
-library/**/screenshots/
+kai/library/**/*.mp3
+kai/library/**/*.har
+kai/library/**/*.zip
+kai/library/**/audio/
+kai/library/**/raw/
+kai/library/**/screenshots/
 **/storageState*.json
 # <<< kai workspace <<<
 ```
@@ -90,11 +93,13 @@ library/**/screenshots/
 writing the block, verify:
 
 - `.kai/runs/` is ignored;
-- `personal/` is ignored;
+- `kai/personal/` is ignored;
+- a legacy root-level `personal/` is ignored until migration completes;
 - a legacy `.persona-self/` is ignored until migration completes;
 - a legacy `.kai/local.json` is ignored until deletion is approved;
-- `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `coordination/`,
-  `initiatives/`, and textual `library/` files are not ignored.
+- `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `kai/coordination/`,
+  `kai/initiatives/`, and textual `kai/library/` files are not ignored.
+<!-- /kai:allow-legacy-roots -->
 
 If these checks fail, onboarding fails. Do not allow browser or evidence runs
 to write credentials or raw state before ignore validation succeeds.
@@ -127,13 +132,40 @@ current fixed schema" means — a re-run brings an old manifest fully up to date
 
 **Schema-version migration ladder.** `schema_version` (independent of the plugin
 `version`) drives upgrades deterministically. The current contract is
-**schema version 1**. Migrations are an ordered, idempotent ladder — apply each
+**schema version 2**. Migrations are an ordered, idempotent ladder — apply each
 step whose version is above the manifest's `schema_version`, in order, then set
 `schema_version` to the current value:
 
 - **→ 1 (baseline / pre-schema):** a manifest with no `schema_version` (or `0`)
   is a pre-schema workspace. Add `schema_version: 1`, apply the fixed-root/`areas`
   reconciliation above, and remove retired fields. No coordination-record changes.
+<!-- kai:allow-legacy-roots -->
+- **→ 2 (working corpus moves under `kai/`):** a schema-1 workspace keeps
+  `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
+  root. Move each to `kai/<root>/` **preserving history** (`git mv` when the path
+  is tracked; the `personal/` lane is gitignored and therefore untracked, so move
+  it with a plain filesystem move), add the `corpus` root and the `kai/`-prefixed
+  root values to the manifest, and re-install the managed ignore block so
+  `kai/personal/` is ignored. `.kai/` does not move — the sentinel path is
+  unchanged. Then repoint references:
+  1. relative links **inside** moved files still resolve, because the four roots
+     move together;
+  2. every reference **from outside** the moved roots — a workspace-root-relative
+     path recorded in a work item, an `artifact_target`, a `context_artifacts`
+     entry, a README link — is rewritten to `kai/…`. Scan all tracked text in the
+     workspace, not just the moved trees;
+  3. regenerate `.kai/CONVENTIONS.md`, which documents the schema-1 layout and is
+     guaranteed stale.
+
+  Show every move and every rewrite before applying, and report them after.
+  The migration is **idempotent and resumable**: bump `schema_version` to `2`
+  **last**, only after the moves and rewrites verify clean, so an interrupted
+  run re-enters at → 2 and finishes rather than declaring success. If a bare root
+  and its `kai/` counterpart both exist, stop with a split-brain error and let
+  the operator reconcile — never merge silently. A root-level directory that
+  merely shares a name but holds no kai content (a product's own `library/` or
+  `personal/`) is **not** kai state: leave it alone.
+<!-- /kai:allow-legacy-roots -->
 
 When a future release changes the generated workspace contract it appends the
 next numbered step here and bumps the current version; it never rewrites an
@@ -147,12 +179,12 @@ Render the current workspace layout, routing table, initiative artifact
 defaults, library promotion invariant, and coordination authority. The skill is
 authoritative if this rendered file ever drifts.
 
-### `coordination/ACTIVE.md`
+### `kai/coordination/ACTIVE.md`
 
 Seed an empty focus pointer explaining that each active row names an initiative
 slug and why it is active.
 
-### `coordination/BOARD.md`
+### `kai/coordination/BOARD.md`
 
 Seed:
 
@@ -160,25 +192,25 @@ Seed:
 | id | title | initiative | milestone | priority | state | owner | next | depends-on | waiting-on | updated |
 ```
 
-State that it is derived from `coordination/items/*.md`.
+State that it is derived from `kai/coordination/items/*.md`.
 
-### `coordination/items/README.md`
+### `kai/coordination/items/README.md`
 
 Document the authoritative work-item schema, lifecycle, typed dependencies,
 lease, version, touch set, questions, review requirements, artifact target, and
 evidence rules from `work-coordination`.
 
-### `coordination/threads/README.md`
+### `kai/coordination/threads/README.md`
 
 Document append-only `HANDOFF`, `QUESTION`, `ANSWER`, and recovery packets from
 `work-coordination`.
 
-### `coordination/backlog.md`
+### `kai/coordination/backlog.md`
 
 Explain that this is the sink for unaffiliated deferred proposals.
-Initiative-scoped proposals belong in `initiatives/<slug>/backlog.md`.
+Initiative-scoped proposals belong in `kai/initiatives/<slug>/backlog.md`.
 
-### `initiatives/INDEX.md`
+### `kai/initiatives/INDEX.md`
 
 Seed:
 
@@ -187,19 +219,19 @@ Seed:
 ```
 
 On re-runs, add missing rows discovered from
-`initiatives/*/northstar.md` without replacing hand-edited rows.
+`kai/initiatives/*/northstar.md` without replacing hand-edited rows.
 
-### `initiatives/README.md`
+### `kai/initiatives/README.md`
 
 Document the north-star schema, lifecycle, scope gate, stewardship, stable
 milestones, `artifacts/` defaults, deliverable index, and closure summary.
 
-### `library/README.md`
+### `kai/library/README.md`
 
 Document allowed types, required frontmatter, one-way steward-approved
 promotion, provenance, and text-only commit rules.
 
-### `personal/README.md`
+### `kai/personal/README.md`
 
 Document the ignored workspace-local personal lane: operational
 `inbox.md`/`agenda.md`, optional linked-workspace registry, consultation
@@ -211,31 +243,34 @@ personal material is never promoted automatically.
 
 Create only when missing:
 
-- `personal/inbox.md` — the `personal-agenda` task/reminder schema.
-- `personal/agenda.md` — derived on demand; not hand-maintained.
-- `personal/workspaces.md` — fenced YAML with `workspaces: []`.
-- `personal/consultations/` — private consultation records.
-- `personal/decisions/` — private operator decision briefs.
-- `personal/proactive/` — proactive-scan delivery ledger (`snapshot.json`),
+- `kai/personal/inbox.md` — the `personal-agenda` task/reminder schema.
+- `kai/personal/agenda.md` — derived on demand; not hand-maintained.
+- `kai/personal/workspaces.md` — fenced YAML with `workspaces: []`.
+- `kai/personal/consultations/` — private consultation records.
+- `kai/personal/decisions/` — private operator decision briefs.
+- `kai/personal/proactive/` — proactive-scan delivery ledger (`snapshot.json`),
   `outbox/`, and a `channels.md` stub with `consent: no` by default. Used by an
   external runner; see `proactive-scan`. Never committed.
-- `personal/identity/README.md` — ownership and privacy of the identity files.
-- `personal/identity/voice.md` — stub owned by `extract-writing-style`, with
+- `kai/personal/identity/README.md` — ownership and privacy of the identity files.
+- `kai/personal/identity/voice.md` — stub owned by `extract-writing-style`, with
   frontmatter `status: stub`.
-- `personal/identity/career-snapshot.md`,
-  `personal/identity/skills-inventory.md`,
-  `personal/identity/current-work.md`, and
-  `personal/identity/career-goals.md` — stubs owned by
+- `kai/personal/identity/career-snapshot.md`,
+  `kai/personal/identity/skills-inventory.md`,
+  `kai/personal/identity/current-work.md`, and
+  `kai/personal/identity/career-goals.md` — stubs owned by
   `principal-engineer-career-mentor`; each carries `status: stub`.
 
 Never invent identity or career content and never overwrite populated files.
 
 ## Legacy and partial-layout handling
 
+<!-- kai:allow-legacy-roots -->
 The new contract does not preserve or write legacy roots. If `.ketzal/`,
-`knowledge/`, `.persona-self/`, `.kai/local.json`, or operational files under
-`initiatives/items`,
-`initiatives/threads`, `initiatives/ACTIVE.md`, or `initiatives/BOARD.md`
+`knowledge/`, `.persona-self/`, `.kai/local.json`, a **schema-1 root-level
+`coordination/`, `initiatives/`, `library/`, or `personal/`**, or operational
+files under
+`kai/initiatives/items`,
+`kai/initiatives/threads`, `kai/initiatives/ACTIVE.md`, or `kai/initiatives/BOARD.md`
 exist:
 
 1. report every detected legacy path;
@@ -244,7 +279,18 @@ exist:
 4. never create both layouts as a compatibility strategy;
 5. never delete the legacy source automatically.
 
-For `.persona-self/`, propose file-for-file moves into `personal/identity/`.
+A root-level directory only counts as **retired kai state** when it actually
+holds kai content — `coordination/` with `items/`, `threads/`, `BOARD.md`,
+`ACTIVE.md`, or `backlog.md`; `initiatives/` with `INDEX.md`; `library/` with
+one of the canonical library types; `personal/` with `inbox.md`, `agenda.md`,
+`identity/`, `consultations/`, or `decisions/`. A product's own root-level
+`library/`, `personal/`, or `docs`-style folder that shares a generic name but
+holds none of those markers is **not** kai state. Do not touch it, do not report
+it as legacy, and do not treat it as split-brain — avoiding exactly that
+collision is why the corpus moved under `kai/`.
+<!-- /kai:allow-legacy-roots -->
+
+For `.persona-self/`, propose file-for-file moves into `kai/personal/identity/`.
 Do not create fresh identity stubs alongside populated legacy files; migration
 must be explicit so the user's private profile is not forked.
 
@@ -256,9 +302,9 @@ For `knowledge/` (an earlier root that mixed research, decisions, and notes),
 **never bulk-move it** — the whole point of the current contract is to split it.
 Classify each artifact and propose a per-item destination, operator-confirmed:
 
-- initiative-scoped research or decisions → `initiatives/<slug>/artifacts/research/`
-  or `initiatives/<slug>/artifacts/decisions/`;
-- cross-initiative reusable outcomes → the matching `library/<type>/`;
+- initiative-scoped research or decisions → `kai/initiatives/<slug>/artifacts/research/`
+  or `kai/initiatives/<slug>/artifacts/decisions/`;
+- cross-initiative reusable outcomes → the matching `kai/library/<type>/`;
 - raw or regenerable scratch → `.kai/runs/`.
 
 An item whose classification is ambiguous stays put until the operator decides;

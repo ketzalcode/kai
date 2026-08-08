@@ -150,7 +150,7 @@ Output to: `<working-root>/product/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/cata
   the date-first run grammar.
 
 **Initiative gating (see `workspace-conventions`).** Before cataloging bets,
-glance at `coordination/ACTIVE.md`. If this product area falls inside the active
+glance at `kai/coordination/ACTIVE.md`. If this product area falls inside the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and weight your prioritization toward it — then
 stamp `initiative: <slug>` in the promoted frontmatter. If it's a side
@@ -161,7 +161,7 @@ to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated catalog
 to
-`library/investigations/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`
+`kai/library/investigations/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`
 with library frontmatter so it travels via `git pull`. Keep it local-only if the operator
 passes `--local`.
 

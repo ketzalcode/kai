@@ -200,7 +200,7 @@ Write detailed local evidence under:
 
 For coordinated work, write a sanitized artifact to:
 
-`initiatives/<slug>/artifacts/reliability/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/reliability/<item-id>.md`
 
 Keep raw telemetry, private endpoints/topology, customer/tenant details, and
 credentials local. Never store secrets even in ignored evidence.

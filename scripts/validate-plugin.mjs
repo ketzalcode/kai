@@ -234,6 +234,60 @@ if (mAreas) {
   }
 }
 
+// 2c. Schema 2 moved the working corpus under `kai/`. A single shipped prompt,
+//     doc, or distributed example still naming a bare root would silently
+//     recreate the retired schema-1 layout beside the real one (split-brain),
+//     so a root segment is only accepted when it is immediately parented by
+//     `kai/`. Text that deliberately names the retired roots — legacy
+//     detection, the migration ladder, retired ignore rules — must say so
+//     explicitly by wrapping the region in `<!-- kai:allow-legacy-roots -->` …
+//     `<!-- /kai:allow-legacy-roots -->`, so the exemption is a decision on the
+//     record rather than a keyword coincidence.
+const ROOT_SEGMENT = /(coordination|initiatives|library|personal)[/\\]/g;
+const LEGACY_OPEN = /<!--\s*kai:allow-legacy-roots\s*-->/;
+const LEGACY_CLOSE = /<!--\s*\/kai:allow-legacy-roots\s*-->/;
+const TREE_LINE = /[├└│]/;
+const corpusScanFiles = [...allFiles.map((f) => f.path)];
+for (const extra of ['AGENTS.md', 'README.md']) {
+  const p = join(ROOT, extra);
+  if (existsSync(p)) corpusScanFiles.push(p);
+}
+const examplesDir = join(ROOT, 'examples');
+if (existsSync(examplesDir)) {
+  const walk = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(md|ya?ml|json|sh|ps1|mjs|js)$/i.test(e.name)) corpusScanFiles.push(p);
+    }
+  };
+  walk(examplesDir);
+}
+for (const path of corpusScanFiles) {
+  const lines = readFileSync(path, 'utf8').split(/\r?\n/);
+  const seen = new Set();
+  let exempt = false;
+  lines.forEach((line, i) => {
+    if (LEGACY_OPEN.test(line)) { exempt = true; return; }
+    if (LEGACY_CLOSE.test(line)) { exempt = false; return; }
+    if (exempt) return;
+    // Tree diagrams render the roots as indented children of `kai/`.
+    if (TREE_LINE.test(line)) return;
+    for (const m of line.matchAll(ROOT_SEGMENT)) {
+      const before = line.slice(0, m.index);
+      // Correctly parented — the only accepted form.
+      if (/kai[/\\]$/.test(before)) continue;
+      // Part of a longer identifier (`sub-library/`, `mylibrary/`), not a root.
+      if (/[\w-]$/.test(before)) continue;
+      const key = `${m[1]}:${i}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      err(rel(path), `line ${i + 1} references the retired schema-1 root \`${m[1]}/\` — the working corpus lives at \`kai/${m[1]}/\` (a bare root forks the workspace; wrap deliberate legacy text in <!-- kai:allow-legacy-roots -->)`);
+    }
+  });
+  if (exempt) err(rel(path), 'an unclosed <!-- kai:allow-legacy-roots --> region suppresses bare-root checking to end of file');
+}
+
 // 3. The library/<type>/ set must match across the conventions "Library types"
 //    table and the two library scaffolds.
 function libTypesFromTable(text) {
@@ -243,9 +297,9 @@ function libTypesFromTable(text) {
   const rest = text.slice(start + 1);
   const nextHeading = rest.search(/\n#{2,3} /);
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
-  return toSet([...section.matchAll(/`library\/([a-z0-9-]+)\/`/g)].map((m) => m[1]));
+  return toSet([...section.matchAll(/`kai\/library\/([a-z0-9-]+)\/`/g)].map((m) => m[1]));
 }
-const obLibM = onboarding && onboarding.match(/\nlibrary\/\r?\n([\s\S]*?)\r?\npersonal\//);
+const obLibM = onboarding && onboarding.match(/\nkai\/library\/\r?\n([\s\S]*?)\r?\nkai\/personal\//);
 const obLib = obLibM ? dirTokens(obLibM[1]) : null;
 const wiLibM = wsInit && wsInit.match(/library\/\{([^}]*)\}/s);
 const wiLib = wiLibM ? dirTokens(wiLibM[1]) : null;
@@ -262,9 +316,9 @@ if (tableLib && wiLib && !setEq(tableLib, wiLib)) {
 
 // 4. Initiative artifact directories must match between the canonical workspace
 //    tree and the bounded workflow that creates an initiative.
-const conventionArtifactsM = conventions && conventions.match(/artifacts\/\r?\n([\s\S]*?)\r?\n├─ library\//);
+const conventionArtifactsM = conventions && conventions.match(/artifacts\/\r?\n([\s\S]*?)\r?\n   ├─ library\//);
 const conventionArtifacts = conventionArtifactsM ? dirTokens(conventionArtifactsM[1]) : null;
-const wiArtifactsM = initiativeInit && initiativeInit.match(/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\ncoordination\//);
+const wiArtifactsM = initiativeInit && initiativeInit.match(/kai\/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\nkai\/coordination\//);
 const wiArtifacts = wiArtifactsM ? dirTokens(wiArtifactsM[1]) : null;
 if (!conventionArtifacts) {
   err('skills/workspace-conventions/SKILL.md', 'could not locate the initiative artifacts/ scaffold');
@@ -280,7 +334,7 @@ if (conventionArtifacts && wiArtifacts && !setEq(conventionArtifacts, wiArtifact
 // Fixtures — a self-contained repository-mode workspace manifest that must match
 // the documented schema and canonical areas, with no machine-specific paths.
 // ---------------------------------------------------------------------------
-const REQUIRED_MANIFEST_KEYS = ['plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode', 'workspace_root', 'kai', 'runs', 'coordination', 'initiatives', 'library', 'personal', 'areas'];
+const REQUIRED_MANIFEST_KEYS = ['plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode', 'workspace_root', 'kai', 'runs', 'corpus', 'coordination', 'initiatives', 'library', 'personal', 'areas'];
 const fixtureManifest = join(ROOT, 'test/fixtures/repo-workspace/.kai/manifest.json');
 if (existsSync(fixtureManifest)) {
   const fr = 'test/fixtures/repo-workspace/.kai/manifest.json';

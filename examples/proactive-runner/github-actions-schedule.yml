@@ -28,24 +28,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Hosted runners start clean and `personal/` is gitignored, so the dedup
+      # Hosted runners start clean and `kai/personal/` is gitignored, so the dedup
       # ledger MUST be persisted across runs or every signal looks new. Cache it.
       - name: Restore proactive ledger
         uses: actions/cache@v4
         with:
-          path: personal/proactive
+          path: kai/personal/proactive
           key: kai-proactive-${{ github.repository }}
 
       # 1) SCAN (read-only). Replace the placeholder with your host's actual
       #    non-interactive invocation of workflow-proactive-scan. It writes
-      #    personal/proactive/outbox/<ts>.json and returns the notification_id.
+      #    kai/personal/proactive/outbox/<ts>.json and returns the notification_id.
       - name: kai proactive scan
         id: scan
         run: |
           echo "Invoke your Copilot host here, e.g.:"
           echo "  copilot --agent workflow-proactive-scan \\"
           echo "    --input 'phase: scan; selected workspace root: ${{ github.workspace }}'"
-          payload=$(ls -t personal/proactive/outbox/*.json 2>/dev/null | head -n1 || true)
+          payload=$(ls -t kai/personal/proactive/outbox/*.json 2>/dev/null | head -n1 || true)
           if [ -z "$payload" ]; then echo "::error::scan produced no payload"; exit 1; fi
           echo "payload=$payload" >> "$GITHUB_OUTPUT"
 
@@ -64,7 +64,7 @@ jobs:
             signals|partial) : ;;
             *)       echo "::error::unexpected status '$status'"; exit 1 ;;
           esac
-          if grep -Eiq 'consent:[[:space:]]*yes' personal/proactive/channels.md; then :; else
+          if grep -Eiq 'consent:[[:space:]]*yes' kai/personal/proactive/channels.md; then :; else
             echo "no consented channel; leaving payload in outbox"; echo "delivered=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           curl --fail-with-body -sS -X POST -H 'Content-Type: application/json' \
@@ -84,5 +84,5 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: personal/proactive
+          path: kai/personal/proactive
           key: kai-proactive-${{ github.repository }}

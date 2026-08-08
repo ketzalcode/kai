@@ -37,8 +37,30 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.26.0` — **54 agents and 39 skills**. This release gives dev designs
-**diagrams from a shared, standard vocabulary** (#62). Engineering design
+`v0.27.0` — **54 agents and 39 skills**. This release ends the **root-level
+clutter** that made kai painful to adopt in an existing repository (#70). A
+<!-- kai:allow-legacy-roots -->
+kai workspace used to scatter four generic top-level directories — the now
+retired `coordination/`, `initiatives/`, `library/`, `personal/` — across the
+root of whatever repo you onboarded, colliding with product folders and burying
+kai state in the file tree.
+<!-- /kai:allow-legacy-roots -->
+The workspace now splits on one honest axis: **`.kai/`
+is the hidden control plane** (the `manifest.json` discovery anchor, the
+contract, and ignored `runs/` evidence — machine state) and the new visible
+**`kai/` root is the working corpus** (everything humans browse, search, and
+edit). The four roots move to `kai/<root>/`; `.kai/` does not move, so the
+bootstrap sentinel is unchanged. This is **`schema_version` 2**, a mandatory
+migration: the workspace doctor now resolves roots from the manifest instead
+of assuming a layout, refuses a workspace still on schema 1, and hard-fails a
+**split-brain** workspace where a retired bare root coexists with its `kai/`
+counterpart. Because ~520 path literals across 73 declarative prompts had to
+move together, the plugin validator gained a rule that rejects any bare-root
+literal in a shipped agent or skill — a single stale prompt is exactly how a
+workspace would silently fork. There is one supported layout and no
+per-workspace layout switch. It builds on the prior release, which gave dev
+designs **diagrams from a shared, standard vocabulary** (#62/v0.26.0).
+Engineering design
 artifacts — the architect's `decision.md` and the backend/frontend/infra
 `design.md` — described system shape, data, flow, and topology in prose,
 with no expectation of a picture and no common way to draw one. A new
@@ -48,8 +70,8 @@ can't carry it; embedded SVG/HTML only when the artifact is itself HTML)
 and a catalog of familiar shapes (component/boundary, sequence, ER, state,
 topology, tree) — while each of the four dev-design producers brings the
 domain judgment about *which* diagram its design needs. It's the technical
-counterpart to `ui-mockup`, which owns UI screens. It builds on the prior
-release, which made the `learn` and
+counterpart to `ui-mockup`, which owns UI screens. It builds on the release
+before it, which made the `learn` and
 `lessons` run areas **goal-first and deterministic** (#61), closing the last
 run-grammar gap from the #59 date-first unification. Those two areas were excluded
 from date-first because a learner's runs accrete toward a durable goal, not a
@@ -284,8 +306,8 @@ Plugins are cached per session — changes only appear in **new** sessions.
 
 ## Upgrading a workspace after a plugin update
 
-A kai *workspace* (the `.kai/`, `coordination/`, `initiatives/`, `library/`, and
-`personal/` state a repo or folder gets when onboarded) carries its own
+A kai *workspace* (the `.kai/`, `kai/coordination/`, `kai/initiatives/`, `kai/library/`, and
+`kai/personal/` state a repo or folder gets when onboarded) carries its own
 **`schema_version`** in `.kai/manifest.json`, independent of the plugin
 `version`. Most `/plugin update kai` releases don't change it; when one does, an
 existing workspace needs a one-time migration.
@@ -331,7 +353,7 @@ kai/
 | Name | Purpose |
 | ---- | ------- |
 | `workflow-self-check` | Read-only structural-health auditor that writes one report under `.kai/runs/review/<YYYY-MM-DD>/<NN>-self-check-kai/report.md`. |
-| `workflow-workspace-init` | Idempotent onboarding for any repository or durable standalone folder. Creates `.kai/`, coordination, initiatives, library, and complete ignored `personal/` assistant/identity state, including migration guidance for legacy `.persona-self/`. |
+| `workflow-workspace-init` | Idempotent onboarding for any repository or durable standalone folder. Creates `.kai/`, coordination, initiatives, library, and complete ignored `kai/personal/` assistant/identity state, including migration guidance for legacy `.persona-self/`. |
 | `workflow-initiative-init` | Bounded intake workflow that resolves the target workspace, then turns mission + vision into a proposed north star with stable milestones, success measures, deliverable index, and initial proposed item records. |
 
 ### Direction (`director-*`)
@@ -424,7 +446,7 @@ kai/
 | ---- | ------- |
 | `instructor-tutor` | Generative tutor for **any subject** — a cert objective, a language, engineering/AI, finance. Writes original concrete-first lessons (Explain / Lesson / Series modes) under `.kai/runs/lessons/<goal-slug>/`; never auto-runs audio. |
 | `instructor-teacher` | Pedagogy orchestrator — turns chaptered/sectioned markdown (course units, book chapters, humanized docs, notes) into paired HTML-visual + audio-narration lessons per source file. Orchestrates `generate-html-lesson` (English visual) + `generate-audio` (Spanish narration). Subject-agnostic. |
-| `instructor-path-mentor` | Stewards a whole certification/learning path over time — plan, schedule against a target date, per-objective progress, and spaced review in `personal/learning/<slug>.md`. Dispatches `workflow-course-to-audio`, `instructor-teacher`, and `instructor-tutor`; never auto-runs audio. Executes a chosen path (career *strategy* stays with `principal-engineer-career-mentor`). |
+| `instructor-path-mentor` | Stewards a whole certification/learning path over time — plan, schedule against a target date, per-objective progress, and spaced review in `kai/personal/learning/<slug>.md`. Dispatches `workflow-course-to-audio`, `instructor-teacher`, and `instructor-tutor`; never auto-runs audio. Executes a chosen path (career *strategy* stays with `principal-engineer-career-mentor`). |
 | `workflow-course-to-audio` | Turns a course, cert module, or long readable web page into local markdown ready for `generate-audio`. Wraps `web-content-extraction` for the crawl, then offers an explicit audio handoff (never auto-runs — Azure cost). Knowledge-checks split into a separate file so narration stays clean. |
 
 ### Product exploration and web evaluation
@@ -453,14 +475,14 @@ assistant) is the default; *pushed* updates need an external runner you host.
 
 | Name | Purpose |
 | ---- | ------- |
-| `workflow-proactive-scan` | The bounded workflow an **external runner** (cron / Task Scheduler / a `schedule:` CI job — see `examples/proactive-runner/`) invokes on a cadence. Read-only scans a selected workspace + linked roots for newly-actionable `@operator` signals and release-ready items, diffs against a gitignored `personal/proactive/snapshot.json`, deduplicates, and **emits** a notification payload for the runner to deliver. Takes no action beyond the configured notification. |
+| `workflow-proactive-scan` | The bounded workflow an **external runner** (cron / Task Scheduler / a `schedule:` CI job — see `examples/proactive-runner/`) invokes on a cadence. Read-only scans a selected workspace + linked roots for newly-actionable `@operator` signals and release-ready items, diffs against a gitignored `kai/personal/proactive/snapshot.json`, deduplicates, and **emits** a notification payload for the runner to deliver. Takes no action beyond the configured notification. |
 
 ### Personal (your voice & career)
 
 | Name | Purpose |
 | ---- | ------- |
-| `persona-self` | Drafts messages, posts, emails, design docs, PR descriptions, and replies in *your* voice with a senior-engineer professionalism overlay. Loads the current workspace's `personal/identity/voice.md` every run. Three modes (Draft / Rewrite / Reply), format-and-audience aware. **Never auto-publishes.** |
-| `principal-engineer-career-mentor` | On-demand IC-track career mentor. Reads the current workspace's `personal/identity/` career files and runs six modes: intake, weekly check-in, quarterly review, spot consultation, cert plan, and visibility nudge. Honest mentor, not cheerleader. **Never auto-publishes.** |
+| `persona-self` | Drafts messages, posts, emails, design docs, PR descriptions, and replies in *your* voice with a senior-engineer professionalism overlay. Loads the current workspace's `kai/personal/identity/voice.md` every run. Three modes (Draft / Rewrite / Reply), format-and-audience aware. **Never auto-publishes.** |
+| `principal-engineer-career-mentor` | On-demand IC-track career mentor. Reads the current workspace's `kai/personal/identity/` career files and runs six modes: intake, weekly check-in, quarterly review, spot consultation, cert plan, and visibility nudge. Honest mentor, not cheerleader. **Never auto-publishes.** |
 
 ### Weekly catch-up
 
@@ -474,14 +496,14 @@ assistant) is the default; *pushed* updates need an external runner you host.
 
 | Name | Purpose |
 | ---- | ------- |
-| `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `coordination/` for team state, initiative-owned `artifacts/`, promoted `library/`, and the personal `personal/` lane. |
+| `workspace-conventions` | Shared output-routing contract: `.kai/runs` for raw work, `kai/coordination/` for team state, initiative-owned `artifacts/`, promoted `kai/library/`, and the personal `kai/personal/` lane. |
 | `workspace-onboarding` | Idempotent initialization and validation method used by `workflow-workspace-init`. |
-| `product-exploration` | Neutral live-product mapping method with canonical `initiatives/<slug>/artifacts/product-map.md` placement. |
-| `product-marketing-intelligence` | The method behind `principal-product-marketing`: turns a product surface into reusable `product_exploration_report.md` + `product_context.json` + `media_manifest.json` under `initiatives/<slug>/artifacts/marketing/`. Types every assertion fact / inference / recommendation with source, confidence, and basis; downstream-consumable without chat. |
+| `product-exploration` | Neutral live-product mapping method with canonical `kai/initiatives/<slug>/artifacts/product-map.md` placement. |
+| `product-marketing-intelligence` | The method behind `principal-product-marketing`: turns a product surface into reusable `product_exploration_report.md` + `product_context.json` + `media_manifest.json` under `kai/initiatives/<slug>/artifacts/marketing/`. Types every assertion fact / inference / recommendation with source, confidence, and basis; downstream-consumable without chat. |
 | `scope-discipline` | The classify-before-adopt gate. Assessors report honestly; `principal-product-manager` owns scope decisions; `principal-product-designer` and engineering acting roles may refine approved scope but route expanded surfaces, flows, capabilities, or implementation as durable proposals. |
-| `work-coordination` | Authoritative item state under `coordination/items/`, derived board, typed dependencies, leases, durable threads, revision-bound reviews, and truthful completion/shipping. |
+| `work-coordination` | Authoritative item state under `kai/coordination/items/`, derived board, typed dependencies, leases, durable threads, revision-bound reviews, and truthful completion/shipping. |
 | `definition-of-done` | The shared release-readiness contract. Its six dimensions gate `in-review → release-ready`; production deployment and verification are evidenced afterward before `shipped`. Each dimension resolves Clear / Gap / Waived-with-reason, and gaps bounce with a named owner. |
-| `peer-communication` | One role-addressed QUESTION/ANSWER protocol over inline, live-peer, and durable `coordination/threads/` transports. |
+| `peer-communication` | One role-addressed QUESTION/ANSWER protocol over inline, live-peer, and durable `kai/coordination/threads/` transports. |
 | `initiative-stewardship` | The shared initiative-ownership contract. The steward approves scope and priority; the Chief of Staff dispatches; principals execute. Milestones require `completed` for knowledge work or `shipped` for production; the initiative ends with the matching truthful status. |
 
 **Engineering craft** — per-change discipline every `principal-swe-*` agent inherits:
@@ -533,16 +555,16 @@ assistant) is the default; *pushed* updates need an external runner you host.
 | ---- | ------- |
 | `generate-audio` | Turns a folder of markdown into multilingual narrated audio via lectoria. Cwd-relative — travels across codebases. |
 | `generate-html-lesson` | Turns a markdown source into a self-contained offline `index.html` lesson — prose + HTML/CSS diagrams + embedded audio player when available. English visual / Spanish audio by default. Orchestrated by `instructor-teacher`. |
-| `extract-writing-style` | Extracts your writing style from chat history / PR comments / pasted samples into the current workspace's portable `personal/identity/voice.md` profile. Idempotent and privacy-first. |
+| `extract-writing-style` | Extracts your writing style from chat history / PR comments / pasted samples into the current workspace's portable `kai/personal/identity/voice.md` profile. Idempotent and privacy-first. |
 
 **Personal:**
 
 | Name | Purpose |
 | ---- | ------- |
-| `personal-agenda` | The method behind `director-executive-assistant`: owns the `personal/inbox.md` task lifecycle (proposed/open/waiting/snoozed/done with recurrence, reminders, dedup, and least-privilege field sharing) and assembles the ranked forward "what needs you" `personal/agenda.md` from `coordination/` signals, the inbox, and cadence nudges. Forward complement to `pulse-digest`; never autonomous. |
-| `executive-consultation` | Private method for "ask the team and brief me": sends a minimal read-only packet to real roles, records attributed answers under `personal/consultations/`, preserves disagreement/provenance, and bridges load-bearing team answers to the owning coordination thread. |
-| `decision-brief` | Private method for "give me what I need to decide, in one place": turns a decision already waiting on you — an `@operator` `kind: decision` thread question or a `release-ready` deploy gate — into a brief with options, per-role positions, tradeoffs, and a sourced recommendation under `personal/decisions/`. Fills only missing positions via `executive-consultation`; never decides. |
-| `proactive-scan` | The contract behind `workflow-proactive-scan`: the runtime boundary (declarative plugin vs external runner), the read-only signal scan, the `personal/proactive/snapshot.json` diff/dedup (new/changed/overdue), the notification payload, and channels/consent kept gitignored. kai emits; your runner delivers. |
+| `personal-agenda` | The method behind `director-executive-assistant`: owns the `kai/personal/inbox.md` task lifecycle (proposed/open/waiting/snoozed/done with recurrence, reminders, dedup, and least-privilege field sharing) and assembles the ranked forward "what needs you" `kai/personal/agenda.md` from `kai/coordination/` signals, the inbox, and cadence nudges. Forward complement to `pulse-digest`; never autonomous. |
+| `executive-consultation` | Private method for "ask the team and brief me": sends a minimal read-only packet to real roles, records attributed answers under `kai/personal/consultations/`, preserves disagreement/provenance, and bridges load-bearing team answers to the owning coordination thread. |
+| `decision-brief` | Private method for "give me what I need to decide, in one place": turns a decision already waiting on you — an `@operator` `kind: decision` thread question or a `release-ready` deploy gate — into a brief with options, per-role positions, tradeoffs, and a sourced recommendation under `kai/personal/decisions/`. Fills only missing positions via `executive-consultation`; never decides. |
+| `proactive-scan` | The contract behind `workflow-proactive-scan`: the runtime boundary (declarative plugin vs external runner), the read-only signal scan, the `kai/personal/proactive/snapshot.json` diff/dedup (new/changed/overdue), the notification payload, and channels/consent kept gitignored. kai emits; your runner delivers. |
 
 More skills and agents are queued; see the roadmap below.
 
@@ -554,42 +576,60 @@ every agent resolves the same paths:
 
 ```
 <workspace>/
-├─ .kai/
+├─ .kai/                                   hidden control plane
 │  ├─ manifest.json + CONVENTIONS.md       committed bootstrap
 │  └─ runs/<area>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/   ignored raw evidence and scratch
-├─ coordination/
-│  ├─ ACTIVE.md + BOARD.md + backlog.md
-│  ├─ items/<item-id>.md                   authoritative work state
-│  └─ threads/<item-id>.md                 durable handoffs and peer questions
-├─ initiatives/
-│  ├─ INDEX.md
-│  └─ <slug>/
-│     ├─ northstar.md + log.md + backlog.md
-│     ├─ deliverables.md + director-summary.md
-│     └─ artifacts/{product-map.md,design-system.md,customer-success/,support/,
-│                    growth/,analytics/,security/,reliability/,incidents/,
-│                    briefs/,research/,designs/,decisions/}
-├─ library/                                promoted cross-initiative outcomes
-│  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
-│     lessons/ digests/ learnings/ releases/ playbooks/
-└─ personal/                               ignored personal ops + growth
-   ├─ inbox.md + agenda.md + workspaces.md
-   ├─ identity/{voice.md,career-*.md}
-   └─ consultations/ + decisions/ + proactive/ + lessons/ + courses/ + certs/ + growth/
+└─ kai/                                    visible human working corpus
+   ├─ coordination/
+   │  ├─ ACTIVE.md + BOARD.md + backlog.md
+   │  ├─ items/<item-id>.md                authoritative work state
+   │  └─ threads/<item-id>.md              durable handoffs and peer questions
+   ├─ initiatives/
+   │  ├─ INDEX.md
+   │  └─ <slug>/
+   │     ├─ northstar.md + log.md + backlog.md
+   │     ├─ deliverables.md + director-summary.md
+   │     └─ artifacts/{product-map.md,design-system.md,customer-success/,support/,
+   │                    growth/,analytics/,security/,reliability/,incidents/,
+   │                    briefs/,research/,designs/,decisions/}
+   ├─ library/                             promoted cross-initiative outcomes
+   │  └─ reviews/ dev-designs/ investigations/ briefings/ qa-findings/
+   │     lessons/ digests/ learnings/ releases/ playbooks/
+   └─ personal/                            ignored personal ops + growth
+      ├─ inbox.md + agenda.md + workspaces.md
+      ├─ identity/{voice.md,career-*.md}
+      └─ consultations/ + decisions/ + proactive/ + lessons/ + courses/ + certs/ + growth/
 ```
 
+Two roots, one axis: **`.kai/` is the control plane** (bootstrap sentinel,
+contract, and regenerable raw evidence — machine state, so hidden), and
+**`kai/` is the working corpus** (everything humans browse, search, and edit,
+so visible and grouped under one predictable parent rather than scattered
+across your repository root). `.kai/manifest.json` is the stable discovery
+anchor and did not move.
+
 - `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
-- `coordination/` holds high-churn cross-effort operational state.
-- `initiatives/` holds strategic intent and outputs owned by one initiative.
-- `library/` holds explicitly promoted outcomes reusable across initiatives.
-- `personal/` holds ignored workspace-local assistant state, optional linked
+- `kai/coordination/` holds high-churn cross-effort operational state.
+- `kai/initiatives/` holds strategic intent and outputs owned by one initiative.
+- `kai/library/` holds explicitly promoted outcomes reusable across initiatives.
+- `kai/personal/` holds ignored workspace-local assistant state, optional linked
   workspaces, consultation records, decision briefs, proactive-scan state, identity/career context,
   and learning.
 
-Initiative work defaults to its own `artifacts/` tree. Promotion to `library/`
-is explicit, steward-approved, recorded in `deliverables.md`, and one-way:
-the library path becomes canonical for cross-initiative use while the
-initiative copy remains provenance.
+Initiative work defaults to its own `artifacts/` tree. Promotion to
+`kai/library/` is explicit, steward-approved, recorded in `deliverables.md`,
+and one-way: the library path becomes canonical for cross-initiative use while
+the initiative copy remains provenance.
+
+<!-- kai:allow-legacy-roots -->
+> **Upgrading from schema 1?** Workspaces onboarded before v0.27.0 keep
+> `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
+> root. Run `node <kai-plugin>/scripts/workspace-doctor.mjs` from the workspace
+> root — it detects the old schema, prints the migration plan, and blocks
+> coordinated work until the four roots move under `kai/`. `.kai/` stays where
+> it is. Never leave both layouts in place: that is a split-brain workspace and
+> the doctor refuses it.
+<!-- /kai:allow-legacy-roots -->
 
 When one agent needs something from another, the **`peer-communication`**
 contract reconciles the three ways that question can travel — a cheap
@@ -616,7 +656,7 @@ Canonical initiative paths are built in: `artifacts/product-map.md`,
 analytics briefs, security/reliability assessments, sanitized incident records,
 PM briefs, research, designs, and decisions under their named artifact folders.
 Sanitized unaffiliated incident records use
-`library/investigations/<incident-id>/incident-record.md`.
+`kai/library/investigations/<incident-id>/incident-record.md`.
 
 ## How the agents chain
 
@@ -649,9 +689,9 @@ validates the full workspace contract for either a repository or a durable
 standalone folder and seeds private assistant and identity stubs.
 
 ```
- repository or ──► workflow-workspace-init ──► .kai/ + coordination/
- standalone folder                              + initiatives/ + library/
-                                                 + personal/identity + assistant state
+ repository or ──► workflow-workspace-init ──► .kai/ + kai/coordination/
+ standalone folder                              + kai/initiatives/ + kai/library/
+                                                 + kai/personal/identity + assistant state
 ```
 
 **0b · North star (optional, spans weeks/months)** — run
@@ -664,7 +704,7 @@ and activates it; later agents load it only when work matches its scope.
                                                        │
                                       PM/steward approves + activates
                                                        ▼
-                                      coordination/ACTIVE.md points to the north star
+                                      kai/coordination/ACTIVE.md points to the north star
                                                             ▼
    any later agent, before substantial work:  target in scope? ──yes──► load + steer toward it
                                                             └──no──► work context-free (no pollution)
@@ -824,17 +864,17 @@ leads; the operator performs every production action.
  a topic ──► instructor-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
             (Explain-in-chat / Lesson / Series modes — any subject)
 
- a whole cert ──► instructor-path-mentor ──► personal/learning/<slug>.md  (plan · progress · review)
+ a whole cert ──► instructor-path-mentor ──► kai/personal/learning/<slug>.md  (plan · progress · review)
                  (dispatches the three above per objective; tracks where you are)
 ```
 
-**5 · Writing & career (`personal/identity/`)** — one workspace-local profile folder powers both your voice and career track.
+**5 · Writing & career (`kai/personal/identity/`)** — one workspace-local profile folder powers both your voice and career track.
 
 ```
- chat history / ──► extract-writing-style ──► personal/identity/voice.md ──┬─► persona-self ──► draft in your voice
+ chat history / ──► extract-writing-style ──► kai/personal/identity/voice.md ──┬─► persona-self ──► draft in your voice
  PR comments / samples                          (workspace profile)        │   (Draft / Rewrite / Reply)
                                                                            │
- first-run intake ──► principal-engineer-career-mentor ──► personal/identity/career-*.md ─┘
+ first-run intake ──► principal-engineer-career-mentor ──► kai/personal/identity/career-*.md ─┘
                       (weekly · quarterly · spot · cert · visibility modes)  └─► honest guidance, never auto-posts
 ```
 
@@ -875,7 +915,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
                                          ├─► executive-consultation ──► real roles + private attributed brief
                                          ├─► decision-brief ──► private brief: options + positions + recommendation
                                          ├─► workflow-weekly-pulse      (what happened)
-                                         └─► personal-agenda ──► personal/agenda.md
+                                         └─► personal-agenda ──► kai/personal/agenda.md
                                              (all enabled workspaces + inbox + nudges)
                                                   │  ranked "what needs you"
                                                   ▼
@@ -933,7 +973,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
 | Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `executive-consultation`) |
 | Package a decision waiting on me into options + a recommendation | `director-executive-assistant` (via `decision-brief`) |
-| Capture a task or reminder | `director-executive-assistant` (→ `personal/inbox.md`) |
+| Capture a task or reminder | `director-executive-assistant` (→ `kai/personal/inbox.md`) |
 | Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `pulse-digest`) |

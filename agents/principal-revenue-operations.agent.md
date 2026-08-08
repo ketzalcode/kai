@@ -159,7 +159,7 @@ Write the full local working brief to:
 Keep raw billing exports, account-level revenue, and named-account terms local.
 For coordinated work, write the aggregate brief to:
 
-`initiatives/<slug>/artifacts/revops/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/revops/<item-id>.md`
 
 Use:
 

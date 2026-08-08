@@ -229,9 +229,9 @@ Before declaring done:
 ### 6. Report back
 
 **Zone & promotion (see `workspace-conventions`).** Lesson bundles are
-**personal learning** — default them under **`personal/lessons/`** (gitignored,
-portable) rather than `library/`. Only `--share` a bundle into
-`library/lessons/` when it's team-relevant work knowledge. (Audio MP3s stay
+**personal learning** — default them under **`kai/personal/lessons/`** (gitignored,
+portable) rather than `kai/library/`. Only `--share` a bundle into
+`kai/library/lessons/` when it's team-relevant work knowledge. (Audio MP3s stay
 gitignored everywhere; they regenerate on demand.)
 
 Summarize:

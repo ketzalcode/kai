@@ -131,7 +131,7 @@ logs) are all working output that lives there.
 
 To **share** a defect report, the calling agent promotes the curated
 markdown to
-`<workspace-root>/library/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`
+`<workspace-root>/kai/library/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`
 with library frontmatter — that committed copy is what travels via `git pull`.
 Screenshots stay in the working root as local evidence, referenced by their
 run path; promote the text, not the binaries.
@@ -187,9 +187,9 @@ mode** if `ask_user` is available; otherwise default to headless.
   reproducible. Note the viewport in the report row.
 - **Screenshots stay local evidence — not committed.** They live in the run
   folder under the ignored `.kai/runs/` root; heavy binaries (including
-  `screenshots/`) remain ignored even below `library/` (see
+  `screenshots/`) remain ignored even below `kai/library/` (see
   `workspace-conventions`). When you promote a report, promote the **text** and
-  reference the evidence by its run path — never copy binaries into `library/`.
+  reference the evidence by its run path — never copy binaries into `kai/library/`.
   Keep filenames stable so the report's local links don't break across renames.
 
 ## Priority scheme
@@ -398,7 +398,7 @@ If the agent is approaching any cap, it should:
   belongs in `## Next steps`, not in a finding row.
 - ❌ Auto-committing anything, or hand-patching `.gitignore`. The whole
   `.kai/runs/` root is ignored centrally by `workflow-workspace-init`;
-  sharing happens by **promoting** the report to `library/qa-findings/`
+  sharing happens by **promoting** the report to `kai/library/qa-findings/`
   (the calling agent's call), never by committing inside the working root.
   The agent never runs git.
 
@@ -412,7 +412,7 @@ When the skill (and the calling agent) finishes a run:
    URL + selector citation.
 3. The run lives under the resolved working root's `qa/<YYYY-MM-DD>/` area; no
    per-folder `.gitignore` patching is done. Sharing is via promotion of
-   `report.md` to `library/qa-findings/`.
+   `report.md` to `kai/library/qa-findings/`.
 4. The agent posts back to the user: run folder path, finding
    count by priority, and a one-line top-line verdict.
 5. No commits, no pushes. The user owns git.

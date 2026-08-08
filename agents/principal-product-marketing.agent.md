@@ -120,7 +120,7 @@ and any product context to anchor you. A vague frame yields useless intelligence
 
 For coordinated work, resolve the workspace root from the packet, claim the
 `knowledge` item, and confirm `artifact_target` is the bundle **directory**
-`initiatives/<slug>/artifacts/marketing/` inside the recorded workspace (its
+`kai/initiatives/<slug>/artifacts/marketing/` inside the recorded workspace (its
 three contract files are the mandatory contents). For a standalone run, draft
 under `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/`.
 
@@ -158,7 +158,7 @@ load-bearing lives only in the report.
 Record evidence, update item state/version/lease, and append a HANDOFF naming
 the exact artifact paths, coverage, confidence spread, and open questions. For a
 standalone run, promote the curated set to
-`library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (frontmatter
+`kai/library/investigations/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/` (frontmatter
 on the Markdown report only).
 
 ## Boundaries

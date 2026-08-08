@@ -159,7 +159,7 @@ Write the full local working design to:
 Never place real data, extracts, or credentials in the workspace. For coordinated
 work, write the design to:
 
-`initiatives/<slug>/artifacts/data-engineering/<item-id>.md`
+`kai/initiatives/<slug>/artifacts/data-engineering/<item-id>.md`
 
 Use:
 

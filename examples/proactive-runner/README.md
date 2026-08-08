@@ -28,15 +28,15 @@ or credential.
 ```
 
 - **kai** decides *what is newly actionable* and writes a payload to the
-  gitignored `personal/proactive/outbox/`. It never schedules or sends.
+  gitignored `kai/personal/proactive/outbox/`. It never schedules or sends.
 - **Your runner** provides the heartbeat and the delivery.
 
 ## What kai maintains (gitignored, local)
 
-- `personal/proactive/snapshot.json` — the last successfully delivered signals,
+- `kai/personal/proactive/snapshot.json` — the last successfully delivered signals,
   so the same one isn't re-sent unless it changes or becomes overdue.
-- `personal/proactive/outbox/<ts>.json` — the payload for your runner to deliver.
-- `personal/proactive/channels.md` — **your** consent + a `secret_ref` (the
+- `kai/personal/proactive/outbox/<ts>.json` — the payload for your runner to deliver.
+- `kai/personal/proactive/channels.md` — **your** consent + a `secret_ref` (the
   *name* of a runner-side secret), never the credential itself. See
   `channels.example.md`.
 
@@ -74,7 +74,7 @@ The runner drives two invocations so a signal is neither lost nor spammed:
    `notification_id`, and kai advances the dedup ledger exactly once.
 
 On delivery failure the runner skips ack, so the next scan re-emits the same
-signals (at-least-once). The ledger under `personal/proactive/` must be
+signals (at-least-once). The ledger under `kai/personal/proactive/` must be
 **persisted across runs** (e.g. `actions/cache`) — hosted runners start clean and
 would otherwise treat every signal as new. Keeping delivery in the runner is
 deliberate: it keeps every credential out of the committed plugin.

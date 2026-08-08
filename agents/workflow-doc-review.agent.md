@@ -1,6 +1,6 @@
 ---
 name: workflow-doc-review
-description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<YYYY-MM-DD>/<NN>-doc-<slug>/review.md`; promoted reusable reviews go to library/reviews. Verifies before asserting and never auto-posts."
+description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<YYYY-MM-DD>/<NN>-doc-<slug>/review.md`; promoted reusable reviews go to kai/library/reviews. Verifies before asserting and never auto-posts."
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
@@ -101,7 +101,7 @@ Output to: `<working-root>/review/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md`
   the date-first run grammar.
 
 **Initiative gating (see `workspace-conventions`).** Before reviewing, glance
-at `coordination/ACTIVE.md`. If the doc under review concerns the active
+at `kai/coordination/ACTIVE.md`. If the doc under review concerns the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and test the doc's argument against it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's an unrelated doc,
@@ -111,7 +111,7 @@ load nothing and review context-free.
 outputs default to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated review
-to `library/reviews/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md` with library
+to `kai/library/reviews/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md` with library
 frontmatter
 so it travels via `git pull`. Keep it local-only if the operator passes
 `--local`.

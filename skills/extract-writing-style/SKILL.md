@@ -1,6 +1,6 @@
 ---
 name: extract-writing-style
-description: "Extracts the user's writing style from past messages and writes the current Kai workspace's portable profile to `personal/identity/voice.md`. Designed for persona-self to consume on every draft. Run initially and when voice drifts; idempotently preserves manual_overrides. Privacy-first and gitignored."
+description: "Extracts the user's writing style from past messages and writes the current Kai workspace's portable profile to `kai/personal/identity/voice.md`. Designed for persona-self to consume on every draft. Run initially and when voice drifts; idempotently preserves manual_overrides. Privacy-first and gitignored."
 tools: [bash, view, edit, ask_user, session_store_sql]
 ---
 
@@ -33,7 +33,7 @@ invocation.
 
 ## What this skill produces
 
-A single file: `personal/identity/voice.md`.
+A single file: `kai/personal/identity/voice.md`.
 
 The folder is gitignored by default (see Privacy below). The profile
 is plain markdown with YAML frontmatter — inspectable, hand-editable,
@@ -243,14 +243,14 @@ Beyond raw samples, the skill should derive:
 
 Resolve the current Kai workspace root through `workspace-conventions` and its
 `.kai/manifest.json` sentinel. The output path is the absolute
-`<workspace-root>/personal/identity/voice.md`; never resolve it from an
+`<workspace-root>/kai/personal/identity/voice.md`; never resolve it from an
 incidental or nested cwd. If the workspace is not initialized, route to
 `workflow-workspace-init`. Also route there when required personal paths are
 missing or when legacy `.persona-self/`, `.kai/local.json`, or manifest
 `workspace_kind` state is unresolved. This skill never scaffolds or migrates
 workspace structure itself.
 
-If a profile already exists at `personal/identity/voice.md`:
+If a profile already exists at `kai/personal/identity/voice.md`:
 
 - Read it. If its frontmatter says `status: stub`, treat it as no profile.
 - Otherwise note the `last_extracted` date and existing sources.
@@ -377,7 +377,7 @@ Pick samples that:
 
 ### 7. Write the profile
 
-Render the markdown to `personal/identity/voice.md` only after onboarding
+Render the markdown to `kai/personal/identity/voice.md` only after onboarding
 validated that the directory exists. Set the `last_extracted` date.
 
 If a previous profile existed, **preserve the `manual_overrides:`
@@ -394,8 +394,8 @@ one.
   mapping key.
 - After writing, **validate the frontmatter parses as YAML**. Quick
   options (pick what's available on the host):
-    - Node: `node -e "require('js-yaml').load(require('fs').readFileSync('personal/identity/voice.md','utf8').split(/^---\s*$/m)[1])"`
-    - Python: `python -c "import yaml; yaml.safe_load(open('personal/identity/voice.md').read().split('---')[1])"`
+    - Node: `node -e "require('js-yaml').load(require('fs').readFileSync('kai/personal/identity/voice.md','utf8').split(/^---\s*$/m)[1])"`
+    - Python: `python -c "import yaml; yaml.safe_load(open('kai/personal/identity/voice.md').read().split('---')[1])"`
     - PowerShell + ConvertFrom-Yaml (if installed): equivalent
   If validation fails, fix the offending line (usually convert to
   `|` block scalar) and re-validate before reporting back to the user.
@@ -409,7 +409,7 @@ Tell the user:
 - Top 3-5 distinctive style signals found (so they can sanity-check
   the extraction).
 - Whether the `manual_overrides:` block was preserved (if pre-existing).
-- The exact next step: *"Open `personal/identity/voice.md`, skim it,
+- The exact next step: *"Open `kai/personal/identity/voice.md`, skim it,
   edit the `manual_overrides:` block if anything looks wrong, and
   you're ready to invoke `persona-self` for drafting."*
 
@@ -430,10 +430,10 @@ Re-running on an existing profile should be safe. The skill must:
 ## Privacy
 
 The profile contains intimate writing patterns of a specific human.
-Default storage location is `personal/identity/voice.md` — gitignored
+Default storage location is `kai/personal/identity/voice.md` — gitignored
 on creation. The skill must:
 
-- **Require the initialized `personal/identity/` path and privacy contract.**
+- **Require the initialized `kai/personal/identity/` path and privacy contract.**
   If missing or invalid, route to `workflow-workspace-init`; do not create paths
   or edit `.gitignore` from this skill.
 - **Never upload the profile** anywhere. No telemetry, no remote
@@ -443,7 +443,7 @@ on creation. The skill must:
 - **Surface borderline samples** to the user before including them.
 
 Do not offer a tracked-profile escape hatch. `persona-self` consumes only the
-workspace-local ignored path, and removing `/personal/` protection could expose
+workspace-local ignored path, and removing `/kai/personal/` protection could expose
 unrelated private state.
 
 ## Insufficient-data handling
@@ -480,8 +480,8 @@ Don't bluff confident attributes on a thin corpus.
   context. Sample broadly.
 - ❌ Auto-running on every session. This is a rare-extraction skill;
   re-run is user-triggered.
-- ❌ Storing the profile in `library/` by default. The default is
-  `personal/identity/` (gitignored) for privacy.
+- ❌ Storing the profile in `kai/library/` by default. The default is
+  `kai/personal/identity/` (gitignored) for privacy.
 - ❌ Generating prose sections that read like marketing
   descriptions ("a thoughtful and articulate communicator"). Be
   specific and actionable.
