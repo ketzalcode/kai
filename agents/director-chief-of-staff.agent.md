@@ -4,7 +4,7 @@ description: "Kai's human-facing team director. Takes an outcome, work-item ID, 
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `peer-communication`, `definition-of-done`, `initiative-stewardship`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `peer-communication`, `definition-of-done`, `pr-delivery`, `initiative-stewardship`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

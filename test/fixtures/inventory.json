@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 54,
-    "skills": 40
+    "agents": 55,
+    "skills": 41
   },
   "agents": [
     "director-chief-of-staff",
@@ -53,6 +53,7 @@
     "workflow-localization",
     "workflow-proactive-scan",
     "workflow-product-explore",
+    "workflow-pull-request",
     "workflow-self-check",
     "workflow-ship",
     "workflow-support-triage",
@@ -76,6 +77,7 @@
     "onboard-to-codebase",
     "peer-communication",
     "personal-agenda",
+    "pr-delivery",
     "pr-sizing",
     "proactive-scan",
     "product-exploration",

@@ -84,6 +84,9 @@ coordinates the triggered graph without taking over specialist decisions.
                                                        │
                                     findings back to the PM ◄────┤
                                                        ▼
+              workflow-pull-request ─► branch, PR narrative, version, merge readiness
+                                                       │ human merges
+                                                       ▼
               workflow-ship PREPARE ── DoD clear ─► `release-ready` + deploy steps
                                       gap ─────────► bounce to owner
                                                        │ human deploys
@@ -309,6 +312,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Small or already-sequenced work | straight to the domain engineer(s) |
 | Build a slice in one domain | `principal-swe-frontend` / `-backend` / `-infra` |
 | Verify a surface objectively / walk it as a customer | `principal-qa-ui` / `persona-ux-first-time-user` |
+| Open a PR for a finished change (branch, narrative, version, merge readiness) | `workflow-pull-request` |
 | Prepare a built slice / record deployment start / confirm production shipment | `workflow-ship` PREPARE / CONFIRM-START / CONFIRM-COMPLETE |
 | Audit SEO + agentic-search readiness | `principal-seo` |
 | Domain-expert audit of a fitness / nutrition product | `persona-professional-trainer` / `-nutritionist` |

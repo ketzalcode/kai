@@ -53,8 +53,8 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Delivery',
-    blurb: 'The release gate. kai never performs the deployment itself.',
-    members: ['workflow-ship'],
+    blurb: 'Getting one change from the workspace to a merged PR, then to production. kai never merges or deploys itself.',
+    members: ['workflow-pull-request', 'workflow-ship'],
   },
   {
     kind: 'agent',
@@ -160,8 +160,8 @@ const CATEGORIES = [
     title: 'Engineering craft',
     blurb: 'Per-change discipline every `principal-swe-*` agent inherits.',
     members: [
-      'coding-style', 'research-before-coding', 'pr-sizing', 'onboard-to-codebase',
-      'build-diagrams',
+      'coding-style', 'research-before-coding', 'pr-sizing', 'pr-delivery',
+      'onboard-to-codebase', 'build-diagrams',
     ],
   },
   {

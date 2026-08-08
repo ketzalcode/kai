@@ -4,6 +4,57 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.31.0] - 2026-08-08
+
+### Added
+
+- `pr-delivery` skill — the contract for how one finished change physically
+  leaves the workspace. Branch naming from a three-rung anchor ladder (GitHub
+  issue, then coordination item id, then date), a conventional-commit title, and
+  a **core-plus-triggered** PR body: Problem / Change / Verification always,
+  with `The change at a glance`, `The constraint that shaped this`,
+  `Deliberately not done`, `Review fixes`, `Before / after`, and
+  `Rollout / reversibility` firing only on their trigger, so no section is ever
+  filled with "N/A". Verification must name the exact command that ran. A defect
+  fix additionally carries what happened, repro steps, and how it was found. A
+  change that alters a structure or flow carries a `build-diagrams` ASCII
+  diagram; a changed user-visible surface carries before/after screenshots.
+  Inherited by `principal-swe-backend`, `-frontend`, `-infra`, and
+  `director-chief-of-staff`.
+- `workflow-pull-request` agent — the front door for that span, and the only
+  place the part a skill cannot do lives: **investigating live branch protection
+  and required checks**, then classifying the change MERGEABLE, NOT YET, or
+  STRUCTURALLY BLOCKED. A solo-maintainer repo requiring one approving review is
+  unmergeable by construction; that is escalated to `@operator` as a
+  configuration decision rather than resolved with a silent admin bypass. It
+  drafts and validates only — the human presses merge, tag, and release.
+
+### Changed
+
+- The delivery chain is now explicit end to end: `pr-sizing` splits the work,
+  `pr-delivery` lands one PR, `definition-of-done` says it is ready, and
+  `workflow-ship` deploys it. Previously nothing owned the span between "the work
+  is sized" and "the work is ready to deploy", so branch, PR narrative, version
+  bump, and merge readiness lived only in whoever happened to be doing the work.
+
+### Fixed
+
+- Branch naming avoids a real git hazard: because refs are directories, a
+  pattern like `<type>/<number>/<author>/<slug>` permanently reserves
+  `feat/28` as a folder, and a contributor running `git checkout -b feat/28`
+  then hits `cannot lock ref`. Keeping `<anchor>-<slug>` in one segment
+  (`kai/feat/28-progressive-onboarding`) reserves nothing, while the `kai/`
+  prefix still lets CI filters and protection rules target `kai/**`.
+- PR titles drop the trailing `(#N)`. It is non-functional — `Closes #N` in the
+  body is what closes the issue — and on a squash-merge GitHub auto-appends the
+  PR number, yielding `feat: ... (#28) (#80)`.
+- Review fix: `pr-delivery` originally told agents not to maintain a CHANGELOG
+  where squash-merged PR titles serve the same purpose — which contradicted
+  kai's own CI-enforced release process, in the skill that
+  `principal-swe-backend`, `-frontend`, `-infra`, and `director-chief-of-staff`
+  now inherit while editing this very repo. It is now workspace-conditional:
+  follow the repo's process, and only avoid introducing a *second* list.
+
 ## [0.30.0] - 2026-08-08
 
 ### Added
@@ -1076,6 +1127,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.31.0]: https://github.com/RubenSaucedo/kai/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/RubenSaucedo/kai/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/RubenSaucedo/kai/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/RubenSaucedo/kai/compare/v0.27.0...v0.28.0
