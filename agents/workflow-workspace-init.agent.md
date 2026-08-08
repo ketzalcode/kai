@@ -67,21 +67,37 @@ onboarding request.
 
 ### 3. Scaffold
 
-Apply the required structure from `workspace-onboarding`:
+Apply the **spine** from `workspace-onboarding` — and only the spine:
 
 ```text
-.kai/{manifest.json,CONVENTIONS.md,runs/{qa/,eng/,product/,revenue/,support/,review/,ship/,
-                                      incident/,ai/,learn/,lessons/,pulse/,content/}}
+.kai/{manifest.json,CONVENTIONS.md,runs/}
 kai/coordination/{ACTIVE.md,BOARD.md,backlog.md,
              items/README.md,threads/README.md}
 kai/initiatives/{README.md,INDEX.md}
-kai/library/{README.md,reviews/,dev-designs/,investigations/,briefings/,
-         qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/,content/}
-kai/personal/{README.md,inbox.md,agenda.md,workspaces.md,consultations/,decisions/,proactive/,
-          identity/{README.md,voice.md,career-snapshot.md,skills-inventory.md,
-                    current-work.md,career-goals.md},
-          lessons/,courses/,certs/,growth/}
+kai/library/README.md
+kai/personal/{README.md,inbox.md,agenda.md,workspaces.md,
+          identity/{README.md,voice.md}}
 ```
+
+Do **not** pre-create run areas, library types, or the remaining personal
+lanes. Those are materialized on first write by the agent that writes into
+them, because an empty directory cannot be tracked by git and would not survive
+a clone. An absent lane is not a defect and never blocks work. The deferred
+vocabulary is:
+
+```text
+.kai/runs/{qa/,eng/,product/,revenue/,support/,review/,ship/,
+           incident/,ai/,learn/,lessons/,pulse/,content/}
+kai/library/{reviews/,dev-designs/,investigations/,briefings/,
+         qa-findings/,lessons/,digests/,learnings/,releases/,playbooks/,content/}
+kai/personal/{consultations/,decisions/,proactive/,lessons/,courses/,certs/,growth/}
+kai/personal/identity/{career-snapshot.md,skills-inventory.md,
+                       current-work.md,career-goals.md}
+```
+
+If the operator explicitly asks to see the complete structure, materialize
+every lane in one pass as a convenience. Record nothing about that choice: it
+is not a mode, and a workspace created either way is identical in contract.
 
 This is a summary; `workspace-onboarding` is authoritative for every seeded
 file and directory. Do not create initiative slug directories;

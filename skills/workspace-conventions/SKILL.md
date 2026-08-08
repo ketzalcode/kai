@@ -111,6 +111,19 @@ when the operator explicitly requested a local throwaway run.
       └─ lessons/        courses/            certs/            growth/
 ```
 
+**Lanes are created on first write, not at onboarding.** The tree above is the
+complete vocabulary, not a checklist that must exist on disk. Onboarding seeds
+only the spine — the manifest, conventions, coordination registries, the
+initiative index, and the two lane READMEs — and every run area, library type,
+and personal sub-lane is created by the agent that first writes into it, in the
+same action, idempotently.
+
+So: **never treat an absent lane as an error, and never refuse to act because a
+lane is missing.** Create the directory on the way to writing your file. Do not
+pre-create lanes you are not writing to. This keeps a new workspace at roughly
+ten tracked files, and it keeps the tree honest — git cannot track an empty
+directory, so a pre-created lane would silently vanish on the next clone.
+
 ## Placement model
 
 kai state splits on one axis: **control plane vs working corpus.**
@@ -541,4 +554,6 @@ before claiming work. `.kai/` itself did not move, so the discovery anchor
 8. Resolve personal state against the current Kai workspace; linked workspaces
    contribute coordination signals read-only.
 9. Record exact workspace-root-relative paths; never abbreviate with `.../`.
-10. Never create a root or artifact lane outside this contract.
+10. Create a lane's directory on the way to writing your first file there; an
+    absent lane is normal, not a defect.
+11. Never create a root or artifact lane outside this contract.

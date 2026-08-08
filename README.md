@@ -37,27 +37,29 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.28.0` — **54 agents and 40 skills**. This release fixes a **silent
-propagation gap**: kai's shared operating rules lived in the plugin's own root
-`AGENTS.md`, and that file is never loaded in a consumer workspace (#34). A
-Copilot plugin manifest has no instruction component type, and the host
-discovers custom instructions only from *your* repo root and working directory,
-`$HOME/.copilot/`, and `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`. So role taxonomy,
-workspace-root resolution, the acting-agent loop, test ownership, the completion
-ladder, and the `@operator` boundary reached kai's own contributors and nobody
-else — while the README claimed they were "carried into every repo". Those rules
-now ship as the `team-operating-rules` **skill**, on the one channel that does
-reach a session, and every agent opens with a machine-checkable
-`**Inherits:**` line plus a verbatim directive to load what it names — which
-also inlines the non-negotiables that must hold even if a skill is not loaded,
-since skills load on demand rather than automatically. `npm test`
-enforces that all 54 agents carry the line first in the body, that every skill
-named exists, that every agent inherits `team-operating-rules`, that each
-`director-*` / `principal-*` / `workflow-*` role also inherits
-`workspace-conventions`, and that nothing a profile's own "Contracts you
-inherit" section claims is missing from the declaration. `AGENTS.md` is now
-scoped honestly to contributing to this repo. It builds on the prior release,
-which ended the **root-level clutter** that made kai painful to adopt in an
+`v0.29.0` — **54 agents and 40 skills**. This release makes the **first five
+minutes** survivable (#28). Onboarding used to pre-create every lane — thirteen
+run areas, eleven library types, seven personal lanes — so a brand-new workspace
+opened as a wall of empty directories before the user had seen a single useful
+outcome. Worse, git cannot track an empty directory, so most of those lanes
+never survived a clone: a teammate received a workspace shaped differently from
+the one onboarding reported building. Onboarding now seeds only the **spine** —
+the manifest, `CONVENTIONS.md`, the coordination registries, the initiative
+index, and two lane READMEs, roughly ten tracked files — and every other lane is
+created by the agent that first writes into it, in the same action. An absent
+lane is not a defect: the doctor reports a lane-free workspace as healthy and no
+agent may refuse to act because a lane is missing. There are **no onboarding
+profiles and no layout modes**; only the moment a lane is created differs, so
+the one-layout guarantee from the previous release is untouched. The README
+gains a copyable **First five minutes** path, and
+`examples/e2e-feature-delivery/` ships a real workspace — validated by the
+doctor on every CI run — showing one feature from brief to production alongside
+an adjacent idea deliberately routed to a proposal instead of being built. It
+builds on the prior release, which fixed a **silent propagation gap**: kai's
+shared operating rules lived in the plugin's own root `AGENTS.md`, a file that
+is never loaded in a consumer workspace, so they now ship as the
+`team-operating-rules` skill that every agent declares on a CI-enforced
+`**Inherits:**` line (#34/v0.28.0). Before that, kai ended the **root-level clutter** that made kai painful to adopt in an
 existing repository (#70/v0.27.0): a kai workspace now splits on one honest axis
 — the hidden `.kai/` control plane and the visible `kai/` working corpus —
 under a mandatory `schema_version` 2 migration enforced by the workspace
@@ -188,6 +190,66 @@ product-scope, positioning/claim, pricing, capability-commitment, metric-validit
 privacy, legal-risk, live-system, spend, and outbound-contact boundaries while
 integrating with the existing product, engineering, QA, delivery, and workspace
 contracts below.
+
+## First five minutes
+
+The shortest path to one real, finished piece of work. Each step is copyable.
+
+**1. Install the plugin** (details in [Install](#install)):
+
+```text
+copilot
+/plugin install RubenSaucedo/kai
+```
+
+Start a **new** session afterwards — plugins load per session.
+
+**2. Initialize the workspace.** From the repo (or durable folder) you want kai
+to work in:
+
+```text
+Initialize this repository as a kai workspace.
+```
+
+`workflow-workspace-init` seeds about ten tracked files: `.kai/manifest.json`,
+`.kai/CONVENTIONS.md`, the coordination registries, the initiative index, and
+two lane READMEs. It does **not** pre-create the run areas, library types, or
+personal sub-lanes — those appear when something first writes to them, so your
+tree only ever contains lanes you actually used.
+
+**3. Ask for the work, not for a role.** The front door routes it:
+
+```text
+I need users to be able to export a saved report as CSV.
+```
+
+`director-chief-of-staff` takes it to the PM for a brief, the architect for a
+decision, and engineering for implementation — creating a work item, a durable
+thread, and initiative artifacts as it goes. For a personal or unclear request,
+start with `director-executive-assistant` instead.
+
+**4. Check the state is honest** at any point:
+
+```bash
+node <path-to-kai>/scripts/workspace-doctor.mjs
+```
+
+It reports whether the workspace is claimable, whether the board has drifted
+from the authoritative items, and whether any schema migration is due.
+
+**5. See where this ends up.**
+[`examples/e2e-feature-delivery/`](examples/e2e-feature-delivery/) is a
+committed, CI-validated workspace showing the same feature carried from brief to
+production: the decision with its rejected options, six handoffs, revision-bound
+reviews, an item correctly stuck at `in-review`, and one adjacent idea routed to
+a proposal instead of being built.
+
+### What you can ignore at first
+
+kai ships 54 agents and 40 skills, and you do not need to learn them. You need
+three things: **ask the front door for outcomes**, **let the work item be the
+source of truth**, and **remember that only you ship**. The rest of this README
+is reference material — read it when you hit the thing it describes.
 
 ## Install
 
@@ -642,6 +704,21 @@ contract, and regenerable raw evidence — machine state, so hidden), and
 so visible and grouped under one predictable parent rather than scattered
 across your repository root). `.kai/manifest.json` is the stable discovery
 anchor and did not move.
+
+That tree is the complete **vocabulary**, not the initial footprint. Onboarding
+seeds only the spine — the manifest, `CONVENTIONS.md`, the coordination
+registries, the initiative index, and the two lane READMEs, about ten tracked
+files. Every run area, library type, and personal sub-lane is created by the
+agent that first writes into it, in the same action. So a fresh workspace holds
+almost nothing, and it grows only lanes you actually used.
+
+An absent lane is never an error: the workspace doctor reports a lane-free
+workspace as healthy, and no agent may refuse to act because a lane it is about
+to create does not exist yet. This is also why the lanes are not pre-created —
+git cannot track an empty directory, so a pre-created lane would silently
+disappear on the next clone and leave your teammates with a different tree than
+the one onboarding reported building. There are no onboarding profiles and no
+layout modes; only the moment a lane is created differs.
 
 - `.kai/runs/` holds raw, regenerable, or heavy evidence and is ignored.
 - `kai/coordination/` holds high-churn cross-effort operational state.

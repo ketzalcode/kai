@@ -4,6 +4,43 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.29.0] - 2026-08-08
+
+### Added
+
+- `examples/e2e-feature-delivery/` — a committed, CI-validated workspace showing
+  one feature carried from brief to production: the architecture decision with
+  its rejected options and a revisit trigger, six durable handoffs,
+  revision-bound reviews, an item correctly held at `in-review` pending
+  independent verification, and an adjacent idea routed to a proposal instead of
+  being built. The workspace doctor validates it on every run, so the first
+  reference a new user reads cannot rot (#28).
+- A **First five minutes** section at the top of the README: copyable commands
+  and prompts for install, workspace init, the first request, a health check,
+  and the worked example — plus a "what you can ignore at first" note.
+- `test/fixtures/spine-workspace/` and a doctor self-test proving a freshly
+  onboarded workspace with no lane materialized is healthy and claimable.
+
+### Changed
+
+- **Onboarding creates only the spine.** `workflow-workspace-init` seeds the
+  manifest, `CONVENTIONS.md`, the coordination registries, the initiative index,
+  and the two lane READMEs — roughly ten tracked files. Run areas, library
+  types, and personal sub-lanes are materialized on first write by the agent
+  that writes into them.
+- `workspace-conventions` states that an absent lane is not a defect, that no
+  agent may refuse to act because a lane is missing, and that the lane directory
+  is created on the way to writing the first file in it.
+- README explains that the layout tree is the vocabulary, not the initial
+  footprint.
+
+### Fixed
+
+- Pre-created empty lanes could not be tracked by git, so they never survived a
+  clone: a teammate received a workspace shaped differently from the one
+  onboarding reported building. Materializing a lane with its first real file
+  keeps the reported tree and the tracked tree the same.
+
 ## [0.28.0] - 2026-08-07
 
 ### Added
@@ -984,6 +1021,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.29.0]: https://github.com/RubenSaucedo/kai/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/RubenSaucedo/kai/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/RubenSaucedo/kai/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/RubenSaucedo/kai/compare/v0.25.0...v0.26.0

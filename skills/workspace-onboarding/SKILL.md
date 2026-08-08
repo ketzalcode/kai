@@ -21,44 +21,67 @@ No root-name customization and no legacy compatibility aliases are supported.
 
 ## Required structure
 
-Create missing paths without overwriting existing content:
+Onboarding creates the **spine** — the paths that must exist before any agent
+can resolve a root, claim work, or route an artifact. Create missing paths
+without overwriting existing content:
 
 ```text
-.kai/
-  manifest.json
-  CONVENTIONS.md
-  runs/
-    qa/ eng/ product/ revenue/ support/ review/ ship/ incident/ ai/ learn/ lessons/ pulse/ content/
-kai/coordination/
-  ACTIVE.md
-  BOARD.md
-  backlog.md
-  items/README.md
-  threads/README.md
-kai/initiatives/
-  README.md
-  INDEX.md
+.kai/manifest.json
+.kai/CONVENTIONS.md
+.kai/runs/                          (ignored; areas created on first use)
+kai/coordination/ACTIVE.md
+kai/coordination/BOARD.md
+kai/coordination/backlog.md
+kai/coordination/items/README.md
+kai/coordination/threads/README.md
+kai/initiatives/README.md
+kai/initiatives/INDEX.md
+kai/library/README.md
+kai/personal/README.md
+kai/personal/inbox.md
+kai/personal/agenda.md
+kai/personal/workspaces.md
+kai/personal/identity/README.md
+kai/personal/identity/voice.md
+```
+
+That is the whole initial footprint: roughly ten tracked files plus the ignored
+personal lane. Everything else is a **lane**, created on first write.
+
+### Lanes materialized on first use
+
+These are the vocabulary of the workspace, not a checklist to pre-create. The
+agent about to write into a lane creates the missing directory on the way, in
+the same action, and never pre-creates a lane it is not writing to:
+
+```text
+.kai/runs/
+  qa/ eng/ product/ revenue/ support/ review/ ship/ incident/ ai/ learn/ lessons/ pulse/ content/
 kai/library/
-  README.md
   reviews/ dev-designs/ investigations/ briefings/ qa-findings/
   lessons/ digests/ learnings/ releases/ playbooks/ content/
 kai/personal/
-  README.md
-  inbox.md
-  agenda.md
-  workspaces.md
-  consultations/
-  decisions/
-  proactive/
-  identity/
-    README.md
-    voice.md
-    career-snapshot.md
-    skills-inventory.md
-    current-work.md
-    career-goals.md
-  lessons/ courses/ certs/ growth/
+  consultations/ decisions/ proactive/ lessons/ courses/ certs/ growth/
+kai/personal/identity/
+  career-snapshot.md skills-inventory.md current-work.md career-goals.md
 ```
+
+An absent lane is **not** a defect and never blocks work: the workspace doctor
+does not require one, and no agent may refuse to act because a lane it is about
+to create does not yet exist. Creation is idempotent — check, create if missing,
+proceed — so concurrent writers converge on the same tree.
+
+This is why lanes are deferred rather than pre-created: an empty directory
+cannot be tracked by git, so a pre-created lane never survives a clone. A
+teammate would receive a workspace shaped differently from the one onboarding
+reported building. Materializing a lane with its first real file makes the
+tracked tree and the reported tree the same thing.
+
+There are **no onboarding profiles and no layout modes.** A lane's path is the
+same whenever it appears; only the moment of creation is deferred. An operator
+who wants to browse the complete structure can ask `workflow-workspace-init` to
+materialize every lane at once — a one-shot convenience that records no state
+and changes no contract.
 
 Initiative slug directories and their `artifacts/` subtrees are created by
 `workflow-initiative-init`, not by general onboarding.
