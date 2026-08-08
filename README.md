@@ -37,7 +37,19 @@ what's missing — it never silently pretends the capability is present.
 
 ## Status
 
-`v0.25.0` — **54 agents and 38 skills**. This release makes the `learn` and
+`v0.26.0` — **54 agents and 39 skills**. This release gives dev designs
+**diagrams from a shared, standard vocabulary** (#62). Engineering design
+artifacts — the architect's `decision.md` and the backend/frontend/infra
+`design.md` — described system shape, data, flow, and topology in prose,
+with no expectation of a picture and no common way to draw one. A new
+`build-diagrams` method skill owns the *how* — an **ASCII-first** format
+rule (ASCII fenced in the Markdown by default; `mermaid` only when ASCII
+can't carry it; embedded SVG/HTML only when the artifact is itself HTML)
+and a catalog of familiar shapes (component/boundary, sequence, ER, state,
+topology, tree) — while each of the four dev-design producers brings the
+domain judgment about *which* diagram its design needs. It's the technical
+counterpart to `ui-mockup`, which owns UI screens. It builds on the prior
+release, which made the `learn` and
 `lessons` run areas **goal-first and deterministic** (#61), closing the last
 run-grammar gap from the #59 date-first unification. Those two areas were excluded
 from date-first because a learner's runs accrete toward a durable goal, not a
@@ -480,6 +492,7 @@ assistant) is the default; *pushed* updates need an external runner you host.
 | `research-before-coding` | Investigate first, then propose, then code. Classifies touched files (own/partner/shared), hunts reusable code, surfaces tradeoffs before writing. |
 | `pr-sizing` | Breaks a feature/refactor into shippable, reviewable increments — each independently mergeable, tests included, never refactor-mixed-with-feature. |
 | `onboard-to-codebase` | Maps an unfamiliar repo fast (stack, dev-loop commands, architecture, conventions, pitfalls) and saves a durable report you can re-read across sessions. |
+| `build-diagrams` | The shared diagram vocabulary for dev designs (inherited by the four `principal-swe-*` design producers). ASCII-first format rule (ASCII fenced in Markdown by default; `mermaid` only when ASCII can't carry it; embedded SVG/HTML only when the artifact is HTML) plus a standard catalog (component/boundary, sequence, ER, state, topology, tree). The technical counterpart to `ui-mockup`. |
 
 **Document review** — the method + lenses behind `workflow-doc-review`:
 

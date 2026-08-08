@@ -171,6 +171,14 @@ to `<workspace-root>/library/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target-slug>/de
 with library frontmatter so the decision travels via `git pull`. Keep it local-only if
 the operator passes `--local`.
 
+You also inherit **`build-diagrams`** — a `decision.md` carries **at least
+one diagram** of the structure the call turns on, drawn from the standard
+catalog and fenced as ASCII in the doc (`mermaid` only when ASCII
+genuinely can't carry it). For architecture that's usually a
+**component / boundary** diagram — the components, the seams, and where
+the boundary you're moving sits — so a reviewer sees the shape before the
+prose. The scaffold's `## Diagram` slot is where it goes.
+
 ### Decision-record scaffold
 
 ````markdown
@@ -185,6 +193,13 @@ the operator passes `--local`.
 
 <2–5 lines: the system as it is today (what you read), and the
 decision that's blocked. Cite the code/flow you investigated.>
+
+## Diagram
+
+<At least one diagram of the structure this decision turns on — a
+component/boundary shape from `build-diagrams`, fenced as ASCII by default
+(escalate to `mermaid` only when ASCII genuinely can't carry it). Show the
+seam you're moving: what talks to what today, and what changes.>
 
 ## Forces
 
