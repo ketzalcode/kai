@@ -212,10 +212,22 @@ Initialize this repository as a kai workspace.
 ```
 
 `workflow-workspace-init` seeds about ten tracked files: `.kai/manifest.json`,
-`.kai/CONVENTIONS.md`, the coordination registries, the initiative index, and
-two lane READMEs. It does **not** pre-create the run areas, library types, or
-personal sub-lanes — those appear when something first writes to them, so your
-tree only ever contains lanes you actually used.
+`.kai/CONVENTIONS.md`, the coordination registries, the initiative index, the
+library README — plus the gitignored `kai/personal/` lane, so the personal
+agents find their own state on first run. It does **not** pre-create run areas
+or library types; those two output-only lanes appear when something first writes
+to them, so your tree only ever contains lanes you actually used.
+
+If you would rather see the whole vocabulary on disk up front, ask for it:
+
+```text
+Initialize this repository as a kai workspace, and materialize every run area
+and library type now so I can see the full layout.
+```
+
+That is a **local convenience, not a different mode**. The extra directories are
+empty, and git cannot track an empty directory, so they will not survive a clone
+— the durable footprint is identical either way.
 
 **3. Ask for the work, not for a role.** The front door routes it:
 
@@ -240,9 +252,10 @@ from the authoritative items, and whether any schema migration is due.
 **5. See where this ends up.**
 [`examples/e2e-feature-delivery/`](examples/e2e-feature-delivery/) is a
 committed, CI-validated workspace showing the same feature carried from brief to
-production: the decision with its rejected options, six handoffs, revision-bound
-reviews, an item correctly stuck at `in-review`, and one adjacent idea routed to
-a proposal instead of being built.
+production: the decision with its rejected options, the full handoff thread
+including `deploying` and `production-verification`, revision-bound reviews, a
+design sign-off on the net-new UI surface, an item correctly stuck at
+`in-review`, and one adjacent idea routed to a proposal instead of being built.
 
 ### What you can ignore at first
 
@@ -706,15 +719,17 @@ across your repository root). `.kai/manifest.json` is the stable discovery
 anchor and did not move.
 
 That tree is the complete **vocabulary**, not the initial footprint. Onboarding
-seeds only the spine — the manifest, `CONVENTIONS.md`, the coordination
-registries, the initiative index, and the two lane READMEs, about ten tracked
-files. Every run area, library type, and personal sub-lane is created by the
-agent that first writes into it, in the same action. So a fresh workspace holds
-almost nothing, and it grows only lanes you actually used.
+seeds the spine — the manifest, `CONVENTIONS.md`, the coordination registries,
+the initiative index, and the library README, about ten tracked files, plus the
+gitignored `kai/personal/` lane in full so the personal agents have their own
+state. Only two **output-only** lanes are deferred: `.kai/runs/<area>/` and
+`kai/library/<type>/` are created by the agent that first writes into them, in
+the same action. So a fresh workspace holds almost nothing, and it grows only
+lanes you actually used.
 
-An absent lane is never an error: the workspace doctor reports a lane-free
+An absent output lane is never an error: the workspace doctor reports such a
 workspace as healthy, and no agent may refuse to act because a lane it is about
-to create does not exist yet. This is also why the lanes are not pre-created —
+to create does not exist yet. This is also why those lanes are not pre-created —
 git cannot track an empty directory, so a pre-created lane would silently
 disappear on the next clone and leave your teammates with a different tree than
 the one onboarding reported building. There are no onboarding profiles and no

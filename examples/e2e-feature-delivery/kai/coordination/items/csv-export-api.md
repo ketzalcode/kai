@@ -30,13 +30,17 @@ completed_reviews:
   - role: principal-swe-architect
     kind: independent-code
     change_ref: 4f1c8ae
+    evidence: kai/coordination/threads/csv-export-api.md
     verdict: approved
+    timestamp: 2026-03-04-0920
   - role: principal-security
     kind: independent-security
     change_ref: 4f1c8ae
+    evidence: kai/coordination/threads/csv-export-api.md
     verdict: approved
+    timestamp: 2026-03-04-1130
 change_ref: 4f1c8ae
-version: 9
+version: 12
 lease:
   holder: null
   token: null
@@ -68,5 +72,7 @@ memory flat regardless of row count.
 - Security review: approved at `4f1c8ae`; row-level authorization and audit
   logging verified.
 - Staging load check: 1M rows in 41s, memory flat at ~90MB.
-- Production deploy: performed by the operator on 2026-03-04; error rate and p99
-  latency unchanged over the following 24h.
+- Ship record: `kai/initiatives/csv-export/artifacts/ship-log.md` — readiness
+  verdict, deploy handoff, and production-verification result.
+- Production deploy: performed by the operator on 2026-03-04 (kai never
+  deploys); error rate and p99 latency unchanged over the following 24h.

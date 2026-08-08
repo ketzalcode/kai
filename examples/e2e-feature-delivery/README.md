@@ -22,22 +22,34 @@ node scripts/workspace-doctor.mjs --root examples/e2e-feature-delivery
 kai/coordination/ACTIVE.md                          what the team is on
 kai/coordination/BOARD.md                           derived index
 kai/coordination/items/csv-export-api.md            shipped
-kai/coordination/items/csv-export-ui.md             in-review, lease held by QA
+kai/coordination/items/csv-export-ui.md             in-review, awaiting QA
 kai/coordination/items/csv-export-scheduling.md     proposed, never built
-kai/coordination/threads/csv-export-api.md          six handoffs, need to prod
+kai/coordination/threads/csv-export-api.md          need -> prod, no skipped state
+kai/coordination/threads/csv-export-ui.md           design review, QA pending
 kai/initiatives/INDEX.md
 kai/initiatives/csv-export/artifacts/brief.md       the accepted need
 kai/initiatives/csv-export/artifacts/decision.md    streaming vs. file, with the
                                                     rejected options and a
                                                     revisit trigger
+kai/initiatives/csv-export/artifacts/design-api.md  the endpoint design
+kai/initiatives/csv-export/artifacts/design-ui.md   the approved UI design
+kai/initiatives/csv-export/artifacts/ship-log.md    readiness verdict, deploy
+                                                    handoff, production
+                                                    verification
 ```
 
-Note what is **absent**: no `kai/library/` types, no `.kai/runs/` areas, no
-personal sub-lanes. Lanes are created on first write, so this workspace only
-contains lanes it actually used. The doctor reports it healthy anyway — an
-absent lane is not a defect.
+Note what is **absent**: no `kai/library/` types and no `.kai/runs/` areas. Those
+two output-only lanes are created on first write, so this workspace contains
+only the ones it actually used — and it used neither. The doctor reports it
+healthy anyway; an absent output lane is not a defect. `kai/personal/` is absent
+for a different reason: it is gitignored everywhere, so it never appears in a
+committed snapshot even though onboarding does seed it.
 
-## The five things worth reading for
+The commit SHAs (`4f1c8ae`, `9b2d017`) belong to the fictional `reporting-service`
+and `web` repositories this workspace describes; they do not resolve in the kai
+repository. In a real workspace a `change_ref` resolves with `git show`.
+
+## The six things worth reading for
 
 **1. Scope was routed, not absorbed.**
 While implementing the endpoint the backend engineer found that recurring
@@ -57,15 +69,23 @@ SHA as the item. A review of an older ref does not count; a new commit
 invalidates it and the reviewer runs again.
 
 **4. `in-review` did not become `release-ready` by momentum.**
-`csv-export-ui` is finished and self-reviewed, but its required independent
-verification hasn't returned — so it sits at `in-review` with `next_role`
-pointing at `principal-qa-ui` and a lease held against version 5. That is the
-honest state, not a stalled one.
+`csv-export-ui` is finished and its design-conformance review has returned, but
+the required independent system verification hasn't — so it sits at `in-review`
+with `next_role` pointing at `principal-qa-ui` and an unheld lease waiting to be
+claimed. That is the honest state, not a stalled one.
 
-**5. `shipped` means a human shipped it.**
-`csv-export-api` is `shipped` only because the operator deployed on 2026-03-04
-*and* 24h of production verification is recorded. Without both it would have
-stopped at `release-ready`. No agent deploys, and no agent awards itself
+**5. A net-new surface needs a designer, whether or not anyone asked.**
+`csv-export-ui` adds a user-facing control, so the `definition-of-done` design
+sign-off sub-gate fires **from the diff**. It carries an approved
+`design-ui.md` and a `principal-product-designer` conformance verdict bound to
+`9b2d017`. Absent both, the only other legal path is an operator-recorded
+waiver — never a self-declared "this one is minor".
+
+**6. `shipped` means a human shipped it, and no state was skipped.**
+`csv-export-api` walks `release-ready -> deploying -> production-verification ->
+shipped`, one thread entry and one version bump each. It is `shipped` only
+because the operator ran the deploy handoff in `ship-log.md` *and* the recorded
+verification window closed clean. No agent deploys, and no agent awards itself
 `shipped`.
 
 ## Try the same shape yourself

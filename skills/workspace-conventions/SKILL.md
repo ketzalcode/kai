@@ -111,18 +111,19 @@ when the operator explicitly requested a local throwaway run.
       └─ lessons/        courses/            certs/            growth/
 ```
 
-**Lanes are created on first write, not at onboarding.** The tree above is the
-complete vocabulary, not a checklist that must exist on disk. Onboarding seeds
-only the spine — the manifest, conventions, coordination registries, the
-initiative index, and the two lane READMEs — and every run area, library type,
-and personal sub-lane is created by the agent that first writes into it, in the
-same action, idempotently.
+**Two output-only lanes are created on first write, not at onboarding.**
+`.kai/runs/<area>/` and `kai/library/<type>/` appear when something first writes
+into them; the agent doing the writing creates the directory on the way, in the
+same action, idempotently. Everything else above — including the whole
+gitignored `kai/personal/` lane with its identity stubs and proactive state — is
+seeded by onboarding, so no role ever finds its own startup state missing.
 
-So: **never treat an absent lane as an error, and never refuse to act because a
-lane is missing.** Create the directory on the way to writing your file. Do not
-pre-create lanes you are not writing to. This keeps a new workspace at roughly
-ten tracked files, and it keeps the tree honest — git cannot track an empty
-directory, so a pre-created lane would silently vanish on the next clone.
+So: **never treat an absent run area or library type as an error, and never
+refuse to act because one is missing.** Create the directory on the way to
+writing your file. Do not pre-create lanes you are not writing to. `kai/library/`
+is tracked and git cannot track an empty directory, so a pre-created lane would
+silently vanish on the next clone and leave the tracked tree different from the
+one onboarding reported building.
 
 ## Placement model
 
@@ -554,6 +555,6 @@ before claiming work. `.kai/` itself did not move, so the discovery anchor
 8. Resolve personal state against the current Kai workspace; linked workspaces
    contribute coordination signals read-only.
 9. Record exact workspace-root-relative paths; never abbreviate with `.../`.
-10. Create a lane's directory on the way to writing your first file there; an
-    absent lane is normal, not a defect.
+10. Create a run area or library type directory on the way to writing your
+    first file there; an absent output lane is normal, not a defect.
 11. Never create a root or artifact lane outside this contract.

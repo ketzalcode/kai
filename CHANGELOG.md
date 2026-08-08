@@ -10,27 +10,33 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
 - `examples/e2e-feature-delivery/` — a committed, CI-validated workspace showing
   one feature carried from brief to production: the architecture decision with
-  its rejected options and a revisit trigger, six durable handoffs,
-  revision-bound reviews, an item correctly held at `in-review` pending
-  independent verification, and an adjacent idea routed to a proposal instead of
-  being built. The workspace doctor validates it on every run, so the first
-  reference a new user reads cannot rot (#28).
+  its rejected options and a revisit trigger, a full handoff thread that walks
+  `release-ready -> deploying -> production-verification -> shipped` without
+  skipping a state, revision-bound reviews with evidence and timestamps, a
+  design sign-off on the net-new UI surface, a ship record with the deploy
+  handoff and production-verification result, an item correctly held at
+  `in-review` pending independent verification, and an adjacent idea routed to a
+  proposal instead of being built. The workspace doctor validates its structure
+  on every run (#28).
 - A **First five minutes** section at the top of the README: copyable commands
-  and prompts for install, workspace init, the first request, a health check,
-  and the worked example — plus a "what you can ignore at first" note.
+  and prompts for install, workspace init — in both the default spine form and
+  an opt-in "materialize everything now" form — the first request, a health
+  check, and the worked example, plus a "what you can ignore at first" note.
 - `test/fixtures/spine-workspace/` and a doctor self-test proving a freshly
-  onboarded workspace with no lane materialized is healthy and claimable.
+  onboarded workspace with no output lane materialized is healthy and claimable.
 
 ### Changed
 
 - **Onboarding creates only the spine.** `workflow-workspace-init` seeds the
   manifest, `CONVENTIONS.md`, the coordination registries, the initiative index,
-  and the two lane READMEs — roughly ten tracked files. Run areas, library
-  types, and personal sub-lanes are materialized on first write by the agent
-  that writes into them.
-- `workspace-conventions` states that an absent lane is not a defect, that no
-  agent may refuse to act because a lane is missing, and that the lane directory
-  is created on the way to writing the first file in it.
+  and the library README — roughly ten tracked files — plus the gitignored
+  `kai/personal/` lane in full, so the personal agents always find their own
+  startup state. Only the two output-only lanes, `.kai/runs/<area>/` and
+  `kai/library/<type>/`, are materialized on first write by the agent that
+  writes into them.
+- `workspace-conventions` states that an absent output lane is not a defect,
+  that no agent may refuse to act because one is missing, and that the lane
+  directory is created on the way to writing the first file in it.
 - README explains that the layout tree is the vocabulary, not the initial
   footprint.
 

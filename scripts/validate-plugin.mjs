@@ -393,7 +393,7 @@ function libTypesFromTable(text) {
   const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
   return toSet([...section.matchAll(/`kai\/library\/([a-z0-9-]+)\/`/g)].map((m) => m[1]));
 }
-const obLibM = onboarding && onboarding.match(/\nkai\/library\/\r?\n([\s\S]*?)\r?\nkai\/personal\//);
+const obLibM = onboarding && onboarding.match(/\nkai\/library\/\r?\n([\s\S]*?)\r?\n```/);
 const obLib = obLibM ? dirTokens(obLibM[1]) : null;
 const wiLibM = wsInit && wsInit.match(/library\/\{([^}]*)\}/s);
 const wiLib = wiLibM ? dirTokens(wiLibM[1]) : null;

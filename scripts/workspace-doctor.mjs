@@ -232,7 +232,8 @@ function checkWorkspace(root) {
   const itemIds = new Set();
   const deps = new Map(); // id -> [depId]
   if (existsSync(itemsDir)) {
-    const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md'));
+    // README.md is the lane's own scaffold file, not a work item.
+    const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md') && f !== 'README.md');
     for (const f of files) {
       const id = basename(f, '.md');
       const rel = `${coordinationRoot}/items/${f}`;
@@ -422,10 +423,10 @@ function selfTest() {
   }
 
 
-  // Spine-only fixture: a freshly onboarded workspace with no lane yet
-  // materialized. Lanes are created on first write, so a workspace with no
-  // run areas, library types, personal sub-lanes, or items is the normal state
-  // between onboarding and first use — and must be claimable.
+  // Spine-only fixture: a freshly onboarded workspace with the full spine
+  // committed and no output lane yet materialized. `.kai/runs/<area>/` and
+  // `kai/library/<type>/` are created on first write, so this is the normal
+  // state between onboarding and first use — and must be claimable.
   const spine = checkWorkspace(join(fx, 'spine-workspace'));
   if (spine.errors.length === 0 && spine.migrations.length === 0) {
     console.log('✓ self-test: spine-only workspace with no materialized lanes is healthy');

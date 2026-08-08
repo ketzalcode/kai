@@ -66,27 +66,68 @@ Durable handoff record. Newest entry last.
 ## HANDOFF 2026-03-04-1130 — principal-security -> workflow-ship
 
 - **item version:** 7
-- **state:** `in-review` -> `release-ready`
+- **state:** `in-review` -> `in-review`
 - **change_ref:** `4f1c8ae`
 - **what happened:** Independent security review at `4f1c8ae`: **approved**.
   Row-level authorization is enforced server-side and cannot be widened by a
   query parameter; the audit record captures actor, report id, and row count.
-- **evidence:** `completed_reviews[1]` on the item.
+- **evidence:** `completed_reviews[1]` on the item; this thread entry.
 - **residual risk:** none requiring operator acceptance.
-- **next:** `definition-of-done` gate, then operator deploy. The agent does not
-  deploy and does not mark this shipped.
+- **next:** `definition-of-done` gate. A reviewer does not promote the item to
+  `release-ready`; the ship gate does, after checking every dimension.
+
+---
+
+## HANDOFF 2026-03-04-1400 — workflow-ship -> operator
+
+- **item version:** 9
+- **state:** `in-review` -> `release-ready`
+- **change_ref:** `4f1c8ae`
+- **what happened:** Ran the `definition-of-done` gate. All six dimensions Clear
+  at `4f1c8ae`; the design sign-off sub-gate does not fire — this item adds no
+  user-facing surface. Produced the ship record with the deploy handoff and the
+  production-verification plan.
+- **evidence:** `kai/initiatives/csv-export/artifacts/ship-log.md`
+- **next:** the **operator** runs the deploy steps. kai never deploys, so the
+  item stops here until a human acts.
+
+---
+
+## HANDOFF 2026-03-04-1505 — operator -> workflow-ship
+
+- **item version:** 10
+- **state:** `release-ready` -> `deploying`
+- **change_ref:** `4f1c8ae`
+- **what happened:** Operator executed the deploy handoff: migration `0043` then
+  a canary at 5% for 20 minutes, then full rollout. Recorded here by the agent
+  from the operator's report; the agent ran nothing.
+- **evidence:** `ship-log.md` deployment record — release `reporting-2026.03.04`.
+- **next:** proportional production verification before any `shipped` claim.
+
+---
+
+## HANDOFF 2026-03-04-1545 — workflow-ship -> workflow-ship
+
+- **item version:** 11
+- **state:** `deploying` -> `production-verification`
+- **change_ref:** `4f1c8ae`
+- **what happened:** Deployment is live. Watching the agreed signals: export
+  endpoint error rate, p99 latency, and reporting-service memory.
+- **evidence:** `ship-log.md` verification plan.
+- **next:** hold until the verification window closes. Reversibility is the
+  documented rollback to the prior release; the migration is additive.
 
 ---
 
 ## HANDOFF 2026-03-04-1610 — workflow-ship -> operator
 
-- **item version:** 9
-- **state:** `release-ready` -> `shipped`
+- **item version:** 12
+- **state:** `production-verification` -> `shipped`
 - **change_ref:** `4f1c8ae`
-- **what happened:** All `review_requirements` are met at the current
-  `change_ref`, acceptance is checked, and the operator deployed on 2026-03-04.
-  Production verification over 24h showed error rate and p99 latency unchanged.
-- **evidence:** the item's Evidence section.
+- **what happened:** Verification window closed clean — error rate and p99
+  latency unchanged over 24h, memory flat. Marked `shipped`.
+- **evidence:** the item's Evidence section; `ship-log.md`.
 - **why `shipped` is honest here:** a human deployed it and proportional
   production verification is recorded. Without both, this would have stopped at
-  `release-ready`.
+  `release-ready`. Note the states in between — an item never jumps from
+  `release-ready` straight to `shipped`.

@@ -24,18 +24,26 @@ depends_on:
 waiting_on_questions: []
 required_for_milestone: true
 review_requirements:
+  - role: principal-product-designer
+    kind: design-conformance
   - role: principal-qa-ui
     kind: independent-system
-completed_reviews: []
+completed_reviews:
+  - role: principal-product-designer
+    kind: design-conformance
+    change_ref: 9b2d017
+    evidence: kai/coordination/threads/csv-export-ui.md
+    verdict: approved
+    timestamp: 2026-03-05-1015
 change_ref: 9b2d017
-version: 6
+version: 7
 lease:
-  holder: principal-qa-ui
-  token: lease-9b2d017-06
-  version_at_grant: 5
-  acquired: 2026-03-05-0900
-  expires: 2099-03-05-1700
-updated: 2026-03-05-0900
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-03-05-1015
 ---
 
 ## Outcome
@@ -48,6 +56,7 @@ failure states while it runs.
 - [x] Export button is disabled while an export for that report is in flight.
 - [x] Progress reflects real server state rather than an animation.
 - [x] A failed export surfaces a retry affordance and does not silently vanish.
+- [x] Design-conformance verdict from `principal-product-designer`.
 - [ ] Independent system verification on a real browser.
 
 ## Evidence
@@ -56,11 +65,18 @@ failure states while it runs.
 - Implementation: commit `9b2d017`
 - Tests: `web/src/reports/__tests__/export/` — component and integration tests,
   written by the implementing frontend engineer.
-- QA verification: in progress; the lease is held by `principal-qa-ui` against
-  version 5, and the review is bound to `9b2d017`. Any new commit invalidates it.
+- Design conformance: approved at `9b2d017` against the approved design artifact.
+  This is a net-new user-facing surface, so the `definition-of-done` design
+  sign-off sub-gate fires from the diff itself; without this verdict or a
+  recorded operator WAIVER the item cannot reach `release-ready`.
+- QA verification: not yet dispatched. The lease is unheld, and `next_role`
+  names `principal-qa-ui`. When QA claims it, the lease is granted against the
+  current version and the review binds to `9b2d017` — any new commit invalidates
+  both completed reviews.
 
 ## Notes
 
 This item is deliberately **not** `release-ready`. Implementation is complete
-and reviewed by its author, but the required independent verification has not
-returned, so the state stays `in-review` and `next_role` points at the reviewer.
+and design conformance has returned, but the required independent system
+verification has not, so the state stays `in-review` and `next_role` points at
+the reviewer.

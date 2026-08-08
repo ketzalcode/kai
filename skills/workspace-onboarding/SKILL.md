@@ -37,22 +37,33 @@ kai/coordination/threads/README.md
 kai/initiatives/README.md
 kai/initiatives/INDEX.md
 kai/library/README.md
-kai/personal/README.md
-kai/personal/inbox.md
-kai/personal/agenda.md
-kai/personal/workspaces.md
-kai/personal/identity/README.md
-kai/personal/identity/voice.md
+kai/personal/
+  README.md
+  inbox.md
+  agenda.md
+  workspaces.md
+  consultations/
+  decisions/
+  proactive/
+  identity/
+    README.md
+    voice.md
+    career-snapshot.md
+    skills-inventory.md
+    current-work.md
+    career-goals.md
+  lessons/ courses/ certs/ growth/
 ```
 
-That is the whole initial footprint: roughly ten tracked files plus the ignored
-personal lane. Everything else is a **lane**, created on first write.
+That is roughly **ten tracked files**, plus the ignored `kai/personal/` lane,
+which is seeded in full.
 
 ### Lanes materialized on first use
 
-These are the vocabulary of the workspace, not a checklist to pre-create. The
-agent about to write into a lane creates the missing directory on the way, in
-the same action, and never pre-creates a lane it is not writing to:
+Two lanes are **output-only**: nothing reads them at startup, and both are
+deferred until something writes into them. The agent about to write creates the
+missing directory on the way, in the same action, and never pre-creates a lane
+it is not writing to:
 
 ```text
 .kai/runs/
@@ -60,10 +71,6 @@ the same action, and never pre-creates a lane it is not writing to:
 kai/library/
   reviews/ dev-designs/ investigations/ briefings/ qa-findings/
   lessons/ digests/ learnings/ releases/ playbooks/ content/
-kai/personal/
-  consultations/ decisions/ proactive/ lessons/ courses/ certs/ growth/
-kai/personal/identity/
-  career-snapshot.md skills-inventory.md current-work.md career-goals.md
 ```
 
 An absent lane is **not** a defect and never blocks work: the workspace doctor
@@ -71,17 +78,28 @@ does not require one, and no agent may refuse to act because a lane it is about
 to create does not yet exist. Creation is idempotent — check, create if missing,
 proceed — so concurrent writers converge on the same tree.
 
-This is why lanes are deferred rather than pre-created: an empty directory
-cannot be tracked by git, so a pre-created lane never survives a clone. A
-teammate would receive a workspace shaped differently from the one onboarding
-reported building. Materializing a lane with its first real file makes the
-tracked tree and the reported tree the same thing.
+Why exactly these two and nothing else:
+
+- `kai/library/<type>/` is **tracked**, and git cannot track an empty directory.
+  A pre-created lane therefore never survives a clone: a teammate would receive
+  a workspace shaped differently from the one onboarding reported building.
+  Materializing a lane with its first real file makes the tracked tree and the
+  reported tree the same thing.
+- `.kai/runs/<area>/` is ignored and inherently per-run; a run directory is
+  created when a run happens.
+
+Everything an agent **reads** — the manifest, the coordination registries, the
+initiative index, and the whole `kai/personal/` lane including the identity
+stubs and the proactive state directory — stays in the spine. `kai/personal/`
+is gitignored, so it is never cloned and the empty-directory problem does not
+apply to it; deferring it would only risk an agent finding its own startup state
+missing.
 
 There are **no onboarding profiles and no layout modes.** A lane's path is the
 same whenever it appears; only the moment of creation is deferred. An operator
 who wants to browse the complete structure can ask `workflow-workspace-init` to
-materialize every lane at once — a one-shot convenience that records no state
-and changes no contract.
+materialize every lane at once — a one-shot local convenience that records no
+state, changes no contract, and (being empty) still will not survive a clone.
 
 Initiative slug directories and their `artifacts/` subtrees are created by
 `workflow-initiative-init`, not by general onboarding.
