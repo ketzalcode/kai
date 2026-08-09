@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 55,
-    "skills": 41
+    "agents": 56,
+    "skills": 42
   },
   "agents": [
     "director-chief-of-staff",
@@ -50,6 +50,7 @@
     "workflow-experiment-review",
     "workflow-incident-response",
     "workflow-initiative-init",
+    "workflow-issue-analysis",
     "workflow-localization",
     "workflow-proactive-scan",
     "workflow-product-explore",
@@ -73,6 +74,7 @@
     "generate-audio",
     "generate-html-lesson",
     "initiative-stewardship",
+    "issue-analysis",
     "linkedin-content",
     "onboard-to-codebase",
     "peer-communication",

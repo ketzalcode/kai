@@ -4,6 +4,43 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.33.0] - 2026-08-08
+
+### Added
+
+- `issue-analysis` skill — the discipline for turning an issue into a chosen
+  approach: proportionality (a fast path for a typo, the full loop for anything
+  with a disputed premise, multiple viable approaches, or a hard-to-reverse
+  choice), grounding against what already exists, **verifying the decisive
+  assumption by experiment rather than assertion**, restating the problem before
+  proposing a remedy, framing only the options that genuinely exist, and stopping
+  at the authorized decision owner.
+- `workflow-issue-analysis` agent — the front door for picking up an issue. It
+  ends in one of three named states: AWAITING SELECTION, FINDING, or BLOCKED.
+  There is no state in which it began the work.
+- Issue health as a first-class outcome: stale, duplicate, wrongly-premised, and
+  "several issues wearing one hat" are **successful** results, not failures to
+  comply. Two issues in this repository had to be consolidated by hand.
+- Acceptance-evidence classification — CI-provable, manually verifiable,
+  externally observable, or not presently provable. Marking a criterion unprovable
+  is honest; inventing a test that appears to cover it converts a known limitation
+  into a false assurance.
+
+### Changed
+
+- `workflow-issue-analysis` is the **first agent in this plugin that holds no
+  `edit` and no `create`.** The central rule of issue analysis — analysis ends in
+  a decision request, it does not slide into implementation — is exactly the rule
+  a confident model steps over once the answer feels obvious. Removing the write
+  tools makes the boundary a capability rather than a promise. The agent
+  documents the honest limit of that: it still holds `bash`, because verifying a
+  decisive fact requires running things, and `bash` can write.
+- The catalog's `Delivery` agent category is now **`Intake & delivery`**, covering
+  the full life of one change: issue, to approach, to merged PR, to production.
+- `director-chief-of-staff` inherits `issue-analysis` and routes issue intake to
+  `workflow-issue-analysis`, so the skill has real carriers. A skill nothing
+  inherits never fires — `research-before-coding` has zero inheritors today.
+
 ## [0.32.0] - 2026-08-08
 
 ### Added
@@ -1186,6 +1223,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.33.0]: https://github.com/RubenSaucedo/kai/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/RubenSaucedo/kai/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/RubenSaucedo/kai/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/RubenSaucedo/kai/compare/v0.29.0...v0.30.0

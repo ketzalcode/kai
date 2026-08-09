@@ -52,9 +52,9 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Delivery',
-    blurb: 'Getting one change from the workspace to a merged PR, then to production. kai never merges or deploys itself.',
-    members: ['workflow-pull-request', 'workflow-ship'],
+    title: 'Intake & delivery',
+    blurb: 'The full life of one change: from an issue to a chosen approach, then to a merged PR, then to production. kai never merges or deploys itself.',
+    members: ['workflow-issue-analysis', 'workflow-pull-request', 'workflow-ship'],
   },
   {
     kind: 'agent',
@@ -151,8 +151,8 @@ const CATEGORIES = [
     members: [
       'team-operating-rules', 'workspace-conventions', 'workspace-onboarding',
       'work-coordination', 'definition-of-done', 'scope-discipline',
-      'initiative-stewardship', 'peer-communication', 'product-exploration',
-      'product-marketing-intelligence',
+      'issue-analysis', 'initiative-stewardship', 'peer-communication',
+      'product-exploration', 'product-marketing-intelligence',
     ],
   },
   {
