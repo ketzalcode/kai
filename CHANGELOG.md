@@ -4,6 +4,63 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.35.0] - 2026-08-10
+
+### Added
+
+- **`work-status` — an exception report that answers "where must I intervene?"**
+  (`node scripts/work-status.mjs --root <workspace>`, plus `--json`). As work
+  scales, reading every coordination record to find the two that need a decision
+  does not scale with it. This reads the authoritative item records under
+  `kai/coordination/items/` — never `BOARD.md`, which is itself derived and can
+  drift — and prints only exceptions, in severity order:
+  - **NEEDS YOU** — an open question addressed to `@operator`, and any state only
+    a human can advance (`release-ready`, `deploying`, `production-verification`),
+    since kai never deploys.
+  - **INTEGRITY** — records that contradict each other: a review that approved a
+    different `change_ref` than the item now carries, a dependency on an item
+    that does not exist, an unreadable record, a terminal state with required
+    reviews unmet.
+  - **BLOCKED** — declared blocked, or waiting on a typed dependency that has not
+    reached its required state.
+  - **UNKNOWN** — an expired lease, active work with no `next_role` and no
+    holder, or `waiting_on_questions` naming a question with no packet in the
+    thread.
+
+  Healthy work is counted, not listed. Ordinary blocked work exits `0` — being
+  blocked is a normal state of a healthy board, not a failure; only an integrity
+  finding exits non-zero.
+- **A confidence tier on every finding** — `declared` (the record asserts it) or
+  `derived` (the tool checked it: two records contradict each other, or the
+  condition is one the tool can evaluate itself). Coordination records are
+  maintained by agents following prose, so a record that has not changed is
+  indistinguishable from an agent that is still working, one that crashed, and
+  one that forgot. Where the tool cannot tell, it reports `UNKNOWN` rather than
+  showing green, and the report states plainly that it describes what agents
+  have **declared**, not verified live activity. A confident green board that is
+  green because nobody updated it is worse than no board.
+- `scripts/lib/coordination.mjs` — the shared parser for coordination records.
+  `workspace-doctor` validates these records and `work-status` reports on them;
+  both now read through one module, because a second parser would be a second
+  truth. Adds list, map-list, and QUESTION-packet parsing on top of the helpers
+  the doctor already had.
+- Docs: *Seeing what needs you* in the workspace model guide, covering the
+  sections, the exit codes, and — explicitly — what the report cannot tell you.
+
+### Changed
+
+- `npm test` is now **eight** checks; `npm run status` and
+  `npm run status:self-test` are available directly.
+- `workspace-doctor` now exports `checkWorkspace` and only runs its CLI when
+  invoked as the entry point. Previously, importing it executed the CLI and
+  consumed the importer's own flags — `work-status --self-test` silently ran the
+  doctor's self-test instead of its own.
+
+### Fixed
+
+- `docs/README.md` advertised "54 agents and 40 skills"; the shipped surface is
+  56 and 42.
+
 ## [0.34.0] - 2026-08-10
 
 ### Added
@@ -1266,6 +1323,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.35.0]: https://github.com/RubenSaucedo/kai/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/RubenSaucedo/kai/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/RubenSaucedo/kai/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/RubenSaucedo/kai/compare/v0.31.0...v0.32.0

@@ -15,6 +15,10 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  LIFECYCLE, NEEDS_CHANGE_REF, REQUIRES_STATES,
+  frontmatter, scalar, cleanScalar, isNull, unquote, dependsOn, lease, parseStamp,
+} from './lib/coordination.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -48,88 +52,8 @@ const CANONICAL_AREAS = new Set([
   'qa', 'eng', 'product', 'revenue', 'support', 'review', 'ship', 'incident',
   'ai', 'learn', 'lessons', 'pulse', 'content',
 ]);
-const LIFECYCLE = new Set([
-  'proposed', 'ready', 'in-progress', 'in-review', 'blocked', 'completed',
-  'release-ready', 'deploying', 'production-verification', 'shipped', 'dropped',
-]);
-// States at or past in-review require a change_ref bound to the implementation.
-const NEEDS_CHANGE_REF = new Set([
-  'in-review', 'release-ready', 'deploying', 'production-verification', 'shipped',
-]);
-// Valid typed-dependency "requires" gates (see work-coordination).
-const REQUIRES_STATES = new Set(['in-review', 'completed', 'release-ready', 'shipped']);
 const WORKSPACE_MODES = new Set(['repository', 'external']);
 
-// --- tiny frontmatter helpers (built-ins only) -----------------------------
-function frontmatter(raw) {
-  const lines = raw.split(/\r?\n/);
-  if (lines[0] !== '---') return null;
-  let end = -1;
-  for (let i = 1; i < lines.length; i++) { if (lines[i] === '---') { end = i; break; } }
-  if (end === -1) return null;
-  return lines.slice(1, end);
-}
-const scalar = (fmLines, key) => {
-  for (const l of fmLines) {
-    const m = l.match(new RegExp(`^${key}:\\s?(.*)$`));
-    if (m) return cleanScalar(m[1]);
-  }
-  return undefined;
-};
-// Normalize a raw YAML scalar: unwrap surrounding quotes, else strip a trailing
-// ` # comment`. (Comments inside a quoted value are preserved.)
-function cleanScalar(raw) {
-  let s = (raw ?? '').trim();
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    return s.slice(1, -1);
-  }
-  const h = s.indexOf(' #');
-  if (h !== -1) s = s.slice(0, h).trim();
-  return s;
-}
-const isNull = (v) => v === undefined || v === '' || v === 'null' || v === '~' || v === '—';
-const unquote = (s) => {
-  const t = (s ?? '').trim();
-  return (t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))
-    ? t.slice(1, -1) : t;
-};
-// Extract typed dependencies ({item, requires}) under a top-level `depends_on:`.
-function dependsOn(fmLines) {
-  const out = [];
-  let inBlock = false;
-  let cur = null;
-  for (const l of fmLines) {
-    if (/^depends_on:\s*(\[\])?\s*$/.test(l)) { inBlock = true; continue; }
-    if (inBlock) {
-      if (/^\S/.test(l)) break; // dedented to next top-level key
-      const mi = l.match(/^\s*-\s*item:\s*(.+?)\s*$/);
-      if (mi) { cur = { item: cleanScalar(mi[1]), requires: undefined }; out.push(cur); continue; }
-      const mr = l.match(/^\s*requires:\s*(.+?)\s*$/);
-      if (mr && cur) cur.requires = cleanScalar(mr[1]);
-    }
-  }
-  return out;
-}
-// Read holder/token/version_at_grant/expires from the `lease:` block.
-function lease(fmLines) {
-  const out = { holder: undefined, token: undefined, versionAtGrant: undefined, expires: undefined };
-  let inBlock = false;
-  for (const l of fmLines) {
-    if (/^lease:\s*$/.test(l)) { inBlock = true; continue; }
-    if (inBlock) {
-      if (/^\S/.test(l)) break;
-      const h = l.match(/^\s*holder:\s?(.*)$/);
-      const t = l.match(/^\s*token:\s?(.*)$/);
-      const v = l.match(/^\s*version_at_grant:\s?(.*)$/);
-      const e = l.match(/^\s*expires:\s?(.*)$/);
-      if (h) out.holder = h[1].trim();
-      if (t) out.token = t[1].trim();
-      if (v) out.versionAtGrant = v[1].trim();
-      if (e) out.expires = e[1].trim();
-    }
-  }
-  return out;
-}
 // A durable path must be workspace-root-relative: no machine-absolute root,
 // no UNC share, no session-state, no parent-escape, no abbreviated `.../`.
 function badPath(p) {
@@ -151,7 +75,7 @@ function looksLikeKaiRoot(root, key) {
   return (KAI_ROOT_MARKERS[key] || []).some((marker) => existsSync(join(dir, marker)));
 }
 
-function checkWorkspace(root) {
+export function checkWorkspace(root) {
   const errors = [];
   const warnings = [];
   const migrations = [];
@@ -324,15 +248,6 @@ function checkWorkspace(root) {
 }
 
 // Parse a `YYYY-MM-DD-HHMM` (or `YYYY-MM-DD`) stamp to epoch ms, else null.
-function parseStamp(s) {
-  const t = unquote(s);
-  let mm = t.match(/^(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})$/);
-  if (mm) return Date.UTC(+mm[1], +mm[2] - 1, +mm[3], +mm[4], +mm[5]);
-  mm = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (mm) return Date.UTC(+mm[1], +mm[2] - 1, +mm[3]);
-  const d = Date.parse(t);
-  return Number.isNaN(d) ? null : d;
-}
 
 function findCycle(deps) {
   const WHITE = 0, GRAY = 1, BLACK = 2;
@@ -471,11 +386,16 @@ function selfTest() {
 }
 
 // --- main ------------------------------------------------------------------
-const argv = process.argv.slice(2);
-if (argv.includes('--self-test')) {
-  process.exit(selfTest());
-} else {
-  const ri = argv.indexOf('--root');
-  const root = ri !== -1 && argv[ri + 1] ? resolve(argv[ri + 1]) : process.cwd();
-  process.exit(report(root, checkWorkspace(root)));
+// Guarded so importing `checkWorkspace` (see work-status.mjs) does not execute
+// the CLI. Without this, an importer's own flags are consumed by this module.
+const isEntry = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isEntry) {
+  const argv = process.argv.slice(2);
+  if (argv.includes('--self-test')) {
+    process.exit(selfTest());
+  } else {
+    const ri = argv.indexOf('--root');
+    const root = ri !== -1 && argv[ri + 1] ? resolve(argv[ri + 1]) : process.cwd();
+    process.exit(report(root, checkWorkspace(root)));
+  }
 }

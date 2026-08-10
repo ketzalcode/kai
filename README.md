@@ -31,13 +31,14 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.34.0` — **56 agents and 42 skills**, for the **Copilot CLI** and the
+`v0.35.0` — **56 agents and 42 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release documents the three ways a skill can reach a session and makes
-`npm test` fail on a skill that has none of them, so a skill can no longer ship
-unreachable. The four code-writing agents now inherit `research-before-coding`
-and `pr-sizing` (#88).
+This release adds `work-status`, an exception report that answers "where must I
+intervene?" instead of asking you to read every coordination record. It prints
+only what needs a human, what contradicts itself, what is blocked, and what it
+cannot determine — and labels every finding with how much it can be trusted
+(#92).
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.

@@ -111,6 +111,52 @@ PM briefs, research, designs, and decisions under their named artifact folders.
 Sanitized unaffiliated incident records use
 `kai/library/investigations/<incident-id>/incident-record.md`.
 
+## Seeing what needs you
+
+Coordination records pile up as work scales, and reading every item to find the
+two that need a decision does not scale with them. `work-status` answers one
+question — **where must I intervene?**
+
+```bash
+node scripts/work-status.mjs --root .        # human-readable
+node scripts/work-status.mjs --root . --json # machine-readable
+```
+
+It reads the authoritative item records under `kai/coordination/items/` — never
+`BOARD.md`, which is itself derived and can drift — and prints only exceptions,
+in severity order:
+
+| Section | What lands here |
+| ------- | --------------- |
+| **NEEDS YOU** | An open question addressed to `@operator`, and any state only a human can advance (`release-ready`, `deploying`, `production-verification`) — kai never deploys. |
+| **INTEGRITY** | Records that contradict each other: a review that approved a different `change_ref` than the item now carries, a dependency on an item that does not exist, an unreadable record, a terminal state with required reviews unmet. |
+| **BLOCKED** | Declared blocked, or waiting on a typed dependency that has not reached its required state. |
+| **UNKNOWN** | An expired lease, active work with no `next_role` and no holder, or `waiting_on_questions` naming a question with no packet in the thread. |
+
+Healthy work is counted, not listed. Exit code is `0` normally, `1` when an
+integrity finding exists, and `2` when no coordination records could be found.
+**Ordinary blocked work exits `0`** — being blocked is a normal state of a
+healthy board, not a failure.
+
+### What it does not tell you
+
+Every finding is labelled `declared` (the record asserts it) or `derived` (the
+tool checked it — either two records contradict each other, or the condition is
+one the tool can evaluate itself, like an expired lease). That distinction is
+load-bearing:
+
+> This reports what agents have **declared**, not verified live activity.
+
+Coordination records are maintained by agents following prose, so a record that
+has not changed is indistinguishable from an agent that is still working, one
+that crashed, and one that forgot. Where the tool cannot tell, it reports
+`UNKNOWN` rather than showing green — a confident green board that is green
+because nobody updated it is worse than no board at all.
+
+It also cannot see *runtime* activity. kai's agents are prompt documents, not
+host subagents, so nothing in the host's own telemetry identifies which kai role
+is running.
+
 ---
 
 **Next:** [How kai works](how-kai-works.md) ·
