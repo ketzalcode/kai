@@ -30,6 +30,45 @@ root `AGENTS.md` never loads in a consumer workspace — see
 [Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
 for why the shared rules ship as a skill instead.
 
+## How a skill reaches a session
+
+A skill is not loaded because it exists. It is loaded on demand, and there are
+exactly three ways it can fire. All three are legitimate; what is not legitimate
+is a skill with none of them, which ships and appears in the catalog while being
+unreachable.
+
+```
+  skills/<id>/SKILL.md
+          |
+          +-- 1. inherited ----> named on an agent's `**Inherits:**` line.
+          |                      Loads whenever that agent runs. Use for a
+          |                      contract the role must always obey.
+          |
+          +-- 2. user-invoked -> `user-invocable: true` (+ `argument-hint`).
+          |                      The operator runs it directly. Use for a
+          |                      procedure a human starts on purpose.
+          |
+          +-- 3. orchestrated -> declared as a dispatch entry in an agent's
+                                 prose, in the list shape
+                                 `- **`skill-id`** — when it applies`, and run
+                                 situationally. Use for a lens that would be
+                                 waste to run every time — the review lenses
+                                 `workflow-doc-review` calls only when the
+                                 change touches their subject.
+```
+
+A skill can have more than one path: `research-before-coding` is both inherited
+by the code-writing agents and user-invocable.
+
+`npm run validate` fails on a skill with zero firing paths. The orchestrated
+form is matched by that declaration shape specifically, not by any backticked
+mention, so an incidental reference cannot pass an unreachable skill off as
+reachable. That check exists because its absence produced a filed issue
+asserting that user-invocable skills "never fire" — the counting method, not the
+plugin, was wrong. **When auditing inheritance, parse only the `**Inherits:**`
+line**; grepping whole agent files also counts prose mentions and inflates the
+result.
+
 ## Contributing
 
 This is a personal open-source plugin, but issues and PRs are welcome.
@@ -40,17 +79,18 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
-Before opening a PR, run `npm test` — six dependency-free checks that also run
+Before opening a PR, run `npm test` — seven dependency-free checks that also run
 in CI on every pull request:
 
 | Command | Checks |
 | ------- | ------ |
-| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, the `**Inherits:**` declaration, host-tool allowlist, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
+| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, the `**Inherits:**` declaration, at least one firing path per skill, host-tool allowlist, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
 | `npm run docs:check` | The generated agent/skill catalog matches the shipped surface. |
 | `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces. |
 | `npm run host-contract` | Host-loader acceptance — the discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
 | `npm run release-guard:self-test` | The behavior-change-requires-a-bump decision core. |
 | `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
+| `node examples/proactive-runner/runner.mjs --self-test` | The proactive-scan runner's decision, redaction, and retention core. |
 
 On pull requests CI additionally runs `release-guard --base <sha> --head <sha>`
 to block a behavior-sensitive change that lacks a version bump plus
@@ -64,6 +104,9 @@ changelog/README updates.
    `docs/reference/agents-and-skills.md`.
 3. Regenerate the host-loader golden with `npm run host-contract:update` and
    commit `test/fixtures/inventory.json`.
+4. For a new skill, give it a firing path — inherit it from an agent, mark it
+   `user-invocable: true`, or have an agent dispatch it by name. `npm test`
+   fails until one exists.
 
 **When you add a documentation page**, put it under `docs/` — the validator
 scans every `docs/**/*.md` for unresolvable agent references and for workspace

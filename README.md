@@ -31,14 +31,16 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.33.0` — **56 agents and 42 skills**, for the **Copilot CLI** and the
+`v0.34.0` — **56 agents and 42 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release splits this README — which had grown past 1,100 lines — into a
-short landing page plus the guides linked above, and makes the agent/skill
-catalog **generated** from shipped frontmatter so it can no longer drift from
-what the plugin actually declares (#63). Release history and the reasoning
-behind each change live in **[CHANGELOG.md](CHANGELOG.md)**.
+This release documents the three ways a skill can reach a session and makes
+`npm test` fail on a skill that has none of them, so a skill can no longer ship
+unreachable. The four code-writing agents now inherit `research-before-coding`
+and `pr-sizing` (#88).
+
+Release history and the reasoning behind each change live in
+**[CHANGELOG.md](CHANGELOG.md)**.
 
 ## First five minutes
 

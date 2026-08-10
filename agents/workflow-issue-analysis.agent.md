@@ -133,7 +133,8 @@ onto an item that already exists, you cannot take its lease — say so and let t
 grantor hold it on your behalf. Do not proceed as though an unclaimed item were
 claimed.
 
-One honest caveat about the boundary above: `research-before-coding` is the right
-owner for code investigation, but **no agent currently inherits it**, so naming it
-is a routing intent rather than a live seam. Say what the next role needs to
-investigate rather than assuming the skill will fire for them.
+One boundary note: `research-before-coding` is the right owner for code
+investigation, and the four code-writing agents inherit it, so naming it is a
+live seam for them. It is also `user-invocable: true`, so the operator can run
+it directly. Still say what the next role needs to investigate — a firing path
+is not a guarantee that your question survived the handoff.

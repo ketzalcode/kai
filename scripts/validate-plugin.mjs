@@ -235,6 +235,51 @@ for (const agent of agentFiles) {
 }
 
 // ---------------------------------------------------------------------------
+// Skill firing paths
+//
+// A skill reaches a session in exactly one of three ways, and a skill with none
+// of them is dead on arrival while still passing every other check and
+// appearing in the catalog:
+//
+//   1. inherited    — named on some agent's `**Inherits:**` line;
+//   2. user-invoked — `user-invocable: true` in its own frontmatter, so the
+//                     operator can run it directly;
+//   3. orchestrated — declared as a dispatch entry in an agent's prose, in the
+//                     list shape `- **`skill-id`** — when it applies`, which
+//                     dispatches it situationally (the `workflow-doc-review`
+//                     lenses).
+//
+// All three are legitimate designs, so this asserts only that at least one
+// exists. The orchestrated form is matched by that specific declaration shape
+// rather than by any backticked mention, so an incidental reference — a
+// cross-link, or a "do not use `x`" sentence — cannot pass a skill off as
+// reachable. It exists because the absence of this check produced a filed issue
+// claiming user-invocable skills "never fire".
+// ---------------------------------------------------------------------------
+{
+  const inherited = new Set();
+  const dispatched = new Set();
+  for (const agent of agentFiles) {
+    const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
+    for (const line of raw.split('\n')) {
+      if (/^\*\*Inherits:\*\*/.test(line)) {
+        for (const m of line.matchAll(/`([^`]+)`/g)) inherited.add(m[1]);
+        continue;
+      }
+      const d = line.match(/^\s*[-*]\s+\*\*`([^`]+)`\*\*/);
+      if (d) dispatched.add(d[1]);
+    }
+  }
+  for (const skill of skillFiles) {
+    const id = skill.id;
+    if (inherited.has(id) || dispatched.has(id)) continue;
+    const raw = readFileSync(skill.path, 'utf8');
+    if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
+    err(rel(skill.path), 'has no firing path: no agent inherits or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // plugin.json
 // ---------------------------------------------------------------------------
 const pjPath = join(ROOT, 'plugin.json');

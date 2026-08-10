@@ -4,7 +4,7 @@ description: Principal-level infrastructure and platform reviewer and builder fo
 tools: ["bash", "view", "edit", "create", "grep", "glob"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `coding-style`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

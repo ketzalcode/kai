@@ -4,6 +4,49 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.34.0] - 2026-08-10
+
+### Added
+
+- **Documented the three ways a skill reaches a session**, in
+  `docs/reference/plugin-structure.md` -> *How a skill reaches a session*:
+  **inherited** (named on an agent's `**Inherits:**` line), **user-invoked**
+  (`user-invocable: true`, run directly by the operator), and **orchestrated**
+  (declared as a dispatch entry in an agent's prose and run situationally, as
+  `workflow-doc-review` does with its review lenses). All three are legitimate,
+  and a skill may have more than one. The page also records the auditing
+  pitfall: **parse only the `**Inherits:**` line** — grepping whole agent files
+  also counts prose mentions and inflates the count.
+- `npm run validate` now **fails a skill with zero firing paths**. A skill with
+  no inheritor, no `user-invocable: true`, and no dispatching agent previously
+  passed every check and appeared in the generated catalog while being
+  unreachable. The check accepts all three designs and rejects only the
+  genuinely orphaned case. The orchestrated path is matched by the dispatch
+  declaration shape rather than by any backticked mention, so an incidental
+  reference — a cross-link, or a "do not use `x`" sentence — cannot pass an
+  unreachable skill off as reachable. Verified against a probe skill with every
+  path removed, and against that incidental-mention case.
+
+### Changed
+
+- `principal-swe-backend`, `principal-swe-frontend`, `principal-swe-infra`,
+  and `principal-ai-applied-engineer` now inherit `research-before-coding` and
+  `pr-sizing`, matching the carrier set already used for `coding-style`.
+  Investigating before writing code is the normal path for these roles, and
+  `research-before-coding` self-limits — it skips typos, comment edits, and
+  doc-only changes, reduces to a two-line proposal for a change under one file
+  or thirty lines, and accepts implicit approval — so inheriting it cannot
+  impose ceremony on atomic work.
+
+### Fixed
+
+- `workflow-issue-analysis` claimed `research-before-coding` had no inheritor
+  and was therefore "a routing intent rather than a live seam". That was
+  overstated even when written — the skill is `user-invocable: true` — and is
+  now false in both respects. Corrected.
+- `docs/reference/plugin-structure.md` described `npm test` as six checks and
+  omitted the proactive-runner self-test added in 0.32.0. It is seven.
+
 ## [0.33.0] - 2026-08-08
 
 ### Added
@@ -1223,6 +1266,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.34.0]: https://github.com/RubenSaucedo/kai/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/RubenSaucedo/kai/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/RubenSaucedo/kai/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/RubenSaucedo/kai/compare/v0.30.0...v0.31.0
