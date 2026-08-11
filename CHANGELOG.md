@@ -4,6 +4,34 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.39.0] - 2026-08-11
+
+### Added
+
+- **`hooks.json`** — kai now ships its own hook registration, so installing the
+  plugin wires the subagent observer with no manual configuration. Hook sources
+  are merged rather than overwritten, so this adds nothing to any file you own,
+  and the observer stays inert until you run `npm run observe:enable`.
+  - The command uses `${PLUGIN_ROOT}`, which expands to the plugin's install
+    directory. 0.38.0 deliberately withheld this file because the hooks
+    reference documents that variable only for LSP configuration. It has now
+    been **verified** against a real plugin install and a real subagent, which
+    also confirmed that a root `hooks.json` is auto-discovered with no
+    `plugin.json` entry and that a hook's working directory defaults to the
+    plugin root.
+  - Deleting `hooks.json` from the install directory, or uninstalling the
+    plugin, removes the registration entirely. Nothing else in kai depends on it.
+- **A hooks contract check** in `validate-plugin.mjs`. `hooks.json` is the one
+  file in the repository the host executes on its own, on every subagent, for
+  everyone who installs kai — and a mistake in it is silent, because a wrong
+  path simply fails to spawn in someone else's session. CI now rejects a command
+  that omits `${PLUGIN_ROOT}` (it would resolve against the *user's* repository),
+  a path that does not exist in the plugin, a subscription to any event other
+  than `subagentStart`/`subagentStop` (`preToolUse` is fail-closed, and
+  per-tool-call events cost ~66 ms each), a missing half of the start/stop pair,
+  a `timeoutSec` above 15s, and malformed JSON. Each rejection is proved by a
+  negative case.
+
 ## [0.38.0] - 2026-08-11
 
 ### Added
@@ -1478,6 +1506,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.39.0]: https://github.com/RubenSaucedo/kai/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/RubenSaucedo/kai/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RubenSaucedo/kai/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RubenSaucedo/kai/compare/v0.35.0...v0.36.0

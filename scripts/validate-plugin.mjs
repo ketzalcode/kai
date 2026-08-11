@@ -730,6 +730,63 @@ const SANCTIONED_GIT_DEPS = new Map([
 })();
 
 // ---------------------------------------------------------------------------
+// The plugin hooks contract.
+//
+// hooks.json is the one file in this repository the HOST executes on its own,
+// on every subagent, for everyone who installs kai. Nobody reads it in review
+// the way they read a prompt, and a mistake here is silent: a wrong path just
+// fails to spawn, over and over, in someone else's session.
+//
+// So the shape is pinned rather than trusted.
+// ---------------------------------------------------------------------------
+(() => {
+  const rel = 'hooks.json';
+  const raw = readIf(join(ROOT, rel));
+  if (!raw) return; // the observer is optional; only its shape is enforced
+
+  let cfg;
+  try {
+    cfg = JSON.parse(raw);
+  } catch (e) {
+    err(rel, `is not valid JSON (${e.message}) — the host would drop every kai hook`);
+    return;
+  }
+  if (cfg.version !== 1) err(rel, `version must be 1, found ${JSON.stringify(cfg.version)}`);
+
+  const events = Object.keys(cfg.hooks || {});
+  // Deliberately narrow. preToolUse is FAIL-CLOSED -- a crash there denies the
+  // tool call -- and per-tool-call events cost ~66ms each. Neither belongs in a
+  // file that installs itself.
+  const ALLOWED = new Set(['subagentStart', 'subagentStop']);
+  for (const ev of events) {
+    if (!ALLOWED.has(ev)) {
+      err(rel, `subscribes to "${ev}"; kai ships only ${[...ALLOWED].join(' and ')} (see docs/workspaces.md)`);
+    }
+  }
+  for (const ev of ALLOWED) {
+    if (!events.includes(ev)) err(rel, `does not subscribe to "${ev}" — a start without a stop cannot be paired`);
+  }
+
+  for (const [ev, entries] of Object.entries(cfg.hooks || {})) {
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      const cmd = entry.command || entry.bash || entry.powershell || '';
+      // Verified empirically: ${PLUGIN_ROOT} expands to the install directory.
+      // A relative path would resolve against the USER's repository instead.
+      if (!cmd.includes('${PLUGIN_ROOT}')) {
+        err(rel, `${ev} command does not use \${PLUGIN_ROOT}; it would resolve against the user's repository, not the plugin`);
+      }
+      const m = cmd.match(/\$\{PLUGIN_ROOT\}\/([A-Za-z0-9_\-./]+)/);
+      if (m && !existsSync(join(ROOT, m[1]))) {
+        err(rel, `${ev} command points at "${m[1]}", which does not exist in this plugin`);
+      }
+      if (typeof entry.timeoutSec !== 'number' || entry.timeoutSec > 15) {
+        err(rel, `${ev} entry needs a timeoutSec of 15s or less — it sits in the path of every subagent`);
+      }
+    }
+  }
+})();
+
+// ---------------------------------------------------------------------------
 // Report
 // ---------------------------------------------------------------------------
 const counts = `${agentFiles.length} agents, ${skillFiles.length} skills`;

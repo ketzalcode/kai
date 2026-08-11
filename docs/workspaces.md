@@ -233,37 +233,44 @@ npm run observe:enable    # opt in for this workspace
 node scripts/observe-subagent.mjs --disable   # revoke by deleting the marker
 ```
 
-Enabling grants consent. It does **not** wire the hook — that is deliberate, and
-a second, separate step:
+Enabling grants consent. The hook itself is already wired — kai ships a
+`hooks.json`, so installing the plugin registers the observer with the host.
+Hook sources are **merged**, never overwritten, so this adds nothing to any file
+you own, and it stays inert until you enable it.
 
 ```jsonc
-// ~/.copilot/hooks/kai-observe.json
+// hooks.json, shipped in the plugin
 {
   "version": 1,
   "hooks": {
     "subagentStart": [
       { "type": "command", "timeoutSec": 10,
-        "command": "node \"<path-to-kai>/scripts/observe-subagent.mjs\" subagentStart" }
+        "command": "node \"${PLUGIN_ROOT}/scripts/observe-subagent.mjs\" subagentStart" }
     ],
-    "subagentStop": [
-      { "type": "command", "timeoutSec": 10,
-        "command": "node \"<path-to-kai>/scripts/observe-subagent.mjs\" subagentStop" }
-    ]
+    "subagentStop": [ /* ... */ ]
   }
 }
 ```
 
-Hook sources are **merged**, never overwritten, so this adds a file rather than
-editing one of yours, and deleting it fully removes the observer.
+`${PLUGIN_ROOT}` expands to the plugin's install directory. That is verified
+rather than assumed: the reference documents the variable only for LSP config,
+so it was tested with a real plugin install and a real subagent before being
+relied on here. A relative path would resolve against *your* repository instead,
+which is why CI rejects one.
 
-kai does not ship this as a plugin `hooks.json` yet for one honest reason: a
-plugin's hook command needs an absolute path to its own install directory, and
-whether the host exposes a plugin-root variable is unverified. A wired hook
-whose path failed to expand would spawn and fail on *every* subagent, which is
-a worse default than asking for four lines of config.
+The observer costs nothing until you opt in. Without the consent marker the
+script exits immediately and writes nothing — the declined path is deliberately
+the cheapest one, because a user who never opted in still pays for the process
+spawn.
 
 Hook configuration is read when a session **starts**, so restart the session
-after wiring.
+after enabling.
+
+### If you would rather not have it wired at all
+
+Deleting `hooks.json` from the install directory removes the registration
+entirely. Uninstalling the plugin removes it too. Nothing else in kai depends on
+it.
 
 ### What it deliberately does not do
 

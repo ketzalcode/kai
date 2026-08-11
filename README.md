@@ -31,26 +31,23 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.38.0` — **56 agents and 44 skills**, for the **Copilot CLI** and the
+`v0.39.0` — **56 agents and 44 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release adds an **opt-in subagent observer**. kai could already report what
-an agent *said* it was doing; it could not answer which roles actually took part
-in a feature — the case where the gap is the point, like a designer who was
-never consulted. A host hook now records two events per subagent, start and
-stop, with no absolute paths and a digested session id. Storing a one-line
-summary of a reply is a further, separate opt-in, because that line is scraped
-prose and is not secret-scrubbed. It is off until you both grant consent (`npm
-run observe:enable`) and wire the hook yourself, and it never writes to stdout
-or exits non-zero, because
+This release makes the **subagent observer** zero-config. kai could already
+report what an agent *said* it was doing; it could not answer which roles
+actually took part in a feature — the case where the gap is the point, like a
+designer who was never consulted. kai now ships its own `hooks.json`, so
+installing the plugin registers the observer with the host; hook sources are
+merged rather than overwritten, so nothing you own is edited. It stays inert
+until you run `npm run observe:enable`, storing a summary of a reply is a
+further separate opt-in because that line is scraped prose and is not
+secret-scrubbed, and the hook never writes to stdout or exits non-zero, because
 `subagentStop` reads a hook's stdout as a decision that could block or rewrite a
 real agent's answer (#93).
 
-Also in this release: `creative-*` joins the role taxonomy as the lane for
-creative and media-production judgment, and the video-director agent moves into
-it as `creative-video-director` — a video director leads craft rather than
-owning a principal IC domain. Update any saved references to the old
-principal-prefixed name.
+CI now pins the shape of `hooks.json` — the one file here the host executes on
+its own, for everyone who installs kai, where a mistake is silent.
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.
