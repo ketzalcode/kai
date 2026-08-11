@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "0.39.0",
+  "version": "0.40.0",
   "description": "Skills + scripts wired in this repo. Node deps power web-content-extraction; lectoria (used by generate-audio) is pinned as a git dependency and built on install via its prepare hook — run `npm install` at the plugin root. See skills/generate-audio/SKILL.md.",
   "private": true,
   "scripts": {
@@ -15,7 +15,7 @@
     "release-guard": "node scripts/release-guard.mjs",
     "release-guard:self-test": "node scripts/release-guard.mjs --self-test",
     "check-syntax": "node scripts/check-syntax.mjs",
-    "test": "node scripts/validate-plugin.mjs && node scripts/generate-catalog.mjs --check && node scripts/workspace-doctor.mjs --self-test && node scripts/host-contract.mjs --self-test && node scripts/release-guard.mjs --self-test && node examples/proactive-runner/runner.mjs --self-test && node scripts/activity.mjs --self-test && node scripts/work-status.mjs --self-test && node scripts/observe-subagent.mjs --self-test && node scripts/check-syntax.mjs",
+    "test": "node scripts/validate-plugin.mjs && node scripts/generate-catalog.mjs --check && node scripts/workspace-doctor.mjs --self-test && node scripts/host-contract.mjs --self-test && node scripts/release-guard.mjs --self-test && node examples/proactive-runner/runner.mjs --self-test && node scripts/activity.mjs --self-test && node scripts/work-status.mjs --self-test && node scripts/observe-subagent.mjs --self-test && node scripts/observe-watch.mjs --self-test && node scripts/check-syntax.mjs",
     "extract:path": "node scripts/extract-learn-path.js",
     "extract:module": "node scripts/extract-learn-path.js --module",
     "status": "node scripts/work-status.mjs",
@@ -24,7 +24,9 @@
     "activity:self-test": "node scripts/activity.mjs --self-test",
     "observe:enable": "node scripts/observe-subagent.mjs --enable",
     "observe:status": "node scripts/observe-subagent.mjs --status",
-    "observe:self-test": "node scripts/observe-subagent.mjs --self-test"
+    "observe:self-test": "node scripts/observe-subagent.mjs --self-test",
+    "observe:watch": "node scripts/observe-watch.mjs",
+    "observe:watch-self-test": "node scripts/observe-watch.mjs --self-test"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

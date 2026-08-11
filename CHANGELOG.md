@@ -4,6 +4,58 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.40.0] - 2026-08-11
+
+### Added
+
+- **`scripts/observe-watch.mjs`** — a live, ambient view of the subagent fleet.
+  The observed log answers which roles emitted lifecycle events during a piece
+  of work, but reading JSONL is not watching a team; this renders it, so a
+  supervisor can glance at a second terminal instead of scrolling a transcript
+  or waiting on a subagent.
+  - A **separate process by necessity**: the observer is not a daemon, it is
+    spawned per event and exits, so nothing holds state between events. The file
+    is all the two share — which also means the writer can never be slowed,
+    blocked, or crashed by whatever is rendering.
+  - **Strictly read-only.** A viewer that wrote to its own source would become a
+    second writer and destroy the append-only integrity that keeps concurrent
+    subagents safe.
+  - **Does not invent liveness.** A start with no stop is reported as a fact
+    about the log, not as proof a process is alive, and long-open entries are
+    aged rather than trusted. Same-role overlap is labelled as ordering-based
+    pairing, because `subagentStart` carries no agent id.
+  - Modes: ambient view by default, `--feed` for piping or a narrow pane,
+    `--scene` to force the view when stdout is not a TTY, `--once` for a
+    snapshot. Plain ASCII, no dependencies.
+- **`fleet-observation` skill** — the operator path, so adoption does not require
+  cloning the repository. Covers locating the scripts inside the plugin's
+  install directory, granting consent, launching the watcher detached in its own
+  terminal, and reading a participation sequence — including the absences, which
+  is where the finding usually is. It also carries the distinction people get
+  wrong: the observer is not a service, the watcher is.
+
+### Fixed
+
+- The watcher now reads the **rotated** generation of the log as well as the
+  current one. A run that started before a rotation lived only in
+  `observed.jsonl.1`, so the view retired a worker that never stopped and
+  reported an empty fleet with full confidence. When history still cannot be
+  read in full, the shortfall is stated on screen instead of being rendered as
+  quiet.
+- Every field the watcher renders is now validated by the watcher itself rather
+  than trusted from the file. It reads a plain file any process can append to,
+  so a hand-edited role containing a path is quarantined instead of printed, and
+  terminal control sequences in a summary are stripped — a terminal treats an
+  escape sequence as an instruction, not as text. An impossible timestamp is
+  formatted rather than thrown.
+- Pairing is now done on reconciled time, so a stop written before its own start
+  no longer leaves a run counted as both finished and still working, and records
+  with no session are labelled as a guess rather than silently closing
+  each other's runs.
+- `--feed` tracks emitted events by identity instead of by count, so a rotation
+  no longer causes it to skip or repeat lines, and a late `fs.watch` error now
+  falls back to timer polling instead of terminating the process.
+
 ## [0.39.0] - 2026-08-11
 
 ### Added
@@ -1506,6 +1558,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.40.0]: https://github.com/RubenSaucedo/kai/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/RubenSaucedo/kai/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/RubenSaucedo/kai/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RubenSaucedo/kai/compare/v0.36.0...v0.37.0

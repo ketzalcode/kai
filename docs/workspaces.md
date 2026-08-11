@@ -310,6 +310,44 @@ question on #93.
 `general-purpose` subagents emit neither event, so they are structurally
 invisible here — a real limit, not a bug to file.
 
+### Watching it live
+
+The log answers who took part. Reading JSONL is not watching a team, so there is
+a viewer:
+
+```bash
+npm run observe:watch          # ambient view, in its own terminal
+node scripts/observe-watch.mjs --root . --feed    # one line per event
+node scripts/observe-watch.mjs --root . --once --scene   # a single frame
+```
+
+```
+kai fleet   2 working   2 finished
+------------------------------------------------------------------------
+  (-_-)  principal-swe-backend                1m 50s .
+  (^_^)  principal-security                   1m 35s .
+------------------------------------------------------------------------
+finished:  explore x2
+```
+
+Run it in a **second terminal**: it does not exit, so it would block the session
+you are trying to observe. The `fleet-observation` skill knows how to find it
+inside the plugin's install directory and launch it detached, so nobody has to
+clone this repository.
+
+The viewer is a separate process by necessity — the observer is spawned per
+event and exits, so nothing holds state between events. The file is all they
+share, which is also what stops a renderer from ever slowing down or crashing
+the writer. It is strictly read-only: a viewer that wrote to its own source
+would become a second writer and break the append-only integrity that keeps
+concurrent subagents safe.
+
+It refuses to overclaim. A start with no stop means *a start was recorded and a
+stop was not* — a killed process leaves exactly that trace — so long-open rows
+are aged and described as silent, never as running. When two subagents of one
+role overlap, pairing is by arrival order rather than identity, and the view
+says so on screen.
+
 ---
 
 **Next:** [How kai works](how-kai-works.md) ·

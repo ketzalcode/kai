@@ -31,23 +31,22 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.39.0` — **56 agents and 44 skills**, for the **Copilot CLI** and the
+`v0.40.0` — **56 agents and 45 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release makes the **subagent observer** zero-config. kai could already
-report what an agent *said* it was doing; it could not answer which roles
-actually took part in a feature — the case where the gap is the point, like a
-designer who was never consulted. kai now ships its own `hooks.json`, so
-installing the plugin registers the observer with the host; hook sources are
-merged rather than overwritten, so nothing you own is edited. It stays inert
-until you run `npm run observe:enable`, storing a summary of a reply is a
-further separate opt-in because that line is scraped prose and is not
-secret-scrubbed, and the hook never writes to stdout or exits non-zero, because
-`subagentStop` reads a hook's stdout as a decision that could block or rewrite a
-real agent's answer (#93).
+This release makes the fleet **watchable**. kai already recorded which subagents
+emitted lifecycle events during a piece of work; now `observe-watch` renders that
+live in its own terminal — roles with an open start, how long since it was
+recorded, and what has finished — so a supervisor can glance instead of scrolling
+a transcript. The new `fleet-observation` skill owns the operator path, including
+finding the scripts inside the plugin's install directory so adoption never
+requires cloning the repository.
 
-CI now pins the shape of `hooks.json` — the one file here the host executes on
-its own, for everyone who installs kai, where a mistake is silent.
+The view refuses to overclaim: a start with no stop is reported as a fact about
+the log, never as proof a process is alive, and same-role overlap is labelled as
+ordering-based pairing rather than identity. It also reads the rotated
+generation of the log, because a run that began before a rotation would
+otherwise vanish and be reported as a quiet fleet.
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.

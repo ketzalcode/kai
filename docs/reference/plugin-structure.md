@@ -92,6 +92,7 @@ in CI on every pull request:
 | `npm run activity:self-test` | The activity-log contract: the item/log boundary, privacy bounds, and concurrent-writer integrity. |
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |
 | `npm run observe:self-test` | The subagent observer: consent gate, leak bounds, and the empty-stdout/exit-0 guarantee. |
+| `npm run observe:watch-self-test` | The ambient view: start/stop pairing, ambiguity labelling, and layout bounds. |
 | `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
 | `node examples/proactive-runner/runner.mjs --self-test` | The proactive-scan runner's decision, redaction, and retention core. |
 
