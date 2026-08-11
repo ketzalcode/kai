@@ -4,6 +4,47 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.37.0] - 2026-08-11
+
+### Added
+
+- **`no-self-remediation`**, the directional write contract for roles that
+  assess without acting. An assessor may write its own evidence, report, and
+  findings; it must not mutate the target under review. Mutation is defined
+  broadly on purpose — creating, shadowing, deleting, renaming, patching,
+  formatting, or generating a file inside the reviewed target all count, because
+  a new auto-discovered file can make a finding stop reproducing without
+  changing one existing byte. Inherited by an eleven-role assessor roster that
+  CI now pins.
+- **`requires_tools:`** in skill frontmatter, and a validator check that an
+  agent inheriting such a skill actually holds those tools. `work-activity`
+  declares `requires_tools: [bash]` because its procedure is to run
+  `scripts/activity.mjs`. The check found two real defects on its first run.
+
+### Fixed
+
+- **Five assessors were granted `edit` but not `create`** —
+  `principal-qa-ui`, `principal-seo`, `persona-ux-first-time-user`,
+  `persona-professional-nutritionist`, and `persona-professional-trainer`
+  are each told to stub a `report.md`, which `create` does and `edit`
+  cannot. They held the tool that endangers the artifact under review and
+  lacked the one that structurally cannot touch it.
+- **`principal-ai-applied-engineer` and `principal-ai-researcher` inherited
+  `work-activity` without holding `bash`**, so they could not run the
+  reporter that contract requires. Both are deliberately shell-free
+  document-producing roles, so the contract was removed rather than granting
+  shell for a logging side-effect.
+
+### Changed
+
+- The capability tiers are now stated honestly rather than implied. Most kai
+  assessors are `unrestricted-capability`: they hold `bash`, so the
+  boundary is this contract, not the host. Removing shell would not harden the
+  review — it would break it, turning a revision-bound security review into a
+  working-tree guess. A genuinely hard boundary needs a read-only review input
+  mounted separately from a writable evidence root, which a declarative plugin
+  does not control.
+
 ## [0.36.0] - 2026-08-10
 
 ### Added
@@ -1381,6 +1422,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.37.0]: https://github.com/RubenSaucedo/kai/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RubenSaucedo/kai/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RubenSaucedo/kai/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/RubenSaucedo/kai/compare/v0.33.0...v0.34.0

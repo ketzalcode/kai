@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 43
+    "skills": 44
   },
   "agents": [
     "director-chief-of-staff",
@@ -76,6 +76,7 @@
     "initiative-stewardship",
     "issue-analysis",
     "linkedin-content",
+    "no-self-remediation",
     "onboard-to-codebase",
     "peer-communication",
     "personal-agenda",

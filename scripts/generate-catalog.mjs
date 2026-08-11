@@ -151,6 +151,7 @@ const CATEGORIES = [
     members: [
       'team-operating-rules', 'workspace-conventions', 'workspace-onboarding',
       'work-coordination', 'work-activity', 'definition-of-done', 'scope-discipline',
+      'no-self-remediation',
       'issue-analysis', 'initiative-stewardship', 'peer-communication',
       'product-exploration', 'product-marketing-intelligence',
     ],

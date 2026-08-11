@@ -17,7 +17,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  parseFrontmatter, stripQuotes, loaderErrors,
+  parseFrontmatter, stripQuotes, loaderErrors, parseToolList, SUPPORTED_TOOLS,
 } from './lib/loader-contract.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -276,6 +276,114 @@ for (const agent of agentFiles) {
     const raw = readFileSync(skill.path, 'utf8');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
     err(rel(skill.path), 'has no firing path: no agent inherits or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Assessor roster and the no-self-remediation contract
+//
+// The taxonomy leans on roles that judge without acting on what they judge. An
+// assessor that quietly fixes what it found destroys the independence that made
+// the assessment worth having, and does it invisibly: the finding is never
+// reported because it no longer reproduces.
+//
+// That constraint is directional (write your evidence, not the target under
+// review) and a `tools` grant is a capability, so it cannot be expressed in
+// frontmatter — one `edit` grant covers both sides of the line. Pinning the
+// roster here is what stops the contract from silently falling off a role
+// during an unrelated edit, which is the failure a prose-only rule invites.
+// ---------------------------------------------------------------------------
+const ASSESSOR_CONTRACT = 'no-self-remediation';
+const ASSESSOR_ROLES = [
+  'principal-security',
+  'principal-privacy-compliance',
+  'principal-qa-ui',
+  'principal-seo',
+  'persona-ux-first-time-user',
+  'persona-professional-nutritionist',
+  'persona-professional-trainer',
+  'workflow-doc-review',
+  'workflow-experiment-review',
+  'workflow-issue-analysis',
+  'workflow-self-check',
+];
+{
+  if (!skillIds.has(ASSESSOR_CONTRACT)) {
+    err(`skills/${ASSESSOR_CONTRACT}/SKILL.md`, 'missing (the assessor write contract the roster depends on)');
+  }
+  for (const id of ASSESSOR_ROLES) {
+    const agent = agentFiles.find((a) => a.id === id);
+    if (!agent) {
+      err('scripts/validate-plugin.mjs', `assessor roster names \`${id}\`, which is not an agent — update the roster or restore the agent`);
+      continue;
+    }
+    const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
+    const line = (raw.match(/^\*\*Inherits:\*\*.*$/m) || [''])[0];
+    if (!line.includes(`\`${ASSESSOR_CONTRACT}\``)) {
+      err(rel(agent.path), `is on the assessor roster but does not inherit \`${ASSESSOR_CONTRACT}\``);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inherited-skill tool requirements
+//
+// A skill whose procedure is mandatory can require a capability the agent must
+// actually hold: `work-activity` tells an agent to run `scripts/activity.mjs`,
+// which is impossible without `bash`. Nothing otherwise connects the two, so a
+// well-meant tool removal ("assessors should not hold shell") can silently
+// break a contract the same agent is required to follow.
+//
+// This is deliberately opt-in via `requires_tools:` rather than derived from a
+// skill's own `tools:` line. A skill's `tools` is what that skill may use when
+// loaded; treating it as a requirement would force `edit` back onto
+// `workflow-issue-analysis`, whose whole design is that it cannot write.
+//
+// Parsing goes through the canonical frontmatter parser rather than a regex over
+// the raw file: a second parser drifts from the first, and here it would drift
+// toward a false negative -- a requirement silently unenforced, which is exactly
+// the defect class this check exists to catch. Block-form YAML and trailing
+// comments therefore fail loudly instead of parsing as "no requirement".
+// ---------------------------------------------------------------------------
+{
+  const requires = new Map();
+  for (const skill of skillFiles) {
+    const parsed = parseFrontmatter(readFileSync(skill.path, 'utf8'));
+    if (!parsed.ok) continue; // already reported by the loader-contract check
+    const raw = parsed.fm.requires_tools;
+    if (raw === undefined) continue;
+    const list = parseToolList(raw);
+    if (!list) {
+      err(rel(skill.path), 'frontmatter `requires_tools` must be an inline array like [a, b]');
+      continue;
+    }
+    if (list.length === 0) {
+      err(rel(skill.path), '`requires_tools:` is empty — remove it or name the tools the skill cannot work without');
+      continue;
+    }
+    // A typo here would blame every inheriting agent for omitting a tool that
+    // does not exist, so it is caught at the declaration instead.
+    for (const tool of list) {
+      if (!SUPPORTED_TOOLS.has(tool)) {
+        err(rel(skill.path), `\`requires_tools\` names unsupported tool "${tool}" (not in the host allowlist)`);
+      }
+    }
+    requires.set(skill.id, list);
+  }
+  for (const agent of agentFiles) {
+    const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
+    const parsed = parseFrontmatter(raw);
+    const held = new Set(parsed.ok ? parseToolList(parsed.fm.tools) || [] : []);
+    const line = (raw.match(/^\*\*Inherits:\*\*.*$/m) || [''])[0];
+    for (const m of line.matchAll(/`([^`]+)`/g)) {
+      const need = requires.get(m[1]);
+      if (!need) continue;
+      for (const tool of need) {
+        if (!held.has(tool)) {
+          err(rel(agent.path), `inherits \`${m[1]}\`, which requires the \`${tool}\` tool, but its \`tools\` list omits it`);
+        }
+      }
+    }
   }
 }
 

@@ -4,7 +4,7 @@ description: "Bounded independent experiment-integrity gate for SaaS growth and 
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `no-self-remediation`, `peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

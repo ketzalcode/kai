@@ -31,14 +31,17 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.36.0` — **56 agents and 43 skills**, for the **Copilot CLI** and the
+`v0.37.0` — **56 agents and 44 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release adds `work-activity`: an append-only, gitignored activity log that
-agents write when they start and stop, so a fleet is legible between item
-updates and agents can see who else is in flight. It deliberately cannot express
-state or verdicts — those stay on the coordination item — and it reports silence
-past a deadline an agent set for itself, never a crash it cannot observe (#96).
+This release adds `no-self-remediation`: the write contract for roles that
+assess without acting. An assessor may write its own evidence and report, but
+never the target under review — where mutation means creating, shadowing,
+deleting, or generating a file, not just editing one, because a new
+auto-discovered file can make a finding stop reproducing without changing a
+single existing byte. CI pins the assessor roster, and skills can now declare
+`requires_tools:` so a tool a contract depends on cannot be quietly removed
+(#87).
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.

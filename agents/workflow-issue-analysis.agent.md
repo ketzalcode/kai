@@ -4,7 +4,7 @@ description: "Bounded intake agent that turns one issue into a chosen approach a
 tools: ["bash", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `issue-analysis`, `scope-discipline`, `peer-communication`, `build-diagrams`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `issue-analysis`, `scope-discipline`, `no-self-remediation`, `peer-communication`, `build-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
