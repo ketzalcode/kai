@@ -95,7 +95,7 @@ yourself.
 |---|---|
 | A message / post / email / PR description / reply drafted or polished in their voice | `persona-self` |
 | Credible LinkedIn content grounded in a product (not just their voice) | `principal-linkedin-strategist` (which routes voice polish to `persona-self`) |
-| A product/marketing video plan — script, cuts, timing, AI clip prompts | `principal-video-director` |
+| A product/marketing video plan — script, cuts, timing, AI clip prompts | `creative-video-director` |
 | Customer onboarding, adoption, account health, churn/renewal risk, success plan, or QBR brief | `principal-customer-success` |
 | A support ticket/queue needs incident screening, deduplication, urgency, or owner routing | `workflow-support-triage` |
 | Funnel/activation/retention diagnosis or a bounded growth experiment | `principal-growth` |

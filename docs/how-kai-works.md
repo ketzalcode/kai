@@ -302,7 +302,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Active outage, degradation, security/data event, status update, recovery, or post-incident close | `workflow-incident-response` |
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
-| Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `principal-video-director` |
+| Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `creative-video-director` |
 | Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
 | "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |

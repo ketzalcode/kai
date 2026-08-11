@@ -11,7 +11,7 @@ synchronized creative-direction package** a human editor, an AI video tool, or a
 downstream Kai workflow can execute: concept, storyboard, edit timing, voiceover,
 and prompts for the clips that don't exist yet.
 
-It is **not** invoked directly by the user. `principal-video-director` executes
+It is **not** invoked directly by the user. `creative-video-director` executes
 it. It **plans** — it does not render or edit video, and it hard-codes no AI
 provider.
 

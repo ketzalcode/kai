@@ -4,6 +4,62 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.38.0] - 2026-08-11
+
+### Added
+
+- **Opt-in subagent observer** (`scripts/observe-subagent.mjs`). A host hook
+  records two events per subagent — `start` and `stop` — into a gitignored
+  `.kai/observed.jsonl`, so the *participation sequence* of a feature becomes
+  checkable: which roles took part, in what order, and which were skipped. The
+  declared activity log cannot answer that, because a role that was never
+  consulted never writes a record.
+  - Off by default, in two independent steps: `npm run observe:enable` grants
+    consent, and wiring the hook is a separate file you add under
+    `~/.copilot/hooks/` (hook sources are merged, so kai edits nothing you own).
+    kai does not ship a plugin-level `hooks.json` yet, because a plugin hook
+    command needs an absolute path to its own install directory and the host's
+    plugin-root variable is unverified — a hook whose path failed to expand
+    would spawn and fail on every subagent.
+  - Consent is a file (`.kai/observer-consent`) checked inside
+    the hook, because the host has no "installed but inactive" state; without it
+    the script writes nothing and leaves no file behind. `npm run
+    observe:enable`, `npm run observe:status`, `--disable` to revoke.
+  - Only a capped single-line summary of a subagent's reply can ever be stored,
+    never the full response — and summaries are a **second** opt-in
+    (`--with-summary`), off by default. The declared log's note is authored by an
+    agent that knows it is being logged and can self-redact; this summary is
+    scraped from prose written for a parent agent, so path shapes are refused and
+    the line is capped but it is **not secret-scrubbed**. Participation alone
+    answers the question the observer exists to answer, so participation alone is
+    the default.
+  - Absolute paths are refused and the session and agent ids are digested,
+    asserted against the bytes that land on disk rather than the object in
+    memory.
+  - **stdout stays empty and the exit code stays 0, always.** `subagentStop`
+    reads a hook's stdout for `decision` and `modifiedResponse`, so an observer
+    that spoke could block or rewrite a real agent's answer.
+  - Scoped to subagents only: a hook costs ~66 ms to spawn, so per-tool-call
+    events would add ~33 s of overhead across 500 calls, and the main CLI
+    session is the conversation rather than an employee to be watched.
+  - `general-purpose` subagents emit neither host event and are therefore
+    invisible to the observer — a documented limit.
+- **`creative-*` role prefix** in `team-operating-rules`, a lane for creative and
+  media-production judgment — concept, narrative, and craft direction for
+  produced content. Creative roles direct; they do not render, edit, or publish.
+
+### Changed
+
+- **Managed `.gitignore` block** now covers `.kai/observed.jsonl` and
+  `.kai/observer-consent`, in both the repo file and the
+  `workspace-onboarding` template.
+- **Renamed `principal-video-director` to `creative-video-director`.** The
+  `principal-*` prefix marks domain ownership generally, but a video director is
+  a creative lead rather than a principal individual contributor; the new
+  `creative-*` prefix names that lane directly. Behavior, inherited contracts,
+  and produced artifacts are unchanged. Update any saved references to the old
+  agent name.
+
 ## [0.37.0] - 2026-08-11
 
 ### Added
@@ -1422,6 +1478,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.38.0]: https://github.com/RubenSaucedo/kai/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/RubenSaucedo/kai/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/RubenSaucedo/kai/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RubenSaucedo/kai/compare/v0.34.0...v0.35.0

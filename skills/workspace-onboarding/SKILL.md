@@ -117,6 +117,11 @@ Install or replace exactly one managed block:
 # The declared activity log is ephemeral, local, and never committed.
 /.kai/activity.jsonl
 /.kai/activity.jsonl.1
+# Observed subagent events and the consent marker are local-only: the payload
+# they derive from carries absolute paths and full response text.
+/.kai/observed.jsonl
+/.kai/observed.jsonl.1
+/.kai/observer-consent
 # Retired local state stays private during explicit migration.
 /.persona-self/
 /.kai/local.json

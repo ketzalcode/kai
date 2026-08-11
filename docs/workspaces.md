@@ -216,6 +216,93 @@ reports the narrow, true claim:
 the log is absent, stale, or unreadable, the report silently loses the overlay
 and behaves exactly as it does without it.
 
+## Observing subagents (opt-in)
+
+The declared log answers *what an agent said it was doing*. It cannot answer
+*which agents actually took part in a feature* — the case where the gap is the
+point: the designer who was never consulted, the researcher the principal
+skipped. That sequence is invisible in a terminal scrollback.
+
+The observer closes exactly that gap and nothing else. It records two host
+events per subagent — `start` and `stop` — into a gitignored
+`.kai/observed.jsonl`:
+
+```bash
+npm run observe:status    # is it on, and how many records exist
+npm run observe:enable    # opt in for this workspace
+node scripts/observe-subagent.mjs --disable   # revoke by deleting the marker
+```
+
+Enabling grants consent. It does **not** wire the hook — that is deliberate, and
+a second, separate step:
+
+```jsonc
+// ~/.copilot/hooks/kai-observe.json
+{
+  "version": 1,
+  "hooks": {
+    "subagentStart": [
+      { "type": "command", "timeoutSec": 10,
+        "command": "node \"<path-to-kai>/scripts/observe-subagent.mjs\" subagentStart" }
+    ],
+    "subagentStop": [
+      { "type": "command", "timeoutSec": 10,
+        "command": "node \"<path-to-kai>/scripts/observe-subagent.mjs\" subagentStop" }
+    ]
+  }
+}
+```
+
+Hook sources are **merged**, never overwritten, so this adds a file rather than
+editing one of yours, and deleting it fully removes the observer.
+
+kai does not ship this as a plugin `hooks.json` yet for one honest reason: a
+plugin's hook command needs an absolute path to its own install directory, and
+whether the host exposes a plugin-root variable is unverified. A wired hook
+whose path failed to expand would spawn and fail on *every* subagent, which is
+a worse default than asking for four lines of config.
+
+Hook configuration is read when a session **starts**, so restart the session
+after wiring.
+
+### What it deliberately does not do
+
+| | Why |
+| --- | --- |
+| No per-tool-call events | A hook costs ~66 ms to spawn; 500 tool calls is ~33 s of pure overhead for liveness nobody reads. |
+| No main-agent events | The CLI session you are talking to is the conversation, not an employee to be watched. |
+| No full response stored | Only a capped, single-line summary derived from the first prose line — and only if you ask for it separately. The full reply stays in the transcript. |
+| No absolute paths, no raw session id | The workspace root is resolved and discarded; the session id is digested. Same privacy bounds as the activity log. |
+| Never writes to stdout, never exits non-zero | `subagentStop` honours `decision` and `modifiedResponse` from a hook's stdout. An observer that spoke could block or rewrite a real agent's answer. It stays silent, always. |
+
+Consent is a file (`.kai/observer-consent`) checked inside the hook, because the
+host has no "installed but inactive" state. Without it the script writes nothing
+and leaves no file behind.
+
+### Summaries are a second opt-in
+
+By default the observer records **participation only** — who started, who
+finished. That already answers the question it exists to answer.
+
+```bash
+node scripts/observe-subagent.mjs --enable --with-summary
+```
+
+adds a capped one-line summary, scraped from the first prose line of each reply.
+Be deliberate about it. The declared activity log's `note` is written by an agent
+that *knows* it is being logged and can self-redact; this summary is scraped from
+prose a subagent wrote for its parent. Path shapes are refused and the line is
+capped, but it is **not secret-scrubbed** — a token or an address sitting in that
+first line would be stored verbatim. The self-test asserts that fact rather than
+papering over it.
+
+A purpose-built *declared* TLDR — where the subagent writes its own supervisor
+summary, knowing it is recorded — is the real answer, and is tracked as an open
+question on #93.
+
+`general-purpose` subagents emit neither event, so they are structurally
+invisible here — a real limit, not a bug to file.
+
 ---
 
 **Next:** [How kai works](how-kai-works.md) ·

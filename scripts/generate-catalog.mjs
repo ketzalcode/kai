@@ -133,7 +133,7 @@ const CATEGORIES = [
     kind: 'agent',
     title: 'Content & distribution',
     blurb: 'Turn product intelligence into platform-native content. Never auto-publishes.',
-    members: ['principal-linkedin-strategist', 'principal-video-director'],
+    members: ['principal-linkedin-strategist', 'creative-video-director'],
   },
   {
     kind: 'agent',

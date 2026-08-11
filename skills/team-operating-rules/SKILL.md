@@ -22,6 +22,9 @@ plugin's own contributors. Anything load-bearing belongs here.
 - **`director-*`** agents orchestrate, delegate, reconcile, and escalate. They
   do not substitute their judgment for the roles they direct.
 - **`principal-*`** agents own domain judgment and act within their lane.
+- **`creative-*`** agents own creative and media-production judgment — concept,
+  narrative, and craft direction for produced content. They direct; they do not
+  render, edit, or publish.
 - **`workflow-*`** agents run bounded procedures with a defined start and end.
 - **`instructor-*`** agents own the learning lane: `instructor-tutor`
   authors original lessons on any subject, `instructor-teacher` packages

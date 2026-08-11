@@ -4,6 +4,7 @@
     "skills": 44
   },
   "agents": [
+    "creative-video-director",
     "director-chief-of-staff",
     "director-executive-assistant",
     "instructor-path-mentor",
@@ -43,7 +44,6 @@
     "principal-swe-infra",
     "principal-swe-manager",
     "principal-technical-writer",
-    "principal-video-director",
     "workflow-course-to-audio",
     "workflow-customer-feedback",
     "workflow-doc-review",

@@ -55,7 +55,7 @@ Read and apply:
   pre-signup demand creation, campaigns, and lead nurture up to the signup or
   lead handoff; coordinate at the acquisition boundary and do not run in-product
   or free-to-paid experiments.
-- **`principal-linkedin-strategist`, `principal-video-director`, and
+- **`principal-linkedin-strategist`, `creative-video-director`, and
   `principal-seo`** own channel-specific content production. You own the campaign
   plan and route each channel's content to its owner.
 - **`principal-data-analytics` owns measurement validity and causal status.** You

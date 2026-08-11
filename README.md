@@ -31,17 +31,26 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.37.0` — **56 agents and 44 skills**, for the **Copilot CLI** and the
+`v0.38.0` — **56 agents and 44 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release adds `no-self-remediation`: the write contract for roles that
-assess without acting. An assessor may write its own evidence and report, but
-never the target under review — where mutation means creating, shadowing,
-deleting, or generating a file, not just editing one, because a new
-auto-discovered file can make a finding stop reproducing without changing a
-single existing byte. CI pins the assessor roster, and skills can now declare
-`requires_tools:` so a tool a contract depends on cannot be quietly removed
-(#87).
+This release adds an **opt-in subagent observer**. kai could already report what
+an agent *said* it was doing; it could not answer which roles actually took part
+in a feature — the case where the gap is the point, like a designer who was
+never consulted. A host hook now records two events per subagent, start and
+stop, with no absolute paths and a digested session id. Storing a one-line
+summary of a reply is a further, separate opt-in, because that line is scraped
+prose and is not secret-scrubbed. It is off until you both grant consent (`npm
+run observe:enable`) and wire the hook yourself, and it never writes to stdout
+or exits non-zero, because
+`subagentStop` reads a hook's stdout as a decision that could block or rewrite a
+real agent's answer (#93).
+
+Also in this release: `creative-*` joins the role taxonomy as the lane for
+creative and media-production judgment, and the video-director agent moves into
+it as `creative-video-director` — a video director leads craft rather than
+owning a principal IC domain. Update any saved references to the old
+principal-prefixed name.
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.
