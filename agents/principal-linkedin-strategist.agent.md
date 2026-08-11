@@ -4,7 +4,7 @@ description: "LinkedIn content strategist. Converts Kai product intelligence (pr
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "task", "read_agent", "write_agent"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `peer-communication`, `content-grounding`, `linkedin-content`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `peer-communication`, `content-grounding`, `linkedin-content`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

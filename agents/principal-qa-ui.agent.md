@@ -4,7 +4,7 @@ description: "Principal-level QA engineer doing deep manual UI testing of a targ
 tools: ["playwright", "bash", "edit", "view", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `peer-communication`, `web-evaluation`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`, `web-evaluation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

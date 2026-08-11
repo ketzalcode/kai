@@ -34,6 +34,7 @@ import {
   parseStamp, parseQuestions,
 } from './lib/coordination.mjs';
 import { checkWorkspace } from './workspace-doctor.mjs';
+import { read as readActivity, runs } from './lib/activity.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
@@ -45,6 +46,54 @@ const SECTIONS = [
   ['blocked', 'BLOCKED', 'work stopped on a dependency or an unanswered question'],
   ['unknown', 'UNKNOWN', 'cannot tell from the records alone — inspect before assuming'],
 ];
+
+// The activity overlay. Coordination records change a handful of times across
+// days, so between two updates this report can only say UNKNOWN. The activity
+// log (see the work-activity skill) narrows that — but it is still declared,
+// so it adds exactly one checkable fact: a run that declared it would report by
+// T, where T has passed. It never claims an agent crashed; that needs an
+// observer this plugin does not have.
+export function overlay(items, activity, now) {
+  const findings = [];
+  if (!activity.present) return { findings, live: null };
+  const open = runs(activity.records, now).filter((r) => r.open);
+  const known = new Set(items.filter((i) => !i.unparseable).map((i) => i.id));
+
+  // Collapse to one finding per item. A restarted or duplicated agent can leave
+  // several open runs on one item, and emitting one finding each would recreate
+  // the "shows everything equally" noise this report exists to remove.
+  const overdue = open.filter((r) => r.overdue);
+  const byTarget = new Map();
+  for (const r of overdue) {
+    const key = r.item && known.has(r.item) ? r.item : `run:${r.run}`;
+    const prev = byTarget.get(key);
+    if (!prev || (r.deadline ?? 0) < (prev.deadline ?? 0)) byTarget.set(key, { ...r, n: (prev?.n || 0) + 1 });
+    else byTarget.set(key, { ...prev, n: prev.n + 1 });
+  }
+
+  for (const [key, r] of byTarget) {
+    const item = key.startsWith('run:') ? null : items.find((i) => i.id === key);
+    const late = Math.round((Math.floor(now / 1000) - r.deadline) / 60);
+    findings.push({
+      section: 'unknown',
+      item: key,
+      tier: 'derived',
+      headline: `${r.role} declared it would report ${late}m ago and has not${r.n > 1 ? ` (${r.n} open runs)` : ''}`,
+      why: 'The run set that deadline itself. It may still be working, or it may have stopped without recording it — this cannot tell which.',
+      path: item ? item.rel : '.kai/activity.jsonl',
+    });
+  }
+
+  return {
+    findings,
+    live: {
+      open: open.length,
+      overdue: open.filter((r) => r.overdue).length,
+      skipped: activity.skipped,
+      roles: [...new Set(open.map((r) => r.role))].sort(),
+    },
+  };
+}
 
 function readItems(coordRoot) {
   const dir = join(coordRoot, 'items');
@@ -249,6 +298,15 @@ export function collect(root, now = Date.now()) {
   for (const it of items) threads.set(it.id, readThreadQuestions(coordRoot, it.id));
   const findings = analyze(items, threads, now);
 
+  // Degrades to absent by construction: a missing, stale, or unreadable log
+  // costs the overlay and nothing else.
+  let live = null;
+  try {
+    const ov = overlay(items, readActivity(root), now);
+    findings.push(...ov.findings);
+    live = ov.live;
+  } catch { live = null; }
+
   let doctor = null;
   try {
     const r = checkWorkspace(root);
@@ -270,6 +328,7 @@ export function collect(root, now = Date.now()) {
       terminal: items.filter((i) => !i.unparseable && TERMINAL.has(i.state)).length,
     },
     doctor,
+    live,
     findings,
   };
 }
@@ -300,6 +359,11 @@ function render(r) {
   L.push('');
   if (!r.findings.length) L.push('Nothing needs you. No exception found in the recorded state.');
   L.push(`${r.totals.items} item(s): ${r.totals.flagged} flagged, ${r.totals.healthy} without a finding (${r.totals.terminal} terminal).`);
+  if (r.live) {
+    L.push(r.live.open
+      ? `Activity: ${r.live.open} run(s) open${r.live.overdue ? `, ${r.live.overdue} past its declared deadline` : ''} — ${r.live.roles.join(', ')}. Role attribution is self-reported.`
+      : 'Activity: no run currently open.');
+  }
   if (r.doctor && (r.doctor.errors || r.doctor.warnings)) {
     L.push(`workspace-doctor: ${r.doctor.errors} error(s), ${r.doctor.warnings} warning(s) — run \`workspace-doctor\` for detail.`);
   }
@@ -359,6 +423,50 @@ function selfTest() {
   const empty = collect(join(fixtures, 'healthy'), NOW);
   ok(empty.ok && empty.findings.length === 0 && /Nothing needs you/.test(render(empty)),
     'a healthy fixture says nothing needs you');
+  ok(empty.live === null, 'with no activity log there is no overlay at all');
+
+  // The activity overlay (see the work-activity skill). It must add exactly one
+  // checkable fact and must cost nothing when the log is absent.
+  const nowSec = Math.floor(NOW / 1000);
+  const mkItems = [{ id: 'all-good', rel: 'kai/coordination/items/all-good.md', unparseable: false }];
+  const absent = overlay(mkItems, { present: false, records: [], skipped: 0 }, NOW);
+  ok(absent.findings.length === 0 && absent.live === null, 'an absent log produces no finding and no overlay');
+
+  const live = overlay(mkItems, {
+    present: true,
+    skipped: 0,
+    records: [
+      { t: nowSec - 7200, e: 'start', role: 'principal-swe-backend', run: 'r1', item: 'all-good', next_report_by: nowSec - 1200 },
+      { t: nowSec - 300, e: 'start', role: 'principal-qa-ui', run: 'r2', item: 'all-good', next_report_by: nowSec + 1800 },
+    ],
+  }, NOW);
+  ok(live.findings.length === 1 && live.findings[0].tier === 'derived',
+    'only a run past its own declared deadline is a finding, and it is derived');
+  ok(/declared it would report/.test(live.findings[0].headline)
+     && !/crash/i.test(live.findings[0].headline + live.findings[0].why),
+    'the overlay reports a missed self-declared deadline, never a crash it cannot observe');
+  ok(live.live.open === 2 && live.live.overdue === 1, 'open and overdue runs are counted separately');
+  ok(live.findings.every((f) => !/^([A-Za-z]:|\/|\\\\)/.test(f.path)),
+    'an overlay finding never exposes a machine-absolute path');
+
+  const orphanRun = overlay(mkItems, {
+    present: true,
+    skipped: 0,
+    records: [{ t: nowSec - 7200, e: 'start', role: 'principal-sre', run: 'r9', item: 'gone', next_report_by: nowSec - 60 }],
+  }, NOW);
+  ok(orphanRun.findings[0].path === '.kai/activity.jsonl',
+    'a run naming an unknown item points at the log, not at a record that does not exist');
+
+  const dupRuns = overlay(mkItems, {
+    present: true,
+    skipped: 0,
+    records: [
+      { t: nowSec - 7200, e: 'start', role: 'principal-swe-backend', run: 'r1', item: 'all-good', next_report_by: nowSec - 1200 },
+      { t: nowSec - 7100, e: 'start', role: 'principal-swe-backend', run: 'r2', item: 'all-good', next_report_by: nowSec - 900 },
+    ],
+  }, NOW);
+  ok(dupRuns.findings.length === 1 && /2 open runs/.test(dupRuns.findings[0].headline),
+    'several overdue runs on one item collapse to one finding, not one each');
 
   console.log(failed === 0 ? '✓ work-status self-test: all checks passed' : `✗ work-status self-test: ${failed} failure(s)`);
   return failed === 0 ? 0 : 1;

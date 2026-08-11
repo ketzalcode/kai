@@ -4,7 +4,7 @@ description: "Turns a committed product action into a scoped, sequenced engineer
 tools: ["bash", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `peer-communication`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

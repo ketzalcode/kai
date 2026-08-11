@@ -4,7 +4,7 @@ description: "On-demand multi-lens substance review for design docs, PRDs, RFCs,
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

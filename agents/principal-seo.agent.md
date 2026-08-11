@@ -4,7 +4,7 @@ description: "Principal-level SEO + agentic-search auditor for a target website.
 tools: ["playwright", "bash", "edit", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `web-evaluation`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `web-evaluation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

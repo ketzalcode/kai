@@ -4,7 +4,7 @@ description: "Product researcher and marketing analyst. Explores a product's pub
 tools: ["playwright", "bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `peer-communication`, `product-marketing-intelligence`, `web-content-extraction`, `web-evaluation`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `peer-communication`, `product-marketing-intelligence`, `web-content-extraction`, `web-evaluation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

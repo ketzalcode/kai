@@ -4,7 +4,7 @@ description: "Bounded initiative-intake workflow that turns an operator's missio
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

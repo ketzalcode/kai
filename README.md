@@ -31,14 +31,14 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.35.0` — **56 agents and 42 skills**, for the **Copilot CLI** and the
+`v0.36.0` — **56 agents and 43 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release adds `work-status`, an exception report that answers "where must I
-intervene?" instead of asking you to read every coordination record. It prints
-only what needs a human, what contradicts itself, what is blocked, and what it
-cannot determine — and labels every finding with how much it can be trusted
-(#92).
+This release adds `work-activity`: an append-only, gitignored activity log that
+agents write when they start and stop, so a fleet is legible between item
+updates and agents can see who else is in flight. It deliberately cannot express
+state or verdicts — those stay on the coordination item — and it reports silence
+past a deadline an agent set for itself, never a crash it cannot observe (#96).
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.

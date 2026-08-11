@@ -4,6 +4,64 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.36.0] - 2026-08-10
+
+### Added
+
+- **`work-activity` — an append-only activity log, so a fleet is legible
+  between item updates.** A coordination item changes a handful of times across
+  days of work; between two updates a supervisor can only say "unknown". Agents
+  now append a `start` and a `stop` (and optionally a `progress`) to a
+  gitignored `.kai/activity.jsonl`, carrying who is working, on which item, and
+  **when they will report next**.
+
+  ```bash
+  RUN=$(node scripts/activity.mjs new-run)
+  node scripts/activity.mjs start --root <ws> --role principal-swe-backend \
+    --item export-audit --run "$RUN" --for 45m
+  node scripts/activity.mjs stop  --root <ws> --role principal-swe-backend \
+    --run "$RUN" --outcome handoff
+  node scripts/activity.mjs show  --root <ws>     # who else is live
+  ```
+
+  This also gives agents something they never had: a live view of their peers
+  before claiming work — who is in flight, on what, and whether the peer they
+  are about to ask is mid-run.
+- **A boundary the writer enforces, not one the docs request.** The item record
+  is a compare-and-swap surface: every write increments `version` and is
+  verified against a lease token, which is precisely why a heartbeat cannot live
+  there — it would inflate the field that detects racing, and read-modify-write
+  is the lost-update pattern append-only avoids. So the log is a separate file,
+  and a record naming `state`, `verdict`, `change_ref`, `version`, `lease`, or
+  `decision` is **rejected at write time**. Two surfaces that can never carry
+  the same fact cannot drift into two truths.
+- **A live overlay in `work-status`.** Open runs are counted, and a run that
+  declared it would report by `T` when `T` has passed becomes a `derived`
+  UNKNOWN finding. It never says "crashed" — that requires an observer this
+  plugin does not have. With no log present, the report behaves exactly as it
+  did in 0.35.0.
+
+### Changed
+
+- `npm test` is now **nine** checks; `npm run activity` and
+  `npm run activity:self-test` are available directly.
+- The managed `.gitignore` block gained `/.kai/activity.jsonl`. Existing
+  workspaces pick it up by re-running `workflow-workspace-init`.
+- The 42 agents that inherit `work-coordination` now also inherit
+  `work-activity`, which is what gives the skill a real firing path.
+
+### Notes
+
+Concurrency is measured, not assumed. Each agent is a separate OS process, so
+single-threaded JavaScript grants no mutual exclusion; what makes this safe is
+`O_APPEND` plus one `write()` per record. The self-test runs six concurrent
+writer processes and asserts every record survives intact — if that ever stops
+holding, the test catches it.
+
+The log is **declared**, like the item records: an agent that crashes never
+writes its `stop`, and one that forgets never writes at all. It does not
+pretend otherwise.
+
 ## [0.35.0] - 2026-08-10
 
 ### Added
@@ -1323,6 +1381,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.36.0]: https://github.com/RubenSaucedo/kai/compare/v0.35.0...v0.36.0
 [0.35.0]: https://github.com/RubenSaucedo/kai/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/RubenSaucedo/kai/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/RubenSaucedo/kai/compare/v0.32.0...v0.33.0

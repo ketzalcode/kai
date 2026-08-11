@@ -79,7 +79,7 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
-Before opening a PR, run `npm test` — eight dependency-free checks that also run
+Before opening a PR, run `npm test` — nine dependency-free checks that also run
 in CI on every pull request:
 
 | Command | Checks |
@@ -89,6 +89,7 @@ in CI on every pull request:
 | `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces. |
 | `npm run host-contract` | Host-loader acceptance — the discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
 | `npm run release-guard:self-test` | The behavior-change-requires-a-bump decision core. |
+| `npm run activity:self-test` | The activity-log contract: the item/log boundary, privacy bounds, and concurrent-writer integrity. |
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |
 | `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
 | `node examples/proactive-runner/runner.mjs --self-test` | The proactive-scan runner's decision, redaction, and retention core. |

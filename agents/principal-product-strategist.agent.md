@@ -4,7 +4,7 @@ description: "Drives a forward-looking product investigation and proposes a prio
 tools: ["bash", "edit", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

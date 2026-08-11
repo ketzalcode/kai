@@ -4,7 +4,7 @@ description: "Bounded neutral explorer for a live product. Uses Playwright and p
 tools: ["playwright", "bash", "view", "edit", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `design-grounding`, `product-exploration`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `design-grounding`, `product-exploration`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

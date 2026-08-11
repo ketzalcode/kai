@@ -4,7 +4,7 @@ description: "The bridge between AI research and shipped product. Produces a tic
 tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

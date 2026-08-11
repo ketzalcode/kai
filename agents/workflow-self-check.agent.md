@@ -4,7 +4,7 @@ description: On-demand structural-health auditor for kai. Read-only on plugin fi
 tools: ["bash", "edit", "view", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

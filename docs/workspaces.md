@@ -131,7 +131,7 @@ in severity order:
 | **NEEDS YOU** | An open question addressed to `@operator`, and any state only a human can advance (`release-ready`, `deploying`, `production-verification`) — kai never deploys. |
 | **INTEGRITY** | Records that contradict each other: a review that approved a different `change_ref` than the item now carries, a dependency on an item that does not exist, an unreadable record, a terminal state with required reviews unmet. |
 | **BLOCKED** | Declared blocked, or waiting on a typed dependency that has not reached its required state. |
-| **UNKNOWN** | An expired lease, active work with no `next_role` and no holder, or `waiting_on_questions` naming a question with no packet in the thread. |
+| **UNKNOWN** | An expired lease, active work with no `next_role` and no holder, `waiting_on_questions` naming a question with no packet in the thread, or a run that missed the deadline it set for itself (see below). |
 
 Healthy work is counted, not listed. Exit code is `0` normally, `1` when an
 integrity finding exists, and `2` when no coordination records could be found.
@@ -156,6 +156,65 @@ because nobody updated it is worse than no board at all.
 It also cannot see *runtime* activity. kai's agents are prompt documents, not
 host subagents, so nothing in the host's own telemetry identifies which kai role
 is running.
+
+## Seeing what is happening right now
+
+The item record answers *what is the state of this work*. It changes a handful
+of times across days, so between two updates the report above can only say
+`UNKNOWN`. The **activity log** narrows that gap, and gives agents a live view
+of their peers.
+
+```bash
+node scripts/activity.mjs show --root .    # who is live right now
+```
+
+Agents append to a gitignored `.kai/activity.jsonl` when they start and stop:
+
+```bash
+RUN=$(node scripts/activity.mjs new-run)
+node scripts/activity.mjs start --root . --role principal-swe-backend \
+  --item export-audit --run "$RUN" --for 45m
+node scripts/activity.mjs stop  --root . --role principal-swe-backend \
+  --run "$RUN" --outcome handoff
+```
+
+`--for` is the point of the whole design: it is the window after which the
+agent's silence becomes a *checkable* fact rather than an ambiguous one.
+
+### Why it is a separate file
+
+|  | Item record | Activity log |
+| --- | --- | --- |
+| Path | `kai/coordination/items/<id>.md` | `.kai/activity.jsonl` |
+| Shape | compare-and-swap, versioned | append-only, one line per record |
+| Carries | state, ownership, reviews, verdicts | who, which item, when they report next |
+| Committed | yes, authoritative | no, ephemeral, gitignored |
+
+Every write to an item increments `version` and is verified against a lease
+token — that is what makes parallel ownership safe, and exactly why a heartbeat
+cannot live there: it would inflate the field that detects racing, and
+read-modify-write is the lost-update pattern append-only avoids.
+
+That separation is **enforced, not requested**. A record naming `state`,
+`verdict`, `change_ref`, `version`, `lease`, or `decision` is rejected at write
+time. Two surfaces that cannot carry the same fact cannot drift into two truths.
+
+Concurrency is safe because each record is a single sub-4KB `O_APPEND` write —
+not because JavaScript is single-threaded, which grants nothing across separate
+agent processes. The self-test runs six concurrent writers and asserts every
+record survives.
+
+### What this does not tell you either
+
+The log is **declared**, exactly like the item records. An agent that crashes
+never writes its `stop`; one that forgets never writes at all. So `work-status`
+reports the narrow, true claim:
+
+> the run declared it would report by `T`, and `T` has passed
+
+— and never "the agent crashed", which needs an observer kai does not have. If
+the log is absent, stale, or unreadable, the report silently loses the overlay
+and behaves exactly as it does without it.
 
 ---
 

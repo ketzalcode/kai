@@ -4,7 +4,7 @@ description: "Bounded incident-command workflow for SaaS operational, security, 
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `peer-communication`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

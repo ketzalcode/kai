@@ -114,6 +114,9 @@ Install or replace exactly one managed block:
 # Raw kai runs and personal material are local-only.
 /.kai/runs/
 /kai/personal/
+# The declared activity log is ephemeral, local, and never committed.
+/.kai/activity.jsonl
+/.kai/activity.jsonl.1
 # Retired local state stays private during explicit migration.
 /.persona-self/
 /.kai/local.json

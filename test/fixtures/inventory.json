@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 42
+    "skills": 43
   },
   "agents": [
     "director-chief-of-staff",
@@ -101,6 +101,7 @@
     "video-direction",
     "web-content-extraction",
     "web-evaluation",
+    "work-activity",
     "work-coordination",
     "workspace-conventions",
     "workspace-onboarding"

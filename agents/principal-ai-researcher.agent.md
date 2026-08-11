@@ -4,7 +4,7 @@ description: "Researches the AI landscape on the live web and produces a Lectori
 tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

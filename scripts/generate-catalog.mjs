@@ -150,7 +150,7 @@ const CATEGORIES = [
     blurb: 'The shared contracts every acting agent inherits: where work goes, and what it may change.',
     members: [
       'team-operating-rules', 'workspace-conventions', 'workspace-onboarding',
-      'work-coordination', 'definition-of-done', 'scope-discipline',
+      'work-coordination', 'work-activity', 'definition-of-done', 'scope-discipline',
       'issue-analysis', 'initiative-stewardship', 'peer-communication',
       'product-exploration', 'product-marketing-intelligence',
     ],
