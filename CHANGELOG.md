@@ -4,6 +4,37 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.45.1] - 2026-08-12
+
+### Fixed
+
+- **Narration could not actually be synthesised.** `demo-narrate --synthesize`
+  shipped in 0.44.0 calling `lectoria speak`, a subcommand that did not exist —
+  lectoria's CLI only exposed `run`, the whole document-to-podcast pipeline. The
+  capability was always there one layer down (`createTTS()` returns Azure's own
+  measured `audioDuration`); only the CLI surface was missing. Contributed
+  upstream as RubenSaucedo/lectoria#28 and the pinned dependency moved to it, so
+  the command kai has been issuing since 0.44.0 now resolves.
+- **An unconfigured machine failed once per beat.** Every beat produced the same
+  "Azure is not set up" message, burying the one fact that mattered under a wall
+  of repetition. `not-configured` is now fatal: synthesis stops at the first
+  beat and says so. Nothing was billed, so there was nothing to preserve by
+  continuing. A `synthesis-failed` beat is still recorded and the run continues,
+  because that one may be transient.
+- **Failure reasons were scraped from the last line of stderr**, which turned a
+  multi-line explanation into a fragment and could not tell "never set up" from
+  "the call was attempted and failed". kai now reads the structured
+  `error.reason` that `lectoria speak --json` emits, and falls back to the old
+  behaviour so an older lectoria degrades rather than breaks.
+
+### Changed
+
+- kai refuses a synthesis result that carries no measured duration, or that is
+  an estimate. lectoria reports projections under `estimatedDurationSec` and
+  measurements under `durationSec` specifically so the two cannot be confused;
+  this enforces that at the seam rather than trusting it, since a placed
+  estimate is indistinguishable from a placed measurement after the fact.
+
 ## [0.45.0] - 2026-08-12
 
 ### Added
@@ -1875,6 +1906,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.45.1]: https://github.com/RubenSaucedo/kai/compare/v0.45.0...v0.45.1
 [0.45.0]: https://github.com/RubenSaucedo/kai/compare/v0.44.1...v0.45.0
 [0.44.1]: https://github.com/RubenSaucedo/kai/compare/v0.44.0...v0.44.1
 [0.44.0]: https://github.com/RubenSaucedo/kai/compare/v0.43.0...v0.44.0

@@ -89,6 +89,21 @@ A line that fails to synthesise is recorded as a **failed clip**, not retried.
 A retry of a paid request nobody asked for is a charge nobody agreed to, and a
 partial take has to be visibly partial.
 
+**An unconfigured machine stops the run at the first beat**, rather than
+recording the same failure once per line. Every remaining beat would fail
+identically, and nothing has been billed, so there is nothing to preserve by
+continuing. This is distinct from a call that was attempted and failed, which is
+recorded and the run continues — that one may be transient. `lectoria speak`
+reports the difference as a machine-readable reason, so kai does not have to
+guess it from prose.
+
+**A result that is not a measurement is refused.** `lectoria` reports a
+projection under `estimatedDurationSec` and a measured duration under
+`durationSec`, precisely so the two cannot be mistaken for one another. kai
+checks that at the seam rather than trusting it: once an estimate has been
+placed, it is indistinguishable from a measurement, and the whole point of this
+tool is that it never is.
+
 `lectoria` is an optional external tool, discovered at run time exactly like
 `ffmpeg`. It is resolved in a fixed order — `LECTORIA_BIN`, then this plugin's
 `node_modules/.bin/lectoria` (where the pinned git dependency lands), then a
@@ -96,6 +111,13 @@ global install on PATH — and the pinned copy wins over a stray global, so a de
 is narrated by the version this plugin pins. If it is absent the tool says which
 places it looked and narration is unavailable; it does not degrade into
 something silent that looks like it worked.
+
+Synthesis needs Azure Speech configured in the environment lectoria reads:
+`AZURE_SPEECH_REGION`, plus either `AZURE_SPEECH_KEY` or
+`AZURE_SPEECH_RESOURCE_ID` with `az login`. Note that a **rejected key surfaces
+as a WebSocket close 1006, "Unable to contact server", not a 401** — taken at
+face value it sends you to debug the network when the key is wrong or belongs to
+another region.
 
 ### 3. Place it against the recording
 

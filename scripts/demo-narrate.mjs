@@ -31,10 +31,11 @@
 // a lie about how fast the product is. Those are script defects, and the fix is a
 // shorter line or a wider span -- both of which this tool computes for you.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parseScreenplay, parseTake } from './demo-capture.mjs';
 
@@ -366,23 +367,33 @@ export function synthesize(screenplay, { outDir, voice, run = runLectoria }) {
   if (beats.length === 0) fail('this screenplay has no narration beats to synthesise');
   mkdirSync(outDir, { recursive: true });
 
-  const clips = beats.map((beat) => {
+  const clips = [];
+  for (const beat of beats) {
     const path = join(outDir, `${beat.id}.mp3`);
     const textFile = join(outDir, `${beat.id}.txt`);
     writeFileSync(textFile, beat.text, 'utf8');
     const result = run({ textFile, out: path, voice: beat.voice || voice });
-    if (!result.ok) {
-      return { beat: beat.id, status: 'failed', reason: result.reason, text_sha256: textHash(beat.text) };
+
+    // A machine with no Azure configuration will fail identically on every
+    // beat, so continuing produces a wall of the same message and buries the
+    // one fact that matters. Nothing has been billed either, so there is
+    // nothing to preserve by finishing.
+    if (!result.ok && result.fatal) {
+      fail(`${result.reason}\nStopped before beat "${beat.id}". No further calls were attempted, and nothing was billed.`);
     }
-    return {
+    if (!result.ok) {
+      clips.push({ beat: beat.id, status: 'failed', reason: result.reason, text_sha256: textHash(beat.text) });
+      continue;
+    }
+    clips.push({
       beat: beat.id,
       status: 'ok',
       path,
       durationSec: result.durationSec,
       characters: result.characters ?? beat.text.trim().length,
       text_sha256: textHash(beat.text),
-    };
-  });
+    });
+  }
 
   return { schema: TAKE_SCHEMA, provider: 'lectoria', voice: voice ?? null, region: null, clips };
 }
@@ -395,15 +406,47 @@ function runLectoria({ textFile, out, voice }) {
   const args = ['speak', '--text-file', textFile, '--out', out, '--json'];
   if (voice) args.push('--voice', voice);
   const r = spawnSync(found.path, args, { encoding: 'utf8', shell: process.platform === 'win32' });
+  return readLectoriaResult(r);
+}
+
+// Reads what `lectoria speak --json` said. Kept separate from spawning so the
+// contract between the two tools can be tested without an Azure account.
+export function readLectoriaResult(r) {
+  let parsed = null;
+  try {
+    parsed = JSON.parse(r.stdout);
+  } catch {
+    parsed = null;
+  }
+
   if (r.status !== 0) {
+    // lectoria prints a structured reason on stdout under --json. Prefer it:
+    // scraping the last line of stderr turns a multi-line explanation into a
+    // fragment, and cannot distinguish a machine that was never set up from a
+    // call that was attempted and failed.
+    if (parsed?.error?.reason) {
+      return {
+        ok: false,
+        reason: parsed.error.message,
+        // `not-configured` means nothing was attempted and nothing billed, so
+        // every remaining beat would fail the same way.
+        fatal: parsed.error.reason === 'not-configured',
+      };
+    }
     return { ok: false, reason: (r.stderr || r.error?.message || `exit ${r.status}`).trim().split('\n').pop() };
   }
-  try {
-    const parsed = JSON.parse(r.stdout);
-    return { ok: true, durationSec: Number(parsed.durationSec), characters: parsed.characters };
-  } catch {
+
+  if (!parsed) {
     return { ok: false, reason: 'lectoria did not print the JSON measurement this expects; it may predate the `speak` subcommand (RubenSaucedo/lectoria#27)' };
   }
+  // The whole point of this seam is that the duration is *measured*. lectoria
+  // reports a projection under a different key for exactly this reason, so a
+  // payload that is an estimate, or that carries no usable duration at all, is
+  // refused rather than placed as though somebody had heard it.
+  if (parsed.estimated === true || !Number.isFinite(Number(parsed.durationSec)) || Number(parsed.durationSec) <= 0) {
+    return { ok: false, reason: `lectoria returned no measured duration for this line${parsed.estimated === true ? ' (it returned an estimate, which must never be placed as a measurement)' : ''}` };
+  }
+  return { ok: true, durationSec: Number(parsed.durationSec), characters: parsed.characters };
 }
 
 // -------------------------------------------------------------------- reporting
@@ -562,6 +605,31 @@ function selfTest() {
   ok(findLectoria({}, () => false, () => true).source === 'node_modules/.bin', 'the pinned dependency is found where npm actually puts it, which is not on PATH');
   ok(findLectoria({}, () => true, () => false).source === 'PATH', 'a global install still answers when the pinned dependency is not installed');
   ok(findLectoria({}, () => false, () => false) === null, 'a genuinely missing lectoria is reported as absent rather than assumed present');
+
+  // --- the contract with `lectoria speak --json`, pinned against real payloads
+  const measured = readLectoriaResult({ status: 0, stdout: JSON.stringify({ path: 'a.mp3', durationSec: 4.812, characters: 143, estimated: false }) });
+  ok(measured.ok && measured.durationSec === 4.812 && measured.characters === 143, 'a measured duration is read from lectoria\'s JSON');
+  ok(readLectoriaResult({ status: 0, stdout: JSON.stringify({ estimatedDurationSec: 3.3, estimated: true }) }).ok === false,
+    'an estimate is refused rather than placed as a measurement: lectoria reports a projection under a different key precisely so this cannot pass silently');
+  ok(readLectoriaResult({ status: 0, stdout: JSON.stringify({ path: 'a.mp3', durationSec: 0 }) }).ok === false,
+    'a zero duration is refused: it would place a beat that nobody can hear');
+  ok(readLectoriaResult({ status: 0, stdout: 'not json' }).ok === false, 'output that is not the expected JSON is refused rather than half-read');
+
+  const unconfigured = readLectoriaResult({ status: 2, stdout: JSON.stringify({ error: { reason: 'not-configured', message: 'AZURE_SPEECH_REGION is not set. Nothing was attempted and nothing was billed.' } }) });
+  ok(unconfigured.fatal === true, 'an unconfigured machine is fatal: every remaining beat would fail identically, and nothing has been billed to preserve');
+  ok(unconfigured.reason.includes('nothing was billed'), 'the whole structured message survives, rather than the last line of stderr');
+  ok(readLectoriaResult({ status: 3, stdout: JSON.stringify({ error: { reason: 'synthesis-failed', message: 'closed without an answer' } }) }).fatal === false,
+    'a failed call is not fatal: it may be transient, and the other beats are still worth attempting');
+  ok(readLectoriaResult({ status: 1, stdout: '', stderr: 'lectoria speak: something\nlast line' }).reason === 'last line',
+    'an older lectoria with no structured error still yields something, so the seam degrades rather than breaking');
+
+  const stopped = (() => {
+    try {
+      synthesize(sp, { outDir: mkdtempSync(join(tmpdir(), 'kai-narr-')), run: () => ({ ok: false, fatal: true, reason: 'not configured' }) });
+      return null;
+    } catch (e) { return e.message; }
+  })();
+  ok(stopped?.includes('No further calls were attempted'), 'synthesis stops at the first fatal failure instead of producing one identical failure per beat');
   ok(findLectoria({}, () => true, () => true).source === 'node_modules/.bin', 'the pinned version wins over whatever is on PATH, so a demo is narrated by the version this plugin pins rather than a stray global');
   ok(['LECTORIA_BIN', 'node_modules', 'PATH'].every((p) => LECTORIA_MISSING.includes(p)), 'the absence message names every place that was checked, because a bare "not found" sends people looking in the wrong one');
 
