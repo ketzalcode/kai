@@ -4,6 +4,47 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.43.0] - 2026-08-12
+
+### Added
+
+- **A drawn cursor, built from measured pointer telemetry.** At 2x zoom the
+  operating system's cursor is easy to lose, so it is hard to tell what a shot is
+  pointing at. Captures now run with `-draw_mouse 0` and the finished video
+  carries an arrow we control.
+
+  The tempting shortcut was to place that arrow at the centre of each step's
+  target rectangle. That is false data: a rectangle records *intended* geometry
+  and says nothing about the path taken, the hover dwell, or when the button went
+  down. Worse, hiding the OS cursor does not disable its effects -- the physical
+  pointer still drives hover state, so an invented path would show the arrow
+  somewhere the application never reacted.
+
+  So the driver **glides the real pointer** and records where it actually was,
+  on the same measured clock as every other timing. Movement is linear in time
+  because the renderer interpolates linearly between samples; an eased glide
+  would look better and would make two recorded endpoints a lie about the path
+  between them. The pointer is marked hidden while typing, since the arrow would
+  otherwise cover the text the shot exists to show. **A take with no telemetry
+  produces no cursor** -- it is never reconstructed.
+
+  The arrow is drawn *after* the zoom, not before. Compositing it first would
+  have magnified it with everything else, so its size would change shot to shot,
+  its edges would blur under the same interpolation as the pixels, and the crop
+  would clip it. Instead the measured source position is pushed through the crop
+  the zoom is performing, using the same `clip()` the zoom itself uses so the two
+  cannot drift, and a constant-size arrow is drawn in output space.
+
+- `scripts/lib/cursor-png.mjs` generates the arrow with `zlib`, a Node built-in,
+  rather than committing a binary asset that would have to be kept in step by
+  hand with the code that places it.
+
+### Changed
+
+- Out of scope, and rejected rather than approximated: drag, scroll,
+  hover-triggered menus, and cursor shape changes. This draws a cursor from
+  measurements; it is not a compositor.
+
 ## [0.42.0] - 2026-08-12
 
 Recording a real demo with 0.41.0 exposed the seam it left open: `demo-zoom`
@@ -1694,6 +1735,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.43.0]: https://github.com/RubenSaucedo/kai/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/RubenSaucedo/kai/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/RubenSaucedo/kai/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/RubenSaucedo/kai/compare/v0.39.0...v0.40.0

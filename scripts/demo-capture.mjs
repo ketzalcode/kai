@@ -252,7 +252,30 @@ export function parseTake(text) {
     recording_zero_spread: Number.isFinite(Number(raw.recording_zero_spread)) ? Number(raw.recording_zero_spread) : null,
     capture: { region, fps },
     steps,
+    pointer: parsePointer(raw.pointer, region),
   };
+}
+
+// Measured pointer samples, in pixels relative to the capture region, converted
+// to fractions of the frame so a plan stays valid if the render size changes.
+//
+// Absence is not an error: a take recorded before pointer telemetry existed, or
+// one where the driver could not read the cursor, simply has no track. What it
+// must never do is let the renderer guess one -- so this returns null and the
+// caller draws nothing.
+export function parsePointer(raw, region) {
+  if (!raw || !Array.isArray(raw.samples) || raw.samples.length === 0) return null;
+  const track = raw.samples.map((s, i) => {
+    const at = `pointer.samples[${i}]`;
+    return {
+      t: num(s.t, `${at}.t`, { min: 0 }),
+      x: Math.min(1, Math.max(0, num(s.x, `${at}.x`) / region.w)),
+      y: Math.min(1, Math.max(0, num(s.y, `${at}.y`) / region.h)),
+      visible: s.visible !== false,
+    };
+  }).sort((a, b) => a.t - b.t);
+  const clicks = Array.isArray(raw.clicks) ? raw.clicks.map((c, i) => num(c, `pointer.clicks[${i}]`, { min: 0 })) : [];
+  return { track, clicks };
 }
 
 // ------------------------------------------------------------------- driver
@@ -295,10 +318,14 @@ Add-Type @"
 using System;using System.Runtime.InteropServices;
 public class DemoUI {
  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x,int y);
+ [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
  [DllImport("user32.dll")] public static extern void mouse_event(uint f,uint x,uint y,uint d,int e);
- public static void Click(int x,int y){
-   SetCursorPos(x,y); System.Threading.Thread.Sleep(120);
+ [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+ public static void Press(){
    mouse_event(0x0002,0,0,0,0); System.Threading.Thread.Sleep(60); mouse_event(0x0004,0,0,0,0);
+ }
+ public static void Click(int x,int y){
+   SetCursorPos(x,y); System.Threading.Thread.Sleep(120); Press();
  }
 }
 "@ -ErrorAction SilentlyContinue
@@ -343,7 +370,7 @@ Remove-Item $probe -ErrorAction SilentlyContinue
 Remove-Item $plan.progress -ErrorAction SilentlyContinue
 $args = @(
   '-y','-loglevel','error',
-  '-f','gdigrab','-framerate',[string]$plan.fps,
+  '-f','gdigrab','-draw_mouse','0','-framerate',[string]$plan.fps,
   '-video_size',"$($rw)x$($rh)",'-offset_x',[string]$rx,'-offset_y',[string]$ry,'-i','desktop',
   '-t',[string]$plan.duration,
   '-progress',$plan.progress,
@@ -377,6 +404,58 @@ $spread = [math]::Round(($sorted[-1] - $sorted[0]), 3)
 Write-Host "recording clock pinned: offset $([math]::Round($zero,3))s, spread $($spread)s"
 
 function Now-Source { return [math]::Round(($sw.Elapsed.TotalSeconds - $zero), 3) }
+
+# Pointer telemetry.
+#
+# The drawn cursor in the finished video is a redraw of these samples, so they
+# have to describe where the pointer really was -- not where we meant it to go.
+# The rectangle a step names is intended geometry; it says nothing about the
+# path taken, and inferring a path from it would fabricate the one thing this
+# recording exists to establish.
+#
+# Movement is linear in time on purpose. An eased glide looks better, but the
+# renderer interpolates linearly between samples, so a curve would have to be
+# sampled densely to stay truthful. Linear motion makes two endpoints an exact
+# description of the path the application actually received.
+$ptr = @()
+$ptrClicks = @()
+$ptrVisible = $true
+
+function Log-Pointer([int]$x, [int]$y) {
+  $script:ptr += [pscustomobject]@{ t = (Now-Source); x = ($x - $rx); y = ($y - $ry); visible = $script:ptrVisible }
+}
+
+function Set-PointerVisible([bool]$v) {
+  $p = New-Object DemoUI+POINT
+  [DemoUI]::GetCursorPos([ref]$p) | Out-Null
+  Log-Pointer $p.X $p.Y
+  $script:ptrVisible = $v
+  Log-Pointer $p.X $p.Y
+}
+
+# Glides the real pointer, so hover states the application shows are the ones a
+# viewer will see under the drawn arrow.
+function Move-Pointer([int]$tx, [int]$ty, [int]$ms = 420) {
+  $p = New-Object DemoUI+POINT
+  [DemoUI]::GetCursorPos([ref]$p) | Out-Null
+  $x0 = $p.X; $y0 = $p.Y
+  if ($x0 -eq $tx -and $y0 -eq $ty) { Log-Pointer $tx $ty; return }
+  Log-Pointer $x0 $y0
+  $steps = [math]::Max(2, [int]($ms / 16))
+  for ($i = 1; $i -le $steps; $i++) {
+    $k = $i / $steps
+    [DemoUI]::SetCursorPos([int]($x0 + ($tx - $x0) * $k), [int]($y0 + ($ty - $y0) * $k)) | Out-Null
+    Start-Sleep -Milliseconds 16
+  }
+  Log-Pointer $tx $ty
+}
+
+function Click-At([int]$x, [int]$y) {
+  Move-Pointer $x $y
+  Start-Sleep -Milliseconds 120
+  $script:ptrClicks += (Now-Source)
+  [DemoUI]::Press()
+}
 
 function Grab-Frame([string]$path) {
   & $ff -y -loglevel error -f gdigrab -video_size "$($rw)x$($rh)" -offset_x $rx -offset_y $ry -i desktop -frames:v 1 $path
@@ -423,14 +502,14 @@ foreach ($step in $plan.steps) {
   $quiet = $null
   switch ($step.action) {
     'hold'     { Start-Sleep -Milliseconds ([int]($step.seconds * 1000)) }
-    'navigate' { [DemoUI]::Click(($rx + [int]($rw / 2)), ($ry + 60)); Start-Sleep -Milliseconds 400; $sh.SendKeys('^a'); Start-Sleep -Milliseconds 150; Send-Literal $step.url; $sh.SendKeys('{ENTER}') }
+    'navigate' { Click-At ($rx + [int]($rw / 2)) ($ry + 60); Start-Sleep -Milliseconds 400; $sh.SendKeys('^a'); Start-Sleep -Milliseconds 150; Send-Literal $step.url; $sh.SendKeys('{ENTER}') }
     'key'      { $sh.SendKeys($step.keys) }
     'click'    {
       if (-not $step.rect) { $status = 'failed' }
       else {
         $cx = $rx + [int](($step.rect.x0 + $step.rect.x1) / 2)
         $cy = $ry + [int](($step.rect.y0 + $step.rect.y1) / 2)
-        [DemoUI]::Click($cx, $cy)
+        Click-At $cx $cy
       }
     }
     'type'     {
@@ -441,7 +520,7 @@ foreach ($step in $plan.steps) {
         # lands on whatever was on screen a moment ago rather than the field.
         $quiet = Wait-Quiet 8000
         if ($quiet -lt 0) { $status = 'unsettled' }
-        [DemoUI]::Click($cx, $cy); Start-Sleep -Milliseconds 500
+        Click-At $cx $cy; Start-Sleep -Milliseconds 500
       }
       if ($step.clear) {
         # Web apps restore saved drafts, so a field is not empty just because
@@ -449,11 +528,16 @@ foreach ($step in $plan.steps) {
         $sh.SendKeys('^a'); Start-Sleep -Milliseconds 200; $sh.SendKeys('{DEL}'); Start-Sleep -Milliseconds 400
       }
       $t0 = Now-Source
+      # The pointer is parked and irrelevant while keys are going in, and
+      # leaving the arrow sitting on the field covers the very text the shot
+      # exists to show.
+      Set-PointerVisible $false
       $delay = [int](1000 / $step.cps)
       foreach ($ch in $step.text.ToCharArray()) {
         Send-Literal ([string]$ch)
         Start-Sleep -Milliseconds $delay
       }
+      Set-PointerVisible $true
     }
   }
   $t1 = Now-Source
@@ -477,6 +561,7 @@ $manifest = [ordered]@{
   recording_zero_spread = $spread
   capture = [ordered]@{ region = @($rx, $ry, $rw, $rh); fps = $plan.fps }
   steps = $log
+  pointer = [ordered]@{ samples = $ptr; clicks = $ptrClicks }
 }
 $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $plan.take -Encoding ascii
 Write-Host "wrote $($plan.take) and $($plan.recording)"
@@ -569,9 +654,14 @@ export function selfTest() {
   ok(driver.includes('could not read a brightness statistic'), 'an unreadable brightness statistic is distinguished from a black frame');
   ok(driver.includes("SendKeys('^a')"), 'the driver clears a restored draft before typing');
   ok(driver.includes('function Wait-Quiet'), 'the driver waits for the app to stop repainting rather than trusting an authored settle');
-  ok(driver.indexOf('Wait-Quiet 8000') < driver.indexOf('[DemoUI]::Click($cx, $cy); Start-Sleep -Milliseconds 500'),
+  ok(driver.indexOf('Wait-Quiet 8000') < driver.indexOf('Click-At $cx $cy; Start-Sleep -Milliseconds 500'),
     'the quiet wait happens before the click, so the click cannot land on a page that is still rendering');
   ok(driver.includes("$status = 'unsettled'"), 'a screen that never settles is recorded in the manifest rather than passed off as clean');
+  ok(driver.includes("'-draw_mouse','0'"), 'the OS cursor is not captured, because the drawn one replaces it');
+  ok(driver.includes('function Move-Pointer'), 'the real pointer is glided so the app produces the hover states a viewer will see');
+  ok(driver.includes('GetCursorPos'), 'pointer samples are read from the OS, not assumed from the target rect');
+  ok(driver.includes('Set-PointerVisible $false'), 'the pointer is marked hidden while typing, so the arrow does not cover the text');
+  ok(!/(?<!function )Click-At\(/.test(driver), 'Click-At is called with space-separated arguments; PowerShell would pass Click-At(a, b) as a single array');
   ok(!driver.includes('Start-Sleep -Milliseconds 4000'), 'step timing is measured, not hard-coded into the driver');
 
   const typeOnly = parseScreenplay(JSON.stringify({
@@ -589,7 +679,15 @@ export function selfTest() {
     schema: TAKE_SCHEMA, take_id: 't1', recording: 'raw.mp4',
     capture: { region: [0, 0, 1256, 784], fps: 30 },
     steps: [{ id: 'st-2', start: 4.02, end: 4.33, rect: [80, 136, 150, 162] }],
+    pointer: { samples: [{ t: 1, x: 628, y: 392, visible: true }, { t: 2, x: 0, y: 0, visible: false }], clicks: [1.5] },
   }));
+  ok(take.pointer.track[0].x === 0.5 && take.pointer.track[0].y === 0.5,
+    'pointer samples are normalised against the capture region, so a plan survives a change of render size');
+  ok(take.pointer.track[1].visible === false, 'a hidden pointer sample stays hidden through the manifest');
+  ok(parseTake(JSON.stringify({
+    schema: TAKE_SCHEMA, take_id: 't1', recording: 'raw.mp4',
+    capture: { region: [0, 0, 100, 100] }, steps: [{ id: 'a', start: 1, end: 2 }],
+  })).pointer === null, 'a take without pointer telemetry yields no track, rather than one inferred from the rects');
   ok(take.steps[0].start === 4.02, 'a take manifest carries measured seconds');
   ok(take.steps[0].rect.x0 === 80, 'a take manifest carries the rectangle actually acted on');
   rejects(() => parseTake(JSON.stringify({

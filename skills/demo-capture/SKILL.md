@@ -128,6 +128,31 @@ node scripts/demo-zoom.mjs --plan plan.json --review --out sheet.png
 
 Then open the sheet. See `demo-zoom` for what to look for.
 
+## The pointer is measured, not imagined
+
+The finished video shows a **drawn** cursor, not the operating system's. The
+capture runs with `-draw_mouse 0` and the driver records where the pointer
+actually was, sample by sample, on the same clock as everything else.
+
+This distinction is not cosmetic. A step's rectangle is *intended* geometry: it
+says where we meant to click, not the path taken, how long the pointer hovered,
+or when the button went down. Drawing an arrow along a path inferred from
+rectangles would invent the one thing the recording exists to establish. So:
+
+- the driver **glides the real pointer** rather than teleporting it, which means
+  the hover states the application shows are the ones the viewer will see;
+- movement is **linear in time**, because the renderer interpolates linearly
+  between samples — an eased glide would look nicer and would make two recorded
+  endpoints a lie about the path in between;
+- the pointer is marked **hidden while typing**, since it is parked and
+  irrelevant then, and the arrow would otherwise sit on top of the text the shot
+  exists to show;
+- a take with **no** telemetry produces **no** cursor. It is never reconstructed.
+
+Interactions the driver cannot measure — drag, scroll, hover-triggered menus,
+cursor shape changes — are out of scope, and are rejected rather than
+approximated. This draws a cursor from measurements; it is not a compositor.
+
 ## Reject a take rather than plan around it
 
 A take is spent, not precious. Re-record when:
@@ -136,6 +161,7 @@ A take is spent, not precious. Re-record when:
 - the app was in the wrong state when the recording started
 - something unintended appears in the frame
 - the recording clock's reported spread is large enough to matter at your zoom
+- the pointer track is missing or truncated and the demo depends on showing it
 
 Compiling around a bad take produces a demo that is confidently wrong, which is
 worse than one that is obviously unfinished.

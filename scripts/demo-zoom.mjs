@@ -40,6 +40,7 @@ import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync, readFileS
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseScreenplay, parseTake } from './demo-capture.mjs';
+import { cursorPng } from './lib/cursor-png.mjs';
 
 const MAX_ZOOM = 10;
 const MAX_FPS = 240;
@@ -134,12 +135,42 @@ export function parsePlan(text) {
     fps,
     size,
     focus: ordered,
+    cursor: parseCursor(raw.cursor),
     crf: (() => {
       const crf = raw.crf === undefined ? 18 : num(raw.crf, 'crf');
       if (crf < 0 || crf > 51) fail('crf must be within 0..51, the range libx264 accepts');
       return crf;
     })(),
   };
+}
+
+// A cursor track is a list of measured samples, not a path to invent between.
+// Each sample is a normalised position the pointer was actually at, at a
+// measured second. The renderer interpolates linearly between consecutive
+// samples, which is exact only because the driver moves the real pointer
+// linearly in time -- so the drawn arrow retraces the path the application
+// actually saw, rather than a plausible-looking curve it never received.
+export function parseCursor(raw) {
+  if (raw === undefined || raw === null) return null;
+  if (!Array.isArray(raw.track) || raw.track.length === 0) {
+    fail('cursor.track must list at least one measured sample; a cursor cannot be drawn from nothing');
+  }
+  const track = raw.track.map((sample, i) => {
+    const at = `cursor.track[${i}]`;
+    const t = num(sample.t, `${at}.t`);
+    if (t < 0) fail(`${at}.t must not be negative`);
+    const x = num(sample.x, `${at}.x`);
+    const y = num(sample.y, `${at}.y`);
+    if (x < 0 || x > 1 || y < 0 || y > 1) {
+      fail(`${at} is outside the frame (${x}, ${y}); positions are fractions of the source frame`);
+    }
+    return { t, x, y, visible: sample.visible !== false };
+  });
+  for (let i = 1; i < track.length; i += 1) {
+    if (track[i].t < track[i - 1].t) fail(`cursor.track[${i}] goes backwards in time; samples must be ordered`);
+  }
+  const clicks = (raw.clicks ?? []).map((c, i) => num(c, `cursor.clicks[${i}]`));
+  return { track, clicks, scale: raw.scale === undefined ? 2.2 : num(raw.scale, 'cursor.scale') };
 }
 
 // ------------------------------------------------------------- numeric model
@@ -266,26 +297,101 @@ export function buildFilter(plan) {
   return filter;
 }
 
+// A piecewise-linear expression over measured samples. Held flat before the
+// first sample and after the last, so the arrow never flies in from a corner.
+function trackExpr(track, key) {
+  let expr = f(track[track.length - 1][key]);
+  for (let i = track.length - 1; i > 0; i -= 1) {
+    const a = track[i - 1];
+    const b = track[i];
+    const span = b.t - a.t;
+    const at = span <= 0
+      ? f(b[key])
+      : `(${f(a[key])}+(${f(b[key] - a[key])})*(t-${f(a.t)})/${f(span)})`;
+    expr = `if(lt(t,${f(b.t)}),${at},${expr})`;
+  }
+  return `if(lt(t,${f(track[0].t)}),${f(track[0][key])},${expr})`;
+}
+
+// Where the arrow lands in the finished frame.
+//
+// Drawing it before the zoom would be simpler and is wrong: the arrow would be
+// magnified with everything else, so its size would change shot to shot, its
+// edges would blur under the same interpolation as the pixels, and it would be
+// clipped by the crop. Instead the measured source position is pushed through
+// the crop the zoom is performing, and a constant-size arrow is drawn in output
+// space.
+//
+// The crop origin in normalised terms is the same clip() the zoom uses, so the
+// two cannot drift: a point at source fraction u lands at (u - X) * zoom * W.
+export function cursorOverlay(plan) {
+  const c = plan.cursor;
+  if (!c) return null;
+  const T = 't';
+  const z = plan.focus.length === 0
+    ? '1'
+    : `(1+${plan.focus.map((s) => `(${f(s.zoom - 1)})*(${weightExpr(s, T)})`).join('+')})`;
+  const cx = plan.focus.length === 0
+    ? '0.5'
+    : `(0.5+${plan.focus.map((s) => `(${f(s.x - 0.5)})*(${weightExpr(s, T)})`).join('+')})`;
+  const cy = plan.focus.length === 0
+    ? '0.5'
+    : `(0.5+${plan.focus.map((s) => `(${f(s.y - 0.5)})*(${weightExpr(s, T)})`).join('+')})`;
+
+  const originX = `clip(${cx}-1/(2*${z}),0,1-1/${z})`;
+  const originY = `clip(${cy}-1/(2*${z}),0,1-1/${z})`;
+
+  const x = `(${trackExpr(c.track, 'x')}-(${originX}))*${z}*${plan.size.w}`;
+  const y = `(${trackExpr(c.track, 'y')}-(${originY}))*${z}*${plan.size.h}`;
+
+  // Intervals the driver measured as keyboard-only. The pointer is parked and
+  // irrelevant then, and leaving it sitting over the field it just clicked
+  // covers the very text the shot exists to show.
+  const hidden = [];
+  for (let i = 0; i < c.track.length - 1; i += 1) {
+    if (!c.track[i].visible) hidden.push(`between(t,${f(c.track[i].t)},${f(c.track[i + 1].t)})`);
+  }
+  const enable = hidden.length ? `:enable='not(${hidden.join('+')})'` : '';
+
+  return `overlay=x='${x}':y='${y}':eval=frame${enable}`;
+}
+
+// The arrow is drawn to a file next to the output rather than committed as an
+// asset, so its size can follow the render and nobody has to keep a binary in
+// the repository in step with the code that places it.
+export function writeCursorImage(plan) {
+  if (!plan.cursor) return null;
+  const { bytes } = cursorPng(plan.cursor.scale);
+  const path = `${plan.output.replace(/\.[^.]+$/, '')}-cursor.png`;
+  writeFileSync(path, bytes);
+  return path;
+}
+
 // A screen recording usually has no audio at all. `-map 0:a?` already tolerates
 // that, but passing `-c:a`/`-b:a` anyway makes ffmpeg print a paragraph about an
 // unused AVOption that reads like a fault, on what is this tool's most common
 // path. So the audio arguments are added only when a stream is actually there.
-export function buildArgs(plan, hasAudio = true) {
+export function buildArgs(plan, hasAudio = true, cursorImage = null) {
   const audio = hasAudio
     // Re-encoded rather than copied: a stream copy fails outright when the
     // source codec cannot live in the output container, and a demo is not
     // worth losing to that.
     ? ['-c:a', 'aac', '-b:a', '192k']
     : [];
+  const overlay = plan.cursor && cursorImage ? cursorOverlay(plan) : null;
+  const video = overlay
+    ? ['-i', cursorImage,
+       '-filter_complex', `[0:v]${buildFilter(plan)}[z];[z][1:v]${overlay}[v]`,
+       '-map', '[v]']
+    : ['-vf', buildFilter(plan), '-map', '0:v:0'];
   return [
     '-y',
     '-i', plan.source,
-    '-vf', buildFilter(plan),
+    ...video,
     '-c:v', 'libx264',
     '-preset', 'medium',
     '-crf', String(plan.crf),
     '-pix_fmt', 'yuv420p',
-    '-map', '0:v:0',
     '-map', '0:a?',
     ...audio,
     plan.output,
@@ -494,6 +600,20 @@ export function compile(screenplay, take, options = {}) {
         x: round(s.x), y: round(s.y),
         zoom: s.zoom, ease: s.ease, label: s.label,
       })),
+      // Carried straight through from the take. The compiler does not smooth,
+      // resample, or extend this: it is the record of where the pointer was,
+      // and editing it here would make the drawn arrow a claim rather than a
+      // measurement. A take without telemetry simply produces no cursor.
+      ...(take.pointer
+        ? {
+          cursor: {
+            track: take.pointer.track.map((s) => ({
+              t: round(s.t), x: round(s.x), y: round(s.y), visible: s.visible,
+            })),
+            clicks: take.pointer.clicks.map(round),
+          },
+        }
+        : {}),
     },
     notes,
   };
@@ -531,7 +651,7 @@ function render(plan) {
   }
   let args;
   try {
-    args = buildArgs(plan, probeHasAudio(plan.source));
+    args = buildArgs(plan, probeHasAudio(plan.source), writeCursorImage(plan));
   } catch (error) {
     console.error(`demo-zoom: ${error.message}`);
     return 1;
