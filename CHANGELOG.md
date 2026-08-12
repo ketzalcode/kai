@@ -4,6 +4,60 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.44.0] - 2026-08-12
+
+### Added
+
+- **Narration placed against a measured recording, or refused.** `demo-narrate`
+  adds the voice track, and it is the part of the pipeline with the most ways to
+  quietly produce something false, so it is built almost entirely out of
+  refusals.
+
+  Only two numbers matter and neither is the author's to write: **how long a line
+  takes to say** is measured by the synthesiser before capture, and **when a
+  state actually appears** is measured by the recorder during it. A narration
+  beat that declares `start`, `end`, `seconds`, `duration` or `offset` is
+  rejected in the same words a step declaring a source second already was.
+
+  The obvious design -- one line per step, the line's length setting the step's
+  dwell -- was proposed and rejected: a 0.3-second click is not a nine-second
+  visual scene, and keying one to the other manufactures long inert holds.
+  Knowing a clip's duration up front still does not say when the line should
+  start, because that depends on when the interface reached the described state.
+  So a beat instead **spans** the visual states it describes and names the
+  earliest state it may follow (`start_after`), which is the whole defence
+  against narration claiming an outcome before the viewer can see it.
+
+  When speech does not fit, that is a script defect rather than an editing
+  problem, and the rejection computes the fix: if a later state is still on
+  screen when the line ends it names that step -- the *smallest* span that would
+  work -- and otherwise says so and how many words to cut. It will not slow
+  typing to fit prose, freeze while the app is supposedly responding, or stretch
+  a loading state. A freeze that conceals latency is a lie about how fast the
+  product is.
+
+  Refused outright: narrating a step the take recorded as `failed` or
+  `unsettled`, a partial synthesis, a clip that failed (which is not silence),
+  and a clip synthesised from words the screenplay no longer carries.
+
+- **`lectoria` is an optional external tool, not a dependency.** It carries
+  sixteen runtime dependencies including a PDF parser and a DOM implementation;
+  kai's scripts carry none, which is why CI needs no install step. So it is
+  discovered at run time exactly as ffmpeg is, and its absence is stated plainly
+  rather than degrading into something silent that looks like it worked. A line
+  that fails to synthesise is recorded as a failed clip and **not retried** --
+  a retry of a paid request nobody asked for is a charge nobody agreed to.
+
+- `--estimate` prints the size and projected length of a synthesis run **without
+  making a paid call**, and labels every number it prints an estimate.
+
+- Narration is mixed onto the finished render with the video **copied, not
+  re-encoded**, so re-narrating in another language cannot change a single frame
+  of what was recorded. `-shortest` is deliberately absent: placement already
+  guarantees the narration fits, so it could only ever cut the end off the demo.
+
+- New `demo-narrate` skill documenting the beat contract and every refusal.
+
 ## [0.43.0] - 2026-08-12
 
 ### Added
@@ -1735,6 +1789,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.44.0]: https://github.com/RubenSaucedo/kai/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/RubenSaucedo/kai/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/RubenSaucedo/kai/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/RubenSaucedo/kai/compare/v0.40.0...v0.41.0

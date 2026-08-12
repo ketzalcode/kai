@@ -165,7 +165,100 @@ export function parseScreenplay(text) {
     }
   }
 
-  return { schema: SCREENPLAY_SCHEMA, title, capture: { region, fps }, steps };
+  return {
+    schema: SCREENPLAY_SCHEMA,
+    title,
+    capture: { region, fps },
+    steps,
+    narration: parseNarrationBeats(raw.narration, steps),
+  };
+}
+
+// Narration is authored here, beside the actions, because it is the same story
+// told by the same person in the same sitting; splitting it into a second file
+// would let the two drift and be reviewed apart.
+//
+// A beat is deliberately *not* a line bolted to a step. A 0.3-second click is
+// not a nine-second visual scene, and keying one to one manufactures long inert
+// holds. A beat instead spans the visual states it describes, and says the
+// earliest state it may follow. Both are named, never timed: how long a line
+// takes to say is measured by the synthesiser, and when the interface actually
+// reaches a state is measured by the recorder. Neither is knowable while
+// writing, so neither may be written here.
+export function parseNarrationBeats(raw, steps) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) fail('narration must be an array of beats');
+  if (raw.length > MAX_STEPS) fail(`a screenplay of ${raw.length} narration beats is past the ${MAX_STEPS} this tool will place; split the demo`);
+
+  const order = new Map(steps.map((step, i) => [step.id, i]));
+  const seen = new Set();
+
+  return raw.map((beat, i) => {
+    const where = `narration[${i}]`;
+    if (!beat || typeof beat !== 'object' || Array.isArray(beat)) fail(`${where} must be an object`);
+
+    for (const forbidden of ['start', 'end', 'at', 'seconds', 'duration', 'durationSec', 'offset', 'timestamp', 'source_second']) {
+      if (beat[forbidden] !== undefined) {
+        fail(`${where} declares "${forbidden}". A narration beat carries intent, not measurements: how long a line takes to say is measured by the synthesiser and when a state appears is measured by the recorder. Neither can be known while writing.`);
+      }
+    }
+
+    const id = str(beat.id, `${where}.id`);
+    if (seen.has(id)) fail(`${where}.id "${id}" is used twice; a narration take is keyed by beat id`);
+    seen.add(id);
+
+    const text = str(beat.text, `${where}.text`);
+
+    const span = beat.visual_span;
+    if (!span || typeof span !== 'object') fail(`${where}.visual_span is required: a beat has to say which visual states it describes, or nothing can decide whether it fits`);
+    const from = str(span.from_step, `${where}.visual_span.from_step`);
+    const through = str(span.through_step ?? span.from_step, `${where}.visual_span.through_step`);
+    for (const [name, value] of [['from_step', from], ['through_step', through]]) {
+      if (!order.has(value)) fail(`${where}.visual_span.${name} names "${value}", which is not a step in this screenplay`);
+    }
+    if (order.get(through) < order.get(from)) {
+      fail(`${where}.visual_span runs backwards: "${through}" happens before "${from}"`);
+    }
+
+    // The line may not begin before this step's *result* is on screen. That is
+    // the whole defence against narration claiming an outcome the viewer cannot
+    // yet see. It defaults to the start of the span, which claims nothing.
+    let startAfter = null;
+    if (beat.start_after !== undefined && beat.start_after !== null) {
+      startAfter = str(beat.start_after, `${where}.start_after`);
+      if (!order.has(startAfter)) fail(`${where}.start_after names "${startAfter}", which is not a step in this screenplay`);
+      if (order.get(startAfter) < order.get(from) || order.get(startAfter) > order.get(through)) {
+        fail(`${where}.start_after names "${startAfter}", which is outside the beat's own visual span; a beat cannot wait for something it does not cover`);
+      }
+      // Waiting for the last step of your own span leaves nowhere to speak: the
+      // line may not begin until that step is over, and the span is over at the
+      // same instant. No clip is short enough to fix it, so it is refused here
+      // rather than surfacing later as a mystifying "cut about 6 words".
+      if (order.get(startAfter) === order.get(through) && order.get(through) > order.get(from)) {
+        fail(`${where}.start_after names "${startAfter}", which is also where its span ends, so the beat could only start at the instant it must be finished. Extend through_step to whatever stays on screen while the line is spoken.`);
+      }
+      if (order.get(startAfter) === order.get(through) && order.get(through) === order.get(from)) {
+        fail(`${where} covers only "${from}" and also waits for it to finish, leaving no time in which to speak. Extend through_step past "${from}", or drop start_after if the line describes the step happening rather than its result.`);
+      }
+    }
+
+    return {
+      id,
+      text,
+      visual_span: { from_step: from, through_step: through },
+      start_after: startAfter,
+      voice: typeof beat.voice === 'string' && beat.voice.trim() !== '' ? beat.voice : null,
+    };
+  }).map((beat, i, all) => {
+    // Beats are heard in the order they are written. If a later beat covers an
+    // earlier part of the demo, placement would have to either play it out of
+    // authored order or push it past the states it describes; both are worse
+    // than saying the script is in the wrong order.
+    if (i > 0 && order.get(beat.visual_span.from_step) < order.get(all[i - 1].visual_span.from_step)) {
+      fail(`narration[${i}] ("${beat.id}") starts at an earlier point in the demo than the beat before it; narration must be authored in the order it is heard`);
+    }
+    return beat;
+  });
 }
 
 export function parseTargets(text) {

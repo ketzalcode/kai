@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 47
+    "skills": 48
   },
   "agents": [
     "creative-video-director",
@@ -68,6 +68,7 @@
     "decision-brief",
     "definition-of-done",
     "demo-capture",
+    "demo-narrate",
     "demo-zoom",
     "design-grounding",
     "doc-review-rigor",
@@ -117,6 +118,10 @@
     },
     {
       "name": "demo-capture",
+      "argument_hint": ""
+    },
+    {
+      "name": "demo-narrate",
       "argument_hint": ""
     },
     {
