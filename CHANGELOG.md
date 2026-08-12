@@ -4,6 +4,76 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.41.0] - 2026-08-11
+
+### Added
+
+- **`scripts/demo-zoom.mjs`** and the **`demo-zoom`** skill - render a
+  focused demo from a declared focus plan. A recording where the interesting
+  part occupies a small corner of the frame is technically correct and
+  practically unwatchable; this moves the camera to whatever the director said
+  matters. Focus is declared rather than detected: nothing inspects pixels to
+  guess what is interesting, because that fails by zooming confidently onto the
+  wrong thing, and a written plan can be reviewed before an encode is spent.
+  Renders as a single continuous `zoompan` pass, so there are no segment
+  seams and no audio to resynchronise. `--grid` lifts one frame out of the
+  recording ruled into tenths, so coordinates are read off the picture instead
+  of guessed. `--explain` describes the render in plain numbers first, and
+  `--print` emits the ffmpeg command for machines that have ffmpeg when this
+  one does not. Needs ffmpeg on PATH and nothing else.
+- The zoom curve is a sum of per-segment eased weights rather than nested
+  conditionals, which makes every transition continuous by construction: the
+  camera cannot jump, and the arithmetic is checked without ffmpeg by 68
+  self-test assertions. `--verify` proves the render itself, by zooming onto
+  a marker at a known point and reading the centre pixel back out.
+- The tool refuses a plan it cannot honour rather than rendering something
+  misleading - overlapping segments, an ease too long to reach its zoom factor,
+  a path that ffmpeg would read as an option, or an output that would overwrite
+  the source - and names the segment and the reason each time.
+
+### Review fixes
+
+An independent review of the first cut found eight defects; all are fixed here
+and each is pinned by an assertion.
+
+- **Two touching hard cuts added their zoom together.** Segments are allowed to
+  meet, and with both endpoints inclusive both were fully active for the instant
+  they shared, so a 2x segment meeting a 3x segment showed 4x for one frame. The
+  interval is now half-open: a segment is released before the next begins.
+- **A well-formed plan could build a filter too long to hand to a process.** The
+  limit was a segment count, which is only a proxy for the thing that actually
+  breaks. The built expression is now measured against what a command line can
+  carry and refused with the reason, rather than failing inside `spawn`.
+- **Snapping the crop origin to even pixels was justified by an unmeasured
+  claim** and made each step twice as large. It is gone. The crop is instead
+  computed on a frame twice the output size, which halves the smallest possible
+  step -- stated as the arithmetic it is, with the smooth-motion claims removed
+  from the doc, the header, and the tests.
+- **The doc claimed `--explain` caught a segment running past the end of the
+  material, which it could not know.** It now probes the duration with
+  `ffprobe` and names any segment that overruns, or says plainly that the
+  duration is unknown.
+- **A focus point near an edge cannot be centred**, because centring it would
+  show padding. The render always clamped; the doc called the coordinate a
+  centre anyway. It is now described as a target, and `--explain` prints where
+  each shot actually lands next to what was asked for.
+- **`--print` emitted a command that would not run** for a path containing a
+  space, and left the filter's parentheses exposed to a shell. Arguments are now
+  quoted.
+- **Audio was stream-copied**, which fails outright when the source codec cannot
+  enter the output container. It is re-encoded to AAC.
+- **Values that passed validation could still fail deep inside ffmpeg** -- a
+  `00x00` size, a frame rate that rounds to zero, a CRF of 100. All are now
+  refused where the error is readable. The grid's `--size` and `--plan`
+  options are documented, and an explicitly named plan that cannot be parsed is
+  fatal rather than silently falling back to a default size, which would have
+  produced coordinates for a different frame.
+### Fixed
+
+- **README stated two different inventories.** One line claimed 56 agents and 45
+  skills and another claimed 54 agents and 40 skills. `release-guard` checks
+  the version stamp but not the surrounding prose, which is how it survived.
+  Both now agree with the generated catalog.
 ## [0.40.0] - 2026-08-11
 
 ### Added
@@ -1558,6 +1628,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.41.0]: https://github.com/RubenSaucedo/kai/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/RubenSaucedo/kai/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/RubenSaucedo/kai/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/RubenSaucedo/kai/compare/v0.37.0...v0.38.0

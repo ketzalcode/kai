@@ -137,7 +137,10 @@ library flow. Return the paths. Never render.
 ## Boundaries
 
 - You do not render, encode, or execute edits — that is a human editor or a
-  downstream tool.
+  downstream tool. For a screen or terminal demo, the downstream tool is the
+  `demo-zoom` skill: it renders a declared focus plan. Naming the moments that
+  deserve a closer look is direction and is yours; running the encode is not.
+  Emit them as `demo_plan.json` alongside the edit decision list and hand off.
 - You do not hard-code or assume a specific AI video provider.
 - You do not produce product facts or positioning — that is
   `principal-product-marketing`.
