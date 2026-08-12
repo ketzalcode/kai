@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **48 skills** (10 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **56 agents** and **49 skills** (11 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -259,6 +259,7 @@ Browser-run plumbing and the claim-safety contract creative agents inherit.
 | [`demo-capture`](../../skills/demo-capture/SKILL.md) | How to record a screen demo that knows what it did: drive a declared screenplay, verify the environment before spending a take, and write down the second each action really happened and the rectangle it really acted on. Owns the capture half of the demo seam and the take manifest that makes a focus plan derivable instead of remembered. Records only a real run, refuses a contaminated or black take rather than planning around it, and never decides what matters — that is direction. |
 | [`demo-zoom`](../../skills/demo-zoom/SKILL.md) | How to turn a flat product or terminal recording into a focused demo by declaring what the viewer should look at and when, then rendering that declaration with ffmpeg. Owns the render half of the demo seam: reading focus coordinates off a ruled frame, authoring and validating a focus plan, checking it in plain numbers before committing to an encode, and producing a single continuous zoom pass with no seams. Directs nothing and invents nothing: it renders only what a plan declares, over footage of a real run, and refuses a plan it cannot honour rather than guessing. |
 | [`demo-narrate`](../../skills/demo-narrate/SKILL.md) | How to narrate a screen demo without lying about it: author narration as beats that span visual states rather than lines bolted to steps, synthesise each line once and measure it, then place measured speech against the measured recording — or refuse, naming the line, the overrun, and the smallest fix. Owns the narration half of the demo seam. Never stretches time, freezes a frame to cover latency, or lets a line claim an outcome before it is visible. |
+| [`create-product-demo`](../../skills/create-product-demo/SKILL.md) | Plan, record and check a product demo that fits where it is going — a README, a landing hero, a social teaser or a full walkthrough. Use when asked to make a demo video, a product video, a feature announcement clip, or to check whether an existing demo is the right length, size or shape for its destination. |
 | [`pulse-digest`](../../skills/pulse-digest/SKILL.md) | Standardises how a weekly catch-up digest is collected, structured, and written to disk. Owns the source-adapter contract, local `.kai/runs/pulse/sources.md` binding config, run layout, privacy, week resolution, signal prioritization, and page output shapes. Invoked by workflow-weekly-pulse; not invoked directly. |
 
 ### Lessons & writing

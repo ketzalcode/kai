@@ -38,6 +38,15 @@ const TAKE_SCHEMA = 'kai.demo-take/v1';
 const ACTIONS = new Set(['hold', 'click', 'type', 'key', 'navigate']);
 const ANCHORS = new Set(['center', 'leading', 'trailing', 'pointer']);
 const MAX_STEPS = 200;
+// Schema-level names only. The durations, caps and byte limits behind them are
+// editorial policy and live in demo-format, which pins this list in its own
+// self-test so the two cannot drift apart.
+const PLACEMENTS_NAMES = new Set(['social-teaser', 'landing-hero', 'readme', 'walkthrough', 'deep-walkthrough']);
+// What a step is *meant* to show. Intent, which the director genuinely has while
+// writing -- deliberately not named shows, because that would assert the thing
+// was observed. Whether it was actually visible, readable and unobscured is a
+// different question and not one a screenplay can answer.
+const INTENDS = new Set(['intended-outcome', 'primary-action']);
 
 function fail(message) {
   throw new Error(message);
@@ -97,6 +106,26 @@ export function parseScreenplay(text) {
     fail(`the screenplay must declare "schema": "${SCREENPLAY_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
   }
   const title = str(raw.title, 'title');
+
+  // Where this demo is going. It changes what counts as too long, whether
+  // captions are optional, and what will simply refuse to upload. Optional,
+  // because a demo recorded to debug something has no placement.
+  //
+  // The names live here because they are schema; the profiles behind them are
+  // editorial policy and live in `demo-format`, which pins the two together in
+  // its own self-test so they cannot drift.
+  const placement = raw.placement === undefined || raw.placement === null
+    ? null
+    : (PLACEMENTS_NAMES.has(raw.placement) ? raw.placement : fail(`placement must be one of ${[...PLACEMENTS_NAMES].join(', ')}, got ${JSON.stringify(raw.placement)}`));
+
+  // An operator-declared hard limit, as opposed to an editorial default. This is
+  // the only runtime number that may fail a demo outright, because it is the
+  // only one somebody actually promised.
+  const maxSeconds = raw.max_seconds === undefined || raw.max_seconds === null
+    ? null
+    : num(raw.max_seconds, 'max_seconds', { min: 1, max: 7200 });
+
+  const captions = raw.captions === true || (typeof raw.captions === 'string' && raw.captions.trim() !== '' ? raw.captions : false);
   const capture = raw.capture ?? {};
   const region = parseRegion(capture.region ?? fail('capture.region is required: the driver has to know what rectangle of the screen it is recording'));
   const fps = num(capture.fps ?? 30, 'capture.fps', { min: 1, max: 240 });
@@ -134,6 +163,15 @@ export function parseScreenplay(text) {
     if (action === 'key') out.keys = str(step.keys, `${where}.keys`);
     if (action === 'navigate') out.url = str(step.url, `${where}.url`);
 
+    // What this step is *meant* to show. Deliberately not called `shows`: that
+    // would assert the thing was observed, and a screenplay cannot know whether
+    // the result was visible, readable, or unobscured once zoom and composition
+    // have had their say. It says what to look for, not what happened.
+    if (step.intends_to_show !== undefined && step.intends_to_show !== null) {
+      if (!INTENDS.has(step.intends_to_show)) fail(`${where}.intends_to_show must be one of ${[...INTENDS].join(', ')}, got ${JSON.stringify(step.intends_to_show)}`);
+      out.intends_to_show = step.intends_to_show;
+    } else out.intends_to_show = null;
+
     if (step.emphasis !== undefined && step.emphasis !== null) {
       const e = step.emphasis;
       const anchor = e.anchor ?? 'center';
@@ -168,6 +206,9 @@ export function parseScreenplay(text) {
   return {
     schema: SCREENPLAY_SCHEMA,
     title,
+    placement,
+    max_seconds: maxSeconds,
+    captions,
     capture: { region, fps },
     steps,
     narration: parseNarrationBeats(raw.narration, steps),

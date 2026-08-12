@@ -4,6 +4,52 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.45.0] - 2026-08-12
+
+### Added
+
+- **`create-product-demo` skill and `scripts/demo-format.mjs`** — the pipeline
+  could record, focus and narrate a demo, but nothing had an opinion about
+  whether the result was the right *shape* for where it was going. A screenplay
+  now declares a `placement` (`social-teaser`, `landing-hero`, `readme`,
+  `walkthrough`, `deep-walkthrough`) and marks its payoff steps with
+  `intends_to_show`; the checker reports on provenance, runtime, tail, arrival,
+  size, sound-off comprehension and framing.
+- **`INCOMPLETE` as a first-class verdict.** A checker that silently skips is
+  worse than no checker, because it prints a clean pass over a demo it barely
+  looked at. Every check declares the input it needs, and a run missing one is
+  `INCOMPLETE` rather than a qualified pass. `skipped` (input absent) is kept
+  distinct from `n/a` (nothing to check).
+
+### Changed
+
+- **`creative-video-director` must declare `placement` and `intends_to_show`
+  before a demo is recorded.** Neither is recoverable downstream — no tool can
+  look at footage and work out what the demo was for or where it was going.
+- **Editorial length caps can no longer fail a demo.** The "demos must be under
+  60 seconds" rule is not supported by the evidence it is usually cited from:
+  Wistia's 13M-video dataset puts the material engagement drop near five minutes,
+  and the sub-minute figure is a *completion* benchmark, which is an argument
+  about teasers. Targets and caps are now warnings that name their own
+  provenance. Only `max_seconds` — a limit somebody actually declared — fails on
+  runtime. Byte limits stay hard failures, because an over-limit upload is
+  refused rather than discouraged.
+- The word budget is documented and reported as a **planning forecast**, not a
+  validation. Word counts at an assumed pace cannot see how a voice reads code,
+  command names and URLs, and an aggregate that fits can still contain a single
+  line that cannot fit its span. `demo-narrate` remains the deciding answer.
+
+### Fixed
+
+- **The take is not the final timeline.** Found by adversarial review before
+  release: the first version of the format checker measured runtime from the take
+  manifest. On kai's own shipped demo the last measured step ends at 37.2s while
+  the video is 50.0s, so it would have reported a 50-second demo as 37 seconds
+  and passed it. Runtime, framing and size are now measured from the rendered
+  file via ffprobe, and a new tail check surfaced those 12.8 seconds of dead air
+  — which had shipped, invisible to everything.
+- README's catalog line still claimed 47 skills, stale since 0.44.0.
+
 ## [0.44.1] - 2026-08-12
 
 ### Fixed
@@ -1829,6 +1875,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.45.0]: https://github.com/RubenSaucedo/kai/compare/v0.44.1...v0.45.0
 [0.44.1]: https://github.com/RubenSaucedo/kai/compare/v0.44.0...v0.44.1
 [0.44.0]: https://github.com/RubenSaucedo/kai/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/RubenSaucedo/kai/compare/v0.42.0...v0.43.0

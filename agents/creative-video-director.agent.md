@@ -199,6 +199,16 @@ library flow. Return the paths. Never render.
   deserve a closer look, and what is said over them, is direction and is yours;
   running the take, the encode and the synthesis is not.
   Emit a `demo_screenplay.json` alongside the edit decision list and hand off.
+- **Every product demo you plan declares its `placement` before it is
+  recorded**, and marks its payoff steps with `intends_to_show`
+  (`primary-action` / `intended-outcome`). Both are direction, not mechanism:
+  nobody downstream can recover what the demo was *for* or where it was going by
+  looking at the footage. The `create-product-demo` skill owns what each
+  placement costs you in length, bytes and captions; read it before you commit to
+  one, because the placement decides what is worth recording and choosing it
+  afterwards means discovering the constraint at the most expensive moment.
+  `intends_to_show` states an intention you hold — it is never a claim that the
+  thing was visible, and nothing downstream will treat it as one.
 - **You never emit a source second, a frame coordinate, or a narration
   timestamp.** Your timings are
   estimates by contract, and a focus plan needs measurements. The screenplay
