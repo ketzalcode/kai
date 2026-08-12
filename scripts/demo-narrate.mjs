@@ -35,6 +35,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseScreenplay, parseTake } from './demo-capture.mjs';
 
 const TAKE_SCHEMA = 'kai.demo-narration-take/v1';
@@ -295,16 +296,42 @@ export function buildMixArgs(plan, { video, out }) {
 
 // -------------------------------------------------------------- lectoria seam
 
-// kai's scripts have zero runtime dependencies, which is why CI needs no install
-// step and the plugin cannot rot from a transitive advisory. `lectoria` carries
-// sixteen, including a PDF parser and a DOM implementation. So it is treated
-// exactly as ffmpeg is: an optional external tool, discovered at run time,
-// absent-tolerant, and named plainly when missing rather than silently skipped.
-export function findLectoria(env = process.env, probe = defaultProbe) {
+// kai's scripts import nothing outside Node's standard library, which is why CI
+// needs no install step. `lectoria` carries sixteen runtime dependencies,
+// including a PDF parser and a DOM implementation, and none of them belong in a
+// script that only needs a duration back. So it is treated as an external tool
+// and shelled out to, exactly as ffmpeg is.
+//
+// Where it lives is not a guess. kai pins lectoria as a git dependency, so
+// `npm install` puts it at `node_modules/.bin/lectoria` -- not on PATH, and not
+// global. `generate-audio` already resolves it that way; looking only on PATH
+// would report it absent on precisely the machines where it is correctly
+// installed, with a message accurate about what it checked and wrong about the
+// conclusion.
+export function findLectoria(env = process.env, probe = defaultProbe, exists = existsSync) {
   const explicit = env.LECTORIA_BIN;
   if (explicit) return { path: explicit, source: 'LECTORIA_BIN' };
+
+  // The plugin root is two levels up from this file (scripts/demo-narrate.mjs).
+  const root = dirname(dirname(fileURLToPath(import.meta.url)));
+  for (const name of process.platform === 'win32' ? ['lectoria.cmd', 'lectoria.ps1', 'lectoria'] : ['lectoria']) {
+    const local = join(root, 'node_modules', '.bin', name);
+    if (exists(local)) return { path: local, source: 'node_modules/.bin' };
+  }
+
   return probe('lectoria') ? { path: 'lectoria', source: 'PATH' } : null;
 }
+
+// Every place that has to say lectoria is missing says the same thing, and says
+// what was checked -- a bare "not found" sends people looking in the wrong place.
+export const LECTORIA_MISSING = [
+  'lectoria was not found, so narration cannot be synthesised. Checked LECTORIA_BIN,',
+  "this plugin's node_modules/.bin, and PATH.",
+  'Run `npm install` in the plugin (lectoria is pinned there as a git dependency), or set',
+  'LECTORIA_BIN to its executable. Note lectoria needs Node ^22.22.2 || ^24.15.0 || >=26.0.0,',
+  'so a version error can look like an install problem.',
+  'Nothing was recorded as narrated.',
+].join(' ');
 
 function defaultProbe(name) {
   const finder = process.platform === 'win32' ? 'where' : 'which';
@@ -363,7 +390,7 @@ export function synthesize(screenplay, { outDir, voice, run = runLectoria }) {
 function runLectoria({ textFile, out, voice }) {
   const found = findLectoria();
   if (!found) {
-    fail('lectoria was not found on PATH and LECTORIA_BIN is not set, so narration cannot be synthesised. Install it, or set LECTORIA_BIN to its executable. Nothing was recorded as narrated.');
+    fail(LECTORIA_MISSING);
   }
   const args = ['speak', '--text-file', textFile, '--out', out, '--json'];
   if (voice) args.push('--voice', voice);
@@ -531,9 +558,12 @@ function selfTest() {
   rejects(() => buildMixArgs(good, { video: '-evil', out: 'b' }), 'read as an option', 'a filename that would be read as an option is refused');
 
   // --- the optional-tool seam
-  ok(findLectoria({ LECTORIA_BIN: 'C:\\x\\lectoria.cmd' }, () => false).source === 'LECTORIA_BIN', 'an explicit LECTORIA_BIN wins, so an uninstalled checkout can still be used');
-  ok(findLectoria({}, () => false) === null, 'a missing lectoria is reported as absent rather than assumed present');
-  ok(findLectoria({}, () => true).path === 'lectoria', 'lectoria is found on PATH when it is there');
+  ok(findLectoria({ LECTORIA_BIN: 'C:\\x\\lectoria.cmd' }, () => false, () => true).source === 'LECTORIA_BIN', 'an explicit LECTORIA_BIN wins over everything, so an uninstalled checkout can still be used');
+  ok(findLectoria({}, () => false, () => true).source === 'node_modules/.bin', 'the pinned dependency is found where npm actually puts it, which is not on PATH');
+  ok(findLectoria({}, () => true, () => false).source === 'PATH', 'a global install still answers when the pinned dependency is not installed');
+  ok(findLectoria({}, () => false, () => false) === null, 'a genuinely missing lectoria is reported as absent rather than assumed present');
+  ok(findLectoria({}, () => true, () => true).source === 'node_modules/.bin', 'the pinned version wins over whatever is on PATH, so a demo is narrated by the version this plugin pins rather than a stray global');
+  ok(['LECTORIA_BIN', 'node_modules', 'PATH'].every((p) => LECTORIA_MISSING.includes(p)), 'the absence message names every place that was checked, because a bare "not found" sends people looking in the wrong one');
 
   const est = estimate(sp);
   ok(est.estimated === true, 'a pre-synthesis estimate is labelled an estimate everywhere it surfaces');

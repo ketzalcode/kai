@@ -90,8 +90,12 @@ A retry of a paid request nobody asked for is a charge nobody agreed to, and a
 partial take has to be visibly partial.
 
 `lectoria` is an optional external tool, discovered at run time exactly like
-`ffmpeg`. If it is absent the tool says so and narration is unavailable; it does
-not degrade into something silent that looks like it worked.
+`ffmpeg`. It is resolved in a fixed order — `LECTORIA_BIN`, then this plugin's
+`node_modules/.bin/lectoria` (where the pinned git dependency lands), then a
+global install on PATH — and the pinned copy wins over a stray global, so a demo
+is narrated by the version this plugin pins. If it is absent the tool says which
+places it looked and narration is unavailable; it does not degrade into
+something silent that looks like it worked.
 
 ### 3. Place it against the recording
 

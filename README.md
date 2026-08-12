@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.44.0` — **56 agents and 48 skills**, for the **Copilot CLI** and the
+`v0.44.1` — **56 agents and 48 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 This release makes the fleet **watchable**. kai already recorded which subagents

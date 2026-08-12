@@ -4,6 +4,44 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.44.1] - 2026-08-12
+
+### Fixed
+
+- **`demo-narrate` looked for lectoria everywhere except where it is.** It checked
+  `LECTORIA_BIN` and then PATH, but kai *pins* lectoria as a git dependency, so
+  `npm install` puts it at `node_modules/.bin/lectoria` -- not global, not on
+  PATH. On a machine where lectoria was installed exactly the way this plugin
+  installs it, narration reported the tool absent and refused to synthesise: a
+  message accurate about what it checked and wrong about the conclusion.
+  `generate-audio` had the right order all along and this now matches it, with
+  the pinned copy winning over a stray global so a demo is narrated by the
+  version this plugin pins. The absence message names all three places it looked,
+  and mentions lectoria's Node requirement, because a version error otherwise
+  looks like an install problem. (#120)
+
+- **`creative-video-director` emitted audio cues that `demo-narrate` refuses.**
+  The two halves of the narrated-demo feature disagreed about whether narration
+  has timestamps. The director produced `{event_id, timestamp, video_action,
+  audio_action}` under a rule that a cut is an audio cue at the same timestamp;
+  `demo-narrate` rejects any beat carrying a time. Handing one to the other
+  would have been rejected outright, which is why nothing routed to the skill
+  that shipped in 0.44.0.
+
+  Both sides were right for different videos, so the fix is a branch rather than
+  a translation layer -- converting one into the other would have laundered a
+  guess into something that looked measured. Cutting **existing footage**, a
+  timestamp is legitimate: the material is recorded, so the director reads its
+  timeline rather than inventing one. Directing a **live interface**, the footage
+  does not exist, and the two numbers that decide where a line goes are measured
+  by the synthesiser and the recorder respectively. The director now emits
+  narration beats for that case, routes to `demo-narrate`, and is told plainly
+  that a line which does not fit comes back to it as a script defect. (#121)
+
+- Corrected an inaccurate claim in the 0.44.0 notes: kai's *scripts* import
+  nothing outside Node's standard library, but the package does pin lectoria for
+  `generate-audio`. CI still needs no install step.
+
 ## [0.44.0] - 2026-08-12
 
 ### Added
@@ -42,7 +80,9 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
 - **`lectoria` is an optional external tool, not a dependency.** It carries
   sixteen runtime dependencies including a PDF parser and a DOM implementation;
-  kai's scripts carry none, which is why CI needs no install step. So it is
+  kai's scripts import nothing outside Node's standard library, which is why CI
+  needs no install step. (kai does *pin* lectoria in `package.json`, at a SHA, for
+  `generate-audio` — but no script imports it.) So it is
   discovered at run time exactly as ffmpeg is, and its absence is stated plainly
   rather than degrading into something silent that looks like it worked. A line
   that fails to synthesise is recorded as a failed clip and **not retried** --
@@ -1789,6 +1829,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.44.1]: https://github.com/RubenSaucedo/kai/compare/v0.44.0...v0.44.1
 [0.44.0]: https://github.com/RubenSaucedo/kai/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/RubenSaucedo/kai/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/RubenSaucedo/kai/compare/v0.41.0...v0.42.0
