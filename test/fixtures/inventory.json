@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 46
+    "skills": 47
   },
   "agents": [
     "creative-video-director",
@@ -67,6 +67,7 @@
     "content-grounding",
     "decision-brief",
     "definition-of-done",
+    "demo-capture",
     "demo-zoom",
     "design-grounding",
     "doc-review-rigor",
@@ -113,6 +114,10 @@
     {
       "name": "coding-style",
       "argument_hint": "optional file or area to apply to"
+    },
+    {
+      "name": "demo-capture",
+      "argument_hint": ""
     },
     {
       "name": "demo-zoom",

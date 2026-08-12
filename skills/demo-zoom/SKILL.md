@@ -46,9 +46,23 @@ command for the user to run wherever ffmpeg does exist.
 
 ### 1. Record the real thing
 
-Any recorder that produces a video file works. Record an actual run. Never
-stage output that the command did not produce — a demo is a claim about
-behaviour, and a fabricated frame makes it a false one.
+For a demo of a live interface, use `demo-capture`. It drives a declared
+screenplay and writes a take manifest recording when each step really happened
+and what rectangle it really acted on, so the plan below can be **compiled**
+rather than remembered:
+
+```bash
+node scripts/demo-zoom.mjs --compile demo_screenplay.json demo_take.json --out plan.json
+```
+
+That skips steps 2 and 3 entirely, and it is the better path whenever it is
+available. Hand-authoring is for footage that already exists, or a recorder that
+reports nothing — and it means someone is typing source seconds from memory,
+which is how a shot ends up framing the page *after* the click.
+
+Either way, record an actual run. Never stage output that the command did not
+produce — a demo is a claim about behaviour, and a fabricated frame makes it a
+false one.
 
 ### 2. Rule a frame to read coordinates off it
 
@@ -132,7 +146,33 @@ node scripts/demo-zoom.mjs --plan demo-plan.json
 
 One continuous pass. Audio is re-encoded to AAC when the source has any, rather
 than copied, because a stream copy fails outright when the source codec cannot
-live in the output container.
+live in the output container. A source with no audio track at all — the usual
+case for a screen recording — is given no audio options, so the render stays
+quiet about a stream that was never there.
+
+### 6. Look at it
+
+```bash
+node scripts/demo-zoom.mjs --plan demo-plan.json --review --out sheet.png
+```
+
+This builds a contact sheet: four frames per segment — the source just before the
+camera moves, the source at the segment's midpoint, the render at peak zoom, and
+the render near the end — one row per segment.
+
+Open it. Everything up to here proves the plan is *arithmetically* sound; none of
+it can see the two ways a demo actually fails:
+
+- **the moment has already passed.** The camera arrives after the click has
+  navigated, and the shot frames the next page. A real plan placed a segment at
+  8.6s for a click at 8.0s and framed an empty panel.
+- **what is changing is outside the crop.** A zoom aimed at the centre of a text
+  field, where the text starts at the left edge.
+
+Both are obvious in the sheet and invisible to any check. `--compile` prevents
+both by construction; hand-authored plans need the sheet.
+
+A render is not finished until someone has looked at it.
 
 ## Reading a failure
 
@@ -155,6 +195,10 @@ says which segment and why. The refusals worth knowing:
 - Do not present a rendered demo as evidence that a feature works. It is
   evidence of what was recorded. The claim still needs its own grounding.
 - Do not report a render as complete without the output file existing. Check it.
+- Do not report a demo as finished without having opened the contact sheet. A
+  passing `--explain` says the arithmetic is sound, not that the shot is right.
+- Do not present a contact sheet as evidence the demo is correct either. It puts
+  the frames where a person can judge them; the judgement is still theirs.
 - Do not promise the motion is perfectly smooth. The zoom curve is continuous,
   and the crop is computed on a frame twice the output size so its smallest
   step is half an output pixel rather than a whole one — but that is

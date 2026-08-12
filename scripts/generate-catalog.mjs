@@ -187,7 +187,7 @@ const CATEGORIES = [
     blurb: 'Browser-run plumbing and the claim-safety contract creative agents inherit.',
     members: [
       'web-evaluation', 'web-content-extraction', 'content-grounding', 'linkedin-content',
-      'video-direction', 'demo-zoom', 'pulse-digest',
+      'video-direction', 'demo-capture', 'demo-zoom', 'pulse-digest',
     ],
   },
   {

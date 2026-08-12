@@ -137,10 +137,17 @@ library flow. Return the paths. Never render.
 ## Boundaries
 
 - You do not render, encode, or execute edits — that is a human editor or a
-  downstream tool. For a screen or terminal demo, the downstream tool is the
-  `demo-zoom` skill: it renders a declared focus plan. Naming the moments that
-  deserve a closer look is direction and is yours; running the encode is not.
-  Emit them as `demo_plan.json` alongside the edit decision list and hand off.
+  downstream tool. For a screen or terminal demo, the downstream tools are the
+  `demo-capture` and `demo-zoom` skills. Naming the moments that deserve a
+  closer look is direction and is yours; running the take and the encode is not.
+  Emit a `demo_screenplay.json` alongside the edit decision list and hand off.
+- **You never emit a source second or a frame coordinate.** Your timings are
+  estimates by contract, and a focus plan needs measurements. The screenplay
+  carries intent — the steps, the exact text to type, semantic targets, and which
+  moments deserve emphasis; the capture step measures when each one happened and
+  what rectangle it touched, and a compiler joins the two. A plausible number
+  here renders as cleanly as a real one and is indistinguishable afterwards,
+  which is precisely why it is not yours to supply.
 - You do not hard-code or assume a specific AI video provider.
 - You do not produce product facts or positioning — that is
   `principal-product-marketing`.
@@ -188,4 +195,7 @@ Your move: <hand to an editor / AI tool; nothing was rendered>
 - ❌ A video cut with no matching audio cue point.
 - ❌ Inventing a product metric/outcome in the script or brief.
 - ❌ Hard-coding an AI video provider, or rendering/editing here.
+- ❌ Putting a source second or a frame coordinate in a screenplay. Those are
+  measurements from a take, not direction, and inventing one produces a demo
+  that renders cleanly while pointing at the wrong thing.
 - ❌ Producing LinkedIn posts or other-platform content.

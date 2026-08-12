@@ -211,6 +211,48 @@ Provider-agnostic prompts for the to-generate clips:
 
 Keep prompts compatible with common AI video tools without naming a provider.
 
+### 6. `demo_screenplay.json` — screen and terminal demos only
+
+When the video demonstrates a live interface, the scenes that show it need a
+sixth artifact, because a storyboard scene says *what the viewer sees* and a demo
+also needs *what the driver does*.
+
+```json
+{
+  "schema": "kai.demo-screenplay/v1",
+  "title": "<what the demo shows>",
+  "capture": { "region": "0,0 1256x784", "fps": 30 },
+  "steps": [
+    { "id": "st-1", "action": "hold", "seconds": 2, "note": "establish the page" },
+    { "id": "st-2", "action": "click", "target": "<semantic name>", "settle": 3.5,
+      "emphasis": { "anchor": "center", "zoom": 2.0, "lead": 1.4, "hold": 1.0,
+                    "label": "<what deserves the closer look>" } },
+    { "id": "st-3", "action": "type", "target": "<semantic name>", "clear": true,
+      "text": "<exactly what is typed>",
+      "emphasis": { "anchor": "leading", "zoom": 2.2 } }
+  ]
+}
+```
+
+- `action` is one of `hold`, `click`, `type`, `key`, `navigate`.
+- `target` is a **semantic name** ("the title input"), never a coordinate. The
+  capture step resolves it to a rectangle against a real frame.
+- `emphasis.anchor` says what must stay visible, not where to aim:
+  `center` for a button, **`leading` for anything being typed** — text starts at
+  a field's left edge, so centring the field crops the typing out of shot.
+- `lead` and `hold` are seconds of camera before and after the action. Generous
+  is fine; the compiler splits collisions.
+
+**A screenplay carries no `start`, `end`, `x`, or `y`, and the tooling refuses
+one that does.** Your timings are estimates by contract and a focus plan needs
+measurements: `demo-capture` records when each step really happened and what it
+really touched, and `demo-zoom --compile` joins the two. An invented number here
+renders exactly as cleanly as a real one, so nobody downstream can tell it was
+invented.
+
+The screenplay outlives any single recording. The take manifest and the compiled
+focus plan belong to one take and are disposable.
+
 ## Placement
 
 Resolve the workspace via `workspace-conventions`.

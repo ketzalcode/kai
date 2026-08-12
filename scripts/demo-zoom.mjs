@@ -36,9 +36,10 @@
 // argv array (never a shell string), and uses Node built-ins only.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync, existsSync, mkdtempSync, rmSync, readFileSync as read } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync, readFileSync as read } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseScreenplay, parseTake } from './demo-capture.mjs';
 
 const MAX_ZOOM = 10;
 const MAX_FPS = 240;
@@ -265,7 +266,17 @@ export function buildFilter(plan) {
   return filter;
 }
 
-export function buildArgs(plan) {
+// A screen recording usually has no audio at all. `-map 0:a?` already tolerates
+// that, but passing `-c:a`/`-b:a` anyway makes ffmpeg print a paragraph about an
+// unused AVOption that reads like a fault, on what is this tool's most common
+// path. So the audio arguments are added only when a stream is actually there.
+export function buildArgs(plan, hasAudio = true) {
+  const audio = hasAudio
+    // Re-encoded rather than copied: a stream copy fails outright when the
+    // source codec cannot live in the output container, and a demo is not
+    // worth losing to that.
+    ? ['-c:a', 'aac', '-b:a', '192k']
+    : [];
   return [
     '-y',
     '-i', plan.source,
@@ -276,11 +287,7 @@ export function buildArgs(plan) {
     '-pix_fmt', 'yuv420p',
     '-map', '0:v:0',
     '-map', '0:a?',
-    // Re-encoded rather than copied: a stream copy fails outright when the
-    // source codec cannot live in the output container, and a demo is not
-    // worth losing to that.
-    '-c:a', 'aac',
-    '-b:a', '192k',
+    ...audio,
     plan.output,
   ];
 }
@@ -317,6 +324,19 @@ export function probeDuration(source) {
   if (run.error || run.status !== 0) return null;
   const seconds = Number(String(run.stdout).trim());
   return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
+}
+
+// Whether the source carries an audio stream at all. `true` when ffprobe cannot
+// say, so an unavailable ffprobe keeps the previous behaviour rather than
+// silently dropping audio that is really there.
+export function probeHasAudio(source) {
+  const run = spawnSync('ffprobe', [
+    '-v', 'error', '-select_streams', 'a',
+    '-show_entries', 'stream=index',
+    '-of', 'default=noprint_wrappers=1:nokey=1', source,
+  ], { encoding: 'utf8' });
+  if (run.error || run.status !== 0) return true;
+  return String(run.stdout).trim().length > 0;
 }
 
 export function overrunning(plan, duration) {
@@ -358,6 +378,127 @@ export function explain(plan, duration = null) {
   return lines.join('\n');
 }
 
+// ------------------------------------------------------------------ compile
+// A screenplay says what mattered. A take says when it happened and where. Only
+// together do they make a focus plan, and neither half can be guessed from the
+// other: direction cannot know a source second, and a recorder cannot know what
+// deserved a closer look. This is the join, and it is arithmetic, not judgement.
+
+const ANCHOR_MARGIN = 0.02;
+
+// A point says where to aim; it does not say what has to stay visible. Typing
+// starts at the left edge of a field and grows right, so centring the field puts
+// the first characters outside the crop — which is exactly how a plan can be
+// valid, render cleanly, and miss the thing being demonstrated. `leading` frames
+// the near edge with a margin instead, and never pans further than centring the
+// element would, so a small target still just gets centred.
+export function anchorPoint(anchor, rect, pointer, region, zoom) {
+  const half = 1 / (2 * zoom);
+  const cx = (rect ? (rect.x0 + rect.x1) / 2 / region.w : 0.5);
+  const cy = (rect ? (rect.y0 + rect.y1) / 2 / region.h : 0.5);
+
+  if (anchor === 'pointer') {
+    if (!pointer) fail('an emphasis anchored to the pointer needs a pointer position in the take manifest');
+    return { x: pointer.x / region.w, y: pointer.y / region.h };
+  }
+  if (!rect) fail('an emphasis needs the rectangle the step acted on; the take manifest recorded none');
+  if (anchor === 'leading') return { x: Math.min(cx, rect.x0 / region.w - ANCHOR_MARGIN + half), y: cy };
+  if (anchor === 'trailing') return { x: Math.max(cx, rect.x1 / region.w + ANCHOR_MARGIN - half), y: cy };
+  return { x: cx, y: cy };
+}
+
+const MIN_SEGMENT = 0.5;
+
+export function compile(screenplay, take, options = {}) {
+  const notes = [];
+  const byId = new Map(take.steps.map((step) => [step.id, step]));
+  const region = take.capture.region;
+
+  let segments = [];
+  for (const step of screenplay.steps) {
+    if (!step.emphasis) continue;
+    const measured = byId.get(step.id);
+    if (!measured) {
+      notes.push(`${step.id}: marked for emphasis but the take never recorded it; skipped`);
+      continue;
+    }
+    if (measured.status === 'failed') {
+      notes.push(`${step.id}: the take recorded this step as failed; skipped rather than zooming into a mistake`);
+      continue;
+    }
+    const e = step.emphasis;
+    let point;
+    try {
+      point = anchorPoint(e.anchor, measured.rect, measured.pointer, region, e.zoom);
+    } catch (error) {
+      notes.push(`${step.id}: ${error.message}; skipped`);
+      continue;
+    }
+    segments.push({
+      id: step.id,
+      start: Math.max(0, measured.start - e.lead),
+      end: measured.end + e.hold,
+      x: Math.min(1, Math.max(0, point.x)),
+      y: Math.min(1, Math.max(0, point.y)),
+      zoom: e.zoom,
+      ease: e.ease,
+      label: e.label,
+    });
+  }
+
+  segments.sort((a, b) => a.start - b.start);
+
+  // The camera cannot be in two places at once, and `demo-zoom` refuses a plan
+  // that asks it to be. Lead-in and hold are generous by design, so neighbours
+  // collide routinely; the fair split is the midpoint of the overlap.
+  for (let i = 1; i < segments.length; i += 1) {
+    const previous = segments[i - 1];
+    const current = segments[i];
+    if (current.start < previous.end) {
+      const midpoint = (current.start + previous.end) / 2;
+      notes.push(`${previous.id} and ${current.id} overlapped by ${(previous.end - current.start).toFixed(2)}s; split at ${midpoint.toFixed(2)}s`);
+      previous.end = midpoint;
+      current.start = midpoint;
+    }
+  }
+
+  const kept = [];
+  for (const segment of segments) {
+    const duration = segment.end - segment.start;
+    if (duration < MIN_SEGMENT) {
+      notes.push(`${segment.id}: only ${duration.toFixed(2)}s of clear time, too short to zoom into; skipped`);
+      continue;
+    }
+    // The ease has to fit twice or the zoom never reaches its factor. Trimming
+    // it is better than refusing the plan, but it is said out loud.
+    const room = duration / 2 - 0.01;
+    if (segment.ease > room) {
+      notes.push(`${segment.id}: ease trimmed from ${segment.ease}s to ${room.toFixed(2)}s to fit a ${duration.toFixed(2)}s segment`);
+      segment.ease = Math.max(0, Number(room.toFixed(3)));
+    }
+    kept.push(segment);
+  }
+
+  const round = (n) => Number(n.toFixed(3));
+  return {
+    plan: {
+      // Stamped so a plan cannot silently be rendered against a different
+      // recording than the one whose clock produced its timings.
+      compiled_from: { screenplay: screenplay.title, take_id: take.take_id, recording: take.recording },
+      source: take.recording,
+      output: options.output ?? 'demo-focused.mp4',
+      size: options.size ?? `${region.w}x${region.h}`,
+      fps: take.capture.fps,
+      focus: kept.map((s) => ({
+        start: round(s.start), end: round(s.end),
+        x: round(s.x), y: round(s.y),
+        zoom: s.zoom, ease: s.ease, label: s.label,
+      })),
+    },
+    notes,
+  };
+}
+
 const EXAMPLE = `{
   "source": "demo.mp4",
   "output": "demo-focused.mp4",
@@ -390,7 +531,7 @@ function render(plan) {
   }
   let args;
   try {
-    args = buildArgs(plan);
+    args = buildArgs(plan, probeHasAudio(plan.source));
   } catch (error) {
     console.error(`demo-zoom: ${error.message}`);
     return 1;
@@ -570,12 +711,92 @@ export function selfTest() {
   ok(args[args.length - 1] === 'b.mp4', 'the output path is the final argument');
   ok(args.includes('0:a?'), 'audio is carried through when present and not demanded when absent');
   ok(args.includes('aac'), 'audio is re-encoded rather than copied, which would fail on a container the codec cannot enter');
+  const silent = buildArgs(plan, false);
+  ok(!silent.includes('aac') && !silent.includes('-b:a'),
+    'a source with no audio stream is given no audio encoder options, which would otherwise print an unused-AVOption warning');
+  ok(silent.includes('0:a?'), 'a silent source still tolerates audio appearing, rather than refusing it');
+
+  // --- compile: the join between declared intent and measured fact ----------
+  const screenplay = parseScreenplay(JSON.stringify({
+    schema: 'kai.demo-screenplay/v1',
+    title: 'issue demo',
+    capture: { region: '0,0 1256x784', fps: 30 },
+    steps: [
+      { id: 'st-1', action: 'click', target: 'new-issue', emphasis: { anchor: 'center', zoom: 2, lead: 1, hold: 0.5, ease: 0.4, label: 'the button' } },
+      { id: 'st-2', action: 'type', target: 'title-input', text: 'hello', emphasis: { anchor: 'leading', zoom: 2.2, lead: 0.8, hold: 1, ease: 0.4, label: 'the title being typed' } },
+    ],
+  }));
+  const take = parseTake(JSON.stringify({
+    schema: 'kai.demo-take/v1', take_id: 'T1', recording: 'raw.mp4',
+    capture: { region: [0, 0, 1256, 784], fps: 30 },
+    steps: [
+      { id: 'st-1', start: 6.4, end: 6.7, rect: [1090, 190, 1230, 222] },
+      { id: 'st-2', start: 12.9, end: 15.2, rect: [78, 254, 940, 282] },
+    ],
+  }));
+  const compiled = compile(screenplay, take, { output: 'focused.mp4' });
+  ok(compiled.plan.focus.length === 2, 'a screenplay and a take compile into one segment per emphasised step');
+  ok(compiled.plan.source === 'raw.mp4', 'the compiled plan renders the recording the take actually produced');
+  ok(compiled.plan.compiled_from.take_id === 'T1', 'a compiled plan is stamped with the take it came from, so it cannot silently render against another recording');
+  ok(compiled.plan.fps === 30 && compiled.plan.size === '1256x784', 'the output frame and rate come from the take, not from a guess');
+
+  const [button, typing] = compiled.plan.focus;
+  ok(Math.abs(button.start - 5.4) < 0.001 && Math.abs(button.end - 7.2) < 0.001,
+    'a segment starts a declared lead before the measured action and holds after it');
+
+  // The failure that motivated all of this: centring the title field put the
+  // text being typed outside the crop. `leading` has to frame the near edge.
+  const half = 1 / (2 * 2.2);
+  const textStart = 78 / 1256;
+  ok(typing.x - half <= textStart, `the leading anchor keeps the left edge of the field in frame (visible from ${(typing.x - half).toFixed(3)}, field starts ${textStart.toFixed(3)})`);
+  ok(typing.x < (78 + 940) / 2 / 1256, 'the leading anchor sits left of the field centre, which is where the text actually is');
+  ok(Math.abs(button.x - (1090 + 1230) / 2 / 1256) < 0.001, 'a click is centred on the rectangle it clicked');
+
+  // The other failure: a hand-typed segment framed the page after it navigated.
+  ok(button.end < typing.start, 'compiled segments never overlap, so the camera is never asked to be in two places');
+  parsePlan(JSON.stringify(compiled.plan));
+  ok(true, 'a compiled plan passes the same validation as a hand-written one');
+
+  const collide = compile(screenplay, parseTake(JSON.stringify({
+    schema: 'kai.demo-take/v1', take_id: 'T2', recording: 'raw.mp4',
+    capture: { region: [0, 0, 1256, 784], fps: 30 },
+    steps: [
+      { id: 'st-1', start: 6.4, end: 6.7, rect: [1090, 190, 1230, 222] },
+      { id: 'st-2', start: 7.0, end: 9.0, rect: [78, 254, 940, 282] },
+    ],
+  })));
+  ok(collide.notes.some((n) => n.includes('overlapped')), 'overlapping lead-in and hold are split rather than refused, and the split is reported');
+  parsePlan(JSON.stringify(collide.plan));
+  ok(true, 'the split result is still renderable');
+
+  const failed = compile(screenplay, parseTake(JSON.stringify({
+    schema: 'kai.demo-take/v1', take_id: 'T3', recording: 'raw.mp4',
+    capture: { region: [0, 0, 1256, 784], fps: 30 },
+    steps: [{ id: 'st-1', start: 6.4, end: 6.7, rect: [1090, 190, 1230, 222], status: 'failed' }],
+  })));
+  ok(failed.plan.focus.length === 0 && failed.notes.some((n) => n.includes('failed')),
+    'a step the take recorded as failed is not zoomed into, because magnifying a mistake is worse than not zooming');
+
+  const unrecorded = compile(screenplay, parseTake(JSON.stringify({
+    schema: 'kai.demo-take/v1', take_id: 'T4', recording: 'raw.mp4',
+    capture: { region: [0, 0, 1256, 784], fps: 30 },
+    steps: [{ id: 'st-1', start: 1, end: 2, rect: [10, 10, 20, 20] }],
+  })));
+  ok(unrecorded.notes.some((n) => n.includes('st-2')), 'an emphasised step the take never recorded is named, not silently dropped');
+
+  // --- review ---------------------------------------------------------------
+  const samples = reviewSampleTimes({ start: 4, end: 8 });
+  ok(samples.length === 4, 'a review row samples four frames');
+  ok(samples[0].at < 4 && samples[0].of === 'source', 'the first cell shows the source just before the camera moves');
+  ok(samples[1].at === 6 && samples[2].at === 6,
+    'the source and the render are sampled at the same instant, so the pair shows what the zoom did to it');
+  ok(reviewSampleTimes({ start: 0, end: 1 })[0].at === 0, 'a segment at the very start does not sample a negative time');
+  ok(reviewLegend(plan).includes('not evidence'), 'the legend refuses to let a contact sheet stand in for grounding');
 
   const spaced = parsePlan(JSON.stringify({
     source: 'my clips/a b.mp4', output: 'out dir/c.mp4',
     focus: [{ start: 0, end: 3, x: 0.5, y: 0.5 }],
-  }));
-  const printed = printable(spaced);
+  }));  const printed = printable(spaced);
   ok(printed.includes('"my clips/a b.mp4"'), 'a path with a space survives --print as one argument');
   ok(/-vf "/.test(printed), 'the filter is quoted in --print, so a shell cannot eat its parentheses');
   ok(quoteArg('simple.mp4') === 'simple.mp4', 'an ordinary path is not needlessly quoted');
@@ -770,7 +991,155 @@ function verify() {
   }
 }
 
+// ------------------------------------------------------------------- review
+// Validation proves the arithmetic; it cannot tell you the shot is right. Both
+// ways a demo really fails are editorial: the moment has already passed by the
+// time the camera arrives, or the thing that is changing sits inside the element
+// but outside the crop. Both are obvious in four frames side by side, and
+// invisible in any number that a validator could check. So this builds the
+// contact sheet and leaves the judgement to a person.
+
+export function reviewSampleTimes(segment) {
+  const mid = (segment.start + segment.end) / 2;
+  return [
+    { at: Math.max(0, segment.start - 0.3), of: 'source', what: 'before' },
+    { at: mid, of: 'source', what: 'at' },
+    { at: mid, of: 'render', what: 'peak' },
+    { at: Math.max(segment.start, segment.end - 0.2), of: 'render', what: 'end' },
+  ];
+}
+
+const REVIEW_CELL = { w: 480, h: 300 };
+
+export function reviewLegend(plan) {
+  const lines = ['contact sheet: one row per focus segment', ''];
+  lines.push('  row  time            zoom   source before | source at | rendered peak | rendered end');
+  plan.focus.forEach((segment, index) => {
+    lines.push(`  ${String(index + 1).padStart(3)}  ${segment.start.toFixed(2)}-${segment.end.toFixed(2)}s`.padEnd(24)
+      + `${`${segment.zoom}x`.padStart(5)}   ${segment.label}`);
+  });
+  lines.push('');
+  lines.push('Look for two things a validator cannot see: whether the moment has already');
+  lines.push('passed by the time the camera arrives, and whether what is changing is');
+  lines.push('inside the crop. This sheet is not evidence the demo is correct.');
+  return lines.join('\n');
+}
+
+function review(plan, out) {
+  if (plan.focus.length === 0) {
+    console.error('demo-zoom: this plan has no focus segments, so there is nothing to review');
+    return 1;
+  }
+  for (const path of [plan.source, plan.output]) {
+    if (!existsSync(path)) {
+      console.error(`demo-zoom: --review compares the recording with the render, and ${path} does not exist yet. Render first.`);
+      return 1;
+    }
+  }
+  if (!findFfmpeg()) {
+    console.error('demo-zoom: ffmpeg is not on PATH.');
+    return 1;
+  }
+
+  const dir = mkdtempSync(join(tmpdir(), 'demo-zoom-review-'));
+  try {
+    let n = 0;
+    for (const segment of plan.focus) {
+      for (const sample of reviewSampleTimes(segment)) {
+        const cell = join(dir, `cell${String(n).padStart(3, '0')}.png`);
+        const from = sample.of === 'source' ? plan.source : plan.output;
+        const run = spawnSync('ffmpeg', [
+          '-y', '-loglevel', 'error', '-ss', String(sample.at), '-i', from, '-frames:v', '1',
+          '-vf', `scale=${REVIEW_CELL.w}:${REVIEW_CELL.h}:force_original_aspect_ratio=decrease,`
+            + `pad=${REVIEW_CELL.w}:${REVIEW_CELL.h}:(ow-iw)/2:(oh-ih)/2:color=0x202020,setsar=1`,
+          cell,
+        ], { encoding: 'utf8' });
+        if (run.error || run.status !== 0 || !existsSync(cell)) {
+          console.error(`demo-zoom: could not sample ${from} at ${sample.at.toFixed(2)}s`);
+          return 1;
+        }
+        n += 1;
+      }
+    }
+
+    const tile = spawnSync('ffmpeg', [
+      '-y', '-loglevel', 'error',
+      '-f', 'image2', '-i', join(dir, 'cell%03d.png'),
+      '-vf', `tile=4x${plan.focus.length}:margin=8:padding=4:color=0x101010`,
+      '-frames:v', '1', out,
+    ], { encoding: 'utf8' });
+    if (tile.error || tile.status !== 0 || !existsSync(out)) {
+      console.error(`demo-zoom: could not build the contact sheet${tile.stderr ? `: ${tile.stderr.trim()}` : ''}`);
+      return 1;
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+
+  console.log(reviewLegend(plan));
+  console.log('');
+  console.log(`wrote ${out}`);
+  console.log('Open it. A render is not finished until someone has looked at it.');
+  return 0;
+}
+
 // --------------------------------------------------------------------- cli
+
+function compileCommand(argv) {
+  const i = argv.indexOf('--compile');
+  const screenplayPath = argv[i + 1];
+  const takePath = argv[i + 2];
+  if (!screenplayPath || !takePath || screenplayPath.startsWith('-') || takePath.startsWith('-')) {
+    console.error('demo-zoom: --compile needs a screenplay and a take manifest: --compile demo_screenplay.json demo_take.json');
+    return 1;
+  }
+  for (const path of [screenplayPath, takePath]) {
+    if (!existsSync(path)) {
+      console.error(`demo-zoom: not found: ${path}`);
+      return 1;
+    }
+  }
+
+  const outIndex = argv.indexOf('--out');
+  const out = outIndex === -1 ? null : argv[outIndex + 1];
+  const outputIndex = argv.indexOf('--output');
+
+  let result;
+  try {
+    const screenplay = parseScreenplay(readFileSync(screenplayPath, 'utf8'));
+    const take = parseTake(readFileSync(takePath, 'utf8'));
+    result = compile(screenplay, take, {
+      output: outputIndex === -1 ? undefined : argv[outputIndex + 1],
+    });
+  } catch (error) {
+    console.error(`demo-zoom: ${error.message}`);
+    return 1;
+  }
+
+  const text = `${JSON.stringify(result.plan, null, 2)}\n`;
+
+  // Compiled or hand-written, a plan goes through the same front door. A
+  // compiler that emitted something the renderer would reject would only move
+  // the failure later.
+  let plan;
+  try {
+    plan = parsePlan(text);
+  } catch (error) {
+    console.error(`demo-zoom: the compiled plan is not renderable: ${error.message}`);
+    return 1;
+  }
+
+  for (const note of result.notes) console.error(`  note: ${note}`);
+  if (result.notes.length > 0) console.error('');
+
+  if (out) {
+    writeFileSync(out, text, 'utf8');
+    console.error(`wrote ${out}  (${plan.focus.length} focus segment(s) from take ${result.plan.compiled_from.take_id})`);
+  } else {
+    process.stdout.write(text);
+  }
+  return 0;
+}
 
 function usage() {
   console.log(`demo-zoom -- render a focused demo from a declared focus plan
@@ -778,10 +1147,19 @@ function usage() {
   node demo-zoom.mjs --plan <file>            render it (needs ffmpeg)
   node demo-zoom.mjs --plan <file> --print    print the ffmpeg command instead
   node demo-zoom.mjs --plan <file> --explain  describe the render in plain numbers
+  node demo-zoom.mjs --plan <file> --review [--out sheet.png]
+                                              contact sheet, four frames per
+                                              segment, so a person can see
+                                              whether the shot is right
   node demo-zoom.mjs --grid <video> --at 3.5 [--plan <file> | --size 1920x1080]
                                               lift out that frame, ruled into
                                               tenths, fitted the way the render
                                               will fit it
+  node demo-zoom.mjs --compile <screenplay> <take> [--out plan.json]
+                                              join a screenplay's intent to a
+                                              take's measured timings and
+                                              rectangles, so no source second is
+                                              ever typed by hand
   node demo-zoom.mjs --example                print a starter plan
   node demo-zoom.mjs --self-test              check the arithmetic, no ffmpeg needed
   node demo-zoom.mjs --verify                 prove a real render lands on target
@@ -798,6 +1176,7 @@ async function main(argv) {
     return 0;
   }
   if (argv.includes('--verify')) return verify();
+  if (argv.includes('--compile')) return compileCommand(argv);
   if (argv.includes('--grid')) return grid(argv);
   if (argv.includes('--example')) {
     process.stdout.write(EXAMPLE);
@@ -830,6 +1209,10 @@ async function main(argv) {
   if (argv.includes('--explain')) {
     console.log(explain(plan, existsSync(plan.source) ? probeDuration(plan.source) : null));
     return 0;
+  }
+  if (argv.includes('--review')) {
+    const at = argv.indexOf('--out');
+    return review(plan, at === -1 || !argv[at + 1] ? 'demo-review.png' : argv[at + 1]);
   }
   if (argv.includes('--print')) {
     try {

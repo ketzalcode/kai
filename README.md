@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.41.0` — **56 agents and 46 skills**, for the **Copilot CLI** and the
+`v0.42.0` — **56 agents and 47 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 This release makes the fleet **watchable**. kai already recorded which subagents
@@ -117,7 +117,7 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-56 agents and 46 skills, grouped by the judgment they own — direction,
+56 agents and 47 skills, grouped by the judgment they own — direction,
 engineering, delivery, trust & reliability, product, customer operations,
 revenue, growth & analytics, AI research, learning, exploration, content, and
 personal.

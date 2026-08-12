@@ -4,6 +4,72 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.42.0] - 2026-08-12
+
+Recording a real demo with 0.41.0 exposed the seam it left open: `demo-zoom`
+renders a plan, but nothing owned producing one. The plan was hand-typed from
+memory, and both ways that failed are now fixed by construction.
+
+### Added
+
+- `demo-capture`, the capture half of the demo seam (#108). It drives a declared
+  screenplay and writes a take manifest recording, per step, the **measured**
+  source second it happened and the rectangle it acted on. The recording clock is
+  pinned against ffmpeg's own `-progress` output rather than assumed, and
+  preflight refuses a take before spending it: a uniformly black frame (how
+  `gdigrab` captures a GPU-composited browser while appearing to work), an odd
+  capture dimension h264 cannot encode, or an unresolved target.
+- `demo_screenplay.json` (`kai.demo-screenplay/v1`) as a sixth `video-direction`
+  artifact: steps, the exact text to type, semantic targets, and which moments
+  deserve emphasis. It carries no source seconds or frame coordinates, and the
+  tooling refuses one that does.
+- `demo-zoom --compile`, joining a screenplay's intent to a take's measurements
+  (#109). It resolves `emphasis.anchor` against the recorded rectangle, splits
+  overlapping lead-in and hold at the midpoint, trims an ease that no longer
+  fits, skips a step the take recorded as failed, and stamps the plan with its
+  `take_id` so it cannot silently render against another recording.
+- `demo-zoom --review`, a contact sheet of four frames per segment (#111):
+  source before, source at, render at peak zoom, render near the end. It catches
+  the two editorial failures no validator can see. It found one on its first run
+  against a real plan.
+
+### Fixed
+
+- `demo-zoom` no longer passes `-c:a`/`-b:a` when the source has no audio
+  stream (#110). Since a screen recording usually has none, the most common path
+  was printing an unused-AVOption paragraph that reads like a fault.
+- `creative-video-director` was told to emit a `demo_plan.json` that nothing
+  defined, validated, or consumed, and that it could not honestly produce: its
+  timings are estimates by contract while a focus plan needs measurements (#107).
+  It now hands off a screenplay, and is explicitly forbidden from emitting a
+  source second or a frame coordinate.
+- Four defects found by running the emitted driver for real, each of which had
+  passed a self-test that only inspected the generated text:
+  - The preflight brightness gate scraped `-match` over an **array** of ffmpeg
+    output lines. PowerShell's `-match` filters an array instead of populating
+    `$matches`, so the reading was always zero and every take aborted claiming a
+    black frame. It now joins the output first, and distinguishes "the frame is
+    black" from "the statistic could not be read" rather than reporting both as
+    the former.
+  - `metadata=print` logs at info level, which `-v error` discarded. The
+    statistic is now written to a file, whose name is relative and free of `:`
+    and `\` because ffmpeg's filter parser treats both as syntax.
+  - A `type` step clicked its field as soon as the previous step's authored
+    `settle` elapsed. When the form had not finished rendering, the click missed
+    the input, `Ctrl+A` selected the whole document, and the opening characters
+    of the typed text were lost — producing a plausible-looking take with a
+    truncated title. How long an app takes to paint is not something a
+    screenplay can know, so the driver now **measures** it: successive captures
+    are compared until they are near-identical. A screen that never settles is
+    recorded as `unsettled` in the manifest instead of being passed off as clean.
+  - The estimated take duration ignored that measured wait, so the recorder
+    could stop before the last step happened. It is now budgeted.
+
+### Changed
+
+- `demo-zoom`'s workflow leads with compiling from a take; hand-authoring is
+  documented as the fallback for footage that already exists, and as the path
+  where someone is typing seconds from memory.
 ## [0.41.0] - 2026-08-11
 
 ### Added
@@ -1628,6 +1694,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.42.0]: https://github.com/RubenSaucedo/kai/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/RubenSaucedo/kai/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/RubenSaucedo/kai/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/RubenSaucedo/kai/compare/v0.38.0...v0.39.0
