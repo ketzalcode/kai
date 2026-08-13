@@ -150,6 +150,9 @@ export function parseRecords(text, forcedSrc = null) {
       t: Number.isFinite(ts) && ts >= 0 && ts < 1e12 ? Math.floor(ts) : 0,
       nextBy: Number.isFinite(nextBy) && nextBy > 0 && nextBy < 1e12 ? Math.floor(nextBy) : 0,
       tldr: safeText(rec.tldr || rec.note, 96),
+      // Why no summary was stored. Carried through so the feed can say
+      // "withheld" instead of showing the same blank as "never asked for one".
+      withheld: rec.tldr_withheld === 'path' || rec.tldr_withheld === 'no-prose' ? rec.tldr_withheld : '',
       invalid: !valid,
     });
   }
@@ -639,7 +642,12 @@ export function feedLine(rec) {
   const tier = rec.src === 'declared' ? '~' : ' ';
   const role = safeText(rec.role, 60) || INVALID_ROLE;
   const tldr = safeText(rec.tldr, 96);
-  return `${when} ${tier}${mark} ${role}${tldr ? `  ${tldr}` : ''}`;
+  // A refusal is reported rather than shown as an absent summary. The reason is
+  // shape-only: it says why nothing was stored, never what was in the text.
+  const withheld = !tldr && rec.withheld
+    ? (rec.withheld === 'path' ? '  [summary withheld: named a path]' : '  [no summary: no prose in the reply]')
+    : '';
+  return `${when} ${tier}${mark} ${role}${tldr ? `  ${tldr}` : withheld}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1072,6 +1080,30 @@ function selfTest() {
   // --- feed ---------------------------------------------------------------
   const line = feedLine({ t: 1786488059, event: 'stop', role: 'explore', tldr: 'Did the thing.' });
   ok(line.includes('explore') && line.includes('Did the thing.'), 'a feed line carries the role and any summary');
+  // A withheld summary is reported, not shown as the same blank an operator
+  // gets when they never opted in (#103).
+  const held = parseRecords(JSON.stringify({
+    t: 1786488059, event: 'stop', role: 'explore', tldr: null, tldr_withheld: 'path',
+  }));
+  ok(feedLine(held[0]).includes('summary withheld: named a path'),
+    'the feed says a summary was withheld rather than showing nothing');
+  const noProseLine = parseRecords(JSON.stringify({
+    t: 1786488059, event: 'stop', role: 'explore', tldr: null, tldr_withheld: 'no-prose',
+  }));
+  ok(feedLine(noProseLine[0]).includes('no prose in the reply'),
+    'a reply with no prose is distinguished from a refusal');
+  const plain = parseRecords(JSON.stringify({ t: 1786488059, event: 'stop', role: 'explore' }));
+  ok(!/withheld|no summary/.test(feedLine(plain[0])),
+    'a record with no marker claims nothing about why a summary is absent');
+  const bogus = parseRecords(JSON.stringify({
+    t: 1, event: 'stop', role: 'explore', tldr_withheld: 'C:\\Users\\someone\\leak.md',
+  }));
+  // The render never interpolates the reason, so this asserts the parser's own
+  // allowlist rather than the render -- otherwise the check passes even with the
+  // allowlist removed, which is exactly how a vacuous test hides a hole.
+  ok(bogus[0].withheld === '', 'a reason outside the allowlist is dropped at the parser, not carried');
+  ok(!feedLine(bogus[0]).includes('someone') && !/withheld|no summary/.test(feedLine(bogus[0])),
+    'a hostile reason renders as no claim at all, rather than as a refusal that never happened');
   ok(feedLine({ t: 0, event: 'start', role: 'explore' }).includes('>>'), 'a start is marked distinctly from a stop');
 
   // --- the sequence view ---------------------------------------------------

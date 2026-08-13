@@ -4,6 +4,31 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.49.2] - 2026-08-13
+
+### Fixed
+
+- **A withheld summary no longer looks like a broken feature.** `--with-summary`
+  refuses a path-shaped line, which is the common shape of a subagent's opening
+  sentence — agents answer questions about a codebase. The result was a silent
+  `null` a large fraction of the time, indistinguishable from never having
+  opted in. Records now carry `tldr_withheld` and the feed renders
+  `[summary withheld: named a path]` or `[no summary: no prose in the reply]`.
+  The reason records the *shape* of what was refused, never the text, so it
+  leaks nothing and the path check is not relaxed. (#103)
+
+  The three cases an operator must tell apart — never opted in, no usable
+  prose, and refused for privacy — are now distinct in the log and on screen.
+
+  A `tldr_withheld` value outside the allowlist is dropped at the parser, so a
+  hostile log cannot render text through the marker.
+
+### Changed
+
+- `tldrFrom` is now a thin wrapper over `tldrDetail`, which returns the reason
+  alongside the line. The line walk already continued past a refusal — #103
+  reported otherwise, and that part of the issue was mistaken; it is now
+  covered by a test so it stays true.
 ## [0.49.1] - 2026-08-13
 
 ### Fixed
@@ -2174,6 +2199,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.49.2]: https://github.com/RubenSaucedo/kai/compare/v0.49.1...v0.49.2
 [0.49.1]: https://github.com/RubenSaucedo/kai/compare/v0.49.0...v0.49.1
 [0.49.0]: https://github.com/RubenSaucedo/kai/compare/v0.48.1...v0.49.0
 [0.48.1]: https://github.com/RubenSaucedo/kai/compare/v0.48.0...v0.48.1

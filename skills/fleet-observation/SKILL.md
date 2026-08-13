@@ -261,3 +261,19 @@ verbatim.
 
 Do not enable it silently. Offer it, state that limit plainly, and leave it off
 by default. Participation alone answers the question this skill exists for.
+
+**A missing summary is not a broken feature.** Agents answer questions about a
+codebase, so their opening sentence very often names a file or a directory, and
+a path-shaped line is refused. When that happens the record carries
+`tldr_withheld` and the feed says so:
+
+- `[summary withheld: named a path]` — a usable sentence existed and was
+  refused. The refusal is working as designed.
+- `[no summary: no prose in the reply]` — the reply offered no prose line at
+  all, only headings, bullets, or fences.
+- No marker — summaries were never opted into, so nothing was attempted.
+
+Tell those three apart before reporting the feature as faulty. The reason
+records the *shape* of what was refused and never the text, so it leaks
+nothing. The walk also continues past a refusal, so a clean sentence following
+a path-shaped one is still stored.

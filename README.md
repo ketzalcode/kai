@@ -31,19 +31,23 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.49.1` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.49.2` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release fixes a defect that had disabled every script-running contract kai
-has, on Windows, silently. 54 of 56 agents declared the `bash` tool. The host
-does not map that per-OS — it drops the name and hands the agent a toolset with
-no way to run anything, without complaining. Agents and skills now declare both
-`bash` and `shell`, the only portable form, with a CI rule keeping the pair
-together.
+Two fixes, both found by actually running the thing.
 
-That is why nothing had ever been observed writing `.kai/activity.jsonl`. A
-live run now does, and `--sequence` renders it — the first end-to-end proof
-of the declared tier.
+A live agent run showed that 54 of 56 agents had **no shell on Windows**: they
+declared the `bash` tool, and the host drops that name silently rather than
+mapping it per-OS. Agents and skills now declare both `bash` and `shell`,
+with a CI rule keeping the pair together. That had disabled every
+script-running contract on the platform, which is why nothing had ever written
+`.kai/activity.jsonl`.
+
+Watching the observer showed the second: an opted-in summary was withheld
+whenever the reply's first sentence named a path — the common case, since
+agents answer questions about codebases — and a withheld summary looked exactly
+like a feature that never worked. The refusal now says so, recording the shape
+of what it refused and never the text.
 
 `--sequence`, added in `v0.49.0`, is the view `fleet-observation` was
 named for: every run in the retained history, in the order it began, each

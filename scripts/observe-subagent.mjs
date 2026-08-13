@@ -116,16 +116,34 @@ export function wantsSummary(root) {
 // separate open question (see issue #93); when one exists it should win, and be
 // labeled as declared.
 // ---------------------------------------------------------------------------
-export function tldrFrom(response) {
-  if (typeof response !== 'string') return null;
+// A refusal and an absence look identical in the log unless the refusal says so.
+// `safeNote` rejects exactly one thing -- path-shaped prose -- and that is the
+// common shape of a subagent's opening sentence, because agents answer questions
+// about a codebase. A user who opted into summaries and got nothing had no way
+// to tell "withheld for your privacy" from "the feature is broken", and the
+// second reading is the one people reached (#103).
+//
+// So the reason is recorded, never the text. `path` means a usable sentence
+// existed and was refused; `no-prose` means the response offered no prose line
+// at all. Neither reveals anything about the response beyond its shape.
+export function tldrDetail(response) {
+  if (typeof response !== 'string') return { tldr: null, withheld: 'no-prose' };
+  let refused = false;
   for (const line of response.split(/\r?\n/)) {
     const t = line.trim();
     // Skip structure, fences, and headings -- they describe shape, not outcome.
     if (!t || /^[#>*\-=_`|]/.test(t)) continue;
     const safe = safeNote(t);
-    if (safe) return safe;
+    // The walk continues past a refusal: a clean sentence often follows the one
+    // that named a path, and stopping at the first would throw it away.
+    if (safe) return { tldr: safe, withheld: null };
+    refused = true;
   }
-  return null;
+  return { tldr: null, withheld: refused ? 'path' : 'no-prose' };
+}
+
+export function tldrFrom(response) {
+  return tldrDetail(response).tldr;
 }
 
 // ---------------------------------------------------------------------------
@@ -142,6 +160,7 @@ export function buildObserved(event, payload, now = Date.now(), { summary = fals
   const role = typeof payload.agentName === 'string' ? payload.agentName.trim() : '';
   if (!role || !NAME_RE.test(role)) return { ok: false, reason: 'payload has no usable agentName' };
 
+  const derived = summary && event === 'stop' ? tldrDetail(payload.response) : { tldr: null, withheld: null };
   const rec = {
     t: Math.floor(now / 1000),
     src: 'observed',
@@ -155,8 +174,11 @@ export function buildObserved(event, payload, now = Date.now(), { summary = fals
     // subagents of the same role run concurrently. The viewer must label that
     // ambiguity rather than resolve it by guessing.
     agent: typeof payload.agentId === 'string' && payload.agentId ? digest(payload.agentId).slice(0, 12) : null,
-    tldr: summary && event === 'stop' ? tldrFrom(payload.response) : null,
+    tldr: derived.tldr,
   };
+  // Only present when a summary was wanted and none could be stored. Absent
+  // otherwise, so "no opt-in" stays visibly different from "opted in, withheld".
+  if (derived.withheld) rec.tldr_withheld = derived.withheld;
 
   // Defense in depth. `safeNote` already rejects path-shaped text, but this is
   // the boundary that matters most in a public repository, so it is asserted on
@@ -255,6 +277,31 @@ function selfTest() {
     response: 'C:\\Users\\someone\\secret\\report.md is where I wrote it',
   }), Date.now(), S);
   ok(leaky.ok && leaky.record.tldr === null, 'a response whose only line is an absolute path yields no tldr');
+  ok(leaky.ok && leaky.record.tldr_withheld === 'path',
+    'a refusal says so, because a silent null reads as a broken feature rather than a privacy choice');
+  ok(leaky.ok && !JSON.stringify(leaky.record).includes('secret'),
+    'the reason for the refusal never carries the text that caused it');
+
+  // The three cases the operator must be able to tell apart (#103).
+  const noProse = buildObserved('stop', payload({ response: '## Heading\n\n- bullet' }), Date.now(), S);
+  ok(noProse.ok && noProse.record.tldr_withheld === 'no-prose',
+    'a reply with no prose at all is distinguished from one that was refused');
+  const clean = buildObserved('stop', payload({ response: 'All good.' }), Date.now(), S);
+  ok(clean.ok && clean.record.tldr_withheld === undefined,
+    'a stored summary carries no withheld marker');
+  const optedOut = buildObserved('stop', payload({ response: '/home/me/x.md is the file' }));
+  ok(optedOut.ok && optedOut.record.tldr_withheld === undefined,
+    'without the summary opt-in nothing is withheld, because nothing was attempted');
+
+  // The walk continues past a refusal: a clean sentence often follows the one
+  // that named a path, and stopping at the first would throw it away.
+  const recovered = buildObserved('stop', payload({
+    response: 'I wrote it to /home/someone/notes.md for you.\nThe review finished cleanly.',
+  }), Date.now(), S);
+  ok(recovered.ok && recovered.record.tldr === 'The review finished cleanly.',
+    'a path-shaped first line does not discard a clean sentence that follows it');
+  ok(recovered.ok && recovered.record.tldr_withheld === undefined,
+    'a recovered summary is not also reported as withheld');
 
   const posix = buildObserved('stop', payload({ response: '/home/someone/notes.md holds the detail' }), Date.now(), S);
   ok(posix.ok && posix.record.tldr === null, 'a POSIX absolute path is refused just like a Windows one');
