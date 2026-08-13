@@ -134,11 +134,44 @@ fails the `release-guard` gate; docs- and test-only changes stay exempt.
 | Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
 | Docs- or test-only | no bump (or patch) | no bump (or patch) |
 
-Cutting `1.0.0` is a deliberate stability milestone, not automatic. Release steps
-(also in `AGENTS.md` → **Releasing this plugin**):
+Cutting `1.0.0` is a deliberate stability milestone, not automatic.
+
+### What `1.0.0` is reserved for
+
+**`1.0.0` is the release in which packs become the install surface** — where
+`kai` stops being a single plugin and `kai-core` plus department packs replace
+it (see [the pack architecture proposal](../proposals/pack-architecture.md) and
+issue #29). Nothing else takes the major.
+
+That split is breaking in the literal semver sense, which is why it earns the
+number rather than merely coinciding with it: install commands change, and core
+skills gain contract-versioned names because skill binding was measured to be
+**load-order dependent** — with two plugins providing the same skill name, the
+agent binds to whichever loaded first, and a preflight cannot detect it.
+
+Two consequences, both deliberate:
+
+- **Do not cut `1.0.0` early to signal maturity.** The version is a promise
+  about the install contract, not a maturity badge. Groundwork for the split —
+  harnesses, validators, metadata work — stays on `0.x` no matter how
+  substantial, because a consumer's install command has not changed.
+- **Do not cut it while the split's failure modes are unmeasured.** `1.0.0`
+  reads as a stability promise, so it waits on the Phase 3 gates: roster
+  enumeration under the full agent set, skill collision under real install
+  order and fresh sessions, and macOS plus the cloud host. Ship the split when
+  those are closed, and ship it *as* `1.0.0`.
+
+Until then the pre-1.0 column above applies unchanged: breaking changes ride in
+a **minor**.
+
+### Release steps
+
+Also in `AGENTS.md` → **Releasing this plugin**:
 
 1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in
-   `plugin.json`.
+   `plugin.json` **and in `.github/plugin/marketplace.json`** (both
+   `metadata.version` and the `plugins[]` entry — CI rejects a stale index,
+   because it installs fine while reporting the wrong version).
 2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its
    `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all
    three for the current version.)

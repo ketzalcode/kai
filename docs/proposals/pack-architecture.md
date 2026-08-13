@@ -250,6 +250,15 @@ Lockstep for the preview, because it is simple and the broken `autoUpdate`
 into a per-pack semver plus a separate core **contract version**, so a core
 patch does not force every pack to release.
 
+**The split ships as `1.0.0`.** It is the only thing reserved for kai's major:
+the install surface changes and core skill names change, which is breaking in
+the literal semver sense rather than merely a large refactor. Two rules follow —
+groundwork stays on `0.x` however substantial, because a consumer's install
+command has not changed; and `1.0.0` waits on the Phase 3 gates below, since the
+number reads as a stability promise and the split's failure modes are still
+partly unmeasured. Recorded in `docs/reference/plugin-structure.md` →
+**What `1.0.0` is reserved for**.
+
 ### Onboarding
 
 A skill is a prompt document — it cannot render a real checked multi-select or

@@ -103,9 +103,12 @@ is descriptive metadata, not an update gate; keep it honest anyway.
 
 Any PR that changes shipped plugin behavior must, in the **same PR**:
 
-1. Bump the version in **`plugin.json`** and **`package.json`** together
-   (`npm version <x.y.z> --no-git-tag-version`, then set `plugin.json` to match).
-   Run `npm install` if you touched dependencies so `package-lock.json` stays in
+1. Bump the version in **`plugin.json`**, **`package.json`**, and
+   **`.github/plugin/marketplace.json`** (both `metadata.version` and the
+   `plugins[]` entry) together — `npm version <x.y.z> --no-git-tag-version`,
+   then set the other two to match. CI rejects a stale marketplace index,
+   because it installs fine while reporting the wrong version. Run
+   `npm install` if you touched dependencies so `package-lock.json` stays in
    sync.
 2. Add a dated **`CHANGELOG.md`** entry under the new version
    (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
@@ -131,4 +134,11 @@ Pick the number by semver (full table in
 while pre-1.0, both features and breaking changes are a **minor** bump and fixes
 are a **patch**; after 1.0, breaking changes are **major**, features **minor**,
 fixes **patch**. Docs- or test-only changes need no bump.
+
+**`1.0.0` is reserved** for the release in which packs become the install
+surface — `kai-core` plus department packs replacing the single `kai` plugin
+(#29). Nothing else takes the major, and it is not cut early to signal
+maturity: groundwork for the split stays on `0.x` however substantial, because a
+consumer's install command has not changed. See **What `1.0.0` is reserved for**
+in `docs/reference/plugin-structure.md` for the gates it waits on.
 
