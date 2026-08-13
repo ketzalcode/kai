@@ -9,8 +9,8 @@ kai is **declarative**: agents and skills are markdown, not a framework or a
 service. It contains no employer-specific knowledge and ships no MCP servers.
 
 ```text
-copilot
-/plugin install RubenSaucedo/kai
+copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin install kai@kai-plugins
 ```
 
 **[Get started →](docs/getting-started.md)** ·
@@ -31,10 +31,29 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.49.3` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.50.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-A rendering fix, reported from a real macOS run.
+**kai now installs from its own marketplace.** The host has deprecated direct
+`owner/repo` installs — the form every instruction kai shipped used — with no
+removal date, so the documented path was scheduled to break on someone else's
+clock. A marketplace is just a repository with a `marketplace.json` index, so
+kai publishes one for itself: no approval, no waiting.
+
+```text
+copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin install kai@kai-plugins
+```
+
+A marketplace install was measured to be a **full repository checkout** — all
+56 agents and `scripts/` — so the fleet observer stays reachable without a
+clone. The direct form remains documented as a fallback while the host honours
+it, and a CI rule keeps the index from drifting out of step with the version it
+claims to ship. If you already installed the direct way, **uninstall first** —
+installing over the top leaves you with both copies; see
+[Getting started](docs/getting-started.md#install).
+
+Before that, a rendering fix reported from a real macOS run.
 
 The live fleet view scrolled instead of updating in place: it cleared the
 screen with `ESC[2J`, and macOS Terminal implements that by pushing the erased
@@ -73,8 +92,14 @@ Release history and the reasoning behind each change live in
 **1. Install**, then start a *new* session — plugins load per session:
 
 ```text
-/plugin install RubenSaucedo/kai
+copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin install kai@kai-plugins
 ```
+
+kai publishes its own marketplace index, because the host has deprecated direct
+`owner/repo` installs. The direct form still works today and prints a
+deprecation warning; see [Getting started](docs/getting-started.md#install)
+for it and for the coding-agent path.
 
 **2. Initialize** the repo or durable folder you want kai to work in:
 
@@ -147,8 +172,10 @@ You do not need to learn them. Ask a front door for an outcome and it routes.
 
 See **[Getting started → Install](docs/getting-started.md#install)** for the
 Copilot CLI, the cloud coding agent, and the optional audio and browser-automation
-setup. To update an already-installed plugin, run `/plugin update kai` and start
-a new session; to migrate an existing workspace after an update, see
+setup. To update an already-installed plugin, refresh the catalog and then the
+plugin — `copilot plugin marketplace update kai-plugins` followed by
+`copilot plugin update kai` — and start a new session; to migrate an existing
+workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
 
 ## Workspace

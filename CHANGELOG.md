@@ -4,7 +4,78 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.50.0] - 2026-08-13
+
+### Added
+
+- **kai publishes its own marketplace index**, at
+  `.github/plugin/marketplace.json`. The host has deprecated direct
+  `owner/repo` installs — the form every instruction kai shipped used — and
+  announced no removal date, so the documented install path was scheduled to
+  break on someone else's clock, for new users, all at once. Installing is now:
+
+  ```
+  copilot plugin marketplace add RubenSaucedo/kai
+  copilot plugin install kai@kai-plugins
+  ```
+
+  A marketplace is just a repository containing that index, so this needs
+  nobody's approval and works today. Verified end to end against the real
+  remote: register, browse, install, list, update. The marketplace is named
+  `kai-plugins` rather than `kai` because the host uses the manifest's own name
+  as the registration key with no local override — so the name is effectively
+  permanent, and keeping it distinct from the plugin leaves room to publish more
+  than one. The direct form is kept as a documented fallback, with its warning
+  explained, for as long as the host honours it. (#102)
+
+- **A migration path for anyone already installed the direct way.** Registering
+  the marketplace does not move an existing install onto it, and installing over
+  the top does **not** replace the old copy — it leaves both `kai` and
+  `kai@kai-plugins` installed at once, which was measured, not assumed.
+  `docs/getting-started.md` now documents uninstalling first, notes that a
+  workspace (`.kai/`, `kai/`) is untouched by either command, and says how to
+  recover if you already ended up with both.
+
+- **A CI rule keeps the index honest.** The marketplace entry carries its own
+  copy of the version, name and description; a stale one does not fail an
+  install, it succeeds and reports the wrong version, which is worse than a
+  clean break. Validation requires the file to exist, the marketplace name to be
+  exactly the one every document tells users to type, `owner.name` to be
+  present, exactly one entry matching the plugin, its `source` to resolve to a
+  directory that really contains a `plugin.json`, and its version and
+  description to match `plugin.json` — which is canonical for both.
+
+### Fixed
+
+- **`fleet-observation` no longer speculates about the install layout.** It said
+  a marketplace install "will not look like a direct one" without knowing how.
+  Both kinds were measured: a marketplace install **is** a full repository
+  checkout — 56 agents, `scripts/`, `hooks.json` — so the watcher is reachable
+  either way, which is the assumption that skill's central promise rests on.
+  The two observed layouts are recorded as *examples* (`kai-plugins/kai` and
+  `_direct/RubenSaucedo--kai`) with the instruction to always search by
+  filename rather than build a path from them: the host has never documented the
+  layout, and one machine is not a contract. A `--plugin-dir` source checkout is
+  now listed as a third place to look, which contributors hit and the list had
+  missed.
+
+### Changed
+
+- Install instructions in `README.md` and `docs/getting-started.md` lead with
+  the marketplace form. Updating now documents **two** caches — refresh the
+  marketplace catalog (`marketplace update kai-plugins`) before updating the
+  plugin, or the update has nothing new to find. The host's documented
+  `autoUpdate` opt-in for self-added marketplaces is called out as **not
+  currently working**, so nobody relies on it.
+- The local-checkout instructions now use `copilot --plugin-dir .` and say
+  plainly that it *loads* rather than *installs*, so the flag is needed every
+  session. The previous instruction, `/plugin install .`, was itself a
+  deprecated direct install.
+- `docs/getting-started.md` said kai ships 54 agents and 40 skills. It ships 56
+  and 49.
+
 ## [0.49.3] - 2026-08-13
+
 
 ### Fixed
 
@@ -2240,6 +2311,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.50.0]: https://github.com/RubenSaucedo/kai/compare/v0.49.3...v0.50.0
 [0.49.3]: https://github.com/RubenSaucedo/kai/compare/v0.49.2...v0.49.3
 [0.49.2]: https://github.com/RubenSaucedo/kai/compare/v0.49.1...v0.49.2
 [0.49.1]: https://github.com/RubenSaucedo/kai/compare/v0.49.0...v0.49.1

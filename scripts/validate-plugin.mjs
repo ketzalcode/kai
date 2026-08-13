@@ -532,6 +532,67 @@ if (!existsSync(pjPath)) {
         }
       }
     }
+
+    // The marketplace index is how kai is installed once the host removes
+    // direct installs, and it carries its own copy of the version, name and
+    // description. A stale entry does not fail an install -- it succeeds and
+    // reports the wrong version, which is worse than a broken one.
+    //
+    // The marketplace name is checked against a constant because it is not
+    // free-form: the host uses the manifest's own name as the registration key
+    // and gives the user no way to override it, so renaming it silently
+    // invalidates `kai@kai-plugins` in every document and every existing
+    // install. It is deliberately not `kai`, so that the marketplace and the
+    // plugin in it stay separable if kai is ever split into packs.
+    const MARKETPLACE_REL = '.github/plugin/marketplace.json';
+    const MARKETPLACE_NAME = 'kai-plugins';
+    const mktPath = join(ROOT, MARKETPLACE_REL);
+    if (!existsSync(mktPath)) {
+      err(MARKETPLACE_REL, 'missing — kai publishes itself as a marketplace so it can be installed without a deprecated direct install');
+    } else {
+      let mkt;
+      try { mkt = JSON.parse(readFileSync(mktPath, 'utf8')); }
+      catch (e) { err(MARKETPLACE_REL, `invalid JSON: ${e.message}`); }
+      if (mkt) {
+        if (mkt.name !== MARKETPLACE_NAME) {
+          err(MARKETPLACE_REL, `"name" is "${mkt.name ?? 'missing'}" but every documented install says \`${pj.name}@${MARKETPLACE_NAME}\` — the host uses this name as the registration key and offers no local override, so changing it breaks the docs and every existing install`);
+        }
+        if (!mkt.owner?.name) err(MARKETPLACE_REL, 'missing "owner.name" (the host refuses a marketplace without it)');
+        const entries = Array.isArray(mkt.plugins) ? mkt.plugins : null;
+        if (!entries) err(MARKETPLACE_REL, 'missing "plugins" array (required by the host)');
+        else {
+          const matches = entries.filter((p) => p?.name === pj.name);
+          if (matches.length === 0) {
+            err(MARKETPLACE_REL, `no entry named "${pj.name}" — the index must list this plugin or \`plugin install ${pj.name}@${MARKETPLACE_NAME}\` cannot resolve`);
+          } else if (matches.length > 1) {
+            err(MARKETPLACE_REL, `${matches.length} entries are named "${pj.name}" — which one an install resolves to is unspecified`);
+          } else {
+            const self = matches[0];
+            if (!self.source) err(MARKETPLACE_REL, `entry "${pj.name}" is missing "source" (required by the host)`);
+            else if (typeof self.source === 'string') {
+              // A source that does not resolve to a plugin still passes the
+              // host's schema; it fails at install time, on the user's machine.
+              const rel = self.source.replace(/^\.\/?/, '');
+              const target = rel === '' ? ROOT : join(ROOT, rel);
+              if (!existsSync(join(target, 'plugin.json'))) {
+                err(MARKETPLACE_REL, `entry "${pj.name}" source "${self.source}" does not contain a plugin.json — the install would fail on the user's machine, not here`);
+              }
+            }
+            if (self.version !== pj.version) {
+              err(MARKETPLACE_REL, `entry "${pj.name}" version "${self.version ?? 'missing'}" must equal plugin.json version "${pj.version}" — a stale index installs fine and reports the wrong version`);
+            }
+            // plugin.json is the canonical description; this copy is what
+            // `marketplace browse` shows to someone deciding whether to install.
+            if (self.description !== pj.description) {
+              err(MARKETPLACE_REL, `entry "${pj.name}" description must match plugin.json, which is canonical — this copy is what \`marketplace browse\` shows before anyone installs`);
+            }
+          }
+        }
+        if (mkt.metadata && mkt.metadata.version && mkt.metadata.version !== pj.version) {
+          err(MARKETPLACE_REL, `metadata.version "${mkt.metadata.version}" must equal plugin.json version "${pj.version}"`);
+        }
+      }
+    }
   }
 }
 
