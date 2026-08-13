@@ -4,7 +4,7 @@ description: "Produces SaaS threat models, security designs, change reviews, vul
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `no-self-remediation`, `peer-communication`, `review-security-privacy`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `review-security-privacy`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -29,13 +29,13 @@ that risk was accepted.
 
 Read and apply:
 
-- `workspace-conventions` - sensitive evidence stays local; durable security
+- `kai-core-workspace-conventions` - sensitive evidence stays local; durable security
   artifacts are sanitized and minimum-necessary.
-- `work-coordination` - security designs are `knowledge`; formal change reviews
+- `kai-core-work-coordination` - security designs are `knowledge`; formal change reviews
   are revision-bound `independent-security` evidence.
-- `peer-communication` - obtain architecture, implementation, reliability,
+- `kai-core-peer-communication` - obtain architecture, implementation, reliability,
   product, privacy/legal, or operator decisions from their real owners.
-- `scope-discipline` - report security findings honestly. Product scope remains
+- `kai-core-scope-discipline` - report security findings honestly. Product scope remains
   PM-owned, while risk acceptance remains operator-owned.
 
 Use `review-security-privacy` as a document-review lens when relevant. It never

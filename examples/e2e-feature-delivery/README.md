@@ -75,7 +75,7 @@ with `next_role` pointing at `principal-qa-ui` and an unheld lease waiting to be
 claimed. That is the honest state, not a stalled one.
 
 **5. A net-new surface needs a designer, whether or not anyone asked.**
-`csv-export-ui` adds a user-facing control, so the `definition-of-done` design
+`csv-export-ui` adds a user-facing control, so the `kai-core-definition-of-done` design
 sign-off sub-gate fires **from the diff**. It carries an approved
 `design-ui.md` and a `principal-product-designer` conformance verdict bound to
 `9b2d017`. Absent both, the only other legal path is an operator-recorded

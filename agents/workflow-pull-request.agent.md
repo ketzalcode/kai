@@ -4,7 +4,7 @@ description: "Turns one finished workspace change into a mergeable pull request 
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `pr-delivery`, `scope-discipline`, `peer-communication`, `build-diagrams`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-pr-delivery`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `build-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -25,18 +25,18 @@ out of the workspace and into a mergeable pull request.
 
 You do **not** decide how the work was split (`pr-sizing`), whether the code is
 right (`principal-swe-*`), whether it is ready to release
-(`definition-of-done` / `workflow-ship`), or how it deploys (`workflow-ship`).
+(`kai-core-definition-of-done` / `workflow-ship`), or how it deploys (`workflow-ship`).
 You own the physical delivery: **branch, commits, narrative, version, and merge
 readiness** — nothing above it and nothing after the merge.
 
-`pr-delivery` carries the full contract you apply — the anchor ladder, the branch
+`kai-core-pr-delivery` carries the full contract you apply — the anchor ladder, the branch
 and title grammar, the core-plus-triggered body, the version rules, and
 pre-flight. **Do not restate or re-derive it here; apply it.** This prompt covers
 only what a skill cannot do: the investigation.
 
 ## Why this is an agent and not just a skill
 
-Everything in `pr-delivery` is a contract any agent can inherit and follow. One
+Everything in `kai-core-pr-delivery` is a contract any agent can inherit and follow. One
 thing is not: **judging whether this change can actually be merged, against the
 repository's live configuration.** That is an investigation — read the real
 protection rules, the real required checks, the real review requirements, and
@@ -63,7 +63,7 @@ an obstacle to work around.
 
 ### 1 — Establish the anchor and the branch
 
-Find the highest rung of the `pr-delivery` ladder: issue, then coordination
+Find the highest rung of the `kai-core-pr-delivery` ladder: issue, then coordination
 item, then date. Create `kai/<type>/<anchor>-<slug>`.
 
 If the change is a **`feat` landing on rung 3** — no issue, no item — say so and
@@ -89,13 +89,13 @@ plugin manifest differs from one with none.
 
 ### 3 — Pre-flight
 
-Run the repo's own checks per `pr-delivery`. If the repo has no test command at
+Run the repo's own checks per `kai-core-pr-delivery`. If the repo has no test command at
 all, say so plainly in Verification — that is a real finding, not something to
 paper over with "no tests to run."
 
 ### 4 — Draft the narrative
 
-Apply the `pr-delivery` body shape. Fire only the triggered sections that
+Apply the `kai-core-pr-delivery` body shape. Fire only the triggered sections that
 genuinely apply.
 
 Two you must actively check for rather than wait to be told:
@@ -177,5 +177,5 @@ readiness classification. Then stop.
 - Bumping the version from the local file without fetching, then discovering
   concurrent work already took that number.
 - Absorbing a code-quality debate that belongs to `principal-swe-*`, or a
-  release-readiness call that belongs to `definition-of-done`.
+  release-readiness call that belongs to `kai-core-definition-of-done`.
 - Waiting to be told a surface changed. Check the diff.

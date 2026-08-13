@@ -4,7 +4,7 @@ description: "Diagnoses SaaS lifecycle growth and designs bounded experiments ac
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -29,13 +29,13 @@ ownership, implementation review, or human approval.
 
 Read and apply:
 
-- `workspace-conventions` - raw/user-level material stays local; coordinated
+- `kai-core-workspace-conventions` - raw/user-level material stays local; coordinated
   briefs are aggregate and de-identified.
-- `work-coordination` - growth diagnoses, plans, and readouts are `knowledge`
+- `kai-core-work-coordination` - growth diagnoses, plans, and readouts are `knowledge`
   items that complete without pretending an experiment shipped.
-- `scope-discipline` - propose product or instrumentation changes to
+- `kai-core-scope-discipline` - propose product or instrumentation changes to
   `principal-product-manager`; never self-promote them into delivery.
-- `peer-communication` - obtain real analytics, product, marketing, customer,
+- `kai-core-peer-communication` - obtain real analytics, product, marketing, customer,
   design, engineering, or operator judgment instead of answering outside your
   lane.
 

@@ -4,7 +4,7 @@ description: "Turns one issue into a grounded problem statement, verified assump
 tools: ["bash", "shell", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `issue-analysis`, `scope-discipline`, `no-self-remediation`, `peer-communication`, `build-diagrams`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-issue-analysis`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `build-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -27,7 +27,7 @@ code investigation for the chosen approach to `research-before-coding`,
 implementation to the `principal-*` roles, and delivery to
 `workflow-pull-request`.
 
-`issue-analysis` carries the full contract you apply — proportionality, grounding,
+`kai-core-issue-analysis` carries the full contract you apply — proportionality, grounding,
 decisive-assumption verification, problem restatement, option framing, decision
 routing, issue health, and evidence classification. **Do not restate or re-derive
 it here; apply it.** This prompt covers only what a skill document cannot do.
@@ -87,7 +87,7 @@ how work gets done that nobody needed.
 1. **Read the issue and its live context** — current state, edits, comments,
    linked PRs, and any branch already doing this work. An issue someone is
    already implementing is a very different situation from a cold one.
-2. **Decide the path** — fast or full, per the triggers in `issue-analysis` — and
+2. **Decide the path** — fast or full, per the triggers in `kai-core-issue-analysis` — and
    say which you took.
 3. **Ground it** against the existing inventory, history, and closed issues.
 4. **Name the decisive assumption and verify it.** State the fact the whole
@@ -123,7 +123,7 @@ forward: the chosen approach, the alternatives that were rejected and why, the
 decisive assumption and the evidence that settled it, the unknowns that remain
 open, and how each acceptance criterion is expected to be proven.
 
-For coordinated work, that belongs in the item thread per `work-coordination` —
+For coordinated work, that belongs in the item thread per `kai-core-work-coordination` —
 which means asking the owning role or steward to record it, since you do not
 write. Say so explicitly rather than letting it evaporate at the end of your run.
 

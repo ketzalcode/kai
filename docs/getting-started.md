@@ -208,7 +208,7 @@ node <kai-plugin>/scripts/workspace-doctor.mjs
 
 - verifies `.kai/manifest.json` is present, well-formed, and schema-compatible;
 - if `schema_version` is behind, prints the **deterministic migration ladder**
-  to apply (defined in `workspace-onboarding`);
+  to apply (defined in `kai-core-workspace-onboarding`);
 - validates generated coordination state — item schemas, lifecycle states,
   `change_ref`-bound reviews, typed dependencies and cycles, lease shape/expiry,
   path containment, and `BOARD.md` drift.
@@ -230,7 +230,7 @@ completed migration is a no-op.
 
 ## Audio setup (optional)
 
-Only for the `generate-audio` skill and the `instructor-*` learning agents,
+Only for the `kai-core-generate-audio` skill and the `instructor-*` learning agents,
 which narrate markdown into MP3s via
 [lectoria](https://github.com/RubenSaucedo/lectoria). Everything else works
 without this. To enable audio, do this **once** at the plugin root (the folder
@@ -262,7 +262,7 @@ Several agents and skills drive a real browser **via a Playwright MCP server**:
 `principal-qa-ui`, `persona-ux-first-time-user`, `persona-professional-trainer`,
 `persona-professional-nutritionist`, `principal-product-designer`,
 `principal-product-marketing`, `principal-seo`, `workflow-product-explore`, and
-`workflow-course-to-audio` (plus the `web-evaluation`, `web-content-extraction`,
+`workflow-course-to-audio` (plus the `kai-core-web-evaluation`, `kai-core-web-content-extraction`,
 `product-exploration`, `product-marketing-intelligence`, and `ui-mockup` skills).
 They declare `tools: [..., playwright]`, but **kai ships no MCP servers** — you
 register one in your host. Everything else works without this; only these

@@ -69,7 +69,7 @@ not inspectable. Prefer reusing existing facts over rediscovering them.
 | Mode | Source | How |
 |---|---|---|
 | **A · Existing map** | a current `kai/initiatives/<slug>/artifacts/product-map.md` | consume its observed facts directly; cite, do not re-walk |
-| **B · Public marketing surface** | a public landing, pricing, or marketing URL | walk it read-only via `web-evaluation`; harvest copy via `web-content-extraction` — marketing surfaces only |
+| **B · Public marketing surface** | a public landing, pricing, or marketing URL | walk it read-only via `kai-core-web-evaluation`; harvest copy via `kai-core-web-content-extraction` — marketing surfaces only |
 | **C · Provided media** | screenshots, screen recordings, uploaded assets | copy into the run media folder and catalog into `media_manifest.json`; extract facts from what is visible |
 | **D · Notes only** | operator product notes | record as `source: operator-provided`; verify nothing, flag as unverified |
 
@@ -93,7 +93,7 @@ notes** — plus reading what a map already established.
 
 - Read-only. Never submit payment, delete, publish, invite, message, or perform
   any irreversible action to "explore" a flow.
-- Use the `web-evaluation` login-pause pattern; keep cookies, tokens, and
+- Use the `kai-core-web-evaluation` login-pause pattern; keep cookies, tokens, and
   `storageState*.json` local and unindexed.
 - Every media asset is **copied into**
   `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/media/` and referenced by a
@@ -220,7 +220,7 @@ Media handling rules:
 
 ## Placement
 
-Resolve the workspace via `workspace-conventions`.
+Resolve the workspace via `kai-core-workspace-conventions`.
 
 - **Initiative work:** the three artifacts live in the bundle directory
   `kai/initiatives/<slug>/artifacts/marketing/`. The work item's `artifact_target`

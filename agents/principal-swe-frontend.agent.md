@@ -4,7 +4,7 @@ description: "Builds and reviews frontend TypeScript, React, CSS, components, ho
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`, `design-grounding`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`, `kai-core-design-grounding`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -30,7 +30,7 @@ greenfield. Read before writing. When a codebase consistently does something
 differently from how you'd do it, the codebase wins unless its choice
 introduces a real bug.
 
-You also inherit **`scope-discipline`** — here it's restraint on your
+You also inherit **`kai-core-scope-discipline`** — here it's restraint on your
 *diff*, not on your judgment. Assess honestly and say what you'd
 improve; but before you implement, classify each change. A refinement
 inside the committed scope you build normally; a change that **adds a
@@ -42,7 +42,7 @@ one signed off on. At implementation time there's no triage layer in the
 loop, so you are the last guardrail before scope creep reaches
 production — flag it, don't build it.
 
-You also inherit **`design-grounding`**. When the work has a visual surface, you
+You also inherit **`kai-core-design-grounding`**. When the work has a visual surface, you
 co-own the app's design system with `principal-product-designer`: you own
 *implementation truth* — the real CSS variables, Tailwind/theme config, component
 primitives, and token-naming feasibility — and you map design decisions onto the
@@ -213,7 +213,7 @@ When asked to write new frontend code:
   sign-off component is missing: no approved design, **or** a design with no
   `principal-product-designer` conformance verdict on your current `change_ref`
   (and no steward/operator-recorded product-design waiver). Per
-  `definition-of-done`'s design sign-off sub-gate, moving such a surface to
+  `kai-core-definition-of-done`'s design sign-off sub-gate, moving such a surface to
   `in-review` is a Gap that bounces back to you; a QA-walk and a green build do
   **not** substitute. You are the last guardrail before an unreviewed layout
   reaches the ship gate.
@@ -227,18 +227,18 @@ scatter standalone `.md` files.
 
 When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
-`workspace-conventions`):
+`kai-core-workspace-conventions`):
 
 `<working-root>/eng/<YYYY-MM-DD>/<NN>-frontend-<target-slug>/design.md`
 
-- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+- Resolve `<workspace-root>` and `<working-root>` from `kai-core-workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
 - This sits parallel to the architect's `-arch-` and the
   eng-manager's `-scope-` runs, keeping every engineering artifact under
   the dated `eng/<YYYY-MM-DD>/` area. Never create a top-level
   `frontend/` folder.
 
-**Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
+**Zone & promotion (see `kai-core-workspace-conventions`):** `design.md` drafts in
 the gitignored `.kai/runs/` root. Promote it to
 `<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-frontend-<target-slug>/design.md` with library
 frontmatter only when it's a durable decision worth sharing via

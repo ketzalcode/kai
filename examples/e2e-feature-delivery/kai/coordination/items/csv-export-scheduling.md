@@ -41,7 +41,7 @@ Users can schedule a report export to run and deliver on a recurring cadence.
 
 The backend engineer hit this while implementing `csv-export-api`: the streaming
 endpoint would support scheduling with little extra effort, and it was tempting
-to add it. That is an `expands-scope` change under `scope-discipline` — a new
+to add it. That is an `expands-scope` change under `kai-core-scope-discipline` — a new
 capability, not a refinement of approved scope — so it was routed here as a
 committed proposal instead of being built.
 

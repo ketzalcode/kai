@@ -24,14 +24,14 @@ produces **LinkedIn** content only — other platforms are separate agents.
 
 | Input | Role |
 |---|---|
-| `product_context.json` | **sole factual authority** — every claim maps here (see `content-grounding`) |
+| `product_context.json` | **sole factual authority** — every claim maps here (see `kai-core-content-grounding`) |
 | `product_exploration_report.md` | **phrasing nuance only** — never a source of facts the JSON lacks |
 | `media_manifest.json` (optional) | assets a carousel or post can reference |
 | operator brief | goal (awareness, launch, waitlist, recruitment, feedback, fundraising, community, technical credibility…), audience, tone/style, language, output mode, confirmed speaker identity |
 
 ## Grounding and claim-safety
 
-**Inherits `content-grounding`** — the product_context reference scheme, the
+**Inherits `kai-core-content-grounding`** — the product_context reference scheme, the
 per-item claim ledger, the provenance treatment table, the never-fabricate rules,
 `needs_confirmation` handling, the JSON-is-sole-authority rule, bilingual
 grounding, and locked-facts voicing apply here verbatim.
@@ -143,15 +143,15 @@ slide, and its own `Grounded:` refs. Never imply an asset exists when it doesn't
 
 ## Placement
 
-Resolve the workspace via `workspace-conventions`.
+Resolve the workspace via `kai-core-workspace-conventions`.
 
 - **Ad-hoc / standalone** review-then-post drafts default to the ignored run
   area: `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
 - **Coordinated (initiative) work** writes the bundle to
   `kai/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
-  knowledge` and the normal `work-coordination` handoff.
+  knowledge` and the normal `kai-core-work-coordination` handoff.
 - **A reusable pack** the operator wants to keep is promoted through the standard
-  `workspace-conventions` library flow (steward-approved, recorded in
+  `kai-core-workspace-conventions` library flow (steward-approved, recorded in
   `deliverables.md`) to `kai/library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
   Library frontmatter goes on the Markdown index only; the JSON matrix stays
   valid JSON. Never overwrite a prior pack — new runs get the next per-day index.

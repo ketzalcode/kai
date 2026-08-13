@@ -4,7 +4,7 @@ description: "Emits a read-only notification payload for newly actionable @opera
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `personal-agenda`, `proactive-scan`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-personal-agenda`, `kai-core-proactive-scan`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -28,11 +28,11 @@ stays the operator's to take through `director-executive-assistant`.
 
 ## Contracts you inherit
 
-- `proactive-scan` — the runtime boundary, snapshot/diff/dedup rules, notification
+- `kai-core-proactive-scan` — the runtime boundary, snapshot/diff/dedup rules, notification
   payload, channels/consent separation, and failure handling.
-- `personal-agenda` — the authoritative Source A detection of operator signals
+- `kai-core-personal-agenda` — the authoritative Source A detection of operator signals
   (you reuse it; you invent no new signal type).
-- `workspace-conventions` — resolving the selected workspace and its optional
+- `kai-core-workspace-conventions` — resolving the selected workspace and its optional
   linked roots.
 
 ## Invocation
@@ -56,16 +56,16 @@ permission to act.
 
 ## Workflow — scan
 
-1. **Resolve.** Resolve the selected workspace via `workspace-conventions` and
+1. **Resolve.** Resolve the selected workspace via `kai-core-workspace-conventions` and
    its `.kai/manifest.json`; compute its stable `root_id`. Read enabled,
    validated linked roots from `kai/personal/workspaces.md` read-only. A missing
    sentinel or unreadable selected workspace → emit `status: error`; advance
    nothing. An unreadable linked root → `status: partial` + a `gaps[]` entry, and
    preserve that root's ledger signals (never treat them as cleared).
-2. **Scan (read-only).** Apply `personal-agenda` Source A to each fully-read
+2. **Scan (read-only).** Apply `kai-core-personal-agenda` Source A to each fully-read
    root: open `@operator` `decision|reply|action` questions with no answered
    `ANSWER`, `release-ready` items, and overdue `@operator` questions. Compute
-   each signal's deterministic `key` and `hash` per `proactive-scan`. Change no
+   each signal's deterministic `key` and `hash` per `kai-core-proactive-scan`. Change no
    record.
 3. **Diff.** Load `kai/personal/proactive/snapshot.json`; classify each signal
    `new` / `changed` / `overdue` / `unchanged`, and `cleared` only from

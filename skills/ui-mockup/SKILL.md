@@ -17,7 +17,7 @@ the card. The human never saw the options **as mockups** before implementation.
 This skill makes consequential options **visual**, marks a recommended pick, and
 **pauses for a human choice** before the design is locked. It is **not** a
 standalone trigger — `principal-product-designer` inherits it by reference, and
-every mock is grounded by `design-grounding` (it uses the app's real
+every mock is grounded by `kai-core-design-grounding` (it uses the app's real
 design-system tokens, never an invented look).
 
 ## When it applies — and when to skip
@@ -50,7 +50,7 @@ network is a broken deliverable.
 
 "**Component-library-backed**" here means a **small inline mock kit** of semantic
 classes — `.k-card`, `.k-btn`, `.k-field`, `.k-badge`, `.k-row` — whose values are
-the **app's real tokens** pulled from `design-grounding`. It is **not** importing
+the **app's real tokens** pulled from `kai-core-design-grounding`. It is **not** importing
 shadcn/ui, Tailwind, MUI, or any runtime component library. Seed the `<style>`
 block from the design system, for example:
 
@@ -89,9 +89,9 @@ into an existing modal / sheet / panel / detail view, or **removing** it — not
 merely a within-container variant. Options that all share the same host surface
 are "option theater" for these problems: the actually-correct answer (move it out
 of the crowded box) never reaches the human. Ground the alternative surface(s) in
-ones that **already exist** in the app (per `design-grounding`), not invented
+ones that **already exist** in the app (per `kai-core-design-grounding`), not invented
 screens. A container-challenge option that **expands scope** is recorded as a
-`PROPOSAL` per hard rule 6 (`scope-discipline`) — it is offered and reviewable, but
+`PROPOSAL` per hard rule 6 (`kai-core-scope-discipline`) — it is offered and reviewable, but
 is never the silent default and cannot be the Recommended pick until the PM/steward
 promotes it into scope.
 
@@ -100,7 +100,7 @@ For each option, record:
 - the **mock** (an ASCII block inline, or a labeled section in `options.html`);
 - a **one-line concept**;
 - **pros** and **cons** (incl. how it fits the settled design and its trade-offs);
-- a **scope class** per `scope-discipline` (refine-in-scope / expands-scope);
+- a **scope class** per `kai-core-scope-discipline` (refine-in-scope / expands-scope);
 - an **accessibility note** if relevant.
 
 Mark **exactly one** as **Recommended**, with a short **why** tied to the approved
@@ -165,7 +165,7 @@ Human confirmation: <picked by operator | delegated>, <timestamp>.
 
 Screenshots stay in the run folder as local evidence (heavy binaries aren't
 committed), referenced by path — the same "promote the text, not the binaries"
-pattern as `web-evaluation`.
+pattern as `kai-core-web-evaluation`.
 
 ## Hard rules
 
@@ -184,7 +184,7 @@ pattern as `web-evaluation`.
    options either way.
 5. **Reachable from DESIGN and REVIEW.** A REVIEW fork with real options escalates
    here, never a silent pick.
-6. **Classify each option's scope** (`scope-discipline`); an expands-scope option
+6. **Classify each option's scope** (`kai-core-scope-discipline`); an expands-scope option
    is a `PROPOSAL`, not the silent default.
 7. **Mocks, not production code.** This skill produces mockups and a recorded
    decision; frontend code is `principal-swe-frontend`.

@@ -4,7 +4,7 @@ description: "Gates SaaS experiment integrity before launch or after readout, co
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `no-self-remediation`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -30,14 +30,14 @@ bear the weight of the decision it is being used for.
 
 Read and apply:
 
-- `workspace-conventions` - work from supplied artifacts; keep any raw/user-level
+- `kai-core-workspace-conventions` - work from supplied artifacts; keep any raw/user-level
   material local and reference it by ID.
-- `work-coordination` - integrity certification is a `knowledge` item and, when
+- `kai-core-work-coordination` - integrity certification is a `knowledge` item and, when
   named in `review_requirements`, is revision-bound `experiment-integrity`
   evidence against the exact analysis `change_ref`.
-- `peer-communication` - send integrity gaps back to analytics and growth; ask
+- `kai-core-peer-communication` - send integrity gaps back to analytics and growth; ask
   the decision owner for intent rather than assuming it.
-- `scope-discipline` - you assess integrity only. Metric definitions belong to
+- `kai-core-scope-discipline` - you assess integrity only. Metric definitions belong to
   analytics, the action belongs to growth/PM, and scope belongs to the PM.
 
 ## Where you sit

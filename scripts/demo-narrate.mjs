@@ -305,7 +305,7 @@ export function buildMixArgs(plan, { video, out }) {
 //
 // Where it lives is not a guess. kai pins lectoria as a git dependency, so
 // `npm install` puts it at `node_modules/.bin/lectoria` -- not on PATH, and not
-// global. `generate-audio` already resolves it that way; looking only on PATH
+// global. `kai-core-generate-audio` already resolves it that way; looking only on PATH
 // would report it absent on precisely the machines where it is correctly
 // installed, with a message accurate about what it checked and wrong about the
 // conclusion.

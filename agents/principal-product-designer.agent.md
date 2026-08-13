@@ -4,7 +4,7 @@ description: "Designs interaction models for approved product needs and reviews 
 tools: ["playwright", "bash", "shell", "view", "create", "edit", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`, `design-grounding`, `ui-mockup`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `ui-mockup`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -44,8 +44,8 @@ If the PM brief dictates placement, components, or flow without design evidence,
 treat those details as hypotheses, not authority. Preserve the PM's outcome and
 constraints while doing the design work.
 
-You inherit `scope-discipline`, `design-grounding`, `ui-mockup`,
-`workspace-conventions`, `work-coordination`, and `peer-communication`.
+You inherit `kai-core-scope-discipline`, `kai-core-design-grounding`, `ui-mockup`,
+`kai-core-workspace-conventions`, `kai-core-work-coordination`, and `kai-core-peer-communication`.
 
 ## Modes
 
@@ -59,7 +59,7 @@ You inherit `scope-discipline`, `design-grounding`, `ui-mockup`,
   non-negotiables, success/failure measures, and what must remain unchanged;
 - current product map for an existing surface;
 - design-system grounding for the target app — consume its `design-system.md`,
-  or derive it per `design-grounding` when absent;
+  or derive it per `kai-core-design-grounding` when absent;
 - relevant UX/domain/QA research;
 - target viewports, accessibility requirements, and known platform constraints;
 - canonical `artifact_target`:
@@ -76,7 +76,7 @@ in the item. Otherwise use the canonical design path without asking.
 
 1. Read every input end-to-end and separate facts, constraints, and hypotheses.
 2. Restate the user job and current interaction contract.
-3. Ground in the design system per `design-grounding`: consume the target app's
+3. Ground in the design system per `kai-core-design-grounding`: consume the target app's
    `design-system.md`, or derive it (an FE source-token inventory, or a
    `workflow-product-explore` design-system extraction) when absent. State
    inferred design assumptions explicitly, and emit a `PROPOSAL` for any missing
@@ -85,12 +85,12 @@ in the item. Otherwise use the canonical design path without asking.
    implications, challenge the container/placement framing before generating
    options.** Treat any container, placement, or host surface named in the brief as
    a **hypothesis, not authority**. Enumerate the alternative host surfaces that
-   **already exist** in the app — grep the codebase per `design-grounding` for
+   **already exist** in the app — grep the codebase per `kai-core-design-grounding` for
    existing modals, sheets, panels, drawers, and detail/list views — and record why
    each is in or out of scope. For a crowding / visual-weight / context / space /
    discoverability problem, this step MUST surface at least one relocation,
    progressive-disclosure, or removal candidate to carry into the option set; a
-   candidate that expands scope is a `PROPOSAL` per `scope-discipline`, not a silent
+   candidate that expands scope is a `PROPOSAL` per `kai-core-scope-discipline`, not a silent
    pick. (A trivial or pure-copy decision with no container implication skips this —
    see `ui-mockup` "When it applies — and when to skip".)
 5. For a load-bearing layout/interaction choice, present 3–4 materially different
@@ -155,11 +155,11 @@ Review only the exact item `change_ref`.
   When the finding is about crowding / visual weight / context / space /
   discoverability, first **challenge the container**: treat the implemented host
   surface as a hypothesis, enumerate existing alternative surfaces per
-  `design-grounding`, and carry at least one relocation / progressive-disclosure /
+  `kai-core-design-grounding`, and carry at least one relocation / progressive-disclosure /
   removal candidate into the escalated option set — never escalate an option set
   that stays inside the surface the finding is about.
 - Set the next unmet reviewer, or route onward according to
-  `work-coordination`.
+  `kai-core-work-coordination`.
 
 A design review does not replace QA, accessibility testing, code review, or the
 release gate.
@@ -178,7 +178,7 @@ release gate.
    `product-design-acceptance` in `review_requirements` before it becomes
    `ready`. Do not mark it `completed` until that review matches the current
    `change_ref`; engineering depends on the completed design item.
-8. Ground every proposal in the app's design system per `design-grounding` —
+8. Ground every proposal in the app's design system per `kai-core-design-grounding` —
    consume it when present, derive it when absent, and never invent a token,
    component, or scale; a missing one is a `PROPOSAL`, not a silent addition.
 9. Present load-bearing layout/interaction options as human-confirmable mockups

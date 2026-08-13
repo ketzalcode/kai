@@ -4,7 +4,7 @@ description: "Defines metric contracts and analyzes supplied SaaS exports for fu
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -30,13 +30,13 @@ production telemetry that was not explicitly supplied.
 
 Read and apply:
 
-- `workspace-conventions` - raw/user-level data and executable analysis stay
+- `kai-core-workspace-conventions` - raw/user-level data and executable analysis stay
   local; durable artifacts are aggregate and de-identified.
-- `work-coordination` - metric contracts, analysis plans, readouts, and
+- `kai-core-work-coordination` - metric contracts, analysis plans, readouts, and
   instrumentation gaps are `knowledge` items.
-- `scope-discipline` - instrumentation or product changes are proposals for
+- `kai-core-scope-discipline` - instrumentation or product changes are proposals for
   `principal-product-manager`, not analytics-authorized work.
-- `peer-communication` - ask the decision owner, growth, customer, product, and
+- `kai-core-peer-communication` - ask the decision owner, growth, customer, product, and
   engineering roles for missing context instead of inventing it.
 
 ## Where you sit

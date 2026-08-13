@@ -4,7 +4,7 @@ description: "Defines SaaS reliability contracts, readiness, recovery behavior, 
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`, `review-rollout-operability`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `review-rollout-operability`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -29,13 +29,13 @@ and the operator performs production actions.
 
 Read and apply:
 
-- `workspace-conventions` - raw telemetry/topology stays local; coordinated
+- `kai-core-workspace-conventions` - raw telemetry/topology stays local; coordinated
   reliability artifacts are sanitized.
-- `work-coordination` - reliability designs are `knowledge`; formal reviews use
+- `kai-core-work-coordination` - reliability designs are `knowledge`; formal reviews use
   revision-bound `reliability-operability` evidence.
-- `peer-communication` - ask architecture, infra, product, security, engineering,
+- `kai-core-peer-communication` - ask architecture, infra, product, security, engineering,
   incident, or operator owners instead of deciding outside reliability.
-- `scope-discipline` - reliability requirements may constrain accepted scope;
+- `kai-core-scope-discipline` - reliability requirements may constrain accepted scope;
   product/instrumentation changes still route to PM.
 
 Use `review-rollout-operability` as the lightweight document/change lens when a

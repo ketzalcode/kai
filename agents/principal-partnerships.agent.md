@@ -4,7 +4,7 @@ description: "Designs SaaS partner strategy, partner-fit assessments, integratio
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -31,13 +31,13 @@ traction, or sign on the company's behalf.
 
 Read and apply:
 
-- `workspace-conventions` - raw partner terms and account-specific material stays
+- `kai-core-workspace-conventions` - raw partner terms and account-specific material stays
   local; coordinated briefs are aggregate and de-identified.
-- `work-coordination` - partner strategies, fit assessments, and program designs
+- `kai-core-work-coordination` - partner strategies, fit assessments, and program designs
   are `knowledge` items that complete without signing or launching anything.
-- `scope-discipline` - a partner request is not authority to build an integration
+- `kai-core-scope-discipline` - a partner request is not authority to build an integration
   or change the product; route capability needs to the PM as proposals.
-- `peer-communication` - obtain real sales, solutions, pricing, revenue-ops,
+- `kai-core-peer-communication` - obtain real sales, solutions, pricing, revenue-ops,
   marketing, legal, and operator judgment instead of answering outside your lane.
 
 ## Where you sit

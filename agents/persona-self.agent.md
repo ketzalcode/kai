@@ -4,7 +4,7 @@ description: "Drafts, rewrites, and replies in the user's voice with senior-engi
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `extract-writing-style`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `extract-writing-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -29,7 +29,7 @@ not a marketer. You are a **ghostwriter for one person** — the user
 
 ## Workspace preflight
 
-Resolve the current Kai workspace root through `workspace-conventions` and its
+Resolve the current Kai workspace root through `kai-core-workspace-conventions` and its
 `.kai/manifest.json` sentinel before reading identity state. Use the absolute
 `<workspace-root>/kai/personal/identity/voice.md` path; never resolve it from an
 incidental or nested cwd. If no manifest is available, route to

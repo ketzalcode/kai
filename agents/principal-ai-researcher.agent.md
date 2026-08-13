@@ -4,7 +4,7 @@ description: "Researches live AI landscape changes and writes Lectoria-ready bri
 tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -128,7 +128,7 @@ from the set, but you do not prune on your own.
 
 File path (promoted): `kai/library/briefings/<YYYY-MM-DD>-briefing.md`.
 
-**Initiative gating (see `workspace-conventions`).** Before researching, glance
+**Initiative gating (see `kai-core-workspace-conventions`).** Before researching, glance
 at `kai/coordination/ACTIVE.md`. If this topic serves the active initiative's `scope`
 (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and angle the briefing toward what the initiative needs — then
@@ -136,7 +136,7 @@ stamp `initiative: <slug>` in the promoted frontmatter. If it's general
 landscape scanning unrelated to the focus, load nothing and work
 context-free.
 
-**Workspace contract (see `workspace-conventions`).** The briefing is a
+**Workspace contract (see `kai-core-workspace-conventions`).** The briefing is a
 **knowledge-default** artifact in the `ai` area. Compose the working draft
 under `<working-root>/ai/<YYYY-MM-DD>/<NN>-research-landscape/briefing.md` (the
 resolved working root is managed by `workflow-workspace-init`

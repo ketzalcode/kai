@@ -4,7 +4,7 @@ description: "Turns chaptered markdown - course units, book chapters, study note
 tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `generate-audio`, `generate-html-lesson`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-generate-audio`, `generate-html-lesson`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -66,7 +66,7 @@ how they're called:
 - **`generate-html-lesson`** — produces the visual half (a
   self-contained `index.html` with prose + HTML+CSS diagrams + an
   embedded audio player when audio exists).
-- **`generate-audio`** — produces the auditory half (per-file MP3s via
+- **`kai-core-generate-audio`** — produces the auditory half (per-file MP3s via
   Lectoria, default Spanish, conversational style).
 
 What *you* bring is the pedagogical judgement: which sources get
@@ -189,14 +189,14 @@ count, skip a source), honour and re-plan.
 ### 3. Generate audio for sources that need it (parallelize where safe)
 
 For each source whose audio doesn't already exist, invoke the
-`generate-audio` skill via the wrapper script (`scripts/generate-audio.ps1`
+`kai-core-generate-audio` skill via the wrapper script (`scripts/generate-audio.ps1`
 in the kai checkout). Pass `-Lang es` (Spanish default) and `-Style
 conversational` unless the operator overrode.
 
 If the host supports parallel async shells, you can launch a few in
 parallel — but be mindful of Azure OpenAI TPM quota. For sources
 already extracted by `workflow-course-to-audio`, the safer pattern is
-one `generate-audio` invocation pointed at the parent `raw/` folder — it
+one `kai-core-generate-audio` invocation pointed at the parent `raw/` folder — it
 walks recursively and produces one MP3 per source file in one
 session. That's usually faster than fanning out per file.
 
@@ -206,7 +206,7 @@ reusing it.
 
 If sensitivity flagged → pass `-NoDistribute`.
 
-Audio output (per `generate-audio` convention) lands at
+Audio output (per `kai-core-generate-audio` convention) lands at
 `<source-dir>/../audio/raw/<source-slug>-<lang>.mp3` (mirroring the
 source tree). The `generate-html-lesson` skill knows how to find audio
 at that path automatically.
@@ -241,7 +241,7 @@ Before declaring done:
 
 ### 6. Report back
 
-**Zone & promotion (see `workspace-conventions`).** Lesson bundles are
+**Zone & promotion (see `kai-core-workspace-conventions`).** Lesson bundles are
 **personal learning** — default them under **`kai/personal/lessons/`** (gitignored,
 portable) rather than `kai/library/`. Only `--share` a bundle into
 `kai/library/lessons/` when it's team-relevant work knowledge. (Audio MP3s stay
@@ -359,14 +359,14 @@ back to this lesson once before moving on"* when that's the truth.
 - `instructor-path-mentor.agent.md` — owns a whole certification /
   learning path and dispatches you to package objectives.
 - `generate-html-lesson/SKILL.md` — the HTML half you orchestrate.
-- `generate-audio/SKILL.md` — the audio half you orchestrate.
+- `kai-core-generate-audio/SKILL.md` — the audio half you orchestrate.
 - Example complete chain:
   ```
   user → workflow-course-to-audio "extract this Learn module"
        → writes .kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/<NN-unit>.md
 
   user → instructor-teacher "turn it into lessons"
-       → invokes generate-audio on raw/ (Spanish, conversational)
+       → invokes kai-core-generate-audio on raw/ (Spanish, conversational)
        → invokes generate-html-lesson × N (English visual, audio embedded)
        → produces .kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/lessons/<NN-unit>/index.html
          + audio.mp3 references (the lessons/ subfolder sits inside the extraction

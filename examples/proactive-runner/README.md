@@ -21,7 +21,7 @@ or credential.
                  │ invokes (read-only)          ▲ emits payload
                  ▼                              │
 ┌─ kai (declarative plugin) ───────────────────┴───────────────────┐
-│  workflow-proactive-scan + proactive-scan:                        │
+│  workflow-proactive-scan + kai-core-proactive-scan:                        │
 │    read-only scan → diff vs snapshot → dedupe → emit payload      │
 │    (no scheduling, no network, no credentials)                    │
 └──────────────────────────────────────────────────────────────────┘

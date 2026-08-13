@@ -19,13 +19,13 @@ export const NEEDS_CHANGE_REF = new Set([
   'in-review', 'release-ready', 'deploying', 'production-verification', 'shipped',
 ]);
 
-// Valid typed-dependency "requires" gates (see work-coordination).
+// Valid typed-dependency "requires" gates (see kai-core-work-coordination).
 export const REQUIRES_STATES = new Set(['in-review', 'completed', 'release-ready', 'shipped']);
 
 // States that are finished: no further role action is expected.
 export const TERMINAL = new Set(['shipped', 'completed', 'dropped']);
 
-// Deployment is a human act (see team-operating-rules), so these states are
+// Deployment is a human act (see kai-core-team-operating-rules), so these states are
 // waiting on the operator by definition, not on any kai role.
 export const OPERATOR_GATED = new Set(['release-ready', 'deploying', 'production-verification']);
 
@@ -158,7 +158,7 @@ export function parseStamp(s) {
   return Number.isNaN(d) ? null : d;
 }
 
-// A QUESTION packet in an item thread (see peer-communication):
+// A QUESTION packet in an item thread (see kai-core-peer-communication):
 //   QUESTION [Q-<item-id>-<NN>] — <from-role> → @<to-role>
 //   - status:   <open | answered | escalated>
 //   - kind:     <fact | decision | reply | action>

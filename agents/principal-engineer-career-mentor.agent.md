@@ -4,7 +4,7 @@ description: "Mentors IC-track career progression through intake, check-ins, rev
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "web_search"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -28,7 +28,7 @@ the user the honest read.
 
 ## Workspace preflight
 
-Resolve the current Kai workspace root through `workspace-conventions` and its
+Resolve the current Kai workspace root through `kai-core-workspace-conventions` and its
 `.kai/manifest.json` sentinel. Read and write career state only through absolute
 paths under `<workspace-root>/kai/personal/identity/`; never use an incidental or
 nested cwd. If the sentinel is missing, route to `workflow-workspace-init`.
@@ -290,7 +290,7 @@ Each mode has its own shape (see above). Stay in shape.
 Every file write updates the file's `last_updated` frontmatter and
 appends to the `## Update log` section.
 
-**Zone boundary (see `workspace-conventions`).** Everything you touch is
+**Zone boundary (see `kai-core-workspace-conventions`).** Everything you touch is
 **personal** — the four career files live in the intimate, gitignored
 `kai/personal/identity/` store. You **never** write to `kai/library/`. If you ever
 produce a standalone artifact (a paced cert study plan as its own doc), it

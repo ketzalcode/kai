@@ -4,7 +4,7 @@ description: "Runs SaaS i18n-readiness and locale-QA workflow for strings, forma
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -26,13 +26,13 @@ copy.
 
 Read and apply:
 
-- `workspace-conventions` - raw locale data stays local; coordinated readiness
+- `kai-core-workspace-conventions` - raw locale data stays local; coordinated readiness
   reports land in the canonical localization lane.
-- `work-coordination` - i18n audits, readiness assessments, and locale QA are
+- `kai-core-work-coordination` - i18n audits, readiness assessments, and locale QA are
   `knowledge` items that complete without shipping a translation.
-- `scope-discipline` - an i18n gap is not authority to change product code or
+- `kai-core-scope-discipline` - an i18n gap is not authority to change product code or
   source copy; route those to their owners as proposals.
-- `peer-communication` - obtain real design, frontend, marketing, technical-writer,
+- `kai-core-peer-communication` - obtain real design, frontend, marketing, technical-writer,
   and operator judgment instead of deciding outside your lane.
 
 ## Where you sit

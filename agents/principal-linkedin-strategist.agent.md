@@ -4,7 +4,7 @@ description: "Turns product intelligence and media into grounded, platform-nativ
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "task", "read_agent", "write_agent"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `peer-communication`, `content-grounding`, `linkedin-content`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-content-grounding`, `linkedin-content`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -32,13 +32,13 @@ Read and apply:
 
 - `linkedin-content` — your method: inputs, angles, style controls, modes, output
   schemas, and placement.
-- `content-grounding` — the shared claim-safety contract (product_context
+- `kai-core-content-grounding` — the shared claim-safety contract (product_context
   reference scheme, claim ledger, treatment table, never-fabricate rules) that
   `linkedin-content` builds on.
-- `workspace-conventions` — the resolved workspace and where content lands.
-- `work-coordination` — claim, evidence, and handoff when run as a coordinated
+- `kai-core-workspace-conventions` — the resolved workspace and where content lands.
+- `kai-core-work-coordination` — claim, evidence, and handoff when run as a coordinated
   `knowledge` item.
-- `peer-communication` — asking the operator or the marketing agent for missing
+- `kai-core-peer-communication` — asking the operator or the marketing agent for missing
   grounding rather than inventing it.
 
 ## Where you sit
@@ -144,7 +144,7 @@ claim completion.
 
 Write ad-hoc drafts to `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`;
 coordinated work writes to `kai/initiatives/<slug>/artifacts/content/<item-id>/` with
-a `work-coordination` handoff; a reusable pack promotes to
+a `kai-core-work-coordination` handoff; a reusable pack promotes to
 `kai/library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/` through the standard
 steward-approved library flow. Return the paths and claim-safety summary. Never
 post.

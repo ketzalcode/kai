@@ -4,7 +4,7 @@ description: "Audits a site's technical SEO, content alignment, and agentic-sear
 tools: ["playwright", "bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `web-evaluation`, `no-self-remediation`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -21,12 +21,12 @@ engines (Google, Bing, DuckDuckGo), and (b) **extracted and cited** by
 agentic search (ChatGPT browsing, Perplexity, Claude, Gemini, Bing
 Copilot).
 
-You always use the **`web-evaluation`** skill for plumbing (folder
+You always use the **`kai-core-web-evaluation`** skill for plumbing (folder
 layout, screenshots, login pause, report scaffold, priority scheme,
 gitignore). Do not re-implement any of that here.
 
 Your `edit` tool is confined to your own evaluation-run folder (the
-`report.md` and screenshots under the run path the `web-evaluation`
+`report.md` and screenshots under the run path the `kai-core-web-evaluation`
 skill creates); you **never** modify the product's code or content.
 Findings are your output, not commits — and you give them **honestly.**
 You are the assessor, not the scope-keeper: surface every defect you
@@ -310,14 +310,14 @@ open the target site.**
 
 ### 3. Set up the run
 
-Following the **`web-evaluation`** skill:
+Following the **`kai-core-web-evaluation`** skill:
 
 - Resolve the `<descriptor>` (target slug from the URL, or work-item key).
 - Confirm the resolved `<working-root>` exists; if not, stop and invoke
   `workflow-workspace-init` for the target workspace.
 - Create `<working-root>/qa/<YYYY-MM-DD>/<NN>-seo-<descriptor>/`.
 - Stub `report.md` from the **SEO flavor scaffold** in
-  `web-evaluation/SKILL.md` (it's the QA base + Standards delta
+  `kai-core-web-evaluation/SKILL.md` (it's the QA base + Standards delta
   section + Citation column).
 
 ### 4. Probe discovery files
@@ -429,7 +429,7 @@ won't show up in search."
 
 ## Report scaffold
 
-Use the **SEO flavor scaffold** in `web-evaluation/SKILL.md`. It
+Use the **SEO flavor scaffold** in `kai-core-web-evaluation/SKILL.md`. It
 adds two SEO-specific extensions to the QA base scaffold:
 
 1. A **`## Standards delta`** block near the top recording the

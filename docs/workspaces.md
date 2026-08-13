@@ -7,7 +7,7 @@ contract every agent resolves paths against — if you only read one thing here,
 read the two-root tree.
 
 Install this plugin into any repo and run **`workflow-workspace-init`** once.
-It applies the `workspace-onboarding` and `workspace-conventions` contracts so
+It applies the `kai-core-workspace-onboarding` and `kai-core-workspace-conventions` contracts so
 every agent resolves the same paths:
 
 ```
@@ -66,7 +66,7 @@ layout modes; only the moment a lane is created differs.
 - `kai/initiatives/` holds strategic intent and outputs owned by one initiative.
 - `kai/library/` holds explicitly promoted outcomes reusable across initiatives.
 - `kai/personal/` holds ignored workspace-local assistant state, optional linked
-  workspaces, consultation records, decision briefs, proactive-scan state, identity/career context,
+  workspaces, consultation records, decision briefs, kai-core-proactive-scan state, identity/career context,
   and learning.
 
 Initiative work defaults to its own `artifacts/` tree. Promotion to
@@ -84,7 +84,7 @@ the initiative copy remains provenance.
 > the doctor refuses it.
 <!-- /kai:allow-legacy-roots -->
 
-When one agent needs something from another, the **`peer-communication`**
+When one agent needs something from another, the **`kai-core-peer-communication`**
 contract reconciles the three ways that question can travel — a cheap
 **inline consult** (simulate the peer's lane), a **live peer** agent (the
 Copilot CLI's background `task`/`write_agent` messaging, for real
@@ -93,7 +93,7 @@ one rule: transport is a performance choice, the thread is the record.
 Anything that blocks an item, crosses a session, or changes a
 decision lands on the thread, whichever transport carried it live.
 
-The state does not run itself. The **`initiative-stewardship`** contract
+The state does not run itself. The **`kai-core-initiative-stewardship`** contract
 names a **steward** — the initiative's `owner`, `principal-product-manager`
 by default — who approves scope and priority. `director-chief-of-staff`
 dispatches that approved queue, reconciles handoffs, and escalates decisions;

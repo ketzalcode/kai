@@ -4,7 +4,7 @@ description: "Turns a committed product action into a scoped, sequenced engineer
 tools: ["bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -176,20 +176,20 @@ Output to: `<working-root>/eng/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md`
 
 - `<target-slug>` is the descriptor — a slug of the product action being
   scoped; descriptive only, not the grouping key.
-- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+- Resolve `<workspace-root>` and `<working-root>` from `kai-core-workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
 - `<NN>` is the zero-padded per-day run index (highest existing in
-  `<working-root>/eng/<YYYY-MM-DD>/` + 1); see `workspace-conventions` for the
+  `<working-root>/eng/<YYYY-MM-DD>/` + 1); see `kai-core-workspace-conventions` for the
   date-first run grammar.
 
-**Initiative gating (see `workspace-conventions`).** Before scoping the plan,
+**Initiative gating (see `kai-core-workspace-conventions`).** Before scoping the plan,
 glance at `kai/coordination/ACTIVE.md`. If this work falls inside the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and sequence the plan toward it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's a side effort or an
 unrelated surface, load nothing and work context-free.
 
-**Zone & promotion (see `workspace-conventions`):** `plan.md` defaults to
+**Zone & promotion (see `kai-core-workspace-conventions`):** `plan.md` defaults to
 the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated plan to

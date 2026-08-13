@@ -66,7 +66,7 @@ failure states while it runs.
 - Tests: `web/src/reports/__tests__/export/` — component and integration tests,
   written by the implementing frontend engineer.
 - Design conformance: approved at `9b2d017` against the approved design artifact.
-  This is a net-new user-facing surface, so the `definition-of-done` design
+  This is a net-new user-facing surface, so the `kai-core-definition-of-done` design
   sign-off sub-gate fires from the diff itself; without this verdict or a
   recorded operator WAIVER the item cannot reach `release-ready`.
 - QA verification: not yet dispatched. The lease is unheld, and `next_role`

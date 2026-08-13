@@ -90,7 +90,7 @@ function selfTest() {
     },
     {
       name: 'behavior change without a bump fails',
-      input: { changedFiles: ['skills/work-coordination/SKILL.md'], baseVersion: '0.14.0', headVersion: '0.14.0' },
+      input: { changedFiles: ['skills/kai-core-work-coordination/SKILL.md'], baseVersion: '0.14.0', headVersion: '0.14.0' },
       expect: (r) => !r.ok && r.behaviorChanged && r.errors.some((e) => /not bumped/.test(e)),
     },
     {

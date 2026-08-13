@@ -52,12 +52,12 @@ Behavioral-contract and host compatibility:
 - **Workspace-contract consistency (drift detectors).** The workspace contract
   is described in several files that must not diverge:
   - the managed `.gitignore` block is byte-identical between the repo
-    `.gitignore` and the `workspace-onboarding` template agents install;
+    `.gitignore` and the `kai-core-workspace-onboarding` template agents install;
   - the `.kai/runs` **areas** match across the manifest schema
-    (`workspace-conventions`), the onboarding scaffold, and
+    (`kai-core-workspace-conventions`), the onboarding scaffold, and
     `workflow-workspace-init`;
   - the initiative `artifacts/` directories match between
-    `workspace-conventions` and `workflow-initiative-init`;
+    `kai-core-workspace-conventions` and `workflow-initiative-init`;
   - the `library/<type>/` set matches across the conventions "Library types"
     table and both library scaffolds.
 - **Fixture manifest schema.** `test/fixtures/repo-workspace/.kai/manifest.json`
@@ -152,7 +152,7 @@ Copilot host (CLI or coding agent) against a scratch workspace:
 - setup/migration idempotence (`.persona-self/`, retired `.kai/local.json`,
   manifest `workspace_kind`) without exposing private local paths;
 - workspace-scoped identity extraction and `status: stub` handling;
-- content-grounding claim-safety end to end on a real `product_context.json`.
+- kai-core-content-grounding claim-safety end to end on a real `product_context.json`.
 - support triage redaction, grounded deduplication, and incident-first routing;
 - growth/data metric-contract, causal-status, small-cell, and scope-boundary
   behavior;
@@ -164,7 +164,7 @@ Copilot host (CLI or coding agent) against a scratch workspace:
 When adding a new run area, `library/` type, or host tool, update the manifest
 schema/scaffolds/allowlist together — the consistency checks above will fail
 until they agree. When changing the generated workspace contract, bump
-`schema_version`, append a migration step to the `workspace-onboarding` ladder,
+`schema_version`, append a migration step to the `kai-core-workspace-onboarding` ladder,
 and update the doctor + fixtures together. When adding, removing, or renaming an
 agent/skill (or changing a user-invocable skill's `argument-hint`), regenerate
 the golden inventory with `npm run host-contract:update` and commit it.

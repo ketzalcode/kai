@@ -149,10 +149,10 @@ const CATEGORIES = [
     title: 'Workspace & scope',
     blurb: 'The shared contracts every acting agent inherits: where work goes, and what it may change.',
     members: [
-      'team-operating-rules', 'workspace-conventions', 'workspace-onboarding',
-      'work-coordination', 'work-activity', 'fleet-observation', 'definition-of-done', 'scope-discipline',
-      'no-self-remediation',
-      'issue-analysis', 'initiative-stewardship', 'peer-communication',
+      'kai-core-team-operating-rules', 'kai-core-workspace-conventions', 'kai-core-workspace-onboarding',
+      'kai-core-work-coordination', 'kai-core-work-activity', 'fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
+      'kai-core-no-self-remediation',
+      'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
       'product-exploration', 'product-marketing-intelligence',
     ],
   },
@@ -161,7 +161,7 @@ const CATEGORIES = [
     title: 'Engineering craft',
     blurb: 'Per-change discipline every `principal-swe-*` agent inherits.',
     members: [
-      'coding-style', 'research-before-coding', 'pr-sizing', 'pr-delivery',
+      'coding-style', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
       'onboard-to-codebase', 'build-diagrams',
     ],
   },
@@ -179,28 +179,28 @@ const CATEGORIES = [
     kind: 'skill',
     title: 'Product design',
     blurb: 'Design-system grounding and human-confirmable mockups, with the frontend seam.',
-    members: ['design-grounding', 'ui-mockup'],
+    members: ['kai-core-design-grounding', 'ui-mockup'],
   },
   {
     kind: 'skill',
     title: 'Web & content',
     blurb: 'Browser-run plumbing and the claim-safety contract creative agents inherit.',
     members: [
-      'web-evaluation', 'web-content-extraction', 'content-grounding', 'linkedin-content',
-      'video-direction', 'demo-capture', 'demo-zoom', 'demo-narrate', 'create-product-demo', 'pulse-digest',
+      'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'kai-core-content-grounding', 'linkedin-content',
+      'video-direction', 'demo-capture', 'demo-zoom', 'demo-narrate', 'create-product-demo', 'kai-core-pulse-digest',
     ],
   },
   {
     kind: 'skill',
     title: 'Lessons & writing',
     blurb: 'Turn markdown into lessons, audio, or your own voice.',
-    members: ['generate-audio', 'generate-html-lesson', 'extract-writing-style'],
+    members: ['kai-core-generate-audio', 'generate-html-lesson', 'extract-writing-style'],
   },
   {
     kind: 'skill',
     title: 'Personal',
     blurb: 'The private methods behind the executive assistant. Never autonomous.',
-    members: ['personal-agenda', 'executive-consultation', 'decision-brief', 'proactive-scan'],
+    members: ['kai-core-personal-agenda', 'kai-core-executive-consultation', 'kai-core-decision-brief', 'kai-core-proactive-scan'],
   },
 ];
 

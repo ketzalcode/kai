@@ -24,7 +24,7 @@ or editing.
 
 ## Grounding and claim-safety
 
-**Inherits `content-grounding`.** The voiceover script, on-screen text, and
+**Inherits `kai-core-content-grounding`.** The voiceover script, on-screen text, and
 creative brief make claims about the product, so every factual span is entered in
 the claim ledger against a `product_context.json` reference, treated by its
 provenance, and never fabricated. `needs_confirmation` items stay out of the
@@ -126,7 +126,7 @@ Five artifacts, produced together, using these exact filenames.
 Video goal · target audience · core message · narrative angle · visual style ·
 pacing · platform assumptions · required assets (existing, by `media_manifest`
 id) · missing assets (`generated` or `capture-required`). Claims in the brief
-follow `content-grounding`.
+follow `kai-core-content-grounding`.
 
 ### 2. `storyboard.md`
 
@@ -179,7 +179,7 @@ same `timestamp`. Every timing not backed by real asset metadata carries an
 Full spoken script **blocked by `scene:` id** so it aligns to the storyboard and
 EDL. Each block carries its estimated timing, `[pause Ns]` markers (counted in
 the timing), cut markers referencing the EDL `event_id`s, and retake notes where
-a line reads awkwardly. Every factual line carries its `content-grounding`
+a line reads awkwardly. Every factual line carries its `kai-core-content-grounding`
 claim-ledger mapping; `needs_confirmation` content is excluded from the spoken
 copy.
 
@@ -255,12 +255,12 @@ focus plan belong to one take and are disposable.
 
 ## Placement
 
-Resolve the workspace via `workspace-conventions`.
+Resolve the workspace via `kai-core-workspace-conventions`.
 
 - **Ad-hoc / standalone**: `.kai/runs/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
 - **Coordinated (initiative)**: the bundle writes to
   `kai/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
-  knowledge` and a `work-coordination` handoff.
+  knowledge` and a `kai-core-work-coordination` handoff.
 - **Reusable direction** promotes through the standard steward-approved library
   flow to `kai/library/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`. Existing media
   is referenced from `media_manifest.json`, never copied into the committed
@@ -270,7 +270,7 @@ Resolve the workspace via `workspace-conventions`.
 
 By default the script is written in a neutral, well-paced narration register.
 When the operator wants their founder voice, hand the claim-safe script to
-`persona-self` with facts locked (per `content-grounding`) and re-verify
+`persona-self` with facts locked (per `kai-core-content-grounding`) and re-verify
 claim-safety and timing after voicing — a re-worded line changes its word count
 and therefore its scene timing.
 
@@ -278,7 +278,7 @@ and therefore its scene timing.
 
 1. **Plan, don't render.** Produce direction and structured instructions; never
    render, encode, or execute an edit, and never hard-code an AI provider.
-2. **Ground every claim** through `content-grounding`; the script and brief invent
+2. **Ground every claim** through `kai-core-content-grounding`; the script and brief invent
    no product facts, metrics, or outcomes.
 3. **Existing vs. generated is explicit.** Existing assets cite a
    `media_manifest` id; missing ones are `ai_video_prompts` entries; never blur
@@ -314,6 +314,6 @@ Your move: <hand to an editor / AI tool; nothing was rendered>
   to-generate clip as captured footage.
 - ❌ A video cut with no matching audio cue point.
 - ❌ Inventing a product metric/outcome in the script or brief (see
-  `content-grounding`).
+  `kai-core-content-grounding`).
 - ❌ Hard-coding a specific AI video provider, or rendering/editing here.
 - ❌ Producing LinkedIn posts or other-platform copy.

@@ -31,15 +31,16 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.52.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.53.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**Discovery metadata is 63% smaller.** Every agent and skill `description:` is
-loaded into every session — it is the routing surface, not documentation. Those
-descriptions had grown to **~13.4k tokens per session** by accumulating
-capability inventories and implementation notes the bodies already carried.
-Rewriting all 105 to "what it does, when it fires" cut that to **~4.9k**, and a
-CI budget now holds the line at 250 characters per agent and 180 per skill.
+**Core skills now carry an owned namespace.** The 22 skills that every
+department shares are prefixed `kai-core-*`, ahead of the split into a required
+core plus installable department packs. This is forced by measured host
+behaviour: when two plugins provide the same skill name, an agent binds to
+whichever loaded first — silently, and invisibly to a preflight. A prefixed name
+on an agent's `**Inherits:**` line now means "this comes from core"; pack-local
+skills keep their bare names.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai

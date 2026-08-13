@@ -42,7 +42,7 @@ Durable handoff record. Newest entry last.
   new token was introduced.
 - **evidence:** `completed_reviews[0]` on the item; this thread entry.
 - **note:** this review was required because the change adds a net-new
-  user-facing surface. The `definition-of-done` sub-gate detects that from the
+  user-facing surface. The `kai-core-definition-of-done` sub-gate detects that from the
   diff — a missing designer entry in `review_requirements` would have been the
   failure, not an exemption.
 - **next:** `principal-qa-ui` independent system verification. The lease is

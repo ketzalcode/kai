@@ -135,7 +135,7 @@ export function checkWorkspace(root) {
   } else if (!Number.isInteger(sv)) {
     err(`.kai/manifest.json "schema_version" must be an integer (found ${JSON.stringify(sv)}).`);
   } else if (sv < CURRENT_SCHEMA_VERSION) {
-    for (let v = sv + 1; v <= CURRENT_SCHEMA_VERSION; v++) migrations.push(`apply migration step → ${v} (see workspace-onboarding ladder).`);
+    for (let v = sv + 1; v <= CURRENT_SCHEMA_VERSION; v++) migrations.push(`apply migration step → ${v} (see kai-core-workspace-onboarding ladder).`);
     err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_SCHEMA_VERSION}; migration required before claiming work.`);
   } else if (sv > CURRENT_SCHEMA_VERSION) {
     err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update the plugin (/plugin update kai) before claiming work.`);
@@ -203,7 +203,7 @@ export function checkWorkspace(root) {
           err(`${rel}: lease held by ${lz.holder} but has no expiry`);
         }
         if (isNull(lz.token)) {
-          err(`${rel}: lease held by ${lz.holder} but has no token (a held lease must carry a unique grant token — see work-coordination "Claiming work safely")`);
+          err(`${rel}: lease held by ${lz.holder} but has no token (a held lease must carry a unique grant token — see kai-core-work-coordination "Claiming work safely")`);
         }
         if (isNull(lz.versionAtGrant)) {
           err(`${rel}: lease held by ${lz.holder} but has no version_at_grant (the grant must be bound to the item version it was issued against)`);
@@ -323,7 +323,7 @@ function checkLocalCorpusPrivacy(root, err, warn) {
   for (const p of ['kai/coordination', '.kai/manifest.json']) {
     const r = git(['check-ignore', '--no-index', '-q', '--', p]);
     if (r.status === 1) {
-      err(`corpus_visibility is "local" but "${p}" is not ignored; re-install the managed .gitignore block from workspace-onboarding.`);
+      err(`corpus_visibility is "local" but "${p}" is not ignored; re-install the managed .gitignore block from kai-core-workspace-onboarding.`);
     } else if (r.status !== 0) {
       warn(`corpus_visibility is "local" but git could not evaluate ignore rules for "${p}"; the exclusion is unverified.`);
     }

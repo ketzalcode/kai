@@ -4,7 +4,7 @@ description: "Builds grounded product marketing intelligence from public surface
 tools: ["playwright", "bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `peer-communication`, `product-marketing-intelligence`, `web-content-extraction`, `web-evaluation`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `product-marketing-intelligence`, `kai-core-web-content-extraction`, `kai-core-web-evaluation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -35,14 +35,14 @@ Read and apply:
 - `product-marketing-intelligence` — your method and the three-artifact contract
   (report + `product_context.json` + `media_manifest.json`), the
   fact/inference/recommendation discipline, intake modes, and placement.
-- `web-evaluation` — browser safety, login-pause, run folders, and screenshot
+- `kai-core-web-evaluation` — browser safety, login-pause, run folders, and screenshot
   discipline for live-surface intake.
-- `web-content-extraction` — harvesting readable marketing copy from a landing or
+- `kai-core-web-content-extraction` — harvesting readable marketing copy from a landing or
   content page into clean local markdown.
-- `workspace-conventions` — the resolved workspace and canonical artifact paths.
-- `work-coordination` — claim, evidence, and handoff when run as a coordinated
+- `kai-core-workspace-conventions` — the resolved workspace and canonical artifact paths.
+- `kai-core-work-coordination` — claim, evidence, and handoff when run as a coordinated
   `knowledge` item.
-- `peer-communication` — asking real roles for facts or access you lack.
+- `kai-core-peer-communication` — asking real roles for facts or access you lack.
 
 ## Where you sit
 
@@ -110,7 +110,7 @@ Infer the intake mode(s) from what the operator supplies (see
 
 - **Existing map** — a current `product-map.md`: consume its facts directly.
 - **Public marketing surface** — a public landing/pricing/marketing URL: walk it
-  read-only via `web-evaluation` and harvest copy via `web-content-extraction`.
+  read-only via `kai-core-web-evaluation` and harvest copy via `kai-core-web-content-extraction`.
   Interactive app-flow facts come from the product-map, not from re-walking here.
 - **Provided media** — screenshots/recordings/uploads: catalog into the manifest.
 - **Notes only** — operator notes: treat as `operator-provided`, verify nothing,

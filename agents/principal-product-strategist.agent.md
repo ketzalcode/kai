@@ -4,7 +4,7 @@ description: "Investigates future product opportunities, analogous products, fit
 tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -154,20 +154,20 @@ Output to: `<working-root>/product/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/cata
 
 - `<target-slug>` is the descriptor — the work-item key or a slug of the
   product or investigation subject; descriptive only, not the grouping key.
-- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+- Resolve `<workspace-root>` and `<working-root>` from `kai-core-workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
 - `<NN>` is the zero-padded per-day run index (highest existing in
-  `<working-root>/product/<YYYY-MM-DD>/` + 1); see `workspace-conventions` for
+  `<working-root>/product/<YYYY-MM-DD>/` + 1); see `kai-core-workspace-conventions` for
   the date-first run grammar.
 
-**Initiative gating (see `workspace-conventions`).** Before cataloging bets,
+**Initiative gating (see `kai-core-workspace-conventions`).** Before cataloging bets,
 glance at `kai/coordination/ACTIVE.md`. If this product area falls inside the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and weight your prioritization toward it — then
 stamp `initiative: <slug>` in the promoted frontmatter. If it's a side
 exploration or an unrelated surface, load nothing and work context-free.
 
-**Zone & promotion (see `workspace-conventions`):** `catalog.md` defaults
+**Zone & promotion (see `kai-core-workspace-conventions`):** `catalog.md` defaults
 to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated catalog
@@ -342,7 +342,7 @@ Save the catalog. Post back:
   `principal-product-manager`. You propose; it later defends and
   triages.
 - **First-time-user friction on a shipped surface** →
-  `persona-ux-first-time-user` (via the `web-evaluation` skill).
+  `persona-ux-first-time-user` (via the `kai-core-web-evaluation` skill).
 
 ## Tone
 

@@ -1,6 +1,6 @@
 // The observed half of fleet visibility.
 //
-// `work-activity` (#96) is DECLARED: an agent chooses to report. That is enough
+// `kai-core-work-activity` (#96) is DECLARED: an agent chooses to report. That is enough
 // to build a participation timeline, and not enough to trust one -- when the
 // question is "why did no designer ever appear on this feature", a missing role
 // means either "not consulted" or "consulted and forgot to log", and those two

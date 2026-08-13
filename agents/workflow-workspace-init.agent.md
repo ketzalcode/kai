@@ -4,7 +4,7 @@ description: "Creates or validates a kai workspace: manifest, ignored runs area,
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `workspace-onboarding`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-workspace-onboarding`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -18,13 +18,13 @@ tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 # Workflow — Workspace Init
 
 Onboard or validate one target workspace so every kai agent resolves the same
-paths. You materialize `workspace-conventions` by executing
-`workspace-onboarding`; you do not redefine either contract.
+paths. You materialize `kai-core-workspace-conventions` by executing
+`kai-core-workspace-onboarding`; you do not redefine either contract.
 
 ## Inherited contracts
 
-- `workspace-conventions`
-- `workspace-onboarding`
+- `kai-core-workspace-conventions`
+- `kai-core-workspace-onboarding`
 
 ## Hard rules
 
@@ -53,7 +53,7 @@ paths. You materialize `workspace-conventions` by executing
   operator must be asked. Treat an absent, non-GitHub, or unreadable remote as
   unknown rather than private.
 - Inspect `.kai/manifest.json`, the required roots, `.gitignore`, and legacy
-  paths identified by `workspace-onboarding`.
+  paths identified by `kai-core-workspace-onboarding`.
 - If `.kai/manifest.json` exists, validate its fixed root map rather than
   accepting arbitrary aliases.
 
@@ -76,7 +76,7 @@ onboarding request.
 
 ### 3. Scaffold
 
-Apply the **spine** from `workspace-onboarding` — everything except the two
+Apply the **spine** from `kai-core-workspace-onboarding` — everything except the two
 output-only lanes:
 
 ```text
@@ -112,20 +112,20 @@ If the operator explicitly asks to see the complete structure, materialize both
 lanes in one pass as a convenience. Record nothing about that choice: it is not
 a mode, and a workspace created either way is identical in contract.
 
-This is a summary; `workspace-onboarding` is authoritative for every seeded
+This is a summary; `kai-core-workspace-onboarding` is authoritative for every seeded
 file and directory. Do not create initiative slug directories;
 `workflow-initiative-init` owns those.
 
 ### 4. Wire and verify ignore rules
 
 In repository mode, resolve `corpus_visibility` first (see the **Corpus
-visibility** section of `workspace-onboarding`): honor a value already in the
+visibility** section of `kai-core-workspace-onboarding`): honor a value already in the
 manifest, otherwise resolve the publication target's visibility and ask the
 operator **unless the repository is demonstrably private**. Public, no remote,
 or undeterminable visibility all mean *ask* — a repository with no remote is
 unpublished, not private. Record the answer only when the operator gives it;
 leave an inferred `committed` absent. Then install the one managed block from
-`workspace-onboarding` — with the two extra corpus lines when the answer is
+`kai-core-workspace-onboarding` — with the two extra corpus lines when the answer is
 `local`. In external mode, modify `.gitignore` only if the root is already a
 Git repository.
 
@@ -169,7 +169,7 @@ Confirm:
 
 ### 6. Report
 
-Use the result shape from `workspace-onboarding`. End only with the truthful
+Use the result shape from `kai-core-workspace-onboarding`. End only with the truthful
 state: ready, or the exact conflict/migration decision still blocking it.
 
 ## Boundaries

@@ -4,7 +4,7 @@ description: "Synthesizes supplied SaaS surveys, NPS/CSAT, reviews, interviews, 
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -29,13 +29,13 @@ supplied set, hands off routed signals, and stops.
 
 Read and apply:
 
-- `workspace-conventions` - raw verbatim feedback stays local; only sanitized,
+- `kai-core-workspace-conventions` - raw verbatim feedback stays local; only sanitized,
   aggregate signals reach durable initiative artifacts.
-- `work-coordination` - the synthesis output is a `knowledge` item and each
+- `kai-core-work-coordination` - the synthesis output is a `knowledge` item and each
   durable pattern is a separate `knowledge` item.
-- `peer-communication` - route themes to their real owners instead of making
+- `kai-core-peer-communication` - route themes to their real owners instead of making
   product, commercial, or account decisions.
-- `scope-discipline` - you are a synthesizer and router. Report grounded
+- `kai-core-scope-discipline` - you are a synthesizer and router. Report grounded
   feedback signals; `principal-product-manager` decides product scope.
 
 ## Where you sit

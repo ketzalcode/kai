@@ -4,7 +4,45 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.53.0] - 2026-08-13
+
+### Changed
+
+- **The 22 skills destined for `kai-core` now carry an owned-namespace prefix**
+  — `team-operating-rules` is now `kai-core-team-operating-rules`, and so on.
+  This is forced by measured host behaviour: when two installed plugins provide
+  a skill with the same name, an agent binds to whichever plugin loaded
+  **first**, silently, and a preflight cannot detect it because core *is*
+  present and answering while a different plugin supplies the rules. During the
+  pack migration (#29) legacy `kai` and `kai-core` are both installed, so every
+  shared name would collide. Renaming is what removes the ambiguity; load order
+  is not a mitigation.
+
+  Landed in the monolith ahead of the split, so the split itself is a pure file
+  move rather than a rename and a move in one unreviewable PR. 22 directories
+  renamed, 345 inheritance references re-resolved, ~1,000 mentions rewritten
+  across 118 files.
+
+  **Breaking for one user-facing name:** `generate-audio` is `user-invocable`
+  and is now `kai-core-generate-audio`. The `scripts/generate-audio.ps1`
+  command it hands you is unchanged. Pack-local skills (`coding-style`,
+  `pr-sizing`, `ui-mockup`, and the rest) keep their bare names — a prefixed
+  name now means "this comes from core", which is readable directly off an
+  agent's `**Inherits:**` line.
+
+  Two things deliberately **not** done, both recorded in the proposal: no `-v1`
+  suffix on the 22 (only `kai-core-contract-v1`, the preflight probe, carries a
+  version — otherwise every contract bump renames everything), and no taxonomy
+  segment in the name (classification is the most volatile attribute a skill
+  has; forcing a four-way taxonomy onto the 22 produced 12 arguable cases).
+
+- `docs/proposals/pack-architecture.md` records the revision, since the earlier
+  decision it had recorded — *contract-versioned* names for all core skills —
+  was measured to be the more expensive and less stable choice.
+
 ## [0.52.0] - 2026-08-13
+
+
 
 ### Added
 
@@ -2373,6 +2411,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.53.0]: https://github.com/RubenSaucedo/kai/compare/v0.52.0...v0.53.0
 [0.52.0]: https://github.com/RubenSaucedo/kai/compare/v0.51.0...v0.52.0
 [0.51.0]: https://github.com/RubenSaucedo/kai/compare/v0.50.0...v0.51.0
 [0.50.0]: https://github.com/RubenSaucedo/kai/compare/v0.49.3...v0.50.0

@@ -94,7 +94,7 @@ in CI on every pull request:
 | `npm run observe:self-test` | The subagent observer: consent gate, leak bounds, and the empty-stdout/exit-0 guarantee. |
 | `npm run observe:watch-self-test` | The ambient view: start/stop pairing, ambiguity labelling, and layout bounds. |
 | `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
-| `node examples/proactive-runner/runner.mjs --self-test` | The proactive-scan runner's decision, redaction, and retention core. |
+| `node examples/proactive-runner/runner.mjs --self-test` | The kai-core-proactive-scan runner's decision, redaction, and retention core. |
 
 On pull requests CI additionally runs `release-guard --base <sha> --head <sha>`
 to block a behavior-sensitive change that lacks a version bump plus

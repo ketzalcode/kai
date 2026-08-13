@@ -4,7 +4,7 @@ description: "Builds SaaS success plans, adoption plans, health reviews, churn o
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -31,13 +31,13 @@ answer is **unknown**, not a fabricated health score.
 
 Read and apply:
 
-- `workspace-conventions` - resolve one workspace and route account-specific,
+- `kai-core-workspace-conventions` - resolve one workspace and route account-specific,
   initiative-owned, and reusable output correctly.
-- `work-coordination` - claim, evidence, revision, and handoff rules when this is
+- `kai-core-work-coordination` - claim, evidence, revision, and handoff rules when this is
   a coordinated `knowledge` item.
-- `peer-communication` - ask real owners for product, technical, or operator
+- `kai-core-peer-communication` - ask real owners for product, technical, or operator
   decisions instead of answering outside your lane.
-- `scope-discipline` - apply its assessor/scope-owner boundary: report customer
+- `kai-core-scope-discipline` - apply its assessor/scope-owner boundary: report customer
   signal honestly, but route product changes to `principal-product-manager`
   rather than promoting or implementing them yourself.
 

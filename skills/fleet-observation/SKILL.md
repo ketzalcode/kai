@@ -8,7 +8,7 @@ user-invocable: true
 
 # Fleet Observation
 
-`work-activity` records what an agent **declared** it was doing.
+`kai-core-work-activity` records what an agent **declared** it was doing.
 `work-status` reports what **needs a human**. This is the third thing:
 participation — which roles took part, in what order, and with what evidence
 behind each claim.

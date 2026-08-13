@@ -73,7 +73,7 @@ Durable handoff record. Newest entry last.
   query parameter; the audit record captures actor, report id, and row count.
 - **evidence:** `completed_reviews[1]` on the item; this thread entry.
 - **residual risk:** none requiring operator acceptance.
-- **next:** `definition-of-done` gate. A reviewer does not promote the item to
+- **next:** `kai-core-definition-of-done` gate. A reviewer does not promote the item to
   `release-ready`; the ship gate does, after checking every dimension.
 
 ---
@@ -83,7 +83,7 @@ Durable handoff record. Newest entry last.
 - **item version:** 9
 - **state:** `in-review` -> `release-ready`
 - **change_ref:** `4f1c8ae`
-- **what happened:** Ran the `definition-of-done` gate. All six dimensions Clear
+- **what happened:** Ran the `kai-core-definition-of-done` gate. All six dimensions Clear
   at `4f1c8ae`; the design sign-off sub-gate does not fire — this item adds no
   user-facing surface. Produced the ship record with the deploy handoff and the
   production-verification plan.

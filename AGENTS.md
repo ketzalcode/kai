@@ -3,21 +3,21 @@
 These are the **repo-local** rules for changing kai itself. They apply to work
 inside this repository only.
 
-> **The shared operating contract lives in `skills/team-operating-rules/SKILL.md`,
+> **The shared operating contract lives in `skills/kai-core-team-operating-rules/SKILL.md`,
 > not here.** A plugin's own root `AGENTS.md` is never loaded as custom
 > instructions in a consumer workspace — the host reads `AGENTS.md` only from
 > the user's repository root and working directory. Rules placed here reach kai
 > contributors and nobody else. Anything that must bind agent behaviour in every
-> workspace belongs in the `team-operating-rules` skill, and every agent
+> workspace belongs in the `kai-core-team-operating-rules` skill, and every agent
 > declares it on its `**Inherits:**` line.
 
 ## Where the rules live
 
 | Concern | Home |
 | --- | --- |
-| Role taxonomy, ownership boundaries, acting-agent loop, test ownership, completion ladder, communication, `@operator` | `skills/team-operating-rules/SKILL.md` |
-| Workspace roots, schema version, artifact targets | `skills/workspace-conventions/SKILL.md` |
-| Item lifecycle, leases, handoffs | `skills/work-coordination/SKILL.md` |
+| Role taxonomy, ownership boundaries, acting-agent loop, test ownership, completion ladder, communication, `@operator` | `skills/kai-core-team-operating-rules/SKILL.md` |
+| Workspace roots, schema version, artifact targets | `skills/kai-core-workspace-conventions/SKILL.md` |
+| Item lifecycle, leases, handoffs | `skills/kai-core-work-coordination/SKILL.md` |
 | Persona-specific craft | `agents/*.agent.md` |
 | Releasing this plugin | this file, below |
 
@@ -28,14 +28,14 @@ body, directly under the frontmatter, listing the skills that bind it, followed
 by the verbatim directive in `scripts/lib/inherits-block.txt`:
 
 ```markdown
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`
 ```
 
 `npm test` enforces that the line exists exactly once and comes first, that the
 directive matches the canonical text byte for byte, that every skill it names
-exists, that every agent inherits `team-operating-rules`, that every
+exists, that every agent inherits `kai-core-team-operating-rules`, that every
 `director-*` / `principal-*` / `workflow-*` agent also inherits
-`workspace-conventions`, and that every skill claimed by a profile's
+`kai-core-workspace-conventions`, and that every skill claimed by a profile's
 "Contracts you inherit" section or by inheritance prose appears on the line.
 
 The directive is deliberately duplicated into every agent rather than
@@ -46,7 +46,7 @@ copies from drifting.
 The same reasoning applies to the communication-style block below, for the
 opposite reason: it must reach the **main CLI agent**, which loads no skill and
 no agent file at all. Its canonical text lives in
-`scripts/lib/communication-style-block.md`, `workspace-onboarding` installs it
+`scripts/lib/communication-style-block.md`, `kai-core-workspace-onboarding` installs it
 into a consumer's `AGENTS.md` on explicit opt-in, and `npm test` fails if this
 file's copy drifts from the canonical one, if the markers are missing, or if
 onboarding stops referencing it. **Edit the canonical file, never this copy.**
@@ -55,7 +55,7 @@ onboarding stops referencing it. **Edit the canonical file, never this copy.**
 
 The block below is the one thing kai ships that binds the **main CLI agent**
 rather than a kai agent. The host loads `AGENTS.md` from the *user's*
-repository, never from a plugin, so `team-operating-rules` — which governs how
+repository, never from a plugin, so `kai-core-team-operating-rules` — which governs how
 kai roles talk to each other — cannot reach the top-level assistant that
 actually replies to a human. A consumer opts into this block at onboarding;
 kai carries it here because a style we ship and do not use ourselves is a

@@ -10,7 +10,7 @@ argument-hint: <path to source markdown> [--audio <path to mp3>] [--lang en|es] 
 
 You produce a **self-contained HTML lesson page** from a markdown source.
 The page is the visual half of a lesson; the audio (produced separately
-by `generate-audio`) is the auditory half. They sit next to each other
+by `kai-core-generate-audio`) is the auditory half. They sit next to each other
 so the user can double-click `index.html` to open it in a browser, hit
 play on the embedded audio, and follow along.
 
@@ -127,13 +127,13 @@ this order:
   Lectoria output convention when audio was generated from a single
   file).
 - **`<source-dir>/../../audio/<source-folder>/<source-slug>-<lang>.mp3`**
-  (the convention when the parent folder was passed to `generate-audio`
+  (the convention when the parent folder was passed to `kai-core-generate-audio`
   recursively — e.g. `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/audio/raw/<module>/`).
 - **`<source-dir>/audio.mp3`** (already-staged sibling).
 
 If no audio is found and the user didn't specify, **ask** whether to:
 
-- (a) Generate audio now via the `generate-audio` skill, then proceed.
+- (a) Generate audio now via the `kai-core-generate-audio` skill, then proceed.
 - (b) Generate the HTML without audio (player omitted).
 - (c) Cancel and let the user generate audio first.
 
@@ -462,7 +462,7 @@ Surface:
 - ❌ Editing the source markdown. The source is canonical; the HTML
   is derived. Edit the source if you need content changes, then
   regenerate.
-- ❌ Generating audio inline. Use the existing `generate-audio` skill
+- ❌ Generating audio inline. Use the existing `kai-core-generate-audio` skill
   or `instructor-teacher` to orchestrate. This skill consumes
   audio; it doesn't produce it.
 - ❌ Hard-coding the title. Pull it from frontmatter or the first H1
@@ -473,14 +473,14 @@ Surface:
 - **From `workflow-course-to-audio`** — after it writes per-unit markdown to
   `.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/raw/`, the natural next step is
   the `instructor-teacher` agent, which uses this skill plus
-  `generate-audio` to produce paired lessons.
+  `kai-core-generate-audio` to produce paired lessons.
 - **From the user directly** — they can also invoke this skill
   standalone on any markdown file that has matching audio.
 
 ## See also
 
 - `instructor-teacher.agent.md` — the agent that orchestrates
-  this skill + `generate-audio` to produce complete lessons.
+  this skill + `kai-core-generate-audio` to produce complete lessons.
 - `workflow-course-to-audio.agent.md` — extracts course/cert/docs pages into the
   per-unit markdown this skill can consume.
-- `generate-audio/SKILL.md` — produces the MP3 the lesson embeds.
+- `kai-core-generate-audio/SKILL.md` — produces the MP3 the lesson embeds.

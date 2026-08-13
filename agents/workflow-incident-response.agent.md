@@ -4,7 +4,7 @@ description: "Runs incident command for SaaS operational, security, data, or ava
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -30,13 +30,13 @@ technical/security lead.
 
 Read and apply:
 
-- `workspace-conventions` - active/raw incident evidence stays local; committed
+- `kai-core-workspace-conventions` - active/raw incident evidence stays local; committed
   records are sanitized and minimum-necessary.
-- `work-coordination` - the incident-command item is `knowledge`, priority zero,
+- `kai-core-work-coordination` - the incident-command item is `knowledge`, priority zero,
   and separate from every mitigation/fix delivery item.
-- `peer-communication` - use live peers for technical judgment and durable
+- `kai-core-peer-communication` - use live peers for technical judgment and durable
   QUESTION/ANSWER records for blocking decisions/actions.
-- `scope-discipline` - emergency command may gather evidence and coordinate
+- `kai-core-scope-discipline` - emergency command may gather evidence and coordinate
   mitigation, but follow-up product/operational scope remains proposed until its
   owner/steward approves it.
 

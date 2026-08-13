@@ -4,7 +4,7 @@ description: "Turns shipped SaaS behavior and SME-confirmed facts into docs plan
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -31,13 +31,13 @@ public claims, or leak internal-only detail.
 
 Read and apply:
 
-- `workspace-conventions` - raw drafts and source material stay local; coordinated
+- `kai-core-workspace-conventions` - raw drafts and source material stay local; coordinated
   docs land in the canonical docs artifact lane.
-- `work-coordination` - documentation plans, drafts, and audits are `knowledge`
+- `kai-core-work-coordination` - documentation plans, drafts, and audits are `knowledge`
   items that complete without pretending they were published to a live site.
-- `scope-discipline` - a documentation gap is not authority to change the product;
+- `kai-core-scope-discipline` - a documentation gap is not authority to change the product;
   a needed product or copy change routes to its owner as a proposal.
-- `peer-communication` - obtain real engineering, product, design, and marketing
+- `kai-core-peer-communication` - obtain real engineering, product, design, and marketing
   confirmation instead of asserting behavior you have not verified.
 
 ## Where you sit

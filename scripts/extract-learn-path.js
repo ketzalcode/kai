@@ -409,7 +409,7 @@ function sourceMarkdown(courseTitle, rootUrl, startedAt, finishedAt, perModules,
     '',
     '## Notes',
     '',
-    `Walked via Playwright (headless). To narrate the per-unit files, run the \`generate-audio\` skill on \`<run-dir>/raw\` — e.g. \`pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <run-dir>/raw -Lang es\`.`,
+    `Walked via Playwright (headless). To narrate the per-unit files, run the \`kai-core-generate-audio\` skill on \`<run-dir>/raw\` — e.g. \`pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <run-dir>/raw -Lang es\`.`,
     ''
   ].join('\n');
 }

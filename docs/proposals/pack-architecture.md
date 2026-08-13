@@ -174,7 +174,7 @@ If legacy `kai` and `kai-core` are both installed, both provide
 qualified tools rather than a silent wrong-copy-wins — better than feared, but
 an agent could still load the stale contract and pass its own preflight.
 
-Mitigation: give core skills distinctive contract-versioned identifiers so
+Mitigation: give core skills an owned-namespace prefix (`kai-core-*`) so
 legacy `kai` cannot accidentally satisfy them. Plus a migration that uninstalls
 legacy first — already required, since installing over a direct install leaves
 **both** copies loaded.
@@ -222,8 +222,8 @@ requirement. Monolithic `kai` stays authoritative throughout.
 
 **Status: done.** See "Phase 1 results" below. Built by
 `scripts/pack-preview.mjs`. Outcome: the preflight holds on real agents, and
-skill-name collision was found to be load-order dependent — which forces
-contract-versioned names for core skills.
+skill-name collision was found to be load-order dependent — which forces an
+owned-namespace prefix on core skills.
 
 ### Phase 2 — prove roster enumeration
 
@@ -323,10 +323,31 @@ user neither controls nor sees — and the preflight does **not** catch it, beca
 core is present and answers correctly while a *different* plugin supplies the
 rules.
 
-> **Decision: core skills must carry distinctive, contract-versioned names**
-> (`kai-core-team-operating-rules-v1` rather than `team-operating-rules`), so a
+> **Decision: core skills must carry an owned-namespace prefix**
+> (`kai-core-team-operating-rules` rather than `team-operating-rules`), so a
 > legacy `kai` install cannot satisfy a pack agent's inheritance by accident.
 > Renaming is what removes the ambiguity; ordering luck is not a mitigation.
+>
+> **Revised while executing it.** This decision was first recorded as
+> *contract-versioned* names — a `-v1` suffix on every core skill. Measured,
+> that is wrong: it makes every contract bump a rename of all 22 skills and
+> ~1,000 mentions, so the version would be re-litigated in the most expensive
+> identifier in the system. The prefix alone removes the collision. **Exactly
+> one skill carries a version — `kai-core-contract-v1`, the preflight probe**,
+> which exists to be version-pinned. The other names never change again.
+>
+> For the same reason there is **no taxonomy segment** in the name
+> (`kai-core-<space>-<skill>`). Classification is the most volatile attribute a
+> skill has, and the name is the most expensive place to keep it; it belongs in
+> frontmatter, grouping the generated catalog. Forcing a four-way taxonomy onto
+> the 22 core skills produced 12 genuinely arguable cases, because the axes are
+> not parallel — normative force, subject matter, mechanism, and procedural
+> shape are different questions about the same document.
+>
+> **Landed** in the monolith ahead of the split: 22 skill directories renamed,
+> 345 inheritance references re-resolved, ~1,000 mentions rewritten. Doing it
+> first means the split itself is a pure file move rather than a rename and a
+> move in one unreviewable PR.
 
 **Directors can stay in core — conditionally.** Test E answers the Phase 2 gate:
 an agent *can* determine the installed roster and does not invent availability

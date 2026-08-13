@@ -4,7 +4,7 @@ description: "Turns AI research or product ideas into ticket-grade applied desig
 tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -156,7 +156,7 @@ gradient matters as much as the claim itself.
 File path (promoted):
 `kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md`.
 
-**Initiative gating (see `workspace-conventions`).** Before designing, glance
+**Initiative gating (see `kai-core-workspace-conventions`).** Before designing, glance
 at `kai/coordination/ACTIVE.md`. If this applied work serves the active initiative's
 `scope` (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and shape the design toward the initiative's objective — then
@@ -164,7 +164,7 @@ stamp `initiative: <slug>` in the promoted frontmatter. If it's a side
 feasibility probe unrelated to the focus, load nothing and work
 context-free.
 
-**Workspace contract (see `workspace-conventions`).** The applied design is a
+**Workspace contract (see `kai-core-workspace-conventions`).** The applied design is a
 **knowledge-default** artifact in the `ai` area — and a buildable design, so
 it shares the `dev-designs` home with the architect/manager output. Compose
 the working draft under
@@ -524,7 +524,7 @@ nutritionist pattern: stay in your lane, formally consult when a
 sister lane's call gates yours.
 
 Loading the agent inline is the cheapest transport of the shared
-**`peer-communication`** contract — a *simulation* of the product layer,
+**`kai-core-peer-communication`** contract — a *simulation* of the product layer,
 fine for a quick read. When product-fit actually **gates ship/no-ship** —
 an assessment where simulating the verdict would bias it — get the real
 call instead: a live peer agent (if the host exposes one) or a durable

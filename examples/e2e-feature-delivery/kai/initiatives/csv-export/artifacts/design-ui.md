@@ -4,7 +4,7 @@ Owner: `principal-product-designer`. Bound to item `csv-export-ui`.
 Approved before implementation; the design-conformance review at `9b2d017`
 checks the built surface against this document.
 
-This is a **net-new user-facing surface**, so the `definition-of-done` design
+This is a **net-new user-facing surface**, so the `kai-core-definition-of-done` design
 sign-off sub-gate fires from the diff whether or not anyone remembered to add
 the designer to `review_requirements`.
 

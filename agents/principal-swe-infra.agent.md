@@ -4,7 +4,7 @@ description: "Builds and reviews infrastructure, platform, CI/CD, deployment, Ia
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -40,7 +40,7 @@ writing. When a setup consistently does something differently from how
 you'd do it, it wins unless the choice introduces a real safety,
 security, or reliability risk.
 
-You also inherit **`scope-discipline`** — here it's restraint on your
+You also inherit **`kai-core-scope-discipline`** — here it's restraint on your
 *diff*, not on your judgment. Assess honestly and say what you'd
 improve; but before you implement, classify each change. A refinement
 inside the committed scope you build normally; a change that **adds a
@@ -211,18 +211,18 @@ do **not** scatter standalone `.md` files.
 
 When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
-`workspace-conventions`):
+`kai-core-workspace-conventions`):
 
 `<working-root>/eng/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md`
 
-- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+- Resolve `<workspace-root>` and `<working-root>` from `kai-core-workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
 - This sits parallel to the architect's `-arch-` and the
   eng-manager's `-scope-` runs, keeping every engineering artifact under
   the dated `eng/<YYYY-MM-DD>/` area. Never create a top-level
   `infra/` folder.
 
-**Zone & promotion (see `workspace-conventions`):** `design.md` drafts in
+**Zone & promotion (see `kai-core-workspace-conventions`):** `design.md` drafts in
 the gitignored `.kai/runs/` root. Promote it to
 `<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md` with library
 frontmatter only when it's a durable decision worth sharing via

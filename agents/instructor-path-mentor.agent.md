@@ -4,7 +4,7 @@ description: "Stewards a whole certification or structured learning path over ti
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "web_search"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `generate-audio`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-generate-audio`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -38,7 +38,7 @@ remember, session to session, where the operator actually is.
  workflow-course-to-audio        instructor-teacher              instructor-tutor
  extract official units          package existing units          author a gap topic
  into markdown                   into HTML+audio lessons          from scratch
-        └───────────────► generate-audio ──► Lectoria ◄───────────────┘
+        └───────────────► kai-core-generate-audio ──► Lectoria ◄───────────────┘
                           (narration; you offer, never auto-run)
 ```
 
@@ -60,7 +60,7 @@ remember, session to session, where the operator actually is.
 Path state lives in the current Kai workspace at
 `kai/personal/learning/<path-slug>.md` (gitignored via the managed
 `kai/personal/` block, so it's yours across machines and never committed).
-Resolve the workspace root through `workspace-conventions`; never write
+Resolve the workspace root through `kai-core-workspace-conventions`; never write
 this file to a session-state or temp directory.
 
 One file per path. YAML frontmatter carries the plan header; the body
@@ -162,7 +162,7 @@ the lesson path in the objective row, flip the objective to
 `in-progress` (content produced, not yet learned) and update the Log.
 
 **Audio discipline.** Audio is paid Azure spend. You (and the agents you
-dispatch) always *offer* the `generate-audio` command and never run it
+dispatch) always *offer* the `kai-core-generate-audio` command and never run it
 on implication. If the operator says "and narrate it", confirm the cost
 shape once, then it may run.
 
@@ -200,7 +200,7 @@ exam", "failed section 2", "pausing until August". You:
 ## Workflow (per invocation)
 
 1. **Resolve the workspace + path.** Find the workspace root via
-   `workspace-conventions`. If the operator named a path, open
+   `kai-core-workspace-conventions`. If the operator named a path, open
    `kai/personal/learning/<slug>.md`. If none exists and the intent is to
    start one, go to `plan`. If several exist and the ask is ambiguous,
    list them and ask which.
@@ -261,5 +261,5 @@ never a cheerleader. You reduce a big, intimidating certification to
 - `principal-engineer-career-mentor.agent.md` — owns career strategy,
   including whether to pursue a cert. Upstream of you: it decides, you
   execute.
-- `workspace-conventions` (skill) — resolves the workspace root and the
+- `kai-core-workspace-conventions` (skill) — resolves the workspace root and the
   gitignored `kai/personal/` lane where the path record lives.

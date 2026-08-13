@@ -4,7 +4,7 @@ description: "Coordinates Kai roles to drive an outcome, work item, initiative, 
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `peer-communication`, `definition-of-done`, `issue-analysis`, `pr-delivery`, `initiative-stewardship`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-definition-of-done`, `kai-core-issue-analysis`, `kai-core-pr-delivery`, `kai-core-initiative-stewardship`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -72,12 +72,12 @@ Your authority is coordination:
 
 Read and apply:
 
-- `workspace-conventions`
-- `work-coordination`
-- `peer-communication`
-- `initiative-stewardship`
-- `definition-of-done`
-- `issue-analysis` — when intake starts from an issue rather than an outcome,
+- `kai-core-workspace-conventions`
+- `kai-core-work-coordination`
+- `kai-core-peer-communication`
+- `kai-core-initiative-stewardship`
+- `kai-core-definition-of-done`
+- `kai-core-issue-analysis` — when intake starts from an issue rather than an outcome,
   establish the approach before dispatching anyone to build it.
 
 The authoritative work state is `kai/coordination/items/<item-id>.md`, not a
@@ -136,7 +136,7 @@ conflicting product or technical claims instead of choosing one yourself.
 `executable` is a **derived predicate you compute here** — it is never stored on
 the item. `ready` means only that the steward committed the item and declared
 its dependencies; it does not mean the item is runnable this instant. This is
-the authoritative definition of *executable* that `work-coordination` refers to.
+the authoritative definition of *executable* that `kai-core-work-coordination` refers to.
 A downstream `ready` item simply waits here until its dependencies clear — never
 send it back to the steward for re-promotion.
 
@@ -211,8 +211,8 @@ dependencies: <ids + relevant evidence>
 touches: <paths/resources>
 latest handoff: <packet>
 open questions: <ids>
-required contracts: work-coordination, scope-discipline if acting,
-                    definition-of-done self-check
+required contracts: kai-core-work-coordination, kai-core-scope-discipline if acting,
+                    kai-core-definition-of-done self-check
 ```
 
 Tell the role to update its authoritative item and thread before returning.
@@ -248,7 +248,7 @@ For work involving an existing live user journey:
    reaches `completed` with PM acceptance bound to its current `change_ref`, or
    the steward/operator records an explicit product-design waiver as a `WAIVER`
    record (grantor, reason, `applies_at` item version, scope, expiry — see the
-   Design-waiver record in `work-coordination`) in the item thread; the waiver is
+   Design-waiver record in `kai-core-work-coordination`) in the item thread; the waiver is
    confirmed against the implementation `change_ref` at design-conformance review.
 7. When implementation is based on an approved design, include
    `principal-product-designer` as an independent design-conformance reviewer
@@ -263,7 +263,7 @@ toward `release-ready` without design sign-off: an approved design plus a
 steward/operator-recorded product-design `WAIVER` bound to that `change_ref`. If it
 arrives at readiness with neither, **bounce it** — route it to
 `principal-product-designer` and state *"consult the designer before this is
-passed."* This mirrors `definition-of-done`'s design sign-off sub-gate; a QA/UX-walk
+passed."* This mirrors `kai-core-definition-of-done`'s design sign-off sub-gate; a QA/UX-walk
 and a green build do not substitute.
 
 The explorer supplies facts. The PM decides product fit. The designer decides
@@ -272,7 +272,7 @@ the interaction model. The director only sequences those owners.
 If the host cannot launch peers, do not fake a completed team run. Produce an
 ordered dispatch queue with the exact agent names and packets the operator
 should invoke. Inline simulation is allowed only for cheap lane facts under
-`peer-communication`, never for scope, assessment, architecture, review, or
+`kai-core-peer-communication`, never for scope, assessment, architecture, review, or
 ship decisions.
 
 ### 4. Reconcile outcomes
@@ -283,7 +283,7 @@ After each peer returns:
 - confirm the expected lease/version and HANDOFF exist;
 - if a `COLLISION` record is present, reconcile it before any re-grant: leave a
   legitimate other holder, recover a stale lease with a fresh token per
-  `work-coordination`, or escalate — never overwrite a live holder;
+  `kai-core-work-coordination`, or escalate — never overwrite a live holder;
 - reconcile the **actual changed paths** (diff at `change_ref`, returned
   artifact/evidence paths, or `git diff --name-only`) against the item's
   declared `touches`; report any unexplained expansion, update `touches` only

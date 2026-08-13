@@ -113,7 +113,7 @@ production before using the `shipped` state.
             (only if it spans seams)         (build it)
 ```
 
-**3 · Web evaluation → product** — many lenses on one live surface, all routed through the `web-evaluation` skill, all feeding the PM.
+**3 · Web evaluation → product** — many lenses on one live surface, all routed through the `kai-core-web-evaluation` skill, all feeding the PM.
 
 ```
               ┌─ principal-qa-ui ──────────────────── defects (broken UI)
@@ -121,7 +121,7 @@ production before using the `shipped` state.
  a live ──────┼─ persona-ux-first-time-user ───────── first-run friction       ─┐
  surface      ├─ persona-professional-trainer ─────── domain-expert audit       ├─► reports
               └─ persona-professional-nutritionist ── domain-expert audit      ─┘   │
-                        (each runs via the web-evaluation skill)                    ▼
+                        (each runs via the kai-core-web-evaluation skill)                    ▼
                                                          principal-product-manager ──► decisions
 ```
 
@@ -204,11 +204,11 @@ leads; the operator performs every production action.
 **4 · Learning & content** — author, package, or steward a whole path.
 
 ```
- course / cert / ──► workflow-course-to-audio ──► clean markdown ──► generate-audio ──► narrated audio
- long web page        (wraps web-content-extraction)               (explicit handoff — never auto)
+ course / cert / ──► workflow-course-to-audio ──► clean markdown ──► kai-core-generate-audio ──► narrated audio
+ long web page        (wraps kai-core-web-content-extraction)               (explicit handoff — never auto)
 
  chaptered ──► instructor-teacher ──┬─► generate-html-lesson ──► index.html  (English visual)
- markdown      (packages existing source)  └─► generate-audio ──► MP3         (Spanish narration)
+ markdown      (packages existing source)  └─► kai-core-generate-audio ──► MP3         (Spanish narration)
 
  a topic ──► instructor-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
             (Explain-in-chat / Lesson / Series modes — any subject)
@@ -246,10 +246,10 @@ leads; the operator performs every production action.
 **7 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read or hear.
 
 ```
- a week of ──► workflow-weekly-pulse ──► pulse.md  ┬─ Page 1 Brief (narratable) ──► generate-audio
+ a week of ──► workflow-weekly-pulse ──► pulse.md  ┬─ Page 1 Brief (narratable) ──► kai-core-generate-audio
  messages +    (binds message/doc/code     + brief.md │  Page 2 Board (tables + thread map)   (offer, never auto)
  docs + code    adapters via local config)            └─ Page 3 Career ──┬─► persona-self (draft the post)
-                (writes via pulse-digest; read-only)                      └─► career-mentor (weigh promotion)
+                (writes via kai-core-pulse-digest; read-only)                      └─► career-mentor (weigh promotion)
 ```
 
 **8 · Personal front door** — the default start when intent is personal or
@@ -261,10 +261,10 @@ the specialist); it routes into every flow above and keeps your forward agenda
  you ──► director-executive-assistant ──┬─► persona-self             (draft in your voice)
          (current workspace + links)     ├─► principal-engineer-career-mentor  (career)
                                          ├─► director-chief-of-staff   (team delivery)
-                                         ├─► executive-consultation ──► real roles + private attributed brief
-                                         ├─► decision-brief ──► private brief: options + positions + recommendation
+                                         ├─► kai-core-executive-consultation ──► real roles + private attributed brief
+                                         ├─► kai-core-decision-brief ──► private brief: options + positions + recommendation
                                          ├─► workflow-weekly-pulse      (what happened)
-                                         └─► personal-agenda ──► kai/personal/agenda.md
+                                         └─► kai-core-personal-agenda ──► kai/personal/agenda.md
                                              (all enabled workspaces + inbox + nudges)
                                                   │  ranked "what needs you"
                                                   ▼
@@ -304,7 +304,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
 | Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `creative-video-director` |
 | Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
-| "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `initiative-stewardship`) |
+| "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `kai-core-initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
 | Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |
 | A decision spans FE+BE+infra, or services/repos | `principal-swe-architect` |
@@ -321,12 +321,12 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Plan + track a whole certification/learning path | `instructor-path-mentor` |
 | Course / cert / long page → narrated audio | `workflow-course-to-audio` |
 | Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
-| Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `executive-consultation`) |
-| Package a decision waiting on me into options + a recommendation | `director-executive-assistant` (via `decision-brief`) |
+| Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `kai-core-executive-consultation`) |
+| Package a decision waiting on me into options + a recommendation | `director-executive-assistant` (via `kai-core-decision-brief`) |
 | Capture a task or reminder | `director-executive-assistant` (→ `kai/personal/inbox.md`) |
 | Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
-| Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `pulse-digest`) |
+| Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |
 | Pressure-test the substance of a doc | `workflow-doc-review` (fans out to `review-*`) |
 
 `director-chief-of-staff` owns orchestration only. Scope, technical judgment,

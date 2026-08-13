@@ -177,7 +177,7 @@ Your voice, your career, your week. Workspace-local and gitignored.
 | ---- | ------------ |
 | [`persona-self`](../../agents/persona-self.agent.md) | Drafts, rewrites, and replies in the user's voice with senior-engineer professionalism. Use for messages, posts, emails, design docs, PR descriptions, and replies. Never auto-publishes. |
 | [`principal-engineer-career-mentor`](../../agents/principal-engineer-career-mentor.agent.md) | Mentors IC-track career progression through intake, check-ins, reviews, spot consults, cert planning, and visibility nudges. Use for career strategy. Not executing a chosen learning path (`instructor-path-mentor`). |
-| [`workflow-weekly-pulse`](../../agents/workflow-weekly-pulse.agent.md) | Produces a concise weekly activity digest via pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio. |
+| [`workflow-weekly-pulse`](../../agents/workflow-weekly-pulse.agent.md) | Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio. |
 | [`workflow-proactive-scan`](../../agents/workflow-proactive-scan.agent.md) | Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys. |
 
 ## Skills
@@ -191,18 +191,18 @@ The shared contracts every acting agent inherits: where work goes, and what it m
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`team-operating-rules`](../../skills/team-operating-rules/SKILL.md) | Defines the universal kai role operating contract. Use whenever acting as a kai role in any workspace, including ownership, handoffs, tests, shipping, and @operator. |
-| [`workspace-conventions`](../../skills/workspace-conventions/SKILL.md) | Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths. |
-| [`workspace-onboarding`](../../skills/workspace-onboarding/SKILL.md) | Initializes and validates kai workspaces. Use when creating or repairing .kai, runs, coordination, initiatives, library, personal lane, or gitignore rules. |
-| [`work-coordination`](../../skills/work-coordination/SKILL.md) | Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths. |
-| [`work-activity`](../../skills/work-activity/SKILL.md) | Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl. |
+| [`kai-core-team-operating-rules`](../../skills/kai-core-team-operating-rules/SKILL.md) | Defines the universal kai role operating contract. Use whenever acting as a kai role in any workspace, including ownership, handoffs, tests, shipping, and @operator. |
+| [`kai-core-workspace-conventions`](../../skills/kai-core-workspace-conventions/SKILL.md) | Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths. |
+| [`kai-core-workspace-onboarding`](../../skills/kai-core-workspace-onboarding/SKILL.md) | Initializes and validates kai workspaces. Use when creating or repairing .kai, runs, coordination, initiatives, library, personal lane, or gitignore rules. |
+| [`kai-core-work-coordination`](../../skills/kai-core-work-coordination/SKILL.md) | Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths. |
+| [`kai-core-work-activity`](../../skills/kai-core-work-activity/SKILL.md) | Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl. |
 | [`fleet-observation`](../../skills/fleet-observation/SKILL.md) | Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate. |
-| [`definition-of-done`](../../skills/definition-of-done/SKILL.md) | Release-readiness and production-completion gate. Use when deciding whether work can move to in-review, release-ready, or shipped. |
-| [`scope-discipline`](../../skills/scope-discipline/SKILL.md) | Governs assessment-versus-action scope boundaries. Use when assessors, PM, design, or SWE roles must avoid silently expanding approved scope. |
-| [`no-self-remediation`](../../skills/no-self-remediation/SKILL.md) | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
-| [`issue-analysis`](../../skills/issue-analysis/SKILL.md) | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
-| [`initiative-stewardship`](../../skills/initiative-stewardship/SKILL.md) | Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative. |
-| [`peer-communication`](../../skills/peer-communication/SKILL.md) | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
+| [`kai-core-definition-of-done`](../../skills/kai-core-definition-of-done/SKILL.md) | Release-readiness and production-completion gate. Use when deciding whether work can move to in-review, release-ready, or shipped. |
+| [`kai-core-scope-discipline`](../../skills/kai-core-scope-discipline/SKILL.md) | Governs assessment-versus-action scope boundaries. Use when assessors, PM, design, or SWE roles must avoid silently expanding approved scope. |
+| [`kai-core-no-self-remediation`](../../skills/kai-core-no-self-remediation/SKILL.md) | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
+| [`kai-core-issue-analysis`](../../skills/kai-core-issue-analysis/SKILL.md) | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
+| [`kai-core-initiative-stewardship`](../../skills/kai-core-initiative-stewardship/SKILL.md) | Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative. |
+| [`kai-core-peer-communication`](../../skills/kai-core-peer-communication/SKILL.md) | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
 | [`product-exploration`](../../skills/product-exploration/SKILL.md) | Provides neutral live-product mapping. Use when PM, design, QA, domain, or engineering need an evidence-backed navigation model without UX evaluation. |
 | [`product-marketing-intelligence`](../../skills/product-marketing-intelligence/SKILL.md) | Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work. |
 
@@ -215,7 +215,7 @@ Per-change discipline every `principal-swe-*` agent inherits.
 | [`coding-style`](../../skills/coding-style/SKILL.md) | User coding preferences. Use when writing, editing, or refactoring code, especially to keep changes simple, readable, composed, and aligned with repo conventions. |
 | [`research-before-coding`](../../skills/research-before-coding/SKILL.md) | Enforces research before non-trivial code changes. Use when investigating ownership, reusable code, and tradeoffs before editing. |
 | [`pr-sizing`](../../skills/pr-sizing/SKILL.md) | PR sizing method. Use when planning a feature, large refactor, or multi-file change into independently shippable, reviewable increments. |
-| [`pr-delivery`](../../skills/pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
+| [`kai-core-pr-delivery`](../../skills/kai-core-pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
 | [`onboard-to-codebase`](../../skills/onboard-to-codebase/SKILL.md) | Fast codebase onboarding report. Use when mapping an unfamiliar repo's stack, commands, architecture, conventions, patterns, and gotchas for future sessions. |
 | [`build-diagrams`](../../skills/build-diagrams/SKILL.md) | Shared diagram vocabulary and ASCII-first rules. Use when writing design, decision, or engineering docs that need system shape, data, flow, state, or topology diagrams. |
 
@@ -242,7 +242,7 @@ Design-system grounding and human-confirmable mockups, with the frontend seam.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`design-grounding`](../../skills/design-grounding/SKILL.md) | Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language. |
+| [`kai-core-design-grounding`](../../skills/kai-core-design-grounding/SKILL.md) | Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language. |
 | [`ui-mockup`](../../skills/ui-mockup/SKILL.md) | Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision. |
 
 ### Web & content
@@ -251,16 +251,16 @@ Browser-run plumbing and the claim-safety contract creative agents inherit.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`web-evaluation`](../../skills/web-evaluation/SKILL.md) | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
-| [`web-content-extraction`](../../skills/web-content-extraction/SKILL.md) | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
-| [`content-grounding`](../../skills/content-grounding/SKILL.md) | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
+| [`kai-core-web-evaluation`](../../skills/kai-core-web-evaluation/SKILL.md) | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
+| [`kai-core-web-content-extraction`](../../skills/kai-core-web-content-extraction/SKILL.md) | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
+| [`kai-core-content-grounding`](../../skills/kai-core-content-grounding/SKILL.md) | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
 | [`linkedin-content`](../../skills/linkedin-content/SKILL.md) | LinkedIn content method for grounded product intelligence. Use when drafting posts, angle matrices, calendars, or carousel outlines from product_context.json. |
 | [`video-direction`](../../skills/video-direction/SKILL.md) | Creates video creative direction from product intelligence and media. Use when planning briefs, storyboards, edit decisions, voiceover, or AI video prompts. |
 | [`demo-capture`](../../skills/demo-capture/SKILL.md) | Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work. |
 | [`demo-zoom`](../../skills/demo-zoom/SKILL.md) | Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass. |
 | [`demo-narrate`](../../skills/demo-narrate/SKILL.md) | Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording. |
 | [`create-product-demo`](../../skills/create-product-demo/SKILL.md) | Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks. |
-| [`pulse-digest`](../../skills/pulse-digest/SKILL.md) | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
+| [`kai-core-pulse-digest`](../../skills/kai-core-pulse-digest/SKILL.md) | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
 
 ### Lessons & writing
 
@@ -268,7 +268,7 @@ Turn markdown into lessons, audio, or your own voice.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`generate-audio`](../../skills/generate-audio/SKILL.md) | Markdown-to-audio lesson generation. Use when converting notes, READMEs, course content, or drafts into multilingual narrated audio with lectoria. |
+| [`kai-core-generate-audio`](../../skills/kai-core-generate-audio/SKILL.md) | Markdown-to-audio lesson generation. Use when converting notes, READMEs, course content, or drafts into multilingual narrated audio with lectoria. |
 | [`generate-html-lesson`](../../skills/generate-html-lesson/SKILL.md) | Markdown-to-HTML lesson generation. Use when creating a self-contained visual lesson page, often as the companion to generated audio or an instructor flow. |
 | [`extract-writing-style`](../../skills/extract-writing-style/SKILL.md) | Portable voice-profile extraction. Use when persona-self needs the user's writing style captured from past messages or refreshed after voice drift. |
 
@@ -278,10 +278,10 @@ The private methods behind the executive assistant. Never autonomous.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`personal-agenda`](../../skills/personal-agenda/SKILL.md) | Operator agenda assembly. Use when producing the current workspace's what-needs-you view from inbox tasks, @operator questions, release gates, and nudges. |
-| [`executive-consultation`](../../skills/executive-consultation/SKILL.md) | Private role-consultation method for the executive assistant. Use when a decision brief needs facts or independent judgment from real kai roles without impersonation. |
-| [`decision-brief`](../../skills/decision-brief/SKILL.md) | Decision brief packaging for the executive assistant. Use when an operator decision or deploy gate needs options, tradeoffs, role positions, recommendation, and next actions. |
-| [`proactive-scan`](../../skills/proactive-scan/SKILL.md) | Defines runner-invoked proactive notifications. Use when an external cadence scans workspaces for newly actionable decisions, replies, actions, or release-ready items. |
+| [`kai-core-personal-agenda`](../../skills/kai-core-personal-agenda/SKILL.md) | Operator agenda assembly. Use when producing the current workspace's what-needs-you view from inbox tasks, @operator questions, release gates, and nudges. |
+| [`kai-core-executive-consultation`](../../skills/kai-core-executive-consultation/SKILL.md) | Private role-consultation method for the executive assistant. Use when a decision brief needs facts or independent judgment from real kai roles without impersonation. |
+| [`kai-core-decision-brief`](../../skills/kai-core-decision-brief/SKILL.md) | Decision brief packaging for the executive assistant. Use when an operator decision or deploy gate needs options, tradeoffs, role positions, recommendation, and next actions. |
+| [`kai-core-proactive-scan`](../../skills/kai-core-proactive-scan/SKILL.md) | Defines runner-invoked proactive notifications. Use when an external cadence scans workspaces for newly actionable decisions, replies, actions, or release-ready items. |
 
 ---
 

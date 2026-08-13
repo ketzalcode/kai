@@ -22,7 +22,7 @@ whether a feature belongs in the product.
 ## Who uses this method
 
 `workflow-product-explore` executes the full method. It reuses
-`web-evaluation` only for browser safety, login handling, screenshot naming,
+`kai-core-web-evaluation` only for browser safety, login handling, screenshot naming,
 and the local run folder; it does not use an evaluation report scaffold or
 finding taxonomy. PM, product design, professional personas, QA, and engineers
 consume the resulting map.

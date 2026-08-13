@@ -4,7 +4,7 @@ description: "Produces one consolidated substance review for a design doc, PRD, 
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`, `no-self-remediation`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`, `kai-core-no-self-remediation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -105,20 +105,20 @@ Output to: `<working-root>/review/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md`
 
 - `<doc-slug>` is the descriptor — a slug of the reviewed document;
   descriptive only, not the grouping key.
-- Resolve `<workspace-root>` and `<working-root>` from `workspace-conventions`;
+- Resolve `<workspace-root>` and `<working-root>` from `kai-core-workspace-conventions`;
   a dispatch packet or loaded north star wins over this agent's cwd.
 - `<NN>` is the zero-padded per-day run index (highest existing in
-  `<working-root>/review/<YYYY-MM-DD>/` + 1); see `workspace-conventions` for
+  `<working-root>/review/<YYYY-MM-DD>/` + 1); see `kai-core-workspace-conventions` for
   the date-first run grammar.
 
-**Initiative gating (see `workspace-conventions`).** Before reviewing, glance
+**Initiative gating (see `kai-core-workspace-conventions`).** Before reviewing, glance
 at `kai/coordination/ACTIVE.md`. If the doc under review concerns the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and test the doc's argument against it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's an unrelated doc,
 load nothing and review context-free.
 
-**Zone & promotion (see `workspace-conventions`):** reusable `review.md`
+**Zone & promotion (see `kai-core-workspace-conventions`):** reusable `review.md`
 outputs default to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
 so you never manage `.gitignore` yourself — then promote the curated review

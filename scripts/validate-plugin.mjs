@@ -180,7 +180,7 @@ for (const p of refScanFiles) {
 // consumer workspace, so shared rules only reach a session through a skill the
 // agent names. The `**Inherits:**` line is that machine-checkable declaration.
 // ---------------------------------------------------------------------------
-const BASELINE_SKILL = 'team-operating-rules';
+const BASELINE_SKILL = 'kai-core-team-operating-rules';
 const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
 
 // Agents that do bounded, delegated work must declare that they are running.
@@ -188,13 +188,13 @@ const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
 // This became load-bearing rather than nice-to-have: the host emits no subagent
 // lifecycle events for plugin-provided agents, so `.kai/activity.jsonl` is the
 // ONLY evidence that a kai persona ran at all. An agent in a coordinating
-// family that does not inherit `work-activity` is invisible in both tiers, and
+// family that does not inherit `kai-core-work-activity` is invisible in both tiers, and
 // the fleet view renders it as though it never existed.
 //
 // The rule is an opt-OUT, deliberately. A new agent inherits the obligation by
 // default; forgetting to exempt one costs a line of bookkeeping, while
 // forgetting to opt one in costs an agent that cannot be seen.
-const ACTIVITY_SKILL = 'work-activity';
+const ACTIVITY_SKILL = 'kai-core-work-activity';
 // Conversational roles, exempt because they have no bounded run to report.
 // Two appends per run is the contract; a role whose "run" is an open-ended
 // conversation with the operator would emit bookkeeping noise instead, and the
@@ -203,7 +203,7 @@ const ACTIVITY_EXEMPT = new Map([
   ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
   ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
   // These two DO bounded work worth seeing, and are exempt for a worse reason:
-  // they hold no `bash` tool, and `work-activity` needs one to append. Granting
+  // they hold no `bash` tool, and `kai-core-work-activity` needs one to append. Granting
   // a shell to a research-and-write role purely so it can log would trade a
   // sandbox boundary for observability, which is the wrong way round. They stay
   // invisible until the delegating agent can record on their behalf.
@@ -246,11 +246,11 @@ if (!styleBlock) {
   }
   // Onboarding is what installs the block in a consumer workspace; if it stops
   // naming the canonical file, the block ships to nobody.
-  const onboarding = join(ROOT, 'skills/workspace-onboarding/SKILL.md');
+  const onboarding = join(ROOT, 'skills/kai-core-workspace-onboarding/SKILL.md');
   if (existsSync(onboarding)) {
     const ob = readFileSync(onboarding, 'utf8');
     if (!ob.includes('scripts/lib/communication-style-block.md')) {
-      err('skills/workspace-onboarding/SKILL.md', 'does not reference scripts/lib/communication-style-block.md, so the opt-in style block would never reach a consumer workspace');
+      err('skills/kai-core-workspace-onboarding/SKILL.md', 'does not reference scripts/lib/communication-style-block.md, so the opt-in style block would never reach a consumer workspace');
     }
   }
 }
@@ -300,8 +300,8 @@ for (const agent of agentFiles) {
   if (!seen.has(BASELINE_SKILL)) {
     err(r, `must inherit \`${BASELINE_SKILL}\` (the shared operating contract)`);
   }
-  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('workspace-conventions')) {
-    err(r, 'coordinating roles must inherit `workspace-conventions`');
+  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('kai-core-workspace-conventions')) {
+    err(r, 'coordinating roles must inherit `kai-core-workspace-conventions`');
   }
   if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0])
     && !seen.has(ACTIVITY_SKILL)
@@ -388,7 +388,7 @@ for (const agent of agentFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Assessor roster and the no-self-remediation contract
+// Assessor roster and the kai-core-no-self-remediation contract
 //
 // The taxonomy leans on roles that judge without acting on what they judge. An
 // assessor that quietly fixes what it found destroys the independence that made
@@ -401,7 +401,7 @@ for (const agent of agentFiles) {
 // roster here is what stops the contract from silently falling off a role
 // during an unrelated edit, which is the failure a prose-only rule invites.
 // ---------------------------------------------------------------------------
-const ASSESSOR_CONTRACT = 'no-self-remediation';
+const ASSESSOR_CONTRACT = 'kai-core-no-self-remediation';
 const ASSESSOR_ROLES = [
   'principal-security',
   'principal-privacy-compliance',
@@ -437,7 +437,7 @@ const ASSESSOR_ROLES = [
 // Inherited-skill tool requirements
 //
 // A skill whose procedure is mandatory can require a capability the agent must
-// actually hold: `work-activity` tells an agent to run `scripts/activity.mjs`,
+// actually hold: `kai-core-work-activity` tells an agent to run `scripts/activity.mjs`,
 // which is impossible without `bash`. Nothing otherwise connects the two, so a
 // well-meant tool removal ("assessors should not hold shell") can silently
 // break a contract the same agent is required to follow.
@@ -640,8 +640,8 @@ if (!existsSync(pjPath)) {
 // area is added to the manifest but forgotten in a scaffold; these catch it.
 // ---------------------------------------------------------------------------
 const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-const conventions = readIf(join(ROOT, 'skills/workspace-conventions/SKILL.md'));
-const onboarding = readIf(join(ROOT, 'skills/workspace-onboarding/SKILL.md'));
+const conventions = readIf(join(ROOT, 'skills/kai-core-workspace-conventions/SKILL.md'));
+const onboarding = readIf(join(ROOT, 'skills/kai-core-workspace-onboarding/SKILL.md'));
 const wsInit = readIf(join(ROOT, 'agents/workflow-workspace-init.agent.md'));
 const initiativeInit = readIf(join(ROOT, 'agents/workflow-initiative-init.agent.md'));
 const gitignore = readIf(join(ROOT, '.gitignore'));
@@ -664,9 +664,9 @@ function managedBlock(text) {
 const giBlock = managedBlock(gitignore);
 const obBlock = managedBlock(onboarding);
 if (giBlock === null) err('.gitignore', 'missing the managed "# >>> kai workspace" block');
-if (obBlock === null) err('skills/workspace-onboarding/SKILL.md', 'missing the managed gitignore block template');
+if (obBlock === null) err('skills/kai-core-workspace-onboarding/SKILL.md', 'missing the managed gitignore block template');
 if (giBlock && obBlock && giBlock !== obBlock) {
-  err('.gitignore', 'managed gitignore block differs from the workspace-onboarding template (they must stay identical)');
+  err('.gitignore', 'managed gitignore block differs from the kai-core-workspace-onboarding template (they must stay identical)');
 }
 
 // 2. The .kai/runs areas must match across the manifest schema and the two
@@ -677,11 +677,11 @@ const obAreasM = onboarding && onboarding.match(/\n\s*(qa\/[^\n]*)\n/);
 const obAreas = obAreasM ? dirTokens(obAreasM[1]) : null;
 const wiAreasM = wsInit && wsInit.match(/runs\/\{([^}]*)\}/s);
 const wiAreas = wiAreasM ? dirTokens(wiAreasM[1]) : null;
-if (!mAreas) err('skills/workspace-conventions/SKILL.md', 'could not locate the manifest "areas" list');
-if (!obAreas) err('skills/workspace-onboarding/SKILL.md', 'could not locate the runs/ area scaffold');
+if (!mAreas) err('skills/kai-core-workspace-conventions/SKILL.md', 'could not locate the manifest "areas" list');
+if (!obAreas) err('skills/kai-core-workspace-onboarding/SKILL.md', 'could not locate the runs/ area scaffold');
 if (!wiAreas) err('agents/workflow-workspace-init.agent.md', 'could not locate the runs/ area scaffold');
 if (mAreas && obAreas && !setEq(mAreas, obAreas)) {
-  err('skills/workspace-onboarding/SKILL.md', `runs/ areas ${JSON.stringify([...obAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
+  err('skills/kai-core-workspace-onboarding/SKILL.md', `runs/ areas ${JSON.stringify([...obAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
 }
 if (mAreas && wiAreas && !setEq(mAreas, wiAreas)) {
   err('agents/workflow-workspace-init.agent.md', `runs/ areas ${JSON.stringify([...wiAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
@@ -777,11 +777,11 @@ const obLib = obLibM ? dirTokens(obLibM[1]) : null;
 const wiLibM = wsInit && wsInit.match(/library\/\{([^}]*)\}/s);
 const wiLib = wiLibM ? dirTokens(wiLibM[1]) : null;
 const tableLib = libTypesFromTable(conventions);
-if (!tableLib) err('skills/workspace-conventions/SKILL.md', 'could not locate the "Library types" table');
-if (tableLib && !obLib) err('skills/workspace-onboarding/SKILL.md', 'could not locate the library/ scaffold');
+if (!tableLib) err('skills/kai-core-workspace-conventions/SKILL.md', 'could not locate the "Library types" table');
+if (tableLib && !obLib) err('skills/kai-core-workspace-onboarding/SKILL.md', 'could not locate the library/ scaffold');
 if (tableLib && !wiLib) err('agents/workflow-workspace-init.agent.md', 'could not locate the library/ scaffold');
 if (tableLib && obLib && !setEq(tableLib, obLib)) {
-  err('skills/workspace-onboarding/SKILL.md', `library/ types ${JSON.stringify([...obLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
+  err('skills/kai-core-workspace-onboarding/SKILL.md', `library/ types ${JSON.stringify([...obLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
 }
 if (tableLib && wiLib && !setEq(tableLib, wiLib)) {
   err('agents/workflow-workspace-init.agent.md', `library/ types ${JSON.stringify([...wiLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
@@ -794,7 +794,7 @@ const conventionArtifacts = conventionArtifactsM ? dirTokens(conventionArtifacts
 const wiArtifactsM = initiativeInit && initiativeInit.match(/kai\/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\nkai\/coordination\//);
 const wiArtifacts = wiArtifactsM ? dirTokens(wiArtifactsM[1]) : null;
 if (!conventionArtifacts) {
-  err('skills/workspace-conventions/SKILL.md', 'could not locate the initiative artifacts/ scaffold');
+  err('skills/kai-core-workspace-conventions/SKILL.md', 'could not locate the initiative artifacts/ scaffold');
 }
 if (!wiArtifacts) {
   err('agents/workflow-initiative-init.agent.md', 'could not locate the initiative artifacts/ scaffold');

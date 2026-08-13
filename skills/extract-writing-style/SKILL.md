@@ -241,7 +241,7 @@ Beyond raw samples, the skill should derive:
 
 ### 1. Resolve the workspace and confirm scope
 
-Resolve the current Kai workspace root through `workspace-conventions` and its
+Resolve the current Kai workspace root through `kai-core-workspace-conventions` and its
 `.kai/manifest.json` sentinel. The output path is the absolute
 `<workspace-root>/kai/personal/identity/voice.md`; never resolve it from an
 incidental or nested cwd. If the workspace is not initialized, route to
@@ -497,6 +497,6 @@ Don't bluff confident attributes on a thin corpus.
 
 - `persona-self.agent.md` — the agent that consumes this profile
   on every draft.
-- Sister skills: `web-content-extraction` (different lane —
-  extracts someone else's content for reading), `web-evaluation`
+- Sister skills: `kai-core-web-content-extraction` (different lane —
+  extracts someone else's content for reading), `kai-core-web-evaluation`
   (UI evaluation, not text analysis).

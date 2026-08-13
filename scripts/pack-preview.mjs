@@ -9,7 +9,7 @@
 //   1. does a fail-closed preflight work on a REAL agent with full tool grants,
 //      or only on a restricted probe that had nothing else it could do?
 //   2. what happens when core is absent, or present at an incompatible version?
-//   3. when legacy `kai` and `kai-core` both provide `team-operating-rules`,
+//   3. when legacy `kai` and `kai-core` both provide `kai-core-team-operating-rules`,
 //      which one resolves?
 //   4. what does a pack agent do when it references an agent from a pack the
 //      user did not install?
@@ -175,9 +175,9 @@ function selfTest() {
   const ok = (cond, msg) => { if (cond) { pass++; console.log(`  ok ${msg}`); } else { fails.push(msg); console.log(`  FAIL ${msg}`); } };
 
   const { core, local } = planSkills(PACK_AGENTS);
-  ok(core.includes('team-operating-rules'),
+  ok(core.includes('kai-core-team-operating-rules'),
     'the universal contract is planned into core, never into the pack');
-  ok(!local.includes('team-operating-rules'),
+  ok(!local.includes('kai-core-team-operating-rules'),
     'and it is not also duplicated into the pack, which is the whole point');
   ok(local.length > 0,
     'a pack that owns no skills of its own would not be testing anything');

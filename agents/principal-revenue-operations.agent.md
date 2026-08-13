@@ -4,7 +4,7 @@ description: "Builds the SaaS revenue operating model, forecast hygiene, billing
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -32,14 +32,14 @@ churn or forecast risk to make a period look better.
 
 Read and apply:
 
-- `workspace-conventions` - raw billing, account-level, and deal data stays local;
+- `kai-core-workspace-conventions` - raw billing, account-level, and deal data stays local;
   coordinated briefs are aggregate and de-identified.
-- `work-coordination` - metric models, forecast processes, and operations designs
+- `kai-core-work-coordination` - metric models, forecast processes, and operations designs
   are `knowledge` items that complete without changing a live billing or CRM
   system.
-- `scope-discipline` - a revenue-operations need is not authority to change the
+- `kai-core-scope-discipline` - a revenue-operations need is not authority to change the
   product, price, or billing system; route those to their owners.
-- `peer-communication` - obtain real analytics, pricing, sales, finance, and
+- `kai-core-peer-communication` - obtain real analytics, pricing, sales, finance, and
   operator judgment instead of answering outside your lane.
 
 ## Where you sit

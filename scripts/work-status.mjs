@@ -49,7 +49,7 @@ const SECTIONS = [
 
 // The activity overlay. Coordination records change a handful of times across
 // days, so between two updates this report can only say UNKNOWN. The activity
-// log (see the work-activity skill) narrows that — but it is still declared,
+// log (see the kai-core-work-activity skill) narrows that — but it is still declared,
 // so it adds exactly one checkable fact: a run that declared it would report by
 // T, where T has passed. It never claims an agent crashed; that needs an
 // observer this plugin does not have.
@@ -182,7 +182,7 @@ export function analyze(items, threads, now) {
     }
 
     // 3b. UNKNOWN — the item names blocking questions but is not blocked. Per
-    //     peer-communication, a blocking question flips the item to `blocked` and
+    //     kai-core-peer-communication, a blocking question flips the item to `blocked` and
     //     records its ID; carrying the IDs without the state is a contradiction
     //     between the item's own fields, so neither reading can be trusted.
     if (it.questionIds.length && !terminal && it.state !== 'blocked') {
@@ -214,7 +214,7 @@ export function analyze(items, threads, now) {
     }
 
     // 5. INTEGRITY — a review that certified a different revision than the one on
-    //    the item. Per team-operating-rules, a review of an older ref no longer
+    //    the item. Per kai-core-team-operating-rules, a review of an older ref no longer
     //    counts. Superseded reviews legitimately *remain* in the record, so this
     //    fires only when nothing re-certified that role and kind at the current
     //    ref — otherwise a normal review iteration would read as a failure.
@@ -425,7 +425,7 @@ function selfTest() {
     'a healthy fixture says nothing needs you');
   ok(empty.live === null, 'with no activity log there is no overlay at all');
 
-  // The activity overlay (see the work-activity skill). It must add exactly one
+  // The activity overlay (see the kai-core-work-activity skill). It must add exactly one
   // checkable fact and must cost nothing when the log is absent.
   const nowSec = Math.floor(NOW / 1000);
   const mkItems = [{ id: 'all-good', rel: 'kai/coordination/items/all-good.md', unparseable: false }];

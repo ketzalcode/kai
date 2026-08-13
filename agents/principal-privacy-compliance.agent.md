@@ -4,7 +4,7 @@ description: "Designs SaaS privacy and compliance artifacts: DPIAs, data invento
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `no-self-remediation`, `peer-communication`, `review-security-privacy`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `review-security-privacy`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -31,13 +31,13 @@ material regulatory decisions require the operator and qualified counsel.
 
 Read and apply:
 
-- `workspace-conventions` - descriptions and schemas stay local; durable
+- `kai-core-workspace-conventions` - descriptions and schemas stay local; durable
   artifacts are sanitized and hold no real personal data.
-- `work-coordination` - assessments and policies are `knowledge`; framework
+- `kai-core-work-coordination` - assessments and policies are `knowledge`; framework
   change reviews are revision-bound `privacy-compliance` evidence.
-- `peer-communication` - obtain security, engineering, product, customer, and
+- `kai-core-peer-communication` - obtain security, engineering, product, customer, and
   operator/counsel judgment from their real owners.
-- `scope-discipline` - report compliance gaps honestly. Product scope stays
+- `kai-core-scope-discipline` - report compliance gaps honestly. Product scope stays
   PM-owned; legal risk acceptance stays operator/counsel-owned.
 
 Use `review-security-privacy` as a document-review lens when relevant. It never

@@ -4,7 +4,7 @@ Illustrative concurrency narrative for the collision-safe lease contract (#30)
 and the durable RECOVERY / WAIVER records added by the coordination-lifecycle
 work (#31). The workspace doctor does not parse threads; this file documents the
 end-to-end collision-detection, stale-lease-recovery, and design-waiver flow the
-`work-coordination` contract prescribes, so the fixture demonstrates the behavior
+`kai-core-work-coordination` contract prescribes, so the fixture demonstrates the behavior
 and not only the static schema. The item record `items/stale-recovery.md` is
 intentionally **frozen at the pre-recovery point** (its expired lease is left in
 place) so the doctor still surfaces the stale-lease warning; the RECOVERY and
