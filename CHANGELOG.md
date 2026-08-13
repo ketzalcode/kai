@@ -4,6 +4,47 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.49.3] - 2026-08-13
+
+### Fixed
+
+- **The live fleet view now redraws in place instead of scrolling.** Every
+  frame began with `ESC[2J`, which erases the screen — but macOS Terminal
+  implements that by pushing the erased lines into scrollback rather than
+  clearing them, so the view grew downward and updates happened below the
+  fold. It was reported from an actual macOS run. The view now takes the
+  terminal's alternate screen buffer, which has no scrollback by construction,
+  homes the cursor each frame and erases per line as it writes. That also
+  removes the flicker that clear-then-draw always had, and leaves the shell's
+  scrollback exactly as it found it.
+- **A frame taller than the window is fitted rather than scrolled.** The
+  alternate screen removes scrollback but does not stop a too-tall frame from
+  scrolling, which would have reintroduced the same bug on a fleet larger than
+  the window. Worker rows are dropped with an explicit `N more row(s) not
+  shown`; the caveat block is never what disappears, because a view that
+  scrolls its own warnings off the bottom has failed in the same way as one
+  that never printed them. When the window cannot fit even the header and the
+  caveats, it says so plainly instead of rendering a confident-looking
+  fragment.
+
+  The fit is measured in **wrapped rows, not lines** — on a window narrower
+  than the layout a single line occupies several rows, and counting newlines
+  would have under-counted the frame and let it scroll anyway. A window with no
+  usable rows at all renders one line rather than the whole frame.
+- **The terminal is restored on every exit path.** Only `SIGINT` was handled;
+  `SIGTERM`, `SIGHUP`, an uncaught exception, an unhandled rejection and normal
+  exit now restore the cursor and leave the alternate screen too. The restore
+  is written and *flushed* before exiting, because TTY writes are asynchronous
+  on Windows and exiting straight after the write can drop it. A terminal
+  abandoned on the alternate screen with a hidden cursor needs `reset` to
+  recover, which is a worse outcome than anything it could follow. Resizing the
+  window redraws instead of leaving the previous layout behind.
+
+The control sequences are used **only** on a real TTY in the continuous view.
+`--once`, `--sequence`, `--feed`, and a piped `--scene` still emit plain text —
+alternate-screen output on `--once` would erase itself on exit, and ANSI in a
+pipe or a file is garbage.
+
 ## [0.49.2] - 2026-08-13
 
 ### Fixed
@@ -2199,6 +2240,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.49.3]: https://github.com/RubenSaucedo/kai/compare/v0.49.2...v0.49.3
 [0.49.2]: https://github.com/RubenSaucedo/kai/compare/v0.49.1...v0.49.2
 [0.49.1]: https://github.com/RubenSaucedo/kai/compare/v0.49.0...v0.49.1
 [0.49.0]: https://github.com/RubenSaucedo/kai/compare/v0.48.1...v0.49.0

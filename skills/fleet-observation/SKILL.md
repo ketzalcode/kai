@@ -144,6 +144,11 @@ Modes:
 - default — the ambient view: roles with an unmatched start, how long ago that
   start was recorded, and roles that have finished. An unmatched start means the
   log records no stop; it is not a claim that a process is alive.
+  It takes over the terminal's alternate screen, so it redraws in place and
+  leaves the scrollback untouched when it exits. If the window is too short for
+  the whole fleet it drops worker rows and says how many — the caveats at the
+  bottom are never the thing that scrolls away. Make the window taller, or use
+  `--sequence`, to see them all.
 - `--sequence` — the participation sequence: every run in the **retained**
   history, in the order it began, with its tier (`said`/`seen`), span, and any
   caveat. This is the view to use for the reading below. It prints once and

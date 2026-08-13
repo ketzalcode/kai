@@ -493,8 +493,70 @@ export function renderScene(state, { tick = 0, width = 72, stale = 900 } = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// The sequence view
+// Fitting a frame to the window
 // ---------------------------------------------------------------------------
+// The alternate screen removes scrollback, but a frame taller than the window
+// still scrolls -- and then the top of the view is gone. So the frame is fitted
+// before it is written.
+//
+// What gets dropped is worker rows, never the caveats: a view that scrolled its
+// warnings off the bottom is the same failure as one that never printed them.
+// Both renderers separate the caveats with a rule, which is the anchor used
+// here. When even the header and the caveats will not fit, nothing is rendered
+// at all rather than a confident-looking fragment.
+//
+// The budget is in *physical* rows, not lines. A line longer than the window is
+// wrapped by the terminal into several rows, so counting `\n` would under-count
+// the frame on a narrow window and let it scroll anyway -- the very bug this
+// exists to prevent. `width` is optional; without it, a line costs one row.
+export function fitHeight(text, rows, width) {
+  const lines = text.split('\n');
+  if (!Number.isFinite(rows)) return text; // no budget known; do not guess
+  const budget = Math.max(1, Math.floor(rows));
+  const cols = Number.isFinite(width) && width > 0 ? Math.floor(width) : Infinity;
+  const cost = (l) => (cols === Infinity ? 1 : Math.max(1, Math.ceil(l.length / cols)));
+  const height = (ls) => ls.reduce((n, l) => n + cost(l), 0);
+  if (height(lines) <= budget) return text;
+
+  // Too short even for the frame's fixed parts. Say that, in as many rows as
+  // there are, rather than showing a fragment that reads like the whole fleet.
+  const bail = () => {
+    const msg = ['  window too short for the live view.', '  use --sequence, or make it taller.'];
+    while (msg.length > 1 && height(msg) > budget) msg.pop();
+    return height(msg) > budget ? msg[0].slice(0, Math.max(1, cols === Infinity ? msg[0].length : cols * budget)) : msg.join('\n');
+  };
+
+  let tailStart = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (/^-{3,}$/.test(lines[i].trim())) { tailStart = i; break; }
+  }
+  const HEAD = 2;
+  // No caveat rule to anchor on, so there is no safe thing to drop. Truncating
+  // blind here would be the exact failure this function exists to prevent.
+  if (tailStart < HEAD) return bail();
+
+  const head = lines.slice(0, HEAD);
+  const body = lines.slice(HEAD, tailStart);
+  const tail = lines.slice(tailStart);
+  const marker = (n) => `  ... ${n} more row(s) not shown -- window too short`;
+  const fixed = height(head) + height(tail) + cost(marker(body.length));
+  if (fixed >= budget) return bail();
+
+  // Drop body rows until what remains fits. Rows are dropped from the end, so
+  // the fleet is read top-down and the cut is always at a predictable place.
+  let room = budget - fixed;
+  const kept = [];
+  for (const line of body) {
+    const c = cost(line);
+    if (c > room) break;
+    kept.push(line);
+    room -= c;
+  }
+  const hidden = body.length - kept.length;
+  return [...head, ...kept, marker(hidden), ...tail].join('\n');
+}
+
+
 // The ambient scene answers "who is working right now". This answers the
 // question the feature exists for: which roles took part, in what order.
 //
@@ -727,6 +789,9 @@ function fingerprint(rec, n) {
 
 function runWatch(root, { feed, once, sequence }) {
   const dir = join(root, dirname(OBSERVED_REL));
+  // The live view owns the screen. A single frame, a pipe, and the feed all
+  // want plain text they can scroll, redirect, or page.
+  const live = Boolean(process.stdout.isTTY) && !feed && !once && !sequence;
   let tick = 0;
   let emitted = new Set();
   let primed = false;
@@ -761,11 +826,43 @@ function runWatch(root, { feed, once, sequence }) {
       process.stdout.write(`${renderSequence(state, { width })}\n`);
       return;
     }
-    process.stdout.write(`\x1b[2J\x1b[H${renderScene(state, { tick, width })}\n\n  watching ${OBSERVED_REL} + ${ACTIVITY_REL} -- ctrl-c to stop\n`);
+    const frame = `${renderScene(state, { tick, width })}\n\n  watching ${OBSERVED_REL} + ${ACTIVITY_REL} -- ctrl-c to stop`;
+    if (!live) {
+      // No TTY, or a single frame: plain text, no control sequences. Piping
+      // ANSI into a file or a pager produces garbage.
+      process.stdout.write(`${frame}\n`);
+      return;
+    }
+    // Home the cursor and erase as we go, rather than clearing the screen up
+    // front. `ESC[2J` is what made the view scroll on macOS -- Terminal.app
+    // moves the erased lines into scrollback instead of erasing in place, so
+    // every frame grew the buffer and the update happened below the fold.
+    // Erasing per line (`ESC[K`) and then to the end of the frame (`ESC[J`)
+    // rewrites in place on every terminal, and removes the flicker that a
+    // clear-then-draw always has.
+    //
+    // One row is held back: writing a newline on the last row scrolls the
+    // window, which would reintroduce the bug on a full screen.
+    const rows = Math.max(1, (process.stdout.rows || 24) - 1);
+    const out = fitHeight(frame, rows, width).split('\n').join('\x1b[K\n');
+    process.stdout.write(`\x1b[H${out}\x1b[K\x1b[J`);
   };
 
+  // The alternate screen has no scrollback by construction, so the view cannot
+  // scroll away and the user's shell history is untouched when it exits.
+  if (live) process.stdout.write('\x1b[?1049h\x1b[?25l');
+  let restored = false;
+  const restore = () => {
+    if (restored || !live) return;
+    restored = true;
+    // Leaving a terminal on the alternate screen with a hidden cursor is worse
+    // than any crash it might follow, so this runs on every exit path.
+    process.stdout.write('\x1b[?25h\x1b[?1049l');
+  };
+  process.on('exit', restore);
+
   draw();
-  if (once || sequence) return;
+  if (once || sequence) { restore(); return; }
 
   // Rendering is driven by a timer, not by the watcher: fs.watch coalesces and
   // can miss on some filesystems, and the animation needs a heartbeat anyway.
@@ -780,12 +877,32 @@ function runWatch(root, { feed, once, sequence }) {
     // reason to lose the view, so it falls back to the timer alone.
     watcher.on('error', () => { try { watcher.close(); } catch { /* already gone */ } watcher = null; });
   } catch { /* no .kai yet; the timer picks it up when it appears */ }
-  process.on('SIGINT', () => {
+  const stop = () => {
     if (watcher) { try { watcher.close(); } catch { /* already gone */ } }
     clearInterval(timer);
-    process.stdout.write('\n');
-    process.exit(0);
-  });
+    if (!live) { process.stdout.write('\n'); process.exit(0); return; }
+    // TTY writes are asynchronous on Windows, so exiting straight after the
+    // write can drop it and strand the terminal on the alternate screen with
+    // no cursor -- recoverable only with `reset`. Exit from the flush instead,
+    // with a short backstop so a wedged stream cannot hang the process.
+    restored = true;
+    const done = () => { if (!ended) { ended = true; process.exit(0); } };
+    let ended = false;
+    setTimeout(done, 200).unref?.();
+    process.stdout.write('\x1b[?25h\x1b[?1049l\n', done);
+  };
+  process.on('SIGINT', stop);
+  // A terminal left on the alternate screen with a hidden cursor looks broken
+  // and needs `reset` to recover, so every signal that ends us is handled, not
+  // just the one a user is most likely to send.
+  process.on('SIGTERM', stop);
+  process.on('SIGHUP', stop);
+  // A crash must not strand the terminal either. `exit` runs restore
+  // synchronously as a best effort; these two get us there deliberately.
+  process.on('uncaughtException', (err) => { restore(); console.error(err); process.exit(1); });
+  process.on('unhandledRejection', (err) => { restore(); console.error(err); process.exit(1); });
+  // The window changing size mid-frame leaves the previous layout behind.
+  if (live && process.stdout.on) process.stdout.on('resize', () => draw());
 }
 
 // ---------------------------------------------------------------------------
@@ -1223,6 +1340,51 @@ function selfTest() {
     ok(out.includes('start not in view') && out.includes('run 2'),
       `no caveat is dropped at ${width} columns`);
   }
+
+  // --- fitting the frame to the window ------------------------------------
+  // A frame taller than the window scrolls, which is the bug the alternate
+  // screen was adopted to fix; fitting is the other half of that fix.
+  const tallScene = renderScene(reduceState(parseRecords(
+    Array.from({ length: 30 }, (_, i) => JSON.stringify({
+      t: 100 + i, event: 'start', role: `principal-role-${i}`, session: `s${i}`,
+    })).join('\n'), 'observed'), 500), { width: 80 });
+  ok(tallScene.split('\n').length > 20, 'the fixture is genuinely taller than a short window');
+  const fitted = fitHeight(tallScene, 20);
+  ok(fitted.split('\n').length <= 20, 'a tall frame is cut down to the rows available');
+  ok(fitted.includes('more row(s) not shown'), 'the rows that were dropped are declared, not silently missing');
+  // The invariant is exact: everything from the final rule onward -- the whole
+  // caveat block -- must survive the cut byte for byte.
+  const tailOf = (s) => {
+    const ls = s.split('\n');
+    for (let i = ls.length - 1; i >= 0; i--) if (/^-{3,}$/.test(ls[i].trim())) return ls.slice(i).join('\n');
+    return '';
+  };
+  ok(tailOf(tallScene).length > 0 && tailOf(fitted) === tailOf(tallScene),
+    'every caveat survives the cut -- workers are dropped, warnings never are');
+  ok(fitHeight(tallScene, 500) === tallScene, 'a frame that already fits is returned untouched');
+  ok(fitHeight(tallScene, 4).includes('too short'),
+    'a window too short for even the caveats renders a plain explanation, not a confident fragment');
+  ok(!fitHeight(tallScene, 4).includes('principal-role-0'),
+    'the too-short fallback shows no worker rows, so it cannot be read as the whole fleet');
+
+  // A line longer than the window is wrapped by the terminal into several rows.
+  // Counting newlines rather than rows would under-count the frame and let it
+  // scroll on a narrow window -- the bug this whole change exists to prevent.
+  const wrapping = ['a'.repeat(70), '-'.repeat(20), 'note: keep me'].join('\n');
+  ok(fitHeight(wrapping, 4, 20).includes('too short'),
+    'a frame is measured in wrapped rows, not lines: 3 lines can be far more than 3 rows');
+  ok(fitHeight(wrapping, 40, 20) === wrapping, 'the same frame is untouched when the rows really are there');
+  const narrow = fitHeight(tallScene, 6, 20);
+  ok(narrow.split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 20)), 0) <= 6,
+    'the fitted frame fits the window once wrapping is counted');
+  // A one-row window makes the budget zero at the call site; a frame emitted
+  // there would scroll immediately.
+  ok(fitHeight(tallScene, 0, 80).split('\n').length === 1 && !fitHeight(tallScene, 0, 80).includes('principal-role-'),
+    'a window with no usable rows renders one line, never the whole frame');
+  ok(fitHeight(tallScene, undefined) === tallScene, 'an unknown budget is not guessed at');
+  // The anchor is what makes dropping safe. Without it there is no safe cut.
+  ok(fitHeight('head\nrule\nrow\nrow\nrow\nrow', 3, 80).includes('too short'),
+    'a frame with no caveat rule is refused rather than truncated blind');
 
   console.log(failed === 0 ? '\u2713 observe-watch self-test: all checks passed' : `\u2717 observe-watch self-test: ${failed} failure(s)`);
   process.exit(failed === 0 ? 0 : 1);

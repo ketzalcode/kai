@@ -31,10 +31,20 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.49.2` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.49.3` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-Two fixes, both found by actually running the thing.
+A rendering fix, reported from a real macOS run.
+
+The live fleet view scrolled instead of updating in place: it cleared the
+screen with `ESC[2J`, and macOS Terminal implements that by pushing the erased
+lines into scrollback. The view now takes the terminal's alternate screen,
+which has no scrollback at all, and redraws in place without flicker. A frame
+taller than the window is fitted rather than allowed to scroll — worker rows
+are dropped with a count, and the caveats at the bottom are never what
+disappears. The terminal is restored on every exit path, not just `ctrl-c`.
+
+Before that, two fixes found by actually running the thing.
 
 A live agent run showed that 54 of 56 agents had **no shell on Windows**: they
 declared the `bash` tool, and the host drops that name silently rather than
