@@ -4,7 +4,40 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.54.0] - 2026-08-13
+
+### Added
+
+- **`scripts/pack-preview.mjs --all` materialises the whole five-pack split**
+  from the live roster — `kai-core-preview` (7 agents) plus engineering (20),
+  product (9), gtm (11) and personal (9) — so the split can be exercised
+  end-to-end before a single file moves in the shipped plugin. The partition is
+  enforced by the self-test rather than asserted: 56 of 56 agents assigned, no
+  agent claimed by two packs, no skill provided by both core and a pack, and
+  skills that no agent inherits reported separately instead of being silently
+  swept into core. 16 checks.
+
+### Changed
+
+- `docs/proposals/pack-architecture.md` records the whole-roster results, which
+  close the Phase 2 gate and add one design constraint:
+  - **Enumeration is complete at 56 agents across five plugins.** Truncation was
+    the wrong thing to fear — verified by diffing the returned ids against the
+    roster on disk rather than by eye.
+  - **A model-computed count is not trustworthy.** The same call that listed all
+    56 ids reported `COUNT=55` on one run and `COUNT=53` on another. So
+    availability logic must test **membership**, never counts: "is
+    `principal-security` installed?" is sound; any quorum or tally an agent
+    computes is not. That rules out a class of dispatch heuristics.
+  - **Core alone is usable, with a control to prove it.** Asked for work only a
+    department can do, core's director named the right owner and reported it
+    unavailable — and the identical question returns *available* once
+    engineering is installed, which rules out a director that simply always
+    says no.
+
 ## [0.53.0] - 2026-08-13
+
+
 
 ### Changed
 
@@ -2411,6 +2444,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.54.0]: https://github.com/RubenSaucedo/kai/compare/v0.53.0...v0.54.0
 [0.53.0]: https://github.com/RubenSaucedo/kai/compare/v0.52.0...v0.53.0
 [0.52.0]: https://github.com/RubenSaucedo/kai/compare/v0.51.0...v0.52.0
 [0.51.0]: https://github.com/RubenSaucedo/kai/compare/v0.50.0...v0.51.0

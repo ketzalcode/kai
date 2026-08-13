@@ -359,3 +359,56 @@ Caveats on E: this is the model reading an injected tool list, not a structured
 inventory API. It was tested with 9 pack agents, not 56, so truncation under a
 full roster is unproven, and the cloud host was not tested at all.
 
+---
+
+## Phase 2/3 results — the full five-pack split, whole roster
+
+`scripts/pack-preview.mjs --all` now materialises **all six plugins** from the
+live roster: `kai-core-preview` (7 agents, 22 core skills + 9 unplaceable) plus
+engineering (20), product (9), gtm (11) and personal (9). The partition is
+enforced in the self-test: 56 of 56 agents assigned, no agent claimed twice, and
+no skill provided by both core and a pack.
+
+| # | Test | Result |
+| --- | --- | --- |
+| F | Enumeration at the **full 56-agent roster**, all six plugins installed | **All 56 listed**, correctly qualified. Nothing missing, nothing invented. |
+| F2 | The model's own `COUNT=` of that same list | **Wrong, twice: 55 and 53**, while listing 56 both times |
+| G | **Core alone**, asked for work only a department can do | Named `principal-security` as owner and reported `AVAILABLE=no` |
+| H | Control: same question, engineering **installed** | `AVAILABLE=yes` |
+| H2 | Core + engineering, asked for **GTM** work | `AVAILABLE=no` |
+
+### What these change
+
+**The Phase 2 gate is closed, and truncation was the wrong thing to fear.** At
+56 agents across five plugins the host exposes every agent and the enumeration
+is complete — verified by diffing the returned ids against the roster on disk,
+not by eye.
+
+**But a model-computed count is not trustworthy, and that is a design
+constraint.** The same call that listed all 56 ids reported `COUNT=55` on one
+run and `COUNT=53` on another. The list is reliable; arithmetic over it is not.
+
+> **Decision: availability logic must test membership, never counts.** "Is
+> `principal-security` in the installed set?" is sound. "Are all N roles
+> present?", "how many engineers do I have?", or any quorum rule computed by an
+> agent is not. This rules out a whole class of dispatch heuristics.
+
+**Core alone is genuinely usable, and the control proves it.** G on its own
+would be a false pass if the director simply always answered "no" — H is the
+control that rules that out: the identical question returns `AVAILABLE=yes` once
+engineering is installed, and H2 returns `no` for a department that is absent.
+The director resolves against the real installed set rather than a fixed answer
+or its own role taxonomy.
+
+That is the strongest evidence so far for keeping directors in core. The
+condition from Phase 1 stands unchanged: resolve availability **before**
+claiming work or taking a lease.
+
+### Still not verified
+
+- macOS and the cloud host — everything above is Windows CLI.
+- Collision under real **install** order, marketplace-vs-direct, and fresh
+  sessions; only `--plugin-dir` order has been tested.
+- The 9 skills no agent inherits (`demo-*`, `fleet-observation`,
+  `onboard-to-codebase`, three `review-*`) are parked in core by the builder,
+  which is a placeholder, not a decision.

@@ -110,6 +110,124 @@ export function injectPreflight(body, block) {
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// The full five-pack partition, for the whole-roster tests
+// ---------------------------------------------------------------------------
+
+// Every one of the 56 agents belongs to exactly one pack. `core` holds the org
+// spine and the workspace machinery: the roles that are meaningful with no
+// department installed at all.
+export const PACKS = {
+  core: [
+    'director-chief-of-staff', 'director-executive-assistant', 'workflow-workspace-init',
+    'workflow-self-check', 'workflow-proactive-scan', 'workflow-weekly-pulse',
+    'workflow-initiative-init',
+  ],
+  engineering: [
+    'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
+    'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
+    'principal-sre', 'principal-security', 'principal-privacy-compliance',
+    'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
+    'principal-ai-researcher', 'principal-technical-writer', 'workflow-pull-request',
+    'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
+    'workflow-doc-review', 'workflow-localization',
+  ],
+  product: [
+    'principal-product-manager', 'principal-product-designer', 'principal-product-strategist',
+    'principal-brand-designer', 'principal-data-analytics', 'persona-ux-first-time-user',
+    'workflow-product-explore', 'workflow-experiment-review', 'workflow-customer-feedback',
+  ],
+  gtm: [
+    'principal-sales', 'principal-growth', 'principal-demand-generation',
+    'principal-product-marketing', 'principal-seo', 'principal-linkedin-strategist',
+    'principal-partnerships', 'principal-pricing-monetization',
+    'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
+  ],
+  personal: PACK_AGENTS,
+};
+
+// Assign every skill on disk to exactly one provider. The rule is the one the
+// real split uses: a skill inherited by agents in more than one pack, or by a
+// core agent, must come from core -- otherwise a pack becomes a dependency of
+// another pack, or of core, and the dependency direction inverts.
+//
+// Skills that NO agent inherits cannot be placed by inheritance at all. They are
+// returned separately rather than silently swept into core, because "we could
+// not decide this mechanically" is a finding, not a default.
+export function planPacks() {
+  const packOf = new Map();
+  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) packOf.set(id, pack);
+
+  const allAgents = readdirSync(join(ROOT, 'agents'))
+    .filter((f) => f.endsWith('.agent.md')).map((f) => f.replace(/\.agent\.md$/, ''));
+  const unassigned = allAgents.filter((id) => !packOf.has(id));
+
+  const usedBy = new Map();
+  for (const id of allAgents) {
+    for (const s of inheritedSkills(readAgent(id))) {
+      if (!usedBy.has(s)) usedBy.set(s, new Set());
+      usedBy.get(s).add(packOf.get(id) ?? '?');
+    }
+  }
+
+  const onDisk = readdirSync(join(ROOT, 'skills'))
+    .filter((d) => existsSync(skillPath(d))).sort();
+
+  const core = [];
+  const local = Object.fromEntries(Object.keys(PACKS).map((p) => [p, []]));
+  const orphans = [];
+  for (const s of onDisk) {
+    const packs = usedBy.get(s);
+    if (!packs) { orphans.push(s); continue; }
+    if (packs.size > 1 || packs.has('core')) core.push(s);
+    else local[[...packs][0]].push(s);
+  }
+  return { core, local, orphans, unassigned };
+}
+
+function writePlugin(dir, name, description, agentIds, skills, block) {
+  mkdirSync(dir, { recursive: true });
+  const manifest = { name, version: '0.0.0-preview', description, skills: 'skills' };
+  if (agentIds.length) manifest.agents = 'agents';
+  writeFileSync(join(dir, 'plugin.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  if (agentIds.length) {
+    mkdirSync(join(dir, 'agents'), { recursive: true });
+    for (const id of agentIds) {
+      const body = readAgent(id);
+      writeFileSync(join(dir, 'agents', `${id}.agent.md`),
+        block ? injectPreflight(body, block) : body.replace(/\r\n/g, '\n'));
+    }
+  }
+  for (const s of skills) writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'));
+}
+
+// Materialise core plus any subset of the departments. A subset is the point:
+// the interesting failures are what a pack does when a pack it references is
+// not installed, and what core alone can still do.
+export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== 'core'),
+  withCore = true, contract = 1 }) {
+  rmSync(out, { recursive: true, force: true });
+  const plan = planPacks();
+  const built = [];
+
+  if (withCore) {
+    const dir = join(out, 'kai-core-preview');
+    writePlugin(dir, 'kai-core-preview', 'Preview of the kai shared core. Not for use.',
+      PACKS.core, [...plan.core, ...plan.orphans], null);
+    writeSkill(dir, CONTRACT_SKILL, contractSkill(contract));
+    built.push({ name: 'kai-core-preview', dir, agents: PACKS.core.length });
+  }
+
+  const block = preflightBlock();
+  for (const p of packs) {
+    const dir = join(out, `kai-${p}-preview`);
+    writePlugin(dir, `kai-${p}-preview`, `Preview of the kai ${p} department. Not for use.`,
+      PACKS[p], plan.local[p], block);
+    built.push({ name: `kai-${p}-preview`, dir, agents: PACKS[p].length });
+  }
+  return { built, plan };
+}
+
 export function contractSkill(contractVersion) {
   return [
     '---',
@@ -204,6 +322,23 @@ function selfTest() {
   ok(contractSkill(1).includes('contract: 1') && contractSkill(2).includes('contract: 2'),
     'the contract skill reports the version it was built with, so skew is testable');
 
+  const plan = planPacks();
+  const rosterSize = readdirSync(join(ROOT, 'agents')).filter((f) => f.endsWith('.agent.md')).length;
+  const assigned = Object.values(PACKS).reduce((n, l) => n + l.length, 0);
+  ok(plan.unassigned.length === 0,
+    `every agent belongs to a pack (unassigned: ${plan.unassigned.join(', ') || 'none'})`);
+  ok(assigned === rosterSize,
+    `the partition covers the roster exactly: ${assigned} of ${rosterSize}`);
+  ok(new Set(Object.values(PACKS).flat()).size === assigned,
+    'no agent is claimed by two packs, which would make its home ambiguous');
+  ok(plan.core.includes('kai-core-team-operating-rules'),
+    'the universal contract is provided by core in the full partition too');
+  const localAll = Object.values(plan.local).flat();
+  ok(localAll.every((s) => !plan.core.includes(s)),
+    'no skill is provided by both core and a pack: exactly one provider each');
+  ok(plan.orphans.length > 0 ? plan.orphans.every((s) => !localAll.includes(s)) : true,
+    'skills no agent inherits are reported separately, not silently defaulted into a pack');
+
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;
 }
@@ -213,6 +348,22 @@ const flag = (n, d) => { const i = args.indexOf(n); return i === -1 ? d : args[i
 
 if (args.includes('--self-test')) {
   process.exit(selfTest() ? 0 : 1);
+} else if (args.includes('--all')) {
+  const packsArg = flag('--packs', '');
+  const r = buildAll({
+    out: flag('--out'),
+    packs: packsArg ? packsArg.split(',') : undefined,
+    withCore: !args.includes('--no-core'),
+    contract: Number(flag('--contract', '1')),
+  });
+  for (const b of r.built) {
+    console.log(`  ${b.name.padEnd(28)} ${String(b.agents).padStart(2)} agents  ${b.dir}`);
+  }
+  console.log(`\ncore skills: ${r.plan.core.length} (+${r.plan.orphans.length} inherited by nobody)`);
+  for (const [p, l] of Object.entries(r.plan.local)) {
+    if (l.length) console.log(`  ${p} owns ${l.length}: ${l.join(', ')}`);
+  }
+  if (r.plan.orphans.length) console.log(`\nunplaceable by inheritance: ${r.plan.orphans.join(', ')}`);
 } else if (args.includes('--out')) {
   const r = build({
     out: flag('--out'),

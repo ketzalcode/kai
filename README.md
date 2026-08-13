@@ -31,16 +31,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.53.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.54.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**Core skills now carry an owned namespace.** The 22 skills that every
-department shares are prefixed `kai-core-*`, ahead of the split into a required
-core plus installable department packs. This is forced by measured host
-behaviour: when two plugins provide the same skill name, an agent binds to
-whichever loaded first — silently, and invisibly to a preflight. A prefixed name
-on an agent's `**Inherits:**` line now means "this comes from core"; pack-local
-skills keep their bare names.
+**The five-pack split is now exercisable end to end**, before a single file
+moves. `pack-preview --all` builds core plus four departments from the live
+roster, and the whole-roster tests close the last open gate: at 56 agents across
+five plugins the host exposes every agent, and core alone still routes honestly
+— it names the right owner for work it cannot do and reports that owner as not
+installed. Core skills carry the `kai-core-*` namespace that makes this safe.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
