@@ -4,7 +4,7 @@ description: "On-demand orchestrator that turns a week of activity into a concis
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_fetch", "web_search"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `generate-audio`, `pulse-digest`, `web-content-extraction`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `generate-audio`, `pulse-digest`, `web-content-extraction`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

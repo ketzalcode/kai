@@ -150,6 +150,34 @@ for (const p of refScanFiles) {
 // ---------------------------------------------------------------------------
 const BASELINE_SKILL = 'team-operating-rules';
 const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
+
+// Agents that do bounded, delegated work must declare that they are running.
+//
+// This became load-bearing rather than nice-to-have: the host emits no subagent
+// lifecycle events for plugin-provided agents, so `.kai/activity.jsonl` is the
+// ONLY evidence that a kai persona ran at all. An agent in a coordinating
+// family that does not inherit `work-activity` is invisible in both tiers, and
+// the fleet view renders it as though it never existed.
+//
+// The rule is an opt-OUT, deliberately. A new agent inherits the obligation by
+// default; forgetting to exempt one costs a line of bookkeeping, while
+// forgetting to opt one in costs an agent that cannot be seen.
+const ACTIVITY_SKILL = 'work-activity';
+// Conversational roles, exempt because they have no bounded run to report.
+// Two appends per run is the contract; a role whose "run" is an open-ended
+// conversation with the operator would emit bookkeeping noise instead, and the
+// activity skill is explicit that a drifted-from log is worse than no log.
+const ACTIVITY_EXEMPT = new Map([
+  ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
+  ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
+  // These two DO bounded work worth seeing, and are exempt for a worse reason:
+  // they hold no `bash` tool, and `work-activity` needs one to append. Granting
+  // a shell to a research-and-write role purely so it can log would trade a
+  // sandbox boundary for observability, which is the wrong way round. They stay
+  // invisible until the delegating agent can record on their behalf.
+  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `bash`'],
+  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `bash`'],
+]);
 const CONTRACT_HEADING = /^## (?:Contracts you inherit|Inherited contracts)[^\n]*\n/gm;
 const blockPath = join(ROOT, 'scripts/lib/inherits-block.txt');
 const inheritsBlock = existsSync(blockPath)
@@ -242,6 +270,16 @@ for (const agent of agentFiles) {
   }
   if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('workspace-conventions')) {
     err(r, 'coordinating roles must inherit `workspace-conventions`');
+  }
+  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0])
+    && !seen.has(ACTIVITY_SKILL)
+    && !ACTIVITY_EXEMPT.has(agent.id)) {
+    err(r, `coordinating roles must inherit \`${ACTIVITY_SKILL}\`, or be listed in ACTIVITY_EXEMPT with a reason `
+      + '(the host observes no plugin agent, so this log is the only evidence the role ran)');
+  }
+  if (ACTIVITY_EXEMPT.has(agent.id) && seen.has(ACTIVITY_SKILL)) {
+    // Otherwise the exemption list rots into a lie about the fleet.
+    err(r, `is listed in ACTIVITY_EXEMPT but inherits \`${ACTIVITY_SKILL}\`; remove the exemption`);
   }
 
   // A structured "Contracts you inherit" section is the profile's own claim

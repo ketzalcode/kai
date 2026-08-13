@@ -4,6 +4,35 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.48.1] - 2026-08-12
+
+### Fixed
+
+- **Five agents that do real work were invisible in the fleet view.**
+  `workflow-pull-request`, `workflow-issue-analysis`, `workflow-proactive-scan`,
+  `workflow-course-to-audio` and `workflow-weekly-pulse` never inherited
+  `work-activity`, so they wrote nothing to the declared log. Since v0.48.0
+  established that the host observes no plugin-provided agent at all, that made
+  them invisible in **both** tiers — the fleet view rendered them as though they
+  had never run. All five now declare their runs.
+- **The obligation is now enforced as an opt-out.** Any `director-*`,
+  `principal-*` or `workflow-*` agent must inherit `work-activity` or appear in
+  `ACTIVITY_EXEMPT` with a written reason, and an exemption that also inherits
+  the skill is itself an error so the list cannot rot into a false claim about
+  the fleet. Opt-out rather than opt-in is deliberate: forgetting to exempt an
+  agent costs a line of bookkeeping, while forgetting to opt one in costs an
+  agent nobody can see. Both directions are covered by tests.
+
+### Known gap
+
+- `principal-ai-researcher` and `principal-ai-applied-engineer` do bounded work
+  worth seeing and remain invisible. `work-activity` appends through a script
+  that needs the `bash` tool, and neither agent holds a shell by design. They are
+  exempted with that reason recorded rather than granted one, because trading a
+  sandbox boundary for observability is the wrong way round. Tracked in #132,
+  where the real fix — the delegating agent recording on the subagent's behalf —
+  is specified.
+
 ## [0.48.0] - 2026-08-12
 
 ### Fixed
@@ -2080,6 +2109,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.48.1]: https://github.com/RubenSaucedo/kai/compare/v0.48.0...v0.48.1
 [0.48.0]: https://github.com/RubenSaucedo/kai/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/RubenSaucedo/kai/compare/v0.46.0...v0.47.0
 [0.46.0]: https://github.com/RubenSaucedo/kai/compare/v0.45.1...v0.46.0

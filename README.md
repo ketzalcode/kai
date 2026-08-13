@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.48.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.48.1` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 This release fixes a claim kai could not back up. The fleet observer was built

@@ -4,7 +4,7 @@ description: "Bounded delivery agent that takes one finished change from workspa
 tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `pr-delivery`, `scope-discipline`, `peer-communication`, `build-diagrams`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `pr-delivery`, `scope-discipline`, `peer-communication`, `build-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

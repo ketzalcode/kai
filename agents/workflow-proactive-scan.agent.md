@@ -4,7 +4,7 @@ description: "Bounded workflow an EXTERNAL runner invokes on a cadence to proact
 tools: ["bash", "view", "edit", "create", "grep", "glob"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `personal-agenda`, `proactive-scan`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `personal-agenda`, `proactive-scan`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

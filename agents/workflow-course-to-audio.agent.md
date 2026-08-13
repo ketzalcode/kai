@@ -4,7 +4,7 @@ description: "Turns a course, certification module, learning-path unit, or any l
 tools: ["playwright", "bash", "edit", "view", "ask_user"]
 ---
 
-**Inherits:** `team-operating-rules`, `workspace-conventions`, `generate-audio`, `web-content-extraction`
+**Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `generate-audio`, `web-content-extraction`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
