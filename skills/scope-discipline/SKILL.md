@@ -1,6 +1,6 @@
 ---
 name: scope-discipline
-description: "The shared behavioral contract governing the seam between honest assessment and unilateral action. Assessors report honestly; principal-product-manager owns the scope gate; principal-product-designer and principal-swe acting roles may refine approved scope but must route expanded surfaces, flows, capabilities, or implementation as durable proposals instead of silently adopting them."
+description: "Governs assessment-versus-action scope boundaries. Use when assessors, PM, design, or SWE roles must avoid silently expanding approved scope."
 tools: [bash, shell, view, grep, glob]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: workflow-workspace-init
-description: "Run-once kai workspace onboarding workflow for any repository or durable standalone folder. Applies workspace-onboarding and workspace-conventions to create or validate .kai/manifest.json, ignored .kai/runs, coordination registries, initiative catalog, promoted library, and complete workspace-local kai/personal/assistant state including identity stubs. Idempotent and non-destructive."
+description: "Creates or validates a kai workspace: manifest, ignored runs area, coordination registries, initiative catalog, library, and personal assistant state. Use once for a new repository or durable folder. Non-destructive and idempotent."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 

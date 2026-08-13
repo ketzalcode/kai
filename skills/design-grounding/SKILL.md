@@ -1,6 +1,6 @@
 ---
 name: design-grounding
-description: "Shared design-system grounding contract for kai's design and frontend agents. Owns the human-readable design-system.md reference shape, the consume-vs-derive decision, the neutral design-system-extract.md contract that workflow-product-explore fills, the propose-missing-scale bubble-up wired to scope-discipline, and the designer/frontend/brand ownership split. principal-product-designer, principal-swe-frontend, and principal-brand-designer inherit it so design and brand proposals stay grounded in the app's settled visual language instead of inventing a look."
+description: "Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language."
 tools: [view, create, edit, grep, glob]
 ---
 

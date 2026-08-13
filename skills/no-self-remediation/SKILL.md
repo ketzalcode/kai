@@ -1,6 +1,6 @@
 ---
 name: no-self-remediation
-description: "The directional write contract for roles that assess without acting. An assessor may write its own evidence, report, and findings; it must not mutate the target under review — where mutation means creating, editing, deleting, renaming, patching, formatting, or generating any file inside that target, not merely editing an existing one. Also names each assessor's honest capability tier, because a tool grant that still permits shell is a documented residual risk rather than an enforced boundary."
+description: "Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review."
 tools: [view, grep, glob]
 ---
 

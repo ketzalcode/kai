@@ -1,6 +1,6 @@
 ---
 name: personal-agenda
-description: "Assembles the operator's forward 'what needs you' agenda in the current Kai workspace, optionally including enabled roots from kai/personal/workspaces.md. Owns the kai/personal/inbox.md task lifecycle (proposed/open/waiting/snoozed/done with recurrence, reminders, and deduplication) and the derived kai/personal/agenda.md schema, maps explicit @operator decision/reply/action questions plus release-ready items, cadence nudges, ranking, least-privilege personal-field sharing, and the never-autonomous output contract."
+description: "Operator agenda assembly. Use when producing the current workspace's what-needs-you view from inbox tasks, @operator questions, release gates, and nudges."
 tools: [bash, shell, view, edit, create, grep, glob]
 ---
 

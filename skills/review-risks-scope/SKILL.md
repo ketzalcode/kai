@@ -1,6 +1,6 @@
 ---
 name: review-risks-scope
-description: "The risks-and-scope lens of a document review — are the real risks named and mitigated, or hand-waved? Is scope drawn tightly (what's explicitly IN and OUT), or open-ended? Are assumptions stated as assumptions or smuggled in as facts? Were risks raised early then quietly dropped by the conclusion? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator (or directly when the user asks to check risks and scope). NEVER auto-posts."
+description: "Risks and scope review lens. Use when checking whether risks, mitigations, assumptions, in-scope work, and out-of-scope work are explicit."
 tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 

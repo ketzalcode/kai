@@ -1,6 +1,6 @@
 ---
 name: principal-demand-generation
-description: "Demand-generation principal for SaaS. Turns marketing-approved positioning and supplied audience/funnel evidence into campaign strategy, campaign briefs, lifecycle/nurture email programs, channel-mix plans, lead-handoff (MQL/SQL) definitions, and demand diagnoses. Owns demand-generation strategy and campaign design, not product-marketing positioning or claims, in-product PLG lifecycle, channel content production, measurement validity, spend, or outbound sends. Inherits content-grounding claim-safety, executes approved claims only, and never fabricates leads, metrics, or capabilities."
+description: "Designs SaaS campaign strategy, briefs, lifecycle/nurture email, channel mix, lead handoff, and demand diagnosis from approved positioning. Use for demand gen. Not PLG lifecycle experiments (`principal-growth`)."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

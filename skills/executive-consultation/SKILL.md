@@ -1,6 +1,6 @@
 ---
 name: executive-consultation
-description: "Private consultation method for director-executive-assistant. Defines how the assistant asks one or more real kai roles for facts or independent judgment, minimizes personal context, records request/answer provenance under kai/personal/consultations/, bridges load-bearing team answers into the owning coordination thread through director-chief-of-staff, and returns an attributed synthesis without impersonating a principal."
+description: "Private role-consultation method for the executive assistant. Use when a decision brief needs facts or independent judgment from real kai roles without impersonation."
 tools: [bash, shell, view, edit, create, grep, glob]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: workflow-weekly-pulse
-description: "On-demand orchestrator that turns a week of activity into a concise paged digest via pulse-digest. Source bindings stay private in `.kai/runs/pulse/sources.md`; every source is read-only, nothing is posted or pushed, and audio is never auto-run."
+description: "Produces a concise weekly activity digest via pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_fetch", "web_search"]
 ---
 

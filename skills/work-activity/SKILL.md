@@ -1,6 +1,6 @@
 ---
 name: work-activity
-description: "The fine-grained activity contract that makes a fleet of agents legible without pretending markdown is a runtime. Owns the append-only, gitignored .kai/activity.jsonl: a run-scoped start/progress/stop signal carrying who is working, on what item, and when they will report next. Deliberately cannot express state, verdicts, reviews, or decisions — those stay authoritative on the coordination item — and reports silence past a self-declared deadline as a derived, checkable fact rather than guessing whether an agent crashed."
+description: "Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl."
 tools: [bash, shell, view, grep, glob]
 requires_tools: [bash, shell]
 ---

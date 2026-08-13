@@ -4,9 +4,42 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.50.0] - 2026-08-13
+## [0.51.0] - 2026-08-13
+
+### Changed
+
+- **Every agent and skill `description:` rewritten to fit a budget.** These
+  descriptions are the host's routing surface — they load into *every* session
+  to answer "should this fire?" — but they had accumulated capability
+  inventories, implementation notes and example lists that each file's body
+  already carried. Measured cost before: **~13.4k tokens per session** (56
+  agent descriptions ~7.4k, 49 skill descriptions ~6.1k). After rewriting all
+  105 to "what it does, when it fires": **~4.9k tokens**, a **63% reduction**
+  and ~8.5k tokens returned to every session.
+- The nine `review-*` lenses no longer open with near-identical phrasing. Each
+  now names its lens in the first words, so the right lenses fire on a document
+  instead of all of them looking interchangeable.
+- Near-neighbour roles that a router could confuse — the five `principal-swe-*`
+  layers, product manager vs strategist vs marketing, growth vs demand
+  generation, the two `director-*` routers, and the `demo-*` pipeline stages —
+  carry an explicit disambiguation clause naming the agent they are *not*.
 
 ### Added
+
+- **A discovery-metadata budget in `validate-plugin.mjs`**: 250 characters per
+  agent description, 180 per skill. Without a ratchet the prose grows back one
+  reasonable-looking sentence at a time and nothing fails until someone
+  re-measures. Verified to catch a violation at exactly one character over.
+- `docs/proposals/pack-architecture.md` — the measured assessment behind #29
+  (`kai-core` plus department packs), including the finding that an agent in one
+  plugin *can* load a skill from another, so packs need no duplicated contracts.
+
+### Fixed
+
+- Restored the exact boundary between near-neighbour roles in the routing
+  surface: several descriptions previously disambiguated only in prose the
+  router never sees, because the distinguishing detail sat in the body.
+
 
 - **kai publishes its own marketplace index**, at
   `.github/plugin/marketplace.json`. The host has deprecated direct
@@ -2311,6 +2344,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.51.0]: https://github.com/RubenSaucedo/kai/compare/v0.50.0...v0.51.0
 [0.50.0]: https://github.com/RubenSaucedo/kai/compare/v0.49.3...v0.50.0
 [0.49.3]: https://github.com/RubenSaucedo/kai/compare/v0.49.2...v0.49.3
 [0.49.2]: https://github.com/RubenSaucedo/kai/compare/v0.49.1...v0.49.2

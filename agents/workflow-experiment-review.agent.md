@@ -1,6 +1,6 @@
 ---
 name: workflow-experiment-review
-description: "Bounded independent experiment-integrity gate for SaaS growth and analytics work. Reviews a supplied experiment design before launch (falsifiability, pre-registration, power, fixed primary/guardrail metrics, decision rule) and a supplied readout after (sample-ratio mismatch, exposure integrity, peeking/stopping, multiple comparisons, guardrail honoring, and causal-status correctness) against the exact analysis revision. Owns integrity certification, not experiment design, metric definitions, or the growth/product decision. Never runs the experiment, recomputes from raw data, upgrades a causal label, or approves scope."
+description: "Gates SaaS experiment integrity before launch or after readout, covering design, metrics, exposure, peeking, comparisons, guardrails, and causal status. Use when an experiment needs independent certification. Not growth or product decisions."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 

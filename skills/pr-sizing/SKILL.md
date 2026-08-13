@@ -1,6 +1,6 @@
 ---
 name: pr-sizing
-description: "Apply when planning a feature, large refactor, or any change spanning multiple files. Helps break work into shippable, reviewable increments \u2014 neither massive nor micro \u2014 each shippable independently."
+description: "PR sizing method. Use when planning a feature, large refactor, or multi-file change into independently shippable, reviewable increments."
 tools: [view, grep, glob, edit]
 user-invocable: true
 argument-hint: "optional feature description"

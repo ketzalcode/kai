@@ -1,6 +1,6 @@
 ---
 name: workflow-ship
-description: "Release orchestrator with three explicit phases. PREPARE gates in-review to release-ready and writes versioned deploy/rollback/verification steps. CONFIRM-START records evidence that human deployment began and moves to deploying. CONFIRM-COMPLETE requires successful completion evidence before production-verification, then records proportional smoke checks and marks shipped. Kai never performs deployment."
+description: "Orchestrates release prepare, human deployment start, and completion confirmation with deploy, rollback, verification, and smoke-check records. Use when a release moves from in-review to shipped. Not deployment execution."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

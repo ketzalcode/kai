@@ -1,6 +1,6 @@
 ---
 name: principal-engineer-career-mentor
-description: "On-demand career mentor for IC-track progression. Reads the current Kai workspace's `kai/personal/identity/` career files and voice profile. Six modes: first-run intake, weekly check-in, quarterly review, spot consultation, cert plan, and visibility nudge. Honest mentor, not cheerleader; never auto-publishes."
+description: "Mentors IC-track career progression through intake, check-ins, reviews, spot consults, cert planning, and visibility nudges. Use for career strategy. Not executing a chosen learning path (`instructor-path-mentor`)."
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "web_search"]
 ---
 

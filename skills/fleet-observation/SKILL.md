@@ -1,6 +1,6 @@
 ---
 name: fleet-observation
-description: "How to turn on, launch, and read kai's live view of its own subagents. Owns the operator path for the observer: locating the script inside the plugin's install directory so nobody has to clone the repository, granting consent, launching the ambient watcher in its own terminal, and interpreting a participation sequence — including the gaps, where a role that should have taken part never appears. Deliberately does not treat the observer as a running service, because the host spawns it per event, and never presents a start without a stop as proof that a process is alive."
+description: "Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate."
 tools: [bash, shell, view, grep, glob]
 requires_tools: [bash, shell]
 user-invocable: true

@@ -1,6 +1,6 @@
 ---
 name: workflow-issue-analysis
-description: "Bounded intake agent that turns one issue into a chosen approach and stops. It grounds the issue against what already exists, verifies the decisive assumption by experiment rather than assertion, restates the problem, frames the genuinely viable options with their costs, and routes the decision to whoever owns it. It holds no edit or create tools, so the handoff to implementation is structural rather than a promise — it cannot start building what it just recommended."
+description: "Turns one issue into a grounded problem statement, verified assumption, viable options, and chosen approach handoff. Use at issue intake before implementation. Not coding or creating work items."
 tools: ["bash", "shell", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

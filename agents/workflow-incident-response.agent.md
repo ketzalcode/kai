@@ -1,6 +1,6 @@
 ---
 name: workflow-incident-response
-description: "Bounded incident-command workflow for SaaS operational, security, data, and availability events. Declares or rejects an incident from supplied evidence, assigns provisional SEV by impact, coordinates real SRE/security/SWE/QA leads, maintains one timeline and decision log, produces operator action packets and unsent status briefs, verifies recovery evidence, and closes with a sanitized incident record plus follow-up proposals. Never executes production actions, uses credentials, sends communications, makes breach/legal declarations, or lets emergency command promote remediation scope."
+description: "Runs incident command for SaaS operational, security, data, or availability events: SEV, leads, timeline, action packets, status drafts, recovery evidence, and record. Use when an incident starts. Not production actions or breach/legal declarations."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent", "web_search", "web_fetch"]
 ---
 

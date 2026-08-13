@@ -1,6 +1,6 @@
 ---
 name: principal-qa-ui
-description: "Principal-level QA engineer doing deep manual UI testing of a target website via Playwright MCP. Hunts for objectively broken things — overlapping elements, text overflow, broken buttons, console errors, network failures with visible UI impact, broken focus order, layout breaking at common viewports. Produces a defect report via the web-evaluation skill. Invoke when the user pastes a URL and asks for a QA pass."
+description: "Manually tests a website UI for objective defects: overlap, overflow, broken controls, console or network errors with visible impact, focus order, and viewport layout breaks. Use for QA passes. Not fresh-eyes UX (`persona-ux-first-time-user`)."
 tools: ["playwright", "bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 

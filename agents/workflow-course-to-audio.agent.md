@@ -1,6 +1,6 @@
 ---
 name: workflow-course-to-audio
-description: "Turns a course, certification module, learning-path unit, or any long readable web page into local markdown the user can hand to the `generate-audio` skill and listen to on the go. Wraps the `web-content-extraction` skill for the crawl, then offers an explicit handoff to `generate-audio` (never auto-runs it — audio costs Azure tokens). Built for the 'listen while walking, self-test when home' workflow. Knowledge-check questions are split into a separate file so the audio stays narration-clean and the listener can answer from memory later. Invoke when the user pastes a course / cert / doc URL and asks to extract it for listening."
+description: "Extracts a course, certification module, learning-path unit, or long readable web page into local markdown for later audio. Use when a URL should become listenable study material with separate knowledge checks."
 tools: ["playwright", "bash", "shell", "edit", "view", "ask_user"]
 ---
 

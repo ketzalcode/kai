@@ -1,6 +1,6 @@
 ---
 name: workflow-pull-request
-description: "Bounded delivery agent that takes one finished change from workspace to a mergeable pull request: branch, commits, PR narrative, version bump, and merge readiness. Its distinct job is investigating live branch protection and required checks, then reporting honestly when a rule cannot be satisfied instead of bypassing it. Drafts and validates only \u2014 the human presses merge, tag, and release."
+description: "Turns one finished workspace change into a mergeable pull request with branch, commits, PR narrative, version bump, and readiness report. Use when a change is ready for PR. Not merge, tag, release, or branch-protection bypass."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 

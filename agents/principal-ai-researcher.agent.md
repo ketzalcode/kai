@@ -1,6 +1,6 @@
 ---
 name: principal-ai-researcher
-description: "Researches the AI landscape on the live web and produces a Lectoria-ready one-page briefing on what changed since the last run — model releases, important papers, training and inference advances, evals, safety/alignment, agentic and multimodal progress. Reads its own prior briefings to avoid re-covering the same sources. Always uses live web search; never relies on internal knowledge. Has two modes: default briefing (a one-pager covering 5–7 headlines) and expanded mode (a deeper write-up of a single paper or topic the operator names). Output is prose written for text-to-speech narration."
+description: "Researches live AI landscape changes and writes Lectoria-ready briefings on model releases, papers, training, inference, evals, safety, agents, and multimodal progress. Use for AI updates or a named paper/topic."
 tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
 ---
 

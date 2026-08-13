@@ -1,6 +1,6 @@
 ---
 name: review-rollout-operability
-description: "The rollout-and-operability lens of a document review — how does this ship safely and how is it run once live? Is there a staged rollout (flag/canary/percentage), a reversibility/rollback story, and a kill switch? Once in production: what's monitored, what alerts fire, who's on call, what are the runbooks? Are migrations reversible and backfills safe? Are the 'we can just roll it back' assurances actually true? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator when a doc proposes shipping something to production. NEVER auto-posts."
+description: "Rollout and operability review lens. Use when production changes need staged rollout, rollback, kill switch, monitoring, alerts, on-call, or runbooks."
 tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 

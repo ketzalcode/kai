@@ -1,6 +1,6 @@
 ---
 name: create-product-demo
-description: Plan, record and check a product demo that fits where it is going — a README, a landing hero, a social teaser or a full walkthrough. Use when asked to make a demo video, a product video, a feature announcement clip, or to check whether an existing demo is the right length, size or shape for its destination.
+description: "Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks."
 tools: [bash, shell, view, edit, create, grep, glob]
 requires_tools: [bash, shell]
 user-invocable: true

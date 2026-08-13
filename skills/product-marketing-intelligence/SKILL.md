@@ -1,6 +1,6 @@
 ---
 name: product-marketing-intelligence
-description: "Reusable method for turning a product surface (public marketing pages, screenshots, recordings, uploaded assets, notes, or an existing product-map) into a durable, product-agnostic marketing-intelligence layer: a human product_exploration_report.md plus machine-readable product_context.json and media_manifest.json that downstream content and creative agents consume without the original chat. Every assertion is typed fact / inference / recommendation with a source, confidence, and basis, so uncertainty and coverage gaps are always explicit."
+description: "Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work."
 tools: [playwright, bash, shell, view, edit, create, grep, glob, ask_user, web_search, web_fetch]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: workflow-customer-feedback
-description: "Bounded, privacy-first SaaS customer-feedback synthesis workflow. Ingests explicitly supplied surveys, NPS/CSAT exports, reviews, interview notes, and feature requests, then clusters them into de-identified themes with grounded frequency, representativeness caveats, and sentiment labels, and routes each theme to product, customer-success, growth, pricing, or marketing owners. Keeps raw verbatim material local, routes satisfaction-statistic validity to analytics, and never replies to customers, promises outcomes, fabricates quotes or frequencies, or turns a feature request into product scope."
+description: "Synthesizes supplied SaaS surveys, NPS/CSAT, reviews, interviews, and feature requests into de-identified themes and owner routing. Use when customer feedback needs privacy-first clustering. Not product scoping or customer replies."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 

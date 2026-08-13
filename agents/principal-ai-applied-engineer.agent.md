@@ -1,6 +1,6 @@
 ---
 name: principal-ai-applied-engineer
-description: "The bridge between AI research and shipped product. Produces a ticket-grade applied design under kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md, or the canonical initiative decision path when initiative-owned, with architecture, FE/BE work, eval, rollout, risk, cost, latency, and an honest build/no-build recommendation."
+description: "Turns AI research or product ideas into ticket-grade applied designs with architecture, FE/BE work, eval, rollout, risk, cost, latency, and build/no-build guidance. Use when deciding how to ship AI."
 tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
 ---
 

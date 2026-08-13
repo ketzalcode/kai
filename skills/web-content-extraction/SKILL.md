@@ -1,6 +1,6 @@
 ---
 name: web-content-extraction
-description: "Standardises a Playwright MCP walkthrough of a website that is meant to be *read* (course modules, certification units, doc pages, long articles) and writes the readable content out as clean markdown ready for downstream consumption — typically the `generate-audio` skill. Owns folder layout, slug rules, .gitignore patching, login-pause, multi-unit traversal, knowledge-check detection, and the markdown output shape. Invoked by agents like `workflow-course-to-audio`; not invoked directly by the user."
+description: "Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption."
 tools: [playwright, bash, shell, edit, view, ask_user]
 ---
 

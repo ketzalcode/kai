@@ -1,6 +1,6 @@
 ---
 name: demo-capture
-description: "How to record a screen demo that knows what it did: drive a declared screenplay, verify the environment before spending a take, and write down the second each action really happened and the rectangle it really acted on. Owns the capture half of the demo seam and the take manifest that makes a focus plan derivable instead of remembered. Records only a real run, refuses a contaminated or black take rather than planning around it, and never decides what matters — that is direction."
+description: "Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work."
 tools: [bash, shell, view, edit, create, grep, glob]
 requires_tools: [bash, shell]
 user-invocable: true

@@ -1,6 +1,6 @@
 ---
 name: work-coordination
-description: "The shared coordination contract that lets many single-shot agents behave like one team across several concurrent efforts. Owns the durable kai/coordination/ surface: authoritative per-item state, derived BOARD.md, append-only threads, and unaffiliated backlog, while initiatives retain strategic context and deliverable indexes. Defines lifecycle, leases, versions, dependencies, touch collisions, handoffs, questions, canonical artifact targets, and exact evidence paths."
+description: "Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths."
 tools: [bash, shell, view, edit, create, grep, glob]
 ---
 

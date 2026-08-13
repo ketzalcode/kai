@@ -1,6 +1,6 @@
 ---
 name: initiative-stewardship
-description: "The shared contract for the initiative steward: own north-star state, groom proposals, approve and prioritize ready work, keep authoritative item records honest, and close the initiative only after every current milestone is production-shipped. The steward (principal-product-manager by default) owns what/priority; director-chief-of-staff dispatches the approved queue; principal-swe-manager sequences large multi-owner delivery. This preserves one accountable scope owner without making the steward the execution lead."
+description: "Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative."
 tools: [bash, shell, view, edit, grep, glob, ask_user]
 ---
 

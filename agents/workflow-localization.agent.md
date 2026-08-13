@@ -1,6 +1,6 @@
 ---
 name: workflow-localization
-description: "Bounded internationalization-readiness and locale-QA workflow for SaaS. Audits a surface for i18n readiness (externalized strings, date/number/currency formatting, pluralization, RTL, encoding), assesses locale readiness, routes translation to human translators or services, and runs locale QA against a build. Owns i18n readiness judgment within a bounded procedure, not source copy, UI layout implementation, the translation itself, or the product code. Never translates content, edits product code, or invents locale data."
+description: "Runs SaaS i18n-readiness and locale-QA workflow for strings, formatting, pluralization, RTL, encoding, translation routing, and build checks. Use when a surface needs localization readiness. Not translating or code edits."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

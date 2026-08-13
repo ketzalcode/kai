@@ -1,6 +1,6 @@
 ---
 name: pr-delivery
-description: "The shared contract for how one finished change physically leaves the workspace: branch naming from a three-rung anchor ladder, conventional-commit title, and a core-plus-triggered PR body whose Verification names the exact command that ran. Owns delivery hygiene only \u2014 sizing stays with pr-sizing, readiness with definition-of-done, deployment with workflow-ship, code judgment with the principal-swe roles. Never bypasses branch protection and never presses merge."
+description: "PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff."
 tools: [bash, shell, view, edit, create, grep, glob]
 ---
 

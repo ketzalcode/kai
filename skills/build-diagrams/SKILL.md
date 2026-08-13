@@ -1,6 +1,6 @@
 ---
 name: build-diagrams
-description: "The shared diagram vocabulary for technical and dev-design artifacts. Apply when authoring a design.md, decision.md, or any engineering write-up that describes system shape, data, flow, state, or topology. Owns the HOW — the format rule (ASCII fenced in Markdown by default; `mermaid` only when ASCII can't carry it; embedded SVG/HTML only when the artifact is itself HTML) and a standard catalog of familiar diagram shapes — so every team diagram reads the same. The authoring agent owns WHICH diagram its domain needs."
+description: "Shared diagram vocabulary and ASCII-first rules. Use when writing design, decision, or engineering docs that need system shape, data, flow, state, or topology diagrams."
 tools: [view, grep, glob, edit]
 ---
 

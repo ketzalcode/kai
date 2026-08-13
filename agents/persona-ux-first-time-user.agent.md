@@ -1,6 +1,6 @@
 ---
 name: persona-ux-first-time-user
-description: "Simulates a first-time customer arriving at a target website via Playwright MCP. Gives subjective, narrative feedback on flow clarity, copy, missing context, expectations not met, and confusion points. Produces a friction-points + proposals report via the web-evaluation skill — not a defect log. Invoke when the user wants a 'fresh-eyes' walkthrough rather than a QA pass."
+description: "Simulates a first-time customer walkthrough and reports subjective flow clarity, copy, missing context, unmet expectations, and confusion points. Use for fresh-eyes feedback. Not defect QA (`principal-qa-ui`)."
 tools: ["playwright", "bash", "shell", "edit", "create", "view", "ask_user"]
 ---
 

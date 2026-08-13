@@ -1,6 +1,6 @@
 ---
 name: product-exploration
-description: "Shared method for neutrally mapping how a live product works so PM, design, domain experts, QA, and engineering can reuse one evidence-backed navigation model. Defines safe Playwright exploration, canonical initiative product-map placement, journey and surface-map schema, provenance, auth/state boundaries, freshness, and peer handoff without evaluating UX or choosing scope."
+description: "Provides neutral live-product mapping. Use when PM, design, QA, domain, or engineering need an evidence-backed navigation model without UX evaluation."
 tools: [playwright, view, edit, ask_user]
 ---
 

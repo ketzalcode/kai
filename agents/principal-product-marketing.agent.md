@@ -1,6 +1,6 @@
 ---
 name: principal-product-marketing
-description: "Product researcher and marketing analyst. Explores a product's public marketing surfaces, screenshots, recordings, uploaded assets, notes, or an existing product-map and produces a reusable, product-agnostic marketing-intelligence layer — a human product_exploration_report.md plus machine-readable product_context.json and media_manifest.json — that downstream content and creative agents consume without the original chat. Types every assertion fact / inference / recommendation with source, confidence, and basis. Consumes the neutral product-map for interactive app flows rather than re-walking them. Carries no assumptions about any specific product."
+description: "Builds grounded product marketing intelligence from public surfaces, screenshots, recordings, assets, notes, or product maps. Use when content or creative agents need reusable product context. Not product scope (`principal-product-manager`)."
 tools: ["playwright", "bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

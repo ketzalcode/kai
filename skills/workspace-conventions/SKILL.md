@@ -1,6 +1,6 @@
 ---
 name: workspace-conventions
-description: "Shared output-routing contract for every file-producing kai agent. Resolves one target workspace, uses .kai/manifest.json as the bootstrap sentinel, separates ignored raw runs, global coordination, initiative-owned artifacts, promoted library outcomes, and personal material, and defines canonical product-map, brief, research, design, decision, evidence, and delivery paths."
+description: "Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths."
 tools: [bash, shell, view, grep, glob]
 ---
 

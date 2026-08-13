@@ -1,6 +1,6 @@
 ---
 name: issue-analysis
-description: "The discipline for turning an issue into a chosen approach: ground it against what already exists, verify the decisive assumption empirically instead of asserting it, restate the problem before proposing a remedy, frame the real options with their costs, and stop at the authorized decision owner. Owns the span before an approach exists — sizing stays with pr-sizing, code investigation with research-before-coding, packaging a recorded decision with decision-brief, delivery with pr-delivery. Reports a stale, duplicate, or wrong-premise issue as a finding rather than building it anyway."
+description: "Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner."
 tools: [bash, shell, view, grep, glob, ask_user, web_search, web_fetch]
 ---
 

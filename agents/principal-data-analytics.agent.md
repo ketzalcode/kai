@@ -1,6 +1,6 @@
 ---
 name: principal-data-analytics
-description: "Decision-analytics principal for SaaS products. Defines metric contracts, analyzes explicitly supplied exports with raw/user-level data kept local, designs and reads experiments, and produces reproducible funnel, cohort, retention, segmentation, and instrumentation-gap briefs. Owns analytical validity, uncertainty, and causal-status labeling, not product, growth, marketing, customer-success, pricing, production-data access, telemetry implementation, or dashboard decisions. Initiative artifacts are aggregate and de-identified."
+description: "Defines metric contracts and analyzes supplied SaaS exports for funnel, cohort, retention, segmentation, experiments, and instrumentation gaps. Use for analytical validity and causal-status judgment. Not pipelines (`principal-data-engineer`)."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 

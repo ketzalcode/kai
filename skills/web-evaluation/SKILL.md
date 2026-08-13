@@ -1,6 +1,6 @@
 ---
 name: web-evaluation
-description: "Shared Playwright plumbing for live-product walkthroughs: safe-action rules, login pause, local run folders, screenshot discipline, and evaluation report scaffolds. QA/UX/SEO use the full evaluation contract; workflow-product-explore reuses only safety/login/evidence plumbing and supplies its own neutral product-map schema."
+description: "Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports."
 tools: [playwright, bash, shell, edit, view, ask_user]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: ui-mockup
-description: "Shared method for turning a load-bearing pre-implementation design choice into human-confirmable visual mockups. Owns the ASCII/HTML fidelity ladder, the offline self-contained token-driven mock kit (no CDN/npm, like generate-html-lesson), the 3-4 option presentation with a recommended pick and pros/cons, and the ask_user confirmation gate (pause for a human pick unless explicitly delegated) reachable from both DESIGN and REVIEW. principal-product-designer inherits it; mocks are grounded by design-grounding."
+description: "Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision."
 tools: [view, create, edit, grep, glob, ask_user, playwright]
 ---
 

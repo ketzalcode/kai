@@ -1,6 +1,6 @@
 ---
 name: workspace-onboarding
-description: "Shared initialization and validation method for kai workspaces. Creates the .kai sentinel and ignored runs subtree, coordination registries, initiative catalog, promoted library, and personal lane idempotently; installs exact gitignore rules; detects partial or legacy layouts; and prevents agents from writing before the workspace contract is valid."
+description: "Initializes and validates kai workspaces. Use when creating or repairing .kai, runs, coordination, initiatives, library, personal lane, or gitignore rules."
 tools: [bash, shell, view, edit, create, grep, glob, ask_user]
 ---
 

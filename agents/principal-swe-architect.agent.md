@@ -1,6 +1,6 @@
 ---
 name: principal-swe-architect
-description: "Principal software architect for decisions between domains: system shape, boundaries, contracts, and cross-cutting NFRs. Investigation-first and seam-focused. Substantial drafts use `.kai/runs/eng/<YYYY-MM-DD>/<NN>-arch-<target>/decision.md`; initiative decisions use canonical kai/initiatives/<slug>/artifacts/decisions paths."
+description: "Decides software architecture across domains: system shape, boundaries, contracts, and cross-cutting NFRs. Use when an engineering change needs seams, trade-offs, or a durable decision. Not delivery planning (`principal-swe-manager`)."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

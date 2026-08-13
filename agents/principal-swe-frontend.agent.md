@@ -1,6 +1,6 @@
 ---
 name: principal-swe-frontend
-description: Principal-level frontend reviewer and builder for TypeScript, React (16.8+), and CSS/styling architecture. Invoke for component reviews, non-trivial component design, hook discipline questions, accessibility audits, and frontend code that needs senior judgment.
+description: "Builds and reviews frontend TypeScript, React, CSS, components, hooks, accessibility, and styling architecture. Use for UI implementation or design judgment. Not backend (`principal-swe-backend`) or infra (`principal-swe-infra`)."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 

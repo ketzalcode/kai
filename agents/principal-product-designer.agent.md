@@ -1,6 +1,6 @@
 ---
 name: principal-product-designer
-description: "Principal product designer owning interaction design for approved product needs. In DESIGN mode, turns a PM brief plus product map/research into the smallest coherent interaction model at the canonical initiative design path. In REVIEW mode, independently checks an implementation revision against the approved design. Does not own scope, architecture, QA, or production code."
+description: "Designs interaction models for approved product needs and reviews implementation against the approved design. Use after PM scope exists. Not product scope (`principal-product-manager`) or visual brand (`principal-brand-designer`)."
 tools: ["playwright", "bash", "shell", "view", "create", "edit", "grep", "glob", "ask_user"]
 ---
 

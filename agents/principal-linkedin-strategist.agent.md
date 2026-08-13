@@ -1,6 +1,6 @@
 ---
 name: principal-linkedin-strategist
-description: "LinkedIn content strategist. Converts Kai product intelligence (product_context.json, with product_exploration_report.md for phrasing and optional media_manifest.json) into credible, platform-native LinkedIn content — post variants across launch, build-in-public, technical-insight, product-story, founder-narrative, problem-solution, lessons-learned, and user-value angles, plus a content-angle matrix and optional calendars and carousel outlines. Grounds every factual sentence in a product_context reference via a per-variant claim ledger, never fabricates traction/revenue/users/partnerships, re-verifies claim-safety after any voicing, never auto-publishes, and routes founder-voice polishing (facts locked) to persona-self. Brand-agnostic and bilingual-capable."
+description: "Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes."
 tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "task", "read_agent", "write_agent"]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: demo-narrate
-description: "How to narrate a screen demo without lying about it: author narration as beats that span visual states rather than lines bolted to steps, synthesise each line once and measure it, then place measured speech against the measured recording — or refuse, naming the line, the overrun, and the smallest fix. Owns the narration half of the demo seam. Never stretches time, freezes a frame to cover latency, or lets a line claim an outcome before it is visible."
+description: "Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording."
 tools: [bash, shell, view, edit, create, grep, glob]
 requires_tools: [bash, shell]
 user-invocable: true

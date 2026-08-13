@@ -31,14 +31,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.50.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.51.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**kai now installs from its own marketplace.** The host has deprecated direct
-`owner/repo` installs — the form every instruction kai shipped used — with no
-removal date, so the documented path was scheduled to break on someone else's
-clock. A marketplace is just a repository with a `marketplace.json` index, so
-kai publishes one for itself: no approval, no waiting.
+**Discovery metadata is 63% smaller.** Every agent and skill `description:` is
+loaded into every session — it is the routing surface, not documentation. Those
+descriptions had grown to **~13.4k tokens per session** by accumulating
+capability inventories and implementation notes the bodies already carried.
+Rewriting all 105 to "what it does, when it fires" cut that to **~4.9k**, and a
+CI budget now holds the line at 250 characters per agent and 180 per skill.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai

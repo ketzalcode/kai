@@ -1,6 +1,6 @@
 ---
 name: content-grounding
-description: "Shared claim-safety contract for every Kai content and creative agent that turns product intelligence into external-facing material (LinkedIn posts, video scripts, and future platform content). Owns the product_context.json id/reference scheme, the per-item claim ledger, the provenance treatment table, the never-fabricate rules, needs_confirmation handling, the JSON-is-sole-authority rule, bilingual grounding, and the locked-facts voicing hand-off. Content methods (linkedin-content, video-direction) inherit it so grounding never diverges across platforms."
+description: "Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence."
 tools: [view, edit, grep, glob]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: review-rationale
-description: "The rationale lens of a document review — tests whether the 'why' holds. Is the problem real and correctly stated? Does the reasoning from problem to proposed solution actually connect, or are there missing steps, circular arguments, or a solution in search of a problem? Are the premises the argument rests on true? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator (or directly when the user asks specifically to pressure-test a doc's reasoning). NEVER auto-posts."
+description: "Rationale review lens. Use when pressure-testing a doc's problem statement, premises, reasoning chain, or why this solution follows."
 tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 

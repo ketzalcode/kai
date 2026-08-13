@@ -1,6 +1,6 @@
 ---
 name: principal-revenue-operations
-description: "Revenue-operations principal for SaaS. Turns supplied pipeline, billing, usage, and analytics evidence into the SaaS metric operating model (MRR/ARR/NRR/CAC/LTV/churn/payback), forecast and pipeline-hygiene process, billing/subscription operations design, and quota/territory/comp modeling inputs. Owns the revenue operating model and process, not metric validity or causal status, pricing, individual deal judgment, billing-system changes, or the financial/comp/hiring decision. Preserves analytics causal-status labels, keeps account-level data local, and never fabricates revenue or pipeline numbers."
+description: "Builds the SaaS revenue operating model, forecast hygiene, billing/subscription ops, and quota/territory/comp inputs. Use with supplied pipeline, billing, usage, or analytics evidence. Not pricing or sales deal judgment."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

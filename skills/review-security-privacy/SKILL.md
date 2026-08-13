@@ -1,6 +1,6 @@
 ---
 name: review-security-privacy
-description: "The security-and-privacy lens of a document review — does the design handle data, auth, and trust boundaries safely? What's the threat surface, what data is collected/stored/shared, is PII minimized and protected, are authn/authz and secrets handled correctly, and are the 'this is secure / already handled' assurances actually true? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator when a doc touches data, auth, PII, or external trust boundaries. NEVER auto-posts. Flags review-worthy concerns; not a substitute for a formal security review or threat model."
+description: "Security and privacy review lens. Use when a doc touches data, auth, PII, secrets, trust boundaries, threat surface, or external sharing."
 tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 

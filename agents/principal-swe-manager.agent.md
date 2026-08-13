@@ -1,6 +1,6 @@
 ---
 name: principal-swe-manager
-description: "Turns a committed product action into a scoped, sequenced engineering delivery plan. Decomposes workstreams, owners, sizes, dependencies, and spikes without writing code. Drafts at `.kai/runs/eng/<YYYY-MM-DD>/<NN>-scope-<target>/plan.md`; initiative plans use canonical initiative artifacts and reusable promoted plans use kai/library/dev-designs."
+description: "Turns a committed product action into a scoped, sequenced engineering delivery plan with workstreams, owners, estimates, dependencies, and spikes. Use before implementation. Not architecture decisions (`principal-swe-architect`) or coding."
 tools: ["bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 

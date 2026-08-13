@@ -1,6 +1,6 @@
 ---
 name: doc-review-rigor
-description: "The shared evaluation method every review-* dimension skill and the workflow-doc-review agent inherit from. Surface-agnostic discipline for reviewing a document well: the posture (partner before critic; understand the goal first; verify before asserting; don't front-run the doc), the lens (separate fact from the author's inference from what's actually been decided), and the method (extract load-bearing claims, ground each against the codebase / cited sources / reality, classify with the six-class taxonomy, test the author's own assurances, clear the confidence bar or cut, run the two value filters). NOT a standalone trigger skill — it is invoked from inside a review-* dimension skill or the workflow-doc-review orchestrator. Never auto-posts; the operator decides what ships."
+description: "Document review rigor method. Use from review dimension skills or workflow-doc-review when judging load-bearing claims, evidence, confidence, and value."
 tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 

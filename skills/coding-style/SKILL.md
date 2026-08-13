@@ -1,6 +1,6 @@
 ---
 name: coding-style
-description: "Apply when writing, editing, or refactoring code. Encodes the user's coding preferences: simplicity over cleverness, human-readable names and messages, composition, disciplined comments, and matching repo conventions before imposing taste."
+description: "User coding preferences. Use when writing, editing, or refactoring code, especially to keep changes simple, readable, composed, and aligned with repo conventions."
 tools: [view, grep, glob, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"

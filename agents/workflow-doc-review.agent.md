@@ -1,6 +1,6 @@
 ---
 name: workflow-doc-review
-description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<YYYY-MM-DD>/<NN>-doc-<slug>/review.md`; promoted reusable reviews go to kai/library/reviews. Verifies before asserting and never auto-posts."
+description: "Produces one consolidated substance review for a design doc, PRD, RFC, strategy doc, or proposal. Use when a draft document needs routed multi-lens review. Not implementation or auto-posting."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 

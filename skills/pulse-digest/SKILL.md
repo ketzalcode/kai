@@ -1,6 +1,6 @@
 ---
 name: pulse-digest
-description: "Standardises how a weekly catch-up digest is collected, structured, and written to disk. Owns the source-adapter contract, local `.kai/runs/pulse/sources.md` binding config, run layout, privacy, week resolution, signal prioritization, and page output shapes. Invoked by workflow-weekly-pulse; not invoked directly."
+description: "Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes."
 tools: [bash, shell, view, edit, create, grep, glob, ask_user]
 ---
 

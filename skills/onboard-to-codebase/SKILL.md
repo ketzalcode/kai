@@ -1,6 +1,6 @@
 ---
 name: onboard-to-codebase
-description: "Map an unfamiliar codebase fast: stack, build/test/lint commands, directory architecture, conventions, patterns, gotchas. Saves a structured report you can re-read in future sessions."
+description: "Fast codebase onboarding report. Use when mapping an unfamiliar repo's stack, commands, architecture, conventions, patterns, and gotchas for future sessions."
 tools: [view, grep, glob, bash, shell, edit]
 user-invocable: true
 argument-hint: "optional focus, e.g. frontend only or auth subsystem"

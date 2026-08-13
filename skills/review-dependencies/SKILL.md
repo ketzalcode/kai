@@ -1,6 +1,6 @@
 ---
 name: review-dependencies
-description: "The coordination-and-dependencies lens of a document review — does the doc name the partner teams, upstream/downstream dependencies, sign-offs, and breaking-change implications the work actually has? Who has to do something or agree before this can ship? What does this break for consumers, and were they told? Are external/third-party dependencies and their failure modes acknowledged? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator when work crosses a team, service, or API boundary. NEVER auto-posts."
+description: "Dependencies review lens. Use when work crosses team, service, API, upstream/downstream, sign-off, breaking-change, or third-party boundaries."
 tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 

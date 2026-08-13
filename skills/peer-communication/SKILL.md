@@ -1,6 +1,6 @@
 ---
 name: peer-communication
-description: "The shared peer-question contract: one stable-ID QUESTION/ANSWER packet over inline consult, real live peer, or durable item thread transports. Blocking or decision-changing exchanges are recorded in the thread and coupled to the authoritative work item through waiting_on_questions; item dependencies remain separately typed. Independent judgments cannot be self-simulated."
+description: "Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread."
 tools: [bash, shell, view, grep, glob]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: decision-brief
-description: "Packaging method for director-executive-assistant: turns a decision already waiting on the operator — an open @operator kind:decision thread question, or a release-ready deploy gate — into one decide-in-one-place brief. Reads the authoritative item, thread, context artifacts, and related consultations; fills only missing role positions through executive-consultation; assembles options, tradeoffs, per-role positions, a recommendation with owner, and the exact your-move actions; stores a private kai/personal/decisions/ record; and never makes the decision."
+description: "Decision brief packaging for the executive assistant. Use when an operator decision or deploy gate needs options, tradeoffs, role positions, recommendation, and next actions."
 tools: [bash, shell, view, edit, create, grep, glob]
 ---
 
