@@ -157,6 +157,44 @@ const inheritsBlock = existsSync(blockPath)
   : null;
 if (!inheritsBlock) err('scripts/lib/inherits-block.txt', 'missing (canonical inherited-contract directive)');
 
+// ---------------------------------------------------------------------------
+// Communication-style block
+//
+// This block is the one thing kai ships that binds the MAIN CLI agent rather
+// than a kai agent: the host loads AGENTS.md from the user's repo, so a
+// consumer opts into it at onboarding. kai carries the same block in its own
+// AGENTS.md — a style shipped to users and not used here would be a
+// recommendation nobody tested. One canonical file, pinned byte for byte, is
+// what stops the shipped copy and the dogfooded copy from drifting.
+// ---------------------------------------------------------------------------
+const stylePath = join(ROOT, 'scripts/lib/communication-style-block.md');
+const styleBlock = existsSync(stylePath)
+  ? readFileSync(stylePath, 'utf8').replace(/\r\n/g, '\n').trim()
+  : null;
+if (!styleBlock) {
+  err('scripts/lib/communication-style-block.md', 'missing (canonical communication-style block)');
+} else {
+  const OPEN = '<!-- >>> kai communication style (managed by workflow-workspace-init) >>> -->';
+  const CLOSE = '<!-- <<< kai communication style <<< -->';
+  if (!styleBlock.startsWith(OPEN) || !styleBlock.endsWith(CLOSE)) {
+    err('scripts/lib/communication-style-block.md', 'must open and close with the exact managed-block markers, or onboarding cannot update or remove its own block without touching user text');
+  }
+  const ownAgents = join(ROOT, 'AGENTS.md');
+  const ownRaw = existsSync(ownAgents) ? readFileSync(ownAgents, 'utf8').replace(/\r\n/g, '\n') : '';
+  if (!ownRaw.includes(styleBlock)) {
+    err('AGENTS.md', 'missing the verbatim communication-style block from scripts/lib/communication-style-block.md (kai must use the style it ships)');
+  }
+  // Onboarding is what installs the block in a consumer workspace; if it stops
+  // naming the canonical file, the block ships to nobody.
+  const onboarding = join(ROOT, 'skills/workspace-onboarding/SKILL.md');
+  if (existsSync(onboarding)) {
+    const ob = readFileSync(onboarding, 'utf8');
+    if (!ob.includes('scripts/lib/communication-style-block.md')) {
+      err('skills/workspace-onboarding/SKILL.md', 'does not reference scripts/lib/communication-style-block.md, so the opt-in style block would never reach a consumer workspace');
+    }
+  }
+}
+
 for (const agent of agentFiles) {
   const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
   const r = rel(agent.path);

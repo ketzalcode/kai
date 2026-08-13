@@ -179,6 +179,55 @@ happens, onboarding reports the contract as **blocked** rather than complete —
 operator their state is private when it is not. The workspace doctor enforces
 the same condition on every later run.
 
+## Communication style (opt-in)
+
+kai's agents are bound by `team-operating-rules`. The **main CLI agent** — the
+top-level assistant that collects their results and replies to the human — is
+not a kai agent and loads no kai agent file. The only thing that reaches it is
+the host's own instruction discovery, which reads `AGENTS.md` from the user's
+repository root and working directory.
+
+So kai offers, once, to install a managed **communication style** block into the
+workspace's `AGENTS.md`. It is **opt-in and off by default**: many people want
+the agents and skills and nothing else.
+
+**Ask plainly, and say who it binds:**
+
+> kai can add a short communication-style block to this repository's
+> `AGENTS.md` — reply with the recommendation first, don't narrate routine
+> steps, and never drop failures or unverified claims to stay brief.
+> `AGENTS.md` is committed, so it applies to **everyone working in this
+> repository**, including the Copilot coding agent — not just you. kai marks
+> its own block and can update or remove it later without touching anything you
+> wrote. Add it?
+
+Do not ask in a workspace whose `AGENTS.md` already contains the block; honor
+what is there. Record nothing in the manifest: the block's presence in
+`AGENTS.md` *is* the state, and a second source could disagree with it.
+
+**Installing it:**
+
+- The text is the verbatim contents of the plugin's
+  `scripts/lib/communication-style-block.md`, markers included. Never
+  paraphrase it — a style block that drifts per workspace cannot be updated or
+  recognized later.
+- **Append** to an existing `AGENTS.md`, never replace it, and never reorder or
+  reword a line the user wrote. Create the file with only the block if absent.
+- If a kai block is already present, replace **exactly** the marked region.
+- On removal, delete the marked region and nothing else.
+- Leave the file untracked-or-tracked exactly as it was; do not stage or commit
+  it. Say that the file changed and that the operator commits it.
+
+The markers are what make "you can ask kai to remove it" true. Without them,
+kai would have to guess which lines are its own, and the safe guess is to touch
+nothing — which is the same as never being able to update it.
+
+Under `corpus_visibility: local` this block is still offered. `AGENTS.md` is the
+repository's own file, not kai workspace state, and it is not covered by
+`/kai/` or `/.kai/` — so it *is* committed and published. Say so when the
+operator has just chosen to keep kai's corpus off the remote, or the two
+decisions will look contradictory.
+
 ## Repository-mode ignore block
 
 Install or replace exactly one managed block:

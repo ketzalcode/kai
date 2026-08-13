@@ -31,24 +31,26 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.46.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.47.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release lets a **public repository keep kai's state private**. Onboarding
-committed the working corpus unconditionally, on the reasoning that design notes
-and decisions belong next to the code humans review. That holds for a team
-repository and breaks for an open-source one, where the same files are usually
-the maintainer's own working notes. The new `corpus_visibility` setting in
-`.kai/manifest.json` chooses: `committed` keeps today's behaviour, `local`
-ignores `/kai/` and `/.kai/` entirely. The paths never change, so nothing else
-in kai notices.
+This release lets kai reach the agent that **actually talks to you**. Every kai
+agent is bound by `team-operating-rules`, but the main CLI agent — the one that
+collects subagent results and replies in your terminal — is not a kai agent and
+loads no kai agent file. The host reads instructions from *your* `AGENTS.md`,
+never from a plugin. So onboarding now offers, once, to install a managed
+communication-style block there: lead with the recommendation, don't narrate
+routine steps, and never drop failures or unverified claims to stay brief.
 
-The question is asked only when it is a real one — a demonstrably private
-repository is `committed` without a prompt, while an unpublished or unreadable
-one is asked rather than assumed — and the cost of `local` is stated up front
-rather than discovered: durability narrows to that one checkout. The doctor then
-verifies the recorded value against git instead of trusting it, and refuses to
-pretend that adding a path to `.gitignore` untracks or unpublishes anything.
+It is **off by default**, and the question says plainly that `AGENTS.md` is
+committed and binds everyone in the repository rather than just you. The block
+is marked, so kai can update or remove exactly its own region later and never
+touches a line you wrote. kai carries the same block in its own `AGENTS.md`,
+pinned in CI — a style we ship and don't use ourselves is a recommendation
+nobody tested.
+
+The previous release, `v0.46.0`, added `corpus_visibility` so a **public**
+repository can keep kai's working corpus out of git entirely.
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.

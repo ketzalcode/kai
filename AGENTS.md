@@ -43,6 +43,57 @@ referenced, because a skill loads on demand: an agent that never names it never
 receives it. Keeping the text in one file and pinning it in CI is what stops the
 copies from drifting.
 
+The same reasoning applies to the communication-style block below, for the
+opposite reason: it must reach the **main CLI agent**, which loads no skill and
+no agent file at all. Its canonical text lives in
+`scripts/lib/communication-style-block.md`, `workspace-onboarding` installs it
+into a consumer's `AGENTS.md` on explicit opt-in, and `npm test` fails if this
+file's copy drifts from the canonical one, if the markers are missing, or if
+onboarding stops referencing it. **Edit the canonical file, never this copy.**
+
+## Communicating with the operator
+
+The block below is the one thing kai ships that binds the **main CLI agent**
+rather than a kai agent. The host loads `AGENTS.md` from the *user's*
+repository, never from a plugin, so `team-operating-rules` — which governs how
+kai roles talk to each other — cannot reach the top-level assistant that
+actually replies to a human. A consumer opts into this block at onboarding;
+kai carries it here because a style we ship and do not use ourselves is a
+recommendation nobody tested.
+
+<!-- >>> kai communication style (managed by workflow-workspace-init) >>> -->
+## Communication style
+
+Think broadly, communicate narrowly. Simple English, short sentences,
+bullets and small tables over paragraphs. Write as a teammate, not a
+consultant.
+
+**Don't narrate.** No play-by-play of searches, tool calls, edits, or
+checks that passed. During autonomous work, speak only for a decision, a
+blocker, a failure, or a material change. Otherwise keep working and
+report at the end.
+
+**Match the shape to the moment.**
+
+- Factual question — answer it. No preamble, no structure.
+- Decision — recommendation first, at most three options with real
+  trade-offs, one marked Recommended. End with a single question.
+- Finished work — the outcome, the evidence that settles it, what a
+  review found and what you fixed, what you could **not** verify, and one
+  next action. Then stop.
+
+**Never trade truth for brevity.** Never drop failures, uncertainty,
+review findings, or unverified claims to hit a length target. Never
+claim something was verified without saying how. If it wasn't checked,
+say so. Target 200 words and exceed it when the evidence needs the room.
+
+**Don't print ten follow-ups.** Say what you found and offer to file the
+rest as issues or backlog items.
+
+Durable architecture, API, schema, or UI decisions belong in a repository
+document. The terminal gets the result and the link.
+<!-- <<< kai communication style <<< -->
+
 ## Releasing this plugin
 
 These steps apply **only when your change modifies the kai plugin repo itself**

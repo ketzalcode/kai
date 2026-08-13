@@ -4,6 +4,48 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.47.0] - 2026-08-12
+
+### Added
+
+- **An opt-in communication-style block, because kai could not previously reach
+  the agent that actually talks to you.** Every kai agent is bound by
+  `team-operating-rules`, but the **main CLI agent** — the top-level assistant
+  that collects subagent results and replies in the terminal — is not a kai
+  agent and loads no kai agent file. Subagent verbosity is largely invisible;
+  what a user reads is that synthesis. The host discovers instructions from the
+  *user's* `AGENTS.md`, never from a plugin, so a style rule had nowhere to live.
+  `workflow-workspace-init` now offers, once, to install a managed block into
+  the workspace's `AGENTS.md`.
+- **Off by default, and the question says who it binds.** Many people want the
+  agents and skills and nothing else. The prompt states plainly that `AGENTS.md`
+  is committed and therefore applies to everyone working in the repository —
+  including the Copilot coding agent — rather than being a personal setting.
+- **Marked, so it can be updated or removed.** The block is delimited by
+  `<!-- >>> kai communication style ... >>> -->` markers, the same pattern the
+  managed `.gitignore` block already uses. kai replaces or deletes exactly the
+  marked region and never touches a line the user wrote; it appends to an
+  existing `AGENTS.md` rather than replacing it, and never stages or commits it.
+  Without markers kai would have to guess which lines were its own, and the only
+  safe guess — touch nothing — is the same as never being able to update it.
+- **kai uses the style it ships.** The canonical text lives in
+  `scripts/lib/communication-style-block.md` and is carried verbatim in kai's own
+  `AGENTS.md`, pinned byte for byte by `npm test` — the discipline already used
+  for `scripts/lib/inherits-block.txt`. A style shipped to users and not used
+  here would be a recommendation nobody tested. Validation also fails if
+  `workspace-onboarding` stops naming the canonical file, since the block would
+  then ship to nobody.
+
+The rule the block actually turns on: **don't narrate routine work** — speak for
+a decision, blocker, failure, or material change, and at completion. It sets a
+200-word target rather than a cap, and forbids dropping failures, uncertainty,
+review findings, or unverified claims to hit it. A hard limit would quietly
+resolve the choice between brief and truthful in favour of brief.
+
+`AGENTS.md` is the repository's own file, not kai workspace state, so it is not
+covered by `corpus_visibility: local` — onboarding says so explicitly when both
+decisions are made in one session.
+
 ## [0.46.0] - 2026-08-12
 
 ### Added
@@ -1969,6 +2011,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.47.0]: https://github.com/RubenSaucedo/kai/compare/v0.46.0...v0.47.0
 [0.46.0]: https://github.com/RubenSaucedo/kai/compare/v0.45.1...v0.46.0
 [0.45.1]: https://github.com/RubenSaucedo/kai/compare/v0.45.0...v0.45.1
 [0.45.0]: https://github.com/RubenSaucedo/kai/compare/v0.44.1...v0.45.0
