@@ -144,6 +144,11 @@ Modes:
 - default — the ambient view: roles with an unmatched start, how long ago that
   start was recorded, and roles that have finished. An unmatched start means the
   log records no stop; it is not a claim that a process is alive.
+- `--sequence` — the participation sequence: every run in the **retained**
+  history, in the order it began, with its tier (`said`/`seen`), span, and any
+  caveat. This is the view to use for the reading below. It prints once and
+  exits; it does not animate, because it is a report to scroll through rather
+  than a dashboard to watch.
 - `--feed` — one line per event, for piping, logging, or a narrow pane.
 - `--scene` — force the ambient view even when stdout is not a TTY.
 - `--once` — render a single frame and exit. Use this when a user wants a
@@ -154,6 +159,36 @@ anywhere except the hook: a second writer would break the append-only integrity
 that keeps concurrent subagents safe.
 
 ## Reading a participation sequence
+
+Render it with `--sequence`:
+
+```
+kai participation   4 role(s)   24 run(s)   26h 28m span
+------------------------------------------------------------------------
+   1  explore          seen  22:40:59 22:41:09       10s
+   2  rubber-duck      seen  23:09:33 23:14:08    4m 35s
+   3  explore          seen  23:36:59 23:37:08        9s  run 2
+  ...
+  23  explore          seen  00:54:35                 --  no stop recorded; run 12
+------------------------------------------------------------------------
+note:      a missing role means no record, not no work. ...
+```
+
+Each row is one run: its order, the role, which log it came from, when it began
+and ended, and how long it took. `no stop recorded` means exactly that — the log
+holds no stop. It is **not** evidence that a process is alive. `start not in
+view` means the run is real but its beginning fell outside the history that was
+read, so it shows no start clock and no span rather than a number the log cannot
+support. `run N` counts repeats of that role **in this view**, not overall.
+
+The view covers **retained history only**. Both logs rotate at 512 KB and keep
+one previous generation, so older runs may have aged out; a first appearance
+here is not necessarily a first run.
+
+The view lists **only what a log recorded**. It never names the roles that
+*should* have taken part, because kai holds no plan to compare against, and a
+display that invented one would look authoritative while being fiction. Reading
+the absences is your job, under the constraints below.
 
 Read the order, then read the absences. The absences are where the finding
 usually is — **but only in the declared log.** Re-read "What the observed log

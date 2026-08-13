@@ -212,6 +212,17 @@ export function reduceState(records, now = Math.floor(Date.now() / 1000), opts =
   let invalid = 0;
   let last = 0;
   let startless = false;
+  let mismatched = false;
+  // Records are ordered by timestamp, so a stop whose clock ran behind its own
+  // start sorts ahead of it and looks like two separate half-runs. That is
+  // detectable -- an orphan stop and a never-closed start on the same key --
+  // and it is reported rather than repaired, because guessing which pair
+  // belongs together would invent a run boundary the log does not contain.
+  const orphanStops = new Set();
+  // Every run the log can account for, open or closed, in the order they
+  // began. The ambient view answers "who is working now"; this answers "what
+  // happened, in what order", which is the question worth coaching on.
+  const runs = [];
   const declaredOnly = new Set();
   const observedOnly = new Set();
 
@@ -276,15 +287,36 @@ export function reduceState(records, now = Math.floor(Date.now() / 1000), opts =
       const arr = active.get(key);
       if (arr && arr.length) {
         if (!rec.run && (arr.length > 1 || !rec.session)) ambiguous = true;
-        arr.shift(); // oldest start closes first
+        const opened = arr.shift(); // oldest start closes first
+        // The run is described by the start it closes, not by the stop that
+        // closed it. A stop naming a different role would otherwise rewrite
+        // which role took part -- a log line silently editing history.
+        if (opened.role !== rec.role || opened.src !== rec.src) mismatched = true;
+        runs.push({
+          role: opened.role,
+          src: opened.src,
+          start: opened.t,
+          end: rec.t,
+          open: false,
+          startless: Boolean(opened.startless),
+          note: rec.tldr || opened.note || '',
+        });
         if (!arr.length) active.delete(key);
+      } else {
+        // A stop with no start in view. The run is real -- something ended --
+        // but its span is unknown, and a zero-length run would read as an
+        // instant one rather than as a missing fact.
+        runs.push({ role: rec.role, src: rec.src, start: null, end: rec.t, open: false, startless: true, note: rec.tldr || '' });
+        orphanStops.add(key);
       }
       done.set(rec.role, (done.get(rec.role) || 0) + 1);
     }
   }
 
   const working = [];
-  for (const arr of active.values()) {
+  let outOfOrder = false;
+  for (const [key, arr] of active.entries()) {
+    if (orphanStops.has(key)) outOfOrder = true;
     for (const a of arr) {
       working.push({
         role: a.role,
@@ -298,9 +330,24 @@ export function reduceState(records, now = Math.floor(Date.now() / 1000), opts =
         // than elapsed time a watcher picked a threshold for.
         overdue: Boolean(a.nextBy && now > a.nextBy),
       });
+      // A run still open is part of the sequence too. Leaving it out would
+      // make the most recent, most relevant work the only work not shown.
+      runs.push({
+        role: a.role,
+        src: a.src,
+        start: a.t,
+        end: null,
+        open: true,
+        startless: Boolean(a.startless),
+        overdue: Boolean(a.nextBy && now > a.nextBy),
+        note: a.note || '',
+      });
     }
   }
   working.sort((a, b) => a.since - b.since);
+  // Ordered by when each run began. A run with no start in view has no place
+  // in that order, so it sorts by the only time it has and is marked.
+  runs.sort((a, b) => (a.start ?? a.end) - (b.start ?? b.end));
 
   // Roles that appear in the declared tier and nowhere in the observed tier
   // WITHIN THE RETAINED HISTORY. That last qualifier is load-bearing: the two
@@ -317,6 +364,9 @@ export function reduceState(records, now = Math.floor(Date.now() / 1000), opts =
     invalid,
     unobserved,
     startless,
+    runs,
+    outOfOrder,
+    mismatched,
     // History was cut, so an open start may have scrolled out of reach. The
     // view says so instead of reporting an empty fleet as if it were quiet.
     truncated: Boolean(opts.truncated),
@@ -439,6 +489,146 @@ export function renderScene(state, { tick = 0, width = 72, stale = 900 } = {}) {
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// The sequence view
+// ---------------------------------------------------------------------------
+// The ambient scene answers "who is working right now". This answers the
+// question the feature exists for: which roles took part, in what order.
+//
+// What it deliberately does NOT do is name the roles that *should* have taken
+// part. That would need a plan, and kai has none -- inventing an expected
+// roster and rendering the difference would produce exactly the display that
+// looks authoritative and is not. Every line here is something a log recorded.
+export function clockOf(t) {
+  if (!Number.isFinite(t) || t <= 0) return '--:--:--';
+  try {
+    return new Date(t * 1000).toISOString().slice(11, 19);
+  } catch { return '--:--:--'; }
+}
+
+export function renderSequence(state, { width = 72 } = {}) {
+  const w = Math.max(40, Math.min(width, 100));
+  const rule = '-'.repeat(w);
+  const lines = [];
+  // A malformed role must not take the view down; the other render paths
+  // already normalise, and a crashed watcher tells the operator nothing.
+  const runs = (state.runs || []).map((r) => ({
+    ...r, role: typeof r.role === 'string' && r.role ? r.role : 'unknown',
+  }));
+
+  // Notes are prose, and prose that overflows wraps -- which destroys the
+  // alignment of everything above it. It is wrapped here to a known width
+  // instead of trusting the terminal to break it somewhere sensible.
+  const label = 'note:      ';
+  const note = (text) => {
+    const room = Math.max(20, w - label.length);
+    const out = [];
+    let line = '';
+    for (const word of text.split(/\s+/)) {
+      if (!line) line = word;
+      else if (line.length + 1 + word.length <= room) line += ` ${word}`;
+      else { out.push(line); line = word; }
+    }
+    if (line) out.push(line);
+    out.forEach((l, i) => lines.push((i === 0 ? label : ' '.repeat(label.length)) + l));
+  };
+  // Every caveat that applies to the run of the view, printed on every render
+  // including the empty one. The empty view is the render most likely to be
+  // read as "nothing ran", so it is the last place these may be omitted.
+  const caveats = () => {
+    note('a missing role means no record, not no work. The host observes no kai agent, and an agent can run without declaring. Check before reporting a gap.');
+    note('this is the retained history only; older runs may have rotated out, and "run N" counts repeats in this view, not overall.');
+    if (state.ambiguous) note('some observed runs were paired by order, not identity.');
+    if (state.outOfOrder) note('a stop is timestamped before its own start; order and pairing around it are unreliable.');
+    if (state.mismatched) note('a stop named a different role than the start it closed; the start is shown.');
+    if (state.truncated) note('older history was not read; earlier runs may be missing.');
+  };
+
+  // A startless run contributes only its end: its other timestamp is the first
+  // thing heard from it, not a start, so counting it would understate the span
+  // while looking exact.
+  const bounds = runs.flatMap((r) => (r.startless ? [r.end] : [r.start, r.end]))
+    .filter((t) => Number.isFinite(t) && t > 0);
+  const span = bounds.length ? Math.max(...bounds) - Math.min(...bounds) : 0;
+  const roles = new Set(runs.map((r) => r.role));
+  const head = `kai participation   ${roles.size} role(s)   ${runs.length} run(s)   ${fmtDuration(span)} span`;
+  const shortHead = `kai participation   ${roles.size} role(s)   ${runs.length} run(s)`;
+  lines.push(head.length <= w ? head : (shortHead.length <= w ? shortHead : `kai participation   ${runs.length} run(s)`));
+  lines.push(rule);
+
+  if (!runs.length) {
+    lines.push('');
+    lines.push('   no runs recorded.');
+    lines.push('');
+    lines.push(rule);
+    note('nothing recorded is not the same as nothing happened.');
+    caveats();
+    return lines.join('\n');
+  }
+
+  // A narrow terminal loses the end clock before it loses the role name: the
+  // duration already carries the span, so the second timestamp is the least
+  // informative thing on the row.
+  const wide = w >= 64;
+  const whenW = wide ? 17 : 8;
+  const idxW = String(runs.length).length;
+  // One name column for the whole table, not one per row. Sizing it from each
+  // row's own flags made the column jump around, which is precisely the
+  // alignment a sequence view exists to provide.
+  const base = 2 + idxW + 2 + 2 + 4 + 2 + whenW + 2 + 8;
+  const longest = runs.reduce((m, r) => Math.max(m, r.role.length), 0);
+  const nameW = Math.max(3, Math.min(longest, w - base - 2));
+  // Repeated runs of one role are worth noticing -- often retrying rather than
+  // escalating -- so the ordinal is shown rather than left for the reader to
+  // count.
+  const seenCount = new Map();
+  runs.forEach((r, i) => {
+    const n = (seenCount.get(r.role) || 0) + 1;
+    seenCount.set(r.role, n);
+    const flags = [];
+    if (r.open) flags.push(r.overdue ? 'no stop recorded, past check-in' : 'no stop recorded');
+    if (r.startless) flags.push('start not in view');
+    if (n > 1) flags.push(`run ${n}`);
+    const flag = flags.length ? `  ${flags.join('; ')}` : '';
+    const tier = r.src === 'declared' ? 'said' : 'seen';
+    // A startless run has no known beginning, so it prints neither a start
+    // clock nor a span. The timestamp it carries is the first thing heard from
+    // it, and showing that as a start would be a fabricated fact.
+    const known = !r.startless && Number.isFinite(r.start) && Number.isFinite(r.end) && r.end >= r.start;
+    const dur = known ? fmtDuration(r.end - r.start) : '--';
+    const from = r.startless ? '--:--:--' : clockOf(r.start);
+    const when = wide ? `${from} ${r.end ? clockOf(r.end) : '        '}` : from;
+    const idx = String(i + 1).padStart(idxW);
+    // Flags are never truncated; a row that lost its caveat reads as a clean
+    // row. When they will not fit beside the name they move to their own line,
+    // because the alternative is cutting the one part of the row that carries
+    // doubt.
+    const inline = base + nameW + flag.length <= w ? flag : '';
+    const name = r.role.length > nameW ? `${r.role.slice(0, nameW - 1)}~` : r.role;
+    lines.push(`  ${idx}  ${name.padEnd(nameW)}  ${tier}  ${when}  ${dur.padStart(8)}${inline}`);
+    if (flag && !inline) {
+      const indent = ' '.repeat(4 + idxW);
+      let line = indent;
+      for (const part of flags) {
+        const piece = line.trim() ? `; ${part}` : part;
+        if (line.length + piece.length > w) { lines.push(line); line = indent + part; }
+        else line += piece;
+      }
+      if (line.trim()) lines.push(line);
+    }
+  });
+
+  lines.push(rule);
+  // The limit is printed with the data, not left in documentation someone may
+  // not have read. A sequence invites the reader to notice who is missing, and
+  // for kai's own agents that inference is guaranteed wrong.
+  if (runs.some((r) => r.open)) {
+    note('"no stop recorded" means the log has no stop. It is not evidence that a process is still alive.');
+  }
+  caveats();
+  return lines.join('\n');
+}
+
 export function feedLine(rec) {
   const t = Number.isFinite(rec.t) && rec.t >= 0 && rec.t < 1e12 ? rec.t : 0;
   let when = '--:--:--';
@@ -527,7 +717,7 @@ function fingerprint(rec, n) {
   return `${rec.t}|${rec.src}|${rec.event}|${rec.role}|${rec.session}|${rec.run}|${rec.tldr}#${n}`;
 }
 
-function runWatch(root, { feed, once }) {
+function runWatch(root, { feed, once, sequence }) {
   const dir = join(root, dirname(OBSERVED_REL));
   let tick = 0;
   let emitted = new Set();
@@ -557,11 +747,17 @@ function runWatch(root, { feed, once }) {
     }
     const state = reduceState(records, undefined, { truncated });
     const width = process.stdout.columns || 72;
+    if (sequence) {
+      // No animation and no screen clear: the sequence is a report, and a
+      // reader wants to scroll back through it rather than watch it blink.
+      process.stdout.write(`${renderSequence(state, { width })}\n`);
+      return;
+    }
     process.stdout.write(`\x1b[2J\x1b[H${renderScene(state, { tick, width })}\n\n  watching ${OBSERVED_REL} + ${ACTIVITY_REL} -- ctrl-c to stop\n`);
   };
 
   draw();
-  if (once) return;
+  if (once || sequence) return;
 
   // Rendering is driven by a timer, not by the watcher: fs.watch coalesces and
   // can miss on some filesystems, and the animation needs a heartbeat anyway.
@@ -878,6 +1074,124 @@ function selfTest() {
   ok(line.includes('explore') && line.includes('Did the thing.'), 'a feed line carries the role and any summary');
   ok(feedLine({ t: 0, event: 'start', role: 'explore' }).includes('>>'), 'a start is marked distinctly from a stop');
 
+  // --- the sequence view ---------------------------------------------------
+  const seqRecs = parseRecords([
+    JSON.stringify({ t: 100, event: 'start', role: 'workflow-issue-analysis', session: 's' }),
+    JSON.stringify({ t: 160, event: 'stop', role: 'workflow-issue-analysis', session: 's' }),
+    JSON.stringify({ t: 200, event: 'start', role: 'principal-swe-backend', session: 's' }),
+    JSON.stringify({ t: 500, event: 'stop', role: 'principal-swe-backend', session: 's' }),
+    JSON.stringify({ t: 600, event: 'start', role: 'principal-swe-backend', session: 's' }),
+  ].join('\n'), 'observed');
+  const seqState = reduceState(seqRecs, 700);
+  ok(seqState.runs.length === 3, 'every run reaches the sequence, closed and open alike');
+  ok(seqState.runs[0].role === 'workflow-issue-analysis' && seqState.runs[2].open === true,
+    'runs are ordered by when they began, and the open one is last');
+  const seq = renderSequence(seqState, { width: 100 });
+  ok(seq.includes('workflow-issue-analysis') && seq.includes('principal-swe-backend'),
+    'the sequence names each role that took part');
+  // Assertions are made against whitespace-normalised text: these notes wrap to
+  // the terminal, so a literal substring would be testing the line breaks
+  // rather than the words.
+  const flat = (s) => s.replace(/\s+/g, ' ');
+  ok(seq.includes('run 2'), 'a repeated role is marked rather than left for the reader to count');
+  ok(seq.includes('no stop recorded'), 'a run with no stop is shown as such, not as finished');
+  ok(flat(seq).includes('not evidence that a process is still alive'),
+    'an open run carries the liveness caveat in the report itself');
+  ok(!/\bopen\b/.test(seq.split('note:')[0]), 'no row claims a run is "open", which reads as alive');
+  ok(/1m 0/.test(seq), 'a closed run reports the span between its own start and stop');
+  // The one inference this view must never invite.
+  ok(!/did not run|idle|never ran|absent|skipped/i.test(seq),
+    'the sequence never reports a role as not having run');
+  ok(flat(seq).includes('no record, not no work') && flat(seq).includes('host observes no kai agent'),
+    'the measured host limitation travels with the data, not documentation nobody read');
+  ok(flat(seq).includes('retained history'),
+    'the view says it shows retained history rather than implying it is complete');
+  ok(flat(seq).includes('counts repeats in this view'),
+    'the repeat ordinal is scoped to the view rather than read as a global count');
+
+  // The empty render is the one most likely to be read as "nothing ran", so it
+  // is the last place a caveat may be dropped.
+  const emptySeq = flat(renderSequence(reduceState([], 1, { truncated: true }), { width: 72 }));
+  ok(emptySeq.includes('nothing recorded is not the same'),
+    'an empty sequence still refuses to read as an empty fleet');
+  ok(emptySeq.includes('host observes no kai agent'),
+    'the empty sequence keeps the measured host limitation');
+  ok(emptySeq.includes('older history was not read'),
+    'the empty sequence still reports that history was truncated');
+
+  // A stop whose start fell outside the read window is a real run with an
+  // unknown span; showing it as instant would be a fabricated duration.
+  const orphanStop = reduceState(parseRecords(
+    JSON.stringify({ t: 900, event: 'stop', role: 'explore', session: 's' }), 'observed'), 950);
+  ok(orphanStop.runs.length === 1 && orphanStop.runs[0].start === null,
+    'a stop with no start in view keeps an unknown span rather than inventing one');
+  ok(renderSequence(orphanStop, { width: 72 }).includes('start not in view'),
+    'an unknown span is labelled, not silently rendered as a duration');
+
+  // A run first heard from at `progress` has a timestamp, but that timestamp is
+  // not its start -- so it has no span, and printing one would be fabrication.
+  const progressOnly = reduceState(parseRecords([
+    JSON.stringify({ t: 100, e: 'progress', role: 'principal-swe-backend', run: 'r9' }),
+    JSON.stringify({ t: 160, e: 'stop', role: 'principal-swe-backend', run: 'r9' }),
+  ].join('\n'), 'declared'), 200);
+  const progressSeq = renderSequence(progressOnly, { width: 100 });
+  ok(progressOnly.runs.length === 1 && progressOnly.runs[0].startless === true,
+    'a run first heard at progress is marked as having no start in view');
+  ok(flat(progressSeq).includes('--:--:-- 00:02:40 -- start not in view'),
+    'a run with no known start prints neither a start clock nor a span, because its first record is not its start');
+
+  // A stop timestamped before its own start sorts ahead of it and looks like
+  // two half-runs. That is reported, never quietly repaired.
+  const skew = reduceState(parseRecords([
+    JSON.stringify({ t: 100, event: 'start', role: 'explore', session: 's' }),
+    JSON.stringify({ t: 50, event: 'stop', role: 'explore', session: 's' }),
+  ].join('\n'), 'observed'), 200);
+  ok(skew.outOfOrder === true, 'a stop preceding its own start is detected rather than shown as two runs');
+  ok(renderSequence(skew, { width: 100 }).includes('order and pairing around it are unreliable'),
+    'out-of-order records are disclosed in the render');
+
+  // A stop naming a different role must not rewrite which role took part.
+  const swapped = reduceState(parseRecords([
+    JSON.stringify({ t: 10, e: 'start', role: 'principal-swe-backend', run: 'r7' }),
+    JSON.stringify({ t: 70, e: 'stop', role: 'principal-security', run: 'r7' }),
+  ].join('\n'), 'declared'), 100);
+  ok(swapped.runs[0].role === 'principal-swe-backend',
+    'a run is described by the start it closes, so a stop cannot rewrite the role');
+  ok(swapped.mismatched === true && renderSequence(swapped, { width: 100 }).includes('named a different role'),
+    'a role disagreement between start and stop is disclosed, not silently resolved');
+
+  const declaredSeq = reduceState(parseRecords([
+    JSON.stringify({ t: 10, e: 'start', role: 'principal-swe-backend', run: 'r1' }),
+    JSON.stringify({ t: 70, e: 'stop', role: 'principal-swe-backend', run: 'r1' }),
+  ].join('\n'), 'declared'), 100);
+  ok(renderSequence(declaredSeq, { width: 72 }).includes('said'),
+    'a self-declared run is labelled as said, never as observed');
+
+  // A malformed record must not take the whole view down.
+  ok(renderSequence({ runs: [{ role: null, src: 'observed', start: 1, end: 2 }] }, { width: 72 }).includes('unknown'),
+    'a run with no usable role renders as unknown rather than crashing');
+
+  const crowded = reduceState(parseRecords([
+    JSON.stringify({ t: 10, event: 'stop', role: 'creative-video-director', session: 's' }),
+    JSON.stringify({ t: 20, event: 'stop', role: 'creative-video-director', session: 's' }),
+    JSON.stringify({ t: 30, event: 'start', role: 'principal-swe-architect', session: 's' }),
+  ].join('\n'), 'observed'), 40);
+  // Three-digit run counts must not push the index column into the name.
+  const many = { runs: Array.from({ length: 120 }, (_, i) => ({
+    role: 'principal-swe-architect', src: 'observed', start: i * 10, end: i * 10 + 5,
+  })) };
+  for (const width of [40, 56, 72, 100]) {
+    for (const st of [seqState, crowded, orphanStop, skew, many, reduceState([], 1, { truncated: true })]) {
+      const over = renderSequence(st, { width }).split('\n')
+        .filter((l) => l.length > Math.max(40, Math.min(width, 100)));
+      ok(over.length === 0, `the sequence fits ${width} columns without wrapping`);
+    }
+    // Every flag survives the narrowest layout, on its own line if it must.
+    const out = renderSequence(crowded, { width });
+    ok(out.includes('start not in view') && out.includes('run 2'),
+      `no caveat is dropped at ${width} columns`);
+  }
+
   console.log(failed === 0 ? '\u2713 observe-watch self-test: all checks passed' : `\u2717 observe-watch self-test: ${failed} failure(s)`);
   process.exit(failed === 0 ? 0 : 1);
 }
@@ -900,12 +1214,14 @@ if (isEntry) {
       console.log('  3. run any subagent\n');
       console.log('Waiting for the first record...\n');
     }
+    const sequence = argv.includes('--sequence');
     runWatch(root, {
       // A pipe gets the feed, because ANSI screen-clearing into a file or a
       // pager produces garbage. `--scene` forces the ambient view anyway, which
       // is what makes it previewable and testable.
-      feed: argv.includes('--feed') || (!process.stdout.isTTY && !argv.includes('--scene')),
+      feed: !sequence && (argv.includes('--feed') || (!process.stdout.isTTY && !argv.includes('--scene'))),
       once: argv.includes('--once'),
+      sequence,
     });
   }
 }

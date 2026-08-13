@@ -31,33 +31,25 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.48.1` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.49.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release fixes a claim kai could not back up. The fleet observer was built
-to answer "who never took part", and measurement showed it cannot: the host
-emits **no** subagent lifecycle events for plugin-provided agents at all. An
-A/B in one session, same hook config, produced 4 events for a built-in
-`explore` and **0** for `kai:principal-swe-backend`. Every one of kai's 56
-personas is invisible to the observed log by construction, so "never showed up"
-was silently false for exactly the agents kai ships.
+This release ships the view the observer was named for. `fleet-observation`
+has always told agents to read a **participation sequence** — who took part, in
+what order — but no command produced one. `--sequence` now does: every
+run in the retained history, in the order it began, each labelled `said` (the agent's own
+account) or `seen` (the host's), with its span and any caveat.
 
-The same measurement narrowed a long-standing theory. Personas were not being
-mis-reported as `explore` — loaded as a plugin, they are offered to the host as
-real agent types and the name is correct. The simplest reading of the old log is
-that it was accurate and those really were the agents delegated to, though the
-experiment establishes today's naming rather than replaying that history.
+It lists only what a log recorded. It does **not** name the roles that should
+have been there, because kai holds no plan to compare against and a display
+that invented one would look authoritative while being fiction. Reading the
+absences stays a human judgement, and every render carries the reason a missing
+role is not a finding: the host emits no lifecycle events for plugin-provided
+agents, so all 56 kai personas are invisible to the observed log by
+construction, and an agent can run without declaring.
 
-So the watcher now reads **both** logs: what agents declare about themselves and
-what the host observed, each row labelled `said` or `seen`, merged for display
-and never reconciled. Declared runs carry an id and pair exactly, a run is late
-against the check-in **it** promised rather than a threshold kai invented, and a
-duplicated hook event is collapsed only where that can be defended — the corpus
-contains an agent id reused a day apart, so the obvious fix would have deleted a
-real run.
-
-The previous release, `v0.47.0`, added an opt-in communication-style block so
-kai can reach the main CLI agent through your `AGENTS.md`.
+The previous release, `v0.48.1`, made every working agent declare its own
+runs, enforced in CI.
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.

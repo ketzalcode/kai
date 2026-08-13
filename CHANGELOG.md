@@ -4,7 +4,47 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.48.1] - 2026-08-12
+## [0.49.0] - 2026-08-13
+
+### Added
+
+- **A participation sequence view**: `node scripts/observe-watch.mjs --sequence`
+  renders every run in the retained history, in the order it began — role, tier (`said` or
+  `seen`), start, end, span, and any caveat. This is the view
+  `fleet-observation` has always told agents to read; until now no command
+  produced one, and the skill described an artifact that did not exist.
+  - Open runs appear in the sequence rather than being held back for the
+    ambient view, so the most recent work is not the only work missing.
+  - A stop whose start fell outside the read window shows neither a start
+    clock nor a span, labelled `start not in view`, instead of rendering as a
+    run that took no time. The same applies to a run first heard from at
+    `progress`: its first record is not its start.
+  - A run with no stop reads `no stop recorded`, never `open` or `idle`,
+    and the render says plainly that this is not evidence a process is alive.
+  - Repeated runs of one role are numbered, because retrying rather than
+    escalating is the pattern most worth noticing and counting rows by hand is
+    how it gets missed.
+  - The view lists only what a log recorded. It deliberately does **not** name
+    the roles that should have taken part: kai holds no plan to compare
+    against, and a display that invented one would look authoritative while
+    being fiction.
+  - The limit travels with the data. Every render carries the reason a missing
+    role is not a finding — the host observes no kai agent, and an agent can
+    run without declaring — rather than leaving it in documentation the reader
+    may not have opened. The empty render, the one most likely to be read as
+    `nothing ran`, keeps every caveat.
+  - A run is described by the start it closes, so a stop naming a different
+    role cannot rewrite which role took part; the disagreement is disclosed.
+  - A stop timestamped before its own start is detected and disclosed rather
+    than shown as two separate half-runs.
+
+### Fixed
+
+- The sequence view holds its layout from 40 to 100 columns. A caveat is never
+  truncated to make a row fit; it moves to its own line, because a row that
+  lost its doubt reads as a confident row. The name column is sized once for
+  the table rather than per row, which had made the column jump.
+
 
 ### Fixed
 
@@ -2109,6 +2149,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.49.0]: https://github.com/RubenSaucedo/kai/compare/v0.48.1...v0.49.0
 [0.48.1]: https://github.com/RubenSaucedo/kai/compare/v0.48.0...v0.48.1
 [0.48.0]: https://github.com/RubenSaucedo/kai/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/RubenSaucedo/kai/compare/v0.46.0...v0.47.0
