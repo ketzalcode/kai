@@ -148,10 +148,22 @@ kai state splits on one axis: **control plane vs working corpus.**
 | `kai/library/` | curated outcomes intentionally reusable across initiatives | committed text |
 | `kai/personal/` | portable personal operational, career, and learning material | ignored |
 
+The **committed** rows describe the default. Under `corpus_visibility: local`
+they are all ignored instead; the ignored rows are unaffected.
+
 `.kai/runs/` stays hidden deliberately: it is bulky, regenerable, and may
 hold raw or sensitive evidence, so it should not pollute everyday search.
 `kai/personal/` is the mirror case — **visible but gitignored**, because
 privacy and discoverability are separate concerns.
+
+**A public repository is a third case.** The table above assumes the corpus is
+material the project's collaborators should read. In a public open-source
+repository that assumption can be wrong: coordination churn, backlog, and
+design notes are often the maintainer's own working state, and committing them
+publishes it to everyone on the next push. Onboarding therefore asks once and
+records the answer as `corpus_visibility` in the manifest (see **Manifest**
+below); `local` keeps the identical paths but ignores `/kai/` and `/.kai/`
+entirely, narrowing durability to that one checkout.
 
 `kai/coordination/` answers “what is happening now?” `kai/initiatives/` answers “why
 are we doing this, and what did this effort produce?” Work items and threads
@@ -519,6 +531,39 @@ automatically.
   "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
+
+One optional key may follow, written only on an explicit operator choice:
+
+```json
+  "corpus_visibility": "committed" | "local"
+```
+
+**`corpus_visibility` records whether the working corpus is published with the
+repository.** It is optional, it is written only when an operator explicitly
+chooses, and an absent key means `committed` — so every workspace scaffolded
+before it existed stays valid and needs no migration. The paths never change,
+only whether git carries them:
+
+- **`committed`** (default) — `kai/coordination/`, `kai/initiatives/`, and
+  textual `kai/library/` are tracked, so collaborators clone the working corpus.
+- **`local`** — the managed ignore block additionally covers `/kai/` and
+  `/.kai/`, so untracked kai state is excluded from ordinary `git add` and does
+  not reach the remote. Use it when the repository is public and its kai state
+  is *your* working notes rather than material the project's collaborators are
+  meant to read. Anything already tracked stays committable until it is
+  explicitly untracked — ignoring a path never untracks or unpublishes it.
+
+`local` narrows durability to **this checkout**: the corpus does not survive a
+clone and is invisible to teammates, other machines, CI, cloud agents, and clean
+worktrees. Agents sharing one synchronized working tree still coordinate
+normally, so it is single-checkout rather than single-user. That is a real cost,
+it must be stated before the operator chooses, and it is never a default an
+agent picks silently.
+
+The workspace doctor verifies a recorded `local` against git rather than
+trusting it: tracked kai paths, or a corpus that is not actually ignored, are
+errors. Outside a git work tree it reports the exclusion as unverified and
+claims nothing.
 
 `version` is the plugin build stamped at scaffold time; **`schema_version`** is the
 independent workspace-contract version and is what upgrades key off. They move

@@ -12,8 +12,10 @@
 //
 // Exit code: 0 = healthy (claimable); non-zero = errors or migration required.
 
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   LIFECYCLE, NEEDS_CHANGE_REF, REQUIRES_STATES,
@@ -32,6 +34,10 @@ const REQUIRED_MANIFEST_KEYS = [
 // Schema 2 moved the working corpus under kai/. Roots are resolved from the
 // manifest so the doctor never assumes a layout the workspace does not have.
 const CORPUS_ROOTS = ['coordination', 'initiatives', 'library', 'personal'];
+// Whether the working corpus is published with the repository. Optional: an
+// absent key means "committed", which is what every workspace scaffolded before
+// this key existed already does — so its absence needs no migration.
+const CORPUS_VISIBILITIES = new Set(['committed', 'local']);
 const DEFAULT_ROOTS = {
   corpus: 'kai',
   coordination: 'kai/coordination',
@@ -107,6 +113,13 @@ export function checkWorkspace(root) {
   }
   if (m.workspace_mode === 'repository' && m.workspace_root !== '.') {
     err('.kai/manifest.json repository-mode "workspace_root" must be "."');
+  }
+  // A typo here would silently publish a corpus the operator asked to keep
+  // local, so an unrecognized value is an error rather than a fallback.
+  if (m.corpus_visibility !== undefined && !CORPUS_VISIBILITIES.has(m.corpus_visibility)) {
+    err(`.kai/manifest.json "corpus_visibility" must be "committed" or "local" (found ${JSON.stringify(m.corpus_visibility)})`);
+  } else if (m.corpus_visibility === 'local') {
+    checkLocalCorpusPrivacy(root, err, warn);
   }
   if (Array.isArray(m.areas)) {
     const a = new Set(m.areas);
@@ -283,7 +296,41 @@ function report(root, res) {
   return 1;
 }
 
-// --- self-test -------------------------------------------------------------
+// Under `corpus_visibility: local` the operator asked for kai state to stay off
+// the remote. That promise is kept by git, not by the manifest, so it has to be
+// verified against git rather than assumed from the recorded value — a manifest
+// saying `local` over a .gitignore that never got the block is exactly the
+// silent failure the setting exists to prevent. Only invoked for `local`, so a
+// `committed` workspace keeps the doctor's historical behaviour of never
+// shelling out at all.
+function checkLocalCorpusPrivacy(root, err, warn) {
+  const git = (args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true });
+  const tree = git(['rev-parse', '--is-inside-work-tree']);
+  if (tree.error || tree.status !== 0 || tree.stdout.trim() !== 'true') {
+    warn('corpus_visibility is "local" but this workspace is not a git work tree (or git is unavailable), so the exclusion could not be verified. Nothing is claimed about what a remote would receive.');
+    return;
+  }
+  // .gitignore never untracks anything. A tracked file stays committable no
+  // matter what the ignore block says, so this is an error and not a warning.
+  const tracked = git(['ls-files', '--', 'kai', '.kai']);
+  if (tracked.status === 0 && tracked.stdout.trim()) {
+    const files = tracked.stdout.trim().split(/\r?\n/);
+    const sample = files.slice(0, 3).join(', ');
+    err(`corpus_visibility is "local" but ${files.length} kai path(s) are tracked by git (e.g. ${sample}${files.length > 3 ? ', …' : ''}); ignoring a path does not untrack it, so this state is still committable. Untrack them ("git rm --cached") or record corpus_visibility "committed".`);
+  }
+  // check-ignore reports the EFFECTIVE rule, so a later negation or a
+  // hand-edited block is caught rather than inferred from the block's text.
+  for (const p of ['kai/coordination', '.kai/manifest.json']) {
+    const r = git(['check-ignore', '--no-index', '-q', '--', p]);
+    if (r.status === 1) {
+      err(`corpus_visibility is "local" but "${p}" is not ignored; re-install the managed .gitignore block from workspace-onboarding.`);
+    } else if (r.status !== 0) {
+      warn(`corpus_visibility is "local" but git could not evaluate ignore rules for "${p}"; the exclusion is unverified.`);
+    }
+  }
+}
+
+
 function selfTest() {
   const fx = join(__dirname, '..', 'test', 'fixtures');
   let ok = true;
@@ -380,6 +427,84 @@ function selfTest() {
     if (!vagErr) console.log('    missing error: held lease without version_at_grant');
     if (!racyErr) console.log('    missing error: version_at_grant >= version (increment-skipping grant)');
     if (!staleWarn) console.log('    missing warning: expired lease stale-work recovery signal');
+  }
+
+  // corpus_visibility: optional, and its ABSENCE must stay healthy — every
+  // workspace scaffolded before the key existed omits it and must not be forced
+  // into a migration. `local` is equally valid; only an unrecognized value is
+  // rejected, because a typo would silently publish a corpus meant to stay off
+  // a public remote.
+  const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-doctor-'));
+  try {
+    const variant = (value, prepare) => {
+      const dir = join(tmpRoot, `vis-${String(value)}-${Math.random().toString(36).slice(2, 8)}`);
+      cpSync(join(fx, 'repo-workspace'), dir, { recursive: true });
+      const mPath = join(dir, '.kai', 'manifest.json');
+      const m = JSON.parse(readFileSync(mPath, 'utf8'));
+      m.corpus_visibility = value;
+      writeFileSync(mPath, `${JSON.stringify(m, null, 2)}\n`);
+      if (prepare) prepare(dir);
+      return checkWorkspace(dir);
+    };
+    const git = (dir, args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8', windowsHide: true });
+
+    const badVis = variant('private');
+    if (/"corpus_visibility" must be "committed" or "local"/.test(badVis.errors.join('\n'))) {
+      console.log('✓ self-test: an unrecognized corpus_visibility is rejected rather than defaulted');
+    } else {
+      ok = false;
+      console.log('✗ self-test: corpus_visibility "private" was NOT rejected');
+    }
+
+    // Not a git work tree: the exclusion cannot be verified, so it is reported
+    // as unverified rather than either failed or quietly assumed to hold.
+    const nonGit = variant('local');
+    if (nonGit.errors.length === 0 && /could not be verified/i.test(nonGit.warnings.join('\n'))) {
+      console.log('✓ self-test: "local" outside a git work tree warns that the exclusion is unverified, and claims nothing');
+    } else {
+      ok = false;
+      console.log('✗ self-test: "local" outside a git work tree did not report an unverified exclusion');
+      [...nonGit.errors, ...nonGit.warnings].forEach((e) => console.log(`    ${e}`));
+    }
+
+    const gitAvailable = spawnSync('git', ['--version'], { encoding: 'utf8', windowsHide: true }).status === 0;
+    if (!gitAvailable) {
+      console.log('~ self-test: git unavailable — skipped the corpus_visibility drift checks');
+    } else {
+      // The failure the setting exists to prevent: the manifest says "local"
+      // while git happily tracks the corpus and no ignore rule covers it.
+      const exposed = variant('local', (dir) => {
+        git(dir, ['init', '-q']);
+        // safecrlf would abort the add on this repo's LF fixtures under a
+        // Windows checkout, leaving an empty index and a hollow assertion.
+        git(dir, ['-c', 'core.safecrlf=false', '-c', 'core.autocrlf=false', 'add', '-A']);
+      });
+      const exposedJoined = exposed.errors.join('\n');
+      const sawTracked = /kai path\(s\) are tracked by git/.test(exposedJoined);
+      const sawUnignored = /is not ignored/.test(exposedJoined);
+      if (sawTracked && sawUnignored) {
+        console.log('✓ self-test: "local" over a tracked, unignored corpus is rejected — the recorded value is verified against git, not trusted');
+      } else {
+        ok = false;
+        console.log('✗ self-test: "local" over a tracked, unignored corpus was not fully rejected:');
+        if (!sawTracked) console.log('    missing error: tracked kai paths');
+        if (!sawUnignored) console.log('    missing error: corpus not ignored');
+      }
+
+      const honored = variant('local', (dir) => {
+        git(dir, ['init', '-q']);
+        writeFileSync(join(dir, '.gitignore'), '/kai/\n/.kai/\n');
+      });
+      if (honored.errors.length === 0) {
+        console.log('✓ self-test: a correctly excluded "local" workspace is healthy');
+      } else {
+        ok = false;
+        console.log('✗ self-test: a correctly excluded "local" workspace was rejected:');
+        honored.errors.forEach((e) => console.log(`    ${e}`));
+      }
+    }
+  } finally {
+    rmSync(tmpRoot, { recursive: true, force: true });
   }
 
   return ok ? 0 : 1;

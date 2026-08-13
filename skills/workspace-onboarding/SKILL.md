@@ -104,6 +104,81 @@ state, changes no contract, and (being empty) still will not survive a clone.
 Initiative slug directories and their `artifacts/` subtrees are created by
 `workflow-initiative-init`, not by general onboarding.
 
+## Corpus visibility
+
+Before installing the ignore block in repository mode, resolve whether the
+working corpus is published with the repository. The answer is recorded in
+`.kai/manifest.json` as `corpus_visibility` **only when the operator gives it**;
+an inferred default is left absent, because absence already means `committed`
+and writing a value nobody chose would make a guess indistinguishable from a
+decision on the next run.
+
+**Detect first, ask only when it matters.**
+
+1. Read any existing `corpus_visibility` from the manifest. If present, honor it
+   and do not re-ask — the decision was already made.
+2. Otherwise resolve the publication target explicitly. Take the remote the
+   branch tracks, or `origin` when there is no upstream; if several remotes
+   disagree, name them and ask rather than picking one. Read its visibility with
+   `gh repo view <owner>/<repo> --json visibility -q .visibility`, passing the
+   resolved slug rather than relying on the ambient directory.
+3. Treat visibility as **unknown** — not private — whenever `gh` is missing,
+   unauthenticated, errors, or the remote is not GitHub. A host name does not
+   reveal whether a repository is public, so never infer visibility from the
+   URL. A fork's visibility is its own, not the upstream's.
+4. If the repository is **private**, use `committed` and do not ask. Say which
+   remote that conclusion came from, so a later change of visibility is
+   traceable to a stated assumption rather than a silent one.
+5. If the repository is **public**, has **no remote**, or its visibility is
+   **unknown**, ask the operator exactly once. A repository with no remote is
+   not a private repository — it is one that has not been published *yet*, and
+   the corpus accumulates long before the first `git push`.
+
+**The question is not "public or private" — it is who the corpus is for.** Put
+both options and their costs to the operator plainly:
+
+- **`committed`** — the corpus is part of the project. Collaborators clone it,
+  review design notes in PRs, and share coordination state. If the repository is
+  public, everything in `kai/coordination/`, `kai/initiatives/`, and textual
+  `kai/library/` — backlog items and decision records included — is published
+  the next time it is pushed.
+- **`local`** — the corpus is the operator's working state that happens to live
+  in this repository. `/kai/` and `/.kai/` are ignored wholesale, so untracked
+  kai state is excluded from ordinary `git add` and never reaches the remote.
+  Anything **already tracked stays committable** until it is untracked (see
+  below), and this says nothing about the product changes agents make — only
+  about kai's own state.
+
+`local` narrows durability to **this checkout**. The corpus does not survive a
+clone, and it is invisible to teammates, other machines, CI, cloud agents, and
+clean worktrees. Agents sharing one synchronized working tree still coordinate
+normally, so it is not single-user — it is single-checkout. Say this before the
+operator chooses.
+
+Never infer `local` from repository visibility, and never change a recorded
+value without asking.
+
+### Already-published state
+
+Adding a path to `.gitignore` does not untrack a file, and it cannot unpublish
+one. If tracked kai paths already exist when the operator chooses `local`, say
+so and do not claim privacy that does not exist:
+
+- list the tracked paths (`git ls-files -- kai .kai`);
+- state that until they are untracked, `local` does **not** hold for them: they
+  remain staged, committed, and pushed like any other tracked file;
+- state that `git rm --cached` stops future commits but **leaves the content in
+  history and on every existing clone and fork**;
+- if the repository is public and was already pushed, say plainly that the
+  content is public and only the operator can decide whether rewriting history
+  or rotating anything sensitive is warranted.
+
+Take no destructive action. Untracking is the operator's explicit call. Until it
+happens, onboarding reports the contract as **blocked** rather than complete —
+`local` was requested and is not in force, and reporting success would tell the
+operator their state is private when it is not. The workspace doctor enforces
+the same condition on every later run.
+
 ## Repository-mode ignore block
 
 Install or replace exactly one managed block:
@@ -150,6 +225,24 @@ writing the block, verify:
   `kai/initiatives/`, and textual `kai/library/` files are not ignored.
 <!-- /kai:allow-legacy-roots -->
 
+### Under `corpus_visibility: local`
+
+Append two more lines to the same managed block:
+
+```gitignore
+# The working corpus stays local: this repository publishes code, not kai state.
+/kai/
+/.kai/
+```
+
+The last two verification points **invert**: `kai/coordination/`,
+`kai/initiatives/`, textual `kai/library/`, `.kai/manifest.json`, and
+`.kai/CONVENTIONS.md` must all be *ignored*. Every other check is unchanged, and
+the structural contract is identical — only git's view of it differs. Verify the
+inverted expectation explicitly rather than skipping it: an unverified `local`
+workspace is one commit away from publishing exactly what the operator asked to
+keep off the remote.
+
 If these checks fail, onboarding fails. Do not allow browser or evidence runs
 to write credentials or raw state before ignore validation succeeds.
 
@@ -174,6 +267,11 @@ single field. Plan one idempotent migration that:
   defines but the file lacks (e.g. a workspace predating the `content` area);
 - removes retired fields (e.g. `workspace_kind`);
 - preserves every other value and the operator-confirmed root verbatim.
+
+`corpus_visibility` is deliberately **not** added by reconciliation. It is
+optional, its absence means `committed`, and inventing a value would answer a
+question only the operator can answer. It is written when the operator is asked
+(see **Corpus visibility**) and preserved verbatim thereafter.
 
 In a non-empty workspace, show the exact manifest diff with the rest of the
 onboarding plan before applying it. This reconciliation is what "matches the

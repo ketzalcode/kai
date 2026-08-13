@@ -35,8 +35,10 @@ paths. You materialize `workspace-conventions` by executing
    before writing.
 4. Create missing structure idempotently; never overwrite, delete, stage,
    commit, or push user content.
-5. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata.
-   `.kai/runs/` and `kai/personal/` are ignored.
+5. `.kai/manifest.json` and `.kai/CONVENTIONS.md` are committed metadata under
+   the default `corpus_visibility: committed`; under `local` the whole `/kai/`
+   and `/.kai/` tree is ignored instead. `.kai/runs/` and `kai/personal/` are
+   ignored either way.
 6. Do not create `.ketzal/`, `knowledge/`, `.persona-self/`, or coordination files inside
    `kai/initiatives/`.
 
@@ -46,6 +48,10 @@ paths. You materialize `workspace-conventions` by executing
 
 - Resolve absolute `workspace_root` and `workspace_mode`.
 - Read `plugin.json` for the kai version.
+- Resolve `corpus_visibility`: honor an existing manifest value; otherwise
+  resolve the publication target's visibility so step 4 knows whether the
+  operator must be asked. Treat an absent, non-GitHub, or unreadable remote as
+  unknown rather than private.
 - Inspect `.kai/manifest.json`, the required roots, `.gitignore`, and legacy
   paths identified by `workspace-onboarding`.
 - If `.kai/manifest.json` exists, validate its fixed root map rather than
@@ -59,6 +65,9 @@ Report:
 - matching paths to keep;
 - conflicting paths;
 - legacy paths and proposed source-to-destination moves;
+- the resolved `corpus_visibility` and how it was decided (recorded in the
+  manifest, inferred `committed` from a demonstrably private remote, or
+  operator-answered) — naming the remote any inference came from;
 - the exact managed `.gitignore` block.
 
 If the workspace is non-empty, ask before applying the plan. A conflict or
@@ -109,17 +118,33 @@ file and directory. Do not create initiative slug directories;
 
 ### 4. Wire and verify ignore rules
 
-In repository mode, install the one managed block from
-`workspace-onboarding`. In external mode, modify `.gitignore` only if the root
-is already a Git repository.
+In repository mode, resolve `corpus_visibility` first (see the **Corpus
+visibility** section of `workspace-onboarding`): honor a value already in the
+manifest, otherwise resolve the publication target's visibility and ask the
+operator **unless the repository is demonstrably private**. Public, no remote,
+or undeterminable visibility all mean *ask* — a repository with no remote is
+unpublished, not private. Record the answer only when the operator gives it;
+leave an inferred `committed` absent. Then install the one managed block from
+`workspace-onboarding` — with the two extra corpus lines when the answer is
+`local`. In external mode, modify `.gitignore` only if the root is already a
+Git repository.
 
 Verify that:
 
 - in a Git workspace, `.kai/runs/`, `kai/personal/`, and retired local-state paths
-  are ignored while `.kai/manifest.json`, `.kai/CONVENTIONS.md`,
-  `kai/coordination/`, `kai/initiatives/`, and textual `kai/library/` entries are trackable;
+  are ignored;
+- under `committed`, `.kai/manifest.json`, `.kai/CONVENTIONS.md`,
+  `kai/coordination/`, `kai/initiatives/`, and textual `kai/library/` entries are
+  trackable; under `local`, those same paths are **ignored** instead, and
+  `git ls-files -- kai .kai` is empty;
 - in a non-Git external workspace, ignore checks are reported as `n/a` and do
   not block the structural contract.
+
+If the operator chooses `local` while kai paths are already tracked, report the
+tracked paths, state that ignoring them neither untracks nor unpublishes them,
+and report `Contract: blocked` — the requested exclusion is not in force, and
+calling that success would tell the operator their state is private when it is
+not. Do not run `git rm --cached` or rewrite history on your own initiative.
 
 On failure, report `Contract: blocked` and do not claim onboarding succeeded.
 
@@ -130,6 +155,8 @@ Confirm:
 - `.kai/manifest.json` was reconciled to the current fixed schema — missing
   fixed roots and `areas` (e.g. `content`) added, retired fields (e.g.
   `workspace_kind`) removed, and all other values preserved;
+- `corpus_visibility` is absent (meaning `committed`) or exactly `committed` or
+  `local`, and matches the ignore block actually installed;
 - every coordination registry exists;
 - `kai/initiatives/INDEX.md` contains missing discovered initiative rows without
   duplicate slugs;

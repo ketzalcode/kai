@@ -21,7 +21,10 @@ Coordination must survive sessions, machines, CLI/cloud boundaries, and branch
 handoffs, so it lives under the target workspace's `kai/coordination/`. In a
 repository workspace this surface is committed. In an operator-confirmed
 external workspace it is durable local state and must not be described as
-committed unless that directory is actually version-controlled.
+committed unless that directory is actually version-controlled. The same caveat
+applies to a repository workspace recorded as `corpus_visibility: local`: the
+surface is durable only within that checkout, so it does not cross machines,
+clones, CI, or cloud agents, and must not be described as committed.
 
 A single mutable board is not safe as the authoritative store: two agents
 working in parallel would edit the same file and create conflicts or overwrite

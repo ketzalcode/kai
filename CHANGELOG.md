@@ -4,6 +4,69 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.46.0] - 2026-08-12
+
+### Added
+
+- **`corpus_visibility` — kai state no longer has to be published with a public
+  repository.** Onboarding committed `kai/coordination/`, `kai/initiatives/` and
+  textual `kai/library/` unconditionally, on the reasoning that the working
+  corpus is closer to `docs/` than to `.vscode/` and humans should browse it.
+  That reasoning holds for a team repository and breaks for a public open-source
+  one, where the same files are usually the maintainer's own working notes and
+  committing them publishes backlog, coordination churn and decision records to
+  everyone. `workflow-workspace-init` now resolves an optional
+  `corpus_visibility` key in `.kai/manifest.json`: `committed` (the default)
+  keeps today's behaviour, and `local` extends the managed ignore block with
+  `/kai/` and `/.kai/` so untracked kai state is excluded from ordinary `git
+  add` and never reaches the remote. Paths are identical under both, so no agent
+  or skill changes.
+- **The question is asked only when it is a real question.** A demonstrably
+  private repository is `committed` without asking. Public, no remote, or
+  visibility that cannot be read all mean *ask* — a repository with no remote is
+  unpublished rather than private, and the corpus accumulates long before the
+  first push. Visibility is never inferred from a remote's host name, and an
+  inferred `committed` is left absent rather than written, so a guess never
+  becomes indistinguishable from a decision. The choice is framed as who the
+  corpus is *for* rather than as public-versus-private, because a project that
+  wants transparent design docs should still commit.
+- **The cost of `local` is stated, not discovered.** It narrows durability to
+  one checkout: the corpus does not survive a clone and is invisible to
+  teammates, other machines, CI, cloud agents, and clean worktrees. Agents
+  sharing one working tree still coordinate, so it is single-checkout rather
+  than single-user.
+- **The recorded value is verified against git, not trusted.** `workspace-doctor`
+  now checks a `local` workspace with `git ls-files` and `git check-ignore`: kai
+  paths that are tracked, or a corpus that is not actually ignored, are errors
+  that block claiming work. A manifest reading `local` over a `.gitignore` that
+  never received the block is precisely the silent failure the setting exists to
+  prevent. Outside a git work tree it reports the exclusion as **unverified**
+  and claims nothing. An unrecognized value is rejected outright rather than
+  falling back to a default — a typo would otherwise silently publish the corpus
+  the operator asked to keep local.
+- **Ignoring a path is not unpublishing it.** If tracked kai paths already exist
+  when `local` is chosen, onboarding lists them, states that `git rm --cached`
+  stops future commits but leaves the content in history and in every existing
+  clone and fork, and reports the contract **blocked** rather than complete —
+  the requested exclusion is not in force, and calling that success would tell
+  the operator their state is private when it is not. It takes no destructive
+  action; untracking and any history rewrite stay the operator's explicit call.
+
+### Changed
+
+- The ignore-block verification in `workspace-onboarding` now **inverts** under
+  `local` — the corpus paths must be *ignored* — rather than being skipped. An
+  unverified `local` workspace is one commit away from publishing exactly what
+  it was configured to withhold.
+- `work-coordination` no longer describes repository coordination as committed
+  without qualification. Under `local` it is durable only within the checkout,
+  which is the same caveat external workspaces already carried.
+
+Nothing migrates. `corpus_visibility` is optional and its absence means
+`committed`, so every existing workspace stays valid and `schema_version`
+remains 2. Reconciliation deliberately never invents the key: it answers a
+question only the operator can answer.
+
 ## [0.45.1] - 2026-08-12
 
 ### Fixed
@@ -1906,6 +1969,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.46.0]: https://github.com/RubenSaucedo/kai/compare/v0.45.1...v0.46.0
 [0.45.1]: https://github.com/RubenSaucedo/kai/compare/v0.45.0...v0.45.1
 [0.45.0]: https://github.com/RubenSaucedo/kai/compare/v0.44.1...v0.45.0
 [0.44.1]: https://github.com/RubenSaucedo/kai/compare/v0.44.0...v0.44.1
