@@ -4,6 +4,35 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.52.0] - 2026-08-13
+
+### Added
+
+- **`scripts/pack-preview.mjs`** — a harness that materialises a throwaway
+  two-plugin preview of the pack architecture (#29) from the **live roster**
+  rather than from toy fixtures, so the host-behaviour questions that gate the
+  split are answered against the agents we would actually publish. It builds a
+  `kai-core-preview` (shared skills plus a `kai-core-contract-v1` preflight) and
+  a `kai-personal-preview` (9 real agents with a fail-closed preflight injected),
+  and supports `--no-core` and `--contract N` to reproduce a missing core and a
+  version skew. Nothing in the shipped plugin moves. 10 self-test checks.
+
+### Changed
+
+- `docs/proposals/pack-architecture.md` records the Phase 1 and Phase 2 results,
+  which change two design decisions:
+  - **Core skills must carry contract-versioned names.** With legacy `kai` and
+    `kai-core-preview` both providing `team-operating-rules`, the agent bound to
+    whichever plugin was loaded **first** — and the preflight did not catch it,
+    because core was present and answering while a different plugin supplied the
+    rules. Renaming removes the ambiguity; load order is not a mitigation.
+  - **Directors may stay in core**, because an agent can enumerate the installed
+    roster and does not invent availability for a role that is absent — provided
+    they resolve availability *before* claiming work or taking a lease.
+  - Also recorded: core is larger than the six universal contracts. A 9-agent
+    pack pulls **10** skills from core, because shared utilities cross
+    departments just as the operating contracts do.
+
 ## [0.51.0] - 2026-08-13
 
 ### Changed
@@ -2344,6 +2373,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.52.0]: https://github.com/RubenSaucedo/kai/compare/v0.51.0...v0.52.0
 [0.51.0]: https://github.com/RubenSaucedo/kai/compare/v0.50.0...v0.51.0
 [0.50.0]: https://github.com/RubenSaucedo/kai/compare/v0.49.3...v0.50.0
 [0.49.3]: https://github.com/RubenSaucedo/kai/compare/v0.49.2...v0.49.3

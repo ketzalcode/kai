@@ -220,10 +220,19 @@ kill the design: missing core, wrong core version, duplicate skill names,
 legacy `kai` installed alongside, partial install, and the fresh-session
 requirement. Monolithic `kai` stays authoritative throughout.
 
+**Status: done.** See "Phase 1 results" below. Built by
+`scripts/pack-preview.mjs`. Outcome: the preflight holds on real agents, and
+skill-name collision was found to be load-order dependent — which forces
+contract-versioned names for core skills.
+
 ### Phase 2 — prove roster enumeration
 
 Establish whether an agent can reliably obtain the exact qualified
 installed-agent set. This decides where directors live. Do not skip it.
+
+**Status: passed at small scale** (test E). Directors may stay in core, on the
+condition that they resolve availability *before* claiming work. Still unproven:
+a full 56-agent roster, and the cloud host.
 
 ### Phase 3 — incremental migration
 
@@ -257,11 +266,66 @@ in the current session, because plugins load at session start:
 
 ## Open questions
 
-- Can an agent reliably enumerate installed agents? (Gates Phase 2 and the
-  directors' home.)
 - Does skill collision behaviour hold across install order, marketplace vs
   direct, and fresh sessions? Only `--plugin-dir` ordering was tested.
 - Does macOS and the cloud host behave the same? All measurements were Windows
   CLI.
 - Would upstream add plugin dependency declarations? Worth asking — it would
   remove the largest risk here.
+
+---
+
+## Phase 1 results — the two-pack preview
+
+Built by `scripts/pack-preview.mjs` from the **live roster**, not from toy
+fixtures: `kai-core-preview` (the 10 shared skills the pack inherits, plus a
+`kai-core-contract-v1` preflight skill) and `kai-personal-preview` (the 9 real
+personal agents with a fail-closed preflight injected into each body, plus the 3
+skills only they use). Nothing was moved in the shipped plugin.
+
+The pack composition is itself a finding: **core is bigger than the six
+universal contracts.** A 9-agent personal pack pulls 10 skills from core,
+because shared utilities (`generate-audio`, `web-evaluation`, `content-grounding`,
+`web-content-extraction`) are inherited across departments just like the
+operating contracts are.
+
+| # | Test | Result |
+| --- | --- | --- |
+| A | Core present, contract 1 | Preflight fired, resolved across the plugin boundary, agent proceeded normally |
+| B | **Core absent** | Agent replied with the exact refusal token and did nothing else |
+| C | Core present, contract **2** | Refused — version skew detected |
+| D | **Legacy `kai` + `kai-core-preview`, both providing `team-operating-rules`** | Agent bound to **`kai:team-operating-rules`** — the *legacy* copy — while its preflight passed |
+| D2 | Same set, core listed first | Bound to `kai-core-preview:team-operating-rules` |
+| E | Roster enumeration | Agent listed the exact qualified IDs of all installed agents, and correctly answered **NO** for an agent that was not installed |
+
+### What these change
+
+**The preflight works, and it works on the hard case.** Test B is the one that
+mattered: a *real* agent, with its full tool grants, asked to "teach me how
+binary search works" — something it could trivially have answered from memory.
+It refused. The earlier evidence for this was a probe restricted to a single
+tool, which proved much less.
+
+**Skill collision is load-order dependent, and that is now blocking.** Tests D
+and D2 differ only in the order the plugins were listed, and the agent bound to
+a different copy of the operating contract each time. During migration, whether
+a pack agent gets the new contract or a stale one would depend on load order the
+user neither controls nor sees — and the preflight does **not** catch it, because
+core is present and answers correctly while a *different* plugin supplies the
+rules.
+
+> **Decision: core skills must carry distinctive, contract-versioned names**
+> (`kai-core-team-operating-rules-v1` rather than `team-operating-rules`), so a
+> legacy `kai` install cannot satisfy a pack agent's inheritance by accident.
+> Renaming is what removes the ambiguity; ordering luck is not a mitigation.
+
+**Directors can stay in core — conditionally.** Test E answers the Phase 2 gate:
+an agent *can* determine the installed roster and does not invent availability
+for a missing role. So a director can build the available-role set before
+routing. The condition is that it must do so **before** claiming work or writing
+a lease, which `director-chief-of-staff` currently does not — it leases first.
+
+Caveats on E: this is the model reading an injected tool list, not a structured
+inventory API. It was tested with 9 pack agents, not 56, so truncation under a
+full roster is unproven, and the cloud host was not tested at all.
+

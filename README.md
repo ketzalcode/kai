@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.51.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.52.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 **Discovery metadata is 63% smaller.** Every agent and skill `description:` is
