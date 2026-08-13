@@ -4,6 +4,75 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.48.0] - 2026-08-12
+
+### Fixed
+
+- **The fleet view claimed absences it could not observe.** Measurement settled
+  a question that had been guessed at for weeks: the host emits **no** subagent
+  lifecycle events for plugin-provided agents. An A/B in a single session, same
+  hook config, produced 4 events for a built-in `explore` and **0** for
+  `kai:principal-swe-backend`. Every kai persona is therefore invisible to
+  `.kai/observed.jsonl` by construction. The observer's core claim — that it can
+  surface a role which never took part — was true only for built-in agents, and
+  silently false for all 56 of kai's own. `fleet-observation` now states the
+  limit up front and forbids "did not run" language on that basis.
+- **The same measurement narrowed the "agents report as explorers" theory.**
+  They were not mis-attributed. Loaded as a plugin, kai's personas are offered
+  to the host as real agent types (`kai:principal-swe-architect`) and the name
+  is correct. The simplest reading of the historical log is that it was accurate
+  and those really were the agents delegated to — though the experiment
+  establishes current naming, not a replay of that history.
+- **One hook event delivered twice is no longer counted twice.** The rule
+  depends on the evidence available: within a second when the record carries a
+  run or agent id, and only at an *identical* timestamp when it carries neither.
+  A `start` has no id, so two real agents launched a second apart cannot be told
+  from one event delivered twice, and some duplicate starts survive on purpose —
+  a double-count is visible in the view and a deleted agent is not. The ceiling
+  is one second because the corpus contains an `agentId` **reused** by two
+  distinct runs 90,244 seconds apart, so identity alone is never sufficient;
+  collapsing on it — the fix originally proposed — would have deleted a real
+  run. Regression tests pin both halves.
+- **Roles the host qualifies with a namespace are no longer quarantined.** The
+  host names plugin agents `kai:<name>`; the role pattern rejected the colon, so
+  the day those events start arriving every one of them would have rendered as
+  `<invalid-role>`.
+- **Provenance now comes from the file, never from the record.** A `src` field
+  inside a record is a field either writer can set, so anything able to append
+  to the observed log could have presented itself as an agent's own considered
+  account, or the reverse — and a run id in an observed record could have closed
+  a declared run outright. Each log is parsed under the tier of the path it was
+  read from, run ids are accepted only from the tier that issues them, and
+  pairing keys are namespaced per tier.
+- **The rotated declared log is read.** `activity.jsonl` rotates exactly like
+  `observed.jsonl`, and the watcher was reading only the current generation, so
+  a rotation mid-run made a healthy, still-running agent vanish from the view.
+- **A run reporting progress with no start in view is shown, not dropped.**
+  Previously it rendered as an idle fleet, which is the one thing this view must
+  never do. It appears, marked `start not in view`.
+- **A replayed declared start no longer strands a worker.** A second start for
+  one run id was treated as a second agent, leaving a row no stop could clear.
+- **Rows fit the terminal.** Column widths are derived from the surrounding
+  content rather than a constant left over from an earlier layout. At narrow
+  widths the *name* gives up space and a caveat contracts to a short form, but
+  is never dropped: a row that has quietly lost its doubt reads as a confident
+  one.
+
+### Added
+
+- **The watcher reads both tiers.** `.kai/activity.jsonl` (declared, written by
+  agents about themselves) is merged with `.kai/observed.jsonl` (observed,
+  written by the host). Since the host cannot see kai's agents at all, the
+  declared tier is the only evidence that exists for them. Every row is labelled
+  `said` or `seen`, and the two are merged for display but never reconciled — an
+  agent in one tier and not the other is the normal case, not a discrepancy.
+- **Declared runs pair exactly.** They carry a run id, so two runs of one role
+  at the same time are matched by identity rather than by arrival order. The
+  ambiguity warning is now raised only by the tier that earns it.
+- **A run is late against its own promise, not against a threshold kai
+  invented.** `next_report_by` from the declared tier drives a
+  `past its own check-in` mark, and a `progress` record renews it.
+
 ## [0.47.0] - 2026-08-12
 
 ### Added
@@ -2011,6 +2080,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.48.0]: https://github.com/RubenSaucedo/kai/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/RubenSaucedo/kai/compare/v0.46.0...v0.47.0
 [0.46.0]: https://github.com/RubenSaucedo/kai/compare/v0.45.1...v0.46.0
 [0.45.1]: https://github.com/RubenSaucedo/kai/compare/v0.45.0...v0.45.1

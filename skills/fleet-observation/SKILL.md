@@ -9,18 +9,51 @@ user-invocable: true
 # Fleet Observation
 
 `work-activity` records what an agent **declared** it was doing.
-`work-status` reports what **needs a human**. This is the third thing: what
-actually **happened**, in order, including who never showed up.
+`work-status` reports what **needs a human**. This is the third thing:
+participation — which roles took part, in what order, and with what evidence
+behind each claim.
 
-That last part is the whole point. A role that was never consulted writes no
-record anywhere — no declared log can surface an absence. The observed log can,
-because it lists every role that emitted lifecycle events.
+The watcher reads **both** logs and shows them side by side:
+`.kai/observed.jsonl`, written by the host, and `.kai/activity.jsonl`, written
+by agents about themselves. Each row is labelled `seen` or `said`. They are
+merged for display and never reconciled, because they answer different
+questions and neither is complete.
 
-Two structural limits bound that claim, and you must state them whenever you
-report an absence: `general-purpose` subagents emit no events at all, so they
-are invisible here, and a role invoked some other way — by the user directly, or
-by a tool the host does not instrument — leaves no record either. "Never
-appeared in the log" is therefore evidence of an absence, not proof of one.
+Note the word *participation*, not *what happened*. A `seen` row is the host
+reporting that it ran something. A `said` row is an agent's own account,
+written before it knew the outcome. Neither is a transcript, and neither
+proves the work was any good.
+
+## What the observed log cannot tell you
+
+Read this before you report that a role never took part.
+
+**The host emits no lifecycle events for plugin-provided agents.** Every kai
+persona is delegated as `kai:<name>`, and delegations of that kind produce
+nothing in `observed.jsonl` — not a start, not a stop. This is measured, not
+suspected: an identical A/B in one session produced 4 events for a built-in
+`explore` and 0 for `kai:principal-swe-backend`.
+
+So for kai's own roles, absence from the observed log is the **guaranteed**
+outcome and carries no information whatsoever. Never write "did not run",
+"was skipped", or "never showed up" on that basis. The watcher labels these
+roles `self-reported only, the host does not observe them`; use that language.
+
+Two narrower limits also apply, to built-in agents: `general-purpose` emits no
+events either, and a role invoked some other way — by the user directly, or by
+a tool the host does not instrument — leaves no record.
+
+What remains true is the positive claim. A record in the observed log is solid
+evidence that the host ran that agent. Absence is evidence of nothing.
+
+**Counts can be very slightly high.** The host occasionally delivers one event
+twice. The watcher collapses a repeat only when it can defend the call: within
+a second when the record carries a run or agent id, and only at an *identical*
+timestamp when it carries neither. A `start` carries no id at all, so two real
+agents launched a second apart are indistinguishable from one event delivered
+twice — and deleting an agent that ran is worse than counting one twice. Some
+duplicate starts therefore survive on purpose. This is a heuristic, not a
+proof; describe it that way.
 
 ## The two things people confuse
 
@@ -123,22 +156,40 @@ that keeps concurrent subagents safe.
 ## Reading a participation sequence
 
 Read the order, then read the absences. The absences are where the finding
-usually is.
+usually is — **but only in the declared log.** Re-read "What the observed log
+cannot tell you" first. For kai's own roles, an absence in the observed tier is
+guaranteed and means nothing, so every question below is answered from
+`.kai/activity.jsonl` rows (`said`), not from `seen` rows.
 
 Ask, in this order:
 
-1. **Who acted first?** An implementation role before any research or design
-   role often means the work started before it was understood.
+1. **Who acted first?** An implementation role recorded before any research or
+   design role often means the work started before it was understood.
 2. **Which role is missing that the work implied?** UI work with no design or
    QA role. A schema change with no security or data role. A customer-facing
    change with no writer.
-3. **Did assessment happen at all?** Work that shows only the author's own role
-   was never independently reviewed.
+3. **Is there any record of independent assessment?** Work showing only the
+   author's own role has none — in the log.
 4. **Did the same role run repeatedly?** Often a sign of retrying rather than
    escalating.
 
+Every one of those is a question about the **log**, not about the work. Phrase
+findings that way and the distinction survives; phrase them as facts about the
+team and it does not:
+
+| Say this | Never this |
+| --- | --- |
+| "No reviewing role was recorded." | "It was never reviewed." |
+| "No design role appears for this UI work." | "Design was skipped." |
+| "`principal-security` has no record here." | "Security never showed up." |
+
+The gap is real and common: an agent that ran but never called
+`activity.mjs` — or that crashed before its stop — leaves the same trace as one
+that never ran. A missing role is a prompt to go and check, not a finding to
+report.
+
 Deliver this as coaching, not verdicts. The log shows participation; it does not
-show whether consulting someone would have helped. Say what was observed, then
+show whether consulting someone would have helped. Say what was recorded, then
 what it suggests, and let the user decide.
 
 ## What you must not claim
@@ -147,15 +198,23 @@ what it suggests, and let the user decide.
   and a stop was not. A killed process leaves exactly that trace. The watcher
   ages long-open entries for this reason; describe them as silent, never as
   running.
-- **Pairing can be a guess.** `subagentStart` carries no agent id, so a start
-  and a stop are matched by session and role in arrival order. When two
-  subagents of one role overlap, the pairing is ordering, not identity. The
-  watcher labels this; repeat the label rather than smoothing it over.
+- **Pairing can be a guess — in the observed tier only.** `subagentStart`
+  carries no agent id, so a start and a stop are matched by session and role in
+  arrival order. When two subagents of one role overlap, the pairing is
+  ordering, not identity. The watcher labels this; repeat the label rather than
+  smoothing it over. Declared rows carry a run id and pair exactly, so an
+  overlap there is not ambiguous.
 - **The log is not a transcript.** It carries who and when. Summaries are stored
   only when explicitly opted in, and even then only one derived line.
-- **Absence of a record is not absence of work.** `general-purpose` subagents
-  emit no events, and work done by the main session is deliberately not
-  recorded.
+- **Absence of a record is not absence of work.** This is the one to get right.
+  Every kai persona is invisible to the observed tier by construction, plus
+  `general-purpose` emits no events, plus work done by the main session is
+  deliberately not recorded. Say "not observed", never "did not happen".
+- **`said` is a claim, not a measurement.** A declared row is an agent's own
+  account of itself, written before the outcome was known. It is the only
+  evidence available for kai's roles, which makes labelling it honestly more
+  important, not less. An agent that crashes never writes its stop, so an open
+  declared run means silence, not failure.
 
 ## Summaries carry real risk
 

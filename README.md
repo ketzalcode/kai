@@ -31,26 +31,33 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.47.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.48.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release lets kai reach the agent that **actually talks to you**. Every kai
-agent is bound by `team-operating-rules`, but the main CLI agent — the one that
-collects subagent results and replies in your terminal — is not a kai agent and
-loads no kai agent file. The host reads instructions from *your* `AGENTS.md`,
-never from a plugin. So onboarding now offers, once, to install a managed
-communication-style block there: lead with the recommendation, don't narrate
-routine steps, and never drop failures or unverified claims to stay brief.
+This release fixes a claim kai could not back up. The fleet observer was built
+to answer "who never took part", and measurement showed it cannot: the host
+emits **no** subagent lifecycle events for plugin-provided agents at all. An
+A/B in one session, same hook config, produced 4 events for a built-in
+`explore` and **0** for `kai:principal-swe-backend`. Every one of kai's 56
+personas is invisible to the observed log by construction, so "never showed up"
+was silently false for exactly the agents kai ships.
 
-It is **off by default**, and the question says plainly that `AGENTS.md` is
-committed and binds everyone in the repository rather than just you. The block
-is marked, so kai can update or remove exactly its own region later and never
-touches a line you wrote. kai carries the same block in its own `AGENTS.md`,
-pinned in CI — a style we ship and don't use ourselves is a recommendation
-nobody tested.
+The same measurement narrowed a long-standing theory. Personas were not being
+mis-reported as `explore` — loaded as a plugin, they are offered to the host as
+real agent types and the name is correct. The simplest reading of the old log is
+that it was accurate and those really were the agents delegated to, though the
+experiment establishes today's naming rather than replaying that history.
 
-The previous release, `v0.46.0`, added `corpus_visibility` so a **public**
-repository can keep kai's working corpus out of git entirely.
+So the watcher now reads **both** logs: what agents declare about themselves and
+what the host observed, each row labelled `said` or `seen`, merged for display
+and never reconciled. Declared runs carry an id and pair exactly, a run is late
+against the check-in **it** promised rather than a threshold kai invented, and a
+duplicated hook event is collapsed only where that can be defended — the corpus
+contains an agent id reused a day apart, so the obvious fix would have deleted a
+real run.
+
+The previous release, `v0.47.0`, added an opt-in communication-style block so
+kai can reach the main CLI agent through your `AGENTS.md`.
 
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.
