@@ -1,7 +1,7 @@
 ---
 name: workflow-initiative-init
 description: "Bounded initiative-intake workflow that turns an operator's mission, vision, constraints, and desired outcomes into a scope-gated north star with stable milestones, canonical initiative artifact paths, and initial proposed work records. Creates kai/initiatives/<slug>/ plus artifacts/, updates the initiative index, and seeds kai/coordination/items and threads. PM approves scope before the Chief of Staff dispatches work."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`

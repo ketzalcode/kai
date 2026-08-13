@@ -1,7 +1,7 @@
 ---
 name: workflow-self-check
 description: On-demand structural-health auditor for kai. Read-only on plugin files and writes one tiered findings report at `.kai/runs/review/<YYYY-MM-DD>/<NN>-self-check-kai/report.md`. Detects inventory, naming, description, reference, overlap, responsibility, and discoverability drift. Never auto-restructures.
-tools: ["bash", "edit", "view", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `no-self-remediation`

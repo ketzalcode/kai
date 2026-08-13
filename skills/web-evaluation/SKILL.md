@@ -1,7 +1,7 @@
 ---
 name: web-evaluation
 description: "Shared Playwright plumbing for live-product walkthroughs: safe-action rules, login pause, local run folders, screenshot discipline, and evaluation report scaffolds. QA/UX/SEO use the full evaluation contract; workflow-product-explore reuses only safety/login/evidence plumbing and supplies its own neutral product-map schema."
-tools: [playwright, bash, edit, view, ask_user]
+tools: [playwright, bash, shell, edit, view, ask_user]
 ---
 
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.

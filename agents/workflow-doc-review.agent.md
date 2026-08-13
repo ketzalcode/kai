@@ -1,7 +1,7 @@
 ---
 name: workflow-doc-review
 description: "On-demand multi-lens substance review for design docs, PRDs, RFCs, strategy docs, and proposals. Aggregates one review at `.kai/runs/review/<YYYY-MM-DD>/<NN>-doc-<slug>/review.md`; promoted reusable reviews go to kai/library/reviews. Verifies before asserting and never auto-posts."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`, `no-self-remediation`

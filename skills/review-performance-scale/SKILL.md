@@ -1,7 +1,7 @@
 ---
 name: review-performance-scale
 description: "The performance-and-scale lens of a document review — are latency budgets named (P50/P95/P99)? Throughput and concurrency? Cold start? Are scale assumptions tied to real volume data rather than guesses? What happens under load — failure modes, backpressure, retries, the hot path? Are the 'this is fast / scales fine' assurances grounded? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator when a doc proposes a new service, API, data path, or anything with a latency or volume budget. NEVER auto-posts."
-tools: [bash, view, grep, glob, web_search, web_fetch]
+tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 
 # Review: Performance & Scale

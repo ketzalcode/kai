@@ -1,7 +1,7 @@
 ---
 name: web-content-extraction
 description: "Standardises a Playwright MCP walkthrough of a website that is meant to be *read* (course modules, certification units, doc pages, long articles) and writes the readable content out as clean markdown ready for downstream consumption — typically the `generate-audio` skill. Owns folder layout, slug rules, .gitignore patching, login-pause, multi-unit traversal, knowledge-check detection, and the markdown output shape. Invoked by agents like `workflow-course-to-audio`; not invoked directly by the user."
-tools: [playwright, bash, edit, view, ask_user]
+tools: [playwright, bash, shell, edit, view, ask_user]
 ---
 
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.

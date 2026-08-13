@@ -31,26 +31,26 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.49.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.49.1` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-This release ships the view the observer was named for. `fleet-observation`
-has always told agents to read a **participation sequence** — who took part, in
-what order — but no command produced one. `--sequence` now does: every
-run in the retained history, in the order it began, each labelled `said` (the agent's own
-account) or `seen` (the host's), with its span and any caveat.
+This release fixes a defect that had disabled every script-running contract kai
+has, on Windows, silently. 54 of 56 agents declared the `bash` tool. The host
+does not map that per-OS — it drops the name and hands the agent a toolset with
+no way to run anything, without complaining. Agents and skills now declare both
+`bash` and `shell`, the only portable form, with a CI rule keeping the pair
+together.
 
-It lists only what a log recorded. It does **not** name the roles that should
-have been there, because kai holds no plan to compare against and a display
-that invented one would look authoritative while being fiction. Reading the
-absences stays a human judgement, and every render carries the reason a missing
-role is not a finding: the host emits no lifecycle events for plugin-provided
-agents, so all 56 kai personas are invisible to the observed log by
-construction, and an agent can run without declaring.
+That is why nothing had ever been observed writing `.kai/activity.jsonl`. A
+live run now does, and `--sequence` renders it — the first end-to-end proof
+of the declared tier.
 
-The previous release, `v0.48.1`, made every working agent declare its own
-runs, enforced in CI.
-
+`--sequence`, added in `v0.49.0`, is the view `fleet-observation` was
+named for: every run in the retained history, in the order it began, each
+labelled `said` (the agent's own account) or `seen` (the host's). It lists
+only what a log recorded and never names the roles that should have been there,
+because kai holds no plan to compare against and a display that invented one
+would look authoritative while being fiction.
 Release history and the reasoning behind each change live in
 **[CHANGELOG.md](CHANGELOG.md)**.
 

@@ -1,8 +1,8 @@
 ---
 name: demo-zoom
 description: "How to turn a flat product or terminal recording into a focused demo by declaring what the viewer should look at and when, then rendering that declaration with ffmpeg. Owns the render half of the demo seam: reading focus coordinates off a ruled frame, authoring and validating a focus plan, checking it in plain numbers before committing to an encode, and producing a single continuous zoom pass with no seams. Directs nothing and invents nothing: it renders only what a plan declares, over footage of a real run, and refuses a plan it cannot honour rather than guessing."
-tools: [bash, view, edit, create, grep, glob]
-requires_tools: [bash]
+tools: [bash, shell, view, edit, create, grep, glob]
+requires_tools: [bash, shell]
 user-invocable: true
 ---
 

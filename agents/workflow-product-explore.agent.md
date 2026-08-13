@@ -1,7 +1,7 @@
 ---
 name: workflow-product-explore
 description: "Bounded neutral explorer for a live product. Uses Playwright and product-exploration to create an evidence-backed map at the initiative's canonical artifacts/product-map.md path — and, on request, a neutral design-system extract of observed visual facts — so peers can navigate without rediscovery. It never evaluates UX, files defects, recommends or selects design, chooses scope, or modifies product data."
-tools: ["playwright", "bash", "view", "edit", "grep", "glob", "ask_user"]
+tools: ["playwright", "bash", "shell", "view", "edit", "grep", "glob", "ask_user"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `design-grounding`, `product-exploration`

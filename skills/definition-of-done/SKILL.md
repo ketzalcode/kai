@@ -1,7 +1,7 @@
 ---
 name: definition-of-done
 description: "The shared behavioral contract defining release readiness and production completion. Its six-dimension gate moves an item from in-review to release-ready only when scope, verification, review, safe rollout, documentation, and coordination are clear or honestly waived. `shipped` is a later claim: the human deployed and proportional production verification passed. Any readiness or production gap bounces/blocks with a named owner. Kai never performs the irreversible deployment itself."
-tools: [bash, view, grep, glob, web_search, web_fetch]
+tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 
 # Definition of Done

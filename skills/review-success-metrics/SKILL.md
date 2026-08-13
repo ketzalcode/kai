@@ -1,7 +1,7 @@
 ---
 name: review-success-metrics
 description: "The success-metrics lens of a document review — does the doc define how it will know it worked, in measurable terms tied to the stated goal? Are the metrics observable with instrumentation that exists or is planned? Is there a baseline and a target, or just a vibe? Could the metric move while the actual goal fails (a proxy that's gameable or misaligned)? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator (or directly when the user asks whether success is measurable). NEVER auto-posts."
-tools: [bash, view, grep, glob, web_search, web_fetch]
+tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 
 # Review: Success Metrics

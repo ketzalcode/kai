@@ -13,7 +13,12 @@
 // generic alias (read / search / write) is caught before release.
 export const SUPPORTED_TOOLS = new Set([
   'view', 'create', 'edit', 'grep', 'glob', // files & content
-  'bash',                                    // shell (host maps per-OS)
+  // Shell. `bash` does NOT map per-OS: on Windows the host silently drops it
+  // and grants no shell at all, while `shell` resolves to the platform's
+  // terminal (measured -- an agent declaring only `bash` got view/skill/sql and
+  // no way to run anything). Declaring both is the portable form, and an
+  // unrecognised name costs nothing because the host ignores it.
+  'bash', 'shell',
   'ask_user',                                // operator interaction
   'task', 'read_agent', 'write_agent',       // sub-agents / peer transport
   'web_fetch', 'web_search',                 // web

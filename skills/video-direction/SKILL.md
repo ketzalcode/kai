@@ -1,7 +1,7 @@
 ---
 name: video-direction
 description: "Reusable method for turning Kai product intelligence and media (product_context.json, product_exploration_report.md, media_manifest.json, plus reference videos/screenshots) into a synchronized video creative-direction package: a creative brief, a timestamped storyboard, a structured edit_decision_list.json, a voiceover_script.md with pacing/cut markers, and provider-agnostic ai_video_prompts.json for missing scenes. It plans and directs; it never renders or edits. Grounds every spoken/on-screen product claim through content-grounding, distinguishes existing from generated assets, and makes every timing and asset assumption explicit."
-tools: [view, edit, create, grep, glob, ask_user, bash]
+tools: [view, edit, create, grep, glob, ask_user, bash, shell]
 ---
 
 # Video Direction

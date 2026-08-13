@@ -1,7 +1,7 @@
 ---
 name: linkedin-content
 description: "Reusable method for turning Kai product intelligence (product_context.json, with product_exploration_report.md for phrasing nuance and optional media_manifest.json) into credible, platform-native LinkedIn content: post variants across defined angles, a content-angle matrix, and optional content calendars and carousel outlines. Every factual sentence is mapped in a per-variant claim ledger to a product_context assertion by id or path; the method never invents traction, revenue, users, partnerships, or results, never auto-publishes, and re-verifies claim-safety after any voicing. Brand-agnostic and bilingual-capable (English, Spanish)."
-tools: [view, edit, create, grep, glob, ask_user, bash]
+tools: [view, edit, create, grep, glob, ask_user, bash, shell]
 ---
 
 # LinkedIn Content

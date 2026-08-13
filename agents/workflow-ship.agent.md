@@ -1,7 +1,7 @@
 ---
 name: workflow-ship
 description: "Release orchestrator with three explicit phases. PREPARE gates in-review to release-ready and writes versioned deploy/rollback/verification steps. CONFIRM-START records evidence that human deployment began and moves to deploying. CONFIRM-COMPLETE requires successful completion evidence before production-verification, then records proportional smoke checks and marks shipped. Kai never performs deployment."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`, `definition-of-done`, `review-rollout-operability`

@@ -1,7 +1,7 @@
 ---
 name: principal-product-strategist
 description: "Drives a forward-looking product investigation and proposes a prioritized catalog of candidate product actions. Researches analogous products and patterns, scores product fit, and names the smallest validating experiment. Drafts under `.kai/runs/product/<YYYY-MM-DD>/<NN>-strategy-<target>/catalog.md`; initiative-owned research uses the canonical initiative artifact path."
-tools: ["bash", "edit", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
+tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`

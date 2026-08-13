@@ -1,7 +1,7 @@
 ---
 name: principal-swe-backend
 description: Principal-level backend reviewer and builder for APIs, server-side logic, data modeling, and model-invocation backends. Invoke for endpoint and service reviews, non-trivial API/contract design, data-model and migration questions, failure-handling and consistency review, and backend code that needs senior judgment. Pairs downstream of `principal-swe-manager` (which scopes the work) and `principal-ai-applied-engineer` (which hands it model-serving slices).
-tools: ["bash", "view", "edit", "create", "grep", "glob"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`

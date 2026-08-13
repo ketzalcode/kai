@@ -4,7 +4,32 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.49.0] - 2026-08-13
+## [0.49.1] - 2026-08-13
+
+### Fixed
+
+- **Every kai agent had no shell on Windows.** 54 of 56 agents declared
+  `tools: ["bash", ...]`. The host does not map `bash` per-OS: on Windows it
+  drops the name silently and hands the agent a toolset with no way to run
+  anything. Measured — an agent declaring `bash` received `view, skill, sql`
+  and nothing else, while one declaring `shell` received the full
+  `powershell` family. Every agent and skill now declares **both**, which is
+  the only portable form; an unrecognised name costs nothing because the host
+  ignores it.
+
+  This had silently broken every script-running contract on the platform,
+  `work-activity` among them — which is why nothing had ever been observed
+  writing `.kai/activity.jsonl`. A live run under `--plugin-dir` now writes a
+  paired start/stop and the sequence view renders it.
+
+  A CI rule keeps the pair together in both directions, so neither name can be
+  dropped by a well-meant tidy-up.
+
+- The watcher printed "No observation log yet" and hook setup instructions
+  even when `.kai/activity.jsonl` was present and full. The declared tier
+  stands on its own — it is the only tier that records kai's own agents — so
+  the banner now appears only when **neither** log exists.
+
 
 ### Added
 
@@ -2149,6 +2174,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.49.1]: https://github.com/RubenSaucedo/kai/compare/v0.49.0...v0.49.1
 [0.49.0]: https://github.com/RubenSaucedo/kai/compare/v0.48.1...v0.49.0
 [0.48.1]: https://github.com/RubenSaucedo/kai/compare/v0.48.0...v0.48.1
 [0.48.0]: https://github.com/RubenSaucedo/kai/compare/v0.47.0...v0.48.0

@@ -1207,7 +1207,11 @@ if (isEntry) {
       console.error('observe-watch: no workspace found (looked for a .kai or .git directory)');
       process.exit(2);
     }
-    if (!existsSync(join(root, OBSERVED_REL))) {
+    if (!existsSync(join(root, OBSERVED_REL)) && !existsSync(join(root, ACTIVITY_REL))) {
+      // Only when *neither* log exists. The declared tier stands on its own --
+      // it is the only tier that records kai's own agents -- so telling an
+      // operator with a full activity log that there is "no observation log
+      // yet" sends them to configure a hook they do not need.
       console.log('No observation log yet.\n');
       console.log('  1. enable:  node scripts/observe-subagent.mjs --enable');
       console.log('  2. restart your session (hook config is read at session start)');

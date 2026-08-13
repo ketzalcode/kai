@@ -1,7 +1,7 @@
 ---
 name: extract-writing-style
 description: "Extracts the user's writing style from past messages and writes the current Kai workspace's portable profile to `kai/personal/identity/voice.md`. Designed for persona-self to consume on every draft. Run initially and when voice drifts; idempotently preserves manual_overrides. Privacy-first and gitignored."
-tools: [bash, view, edit, ask_user, session_store_sql]
+tools: [bash, shell, view, edit, ask_user, session_store_sql]
 ---
 
 # Extract Writing Style

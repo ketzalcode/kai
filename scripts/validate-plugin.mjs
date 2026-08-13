@@ -464,6 +464,40 @@ const ASSESSOR_ROLES = [
 }
 
 // ---------------------------------------------------------------------------
+// Shell tools are declared in the portable pair
+// ---------------------------------------------------------------------------
+// `bash` alone grants no shell on Windows. The host does not map it per-OS and
+// does not complain: it drops the name and hands the agent a toolset with no
+// way to run anything, so every script-running contract fails silently on the
+// platform. `shell` resolves to the platform terminal. Declaring both is the
+// only form that works everywhere, and this check stops the pair from being
+// split again by a well-meant tidy-up.
+// ---------------------------------------------------------------------------
+{
+  const checkPair = (file, list, field) => {
+    if (!list) return;
+    const has = new Set(list);
+    if (has.has('bash') && !has.has('shell')) {
+      err(file, `\`${field}\` names \`bash\` without \`shell\` — on Windows that grants no shell at all; declare both`);
+    }
+    if (has.has('shell') && !has.has('bash')) {
+      err(file, `\`${field}\` names \`shell\` without \`bash\` — declare both so the pair stays portable`);
+    }
+  };
+  for (const agent of agentFiles) {
+    const parsed = parseFrontmatter(readFileSync(agent.path, 'utf8'));
+    if (!parsed.ok) continue;
+    checkPair(rel(agent.path), parseToolList(parsed.fm.tools), 'tools');
+  }
+  for (const skill of skillFiles) {
+    const parsed = parseFrontmatter(readFileSync(skill.path, 'utf8'));
+    if (!parsed.ok) continue;
+    checkPair(rel(skill.path), parseToolList(parsed.fm.tools), 'tools');
+    checkPair(rel(skill.path), parseToolList(parsed.fm.requires_tools), 'requires_tools');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // plugin.json
 // ---------------------------------------------------------------------------
 const pjPath = join(ROOT, 'plugin.json');

@@ -1,7 +1,7 @@
 ---
 name: instructor-tutor
 description: "On-demand generative tutor for any subject — a cloud/security/PM certification objective, a spoken language, engineering and AI, finance, science, anything the operator wants to learn. Produces concrete-first lessons in Explain, Lesson, or Series mode, writing file output under `.kai/runs/lessons/<goal-slug>/<NN>-tutor-<lesson-slug>/`. Distinct from `instructor-teacher`, which packages existing markdown, and `instructor-path-mentor`, which owns a whole certification/learning path over time and dispatches this agent for a specific gap topic. Never auto-runs paid audio."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `generate-audio`, `generate-html-lesson`

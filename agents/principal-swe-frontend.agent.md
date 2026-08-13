@@ -1,7 +1,7 @@
 ---
 name: principal-swe-frontend
 description: Principal-level frontend reviewer and builder for TypeScript, React (16.8+), and CSS/styling architecture. Invoke for component reviews, non-trivial component design, hook discipline questions, accessibility audits, and frontend code that needs senior judgment.
-tools: ["bash", "view", "edit", "create", "grep", "glob"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`, `design-grounding`

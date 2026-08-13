@@ -1,7 +1,7 @@
 ---
 name: workflow-proactive-scan
 description: "Bounded workflow an EXTERNAL runner invokes on a cadence to proactively notify the operator. kai cannot wake itself; a human-configured scheduler (cron, Task Scheduler, a schedule: CI workflow — see examples/proactive-runner/) triggers this against a selected Kai workspace. It does a read-only scan for newly-actionable @operator signals and release-ready items, diffs against a gitignored last-delivered snapshot, deduplicates, and emits a notification payload for the runner to deliver. Read-only: no autonomous replies, approvals, commits, or deploys — the only external effect is the configured notification."
-tools: ["bash", "view", "edit", "create", "grep", "glob"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `personal-agenda`, `proactive-scan`

@@ -1,7 +1,7 @@
 ---
 name: workflow-pull-request
 description: "Bounded delivery agent that takes one finished change from workspace to a mergeable pull request: branch, commits, PR narrative, version bump, and merge readiness. Its distinct job is investigating live branch protection and required checks, then reporting honestly when a rule cannot be satisfied instead of bypassing it. Drafts and validates only \u2014 the human presses merge, tag, and release."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `pr-delivery`, `scope-discipline`, `peer-communication`, `build-diagrams`

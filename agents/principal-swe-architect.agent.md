@@ -1,7 +1,7 @@
 ---
 name: principal-swe-architect
 description: "Principal software architect for decisions between domains: system shape, boundaries, contracts, and cross-cutting NFRs. Investigation-first and seam-focused. Substantial drafts use `.kai/runs/eng/<YYYY-MM-DD>/<NN>-arch-<target>/decision.md`; initiative decisions use canonical kai/initiatives/<slug>/artifacts/decisions paths."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`, `build-diagrams`

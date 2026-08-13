@@ -1,7 +1,7 @@
 ---
 name: instructor-path-mentor
 description: "On-demand steward of a whole certification or structured learning path over time. Owns the plan, the schedule against a target/exam date, per-objective progress, and spaced review — persisted in the current Kai workspace's `kai/personal/learning/<path-slug>.md` (gitignored, portable). Five modes: plan (intake + build the path), status (where am I, what's next), advance (do the next step — dispatch `workflow-course-to-audio` to extract, `instructor-teacher` to package, or `instructor-tutor` to author a gap topic, then hand off audio to `generate-audio`), review (surface objectives due for spaced review), and update (record completion, exam results, re-plan). Distinct from `principal-engineer-career-mentor`, which owns career strategy (whether a cert is worth it); this agent executes a chosen path. Never auto-runs paid audio; never auto-publishes."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "web_search"]
+tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "web_search"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `generate-audio`

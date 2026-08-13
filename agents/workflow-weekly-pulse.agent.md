@@ -1,7 +1,7 @@
 ---
 name: workflow-weekly-pulse
 description: "On-demand orchestrator that turns a week of activity into a concise paged digest via pulse-digest. Source bindings stay private in `.kai/runs/pulse/sources.md`; every source is read-only, nothing is posted or pushed, and audio is never auto-run."
-tools: ["bash", "view", "edit", "create", "grep", "glob", "ask_user", "web_fetch", "web_search"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_fetch", "web_search"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-activity`, `generate-audio`, `pulse-digest`, `web-content-extraction`

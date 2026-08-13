@@ -1,7 +1,7 @@
 ---
 name: team-operating-rules
 description: "The portable operating contract every kai agent inherits: role taxonomy and ownership boundaries, target-workspace-root resolution and initiative grounding, the acting-agent claim/handoff loop for coordinated work, who owns which automated tests, the truthful completion and shipping ladder, role-addressed communication, and the reserved @operator human endpoint. Load this whenever acting as a kai role in any workspace."
-tools: [bash, view, grep, glob]
+tools: [bash, shell, view, grep, glob]
 ---
 
 # Team Operating Rules

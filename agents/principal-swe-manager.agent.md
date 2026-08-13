@@ -1,7 +1,7 @@
 ---
 name: principal-swe-manager
 description: "Turns a committed product action into a scoped, sequenced engineering delivery plan. Decomposes workstreams, owners, sizes, dependencies, and spikes without writing code. Drafts at `.kai/runs/eng/<YYYY-MM-DD>/<NN>-scope-<target>/plan.md`; initiative plans use canonical initiative artifacts and reusable promoted plans use kai/library/dev-designs."
-tools: ["bash", "edit", "create", "view", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `peer-communication`

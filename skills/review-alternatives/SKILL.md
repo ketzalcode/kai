@@ -1,7 +1,7 @@
 ---
 name: review-alternatives
 description: "The alternatives lens of a document review — did the doc consider other options properly? What was on the table, why was THIS one picked, is there a real trade-off comparison, and are obvious alternatives missing (compose-vs-build, buy-vs-build, defer-to-platform, do-nothing, smaller-first-step)? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator (or directly when the user asks whether other options were considered). NEVER auto-posts."
-tools: [bash, view, grep, glob, web_search, web_fetch]
+tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 
 # Review: Alternatives

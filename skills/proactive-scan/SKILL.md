@@ -1,7 +1,7 @@
 ---
 name: proactive-scan
 description: "Contract for runner-invoked proactive notification of the operator. kai is a declarative prompt plugin and cannot wake itself; this skill defines the two-phase, read-only behavior an EXTERNAL runner triggers on a cadence — a scan phase that reuses personal-agenda's operator-signal detection to find newly-actionable decisions/replies/actions/release-ready items across a selected workspace and its linked roots, diffs them against a gitignored delivery ledger, deduplicates (new/changed/overdue), and emits an idempotent notification payload; and an ack phase the runner calls after confirmed delivery to advance the ledger. Coordination is read-only, local writes are limited to kai/personal/proactive/, and the only external effect is the configured notification the runner delivers."
-tools: [bash, view, edit, create, grep, glob]
+tools: [bash, shell, view, edit, create, grep, glob]
 ---
 
 # Proactive Scan

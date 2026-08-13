@@ -1,7 +1,7 @@
 ---
 name: review-ux-accessibility
 description: "The UX-and-accessibility lens of a document review — for a doc proposing a user-facing surface, does it account for the real user experience and for accessibility? Are the primary flows, empty/error/loading states, and edge cases (long content, no data, slow network, failure) designed, or only the happy path? Is accessibility considered (keyboard, focus, screen-reader semantics, contrast, motion, target size) rather than bolted on later? Is the UX claim ('intuitive', 'simple') grounded? Inherits the doc-review-rigor method (load-bearing claims, grounding, six-class taxonomy, value filters). Invoked by the workflow-doc-review orchestrator when a doc proposes a user-facing UI. NEVER auto-posts."
-tools: [bash, view, grep, glob, web_search, web_fetch]
+tools: [bash, shell, view, grep, glob, web_search, web_fetch]
 ---
 
 # Review: UX & Accessibility

@@ -1,7 +1,7 @@
 ---
 name: peer-communication
 description: "The shared peer-question contract: one stable-ID QUESTION/ANSWER packet over inline consult, real live peer, or durable item thread transports. Blocking or decision-changing exchanges are recorded in the thread and coupled to the authoritative work item through waiting_on_questions; item dependencies remain separately typed. Independent judgments cannot be self-simulated."
-tools: [bash, view, grep, glob]
+tools: [bash, shell, view, grep, glob]
 ---
 
 # Peer Communication

@@ -1,7 +1,7 @@
 ---
 name: principal-swe-infra
 description: Principal-level infrastructure and platform reviewer and builder for CI/CD pipelines, deployment, infrastructure-as-code, containerization, build tooling, secrets management, and observability/reliability infrastructure. Invoke for pipeline and deployment reviews, IaC design and review, rollout/rollback strategy, cloud-resource and networking config, and any infra change that needs senior judgment. Pairs downstream of `principal-swe-manager`, which scopes the work.
-tools: ["bash", "view", "edit", "create", "grep", "glob"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `work-coordination`, `work-activity`, `scope-discipline`, `pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`

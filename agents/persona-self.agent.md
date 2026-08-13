@@ -1,7 +1,7 @@
 ---
 name: persona-self
 description: "Drafts messages, posts, emails, design docs, PR descriptions, replies — anything written — in the user's own voice with a senior-engineer professionalism overlay. Loads `kai/personal/identity/voice.md` from the current Kai workspace on every invocation so style updates take effect immediately. Three modes: Draft, Rewrite, and Reply. Format-and-audience-aware and never auto-publishes or simulates anyone other than the user."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash"]
+tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell"]
 ---
 
 **Inherits:** `team-operating-rules`, `workspace-conventions`, `extract-writing-style`
