@@ -1,0 +1,267 @@
+# Proposal: pack architecture (`kai-core` + department packs)
+
+**Status:** proposal — no code moved yet
+**Relates to:** #29 (positioning / optional plugin packs)
+**Depends on:** v0.50.0, which published the `kai-plugins` marketplace
+
+---
+
+## TL;DR
+
+Splitting kai into a shared `kai-core` plus installable department packs is
+**technically viable with zero file duplication** — the host resolves skills
+across plugin boundaries. That was the load-bearing unknown, and it is now
+measured.
+
+It is **not** cheap. The host gives us composition but **no dependency
+integrity**: a missing pack degrades silently, with no error. So the work is
+not "move files into folders" — it is building the dependency guarantees the
+host does not provide.
+
+Recommendation: **phase it.** Trim discovery metadata first (a real win that
+is independent of the split), prove the risky host semantics with a
+throwaway two-pack preview, and only then move agents — one department at a
+time, keeping the monolith authoritative until the preview passes.
+
+---
+
+## What was measured
+
+All findings below are empirical, run against the real host on Windows with
+an isolated `COPILOT_HOME`. They are not inferred from documentation.
+
+| # | Question | Result |
+| --- | --- | --- |
+| 1 | Can a plugin reference agents outside its own directory? | **No.** `"agents": "../../shared/agents"` loads **zero** agents, silently. In-directory control loaded fine. |
+| 2 | Can an agent in plugin A load a skill from plugin B? | **Yes.** Verified with a `["skill"]`-only agent that could not read disk. |
+| 3 | Does that depend on B actually being loaded? | **Yes.** Negative control without B returned the failure sentinel. |
+| 4 | How does a missing dependency fail? | **Silently.** No host error, no warning. The probe only spoke up because it was scripted to. |
+| 5 | Are agents namespaced? | **Yes** — `provider:provider-agent, consumer:probe-consumer`, one flat list assembled from all loaded plugins. |
+| 6 | What happens when two plugins provide the same skill name? | **Both are exposed, namespace-qualified** (`alpha:probe-skill`, `beta:probe-skill`). Not silent, not arbitrary. |
+| 7 | Is there a dependency mechanism in `plugin.json`? | **None found.** A `"dependencies"` key is accepted and ignored. |
+| 8 | Can `--plugin-dir` be repeated? | **Yes** (host help: "can be used multiple times"). |
+
+**Finding 2 is what makes the whole design possible.** Without it, every pack
+would need physical copies of the shared skills, plus a generator and
+byte-identity CI to stop them drifting. That entire class of work is off the
+table.
+
+**Finding 4 is what makes it expensive.** `kai-core` being absent does not
+produce an error — the agent simply proceeds without its operating contract.
+
+### Discovery-metadata cost today
+
+| Item | Size |
+| --- | --- |
+| 56 agent descriptions | ~7.4k tokens |
+| 49 skill descriptions | ~6.1k tokens |
+| **Total, present every session** | **~13.5k tokens** |
+
+Skill descriptions are the larger half. That matters: a user who installs
+`kai-core` + `kai-engineering` still pays full price for every verbose
+description inside those packs. **Splitting does not fix oversized prose.**
+
+### How porous are "departments"?
+
+Against a candidate five-pack partition (core / engineering / product / gtm /
+personal), covering all 56 agents:
+
+| Measure | Value |
+| --- | --- |
+| Agent-to-agent references | 363 |
+| That cross a pack boundary | **195 (54%)** |
+
+54% looks fatal. Classifying those 195 by intent changes the picture:
+
+| Kind | Count | Share |
+| --- | ---: | ---: |
+| Real runtime dispatch ("delegate to", "invoke") | **8** | 4% |
+| Ownership boundary ("not yours — that's X") | 19 | 10% |
+| Orientation prose (role taxonomy, "where you sit") | 168 | 86% |
+
+**Hard cross-pack dispatch is rare.** The graph is dominated by org-chart
+prose — and roughly a quarter of all cross-pack edges come from `core` alone,
+concentrated in the two directors' role-taxonomy tables.
+
+> Caveat: this classification is a keyword heuristic over the nearest
+> preceding heading. Treat the 8 / 19 / 168 split as indicative, not exact.
+> The direction is clear; the precise numbers are not load-bearing.
+
+Skills partition far more cleanly. Six are inherited by agents in **all five**
+packs — `team-operating-rules`, `workspace-conventions`, `work-coordination`,
+`work-activity`, `peer-communication`, `no-self-remediation`. Those six are
+precisely `kai-core`'s payload.
+
+---
+
+## Shape
+
+```
+NOW                          PROPOSED
+ kai  (one plugin)            kai-core        contracts + onboarding
+  56 agents                    ├── kai-engineering
+  49 skills                    ├── kai-product
+  ~13.5k tokens always         ├── kai-gtm
+                               └── kai-personal
+                              installed selectively, from kai-plugins
+
+ shared skills:               shared skills:
+   in the same plugin           in kai-core, loaded ACROSS the
+                                plugin boundary — no duplication
+```
+
+---
+
+## The central risk
+
+> The host supports **composition** but not **dependency integrity**.
+
+kai must supply the missing guarantees itself, and can only do so at prompt
+level — which is a strong convention, not a hard boundary. Three concrete
+consequences:
+
+### 1. Silent contract loss (blocking, but bounded by "core is required")
+
+An agent keeps its `**Inherits:** \`team-operating-rules\`` line while the
+runtime supplies nothing. It runs, looks healthy, and ignores workspace
+resolution, role boundaries, work claiming, and escalation.
+
+**`kai-core` is a required dependency, not a choice.** It is never offered in
+the selector; it rides along with every selection. Core depends on nothing,
+everything depends on core. That makes core-missing an edge case rather than a
+normal state — the same pattern any package ecosystem uses for a required
+runtime.
+
+It is not unreachable, though: a user can run
+`copilot plugin install kai-engineering@kai-plugins` directly and bypass
+onboarding entirely. So the state must still be handled, just not designed
+around.
+
+Two mitigations, in order:
+
+1. A uniquely named `kai-core-contract-v1` skill returning a rigid marker,
+   invoked as a **fail-closed preflight** written into each pack agent's own
+   body (not into an inherited skill — that would be circular), pinned
+   byte-for-byte in CI the way `inherits-block.txt` already is. Honest label:
+   best-effort. The model can skip it.
+2. A degraded-mode block shipped in every pack for when the preflight fails.
+
+**The degraded block must be a refusal, not a fallback contract.** The
+temptation is to have it mirror core's rules so agents keep working. That
+recreates the duplication problem this whole design just escaped: a second copy
+of the operating contract, in N packs, drifting from core silently and
+invisibly, with the drift only surfacing as inconsistent behaviour.
+
+Instead it states the *absence* of the contract and nothing else — roughly:
+
+> You are running without `kai-core`. You have no coordination contract. Do
+> single-shot work only. Do not claim work, take leases, or write workspace
+> state. Tell the operator to install `kai-core`.
+
+Because it restates no rules, it has nothing to drift from. It stays correct
+for free as core evolves. And migration is trivial by construction: install
+core later, the preflight passes, full behaviour resumes, nothing to change.
+
+Precedent for the mechanics already exists in this repo — `inherits-block.txt`
+is a canonical source duplicated into all 56 agents with a byte-for-byte CI
+pin. The degraded block uses the same pattern: one canonical file under
+`scripts/lib/`, copied per pack, pinned by CI.
+
+### 2. Legacy collision (blocking)
+
+If legacy `kai` and `kai-core` are both installed, both provide
+`team-operating-rules`. Finding 6 means this surfaces as two visible,
+qualified tools rather than a silent wrong-copy-wins — better than feared, but
+an agent could still load the stale contract and pass its own preflight.
+
+Mitigation: give core skills distinctive contract-versioned identifiers so
+legacy `kai` cannot accidentally satisfy them. Plus a migration that uninstalls
+legacy first — already required, since installing over a direct install leaves
+**both** copies loaded.
+
+### 3. Directors route to agents that may not exist (blocking)
+
+`director-chief-of-staff` names 28 distinct roles; `director-executive-assistant`
+names 20. A core-only install would ship a router whose majority of
+destinations are not installed. Worse, chief-of-staff **writes leases before
+dispatch** — a failed route could leave work claimed.
+
+This is unresolved and gates the design. Either directors can reliably
+enumerate the installed roster — which must be proven as a host contract, in
+both CLI and cloud — or **directors do not belong in a minimal core** and
+should ship as an optional `kai-orchestrator`.
+
+---
+
+## Does this deliver the stated goals?
+
+| Goal | Verdict |
+| --- | --- |
+| Different projects install different departments | **Yes** — a real benefit, now that packs stay small and share contracts. |
+| Core keeps communication consistent | **Yes, given core is required.** Core is never optional and never in the selector, so the shared contract is present by construction. The residual risks are a direct install that bypasses onboarding, a version-incompatible core, and an agent skipping its preflight — all handled, none of them the normal path. |
+| Contribution is easier and less fragile | **Not yet proven.** Duplication is gone, which helps a lot. But cross-pack references, qualified agent IDs, contract compatibility, several marketplace entries, and supported-combination testing are all new. This holds only if tooling hides the mechanics. |
+
+---
+
+## Plan
+
+### Phase 0 — trim discovery metadata (do regardless)
+
+Budget agent descriptions to ~250 chars and skill descriptions to ~180, moving
+ownership detail and examples into agent bodies and the generated catalog.
+Recoverable: roughly 6–9k tokens per session, at low risk, with no
+restructuring. Re-measure afterwards, so savings that were really about prose
+are not later credited to the split.
+
+### Phase 1 — two-pack preview, no roster move
+
+Throwaway `kai-core-preview` plus one narrow pack. Test the things that can
+kill the design: missing core, wrong core version, duplicate skill names,
+legacy `kai` installed alongside, partial install, and the fresh-session
+requirement. Monolithic `kai` stays authoritative throughout.
+
+### Phase 2 — prove roster enumeration
+
+Establish whether an agent can reliably obtain the exact qualified
+installed-agent set. This decides where directors live. Do not skip it.
+
+### Phase 3 — incremental migration
+
+Land the pack manifest format, cross-pack validator, contract preflight,
+collision tests, compatibility model, and a migration doctor. Then move **one**
+department at a time.
+
+**Do not move 56 agents and 49 skills in one PR.** That builds the maintenance
+system before proving the host semantics it depends on.
+
+### Versioning
+
+Lockstep for the preview, because it is simple and the broken `autoUpdate`
+(upstream `github/copilot-cli#4465`) makes skew routine. Longer term, split
+into a per-pack semver plus a separate core **contract version**, so a core
+patch does not force every pack to release.
+
+### Onboarding
+
+A skill is a prompt document — it cannot render a real checked multi-select or
+an atomic transaction. Describe it honestly as a **guided installer**: show the
+exact pack set and commands, get explicit confirmation, install core first,
+verify after every step, stop on first failure, report partial state precisely,
+and never claim rollback that was not verified. It cannot repair a missing core
+in the current session, because plugins load at session start:
+
+> Core installed. This session still does not have it loaded — start a new
+> session before invoking pack agents.
+
+---
+
+## Open questions
+
+- Can an agent reliably enumerate installed agents? (Gates Phase 2 and the
+  directors' home.)
+- Does skill collision behaviour hold across install order, marketplace vs
+  direct, and fresh sessions? Only `--plugin-dir` ordering was tested.
+- Does macOS and the cloud host behave the same? All measurements were Windows
+  CLI.
+- Would upstream add plugin dependency declarations? Worth asking — it would
+  remove the largest risk here.
