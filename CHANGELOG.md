@@ -4,6 +4,46 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.56.0] - 2026-08-13
+
+### Fixed
+
+- **`director-chief-of-staff` resolves role availability before it grants a
+  lease** (#29). It previously discovered a missing role only as a stop
+  condition — "the host cannot dispatch the required role" — which is after the
+  lease is already written. In a packs world that ordering parks a live lease on
+  work nobody is doing, and the next director has to recover it as stale before
+  the item can move at all. Availability is now a runtime gate in selection, so
+  an unstaffable item is never reserved.
+
+  The item is deliberately **left untouched** rather than marked `blocked`.
+  Availability is a property of the session, not of the work: writing it into
+  durable state records an environment fact that goes stale silently the moment
+  the operator installs the pack, and would then need an authorized restore to
+  undo. The gap is reported instead, on a new `Unavailable:` line in the
+  director report, naming the exact missing agent and its providing pack — or
+  saying the pack is unknown rather than guessing one.
+
+  Three things about the check are load-bearing, and each was established
+  against the real host rather than reasoned about:
+
+  - **The roster must be read, not recalled.** Asked whether a role is available
+    without consulting the agent types its `task` tool accepts, the director
+    answers from an assumption about which packs are installed — and the same
+    session that can list `principal-security` among its accepted agent types
+    reported it missing when answering from memory.
+  - **Match on the role segment, not the whole id.** The host names an installed
+    agent `<plugin>:<role>`, while items name the bare role. A whole-string
+    comparison matches nothing and reports every role missing, which refuses
+    work the operator can already staff.
+  - **Membership, never counts.** A tally over the roster is unreliable even
+    when the roster is correct, so no rule may depend on one.
+
+  Both failure directions are silent, which is why the fix is tested in both:
+  with core alone the director declines, names `principal-security`, and refuses
+  to substitute the built-in `security-review` for it; with the engineering pack
+  installed the identical item is staffed and dispatched by qualified id.
+
 ## [0.54.0] - 2026-08-13
 
 ### Added
@@ -2444,6 +2484,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.56.0]: https://github.com/RubenSaucedo/kai/compare/v0.54.0...v0.56.0
 [0.54.0]: https://github.com/RubenSaucedo/kai/compare/v0.53.0...v0.54.0
 [0.53.0]: https://github.com/RubenSaucedo/kai/compare/v0.52.0...v0.53.0
 [0.52.0]: https://github.com/RubenSaucedo/kai/compare/v0.51.0...v0.52.0

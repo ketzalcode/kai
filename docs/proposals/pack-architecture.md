@@ -412,3 +412,46 @@ claiming work or taking a lease.
 - The 9 skills no agent inherits (`demo-*`, `fleet-observation`,
   `onboard-to-codebase`, three `review-*`) are parked in core by the builder,
   which is a placeholder, not a decision.
+## Availability resolution — how a director learns a role is missing
+
+The Phase 2 tests showed core alone routes honestly. Making that a rule in
+`director-chief-of-staff` surfaced three host behaviours that the design now
+depends on, each found by a test that failed first.
+
+**The check must precede the lease.** The agent previously listed "the host
+cannot dispatch the required role" as a *stop condition* — reached after the
+lease is written. Availability is now a runtime gate in selection.
+
+**The item is not mutated.** Marking it `blocked` would record a session fact in
+durable state, where it goes stale the moment the operator installs the pack.
+The gap is reported, not stored.
+
+**The roster must be read, not recalled.** This is the finding that cost the
+most. Asked "is `principal-security` available?" with the engineering pack
+*installed*, the director answered **no** — confidently, and with a plausible
+account of having checked. The same session, asked to enumerate the agent types
+its `task` tool accepts, listed `kai-engineering:principal-security` correctly.
+The roster is visible; the model just doesn't consult it unless the instruction
+says to. So the agent text names the `task` tool's accepted agent types as the
+authoritative list.
+
+**Match the role segment, not the id.** The host qualifies an installed agent as
+`<plugin>:<role>`; items name the bare role. A whole-string comparison matches
+nothing and reports every role missing.
+
+**A test artifact worth recording.** The false negative reproduced only under a
+rigidly formatted prompt ("reply with exactly three lines"). Under an
+open-ended question the same agent consulted the roster and answered correctly
+in both arms. Output-format pressure can suppress a verification step the
+instructions require — so an availability check that must survive terse prompts
+should not rely on the model choosing to look. A dispatch-probe that fails
+observably would be stronger than introspection, and remains open.
+
+### Both arms, real host, Windows CLI
+
+| Arm | Installed | Result |
+| --- | --- | --- |
+| A | core only | declines, names `principal-security`, leaves the item, refuses `security-review` as a substitute |
+| B | core + engineering | staffs it, dispatches by qualified id |
+
+Arm B is the control: without it, an agent that always declines would pass.

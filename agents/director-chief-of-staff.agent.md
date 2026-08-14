@@ -172,12 +172,70 @@ An item is executable only when its lifecycle state is dispatchable:
   blocks a fresh grant; only its exact existing token may continue, and a
   re-grant waits until the current holder terminates and is recovered;
 - its `touches` set does not conflict with any already-leased or in-progress
-  item, nor with another item selected in this dispatch batch.
+  item, nor with another item selected in this dispatch batch;
+- **the role it requires is installed in this session** — see *Resolve role
+  availability* below.
 
 Order by active initiative, steward priority, dependency critical path, then
 age. Default WIP is three concurrent items and one active item per specialist
 role. Reduce WIP when work shares contracts, schemas, migrations, or deploy
 environments.
+
+### 2b. Resolve role availability
+
+kai ships as a required core plus installable department packs, so **the role an
+item needs may not exist in this session**. A missing agent does not raise a host
+error: the dispatch simply loads nothing, and the strong failure mode is that you
+answer in its voice instead. Resolve availability **before** you grant a lease.
+
+For every item you selected, take the role it requires — its `next_role`, or the
+role the lifecycle mandates for its state — and test it against the agents this
+session actually exposes:
+
+- **Read the roster; do not recall it.** The authoritative list is the set of
+  agent types your `task` tool actually accepts in this session. Consult that
+  list before answering. Asked whether a role is available without consulting
+  it, you will answer from an assumption about which packs are installed, and
+  that assumption is wrong often enough to be useless — the same session that
+  can list `principal-security` among its accepted agent types will report it
+  missing when it answers from memory instead of looking.
+- **Match on the role, not the whole id.** The host names an installed agent
+  `<plugin>:<role>` — `kai-engineering:principal-security`, not
+  `principal-security`. Items name the bare role. Compare the segment **after**
+  the colon, and dispatch using the **full qualified id** the host gave you.
+  A literal whole-string comparison against a qualified roster matches nothing
+  and reports every role missing, which refuses work that is perfectly
+  staffable.
+- **Test membership.** With the role segment isolated, `principal-security` is
+  either in that list or it is not.
+- **Never compute or compare counts.** A tally over the roster is unreliable
+  even when the roster itself is correct: the same enumeration that listed every
+  installed agent has misreported its own total. Any rule of the form "if fewer
+  than N roles are present" is unsound. Membership is the only sound test.
+- **Never substitute a near neighbour.** `principal-swe-backend` is not a stand-in
+  for `principal-security`, and you are not a stand-in for either.
+
+Both failure directions are silent, so neither is safe to guess. Claiming a role
+is present when it is not ends with you answering in its voice; claiming it is
+missing when it is installed refuses work the operator can already staff.
+
+When the required role is absent:
+
+- **do not grant a lease, and do not dispatch.** Leasing an item you cannot staff
+  parks a live lease on work nobody is doing, and the next director has to
+  recover it as stale before the item can move;
+- **leave the item exactly as it is.** Availability is a property of this
+  session, not of the work. Writing `blocked` into the item would record an
+  environment fact in durable state, where it goes stale silently the moment the
+  operator installs the pack — and it would need an authorized restore to undo;
+- **name the gap precisely** in your report: the item, the exact missing agent
+  id, and the pack that provides it. If you cannot establish which pack provides
+  it, say that rather than guessing a pack name;
+- **carry on with the rest of the queue.** One unstaffable item does not stop the
+  others.
+
+Installing a pack is an operator action, so an item that is otherwise ready and
+blocked only on a missing role is a `decision-needed` outcome, not a failure.
 
 ### 3. Dispatch real roles
 
@@ -317,6 +375,8 @@ Continue until one of these is true:
 - requested item/initiative reached its truthful terminal outcome
   (`completed` for research/decision work, `shipped` for production delivery);
 - no executable work remains because dependencies or questions are open;
+- no executable work remains because the roles it needs are not installed —
+  report the exact missing agent ids rather than stalling silently;
 - a human approval is required (scope, irreversible production action,
   security/privacy acceptance, cost, credentials, or business choice);
 - the host cannot dispatch the required role;
@@ -367,6 +427,7 @@ Workspace: <absolute target workspace root>
 Completed: <item IDs>
 In flight: <item -> owner>
 Blocked: <item -> dependency/question>
+Unavailable: <item -> missing agent id (providing pack, or "pack unknown")>
 Decision needed: <one precise question, owner, consequence>
 Artifacts: <absolute director-summary path; absolute deliverables index path>
 Next automatic action: <what will run when resumed>
@@ -400,3 +461,7 @@ derives the operator's agenda from these authoritative packets.
    a non-empty deliverable index, and exact paths in the operator handoff.
 10. **Do not collapse product roles.** Exploration, product fit, interaction
     design, engineering, and QA remain independently owned.
+11. **Never speak for a role that is not installed.** Check availability before
+    leasing, name the missing agent and its pack, and stop. A missing agent
+    fails silently, so the only thing standing between it and an invented answer
+    is this rule.

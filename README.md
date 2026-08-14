@@ -31,15 +31,16 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.54.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.56.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**The five-pack split is now exercisable end to end**, before a single file
-moves. `pack-preview --all` builds core plus four departments from the live
-roster, and the whole-roster tests close the last open gate: at 56 agents across
-five plugins the host exposes every agent, and core alone still routes honestly
-— it names the right owner for work it cannot do and reports that owner as not
-installed. Core skills carry the `kai-core-*` namespace that makes this safe.
+**The Chief of Staff now checks that a role is installed before it leases the
+work.** In a packs world the required specialist may simply not be there, and a
+missing agent fails silently — so the director resolves availability first,
+leaves the item untouched, and names the missing agent instead of answering in
+its voice. Both directions are tested against the real host: core alone declines
+and names the gap, and the identical item is staffed once the department pack is
+installed.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
