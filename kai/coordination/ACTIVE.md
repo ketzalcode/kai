@@ -624,3 +624,65 @@ dispatchable-but-undispatched with its touch-conflict check on `scripts/lib/pack
 dependent item record was edited. **Next: `@operator`** — run deploy steps 1–6, then return the
 deployment evidence for `workflow-ship` CONFIRM-START and CONFIRM-COMPLETE. Do not mark the item
 `shipped` by hand.
+
+**SHIPPED 2026-08-25-1612 (`workflow-ship`, CONFIRM-START + CONFIRM-COMPLETE).**
+`pack-split-degraded-refusal` is **`shipped`** — the item walked **`release-ready` -> `deploying`
+(v10) -> `production-verification` (v11) -> `shipped` (v12)**, no state skipped and `shipped`
+**not** reached directly from `release-ready`; lease `wsh-2026-08-25-1612-dgr-confirm` self-granted
+at v9 and cleared, `resume_state` `null` throughout, `next_role: "@operator" -> null`. **kai merged,
+tagged, released and published nothing** — **the operator squash-merged PR #158 at
+2026-08-25T23:12:06Z** into merge commit **`680ca445a2616bc9bc1b972db6b40042c06abf6c`** (single
+parent `e679de9d41187614e9765e00ec3e20dafff9ec0c` — the exact PREPARE base, so **no rebase** and
+both review bindings survive; signature `verified: true`), then tagged and released **`v0.61.0`**
+(annotated tag `e88857db…` peeling to that commit, release `376770741`, published 23:12:37Z, not
+draft, not prerelease). `change_ref` stays `8d3ef484…`: deployment moves state, not the reviewed
+ref. **Deployment completion is evidenced, not asserted:** `main` run **`32909692506`** is
+`event: push`, `run_attempt: 1`, `head_sha` exactly the merge commit, **`conclusion: success`**,
+23:12:10Z -> 23:12:29Z, job `contract` **`98001208870`** green in **16s** with **10 substantive
+steps** passing — step 4 `Validate plugin contract` and step 8 `Pack generator self-test` among
+them, the two that carry this item's byte-pins — and step 11 `Release-guard (--base --head)`
+correctly `skipped` on a push event; `check-runs` on the merge SHA is `total_count: 1`, so no second
+red check hides behind it. **Production verification PASSED 8 of 8, every check re-derived
+read-only against the merge commit itself** (git commit/tree/tag APIs, the Actions API,
+`raw.githubusercontent.com`), deliberately not the local worktree: `0.61.0` coherent across all six
+version locations + README `## Status` (56 agents / 51 skills) + the dated `## [0.61.0] -
+2026-08-25` section with a **non-dangling** compare link (`v0.60.0` = `d5cd9590…` exists);
+marketplace still **exactly one** entry, `kai` at `source: "."`; **`COMMITTED_PACKS = []` and no
+`packs/` tree**, proven **positively** from the merge commit's complete root tree (`d4f95819…`,
+`"truncated": false`), so the committed-unpublished non-negotiable holds **in production**;
+`scripts/lib/degraded-block.txt` present at the merge commit and identical to the copy both reviews
+were read from; and **not one agent or skill body changed** — the `agents` (`c0284f31…`) and
+`skills` (`2a4a7abc…`) subtrees are **byte-identical** between base and merge, as are `docs`,
+`examples`, `test`, `.kai`, `hooks.json`, `AGENTS.md` and **`.github/workflows` (`2fb1467c…`)**, so
+`validate.yml` was declared in `touches` and genuinely not changed and **"no new CI step" is true in
+production**. **Rollback was never invoked**, so the recorded abort path was not entered and the
+item was never returned to `release-ready`. **The published release note was read in full and holds
+the security truth-binding:** it claims carriage and CI enforcement — "Every generated
+department-agent body now carries a canonical, byte-pinned degraded-mode refusal instruction after
+the core compatibility preflight" — and states the limits outright — "The trigger remains a
+model-evaluated instruction; this release does not claim measured refusal or graceful degradation";
+"No generated pack tree is committed or published, and the marketplace still exposes only the
+monolithic `kai` plugin" — saying **department**, never "every pack". **So what is proven is
+carriage, order, count and text; what is NOT proven, and is claimed nowhere, is that any agent
+refuses, detects contract loss or degrades gracefully** — that trigger is model-evaluated
+self-report and stays **unmeasured**, with firing evidence still owed at `pack-split-host-gates`
+(parked P2-D1). The PREPARE attestations (head-vs-ref byte-identity, the local suite) are now
+**subsumed by production evidence**; only the exit status of deploy step 1's `git diff --exit-code`
+remains operator-attested, since this run had **no shell** and executed nothing. **Milestone
+`dependency-guarantees` moves to 4 of 5 required items `shipped` and stays OPEN** —
+`pack-split-ci-partition-checks` is the last one. **Dependents cleared strictly by the DAG:**
+`pack-split-generated-pack-trees` goes **3 of 6 -> 4 of 6** met and stays `proposed`, in
+`first-pack-extracted`, **outside `scope.current`** — the one-way valve stays shut regardless of
+dependency count, and the A1 / P2-S1 findings routed to it were restated in its thread rather than
+left to be rediscovered; `pack-split-ci-partition-checks` was already dependency-satisfied and
+dispatchable and still is — **dispatch is the director's call, not this gate's** — but its
+touch-conflict check on `scripts/lib/pack-plan.mjs`, `scripts/validate-plugin.mjs` and
+`scripts/pack-preview.mjs` now applies against **landed `v0.61.0` surface**, so it must read this
+diff rather than the pre-`0.61.0` files. **No dependent item record was edited** — a reconciliation
+NOTE was appended to the affected thread. **No post-ship reconciliation is owed** — the ship record
+was already at its canonical library home
+`kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md`, because its
+move rode the same records commit as the merge. Two interpretations stay parked with
+`principal-product-manager` and were **not** self-cleared here: **E1** (the northstar's "every pack"
+against a department-only ship) and **A1** (core-only coverage). **Next: none for this item
+(`next_role: null`).**

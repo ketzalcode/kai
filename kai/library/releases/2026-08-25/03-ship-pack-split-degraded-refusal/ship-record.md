@@ -30,6 +30,12 @@ evidence:
     source: item thread — build HANDOFF 2026-08-25-1518, operator verification HANDOFF 2026-08-25-1525, ratification HANDOFF 2026-08-25-1516, security-clear HANDOFF 2026-08-25-1540, deploy HANDOFF 2026-08-25-1554
   - path: kai/initiatives/pack-split/backlog.md
     source: six PROPOSALs parked at this gate (A1, E1, §147 errata, P2-D1, P2-D2, P2-D3) plus a blast-radius update recording P2-S1/N1 + N3 on the already-parked pin-pattern proposal — nothing routed by a reviewer was dropped
+  - path: https://github.com/RubenSaucedo/kai/commit/680ca445a2616bc9bc1b972db6b40042c06abf6c
+    source: 'merge commit of PR #158 on `main` (squash), 2026-08-25T23:12:06Z, single parent `e679de9d…` = the PREPARE base (no rebase), signature `verified: true` — read at CONFIRM-START from `api.github.com`'
+  - path: https://github.com/RubenSaucedo/kai/actions/runs/32909692506
+    source: '`main` `validate` run — `event: push`, `run_attempt: 1`, `head_sha 680ca445…`, `status: completed`, **`conclusion: success`**, 23:12:10Z -> 23:12:29Z; job `contract` `98001208870` `success` in 16s with 10 substantive steps green (incl. `Validate plugin contract`, `Pack generator self-test`) and the `pull_request`-only release-guard step correctly skipped; `check-runs` on the merge SHA `total_count: 1`'
+  - path: https://github.com/RubenSaucedo/kai/releases/tag/v0.61.0
+    source: 'release id `376770741`, `draft: false`, `prerelease: false`, published 2026-08-25T23:12:37Z, from annotated tag object `e88857db…` peeling to the merge commit; body read in full and confirmed to claim carriage + CI enforcement only, explicitly disclaiming measured refusal, graceful degradation and any pack publication'
 ---
 
 # Ship Record — canonical degraded-mode refusal instruction, CI-pinned
@@ -40,10 +46,17 @@ evidence:
 **Date:** 2026-08-25 15:54 local (America/Los_Angeles, UTC-07:00) — recorded as
 **2026-08-25-1554** so the append-only record stays ordered behind the security
 review's `1540` entry.
-**Run:** `workflow-ship` — **PREPARE** (`in-review -> release-ready`).
-**State reached: RELEASE-READY. Not deploying. Not shipped.** Nothing was merged,
-tagged, released or published by this run, and nothing will be: CONFIRM-START and
-CONFIRM-COMPLETE run only on operator-supplied deployment evidence.
+**Run:** `workflow-ship` — **PREPARE** (`in-review -> release-ready`) 2026-08-25-1554,
+then **CONFIRM-START + CONFIRM-COMPLETE** (`release-ready -> deploying ->
+production-verification -> shipped`) 2026-08-25-1612.
+**State reached: SHIPPED** — `v0.61.0` merged to `main` as
+`680ca445a2616bc9bc1b972db6b40042c06abf6c`, `main` run `32909692506`
+**`conclusion: success`**, production verification **8 of 8 PASS**, tag and release
+published against that exact commit. **The operator executed every deployment
+action; kai merged, tagged, released and published nothing** and re-derived the
+production facts read-only. **No rollback was invoked.** *(The PREPARE text below
+is preserved verbatim as the audit trail; the executed verification and the
+deployment record are appended at the end.)*
 
 **What shipped (one line):** one canonical block of text
 (`scripts/lib/degraded-block.txt`) that the authoritative generator copies into
@@ -310,7 +323,7 @@ the two operator attestations this gate could not re-derive.
 
 ---
 
-## Production verification (run at CONFIRM-COMPLETE, on operator evidence)
+## Production verification — the plan as written at PREPARE (executed below; kept for the audit trail)
 
 All read-only. Return the evidence; `workflow-ship` re-derives what this
 environment can and records the rest as operator-attested.
@@ -340,6 +353,93 @@ environment can and records the rest as operator-attested.
 **Expected threshold: 8 of 8.** Any failure → do **not** mark `shipped`: invoke the
 recorded rollback through the operator, capture `production-verification` in
 `resume_state`, and set `blocked` with `principal-swe-infra` named.
+
+---
+
+## Production verification — EXECUTED at CONFIRM-COMPLETE 2026-08-25-1612: **8 of 8 PASS**
+
+Every check re-derived read-only against the merge commit itself — the git
+commit/tree/tag APIs, the Actions API and `raw.githubusercontent.com` at
+`680ca445…` — deliberately **not** the local worktree, so a dirty checkout could
+not have produced a false pass. This run had **no shell**; nothing was executed.
+
+| # | Check | Result | How verified |
+|---|-------|--------|--------------|
+| 1 | Deployment start evidence | **PASS (re-derived)** | Merge commit `680ca445a2616bc9bc1b972db6b40042c06abf6c` on `main`, single parent `e679de9d41187614e9765e00ec3e20dafff9ec0c` — **the exact PREPARE base, so no rebase happened** and both review bindings survive — authored 2026-08-25T23:12:06Z, `verification.verified: true`, message `feat: add degraded-mode refusal (#158)` carrying both the implementation commit and the `docs: record degraded refusal ship gate` records commit. `main` run `32909692506`, `run_started_at` 23:12:10Z. Corroborated locally: `.git/refs/heads/main` = that SHA. |
+| 2 | Deployment completion — and the pins actually ran in production | **PASS (re-derived)** | Run `32909692506`: `status: completed`, **`conclusion: success`**, `event: push`, `head_branch: main`, `run_attempt: 1`, `head_sha` exactly the merge commit, 23:12:10Z -> 23:12:29Z. Job `contract` `98001208870` on `ubuntu-latest`, 23:12:12Z -> 23:12:28Z (**16s**), **10 substantive steps all `success`** — including step 4 **`Validate plugin contract`** (the byte-pin over real generator output) and step 8 **`Pack generator self-test`** (the mutation, on-disk `--all` and drift arms), the two steps this item's guarantees live in. Step 11 `Release-guard (--base --head)` is `skipped`, correct on a `push` event: it is the `pull_request`-only gate and it ran green on the PR. `check-runs` on the merge SHA: `total_count: 1` — no second red check hides behind it. |
+| 3 | Version coherence `0.61.0` on `main` | **PASS (re-derived)** | At the merge commit: `plugin.json` `0.61.0`; `package.json` `0.61.0`; `package-lock.json` **both** root `version` and `packages[""].version`; `marketplace.json` `metadata.version` **and** `plugins[0].version`; `README.md` `## Status` = `v0.61.0` — **56 agents and 51 skills**; `CHANGELOG.md` `## [0.61.0] - 2026-08-25` with its `[0.61.0]: …/compare/v0.60.0...v0.61.0` link. **Not dangling** — tag `v0.60.0` (`d5cd9590…`) exists and peels to `32a07a9a…`. Eight of eight locations. |
+| 4 | Marketplace still exactly one entry | **PASS (re-derived)** | `.github/plugin/marketplace.json` at the merge commit: `plugins[]` length **1**, `name: kai`, `source: "."`, version-only change. No pack entries; the monolith remains authoritative. |
+| 5 | `COMMITTED_PACKS` empty **and** no `packs/` tree | **PASS (re-derived, proven positively)** | `scripts/lib/pack-plan.mjs` at the merge commit still reads `export const COMMITTED_PACKS = [];`. Absence of `packs/` is proven from the merge commit's **complete** root tree (`d4f95819…`, `"truncated": false`), which lists `package-lock.json`, `package.json`, `plugin.json`, `scripts`, `skills`, `test` — `packs` sorts between `package.json` and `plugin.json` in git's byte ordering and **is absent**. Not inferred from a local glob. The committed-unpublished non-negotiable holds **in production**. |
+| 6 | The canonical block shipped and is pinned | **PASS (re-derived)** | `scripts/lib/degraded-block.txt` read at the merge commit — present and identical to the copy both reviews were read from: one heading, the trigger-boundary paragraph ("The preflight above proves `kai-core` answered and is compatible…"), five bullets (one `Refuse …` single-shot, three `Do not …`, one `Tell the operator to install \`kai-core\``), **no** `KAI-CORE-MISSING`, **no** contract-version literal. The pin itself is re-asserted by check 2's green `Validate plugin contract` and `Pack generator self-test` steps. |
+| 7 | Tag and release point at the merge | **PASS (re-derived)** | `refs/tags/v0.61.0` -> annotated **tag object** `e88857db3bc81a64f7edee966cf409ca4319d126` (tagger 23:12:33Z), peeled via the git-tags API to commit `680ca445…` — **the merge commit**. Release `376770741`, `tag_name: v0.61.0`, `target_commitish: main`, `draft: false`, `prerelease: false`, `published_at` 23:12:37Z. |
+| 8 | No agent or skill body changed on `main` | **PASS (re-derived, by tree identity)** | Between base `e679de9d…` and the merge commit, the `agents` subtree (`c0284f31c7cd221cc2f31712f98148482c5ac49a`) and the `skills` subtree (`2a4a7abc01571bf6c237b97548a3e5ce0462caf6`) are **byte-identical**, as are `docs`, `examples`, `test`, `.kai`, `hooks.json`, `AGENTS.md`, `LICENSE`, `.gitignore`, `.gitattributes`, `.nvmrc` and `.env.example`. Only `.github`, `CHANGELOG.md`, `README.md`, `kai`, `package-lock.json`, `package.json`, `plugin.json` and `scripts` moved — exactly the declared surface. Inside `.github`, **`workflows` is byte-identical (`2fb1467c…`)**: `validate.yml` was declared in `touches` and genuinely **not** changed, so "no new CI step" is true in production; only `.github/plugin` moved. Not one shipped body was edited. |
+
+**Release-note language checked by reading the published body, not by report.** The
+`v0.61.0` release claims **carriage and CI enforcement only** — "Every generated
+department-agent body now carries a canonical, byte-pinned degraded-mode refusal
+instruction after the core compatibility preflight"; "Added CI validation for exact
+copy count, ordering, adjacency, core exclusion, and absence of duplicated operating
+rules" — and states the limits outright under **Unchanged**: "The trigger remains a
+model-evaluated instruction; this release does not claim measured refusal or graceful
+degradation", and "No generated pack tree is committed or published, and the
+marketplace still exposes only the monolithic `kai` plugin." It says **department**
+agent, never "every pack"; it claims **no model obedience**, no detection and no
+graceful degradation; and it does not imply the split is done. Compliant with the
+security review's extended `P2-S2` truth-binding and with the constraint deploy step 6
+placed on it.
+
+**What production evidence proves, at exactly its own width.** Proven: **carriage,
+order, count and text** — the canonical block is on `main`, byte-identical to the
+reviewed copy, and the gates that pin it into every generated department agent (exact
+bytes, exactly one copy, immediately after the preflight, zero copies in core,
+restating no rule) ran green on the merge commit. **Not proven, and not claimed
+anywhere:** that any agent *refuses*, *detects* contract loss, or *degrades
+gracefully*. That trigger is model-evaluated self-report and remains **unmeasured**;
+concrete firing evidence stays owed downstream at `pack-split-host-gates` (parked
+**P2-D1**). `pack-preview --check` remains **vacuous** for this item
+(`pack-preview.mjs:281-283`) and is not counted.
+
+**The two PREPARE attestations are now subsumed by production evidence.**
+Head-vs-ref byte-identity and the local suite were operator-attested at PREPARE and
+converted into fail-closed deploy steps 1 and 3. The merge tree changed only the
+declared paths, `agents/` and `skills/` are provably byte-identical, and the identical
+gates ran green on `main` — so the reviewed implementation is what production runs.
+The exit status of deploy step 1's `git diff --exit-code` itself remains
+operator-attested; it was not re-derived here (no shell).
+
+---
+
+## Deployment record (operator-executed; kai executed nothing)
+
+| What | Value |
+|------|-------|
+| PR | [#158](https://github.com/RubenSaucedo/kai/pull/158) — squash-merged (repo convention), **not rebased** |
+| Merge commit | `680ca445a2616bc9bc1b972db6b40042c06abf6c` on `main`, parent `e679de9d41187614e9765e00ec3e20dafff9ec0c` |
+| Merge time | 2026-08-25T23:12:06Z (signature `verified_at` 23:12:07Z) |
+| Version | `0.60.0 -> 0.61.0` |
+| `main` CI | run [`32909692506`](https://github.com/RubenSaucedo/kai/actions/runs/32909692506), job `contract` [`98001208870`](https://github.com/RubenSaucedo/kai/actions/runs/32909692506/job/98001208870) — `success`, 16s |
+| Tag | annotated `v0.61.0` -> tag object `e88857db3bc81a64f7edee966cf409ca4319d126`, peels to the merge commit |
+| Release | [`v0.61.0`](https://github.com/RubenSaucedo/kai/releases/tag/v0.61.0) — id `376770741`, published 2026-08-25T23:12:37Z, not draft, not prerelease |
+| Rollback | **never invoked** — the recorded abort/rollback path was not entered, and this item was never returned to `release-ready` |
+| Records commit | folded into the same squash-merge, so the ship record landed at its canonical library path with the release — **no post-ship `git mv` is owed** (the `0.58.0` record needed one; `0.60.0` and this one did not) |
+
+**Lifecycle walked, not skipped.** Item **v9 -> v10 (`deploying`) -> v11
+(`production-verification`) -> v12 (`shipped`)**, workflow lease
+`wsh-2026-08-25-1612-dgr-confirm` self-granted at v9 and cleared at close,
+`resume_state` `null` throughout, `next_role: "@operator" -> null`. `change_ref` stays
+`8d3ef4844988f4974e6bec8f406a7723dee4e942` — deployment moves an item's *state*, not
+its reviewed implementation ref.
+
+**Downstream, cleared strictly by the DAG.** Milestone `dependency-guarantees` moves
+to **4 of 5 required items `shipped`** and stays **OPEN** — only
+`pack-split-ci-partition-checks` remains. `pack-split-generated-pack-trees` goes from
+**3 of 6** to **4 of 6** dependencies met, stays `proposed`, in `first-pack-extracted`,
+outside `scope.current` — the one-way valve stays shut. `pack-split-ci-partition-checks`
+was already dependency-satisfied and dispatchable; nothing here changed that, and
+dispatch is the director's call — but its overlap on `scripts/lib/pack-plan.mjs`,
+`scripts/validate-plugin.mjs` and `scripts/pack-preview.mjs` is now **landed on
+`main`**, so it must read this diff rather than the pre-`0.61.0` files. **No dependent
+item record was edited** — a reconciliation NOTE was appended to the affected thread.
 
 ---
 

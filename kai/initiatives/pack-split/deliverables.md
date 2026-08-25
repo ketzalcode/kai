@@ -12,24 +12,35 @@ one-way and steward-approved:
 | Release record — pack generator + multi-manifest gates (`0.58.0`) | dependency-guarantees | pack-split-generator-gates | kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **SHIPPED 2026-08-25** (`v0.58.0`, merge `47aa0549…`) |
 | Release record — combined fail-closed preflight + version-compat (`0.59.0`) | dependency-guarantees | pack-split-preflight-compat | kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **SHIPPED 2026-08-25** (`v0.59.0`, merge `67670525…`, production verification PASSED) |
 | Release record — cross-pack reference validator, invoked assets, hooks-exactly-once (`0.60.0`) | dependency-guarantees | pack-split-crosspack-validator | kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **SHIPPED 2026-08-25** (`v0.60.0`, merge `32a07a9a…`, `main` run `32902043562` success, production verification PASSED 7/7) |
-| Release record — canonical degraded-mode refusal instruction, CI-pinned (`0.61.0`) | dependency-guarantees | pack-split-degraded-refusal | kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md | **RELEASE-READY 2026-08-25** — PR #158 open at `75053e08…`, check `contract` `97997128517` success; **NOT shipped**, awaiting the operator merge and `v0.61.0` |
+| Release record — canonical degraded-mode refusal instruction, CI-pinned (`0.61.0`) | dependency-guarantees | pack-split-degraded-refusal | kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md | **SHIPPED 2026-08-25** (`v0.61.0`, merge `680ca445…`, `main` run `32909692506` success, production verification PASSED 8/8) |
 
 The **release record** for `pack-split-degraded-refusal` was written by `workflow-ship` at the
-2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived.
-It records the six-dimension evidence, including check run `contract` **`97997128517`** (run
-**`32908330221`**, `conclusion: success`, 12s, `total_count: 1`) at PR head
+2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived —
+and **closed at the 2026-08-25-1612 CONFIRM-START + CONFIRM-COMPLETE run (verdict SHIPPED)**.
+It records a completed ship: the six-dimension evidence, including check run `contract`
+**`97997128517`** (run **`32908330221`**, `conclusion: success`, 12s, `total_count: 1`) at PR head
 **`75053e08551e6865df501e85d25888b19693af72`**, which closed the one criterion only CI could
 close; the rollout and rollback plans; the operator deploy handoff with its abort criteria; and
-the 8-check production verification to run at CONFIRM-COMPLETE. **It is not shipped** — nothing
-was merged, tagged, released, published or deployed, and `change_ref` stays at
-`8d3ef4844988f4974e6bec8f406a7723dee4e942`, the object both reviews bind, with head-vs-ref
-byte-identity converted into a fail-closed deploy step. Its language is constrained by the
-security review's truth-binding: every generated **department** agent **carries a pinned,
-correctly ordered refusal instruction** that cannot drift from core — no claim that any agent
-refuses, detects contract loss, or degrades gracefully. Six PROPOSALs and one blast-radius update
-were parked in the initiative backlog at this gate, so no reviewer finding ships unowned. The
-record's move into its canonical directory is deploy step 2, inside the same records commit as
-the merge — the pattern that spared `0.60.0` a post-ship reconciliation.
+the 8-check production verification, now **executed and PASSED 8 of 8**. The operator
+squash-merged **PR #158** at **2026-08-25T23:12:06Z** into merge commit
+**`680ca445a2616bc9bc1b972db6b40042c06abf6c`** — single parent `e679de9d…`, the exact PREPARE
+base, so **no rebase** and both review bindings survive — then tagged and published **`v0.61.0`**
+(annotated tag `e88857db…` peeling to that commit, release `376770741`, not draft, not
+prerelease). The `main` `validate` run **`32909692506`** is `conclusion: success` at that
+`head_sha`, job `contract` **`98001208870`** green in 16s with the two load-bearing steps —
+`Validate plugin contract` and `Pack generator self-test` — among the 10 that ran.
+**kai merged, tagged, released and published nothing**; every deployment action was the
+operator's, and every production fact was re-derived read-only against the merge commit rather
+than the worktree. **Rollback was never invoked.** `change_ref` stays at
+`8d3ef4844988f4974e6bec8f406a7723dee4e942`, the object both reviews bind — deployment moves
+state, not the reviewed ref. Its language remains constrained by the security review's
+truth-binding, and the **published release note was read and holds it**: every generated
+**department** agent **carries a pinned, correctly ordered refusal instruction** that cannot
+drift from core — with no claim that any agent refuses, detects contract loss or degrades
+gracefully, and none that a pack is generated, committed or published. Six PROPOSALs and one
+blast-radius update were parked in the initiative backlog at the gate, so no reviewer finding
+ships unowned. Because the record's move into its canonical directory rode the same records
+commit as the merge, **no post-ship reconciliation is owed**.
 
 The **release record** for `pack-split-crosspack-validator` was written by `workflow-ship`
 at the 2026-08-25-1435 DoD gate (verdict **RELEASE-READY**, all six dimensions Clear, none

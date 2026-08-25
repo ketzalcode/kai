@@ -413,3 +413,126 @@ Append-only communication log mirroring
              `pack-split-ci-partition-checks` still overlaps this item on
              `scripts/lib/pack-plan.mjs`, `scripts/validate-plugin.mjs` and
              `scripts/pack-preview.mjs`.
+
+## NOTE 2026-08-25-1612 — workflow-ship claimed (self-grant)
+
+- Lease **self-granted** at `version: 9` — token `wsh-2026-08-25-1612-dgr-confirm`,
+  `holder: workflow-ship`, `version_at_grant: 9` — to run CONFIRM-START and CONFIRM-COMPLETE on
+  the operator's deployment evidence. Sole acting worker: the item sat at `release-ready` with
+  `next_role: "@operator"` and no competing lease, and the item version was unchanged since the
+  `1554` PREPARE entry, so nothing was overwritten.
+- Lease **cleared** at handoff below with the item at `version: 12`, `state: shipped`,
+  `next_role: null`.
+
+## HANDOFF 2026-08-25-1612 — workflow-ship -> (none: item closed)
+
+- did:       **CONFIRM-START + CONFIRM-COMPLETE run on operator-supplied deployment evidence —
+             verdict `SHIPPED`.** Walked **`release-ready` -> `deploying` (v10) ->
+             `production-verification` (v11) -> `shipped` (v12)**; no state skipped, `shipped`
+             **not** reached directly from `release-ready`, `resume_state` stayed `null`,
+             `next_role: "@operator" -> null`, lease cleared. **kai merged, tagged, released and
+             published nothing** — the operator executed every one of those actions; this run
+             recorded them and re-derived the production facts read-only. **No rollback was
+             invoked**, so the recorded abort/rollback path was never entered.
+             **CONFIRM-START:** PR #158 squash-merged **2026-08-25T23:12:06Z** into merge commit
+             **`680ca445a2616bc9bc1b972db6b40042c06abf6c`**, single parent
+             `e679de9d41187614e9765e00ec3e20dafff9ec0c` — the exact PREPARE base, so **no rebase
+             happened** and both review bindings survive the merge — signature
+             `verified: true`; `main` `validate` run **`32909692506`** started 23:12:10Z.
+             **CONFIRM-COMPLETE:** that run is `status: completed`, **`conclusion: success`**,
+             `event: push`, `run_attempt: 1`, `head_sha` exactly the merge commit, 23:12:10Z ->
+             23:12:29Z; job `contract` **`98001208870`** `success`, 23:12:12Z -> 23:12:28Z
+             (**16s**), **10 substantive steps all green** including step 4 `Validate plugin
+             contract` and step 8 `Pack generator self-test` — the two steps that carry this
+             item's pins — with step 11 `Release-guard (--base --head)` correctly `skipped` on a
+             `push` event. `check-runs` on the merge SHA reports `total_count: 1`, so no second
+             red check hides behind it.
+             **Production verification: 8 of 8 PASS**, each re-derived read-only against the
+             merge commit itself rather than the local worktree — deployment start; deployment
+             completion with the pins actually running; `0.61.0` coherent across all six version
+             locations plus the README `## Status` stamp (56 agents / 51 skills) and the dated
+             `## [0.61.0] - 2026-08-25` section with a **non-dangling** compare link (`v0.60.0` =
+             `d5cd9590…` exists); marketplace still **exactly one** entry, `kai` at
+             `source: "."`; `COMMITTED_PACKS = []` **and no `packs/` tree**, proven *positively*
+             from the merge commit's complete root tree (`d4f95819…`, `"truncated": false`), not
+             from a local glob; `scripts/lib/degraded-block.txt` present at the merge commit and
+             identical to the reviewed copy; annotated tag `v0.61.0` (`e88857db…`) peeling to the
+             merge commit with release `376770741` `draft: false` / `prerelease: false` published
+             23:12:37Z; and **no agent or skill body changed** — the `agents` (`c0284f31…`) and
+             `skills` (`2a4a7abc…`) subtrees are byte-identical between base and merge, as are
+             `docs`, `examples`, `test`, `.kai`, `hooks.json`, `AGENTS.md` and
+             **`.github/workflows` (`2fb1467c…`)**, so `validate.yml` was declared in `touches`
+             and genuinely not changed and "no new CI step" is true in production.
+             **The release note was read, not accepted on report, and it holds the security
+             truth-binding:** it claims carriage and CI enforcement — "Every generated
+             department-agent body now carries a canonical, byte-pinned degraded-mode refusal
+             instruction after the core compatibility preflight" — and states the limits outright:
+             "The trigger remains a model-evaluated instruction; this release does not claim
+             measured refusal or graceful degradation", "No generated pack tree is committed or
+             published, and the marketplace still exposes only the monolithic `kai` plugin." It
+             says **department**, never "every pack", and claims **no model obedience**.
+             **`change_ref` deliberately unchanged** at `8d3ef484…` — deployment moves state, not
+             the reviewed implementation ref.
+- state:     shipped
+- change_ref: `8d3ef4844988f4974e6bec8f406a7723dee4e942`
+- needs:     Nothing from this item. **What is proven is carriage, order, count and text** — the
+             canonical block is on `main`, byte-identical to the reviewed copy, and the gates that
+             pin it into every generated **department** agent ran green on the merge commit. What
+             is **not** proven, and must not be claimed downstream, is that any agent *refuses*,
+             *detects* contract loss or *degrades gracefully*: the trigger is model-evaluated
+             self-report and is **unmeasured**. Concrete firing evidence stays owed at
+             `pack-split-host-gates` (parked **P2-D1**).
+- artifacts: kai/coordination/items/pack-split-degraded-refusal.md (v12, `shipped`, `## Ship
+             confirm — CONFIRM-START + CONFIRM-COMPLETE, 2026-08-25-1612`);
+             kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md
+             (production verification executed + deployment record appended — already at its
+             canonical library path, so **no post-ship `git mv` is owed**);
+             kai/coordination/threads/pack-split-generated-pack-trees.md (dependency
+             reconciliation NOTE, no field changed on that record); kai/coordination/BOARD.md;
+             kai/coordination/ACTIVE.md; kai/initiatives/pack-split/deliverables.md;
+             kai/initiatives/pack-split/log.md
+- evidence:  **No shell** — read / search / fetch / edit only; nothing was executed. Re-derived
+             from `api.github.com` and `raw.githubusercontent.com` at `680ca445…`: the merge
+             commit and its parent and signature, run `32909692506`, job `98001208870` with its
+             per-step conclusions, the merge SHA's `check-runs` (`total_count: 1`), the annotated
+             tag object `e88857db…` and its peel, release `376770741` **with its published body
+             read in full**, the merge and base **root trees** and the `.github` subtrees,
+             `plugin.json`, `package.json`, `package-lock.json`, `marketplace.json`, `README.md`,
+             `scripts/lib/degraded-block.txt` and `scripts/lib/pack-plan.mjs`
+             (`COMMITTED_PACKS = []`) at the merge commit. Corroborated locally:
+             `.git/refs/heads/main` = `680ca445…`; `.git/packed-refs` holds `v0.60.0` =
+             `d5cd9590…`, so the `[0.61.0]` compare link is not dangling. **Operator-attested,
+             not re-derived:** the exit status of deploy step 1's `git diff --exit-code` — now
+             subsumed by production evidence, since the merge tree changed only declared paths
+             and `agents/` + `skills/` are provably byte-identical.
+- questions: none blocking. Two interpretations remain parked for
+             `principal-product-manager` and are **not** resolved by this ship: **E1** — the
+             northstar's `dependency-guarantees` line reads "shipped in **every pack**" while this
+             shipped in every **department** pack (4 of 5); the item's own acceptance is met
+             exactly and no milestone was declared met here. **A1** — whether core agents need
+             their own second block once a core-only install becomes real (reopen at
+             `pack-split-generated-pack-trees`, at the latest `pack-split-first-department`).
+- next:      none — item closed (`next_role: null`). Milestone `dependency-guarantees` moves to
+             **4 of 5** required items `shipped` and stays **OPEN**; only
+             `pack-split-ci-partition-checks` remains. `pack-split-generated-pack-trees` goes
+             **3 of 6 -> 4 of 6** dependencies met, stays `proposed` and outside `scope.current`.
+             `pack-split-ci-partition-checks` was already dispatchable and still is — dispatch is
+             the director's call, not this gate's — but its touch-conflict check on
+             `scripts/lib/pack-plan.mjs`, `scripts/validate-plugin.mjs` and
+             `scripts/pack-preview.mjs` now applies against **landed `v0.61.0` surface**.
+
+## NOTE 2026-08-25-1612 — workflow-ship: what SHIPPED does and does not mean here
+
+- **Does:** record that the operator deployed `v0.61.0` to `main`, that the merge is green in
+  production, that the canonical refusal block and its byte-pins are live on the default branch,
+  and that the release is tagged and published against that exact commit.
+- **Does not:** claim any agent *refuses*, *detects* contract loss or *degrades gracefully* — the
+  trigger is model-evaluated self-report, its effectiveness is **unmeasured**, and the CI pin is
+  on the text being present, unique, ordered and unaltered, never on a model obeying it. Does not
+  claim any pack is generated, committed or published (`COMMITTED_PACKS = []`, no `packs/` tree,
+  marketplace still N=1). Does not close milestone `dependency-guarantees`, promote or dispatch
+  any item, or resolve **E1** / **A1**, which stay parked with `principal-product-manager`.
+- **Consumers of the published `kai` plugin get `0.61.0` metadata and nothing behavioural** — all
+  56 agents and 51 skills are byte-identical to `0.60.0`, proven by subtree identity, so the
+  rollback residue the ship record described (a consumer holding a `0.61.0` copy) would have been
+  behaviourally indistinguishable in any case. Rollback was never invoked.

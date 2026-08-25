@@ -99,3 +99,40 @@ Append-only communication log mirroring
 - **Production still holds the committed-unpublished line:** at the `v0.60.0` merge commit,
   `COMMITTED_PACKS = []`, there is **no `packs/` tree**, and the marketplace is still N=1
   (`kai` at `source: "."`). This item still owns creating the first tree.
+
+## NOTE 2026-08-25-1612 — workflow-ship: 4 of 6 dependencies satisfied; still blocked and still out of scope
+
+- **`pack-split-degraded-refusal` reached `shipped`** at 2026-08-25-1612 — PR #158
+  squash-merged 2026-08-25T23:12:06Z into merge commit
+  `680ca445a2616bc9bc1b972db6b40042c06abf6c`, released **`v0.61.0`**, `main` run `32909692506`
+  `conclusion: success`, production verification **8 of 8 PASS**. With
+  `pack-split-crosspack-validator` (`v0.60.0`), `pack-split-preflight-compat` (`v0.59.0`) and
+  `pack-split-generator-gates` (`v0.58.0`), **four of six** dependencies are satisfied.
+- **This item remains NOT executable.** Two are still open: `pack-split-ci-partition-checks`
+  (required at `shipped`; it is `ready` and dependency-satisfied, but has not shipped and has
+  not been dispatched) and `pack-split-host-semantics-spike` (required at `completed`; it needs
+  an `@operator` host session). It is additionally in `first-pack-extracted`, outside
+  `northstar.scope.current` — the one-way valve stays shut regardless of dependency count.
+- `workflow-ship` reconciles dependencies only; it did not promote, dispatch or re-prioritize,
+  and **changed no field on this record**.
+- **What this item now inherits as live surface on `main` (`v0.61.0`):** `materializePacks`
+  injects **both** guarantee blocks — `guaranteeBlocks()` states the order `[preflight,
+  degraded]` **once** and `injectBlocks()` splices them in a **single** pass — into every
+  non-core agent and **neither** into a core agent, and `validate-plugin.mjs` byte-pins both
+  over real generator output. So the first generated tree this item commits will be checked for
+  exact bytes, exactly one copy of each, zero copies in core, and the preflight-then-refusal
+  order with only whitespace between. Build against those functions; do not re-derive injection.
+- **Two findings were routed *here* and are waiting, not lost.** **A1** (architecture, deferred
+  with this item named as the reopen trigger): core agents carry neither block, on an argument
+  that is airtight for *install-level* absence but not for the *context-loading* absence the
+  refusal now owns — covering core needs a **second** canonical block with its own pin, because
+  this block's first sentence would be false where no preflight exists. `principal-security`
+  adds that core holds `director-chief-of-staff` and `workflow-workspace-init`, so the uncovered
+  blast radius there is **larger per agent**, not smaller. It becomes real the moment this item
+  makes a core-only install possible. Also carried: **P2-S1/N1** — `validate-plugin.mjs:443`
+  gates **both** guarantees on `/^kai-[a-z]+\/agents\/.+\.agent\.md$/`, so any new pack key
+  outside `[a-z]+` would escape both pins together.
+- **Production still holds the committed-unpublished line:** at the `v0.61.0` merge commit,
+  `COMMITTED_PACKS = []`, there is **no `packs/` tree** (proven positively from the complete
+  root tree), and the marketplace is still N=1 (`kai` at `source: "."`). This item still owns
+  creating the first tree.
