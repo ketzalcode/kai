@@ -4,6 +4,56 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.60.0] - 2026-08-25
+
+### Added
+
+- **Cross-pack reference validation on all three firing paths** (#29). A
+  department pack installs with `kai-core` and nothing else, so every reference a
+  shipped body makes has to resolve inside its own pack or inside core. The
+  validator now collects them and resolves each one against what the
+  authoritative generator emits: inherited skills (`**Inherits:**`), user-invoked
+  entry points (`user-invocable: true`), and orchestrated dispatch — the
+  declaration shape the roster already uses, a bolded backticked id at the head of
+  a list item, rather than any backticked mention, so an editorial cross-link is
+  not mistaken for a dependency. A reference that resolves to another department,
+  to no pack, or to two packs fails by name. Agent-to-agent referrals across
+  departments stay legal: a missing role degrades to "that pack is not installed",
+  while a missing skill breaks the body that named it.
+
+- **Non-markdown asset ownership.** Every `scripts/*.mjs|js|cjs|ps1|sh|py` a
+  shipped instruction tells someone to run is now planned to a pack: it travels
+  with the sole pack that invokes it, and an asset invoked from more than one pack
+  promotes to `kai-core`, the plugin every department already requires. A missing
+  file, an asset assigned to a department while two packs invoke it, and a
+  consumer reaching across the boundary each fail with the exact miss.
+
+- **`hooks.json` is assigned to exactly one pack.** The host executes that file
+  itself, on every subagent, for everyone who installs the plugin carrying it —
+  so two packs shipping it would run the observer twice per subagent and none
+  shipping it would never run it at all. The assignment is now declared
+  (`HOOKS_OWNER = 'core'`) and checked: zero owners, duplicate owners, and a hook
+  whose script is owned by another pack each fail, because `${PLUGIN_ROOT}`
+  resolves inside the hook's own plugin and never crosses the boundary.
+
+### Changed
+
+- **The firing-path check reuses the shared parsers.** `scripts/validate-plugin.mjs`
+  now reads inherits lines and dispatch entries through `declaredInherits` /
+  `dispatchedRefs` in `scripts/lib/pack-plan.mjs` instead of its own inline
+  regexes, so the generator, the preview and the validator agree on what a
+  reference is by construction. The generated tree is materialised once and shared
+  by the preflight pin and the new checks. No new CI step: the workflow already
+  runs the validator and the pack self-test on every PR and push.
+
+- **`pack-preview --self-test` proves each new failure by name.** The new arms are
+  pure over synthetic inputs — cross-pack inherited skill, dangling reference,
+  duplicate provider, cross-pack orchestrated dispatch, permitted cross-pack agent
+  referral, missing asset, shared asset routed to a department, cross-boundary
+  asset, and hooks assigned to zero, two, or a pack that does not exist — with
+  live assertions that each firing path is actually populated in this repository,
+  so a collector that silently found nothing cannot pass.
+
 ## [0.59.0] - 2026-08-25
 
 ### Added
@@ -2610,6 +2660,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.60.0]: https://github.com/RubenSaucedo/kai/compare/v0.59.0...v0.60.0
 [0.59.0]: https://github.com/RubenSaucedo/kai/compare/v0.58.0...v0.59.0
 [0.58.0]: https://github.com/RubenSaucedo/kai/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/RubenSaucedo/kai/compare/v0.56.0...v0.57.0

@@ -24,10 +24,12 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  SKILL_OWNER_OVERRIDES,
+  SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER,
   planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   inheritedSkills as inheritedSkillsOf,
+  collectReferences, referenceErrors, packProviders,
+  planAssets, assetOwnershipErrors, hooksAssignmentErrors,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -504,6 +506,121 @@ function selfTest() {
   ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry])))
     .some((e) => /no entry named "kai"/.test(e)),
     'the monolith entry is still required until the flip retires it');
+
+  // --- cross-pack references: the live corpus ---------------------------
+  // Every arm below runs against synthetic inputs, so the failure it proves is
+  // the rule and not a fixture. These first checks are the other half: without
+  // them a collector that silently found nothing would make every arm pass.
+  const liveRefs = collectReferences(ROOT);
+  const liveProviders = packProviders(materializePacks({ root: ROOT, version: '9.9.9-selftest' }));
+  const firing = (path, kind) => liveRefs.filter((r) => r.firing.includes(path) && r.kind === kind);
+  const carries = (path, kind, from, target) => firing(path, kind)
+    .some((r) => r.from === from && r.target === target);
+
+  ok(carries('inherited', 'skill', 'agents/persona-self.agent.md', 'kai-core-team-operating-rules'),
+    'the inherited path is really collected: a department agent inheriting the core contract is seen');
+  ok(carries('orchestrated', 'skill', 'agents/workflow-doc-review.agent.md', 'review-rationale'),
+    'the orchestrated path is really collected: a dispatched lens is seen as a reference');
+  ok(carries('orchestrated', 'agent', 'agents/principal-swe-manager.agent.md', 'principal-product-manager'),
+    'agent-to-agent dispatch is really collected, across the department boundary');
+  ok(carries('user-invoked', 'asset', 'skills/demo-zoom/SKILL.md', 'scripts/demo-zoom.mjs'),
+    'the user-invoked path is really collected, down to the script the skill tells you to run');
+  ok(firing('inherited', 'skill').length > 100 && firing('orchestrated', 'agent').length > 5
+    && firing('user-invoked', 'skill').length > 5 && liveRefs.some((r) => r.kind === 'asset'),
+  'all three firing paths and the asset path are populated, so no arm is vacuous');
+  ok(referenceErrors({ refs: liveRefs, providers: liveProviders }).length === 0,
+    'every reference in the live corpus resolves to core or its own pack');
+  const liveAssets = planAssets(liveRefs);
+  ok(liveAssets.get('scripts/demo-zoom.mjs')?.owner === 'personal'
+    && liveAssets.get('scripts/generate-audio.ps1')?.owner === 'core',
+  'an asset invoked from one pack travels with it; one invoked from two promotes to core');
+  ok(assetOwnershipErrors({
+    assets: liveAssets,
+    exists: (a) => existsSync(join(ROOT, ...a.split('/'))),
+  }).length === 0,
+  'every invoked script exists and is reachable from the pack that invokes it');
+
+  // --- cross-pack references: the mutation arms -------------------------
+  const providersOf = (entries) => new Map(Object.entries(entries));
+  const ref = (over) => ({ from: 'agents/x.agent.md', fromPack: 'engineering', firing: ['inherited'], kind: 'skill', target: 'video-direction', ...over });
+  const messages = (refs, providers) => referenceErrors({ refs, providers: providersOf(providers) }).map((e) => e.msg);
+
+  ok(messages([ref({})], { 'skill:video-direction': ['personal'] })
+    .some((m) => /inherited reference to skill `video-direction` resolves to kai-personal/.test(m)),
+  'an inherited skill provided by another department fails by name');
+  ok(messages([ref({ target: 'gone-skill' })], {})
+    .some((m) => /resolves to no pack/.test(m)),
+  'an inherited skill no pack provides fails as a dangling reference');
+  ok(messages([ref({ from: 'skills/create-product-demo/SKILL.md', fromPack: 'personal', firing: ['user-invoked'], target: 'create-product-demo' })],
+    { 'skill:create-product-demo': ['personal', 'gtm'] })
+    .some((m) => /user-invoked reference to skill `create-product-demo` is provided by kai-personal and kai-gtm/.test(m)),
+  'a user-invoked entry point two packs both provide fails as an unspecified resolution');
+  ok(messages([ref({ firing: ['orchestrated'], target: 'ui-mockup' })], { 'skill:ui-mockup': ['product'] })
+    .some((m) => /orchestrated reference to skill `ui-mockup` resolves to kai-product/.test(m)),
+  'an orchestrated dispatch of another department\'s skill fails by name');
+  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'principal-gone' })], {})
+    .some((m) => /orchestrated reference to agent `principal-gone` resolves to no pack/.test(m)),
+  'an orchestrated dispatch of an agent that no longer exists fails by name');
+  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'persona-self' })], { 'agent:persona-self': ['personal'] })
+    .length === 0,
+  'but dispatching a real agent in another pack is allowed: a referral degrades, it does not fail to load');
+  ok(messages([ref({ fromPack: null })], { 'skill:video-direction': ['personal'] })
+    .some((m) => /comes from a file no pack owns/.test(m)),
+  'a reference from a body the partition never placed fails instead of resolving by luck');
+
+  const assetRef = (from, pack, target) => ({ from, fromPack: pack, firing: ['user-invoked'], kind: 'asset', target });
+  const assetMsgs = (refs, exists = () => true) => assetOwnershipErrors({ assets: planAssets(refs), exists }).map((e) => e.msg);
+
+  ok(assetMsgs([assetRef('skills/demo-zoom/SKILL.md', 'personal', 'scripts/gone.mjs')], () => false)
+    .some((m) => /invokes `scripts\/gone\.mjs`, which does not exist in this plugin/.test(m)),
+  'an invoked script that is not in the plugin fails by name');
+  ok(assetMsgs([
+    assetRef('skills/a/SKILL.md', 'personal', 'scripts/shared.mjs'),
+    assetRef('skills/b/SKILL.md', 'engineering', 'scripts/shared.mjs'),
+  ]).length === 0,
+  'a script invoked from two packs is promoted to core by the plan, so neither reference breaks');
+  const sharedToDepartment = new Map([['scripts/shared.mjs', {
+    asset: 'scripts/shared.mjs',
+    consumers: [{ from: 'skills/a/SKILL.md', pack: 'personal' }, { from: 'skills/b/SKILL.md', pack: 'engineering' }],
+    packs: new Set(['personal', 'engineering']),
+    owner: 'personal',
+  }]]);
+  ok(assetOwnershipErrors({ assets: sharedToDepartment, exists: () => true })
+    .some((e) => /is invoked from kai-engineering and kai-personal but is assigned to kai-personal/.test(e.msg)),
+  'and routing a shared script into a department instead of core fails by name');
+  const departmentAsset = new Map([['scripts/demo-zoom.mjs', {
+    asset: 'scripts/demo-zoom.mjs',
+    consumers: [{ from: 'skills/onboard-to-codebase/SKILL.md', pack: 'engineering' }],
+    packs: new Set(['personal']),
+    owner: 'personal',
+  }]]);
+  ok(assetOwnershipErrors({ assets: departmentAsset, exists: () => true })
+    .some((e) => /ships in kai-personal — kai-engineering can only run its own assets/.test(e.msg)),
+  'a script invoked across the boundary from another department fails by name');
+
+  // --- hooks.json belongs to exactly one pack ---------------------------
+  const observer = 'scripts/observe-subagent.mjs';
+  const hookAssets = [observer];
+  const owned = (pack) => new Map([[observer, { asset: observer, consumers: [], packs: new Set([pack]), owner: pack }]]);
+  const hookMsgs = (args) => hooksAssignmentErrors({ hookAssets, assets: owned(HOOKS_OWNER), ...args }).map((e) => e.msg);
+
+  ok(hookMsgs({ owners: [HOOKS_OWNER] }).length === 0,
+    `${HOOKS_FILE} assigned to exactly one pack, running a script that pack owns, is clean`);
+  ok(hookMsgs({ owners: [] }).some((m) => /is assigned to no pack/.test(m)),
+    `${HOOKS_FILE} assigned to zero packs fails by name`);
+  ok(hookMsgs({ owners: ['core', 'personal'] })
+    .some((m) => /is claimed by kai-core and kai-personal/.test(m)),
+  `${HOOKS_FILE} claimed by two packs fails by name — the observer would fire twice per subagent`);
+  ok(hooksAssignmentErrors({ owners: [HOOKS_OWNER], hookAssets, assets: owned('personal') })
+    .some((e) => /runs `scripts\/observe-subagent\.mjs`, owned by kai-personal/.test(e.msg)),
+  'a hook whose script is owned by another pack fails: ${PLUGIN_ROOT} never crosses the boundary');
+  ok(hooksAssignmentErrors({ owners: [HOOKS_OWNER], hookAssets, assets: new Map() })
+    .some((e) => /which no pack owns/.test(e.msg)),
+  'a hook whose script no pack owns fails rather than shipping a command nobody can run');
+  ok(hookMsgs({ owners: ['nope'] }).some((m) => /is assigned to "nope", which is not a pack/.test(m)),
+    'assigning the hooks file to a pack that does not exist fails by name');
+  ok(HOOKS_OWNER === 'core' && liveAssets.get(observer)?.owner === HOOKS_OWNER,
+    `${HOOKS_FILE} and the script it runs are both owned by kai-core in the live partition`);
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;

@@ -119,3 +119,47 @@ PROPOSAL
 already carries the `fleet-observation -> kai-core-fleet-observation` rename, so a key-shape
 change is closer than it looks). Until then it rides into `ci-partition-checks` as a two-line
 hardening, not as its own item.
+
+### PROPOSAL — cross-department agent-referral degradation is unspecified
+
+Parked by `workflow-ship` at the 2026-08-25-1435 DoD gate for
+`pack-split-crosspack-validator`, from the escalation in the `independent-architecture`
+review (RATIFIED 2026-08-25-1428 at `change_ref cb5fd0290f1a8b7478b54e98bf24f1968aa58f09`).
+The architect routed it to `principal-product-manager` **for triage** and deliberately did not
+create an item, a dependency or an acceptance criterion; it is recorded here because a finding
+that ships unowned is a finding that gets lost. It did **not** gate the `0.60.0` release and is
+**not** fixed in PR #156.
+
+```
+PROPOSAL
+  problem:          Ratifying design call 3 permits cross-department *agent* referrals while
+                    cross-department *skill* references fail — correct, because partition-lock
+                    §7.2 binds providers (what an agent *inherits*), not referrals. But that
+                    leaves 12+ live referrals (principal-swe-manager -> principal-product-manager,
+                    creative-video-director -> principal-product-marketing, and others) surviving
+                    the split with NO defined behaviour when the sibling department pack is not
+                    installed. WS#5 pack-split-degraded-refusal covers a missing *core*, not a
+                    missing *department*, so nothing in the committed plan says what the operator
+                    should see.
+  proposed_change:  Decide the product behaviour for a referral to an uninstalled department:
+                    degrade silently, name the missing pack, or name it and suggest installing
+                    it. Then route the decision to whichever item owns generated agent bodies.
+  friction_cost:    Any option beyond "silent" adds a new surface to generated bodies and a new
+                    string to keep truthful across five packs — and it is a surface no committed
+                    item owns today, so it would also need an owner and a milestone.
+  mission_tradeoff: This is an operator-experience call, not an architecture call: the reference
+                    model is already correct and fails closed for skills. Deferring costs nothing
+                    today (the monolith is still authoritative and every role is present), and it
+                    is not reachable until at least two packs are actually installable
+                    separately — which is `first-pack-extracted`, outside `scope.current`.
+                    Deciding it now would spend product judgment on a shape the extraction may
+                    change.
+  scope_target:     first-pack-extracted (or earlier, if the steward wants the answer before
+                    pack-split-generated-pack-trees emits agent bodies).
+  owner:            principal-product-manager (triage), then whichever item owns generated bodies
+```
+
+**What would change my mind (trigger to promote):** `pack-split-generated-pack-trees` reaching
+implementation (it emits the agent bodies where any such text would live), a second pack becoming
+independently installable, or a user hitting an unresolved referral in a preview. Until one of
+those, it is a product question with no reachable user — recorded, owned, and not scheduled.

@@ -10,6 +10,9 @@
 //   • generated-pack guarantees — the canonical fail-closed core preflight, byte
 //     for byte, exactly once, in every generated department agent and in no core
 //     agent, over a probe skill whose marker and version are rigid;
+//   • cross-pack references — every inherited, user-invoked and orchestrated
+//     reference, plus every invoked script and hooks.json itself, resolves to
+//     core or to the referring body's own pack;
 //   • fixtures — the sample repository-mode manifest matches the schema.
 // Dependency-free (Node built-ins only) so CI runs it with no install step.
 //
@@ -26,6 +29,9 @@ import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
   materializePacks, preflightBlock as canonicalPreflightBlock,
   PREFLIGHT_BLOCK_REL, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  HOOKS_FILE, HOOKS_OWNER, declaredInherits, dispatchedRefs, packProviders,
+  collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
+  hooksAssignmentErrors,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -360,8 +366,17 @@ for (const agent of agentFiles) {
 // inherits-block.txt above. Core agents are excluded: they ship inside the pack
 // that provides the probe.
 // ---------------------------------------------------------------------------
+
 const preflightPath = join(ROOT, PREFLIGHT_BLOCK_REL);
 const preflight = existsSync(preflightPath) ? canonicalPreflightBlock(ROOT) : null;
+
+// What the authoritative generator emits, materialised once: the preflight pin
+// below and the cross-pack reference checks further down both resolve against the
+// tree a user would install, not against a plan that only adds up on paper.
+// Generation needs the canonical block, so when it is missing this stands down
+// behind the error reported on the next line instead of crashing the whole run.
+const generatedPacks = preflight ? materializePacks({ root: ROOT, version: '0.0.0-validate' }) : new Map();
+
 if (!preflight) {
   err(PREFLIGHT_BLOCK_REL, 'missing (canonical fail-closed core-preflight block)');
 } else {
@@ -399,8 +414,7 @@ if (!preflight) {
   }
 
   // The pin that decides it: what the authoritative generator actually emits.
-  const generated = materializePacks({ root: ROOT, version: '0.0.0-validate' });
-  for (const [key, body] of generated) {
+  for (const [key, body] of generatedPacks) {
     if (!/^kai-[a-z]+\/agents\/.+\.agent\.md$/.test(key)) continue;
     const copies = body.split(preflight).length - 1;
     if (key.startsWith('kai-core/')) {
@@ -424,7 +438,7 @@ if (!preflight) {
       err(`generated ${key}`, 'places content between the inherited-contract directive and the core preflight — the preflight must remain the first executable instruction');
     }
   }
-  if (!generated.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
+  if (!generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
     err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
   }
 }
@@ -455,15 +469,9 @@ if (!preflight) {
   const inherited = new Set();
   const dispatched = new Set();
   for (const agent of agentFiles) {
-    const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
-    for (const line of raw.split('\n')) {
-      if (/^\*\*Inherits:\*\*/.test(line)) {
-        for (const m of line.matchAll(/`([^`]+)`/g)) inherited.add(m[1]);
-        continue;
-      }
-      const d = line.match(/^\s*[-*]\s+\*\*`([^`]+)`\*\*/);
-      if (d) dispatched.add(d[1]);
-    }
+    const raw = readFileSync(agent.path, 'utf8');
+    for (const skill of declaredInherits(raw)) inherited.add(skill);
+    for (const token of dispatchedRefs(raw)) dispatched.add(token);
   }
   for (const skill of skillFiles) {
     const id = skill.id;
@@ -476,6 +484,37 @@ if (!preflight) {
     if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
     err(rel(skill.path), 'has no firing path: no agent inherits or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
   }
+}
+
+// ---------------------------------------------------------------------------
+// Cross-pack references (the plugin boundary)
+//
+// The check above proves a skill can fire at all. This one proves it can still
+// fire once the plugin is five plugins: a department pack installs with kai-core
+// and nothing else, so an inherited skill, a user-invoked entry point, an
+// orchestrated dispatch or an invoked script that lives in a third pack is a
+// break the monolith can never show — every reference resolves here today
+// because everything ships in one directory.
+//
+// References resolve against what the generator emits, so a provider the
+// generator would not copy is a miss now rather than a support ticket later. The
+// parsers, the partition and the resolution rules are the ones in
+// scripts/lib/pack-plan.mjs that the generator itself uses; nothing is re-parsed
+// with a second regex here.
+// ---------------------------------------------------------------------------
+const packRefs = collectReferences(ROOT);
+const packAssets = planAssets(packRefs);
+{
+  // With no generated tree there is nothing to resolve against; that case is
+  // already reported above, so this stands down rather than blaming every
+  // reference in the repository for one missing file.
+  if (generatedPacks.size) {
+    for (const e of referenceErrors({ refs: packRefs, providers: packProviders(generatedPacks) })) {
+      err(e.file, e.msg);
+    }
+  }
+  const exists = (asset) => existsSync(join(ROOT, ...asset.split('/')));
+  for (const e of assetOwnershipErrors({ assets: packAssets, exists })) err(e.file, e.msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -1057,6 +1096,7 @@ const SANCTIONED_GIT_DEPS = new Map([
     if (!events.includes(ev)) err(rel, `does not subscribe to "${ev}" — a start without a stop cannot be paired`);
   }
 
+  const hookAssets = new Set();
   for (const [ev, entries] of Object.entries(cfg.hooks || {})) {
     for (const entry of Array.isArray(entries) ? entries : []) {
       const cmd = entry.command || entry.bash || entry.powershell || '';
@@ -1066,13 +1106,33 @@ const SANCTIONED_GIT_DEPS = new Map([
         err(rel, `${ev} command does not use \${PLUGIN_ROOT}; it would resolve against the user's repository, not the plugin`);
       }
       const m = cmd.match(/\$\{PLUGIN_ROOT\}\/([A-Za-z0-9_\-./]+)/);
-      if (m && !existsSync(join(ROOT, m[1]))) {
-        err(rel, `${ev} command points at "${m[1]}", which does not exist in this plugin`);
+      if (m) {
+        hookAssets.add(m[1]);
+        if (!existsSync(join(ROOT, m[1]))) {
+          err(rel, `${ev} command points at "${m[1]}", which does not exist in this plugin`);
+        }
       }
       if (typeof entry.timeoutSec !== 'number' || entry.timeoutSec > 15) {
         err(rel, `${ev} entry needs a timeoutSec of 15s or less — it sits in the path of every subagent`);
       }
     }
+  }
+
+  // And exactly one pack may ship it. ${PLUGIN_ROOT} resolves inside the hook's
+  // own plugin, so the scripts it runs have to be owned by that same pack; two
+  // packs carrying this file would run the observer twice on every subagent.
+  // No generated tree emits hooks.json yet — routing assets into trees is the
+  // extraction item's job — so today this pins the declared assignment, and it
+  // fails the moment a second pack starts emitting one.
+  const claimants = [...generatedPacks.keys()]
+    .filter((key) => key.endsWith(`/${HOOKS_FILE}`))
+    .map((key) => key.split('/')[0].replace(/^kai-/, ''));
+  for (const e of hooksAssignmentErrors({
+    owners: [...new Set([HOOKS_OWNER, ...claimants])],
+    hookAssets: [...hookAssets],
+    assets: packAssets,
+  })) {
+    err(e.file, e.msg);
   }
 })();
 

@@ -3,13 +3,15 @@ name: validate
 # Guards the plugin contract on every PR and on pushes to main: frontmatter and
 # name-to-path agreement, resolvable cross-references, the host-tool allowlist,
 # workspace-contract consistency, the fixture manifest schema, per-manifest version
-# agreement across the monolith and any committed pack trees, and release hygiene
-# (semver, changelog/README stamp for the current version, dependency/lockfile
-# consistency, sanctioned git deps). It also runs the workspace-doctor self-test,
-# the host-loader acceptance mirror, the release-guard self-test, the pack-generator
-# self-test and its regenerate-and-diff check, and a syntax/parse check of shipped
-# helper scripts. On pull requests it additionally runs the release-guard gate: a
-# behavior-sensitive change must carry a version bump plus changelog/README updates.
+# agreement across the monolith and any committed pack trees, cross-pack reference
+# resolution on all three firing paths (plus invoked assets and the single owner of
+# hooks.json), and release hygiene (semver, changelog/README stamp for the current
+# version, dependency/lockfile consistency, sanctioned git deps). It also runs the
+# workspace-doctor self-test, the host-loader acceptance mirror, the release-guard
+# self-test, the pack-generator self-test and its regenerate-and-diff check, and a
+# syntax/parse check of shipped helper scripts. On pull requests it additionally
+# runs the release-guard gate: a behavior-sensitive change must carry a version
+# bump plus changelog/README updates.
 # Dependency-free — no install step, so it stays fast.
 
 on:

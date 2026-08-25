@@ -35,6 +35,14 @@ export const PREFLIGHT_BLOCK_REL = 'scripts/lib/preflight-block.txt';
 // generated trees themselves land in a downstream item.
 export const PACKS_DIR = 'packs';
 
+// The host executes hooks.json itself, on every subagent, for everyone who
+// installs the plugin that ships it. Two installed packs carrying it means the
+// observer runs twice per subagent; none carrying it means it never runs. So it
+// is assigned to exactly one pack, and core is that pack: the one plugin every
+// department already requires.
+export const HOOKS_FILE = 'hooks.json';
+export const HOOKS_OWNER = 'core';
+
 // Every one of the 56 agents belongs to exactly one pack. `core` is the org spine
 // and workspace machinery — the roles meaningful with no department installed.
 // Insertion order is the emission order (see PACK_ORDER); it matches the locked
@@ -124,14 +132,23 @@ const skillFile = (root, id) => join(root, 'skills', id, 'SKILL.md');
 const listAgentIds = (root) => readdirSync(join(root, 'agents'))
   .filter((f) => f.endsWith('.agent.md')).map((f) => f.replace(/\.agent\.md$/, ''));
 
+const listSkillIds = (root) => readdirSync(join(root, 'skills'))
+  .filter((d) => existsSync(skillFile(root, d))).sort();
+
+// Every skill named on an agent's single `**Inherits:**` line, as written —
+// including one that does not exist, which is a reference miss rather than a
+// partition input.
+export function declaredInherits(body) {
+  const line = normalizeLF(body).match(/^\*\*Inherits:\*\*(.*)$/m);
+  if (!line) return [];
+  return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+}
+
 // The skills an agent inherits, read from its single `**Inherits:**` line and
 // filtered to those that exist on disk (a named-but-absent skill is a separate
 // validator concern, not a partition input).
 export function inheritedSkills(root, body) {
-  const line = body.match(/^\*\*Inherits:\*\*(.*)$/m);
-  if (!line) return [];
-  return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1])
-    .filter((s) => existsSync(skillFile(root, s)));
+  return declaredInherits(body).filter((s) => existsSync(skillFile(root, s)));
 }
 
 // Assign every skill on disk to exactly one provider. The mechanical rule handles
@@ -152,8 +169,7 @@ export function planPacks(root = REPO_ROOT) {
     }
   }
 
-  const onDisk = readdirSync(join(root, 'skills'))
-    .filter((d) => existsSync(skillFile(root, d))).sort();
+  const onDisk = listSkillIds(root);
 
   const inheritedCore = [];
   const inheritedLocal = Object.fromEntries(Object.keys(PACKS).map((p) => [p, []]));
@@ -370,6 +386,297 @@ export function marketplaceConsistencyErrors({
 
   if (mkt.metadata && mkt.metadata.version && mkt.metadata.version !== canonicalVersion) {
     errs.push(`metadata.version "${mkt.metadata.version}" must equal the canonical plugin version "${canonicalVersion}"`);
+  }
+  return errs;
+}
+
+// ---------------------------------------------------------------------------
+// Cross-pack references
+//
+// A department pack installs with kai-core and nothing else. Every reference a
+// shipped body makes therefore has to resolve inside its own pack or inside
+// core, on all three paths a skill can reach a session — inherited,
+// user-invoked, orchestrated — plus the non-markdown assets an instruction
+// tells someone to run. In the monolith all of them resolve trivially, which is
+// exactly why the break is invisible until a user installs one pack.
+//
+// Collection reads the tree; every `*Errors` function below is pure over plain
+// data, so the self-test proves each failure mode by name without building a
+// fixture repository.
+// ---------------------------------------------------------------------------
+
+// The one static shape the roster already uses to declare a situational
+// dispatch: `- **`id`** — when it applies`. Deliberately narrower than "any
+// backticked mention": prose cross-references ("the technical counterpart to
+// `ui-mockup`") are editorial, and reading those as firing paths would make
+// most of the corpus a cross-pack dependency it is not.
+const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
+
+// Role ids carry a family prefix. A dispatch entry shaped like one that
+// resolves to nothing is a renamed or deleted role; a token that is not shaped
+// like one (`post-only`) is an output mode, not a reference.
+const AGENT_SHAPED = /^(?:principal|workflow|director|persona|instructor|creative)-[a-z0-9-]+$/;
+
+// A non-markdown asset a shipped instruction invokes. Only top-level scripts/
+// executables qualify: scripts/lib/ is build-internal, and no shipped body tells
+// anyone to run it.
+const ASSET_REF = /(?<![A-Za-z0-9_-])scripts\/[A-Za-z0-9_-]+\.(?:mjs|js|cjs|ps1|sh|py)/g;
+
+// Situational dispatch targets declared in a body, in declaration order.
+export function dispatchedRefs(body) {
+  const out = [];
+  for (const line of normalizeLF(body).split('\n')) {
+    if (/^\*\*Inherits:\*\*/.test(line)) continue;
+    const m = line.match(DISPATCH_ENTRY);
+    if (m && !out.includes(m[1])) out.push(m[1]);
+  }
+  return out;
+}
+
+// Every plugin-relative asset path a body invokes, de-duplicated.
+function assetRefs(text) {
+  return [...new Set(normalizeLF(text).match(ASSET_REF) ?? [])];
+}
+
+// skill id -> providing pack, from the same plan the generator emits.
+function skillOwners(plan) {
+  const owners = new Map();
+  for (const id of plan.core) owners.set(id, 'core');
+  for (const [pack, ids] of Object.entries(plan.local)) for (const id of ids) owners.set(id, pack);
+  return owners;
+}
+
+// agent id -> owning pack, straight from the locked partition.
+function agentOwners() {
+  const owners = new Map();
+  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) owners.set(id, pack);
+  return owners;
+}
+
+// What the generator actually emits, indexed as `<kind>:<id> -> [pack, …]`.
+// Resolving references against emitted files rather than against the plan is the
+// point: the emitted tree is what a user installs, so a provider the generator
+// forgot to copy shows up here as a miss instead of as a plan that still adds up.
+export function packProviders(files) {
+  const providers = new Map();
+  const add = (key, pack) => {
+    if (!providers.has(key)) providers.set(key, []);
+    if (!providers.get(key).includes(pack)) providers.get(key).push(pack);
+  };
+  for (const key of files.keys()) {
+    const [dir, kind, ...rest] = key.split('/');
+    const pack = dir.replace(/^kai-/, '');
+    if (kind === 'skills' && rest.length === 2 && rest[1] === 'SKILL.md') add(`skill:${rest[0]}`, pack);
+    else if (kind === 'agents' && rest.length === 1 && rest[0].endsWith('.agent.md')) {
+      add(`agent:${rest[0].replace(/\.agent\.md$/, '')}`, pack);
+    }
+  }
+  for (const list of providers.values()) list.sort();
+  return providers;
+}
+
+// Every reference that must survive the plugin boundary: one record per
+// (consumer, kind, target), carrying the firing paths it travels.
+//
+//   inherited    — an agent's `**Inherits:**` line, and the assets of a skill
+//                  that reaches a session that way;
+//   user-invoked — a `user-invocable: true` skill's own entry point and assets,
+//                  which fire with no agent to carry a dependency for them;
+//   orchestrated — an agent's dispatch entries, and the assets in its own body,
+//                  which fire when something dispatches the agent.
+export function collectReferences(root = REPO_ROOT) {
+  const plan = planPacks(root);
+  const skillOf = skillOwners(plan);
+  const agentOf = agentOwners();
+
+  const refs = [];
+  const add = (from, fromPack, firing, kind, target) => {
+    const seen = refs.find((r) => r.from === from && r.kind === kind && r.target === target);
+    if (seen) { if (!seen.firing.includes(firing)) seen.firing.push(firing); return; }
+    refs.push({ from, fromPack, firing: [firing], kind, target });
+  };
+
+  const dispatched = new Set();
+  const inherited = new Set();
+  for (const id of listAgentIds(root).sort()) {
+    const body = readAgentBody(root, id);
+    const from = `agents/${id}.agent.md`;
+    const pack = agentOf.get(id) ?? null;
+    for (const skill of declaredInherits(body)) {
+      inherited.add(skill);
+      add(from, pack, 'inherited', 'skill', skill);
+    }
+    for (const token of dispatchedRefs(body)) {
+      if (skillOf.has(token)) { dispatched.add(token); add(from, pack, 'orchestrated', 'skill', token); }
+      else if (agentOf.has(token) || AGENT_SHAPED.test(token)) add(from, pack, 'orchestrated', 'agent', token);
+    }
+    for (const asset of assetRefs(body)) add(from, pack, 'orchestrated', 'asset', asset);
+  }
+
+  for (const id of listSkillIds(root)) {
+    const raw = normalizeLF(readFileSync(skillFile(root, id), 'utf8'));
+    const from = `skills/${id}/SKILL.md`;
+    const pack = skillOf.get(id) ?? null;
+    const firings = [];
+    if (inherited.has(id)) firings.push('inherited');
+    if (/^user-invocable:\s*true\s*$/m.test(raw)) firings.push('user-invoked');
+    if (dispatched.has(id)) firings.push('orchestrated');
+    // The direct entry point: `/skills run <id>` resolves across every installed
+    // plugin, so the pack that ships it must be the one that provides it.
+    if (firings.includes('user-invoked')) add(from, pack, 'user-invoked', 'skill', id);
+    for (const firing of firings) {
+      for (const asset of assetRefs(raw)) add(from, pack, firing, 'asset', asset);
+    }
+  }
+  return refs;
+}
+
+// Resolve collected references against the providers the generator emits.
+// Pure: `providers` is the `<kind>:<id> -> [pack, …]` index from packProviders.
+export function referenceErrors({ refs, providers }) {
+  const errs = [];
+  for (const ref of refs) {
+    const label = `${ref.firing.join(' + ')} reference to ${ref.kind} \`${ref.target}\``;
+    if (ref.kind === 'asset') continue; // owned by assetOwnershipErrors, which knows where assets live
+    if (!ref.fromPack) {
+      errs.push({
+        file: ref.from,
+        msg: `${label} comes from a file no pack owns — place it in PACKS or SKILL_OWNER_OVERRIDES `
+          + 'before its references can resolve to anything',
+      });
+      continue;
+    }
+    const owners = providers.get(`${ref.kind}:${ref.target}`) ?? [];
+    if (owners.length === 0) {
+      errs.push({
+        file: ref.from,
+        msg: `${label} resolves to no pack — nothing in the partition provides it, so the reference `
+          + `dangles as soon as ${packPluginName(ref.fromPack)} is installed on its own`,
+      });
+      continue;
+    }
+    if (owners.length > 1) {
+      errs.push({
+        file: ref.from,
+        msg: `${label} is provided by ${owners.map(packPluginName).join(' and ')} — with both installed, `
+          + 'which copy answers is unspecified',
+      });
+      continue;
+    }
+    const owner = owners[0];
+    if (owner === 'core' || owner === ref.fromPack) continue;
+    // An agent is a routing target, not a load-time dependency: naming a role in
+    // another department degrades to "that pack is not installed", while a skill
+    // is loaded and a missing one breaks the body that named it. The locked
+    // partition's dependency-direction claim is about providers, not referrals.
+    if (ref.kind === 'agent') continue;
+    errs.push({
+      file: ref.from,
+      msg: `${label} resolves to ${packPluginName(owner)}, but ${packPluginName(ref.fromPack)} may only `
+        + 'reach its own pack or kai-core — no department pack depends on another',
+    });
+  }
+  return errs;
+}
+
+// Assign every referenced asset to one pack, by the ratified rule: an asset
+// travels with the sole pack that invokes it, and an asset invoked from more
+// than one pack promotes to core, the plugin every pack already requires.
+// Pure over collected references; the generator consumes this to route assets
+// into trees, and the checks below re-derive the invariants from the consumers.
+export function planAssets(refs) {
+  const assets = new Map();
+  for (const ref of refs) {
+    if (ref.kind !== 'asset') continue;
+    const entry = assets.get(ref.target) ?? { asset: ref.target, consumers: [], packs: new Set() };
+    entry.consumers.push({ from: ref.from, pack: ref.fromPack });
+    if (ref.fromPack) entry.packs.add(ref.fromPack);
+    assets.set(ref.target, entry);
+  }
+  for (const entry of assets.values()) {
+    entry.owner = entry.packs.size === 1 ? [...entry.packs][0] : 'core';
+  }
+  return new Map([...assets].sort((a, b) => a[0].localeCompare(b[0])));
+}
+
+// Check the asset plan against the bodies that invoke it: the file exists, a
+// shared asset is owned by core, and every consumer can reach its owner.
+// `exists` is injected so this stays pure and testable off a real tree.
+export function assetOwnershipErrors({ assets, exists }) {
+  const errs = [];
+  for (const [asset, entry] of assets) {
+    const packs = [...entry.packs].sort();
+    if (!exists(asset)) {
+      errs.push({
+        file: entry.consumers[0].from,
+        msg: `invokes \`${asset}\`, which does not exist in this plugin — the pack that ships that `
+          + 'instruction would carry a command nobody can run',
+      });
+      continue;
+    }
+    if (packs.length > 1 && entry.owner !== 'core') {
+      errs.push({
+        file: asset,
+        msg: `is invoked from ${packs.map(packPluginName).join(' and ')} but is assigned to `
+          + `${packPluginName(entry.owner)} — an asset shared across packs belongs to kai-core`,
+      });
+      continue;
+    }
+    for (const consumer of entry.consumers) {
+      if (!consumer.pack) {
+        errs.push({ file: consumer.from, msg: `invokes \`${asset}\` but belongs to no pack` });
+        continue;
+      }
+      if (entry.owner === 'core' || entry.owner === consumer.pack) continue;
+      errs.push({
+        file: consumer.from,
+        msg: `invokes \`${asset}\`, which ships in ${packPluginName(entry.owner)} — `
+          + `${packPluginName(consumer.pack)} can only run its own assets or kai-core's`,
+      });
+    }
+  }
+  return errs;
+}
+
+// hooks.json is assigned to exactly one pack, and the scripts it runs ship in
+// that same pack. Pure: `owners` is every pack claiming the file, `hookAssets`
+// the plugin-relative commands it runs, `assets` the plan from planAssets.
+export function hooksAssignmentErrors({ owners, hookAssets = [], assets = new Map(), packs = PACK_ORDER }) {
+  const errs = [];
+  const file = HOOKS_FILE;
+  if (owners.length === 0) {
+    errs.push({
+      file,
+      msg: 'is assigned to no pack — the host-executed subagent observer would ship in no plugin at all',
+    });
+  } else if (owners.length > 1) {
+    errs.push({
+      file,
+      msg: `is claimed by ${owners.map(packPluginName).join(' and ')} — the host loads every installed `
+        + 'copy, so the observer would fire once per pack on every subagent',
+    });
+  }
+  for (const owner of owners) {
+    if (!packs.includes(owner)) errs.push({ file, msg: `is assigned to "${owner}", which is not a pack` });
+  }
+  const owner = owners.length === 1 ? owners[0] : null;
+  for (const asset of hookAssets) {
+    const entry = assets.get(asset);
+    if (!entry) {
+      errs.push({
+        file,
+        msg: `runs \`${asset}\`, which no pack owns — a hook cannot point at a file its own plugin `
+          + 'does not ship',
+      });
+      continue;
+    }
+    if (owner && entry.owner !== owner) {
+      errs.push({
+        file,
+        msg: `runs \`${asset}\`, owned by ${packPluginName(entry.owner)}, but ships in `
+          + `${packPluginName(owner)} — \${PLUGIN_ROOT} resolves inside the hook's own plugin`,
+      });
+    }
   }
   return errs;
 }

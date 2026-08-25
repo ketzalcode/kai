@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.59.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.60.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 **Groundwork for the pack split.** The build tooling now speaks one
@@ -41,6 +41,10 @@ validate and release gates are multi-manifest aware — so a future `kai-core` p
 department packs can never land outside version and release enforcement. Every
 generated department agent now carries a fail-closed core preflight: a missing or
 version-skewed `kai-core` produces a refusal, never a silent half-working agent.
+Validation also resolves every cross-pack reference — inherited, user-invoked and
+orchestrated, plus the scripts an instruction tells you to run and the single pack
+that owns `hooks.json` — so a reference that only works because everything ships
+in one directory fails now rather than after the split.
 kai still ships as the single `kai` plugin; no packs are published yet.
 
 ```text
