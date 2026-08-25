@@ -7,9 +7,11 @@
 //   • workspace-contract consistency — the managed .gitignore block, the
 //     .kai/runs areas, initiative artifact directories, and the library/<type>
 //     set stay in sync across the manifest schema and scaffolds;
-//   • generated-pack guarantees — the canonical fail-closed core preflight, byte
-//     for byte, exactly once, in every generated department agent and in no core
-//     agent, over a probe skill whose marker and version are rigid;
+//   • generated-pack guarantees — the canonical fail-closed core preflight and
+//     the degraded-mode refusal that follows it, byte for byte, exactly once, in
+//     every generated department agent and in neither case in a core agent, over
+//     a probe skill whose marker and version are rigid, with the refusal held to
+//     restating no core rule;
 //   • cross-pack references — every inherited, user-invoked and orchestrated
 //     reference, plus every invoked script and hooks.json itself, resolves to
 //     core or to the referring body's own pack;
@@ -28,7 +30,8 @@ import {
 import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
   materializePacks, preflightBlock as canonicalPreflightBlock,
-  PREFLIGHT_BLOCK_REL, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  degradedBlock as canonicalDegradedBlock, degradedBlockErrors, coreContractLines,
+  PREFLIGHT_BLOCK_REL, DEGRADED_BLOCK_REL, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   HOOKS_FILE, HOOKS_OWNER, declaredInherits, dispatchedRefs, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors,
@@ -357,25 +360,31 @@ for (const agent of agentFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Core preflight block (generated department agents)
+// Guarantee blocks (generated department agents)
 //
 // A pack agent that cannot reach core cannot reach a skill that would tell it
-// what to do about core, so the fail-closed probe is copied into every generated
-// department agent's OWN body. One canonical file, pinned byte for byte here, is
-// what stops those copies from drifting — the same reasoning as
-// inherits-block.txt above. Core agents are excluded: they ship inside the pack
-// that provides the probe.
+// what to do about core, so both guarantee blocks are copied into every
+// generated department agent's OWN body: the fail-closed probe first, then the
+// degraded-mode refusal for the case the probe cannot cover — core answered and
+// is compatible, and the operating contract still is not in the session. One
+// canonical file each, pinned byte for byte here, is what stops those copies
+// from drifting — the same reasoning as inherits-block.txt above. Core agents
+// are excluded from both: they ship inside kai-core itself.
 // ---------------------------------------------------------------------------
 
 const preflightPath = join(ROOT, PREFLIGHT_BLOCK_REL);
 const preflight = existsSync(preflightPath) ? canonicalPreflightBlock(ROOT) : null;
+const degradedPath = join(ROOT, DEGRADED_BLOCK_REL);
+const degraded = existsSync(degradedPath) ? canonicalDegradedBlock(ROOT) : null;
 
-// What the authoritative generator emits, materialised once: the preflight pin
-// below and the cross-pack reference checks further down both resolve against the
-// tree a user would install, not against a plan that only adds up on paper.
-// Generation needs the canonical block, so when it is missing this stands down
-// behind the error reported on the next line instead of crashing the whole run.
-const generatedPacks = preflight ? materializePacks({ root: ROOT, version: '0.0.0-validate' }) : new Map();
+// What the authoritative generator emits, materialised once: the block pins below
+// and the cross-pack reference checks further down both resolve against the tree a
+// user would install, not against a plan that only adds up on paper. Generation
+// needs both canonical blocks, so when either is missing this stands down behind
+// the error reported for it instead of crashing the whole run.
+const generatedPacks = preflight && degraded
+  ? materializePacks({ root: ROOT, version: '0.0.0-validate' })
+  : new Map();
 
 if (!preflight) {
   err(PREFLIGHT_BLOCK_REL, 'missing (canonical fail-closed core-preflight block)');
@@ -412,35 +421,68 @@ if (!preflight) {
       err(probeRel, `returns \`contract: ${declared[1]}\`, but its name pins it to ${CONTRACT_VERSION} — a skew here is invisible to the agents that trust it`);
     }
   }
+}
 
-  // The pin that decides it: what the authoritative generator actually emits.
-  for (const [key, body] of generatedPacks) {
-    if (!/^kai-[a-z]+\/agents\/.+\.agent\.md$/.test(key)) continue;
-    const copies = body.split(preflight).length - 1;
-    if (key.startsWith('kai-core/')) {
-      if (copies !== 0) {
-        err(`generated ${key}`, 'carries the core-preflight block; a core agent ships inside the pack that provides the probe, so it would only ever fail on itself');
-      }
-      continue;
+// The refusal restates no operating rule — that is the whole reason it cannot
+// drift from core, so it is checked rather than trusted.
+if (!degraded) {
+  err(DEGRADED_BLOCK_REL, 'missing (canonical degraded-mode refusal block)');
+} else {
+  for (const msg of degradedBlockErrors({
+    block: degraded,
+    refusalToken: REFUSAL,
+    ids: new Set([...skillIds, ...agentIds]),
+    contractLines: coreContractLines(ROOT),
+  })) err(DEGRADED_BLOCK_REL, msg);
+}
+
+// The pin that decides it: what the authoritative generator actually emits. The
+// map is empty when either canonical block is missing, so this reports the copy
+// state only when there is a copy to judge.
+for (const [key, body] of generatedPacks) {
+  if (!/^kai-[a-z]+\/agents\/.+\.agent\.md$/.test(key)) continue;
+  const copies = body.split(preflight).length - 1;
+  const refusals = body.split(degraded).length - 1;
+  if (key.startsWith('kai-core/')) {
+    if (copies !== 0) {
+      err(`generated ${key}`, 'carries the core-preflight block; a core agent ships inside the pack that provides the probe, so it would only ever fail on itself');
     }
-    if (copies !== 1) {
-      err(`generated ${key}`, `carries the verbatim core-preflight block ${copies} time(s); exactly one copy is required`);
-      continue;
+    if (refusals !== 0) {
+      err(`generated ${key}`, 'carries the degraded-mode refusal; a core agent ships inside kai-core, so the absence it refuses is not a state it can be in');
     }
-    const at = body.indexOf(preflight);
-    const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
-    const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
-    if (at < body.indexOf('**Inherits:**')) {
-      err(`generated ${key}`, 'places the core-preflight block before the `**Inherits:**` line it must follow');
-    } else if (inheritsBlock && at < directiveAt) {
-      err(`generated ${key}`, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
-    } else if (directiveEnd !== -1 && !/^\s*$/.test(body.slice(directiveEnd, at))) {
-      err(`generated ${key}`, 'places content between the inherited-contract directive and the core preflight — the preflight must remain the first executable instruction');
-    }
+    continue;
   }
-  if (!generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
-    err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
+  if (copies !== 1) {
+    err(`generated ${key}`, `carries the verbatim core-preflight block ${copies} time(s); exactly one copy is required`);
+    continue;
   }
+  if (refusals !== 1) {
+    err(`generated ${key}`, `carries the verbatim degraded-mode refusal ${refusals} time(s); exactly one copy is required`);
+    continue;
+  }
+  const at = body.indexOf(preflight);
+  const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
+  const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
+  if (at < body.indexOf('**Inherits:**')) {
+    err(`generated ${key}`, 'places the core-preflight block before the `**Inherits:**` line it must follow');
+  } else if (inheritsBlock && at < directiveAt) {
+    err(`generated ${key}`, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
+  } else if (directiveEnd !== -1 && !/^\s*$/.test(body.slice(directiveEnd, at))) {
+    err(`generated ${key}`, 'places content between the inherited-contract directive and the core preflight — the preflight must remain the first executable instruction');
+  }
+
+  // Order is the contract between the two blocks: the preflight decides whether
+  // core is there, and the refusal answers only after it has passed.
+  const preflightEnd = at + preflight.length;
+  const refusalAt = body.indexOf(degraded);
+  if (refusalAt < preflightEnd) {
+    err(`generated ${key}`, 'places the degraded-mode refusal before the end of the core preflight — the preflight must remain the first executable instruction, and the refusal is what a passed preflight falls to');
+  } else if (!/^\s*$/.test(body.slice(preflightEnd, refusalAt))) {
+    err(`generated ${key}`, 'places content between the core preflight and the degraded-mode refusal — the two guarantee blocks are contiguous, in that order');
+  }
+}
+if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
+  err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
 }
 
 // ---------------------------------------------------------------------------

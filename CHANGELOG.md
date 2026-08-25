@@ -4,6 +4,48 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.61.0] - 2026-08-25
+
+### Added
+
+- **A degraded-mode refusal shipped in every generated pack agent** (#29). The
+  preflight decides whether `kai-core` is there and compatible; this covers the
+  one case it cannot — core answered, and the shared operating contract still is
+  not in the session. The canonical text lives in
+  `scripts/lib/degraded-block.txt` and is copied by the authoritative generator
+  (`materializePacks`) into every generated department agent's own body,
+  immediately after the preflight, so the preflight remains the first executable
+  instruction. Core agents carry neither block: they ship inside `kai-core`, so
+  the absence the refusal describes is not a state they can be in.
+
+- **The refusal is pinned to restating nothing.** `scripts/validate-plugin.mjs`
+  now byte-pins the block into every generated department agent — exact copy,
+  exactly one, after the preflight with nothing wedged between them, and zero
+  copies in a core agent — and holds the canonical file to the rules that make it
+  drift-proof: it may only refuse, prohibit, or say to install `kai-core`; it
+  names no shipped skill or agent; it repeats no line of the live `kai-core-*`
+  contract (derived from the shipped skills, not a pinned list); it never carries
+  the preflight's `KAI-CORE-MISSING` token or a second contract-version literal;
+  and it stays inside a character budget, because a refusal that grows has become
+  the fallback contract it exists not to be.
+
+### Changed
+
+- **One injection path for both blocks.** `injectBlocks` splices the ordered
+  guarantee blocks in a single pass, and `guaranteeBlocks` defines that order
+  once, so the generator, the preview and the validator cannot disagree about it
+  and a second injection cannot re-anchor a later block above the preflight.
+  `injectPreflight` remains as the single-block form.
+
+- **`pack-preview --self-test` proves the new failures by name.** Mutation arms
+  over the shipped block — an affirmative coordination instruction, a cited
+  contract, a line lifted verbatim from core, the preflight's token, a second
+  contract version, an over-budget block, a dropped single-shot or install
+  instruction — plus on-disk arms that read every agent a full `--all` build
+  writes, and a drift arm that softens the refusal inside a generated tree and
+  catches it on that exact file. No new CI step: the workflow already runs the
+  validator and the pack self-test on every PR and push.
+
 ## [0.60.0] - 2026-08-25
 
 ### Added
@@ -2660,6 +2702,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.61.0]: https://github.com/RubenSaucedo/kai/compare/v0.60.0...v0.61.0
 [0.60.0]: https://github.com/RubenSaucedo/kai/compare/v0.59.0...v0.60.0
 [0.59.0]: https://github.com/RubenSaucedo/kai/compare/v0.58.0...v0.59.0
 [0.58.0]: https://github.com/RubenSaucedo/kai/compare/v0.57.0...v0.58.0

@@ -24,8 +24,9 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER,
+  SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX,
   planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
+  degradedBlock, guaranteeBlocks, injectBlocks, degradedBlockErrors, coreContractLines,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   inheritedSkills as inheritedSkillsOf,
   collectReferences, referenceErrors, packProviders,
@@ -35,11 +36,12 @@ import {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // The partition, the contract-skill name, the refusal token and the canonical
-// preflight injection live once in scripts/lib/pack-plan.mjs. Re-exported here
-// so callers and the locked partition doc that name them on pack-preview keep
+// block injection live once in scripts/lib/pack-plan.mjs. Re-exported here so
+// callers and the locked partition doc that name them on pack-preview keep
 // resolving.
 export {
-  PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL, planPacks, preflightBlock, injectPreflight,
+  PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL, planPacks,
+  preflightBlock, injectPreflight, degradedBlock, guaranteeBlocks, injectBlocks,
 };
 
 // The narrow pack under test. Personal roles are chosen deliberately: they are
@@ -84,7 +86,8 @@ export function planSkills(packAgents) {
 // inherited skill: an agent that cannot reach core also cannot reach a skill
 // that tells it what to do about core. That circularity is the whole reason
 // the block is duplicated per agent rather than referenced, and why the
-// canonical text and the injection both live in scripts/lib/pack-plan.mjs.
+// canonical text and the injection both live in scripts/lib/pack-plan.mjs. The
+// degraded-mode refusal rides the same path, immediately after it.
 
 // Deterministic evaluation of the injected block's own rule against a built
 // preview: read what `kai-core-contract-v1` would return from the built core, if
@@ -132,7 +135,7 @@ const contractSkillText = (contract) => (contract === 1
 // The five-pack partition (PACKS) and the skill->provider rule (planPacks) are
 // defined once in scripts/lib/pack-plan.mjs and imported above.
 
-function writePlugin(dir, name, description, agentIds, skills, block) {
+function writePlugin(dir, name, description, agentIds, skills, blocks) {
   mkdirSync(dir, { recursive: true });
   const manifest = { name, version: '0.0.0-preview', description, skills: 'skills' };
   if (agentIds.length) manifest.agents = 'agents';
@@ -142,7 +145,7 @@ function writePlugin(dir, name, description, agentIds, skills, block) {
     for (const id of agentIds) {
       const body = readAgent(id);
       writeFileSync(join(dir, 'agents', `${id}.agent.md`),
-        block ? injectPreflight(body, block) : body.replace(/\r\n/g, '\n'));
+        blocks.length ? injectBlocks(body, blocks) : normalizeLF(body));
     }
   }
   for (const s of skills) writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'));
@@ -160,18 +163,18 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
   if (withCore) {
     const dir = join(out, 'kai-core-preview');
     writePlugin(dir, 'kai-core-preview', 'Preview of the kai shared core. Not for use.',
-      PACKS.core, plan.core, null);
+      PACKS.core, plan.core, []);
     // plan.core already copied the real probe; this rewrite is what a --contract
     // other than 1 uses to build a core the agents must refuse.
     writeSkill(dir, CONTRACT_SKILL, contractSkillText(contract));
     built.push({ name: 'kai-core-preview', dir, agents: PACKS.core.length });
   }
 
-  const block = preflightBlock();
+  const blocks = guaranteeBlocks();
   for (const p of packs) {
     const dir = join(out, `kai-${p}-preview`);
     writePlugin(dir, `kai-${p}-preview`, `Preview of the kai ${p} department. Not for use.`,
-      PACKS[p], plan.local[p], block);
+      PACKS[p], plan.local[p], blocks);
     built.push({ name: `kai-${p}-preview`, dir, agents: PACKS[p].length });
   }
   return { built, plan };
@@ -227,9 +230,9 @@ export function build({ out, withCore = true, contract = 1 }) {
     description: 'Preview of the kai personal department. Not for use.',
     agents: 'agents', skills: 'skills',
   }, null, 2)}\n`);
-  const block = preflightBlock();
+  const blocks = guaranteeBlocks();
   for (const id of PACK_AGENTS) {
-    writeFileSync(join(packDir, 'agents', `${id}.agent.md`), injectPreflight(readAgent(id), block));
+    writeFileSync(join(packDir, 'agents', `${id}.agent.md`), injectBlocks(readAgent(id), blocks));
   }
   for (const s of local) writeSkill(packDir, s, readFileSync(skillPath(s), 'utf8'));
 
@@ -241,10 +244,10 @@ export function build({ out, withCore = true, contract = 1 }) {
 //
 // Unlike the preview above, this path is the authoritative generator: it copies
 // skill and core-agent bodies verbatim from root (root stays the single source of
-// truth), injects the canonical fail-closed preflight into every department
-// agent, stamps a per-pack plugin.json, and normalises to LF so the output is
-// byte-identical on every platform. The degraded-mode block and non-markdown
-// asset routing are added by downstream items.
+// truth), injects the canonical fail-closed preflight and the degraded-mode
+// refusal that follows it into every department agent, stamps a per-pack
+// plugin.json, and normalises to LF so the output is byte-identical on every
+// platform. Non-markdown asset routing is added by a downstream item.
 // ---------------------------------------------------------------------------
 
 // Stamp generated packs in lockstep with the monolith. Falls back to the preview
@@ -327,7 +330,8 @@ function selfTest() {
 
   // --- the canonical fail-closed preflight -------------------------------
   const block = preflightBlock();
-  const injected = injectPreflight(readAgent(PACK_AGENTS[0]), block);
+  const degraded = degradedBlock();
+  const injected = injectBlocks(readAgent(PACK_AGENTS[0]), guaranteeBlocks());
   const injectedLines = injected.split('\n');
   const iInherits = injectedLines.findIndex((l) => l.startsWith('**Inherits:**'));
   const iPreflight = injectedLines.findIndex((l) => l.startsWith('## Core preflight'));
@@ -346,6 +350,18 @@ function selfTest() {
   const noAnchor = injectPreflight('---\nname: x\n---\n\nbody\n', block);
   ok(noAnchor.includes(block) && noAnchor.startsWith('---\n'),
     'an agent with no inherits line still gets the preflight, under its frontmatter rather than above it');
+
+  // --- the canonical degraded-mode refusal -------------------------------
+  const preflightEnd = injected.indexOf(block) + block.length;
+  const refusalAt = injected.indexOf(degraded);
+  ok(injected.split(degraded).length === 2,
+    'the canonical refusal is copied in verbatim, exactly once');
+  ok(refusalAt > preflightEnd,
+    'and lands after the preflight, which stays the first executable instruction');
+  ok(/^\s*$/.test(injected.slice(preflightEnd, refusalAt)),
+    'with nothing wedged between the two guarantee blocks');
+  ok(!degraded.includes(REFUSAL),
+    `the refusal does not reuse the preflight's ${REFUSAL} token — core answered, so that token would be a lie`);
 
   const shippedProbe = normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'));
   ok(/^KAI_CORE_READY$/m.test(shippedProbe)
@@ -374,6 +390,28 @@ function selfTest() {
     ok(readFileSync(join(arms, 'ready', 'kai-personal-preview', 'agents', 'persona-self.agent.md'), 'utf8')
       .includes(block),
     'a built department agent carries the canonical block on disk, not only in memory');
+
+    // The acceptance criterion, read back off disk: every agent a full --all
+    // build writes, not the one file a spot check happens to open.
+    const full = join(arms, 'all');
+    buildAll({ out: full });
+    const builtAgents = [];
+    for (const pack of Object.keys(PACKS)) {
+      const dir = join(full, `kai-${pack}-preview`, 'agents');
+      for (const file of readdirSync(dir)) {
+        builtAgents.push({ pack, body: readFileSync(join(dir, file), 'utf8') });
+      }
+    }
+    const departmentAgents = builtAgents.filter((a) => a.pack !== 'core');
+    const coreAgents = builtAgents.filter((a) => a.pack === 'core');
+    ok(departmentAgents.length === Object.entries(PACKS)
+      .filter(([pack]) => pack !== 'core').reduce((n, [, ids]) => n + ids.length, 0)
+      && departmentAgents.every((a) => a.body.split(degraded).length === 2
+        && a.body.indexOf(degraded) > a.body.indexOf(block) + block.length),
+    `all ${departmentAgents.length} department agents from --all carry the refusal once, after the preflight`);
+    ok(coreAgents.length === PACKS.core.length
+      && coreAgents.every((a) => !a.body.includes(degraded) && !a.body.includes(block)),
+    'and no core agent carries either block: kai-core cannot be absent from itself');
   } catch (e) {
     ok(false, `preflight arms threw: ${e.message}`);
   } finally {
@@ -403,6 +441,45 @@ function selfTest() {
     && plan.local.engineering.includes('review-dependencies'),
   'the generator applies the ratified core, personal, and engineering orphan dispositions');
 
+  // --- the refusal's own rules, each failure proven by name --------------
+  // Mutations of the shipped block, so what fails is the rule and not a fixture.
+  const contractLines = coreContractLines(ROOT);
+  const shippedIds = new Set([
+    ...plan.core, ...Object.values(plan.local).flat(), ...Object.values(PACKS).flat(),
+  ]);
+  const refusalErrors = (text) => degradedBlockErrors({
+    block: text, refusalToken: REFUSAL, ids: shippedIds, contractLines,
+  });
+
+  ok(contractLines.size > 100,
+    'the shipped core contract really was read, or every "restates no rule" arm below is vacuous');
+  ok(refusalErrors(degraded).length === 0,
+    'the shipped refusal satisfies every rule the validator pins it to');
+  ok(refusalErrors(`${degraded}\n- Write your handoff into the coordination thread.`)
+    .some((m) => /affirmative instruction/.test(m)),
+  'an affirmative coordination instruction added to the block fails by name');
+  ok(refusalErrors(degraded.replace('`kai-core`', '`kai-core-work-coordination`'))
+    .some((m) => /names the shipped contract/.test(m)),
+  'citing a shipped contract fails: a refusal names none, so it can copy none');
+  ok(refusalErrors(`${degraded}\n${[...contractLines][0]}`)
+    .some((m) => /restates the shipped core contract verbatim/.test(m)),
+  'a line lifted verbatim out of core fails — that is "restates no rule", mechanically');
+  ok(refusalErrors(`${degraded}\n${REFUSAL}`)
+    .some((m) => new RegExp(`${REFUSAL}\`? token`).test(m)),
+  `reusing the ${REFUSAL} token fails: the two refusals answer different questions`);
+  ok(refusalErrors(`${degraded}\nReport \`contract: 9\` to the operator.`)
+    .some((m) => /contract version/.test(m)),
+  'a second contract-version literal fails — the fail-open skew the preflight pin already forbids');
+  ok(refusalErrors(`${degraded}\n${'x'.repeat(DEGRADED_BLOCK_MAX)}`)
+    .some((m) => /refusal budget/.test(m)),
+  'a block that outgrows the refusal budget fails before it becomes a fallback contract');
+  ok(refusalErrors(degraded.replace('single-shot', 'staged'))
+    .some((m) => /single-shot/.test(m)),
+  'dropping the single-shot instruction fails: a pause is not a refusal');
+  ok(refusalErrors(degraded.replace(/^- Tell the operator to install.*$/m, '- Do not continue.'))
+    .some((m) => /exactly one .Tell the operator to install/.test(m)),
+  'losing the install remedy fails: a refusal with no way out is a dead end');
+
   // --- generator determinism + committed-tree gate -----------------------
   const selectedPacks = ['core', 'personal'];
   const m1 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
@@ -417,8 +494,11 @@ function selfTest() {
     'the materialised tree places a per-pack plugin.json and copied agent bodies');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
     'the authoritative generator injects the canonical preflight into department agents');
-  ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(block)),
-    'and never into a core agent, which ships inside the pack that provides the probe');
+  ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(degraded),
+    'and the degraded refusal alongside it, from the same authoritative path');
+  ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(block)
+    && !m1.get(`kai-core/agents/${id}.agent.md`).includes(degraded)),
+  'and neither into a core agent, which ships inside the pack whose absence they cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
     'core provides the probe the injected block tells department agents to invoke');
   ok(![...m1.keys()].some((key) => key.startsWith('kai-engineering/')),
@@ -460,6 +540,18 @@ function selfTest() {
     };
     ok(checkSelected().length === 0,
       'a freshly generated tree passes the regenerate-and-diff check with no drift');
+
+    // Softening the refusal in a shipped tree is the drift this whole pin
+    // exists to catch, so it is proven on the exact file it would land in.
+    const agentPath = join(scratch, 'kai-personal', 'agents', 'persona-self.agent.md');
+    const original = readFileSync(agentPath, 'utf8');
+    writeFileSync(agentPath, original.replace(degraded, degraded.replace('Refuse', 'Consider refusing')));
+    ok(checkSelected().some((d) => d.includes('kai-personal/agents/persona-self.agent.md')),
+      'a softened refusal inside a generated agent is caught as drift, on that exact file');
+    writeFileSync(agentPath, original);
+    ok(checkSelected().length === 0,
+      'and restoring it clears the drift, so the check reports state rather than history');
+
     const victim = join(scratch, 'kai-core', 'plugin.json');
     writeFileSync(victim, `${readFileSync(victim, 'utf8')}tampered`);
     ok(checkSelected().length > 0,

@@ -30,6 +30,13 @@ export const REFUSAL = 'KAI-CORE-MISSING';
 // reason scripts/lib/inherits-block.txt is a file.
 export const PREFLIGHT_BLOCK_REL = 'scripts/lib/preflight-block.txt';
 
+// The canonical degraded-mode refusal, carried on the same terms. It answers the
+// one case the preflight cannot: core answered and is compatible, and the shared
+// operating contract still is not in the session. Because a refusal restates no
+// rule it has nothing to drift from; `degradedBlockErrors` below is what keeps it
+// a refusal instead of a second copy of the contract.
+export const DEGRADED_BLOCK_REL = 'scripts/lib/degraded-block.txt';
+
 // The default committed-tree root. release-guard classifies changes under it as
 // behavior-sensitive and the validator discovers manifests under it; the
 // generated trees themselves land in a downstream item.
@@ -232,22 +239,22 @@ export function planManifests({
 // Materialise the whole partition into an in-memory map of pack-relative path ->
 // file content (LF-normalised, sorted keys). Skill bodies and core agent bodies
 // are copied verbatim from root — root stays the single source of truth and
-// nothing is moved. Department agent bodies additionally carry the canonical
-// fail-closed preflight (below); the degraded-mode block and non-markdown asset
-// routing are added by downstream items, not here.
+// nothing is moved. Department agent bodies additionally carry the guarantee
+// blocks (below); non-markdown asset routing is added by a downstream item.
 export function materializePacks({
   root = REPO_ROOT, version = '0.0.0-preview', packs = PACK_ORDER,
 } = {}) {
   const files = new Map();
-  const block = preflightBlock(root);
+  const blocks = guaranteeBlocks(root);
   for (const p of planManifests({ root, version, packs })) {
     files.set(`${p.dir}/plugin.json`, `${JSON.stringify(p.manifest, null, 2)}\n`);
     for (const id of p.agents) {
       const body = normalizeLF(readAgentBody(root, id));
-      // Core agents ship inside the pack that provides the probe, so a preflight
-      // there could only ever fail on itself.
+      // Core agents carry neither block: they ship inside kai-core, so the
+      // preflight could only ever fail on itself and the absence the refusal
+      // describes is not a state a core agent can be in.
       files.set(`${p.dir}/agents/${id}.agent.md`,
-        p.kind === 'core' ? body : injectPreflight(body, block));
+        p.kind === 'core' ? body : injectBlocks(body, blocks));
     }
     for (const id of p.skills) {
       files.set(`${p.dir}/skills/${id}/SKILL.md`, normalizeLF(readFileSync(skillFile(root, id), 'utf8')));
@@ -256,22 +263,37 @@ export function materializePacks({
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
 }
 
-// The canonical preflight text, read from disk rather than restated here: one
-// source is what the CI byte-pin pins, and prose duplicated into JS is prose
-// that drifts.
-export function preflightBlock(root = REPO_ROOT) {
-  return normalizeLF(readFileSync(join(root, ...PREFLIGHT_BLOCK_REL.split('/')), 'utf8')).trimEnd();
-}
+// The canonical block texts, read from disk rather than restated here: one source
+// is what the CI byte-pin pins, and prose duplicated into JS is prose that drifts.
+const readBlock = (root, relPath) =>
+  normalizeLF(readFileSync(join(root, ...relPath.split('/')), 'utf8')).trimEnd();
 
-// Splice the block into an agent body, LF throughout: splicing LF lines into a
-// CRLF checkout would leave the generated agent with mixed endings.
-export function injectPreflight(body, block) {
+export const preflightBlock = (root = REPO_ROOT) => readBlock(root, PREFLIGHT_BLOCK_REL);
+
+export const degradedBlock = (root = REPO_ROOT) => readBlock(root, DEGRADED_BLOCK_REL);
+
+// The guarantee blocks every generated department agent carries, in the order
+// they must appear. The order is the contract: the preflight is the first
+// executable instruction, and the refusal is what a session falls to only once
+// the preflight has passed. Defined once so the generator, the preview and the
+// validator cannot disagree about it.
+export const guaranteeBlocks = (root = REPO_ROOT) => [preflightBlock(root), degradedBlock(root)];
+
+// Splice the ordered blocks into an agent body, LF throughout: splicing LF lines
+// into a CRLF checkout would leave the generated agent with mixed endings. One
+// splice, in argument order — injecting twice would re-resolve the same anchor
+// and push the newer block above the preflight that has to stay first.
+export function injectBlocks(body, blocks) {
   const lines = normalizeLF(body).split('\n');
   const at = afterInheritsDirective(lines);
   const spacer = lines[at] === undefined || lines[at].trim() === '' ? [] : [''];
-  lines.splice(at, 0, '', ...block.split('\n'), ...spacer);
+  const spliced = blocks.flatMap((block) => ['', ...block.split('\n')]);
+  lines.splice(at, 0, ...spliced, ...spacer);
   return lines.join('\n');
 }
+
+// The single-block form, kept for callers that inject only the preflight.
+export const injectPreflight = (body, block) => injectBlocks(body, [block]);
 
 // The first line after the whole inherits directive block — the `**Inherits:**`
 // line plus the blockquote that binds it — so the probe never lands between a
@@ -285,6 +307,101 @@ function afterInheritsDirective(lines) {
   if (lines[j]?.trim() === '' && lines[j + 1]?.startsWith('>')) j += 1;
   while (lines[j]?.startsWith('>')) j += 1;
   return j;
+}
+
+// ---------------------------------------------------------------------------
+// The degraded refusal's own rules
+//
+// The block's entire value is that it restates nothing: a prohibition stays
+// correct however core evolves, while an affirmative instruction is a second
+// copy of the operating contract that drifts from it silently. So the rules
+// below allow exactly three things to be said — refuse, prohibit, install
+// `kai-core` — and reject anything that names, quotes or outgrows the contract.
+// Pure over plain data, so the preview self-test proves each failure by name.
+// ---------------------------------------------------------------------------
+
+// A refusal needing more room than this has become the fallback contract it
+// exists not to be. Raising it is a decision, not a formatting fix.
+export const DEGRADED_BLOCK_MAX = 1200;
+
+// Long enough that a shared line is a lifted sentence rather than a coincidence.
+const DEGRADED_QUOTE_MIN = 40;
+
+// The two affirmative instructions the block may give — the single-shot refusal
+// and the one remedy — plus the prohibitions, which cannot drift.
+const DEGRADED_OPENERS = [/^Do not\b/, /^Never\b/, /^Refuse\b/, /^Tell the operator to install\b/];
+
+// Every substantial line of the shipped core contract, derived from the live core
+// skills so the "restates no rule" check re-derives as core evolves instead of
+// pinning a list that rots.
+export function coreContractLines(root = REPO_ROOT) {
+  const lines = new Set();
+  for (const id of listSkillIds(root)) {
+    if (!id.startsWith('kai-core-')) continue;
+    for (const line of normalizeLF(readFileSync(skillFile(root, id), 'utf8')).split('\n')) {
+      const text = line.trim();
+      if (text.length >= DEGRADED_QUOTE_MIN) lines.add(text);
+    }
+  }
+  return lines;
+}
+
+// Returns plain message strings, one per violated rule.
+export function degradedBlockErrors({
+  block, refusalToken, ids = new Set(), contractLines = new Set(),
+}) {
+  const errs = [];
+  const known = ids instanceof Set ? ids : new Set(ids);
+  const contract = contractLines instanceof Set ? contractLines : new Set(contractLines);
+  const text = normalizeLF(block);
+
+  if (!text.includes('`kai-core`')) {
+    errs.push('never names `kai-core`, so it states the problem and withholds the one thing that fixes it');
+  }
+  if (!text.includes('single-shot')) {
+    errs.push('does not say the session is single-shot — without that it reads as a pause, not a refusal');
+  }
+  if (refusalToken && text.includes(refusalToken)) {
+    errs.push(`carries the preflight's exact \`${refusalToken}\` token, which means core is missing or skewed; `
+      + 'this block covers the case where core answered, so overloading the token makes both refusals unreadable');
+  }
+  if (/`contract:/.test(text)) {
+    errs.push('states a contract version; compatibility belongs to the preflight alone, and a second version '
+      + 'literal is exactly the fail-open skew the preflight pin exists to prevent');
+  }
+  if (text.length > DEGRADED_BLOCK_MAX) {
+    errs.push(`is ${text.length} characters, over the ${DEGRADED_BLOCK_MAX}-character refusal budget — `
+      + 'a refusal that needs this much room has become the fallback contract it exists not to be');
+  }
+
+  const bullets = text.split('\n').filter((l) => /^-\s+/.test(l)).map((l) => l.replace(/^-\s+/, ''));
+  if (!bullets.length) errs.push('states no instruction at all');
+  for (const bullet of bullets) {
+    if (DEGRADED_OPENERS.some((re) => re.test(bullet))) continue;
+    errs.push(`gives the affirmative instruction "${bullet}" — the block may only refuse, prohibit, or say to `
+      + 'install `kai-core`; anything else is a coordination rule, and a coordination rule here drifts from core');
+  }
+  const opening = (re) => bullets.filter((b) => re.test(b)).length;
+  if (opening(/^Refuse\b/) !== 1) {
+    errs.push('must carry exactly one `Refuse …` instruction — the single-shot refusal is the whole block');
+  }
+  if (opening(/^Tell the operator to install\b/) !== 1) {
+    errs.push('must carry exactly one `Tell the operator to install …` instruction — one remedy, stated once');
+  }
+  if (!opening(/^(Do not|Never)\b/)) errs.push('carries no prohibition, so it refuses nothing');
+
+  for (const m of text.matchAll(/`([^`]+)`/g)) {
+    if (!known.has(m[1])) continue;
+    errs.push(`names the shipped contract \`${m[1]}\` — a refusal cites no contract, and citing one is the `
+      + 'first step to copying it');
+  }
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (t.length < DEGRADED_QUOTE_MIN || !contract.has(t)) continue;
+    errs.push(`restates the shipped core contract verbatim ("${t.slice(0, 60)}…") — the block states the `
+      + 'absence of the contract, it never carries a copy of it');
+  }
+  return errs;
 }
 
 // Every committed plugin manifest: the root monolith plus any pack tree under

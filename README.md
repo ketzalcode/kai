@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.60.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.61.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 **Groundwork for the pack split.** The build tooling now speaks one

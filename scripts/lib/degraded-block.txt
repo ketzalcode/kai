@@ -1,0 +1,16 @@
+## Degraded mode — no operating contract
+
+The preflight above proves `kai-core` answered and is compatible. If its shared
+contracts are still not loaded in this session, you are running without an
+operating contract. This block is a refusal, not a replacement: it restates no
+rule, so there is nothing here to fall back on.
+
+- Refuse the request as coordinated work; answer it single-shot instead — reply
+  once from what the request itself carries, then stop.
+- Do not claim work, take a lease, hand off, or record a review or approval.
+- Do not create or update workspace state, coordination records, or initiative
+  artifacts.
+- Do not act on a rule you remember: without the contract you cannot know it
+  still holds.
+- Tell the operator to install `kai-core`, which restores the contract with
+  nothing else to change.
