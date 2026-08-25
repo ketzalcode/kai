@@ -63,3 +63,39 @@ Append-only communication log mirroring
   verification: **no `packs/` tree exists on `main`**, so this item still owns creating the
   first one, and A1 (`checkCommitted` ENOENT before the `--write` hint) is still reachable
   exactly as described.
+
+## NOTE 2026-08-25-1440 — workflow-ship: 3 of 6 dependencies satisfied; still blocked and still out of scope
+
+- **`pack-split-crosspack-validator` reached `shipped`** at 2026-08-25-1440 — PR #156
+  squash-merged 2026-08-25T21:38:09Z into merge commit
+  `32a07a9a56a6b244586f9048b6bb395e86e43020`, released **`v0.60.0`**, `main` run `32902043562`
+  `conclusion: success`, production verification PASSED. With `pack-split-preflight-compat`
+  (`v0.59.0`) and `pack-split-generator-gates` (`v0.58.0`), **three of six** dependencies are
+  satisfied.
+- **This item remains NOT executable.** Three are still open: `pack-split-degraded-refusal` and
+  `pack-split-ci-partition-checks` (both required at `shipped`; both are `ready` and now
+  dispatchable, but neither has shipped) and `pack-split-host-semantics-spike` (required at
+  `completed`; it needs an `@operator` host session). It is additionally in
+  `first-pack-extracted`, outside `northstar.scope.current` — the one-way valve stays shut
+  regardless of dependency count.
+- `workflow-ship` reconciles dependencies only; it did not promote, dispatch or re-prioritize,
+  and **changed no field on this record**.
+- **Binding constraints this item inherits from the `v0.60.0` architecture ratification —
+  carried here so they are not rediscovered:** (1) **consume `planAssets` and `HOOKS_OWNER`; do
+  not re-derive ownership** — a second ownership truth in the emitter is the A5 duplicate-truth
+  defect class and would be invisible, because the validator would keep agreeing with itself;
+  (2) **route the hook's scripts by declaration** — `hooks.json` and everything its commands
+  invoke ship with `HOOKS_OWNER`, because `${PLUGIN_ROOT}` never crosses a plugin boundary, so a
+  prose mention must not decide where a host-executed script lands; (3) **emit `hooks.json` into
+  core only** — the union check fails a second emitter by name, and that alarm is intended.
+- **Two recorded caveats become live work here, not defects today.** **N3** — the hooks-claimant
+  filter is `key.endsWith('/hooks.json')` where `^[^/]+/hooks\.json$` is the intent; unreachable
+  until this item emits trees. **N4** — the collector's asset key-space is top-level
+  `scripts/<name>.<ext>` while the hooks-command extractor accepts nested paths and reads only
+  the first `${PLUGIN_ROOT}` path per command; a nested or second hook script fails closed but
+  with a misleading "no pack owns it" message. Also inherited: **two of
+  `assetOwnershipErrors`' four arms are structurally unreachable** until this item supplies an
+  independent owner source — today's green is not the guarantee they will become.
+- **Production still holds the committed-unpublished line:** at the `v0.60.0` merge commit,
+  `COMMITTED_PACKS = []`, there is **no `packs/` tree**, and the marketplace is still N=1
+  (`kai` at `source: "."`). This item still owns creating the first tree.

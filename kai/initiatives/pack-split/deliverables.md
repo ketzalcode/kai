@@ -11,7 +11,27 @@ one-way and steward-approved:
 | Engineering delivery decomposition (14-item build & ship plan) | dependency-guarantees | pack-split-engineering-decomposition | kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md | — | completed / accepted |
 | Release record — pack generator + multi-manifest gates (`0.58.0`) | dependency-guarantees | pack-split-generator-gates | kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **SHIPPED 2026-08-25** (`v0.58.0`, merge `47aa0549…`) |
 | Release record — combined fail-closed preflight + version-compat (`0.59.0`) | dependency-guarantees | pack-split-preflight-compat | kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **SHIPPED 2026-08-25** (`v0.59.0`, merge `67670525…`, production verification PASSED) |
-| Release record — cross-pack reference validator, invoked assets, hooks-exactly-once (`0.60.0`) | dependency-guarantees | pack-split-crosspack-validator | kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **RELEASE-READY 2026-08-25** (PR #156 open at head `0f3705e0…`, `v0.60.0` not yet cut — **not shipped**) |
+| Release record — cross-pack reference validator, invoked assets, hooks-exactly-once (`0.60.0`) | dependency-guarantees | pack-split-crosspack-validator | kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **SHIPPED 2026-08-25** (`v0.60.0`, merge `32a07a9a…`, `main` run `32902043562` success, production verification PASSED 7/7) |
+
+The **release record** for `pack-split-crosspack-validator` was written by `workflow-ship`
+at the 2026-08-25-1435 DoD gate (verdict **RELEASE-READY**, all six dimensions Clear, none
+waived) and **closed at the 2026-08-25-1440 CONFIRM-START + CONFIRM-COMPLETE run (verdict
+SHIPPED)**. It now records a completed ship: the six-dimension evidence — including the
+PR-side run `32900688907` / job `contract`, 11/11 steps `success`, which closed the one
+criterion only CI could close — the rollout and rollback plans, the operator deploy handoff,
+and the executed production verification. The operator squash-merged PR #156 at
+2026-08-25T21:38:09Z into `32a07a9a56a6b244586f9048b6bb395e86e43020`; `main` run
+**`32902043562`** concluded **`success`** at that exact head with `Validate plugin contract`
+and `Pack generator self-test` both green — the steps the new cross-pack, asset-ownership and
+hooks-assignment checks ride in — and annotated tag `v0.60.0` plus its published release peel
+to the merge commit. Production verification **PASSED 7 of 7, every check re-derived
+read-only** against the merge commit itself, including `COMMITTED_PACKS = []` with **no
+`packs/` tree** proven positively from the root tree, marketplace still N=1, and the `agents`
+and `skills` trees **byte-identical to base** — the validator landed without editing a single
+shipped body. Rollback was never invoked, and the record was updated in place with the
+deployment record and the executed verification. Its library promotion was already complete at
+`kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md`, inside
+the same records commit as the merge, so **no post-ship reconciliation is owed**.
 
 The **release record** for `pack-split-preflight-compat` was written by `workflow-ship`
 at the 2026-08-25-1310 DoD gate (verdict **RELEASE-READY**, all six dimensions Clear,

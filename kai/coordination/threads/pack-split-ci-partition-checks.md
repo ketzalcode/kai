@@ -77,3 +77,30 @@ Append-only communication log mirroring
              `pack-split-preflight-compat` ship and the director dispatches. One review only
              (`independent-architecture`); must precede `pack-split-generated-pack-trees` so core's
              generated tree carries `kai-core-fleet-observation`.
+
+## NOTE 2026-08-25-1440 — workflow-ship: both dependencies now satisfied (reconciliation only)
+
+`pack-split-crosspack-validator` reached **`shipped`** at 2026-08-25-1440 (PR #156 squash-merged
+2026-08-25T21:38:09Z into merge commit `32a07a9a56a6b244586f9048b6bb395e86e43020`, released
+**`v0.60.0`**, `main` run `32902043562` `conclusion: success`, production verification PASSED on
+all seven checks). With `pack-split-preflight-compat` already `shipped` at `v0.59.0`, **both**
+`depends_on` entries on this item are now satisfied and the director's dependency check passes.
+
+**This note changes nothing on this record.** State stays `ready`, `owner` stays `null`, version
+and `updated` are untouched, no lease was taken, and no acceptance criterion moved. Dispatch is
+the **director's** call, not the ship gate's — this is reconciliation, not a dispatch signal.
+
+**Two things the dispatching role must carry, not inherit:**
+
+1. **The touch-conflict check is not waived by this item becoming dispatchable.** `v0.60.0` moved
+   `scripts/lib/pack-plan.mjs`, `scripts/validate-plugin.mjs` and `scripts/pack-preview.mjs` on
+   `main` — three of this item's declared `touches`, plus a header-only change to
+   `.github/workflows/validate.yml`. Read that diff (merge commit above) rather than the
+   pre-`0.60.0` files; `pack-split-degraded-refusal` shares the first two and is also dispatchable.
+2. **Findings routed here at the crosspack ship gate are waiting.** **N1** — a dispatch entry
+   naming a deleted *skill* is silently dropped (skills classify by resolution, agents by shape);
+   the recorded cheap mitigation is widening the live self-test arm from one `workflow-doc-review`
+   lens to the full lens set. **N2** — two "agent-shaped token" definitions now exist
+   (`AGENT_REF` in `validate-plugin.mjs` omits `creative`; the newer `AGENT_SHAPED` is complete);
+   the fix is one exported family constant both derive from, which changes a docs-scanning check's
+   behaviour and therefore rides with **A5** here. Neither is a defect in what shipped.

@@ -5,11 +5,11 @@ title: Cross-pack reference validator across all three firing paths + assets + h
 initiative: pack-split
 milestone: dependency-guarantees
 delivery_class: product-change
-state: release-ready
+state: shipped
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack-split cross-pack reference validation
 artifact_target: null
 context_artifacts:
@@ -52,9 +52,9 @@ completed_reviews:
     evidence: "## Review — independent architecture (ratification), 2026-08-25-1428"
     timestamp: 2026-08-25-1428
 change_ref: cb5fd0290f1a8b7478b54e98bf24f1968aa58f09
-version: 6
+version: 9
 lease: null
-updated: 2026-08-25-1435
+updated: 2026-08-25-1440
 ---
 
 ## Outcome
@@ -489,3 +489,85 @@ check that fails closed on any extra path.
 and stays non-dispatchable; `pack-split-degraded-refusal` still overlaps
 `scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs` as **live surface movement**.
 Milestone `dependency-guarantees` remains **2 of 5 required items `shipped`**.
+
+## Ship confirm — CONFIRM-START + CONFIRM-COMPLETE, 2026-08-25-1440 (`workflow-ship`)
+
+- **Verdict: `SHIPPED`.** Self-granted the workflow lease at version 6 (token
+  `wsh-2026-08-25-1440-cpv-confirm`, `version_at_grant: 6`), walked every required lifecycle
+  state, then cleared it. **`release-ready` -> `deploying` (v7) -> `production-verification`
+  (v8) -> `shipped` (v9)**; `resume_state` stays `null`. No state was skipped and `shipped`
+  was **not** reached directly from `release-ready`. `next_role: "@operator" -> null`.
+  *(Stamped `1440` to keep append-only ordering behind the `1435` PREPARE entry; this
+  session's clock read 14:39 local, i.e. minutes after the 21:38:09Z merge.)*
+- **kai merged, tagged, released and published nothing — at any phase.** The operator executed
+  every one of those actions and supplied the evidence; this run recorded it and re-derived the
+  production facts read-only. No implementation file, release-metadata file, tag or release was
+  created or modified here. **No rollback was invoked.**
+- **`change_ref` deliberately unchanged** at `cb5fd0290f1a8b7478b54e98bf24f1968aa58f09` — the
+  object the sole required review binds. Deployment moves an item's *state*, not its reviewed
+  implementation ref; the merge commit is recorded below as deployment evidence instead.
+
+**Deployment start (operator-supplied, CONFIRM-START).** PR #156 squash-merged
+2026-08-25T21:38:09Z into merge commit `32a07a9a56a6b244586f9048b6bb395e86e43020` on `main`
+(single parent `630089bc3609e4b5793f3e755fadc7bb51d43bf4`, signature `verified: true`, read from
+the git-commits API); environment `main` + GitHub Releases; version `0.59.0 -> 0.60.0`. The `main`
+`validate` run started 2026-08-25T21:38:12Z —
+<https://github.com/RubenSaucedo/kai/actions/runs/32902043562>.
+
+**Deployment completion (CONFIRM-COMPLETE).** That run reports `status: completed`,
+**`conclusion: success`**, `event: push`, `run_attempt: 1`, `head_sha` exactly
+`32a07a9a56a6b244586f9048b6bb395e86e43020`, `display_title: "feat: validate cross-pack references
+(#156)"`, `21:38:12Z -> 21:38:27Z`. **Read from `api.github.com` by this run — a URL without a
+successful conclusion would not have been accepted as completion.** Annotated tag `v0.60.0` and
+release <https://github.com/RubenSaucedo/kai/releases/tag/v0.60.0> published 2026-08-25T21:38:41Z.
+
+**Production verification — all seven checks PASS, every one re-derived read-only against the
+merge commit itself** (via `api.github.com`, the git trees/tags APIs and
+`raw.githubusercontent.com` at `32a07a9a…`), deliberately **not** the local worktree, so a dirty
+checkout could not have produced a false pass.
+
+| # | Check | Result | How verified |
+|---|-------|--------|--------------|
+| 1 | `validate` green on `main` at the merge commit | **PASS (re-derived)** | Run `32902043562`: `event: push`, `run_attempt: 1`, `conclusion: success`, `head_sha 32a07a9a…`, 21:38:12Z -> 21:38:27Z. Corroborated locally: `.git/refs/heads/main` = that SHA. |
+| 2 | The new gates actually ran in production | **PASS (re-derived)** | Job `contract` `97977862619` on `ubuntu-latest`, all steps `success`, including step 4 **`Validate plugin contract`** and step 8 **`Pack generator self-test`** — where the cross-pack, asset-ownership and hooks-assignment checks live — plus step 9 `Committed pack trees match the generator`. Step 11 (`Release-guard --base --head`) is `skipped`, which is **correct on a `push` event**: it is the `pull_request`-only gate and it ran green on the PR. Neither of the two load-bearing steps was skipped. |
+| 3 | Version coherence `0.60.0` on `main` | **PASS (re-derived)** | At the merge commit: `plugin.json`; `package.json`; `package-lock.json` **both** root `version` and `packages[""].version`; `marketplace.json` `metadata.version` **and** `plugins[0].version`; `README.md` `## Status` = `v0.60.0` — 56 agents and 51 skills; `CHANGELOG.md` `## [0.60.0] - 2026-08-25` and its `[0.60.0]: …/compare/v0.59.0...v0.60.0` link, read at the merge commit (not from the worktree). The link is **not dangling** — the API reports tag ref `v0.59.0` (`338cfb04…`). Eight of eight. |
+| 4 | Marketplace still exactly one entry | **PASS (re-derived)** | `.github/plugin/marketplace.json` at the merge commit: `plugins[]` length **1**, `name: kai`, `source: "."`. No pack entries; the monolith remains authoritative. |
+| 5 | `COMMITTED_PACKS` empty **and** no `packs/` tree | **PASS (re-derived, proven positively)** | `scripts/lib/pack-plan.mjs` at the merge commit still reads `export const COMMITTED_PACKS = [];`. Absence of `packs/` is not inferred from a local glob: the merge commit's root tree (`7b17dd14…`, `"truncated": false`) lists `package-lock.json`, `package.json`, `plugin.json`, `scripts`, `skills`, `test` — `packs` sorts between `package.json` and `plugin.json` in git's byte ordering and **is absent**. The committed-unpublished non-negotiable holds **in production**. |
+| 6 | Validator symbols present; roster unmoved | **PASS (re-derived)** | `scripts/validate-plugin.mjs` at the merge commit imports `declaredInherits, dispatchedRefs, packProviders, collectReferences, referenceErrors, planAssets, assetOwnershipErrors, hooksAssignmentErrors, HOOKS_FILE, HOOKS_OWNER` from `./lib/pack-plan.mjs`, and its header states the cross-pack contract; `pack-plan.mjs` exports `HOOKS_OWNER = 'core'` and the collector/resolver set. Roster untouched, proven by tree identity rather than by diff-reading: `agents` (`c0284f31…`), `skills` (`2a4a7abc…`), `docs`, `examples`, `test` and the `hooks.json` blob are **byte-identical** between base `630089bc…` and the merge commit. Not one shipped body was edited. |
+| 7 | Tag and release | **PASS (re-derived)** | `refs/tags/v0.60.0` -> annotated **tag object** `d5cd9590bbb56e348a090df205a8edc475f6e993`, peeled via the git-tags API to commit `32a07a9a…` — **the merge commit** (local `.git/refs/tags/v0.60.0` holds the same tag object). Release `376735380`, `draft: false`, `prerelease: false`, published 21:38:41Z. |
+
+**Release-note language checked by reading the published body, not by report.** It claims CI
+validation only — "Added CI validation for inherited, user-invoked, and orchestrated references
+across generated pack boundaries", asset-ownership validation, and the exactly-one-owner
+`hooks.json` contract — and states outright that publication is unchanged: "no `packs/` tree is
+committed and the marketplace still exposes only the monolithic `kai` plugin." It makes **no**
+claim that a pack is generated, committed or published, and does **not** imply the split is done.
+Compliant with the constraint the ship record placed on deploy step 6.
+
+**Environment limits, stated rather than absorbed.** This run had **no shell** (read / search /
+edit / fetch only), so nothing was executed: every production fact above is a *read* of the merge
+commit, the workflow API, the git object APIs or the published release. Unlike the PREPARE run,
+`api.github.com` did **not** rate-limit here, so the job-step breakdown and the annotated-tag peel
+were genuinely re-derived rather than attested. The two claims that were operator-attested at
+PREPARE — byte-identity between `cb5fd029…` and the PR head, and the local suite — were converted
+by the operator's deploy steps 1 and 3 and are now **subsumed by production evidence**: the merge
+tree changed only the files this item declared, and the identical gates ran green on `main`.
+
+**What shipping this does and does not change.** Milestone `dependency-guarantees` moves to
+**3 of 5 required items `shipped`** — still **OPEN** (`degraded-refusal` and `ci-partition-checks`
+remain). Dependents cleared strictly by the DAG, not generously:
+**`pack-split-ci-partition-checks` now has both dependencies satisfied** (`preflight-compat`
+shipped, this item shipped) and is **dispatchable** — but it is still `ready` with `owner: null`,
+so **dispatch is the director's call, not this gate's**, and its declared `touches` overlap
+`scripts/lib/pack-plan.mjs`, `scripts/validate-plugin.mjs`, `scripts/pack-preview.mjs` and
+`.github/workflows/validate.yml` — surfaces this release just moved — so the touch-conflict check
+at dispatch applies harder, not less, and it must read this diff rather than the pre-`0.60.0`
+files. **`pack-split-degraded-refusal`** was already dispatchable; nothing here changed that, and
+its overlap with this item on `pack-plan.mjs` / `validate-plugin.mjs` is now **landed on `main`**,
+so it rebases onto live surface. **`pack-split-generated-pack-trees`** goes from **2 of 6** to
+**3 of 6** dependencies met and stays `proposed`, in `first-pack-extracted`, outside
+`scope.current` — the one-way valve stays shut. **No follow-up is owed on the record itself:** the
+ship record was promoted to its canonical library path in the same records commit as the merge
+(deploy step 2), so unlike `0.58.0` there is no post-ship `git mv` outstanding. The parked
+PROPOSAL, N1–N5 and the three WS#7 binding constraints travel unchanged; **this run created no
+item and accepted no residual risk.**
