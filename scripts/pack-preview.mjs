@@ -23,18 +23,22 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
-  PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, REFUSAL, SKILL_OWNER_OVERRIDES,
-  planPacks, planManifests, materializePacks,
+  PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  SKILL_OWNER_OVERRIDES,
+  planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   inheritedSkills as inheritedSkillsOf,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// The partition, the contract-skill name and the refusal token live once in
-// scripts/lib/pack-plan.mjs. Re-exported here so callers and the locked
-// partition doc that name them on pack-preview keep resolving.
-export { PACKS, CONTRACT_SKILL, REFUSAL, planPacks };
+// The partition, the contract-skill name, the refusal token and the canonical
+// preflight injection live once in scripts/lib/pack-plan.mjs. Re-exported here
+// so callers and the locked partition doc that name them on pack-preview keep
+// resolving.
+export {
+  PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL, planPacks, preflightBlock, injectPreflight,
+};
 
 // The narrow pack under test. Personal roles are chosen deliberately: they are
 // the department whose removal from a default install is most defensible, and
@@ -77,37 +81,51 @@ export function planSkills(packAgents) {
 // The preflight is written into each pack agent's OWN body, never into an
 // inherited skill: an agent that cannot reach core also cannot reach a skill
 // that tells it what to do about core. That circularity is the whole reason
-// this block is duplicated per agent rather than referenced.
-export function preflightBlock() {
-  return [
-    '',
-    '## Core preflight — before anything else',
-    '',
-    `Your first action in every session is to invoke the \`${CONTRACT_SKILL}\` skill.`,
-    '',
-    `- If it returns \`KAI_CORE_READY\` and a \`contract:\` line whose value is \`1\`,`,
-    '  continue normally and do not mention the check.',
-    '- If the skill is unavailable, or the marker is missing, or the contract value',
-    `  is anything other than \`1\`: **stop immediately**. Reply with exactly`,
-    `  \`${REFUSAL}\` and nothing else. Do not claim work, take a lease, write`,
-    '  workspace state, use any other tool, or attempt the request from memory.',
-    '',
-  ].join('\n');
+// the block is duplicated per agent rather than referenced, and why the
+// canonical text and the injection both live in scripts/lib/pack-plan.mjs.
+
+// Deterministic evaluation of the injected block's own rule against a built
+// preview: read what `kai-core-contract-v1` would return from the built core, if
+// any, and apply the three conditions the block states. This is what makes the
+// core-absent and version-skew arms answerable without a live host.
+export function evaluatePreflight(out) {
+  const probe = join(out, 'kai-core-preview', 'skills', CONTRACT_SKILL, 'SKILL.md');
+  if (!existsSync(probe)) {
+    return { ok: false, reply: REFUSAL, detail: `no ${CONTRACT_SKILL} skill is installed (core absent)` };
+  }
+  const text = normalizeLF(readFileSync(probe, 'utf8'));
+  if (!/^KAI_CORE_READY$/m.test(text)) {
+    return { ok: false, reply: REFUSAL, detail: `${CONTRACT_SKILL} returns no KAI_CORE_READY marker` };
+  }
+  const declared = text.match(/^contract:\s*(\S+)$/m);
+  if (!declared) {
+    return { ok: false, reply: REFUSAL, detail: `${CONTRACT_SKILL} returns no contract version` };
+  }
+  if (declared[1] !== CONTRACT_VERSION) {
+    return {
+      ok: false,
+      reply: REFUSAL,
+      detail: `core speaks contract ${declared[1]}, the injected block requires ${CONTRACT_VERSION} (version skew)`,
+    };
+  }
+  return {
+    ok: true,
+    reply: null,
+    detail: `core reports contract ${CONTRACT_VERSION} — department agents continue silently`,
+  };
 }
 
-// Insert the preflight directly after the inherits directive block, which ends
-// at the first blank line following the `**Inherits:**` line. Output is
-// normalised to LF: the repo checks out CRLF on Windows, and splicing LF-joined
-// lines into a CRLF file would leave generated agents with mixed endings.
-export function injectPreflight(body, block) {
-  const lines = body.replace(/\r\n/g, '\n').split('\n');
-  const i = lines.findIndex((l) => l.startsWith('**Inherits:**'));
-  if (i === -1) return block + lines.join('\n');
-  let j = i + 1;
-  while (j < lines.length && lines[j].trim() !== '') j++;
-  lines.splice(j, 0, block);
-  return lines.join('\n');
+function reportPreflight(out) {
+  const pf = evaluatePreflight(out);
+  console.log(`\npreflight: ${pf.reply ?? 'ready'} — ${pf.detail}`);
 }
+
+// Core's copy of the probe: the real shipped skill, or a synthesized build when
+// --contract asks for a version core does not actually speak. Skew is only
+// testable if the preview can lie about the version on purpose.
+const contractSkillText = (contract) => (contract === 1
+  ? normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'))
+  : contractSkill(contract));
 
 // The five-pack partition (PACKS) and the skill->provider rule (planPacks) are
 // defined once in scripts/lib/pack-plan.mjs and imported above.
@@ -141,7 +159,9 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
     const dir = join(out, 'kai-core-preview');
     writePlugin(dir, 'kai-core-preview', 'Preview of the kai shared core. Not for use.',
       PACKS.core, plan.core, null);
-    writeSkill(dir, CONTRACT_SKILL, contractSkill(contract));
+    // plan.core already copied the real probe; this rewrite is what a --contract
+    // other than 1 uses to build a core the agents must refuse.
+    writeSkill(dir, CONTRACT_SKILL, contractSkillText(contract));
     built.push({ name: 'kai-core-preview', dir, agents: PACKS.core.length });
   }
 
@@ -155,6 +175,8 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
   return { built, plan };
 }
 
+// Synthesize a probe reporting an arbitrary contract version. Only the skew arms
+// use this: contract 1 is served by the real shipped skill.
 export function contractSkill(contractVersion) {
   return [
     '---',
@@ -193,7 +215,7 @@ export function build({ out, withCore = true, contract = 1 }) {
       skills: 'skills',
     }, null, 2)}\n`);
     for (const s of core) writeSkill(coreDir, s, readFileSync(skillPath(s), 'utf8'));
-    writeSkill(coreDir, CONTRACT_SKILL, contractSkill(contract));
+    writeSkill(coreDir, CONTRACT_SKILL, contractSkillText(contract));
   }
 
   const packDir = join(out, 'kai-personal-preview');
@@ -216,10 +238,11 @@ export function build({ out, withCore = true, contract = 1 }) {
 // Committed pack trees — the deterministic generator (materialise + diff)
 //
 // Unlike the preview above, this path is the authoritative generator: it copies
-// agent/skill bodies verbatim from root (root stays the single source of truth),
-// stamps a per-pack plugin.json, and normalises to LF so the output is
-// byte-identical on every platform. Guarantee-block injection and non-markdown
-// asset routing are added by downstream items; this ships the machinery.
+// skill and core-agent bodies verbatim from root (root stays the single source of
+// truth), injects the canonical fail-closed preflight into every department
+// agent, stamps a per-pack plugin.json, and normalises to LF so the output is
+// byte-identical on every platform. The degraded-mode block and non-markdown
+// asset routing are added by downstream items.
 // ---------------------------------------------------------------------------
 
 // Stamp generated packs in lockstep with the monolith. Falls back to the preview
@@ -300,12 +323,17 @@ function selfTest() {
   ok(core.every((s) => !local.includes(s)),
     'core and pack skill sets are disjoint: a skill has exactly one provider');
 
-  const body = readAgent(PACK_AGENTS[0]);
-  const injected = injectPreflight(body, preflightBlock());
-  const iInherits = injected.split('\n').findIndex((l) => l.startsWith('**Inherits:**'));
-  const iPreflight = injected.split('\n').findIndex((l) => l.includes('Core preflight'));
-  ok(iInherits !== -1 && iPreflight > iInherits,
-    'the preflight lands after the inherits directive, not before it');
+  // --- the canonical fail-closed preflight -------------------------------
+  const block = preflightBlock();
+  const injected = injectPreflight(readAgent(PACK_AGENTS[0]), block);
+  const injectedLines = injected.split('\n');
+  const iInherits = injectedLines.findIndex((l) => l.startsWith('**Inherits:**'));
+  const iPreflight = injectedLines.findIndex((l) => l.startsWith('## Core preflight'));
+  ok(iInherits !== -1 && iPreflight > iInherits
+    && injectedLines[iPreflight - 1] === '' && injectedLines[iPreflight - 2]?.startsWith('>'),
+  'the preflight lands after the whole inherits directive, not between the line and the directive that binds it');
+  ok(injected.split(block).length === 2,
+    'the canonical block is copied in verbatim, exactly once');
   ok(injected.split('**Inherits:**').length === 2,
     'injection does not duplicate the inherits line CI pins to exactly one');
   ok(injected.includes(REFUSAL),
@@ -313,12 +341,42 @@ function selfTest() {
   ok(/^---\n/.test(injected) && !injected.includes('\r'),
     'frontmatter still opens the file and endings are uniform LF, so the host can load it');
 
-  const noAnchor = injectPreflight('no directive here\n', preflightBlock());
-  ok(noAnchor.includes('Core preflight'),
-    'an agent without an inherits line still gets the preflight rather than silently skipping it');
+  const noAnchor = injectPreflight('---\nname: x\n---\n\nbody\n', block);
+  ok(noAnchor.includes(block) && noAnchor.startsWith('---\n'),
+    'an agent with no inherits line still gets the preflight, under its frontmatter rather than above it');
 
-  ok(contractSkill(1).includes('contract: 1') && contractSkill(2).includes('contract: 2'),
-    'the contract skill reports the version it was built with, so skew is testable');
+  const shippedProbe = normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'));
+  ok(/^KAI_CORE_READY$/m.test(shippedProbe)
+    && new RegExp(`^contract: ${CONTRACT_VERSION}$`, 'm').test(shippedProbe),
+    'the shipped probe skill returns the rigid marker and pins contract 1');
+  ok(contractSkill(2).includes('contract: 2'),
+    'the preview can still synthesize a skewed core, or version skew is untestable');
+
+  let arms = null;
+  try {
+    arms = mkdtempSync(join(tmpdir(), 'kai-preflight-'));
+    const arm = (name, opts) => {
+      const out = join(arms, name);
+      buildAll({ out, packs: ['personal'], ...opts });
+      return evaluatePreflight(out);
+    };
+    const ready = arm('ready', {});
+    const noCore = arm('no-core', { withCore: false });
+    const skew = arm('skew', { contract: 2 });
+    ok(ready.ok && ready.reply === null,
+      'against the real core the preflight is ready, and the agent continues silently');
+    ok(noCore.reply === REFUSAL,
+      `the core-absent arm fails closed with the exact ${REFUSAL} token`);
+    ok(skew.reply === REFUSAL,
+      'the contract-2 arm fails closed with the same exact token — absence and skew share one refusal path');
+    ok(readFileSync(join(arms, 'ready', 'kai-personal-preview', 'agents', 'persona-self.agent.md'), 'utf8')
+      .includes(block),
+    'a built department agent carries the canonical block on disk, not only in memory');
+  } catch (e) {
+    ok(false, `preflight arms threw: ${e.message}`);
+  } finally {
+    if (arms) rmSync(arms, { recursive: true, force: true });
+  }
 
   const plan = planPacks();
   const rosterSize = readdirSync(join(ROOT, 'agents')).filter((f) => f.endsWith('.agent.md')).length;
@@ -355,6 +413,12 @@ function selfTest() {
   ok(m1.has('kai-core/plugin.json') && m1.has('kai-personal/plugin.json')
     && m1.has('kai-personal/agents/persona-self.agent.md'),
     'the materialised tree places a per-pack plugin.json and copied agent bodies');
+  ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
+    'the authoritative generator injects the canonical preflight into department agents');
+  ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(block)),
+    'and never into a core agent, which ships inside the pack that provides the probe');
+  ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
+    'core provides the probe the injected block tells department agents to invoke');
   ok(![...m1.keys()].some((key) => key.startsWith('kai-engineering/')),
     'a core-plus-personal slice does not materialise unselected departments');
 
@@ -465,8 +529,9 @@ if (args.includes('--self-test')) {
   console.log(`pack-preview --write: ${r.written} file(s) -> ${r.dir}`);
 } else if (args.includes('--all')) {
   const packsArg = flag('--packs', '');
+  const out = flag('--out');
   const r = buildAll({
-    out: flag('--out'),
+    out,
     packs: packsArg ? packsArg.split(',') : undefined,
     withCore: !args.includes('--no-core'),
     contract: Number(flag('--contract', '1')),
@@ -484,9 +549,11 @@ if (args.includes('--self-test')) {
       console.log(`  ${skill} -> ${SKILL_OWNER_OVERRIDES[skill]}`);
     }
   }
+  reportPreflight(out);
 } else if (args.includes('--out')) {
+  const out = flag('--out');
   const r = build({
-    out: flag('--out'),
+    out,
     withCore: !args.includes('--no-core'),
     contract: Number(flag('--contract', '1')),
   });
@@ -494,6 +561,7 @@ if (args.includes('--self-test')) {
   console.log(`pack agents: ${PACK_AGENTS.length}, pack-local skills: ${r.local.length}`);
   console.log(r.coreDir ? `core: ${r.coreDir}` : 'core: not built');
   console.log(`pack: ${r.packDir}`);
+  reportPreflight(out);
 } else {
   console.log('usage: node scripts/pack-preview.mjs --check          (regenerate + diff committed packs/)');
   console.log('       node scripts/pack-preview.mjs --write          (materialise committed packs/)');

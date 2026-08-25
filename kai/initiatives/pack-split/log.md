@@ -641,3 +641,476 @@ records (+ their threads, each with a HANDOFF to `principal-swe-infra` that stat
 and this log. The northstar was **not** edited — no milestone, `required_items` mapping,
 `scope.current`, or non-negotiable changed. Three open questions still stand, all non-blocking.
 Handoff to `director-chief-of-staff`: dispatch only from the reachable head of the queue.
+
+## 2026-08-25 — preflight-compat built to `in-review` (blocked on one file; nothing run, nothing committed)
+
+`principal-swe-infra` implemented `pack-split-preflight-compat`, the queue head and the first
+**active** dependency-guarantee item. Record v2 -> v3, **`ready -> in-review`**,
+`owner: principal-swe-infra`, `next_role: principal-swe-architect`, no lease held or granted.
+
+**What now exists in the working tree.** The canonical `scripts/lib/preflight-block.txt` — one
+combined fail-closed probe + version check, and the **only** copy of that prose in the repo.
+Injection moved out of the throwaway preview and into the **authoritative** generator:
+`materializePacks` (`scripts/lib/pack-plan.mjs`) injects the block into every generated
+**department** agent after its `**Inherits:**` directive, LF-normalised, exactly one inherits line
+preserved, **core agents excluded** (they ship inside the pack that provides the probe, so a
+preflight there could only fail on itself). `kai-core-contract-v1: core` is an explicit
+`SKILL_OWNER_OVERRIDES` entry, keeping the nine ratified orphan dispositions untouched and the
+`orphans.length === overrides.length` pairing honest at 10/10. `scripts/pack-preview.mjs` now
+consumes the shared functions and prints a deterministic verdict, so the no-core and `contract: 2`
+arms each emit the exact `KAI-CORE-MISSING` token while contract 1 reports ready.
+`scripts/validate-plugin.mjs` pins the generated block byte-for-byte on the `inherits-block.txt`
+precedent. Catalog, `docs/reference/agents-and-skills.md` and `test/fixtures/inventory.json` file
+the new skill at **51**, and `0.58.0 -> 0.59.0` is bumped across all eight release locations.
+
+**One correction worth recording.** The prototype spliced the block at the first blank line
+*after* the `**Inherits:**` line — which lands it **between** that line and the
+`> Load and apply…` blockquote that binds it, splitting a directive. Injection now lands after the
+whole directive block. If the ratified intent was the original position, the architecture review
+should say so and it reverts.
+
+**Why this is `in-review` and not further.** The run had **no shell**. Two consequences, both
+stated on the record rather than papered over:
+
+1. **`skills/kai-core-contract-v1/SKILL.md` is not on disk.** The available file tool will not
+   create a file whose parent directory is missing, and there was no shell to `mkdir`. Acceptance
+   criterion 1 is **unmet**; the exact intended body is recorded verbatim in the item thread's
+   2026-08-25-1157 HANDOFF. Until it lands, `validate-plugin` and `pack-preview --self-test`
+   **fail by design** — the orphan/override pairing, the probe checks and the placement check all
+   name it. That is the guarantee firing, not a regression.
+2. **No command was run.** `npm test`, `validate-plugin`, `pack-preview --self-test`/`--check`,
+   `host-contract`, `docs:check` are all still owed. `docs/reference/agents-and-skills.md` and
+   `test/fixtures/inventory.json` were hand-generated to match generator output and are the
+   likeliest byte-mismatch on the first run.
+
+Nothing was branched, committed, pushed, tagged, released or opened as a PR — the changes sit
+**uncommitted on `main`**, so `change_ref` is `null` and **neither required review can bind yet**.
+Both remain owed at the *same* `change_ref`: `principal-swe-architect` /
+`independent-architecture` and `principal-security` / `independent-security`.
+
+**Boundaries held.** No degraded-mode block (`pack-split-degraded-refusal` owns it); no
+version-skew CI arm (`pack-split-ci-partition-checks` owns it); **no `packs/` tree** —
+`COMMITTED_PACKS` stays empty and `--write` still refuses, so the committed-unpublished
+non-negotiable is untouched; no cross-pack validator, collision gate, fleet rename, migration
+doctor, marketplace publication, tag or release. `.github/workflows/validate.yml` is in `touches`
+but was **deliberately not changed** — both new gates run inside scripts CI already executes, and a
+duplicate step would be a second place to keep in sync for no coverage. `touches` was extended
+with the catalog/inventory/release paths the AGENTS.md release rules make mandatory, declared on
+the record rather than left as a silent expansion. The partition lock's dated `[observed]`
+"50 on-disk skills" statement was **not** retro-edited: it was true when observed, the lock says
+its count excludes this skill, and rewriting a ratified dated observation is the steward's call.
+
+**Milestone status unchanged: `dependency-guarantees` is OPEN, 1 of 5 required items `shipped`.**
+`in-review` is not progress toward closure. `degraded-refusal` and `ci-partition-checks` still
+require this item at `shipped` and remain non-dispatchable. `pack-split-crosspack-validator`
+overlaps it on `scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`, so the
+touch-conflict check at dispatch now matters more, not less — sequence it after this merges or it
+rebases onto a moved surface.
+
+## 2026-08-25 — preflight-compat: blocker resolved, verification green, still uncommitted (reconciliation)
+
+`principal-swe-infra` reconciled `pack-split-preflight-compat` after the operator resolved the
+environment blocker and ran verification. Record v3 -> v4, **still `in-review`**,
+`owner: principal-swe-infra`, `next_role: principal-swe-architect`, `change_ref` still `null`, no
+lease. **Record-only pass — no implementation or release file was edited.**
+
+**The blocker in the entry above is closed, and every claim that depended on it is superseded.**
+The operator created `skills/kai-core-contract-v1/` and wrote `SKILL.md` with the **exact** body
+recorded verbatim in the item thread's 2026-08-25-1157 HANDOFF; it was verified here by reading
+the file — front matter and both `KAI_CORE_READY` / `contract: 1` marker lines byte-identical.
+Everything on the prior record saying *no shell*, *not on disk*, *no command was run*, or *the
+suite fails by design* is **stale and must not be carried into review**. The prior entry stays
+unedited as the honest record of what was true then.
+
+**Verification, operator-run and attested (this pass had no shell and re-executed nothing):**
+`pack-preview --self-test` **44 checks passed**; `--all` contract 1 → preflight ready;
+`--all --no-core` → exact `KAI-CORE-MISSING`; `--all --contract 2` → exact `KAI-CORE-MISSING`;
+`--check` passed (no committed packs configured — the expected result while `COMMITTED_PACKS` is
+empty); `validate-plugin` valid at **56 agents / 51 skills**; catalog check passed; host-contract
+self-test passed with the inventory matching; release-guard self-test passed; syntax check passed;
+**full `npm test` passed.** Acceptance criteria 1–5 are ticked on that evidence. On the refusal
+arms, the operator's log abbreviates them as `--all`, but `--out <dir>` was necessarily supplied —
+`buildAll` calls `rmSync(out, …)` before building — so the criterion's exact command form was run.
+
+**One command failed, and it belongs on the record.** The operator additionally attempted
+`node scripts/generate-fixture.mjs`. **That script does not exist in this repo** and nothing in
+`package.json` references it, so the command failed on the missing file **before any change** — no
+partial write, no side effect, nothing to roll back. It is **not** part of `npm test` and **not**
+required by any acceptance criterion: a wrong guess at a helper name, not a failing gate. The real
+generator `npm run docs:generate` succeeded, and the hand-edited `test/fixtures/inventory.json` was
+then validated by the gate that actually owns it — `host-contract --self-test` — which passed with
+the inventory matching. A reconciliation that lists only the green commands is not a
+reconciliation, so it is stated rather than dropped.
+
+**Still NOT complete, NOT release-ready, NOT shipped.** The remaining acceptance criterion — the
+`validate` workflow **green on the pushed PR** — is deliberately **unticked**. Branch
+`kai/feat/29-preflight-compat` exists, cut from `9d16e0751cc223f9bc9421cedbf0ac32b134b9c3` (`main`
+after PR #153), but the reflog shows **no commit on it**: the work is an uncommitted working tree
+that has moved from `main` onto a branch, nothing more. `change_ref` is therefore `null` and
+**neither required review can bind** — `principal-swe-architect` / `independent-architecture` and
+`principal-security` / `independent-security` must ratify the **same** `change_ref`. Local green is
+evidence for acceptance; it is not a review and it is not CI.
+
+**Milestone status unchanged: `dependency-guarantees` is OPEN, 1 of 5 required items `shipped`.**
+Ticking local criteria is not progress toward closure. `degraded-refusal` and
+`ci-partition-checks` still require this item at `shipped` and remain non-dispatchable, and
+`pack-split-crosspack-validator` still overlaps it on `scripts/lib/pack-plan.mjs` and
+`scripts/validate-plugin.mjs`. **Boundaries still held:** no pack trees (`COMMITTED_PACKS` empty,
+`--write` still refuses, so the committed-unpublished non-negotiable is untouched), no marketplace
+pack entries, no degraded-mode block, no cross-pack validator, no collision gates, no migration
+logic, no tag, no release, no publication.
+
+## 2026-08-25 — preflight-compat: independent architecture review CHANGES REQUIRED (seam endorsed, two guards incomplete)
+
+`principal-swe-architect` reviewed `change_ref a15bd82310737abe550fe660f3677eb19f1c0da2` — the
+first ref this item has ever had, minted by the operator with `git stash create` over the staged
+0.59.0 implementation. Item v5 -> v6, **still `in-review`**, lease cleared,
+`next_role: principal-swe-architect -> principal-swe-infra`. The bound snapshot was read through
+the worktree on the operator's attested empty diff for all implementation/release files; this run
+had no shell and re-executed nothing, so the green suite was treated as **input, not verdict**.
+No implementation or release file was edited; no commit, push, PR, merge, tag, release or
+publication.
+
+**`completed_reviews` is still `[]`, deliberately.** The `independent-architecture` requirement is
+**unmet**, and only reviews matching the current `change_ref` count — a non-ratifying verdict must
+not sit in a list whose sole meaning is "requirement satisfied at this ref". **`principal-security`
+is NOT unblocked**: both required reviews must bind the *same* ref, so security reviews the next
+one, not this one.
+
+**The seam is endorsed. Two guards on it are incomplete, and both are silent under a fully green
+CI.** One canonical block, injected by the authoritative `materializePacks` into non-core agents
+only, over a core-owned probe, with root as the single source, is the right structure — and
+neither finding is a defect in behaviour today. Both are holes in the *pin* this item exists to
+provide, and both close inside files already in `touches`, with no new file, no new CI step, no
+new capability and no acceptance criterion added or raised.
+
+- **A1 — the demanded contract version is the one semantic element of the canonical block that is
+  not pinned.** The validator pins three properties of `preflight-block.txt` (it names
+  `CONTRACT_SKILL`, carries `REFUSAL`, carries the override sentence) and none pins the version;
+  the validator and the preview each compare the *probe* against an independent bare `'1'`. Flip
+  one character so the block demands `2` and every gate stays green while every generated
+  department agent refuses a healthy core. Presence-detection rides two shared constants;
+  version-detection — the half this item is named for — rides prose nobody checks.
+- **A2 — the generated-agent position check has no upper bound.** Only two lower bounds are
+  asserted, and `injectPreflight`'s anchor returns the same index every call, so
+  `pack-split-degraded-refusal`'s obvious composition lands its block **above** the preflight and
+  still passes every check — a section headed "before anything else" that is no longer first.
+  This item established the anchor and the pin, so it is the cheapest place to make that seam
+  fail loudly rather than the next item's to discover.
+
+**Ruled clean, and worth recording as settled:** the pre-review ordering fix **works** — the
+heading claims primacy, the body names the earlier directive and overrides it, and the directive's
+fallback clause does not survive as a competing instruction because those non-negotiables are
+constraints, not permission to act, while the block separately forbids the exact actions they
+reference. Verified against the real shape of all 56 agents (each carries exactly one
+`**Inherits:**` line *and* the verbatim blockquote), so the block's "directive above" reference
+never dangles. Also clean: core exclusion and core-owned probe placement asserted over real
+generator output; the probe restates no kai rule, so it cannot drift from core; the nine ratified
+orphan dispositions are byte-identical with `kai-core-contract-v1: core` added as the tenth, and
+`orphans === overrides` **plus** `unplaced === 0` is genuine set equality, not a count
+coincidence; the firing-path exemption is derived from the block rather than hardcoded; LF
+handling is sound on a CRLF checkout; `0.59.0` is coherent across all eight release locations with
+the marketplace still **N=1** at `source: "."`; and "no new CI step" is true — the workflow already
+runs all three gates.
+
+**Milestone status unchanged: `dependency-guarantees` OPEN, 1 of 5 required items `shipped`.** A
+bounced review moves nothing downstream. `degraded-refusal` and `ci-partition-checks` still require
+this item at `shipped` and stay non-dispatchable, and `crosspack-validator` still overlaps it on
+`scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`, so the touch-conflict check at
+dispatch still applies. **Two findings routed rather than absorbed:** `degraded-refusal` must place
+its block **after** the preflight and must not resurrect the fallback-clause conflict the preflight
+just resolved; the probe's `tools: [view]` grant, on a body that forbids any tool call, is a
+least-privilege question routed to `principal-security` — capability acceptance is not
+architecture's to give. **Boundaries held throughout the review:** no degraded block, no cross-pack
+validator, no collision gates, no migration logic, no pack publication, no tag, no release.
+
+## 2026-08-25 — preflight-compat: re-review CHANGES REQUIRED on `96b693…` (log reconciliation, recorded late)
+
+Recorded here at 2026-08-25-1248 for continuity: this log skipped the middle round, so it must not
+read as though the item went from the 1231 bounce straight to ratification. The round happened and
+is fully recorded on the item and its thread. `principal-swe-architect` re-reviewed `change_ref
+96b693a1f8742b24234c88e170a17ef747bf6830` at 2026-08-25-1241 and returned **CHANGES REQUIRED** on a
+strictly smaller surface — item v7 -> v8, still `in-review`, lease cleared, `completed_reviews`
+still `[]`, `principal-security` still not unblocked. **A2 closed and verified** (the adjacency
+guard at `validate-plugin.mjs:421–423` makes the downstream block-inversion fail by name); **N1
+closed** (README `:168` corrected to 51 skills); **A1 only partially closed** — the shared
+`CONTRACT_VERSION` constant landed correctly, but the canonical block still stated the demanded
+version **twice** and the unpinned occurrence sat in the *refusal* clause, so the residual failed
+**open** at a fail-closed trust boundary while every gate stayed green. The reviewer recorded that
+the scoping ambiguity was partly his own — the 1231 Review section specified set equality over every
+version literal while its HANDOFF summary compressed that to the singular — so what infra shipped
+was a fair reading of the summary and the bar was not raised. No design change was requested in
+either round; both sets of findings were holes in the pin, not in the seam.
+
+## 2026-08-25 — preflight-compat: independent architecture review RATIFIED at `3383d7f2…` (security is next, same ref)
+
+`principal-swe-architect` reviewed `change_ref 3383d7f2476f6ccdec5b4d3077783a13fe47eeb7` and
+**RATIFIED**. Item v9 -> v10, **still `in-review`**, lease cleared,
+`next_role: principal-swe-architect -> principal-security`, and `completed_reviews` now carries
+`principal-swe-architect` / `independent-architecture` / `ratified` at this exact ref. That entry
+is good **for this ref only** — both required reviews must bind the *same* `change_ref`, so if the
+ref moves the ratification stops counting and both re-bind together. The bound snapshot was read
+through the worktree on the operator's attested byte-identity for all implementation and release
+files; this run had **no shell** and re-executed nothing, so the green `npm test` was treated as
+**input, not verdict**. No implementation or release file was edited; no commit, push, PR, merge,
+tag, release or publication.
+
+**A1 is closed, and closed more cheaply than the reviewer specified.** The ask was an assertion to
+police two prose literals. Infra removed the second literal instead: `scripts/lib/preflight-block.txt`
+now names the accepted version **once** (`contract: 1`) and defines refusal as the *complement* of
+the continue clause — "or that exact contract line is not returned" — so the fail-open pair the
+previous round found ("continue iff `2`, stop iff anything other than `1`") is **structurally
+unconstructible** rather than merely detected, and the bump-time trigger is gone because there is no
+second literal to miss. Verified rather than assumed: the block's other backticked tokens carry no
+version, the old "anything other than" clause survives nowhere under `scripts/`, and the continue
+and refusal clauses are exact complements, so a skewed core returning `contract: 2` fails to return
+the exact line and **stops**. The pin at `validate-plugin.mjs:374–378` extracts every backticked
+`contract:` demanded value and requires exactly one equal to the shared `CONTRACT_VERSION` — it
+passes today at `["1"]` and fails **by name** on a forgotten bump, a re-added second clause, a
+dropped version, or the original flipped-literal mutation, with no false positive on
+`kai-core-contract-v1`. Generated agent bodies inherit the guarantee transitively through the
+byte-for-byte block comparison. The reviewer recorded the substitution explicitly rather than
+insisting on his own form: deleting the drift *source* is a smaller structural change than
+detecting drift after the fact.
+
+**A2 and every prior ruled-clean item were re-confirmed unchanged on this ref** and are settled: the
+adjacency guard is byte-unchanged with both bounds intact; the prose edit stranded no gate (the
+pinned override sentence is still verbatim and the preview's self-test anchors did not move);
+`COMMITTED_PACKS` is still empty with no `packs/` tree; the probe skill is byte-unchanged;
+`.github/workflows/validate.yml` is unchanged, so "no new CI step" still holds; `0.59.0` is coherent
+across all eight release locations with the marketplace still **N=1** at `source: "."`; README reads
+56 agents / 51 skills in both places; orphan/override set equality holds at 10/10 with
+`unplaced === 0`; the firing-path exemption is still derived from the block; LF handling on a CRLF
+checkout is still asserted.
+
+**Ratification is not completion.** The item is **not** `complete`, **not** `release-ready` and
+**not** `shipped`, and the CI-green-on-the-pushed-PR criterion stays **unticked** — only CI can
+supply that evidence. `principal-security` is now unblocked **on this same unchanged ref** and
+carries two things architecture deliberately did not decide: **N2**, the probe's `tools: [view]`
+grant on a body that forbids any tool call, and the trust boundary itself — a missing or skewed core
+must fail closed. Non-blocking and **recorded rather than routed**: **N4**, the pin matches
+`` `contract: N` `` forms, so a version stated as a bare backticked digit outside that form would
+escape it; nothing in the block has that shape today, so no work was created and it is a note for
+whoever performs the contract bump.
+
+**Milestone status unchanged: `dependency-guarantees` OPEN, 1 of 5 required items `shipped`.** A
+ratified review moves nothing downstream — `degraded-refusal` and `ci-partition-checks` still
+require this item at `shipped` and remain non-dispatchable, and `crosspack-validator` still overlaps
+it on `scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`, so the touch-conflict check at
+dispatch still applies. **Boundaries held:** no pack trees, no marketplace pack entries, no degraded
+block, no cross-pack validator, no collision gates, no migration logic, no tag, no release, no
+publication.
+
+## 2026-08-25 — preflight-compat: independent security review CLEAR at `3383d7f2…` (both required reviews now bind one ref)
+
+`principal-security` reviewed `change_ref 3383d7f2476f6ccdec5b4d3077783a13fe47eeb7` — the **same
+unchanged ref** architecture ratified — and returned **CLEAR**. Item **v10 -> v12** (v11 was the
+review lease grant: `holder: principal-security`, `token: 7c41-2026-08-25-1252`,
+`version_at_grant: 10`, re-read and verified before every write), **still `in-review`**, lease
+cleared, `next_role: principal-security -> workflow-ship`, and `completed_reviews` now carries
+`principal-security` / `independent-security` / `clear` at this exact ref. **Both required reviews
+are satisfied at this one ref**; if the ref moves, both entries stop counting and both must
+re-bind together. **P0 0 / P1 0 / P2 2** — neither P2 release-blocking, neither requiring a change
+at this ref. Read through the worktree on the operator's attested byte-identity for all
+implementation and release files; this run had **no shell**, nothing was executed, no active check
+was performed, and the green `npm test` was treated as **input, not verdict**. Verified defensively
+rather than assumed: the ref's loose object is present at `.git/objects/33/83d7f2…` (existence
+only — a zlib object cannot be decoded without a shell), and it is unreachable from any ref and
+absent from the reflog, consistent with the `git stash create` object the coordination contract
+permits and with this item's two prior refs. **If the worktree is not byte-identical to that
+object, the review does not bind.** No implementation or release file was edited.
+
+**The trust boundary holds by structure, not by vigilance.** The security question this item
+exists to answer is narrow — a generated department agent that cannot reach a compatible core must
+**refuse**, not degrade — and the shape that answers it is now unconstructible rather than merely
+checked. Continue and refusal are **exact complements over a single version literal** (continue =
+marker ∧ exactly `contract: 1`; refuse = unavailable ∨ marker missing ∨ that exact line not
+returned), so absence and skew share one path with no gap between the clauses, and the surviving
+literal is pinned by **set cardinality** (`validate-plugin.mjs:374–378`) — a dropped version, a
+re-added second clause, a flipped literal and a forgotten bump each fail **by name**. The control
+that matters most to security is the refusal's action list: "do not claim work, take a lease, write
+workspace state, call any other tool, or answer the request from memory" — an agent whose contract
+skills are absent is exactly the agent most likely to corrupt `kai/coordination/**`, and prevention
+is stated at the only layer that can still reach it. Refusal leaks nothing (one token, "and nothing
+else"); success is silent. Primacy is bounded on **both** sides, and the no-anchor branch is
+unreachable for shipped agents because a missing `**Inherits:**` line or missing verbatim directive
+is already a hard error (`validate-plugin.mjs:276–293`). Core exclusion is guarded by **two
+independent keys** — the generator injects on `p.kind`, the validator keys on the `kai-core/`
+directory prefix — so a mismatch in either direction is a named CI failure rather than a silent
+skip; that is a real second control and should not be "tidied" into one key. Core **exclusively**
+provides the probe (one provider per skill, `core ∩ local = ∅` asserted, materialisation into
+`kai-core/` asserted), so no department pack can self-certify core's presence. Also confirmed:
+supply chain unchanged (one git dependency, `lectoria`, pinned to a full commit SHA; both lock
+version fields `0.59.0`); **no secret, credential, token, PII, tenant identifier or endpoint** is
+read, written, logged or transported by any file in this change, and nothing in it reaches the
+network; `.github/workflows/validate.yml` is unchanged at `permissions: contents: read`, so no CI
+privilege was widened to land this.
+
+**N2 is DECIDED — `tools: [view]` on the probe is ACCEPTED as adequate least privilege**, grounded
+in shipped capability rather than argued from principle. `tools: []` is **not expressible** —
+`scripts/lib/loader-contract.mjs` rejects missing `tools`, a non-inline-array, *and* an empty
+array — so "none" was never the alternative. The repo's own declared semantic is a **ceiling, not a
+grant** (`validate-plugin.mjs`: "A skill's `tools` is what that skill may use when loaded", with
+opt-in `requires_tools:` deliberately kept as the separate mechanism for requirements on an agent).
+And marginal capability is **zero even under the opposite semantic**, because **all 56** agent files
+declare `view` — verified by reading every `^tools:` line under `agents/`, not assumed — so no agent
+that could carry the injected preflight gains anything it did not already hold; the ceiling-vs-grant
+ambiguity is **immaterial today**, not merely unlikely. `view` is read-only (no shell, no write, no
+network, no sub-agent transport), and the probe is inert at this ref: not `user-invocable`,
+inherited by nobody, no `packs/` tree, monolith injects no preflight, and the firing-path exemption
+is *derived from the block* rather than hardcoded. **Watch condition, explicitly not a change
+request:** `glob` would be strictly narrower, but moving a byte-pinned trust-boundary file for no
+measured risk reduction is not warranted; the zero-marginal-capability argument is conditional, and
+if a future agent ships **without** `view` **and** the host proves to treat skill `tools` as a
+grant, this becomes a genuine (read-only) expansion — both halves belong to
+`pack-split-host-semantics-spike`.
+
+**Two P2s, neither gating.** **P2-S1** — the generated-agent pin is gated on
+`/^kai-[a-z]+\/agents\/.+\.agent\.md$/` (`validate-plugin.mjs:404`). All five current pack keys are
+`[a-z]+`, so coverage today is **complete**; a future key with a hyphen or digit
+(`kai-customer-success`) would silently escape the copy-count, position and adjacency assertions.
+That is a **pin-coverage** gap, not a live fail-open — the generator still injects on
+`kind !== 'core'`, so the block would still be present; what is lost is verification, which only
+bites alongside a second defect. Smallest fix if ever taken: `kai-[a-z-]+`, or derive the expected
+set from `PACK_ORDER`/`planManifests`. Owner `principal-swe-infra`, natural home
+`pack-split-ci-partition-checks` (already owns partition/namespace work and already touches this
+file); **this review created no item** — filing is the steward's call. **P2-S2** — evidence gap,
+stated so it is not over-read: `evaluatePreflight` is a **JS re-implementation** of the block's rule
+against a built preview's probe, and the validator proves every generated department agent carries
+the identical, correctly placed instruction; **neither is evidence that a model obeys it**. Not
+release-blocking (this item's acceptance is generation plus byte-pin, and host empirical gates are
+out of scope, already owned by `pack-split-host-gates` and `pack-split-host-semantics-spike`), but
+it **does** bind language: no downstream record, changelog entry or release note may claim pack
+agents *refuse* — the truthful claim is that they *carry a pinned fail-closed instruction*.
+
+**Three residual risks recorded, none accepted.** **R1** — the boundary proves **availability and
+compatibility, not authenticity**: the probe answers "is a skill named `kai-core-contract-v1`
+present and does it report contract 1", not "is it genuinely core's", and it is the earliest
+instruction in a department session. A *compromised core* is not a widening (core supplies the
+operating rules anyway — total compromise either way); a *third-party plugin providing a same-named
+skill* is. **Exposure at this ref: none shipped** — `COMMITTED_PACKS` `[]`, no `packs/` tree,
+marketplace still N=1 at `source: "."`. Operator's call **at publication**; technical unknowns owned
+by `pack-split-host-semantics-spike`, gating by `pack-split-crosspack-validator` /
+`pack-split-ci-partition-checks`. **R2** — the control is instruction-level, not host-enforced;
+byte- and position-pinning are the strongest mechanical guarantees available at this layer, and
+obedience is model behaviour. Operator's call; evidence owed by `pack-split-host-gates`. **R3** —
+the block's *semantic* integrity rests on human review of one file; CI pins four properties but
+cannot prove the absence of a future fail-open clause elsewhere in the prose. None exists at this
+ref (whole file read); the control is that both required reviews re-bind on any ref change. No
+change requested. **Recording a risk is not accepting it** — nothing is waived, and no acceptance
+is needed for this item to proceed.
+
+**CLEAR is not completion.** The item is **not** `complete`, **not** `release-ready` and **not**
+`shipped`; the "`validate` green on the pushed PR" criterion stays **unticked** and nothing is
+committed on `kai/feat/29-preflight-compat` (still `9d16e075…`), so the DoD gate is expected to
+bounce the item back to `principal-swe-infra` for PR delivery — the correct mechanical outcome, not
+a security objection. **Routing deviation recorded rather than silently taken:** the dispatch
+suggested `principal-product-manager`, but `kai-core-work-coordination` → *Review routing* step 4
+names `workflow-ship` for a `product-change` item whose `review_requirements` are all satisfied at
+the current ref, which is now true; the steward keeps the acceptance-criteria call and can re-route
+cheaply. **Scope held:** no judgement was made on degraded-refusal, the version-skew CI arm,
+cross-pack collision/namespace gating, migration, committed pack trees, publication, host empirical
+gates, or PR CI status — their absence from the review is not approval of them. **Milestone status
+unchanged: `dependency-guarantees` OPEN, 1 of 5 required items `shipped`** — a clear review moves
+nothing downstream; `degraded-refusal` and `ci-partition-checks` still require this item at
+`shipped` and remain non-dispatchable, and `crosspack-validator` still overlaps it on
+`scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`, so the touch-conflict check at
+dispatch still applies. Nothing was committed, pushed, merged, tagged, released or published.
+Assessment: `kai/initiatives/pack-split/artifacts/security/pack-split-preflight-compat.md`.
+**Activity log not appended** — `kai-core-work-activity` writes via `scripts/activity.mjs` and this
+run had no shell; per that skill a failed append is reported and dropped, never retried and never
+allowed to gate the work, so this log entry was written by hand as prior runs on this item did.
+**`.kai/runs/` deliberately not used:** that lane holds evidence that must not become durable, and
+this review produced none — public repo, no secrets, no PII, no private topology, no customer data.
+With nothing to segregate, a second copy would only drift from the artifact.
+
+## 2026-08-25 — DoD gate: preflight-compat RELEASE-READY (PR #154 open, awaiting the human merge and `v0.59.0`)
+
+`workflow-ship` ran the six-dimension DoD gate on `pack-split-preflight-compat` in
+PREPARE mode. **Verdict: RELEASE-READY — all six dimensions Clear, none Waived.**
+Item version 12 -> 13 -> 14 (lease self-granted at 12, token
+`wsh-2026-08-25-1310-pfc-dod`, cleared after the write); state **`in-review` ->
+`release-ready`**, `next_role: workflow-ship -> "@operator"`, `resume_state` stays
+`null`.
+
+**This is a readiness stamp, not a ship stamp.** PR #154 is open and unmerged, no
+tag exists and no release is cut. Nothing was committed, pushed, merged, tagged,
+released or published by kai, and kai will do none of those. The ship entry for
+this item will be written only when production verification passes and the item
+reaches `shipped`.
+
+**The one open criterion closed on evidence only CI could give — and the security
+review's predicted bounce is superseded, not waved away.** At 2026-08-25-1257
+nothing was committed and the branch sat at `9d16e075…`, so "`validate` green on
+the pushed PR" could not be satisfied and a bounce was the correct expectation.
+The operator then committed the single implementation commit
+`d4145eed69681e20d2443a4242e687a9036bf557`, pushed, and opened **PR #154**.
+GitHub Actions run **32893764931** — workflow `validate`, event `pull_request`,
+`head_sha d4145eed…`, base `main` `9d16e075…`, `run_attempt: 1`,
+**`conclusion: success`**; job **`contract`** (`97951496629`) on `ubuntu-latest` /
+Node 20, `20:10:09Z -> 20:10:23Z` (**14s**), **all 11 substantive steps `success`**,
+including step 4 `Validate plugin contract` (the new byte-pin), steps 8–9 the
+pack-generator self-test and committed-tree check, and step 11 the
+`pull_request`-only **real** `release-guard --base/--head` gate. Read from
+`api.github.com` by the gate run, read-only — not accepted on report.
+
+**Delivery held the binding.** Both required reviews bind `change_ref
+3383d7f2476f6ccdec5b4d3077783a13fe47eeb7` (architecture **ratified**
+2026-08-25-1248, security **clear** 2026-08-25-1257), and the operator attests the
+implementation and release files at the PR head are byte-identical to that object.
+Because the implementation did not change, `change_ref` deliberately **stays** at
+the reviewed object, so `completed_reviews.change_ref == change_ref` still matches
+exactly. That attestation is the one thing the gate could not re-derive (no shell),
+so it is re-checked mechanically as **deploy step 1** — a non-empty
+implementation/release diff voids both bindings and returns the item to the gate.
+
+**Non-negotiables re-read, not asserted.** `COMMITTED_PACKS = []` so `--write`
+still refuses; **no `packs/` tree exists**; `.github/plugin/marketplace.json` still
+lists exactly one plugin, `kai` at `source: "."`, patched version-only
+`0.58.0 -> 0.59.0`; root `agents/`/`skills/` remain the single source of truth and
+the shipped monolith injects no preflight; groundwork stays on `0.x`. Consumers who
+update receive one **inert** 51st skill — not `user-invocable`, inherited by nobody.
+
+**Rollout, rollback and verification are recorded** in the ship record at
+`kai/initiatives/pack-split/artifacts/docs/pack-split-preflight-compat-ship-record.md`
+(canonical library home
+`kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md`
+— **promotion owed**; the gate run cannot create directories, so the `git mv` is
+deploy step 6, the same filing gap `generator-gates` hit and closed on 2026-08-25).
+Rollback is clean: pre-merge, do not merge; post-merge, one revert; post-tag, revert
+**plus** delete the `v0.59.0` tag and release. Nothing durable survives a rollback.
+
+**Language constraint carried forward from security P2-S2:** no release note may
+claim pack agents *refuse*. The truthful claim is that every generated department
+agent *carries a byte-pinned fail-closed instruction*, and that the preview's
+core-absent and version-skew arms print the exact `KAI-CORE-MISSING` token.
+
+**P2-S1 parked, not remembered.** The pin-coverage gap on
+`/^kai-[a-z]+\/agents\/.+\.agent\.md$/` is now a **PROPOSAL** in
+`kai/initiatives/pack-split/backlog.md`, owner `principal-swe-infra`, natural home
+`pack-split-ci-partition-checks`. The gate created no item — filing stays the
+steward's call. No residual risk (R1–R3) was accepted and nothing was waived.
+
+**Milestone `dependency-guarantees` is still OPEN — 1 of 5 required items
+`shipped`.** A readiness stamp moves nothing downstream: `pack-split-degraded-refusal`
+and `pack-split-ci-partition-checks` require this item at `shipped` and remain
+non-dispatchable, and `pack-split-crosspack-validator` still overlaps it on
+`scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`, so the touch-conflict
+check at dispatch still applies.
+
+**Environment limits, stated rather than absorbed.** No shell. `api.github.com`
+began returning 403 (rate limit) partway through, so the PR *file list* and a
+`GET /contents/packs?ref=d4145eed…` 404 could not be re-derived at the head; those
+claims are read from the checked-out tree at that head and are re-verified on `main`
+at production verification. **Activity log not appended** — `kai-core-work-activity`
+writes via `scripts/activity.mjs` and there was no shell; per that skill a failed
+append is reported and dropped, never retried and never allowed to gate the work, so
+this entry was written by hand as prior runs on this item did.
+
+## 2026-08-25 — preflight release record promoted
+
+- Promoted the `pack-split-preflight-compat` release-ready record to
+  `kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md`.
+- Updated current coordination and deliverables references. Historical thread and log
+  entries retain the pre-promotion path.
+- Coordination-only move: no implementation or release metadata changed.

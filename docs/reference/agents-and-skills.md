@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **50 skills** (11 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **56 agents** and **51 skills** (11 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -205,6 +205,7 @@ The shared contracts every acting agent inherits: where work goes, and what it m
 | [`kai-core-peer-communication`](../../skills/kai-core-peer-communication/SKILL.md) | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
 | [`product-exploration`](../../skills/product-exploration/SKILL.md) | Provides neutral live-product mapping. Use when PM, design, QA, domain, or engineering need an evidence-backed navigation model without UX evaluation. |
 | [`product-marketing-intelligence`](../../skills/product-marketing-intelligence/SKILL.md) | Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work. |
+| [`kai-core-contract-v1`](../../skills/kai-core-contract-v1/SKILL.md) | Reports that kai-core is installed and which contract version it provides. Invoked as the first action of every kai department pack agent. |
 
 ### Engineering craft
 

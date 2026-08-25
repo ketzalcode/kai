@@ -7,6 +7,9 @@
 //   • workspace-contract consistency — the managed .gitignore block, the
 //     .kai/runs areas, initiative artifact directories, and the library/<type>
 //     set stay in sync across the manifest schema and scaffolds;
+//   • generated-pack guarantees — the canonical fail-closed core preflight, byte
+//     for byte, exactly once, in every generated department agent and in no core
+//     agent, over a probe skill whose marker and version are rigid;
 //   • fixtures — the sample repository-mode manifest matches the schema.
 // Dependency-free (Node built-ins only) so CI runs it with no install step.
 //
@@ -21,6 +24,8 @@ import {
 } from './lib/loader-contract.mjs';
 import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
+  materializePacks, preflightBlock as canonicalPreflightBlock,
+  PREFLIGHT_BLOCK_REL, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -346,6 +351,85 @@ for (const agent of agentFiles) {
 }
 
 // ---------------------------------------------------------------------------
+// Core preflight block (generated department agents)
+//
+// A pack agent that cannot reach core cannot reach a skill that would tell it
+// what to do about core, so the fail-closed probe is copied into every generated
+// department agent's OWN body. One canonical file, pinned byte for byte here, is
+// what stops those copies from drifting — the same reasoning as
+// inherits-block.txt above. Core agents are excluded: they ship inside the pack
+// that provides the probe.
+// ---------------------------------------------------------------------------
+const preflightPath = join(ROOT, PREFLIGHT_BLOCK_REL);
+const preflight = existsSync(preflightPath) ? canonicalPreflightBlock(ROOT) : null;
+if (!preflight) {
+  err(PREFLIGHT_BLOCK_REL, 'missing (canonical fail-closed core-preflight block)');
+} else {
+  if (!preflight.includes(`\`${CONTRACT_SKILL}\``)) {
+    err(PREFLIGHT_BLOCK_REL, `does not name \`${CONTRACT_SKILL}\`, so the injected block would probe nothing`);
+  }
+  if (!preflight.includes(REFUSAL)) {
+    err(PREFLIGHT_BLOCK_REL, `does not carry the exact refusal token \`${REFUSAL}\` the block promises`);
+  }
+  const demandedVersions = [...preflight.matchAll(/`contract:\s*([^`]+)`/g)]
+    .map((match) => match[1]);
+  if (demandedVersions.length !== 1 || demandedVersions[0] !== CONTRACT_VERSION) {
+    err(PREFLIGHT_BLOCK_REL, `must demand exactly one contract version and it must be ${CONTRACT_VERSION}; found ${JSON.stringify(demandedVersions)} — duplicated prose literals can drift into fail-open skew handling`);
+  }
+  if (!preflight.includes('Do not load or apply any inherited skill until this preflight passes.')) {
+    err(PREFLIGHT_BLOCK_REL, 'does not explicitly override the inherited-skill loading order — a pack agent could touch missing core skills before proving core is compatible');
+  }
+
+  // The probe itself. The version is pinned by the skill's own name, so a body
+  // reporting anything but `contract: 1` makes every injected block wrong.
+  const probeRel = `skills/${CONTRACT_SKILL}/SKILL.md`;
+  const probePath = join(ROOT, 'skills', CONTRACT_SKILL, 'SKILL.md');
+  if (!existsSync(probePath)) {
+    err(probeRel, 'missing — every generated department agent invokes this skill as its first action');
+  } else {
+    const probe = readFileSync(probePath, 'utf8').replace(/\r\n/g, '\n');
+    if (!/^KAI_CORE_READY$/m.test(probe)) {
+      err(probeRel, 'does not return the exact `KAI_CORE_READY` marker line the preflight matches on');
+    }
+    const declared = probe.match(/^contract:\s*(\S+)$/m);
+    if (!declared) err(probeRel, 'does not return a `contract: <version>` line');
+    else if (declared[1] !== CONTRACT_VERSION) {
+      err(probeRel, `returns \`contract: ${declared[1]}\`, but its name pins it to ${CONTRACT_VERSION} — a skew here is invisible to the agents that trust it`);
+    }
+  }
+
+  // The pin that decides it: what the authoritative generator actually emits.
+  const generated = materializePacks({ root: ROOT, version: '0.0.0-validate' });
+  for (const [key, body] of generated) {
+    if (!/^kai-[a-z]+\/agents\/.+\.agent\.md$/.test(key)) continue;
+    const copies = body.split(preflight).length - 1;
+    if (key.startsWith('kai-core/')) {
+      if (copies !== 0) {
+        err(`generated ${key}`, 'carries the core-preflight block; a core agent ships inside the pack that provides the probe, so it would only ever fail on itself');
+      }
+      continue;
+    }
+    if (copies !== 1) {
+      err(`generated ${key}`, `carries the verbatim core-preflight block ${copies} time(s); exactly one copy is required`);
+      continue;
+    }
+    const at = body.indexOf(preflight);
+    const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
+    const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
+    if (at < body.indexOf('**Inherits:**')) {
+      err(`generated ${key}`, 'places the core-preflight block before the `**Inherits:**` line it must follow');
+    } else if (inheritsBlock && at < directiveAt) {
+      err(`generated ${key}`, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
+    } else if (directiveEnd !== -1 && !/^\s*$/.test(body.slice(directiveEnd, at))) {
+      err(`generated ${key}`, 'places content between the inherited-contract directive and the core preflight — the preflight must remain the first executable instruction');
+    }
+  }
+  if (!generated.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
+    err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Skill firing paths
 //
 // A skill reaches a session in exactly one of three ways, and a skill with none
@@ -384,6 +468,10 @@ for (const agent of agentFiles) {
   for (const skill of skillFiles) {
     const id = skill.id;
     if (inherited.has(id) || dispatched.has(id)) continue;
+    // The version-pinned probe fires from the canonical preflight block injected
+    // into every generated department agent — a path with no `**Inherits:**`
+    // line to grep, because the monolith has no injected bodies.
+    if (preflight && id === CONTRACT_SKILL && preflight.includes(id)) continue;
     const raw = readFileSync(skill.path, 'utf8');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
     err(rel(skill.path), 'has no firing path: no agent inherits or dispatches it, and it is not `user-invocable: true` — it can never reach a session');

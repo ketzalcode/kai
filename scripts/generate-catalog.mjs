@@ -153,7 +153,7 @@ const CATEGORIES = [
       'kai-core-work-coordination', 'kai-core-work-activity', 'fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
       'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
-      'product-exploration', 'product-marketing-intelligence',
+      'product-exploration', 'product-marketing-intelligence', 'kai-core-contract-v1',
     ],
   },
   {

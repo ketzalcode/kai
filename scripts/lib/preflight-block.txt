@@ -1,0 +1,14 @@
+## Core preflight — before anything else
+
+Your first action in every session, before any other tool call, is to invoke
+the `kai-core-contract-v1` skill.
+
+This preflight is the only exception to the inherited-skill loading directive
+above. Do not load or apply any inherited skill until this preflight passes.
+
+- If it returns `KAI_CORE_READY` and exactly `contract: 1`, continue normally
+  and never mention the check.
+- If the skill is unavailable, the marker is missing, or that exact contract
+  line is not returned: **stop immediately**. Reply with exactly
+  `KAI-CORE-MISSING` and nothing else. Do not claim work, take a lease, write
+  workspace state, call any other tool, or answer the request from memory.

@@ -76,3 +76,46 @@ PROPOSAL
 re-opened, or any re-partition leaves a department owning zero skills. Any of those makes this
 reachable and it becomes a one-line fix in `pack-split-generated-pack-trees` or the then-current
 generator item. Until then it stays parked — recorded so it is owned rather than remembered.
+
+### PROPOSAL — the generated-agent preflight pin is gated on a pack-name pattern a future pack could fall outside
+
+Parked by `workflow-ship` at the 2026-08-25-1310 DoD gate for
+`pack-split-preflight-compat`, from **security finding P2-S1** in the
+`independent-security` review (CLEAR 2026-08-25-1257 at `change_ref
+3383d7f2476f6ccdec5b4d3077783a13fe47eeb7`). Non-blocking — it did **not** gate the
+release, and it is **not** fixed in PR #154. Recorded here because the security review
+deliberately created no item ("filing is the steward's call") and a finding that ships
+unowned is a finding that gets lost.
+
+```
+PROPOSAL
+  problem:          scripts/validate-plugin.mjs:404 selects generated bodies with
+                    /^kai-[a-z]+\/agents\/.+\.agent\.md$/. All five current pack keys are
+                    [a-z]+, so coverage today is complete — but a future key with a hyphen
+                    or a digit (e.g. kai-customer-success) would not match, and that pack's
+                    agents would silently skip the copy-count, position and adjacency
+                    assertions that make the preflight guarantee real.
+  proposed_change:  Widen to `kai-[a-z-]+`, or better, derive the expected key set from
+                    PACK_ORDER / planManifests in scripts/lib/pack-plan.mjs so the pin
+                    cannot drift from the partition it is pinning.
+  friction_cost:    Small — one pattern or one derivation in a file the owning item already
+                    touches. The cost of doing it *here* would have been re-opening a
+                    twice-reviewed, twice-bounced trust-boundary file at the ship gate for
+                    a case no shipped pack can reach.
+  mission_tradeoff: This is a pin-COVERAGE gap, not a live fail-open: materializePacks still
+                    injects on kind !== 'core', so a hyphenated pack's agents would still
+                    carry the block — what is lost is verification, which only bites
+                    alongside a second defect. The northstar's out_of_scope forbids adding
+                    packs beyond the agreed five while the partition is locked, so the
+                    trigger cannot fire without a partition change.
+  scope_target:     pack-split-ci-partition-checks (dependency-guarantees) — it already owns
+                    partition/namespace work, already touches scripts/validate-plugin.mjs,
+                    and already depends on this item at `shipped`.
+  owner:            principal-swe-infra
+```
+
+**What would change my mind (trigger to promote):** a sixth pack, any pack key that is not
+`[a-z]+`, or the partition being re-opened for renaming (note `pack-split-ci-partition-checks`
+already carries the `fleet-observation -> kai-core-fleet-observation` rename, so a key-shape
+change is closer than it looks). Until then it rides into `ci-partition-checks` as a two-line
+hardening, not as its own item.

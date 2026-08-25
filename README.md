@@ -31,15 +31,17 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.58.0` — **56 agents and 50 skills**, for the **Copilot CLI** and the
+`v0.59.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 **Groundwork for the pack split.** The build tooling now speaks one
 machine-readable pack partition, `scripts/pack-preview.mjs` is the deterministic
 pack generator (byte-stable, per-pack `plugin.json`, regenerate-and-diff), and the
 validate and release gates are multi-manifest aware — so a future `kai-core` plus
-department packs can never land outside version and release enforcement. kai still
-ships as the single `kai` plugin; no packs are published yet.
+department packs can never land outside version and release enforcement. Every
+generated department agent now carries a fail-closed core preflight: a missing or
+version-skewed `kai-core` produces a refusal, never a silent half-working agent.
+kai still ships as the single `kai` plugin; no packs are published yet.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -163,7 +165,7 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-56 agents and 49 skills, grouped by the judgment they own — direction,
+56 agents and 51 skills, grouped by the judgment they own — direction,
 engineering, delivery, trust & reliability, product, customer operations,
 revenue, growth & analytics, AI research, learning, exploration, content, and
 personal.

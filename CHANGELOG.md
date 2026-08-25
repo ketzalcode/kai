@@ -4,6 +4,56 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.59.0] - 2026-08-25
+
+### Added
+
+- **`kai-core-contract-v1` ships as a real core skill** (#29). It was previously
+  synthesized by the preview script and existed nowhere on disk. It returns a
+  rigid two-line marker — `KAI_CORE_READY` and `contract: 1` — and nothing else:
+  it is a version-pinned probe, not a restatement of the operating contract. The
+  version lives in the name, so skew is detectable by identity.
+
+- **A combined fail-closed preflight in every generated department agent.** The
+  authoritative generator (`materializePacks` in `scripts/lib/pack-plan.mjs`) now
+  injects the canonical block from `scripts/lib/preflight-block.txt` into each
+  department agent's own body, directly after its `**Inherits:**` directive. The
+  agent's first action is to invoke `kai-core-contract-v1`; only the exact marker
+  plus `contract: 1` continues silently. A missing core, a missing marker, or any
+  other contract value produces exactly `KAI-CORE-MISSING` and stops — no lease,
+  no workspace state, no other tool call, no answer from memory. Absence and
+  version skew share one refusal path. Core agents are excluded: they ship inside
+  the pack that provides the probe. The block is written into each agent body
+  rather than into an inherited skill because an agent that cannot reach core also
+  cannot reach a skill that would tell it what to do about core.
+
+- **The injected block is byte-pinned in CI.** `scripts/validate-plugin.mjs`
+  follows the existing `scripts/lib/inherits-block.txt` precedent: it requires the
+  canonical file, checks the generator's output carries it verbatim exactly once
+  and after the inherited-contract directive, checks no core agent carries it,
+  checks core provides the probe skill, and checks the probe's marker and pinned
+  version. The validator already runs on every PR and push, so no new workflow
+  step was added.
+
+- **Deterministic preflight arms in the preview.** `node scripts/pack-preview.mjs
+  --all --out <dir>` now prints the preflight verdict it evaluates from the built
+  tree: `--no-core` and `--contract 2` each print the exact `KAI-CORE-MISSING`
+  token, while contract 1 reports ready. `--self-test` proves placement, the
+  single verbatim copy, LF-only output, department-carries/core-excludes on the
+  authoritative path, the real skill's `contract: 1`, and both refusal arms.
+
+### Changed
+
+- **The preflight anchor moved after the whole inherits directive.** The
+  prototype spliced the block at the first blank line following the
+  `**Inherits:**` line, which placed it between that line and the blockquote
+  directive that binds it. The block now lands after the directive block, so a
+  probe never separates a rule from its own instruction.
+
+- **`kai-core-contract-v1` is filed as a core-provided skill** in the explicit
+  provider map (`SKILL_OWNER_OVERRIDES`), keeping the ratified nine orphan
+  dispositions unchanged. Skill count is 51.
+
 ## [0.58.0] - 2026-08-24
 
 ### Added
@@ -2560,6 +2610,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.59.0]: https://github.com/RubenSaucedo/kai/compare/v0.58.0...v0.59.0
 [0.58.0]: https://github.com/RubenSaucedo/kai/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/RubenSaucedo/kai/compare/v0.56.0...v0.57.0
 [0.56.0]: https://github.com/RubenSaucedo/kai/compare/v0.54.0...v0.56.0

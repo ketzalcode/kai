@@ -17,11 +17,18 @@ import { fileURLToPath } from 'node:url';
 // (tests, or a generator run against a checkout) but default to this repo.
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// The version-pinned preflight probe skill (materialised downstream, not on disk
-// today) and the exact refusal token a core-less pack agent must emit. Shared so
-// the preview and any future gate assert on the same constants.
+// The version-pinned preflight probe skill and the exact refusal token a
+// core-less pack agent must emit. Shared so the generator, the preview and the
+// validator assert on the same constants.
 export const CONTRACT_SKILL = 'kai-core-contract-v1';
+export const CONTRACT_VERSION = '1';
 export const REFUSAL = 'KAI-CORE-MISSING';
+
+// The canonical fail-closed preflight, copied into every generated department
+// agent's own body. It lives in a file, not in this module, so the generator,
+// the preview and the CI byte-pin all assert on the same bytes — the same
+// reason scripts/lib/inherits-block.txt is a file.
+export const PREFLIGHT_BLOCK_REL = 'scripts/lib/preflight-block.txt';
 
 // The default committed-tree root. release-guard classifies changes under it as
 // behavior-sensitive and the validator discovers manifests under it; the
@@ -79,6 +86,10 @@ export const SKILL_OWNER_OVERRIDES = {
   'demo-narrate': 'personal',
   'demo-zoom': 'personal',
   'fleet-observation': 'core',
+  // The probe is invoked by the injected preflight, not by an `**Inherits:**`
+  // line, so inheritance cannot place it. Core provides it: a pack agent asks
+  // core whether core is there.
+  [CONTRACT_SKILL]: 'core',
   'onboard-to-codebase': 'engineering',
   'review-dependencies': 'engineering',
   'review-performance-scale': 'engineering',
@@ -203,24 +214,61 @@ export function planManifests({
 }
 
 // Materialise the whole partition into an in-memory map of pack-relative path ->
-// file content (LF-normalised, sorted keys). Agent and skill bodies are copied
-// verbatim from root — root stays the single source of truth and nothing is
-// moved. Guarantee-block injection (preflight, degraded-mode) and non-markdown
-// asset routing are added by downstream items, not here.
+// file content (LF-normalised, sorted keys). Skill bodies and core agent bodies
+// are copied verbatim from root — root stays the single source of truth and
+// nothing is moved. Department agent bodies additionally carry the canonical
+// fail-closed preflight (below); the degraded-mode block and non-markdown asset
+// routing are added by downstream items, not here.
 export function materializePacks({
   root = REPO_ROOT, version = '0.0.0-preview', packs = PACK_ORDER,
 } = {}) {
   const files = new Map();
+  const block = preflightBlock(root);
   for (const p of planManifests({ root, version, packs })) {
     files.set(`${p.dir}/plugin.json`, `${JSON.stringify(p.manifest, null, 2)}\n`);
     for (const id of p.agents) {
-      files.set(`${p.dir}/agents/${id}.agent.md`, normalizeLF(readAgentBody(root, id)));
+      const body = normalizeLF(readAgentBody(root, id));
+      // Core agents ship inside the pack that provides the probe, so a preflight
+      // there could only ever fail on itself.
+      files.set(`${p.dir}/agents/${id}.agent.md`,
+        p.kind === 'core' ? body : injectPreflight(body, block));
     }
     for (const id of p.skills) {
       files.set(`${p.dir}/skills/${id}/SKILL.md`, normalizeLF(readFileSync(skillFile(root, id), 'utf8')));
     }
   }
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
+}
+
+// The canonical preflight text, read from disk rather than restated here: one
+// source is what the CI byte-pin pins, and prose duplicated into JS is prose
+// that drifts.
+export function preflightBlock(root = REPO_ROOT) {
+  return normalizeLF(readFileSync(join(root, ...PREFLIGHT_BLOCK_REL.split('/')), 'utf8')).trimEnd();
+}
+
+// Splice the block into an agent body, LF throughout: splicing LF lines into a
+// CRLF checkout would leave the generated agent with mixed endings.
+export function injectPreflight(body, block) {
+  const lines = normalizeLF(body).split('\n');
+  const at = afterInheritsDirective(lines);
+  const spacer = lines[at] === undefined || lines[at].trim() === '' ? [] : [''];
+  lines.splice(at, 0, '', ...block.split('\n'), ...spacer);
+  return lines.join('\n');
+}
+
+// The first line after the whole inherits directive block — the `**Inherits:**`
+// line plus the blockquote that binds it — so the probe never lands between a
+// rule and its own instruction. With no directive to anchor to, it goes directly
+// under the frontmatter: a pack agent that silently skipped the preflight is the
+// exact failure the block exists to prevent.
+function afterInheritsDirective(lines) {
+  const i = lines.findIndex((l) => l.startsWith('**Inherits:**'));
+  if (i === -1) return lines[0] === '---' ? lines.indexOf('---', 1) + 1 : 0;
+  let j = i + 1;
+  if (lines[j]?.trim() === '' && lines[j + 1]?.startsWith('>')) j += 1;
+  while (lines[j]?.startsWith('>')) j += 1;
+  return j;
 }
 
 // Every committed plugin manifest: the root monolith plus any pack tree under
