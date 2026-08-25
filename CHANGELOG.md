@@ -4,6 +4,39 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.57.0] - 2026-08-13
+
+### Added
+
+- **`html-block-diagrams`** — a block-diagram vocabulary for HTML artifacts and
+  exported images (#86). Most of what a technical document draws is not a graph:
+  a layer stack, an ownership map, a lifecycle, a containment boundary, an
+  owns-versus-does-not-own split have no edges to route, and forcing them through
+  a graph renderer is what produces the cramped, crossed diagram. The skill ships
+  five arrangements — layers, lanes, pipeline, boundary, compare — built on one
+  card that carries a name, a subtitle, a status chip and an artifact path, which
+  is the thing a single-label renderer cannot express at any price.
+
+  It is **self-contained**: no dependency, no build step, no JavaScript, no
+  network request, and light and dark from the same copy. An auto-layout engine
+  was prototyped and rejected — it bought only palette and curvature over
+  `mermaid`, at the cost of the plugin's first real npm dependency and a 1.15 MB
+  WASM payload. Genuinely branching flows are routed to `mermaid`, which is free
+  and renders natively on GitHub.
+
+  Every arrangement is laid out by CSS grid or flex, so nothing is hand-placed
+  and **nothing can overlap**. The four overflow and wrap failures found while
+  prototyping are written down as rules: never a fixed width, never absolute
+  positioning, always `overflow-wrap` on names and paths, and a connector must
+  *lead* its step rather than separate two — a separator is stranded pointing at
+  nothing when the row wraps, which is the same defect as an ASCII arrow aimed
+  past the end of its target line.
+
+### Changed
+
+- **`build-diagrams` points at the new skill** for the HTML-artifact case it
+  already allowed but did not describe (#86).
+
 ## [0.56.0] - 2026-08-13
 
 ### Fixed
@@ -2484,6 +2517,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.57.0]: https://github.com/RubenSaucedo/kai/compare/v0.56.0...v0.57.0
 [0.56.0]: https://github.com/RubenSaucedo/kai/compare/v0.54.0...v0.56.0
 [0.54.0]: https://github.com/RubenSaucedo/kai/compare/v0.53.0...v0.54.0
 [0.53.0]: https://github.com/RubenSaucedo/kai/compare/v0.52.0...v0.53.0

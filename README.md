@@ -31,16 +31,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.56.0` — **56 agents and 49 skills**, for the **Copilot CLI** and the
+`v0.57.0` — **56 agents and 50 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**The Chief of Staff now checks that a role is installed before it leases the
-work.** In a packs world the required specialist may simply not be there, and a
-missing agent fails silently — so the director resolves availability first,
-leaves the item untouched, and names the missing agent instead of answering in
-its voice. Both directions are tested against the real host: core alone declines
-and names the gap, and the identical item is staffed once the department pack is
-installed.
+**Rich diagrams now have a home that isn't Markdown.** `html-block-diagrams`
+ships five block arrangements — layers, lanes, pipeline, boundary, compare —
+for HTML artifacts and exported images, built on a card that carries a name, a
+subtitle, a status and an artifact path. It has no dependency and no build step,
+every arrangement is laid out by CSS grid so nothing can overlap, and a
+genuinely branching flow is still routed to `mermaid`.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -147,14 +146,17 @@ See it for real in
 committed, CI-validated workspace carrying one feature from brief to production,
 with an adjacent idea deliberately routed to a proposal instead of being built.
 
-```
- you ─► director-chief-of-staff ─► PM (scope) ─► designer ─► engineering
-                                                                  │
-                    QA · security · SRE review, bound to a revision│
-                                                                  ▼
-              workflow-ship ─► release-ready + deploy steps ─► you deploy
-                                                                  ▼
-                              production verification ─► shipped
+```text
+  you ─► director-chief-of-staff ─► PM (scope) ─► designer ─► engineering
+                                                                   │
+   ┌───────────────────────────────────────────────────────────────┘
+   │  QA · security · SRE review, bound to a revision
+   ▼
+  workflow-ship ─► release-ready + deploy steps ─► you deploy
+                                                        │
+   ┌────────────────────────────────────────────────────┘
+   ▼
+  production verification ─► shipped
 ```
 
 **[Every flow and the full trigger table →](docs/how-kai-works.md)**

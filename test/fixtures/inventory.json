@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 49
+    "skills": 50
   },
   "agents": [
     "creative-video-director",
@@ -72,6 +72,7 @@
     "extract-writing-style",
     "fleet-observation",
     "generate-html-lesson",
+    "html-block-diagrams",
     "kai-core-content-grounding",
     "kai-core-decision-brief",
     "kai-core-definition-of-done",

@@ -179,7 +179,7 @@ const CATEGORIES = [
     kind: 'skill',
     title: 'Product design',
     blurb: 'Design-system grounding and human-confirmable mockups, with the frontend seam.',
-    members: ['kai-core-design-grounding', 'ui-mockup'],
+    members: ['kai-core-design-grounding', 'ui-mockup', 'html-block-diagrams'],
   },
   {
     kind: 'skill',
