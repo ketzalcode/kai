@@ -4,6 +4,49 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.58.0] - 2026-08-24
+
+### Added
+
+- **A single machine-readable pack partition/manifest source** —
+  `scripts/lib/pack-plan.mjs` (#29). The five-pack partition (`PACKS`), the
+  inherited skill→provider rule, the reviewed dispositions for all nine skills
+  that inheritance cannot place, the deterministic per-pack manifest plan, and the
+  multi-manifest gate helpers now live in one module that the preview, generator,
+  and validator all import. `scripts/pack-preview.mjs` re-exports the names the
+  locked partition doc references, so nothing that named them there breaks.
+
+- **`scripts/pack-preview.mjs` is now the deterministic pack generator**, not only
+  a host-behaviour preview (#29). It materialises the pack trees from the live root
+  roster byte-stably — bodies copied verbatim (root stays the single source of
+  truth), LF-normalised so output is identical on a CRLF checkout, with a per-pack
+  `plugin.json`. `--check` regenerates and diffs so a hand-edit or stale copy fails.
+  `--write` is deliberately disabled until the extraction item selects the first
+  committed slice (`kai-core` + `kai-personal`), preventing the foundation from
+  materialising every department prematurely. The committed trees themselves land
+  in that later item.
+
+- **The committed pack tree is behaviour-sensitive.** `scripts/release-guard.mjs`
+  classifies `packs/` alongside `agents/`, `skills/`, and `scripts/`, so a
+  generated-tree change can never land without a version bump plus a
+  changelog/README update — the first pack directory is under release enforcement
+  before it exists.
+
+### Changed
+
+- **`scripts/validate-plugin.mjs` validates N plugin manifests**, not one (#29). It
+  discovers the monolith plus any committed `packs/<name>/plugin.json`, validates
+  each tree's structure, requires every pack to ship in lockstep with the canonical
+  version, and lets the marketplace index list more than one plugin — every entry
+  still agreeing with its own `plugin.json`, the monolith entry still required, an
+  unpublished pack with no entry still fine. With no `packs/` present this reduces to
+  the previous single-manifest behaviour byte-for-byte, so the current single-plugin
+  marketplace is unaffected. No pack is published or added to the marketplace here.
+
+- **CI and `npm test` run the pack-generator self-test and the regenerate-and-diff
+  check** (`.github/workflows/validate.yml`), so generator determinism and
+  no-drift are enforced on every PR.
+
 ## [0.57.0] - 2026-08-13
 
 ### Added
@@ -2517,6 +2560,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.58.0]: https://github.com/RubenSaucedo/kai/compare/v0.57.0...v0.58.0
 [0.57.0]: https://github.com/RubenSaucedo/kai/compare/v0.56.0...v0.57.0
 [0.56.0]: https://github.com/RubenSaucedo/kai/compare/v0.54.0...v0.56.0
 [0.54.0]: https://github.com/RubenSaucedo/kai/compare/v0.53.0...v0.54.0

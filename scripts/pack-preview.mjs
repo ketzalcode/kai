@@ -1,29 +1,40 @@
 #!/usr/bin/env node
-// Materialises a throwaway two-plugin preview of the pack architecture proposed
-// in docs/proposals/pack-architecture.md, built from the LIVE roster rather than
-// from toy fixtures. Nothing here ships: it exists to answer the host-behaviour
-// questions that gate the split, using real agents whose bodies and tool grants
-// are the ones we would actually publish.
+// The deterministic pack generator, and the host-behaviour preview it grew from.
 //
-// The questions it is built to answer:
-//   1. does a fail-closed preflight work on a REAL agent with full tool grants,
-//      or only on a restricted probe that had nothing else it could do?
-//   2. what happens when core is absent, or present at an incompatible version?
-//   3. when legacy `kai` and `kai-core` both provide `kai-core-team-operating-rules`,
-//      which one resolves?
-//   4. what does a pack agent do when it references an agent from a pack the
-//      user did not install?
+// Two jobs, one partition (scripts/lib/pack-plan.mjs):
+//   • generate  — materialise the pack trees from the LIVE root roster, byte-stably,
+//     with a per-pack plugin.json. `--write` lands them under packs/; `--check`
+//     regenerates and diffs so a hand-edit or a stale copy fails. The committed
+//     trees themselves land in a downstream item; this ships the machinery.
+//   • preview   — a throwaway two- or five-plugin build (`--out`/`--all`) that
+//     answers the host-behaviour questions gating the split: does a fail-closed
+//     preflight hold on a real agent, what happens when core is absent or
+//     version-skewed, which provider wins a name collision, and what a pack does
+//     when it references an uninstalled pack. Preview output ships nothing.
 //
-// Run: node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N]
+// Run: node scripts/pack-preview.mjs --check | --write
+//      node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N] | --all
 //      node scripts/pack-preview.mjs --self-test
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, mkdtempSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+import {
+  PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, REFUSAL, SKILL_OWNER_OVERRIDES,
+  planPacks, planManifests, materializePacks,
+  manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
+  inheritedSkills as inheritedSkillsOf,
+} from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// The partition, the contract-skill name and the refusal token live once in
+// scripts/lib/pack-plan.mjs. Re-exported here so callers and the locked
+// partition doc that name them on pack-preview keep resolving.
+export { PACKS, CONTRACT_SKILL, REFUSAL, planPacks };
 
 // The narrow pack under test. Personal roles are chosen deliberately: they are
 // the department whose removal from a default install is most defensible, and
@@ -35,22 +46,10 @@ export const PACK_AGENTS = [
   'creative-video-director', 'principal-engineer-career-mentor', 'workflow-course-to-audio',
 ];
 
-export const CONTRACT_SKILL = 'kai-core-contract-v1';
-
-// The refusal an agent must produce when core is missing. Pinned as a constant
-// so the test can assert on it exactly rather than on a paraphrase -- a preflight
-// that "sort of" refuses is indistinguishable from one that silently continued.
-export const REFUSAL = 'KAI-CORE-MISSING';
-
 const readAgent = (id) => readFileSync(join(ROOT, 'agents', `${id}.agent.md`), 'utf8');
 const skillPath = (id) => join(ROOT, 'skills', id, 'SKILL.md');
 
-function inheritedSkills(body) {
-  const line = body.match(/^\*\*Inherits:\*\*(.*)$/m);
-  if (!line) return [];
-  return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1])
-    .filter((s) => existsSync(skillPath(s)));
-}
+const inheritedSkills = (body) => inheritedSkillsOf(ROOT, body);
 
 // Split the roster's skills into "core must provide" and "pack owns", using the
 // same rule the real split would use: a skill inherited by any agent outside the
@@ -110,80 +109,8 @@ export function injectPreflight(body, block) {
   return lines.join('\n');
 }
 
-// ---------------------------------------------------------------------------
-// The full five-pack partition, for the whole-roster tests
-// ---------------------------------------------------------------------------
-
-// Every one of the 56 agents belongs to exactly one pack. `core` holds the org
-// spine and the workspace machinery: the roles that are meaningful with no
-// department installed at all.
-export const PACKS = {
-  core: [
-    'director-chief-of-staff', 'director-executive-assistant', 'workflow-workspace-init',
-    'workflow-self-check', 'workflow-proactive-scan', 'workflow-weekly-pulse',
-    'workflow-initiative-init',
-  ],
-  engineering: [
-    'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
-    'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
-    'principal-sre', 'principal-security', 'principal-privacy-compliance',
-    'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
-    'principal-ai-researcher', 'principal-technical-writer', 'workflow-pull-request',
-    'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
-    'workflow-doc-review', 'workflow-localization',
-  ],
-  product: [
-    'principal-product-manager', 'principal-product-designer', 'principal-product-strategist',
-    'principal-brand-designer', 'principal-data-analytics', 'persona-ux-first-time-user',
-    'workflow-product-explore', 'workflow-experiment-review', 'workflow-customer-feedback',
-  ],
-  gtm: [
-    'principal-sales', 'principal-growth', 'principal-demand-generation',
-    'principal-product-marketing', 'principal-seo', 'principal-linkedin-strategist',
-    'principal-partnerships', 'principal-pricing-monetization',
-    'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
-  ],
-  personal: PACK_AGENTS,
-};
-
-// Assign every skill on disk to exactly one provider. The rule is the one the
-// real split uses: a skill inherited by agents in more than one pack, or by a
-// core agent, must come from core -- otherwise a pack becomes a dependency of
-// another pack, or of core, and the dependency direction inverts.
-//
-// Skills that NO agent inherits cannot be placed by inheritance at all. They are
-// returned separately rather than silently swept into core, because "we could
-// not decide this mechanically" is a finding, not a default.
-export function planPacks() {
-  const packOf = new Map();
-  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) packOf.set(id, pack);
-
-  const allAgents = readdirSync(join(ROOT, 'agents'))
-    .filter((f) => f.endsWith('.agent.md')).map((f) => f.replace(/\.agent\.md$/, ''));
-  const unassigned = allAgents.filter((id) => !packOf.has(id));
-
-  const usedBy = new Map();
-  for (const id of allAgents) {
-    for (const s of inheritedSkills(readAgent(id))) {
-      if (!usedBy.has(s)) usedBy.set(s, new Set());
-      usedBy.get(s).add(packOf.get(id) ?? '?');
-    }
-  }
-
-  const onDisk = readdirSync(join(ROOT, 'skills'))
-    .filter((d) => existsSync(skillPath(d))).sort();
-
-  const core = [];
-  const local = Object.fromEntries(Object.keys(PACKS).map((p) => [p, []]));
-  const orphans = [];
-  for (const s of onDisk) {
-    const packs = usedBy.get(s);
-    if (!packs) { orphans.push(s); continue; }
-    if (packs.size > 1 || packs.has('core')) core.push(s);
-    else local[[...packs][0]].push(s);
-  }
-  return { core, local, orphans, unassigned };
-}
+// The five-pack partition (PACKS) and the skill->provider rule (planPacks) are
+// defined once in scripts/lib/pack-plan.mjs and imported above.
 
 function writePlugin(dir, name, description, agentIds, skills, block) {
   mkdirSync(dir, { recursive: true });
@@ -213,7 +140,7 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
   if (withCore) {
     const dir = join(out, 'kai-core-preview');
     writePlugin(dir, 'kai-core-preview', 'Preview of the kai shared core. Not for use.',
-      PACKS.core, [...plan.core, ...plan.orphans], null);
+      PACKS.core, plan.core, null);
     writeSkill(dir, CONTRACT_SKILL, contractSkill(contract));
     built.push({ name: 'kai-core-preview', dir, agents: PACKS.core.length });
   }
@@ -286,6 +213,77 @@ export function build({ out, withCore = true, contract = 1 }) {
 }
 
 // ---------------------------------------------------------------------------
+// Committed pack trees — the deterministic generator (materialise + diff)
+//
+// Unlike the preview above, this path is the authoritative generator: it copies
+// agent/skill bodies verbatim from root (root stays the single source of truth),
+// stamps a per-pack plugin.json, and normalises to LF so the output is
+// byte-identical on every platform. Guarantee-block injection and non-markdown
+// asset routing are added by downstream items; this ships the machinery.
+// ---------------------------------------------------------------------------
+
+// Stamp generated packs in lockstep with the monolith. Falls back to the preview
+// version when plugin.json is unreadable, so the generator never hard-fails here.
+function committedVersion() {
+  try { return JSON.parse(readFileSync(join(ROOT, 'plugin.json'), 'utf8')).version || '0.0.0-preview'; }
+  catch { return '0.0.0-preview'; }
+}
+
+// Every file present under a committed tree, as pack-relative forward-slash keys
+// (never OS separators), so it compares directly against the generator's plan.
+function walkCommitted(base) {
+  const out = [];
+  const walk = (dir, prefix) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const key = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(join(dir, e.name), key);
+      else out.push(key);
+    }
+  };
+  walk(base, '');
+  return out;
+}
+
+// Regenerate the pack trees from root and diff against what is committed. Drift —
+// a hand-edit, a stale copy, a missing or an extra file — fails, so a committed
+// tree can only ever be exactly what the generator produces. With nothing
+// committed yet (this item ships the machinery; the trees land downstream) there
+// is nothing to verify and the check passes.
+export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
+  if (!existsSync(base) && COMMITTED_PACKS.length === 0) {
+    return { ok: true, drift: [], note: `no committed packs configured — ${PACKS_DIR}/ is intentionally absent` };
+  }
+  const expected = materializePacks({ root, version, packs: COMMITTED_PACKS });
+  const drift = [];
+  for (const [relPath, content] of expected) {
+    const abs = join(base, ...relPath.split('/'));
+    if (!existsSync(abs)) { drift.push(`missing:    ${relPath}`); continue; }
+    if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs:    ${relPath}`);
+  }
+  for (const key of walkCommitted(base)) {
+    if (!expected.has(key)) drift.push(`unexpected: ${key}`);
+  }
+  return { ok: drift.length === 0, drift };
+}
+
+// Materialise the trees to `base`, replacing any existing tree so the output is
+// exactly the plan with no stale leftovers. Used by the downstream item that
+// lands the committed trees; wired here as the generator's write path.
+export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
+  if (COMMITTED_PACKS.length === 0) {
+    throw new Error('no committed packs configured; the extraction item must set COMMITTED_PACKS first');
+  }
+  rmSync(base, { recursive: true, force: true });
+  const files = materializePacks({ root, version, packs: COMMITTED_PACKS });
+  for (const [relPath, content] of files) {
+    const abs = join(base, ...relPath.split('/'));
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, content);
+  }
+  return { written: files.size, dir: base };
+}
+
+// ---------------------------------------------------------------------------
 // Self-test
 // ---------------------------------------------------------------------------
 function selfTest() {
@@ -336,8 +334,112 @@ function selfTest() {
   const localAll = Object.values(plan.local).flat();
   ok(localAll.every((s) => !plan.core.includes(s)),
     'no skill is provided by both core and a pack: exactly one provider each');
-  ok(plan.orphans.length > 0 ? plan.orphans.every((s) => !localAll.includes(s)) : true,
-    'skills no agent inherits are reported separately, not silently defaulted into a pack');
+  ok(plan.orphans.length === Object.keys(SKILL_OWNER_OVERRIDES).length,
+    'skills no agent inherits remain visible as mechanical orphans before overrides');
+  ok(plan.unplaced.length === 0,
+    'every mechanical orphan has an explicit reviewed provider');
+  ok(plan.core.includes('fleet-observation')
+    && plan.local.personal.includes('create-product-demo')
+    && plan.local.engineering.includes('review-dependencies'),
+  'the generator applies the ratified core, personal, and engineering orphan dispositions');
+
+  // --- generator determinism + committed-tree gate -----------------------
+  const selectedPacks = ['core', 'personal'];
+  const m1 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
+  const m2 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
+  ok([...m1.keys()].join('\n') === [...m2.keys()].join('\n')
+    && [...m1].every(([k, v]) => m2.get(k) === v),
+    'materialising the partition twice yields byte-identical output (re-running is stable)');
+  ok([...m1.values()].every((v) => !v.includes('\r')),
+    'generated files are LF-normalised, so output is identical on a CRLF checkout');
+  ok(m1.has('kai-core/plugin.json') && m1.has('kai-personal/plugin.json')
+    && m1.has('kai-personal/agents/persona-self.agent.md'),
+    'the materialised tree places a per-pack plugin.json and copied agent bodies');
+  ok(![...m1.keys()].some((key) => key.startsWith('kai-engineering/')),
+    'a core-plus-personal slice does not materialise unselected departments');
+
+  const manifests = planManifests({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
+  const coreM = manifests.find((p) => p.pack === 'core');
+  const personalM = manifests.find((p) => p.pack === 'personal');
+  ok(coreM && coreM.manifest.name === 'kai-core' && coreM.manifest.skills === 'skills',
+    'the generator plans a kai-core manifest with a skills path');
+  ok(personalM && personalM.manifest.name === 'kai-personal'
+    && personalM.manifest.agents === 'agents' && personalM.manifest.skills === 'skills',
+    'a department manifest carries per-pack agents and skills paths');
+  ok(manifests.every((p) => p.manifest.version === '9.9.9-selftest'),
+    'every planned manifest stamps the version it was generated with (lockstep)');
+
+  let scratch = null;
+  try {
+    scratch = mkdtempSync(join(tmpdir(), 'kai-pack-check-'));
+    const generated = materializePacks({
+      root: ROOT, version: '9.9.9-selftest', packs: selectedPacks,
+    });
+    for (const [relPath, content] of generated) {
+      const abs = join(scratch, ...relPath.split('/'));
+      mkdirSync(dirname(abs), { recursive: true });
+      writeFileSync(abs, content);
+    }
+    const checkSelected = () => {
+      const expected = materializePacks({
+        root: ROOT, version: '9.9.9-selftest', packs: selectedPacks,
+      });
+      const drift = [];
+      for (const [relPath, content] of expected) {
+        const abs = join(scratch, ...relPath.split('/'));
+        if (!existsSync(abs)) drift.push(`missing: ${relPath}`);
+        else if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs: ${relPath}`);
+      }
+      return drift;
+    };
+    ok(checkSelected().length === 0,
+      'a freshly generated tree passes the regenerate-and-diff check with no drift');
+    const victim = join(scratch, 'kai-core', 'plugin.json');
+    writeFileSync(victim, `${readFileSync(victim, 'utf8')}tampered`);
+    ok(checkSelected().length > 0,
+      'a hand-edit to a committed tree is caught as drift');
+  } catch (e) {
+    ok(false, `committed-tree check round-trip threw: ${e.message}`);
+  } finally {
+    if (scratch) rmSync(scratch, { recursive: true, force: true });
+  }
+  let writeRefused = false;
+  try {
+    writeCommitted({ root: ROOT, base: join(tmpdir(), 'kai-pack-write-must-refuse') });
+  } catch (e) {
+    writeRefused = /no committed packs configured/.test(e.message);
+  }
+  ok(writeRefused,
+    '--write refuses until the downstream extraction item selects committed packs');
+  ok(checkCommitted().ok,
+    'with no committed pack selection yet, the check passes without creating all departments');
+
+  // --- multi-manifest gate helpers (shared with validate-plugin) ---------
+  const parity = manifestParityErrors(
+    [{ rel: 'plugin.json', version: '1.2.3' },
+      { rel: 'packs/kai-core/plugin.json', version: '1.2.3' },
+      { rel: 'packs/kai-personal/plugin.json', version: '0.9.0' }],
+    '1.2.3');
+  ok(parity.length === 1 && parity[0].rel === 'packs/kai-personal/plugin.json',
+    'manifest parity flags exactly the pack whose version drifts from canonical');
+  ok(manifestParityErrors([{ rel: 'plugin.json', version: '1.2.3' }], '1.2.3').length === 0,
+    'a lone monolith manifest at the canonical version raises no parity error (backwards compatible)');
+
+  const mkt = (plugins) => ({ name: 'kai-plugins', owner: { name: 'x' }, plugins, metadata: { version: '1.2.3' } });
+  const kaiEntry = { name: 'kai', source: '.', version: '1.2.3', description: 'd' };
+  const coreEntry = { name: 'kai-core', source: './packs/kai-core', version: '1.2.3', description: 'core' };
+  const known = { kai: { version: '1.2.3', description: 'd' }, 'kai-core': { version: '1.2.3', description: 'core' } };
+  const mktArgs = (m) => ({ mkt: m, marketName: 'kai-plugins', monolithName: 'kai', canonicalVersion: '1.2.3', manifestsByName: known });
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry]))).length === 0,
+    'the single-plugin marketplace still validates clean (no regression)');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, coreEntry]))).length === 0,
+    'a marketplace listing multiple plugins validates when every entry agrees with its manifest');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, { ...coreEntry, version: '0.0.1' }])))
+    .some((e) => /kai-core.*must equal plugin\.json version/.test(e)),
+    'a marketplace entry whose version disagrees with its plugin.json is caught');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry])))
+    .some((e) => /no entry named "kai"/.test(e)),
+    'the monolith entry is still required until the flip retires it');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;
@@ -348,6 +450,19 @@ const flag = (n, d) => { const i = args.indexOf(n); return i === -1 ? d : args[i
 
 if (args.includes('--self-test')) {
   process.exit(selfTest() ? 0 : 1);
+} else if (args.includes('--check')) {
+  const r = checkCommitted();
+  if (r.ok) {
+    console.log(`\u2713 pack-preview --check: ${r.note ?? `${PACKS_DIR}/ matches the generator`}`);
+    process.exit(0);
+  }
+  console.error(`\u2717 pack-preview --check: ${r.drift.length} drift(s) between ${PACKS_DIR}/ and the generator\n`);
+  for (const d of r.drift) console.error(`  ${d}`);
+  console.error('\n  regenerate with: node scripts/pack-preview.mjs --write');
+  process.exit(1);
+} else if (args.includes('--write')) {
+  const r = writeCommitted();
+  console.log(`pack-preview --write: ${r.written} file(s) -> ${r.dir}`);
 } else if (args.includes('--all')) {
   const packsArg = flag('--packs', '');
   const r = buildAll({
@@ -363,7 +478,12 @@ if (args.includes('--self-test')) {
   for (const [p, l] of Object.entries(r.plan.local)) {
     if (l.length) console.log(`  ${p} owns ${l.length}: ${l.join(', ')}`);
   }
-  if (r.plan.orphans.length) console.log(`\nunplaceable by inheritance: ${r.plan.orphans.join(', ')}`);
+  if (r.plan.orphans.length) {
+    console.log(`\nexplicitly placed outside inheritance:`);
+    for (const skill of r.plan.orphans) {
+      console.log(`  ${skill} -> ${SKILL_OWNER_OVERRIDES[skill]}`);
+    }
+  }
 } else if (args.includes('--out')) {
   const r = build({
     out: flag('--out'),
@@ -375,6 +495,9 @@ if (args.includes('--self-test')) {
   console.log(r.coreDir ? `core: ${r.coreDir}` : 'core: not built');
   console.log(`pack: ${r.packDir}`);
 } else {
-  console.log('usage: node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
+  console.log('usage: node scripts/pack-preview.mjs --check          (regenerate + diff committed packs/)');
+  console.log('       node scripts/pack-preview.mjs --write          (materialise committed packs/)');
+  console.log('       node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
+  console.log('       node scripts/pack-preview.mjs --all --out <dir>');
   console.log('       node scripts/pack-preview.mjs --self-test');
 }

@@ -21,6 +21,7 @@ touches:
   - packs/kai-core/
   - packs/kai-personal/
   - scripts/pack-preview.mjs
+  - .gitattributes
   - package.json
 depends_on:
   - item: pack-split-generator-gates
@@ -42,14 +43,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-24-2240
 ---
 
 ## Outcome
@@ -71,6 +72,22 @@ ship in core only (hooks exactly once).
 - [ ] `node scripts/pack-preview.mjs --all`, `node scripts/validate-plugin.mjs`, `npm test` pass.
 - [ ] Version bumped on `0.x` with CHANGELOG + README stamp.
 
+*Carried forward from the `pack-split-generator-gates` architecture review (ratified
+2026-08-24-2231 at `change_ref 457254b973fb58b129332ffaa609fb5febfdd412`); routed here by the
+steward at acceptance 2026-08-24-2240 because this item is the first state in which each becomes
+reachable. None was a defect in that foundation.*
+
+- [ ] **(A1)** `checkCommitted` guards the committed-tree walk on `existsSync(base)`. With a slice
+      selected and `packs/` not yet present — literally this item's first state — the gate prints
+      the `regenerate with: --write` guidance and exits non-zero, instead of an ENOENT stack trace
+      from `readdirSync` on a missing directory.
+- [ ] **(A2)** The committed-tree walk does not treat every file under `packs/` as generator
+      output: OS artifacts (`.DS_Store`, `Thumbs.db`) are skipped, or the walk is scoped to tracked
+      files. A contributor's local `--check`/`npm test` cannot fail while CI stays green.
+- [ ] **(A3)** `.gitattributes` pins `packs/** text eol=lf` when the first tree lands, matching the
+      existing `scripts/**` and `test/fixtures/**` pins — a byte-compared generated tree is the same
+      category.
+
 ## Evidence
 
 - (to be filled during execution).
@@ -83,4 +100,14 @@ ship in core only (hooks exactly once).
   and the department that owns the demo assets, so architect caveat (c) is resolved where it is needed.
 - Architect caveat (b) — review-lens binding — is **not on this critical path** (engineering is
   deferred); resolve it before the engineering tree is generated. See decomposition Open Questions.
-- Confirm committed-tree location `packs/` (Open Question 2).
+- Committed-tree root `packs/` is **CONFIRMED** (steward, 2026-08-24-2240) — decomposition Open
+  Question 2 is closed, not an open assumption. `PACKS_DIR` in `scripts/lib/pack-plan.mjs` and
+  `BEHAVIOR_PREFIXES` in `scripts/release-guard.mjs` already encode it; `dist/` was rejected because
+  it signals uncommitted build output. Do not re-litigate the root here.
+- **Publication guard is owned elsewhere, but this item is what makes it urgent.** Architect finding
+  A4 is routed to `pack-split-release-12b`: `.github/plugin/marketplace.json` is neither a
+  `BEHAVIOR_PREFIX` nor a `BEHAVIOR_FILE`, so once a tree is committed here, flipping it from
+  unpublished to published is a *pure* marketplace edit that release-guard exempts — no bump, no
+  CHANGELOG, no README. Nothing in this item publishes anything, and the trees land unpublished by
+  contract; but the guard must land no later than the flip. If any publication becomes possible
+  before `12b`, raise it to the steward rather than absorbing it here.

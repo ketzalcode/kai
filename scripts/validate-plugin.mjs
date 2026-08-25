@@ -19,6 +19,9 @@ import { fileURLToPath } from 'node:url';
 import {
   parseFrontmatter, stripQuotes, loaderErrors, parseToolList, SUPPORTED_TOOLS,
 } from './lib/loader-contract.mjs';
+import {
+  discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
+} from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
@@ -530,98 +533,94 @@ const ASSESSOR_ROLES = [
 }
 
 // ---------------------------------------------------------------------------
-// plugin.json
+// Plugin manifests (the monolith + any committed pack trees)
+//
+// The repo is single-manifest today (just the root plugin.json). The pack split
+// adds committed packs/<name>/plugin.json trees, so every check here iterates the
+// discovered manifests: a pack tree is validated exactly like the monolith
+// (structure, and a version kept in lockstep with the canonical release), and the
+// marketplace index may list more than one plugin. With no packs/ present this
+// reduces to the original single-manifest behavior, byte-for-byte.
 // ---------------------------------------------------------------------------
-const pjPath = join(ROOT, 'plugin.json');
-if (!existsSync(pjPath)) {
-  err('plugin.json', 'missing');
-} else {
-  let pj;
-  try {
-    pj = JSON.parse(readFileSync(pjPath, 'utf8'));
-  } catch (e) {
-    err('plugin.json', `invalid JSON: ${e.message}`);
-  }
-  if (pj) {
-    for (const key of ['agents', 'skills']) {
-      if (!pj[key]) err('plugin.json', `missing "${key}" path`);
-      else if (!existsSync(join(ROOT, pj[key]))) {
-        err('plugin.json', `"${key}" path "${pj[key]}" does not exist`);
-      }
-    }
-    // plugin.json and package.json must carry the same version — a release
-    // bumps both together (see AGENTS.md -> "Releasing this plugin").
-    const pkgPath = join(ROOT, 'package.json');
-    if (existsSync(pkgPath)) {
-      let pkg;
-      try { pkg = JSON.parse(readFileSync(pkgPath, 'utf8')); }
-      catch (e) { err('package.json', `invalid JSON: ${e.message}`); }
-      if (pkg) {
-        if (!pj.version) err('plugin.json', 'missing "version"');
-        if (!pkg.version) err('package.json', 'missing "version"');
-        if (pj.version && pkg.version && pj.version !== pkg.version) {
-          err('plugin.json', `version "${pj.version}" must equal package.json version "${pkg.version}" (bump both together on release)`);
-        }
-      }
-    }
+const MARKETPLACE_REL = '.github/plugin/marketplace.json';
+const MARKETPLACE_NAME = 'kai-plugins';
+const MONOLITH_NAME = 'kai';
 
-    // The marketplace index is how kai is installed once the host removes
-    // direct installs, and it carries its own copy of the version, name and
-    // description. A stale entry does not fail an install -- it succeeds and
-    // reports the wrong version, which is worse than a broken one.
-    //
-    // The marketplace name is checked against a constant because it is not
-    // free-form: the host uses the manifest's own name as the registration key
-    // and gives the user no way to override it, so renaming it silently
-    // invalidates `kai@kai-plugins` in every document and every existing
-    // install. It is deliberately not `kai`, so that the marketplace and the
-    // plugin in it stay separable if kai is ever split into packs.
-    const MARKETPLACE_REL = '.github/plugin/marketplace.json';
-    const MARKETPLACE_NAME = 'kai-plugins';
-    const mktPath = join(ROOT, MARKETPLACE_REL);
-    if (!existsSync(mktPath)) {
-      err(MARKETPLACE_REL, 'missing — kai publishes itself as a marketplace so it can be installed without a deprecated direct install');
-    } else {
-      let mkt;
-      try { mkt = JSON.parse(readFileSync(mktPath, 'utf8')); }
-      catch (e) { err(MARKETPLACE_REL, `invalid JSON: ${e.message}`); }
-      if (mkt) {
-        if (mkt.name !== MARKETPLACE_NAME) {
-          err(MARKETPLACE_REL, `"name" is "${mkt.name ?? 'missing'}" but every documented install says \`${pj.name}@${MARKETPLACE_NAME}\` — the host uses this name as the registration key and offers no local override, so changing it breaks the docs and every existing install`);
-        }
-        if (!mkt.owner?.name) err(MARKETPLACE_REL, 'missing "owner.name" (the host refuses a marketplace without it)');
-        const entries = Array.isArray(mkt.plugins) ? mkt.plugins : null;
-        if (!entries) err(MARKETPLACE_REL, 'missing "plugins" array (required by the host)');
-        else {
-          const matches = entries.filter((p) => p?.name === pj.name);
-          if (matches.length === 0) {
-            err(MARKETPLACE_REL, `no entry named "${pj.name}" — the index must list this plugin or \`plugin install ${pj.name}@${MARKETPLACE_NAME}\` cannot resolve`);
-          } else if (matches.length > 1) {
-            err(MARKETPLACE_REL, `${matches.length} entries are named "${pj.name}" — which one an install resolves to is unspecified`);
-          } else {
-            const self = matches[0];
-            if (!self.source) err(MARKETPLACE_REL, `entry "${pj.name}" is missing "source" (required by the host)`);
-            else if (typeof self.source === 'string') {
-              // A source that does not resolve to a plugin still passes the
-              // host's schema; it fails at install time, on the user's machine.
-              const rel = self.source.replace(/^\.\/?/, '');
-              const target = rel === '' ? ROOT : join(ROOT, rel);
-              if (!existsSync(join(target, 'plugin.json'))) {
-                err(MARKETPLACE_REL, `entry "${pj.name}" source "${self.source}" does not contain a plugin.json — the install would fail on the user's machine, not here`);
-              }
-            }
-            if (self.version !== pj.version) {
-              err(MARKETPLACE_REL, `entry "${pj.name}" version "${self.version ?? 'missing'}" must equal plugin.json version "${pj.version}" — a stale index installs fine and reports the wrong version`);
-            }
-            // plugin.json is the canonical description; this copy is what
-            // `marketplace browse` shows to someone deciding whether to install.
-            if (self.description !== pj.description) {
-              err(MARKETPLACE_REL, `entry "${pj.name}" description must match plugin.json, which is canonical — this copy is what \`marketplace browse\` shows before anyone installs`);
-            }
-          }
-        }
-        if (mkt.metadata && mkt.metadata.version && mkt.metadata.version !== pj.version) {
-          err(MARKETPLACE_REL, `metadata.version "${mkt.metadata.version}" must equal plugin.json version "${pj.version}"`);
+const manifests = discoverManifests(ROOT);
+const parsedManifests = [];
+for (const m of manifests) {
+  let pj;
+  try { pj = JSON.parse(readFileSync(m.path, 'utf8')); }
+  catch (e) { err(m.rel, `invalid JSON: ${e.message}`); continue; }
+  // Declared agent/skill paths must resolve, relative to the manifest's own
+  // directory (root for the monolith, the pack dir for a pack).
+  for (const key of ['agents', 'skills']) {
+    if (!pj[key]) err(m.rel, `missing "${key}" path`);
+    else if (!existsSync(join(m.dir, pj[key]))) err(m.rel, `"${key}" path "${pj[key]}" does not exist`);
+  }
+  if (!pj.version) err(m.rel, 'missing "version"');
+  parsedManifests.push({ rel: m.rel, dir: m.dir, isRoot: m.isRoot, name: pj.name, version: pj.version, description: pj.description });
+}
+
+const rootManifest = parsedManifests.find((m) => m.isRoot) ?? null;
+const canonicalVersion = rootManifest?.version ?? null;
+if (!rootManifest) err('plugin.json', 'missing');
+
+// The monolith plugin.json and package.json must carry the same version — a
+// release bumps both together (see AGENTS.md -> "Releasing this plugin").
+if (rootManifest) {
+  const pkgPath = join(ROOT, 'package.json');
+  if (existsSync(pkgPath)) {
+    let pkg;
+    try { pkg = JSON.parse(readFileSync(pkgPath, 'utf8')); }
+    catch (e) { err('package.json', `invalid JSON: ${e.message}`); }
+    if (pkg) {
+      if (!pkg.version) err('package.json', 'missing "version"');
+      if (rootManifest.version && pkg.version && rootManifest.version !== pkg.version) {
+        err('plugin.json', `version "${rootManifest.version}" must equal package.json version "${pkg.version}" (bump both together on release)`);
+      }
+    }
+  }
+}
+
+// Per-manifest version agreement: every committed pack ships in lockstep with the
+// monolith, so a pack whose version drifts is a release-hygiene failure.
+for (const e of manifestParityErrors(parsedManifests.filter((m) => !m.isRoot), canonicalVersion)) {
+  err(e.rel, e.msg);
+}
+
+// The marketplace index is how kai is installed once the host removes direct
+// installs, and it carries its own copy of each plugin's version, name and
+// description. A stale entry does not fail an install -- it succeeds and reports
+// the wrong version, which is worse than a broken one. The name is checked against
+// a constant because the host uses it as the registration key with no override, so
+// renaming it silently invalidates `kai@kai-plugins` everywhere. The index may
+// list more than one plugin once packs publish; an in-repo plugin with no entry is
+// fine, because packs stay unpublished until the marketplace flip.
+const mktPath = join(ROOT, MARKETPLACE_REL);
+if (!existsSync(mktPath)) {
+  err(MARKETPLACE_REL, 'missing — kai publishes itself as a marketplace so it can be installed without a deprecated direct install');
+} else {
+  let mkt;
+  try { mkt = JSON.parse(readFileSync(mktPath, 'utf8')); }
+  catch (e) { err(MARKETPLACE_REL, `invalid JSON: ${e.message}`); }
+  if (mkt) {
+    const manifestsByName = {};
+    for (const m of parsedManifests) if (m.name) manifestsByName[m.name] = { version: m.version, description: m.description };
+    for (const msg of marketplaceConsistencyErrors({
+      mkt, marketName: MARKETPLACE_NAME, monolithName: MONOLITH_NAME, canonicalVersion, manifestsByName,
+    })) {
+      err(MARKETPLACE_REL, msg);
+    }
+    // The one FS check the pure helper leaves to the caller: a listed source that
+    // does not resolve to a plugin.json passes the host's schema but fails at
+    // install time, on the user's machine.
+    for (const entry of Array.isArray(mkt.plugins) ? mkt.plugins : []) {
+      if (typeof entry?.source === 'string') {
+        const relSrc = entry.source.replace(/^\.\/?/, '');
+        const target = relSrc === '' ? ROOT : join(ROOT, relSrc);
+        if (!existsSync(join(target, 'plugin.json'))) {
+          err(MARKETPLACE_REL, `entry "${entry.name}" source "${entry.source}" does not contain a plugin.json — the install would fail on the user's machine, not here`);
         }
       }
     }

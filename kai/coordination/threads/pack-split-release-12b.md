@@ -12,3 +12,28 @@ Append-only communication log mirroring
 - evidence:  .github/plugin/marketplace.json (single monolith entry today); validate-plugin.mjs marketplace checks — captured 2026-08-24 from C:\src\kai
 - questions: none
 - next:      principal-product-manager — groom milestone-by-milestone; the flip is operator-executed and gated.
+
+## NOTE 2026-08-24-2240 — principal-product-manager (steward) — carry-forward from `pack-split-generator-gates` acceptance
+
+- Item version 1 -> 2. State stays `proposed`; `next_role` unchanged. No lease taken.
+- **Architect finding A4 added as two acceptance criteria**, from the `independent-architecture`
+  review ratified 2026-08-24-2231 at `change_ref 457254b973fb58b129332ffaa609fb5febfdd412`:
+  **(1) publication currently sits outside release enforcement.**
+  `.github/plugin/marketplace.json` is neither a `BEHAVIOR_PREFIX` nor a `BEHAVIOR_FILE`, so once a
+  pack tree is committed, flipping it from unpublished to published is a *pure* marketplace edit —
+  validate accepts it and release-guard exempts it: no bump, no CHANGELOG, no README stamp. The
+  generator-gates change did **not** create this exemption (marketplace.json was always exempt), but
+  it is what makes a **second** entry legal, and this item is the flip. Classify the index as
+  behavior-sensitive, or gate publication by an equivalent explicit mechanism recorded as a decision.
+  **(2) entry name is not asserted against its source.** Neither the pure helper
+  (`marketplaceConsistencyErrors`) nor the caller's filesystem check asserts that an entry's `name`
+  matches the `name` inside the `plugin.json` at its `source`, so an entry can point at the wrong pack.
+- `scripts/release-guard.mjs` and `scripts/validate-plugin.mjs` added to `touches` accordingly —
+  the highest-blast-radius item in the initiative should not be the one place the release gate
+  cannot see. The publish, tag, and monolith retirement remain **operator-executed**; these criteria
+  are gates this role prepares, not acts it performs.
+- Timing risk, flagged not resolved: A4's guard ideally exists **before** any committed tree could be
+  flipped. `pack-split-generated-pack-trees` is cross-referenced to raise it to the steward if
+  publication becomes possible earlier, in which case the steward re-routes the guard rather than
+  waiting for `12b`.
+- Dependencies unchanged and unmet; this item remains far from executable.

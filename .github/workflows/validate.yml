@@ -2,13 +2,14 @@ name: validate
 
 # Guards the plugin contract on every PR and on pushes to main: frontmatter and
 # name-to-path agreement, resolvable cross-references, the host-tool allowlist,
-# workspace-contract consistency, the fixture manifest schema, and release
-# hygiene (semver, changelog/README stamp for the current version, dependency/
-# lockfile consistency, sanctioned git deps). It also runs the workspace-doctor
-# self-test, the host-loader acceptance mirror, the release-guard self-test, and
-# a syntax/parse check of shipped helper scripts. On pull requests it additionally
-# runs the release-guard gate: a behavior-sensitive change must carry a version
-# bump plus changelog/README updates.
+# workspace-contract consistency, the fixture manifest schema, per-manifest version
+# agreement across the monolith and any committed pack trees, and release hygiene
+# (semver, changelog/README stamp for the current version, dependency/lockfile
+# consistency, sanctioned git deps). It also runs the workspace-doctor self-test,
+# the host-loader acceptance mirror, the release-guard self-test, the pack-generator
+# self-test and its regenerate-and-diff check, and a syntax/parse check of shipped
+# helper scripts. On pull requests it additionally runs the release-guard gate: a
+# behavior-sensitive change must carry a version bump plus changelog/README updates.
 # Dependency-free — no install step, so it stays fast.
 
 on:
@@ -37,6 +38,10 @@ jobs:
         run: node scripts/host-contract.mjs --self-test
       - name: Release-guard self-test
         run: node scripts/release-guard.mjs --self-test
+      - name: Pack generator self-test
+        run: node scripts/pack-preview.mjs --self-test
+      - name: Committed pack trees match the generator
+        run: node scripts/pack-preview.mjs --check
       - name: Check helper script syntax
         run: node scripts/check-syntax.mjs
       - name: Release-guard (behavior change requires a bump + release notes)

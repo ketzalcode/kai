@@ -31,15 +31,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.57.0` — **56 agents and 50 skills**, for the **Copilot CLI** and the
+`v0.58.0` — **56 agents and 50 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**Rich diagrams now have a home that isn't Markdown.** `html-block-diagrams`
-ships five block arrangements — layers, lanes, pipeline, boundary, compare —
-for HTML artifacts and exported images, built on a card that carries a name, a
-subtitle, a status and an artifact path. It has no dependency and no build step,
-every arrangement is laid out by CSS grid so nothing can overlap, and a
-genuinely branching flow is still routed to `mermaid`.
+**Groundwork for the pack split.** The build tooling now speaks one
+machine-readable pack partition, `scripts/pack-preview.mjs` is the deterministic
+pack generator (byte-stable, per-pack `plugin.json`, regenerate-and-diff), and the
+validate and release gates are multi-manifest aware — so a future `kai-core` plus
+department packs can never land outside version and release enforcement. kai still
+ships as the single `kai` plugin; no packs are published yet.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai

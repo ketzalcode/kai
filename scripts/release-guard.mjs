@@ -12,9 +12,12 @@
 import { execFileSync } from 'node:child_process';
 
 // Behavior-sensitive = the plugin's shipped surface. A change here is a release
-// and must carry a version bump + release notes. Everything else (README,
-// CHANGELOG, docs, tests, workflows, .env.example, LICENSE) is exempt.
-const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'scripts/'];
+// and must carry a version bump + release notes. `packs/` is the committed pack
+// tree: a generated department/core tree ships to users the same way agents/ and
+// skills/ do, so a change to it must never land outside version/release
+// enforcement. Everything else (README, CHANGELOG, docs, tests, workflows,
+// .env.example, LICENSE) is exempt.
+const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'scripts/', 'packs/'];
 const BEHAVIOR_FILES = new Set(['plugin.json', 'package.json', 'package-lock.json']);
 
 function isBehaviorPath(p) {
@@ -114,6 +117,16 @@ function selfTest() {
       expect: (r) => !r.ok && r.behaviorChanged && r.errors.some((e) => /not bumped forward/.test(e)),
     },
     {
+      name: 'a committed pack-tree change is behavior-sensitive',
+      input: { changedFiles: ['packs/kai-core/plugin.json'], baseVersion: '0.15.0', headVersion: '0.15.0' },
+      expect: (r) => !r.ok && r.behaviorChanged && r.errors.some((e) => /not bumped forward/.test(e)),
+    },
+    {
+      name: 'a bumped + release-noted pack-tree change passes',
+      input: { changedFiles: ['packs/kai-personal/agents/persona-self.agent.md', 'CHANGELOG.md', 'README.md'], baseVersion: '0.15.0', headVersion: '0.16.0' },
+      expect: (r) => r.ok && r.behaviorChanged,
+    },
+    {
       name: 'a version downgrade on a behavior change fails',
       input: { changedFiles: ['skills/x/SKILL.md', 'CHANGELOG.md', 'README.md'], baseVersion: '0.15.0', headVersion: '0.14.0' },
       expect: (r) => !r.ok && r.errors.some((e) => /not bumped forward/.test(e)),
@@ -132,6 +145,7 @@ function selfTest() {
   // Path classification spot-checks.
   const cls = [
     ['agents/x.agent.md', true], ['skills/x/SKILL.md', true], ['scripts/x.mjs', true],
+    ['packs/kai-core/plugin.json', true], ['packs/kai-personal/agents/x.agent.md', true],
     ['plugin.json', true], ['package.json', true], ['package-lock.json', true],
     ['README.md', false], ['CHANGELOG.md', false], ['docs/x.md', false],
     ['test/fixtures/x/y.md', false], ['.github/workflows/validate.yml', false],

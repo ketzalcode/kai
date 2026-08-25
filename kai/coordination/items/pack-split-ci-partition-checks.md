@@ -37,14 +37,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-24-2240
 ---
 
 ## Outcome
@@ -65,6 +65,19 @@ still authoritative.
 - [ ] `node scripts/pack-preview.mjs --self-test`, `node scripts/validate-plugin.mjs`, `npm test` pass.
 - [ ] Version bumped on `0.x` with CHANGELOG + README stamp.
 
+*Carried forward from the `pack-split-generator-gates` architecture review (finding A5, ratified
+2026-08-24-2231); routed here by the steward at acceptance 2026-08-24-2240. Not a defect today —
+the authoritative assertions are unaffected — but this item is what turns the partition self-test
+into a hard CI gate, so the duplicate truth must be collapsed immediately before those checks
+become load-bearing.*
+
+- [ ] **(A5)** `scripts/pack-preview.mjs` carries **one** roster truth: `PACK_AGENTS` is derived
+      from the canonical partition (`export const PACK_AGENTS = PACKS.personal;`) or removed, so the
+      second independently maintained copy of the personal roster cannot drift from `PACKS.personal`.
+- [ ] **(A5)** Every partition self-test check runs the canonical `planPacks()` path; no check is
+      left asserting against the legacy `planSkills(PACK_AGENTS)` path (four of the 35 checks do
+      today), so a CI gate cannot pass against stale truth.
+
 ## Evidence
 
 - (to be filled during execution).
@@ -75,3 +88,8 @@ still authoritative.
   **contained** — `fleet-observation` is an orphan (no agent inherits it), so no inheritance refs change.
 - Must precede `pack-split-generated-pack-trees` so core's generated tree carries `kai-core-fleet-observation`.
 - CI capstone of `dependency-guarantees`.
+- **A5 provenance (steward, 2026-08-24-2240).** `pack-split-generator-gates` eliminated the
+  duplicate partition truth everywhere except this one legacy export; it was deliberately not fixed
+  in that ratified diff because re-opening a bound `change_ref` for a non-defect buys nothing.
+  `scripts/pack-preview.mjs` is already in this item's `touches`, so A5 costs approximately one line
+  plus re-pointing four self-test checks.

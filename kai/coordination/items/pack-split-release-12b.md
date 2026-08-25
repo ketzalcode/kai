@@ -22,6 +22,8 @@ touches:
   - package.json
   - CHANGELOG.md
   - README.md
+  - scripts/release-guard.mjs
+  - scripts/validate-plugin.mjs
 depends_on:
   - item: pack-split-host-gates
     requires: completed
@@ -38,14 +40,14 @@ review_requirements:
     kind: independent-security
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-24-2240
 ---
 
 ## Outcome
@@ -61,6 +63,22 @@ Minimal = core + one department, not five at once.
 - [ ] `1.0.0` is cut; `plugin.json` + `package.json` agree; marketplace index matches.
 - [ ] `pack-split-host-gates` evidence is a green go before publish; `release-guard` gate passes.
 
+*Carried forward from the `pack-split-generator-gates` architecture review (finding A4, ratified
+2026-08-24-2231); routed here by the steward at acceptance 2026-08-24-2240. That change did not
+create the exemption — `.github/plugin/marketplace.json` was always exempt — but it is what makes a
+**second** marketplace entry legal, and this item is the flip. Publication must not be the one
+irreversible act that escapes release enforcement.*
+
+- [ ] **(A4)** Publication sits **inside** release enforcement: `.github/plugin/marketplace.json` is
+      classified behavior-sensitive by `release-guard` (a `BEHAVIOR_FILE`/prefix), or publication is
+      gated by an equivalent explicit mechanism recorded as a decision. Flipping a pack from
+      unpublished to published cannot land as a pure marketplace edit with no bump, no CHANGELOG,
+      and no README stamp.
+- [ ] **(A4)** `validate-plugin.mjs` asserts that every marketplace entry's `name` matches the
+      `name` inside the `plugin.json` at that entry's `source` — neither the pure helper
+      (`marketplaceConsistencyErrors`) nor the caller's filesystem check asserts this today, so an
+      entry can point at the wrong pack.
+
 ## Evidence
 
 - (to be filled) — marketplace diff + operator publish/tag confirmation + retirement confirmation.
@@ -71,3 +89,7 @@ Minimal = core + one department, not five at once.
 - Highest blast radius. Reviews: `principal-sre` (publish + monolith retirement) and `principal-security`
   (marketplace integrity, retiring the published monolith). The marketplace publish, tag, and monolith
   retirement are **operator-executed** — this role prepares and gates, never publishes.
+- **A4 scope note (steward, 2026-08-24-2240).** The two A4 criteria add `scripts/release-guard.mjs`
+  and `scripts/validate-plugin.mjs` to this item's `touches`. If a committed pack tree could become
+  publishable **before** this item runs, the guard is needed earlier — raise it to the steward for
+  re-routing rather than assuming `12b` will catch it in time.
