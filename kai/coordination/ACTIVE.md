@@ -99,3 +99,47 @@ required items `shipped`**: `degraded-refusal` and `ci-partition-checks` still r
 `shipped` and stay non-dispatchable, and `crosspack-validator` still overlaps it on
 `scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`, so the touch-conflict check at
 dispatch still applies. **Next: `@operator`**, then back to `workflow-ship`.
+
+**Latest — 2026-08-25-1328 (`workflow-ship`, CONFIRM-START + CONFIRM-COMPLETE).**
+`pack-split-preflight-compat` is **`shipped`**. State walked
+**`release-ready` -> `deploying` (v15) -> `production-verification` (v16) -> `shipped` (v17)** —
+no state skipped — lease self-granted (`wsh-2026-08-25-1328-pfc-confirm`, `version_at_grant: 14`)
+and cleared, `next_role: "@operator" -> null`, `resume_state` stays `null`, `change_ref`
+**unchanged** at `3383d7f2…` (deployment moves state, not the reviewed implementation ref).
+**The operator merged, tagged, released and published; kai did none of those, at any phase, and
+no rollback was invoked.** PR **#154** squash-merged 2026-08-25T20:27:09Z into merge commit
+`67670525808be349466155b836a7fdbbe4dfb8b7`; `main` `validate` run **32895404267** (`event: push`,
+`run_attempt: 1`, `status: completed`, **`conclusion: success`**, `head_sha` exactly that merge
+commit, `20:27:12Z -> 20:27:30Z`); annotated tag `v0.59.0` and release published 20:28:01Z.
+
+**Production verification PASSED — five of six checks re-derived read-only against the merge
+commit itself**, via `raw.githubusercontent.com` and the git-trees/tags APIs rather than the local
+worktree, so a dirty checkout could not have produced a false pass: `0.59.0` coherent across all
+eight version locations (compare link non-dangling — the API reports `v0.58.0 -> 47aa0549…`);
+marketplace still **exactly one** entry, `kai` at `source: "."`; `COMMITTED_PACKS = []` and **no
+`packs/` tree — proven positively**, because the merge commit's root tree lists `package-lock.json`,
+`package.json`, `plugin.json` consecutively and `packs` sorts between the latter two in git's byte
+ordering; `skills/kai-core-contract-v1/SKILL.md` present with the exact `KAI_CORE_READY` /
+`contract: 1` marker; and the annotated tag object `338cfb04…` **peeled to the merge commit** via
+the `tags` API — the peel that was left operator-attested at `v0.58.0` is genuinely re-derived
+this time. The **one** claim resting on attestation is the per-job step breakdown
+(`97956815622`, 16s) — the jobs endpoint returned **403** — and it is subsumed by the run-level
+`success`, since a run cannot conclude `success` with a failing job. Limits recorded, not absorbed:
+no shell, and every 403 was worked around with an equal-or-stronger read-only source rather than
+downgraded to assertion. **Security P2-S2 held, checked by reading the published body:** the notes
+claim generated department-agent bodies *carry a byte-pinned fail-closed instruction* and that the
+**preview arms** emit `KAI-CORE-MISSING`; they do **not** claim a pack agent *refuses*, and they
+state no `packs/` tree is committed and only the monolithic `kai` is exposed.
+
+**Milestone `dependency-guarantees` moves to 2 of 5 required items `shipped` — still OPEN.**
+Dependents cleared strictly by the DAG, not generously: **`pack-split-degraded-refusal` is
+unblocked** (this was its **sole** dependency) and is now dispatchable — though it still overlaps
+`pack-split-crosspack-validator` on `scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs`,
+so the **touch-conflict check at dispatch is not waived**, and its block must land **after** the
+preflight (A2 enforces that mechanically now). **`pack-split-ci-partition-checks` stays blocked**
+on `crosspack-validator` (still `ready`), one of two dependencies met.
+`pack-split-generated-pack-trees` has two of six met and stays `proposed`, outside `scope.current`.
+**No residual risk was accepted** — R1 (authenticity, the operator's call *at publication*, which
+this release is not), R2 (owed by `pack-split-host-gates`) and R3 travel unchanged; **P2-S1 remains
+a parked backlog PROPOSAL** and this run created **no item**. **Next: the director** — dispatch is
+its call, not this gate's.

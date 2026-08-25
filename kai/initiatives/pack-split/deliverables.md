@@ -10,7 +10,7 @@ one-way and steward-approved:
 | Locked five-pack partition (authoritative docs) | partition-lock | pack-split-partition-lock | kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md | — | completed / accepted |
 | Engineering delivery decomposition (14-item build & ship plan) | dependency-guarantees | pack-split-engineering-decomposition | kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md | — | completed / accepted |
 | Release record — pack generator + multi-manifest gates (`0.58.0`) | dependency-guarantees | pack-split-generator-gates | kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **SHIPPED 2026-08-25** (`v0.58.0`, merge `47aa0549…`) |
-| Release record — combined fail-closed preflight + version-compat (`0.59.0`) | dependency-guarantees | pack-split-preflight-compat | kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **RELEASE-READY 2026-08-25** (PR #154 at `d4145eed…`, `v0.59.0` not yet cut) |
+| Release record — combined fail-closed preflight + version-compat (`0.59.0`) | dependency-guarantees | pack-split-preflight-compat | kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **SHIPPED 2026-08-25** (`v0.59.0`, merge `67670525…`, production verification PASSED) |
 
 The **release record** for `pack-split-preflight-compat` was written by `workflow-ship`
 at the 2026-08-25-1310 DoD gate (verdict **RELEASE-READY**, all six dimensions Clear,
@@ -18,9 +18,18 @@ none waived). It records the six-dimension evidence — including GitHub Actions
 `32893764931` / job `contract`, `conclusion: success`, 11/11 steps on `ubuntu-latest`,
 which closed the one criterion only CI could close — plus the rollout plan, the rollback
 plan, the operator deploy handoff for merging PR #154 and cutting `v0.59.0`, and the
-production-verification checks and evidence owed at CONFIRM-COMPLETE. **It has not
-shipped:** nothing is merged, tagged, released or published, and the initiative log
-carries the release-ready entry only. Its library promotion is **complete** at
+production-verification checks and evidence owed at CONFIRM-COMPLETE. **It is now
+`shipped`** — `workflow-ship` ran CONFIRM-START + CONFIRM-COMPLETE at 2026-08-25-1328:
+the operator squash-merged PR #154 into `67670525808be349466155b836a7fdbbe4dfb8b7`,
+`main` run `32895404267` concluded **`success`** at that exact head, and annotated tag
+`v0.59.0` plus its published release **peel to the merge commit**. Production
+verification **PASSED** — five of six checks re-derived read-only against the merge
+commit (version coherence across all eight locations, marketplace still exactly one
+entry, `COMMITTED_PACKS = []` with **no `packs/` tree**, the probe skill present, the
+tag peel), with only the per-job step breakdown left operator-attested after a **403**
+on the jobs endpoint. Rollback was never invoked, and the record was updated in place
+with the deployment record and the executed verification. Its library promotion is
+**complete** at
 `kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md`;
 the move changed coordination records only.
 

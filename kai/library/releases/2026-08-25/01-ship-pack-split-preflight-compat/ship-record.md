@@ -15,16 +15,20 @@ related:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
   - kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md
 evidence:
+  - path: https://github.com/RubenSaucedo/kai/actions/runs/32895404267
+    source: main `validate` run 32895404267 — event push, head_sha 67670525…, conclusion success (read here at CONFIRM-COMPLETE)
+  - path: https://github.com/RubenSaucedo/kai/releases/tag/v0.59.0
+    source: published release 376694649, tag v0.59.0 peeled to merge commit 67670525… (read here)
   - path: https://github.com/RubenSaucedo/kai/pull/154
-    source: GitHub PR #154 — open, head d4145eed…, base main @ 9d16e075… (read via api.github.com here, read-only)
+    source: GitHub PR #154 — squash-merged 2026-08-25T20:27:09Z into 67670525… (was open at head d4145eed… when PREPARE ran)
+  - path: kai/coordination/items/pack-split-preflight-compat.md
+    source: authoritative work item (version 17, `shipped` — was v14 `release-ready` at PREPARE)
   - path: https://github.com/RubenSaucedo/kai/actions/runs/32893764931
     source: workflow `validate` run 32893764931, event pull_request, head_sha d4145eed…, conclusion success (read here)
   - path: https://github.com/RubenSaucedo/kai/actions/runs/32893764931/job/97951496629
     source: job `contract` — ubuntu-latest / Node 20, 11/11 substantive steps success, 14s (read here)
-  - path: kai/coordination/items/pack-split-preflight-compat.md
-    source: authoritative work item (version 14, `release-ready`)
   - path: kai/coordination/threads/pack-split-preflight-compat.md
-    source: item thread — deploy HANDOFF 2026-08-25-1310
+    source: item thread — deploy HANDOFF 2026-08-25-1310, ship HANDOFF 2026-08-25-1328
   - path: kai/initiatives/pack-split/artifacts/security/pack-split-preflight-compat.md
     source: independent security assessment (P0 0 / P1 0 / P2 2) at change_ref 3383d7f2…
 ---
@@ -35,9 +39,14 @@ evidence:
 **Milestone:** `dependency-guarantees`  ·  **Delivery class:** `product-change`
 **Target:** pack-split contract preflight + version compatibility
 **Date:** 2026-08-25 13:10 local (America/Los_Angeles, UTC-07:00)
-**Run:** `workflow-ship` — **PREPARE** (`in-review -> release-ready`)
-**Final state:** **RELEASE-READY — not shipped.** Nothing has been merged, tagged,
-released, or published by kai, and nothing will be.
+**Run:** `workflow-ship` — **PREPARE** (`in-review -> release-ready`) 2026-08-25-1310,
+then **CONFIRM-START + CONFIRM-COMPLETE** (`release-ready -> deploying ->
+production-verification -> shipped`) 2026-08-25-1328
+**Final state:** **SHIPPED** — the operator merged, tagged, released and published;
+**kai merged, tagged, released and published nothing, at any phase.** Production
+verification PASSED; rollback was never invoked. *(This line read "RELEASE-READY —
+not shipped" until the operator supplied deployment evidence; it is updated here
+because the record's header must state the item's real terminal state.)*
 
 **What shipped (one line, once the operator deploys it):** `kai-core-contract-v1`
 becomes a real on-disk core skill and the authoritative generator injects one
@@ -240,7 +249,7 @@ two operator attestations this gate could not re-derive.
 
 ---
 
-## Production verification — to be executed at CONFIRM-COMPLETE (not yet run)
+## Production verification — the plan as written at PREPARE (executed below; kept for the audit trail)
 
 Proportional to a packaging/build-tooling change with no runtime surface. Every
 check below is read-only.
@@ -270,6 +279,64 @@ return it to `release-ready`, and only on rollback evidence.
 
 ---
 
+## Production verification — EXECUTED at CONFIRM-COMPLETE 2026-08-25-1328: **PASS**
+
+Proportional to a packaging/build-tooling change with no runtime surface. Every
+check below is read-only. **Five of six were re-derived here against the merge
+commit itself** — via `raw.githubusercontent.com` and the git-trees/tags APIs at
+`67670525808be349466155b836a7fdbbe4dfb8b7`, deliberately *not* the local
+worktree, so a dirty checkout could not have produced a false pass.
+
+| # | Check | Pass condition | Result |
+|---|-------|----------------|--------|
+| 1 | **`validate` green on `main`** | Workflow run at the merge commit: `conclusion: success`, `head_sha` = the merge SHA. | **PASS.** Run `32895404267`, `event: push`, `run_attempt: 1`, `status: completed`, **`conclusion: success`**, `head_sha 67670525808be349466155b836a7fdbbe4dfb8b7`, `display_title: "feat: add fail-closed pack preflight (#154)"`, `20:27:12Z -> 20:27:30Z`. Job-level detail (`97956815622`, 16s) is operator-attested — the jobs endpoint returned **403** — but a run cannot conclude `success` with a failing job. |
+| 2 | **Version coherence on `main`** | `0.59.0` in all eight locations. | **PASS.** At the merge commit: `plugin.json`; `package.json`; `package-lock.json` ×2 (root `version` + `packages[""].version`); `marketplace.json` `metadata.version` + `plugins[0].version`; `README.md` `## Status` `v0.59.0` — 56 agents / 51 skills; `CHANGELOG.md` `## [0.59.0] - 2026-08-25`. The compare link (`CHANGELOG.md:2613`) is read from checked-out `main` and is **not dangling**: the API reports `v0.58.0 -> 47aa0549…`. |
+| 3 | **Marketplace still exactly one entry** | `plugins[]` length **1**, `name: kai`, `source: "."`. | **PASS.** Exactly one entry, `kai` at `source: "."`, version-only patch. No pack entries. |
+| 4 | **No `packs/` tree on `main`** | Nothing matches `packs/**`. | **PASS — proven positively, not inferred.** The merge commit's root tree `25d379d024b1bff7f406f1af8cee8ec971ce73ff` lists `package-lock.json`, `package.json`, `plugin.json` consecutively; `packs` sorts between `package.json` and `plugin.json` in git's byte ordering and **is absent**. `COMMITTED_PACKS = []` still holds in `scripts/lib/pack-plan.mjs` at that commit. |
+| 5 | **The probe shipped and is pinned** | `skills/kai-core-contract-v1/SKILL.md` present on `main` returning `KAI_CORE_READY` + `contract: 1`. | **PASS.** Present at the merge commit with the exact two-line marker, `tools: [view]`, and the "version lives in the name" clause. The byte-pin is re-asserted by check 1's green `Validate plugin contract` step. |
+| 6 | **Tag and release** | `v0.59.0` exists and points at the merge commit; release cut; compare link resolves. | **PASS.** `.git/refs/tags/v0.59.0` is the annotated **tag object** `338cfb04cb06bb689ca3522ac3f934a1e256b1fe`; peeled via `GET /repos/RubenSaucedo/kai/tags` to commit `67670525808be349466155b836a7fdbbe4dfb8b7` — the merge commit. Release `376694649` published 2026-08-25T20:28:01Z, not draft, not prerelease. |
+
+**Release-note language checked against security P2-S2 — by reading the published
+body, not by report.** It claims generated department-agent bodies "carry a
+canonical, byte-pinned fail-closed compatibility instruction" and that the
+**preview arms** emit `KAI-CORE-MISSING`. It does **not** claim a pack agent
+*refuses* — the claim no evidence supports yet — and it states outright that no
+`packs/` tree is committed and the marketplace still exposes only the monolithic
+`kai` plugin. **Compliant.**
+
+**Environment limits, stated rather than absorbed.** No shell. `api.github.com`
+intermittently returned **403** (rate limit), which blocked the per-job step list
+and the `git/tags` peel endpoint; both were worked around with *stronger or
+equal* read-only sources (run-level conclusion; the `tags` listing, which returns
+the peeled commit) rather than downgraded to assertion. The only claim resting on
+operator attestation alone is the job's step-level breakdown, and it is subsumed
+by the run's `success`.
+
+**Rollback was never invoked.** No revert, no tag deletion, no release deletion.
+
+---
+
+## Deployment record (operator-executed; kai executed nothing)
+
+| Fact | Value |
+|------|-------|
+| PR | #154, **squash-merged** 2026-08-25T20:27:09Z |
+| Merge commit on `main` | `67670525808be349466155b836a7fdbbe4dfb8b7` |
+| Environment | `main` + GitHub Releases |
+| Version | `0.58.0 -> 0.59.0` |
+| Deployment run | <https://github.com/RubenSaucedo/kai/actions/runs/32895404267> — started 20:27:12Z, **`conclusion: success`** 20:27:30Z |
+| Tag | annotated `v0.59.0` -> the merge commit |
+| Release | <https://github.com/RubenSaucedo/kai/releases/tag/v0.59.0>, published 20:28:01Z |
+| Rollback | **not invoked** |
+
+**Final state: `shipped`** — reached 2026-08-25-1328 by
+`release-ready -> deploying -> production-verification -> shipped`, no state
+skipped. Deploy steps 1–3 (reviewed-diff check, final-head green, squash-merge)
+were executed by the operator; this run verified their *outcome* on `main` rather
+than re-running them.
+
+---
+
 ## Follow-ups / parked
 
 - **P2-S1 (security, non-blocking) — PROPOSAL parked** in
@@ -291,10 +358,15 @@ return it to `release-ready`, and only on rollback evidence.
   `contract === 1` is a mode selector that fails loudly; the pin matches
   `` `contract: N` `` forms). Recorded on the item; no work created.
 - **Library promotion of this record** — deploy step 6 above.
-- **Nothing is unblocked by this record.** `pack-split-degraded-refusal` and
-  `pack-split-ci-partition-checks` require this item at **`shipped`**.
-  `dependency-guarantees` stays **OPEN at 1 of 5 required items `shipped`** until
-  CONFIRM-COMPLETE passes.
+- **Nothing is unblocked by this record** *(true at PREPARE; superseded at
+  CONFIRM-COMPLETE 2026-08-25-1328)*. With this item now `shipped`:
+  **`pack-split-degraded-refusal` is unblocked** — this was its sole dependency —
+  though its touch overlap with `pack-split-crosspack-validator` still makes the
+  dispatch-time conflict check real. **`pack-split-ci-partition-checks` stays
+  blocked** on `pack-split-crosspack-validator` (still `ready`), with one of two
+  dependencies now met. `pack-split-generated-pack-trees` has two of six met and
+  stays `proposed`, outside `scope.current`. `dependency-guarantees` moves to
+  **2 of 5 required items `shipped`** and remains **OPEN**.
 
 ---
 

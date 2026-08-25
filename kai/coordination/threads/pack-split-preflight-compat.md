@@ -712,3 +712,98 @@ Item version **12 -> 13 -> 14**. No other role held or was waiting on this item.
 - Updated current coordination references. Historical handoffs retain the pre-promotion
   path because the thread is append-only.
 - No implementation or release metadata changed; review bindings remain valid.
+
+## NOTE 2026-08-25-1328 — workflow-ship claimed (self-grant)
+
+Self-granted the workflow lease to run CONFIRM-START / CONFIRM-COMPLETE: holder `workflow-ship`,
+token `wsh-2026-08-25-1328-pfc-confirm`, `version_at_grant: 14`; re-read after the grant confirmed
+holder, token and version. Both phases ran in one pass because the operator supplied *both*
+deployment-start and successful-completion evidence; the intermediate states were still walked and
+recorded, not collapsed. Lease **cleared** in the same run. Item version **14 -> 15 -> 16 -> 17**.
+No other role held or was waiting on this item.
+
+## HANDOFF 2026-08-25-1328 — workflow-ship -> (none: item closed)
+
+- did:       **CONFIRM-START + CONFIRM-COMPLETE. Verdict: `SHIPPED`.** State
+             **`release-ready` -> `deploying` (v15) -> `production-verification` (v16) ->
+             `shipped` (v17)** — no state skipped, `shipped` **not** reached directly from
+             `release-ready`. `resume_state` stays `null`, `next_role: "@operator" -> null`,
+             lease self-granted and cleared, `change_ref` **unchanged** at `3383d7f2…` (deployment
+             moves an item's state, not its reviewed implementation ref).
+
+             **kai merged, tagged, released and published nothing — at any phase.** The operator
+             executed every one of those actions; this run recorded them and re-derived the
+             production facts read-only. **No rollback was invoked.**
+
+             **Deployment start:** PR #154 squash-merged 2026-08-25T20:27:09Z into
+             `67670525808be349466155b836a7fdbbe4dfb8b7`; environment `main` + GitHub Releases;
+             version `0.59.0`; `main` run started 20:27:12Z.
+
+             **Deployment completion:** run **32895404267**, `event: push`, `run_attempt: 1`,
+             `status: completed`, **`conclusion: success`**, `head_sha` exactly the merge commit,
+             `20:27:12Z -> 20:27:30Z`. Tag `v0.59.0` + release published 20:28:01Z.
+             <https://github.com/RubenSaucedo/kai/actions/runs/32895404267>
+
+             **Production verification — all six checks PASS, five re-derived here against the
+             merge commit itself** (via `raw.githubusercontent.com` and the git-trees/tags APIs,
+             deliberately **not** the local worktree, so a dirty checkout could not fake a pass):
+
+             | # | Check | Result |
+             |---|-------|--------|
+             | 1 | `main` CI green at the merge SHA | **PASS** — run 32895404267 `conclusion: success` at `67670525…`; local `main` = `origin/main` = that SHA. Job-step detail (`97956815622`, 16s) stays **operator-attested** (jobs endpoint 403), and is subsumed by the run-level `success`. |
+             | 2 | Version coherence `0.59.0` | **PASS** — all eight locations at the merge commit; `plugin.json`, `package.json`, `package-lock.json` ×2, marketplace ×2, README `## Status` (56 agents / 51 skills), `CHANGELOG [0.59.0]`. Compare link non-dangling: API reports `v0.58.0 -> 47aa0549…`. |
+             | 3 | Marketplace exactly one entry | **PASS** — `plugins[]` length **1**, `kai` at `source: "."`. No pack entries. |
+             | 4 | `COMMITTED_PACKS = []`, no `packs/` tree | **PASS — proven positively.** The merge commit's root tree lists `package-lock.json`, `package.json`, `plugin.json` consecutively; `packs` sorts between the latter two in git byte order and **is absent**. Not inferred from a local glob. |
+             | 5 | Probe shipped and pinned | **PASS** — `skills/kai-core-contract-v1/SKILL.md` at the merge commit, exact `KAI_CORE_READY` / `contract: 1` marker; byte-pin re-asserted by check 1's green `Validate plugin contract` step. |
+             | 6 | Tag/release point at the merge | **PASS** — annotated tag object `338cfb04…` peeled via the `tags` API to commit `67670525…`; release `376694649` published, not draft, not prerelease. |
+
+             **Security P2-S2 held in the published notes, checked by reading the body.** They say
+             generated department-agent bodies *carry a canonical, byte-pinned fail-closed
+             compatibility instruction* and that the **preview arms** emit `KAI-CORE-MISSING`.
+             They do **not** claim a pack agent *refuses* — the claim nothing yet proves — and
+             they state no `packs/` tree is committed and the marketplace exposes only the
+             monolithic `kai`. Compliant.
+
+- state:     shipped
+- change_ref: `3383d7f2476f6ccdec5b4d3077783a13fe47eeb7` — unchanged, deliberately.
+- artifacts: `kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md`
+             — updated with the deployment record and the executed production verification.
+- evidence:  Item `## Ship confirm — CONFIRM-START + CONFIRM-COMPLETE, 2026-08-25-1328`; the ship
+             record above; run 32895404267; release <https://github.com/RubenSaucedo/kai/releases/tag/v0.59.0>.
+             **Environment limits stated, not absorbed:** no shell; `api.github.com` returned
+             **403** on the per-job step list and on `git/tags`, so both were worked around with
+             equal-or-stronger read-only sources (run-level conclusion; the `tags` listing, which
+             returns the peeled commit) rather than downgraded to assertion.
+- needs:     nothing. The item is closed.
+- questions: none blocking.
+- next:      **none — `next_role: null`.** Dependents were cleared strictly by the DAG:
+             **`pack-split-degraded-refusal` is now unblocked** (this was its sole dependency);
+             **`pack-split-ci-partition-checks` remains blocked** on `pack-split-crosspack-validator`
+             (still `ready`), one of two dependencies met; `pack-split-generated-pack-trees` has
+             two of six met and stays `proposed`, outside `scope.current`. Dispatch is the
+             director's call, not this gate's.
+
+## NOTE 2026-08-25-1328 — workflow-ship: what SHIPPED does and does not mean
+
+- **It means production was verified, not that the diff was green.** Five of the six checks were
+  re-derived here against the merge commit; the sixth (job-step breakdown) is named as
+  operator-attested rather than quietly counted as verified.
+- **`pack-split-degraded-refusal` is genuinely dispatchable now**, but it still **shares the
+  generated-agent-body injection surface** with `pack-split-crosspack-validator` on
+  `scripts/lib/pack-plan.mjs` and `scripts/validate-plugin.mjs` — the touch-conflict check at
+  dispatch is not waived by this item shipping. It must also place its block **after** the
+  preflight; A2 now enforces that mechanically rather than by memory.
+- **No residual risk was accepted here.** R1 (authenticity — the operator's call *at publication*,
+  which this release is not), R2 (instruction-level obedience, owed by `pack-split-host-gates`)
+  and R3 travel unchanged. **P2-S1 remains a parked PROPOSAL** in
+  `kai/initiatives/pack-split/backlog.md`; this run created **no item** — filing stays the
+  steward's call.
+- **P2-S2 is now discharged for this release only.** It binds the *next* set of release notes too;
+  nothing about shipping `0.59.0` licenses a future "pack agents refuse" claim.
+- **Milestone `dependency-guarantees` is OPEN at 2 of 5 required items `shipped`.** Shipping the
+  queue head does not shorten the milestone by more than one item.
+- **Activity log not appended:** `kai-core-work-activity` writes via `scripts/activity.mjs` and
+  this run had no shell. Per that skill a failed append is reported and dropped — never retried,
+  never allowed to gate the work. `kai/initiatives/pack-split/log.md` was updated by hand.
+- **`.kai/runs/` not used.** This confirmation produced no evidence requiring segregation — public
+  repo, no secrets, no PII, no customer data. A run-lane copy would only drift.
