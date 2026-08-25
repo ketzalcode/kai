@@ -35,3 +35,45 @@ Append-only communication log mirroring
 - Dependencies unchanged and unmet (`crosspack-validator`, `preflight-compat` at `shipped`); not
   executable. Decomposition Open Question 4 (director availability by membership) remains open on
   this record and is untouched by this note.
+
+## HANDOFF 2026-08-25-1148 — principal-product-manager -> principal-swe-infra
+
+- did:       Steward grooming pass (continuation of 2026-08-25-1139). **Promoted `proposed -> ready`**
+             at **priority 20 -> 50 — last in the initiative queue** (v2 -> v3,
+             `next_role: principal-swe-infra`, `owner` still null). Promoted **with both dependencies
+             unmet, deliberately**: `ready` requires `depends_on` to be *declared*, not resolved.
+             Tightened acceptance on two finding-driven points only — **split** the bundled "local
+             commands + CI green" criterion (the 2026-08-24-2244 DoD bounce), and named
+             `scripts/lib/pack-plan.mjs` as the canonical partition source the forced rename must
+             update. Reconciled `touches` to the shipped foundation and to WS#6 as already written
+             (added `scripts/lib/pack-plan.mjs` + the doc/README/CHANGELOG paths WS#6 enumerated).
+             The A5 criteria from the 2026-08-24-2240 note are unchanged.
+- state:     ready
+- needs:     **Nothing yet — this item is NOT dispatchable.** Both `depends_on` entries
+             (`pack-split-crosspack-validator`, `pack-split-preflight-compat`, each
+             `requires: shipped`) are unsatisfied — both are `ready`, neither dispatched. The
+             director's dependency check must continue to fail here; do not grant a lease until both
+             are `shipped`. Neither dependency type was relaxed: `crosspack-validator` supplies the
+             multi-manifest gate base this layers on, `preflight-compat` supplies the emitter the
+             **version-skew arm** tests.
+- artifacts: kai/coordination/items/pack-split-ci-partition-checks.md (v3);
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md (WS#6);
+             kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md;
+             kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md
+- evidence:  `scripts/lib/pack-plan.mjs` on `main` still maps `'fleet-observation': 'core'` in its skill
+             map — after `generator-gates` that file is the canonical partition source, so the forced
+             rename cannot land without it; `skills/fleet-observation/SKILL.md` still exists and is
+             referenced by `scripts/generate-catalog.mjs`, `test/fixtures/inventory.json`,
+             `docs/getting-started.md`, `docs/workspaces.md`, `docs/reference/agents-and-skills.md`,
+             `README.md`, `CHANGELOG.md`. Read 2026-08-25 from C:\src\kai.
+- questions: Decomposition **Open Question 4** (director availability asserted by roster membership —
+             is the "partly landed" work complete?) stays open and **non-blocking**; it is deliberately
+             not in `waiting_on_questions`, because it is verified at acceptance against criterion 4
+             rather than blocking the start. It must be answered before that criterion can be claimed.
+             Not decided by the steward: whether historical `CHANGELOG.md` entries naming
+             `fleet-observation` are rewritten or left as history — acting role's call; route to the
+             steward if it grows past a mechanical rename.
+- next:      principal-swe-infra — build **after** both `pack-split-crosspack-validator` and
+             `pack-split-preflight-compat` ship and the director dispatches. One review only
+             (`independent-architecture`); must precede `pack-split-generated-pack-trees` so core's
+             generated tree carries `kai-core-fleet-observation`.

@@ -12,11 +12,15 @@ related:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
 evidence:
   - path: https://github.com/RubenSaucedo/kai/pull/152
-    source: GitHub PR (read via api.github.com, read-only)
+    source: GitHub PR — merged 2026-08-25T18:20:55Z (operator-supplied)
   - path: https://github.com/RubenSaucedo/kai/actions/runs/32814515790/job/97700043167
-    source: GitHub Actions job `contract` (read via api.github.com, read-only)
+    source: GitHub Actions job `contract` at the PR head (read via api.github.com, read-only)
+  - path: https://github.com/RubenSaucedo/kai/actions/runs/32883225913
+    source: GitHub Actions `validate` on `main` — conclusion success at head 47aa0549… (operator-supplied)
+  - path: https://github.com/RubenSaucedo/kai/releases/tag/v0.58.0
+    source: GitHub release v0.58.0 at merge commit 47aa0549… (operator-supplied)
   - path: kai/coordination/items/pack-split-generator-gates.md
-    source: authoritative work item (version 13)
+    source: authoritative work item (version 16, `shipped`)
   - path: kai/coordination/threads/pack-split-generator-gates.md
     source: item thread
 ---
@@ -28,11 +32,16 @@ evidence:
 **Target:** pack-split build tooling — generator + multi-manifest gates (foundation)
 **Date:** 2026-08-24 22:52 local (America/Los_Angeles, UTC-07:00)
 **Run:** `workflow-ship` — PREPARE, gate **re-run** after the `2026-08-24-2244` BOUNCE
+**Closed:** 2026-08-25 11:25 local — `workflow-ship` CONFIRM-START + CONFIRM-COMPLETE
+**Final state:** **SHIPPED** (`release-ready` -> `deploying` -> `production-verification` -> `shipped`)
 
-**What is ready to ship (one line):** the deterministic pack generator plus
+**What shipped (one line):** the deterministic pack generator plus
 multi-manifest validate/release gates on `0.58.0` — build-tooling plumbing only,
 with **no pack tree committed and no pack published**; kai still ships as the
 single `kai` plugin.
+
+**Shipped as:** PR #152 merged 2026-08-25T18:20:55Z -> merge commit
+`47aa0549f89b1733483dd6b662a4787d621c9430` on `main`, tagged and released `v0.58.0`.
 
 **Change:**
 - PR: <https://github.com/RubenSaucedo/kai/pull/152> — *feat(pack-split): add generator and manifest gates*
@@ -41,14 +50,17 @@ single `kai` plugin.
 - Ratified review binding (`change_ref`): `457254b973fb58b129332ffaa609fb5febfdd412`
 - Version: `0.57.0 -> 0.58.0`
 
-> **Canonical location note.** Per `kai-core-workspace-conventions` a release
-> record belongs at
-> `kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md`.
-> This agent has **no shell** in this environment and cannot create directories,
-> so the record is written to its contractual **pre-promotion** home in the
-> initiative artifacts tree. The operator promotion command is in the deploy
-> handoff below; `kai/initiatives/pack-split/deliverables.md` carries the row with
-> promotion marked pending.
+> **Canonical location note — promotion COMPLETE (reconciled 2026-08-25-1136).** Per
+> `kai-core-workspace-conventions` this release record belongs at
+> `kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md`
+> — and that is where it now lives. The operator executed the outstanding move with
+> `git mv` from `kai/initiatives/pack-split/artifacts/docs/pack-split-generator-gates-ship-record.md`;
+> the old path no longer exists. **No implementation, release, or verification fact
+> changed with the move** — same content, same evidence, same `v0.58.0`, same rollback
+> plan. The previously recorded "promotion owed" follow-up is **closed**; see
+> "Promotion — complete" below. Earlier entries in the item, thread, and initiative log
+> that cite the pre-promotion path were true when written and are corrected by appended
+> notes rather than rewritten.
 
 ---
 
@@ -164,9 +176,10 @@ publish anything, and it will not.
 4. **Watch the `validate` workflow on `main`** (push event — 10 steps; the
    PR-only release-guard step is correctly skipped on push). All green.
 
-5. **Promote the release record during CONFIRM-COMPLETE.** The readiness records
-   ship in PR #152. After merge verification, move this record to its canonical
-   library home in the follow-up coordination change:
+5. **Promote the release record during CONFIRM-COMPLETE.** — **DONE 2026-08-25**
+   (operator-executed `git mv`; see "Promotion — complete" below). The readiness
+   records shipped in PR #152; this record was moved to its canonical library home
+   in the follow-up coordination change:
    ```bash
    mkdir -p kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates
    git mv kai/initiatives/pack-split/artifacts/docs/pack-split-generator-gates-ship-record.md \
@@ -191,28 +204,68 @@ publish anything, and it will not.
 
 ---
 
-## Production verification (returns the item to `workflow-ship`)
+## Production verification — EXECUTED 2026-08-25-1125, result PASS
 
-Proportional to a build-tooling change with no runtime surface. Run after merge;
-kai may record these read-only checks, but the operator supplies the deployment
-evidence.
+Proportional to a build-tooling change with no runtime surface. `workflow-ship` ran
+the read-only checks it could and labelled the rest operator-attested — **no check was
+marked verified that was not actually re-derived here.**
 
-1. **Main contract green.** `validate` workflow run on `main` at the merge
-   commit — `conclusion: success`. Return the run URL.
-2. **Version and status visible on `main`.** `plugin.json`, `package.json`,
-   `package-lock.json` (both fields) and `.github/plugin/marketplace.json` (both
-   fields) all read `0.58.0`; `README.md` `## Status` reads `v0.58.0`;
-   `CHANGELOG.md` has the `[0.58.0]` section **and** its compare link.
-3. **Marketplace is still exactly one entry.** `.github/plugin/marketplace.json`
-   on `main` lists one plugin, `name: kai`, `source: "."` — no pack entries. The
-   monolith remains authoritative.
-4. **No `packs/` tree published.** `GET /repos/RubenSaucedo/kai/contents/packs?ref=main`
-   returns **404** — the committed-unpublished contract has not started early.
+**Environment limits, stated up front:** this run had **no shell** (read/search/edit/fetch
+only) and `api.github.com` returned **403** to read-only fetches, as did the release
+pages. CI conclusions and annotated-tag peels therefore could **not** be independently
+re-derived and are recorded as operator-attested.
 
-**Evidence to return for CONFIRM-START / CONFIRM-COMPLETE:**
-merge commit SHA · merge timestamp · `main` workflow-run URL **and its
-conclusion** (a run URL without a success conclusion is not completion) ·
-`v0.58.0` tag/release URL if cut.
+| # | Check | Result | How verified |
+|---|-------|--------|--------------|
+| 1 | **Main contract green** — `validate` on `main` at the merge commit | **Pass — operator-attested** | Run <https://github.com/RubenSaucedo/kai/actions/runs/32883225913>, `conclusion: success`, head SHA exactly `47aa0549f89b1733483dd6b662a4787d621c9430`. Not re-derived (403). **Corroborated locally:** `.git/refs/heads/main` = `.git/refs/remotes/origin/main` = `.git/FETCH_HEAD` = `47aa0549f89b1733483dd6b662a4787d621c9430`, and `.git/logs/refs/heads/main` records `ec29cf2f… -> 47aa0549…` `pull --ff-only: Fast-forward` at 2026-08-25 11:25:26 local. |
+| 2 | **Version coherence on `main`** | **Pass — verified** | All six locations read `0.58.0`: `plugin.json:4`, `package.json:3`, `package-lock.json:3` **and** `:9`, `.github/plugin/marketplace.json` `metadata.version` **and** `plugins[0].version`. `README.md:34` `## Status` reads `v0.58.0`. `CHANGELOG.md:7` has `## [0.58.0] - 2026-08-24` and `:2563` the compare link. |
+| 3 | **Marketplace still exactly one entry** | **Pass — verified** | `.github/plugin/marketplace.json` `plugins[]` has length **1**: `name: kai`, `source: "."`. No pack entries. `/plugin update kai` still resolves the single monolith. |
+| 4 | **No `packs/` tree published** | **Pass — verified** | Nothing matches `packs/**` anywhere on the checked-out `main`. The `non_negotiable` this foundation was gated on holds **in production**, not merely at the PR head — the committed-unpublished contract has not started early. |
+| 5 | **Tags and releases present** | **Pass — partly verified** | `.git/refs/tags/v0.58.0` = `66b3c577b85c0fef7b23785ec2d530ddb74ea576` and `.git/refs/tags/v0.57.0` = `a0b140ed70a04bbf8a7974153dafdd9bc4cf1f57` — both refs **exist locally**. Both are annotated-tag object ids; peeling them to commits requires `git`, so *"`v0.58.0` is at the merge commit"* remains operator-attested. Releases: `v0.58.0`, `v0.57.0`. |
+
+**Verdict: production verification PASS -> item `shipped`.** Nothing contradicted the
+operator's evidence, and the one claim inside it that was independently checkable —
+that `main` now points at `47aa0549f89b1733483dd6b662a4787d621c9430` — matched exactly.
+
+### A latent documentation defect the operator fixed on the way
+
+The compare link this release introduced,
+`[0.58.0]: https://github.com/RubenSaucedo/kai/compare/v0.57.0...v0.58.0`, was
+**dangling**: the historical `v0.57.0` tag and release had never been cut. The operator
+restored `v0.57.0` at its own merge commit
+(<https://github.com/RubenSaucedo/kai/releases/tag/v0.57.0>), so the link now resolves.
+Dimension 5 (documented) is stronger in production than it was at the gate.
+
+### Rollback was not invoked
+
+No abort criterion fired. `main` CI was green at the merge commit, so the recorded
+rollback path (revert the squash-merge; delete the `v0.58.0` tag and release if already
+cut) was never needed and remains available unchanged.
+
+---
+
+## Promotion — complete (2026-08-25)
+
+The library promotion that was outstanding at CONFIRM-COMPLETE has been **executed by the
+operator** and is closed. It was never faked: at the 2026-08-25-1125 run this environment
+could not create directories, so the gap was recorded rather than papered over.
+
+- **Old path (pre-promotion, no longer exists):** `kai/initiatives/pack-split/artifacts/docs/pack-split-generator-gates-ship-record.md`
+- **Canonical path (current, authoritative):** `kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md`
+- **How:** operator-executed `git mv` (history preserved). No implementation, release
+  metadata, or production behavior changed; no new version was cut.
+
+```bash
+# executed by the operator, 2026-08-25
+mkdir -p kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates
+git mv kai/initiatives/pack-split/artifacts/docs/pack-split-generator-gates-ship-record.md \
+       kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md
+```
+
+Verified read-only here: the canonical path exists and holds this record; nothing matches
+the old path anywhere under `kai/`. `kai/` is not a `BEHAVIOR_PREFIX`, so release-guard did
+not require a second version bump for the move or for these reconciliation records. Item
+state remains **`shipped`** — the move corrected filing, not the release.
 
 ---
 
@@ -229,8 +282,17 @@ Nothing was dropped to clear this gate.
 | A5 `PACK_AGENTS` duplicate roster truth | `pack-split-ci-partition-checks` | acceptance criterion |
 | A6 zero-skill pack manifest/`skills/` mismatch | `kai/initiatives/pack-split/backlog.md` | PROPOSAL, parked with trigger |
 
-**Dependents unblocked only at `shipped`, not now.** `pack-split-crosspack-validator`,
-`pack-split-preflight-compat`, `pack-split-migration-doctor`, and
-`pack-split-generated-pack-trees` all declare `depends_on: generator-gates (shipped)`.
-`release-ready` is not `shipped`. They stay non-executable until the human merges
-and production verification passes.
+**Dependents — reconciled at `shipped`, none promoted.** `workflow-ship` records that the
+dependency is satisfied; it does **not** promote or dispatch. Only the steward moves an
+item `proposed -> ready`.
+
+| Dependent | Milestone | Its `generator-gates` dep | Other blockers | Executable now? |
+|---|---|---|---|---|
+| `pack-split-crosspack-validator` | dependency-guarantees (in scope) | **satisfied** | none | **No — still `proposed`.** Needs steward grooming. |
+| `pack-split-preflight-compat` | dependency-guarantees (in scope) | **satisfied** | none | **No — still `proposed`.** Needs steward grooming. |
+| `pack-split-migration-doctor` | first-pack-extracted (**out of `scope.current`**) | **satisfied** | milestone outside current scope | **No** — scope, not dependency. |
+| `pack-split-generated-pack-trees` | first-pack-extracted | **satisfied** | `crosspack-validator`, `preflight-compat`, `degraded-refusal`, `ci-partition-checks` (all `shipped`) + `host-semantics-spike` (`completed`) | **No** — 5 of 6 deps still open. |
+
+Milestone `dependency-guarantees` now has **1 of 5** `required_items` at `shipped`
+(`generator-gates`); `preflight-compat`, `degraded-refusal`, `crosspack-validator`, and
+`ci-partition-checks` remain.

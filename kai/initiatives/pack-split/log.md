@@ -399,3 +399,245 @@ production verification passes.
 **Boundary respected.** No implementation, release, or marketplace file was
 touched — only coordination records, the thread, `ACTIVE.md`, `BOARD.md`,
 `deliverables.md`, this log, and the new ship record.
+
+## 2026-08-25 — SHIPPED: generator-gates in production as `v0.58.0` (first `dependency-guarantees` item closed)
+
+`workflow-ship` ran CONFIRM-START and CONFIRM-COMPLETE on
+`pack-split-generator-gates`. **Verdict: SHIPPED.** Item version 13 -> 14 -> 15 -> 16
+(lease self-granted at 13, token `wsh-2026-08-25-1125-gg-confirm`, cleared after the
+write); states walked in order **`release-ready` -> `deploying` -> `production-verification`
+-> `shipped`**, `next_role: null`. `in-review -> shipped` was never short-circuited.
+
+**This is the ship stamp the 2026-08-24 entry deliberately withheld.** The foundation the
+whole `dependency-guarantees` milestone sits on is now on `main`.
+
+**The operator deployed; kai recorded.** PR #152 merged **2026-08-25T18:20:55Z** into merge
+commit **`47aa0549f89b1733483dd6b662a4787d621c9430`**, tagged and released **`v0.58.0`**.
+`workflow-ship` did not merge, tag, release, or publish — and did not touch implementation
+or release code, cut a second release, or start the next engineering item.
+
+**Production verification passed — 4 of 5 checks re-derived here, the 5th named as
+operator-attested rather than dressed up as verified.** This run had no shell and
+`api.github.com` returned **403**, so CI conclusions and annotated-tag peels could not be
+independently re-read. Verified directly against the checked-out `main`: `0.58.0` coherent
+across all six version locations (`plugin.json`, `package.json`, `package-lock.json` ×2,
+`marketplace.json` ×2) plus the README `## Status` stamp and the `CHANGELOG` `[0.58.0]`
+section and compare link; `marketplace.json` still lists **exactly one** plugin (`kai`,
+`source: "."`), so the monolith remains authoritative and `/plugin update kai` is
+unaffected; and **no `packs/` tree exists on `main`** — the non-negotiable this foundation
+was gated on holds in production, not merely at the PR head. Operator-attested: `main`
+`validate` run **32883225913**, `conclusion: success`, head SHA exactly `47aa0549…`.
+Corroborated locally: `.git/refs/heads/main`, `.git/refs/remotes/origin/main` and
+`.git/FETCH_HEAD` all read `47aa0549f89b1733483dd6b662a4787d621c9430`, with the reflog
+showing a fast-forward to it at 2026-08-25 11:25:26 local. Nothing contradicted the
+evidence, and the one claim inside it that was independently checkable matched exactly.
+
+**A dangling link this release introduced was fixed.** The `[0.58.0]` compare link pointed
+at a `v0.57.0` tag that had never been cut; the operator restored `v0.57.0` at its own merge
+commit, so the link now resolves. The documented dimension is stronger in production than
+it was at the gate.
+
+**Rollback was not invoked.** No abort criterion fired; the recorded reversal path (revert
+the squash-merge, delete the tag and release) remains available and unused.
+
+**One follow-up is still owed, and it is not a production gap.** The ship record could not
+be promoted to its canonical library home — this environment cannot create directories, so
+the move was **not faked**. It remains at
+`kai/initiatives/pack-split/artifacts/docs/pack-split-generator-gates-ship-record.md` and
+must be moved by the operator to
+`kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md`
+(`mkdir -p` + `git mv`; `kai/` is not a `BEHAVIOR_PREFIX`, so no second version bump).
+
+**Milestone status.** `dependency-guarantees` is still **open** — **1 of 5** required items
+is `shipped`. `preflight-compat`, `degraded-refusal`, `crosspack-validator`, and
+`ci-partition-checks` remain. Dependencies were reconciled but **nothing was promoted**:
+`crosspack-validator` and `preflight-compat` had generator-gates as their only dependency
+and are now dependency-satisfied, yet both are still `proposed` and require
+`principal-product-manager` grooming before they are executable. `migration-doctor` is
+dependency-satisfied but sits in `first-pack-extracted`, outside
+`scope.current: [dependency-guarantees]`. `generated-pack-trees` still has five open
+dependencies.
+
+## 2026-08-25 — correction: generator-gates ship record promoted to its canonical library home
+
+`workflow-ship` reconciled the one follow-up the ship stamp above left open. **The operator
+executed the outstanding `git mv`**, so the release record now lives at
+`kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md`. The
+pre-promotion path cited in the entry above —
+`kai/initiatives/pack-split/artifacts/docs/pack-split-generator-gates-ship-record.md` — was
+true when written and **no longer exists**; this entry corrects it rather than rewriting
+history.
+
+**Nothing about the release changed.** No implementation, release-metadata, tag, release, or
+marketplace file was touched; no new version was cut (`kai/` is not a `BEHAVIOR_PREFIX`); the
+`v0.58.0` production verification and the unused rollback path stand exactly as recorded.
+`pack-split-generator-gates` stays **`shipped`** (item v16 -> v17, lease `null`,
+`next_role: null`, `resume_state: null`).
+
+**Milestone status unchanged.** `dependency-guarantees` is still **open** — **1 of 5**
+required items `shipped`. Dependents were **not** promoted or dispatched by this run:
+`crosspack-validator` and `preflight-compat` remain `proposed` and still await
+`principal-product-manager` grooming. The only remaining follow-up from the ship is that
+grooming.
+
+## 2026-08-25 — steward grooming: 3 items promoted to `ready` (queue = preflight-compat -> crosspack-validator -> spike)
+
+`principal-product-manager` (steward) ran the grooming pass the ship entry above named as the
+one outstanding follow-up. **Three items promoted `proposed -> ready`; nothing dispatched, no
+branch, no code, no CI, no marketplace change.** The steward did not build, review, or sequence
+the implementation — that stays with `principal-swe-infra` and the director.
+
+**Dependencies verified against the records, not the notes.** `pack-split-generator-gates` is
+`state: shipped` (v17, `change_ref 457254b973fb…`, PR #152 merged into `47aa0549f8…`, released
+`v0.58.0`, production verification passed) — so the **sole** `depends_on` entry on both
+`preflight-compat` and `crosspack-validator` is satisfied. `pack-split-partition-lock` is
+`completed`, satisfying the spike's sole dependency.
+
+**Promoted, in steward priority order:**
+
+1. **`pack-split-preflight-compat` — priority 20 -> 10, v1 -> v2, `next_role: principal-swe-infra`.**
+   The top of the initiative queue: `pack-split-degraded-refusal` depends on **it** at `shipped`
+   and shares its generated-agent-body injection surface, and `pack-split-ci-partition-checks`
+   needs it for the version-skew arm. It releases more of `dependency-guarantees` than any other
+   ready item, and the single-owner bottleneck (`principal-swe-infra`) makes queue order real
+   rather than decorative. Two required reviews unchanged — `independent-architecture` **and**
+   `independent-security`, both binding the same `change_ref`.
+2. **`pack-split-crosspack-validator` — priority 20 (unchanged), v1 -> v2,
+   `next_role: principal-swe-infra`.** Dependency-satisfied and genuinely parallel-capable. The
+   steward added **no** dependency on `preflight-compat`: if a second infra capacity exists the
+   two may run concurrently, but their declared `touches` overlap in `scripts/lib/pack-plan.mjs`,
+   `scripts/validate-plugin.mjs` and `.github/workflows/validate.yml`, so the **director runs a
+   touch-conflict check at dispatch**. Sequencing is a capacity call, not a DAG change.
+3. **`pack-split-host-semantics-spike` — priority 20 -> 30, v1 -> v2,
+   `next_role: principal-swe-infra`.** Promoted on **already-ratified authority only**:
+   decomposition WS#2 front-loads it to "run in parallel with the dependency-guarantees work",
+   and the 2026-08-24 steward decision kept it a separate gating spike. Its hooks-firing answer
+   is adjacent to the `hooks.json` exactly-one-pack rule `crosspack-validator` is about to cement
+   in CI. **What this promotion explicitly does not do:** it does not move `first-pack-extracted`
+   into `scope.current` (still `[dependency-guarantees]`), does not change its milestone, does not
+   make it a closure gate (`required_for_milestone` stays **false**), does not touch the northstar
+   `deferred` entry for full macOS/cloud certification, and does not disturb the standing decision
+   that `pack-split-host-gates` is a **minimal smoke gate**. Priority 30 keeps it behind both
+   guarantee items on the shared owner. Its completion needs an **`@operator` host session** —
+   infra designs the probe, no kai role can run an external host gate; named as a human
+   scheduling dependency, not parked as a blocked state.
+
+**Acceptance tightened only where a recorded finding already required it** — no new requirement,
+no raised bar, no re-opened architecture:
+
+- The bundled "local commands + CI green" criterion was **split** on both product-change items,
+  because that exact bundling bounced `generator-gates` at the 2026-08-24-2244 DoD gate: two
+  claims with two evidence sources cannot share one checkbox.
+- `preflight-compat`'s injection point now names the **authoritative generator path**
+  (`materializePacks` in `scripts/lib/pack-plan.mjs`, whose own header defers guarantee-block
+  injection to this item), per the steward's 2026-08-24-2240 `generator-gates` acceptance
+  correction — so a committed tree, not just a throwaway preview, carries the block.
+- Command forms corrected to what `main` actually exposes (`pack-preview.mjs --all --out <dir>`).
+- The spike gained a provenance criterion (each answer marked **verified** or **unverified**),
+  carried from this initiative's own ship-gate practice of labelling operator-attested checks as
+  attested rather than dressing them up as independently verified.
+- Touch sets reconciled to the shipped foundation (`scripts/lib/pack-plan.mjs` added to both
+  product-change items) — claims, to be reconciled on handback.
+
+**Deliberately not promoted.** `pack-split-degraded-refusal` and `pack-split-ci-partition-checks`
+sit in `scope.current` and could be promoted as a chain (`ready` needs dependencies *declared*,
+not resolved); this pass was scoped to three items, so they stay `proposed` and are the **next
+steward call** — recommended, not done. `pack-split-migration-doctor` is dependency-satisfied but
+sits in `first-pack-extracted`, outside `scope.current`. `pack-split-generated-pack-trees` still
+has five open dependencies. No generated tree, `packs/` directory, or marketplace entry exists or
+was created — `COMMITTED_PACKS` is still empty on `main` and `pack-preview --write` refuses while
+it is, so the committed-unpublished non-negotiable is untouched.
+
+**Milestone status unchanged: `dependency-guarantees` remains OPEN, 1 of 5 required items
+`shipped`.** Promotion is a commitment to build, not progress toward closure. Records updated:
+the three item records (+ their threads, each with a HANDOFF to `principal-swe-infra`),
+`kai/coordination/BOARD.md`, `kai/coordination/ACTIVE.md`, and this log. The northstar was not
+edited — no milestone, `required_items` mapping, `scope.current`, or non-negotiable changed. Three
+open questions still stand, all non-blocking (review-lens binding, first-department `shipped`
+semantics, director-availability completeness). Handoff to `director-chief-of-staff` to dispatch
+the queue.
+
+## 2026-08-25 — steward grooming (cont.): chain promotion of the 2 remaining `dependency-guarantees` items
+
+`principal-product-manager` (steward) closed out the "next steward call" the entry above named.
+**Both remaining `dependency-guarantees` items promoted `proposed -> ready`; neither is
+dispatchable.** Nothing dispatched, no lease, no branch, no code, no CI, no marketplace change.
+All five required items of the milestone now have a steward commitment; **none of the four
+outstanding has been built.**
+
+**Why promote items whose dependencies have not shipped.** `ready` is defined as a *steward
+commitment* — fits scope, acceptance defined, `depends_on` **declared** — and explicitly does
+**not** require the dependencies to have resolved. *Executable* is the director's derived
+predicate at dispatch time and is never stored on a record. Promoting the chain states the
+steward's commitment to the whole milestone; it does **not** make the work reachable, and the
+dependency checks must still fail on both records until their upstreams reach `shipped`.
+
+**Promoted:**
+
+1. **`pack-split-degraded-refusal` — priority 20 -> 40, v1 -> v2,
+   `next_role: principal-swe-infra`.** Sole dependency `pack-split-preflight-compat`
+   (`requires: shipped`) is **unmet** — that item is `ready` at priority 10, not dispatched.
+   Dependency type **preserved**, not weakened to `in-review`/`release-ready`: the two share the
+   same generated-agent-body injection surface (`materializePacks`) and both byte-pin from
+   `scripts/validate-plugin.mjs`, so WS#5's "sequenced, not raced" holds. Serves the
+   non-negotiable directly — the degraded block is a **refusal, not a fallback contract**, and
+   the drift-proof criterion was not softened.
+2. **`pack-split-ci-partition-checks` — priority 20 -> 50, v2 -> v3,
+   `next_role: principal-swe-infra`.** Both dependencies (`crosspack-validator`,
+   `preflight-compat`, each `requires: shipped`) are **unmet**. Both types **preserved**:
+   `crosspack-validator` supplies the multi-manifest gate base this layers on,
+   `preflight-compat` supplies the emitter the version-skew arm tests. The CI capstone of the
+   milestone, and the only item waiting on two upstreams — hence last in the queue.
+
+**Priorities now encode reachability, not urgency.** Queue order on the single-owner
+(`principal-swe-infra`) bottleneck: `preflight-compat` **10** -> `crosspack-validator` **20** ->
+`host-semantics-spike` **30** (all three dependency-satisfied and dispatchable today) ->
+`degraded-refusal` **40** -> `ci-partition-checks` **50** (neither dispatchable). The director
+dispatches from the top and the dependency check does the gating; priority never overrides it.
+
+**Acceptance tightened only where a recorded finding already required it** — no new requirement,
+no raised bar, no re-opened architecture:
+
+- The bundled "local commands + CI green" criterion was **split** on both items, consistent with
+  the same treatment applied at the 2026-08-25-1139 pass, because that bundling is exactly what
+  bounced `generator-gates` at the 2026-08-24-2244 DoD gate.
+- `degraded-refusal`'s copy path now names the **authoritative generator path**
+  (`materializePacks` in `scripts/lib/pack-plan.mjs`), on the file's own recorded authority: its
+  header states that guarantee-block injection "(preflight, **degraded-mode**)" is "added by
+  downstream items, not here". This item is that downstream owner — the same correction the
+  steward made for `preflight-compat` on 2026-08-24-2240.
+- `ci-partition-checks`'s rename criterion now names `scripts/lib/pack-plan.mjs` as the canonical
+  partition source it must update — verified on `main`, which still maps
+  `'fleet-observation': 'core'` there. After `generator-gates` that file *is* the partition, so
+  the forced rename cannot land without it.
+- Preview command form written as `pack-preview.mjs --all --out <dir>`, matching `main`.
+- Touch sets reconciled: `scripts/lib/pack-plan.mjs` added to both, plus the
+  doc/README/CHANGELOG paths WS#6 had already enumerated for the rename. Claims, to be
+  reconciled against the actual changed-path set on handback.
+
+**Explicitly preserved:** every outcome, milestone, `required_for_milestone: true`,
+`delivery_class`, `owner: null`, and review requirement. `degraded-refusal` keeps **both**
+`independent-architecture` **and** `independent-security`; `ci-partition-checks` keeps its
+**single** `independent-architecture` review — the steward did **not** add a security review to
+an item that wires gates rather than defining the fail-closed boundary. Both dependency types
+stay `requires: shipped`. A5 and its provenance are untouched. Decomposition **Open Question 4**
+(director availability by roster membership) stays open, non-blocking, and deliberately **out**
+of `waiting_on_questions`: it is verified at acceptance against that item's criterion 4, not a
+blocker to starting.
+
+**Not promoted, unchanged:** `pack-split-migration-doctor` is dependency-satisfied but sits in
+`first-pack-extracted`, **outside `scope.current`** — the one-way valve stays shut regardless of
+readiness. `pack-split-generated-pack-trees` and the rest of `first-pack-extracted` /
+`five-pack-split-shipped` stay `proposed`. The backlog was not groomed this pass; the parked A6
+proposal stays parked with its trigger intact.
+
+**Milestone status unchanged: `dependency-guarantees` remains OPEN, 1 of 5 required items
+`shipped`.** Promotion is a commitment to build, not progress toward closure. No generated tree,
+`packs/` directory, or marketplace entry exists or was created — `COMMITTED_PACKS` is still empty
+on `main`, so the committed-unpublished non-negotiable is untouched. Records updated: the two item
+records (+ their threads, each with a HANDOFF to `principal-swe-infra` that states the item is
+**not** dispatchable), `kai/coordination/BOARD.md` (rows refreshed, plus an explicit note that a
+`ready` row with unmet dependencies still fails the dispatch check), `kai/coordination/ACTIVE.md`,
+and this log. The northstar was **not** edited — no milestone, `required_items` mapping,
+`scope.current`, or non-negotiable changed. Three open questions still stand, all non-blocking.
+Handoff to `director-chief-of-staff`: dispatch only from the reachable head of the queue.

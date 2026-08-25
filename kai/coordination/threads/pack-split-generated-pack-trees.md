@@ -42,3 +42,24 @@ Append-only communication log mirroring
 - Dependencies are unchanged and still unmet: this item requires `pack-split-generator-gates` at
   `shipped`, which it is **not** — that item is `in-review`, accepted and routed to `workflow-ship`,
   with nothing committed, pushed, merged, or released. This item is not executable.
+
+## NOTE 2026-08-25-1125 — workflow-ship: 1 of 6 dependencies satisfied; still blocked
+
+- **Correcting the last line above, which is now out of date.**
+  `pack-split-generator-gates` reached **`shipped`** at 2026-08-25-1125 — PR #152 merged
+  2026-08-25T18:20:55Z, merge commit `47aa0549f89b1733483dd6b662a4787d621c9430`, released
+  `v0.58.0`, production verification passed. That dependency is **satisfied**.
+- **This item remains NOT executable.** It has **six** dependencies and five are still
+  open: `pack-split-crosspack-validator`, `pack-split-preflight-compat`,
+  `pack-split-degraded-refusal`, `pack-split-ci-partition-checks` (all required at
+  `shipped`) and `pack-split-host-semantics-spike` (required at `completed`). All five are
+  `proposed`. It is additionally in `first-pack-extracted`, outside
+  `northstar.scope.current`.
+- `workflow-ship` reconciles dependencies only; it did not promote, dispatch, or
+  re-prioritize, and changed no field on this record.
+- **Now unblocked for the A1–A3 work when this item eventually runs:** the `packs/` root is
+  live in production — `BEHAVIOR_PREFIXES` on `main` at `v0.58.0` includes `packs/`, so a
+  committed tree here will require a bump + CHANGELOG + README. Confirmed at production
+  verification: **no `packs/` tree exists on `main`**, so this item still owns creating the
+  first one, and A1 (`checkCommitted` ENOENT before the `--write` hint) is still reachable
+  exactly as described.
