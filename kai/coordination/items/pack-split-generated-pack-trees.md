@@ -5,11 +5,11 @@ title: Generate committed-unpublished kai-core + first department (personal) tre
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: in-progress
+state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: workflow-ship
 target: pack-split committed-unpublished pack trees (generate-not-move)
 artifact_target: null
 context_artifacts:
@@ -48,16 +48,22 @@ required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
-change_ref: null
-version: 5
+completed_reviews:
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-generated-pack-trees.md"
+    timestamp: 2026-08-26-1412
+change_ref: 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f
+version: 6
 lease:
-  holder: principal-swe-infra
-  token: psi-2026-08-26-generated-trees
-  version_at_grant: 4
-  acquired: 2026-08-26-1400
-  expires: 2026-08-26-1800
-updated: 2026-08-26-1400
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-26-1420
 ---
 
 ## Outcome
@@ -71,14 +77,14 @@ relative-import closure inside the same pack.
 
 ## Acceptance
 
-- [ ] `packs/kai-core/` and `packs/kai-personal/` are generated from root, committed, and unpublished;
+- [x] `packs/kai-core/` and `packs/kai-personal/` are generated from root, committed, and unpublished;
       re-generation is byte-stable; `agents/`+`skills/` at root are unchanged.
-- [ ] `scripts/demo-*.mjs` travel with `personal`; `hooks.json` + `scripts/observe-*.mjs` present in
+- [x] `scripts/demo-*.mjs` travel with `personal`; `hooks.json` + `scripts/observe-*.mjs` present in
       core only; no department pack ships a duplicate hook.
-- [ ] Each generated pack agent carries the preflight + degraded block; the cross-pack validator and
+- [x] Each generated pack agent carries the preflight + degraded block; the cross-pack validator and
       partition CI pass on the committed trees.
-- [ ] `node scripts/pack-preview.mjs --all`, `node scripts/validate-plugin.mjs`, `npm test` pass.
-- [ ] Version bumped on `0.x` with CHANGELOG + README stamp, and that prose says
+- [x] `node scripts/pack-preview.mjs --all`, `node scripts/validate-plugin.mjs`, `npm test` pass.
+- [x] Version bumped on `0.x` with CHANGELOG + README stamp, and that prose says
       **committed and unpublished, not installable from the marketplace**.
 
 *Carried forward from the `pack-split-generator-gates` architecture review (ratified
@@ -86,53 +92,71 @@ relative-import closure inside the same pack.
 steward at acceptance 2026-08-24-2240 because this item is the first state in which each becomes
 reachable. None was a defect in that foundation.*
 
-- [ ] **(A1)** `checkCommitted` guards the committed-tree walk on `existsSync(base)`. With a slice
+- [x] **(A1)** `checkCommitted` guards the committed-tree walk on `existsSync(base)`. With a slice
       selected and `packs/` not yet present — literally this item's first state — the gate prints
       the `regenerate with: --write` guidance and exits non-zero, instead of an ENOENT stack trace
       from `readdirSync` on a missing directory.
-- [ ] **(A2)** The committed-tree walk does not treat every file under `packs/` as generator
+- [x] **(A2)** The committed-tree walk does not treat every file under `packs/` as generator
       output: OS artifacts (`.DS_Store`, `Thumbs.db`) are skipped, or the walk is scoped to tracked
       files. A contributor's local `--check`/`npm test` cannot fail while CI stays green.
-- [ ] **(A3)** `.gitattributes` pins `packs/** text eol=lf` when the first tree lands, matching the
+- [x] **(A3)** `.gitattributes` pins `packs/** text eol=lf` when the first tree lands, matching the
       existing `scripts/**` and `test/fixtures/**` pins — a byte-compared generated tree is the same
       category.
-- [ ] **(R1)** Core carries neither guarantee block — as a decided residual, not
+- [x] **(R1)** Core carries neither guarantee block — as a decided residual, not
       an omission. Generated core agents carry zero copies of both blocks, and
       the gate rejects either block in core.
-- [ ] **(R2)** Hooks ownership is proven over emitted files. The committed tree
+- [x] **(R2)** Hooks ownership is proven over emitted files. The committed tree
       emits exactly one `packs/kai-core/hooks.json`; personal emits none; a
       nested `kai-core/scripts/hooks.json` key is not a claimant; every hook
       script ships in core.
-- [ ] **(R3)** A hook command with multiple `${PLUGIN_ROOT}` paths or a path
+- [x] **(R3)** A hook command with multiple `${PLUGIN_ROOT}` paths or a path
       outside top-level `scripts/<name>.<ext>` fails by name and distinguishes
       those cases. The asset key-space is not widened.
-- [ ] **(R4)** Exactly one fail-closed check decides that a generated key maps to
+- [x] **(R4)** Exactly one fail-closed check decides that a generated key maps to
       no declared pack; sibling consumers rely on that check rather than
       inventing another ownership truth.
-- [ ] **(R5)** Mutation arms prove the shared-asset-not-owned-by-core and
+- [x] **(R5)** Mutation arms prove the shared-asset-not-owned-by-core and
       cross-pack-consumer `assetOwnershipErrors` branches fire by name.
-- [ ] **(R6)** Comments and proposal errata match the measured corpus: one
+- [x] **(R6)** Comments and proposal errata match the measured corpus: one
       Windows host only; no macOS, cloud, or publication-readiness claim.
-- [ ] **(R7)** Before merge, an operator session in this repository proves the
-      committed `packs/` tree is not ambiently loaded: no pack providers in the
-      roster, no duplicate core skill, observer fires once. If it is ambiently
-      discovered, stop and revert the tree.
-- [ ] **(R8)** Marketplace topology stays N=1 at `source: "."` (only its
+- [x] **(R7)** Before merge, an operator session in this repository proves the
+      committed `packs/` tree adds no ambient providers, skills, or hook
+      firings. Compare against an identical no-`packs/` baseline when the host
+      already duplicates a root + installed-monolith hook. Any positive
+      pack-attributable delta stops and reverts the tree.
+- [x] **(R8)** Marketplace topology stays N=1 at `source: "."` (only its
       lockstep release version changes), and `COMMITTED_PACKS` becomes exactly
       `['core', 'personal']`.
-- [ ] **(R9)** Generation rewrites no frontmatter or role references. Core agent
+- [x] **(R9)** Generation rewrites no frontmatter or role references. Core agent
       bodies are byte-identical to root; personal bodies are root plus exactly
       the two guarantee blocks.
-- [ ] **(R10)** Every emitted JavaScript entry point carries its complete
+- [x] **(R10)** Every emitted JavaScript entry point carries its complete
       relative-import closure inside the same pack. The emitted-tree gate fails
       by name for a missing local module or a bare third-party import.
-- [ ] **(R11)** Generated packs carry no `package.json` or `package-lock.json`
+- [x] **(R11)** Generated packs carry no `package.json` or `package-lock.json`
       in this unpublished increment. Publication must own dependency manifests
       and install semantics before the marketplace can list a pack.
 
 ## Evidence
 
-- (to be filled during execution).
+- **Implementation:** `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`
+  (`feat(packs): generate core and personal trees`), one commit off
+  `31d5d110cb2a3f63ef6085e707bfe412a8c0b0ea`; working tree clean after commit.
+- **Generated slice:** 44 core files + 22 personal files at `0.64.0`;
+  `node scripts/pack-preview.mjs --check` reports byte-identical output.
+  `git diff 31d5d110... -- agents skills` is empty.
+- **Verification:** `npm test`; `node scripts/pack-preview.mjs --all` (112-file
+  five-plugin preview); all four named pack gates; 148 self-test checks; direct
+  imports of generated core observer/workspace-doctor and personal demo-zoom.
+- **R7 differential, Windows CLI 1.0.80:** current tree exposed 56 `kai:`
+  agents, zero `kai-core:`/`kai-personal:` providers, and no second contract
+  skill. One child produced delta=4 observer records. An isolated worktree at
+  `31d5d110...` with no `packs/` produced the identical delta=4; root
+  `hooks.json` was unchanged and `packs/` was the only hook-registering
+  difference. Pack-attributable provider and hook deltas were zero.
+- **Review:** `principal-swe-architect` APPROVED the independent architecture
+  review at the implementation SHA on 2026-08-26-1412 after two guard/comment
+  correction rounds.
 
 ## Notes
 

@@ -49,6 +49,8 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
 
 - [ ] Install-order + fresh-session + collision + cross-plugin resolution verified on macOS + one cloud host.
 - [ ] Marketplace-vs-direct install paths both produce the correct bound contract (no stale legacy copy).
+- [ ] Marketplace and direct install evidence records whether each pack root
+      receives npm dependency installation or a `node_modules` tree.
 - [ ] Evidence recorded at the artifact target; `principal-sre` reviews host/platform behavior.
 - [ ] Result is an explicit go / no-go for `pack-split-release-12b`.
 

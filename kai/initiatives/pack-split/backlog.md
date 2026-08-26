@@ -613,3 +613,17 @@ its generated-body selection now runs through `parseGeneratedKey`.
   is named, not substituted, and receives no lease. Residual: a non-director
   dispatcher encountering an absent referral. Reopen at `first-department` or
   `host-gates` if observed; owner `principal-product-manager`.
+
+## Proposal 2026-08-26 — duplicate observer records in repo + installed-monolith sessions
+
+- **Observed:** one delegated child writes duplicate start and stop records when
+  the Kai repository root and the installed monolithic plugin are both present.
+  A control at `31d5d110...` with no generated `packs/` reproduces the same
+  four-record delta, so the generated trees are not the cause.
+- **Owner:** `principal-sre` for diagnosis; `principal-product-manager` for
+  scheduling.
+- **Trigger:** `pack-split-host-gates`, or any feature that treats fleet event
+  counts as quantitative truth.
+- **Constraint:** do not route this into generated-pack extraction. R7 closed
+  on a zero pack-attributable differential, not on pretending the duplicate
+  does not exist.

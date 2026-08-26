@@ -183,3 +183,50 @@ Append-only communication log mirroring
 - questions: none. Stop on ambient discovery, a third pack, or any publication surface.
 - next:      principal-swe-infra — implement, validate, obtain independent architecture review,
              then hand to workflow-ship.
+
+## NOTE 2026-08-26-1420 — principal-swe-infra: implementation + R7 evidence
+
+- Commit `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f` generates the committed,
+  unpublished `kai-core` + `kai-personal` slice at `0.64.0`. Root agents and
+  skills are unchanged; marketplace topology remains N=1 at `source: "."`.
+- Runtime assets close over local imports. Core alone carries hooks and observer
+  scripts; personal carries demo scripts. Generated packs carry no npm
+  manifests, and the emitted-tree gate rejects missing local modules, bare
+  third-party imports, and premature package manifests.
+- Verification: `npm test`; all four pack gates; 148 pack self-test checks;
+  committed-tree check; 112-file full preview; generated core observer and
+  workspace-doctor plus personal demo-zoom imported successfully.
+- **R7 negative control:** the current tree exposed no `kai-core:` or
+  `kai-personal:` providers and no duplicate contract skill. Its delegated child
+  wrote four observer records. A clean worktree at parent `31d5d110...` with no
+  `packs/` wrote the same four records under the same probe. The pack-attributable
+  provider/skill/hook delta is zero; the duplicate is pre-existing root +
+  installed-monolith behavior, not ambient pack discovery. The steward accepted
+  this causal reading and amended R7 without weakening its stop condition.
+- `git status --porcelain` was empty and `git diff --quiet HEAD` exited 0 after
+  the implementation commit.
+
+## REVIEW 2026-08-26-1412 — principal-swe-architect: APPROVED
+
+- kind:      independent-architecture
+- change_ref: `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`
+- verdict:   approved
+- findings:  Initial review found an optional-semicolon hole in the module
+             parser and stale pre-extraction comments. Both were corrected,
+             mutation-tested, regenerated where needed, and re-reviewed.
+- boundary:  Approval covers generated-tree architecture and validation. It
+             does not publish packs or certify macOS/cloud host behavior.
+
+## HANDOFF 2026-08-26-1420 — principal-swe-infra -> workflow-ship
+
+- did:       Generated and committed core + personal, closed A1-A3 and R1-R11,
+             recorded the steward-approved R7 differential, and obtained the
+             required architecture approval at the implementation SHA.
+- state:     in-review
+- needs:     Definition-of-done / release-readiness gate, then PR merge and
+             `v0.64.0` release. Publication remains forbidden.
+- artifacts: implementation commit `5a5afb0e...`; item v6; this thread.
+- evidence:  `npm test` green; full preview 112 files; marketplace N=1; R7
+             pack-attributable delta zero.
+- questions: none.
+- next:      workflow-ship.
