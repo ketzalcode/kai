@@ -136,3 +136,33 @@ Append-only communication log mirroring
   `COMMITTED_PACKS = []`, there is **no `packs/` tree** (proven positively from the complete
   root tree), and the marketplace is still N=1 (`kai` at `source: "."`). This item still owns
   creating the first tree.
+
+## NOTE 2026-08-25-1803 — principal-product-manager (steward): in scope, 5 of 6 deps met, deliberately NOT promoted
+
+- Item version 2 -> 3. **State stays `proposed`**, `next_role` stays
+  `principal-product-manager`, lease stays `null`. Grooming, not promotion.
+- **The scope objection recorded four times above is now retired.** `dependency-guarantees`
+  closed **5 of 5** required items `shipped` in this pass and **`scope.current` advanced to
+  `first-pack-extracted`**. `ci-partition-checks` shipped as `v0.62.0` (merge `b72453f1…`,
+  production verification 9/9), so **5 of 6** `depends_on` entries are met. The sixth —
+  `pack-split-host-semantics-spike` at `completed` — is not, and it is the one whose answer can
+  rewrite this item.
+- **Why not chain-promote it to `ready` anyway.** It would be contract-legal (`ready` needs
+  dependencies *declared*, not resolved — this initiative did exactly that on 2026-08-25-1148).
+  It is withheld on **acceptance readiness**: three product decisions that shape what this item
+  emits are open, and promoting now would hand `principal-swe-infra` an acceptance set that
+  moves under it mid-build. Recorded in full in the item's `### Steward grooming —
+  2026-08-25-1803` section; in short, the promotion preconditions are (1) the spike's go/no-go,
+  (2) **proposal A1** — whether core agents need their own canonical block for the
+  context-loading absence, where **this item is the named reopen trigger** because it emits the
+  first committed core tree, and (3) the riders decided as a set: **N4**, **N5**, the §147/§157
+  errata, **N3**, the nested-hook key-space caveat, and the cross-department **agent-referral
+  degradation** proposal whose own trigger is this item reaching implementation.
+- **A1 is why the milestone amendment matters here.** `dependency-guarantees` closed on
+  acceptance lines narrowed to "every generated **department**-pack agent" — because CI errors
+  if a **core** agent carries either block. Core's coverage was therefore **not** claimed by
+  that milestone; it is an open decision that lands on this item, and it is a new file, a new
+  pin and a new refusal budget if the answer is yes.
+- Nothing was dispatched, no lease taken, no acceptance criterion added or removed, and no
+  field other than `version`/`updated` changed. `COMMITTED_PACKS` is still `[]` with no `packs/`
+  tree at `v0.62.0`.

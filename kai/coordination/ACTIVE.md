@@ -977,4 +977,74 @@ withhold) milestone closure and whether `scope.current` advances to `first-pack-
 decomposition **Open Question 4** (criterion 4 answers it, now pinned by `availabilityErrors`), and
 set **S1** policy for the remaining user-invocable renames. The item itself is terminal; do not
 reopen it to record those. **This run had no shell and executed nothing**, and edited no
-implementation or release file.
+implementation or release file. **Steward pass 2026-08-25-1803 (`principal-product-manager`) —
+the decisions above are now taken: `dependency-guarantees` is CLOSED and `scope.current` is
+`first-pack-extracted`.** Closure was taken on the **acceptance lines, not the 5-of-5 count** —
+the four named CI gates verified present in `.github/workflows/validate.yml`, both guarantee
+blocks byte-pinned over real generator output by `guaranteeBlockErrors`, exactly one
+version-pinned core skill on disk (`skills/kai-core-contract-v1/`) with `contractPinErrors` tying
+the name to `CONTRACT_VERSION`, and `skills/kai-core-fleet-observation/` present with
+`fleet-observation` gone. **Two acceptance lines were amended — narrowed, not waived, resolving
+backlog proposal E1:** the preflight and degraded-refusal lines now read "every generated
+**department**-pack agent", because `guaranteeBlockErrors` makes a **core** agent carrying either
+block an **error by name**, so the old "every pack" wording asserted a state the shipped gate
+forbids; a line CI would fail cannot be declared met by interpretation. No `non_negotiable`
+carries that phrasing, so none moved, and nothing was widened. **The uncovered case was not
+disposed of:** proposal **A1** (does core need its own block for the *context-loading* absence?)
+stays **open** and is now a written **promotion precondition** on
+`pack-split-generated-pack-trees`. The `0.61.0` CHANGELOG half of E1 is decided as **no
+follow-up** — the headline is qualified by its own body, and re-cutting shipped release prose for
+an adjective is not worth a release. **Decomposition Open Question 4 is CLOSED — complete, no item
+owed:** `director-chief-of-staff` carries all three membership rules verbatim (lines 195/209/211)
+and, since `v0.62.0`, `availabilityErrors` over `DISPATCHING_ROLES` pins them in **two** CI-run
+places (`validate-plugin.mjs` in `Validate plugin contract`, `pack-preview.mjs` in the `Partition
+gate`) with a mutation arm per rule; the terminal `ci-partition-checks` record was **not** reopened
+to hold it. **One promotion, deliberately the smallest: `pack-split-migration-doctor`
+`proposed -> ready`** (v1 -> v2, priority 20 -> **40**, `next_role: principal-swe-infra`,
+`owner: null`, no lease) — dependency-satisfied since 2026-08-25 (`generator-gates` `shipped`,
+verified against the v17 record) and held back purely by scope until now. Acceptance tightened in
+**one** place on a recorded finding (the bundled "local commands + CI green" criterion **split**,
+per the 2026-08-24-2244 `generator-gates` bounce); `touches` **reconciled, not expanded** (the six
+release-metadata paths its own version-bump criterion implies are now declared, so a concurrent
+release collides visibly — `marketplace.json` is a version stamp only, no pack entry); **both**
+required reviews kept (`independent-security` + `independent-reliability`). **Ready queue:**
+**(1) `pack-split-host-semantics-spike` — priority 30**, unchanged and already `ready`; it leads
+because it **gates** `pack-split-generated-pack-trees` and its answer can rewrite the extraction
+plan, and its cost is `@operator` host time (macOS + one cloud host), not infra time.
+**(2) `pack-split-migration-doctor` — priority 40**, the parallel arm (decomposition WS#8 ∥ WS#7).
+**Touch sets are disjoint** — the spike touches only its reliability artifact, the doctor owns
+`scripts/workspace-doctor.mjs` / `kai-core-workspace-onboarding` / `test/fixtures/`, and the trees
+item owns `packs/**`, `scripts/pack-preview.mjs`, `.gitattributes` — so while the spike waits on
+an operator session, infra can build the doctor without collision; **that is a capacity call at
+dispatch, not a DAG change**, and the director re-runs the check. `principal-swe-infra` is still
+the single-owner bottleneck, so the order is real rather than decorative. **No dependency was
+added** between the two, nor from the doctor to the spike (WS#8 declares cross-host detection
+*informed* by it, not gated on it). **Deliberately NOT promoted — the restraint half of the
+pass:** `pack-split-generated-pack-trees` is now **in scope with 5 of 6 dependencies met** and a
+chain promotion would be contract-legal, but it stays `proposed` (v2 -> v3, grooming only) on
+**acceptance readiness** — three open product decisions shape what it emits, and promoting now
+would hand infra an acceptance set that moves mid-build. Its written promotion preconditions:
+(a) the spike's **go/no-go** (a bad answer re-opens directors-in-core and hooks-ownership *before
+any tree is committed*, by the spike's own acceptance); (b) **proposal A1**, where this item is
+the named reopen trigger; (c) the riders decided **as a set** — **N4**, **N5**, the §147/§157
+errata, **N3**, the nested-hook key-space caveat, and the **cross-department agent-referral
+degradation** proposal, whose own trigger is this item reaching implementation.
+`pack-split-first-department` (still carrying open question 3, its `shipped` semantics) and
+`pack-split-host-gates` (the home of parked **P2-D1**) stay `proposed` behind it; nothing in
+`five-pack-split-shipped` was touched. **Backlog groomed: 1 decided (E1), 1 closed as delivered
+(P2-S1 — verified in the tree: `validate-plugin.mjs` no longer contains the `kai-[a-z]+` pattern
+and selects generated bodies via `parseGeneratedKey`), 10 proposals parked, 5 intake candidates
+unchanged.** Two parked entries gained standing without scheduling: **A1** became a promotion
+precondition, and **Phase 0 metadata trimming** was recorded as a **sequencing constraint** — the
+northstar's first success measure needs it re-measured *before* `first-department` captures
+discovery-cost evidence, or prose savings get credited to the split. **S1** stays parked: no
+decision is required to proceed (neither `ready` item renames anything, and the fleet rename was
+the 23rd and last core-prefix rename), so it belongs to the unscoped `12a/12b/12c` items.
+**Sweep clean** — no stalled `in-progress`, no stuck `blocked`, no orphans, no held leases,
+`waiting_on_questions` `[]` initiative-wide; two non-blocking open questions remain (review-lens
+binding, `first-department` `shipped` semantics). **Initiative stays `active` and is NOT
+closable:** `first-pack-extracted` and `five-pack-split-shipped` have zero required items in a
+terminal state, `1.0.0` is not cut, and the published monolith is still authoritative. **Next:
+`director-chief-of-staff`** — dispatch the two-item queue (`@operator` owns the spike's host
+session). **This steward pass had no shell, executed nothing, dispatched nothing, took no lease,
+and edited no implementation, release-metadata, agent, skill, script, marketplace or CI file.**

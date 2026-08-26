@@ -26,7 +26,7 @@ scope:
     - kai-plugins marketplace
   keywords: [pack, kai-core, plugin, partition, preflight, namespace, degraded-mode, marketplace, migration, split, "1.0.0"]
   current:
-    - dependency-guarantees
+    - first-pack-extracted
   out_of_scope:
     - Rewriting or re-scoping agent and skill content; this initiative relocates and guards contracts, it does not redesign them.
     - Modifying the host or upstream to add native plugin-dependency declarations; kai supplies prompt-level guarantees only.
@@ -79,8 +79,8 @@ milestones:
   - id: dependency-guarantees
     outcome: The guarantees the host does not provide are built and CI-enforced on the full --all preview with the monolith still authoritative — a fail-closed preflight, a degraded-mode refusal, owned-namespace core skill names, a cross-pack reference validator, and collision / partial-install tests.
     acceptance:
-      - Every pack agent carries the fail-closed kai-core-contract-v1 preflight in its own body, pinned byte-for-byte in CI.
-      - The degraded-mode block is a refusal that restates no core rules, shipped in every pack.
+      - Every generated department-pack agent carries the fail-closed kai-core-contract-v1 preflight in its own body, pinned byte-for-byte in CI; core agents are excluded by contract, and CI errors if a core agent carries it. (Steward amendment 2026-08-25-1803 at milestone closure — "every pack agent" read wider than both the shipped generator and the gate that pins it, which forbid the block in core.)
+      - The degraded-mode block is a refusal that restates no core rules, shipped in every generated department-pack agent; core agents are excluded on the same rule and CI errors if one carries it. (Steward amendment 2026-08-25-1803, resolving backlog proposal E1. Whether core needs its own second block for the context-loading case is proposal A1 — open, and a precondition on promoting pack-split-generated-pack-trees, not a claim this milestone made.)
       - Core skills carry the kai-core-* prefix and exactly one skill is version-pinned (kai-core-contract-v1).
       - A cross-pack reference validator plus collision, partial-install, and version-skew tests pass on the --all preview, and core-absent and version-skew each produce the exact refusal token.
     success_measures:
@@ -188,19 +188,38 @@ a non-empty typed `required_items` mapping on every milestone. This is a
 developer-facing packaging change with no user-facing interaction surface, so the
 product-design step is not implicated.
 
-**Required-items status.** `partition-lock` is **satisfied**: its one required
-item (`pack-split-partition-lock`) is `completed` — the locked partition
-document, accepted by the owning role with the `independent-architecture` review
-ratified against `change_ref fd44f4f…`. Focus has advanced to
-`dependency-guarantees`, whose first action is the now-`ready` gated
-`pack-split-engineering-decomposition` pass with `principal-swe-manager`. The
-`dependency-guarantees`, `first-pack-extracted`, and `five-pack-split-shipped`
-milestones carry the typed closure contract above, but their item records are
-**planned, not yet created**: that decomposition pass produces them, where the
-detailed sizing, sequencing, and parallelization are the manager's call — not the
-steward's. It carries three non-blocking architect caveats forward: rename
-`fleet-observation` -> `kai-core-fleet-observation` (forced by its CI prefix check
-under `dependency-guarantees`), decide whether to bind the three orphan review
-lenses on `workflow-doc-review`'s `**Inherits:**` line, and adopt the explicit
-asset-ownership rule in `pack-split-generated-pack-trees`. No generator, code, CI,
-or marketplace work starts until those items are groomed and promoted.
+**Required-items status (steward pass 2026-08-25-1803).** `partition-lock` is
+**satisfied**: its one required item (`pack-split-partition-lock`) is `completed`
+— the locked partition document, accepted by the owning role with the
+`independent-architecture` review ratified against `change_ref fd44f4f…`.
+**`dependency-guarantees` is now CLOSED.** All five typed required items reached
+`shipped` in production: `pack-split-generator-gates` (`v0.58.0`),
+`pack-split-preflight-compat` (`v0.59.0`), `pack-split-crosspack-validator`
+(`v0.60.0`), `pack-split-degraded-refusal` (`v0.61.0`) and
+`pack-split-ci-partition-checks` (`v0.62.0`, merge `b72453f1…`, `main` run
+`32916653342` green, production verification 9/9). Two acceptance lines were
+**narrowed, not waived**, at closure (see the amendments above): the preflight and
+the refusal ship in every generated **department**-pack agent, and CI *errors* if a
+**core** agent carries either — so the previous "every pack" wording claimed the
+inverse of what the shipped gate enforces. The uncovered case is named rather than
+buried: backlog proposal **A1** (does core need its own second block for the
+*context-loading* absence?) stays **open**, is unreachable while
+`COMMITTED_PACKS = []` and no `packs/` tree exists, and is a **promotion
+precondition** on `pack-split-generated-pack-trees`. Decomposition **Open Question
+4** (director availability in core) is **closed — complete, no item owed**:
+`director-chief-of-staff` carries all three membership rules verbatim and
+`availabilityErrors` / `DISPATCHING_ROLES` pin them in `scripts/validate-plugin.mjs`
+and in the partition gate.
+
+**`scope.current` advanced to `first-pack-extracted`** in the same pass. Ready
+queue: `pack-split-host-semantics-spike` (priority 30 — gates tree generation,
+needs an `@operator` host session) then `pack-split-migration-doctor` (priority 40,
+promoted 2026-08-25-1803; sole dependency `generator-gates` at `shipped`;
+touch-disjoint from the spike). `pack-split-generated-pack-trees`,
+`pack-split-first-department` and `pack-split-host-gates` stay `proposed` — the
+trees item waits on the spike's go/no-go plus the A1 decision, and the other two
+sit behind it. Of the three carried architect caveats: (a) the `fleet-observation`
+-> `kai-core-fleet-observation` rename **shipped** in `v0.62.0`; (b) the review-lens
+binding stays open and off the first-pack critical path (engineering tree, deferred);
+(c) the explicit asset-ownership rule remains owned by
+`pack-split-generated-pack-trees`.

@@ -157,4 +157,13 @@ durable record, never a production gap. The move changed no implementation, rele
 metadata, or verification fact, and `kai/` is not a `BEHAVIOR_PREFIX`, so no second version
 bump was required.
 
-`dependency-guarantees` remains **open** with **1 of 5** required items at `shipped`.
+`dependency-guarantees` is **CLOSED** as of the steward pass 2026-08-25-1803 — **5 of 5**
+required items at `shipped` (`v0.58.0` → `v0.62.0`), each with a production ship record above.
+Closure was taken on the acceptance lines, not the count: two of them were **narrowed** at
+closure (the preflight and the refusal ship in every generated **department**-pack agent; CI
+errors if a **core** agent carries either), and the uncovered core case stays open as backlog
+proposal **A1**, bound as a promotion precondition on `pack-split-generated-pack-trees`.
+`scope.current` advanced to **`first-pack-extracted`**, whose four required items
+(`generated-pack-trees`, `migration-doctor`, `first-department`, `host-gates`) have produced **no
+deliverable yet** — the next durable outputs owed are the host-semantics reliability record and
+the migration doctor's release record.

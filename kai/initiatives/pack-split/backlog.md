@@ -491,3 +491,103 @@ PROPOSAL
 
 **What would change my mind (trigger to promote):** a user reporting a broken invocation after
 `0.62.0`, or the first pack extraction renaming a second user-invocable skill.
+
+## Grooming — 2026-08-25-1803 (steward): 1 proposal DECIDED, 11 stay parked
+
+`principal-product-manager` groomed the whole list against the **new** `scope.current`
+(`first-pack-extracted`, advanced in this pass after `dependency-guarantees` closed 5 of 5
+`shipped`). **One proposal is decided because a decision was genuinely required to proceed; every
+other one stays parked.** Reachability moved for several of them — reachable is not the same as
+scheduled, and the one-way valve does not open just because the milestone next to it did.
+
+### DECIDED — E1: "every pack" vs "every department pack" (the milestone-acceptance wording)
+
+**Decision: amend, option (b).** The two `dependency-guarantees` acceptance lines in
+`northstar.md` now read **"every generated department-pack agent"** for both the preflight and
+the degraded-mode refusal, each with the core exclusion stated inline. Recorded as a steward
+amendment dated 2026-08-25-1803, with the milestone closed on the amended text in the same pass.
+
+**Why amend rather than read the old line as satisfied — the reason is stronger than the
+proposal knew.** E1 framed this as "the implementation ships it in 4 of 5 packs". It is sharper
+than that: `guaranteeBlockErrors` in `scripts/lib/pack-plan.mjs` makes a **core agent carrying
+either block an ERROR by name**, and that gate has been a named CI step since `v0.62.0`. So the
+old wording did not merely overreach — it asserted a state the shipped guarantee **forbids**. A
+line that CI would fail cannot be declared "met by interpretation"; leaving it would have left a
+future reader reconstructing a guarantee the codebase actively rejects, which is precisely the
+quiet over-claim the non-negotiables exist to prevent.
+
+**What the amendment does NOT do.** It does not touch a `non_negotiable` (none of them carries
+the "every pack" phrasing). It does not widen any claim — it **narrows** one, to the set CI
+actually enforces. It does not dispose of core's coverage question: **proposal A1 stays open**
+and is now a written **promotion precondition** on `pack-split-generated-pack-trees`, the item
+that emits the first committed core tree. The milestone closed on what shipped, and the
+uncovered case is named in the northstar rather than buried in a review section.
+
+**The CHANGELOG half of E1: no follow-up.** The `0.61.0` headline says "every generated pack
+agent" while its body correctly scopes the block to department agents and states the core
+exclusion. It is qualified where it counts, it is a shipped release note, and re-cutting release
+prose to sharpen an adjective is not worth a release. Recorded as decided, not as debt.
+
+### Still parked — reachability changed, scheduling did not
+
+- **A1 (core agents carry no degraded-mode coverage)** — **stays parked, and is now load-bearing.**
+  Unreachable today: `COMMITTED_PACKS = []`, no `packs/` tree, marketplace still N=1, monolith
+  authoritative — there is no core-only install in the world to expose. Deciding it now would
+  spend product judgment on a shape the extraction may change, and security's point stands that
+  the answer gets *more* expensive the longer it waits (core holds `director-chief-of-staff` and
+  `workflow-workspace-init`). **Promoted from "recorded" to a binding precondition:** it must be
+  decided — second canonical block, or an explicitly accepted residual — **before**
+  `pack-split-generated-pack-trees` is promoted to `ready`, not discovered during its build. A
+  second block is a new file, a new pin and a new refusal budget: a scope decision, and mine.
+- **S1 (user-invocable rename with no alias)** — **stays parked; no decision is required to
+  proceed.** Neither `ready` item renames anything: the spike touches one artifact, and
+  `migration-doctor` touches `workspace-doctor.mjs` and `kai-core-workspace-onboarding`. The
+  `fleet-observation` rename was the **23rd and last** core-prefix rename, so part (a) has no
+  pending trigger, and parts (b)/(c) are release-note conventions whose natural home is
+  `release-12a/12b/12c` — none of which is promoted. Deciding it here would be a policy written
+  for a release nobody has scoped. **Trigger unchanged:** a user reporting a broken invocation
+  after `0.62.0`, or a second user-invocable rename appearing in any promoted item — at which
+  point it is decided *before* that item ships, not after.
+- **N4 (one adjective outruns the one-host corpus)**, **N5 (`parseGeneratedKey` fail-closed in
+  one consumer, fail-open in the rest)**, and the **§147/§157 errata** — stay parked **as
+  riders**, all three now aimed at `pack-split-generated-pack-trees` and recorded in that item's
+  grooming note as part of a "decide the riders as a set" precondition. Individually each is a
+  round trip; together they are one reopening of files that item already owns. N5's masking
+  argument still holds (`--gate partial-install` trips loudly in the same CI run).
+- **P2-S1 / N1 (pack-key pattern)** — its `scope_target` was `pack-split-ci-partition-checks`,
+  which **shipped**, and that item **closed it**: the pattern was replaced with
+  `parseGeneratedKey(key, packs)` matching the declared pack list, with hyphenated and
+  digit-bearing mutation arms. **Closing this entry as delivered.** Its residual — the *sibling*
+  consumers that still fail open — survives as **N5** above and is not double-counted.
+- **P2-D1 (assert the two-block reply exactness on the host gate)** — stays parked, unchanged
+  owner and destination. It belongs in `pack-split-host-gates`' acceptance, and that item is
+  **not** promoted (it sits behind `first-department`, which sits behind the trees). Fold it in
+  when host-gates is scoped, per its own trigger.
+- **P2-D2 (refusal's prohibition set is narrower than the preflight's)** and **P2-D3 (the only
+  permitted remedy is install-shaped)** — stay parked, and stay co-travellers: both move the
+  byte-pinned `scripts/lib/degraded-block.txt` and re-bind both required reviews on whatever
+  item reopens it. Neither is a regression; the block only subtracts. If A1 is answered "yes,
+  core needs its own block", that reopening is the moment to take all three together.
+- **A6 (zero-skill pack manifest)** — stays parked; still unreachable (all five locked
+  departments own ≥ 1 skill, and adding a sixth pack is `out_of_scope`).
+- **Cross-department agent-referral degradation** — stays parked **and is now on the clock**.
+  Its trigger is `pack-split-generated-pack-trees` "reaching implementation", which is one
+  steward decision away. It is a product-behaviour call and it is mine: recorded in that item's
+  promotion preconditions so it gets answered before agent bodies are emitted, not after.
+- **The five intake candidates** (macOS/cloud certification, observable dispatch-probe, per-pack
+  semver, permanent orphan-skill home, Phase 0 metadata trim) — all stay parked, unchanged.
+  Certification and the dispatch-probe remain captured downstream in `pack-split-host-gates`;
+  per-pack semver and the orphan home remain out of scope; **Phase 0 metadata trimming** is
+  still promotable independently on `0.x` and is still not scheduled — with the split's first
+  extraction now the critical path, banking the token win early would compete with it for the
+  one infra owner. Note it is the measure the northstar's first success metric depends on
+  ("re-measured after the Phase 0 metadata trim so prose savings are not credited to the
+  split"), so it must land **before** `first-department` captures its discovery-cost evidence.
+  Recorded as a sequencing constraint, not promoted.
+
+**Net: 1 decided, 1 closed as delivered, 10 proposals parked** (A1, S1, N4, N5, the §147/§157
+errata, P2-D1, P2-D2, P2-D3, A6, cross-department referral) **plus the 5 intake candidates,
+unchanged.** No proposal was promoted into an item, no acceptance criterion was added to any item
+from this list, and no non-negotiable moved. P2-S1's closure was verified in the tree rather than
+taken on report: `scripts/validate-plugin.mjs` no longer contains the `kai-[a-z]+` pattern, and
+its generated-body selection now runs through `parseGeneratedKey`.
