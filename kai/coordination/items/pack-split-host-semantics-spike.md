@@ -1,16 +1,16 @@
 ---
 type: work-item
 id: pack-split-host-semantics-spike
-title: Spike — verify unproven host semantics on macOS + cloud before extraction
+title: Spike — verify host semantics before extraction
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: ready
+state: completed
 resume_state: null
 priority: 30
-owner: null
-next_role: principal-swe-infra
-target: pack-split host behavior de-risk (macOS + cloud + install order)
+owner: principal-swe-infra
+next_role: principal-product-manager
+target: pack-split host behavior de-risk and extraction/publication gate boundary
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
@@ -27,43 +27,48 @@ required_for_milestone: false
 review_requirements: []
 completed_reviews: []
 change_ref: null
-version: 2
+version: 3
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-25-1139
+updated: 2026-08-26-1320
 ---
 
 ## Outcome
 
-A recorded answer to the load-bearing unknown the proposal proved only on Windows CLI:
-does an agent in a department pack resolve a `kai-core-*` skill from core on **macOS** and
-the **cloud host**; does collision/load-order hold under **real install** order and
-**marketplace-vs-direct**; does a **fresh session** load newly-installed plugins; and do
-`hooks.json` hooks fire **once** or per-plugin. Time-boxed; gates the first real tree generation.
+A recorded answer to the load-bearing host unknowns, with the extraction gate
+separated from the publication gate. Windows throwaway evidence decides whether
+committed-unpublished trees may proceed; macOS, cloud, persistent install order,
+marketplace-vs-direct collision, and fresh-session activation remain formal
+publication gates.
 
 ## Acceptance
 
-*Command form made exact by the steward at promotion 2026-08-25-1139 against `main` at
-`v0.58.0`. No question was added, removed, or re-scoped, and the time-box stands.*
-
-- [ ] Each question above answered with evidence captured from a **throwaway** build —
-      `node scripts/pack-preview.mjs --all --out <dir>` — installed on macOS + one cloud host.
-      Nothing is committed by this item: `COMMITTED_PACKS` is empty on `main`, so
-      `pack-preview --write` refuses by design and no `packs/` tree can appear.
-- [ ] A clear go / no-go for `pack-split-generated-pack-trees`: good answer = proceed;
-      bad answer = re-open directors-in-core vs `kai-orchestrator` and the hooks-ownership
-      mechanism with the steward + architect **before** any tree is committed.
-- [ ] Findings recorded at the `artifact_target` with each answer marked **verified** (run on a
-      host) or **unverified** (not reached in the time-box) — an unanswered question is recorded
-      as unanswered, never inferred from the Windows CLI evidence.
+- [x] Host questions recorded from a throwaway
+      `node scripts/pack-preview.mjs --all --out <dir>` build, with each answer
+      marked **verified** or **unverified** and no unrun host inferred from
+      Windows evidence.
+- [x] A clear conditional GO for `pack-split-generated-pack-trees`: proceed with
+      committed-unpublished core + personal after the delegated `skill` fix;
+      keep publication blocked on the formal host matrix.
+- [x] The nested-agent failure was reproduced from an empty workspace, fixed in
+      canonical source, released as `v0.63.1`, and re-verified against freshly
+      generated throwaway core + personal trees.
+- [x] macOS, cloud managed install, persistent order, marketplace-vs-direct
+      collision, and fresh-session activation are explicitly relocated to
+      `pack-split-host-gates`; none is reported verified here.
 
 ## Evidence
 
-- (to be filled) — operator host-run transcript + the reliability record at the artifact target.
+- Reliability record:
+  `kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md`.
+- Windows Copilot CLI `1.0.80`; deterministic discovery used
+  `COPILOT_PLUGIN_DIR_ONLY=true`.
+- Canonical delegated-agent fix: PR #165, merge
+  `f112075f3fe63d7d64f0808b7f5cd12ad1f28e87`, release `v0.63.1`.
 
 ## Notes
 
@@ -72,6 +77,22 @@ the **cloud host**; does collision/load-order hold under **real install** order 
   role cannot run external host gates). Runs in parallel with the dependency-guarantees work.
 - Supporting item, not a closure gate — `pack-split-host-gates` is the formal certification.
   Steward may fold this into that item as an early phased arm (see decomposition *Scope negotiations*).
+
+### Completion — 2026-08-26-1320
+
+The original macOS + cloud acceptance was unsatisfiable for a local throwaway
+tree: `--plugin-dir` is a local/session path, while a true cloud run needs an
+installable source plus managed plugin settings. The gate was therefore
+**reshaped, not weakened**:
+
+- this spike decides whether an unpublished generated tree may be committed;
+- `pack-split-host-gates` still blocks publication on macOS, cloud, persistent
+  install order, marketplace/direct collision, and fresh-session evidence.
+
+Architecture consultation chose canonical `skill` declarations over generator
+frontmatter mutation, and deferred A1 until a core agent is observed operating
+with inherited skills unloaded after that fix. The conditional extraction GO
+is now recorded; the item is `completed`.
 
 ### Steward promotion — 2026-08-25-1139 (`principal-product-manager`)
 

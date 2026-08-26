@@ -166,3 +166,20 @@ Append-only communication log mirroring
 - Nothing was dispatched, no lease taken, no acceptance criterion added or removed, and no
   field other than `version`/`updated` changed. `COMMITTED_PACKS` is still `[]` with no `packs/`
   tree at `v0.62.0`.
+
+## HANDOFF 2026-08-26-1340 — principal-product-manager -> principal-swe-infra
+
+- did:       Promoted proposed -> ready at priority 10 after the host spike completed. Closed A1
+             as an explicit accepted residual after v0.63.1 fixed delegated skill access; decided
+             the referral contract (bare role prose, live-roster provider qualification at
+             dispatch, absent department named without substitution); bounded N4/N5, hook-path
+             diagnostics, asset-ownership mutation arms and proposal errata as riders R2-R6.
+- state:     ready
+- needs:     Build exactly committed-unpublished kai-core + kai-personal. Before merge, run the
+             ambient-discovery stop gate from this repository. Do not touch marketplace.json.
+- artifacts: item v4; host-semantics reliability record; degraded-refusal decision.
+- evidence:  six of six dependencies met; PR #165 / v0.63.1; Windows CLI 1.0.80 empty-workspace
+             delegated preflight passed with exactly one child skill call.
+- questions: none. Stop on ambient discovery, a third pack, or any publication surface.
+- next:      principal-swe-infra — implement, validate, obtain independent architecture review,
+             then hand to workflow-ship.

@@ -5,24 +5,31 @@ title: Generate committed-unpublished kai-core + first department (personal) tre
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: proposed
+state: ready
 resume_state: null
-priority: 20
+priority: 10
 owner: null
-next_role: principal-product-manager
+next_role: principal-swe-infra
 target: pack-split committed-unpublished pack trees (generate-not-move)
 artifact_target: null
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
   - kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md
+  - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md
+  - kai/initiatives/pack-split/artifacts/decisions/pack-split-degraded-refusal.md
   - scripts/pack-preview.mjs
   - hooks.json
 touches:
   - packs/kai-core/
   - packs/kai-personal/
   - scripts/pack-preview.mjs
+  - scripts/lib/pack-plan.mjs
+  - scripts/validate-plugin.mjs
   - .gitattributes
   - package.json
+  - CHANGELOG.md
+  - README.md
+  - docs/proposals/pack-architecture.md
 depends_on:
   - item: pack-split-generator-gates
     requires: shipped
@@ -43,14 +50,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 3
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-25-1803
+updated: 2026-08-26-1340
 ---
 
 ## Outcome
@@ -70,7 +77,8 @@ ship in core only (hooks exactly once).
 - [ ] Each generated pack agent carries the preflight + degraded block; the cross-pack validator and
       partition CI pass on the committed trees.
 - [ ] `node scripts/pack-preview.mjs --all`, `node scripts/validate-plugin.mjs`, `npm test` pass.
-- [ ] Version bumped on `0.x` with CHANGELOG + README stamp.
+- [ ] Version bumped on `0.x` with CHANGELOG + README stamp, and that prose says
+      **committed and unpublished, not installable from the marketplace**.
 
 *Carried forward from the `pack-split-generator-gates` architecture review (ratified
 2026-08-24-2231 at `change_ref 457254b973fb58b129332ffaa609fb5febfdd412`); routed here by the
@@ -87,6 +95,33 @@ reachable. None was a defect in that foundation.*
 - [ ] **(A3)** `.gitattributes` pins `packs/** text eol=lf` when the first tree lands, matching the
       existing `scripts/**` and `test/fixtures/**` pins — a byte-compared generated tree is the same
       category.
+- [ ] **(R1)** Core carries neither guarantee block — as a decided residual, not
+      an omission. Generated core agents carry zero copies of both blocks, and
+      the gate rejects either block in core.
+- [ ] **(R2)** Hooks ownership is proven over emitted files. The committed tree
+      emits exactly one `packs/kai-core/hooks.json`; personal emits none; a
+      nested `kai-core/scripts/hooks.json` key is not a claimant; every hook
+      script ships in core.
+- [ ] **(R3)** A hook command with multiple `${PLUGIN_ROOT}` paths or a path
+      outside top-level `scripts/<name>.<ext>` fails by name and distinguishes
+      those cases. The asset key-space is not widened.
+- [ ] **(R4)** Exactly one fail-closed check decides that a generated key maps to
+      no declared pack; sibling consumers rely on that check rather than
+      inventing another ownership truth.
+- [ ] **(R5)** Mutation arms prove the shared-asset-not-owned-by-core and
+      cross-pack-consumer `assetOwnershipErrors` branches fire by name.
+- [ ] **(R6)** Comments and proposal errata match the measured corpus: one
+      Windows host only; no macOS, cloud, or publication-readiness claim.
+- [ ] **(R7)** Before merge, an operator session in this repository proves the
+      committed `packs/` tree is not ambiently loaded: no pack providers in the
+      roster, no duplicate core skill, observer fires once. If it is ambiently
+      discovered, stop and revert the tree.
+- [ ] **(R8)** `.github/plugin/marketplace.json` is unchanged, marketplace stays
+      N=1 at `source: "."`, and `COMMITTED_PACKS` becomes exactly
+      `['core', 'personal']`.
+- [ ] **(R9)** Generation rewrites no frontmatter or role references. Core agent
+      bodies are byte-identical to root; personal bodies are root plus exactly
+      the two guarantee blocks.
 
 ## Evidence
 
@@ -111,6 +146,18 @@ reachable. None was a defect in that foundation.*
   CHANGELOG, no README. Nothing in this item publishes anything, and the trees land unpublished by
   contract; but the guard must land no later than the flip. If any publication becomes possible
   before `12b`, raise it to the steward rather than absorbing it here.
+- **Accepted residual — core context-loading coverage (steward,
+  2026-08-26).** No second core refusal is added. `v0.63.1` gave every
+  canonical agent explicit `skill` access and the delegated cross-plugin
+  preflight passes from an empty workspace. Reopen if a core agent grants a
+  lease or writes coordination state with inherited skills unloaded after
+  explicit `skill` access is present; stop and consult the steward and security.
+- **Referral contract (steward, 2026-08-26).** Canonical prose keeps bare role
+  IDs. The dispatcher reads the live roster, compares the segment after `:`,
+  and dispatches the full provider-qualified ID exposed by the host. An absent
+  department is named as unavailable; no lease is granted, no substitute is
+  chosen, and the item is left unchanged. Non-dispatch prose referrals remain
+  advisory. Generated bodies perform no provider-ID rewrite.
 
 ### Steward grooming — 2026-08-25-1803 (`principal-product-manager`) — in scope, NOT promoted
 
@@ -162,3 +209,20 @@ lease. This is grooming of a not-yet-promoted record, **not** a promotion.
 - **Nothing about the committed-unpublished line changed.** `COMMITTED_PACKS = []` and there is
   no `packs/` tree at `v0.62.0`, proven positively from the merge root tree. This item still
   owns creating the first one, and it lands **unpublished** by contract.
+
+### Steward promotion — 2026-08-26-1340 (`principal-product-manager`)
+
+**`proposed -> ready`, priority 20 -> 10, `next_role:
+principal-swe-infra`, version 3 -> 4.**
+
+- All six dependencies are satisfied. The host spike gives a conditional GO for
+  committed-unpublished core + personal; publication remains blocked elsewhere.
+- A1 is closed as the accepted residual above. It is not a missing decision.
+- N3 is already delivered through `parseGeneratedKey`; R2 adds the emitted-tree
+  proof arm rather than reimplementing it.
+- N4, N5, hook-path diagnostics, dormant asset-ownership mutation arms, and the
+  proposal errata are bounded riders R3-R6.
+- Cross-department referral degradation is decided by the existing core
+  dispatcher contract; R9 prevents a corpus-wide provider-ID rewrite.
+- Stop conditions are R7 ambient discovery, any marketplace edit, or any third
+  committed pack. None may be worked around inside this item.

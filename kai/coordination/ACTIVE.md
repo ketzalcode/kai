@@ -1096,3 +1096,25 @@ is now **shipped** in `v0.63.0`: PR #163 merged as
 The marketplace remains monolithic and no pack tree is committed. The live
 queue is now the `pack-split-host-semantics-spike`; generated pack trees remain
 proposed behind its evidence and the A1 promotion decision.
+
+**Host-semantics update 2026-08-26-1320 (`principal-swe-infra`).**
+`pack-split-host-semantics-spike` is **completed** with a conditional extraction
+GO. Windows Copilot CLI 1.0.80 proved direct cross-plugin resolution,
+missing/skew fail-closed behavior, provider-qualified dispatch, and core-only
+hook ownership. A delegated-agent failure was fixed in PR #165 and released as
+`v0.63.1`; a fresh generated core+personal preview from an empty workspace then
+made exactly one child `skill` call and returned `CHILD_OK` / `PARENT_OK`.
+macOS, cloud managed install, persistent order, marketplace/direct collision,
+and fresh-session activation remain unverified and block publication through
+`pack-split-host-gates`. `pack-split-generated-pack-trees` now has **6 of 6**
+dependencies met but stays `proposed` pending steward resolution of its recorded
+promotion riders. No pack tree is committed or published.
+
+**Steward promotion 2026-08-26-1340 (`principal-product-manager`).**
+`pack-split-generated-pack-trees` is now **ready**, priority 10, with all six
+dependencies met. A1 is an explicit accepted residual after `v0.63.1`; N4/N5,
+hook-path diagnostics, asset-ownership mutation arms, and proposal errata are
+bounded riders. Cross-department referrals keep bare role prose and resolve the
+full provider-qualified ID from the live roster at dispatch; absent departments
+are named without substitution. The implementation stop gates are ambient
+discovery, any marketplace edit, or any third pack.
