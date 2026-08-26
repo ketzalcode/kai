@@ -5,11 +5,11 @@ title: Migration doctor — uninstall-first, coexistence-refused, workspace-prov
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: in-progress
+state: release-ready
 resume_state: null
 priority: 40
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: workflow-ship
 target: pack-split migration doctor (legacy uninstall + coexistence refusal)
 artifact_target: null
 context_artifacts:
@@ -40,16 +40,28 @@ review_requirements:
     kind: independent-security
   - role: principal-sre
     kind: independent-reliability
-completed_reviews: []
-change_ref: null
-version: 3
+completed_reviews:
+  - role: principal-security
+    kind: independent-security
+    change_ref: 961c86c6e948093999256e64a88f2fe31f53cfe4
+    verdict: clear
+    evidence: "kai/initiatives/pack-split/artifacts/security/pack-split-migration-doctor.md"
+    timestamp: 2026-08-26-1245
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 961c86c6e948093999256e64a88f2fe31f53cfe4
+    verdict: ready
+    evidence: "kai/initiatives/pack-split/artifacts/reliability/pack-split-migration-doctor.md"
+    timestamp: 2026-08-26-1245
+change_ref: 961c86c6e948093999256e64a88f2fe31f53cfe4
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-25-2140
+updated: 2026-08-26-1245
 ---
 
 ## Outcome
@@ -67,13 +79,13 @@ at the 2026-08-24-2244 DoD gate and has been split on every product-change item 
 claims with two evidence sources cannot share one checkbox. Criteria 1-4 and the version-bump
 criterion are unchanged from v1.*
 
-- [ ] The doctor detects a legacy `kai` install and requires its uninstall before installing packs.
-- [ ] Detected coexistence (legacy `kai` + `kai-core`) refuses rather than proceeds.
-- [ ] An existing `.kai` workspace's provenance is migrated without corruption (idempotent; safe on partial).
-- [ ] The fresh-session notice ("core installed; not active until a new session starts") is surfaced.
-- [ ] `node scripts/workspace-doctor.mjs --self-test` and `npm test` pass **locally**.
-- [ ] The `validate` workflow is **green on the pushed PR** at the reviewed `change_ref`.
-- [ ] Version bumped on `0.x` with CHANGELOG + README stamp.
+- [x] The doctor detects a legacy `kai` install and requires its uninstall before installing packs.
+- [x] Detected coexistence (legacy `kai` + `kai-core`) refuses rather than proceeds.
+- [x] An existing `.kai` workspace's provenance is migrated without corruption (idempotent; safe on partial).
+- [x] The fresh-session notice ("core installed; not active until a new session starts") is surfaced.
+- [x] `node scripts/workspace-doctor.mjs --self-test` and `npm test` pass **locally**.
+- [x] The `validate` workflow is **green on the pushed PR** at the reviewed `change_ref`.
+- [x] Version bumped on `0.x` with CHANGELOG + README stamp.
 
 ## Evidence
 

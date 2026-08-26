@@ -156,3 +156,26 @@ Append-only communication log mirroring
              never file contents, tokens, or `source_sha` values).
 - next:      **principal-swe-infra** in a session with a shell (or `@operator`) — branch, run the
              suite, commit, then hand to review at that exact ref.
+
+## HANDOFF 2026-08-26-1245 — principal-swe-infra -> workflow-ship
+
+- did:       Completed the migration doctor on branch
+             `kai/feat/29-migration-doctor`. The review ref is
+             `961c86c6e948093999256e64a88f2fe31f53cfe4`; PR #163 is open and
+             mergeable. The detector now fails closed across 26 scenarios,
+             recursively inventories install trees without leaving the host
+             install root, emits no destructive guidance from incomplete
+             evidence, and provides machine-readable `0/2/3` verdicts.
+- state:     release-ready
+- evidence:  `node scripts/workspace-doctor.mjs --self-test` passed; `npm test`
+             passed; GitHub Actions run `33006110904`, job `98300155097`,
+             `validate / contract` passed at the review ref. Independent
+             security verdict `CLEAR`; independent reliability verdict `READY`.
+- artifacts: `kai/initiatives/pack-split/artifacts/security/pack-split-migration-doctor.md`;
+             `kai/initiatives/pack-split/artifacts/reliability/pack-split-migration-doctor.md`;
+             https://github.com/RubenSaucedo/kai/pull/163
+- questions: none. Marketplace, macOS, and cloud layout evidence remains owned
+             by `pack-split-host-semantics-spike`; inferred layouts stay
+             `unknown` and cannot authorize installation.
+- next:      workflow-ship — merge PR #163, release `v0.63.0`, verify the
+             published release, and persist the ship record.
