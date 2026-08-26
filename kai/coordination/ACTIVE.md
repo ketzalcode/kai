@@ -1192,9 +1192,14 @@ inherited core skills from `kai-core`, then returned `DIRECT_OK`; and focused di
 metadata fell from 20,063 to 8,093 characters, a 59.66% reduction. Marketplace topology
 remained exactly N=1 (`kai`, `source: "."`); no pack was published and no global registry
 was mutated. The canonical reliability artifact records the replaced pre-proof packet/
-fixture failures honestly. Q1 is answered. The item remains **blocked v6** only on
-`Q-pack-split-first-department-02`: this runtime has no shell/git tool, so no dedicated
-branch, commit, reproducible `change_ref`, or workspace-doctor validation can be produced
-here. Architecture review has not started; after validation passes and the commit SHA is
-bound, `principal-swe-architect` is next. The
-initiative and `first-pack-extracted` milestone remain active/open.
+fixture failures honestly. Q1 is answered. `Q-pack-split-first-department-02` is now
+answered. On dedicated branch
+`docs/29-first-department-proof`, evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` has subject
+`docs(pack-split): record first department proof` and changes coordination, initiative,
+and reliability documentation only. `node scripts/workspace-doctor.mjs --root C:\src\kai`
+passed exactly `✓ workspace healthy — claimable (.)`; `git diff --check` passed. The item
+is **in-review v7**, `resume_state: null`, `waiting_on_questions: []`, with
+`principal-swe-architect` next for the required independent review bound to that exact
+`change_ref`. Acceptance remains 4/4 PASS; no reliability finding or implementation changed.
+The initiative and `first-pack-extracted` milestone remain active/open.

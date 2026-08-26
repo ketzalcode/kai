@@ -5,11 +5,11 @@ title: Prove kai-core + personal installs and operates over the plugin boundary
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: blocked
-resume_state: in-progress
+state: in-review
+resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-swe-architect
 target: pack-split first-department install proof
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 context_artifacts:
@@ -22,22 +22,21 @@ depends_on:
     requires: shipped
   - item: pack-split-migration-doctor
     requires: shipped
-waiting_on_questions:
-  - Q-pack-split-first-department-02
+waiting_on_questions: []
 required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
-change_ref: null
-version: 6
+change_ref: 3b14dc6cfb693a7925c48a8c3d4446dda041c03f
+version: 7
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1507
+updated: 2026-08-26-1513
 ---
 
 ## Outcome
@@ -73,10 +72,15 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
   character reduction.
 - Marketplace remained one `kai` entry at `source: "."`; no pack was
   published and no global plugin registry was mutated.
-- `change_ref` remains `null` because this runtime has no shell/git execution
-  tool. `Q-pack-split-first-department-02` requests the smallest existing
-  coordination validation plus the dedicated branch and evidence commit;
-  architecture review cannot bind before that SHA exists.
+- Evidence commit: `3b14dc6cfb693a7925c48a8c3d4446dda041c03f` on dedicated branch
+  `docs/29-first-department-proof`, subject
+  `docs(pack-split): record first department proof`.
+- `node scripts/workspace-doctor.mjs --root C:\src\kai` passed exactly:
+  `✓ workspace healthy — claimable (.)`.
+- `git diff --check` passed. The evidence commit changes coordination,
+  initiative, and reliability documentation only; it changes no agents,
+  skills, scripts, manifests, packs, marketplace or release metadata, or
+  production code.
 
 ## Notes
 

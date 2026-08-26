@@ -2511,3 +2511,19 @@ shell/git tool, so it cannot run the repository's workspace-doctor validation or
 dedicated branch and commit needed for a reproducible `change_ref`. Architecture review
 remains unstarted and cannot bind until that validation passes and the SHA exists.
 The initiative and milestone remain active/open; no downstream item was promoted.
+
+## 2026-08-26 — first-department evidence bound; architecture review next
+
+`Q-pack-split-first-department-02` is answered. On dedicated branch
+`docs/29-first-department-proof`, evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` has subject
+`docs(pack-split): record first department proof`. It changes coordination, initiative, and
+reliability documentation only; no agents, skills, scripts, manifests, packs, marketplace or
+release metadata, or production code changed.
+
+`node scripts/workspace-doctor.mjs --root C:\src\kai` passed exactly
+`✓ workspace healthy — claimable (.)`, and `git diff --check` passed. Infra bound the exact SHA,
+cleared `resume_state` and `waiting_on_questions`, and moved the item v6 -> v7 from `blocked`
+to `in-review` with `principal-swe-architect` next. Acceptance remains 4/4 PASS. No reliability
+finding or implementation changed; the initiative and milestone remain active/open, and the
+item is not release-ready or shipped.
