@@ -265,12 +265,15 @@ function readTree(dir, tail, provenance, basis) {
   return tree;
 }
 
+const looksKaiName = (name) => KAI_PLUGINS.has(name)
+  || /(^|[-_])kai([-_]|$)/i.test(name);
+
 // A tree is kai's when it names a kai plugin, or when it cannot be identified at
 // all yet sits in a kai-shaped directory — the second case is exactly the
 // leftover a half-finished uninstall produces.
 export const looksKai = (tree) => KAI_PLUGINS.has(tree.declaredName)
   || KAI_PLUGINS.has(tree.inferredName)
-  || /(^|[-_])kai([-_]|$)/i.test(tree.inferredName);
+  || looksKaiName(tree.inferredName);
 
 // Every install tree under the home, kai's or not: a config entry named `kai`
 // pointing at a tree that declares something else is a finding, and filtering
@@ -314,7 +317,22 @@ export function scanInstallTrees(home) {
       return;
     }
 
-    for (const name of dirNamesIn(dir, errors)) {
+    const childNames = dirNamesIn(dir, errors);
+    if (segments.length >= 2 && childNames.length === 0) {
+      const inferredName = inferNameFromDir(segments.at(-1));
+      if (looksKaiName(inferredName)) {
+        const tail = segments.join('/');
+        const bucket = segments[0];
+        const provenance = bucket.toLowerCase() === DIRECT_BUCKET
+          ? 'direct'
+          : `marketplace:${bucket}`;
+        const basis = bucket.toLowerCase() === DIRECT_BUCKET ? 'recorded' : 'inferred';
+        trees.push(readTree(dir, tail, provenance, basis));
+      }
+      return;
+    }
+
+    for (const name of childNames) {
       walk(join(dir, name), [...segments, name]);
     }
   };
@@ -490,8 +508,7 @@ function assessHost(host, out) {
     }
     const entryProvenances = new Set(target.entries.map((entry) => entry.provenance));
     const treeProvenances = new Set(target.trees.map((tree) => tree.provenance));
-    const hasProvenanceCollision = (target.entries.length > 1 && entryProvenances.size > 1)
-      || (target.trees.length > 1 && treeProvenances.size > 1);
+    const hasProvenanceCollision = target.entries.length > 1 || target.trees.length > 1;
     const hasProvenanceDisagreement = entryProvenances.size && treeProvenances.size
       && [...entryProvenances].some((provenance) => !treeProvenances.has(provenance));
     if (hasProvenanceCollision) {
@@ -526,9 +543,15 @@ function assessHost(host, out) {
       }
     }
     if (target.presence === 'stale') {
-      add('refusal', 'stale-install',
-        `"${target.name}" has a leftover install tree (${describe(target)}) — an uninstall removed the entry and left the files, which the host may still load.`);
-      step('remove each leftover install tree named in the stale-install finding above');
+      if (config.ok && config.listed) {
+        add('refusal', 'stale-install',
+          `"${target.name}" has a leftover install tree (${describe(target)}) — an uninstall removed the entry and left the files, which the host may still load.`);
+        step('remove each leftover install tree named in the stale-install finding above');
+      } else {
+        add('unverified', 'install-tree-unverified',
+          `"${target.name}" has an install tree, but host metadata was unreadable or unrecognized — `
+          + 'the tree is not labelled stale and no removal is recommended from incomplete evidence.');
+      }
     }
     if (target.entries.some((e) => !e.enabled)) {
       add('note', 'disabled-install',
@@ -538,14 +561,16 @@ function assessHost(host, out) {
 
   const legacy = records.get(LEGACY_PLUGIN);
   const packs = PACK_PLUGINS.map((n) => records.get(n)).filter(Boolean);
+  const actionableLegacy = legacy
+    && (legacy.entries.length > 0 || (config.ok && config.listed));
 
-  if (legacy && packs.length) {
+  if (actionableLegacy && packs.length) {
     add('refusal', 'coexistence',
       `legacy "${LEGACY_PLUGIN}" and ${packs.map((p) => `"${p.name}"`).join(', ')} are installed together — `
       + 'both provide the core operating contract, the host binds one of them by load order, and a pack agent can pass its own '
       + 'preflight while running the stale copy. This is refused, not warned through.');
   }
-  if (legacy) {
+  if (actionableLegacy) {
     add('refusal', 'legacy-installed',
       `legacy "${LEGACY_PLUGIN}" is present (${describe(legacy)}) — it must be verifiably uninstalled before any pack is installed.`);
     step(`copilot plugin uninstall ${LEGACY_PLUGIN}`);
@@ -576,7 +601,7 @@ function assessHost(host, out) {
     add('note', 'nothing-installed',
       `no kai plugin is installed under ${home} — verified by reading ${config.path} and ${scan.dir}.`);
   }
-  return { legacy, core, departments };
+  return { legacy: actionableLegacy || null, core, departments };
 }
 
 function assessWorkspace(root, hostSummary, host, out) {

@@ -34,6 +34,28 @@
       "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai", "version": "0.55.0" }
     },
 
+    "same-source-collision": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/Official--kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/_direct/Official--kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      },
+      "installed-plugins/_direct/Fork--kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      }
+    },
+
     "packs-marketplace": {
       "config.json": {
         "installedPlugins": [
@@ -147,7 +169,10 @@
         "  \"installedPlugins\": [",
         "    { \"name\": \"kai\","
       ],
-      "installed-plugins/": null
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      }
     },
 
     "malformed-entries": {

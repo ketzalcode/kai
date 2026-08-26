@@ -22,7 +22,7 @@
 
 import {
   readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
-  readlinkSync, symlinkSync,
+  lstatSync, readlinkSync, symlinkSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
@@ -327,7 +327,8 @@ const VERDICT = {
 };
 
 const migrationExitCode = (status) => (status === 'clear' ? 0 : status === 'blocked' ? 2 : 3);
-const terminalText = (value) => String(value).replace(/[\x00-\x1f\x7f-\x9f]/g, '?');
+const terminalText = (value) => String(value)
+  .replace(/[\x00-\x1f\x7f-\x9f\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '?');
 
 function reportMigration({ home, root, json = false }) {
   const res = migrationReport({ home, root });
@@ -657,12 +658,18 @@ const MIGRATION_CASES = [
   {
     label: 'host config truncated mid-write',
     home: 'malformed-config', status: 'unknown',
-    expect: ['unreadable-metadata'], forbid: ['nothing-installed'], noRefusal: true,
+    expect: ['unreadable-metadata', 'install-tree-unverified'],
+    forbid: ['nothing-installed', 'stale-install'], noRefusal: true, noSteps: true,
   },
   {
     label: 'host config parses but its entries are junk; workspace records an unknown plugin',
     home: 'malformed-entries', workspace: 'unrecognized', status: 'unknown',
     expect: ['unreadable-metadata', 'workspace-provenance-unknown'], noRefusal: true,
+  },
+  {
+    label: 'same pack has two direct install trees',
+    home: 'same-source-collision', status: 'blocked',
+    expect: ['provenance-collision'], forbid: ['nothing-installed'],
   },
   {
     label: 'Windows and macOS cache paths (case, separators, trailing slash) both resolve',
@@ -783,7 +790,7 @@ function snapshotTree(dir, prefix = '') {
   const out = [];
   for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isSymbolicLink()) out.push(`${rel}->${readlinkSync(join(dir, entry.name))}`);
+    if (lstatSync(join(dir, entry.name)).isSymbolicLink()) out.push(`${rel}->${readlinkSync(join(dir, entry.name))}`);
     else if (entry.isDirectory()) out.push(`${rel}/`, ...snapshotTree(join(dir, entry.name), rel));
     else out.push(`${rel}:${readFileSync(join(dir, entry.name), 'utf8')}`);
   }
