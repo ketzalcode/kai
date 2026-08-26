@@ -20,9 +20,9 @@ evidence:
 
 # Ship Record — pack migration doctor
 
-**Work item:** `pack-split-migration-doctor`  
-**Reviewed ref:** `961c86c6e948093999256e64a88f2fe31f53cfe4`  
-**Merge commit:** `52283b97ef92b3e15cabe2f35fdcf4ebb49c4d25`  
+**Work item:** `pack-split-migration-doctor`
+**Reviewed ref:** `961c86c6e948093999256e64a88f2fe31f53cfe4`
+**Merge commit:** `52283b97ef92b3e15cabe2f35fdcf4ebb49c4d25`
 **Release:** [`v0.63.0`](https://github.com/RubenSaucedo/kai/releases/tag/v0.63.0)
 
 ## Outcome
@@ -51,4 +51,3 @@ workspace.
 - Security review: **CLEAR**.
 - Reliability review: **READY**.
 - Rollback was not invoked.
-
