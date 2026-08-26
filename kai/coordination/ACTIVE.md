@@ -1160,3 +1160,41 @@ non-blocking display-cache residual because the fresh session loaded the exact r
 checkout and all behavior gates passed. The item is terminal (`next_role: null`);
 `first-pack-extracted` remains active and open, with downstream promotion and milestone
 accounting still steward-owned.
+
+**Steward promotion 2026-08-26-1453 (`principal-product-manager`):**
+`pack-split-first-department` is now **ready** at priority 10 (v2),
+`next_role: principal-swe-infra`, owner/lease null pending dispatch. Decomposition Open
+Question 3 is closed: WS#9 may reach `shipped` through necessary human-deployed `0.x`
+enabling changes plus real operator install evidence against committed-unpublished trees.
+No marketplace pack publication is authorized; the public flip remains release 12b.
+No downstream item was promoted, and `first-pack-extracted` remains open.
+
+**Director dispatch 2026-08-26-1457 (`director-chief-of-staff`).**
+`pack-split-first-department` was leased to `principal-swe-infra` at v3. Infra
+prepared the reliability record and an isolated PowerShell proof packet, then
+ended its lease and moved the item to **blocked v4** on
+`Q-pack-split-first-department-01`. The packet publishes nothing and mutates no
+global plugin registry, but both the principal runtime and the available command
+runner lack a PowerShell execution surface. The exact remaining external-host
+action is:
+`powershell -NoProfile -ExecutionPolicy Bypass -File C:\src\kai\.kai\runs\eng\2026-08-26\01-infra-pack-split-first-department\probe.ps1`.
+After its PASS/failure line is returned, the director restores `resume_state:
+in-progress` through `principal-swe-infra`; architecture review remains next
+only after infra binds the evidence to a reproducible `change_ref`.
+
+**Infra evidence reconciliation 2026-08-26-1507 (`principal-swe-infra`).**
+The operator's final PowerShell 7 rerun passed, and infra reviewed the raw records rather
+than trusting the PASS line. All four acceptance criteria now pass: staged coexistence
+refused with `coexistence` + `legacy-installed`; staged core+personal was `clear` /
+`no-workspace` against an isolated empty workspace; both inventories were unchanged; a
+fresh isolated `kai-personal:persona-self` session loaded `kai-core-contract-v1` and
+inherited core skills from `kai-core`, then returned `DIRECT_OK`; and focused discovery
+metadata fell from 20,063 to 8,093 characters, a 59.66% reduction. Marketplace topology
+remained exactly N=1 (`kai`, `source: "."`); no pack was published and no global registry
+was mutated. The canonical reliability artifact records the replaced pre-proof packet/
+fixture failures honestly. Q1 is answered. The item remains **blocked v6** only on
+`Q-pack-split-first-department-02`: this runtime has no shell/git tool, so no dedicated
+branch, commit, reproducible `change_ref`, or workspace-doctor validation can be produced
+here. Architecture review has not started; after validation passes and the commit SHA is
+bound, `principal-swe-architect` is next. The
+initiative and `first-pack-extracted` milestone remain active/open.

@@ -2470,3 +2470,44 @@ positive pack-attributable delta. Rollback was not invoked.
 Milestone `first-pack-extracted` remains **open**. Two required product-change items are
 now `shipped` (`generated-pack-trees`, `migration-doctor`); promotion and sequencing of
 the remaining proposed items, and any milestone accounting, remain steward-owned.
+
+## 2026-08-26 — steward promotion: first-department ready; Open Question 3 closed
+
+`principal-product-manager` confirmed the ratified WS#9 reading: `pack-split-first-department`
+may reach `shipped` after all necessary enabling changes are human-deployed on `0.x` plus real
+operator install evidence against the committed-unpublished trees; **no marketplace pack
+publication is permitted**, and the public flip remains `pack-split-release-12b`. Both typed
+dependencies are `shipped`, the work fits `scope.current: [first-pack-extracted]`, and its
+acceptance and canonical artifact target are explicit. Promoted `proposed -> ready`, priority
+20 -> 10, `next_role: principal-product-manager -> principal-swe-infra`, version 1 -> 2;
+`owner` and lease remain null pending director dispatch. No downstream item was promoted and
+the milestone remains open.
+
+## 2026-08-26 — first-department operator proof passed; git binding blocked
+
+The operator's final PowerShell 7 rerun passed against source
+`342cd8eb9bacb7bfc8ccd3679f3f09667f1bd246`. Infra reviewed every raw record:
+the live doctor refused legacy `kai`; staged legacy/core/personal coexistence returned
+`blocked` with `coexistence` + `legacy-installed`; staged core+personal against an isolated
+empty workspace returned `clear` / `no-workspace`; and both staged inventories remained
+unchanged. A fresh isolated Copilot CLI selected `kai-personal:persona-self`, loaded
+`kai-core-contract-v1` plus inherited core skills from the `kai-core` provider, and returned
+`KAI_CORE_READY`, `contract: 1`, and `DIRECT_OK`. Marketplace topology remained N=1
+(`kai`, `source: "."`); no pack was published and no global plugin registry was mutated.
+
+The re-measured focused discovery surface is 8,093 description characters / estimated
+2,023.25 tokens versus monolith 20,063 / 5,015.75: 11,970 characters and estimated 2,992.50
+tokens lower, a 59.66% character reduction. All four item acceptance criteria now pass.
+The final rerun replaced earlier raw failures, so the reliability artifact records their
+operator-provenance history explicitly: Windows PowerShell 5.1 lacked
+`ProcessStartInfo.ArgumentList`; PowerShell 7 parameter `$Home` collided with readonly
+`$HOME`; and the staged-clean fixture correctly returned `workspace-provenance-stale` when
+it was accidentally pointed at the real legacy workspace before isolation to
+`staged-clean-workspace`. These were packet/fixture-boundary defects, not product defects.
+
+Q-pack-split-first-department-01 is answered. The item remains **blocked v6** with
+`resume_state: in-progress` only on Q-pack-split-first-department-02: this runtime has no
+shell/git tool, so it cannot run the repository's workspace-doctor validation or create the
+dedicated branch and commit needed for a reproducible `change_ref`. Architecture review
+remains unstarted and cannot bind until that validation passes and the SHA exists.
+The initiative and milestone remain active/open; no downstream item was promoted.

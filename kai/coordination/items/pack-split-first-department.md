@@ -5,11 +5,11 @@ title: Prove kai-core + personal installs and operates over the plugin boundary
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: proposed
-resume_state: null
-priority: 20
-owner: null
-next_role: principal-product-manager
+state: blocked
+resume_state: in-progress
+priority: 10
+owner: principal-swe-infra
+next_role: principal-swe-infra
 target: pack-split first-department install proof
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 context_artifacts:
@@ -22,21 +22,22 @@ depends_on:
     requires: shipped
   - item: pack-split-migration-doctor
     requires: shipped
-waiting_on_questions: []
+waiting_on_questions:
+  - Q-pack-split-first-department-02
 required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 1
+version: 6
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-26-1507
 ---
 
 ## Outcome
@@ -47,19 +48,40 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
 
 ## Acceptance
 
-- [ ] A real install of core + personal (via staging source / `--plugin-dir`) is performed and a
+- [x] A real install of core + personal (via staging source / `--plugin-dir`) is performed and a
       personal agent binds `kai-core-*` skills across the plugin boundary and passes its preflight.
-- [ ] The migration doctor's uninstall-first / coexistence-refusal is exercised on the real install.
-- [ ] Per-session discovery-metadata cost for core+personal is captured against the whole-roster baseline.
-- [ ] Evidence recorded at the artifact target.
+- [x] The migration doctor's uninstall-first / coexistence-refusal is exercised on the real install.
+- [x] Per-session discovery-metadata cost for core+personal is captured against the whole-roster baseline.
+- [x] Evidence recorded at the artifact target.
 
 ## Evidence
 
-- (to be filled) — operator install transcript + the reliability record.
+- Completed reliability record:
+  `kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md`.
+- Raw operator evidence:
+  `.kai/runs/eng/2026-08-26/01-infra-pack-split-first-department/evidence/`.
+- Successful command packet:
+  `.kai/runs/eng/2026-08-26/01-infra-pack-split-first-department/probe.ps1`.
+- Fresh direct proof: `kai-personal:persona-self` invoked `kai-core-contract-v1`
+  and inherited core skills from the `kai-core` provider, then returned
+  `KAI_CORE_READY`, `contract: 1`, and `DIRECT_OK`.
+- Doctor proof: staged coexistence returned `blocked` with `coexistence` and
+  `legacy-installed`; staged clean returned `clear` / `no-workspace`; both
+  staged inventories were unchanged.
+- Discovery metadata: focused core+personal `8,093` characters / estimated
+  `2,023.25` tokens versus monolith `20,063` / `5,015.75`, a `59.66%`
+  character reduction.
+- Marketplace remained one `kai` entry at `source: "."`; no pack was
+  published and no global plugin registry was mutated.
+- `change_ref` remains `null` because this runtime has no shell/git execution
+  tool. `Q-pack-split-first-department-02` requests the smallest existing
+  coordination validation plus the dedicated branch and evidence commit;
+  architecture review cannot bind before that SHA exists.
 
 ## Notes
 
-- "Shipped" here = enabling changes in a published `0.x` release **and** operator install evidence
-  against the committed trees — distinct from the public flip (`pack-split-release-12b`). Confirm this
-  reading with the steward (decomposition Open Question 3).
+- **Steward-confirmed 2026-08-26 (decomposition Open Question 3 closed):** "Shipped" here =
+  all necessary enabling changes human-deployed in a published `0.x` release **and** operator
+  install evidence against the committed-unpublished trees. No marketplace pack publication is
+  permitted; the public flip remains exclusively `pack-split-release-12b`.
 - The real install is **operator-executed**; this role assembles the proof and records evidence.
