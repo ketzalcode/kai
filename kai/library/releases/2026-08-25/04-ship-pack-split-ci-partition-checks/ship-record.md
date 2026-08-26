@@ -3,12 +3,13 @@ type: releases
 title: Ship record — four named CI partition gates + kai-core-* namespace enforcement (forced fleet rename)
 slug: pack-split-ci-partition-checks-ship-record
 created: 2026-08-25
-source: workflow-ship (PREPARE gate) — kai/coordination/items/pack-split-ci-partition-checks.md
+source: workflow-ship (PREPARE + CONFIRM-START + CONFIRM-COMPLETE) — kai/coordination/items/pack-split-ci-partition-checks.md
 target: pack-split CI partition enforcement + namespace
 initiative: pack-split
 source_artifact: null
 canonical_path: kai/library/releases/2026-08-25/04-ship-pack-split-ci-partition-checks/ship-record.md
-promotion: completed 2026-08-25 — canonical library home
+promotion: completed 2026-08-25 — canonical library home; verified present at merge commit b72453f1ed46393e77722995212920b9f8615c79 (blob 291d839e…), so no post-ship reconciliation is owed
+shipped: 2026-08-26T00:50:07Z — v0.62.0, merge commit b72453f1ed46393e77722995212920b9f8615c79, production verification 9/9, rollback never invoked
 related:
   - kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md
   - kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md
@@ -17,8 +18,24 @@ related:
   - kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
 evidence:
+  - path: https://github.com/RubenSaucedo/kai/commit/b72453f1ed46393e77722995212920b9f8615c79
+    source: '**the merge commit — production.** PR #160 `state: closed`, **`merged: true`**, `merged_at` **2026-08-26T00:50:07Z**, `merge_commit_sha` **`b72453f1ed46393e77722995212920b9f8615c79`**, merged by `RubenSaucedo` as a squash (`commits: 3`, `changed_files: 26`, +2973/-229) whose single parent is `16493a303c…`, the branch''s own base — so **no rebase**. Final PR head at merge was `1617c819487d19ffd284a30b9d1ad0e698e211fd`, two commits past the ratified ref; the binding was re-proven at the object level rather than re-diffed'
+  - path: https://github.com/RubenSaucedo/kai/actions/runs/32916653342/job/98021655301
+    source: '**the `main` deployment run.** Job `contract` `98021655301` (run `32916653342`, `workflow_name: validate`, `head_branch: main`, `run_attempt: 1`), `status: completed`, **`conclusion: success`**, 2026-08-26T00:50:12Z -> 00:50:27Z (**15s**) at `head_sha b72453f1…`. **The four gates read individually `success` as named steps in the `main` run** — 9 `Partition gate (one pack per agent, one provider per skill, kai-core-* namespace)`, 10 `Collision gate (no id emitted by two packs)`, 11 `Partial-install gate (a department installed with kai-core alone)`, 12 `Version-skew gate (contract pins agree; absent or skewed core fails closed)` — plus 4 `Validate plugin contract`, 5 `Workspace-doctor self-test`, 6 `Host-loader acceptance`, 7 `Release-guard self-test`, 8 `Pack generator self-test`, 13 `Committed pack trees match the generator`, 14 `Check helper script syntax`: **eleven substantive steps, all green**, with 15 `Release-guard (behavior change requires a bump + release notes)` **`skipped`** on a push event, exactly as this record predicted'
+  - path: https://api.github.com/repos/RubenSaucedo/kai/commits/b72453f1ed46393e77722995212920b9f8615c79/check-runs
+    source: '`total_count: 1` on the **merge** SHA — one check, `success`; nothing red hides behind it. `annotations_count: 1` is the pre-existing Node-20 runner deprecation warning'
+  - path: https://api.github.com/repos/RubenSaucedo/kai/git/trees/b72453f1ed46393e77722995212920b9f8615c79
+    source: '**the decisive comparison.** Complete root tree at the merge (`truncated: false`, 21 entries) is **byte-identical to the ratified `aca16e56…` on every top-level entry except `kai/`**: `.env.example` `e39cc322`, `.gitattributes` `2aa1cd03`, `.github` `2034a566`, `.gitignore` `f2abfdaf`, `.kai` `62ab64a1`, `.nvmrc` `a45fd52c`, `AGENTS.md` `c9794bcd`, `CHANGELOG.md` `e2149cee`, `LICENSE` `1db1d317`, `README.md` `652ee436`, `agents` `c0284f31`, `docs` `2c5b302f`, `examples` `d29fd2f2`, `hooks.json` `a21df80f`, `package-lock.json` `4cdda0f8`, `package.json` `0a3bb8cd`, `plugin.json` `63ce31fa`, `scripts` `8996552b`, `skills` `d935bd32`, `test` `2e82a331`. Only `kai` moved (`8baeb55b` -> `69e366c7`, records). **`packs` is absent**, where it would sort between `package.json` and `plugin.json`'
+  - path: https://api.github.com/repos/RubenSaucedo/kai/git/trees/d935bd32e5115428330e1c4675935974be608aa2
+    source: 'the `skills` subtree in production (`truncated: false`) — **`kai-core-fleet-observation` present, `fleet-observation` absent**, 51 skill directories plus `.gitkeep`. Identical to the ratified ref, so the shipped rename is the reviewed rename'
+  - path: https://api.github.com/repos/RubenSaucedo/kai/git/tags/cf91008b2d3530d124e13cc1cf3229c12243f2ed
+    source: 'annotated tag `v0.62.0` (tagger 2026-08-26T00:50:30Z) **peels to `b72453f1…`**, the merge commit — `object.type: commit`. `refs/tags/v0.61.0` also present (`e88857db…`), so the `[0.62.0]` compare link is **not dangling**'
+  - path: https://github.com/RubenSaucedo/kai/releases/tag/v0.62.0
+    source: 'release `376800860`, `tag_name v0.62.0`, `target_commitish main`, **`draft: false`, `prerelease: false`**, published 2026-08-26T00:50:33Z. **Body read in full and it holds the step-6 language constraints** — states the breaking rename ("Renamed the user-invocable `fleet-observation` skill to `kai-core-fleet-observation` … Update direct invocations to the new name"), states "No generated pack tree is committed or published; the marketplace remains the monolithic `kai` plugin", and re-introduces **none** of the host-resolution language A2 removed'
+  - path: https://raw.githubusercontent.com/RubenSaucedo/kai/b72453f1ed46393e77722995212920b9f8615c79/scripts/lib/pack-plan.mjs
+    source: 'production blob reads pinned at the merge SHA — **`COMMITTED_PACKS = []`** and `SKILL_OWNER_OVERRIDES` mapping `''kai-core-fleet-observation'': ''core''`. Alongside `plugin.json` `0.62.0`, `package.json` `0.62.0`, `package-lock.json` `0.62.0` ×2, `.github/plugin/marketplace.json` `0.62.0` ×2 with **exactly one** plugin entry (`kai` at `source: "."`), `README.md` `## Status` reading `v0.62.0` — 56 agents and 51 skills, and `CHANGELOG.md` `## [0.62.0] - 2026-08-25` with its compare link'
   - path: https://github.com/RubenSaucedo/kai/pull/160
-    source: 'GitHub PR #160 "feat: enforce pack partition gates" — `state: open`, `locked: false`, created 2026-08-26T00:31:20Z, head `63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b` on `kai/feat/29-ci-partition-checks`, **exactly two commits** (`aca16e56…` implementation, `63f6da16…` records); read here at PREPARE from `api.github.com`'
+    source: 'GitHub PR #160 "feat: enforce pack partition gates" — read at PREPARE as `state: open`, created 2026-08-26T00:31:20Z, head `63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b`, then merged as recorded above'
   - path: https://github.com/RubenSaucedo/kai/actions/runs/32915426171/job/98018029769
     source: 'check run `contract` (id `98018029769`, run `32915426171`), `workflow_name: validate`, `head_sha 63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b`, `run_attempt: 1`, `status: completed`, **`conclusion: success`**, 2026-08-26T00:31:27Z -> 00:31:45Z (**18s**). **All four new named gates read individually green in the step list** — step 9 `Partition gate (one pack per agent, one provider per skill, kai-core-* namespace)`, step 10 `Collision gate (no id emitted by two packs)`, step 11 `Partial-install gate (a department installed with kai-core alone)`, step 12 `Version-skew gate (contract pins agree; absent or skewed core fails closed)` — plus step 4 `Validate plugin contract`, step 8 `Pack generator self-test`, step 13 `Committed pack trees match the generator`, step 14 `Check helper script syntax` and step 15 `Release-guard (--base --head)`. Twelve substantive steps, every one `success`'
   - path: https://api.github.com/repos/RubenSaucedo/kai/commits/63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b/check-runs
@@ -48,19 +65,22 @@ evidence:
 **Recorded as 2026-08-25-1750** so the append-only record stays ordered behind the
 architecture ratification's `1745` entry; the record labels in this item have drifted
 ahead of wall clock and are kept monotonic rather than re-based.
-**Run:** `workflow-ship` — **PREPARE** (`in-review -> release-ready`).
+**Run:** `workflow-ship` — **PREPARE** (`in-review -> release-ready`) 2026-08-25-1750, then
+**CONFIRM-START + CONFIRM-COMPLETE** (`release-ready -> deploying -> production-verification ->
+shipped`) 2026-08-25-1751.
 **What shipped (one line):** the locked five-pack partition becomes a **hard CI gate** —
 four independently named failing steps on every push and pull request — and core-provided
 skills are held to the `kai-core-*` prefix, which forces `fleet-observation` to become
 `kai-core-fleet-observation`.
 **Change:** [PR #160](https://github.com/RubenSaucedo/kai/pull/160) ·
-head `63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b` ·
+merged `b72453f1ed46393e77722995212920b9f8615c79` ·
 reviewed ref `aca16e56d3d70cf6bac5181a41c3d4a87055dccc` · base `main` `16493a303c6532c8a7d0c78faf5c9027a5c9d998`
-**Version:** `0.61.0 -> 0.62.0`
+**Version:** `0.61.0 -> 0.62.0` · **Tag/release:** `v0.62.0`, published 2026-08-26T00:50:33Z
 
-> **State reached: RELEASE-READY. This is NOT shipped.** kai merged nothing, pushed
-> nothing, tagged nothing, released nothing and deployed nothing, and it will not. The
-> deploy steps below are the operator's to run.
+> **State reached: SHIPPED.** Verified in production 2026-08-25-1751 — **9 of 9 checks passed**,
+> **rollback never invoked**. kai merged nothing, pushed nothing, tagged nothing, released
+> nothing and deployed nothing; every deploy step below was run by the operator, and every
+> production fact was re-derived read-only against the merge commit.
 
 ---
 
@@ -460,6 +480,42 @@ recorded rollback through the operator, capture `production-verification` in
 `resume_state`, and set `blocked` with `principal-swe-infra` named. Only `workflow-ship`
 may later return the item to `release-ready`, and only on rollback/cleanup evidence.
 
+### Outcome — 2026-08-25-1751: **PASSED 9 of 9. SHIPPED.**
+
+Re-derived read-only against merge commit `b72453f1ed46393e77722995212920b9f8615c79`.
+This session had **no shell**: every fact is an `api.github.com` /
+`raw.githubusercontent.com` read pinned at that SHA, plus local `.git` ref reads.
+**Nothing was executed, and no implementation or release file was edited.**
+
+| # | check | result |
+|---|-------|--------|
+| 1 | deployment start | PR #160 `merged: true` at **2026-08-26T00:50:07Z** into `b72453f1…`, squash, parent `16493a303c…` (**no rebase**); `main` run `32916653342` started 00:50:12Z; local `.git/refs/heads/main` agrees — **PASS** |
+| 2 | completion, four gates green **in the `main` run** | job `98021655301` **`success`**, 00:50:12Z -> 00:50:27Z (**15s**); steps 9–12 each `success`; eleven substantive steps green; release-guard correctly `skipped` on a push event — **PASS** |
+| 3 | `0.62.0` coherent across all eight locations | `plugin.json`, `package.json`, `package-lock.json` ×2, `marketplace.json` ×2, README `## Status` (`v0.62.0` — 56 agents and 51 skills), `## [0.62.0] - 2026-08-25` + compare link; `v0.61.0` tag (`e88857db…`) exists, so **not dangling** — **PASS** |
+| 4 | marketplace exactly one entry | `plugins[]` length 1, `kai` at `source: "."` — **PASS** |
+| 5 | `COMMITTED_PACKS` `[]`, no `packs/` tree | read in production at `scripts/lib/pack-plan.mjs`; merge root tree `truncated: false`, 21 entries, **`packs` absent** — **PASS** |
+| 6 | the rename landed | `skills` subtree carries `kai-core-fleet-observation`, **no** `fleet-observation`; 51 skill dirs; `SKILL_OWNER_OVERRIDES` maps the new name to `core`; subtree identical to the ratified ref — **PASS** |
+| 7 | `agents/` byte-identical to base | `c0284f31c7cd221cc2f31712f98148482c5ac49a` at base **and** merge — **PASS** |
+| 8 | tag and release point at the merge | annotated tag `cf91008b…` **peels to `b72453f1…`**; release `376800860`, not draft, not prerelease; **body read in full** and holding the step-6 constraints, including the breaking-rename notice — **PASS** |
+| 9 | `check-runs` on the merge SHA | `total_count: 1`, `success` — **PASS** |
+
+**One reading did more work than the other eight combined.** The merge commit's complete
+root tree is **byte-identical to the ratified `aca16e56…` on every top-level entry except
+`kai/`** (coordination and library records). The PR head had moved twice past the reviewed
+ref (`63f6da16…`, then `1617c819…`) and the merge was a **squash** — three ways the
+reviewed object could have drifted into production unnoticed. It did not, and that is
+proven from git objects rather than from anyone's attestation: **what runs in production
+is, byte-for-byte, what the architecture review ratified.** `change_ref` therefore stays at
+`aca16e56…` — deployment moves state, not the reviewed ref.
+
+**Rollback was never invoked.** No step of the recorded rollback plan was needed or run,
+`v0.62.0` stands, and the plan above remains the reversal path if one is ever required.
+
+**Milestone.** `dependency-guarantees` now has **5 of 5** required items `shipped`. That is
+a **count, not a closure** — declaring the milestone met, advancing `scope.current`, and
+closing decomposition Open Question 4 are the **steward's** calls, routed to
+`principal-product-manager` and deliberately not taken by this gate.
+
 ---
 
 ## Follow-ups / parked
@@ -478,11 +534,15 @@ none is fixed in PR #160, and none was deleted from a review:
   `principal-product-manager` as a policy question for the remaining renames in the split,
   not a defect in this release.
 
-**Dependents:** `pack-split-generated-pack-trees` requires this item at `shipped` and is
-**not** unblocked by `release-ready`; it stays `proposed` at 4 of 6 met and is outside
-`scope.current` regardless. **Milestone `dependency-guarantees` stays 4 of 5.**
+**Dependents:** `pack-split-generated-pack-trees` requires this item at `shipped`. That
+edge is now **satisfied** — it moves from 4 of 6 to **5 of 6** dependencies met. It stays
+`proposed` and **non-dispatchable**: `pack-split-host-semantics-spike` is still not
+`completed`, and it sits in `first-pack-extracted`, outside `scope.current`. No dependent
+item record was edited — dependency satisfaction is derived at dispatch, never stored.
+**Milestone `dependency-guarantees` is now 5 of 5 required items `shipped`.**
 
-**For the steward, after `shipped`:** decomposition Open Question 4
-(director-availability completeness) is now answerable and can be closed; and the
-milestone's fifth required item will be satisfied, which is a steward closure decision,
-not this gate's.
+**For the steward, now due:** decomposition Open Question 4
+(director-availability completeness) is answerable and can be closed — criterion 4 answers
+it and `availabilityErrors` pins it in CI; the milestone's fifth required item is
+satisfied, so milestone closure and whether `scope.current` advances are steward decisions,
+not this gate's; and **S1** needs a policy for the remaining user-invocable renames.

@@ -531,3 +531,81 @@ the **director's** call, not the ship gate's — this is reconciliation, not a d
              `pack-split-generated-pack-trees` is **not** cleared. After `shipped`, two items belong
              to **principal-product-manager**: closing decomposition **Open Question 4** (criterion 4
              now answers it) and deciding whether the fifth required item closes the milestone.
+
+## HANDOFF 2026-08-25-1751 — workflow-ship -> principal-product-manager
+
+- did:       **Ran CONFIRM-START and CONFIRM-COMPLETE. Verdict: SHIPPED — production verification
+             PASSED 9 of 9.** Item **v9 -> v12**, walking `release-ready -> deploying ->
+             production-verification -> shipped` on evidence at each step, `lease: null`,
+             `resume_state: null`, `next_role: "@operator" -> null`, `change_ref` **unchanged** at
+             `aca16e56d3d70cf6bac5181a41c3d4a87055dccc` — deployment moves state, not the reviewed
+             ref. **kai merged, pushed, tagged, released, published and deployed nothing**; every
+             action was the operator's and every fact below was re-derived read-only against the
+             merge commit. **Rollback was never invoked.**
+             **Deployment start:** PR **#160** `merged: true` at **2026-08-26T00:50:07Z** into
+             **`b72453f1ed46393e77722995212920b9f8615c79`** — a squash whose parent is the branch's
+             own base `16493a303c…`, so **no rebase**; `main` run **`32916653342`** started 00:50:12Z
+             at that `head_sha`; local `.git/refs/heads/main` agrees.
+             **Deployment completion:** job `contract` **`98021655301`** is **`conclusion: success`**,
+             **00:50:12Z -> 00:50:27Z (15s)**, and **the four gates are individually `success` as
+             named steps in the `main` run** — 9 `Partition gate…`, 10 `Collision gate…`, 11
+             `Partial-install gate…`, 12 `Version-skew gate…` — alongside `Validate plugin contract`,
+             `Workspace-doctor self-test`, `Host-loader acceptance`, `Release-guard self-test`, `Pack
+             generator self-test`, `Committed pack trees match the generator` and `Check helper
+             script syntax`: **eleven substantive steps, all green**, with the `pull_request`-only
+             release-guard correctly **`skipped`** on a push event, exactly as predicted.
+             `check-runs total_count: 1`, so nothing red hides behind it.
+             **The strongest reading replaced an attestation with an object comparison:** the merge
+             commit's complete root tree is **byte-identical to the ratified `aca16e56…` on every
+             top-level entry except `kai/`** (records only). What runs in production is, byte-for-
+             byte, what the architecture review ratified — the binding survived two head moves and a
+             squash without anyone's word for it. Against base, only the eleven declared top-level
+             entries moved; `agents` is identical (`c0284f31…`), so **no agent body changed and no
+             new tool grant landed**, and **`packs` is absent** from the merge root tree, proven
+             positively from a `truncated: false` listing.
+             **Tag and release:** annotated tag `cf91008b…` **peels to the merge commit**; release
+             `376800860`, not draft, not prerelease. **The release note was read in full and holds
+             the recorded constraints** — it states the breaking rename of a user-invocable skill
+             with no alias ("Update direct invocations to the new name"), says no pack tree is
+             committed or published, and re-introduces **none** of the host-resolution language A2
+             removed.
+             **Ship record promotion verified in production**, so no post-ship reconciliation is
+             owed.
+- state:     shipped
+- change_ref: `aca16e56d3d70cf6bac5181a41c3d4a87055dccc` (unchanged — the object both the review and
+             production agree on)
+- needs:     **Nothing from engineering; the item is terminal (`next_role: null`).** Two decisions
+             belong to the **steward**, and neither was taken here because neither is this gate's to
+             take: **(1)** `dependency-guarantees` now has **5 of 5** required items `shipped`
+             (`generator-gates`, `preflight-compat`, `crosspack-validator`, `degraded-refusal`, this
+             item) — that is a **count, not a closure**; declaring the milestone met, and whether
+             `scope.current` advances to `first-pack-extracted`, is yours. **(2)** decomposition
+             **Open Question 4** (director-availability completeness) is now answerable — acceptance
+             criterion 4 answers it, and `availabilityErrors` pins it in CI — so it can be closed.
+             Also yours: **PROPOSAL S1**, the policy for renaming user-invocable skills without an
+             alias, which this release exercised once and the remaining renames will exercise again.
+- artifacts: kai/coordination/items/pack-split-ci-partition-checks.md (v12,
+             `## Ship — 2026-08-25-1751 (workflow-ship, CONFIRM-START + CONFIRM-COMPLETE): SHIPPED`) ·
+             kai/library/releases/2026-08-25/04-ship-pack-split-ci-partition-checks/ship-record.md
+             (canonical, verified present at the merge commit) ·
+             kai/initiatives/pack-split/{log.md,deliverables.md,backlog.md} · BOARD.md · ACTIVE.md
+- evidence:  `api.github.com` — `pulls/160` (`merged: true`, `merged_at 2026-08-26T00:50:07Z`,
+             `merge_commit_sha b72453f1…`); `actions/jobs/98021655301` (run `32916653342`,
+             `head_branch: main`, `conclusion: success`, 15s, full step list);
+             `commits/b72453f1…/check-runs` (`total_count: 1`); `git/tags/cf91008b…` (peels to the
+             merge commit); `releases/tags/v0.62.0` (`376800860`, body read in full);
+             `git/trees/b72453f1…`, `git/trees/aca16e56…`, `git/trees/16493a303c…` and the `skills`
+             subtree `d935bd32…` (all `truncated: false`); `git/refs/tags/v0.61.0` (compare link not
+             dangling); production blob reads at the merge SHA of `plugin.json`, `package.json`,
+             `package-lock.json`, `.github/plugin/marketplace.json`, `README.md`, `CHANGELOG.md` and
+             `scripts/lib/pack-plan.mjs` (`COMMITTED_PACKS = []`); `contents/…/04-ship-pack-split-ci-
+             partition-checks` (ship record canonical in production); local `.git/refs/heads/main`.
+             **This run had no shell and executed nothing** — every production fact is a read-only
+             re-derivation pinned at `b72453f1…`, not an operator report.
+- questions: None. `waiting_on_questions` stays `[]`.
+- next:      **principal-product-manager** — the two steward decisions above. The item itself is
+             closed; do **not** reopen it to record them. `pack-split-generated-pack-trees` moves
+             from 4 of 6 to **5 of 6** dependencies met and stays `proposed` and non-dispatchable
+             (`pack-split-host-semantics-spike` is not `completed`, and it is outside
+             `scope.current`). **N4**, **N5** and **S1** remain open PROPOSALs in the initiative
+             backlog — shipping closed none of them.

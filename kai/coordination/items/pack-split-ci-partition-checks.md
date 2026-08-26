@@ -5,11 +5,11 @@ title: Real CI partition/collision/skew gates + kai-core-* namespace enforcement
 initiative: pack-split
 milestone: dependency-guarantees
 delivery_class: product-change
-state: release-ready
+state: shipped
 resume_state: null
 priority: 50
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack-split CI partition enforcement + namespace
 artifact_target: null
 context_artifacts:
@@ -57,9 +57,9 @@ completed_reviews:
     evidence: "## Independent architecture re-review — 2026-08-25-1745 (ratification)"
     timestamp: 2026-08-25-1745
 change_ref: aca16e56d3d70cf6bac5181a41c3d4a87055dccc
-version: 9
+version: 12
 lease: null
-updated: 2026-08-25-1750
+updated: 2026-08-25-1751
 ---
 
 ## Outcome
@@ -723,3 +723,108 @@ adjective. **N6** is corrected in this entry.
 not `shipped`. `pack-split-generated-pack-trees` is **not** cleared and stays `proposed` at 4 of 6
 met, outside `scope.current`. Declaring the milestone met when this ships is the **steward's** call,
 as is closing decomposition **Open Question 4**, which criterion 4 now answers.
+
+## Ship — 2026-08-25-1751 (`workflow-ship`, CONFIRM-START + CONFIRM-COMPLETE): **SHIPPED**
+
+**Verdict: SHIPPED. Production verification PASSED 9 of 9.** Item **v9 -> v12**, walking
+`release-ready -> deploying -> production-verification -> shipped` on evidence at each step,
+`lease: null`, `resume_state: null`, `next_role: "@operator" -> null`, `change_ref` **unchanged** at
+`aca16e56d3d70cf6bac5181a41c3d4a87055dccc` — deployment moves state, not the reviewed ref.
+
+**kai merged, pushed, tagged, released, published and deployed nothing.** Every action below was the
+operator's; every fact below was **re-derived read-only** here against the merge commit, not
+accepted on report. **Rollback was never invoked.** This session had **no shell** — all re-derivation
+is `api.github.com` / `raw.githubusercontent.com` reads pinned at the merge SHA, plus `.git` ref
+reads; nothing was executed.
+
+### CONFIRM-START — deployment start evidence
+
+PR **#160** is `state: closed`, **`merged: true`**, `merged_at` **2026-08-26T00:50:07Z**, merged by
+`RubenSaucedo` into **`merge_commit_sha b72453f1ed46393e77722995212920b9f8615c79`** — a squash
+(`commits: 3`, `changed_files: 26`, +2973/-229 collapsed to one commit whose parent is the branch's
+own base `16493a303c…`, so **no rebase**). The `main` `validate` run **`32916653342`**
+(`head_branch: main`, `run_attempt: 1`) started **00:50:12Z** at that exact `head_sha`. Local
+`.git/refs/heads/main` reads `b72453f1…`, agreeing with the remote.
+
+**The final PR head moved twice past the ratified ref, and that was checked rather than assumed.**
+PREPARE bound `aca16e56…` and saw head `63f6da16…`; the operator then pushed the records commit, so
+the merged head was **`1617c819487d19ffd284a30b9d1ad0e698e211fd`**. Rather than re-diffing commits,
+the binding was proven at the object level below — which is stronger, because it tests **what is in
+production**, not what a branch tip claimed.
+
+### CONFIRM-COMPLETE — deployment completion evidence
+
+Job `contract` **`98021655301`** (run **`32916653342`**, `workflow_name: validate`) is
+`status: completed`, **`conclusion: success`**, **00:50:12Z -> 00:50:27Z (15s)** at
+`head_sha b72453f1…`. **The four gates are individually `success` as named steps in the `main` run,
+not inferred from a green tick:** step 9 `Partition gate (one pack per agent, one provider per
+skill, kai-core-* namespace)`, step 10 `Collision gate (no id emitted by two packs)`, step 11
+`Partial-install gate (a department installed with kai-core alone)`, step 12 `Version-skew gate
+(contract pins agree; absent or skewed core fails closed)`. Also `success`: 4 `Validate plugin
+contract`, 5 `Workspace-doctor self-test`, 6 `Host-loader acceptance`, 7 `Release-guard self-test`,
+8 `Pack generator self-test`, 13 `Committed pack trees match the generator`, 14 `Check helper script
+syntax` — **eleven substantive steps, every one green**, with step 15 `Release-guard (behavior change
+requires a bump + release notes)` **`skipped`** because this is a push event, exactly as the ship
+record predicted. `commits/b72453f1…/check-runs` is **`total_count: 1`**, so nothing red hides
+behind the green one; its single `annotations_count: 1` is the pre-existing Node-20 runner
+deprecation warning every run in this initiative carries.
+
+### Production verification — 9 of 9
+
+| # | check | result |
+|---|-------|--------|
+| 1 | deployment start | merge `b72453f1…` at 2026-08-26T00:50:07Z; `main` run `32916653342` started 00:50:12Z — **PASS** |
+| 2 | completion, four gates green **in the `main` run** | job `98021655301` `success` 15s; steps 9–12 each `success` — **PASS** |
+| 3 | `0.62.0` coherent across all eight release locations | `plugin.json`, `package.json`, `package-lock.json` ×2, `marketplace.json` ×2, README `## Status` (`v0.62.0` — 56 agents and 51 skills), `## [0.62.0] - 2026-08-25` + compare link `v0.61.0...v0.62.0` (`CHANGELOG.md:2768`), and tag `v0.61.0` (`e88857db…`) exists, so the link is **not dangling** — **PASS** |
+| 4 | marketplace still exactly one entry | `plugins[]` length 1, `kai` at `source: "."` — **PASS** |
+| 5 | `COMMITTED_PACKS` still `[]`, no `packs/` tree | read in production at `scripts/lib/pack-plan.mjs`; merge root tree `truncated: false`, 21 entries, **`packs` absent** where it would sort between `package.json` and `plugin.json` — **PASS** |
+| 6 | the rename landed in production | `skills` subtree carries `kai-core-fleet-observation` and **no** `fleet-observation`; 51 skill directories; `SKILL_OWNER_OVERRIDES` maps `'kai-core-fleet-observation': 'core'` — **PASS** |
+| 7 | `agents/` byte-identical to base | `c0284f31c7cd221cc2f31712f98148482c5ac49a` at base **and** at the merge — **PASS** |
+| 8 | tag and release point at the merge | annotated tag object `cf91008b2d3530d124e13cc1cf3229c12243f2ed` (tagger 00:50:30Z) **peels to `b72453f1…`**; release `376800860`, `draft: false`, `prerelease: false`, published 00:50:33Z — **PASS** |
+| 9 | `check-runs` on the merge SHA `total_count: 1` | one check, `success` — **PASS** |
+
+**The strongest single reading, and it replaces an attestation with an object comparison.** The
+merge commit's **complete** root tree (`truncated: false`) is **byte-identical to the ratified
+`aca16e56…` on every top-level entry except `kai/`**:
+
+| identical at `aca16e56…` and `b72453f1…` | differs |
+|------------------------------------------|---------|
+| `.env.example` `e39cc322`, `.gitattributes` `2aa1cd03`, `.github` `2034a566`, `.gitignore` `f2abfdaf`, `.kai` `62ab64a1`, `.nvmrc` `a45fd52c`, `AGENTS.md` `c9794bcd`, `CHANGELOG.md` `e2149cee`, `LICENSE` `1db1d317`, `README.md` `652ee436`, `agents` `c0284f31`, `docs` `2c5b302f`, `examples` `d29fd2f2`, `hooks.json` `a21df80f`, `package-lock.json` `4cdda0f8`, `package.json` `0a3bb8cd`, `plugin.json` `63ce31fa`, `scripts` `8996552b`, `skills` `d935bd32`, `test` `2e82a331` | `kai` `8baeb55b` -> `69e366c7` — coordination and library records only |
+
+So **what is running in production is, byte-for-byte, what the architecture review ratified**;
+the only divergence is the records tree, which carries no behaviour. The review binding survived
+two head moves and a squash without needing anyone's word for it, and `change_ref` correctly stays
+at `aca16e56…`. Against base `16493a303c…` the moved top-level entries are exactly the eleven
+declared (`.github`, `CHANGELOG.md`, `README.md`, `docs`, `kai`, `package-lock.json`,
+`package.json`, `plugin.json`, `scripts`, `skills`, `test`), with `agents`, `examples`,
+`hooks.json`, `.kai`, `AGENTS.md`, `LICENSE` and the dotfiles untouched — **scope-true holds in
+production, not just at the gate**.
+
+**The release note was read in full and holds the recorded language constraints.** It states the
+breaking rename explicitly — *"Renamed the user-invocable `fleet-observation` skill to
+`kai-core-fleet-observation` … Update direct invocations to the new name"* — which was deploy step
+6's binding condition and the mitigation for **PROPOSAL S1**. It states *"No generated pack tree is
+committed or published; the marketplace remains the monolithic `kai` plugin."* It does **not** claim
+any pack is generated, published or installable, does not claim the split is done, does not claim
+partial-install or version-skew was measured on a real host, and **re-introduces none of the
+host-resolution language A2 removed** — no "first-found-wins", no "the host keeps the first copy",
+no "install order decides".
+
+**Ship record promotion verified in production, so no post-ship reconciliation is owed.**
+`kai/library/releases/2026-08-25/04-ship-pack-split-ci-partition-checks/ship-record.md` exists at the
+merge commit (blob `291d839e…`) and the pre-promotion flat path no longer exists locally.
+
+**Milestone: `dependency-guarantees` now has 5 of 5 required items `shipped`** —
+`generator-gates`, `preflight-compat`, `crosspack-validator`, `degraded-refusal` and this item.
+**That is a count, not a closure.** Declaring the milestone met, and closing decomposition **Open
+Question 4** (which acceptance criterion 4 answers), are the **steward's** calls and are routed to
+`principal-product-manager`, not taken here.
+
+**Dependency reconciliation, truthfully.** `pack-split-generated-pack-trees` requires this item at
+`shipped`, so that edge is now **satisfied** — it moves from 4 of 6 to **5 of 6** met. It stays
+`proposed` and **non-dispatchable**: `pack-split-host-semantics-spike` is still not `completed`, and
+it sits in `first-pack-extracted`, outside `scope.current`. No dependent item record was edited;
+dependency satisfaction is derived at dispatch, never stored.
+
+**Still open, and still owned:** **N4**, **N5** and **S1** remain PROPOSALs in
+`kai/initiatives/pack-split/backlog.md`. Shipping closed none of them and deleted none of them.

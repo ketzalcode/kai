@@ -930,3 +930,51 @@ as is closing decomposition **Open Question 4**, which criterion 4 now answers. 
 push, squash-merge PR #160 **without rebasing**, watch `main`, tag and release `v0.62.0` under the
 recorded language constraints), then return the deployment evidence to `workflow-ship` for
 CONFIRM-START and CONFIRM-COMPLETE.
+
+**Latest — 2026-08-25-1751 (`workflow-ship`, CONFIRM-START + CONFIRM-COMPLETE).**
+`pack-split-ci-partition-checks` is **`shipped`** — **production verification PASSED 9 of 9**. Item
+**v9 -> v12**, walking `release-ready -> deploying -> production-verification -> shipped` on
+evidence at each step, `lease: null`, `resume_state: null`, `next_role: "@operator" -> null`,
+`change_ref` **unchanged** at `aca16e56d3d70cf6bac5181a41c3d4a87055dccc` — deployment moves state,
+not the reviewed ref. **kai merged, pushed, tagged, released, published and deployed nothing**;
+every action was the operator's, and every fact here was **re-derived read-only** against the merge
+commit rather than accepted on report. **Rollback was never invoked.** **Deployment:** PR **#160**
+`merged: true` at **2026-08-26T00:50:07Z** into **`b72453f1ed46393e77722995212920b9f8615c79`** — a
+squash whose single parent is the branch's own base `16493a303c…`, so **no rebase** — then
+annotated tag **`v0.62.0`** (`cf91008b…`) and release `376800860`, not draft, not prerelease. The
+`main` `validate` run **`32916653342`**, job `contract` **`98021655301`**, is
+**`conclusion: success`** in **15s** at that `head_sha`, `check-runs total_count: 1`, and **the four
+gates are individually `success` as named steps in the `main` run** (9 `Partition gate…`, 10
+`Collision gate…`, 11 `Partial-install gate…`, 12 `Version-skew gate…`) alongside `Validate plugin
+contract`, `Workspace-doctor self-test`, `Host-loader acceptance`, `Release-guard self-test`, `Pack
+generator self-test`, `Committed pack trees match the generator` and `Check helper script syntax` —
+**eleven substantive steps, all green**, with the `pull_request`-only release-guard correctly
+**`skipped`** on a push event, exactly as predicted. **The strongest reading replaced an
+attestation with an object comparison:** the merge commit's complete root tree (`truncated: false`)
+is **byte-identical to the ratified `aca16e56…` on every top-level entry except `kai/`** (records
+only), so **what runs in production is, byte-for-byte, what the architecture review ratified** — a
+binding that survived two head moves (`63f6da16…`, then `1617c819…`) and a squash without anyone's
+word for it. Against base, only the eleven declared top-level entries moved, `agents` is identical
+(`c0284f31…`, so no agent body changed and **no new tool grant** landed), and **`packs` is absent**
+from the merge root tree, proven positively from the listing. **The remaining checks:** `0.62.0`
+coherent across all eight release locations with the `[0.62.0]` compare link **not dangling**
+(`v0.61.0` tag present); marketplace still **exactly one** entry at `source: "."`;
+`COMMITTED_PACKS = []`; the rename landed in production (`skills/kai-core-fleet-observation`
+present, `fleet-observation` **gone**, 51 skill directories); the annotated tag **peels to the merge
+commit**; and the **release note was read in full and holds the recorded constraints** — it states
+the breaking rename of a user-invocable skill with no alias ("Update direct invocations to the new
+name"), says no pack tree is committed or published, and re-introduces **none** of the
+host-resolution language A2 removed. The ship record is verified canonical **at the merge commit**,
+so **no post-ship reconciliation is owed**. **Milestone `dependency-guarantees` now has 5 of 5
+required items `shipped`** (`generator-gates` `v0.58.0`, `preflight-compat` `v0.59.0`,
+`crosspack-validator` `v0.60.0`, `degraded-refusal` `v0.61.0`, this item `v0.62.0`) — **a count, not
+a closure**. `pack-split-generated-pack-trees` moves from 4 of 6 to **5 of 6** dependencies met and
+stays `proposed` and **non-dispatchable** (`pack-split-host-semantics-spike` is not `completed`, and
+it is outside `scope.current`); no dependent item record was edited, because dependency satisfaction
+is derived at dispatch, never stored. **N4**, **N5** and **S1** remain open PROPOSALs in
+`backlog.md` — shipping closed none of them. **Next: `principal-product-manager`** — declare (or
+withhold) milestone closure and whether `scope.current` advances to `first-pack-extracted`, close
+decomposition **Open Question 4** (criterion 4 answers it, now pinned by `availabilityErrors`), and
+set **S1** policy for the remaining user-invocable renames. The item itself is terminal; do not
+reopen it to record those. **This run had no shell and executed nothing**, and edited no
+implementation or release file.

@@ -2138,3 +2138,76 @@ as is closing decomposition **Open Question 4**, which criterion 4 now answers.
 
 **Activity log not appended** — no shell this session; per `kai-core-work-activity` a failed append is
 reported and dropped, so this entry was written by hand as prior runs on this initiative did.
+
+## 2026-08-25 — SHIPPED: ci-partition-checks live on `main` as `v0.62.0` (production verified 9/9; `dependency-guarantees` now 5 of 5 required items shipped)
+
+`workflow-ship` ran **CONFIRM-START** and **CONFIRM-COMPLETE** and the verdict is **SHIPPED —
+production verification PASSED 9 of 9**. Item **v9 -> v12**, walking `release-ready -> deploying ->
+production-verification -> shipped` on evidence at each step, `lease: null`, `resume_state: null`,
+`next_role: "@operator" -> null`, `change_ref` **unchanged** at
+`aca16e56d3d70cf6bac5181a41c3d4a87055dccc` — deployment moves state, not the reviewed ref.
+**kai merged, pushed, tagged, released, published and deployed nothing**; every action was the
+operator's and every fact below was re-derived read-only against the merge commit, not accepted on
+report. **Rollback was never invoked.**
+
+**Deployment.** The operator squash-merged **PR #160** at **2026-08-26T00:50:07Z** into merge
+commit **`b72453f1ed46393e77722995212920b9f8615c79`** — single parent `16493a303c…`, the branch's
+own base, so **no rebase** — then pushed annotated tag **`v0.62.0`** (`cf91008b…`, tagger
+00:50:30Z) and published release `376800860` at 00:50:33Z, not draft, not prerelease. The `main`
+`validate` run **`32916653342`**, job `contract` **`98021655301`**, is **`conclusion: success`**,
+**00:50:12Z -> 00:50:27Z (15s)** at that `head_sha`, with `check-runs total_count: 1`.
+**The four gates are individually `success` as named steps in the `main` run**, not inferred from a
+green tick — 9 `Partition gate…`, 10 `Collision gate…`, 11 `Partial-install gate…`, 12
+`Version-skew gate…` — alongside `Validate plugin contract`, `Workspace-doctor self-test`,
+`Host-loader acceptance`, `Release-guard self-test`, `Pack generator self-test`, `Committed pack
+trees match the generator` and `Check helper script syntax`: **eleven substantive steps, all
+green**, with the `pull_request`-only release-guard correctly **`skipped`** on a push event,
+exactly as the ship record predicted.
+
+**The strongest reading of this run replaced an attestation with an object comparison.** The merge
+commit's **complete** root tree (`truncated: false`) is **byte-identical to the ratified
+`aca16e56…` on every top-level entry except `kai/`** — `.github`, `CHANGELOG.md`, `README.md`,
+`agents`, `docs`, `examples`, `hooks.json`, `package.json`, `package-lock.json`, `plugin.json`,
+`scripts`, `skills`, `test`, `AGENTS.md`, `LICENSE`, `.kai` and the dotfiles all match SHA-for-SHA;
+only the records tree moved (`8baeb55b` -> `69e366c7`). So **what runs in production is, byte-for-
+byte, what the architecture review ratified.** The PR head had moved twice past the ratified ref
+(`63f6da16…` at PREPARE, `1617c819…` at merge) and the merge was a squash, and the binding survived
+both without anyone's word for it. Against base, only the eleven declared top-level entries moved;
+`agents` is identical (`c0284f31…`), proving no agent body changed and **no new tool grant**
+landed; and **`packs` is absent** from the merge root tree, proven positively from the listing
+rather than a local glob.
+
+**Production verification, 9 of 9.** Deployment start and completion (above); `0.62.0` coherent
+across all eight release locations with the `[0.62.0]` compare link **not dangling** (`v0.61.0`
+tag present); marketplace still **exactly one** entry, `kai` at `source: "."`;
+`COMMITTED_PACKS = []` and **no `packs/` tree**; the rename landed —
+`skills/kai-core-fleet-observation` present, `fleet-observation` **gone**, 51 skill directories,
+`SKILL_OWNER_OVERRIDES` mapping the new name to `core`; `agents/` byte-identical to base; the
+annotated tag **peels to the merge commit** and the release is published; and one check on the
+merge SHA. **The release note was read in full and holds the recorded language constraints** — it
+states the breaking rename of a user-invocable skill with no alias ("Update direct invocations to
+the new name"), says no pack tree is committed or published and the marketplace remains the
+monolithic `kai` plugin, and re-introduces **none** of the host-resolution language A2 removed.
+The ship record is verified at its canonical library home **at the merge commit**, so **no
+post-ship reconciliation is owed**.
+
+**Milestone `dependency-guarantees` now has 5 of 5 required items `shipped`** —
+`generator-gates` (`v0.58.0`), `preflight-compat` (`v0.59.0`), `crosspack-validator` (`v0.60.0`),
+`degraded-refusal` (`v0.61.0`) and `ci-partition-checks` (`v0.62.0`). **That is a count, not a
+closure.** Declaring the milestone met, deciding whether `scope.current` advances to
+`first-pack-extracted`, and closing decomposition **Open Question 4** (which acceptance criterion 4
+answers, now pinned in CI by `availabilityErrors`) are all the **steward's** calls and were **not**
+taken here; they are routed to `principal-product-manager`, along with **PROPOSAL S1**, the policy
+for renaming user-invocable skills without an alias. `pack-split-generated-pack-trees` moves from
+4 of 6 to **5 of 6** dependencies met and stays `proposed` and **non-dispatchable**
+(`pack-split-host-semantics-spike` is not `completed`, and it sits outside `scope.current`); no
+dependent item record was edited, because dependency satisfaction is derived at dispatch, never
+stored. **N4**, **N5** and **S1** remain open PROPOSALs in `backlog.md` — shipping closed none of
+them and deleted none of them.
+
+**This run had no shell and executed nothing.** Every production fact is a read-only re-derivation
+pinned at `b72453f1…` (`api.github.com`, `raw.githubusercontent.com`, local `.git` refs). No
+implementation or release file was edited, and no external action was taken.
+
+**Activity log not appended** — no shell this session; per `kai-core-work-activity` a failed append
+is reported and dropped, so this entry was written by hand as prior runs on this initiative did.
