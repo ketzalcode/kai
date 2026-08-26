@@ -5,11 +5,11 @@ title: Generate committed-unpublished kai-core + first department (personal) tre
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: in-review
+state: release-ready
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: "@operator"
 target: pack-split committed-unpublished pack trees (generate-not-move)
 artifact_target: null
 context_artifacts:
@@ -17,6 +17,7 @@ context_artifacts:
   - kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-degraded-refusal.md
+  - kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
   - scripts/pack-preview.mjs
   - hooks.json
 touches:
@@ -27,6 +28,9 @@ touches:
   - scripts/validate-plugin.mjs
   - .gitattributes
   - package.json
+  - package-lock.json
+  - plugin.json
+  - .github/plugin/marketplace.json
   - CHANGELOG.md
   - README.md
   - docs/proposals/pack-architecture.md
@@ -56,14 +60,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-generated-pack-trees.md"
     timestamp: 2026-08-26-1412
 change_ref: 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f
-version: 6
+version: 7
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1420
+updated: 2026-08-26-1424
 ---
 
 ## Outcome
@@ -262,3 +266,37 @@ principal-swe-infra`, version 3 -> 4.**
   dispatcher contract; R9 prevents a corpus-wide provider-ID rewrite.
 - Stop conditions are R7 ambient discovery, any marketplace edit, or any third
   committed pack. None may be worked around inside this item.
+
+### DoD gate — 2026-08-26-1424 (`workflow-ship`, PREPARE) — RELEASE-READY, not shipped
+
+**`in-review -> release-ready`, version 6 -> 7, `next_role: workflow-ship -> "@operator"`,
+lease `null`.** All six dimensions **Clear**, none Gap. Ship record:
+`kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees.md` (canonical
+directory move is deploy step 5). **Nothing was merged, pushed, tagged, released, or
+published** — the branch is still unpushed and there is no PR.
+
+- **Record-accuracy correction to `touches`, not a scope expansion.** `plugin.json`,
+  `package-lock.json` and `.github/plugin/marketplace.json` were added: the `0.63.1 ->
+  0.64.0` bump necessarily edits all three, and the record must describe what actually
+  changed. No new capability; no touch collision (`pack-split-release-12b`, the only other
+  claimant of `marketplace.json`, is `proposed` with no lease).
+- **The marketplace edit is version-only and stays inside R8.** Verified in the tree:
+  topology is still N=1, one `kai` entry at `source: "."`, **zero pack entries**. R8's own
+  parenthetical — "only its lockstep release version changes" — authorizes it, and deploy
+  step 3 fails the release closed on any entry change. The compressed "any marketplace
+  edit" phrasing in the dispatch HANDOFF and `ACTIVE.md` is stricter than this record; the
+  item record governs, and the operator can veto with a two-line revert if the steward
+  reads it otherwise.
+- **R7 is satisfied under its original wording**, so the disputed authorship of its
+  baseline-comparison amendment is not load-bearing: the `packs/` tree *adds* nothing —
+  4 observer records with it, the identical 4 without it at `31d5d110…`, and zero
+  `kai-core:`/`kai-personal:` providers exposed. A steward confirmation NOTE is recorded
+  as non-blocking record hygiene.
+- **This gate ran with no shell.** Acceptance was re-derived by reading the working tree
+  (44 + 22 files, hooks exactly once in core, blocks in all 9 personal agents and 0 of 7
+  core agents, no pack manifests, `COMMITTED_PACKS = ['core','personal']`, eight-location
+  `0.64.0` coherence, A1–A3 guards in code). The suite itself remains infra-attested and
+  is re-executed by CI at deploy step 6, which fails closed.
+- **Milestone `first-pack-extracted` does not advance.** `release-ready` is not `shipped`;
+  `pack-split-first-department` and `pack-split-host-gates` stay blocked until
+  CONFIRM-COMPLETE records production evidence.

@@ -1118,3 +1118,26 @@ bounded riders. Cross-department referrals keep bare role prose and resolve the
 full provider-qualified ID from the live roster at dispatch; absent departments
 are named without substitution. The implementation stop gates are ambient
 discovery, any marketplace edit, or any third pack.
+
+**DoD gate 2026-08-26-1424 (`workflow-ship`, PREPARE): `pack-split-generated-pack-trees`
+is RELEASE-READY — all six dimensions Clear, none Gap.** Item **v6 -> v7, `in-review ->
+release-ready`**, lease `null`, `next_role: "@operator"`. **NOT shipped:** the branch
+`feat/29-generated-core-personal` (two commits off `main` `31d5d110…`) is **unpushed**,
+there is no PR, and kai merged, tagged, released and published nothing. Re-derived from
+the tree with no shell: `packs/` = `kai-core` 44 files + `kai-personal` 22, no third pack,
+`COMMITTED_PACKS = ['core','personal']`, hooks exactly once in core, guarantee blocks in
+9 of 9 personal and 0 of 7 core agents, no pack manifests, A1–A3 guards in code, `0.64.0`
+coherent across all eight version locations, marketplace **N=1** at `source: "."` with
+**zero pack entries**. R7's differential holds under its original wording — zero
+pack-attributable provider/skill/hook delta against a no-`packs/` baseline on Windows CLI
+1.0.80; macOS and cloud stay unmeasured and remain `pack-split-host-gates`' to certify.
+**Two frictions raised rather than smoothed:** `marketplace.json` *was* edited (the
+two-field lockstep bump) — permitted by acceptance **R8** and bound as a fail-closed deploy
+check, but stricter than this pointer's compressed "any marketplace edit" phrasing, so it
+is a non-blocking question to `principal-product-manager`; and `touches` was corrected to
+name `plugin.json`, `package-lock.json` and `marketplace.json` as a record-accuracy fix,
+not a scope expansion. Ship record:
+`kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees.md` (canonical
+directory move is deploy step 5). **Milestone `first-pack-extracted` does not advance** —
+`release-ready` is not `shipped`, and `first-department` / `host-gates` stay blocked until
+CONFIRM-COMPLETE.
