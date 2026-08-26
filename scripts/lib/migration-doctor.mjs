@@ -24,7 +24,7 @@
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -118,18 +118,18 @@ function directoryEntries(dir) {
   }
 }
 
-function isDirectory(dir) {
+function directoryState(dir) {
   try {
-    return statSync(dir).isDirectory();
-  } catch {
-    return false;
+    return { ok: true, isDirectory: statSync(dir).isDirectory() };
+  } catch (error) {
+    return { ok: false, isDirectory: false, error: error?.code ?? 'unreadable' };
   }
 }
 
 function childDir(base, name) {
   const listing = directoryEntries(base);
   if (!listing.ok) return null;
-  const dirs = listing.entries.filter((entry) => isDirectory(join(base, entry.name)));
+  const dirs = listing.entries.filter((entry) => directoryState(join(base, entry.name)).isDirectory);
   const hit = dirs.find((entry) => entry.name === name)
     || dirs.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
   return hit ? join(base, hit.name) : null;
@@ -146,7 +146,9 @@ function inspectChildDir(base, name) {
     || entries.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
   if (!hit) return { dir: join(base, name), present: false, readable: true, error: 'missing' };
   const dir = join(base, hit.name);
-  if (!isDirectory(dir)) return { dir, present: true, readable: false, error: 'not-a-directory' };
+  const state = directoryState(dir);
+  if (!state.ok) return { dir, present: true, readable: false, error: state.error };
+  if (!state.isDirectory) return { dir, present: true, readable: false, error: 'not-a-directory' };
   const listing = directoryEntries(dir);
   return { dir, present: true, readable: listing.ok, error: listing.error ?? null };
 }
@@ -166,10 +168,17 @@ const dirNamesIn = (dir, errors) => {
     errors.push(`${dir} (${listing.error})`);
     return [];
   }
-  return listing.entries
-    .filter((entry) => isDirectory(join(dir, entry.name)))
-    .map((entry) => entry.name)
-    .sort();
+  const names = [];
+  for (const entry of listing.entries) {
+    const path = join(dir, entry.name);
+    const state = directoryState(path);
+    if (!state.ok) {
+      errors.push(`${path} (${state.error})`);
+    } else if (state.isDirectory) {
+      names.push(entry.name);
+    }
+  }
+  return names.sort();
 };
 
 // --- host inventory --------------------------------------------------------
@@ -282,24 +291,35 @@ export function scanInstallTrees(home) {
   const base = root.dir;
   const trees = [];
   const errors = [];
-  for (const bucket of dirNamesIn(base, errors)) {
-    const bucketDir = join(base, bucket);
-    if (bucket.toLowerCase() === DIRECT_BUCKET) {
-      for (const name of dirNamesIn(bucketDir, errors)) {
-        trees.push(readTree(join(bucketDir, name), `${bucket}/${name}`, 'direct', 'recorded'));
-      }
-      continue;
+  const visited = new Set();
+  const walk = (dir, segments) => {
+    let real;
+    try {
+      real = realpathSync(dir);
+    } catch (error) {
+      errors.push(`${dir} (${error?.code ?? 'unreadable'})`);
+      return;
     }
-    // A bucket holding a plugin.json is itself an install tree in a layout this
-    // doctor has not observed; say so rather than guessing a provenance for it.
-    if (existsSync(join(bucketDir, PLUGIN_MANIFEST))) {
-      trees.push(readTree(bucketDir, bucket, 'unknown', 'unknown'));
-      continue;
+    if (visited.has(real)) return;
+    visited.add(real);
+
+    if (segments.length && existsSync(join(dir, PLUGIN_MANIFEST))) {
+      const tail = segments.join('/');
+      const bucket = segments[0];
+      const provenance = bucket.toLowerCase() === DIRECT_BUCKET
+        ? 'direct'
+        : `marketplace:${bucket}`;
+      const basis = bucket.toLowerCase() === DIRECT_BUCKET ? 'recorded' : 'inferred';
+      trees.push(readTree(dir, tail, provenance, basis));
+      return;
     }
-    for (const name of dirNamesIn(bucketDir, errors)) {
-      trees.push(readTree(join(bucketDir, name), `${bucket}/${name}`, `marketplace:${bucket}`, 'inferred'));
+
+    for (const name of dirNamesIn(dir, errors)) {
+      walk(join(dir, name), [...segments, name]);
     }
-  }
+  };
+
+  walk(base, []);
   return { dir: base, present: true, readable: errors.length === 0, error: null, errors, trees };
 }
 
@@ -468,11 +488,21 @@ function assessHost(host, out) {
       add('refusal', 'identity-mismatch',
         `${mismatch} — the install metadata and the tree disagree about what is installed, which is a half-applied migration.`);
     }
-    if (target.provenances.size > 1) {
+    const entryProvenances = new Set(target.entries.map((entry) => entry.provenance));
+    const treeProvenances = new Set(target.trees.map((tree) => tree.provenance));
+    const hasProvenanceCollision = (target.entries.length > 1 && entryProvenances.size > 1)
+      || (target.trees.length > 1 && treeProvenances.size > 1);
+    const hasProvenanceDisagreement = entryProvenances.size && treeProvenances.size
+      && [...entryProvenances].some((provenance) => !treeProvenances.has(provenance));
+    if (hasProvenanceCollision) {
       add('refusal', 'provenance-collision',
         `"${target.name}" is installed from more than one source (${[...target.provenances].map(label).join(' + ')}) — `
         + 'two copies of the same plugin load together and the host binds whichever it sees first.');
       step(`copilot plugin uninstall ${target.name}   # removes one copy; run it until \`copilot plugin list\` shows none`);
+    } else if (hasProvenanceDisagreement) {
+      add('unverified', 'provenance-disagreement',
+        `"${target.name}" has recorded provenance that disagrees with its install-tree location — `
+        + 'the source cannot be trusted until the host layout is verified.');
     }
     if ([...target.provenances].includes('unknown')) {
       add('unverified', 'unknown-provenance',
@@ -485,9 +515,15 @@ function assessHost(host, out) {
         + `(${[...target.provenances].map(label).join(' + ')}) — inferred, not recorded.`);
     }
     if (target.presence === 'incomplete') {
-      add('refusal', 'incomplete-install',
-        `"${target.name}" is recorded as installed (${describe(target)}) — an interrupted install or uninstall left the metadata and the disk out of step.`);
-      step(`copilot plugin uninstall ${target.name}   # clears the stale entry in ${config.path}`);
+      if (scan.readable) {
+        add('refusal', 'incomplete-install',
+          `"${target.name}" is recorded as installed (${describe(target)}) — an interrupted install or uninstall left the metadata and the disk out of step.`);
+        step(`copilot plugin uninstall ${target.name}   # clears the stale entry in ${config.path}`);
+      } else {
+        add('unverified', 'install-tree-unverified',
+          `"${target.name}" is recorded as installed, but its tree could not be verified while the install directory was unreadable — `
+          + 'no uninstall is recommended from incomplete evidence.');
+      }
     }
     if (target.presence === 'stale') {
       add('refusal', 'stale-install',

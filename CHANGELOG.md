@@ -52,7 +52,7 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   `installed-plugins/`, which is the only part that survives a Windows/macOS
   path, mixed separators, or a case difference.
 
-- **A 16-scenario fixture matrix** in `workspace-doctor --self-test`, which
+- **A 24-scenario fixture matrix** in `workspace-doctor --self-test`, which
   already runs in `npm test` and in the `validate` workflow: clean legacy,
   clean pack set, coexistence, partial pack set, stale direct install,
   marketplace/direct collision, inferred and unknown provenance, malformed

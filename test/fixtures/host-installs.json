@@ -216,6 +216,36 @@
       }
     },
 
+    "deep-marketplace-layout": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/kai-plugins/versions/1.0.0/kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      }
+    },
+
+    "provenance-disagreement": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/cache-v2/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/cache-v2/kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      }
+    },
+
+    "dangling-install-link": {
+      "config.json": { "installedPlugins": [] }
+    },
+
     "incomplete-uninstall": {
       "config.json": {
         "installedPlugins": [

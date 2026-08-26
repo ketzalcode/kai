@@ -327,6 +327,7 @@ const VERDICT = {
 };
 
 const migrationExitCode = (status) => (status === 'clear' ? 0 : status === 'blocked' ? 2 : 3);
+const terminalText = (value) => String(value).replace(/[\x00-\x1f\x7f-\x9f]/g, '?');
 
 function reportMigration({ home, root, json = false }) {
   const res = migrationReport({ home, root });
@@ -344,14 +345,14 @@ function reportMigration({ home, root, json = false }) {
     console.log(JSON.stringify(output, null, 2));
     return migrationExitCode(res.status);
   }
-  console.log(`kai migration doctor (read-only) — host ${res.home}`);
-  console.log(`  workspace ${root ?? '(not inspected)'}\n`);
-  for (const f of res.findings) console.log(`  ${SEVERITY_MARK[f.severity]} ${f.message}`);
+  console.log(`kai migration doctor (read-only) — host ${terminalText(res.home)}`);
+  console.log(`  workspace ${terminalText(root ?? '(not inspected)')}\n`);
+  for (const f of res.findings) console.log(`  ${SEVERITY_MARK[f.severity]} ${terminalText(f.message)}`);
   if (res.steps.length) {
     console.log('\n  remediation — run these yourself; this check changed nothing:');
-    res.steps.forEach((s, i) => console.log(`    ${i + 1}. ${s}`));
+    res.steps.forEach((s, i) => console.log(`    ${i + 1}. ${terminalText(s)}`));
   }
-  for (const n of res.notices) console.log(`\n  ! ${n}`);
+  for (const n of res.notices) console.log(`\n  ! ${terminalText(n)}`);
   console.log(`\n${VERDICT[res.status]}`);
   return migrationExitCode(res.status);
 }
@@ -697,6 +698,21 @@ const MIGRATION_CASES = [
     expect: ['unknown-provenance'], forbid: ['nothing-installed'], noRefusal: true,
   },
   {
+    label: 'deep marketplace layout still reveals a stale kai install',
+    home: 'deep-marketplace-layout', status: 'blocked',
+    expect: ['stale-install'], forbid: ['nothing-installed'],
+  },
+  {
+    label: 'recorded marketplace and inferred bucket disagreement is unknown, not collision',
+    home: 'provenance-disagreement', status: 'unknown',
+    expect: ['provenance-disagreement'], forbid: ['provenance-collision'], noRefusal: true,
+  },
+  {
+    label: 'dangling install link makes enumeration unknown',
+    home: 'dangling-install-link', status: 'unknown',
+    expect: ['unreadable-install-tree'], forbid: ['nothing-installed'], noRefusal: true,
+  },
+  {
     label: 'packs installed but the workspace still records the monolith',
     home: 'packs-marketplace', workspace: 'monolith', status: 'blocked',
     expect: ['workspace-provenance-stale'],
@@ -740,14 +756,25 @@ function materializeHostFixtures(dest) {
       writeFileSync(target, text);
     }
   };
-  for (const [name, files] of Object.entries(fx.homes)) write(join(dest, 'homes', name), files);
-  for (const [name, files] of Object.entries(fx.workspaces)) write(join(dest, 'workspaces', name), files);
+  const fixtureBase = (kind, name) => {
+    if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) {
+      throw new Error(`invalid ${kind} fixture name: ${name}`);
+    }
+    return join(dest, kind, name);
+  };
+  for (const [name, files] of Object.entries(fx.homes)) write(fixtureBase('homes', name), files);
+  for (const [name, files] of Object.entries(fx.workspaces)) write(fixtureBase('workspaces', name), files);
 
   const linkedStore = join(dest, 'linked-install-store');
   write(linkedStore, {
     '_direct/RubenSaucedo--kai/plugin.json': { name: 'kai', version: '0.55.0' },
   });
   symlinkSync(linkedStore, join(dest, 'homes', 'symlinked-install-dir', 'installed-plugins'), 'junction');
+  symlinkSync(
+    join(dest, 'missing-linked-install-store'),
+    join(dest, 'homes', 'dangling-install-link', 'installed-plugins'),
+    'junction',
+  );
 }
 
 // Path + content of every file below `dir`, so "this check mutates nothing" is
