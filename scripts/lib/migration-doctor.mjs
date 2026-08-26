@@ -25,7 +25,7 @@
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { dirname, isAbsolute, join, relative } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { PACK_ORDER, packPluginName } from './pack-plan.mjs';
@@ -292,6 +292,19 @@ export function scanInstallTrees(home) {
   }
 
   const base = root.dir;
+  let baseReal;
+  try {
+    baseReal = realpathSync(base);
+  } catch (error) {
+    return {
+      dir: base,
+      present: true,
+      readable: false,
+      error: error?.code ?? 'unreadable',
+      errors: [],
+      trees: [],
+    };
+  }
   const trees = [];
   const errors = [];
   const visited = new Set();
@@ -301,6 +314,11 @@ export function scanInstallTrees(home) {
       real = realpathSync(dir);
     } catch (error) {
       errors.push(`${dir} (${error?.code ?? 'unreadable'})`);
+      return;
+    }
+    const fromBase = relative(baseReal, real);
+    if (fromBase.startsWith('..') || isAbsolute(fromBase)) {
+      errors.push(`${dir} resolves outside ${base}`);
       return;
     }
     if (visited.has(real)) return;
@@ -318,7 +336,7 @@ export function scanInstallTrees(home) {
     }
 
     const childNames = dirNamesIn(dir, errors);
-    if (segments.length >= 2 && childNames.length === 0) {
+    if (segments.length >= 2) {
       const inferredName = inferNameFromDir(segments.at(-1));
       if (looksKaiName(inferredName)) {
         const tail = segments.join('/');
@@ -329,7 +347,6 @@ export function scanInstallTrees(home) {
         const basis = bucket.toLowerCase() === DIRECT_BUCKET ? 'recorded' : 'inferred';
         trees.push(readTree(dir, tail, provenance, basis));
       }
-      return;
     }
 
     for (const name of childNames) {
@@ -460,6 +477,7 @@ function publishedPluginNames(indexPath) {
 function assessHost(host, out) {
   const { add, step } = out;
   const { config, scan, records, unidentified, home } = host;
+  const configClassified = config.entries.every((entry) => !entry.malformed);
 
   if (!config.present) {
     add('unverified', 'unreadable-metadata',
@@ -515,7 +533,9 @@ function assessHost(host, out) {
       add('refusal', 'provenance-collision',
         `"${target.name}" is installed from more than one source (${[...target.provenances].map(label).join(' + ')}) — `
         + 'two copies of the same plugin load together and the host binds whichever it sees first.');
-      step(`copilot plugin uninstall ${target.name}   # removes one copy; run it until \`copilot plugin list\` shows none`);
+      if (config.ok && config.listed && configClassified) {
+        step(`copilot plugin uninstall ${target.name}   # removes one copy; run it until \`copilot plugin list\` shows none`);
+      }
     } else if (hasProvenanceDisagreement) {
       add('unverified', 'provenance-disagreement',
         `"${target.name}" has recorded provenance that disagrees with its install-tree location — `
@@ -543,13 +563,15 @@ function assessHost(host, out) {
       }
     }
     if (target.presence === 'stale') {
-      if (config.ok && config.listed) {
+      const treesUseObservedLayout = target.trees.every((tree) => tree.basis === 'recorded');
+      const treeIdentitiesConfirmed = target.trees.every((tree) => !tree.malformed);
+      if (config.ok && config.listed && configClassified && treesUseObservedLayout && treeIdentitiesConfirmed) {
         add('refusal', 'stale-install',
           `"${target.name}" has a leftover install tree (${describe(target)}) — an uninstall removed the entry and left the files, which the host may still load.`);
         step('remove each leftover install tree named in the stale-install finding above');
       } else {
         add('unverified', 'install-tree-unverified',
-          `"${target.name}" has an install tree, but host metadata was unreadable or unrecognized — `
+          `"${target.name}" has an install tree, but its metadata or on-disk layout is unverified — `
           + 'the tree is not labelled stale and no removal is recommended from incomplete evidence.');
       }
     }
@@ -561,8 +583,11 @@ function assessHost(host, out) {
 
   const legacy = records.get(LEGACY_PLUGIN);
   const packs = PACK_PLUGINS.map((n) => records.get(n)).filter(Boolean);
+  const legacyIdentityConfirmed = legacy?.entries.length > 0
+    || legacy?.trees.some((tree) => tree.declaredName === LEGACY_PLUGIN);
   const actionableLegacy = legacy
-    && (legacy.entries.length > 0 || (config.ok && config.listed));
+    && legacyIdentityConfirmed
+    && (legacy.entries.length > 0 || (config.ok && config.listed && configClassified));
 
   if (actionableLegacy && packs.length) {
     add('refusal', 'coexistence',
@@ -594,10 +619,9 @@ function assessHost(host, out) {
   }
   // "Nothing is installed" is a claim, so it is only made when both surfaces were
   // readable and every entry classified. Junk metadata is unknown, not empty.
-  const classified = config.entries.every((e) => !e.malformed);
   const bothSurfacesReadable = config.present && config.ok && config.listed
     && scan.present && scan.readable;
-  if (!records.size && !unidentified.length && bothSurfacesReadable && classified) {
+  if (!records.size && !unidentified.length && bothSurfacesReadable && configClassified) {
     add('note', 'nothing-installed',
       `no kai plugin is installed under ${home} — verified by reading ${config.path} and ${scan.dir}.`);
   }

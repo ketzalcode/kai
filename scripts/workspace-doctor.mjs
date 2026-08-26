@@ -329,6 +329,10 @@ const VERDICT = {
 const migrationExitCode = (status) => (status === 'clear' ? 0 : status === 'blocked' ? 2 : 3);
 const terminalText = (value) => String(value)
   .replace(/[\x00-\x1f\x7f-\x9f\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '?');
+const jsonText = (value) => JSON.stringify(value, null, 2)
+  .replace(/[\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, (character) => (
+    `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
+  ));
 
 function reportMigration({ home, root, json = false }) {
   const res = migrationReport({ home, root });
@@ -343,7 +347,7 @@ function reportMigration({ home, root, json = false }) {
       notices: res.notices,
       workspace: res.workspace,
     };
-    console.log(JSON.stringify(output, null, 2));
+    console.log(jsonText(output));
     return migrationExitCode(res.status);
   }
   console.log(`kai migration doctor (read-only) — host ${terminalText(res.home)}`);
@@ -705,9 +709,14 @@ const MIGRATION_CASES = [
     expect: ['unknown-provenance'], forbid: ['nothing-installed'], noRefusal: true,
   },
   {
+    label: 'manifest-less legacy remnant with child content does not disappear',
+    home: 'manifestless-legacy-remnant', status: 'unknown',
+    expect: ['unknown-provenance'], forbid: ['nothing-installed'], noRefusal: true, noSteps: true,
+  },
+  {
     label: 'deep marketplace layout still reveals a stale kai install',
-    home: 'deep-marketplace-layout', status: 'blocked',
-    expect: ['stale-install'], forbid: ['nothing-installed'],
+    home: 'deep-marketplace-layout', status: 'unknown',
+    expect: ['install-tree-unverified'], forbid: ['nothing-installed', 'stale-install'], noRefusal: true, noSteps: true,
   },
   {
     label: 'recorded marketplace and inferred bucket disagreement is unknown, not collision',
