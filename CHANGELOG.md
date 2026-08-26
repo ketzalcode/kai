@@ -4,6 +4,33 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.64.0] - 2026-08-26
+
+### Added
+
+- **The first generated pack trees.** `packs/kai-core/` and
+  `packs/kai-personal/` are now committed, deterministic projections of the
+  canonical root agents and skills. Personal agents carry the pinned core
+  preflight and degraded-mode refusal; core agents carry neither.
+
+- **Runtime-complete asset routing.** Core alone owns `hooks.json` and the fleet
+  observer scripts. Personal owns the demo scripts. Each routed JavaScript
+  entry point now carries its relative module closure, and validation rejects a
+  missing local module or an undeclared third-party import before a generated
+  pack can ship.
+
+### Changed
+
+- **Committed does not mean published.** The marketplace still lists only the
+  monolithic `kai` plugin. The generated trees are not installable from the
+  marketplace, have no npm dependency manifests, and remain inert until the
+  host-evidence and publication gates are completed.
+
+- **Pack validation now covers emitted assets and hooks.** It fails closed on
+  generated paths outside the partition, duplicate or missing hook ownership,
+  ambiguous hook commands, unsupported nested hook targets, and committed-tree
+  drift while ignoring common OS metadata files.
+
 ## [0.63.1] - 2026-08-26
 
 ### Fixed
@@ -2848,6 +2875,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.64.0]: https://github.com/RubenSaucedo/kai/compare/v0.63.1...v0.64.0
 [0.63.1]: https://github.com/RubenSaucedo/kai/compare/v0.63.0...v0.63.1
 [0.63.0]: https://github.com/RubenSaucedo/kai/compare/v0.62.0...v0.63.0
 [0.62.0]: https://github.com/RubenSaucedo/kai/compare/v0.61.0...v0.62.0

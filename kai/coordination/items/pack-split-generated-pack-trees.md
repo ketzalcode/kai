@@ -5,11 +5,11 @@ title: Generate committed-unpublished kai-core + first department (personal) tre
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: ready
+state: in-progress
 resume_state: null
 priority: 10
-owner: null
-next_role: principal-swe-infra
+owner: principal-swe-infra
+next_role: principal-swe-architect
 target: pack-split committed-unpublished pack trees (generate-not-move)
 artifact_target: null
 context_artifacts:
@@ -50,14 +50,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 4
+version: 5
 lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-26-1340
+  holder: principal-swe-infra
+  token: psi-2026-08-26-generated-trees
+  version_at_grant: 4
+  acquired: 2026-08-26-1400
+  expires: 2026-08-26-1800
+updated: 2026-08-26-1400
 ---
 
 ## Outcome
@@ -66,7 +66,8 @@ The generator materializes the committed-but-unpublished `kai-core` + `kai-perso
 root (root stays the single source of truth — nothing moved), realizing the explicit asset-ownership
 rule: a non-markdown asset travels with the sole skill that invokes it (`scripts/demo-*.mjs` →
 personal), any asset invoked across >1 pack promotes to core, and `hooks.json` + `scripts/observe-*.mjs`
-ship in core only (hooks exactly once).
+ship in core only (hooks exactly once). Every routed JavaScript entry point also carries its
+relative-import closure inside the same pack.
 
 ## Acceptance
 
@@ -116,12 +117,18 @@ reachable. None was a defect in that foundation.*
       committed `packs/` tree is not ambiently loaded: no pack providers in the
       roster, no duplicate core skill, observer fires once. If it is ambiently
       discovered, stop and revert the tree.
-- [ ] **(R8)** `.github/plugin/marketplace.json` is unchanged, marketplace stays
-      N=1 at `source: "."`, and `COMMITTED_PACKS` becomes exactly
+- [ ] **(R8)** Marketplace topology stays N=1 at `source: "."` (only its
+      lockstep release version changes), and `COMMITTED_PACKS` becomes exactly
       `['core', 'personal']`.
 - [ ] **(R9)** Generation rewrites no frontmatter or role references. Core agent
       bodies are byte-identical to root; personal bodies are root plus exactly
       the two guarantee blocks.
+- [ ] **(R10)** Every emitted JavaScript entry point carries its complete
+      relative-import closure inside the same pack. The emitted-tree gate fails
+      by name for a missing local module or a bare third-party import.
+- [ ] **(R11)** Generated packs carry no `package.json` or `package-lock.json`
+      in this unpublished increment. Publication must own dependency manifests
+      and install semantics before the marketplace can list a pack.
 
 ## Evidence
 
@@ -158,6 +165,11 @@ reachable. None was a defect in that foundation.*
   department is named as unavailable; no lease is granted, no substitute is
   chosen, and the item is left unchanged. Non-dispatch prose referrals remain
   advisory. Generated bodies perform no provider-ID rewrite.
+- **Runtime dependency manifests are deferred to publication.** Reopen no later
+  than the marketplace flip, or earlier if an emitted script gains a load-time
+  third-party import or host evidence proves plugin installation runs
+  `npm install`. Until then Lectoria in a generated pack resolves only through
+  `LECTORIA_BIN` or `PATH`.
 
 ### Steward grooming — 2026-08-25-1803 (`principal-product-manager`) — in scope, NOT promoted
 

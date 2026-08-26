@@ -4,8 +4,8 @@
 // Two jobs, one partition (scripts/lib/pack-plan.mjs):
 //   • generate  — materialise the pack trees from the LIVE root roster, byte-stably,
 //     with a per-pack plugin.json. `--write` lands them under packs/; `--check`
-//     regenerates and diffs so a hand-edit or a stale copy fails. The committed
-//     trees themselves land in a downstream item; this ships the machinery.
+//     regenerates and diffs so a hand-edit or a stale copy fails. The reviewed
+//     committed slice currently contains kai-core and kai-personal.
 //   • preview   — a throwaway two- or five-plugin build (`--out`/`--all`) that
 //     answers the host-behaviour questions gating the split: does a fail-closed
 //     preflight hold on a real agent, what happens when core is absent or
@@ -35,6 +35,7 @@ import {
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   collectReferences, referenceErrors, packProviders,
   planAssets, assetOwnershipErrors, hooksAssignmentErrors,
+  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES,
@@ -222,8 +223,8 @@ export function build({ out, withCore = true, contract = 1, pack = 'personal' })
 // skill and core-agent bodies verbatim from root (root stays the single source of
 // truth), injects the canonical fail-closed preflight and the degraded-mode
 // refusal that follows it into every department agent, stamps a per-pack
-// plugin.json, and normalises to LF so the output is byte-identical on every
-// platform. Non-markdown asset routing is added by a downstream item.
+// plugin.json, routes non-markdown assets and hooks by the reviewed ownership
+// plan, and normalises to LF so output is byte-identical on every platform.
 // ---------------------------------------------------------------------------
 
 // Stamp generated packs in lockstep with the monolith. Falls back to the preview
@@ -237,8 +238,10 @@ function committedVersion() {
 // (never OS separators), so it compares directly against the generator's plan.
 function walkCommitted(base) {
   const out = [];
+  const ignored = new Set(['.DS_Store', 'Thumbs.db']);
   const walk = (dir, prefix) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (ignored.has(e.name)) continue;
       const key = prefix ? `${prefix}/${e.name}` : e.name;
       if (e.isDirectory()) walk(join(dir, e.name), key);
       else out.push(key);
@@ -250,12 +253,18 @@ function walkCommitted(base) {
 
 // Regenerate the pack trees from root and diff against what is committed. Drift —
 // a hand-edit, a stale copy, a missing or an extra file — fails, so a committed
-// tree can only ever be exactly what the generator produces. With nothing
-// committed yet (this item ships the machinery; the trees land downstream) there
-// is nothing to verify and the check passes.
+// tree can only ever be exactly what the generator produces. A configured slice
+// with no packs/ directory fails with the command that regenerates it.
 export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
-  if (!existsSync(base) && COMMITTED_PACKS.length === 0) {
-    return { ok: true, drift: [], note: `no committed packs configured — ${PACKS_DIR}/ is intentionally absent` };
+  if (!existsSync(base)) {
+    if (COMMITTED_PACKS.length === 0) {
+      return { ok: true, drift: [], note: `no committed packs configured — ${PACKS_DIR}/ is intentionally absent` };
+    }
+    return {
+      ok: false,
+      drift: [`missing:    ${PACKS_DIR}/`],
+      note: `committed packs are configured — regenerate with: node scripts/pack-preview.mjs --write`,
+    };
   }
   const expected = materializePacks({ root, version, packs: COMMITTED_PACKS });
   const drift = [];
@@ -271,8 +280,7 @@ export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
 }
 
 // Materialise the trees to `base`, replacing any existing tree so the output is
-// exactly the plan with no stale leftovers. Used by the downstream item that
-// lands the committed trees; wired here as the generator's write path.
+// exactly the reviewed committed slice with no stale leftovers.
 export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (COMMITTED_PACKS.length === 0) {
     throw new Error('no committed packs configured; the extraction item must set COMMITTED_PACKS first');
@@ -552,16 +560,14 @@ function selfTest() {
   } finally {
     if (scratch) rmSync(scratch, { recursive: true, force: true });
   }
-  let writeRefused = false;
-  try {
-    writeCommitted({ root: ROOT, base: join(tmpdir(), 'kai-pack-write-must-refuse') });
-  } catch (e) {
-    writeRefused = /no committed packs configured/.test(e.message);
-  }
-  ok(writeRefused,
-    '--write refuses until the downstream extraction item selects committed packs');
-  ok(checkCommitted().ok,
-    'with no committed pack selection yet, the check passes without creating all departments');
+  ok(COMMITTED_PACKS.length === 2
+    && COMMITTED_PACKS[0] === 'core' && COMMITTED_PACKS[1] === 'personal',
+  'the committed slice is exactly core plus personal');
+  const missingBase = join(tmpdir(), `kai-pack-missing-${process.pid}`);
+  const missingCheck = checkCommitted({ root: ROOT, base: missingBase, version: '9.9.9-selftest' });
+  ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`)
+    && /regenerate with/.test(missingCheck.note),
+  'a configured slice with no packs directory fails with regeneration guidance, not ENOENT');
 
   // --- multi-manifest gate helpers (shared with validate-plugin) ---------
   const parity = manifestParityErrors(
@@ -640,6 +646,41 @@ function selfTest() {
     exists: (a) => existsSync(join(ROOT, ...a.split('/'))),
   }).length === 0,
   'every invoked script exists and is reachable from the pack that invokes it');
+  const liveFiles = materializePacks({ root: ROOT, version: '9.9.9-selftest' });
+  ok(liveFiles.has('kai-core/hooks.json')
+    && !liveFiles.has('kai-personal/hooks.json')
+    && liveFiles.has('kai-core/scripts/observe-subagent.mjs')
+    && liveFiles.has('kai-core/scripts/lib/activity.mjs')
+    && liveFiles.has('kai-personal/scripts/demo-zoom.mjs')
+    && liveFiles.has('kai-personal/scripts/lib/cursor-png.mjs'),
+  'materialization emits hooks once and closes each routed script over its relative modules');
+  ok(generatedKeyErrors(liveFiles).length === 0,
+    'every live generated key belongs to a declared pack');
+  ok(generatedRuntimeErrors(liveFiles).length === 0,
+    'every emitted JavaScript asset resolves locally without an npm manifest');
+  ok(generatedKeyErrors(new Map([['kai-unknown/plugin.json', '{}']]))
+    .some((e) => /belongs to no declared pack/.test(e.msg)),
+  'a generated key outside the declared pack set fails in the one shared check');
+  ok(generatedRuntimeErrors(new Map([
+    ['kai-core/plugin.json', '{}'],
+    ['kai-core/scripts/start.mjs', "import './lib/missing.mjs';\n"],
+  ])).some((e) => /missing from kai-core/.test(e.msg)),
+  'a copied entry point with a missing relative module fails by name');
+  ok(generatedRuntimeErrors(new Map([
+    ['kai-core/plugin.json', '{}'],
+    ['kai-core/scripts/start.mjs', "import './lib/missing.mjs'\n"],
+  ])).some((e) => /missing from kai-core/.test(e.msg)),
+  'a semicolon-less relative import cannot escape the emitted-tree closure gate');
+  ok(generatedRuntimeErrors(new Map([
+    ['kai-core/plugin.json', '{}'],
+    ['kai-core/scripts/start.mjs', "import runtime from 'third-party-runtime';\n"],
+  ])).some((e) => /imports bare module `third-party-runtime`/.test(e.msg)),
+  'a copied entry point with an npm dependency fails while pack manifests are deferred');
+  ok(generatedRuntimeErrors(new Map([
+    ['kai-core/plugin.json', '{}'],
+    ['kai-core/package.json', '{}'],
+  ])).some((e) => /publication work owns pack dependency installation/.test(e.msg)),
+  'a generated npm manifest fails until publication owns its installation contract');
 
   // --- cross-pack references: the mutation arms -------------------------
   const providersOf = (entries) => new Map(Object.entries(entries));
@@ -722,6 +763,20 @@ function selfTest() {
     'assigning the hooks file to a pack that does not exist fails by name');
   ok(HOOKS_OWNER === 'core' && liveAssets.get(observer)?.owner === HOOKS_OWNER,
     `${HOOKS_FILE} and the script it runs are both owned by kai-core in the live partition`);
+  ok(hookAssetReferenceErrors(readFileSync(join(ROOT, HOOKS_FILE), 'utf8')).length === 0,
+    'the live hooks file invokes one supported top-level asset per command');
+  const multiHook = JSON.stringify({ hooks: { subagentStart: [{
+    command: 'node "${PLUGIN_ROOT}/scripts/a.mjs" "${PLUGIN_ROOT}/scripts/b.mjs"',
+  }] } });
+  ok(hookAssetReferenceErrors(multiHook)
+    .some((e) => /contains 2 \$\{PLUGIN_ROOT\} paths/.test(e.msg)),
+  'a hook command with multiple plugin-relative paths fails by name');
+  const nestedHook = JSON.stringify({ hooks: { subagentStart: [{
+    command: 'node "${PLUGIN_ROOT}/scripts/lib/a.mjs"',
+  }] } });
+  ok(hookAssetReferenceErrors(nestedHook)
+    .some((e) => /outside the supported top-level/.test(e.msg)),
+  'a nested hook asset fails by name without widening the asset key-space');
 
   // --- the partition itself, each failure proven by name ----------------
   // A synthetic two-pack world, so what fails is the rule and not the live
@@ -848,9 +903,8 @@ function selfTest() {
   ok(blockMsgs([departmentBody({ first: '', pack: 'fleet-ops' })], ['core', 'fleet-ops'])
     .some((m) => /kai-fleet-ops\/agents\/persona-x\.agent\.md/.test(m)),
   'and a hyphenated pack is held to the same guarantee, rather than skipped by a name pattern');
-  ok(blockMsgs([['kai-unknown/agents/persona-x.agent.md', 'body']])
-    .some((m) => /belongs to no declared pack/.test(m)),
-  'a generated file outside the declared partition fails instead of skipping the guarantees');
+  ok(blockMsgs([['kai-unknown/agents/persona-x.agent.md', 'body']]).length === 0,
+    'the guarantee checker relies on the shared generated-key gate instead of deciding null keys again');
 
   // --- the contract version, pinned wherever it is stated ---------------
   const pinMsgs = (over) => contractPinErrors({
@@ -929,7 +983,11 @@ function gatePartition() {
 // rather than over the plan that produced it.
 function gateCollision() {
   const files = materializePacks({ root: ROOT, version: GATE_VERSION });
-  return providerCollisionErrors({ providers: packProviders(files) });
+  return [
+    ...generatedKeyErrors(files).map((e) => `${e.file}: ${e.msg}`),
+    ...generatedRuntimeErrors(files).map((e) => `${e.file}: ${e.msg}`),
+    ...providerCollisionErrors({ providers: packProviders(files) }),
+  ];
 }
 
 // The scripts hooks.json runs, read out of the file itself so the gate cannot
@@ -951,6 +1009,8 @@ function gatePartialInstall() {
     .filter((entry) => entry && entry.kind === 'hooks')
     .map((entry) => entry.pack);
   return [
+    ...generatedKeyErrors(files),
+    ...generatedRuntimeErrors(files),
     ...referenceErrors({ refs, providers: packProviders(files) }),
     ...assetOwnershipErrors({
       assets,
@@ -961,6 +1021,7 @@ function gatePartialInstall() {
       hookAssets: liveHookAssets(),
       assets,
     }),
+    ...hookAssetReferenceErrors(readFileSync(join(ROOT, HOOKS_FILE), 'utf8')),
     ...guaranteeBlockErrors({
       files, preflight: preflightBlock(), degraded: degradedBlock(),
     }),

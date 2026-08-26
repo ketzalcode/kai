@@ -41,6 +41,7 @@ import {
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
+  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -398,6 +399,9 @@ const generatedPacks = preflight && degraded
   ? materializePacks({ root: ROOT, version: '0.0.0-validate' })
   : new Map();
 
+for (const e of generatedKeyErrors(generatedPacks)) err(e.file, e.msg);
+for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
+
 // The contract version, pinned wherever it is stated: the probe skill's name,
 // the canonical block's prose, and the probe body. A skew between them is the
 // one failure a fully green build still ships — every gate keeps passing while
@@ -699,12 +703,9 @@ const ASSESSOR_ROLES = [
 // ---------------------------------------------------------------------------
 // Plugin manifests (the monolith + any committed pack trees)
 //
-// The repo is single-manifest today (just the root plugin.json). The pack split
-// adds committed packs/<name>/plugin.json trees, so every check here iterates the
-// discovered manifests: a pack tree is validated exactly like the monolith
-// (structure, and a version kept in lockstep with the canonical release), and the
-// marketplace index may list more than one plugin. With no packs/ present this
-// reduces to the original single-manifest behavior, byte-for-byte.
+// The repo currently carries the root monolith plus committed kai-core and
+// kai-personal manifests. Every check iterates the discovered set, while a
+// checkout with no packs/ still reduces to the original single-manifest path.
 // ---------------------------------------------------------------------------
 const MARKETPLACE_REL = '.github/plugin/marketplace.json';
 const MARKETPLACE_NAME = 'kai-plugins';
@@ -1117,6 +1118,7 @@ const SANCTIONED_GIT_DEPS = new Map([
     err(rel, `is not valid JSON (${e.message}) — the host would drop every kai hook`);
     return;
   }
+  for (const e of hookAssetReferenceErrors(raw)) err(e.file, e.msg);
   if (cfg.version !== 1) err(rel, `version must be 1, found ${JSON.stringify(cfg.version)}`);
 
   const events = Object.keys(cfg.hooks || {});
@@ -1155,12 +1157,10 @@ const SANCTIONED_GIT_DEPS = new Map([
     }
   }
 
-  // And exactly one pack may ship it. ${PLUGIN_ROOT} resolves inside the hook's
-  // own plugin, so the scripts it runs have to be owned by that same pack; two
-  // packs carrying this file would run the observer twice on every subagent.
-  // No generated tree emits hooks.json yet — routing assets into trees is the
-  // extraction item's job — so today this pins the declared assignment, and it
-  // fails the moment a second pack starts emitting one.
+  // ${PLUGIN_ROOT} resolves inside the hook's own plugin, so the scripts it runs
+  // have to be owned by that same pack. This check rejects a second claimant;
+  // the emitted-tree equality arm in pack-preview's self-test proves one core
+  // copy exists and no department copy does.
   const claimants = [...generatedPacks.keys()]
     .map((key) => parseGeneratedKey(key))
     .filter((entry) => entry && entry.kind === 'hooks')
