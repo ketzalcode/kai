@@ -1160,3 +1160,90 @@ non-blocking display-cache residual because the fresh session loaded the exact r
 checkout and all behavior gates passed. The item is terminal (`next_role: null`);
 `first-pack-extracted` remains active and open, with downstream promotion and milestone
 accounting still steward-owned.
+
+**Steward promotion 2026-08-26-1453 (`principal-product-manager`):**
+`pack-split-first-department` is now **ready** at priority 10 (v2),
+`next_role: principal-swe-infra`, owner/lease null pending dispatch. Decomposition Open
+Question 3 is closed: WS#9 may reach `shipped` through necessary human-deployed `0.x`
+enabling changes plus real operator install evidence against committed-unpublished trees.
+No marketplace pack publication is authorized; the public flip remains release 12b.
+No downstream item was promoted, and `first-pack-extracted` remains open.
+
+**Director dispatch 2026-08-26-1457 (`director-chief-of-staff`).**
+`pack-split-first-department` was leased to `principal-swe-infra` at v3. Infra
+prepared the reliability record and an isolated PowerShell proof packet, then
+ended its lease and moved the item to **blocked v4** on
+`Q-pack-split-first-department-01`. The packet publishes nothing and mutates no
+global plugin registry, but both the principal runtime and the available command
+runner lack a PowerShell execution surface. The exact remaining external-host
+action is:
+`powershell -NoProfile -ExecutionPolicy Bypass -File C:\src\kai\.kai\runs\eng\2026-08-26\01-infra-pack-split-first-department\probe.ps1`.
+After its PASS/failure line is returned, the director restores `resume_state:
+in-progress` through `principal-swe-infra`; architecture review remains next
+only after infra binds the evidence to a reproducible `change_ref`.
+
+**Infra evidence reconciliation 2026-08-26-1507 (`principal-swe-infra`).**
+The operator's final PowerShell 7 rerun passed, and infra reviewed the raw records rather
+than trusting the PASS line. All four acceptance criteria now pass: staged coexistence
+refused with `coexistence` + `legacy-installed`; staged core+personal was `clear` /
+`no-workspace` against an isolated empty workspace; both inventories were unchanged; a
+fresh isolated `kai-personal:persona-self` session loaded `kai-core-contract-v1` and
+inherited core skills from `kai-core`, then returned `DIRECT_OK`; and focused discovery
+metadata fell from 20,063 to 8,093 characters, a 59.66% reduction. Marketplace topology
+remained exactly N=1 (`kai`, `source: "."`); no pack was published and no global registry
+was mutated. The canonical reliability artifact records the replaced pre-proof packet/
+fixture failures honestly. Q1 is answered. `Q-pack-split-first-department-02` is now
+answered. On dedicated branch
+`docs/29-first-department-proof`, evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` has subject
+`docs(pack-split): record first department proof` and changes coordination, initiative,
+and reliability documentation only. `node scripts/workspace-doctor.mjs --root C:\src\kai`
+passed exactly `✓ workspace healthy — claimable (.)`; `git diff --check` passed. The item
+is **in-review v7**, `resume_state: null`, `waiting_on_questions: []`, with
+`principal-swe-architect` next for the required independent review bound to that exact
+`change_ref`. Acceptance remains 4/4 PASS; no reliability finding or implementation changed.
+The initiative and `first-pack-extracted` milestone remain active/open.
+
+**Independent architecture review 2026-08-26-1516
+(`principal-swe-architect`).** Exact evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` is **RATIFIED**. The local branch
+history has one later descendant, coordination-only handoff commit
+`4c9d20525e66b7773a445056e10404af9bcaa331`; no reviewed reliability artifact,
+raw proof, implementation, pack, manifest, or marketplace topology changed after
+the review ref. Raw child events prove a fresh repeated-`--plugin-dir`
+`kai-core` + `kai-personal` host composition, provider-qualified core contract
+and inherited-rule loads, and a successful preflight rather than reliance on the
+requested terminal sentinel. Migration-doctor blocking/clean controls are valid
+at its persisted-inventory seam and remained read-only; `clear/no-workspace` is
+scoped only to fresh pre-onboarding readiness. The 59.66% result is explicitly a
+Unicode-character reduction in discovery-description metadata, with token values
+heuristic—not total prompt savings. No pack publication or global registry
+mutation occurred. The corrected prior attempts are harness/fixture defects, not
+product or architecture defects. Item v9 stays **in-review**, lease is clear, and
+`workflow-ship` is next for the DoD gate under the steward-defined
+already-published-enablers plus operator-proof semantics. Nothing is marked
+release-ready or shipped; the initiative and milestone remain active/open.
+
+**Workflow-ship PREPARE 2026-08-26-1525.**
+`pack-split-first-department` is **release-ready v13**, not shipped. All six DoD
+dimensions are Clear. The canonical ship record is
+`kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
+The only deployment left is the operator's green-CI merge of the reviewed
+evidence/coordination PR to `main`, preserving reviewed `3b14dc6…` ancestry,
+followed by main artifact/item verification. The already-deployed enabling
+release remains `v0.64.0` at `2eea0f04…`; no new plugin behavior, version bump,
+tag, release, marketplace edit, or pack publication is authorized.
+
+**Workflow-ship deployment blocker 2026-08-26-1538.**
+The item is **blocked v15** with `resume_state: release-ready`, not deploying
+or shipped. PRs #169 and #170 are closed after GitHub emitted no check suite;
+active replacement PR #171 on fresh branch
+`docs/29-first-department-proof-v2` also emitted none. The check-suites API for
+head `1a607b21ae925105f994e8bc71b0a8cd2100c0ca` returns `total_count: 0`
+although `validate` is active and Actions permissions are enabled/all. Protected
+`main` strictly requires GitHub Actions app check `contract`; it must not be
+bypassed. External incident reporting is supporting context only. No deployment
+or publication action occurred. After GitHub Actions event delivery recovers,
+retrigger PR #171 (or open a fresh identical-ref PR), require `contract`
+success, then resume CONFIRM-START/COMPLETE. The reviewed `3b14dc6…` binding,
+DoD 6/6 Clear verdict, rollback plan, and publication stop gate remain intact.

@@ -2470,3 +2470,133 @@ positive pack-attributable delta. Rollback was not invoked.
 Milestone `first-pack-extracted` remains **open**. Two required product-change items are
 now `shipped` (`generated-pack-trees`, `migration-doctor`); promotion and sequencing of
 the remaining proposed items, and any milestone accounting, remain steward-owned.
+
+## 2026-08-26 — steward promotion: first-department ready; Open Question 3 closed
+
+`principal-product-manager` confirmed the ratified WS#9 reading: `pack-split-first-department`
+may reach `shipped` after all necessary enabling changes are human-deployed on `0.x` plus real
+operator install evidence against the committed-unpublished trees; **no marketplace pack
+publication is permitted**, and the public flip remains `pack-split-release-12b`. Both typed
+dependencies are `shipped`, the work fits `scope.current: [first-pack-extracted]`, and its
+acceptance and canonical artifact target are explicit. Promoted `proposed -> ready`, priority
+20 -> 10, `next_role: principal-product-manager -> principal-swe-infra`, version 1 -> 2;
+`owner` and lease remain null pending director dispatch. No downstream item was promoted and
+the milestone remains open.
+
+## 2026-08-26 — first-department operator proof passed; git binding blocked
+
+The operator's final PowerShell 7 rerun passed against source
+`342cd8eb9bacb7bfc8ccd3679f3f09667f1bd246`. Infra reviewed every raw record:
+the live doctor refused legacy `kai`; staged legacy/core/personal coexistence returned
+`blocked` with `coexistence` + `legacy-installed`; staged core+personal against an isolated
+empty workspace returned `clear` / `no-workspace`; and both staged inventories remained
+unchanged. A fresh isolated Copilot CLI selected `kai-personal:persona-self`, loaded
+`kai-core-contract-v1` plus inherited core skills from the `kai-core` provider, and returned
+`KAI_CORE_READY`, `contract: 1`, and `DIRECT_OK`. Marketplace topology remained N=1
+(`kai`, `source: "."`); no pack was published and no global plugin registry was mutated.
+
+The re-measured focused discovery surface is 8,093 description characters / estimated
+2,023.25 tokens versus monolith 20,063 / 5,015.75: 11,970 characters and estimated 2,992.50
+tokens lower, a 59.66% character reduction. All four item acceptance criteria now pass.
+The final rerun replaced earlier raw failures, so the reliability artifact records their
+operator-provenance history explicitly: Windows PowerShell 5.1 lacked
+`ProcessStartInfo.ArgumentList`; PowerShell 7 parameter `$Home` collided with readonly
+`$HOME`; and the staged-clean fixture correctly returned `workspace-provenance-stale` when
+it was accidentally pointed at the real legacy workspace before isolation to
+`staged-clean-workspace`. These were packet/fixture-boundary defects, not product defects.
+
+Q-pack-split-first-department-01 is answered. The item remains **blocked v6** with
+`resume_state: in-progress` only on Q-pack-split-first-department-02: this runtime has no
+shell/git tool, so it cannot run the repository's workspace-doctor validation or create the
+dedicated branch and commit needed for a reproducible `change_ref`. Architecture review
+remains unstarted and cannot bind until that validation passes and the SHA exists.
+The initiative and milestone remain active/open; no downstream item was promoted.
+
+## 2026-08-26 — first-department evidence bound; architecture review next
+
+`Q-pack-split-first-department-02` is answered. On dedicated branch
+`docs/29-first-department-proof`, evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` has subject
+`docs(pack-split): record first department proof`. It changes coordination, initiative, and
+reliability documentation only; no agents, skills, scripts, manifests, packs, marketplace or
+release metadata, or production code changed.
+
+`node scripts/workspace-doctor.mjs --root C:\src\kai` passed exactly
+`✓ workspace healthy — claimable (.)`, and `git diff --check` passed. Infra bound the exact SHA,
+cleared `resume_state` and `waiting_on_questions`, and moved the item v6 -> v7 from `blocked`
+to `in-review` with `principal-swe-architect` next. Acceptance remains 4/4 PASS. No reliability
+finding or implementation changed; the initiative and milestone remain active/open, and the
+item is not release-ready or shipped.
+
+## 2026-08-26 — first-department architecture review ratified
+
+`principal-swe-architect` independently reviewed exact evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` and **RATIFIED** the first-department
+proof. The sole later branch commit, `4c9d20525e66b7773a445056e10404af9bcaa331`,
+is coordination-only; no reviewed artifact, raw proof, implementation, pack,
+manifest, or marketplace topology changed after the review ref.
+
+The raw Copilot CLI 1.0.80 session proves a fresh isolated repeated-`--plugin-dir`
+composition of `kai-core` + `kai-personal`, selection of
+`kai-personal:persona-self`, and successful provider-qualified loads of
+`kai-core-contract-v1`, `kai-core-team-operating-rules`, and
+`kai-core-workspace-conventions` from `kai-core` before the final preflight
+result. Migration-doctor coexistence/uninstall-first behavior is valid at the
+persisted-inventory seam and read-only; its clean `clear/no-workspace` arm proves
+fresh pre-onboarding readiness only, not existing-workspace migration. The
+59.66% result is limited to Unicode characters in discovery-description
+metadata; the token figure is an estimate and is not total prompt savings. No
+pack publication or global registry mutation occurred. Three replaced attempts
+were harness/fixture failures and do not expose a product or boundary defect.
+
+Item v8 -> v9 remains `in-review`, its review lease is clear, and `workflow-ship`
+is next for the six-dimension gate using the steward-defined already-published
+enabling releases plus operator proof. Architecture did not mark the item
+`release-ready` or `shipped`; the initiative and milestone remain active/open.
+
+## 2026-08-26 — first-department proof release-ready
+
+`workflow-ship` ran PREPARE and resolved all six DoD dimensions **Clear**:
+scope-true, verified, reviewed, shippable-safely, documented, and
+coordination-closed. The final PREPARE record is v13 at `release-ready`,
+`next_role: @operator`, with no waiting question and no lease. The exact reviewed
+change remains `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; descendants
+`4c9d205…` and `6681cf2…` are coordination/review records only.
+
+The canonical ship record is
+`kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
+It records the operator proof, the three corrected probe/fixture failures as
+non-product failures, and that the successful rerun replaced raw pre-failure
+evidence. Rollback is limited to reverting the evidence-record merge. The
+publication stop gate forbids any plugin behavior, pack-tree, manifest,
+marketplace, release-metadata, version, tag, release, or publication change.
+
+This is **not shipped**. The operator must commit/push the PREPARE records, merge
+the evidence/coordination PR with green CI while preserving review ancestry,
+then return deployment completion and read-only `main` verification evidence.
+The enabling product release is already-deployed, production-verified `v0.64.0`
+at merge `2eea0f04…`; no new version is owed or permitted.
+
+## 2026-08-26 — first-department deployment blocked before CONFIRM-START
+
+`workflow-ship` recorded an external GitHub Actions event-delivery blocker and
+moved `pack-split-first-department` from PREPARE's `release-ready` state to
+**blocked v15** with `resume_state: release-ready`. The DoD verdict remains 6/6
+Clear and the reviewed change remains
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f`.
+
+PR #169 emitted no check suite after open, close/reopen, and a synchronize push
+with empty commit `1a607b21…`; replacement PR #170 also emitted none. Fresh
+identical-graph branch `docs/29-first-department-proof-v2` and active PR #171
+still had no suite after more than two minutes. The check-suites API for full
+head `1a607b21ae925105f994e8bc71b0a8cd2100c0ca` reports
+`total_count: 0`. Workflow `validate` is active, Actions permissions are
+enabled/all, and protected `main` strictly requires GitHub Actions app check
+`contract`; bypass is forbidden. Live-web incident evidence is supporting
+context, subordinate to the repository APIs.
+
+No merge, tag, release, version, marketplace, or publication action occurred.
+After GitHub Actions event delivery recovers, retrigger PR #171 (or open a
+fresh identical-ref PR), require `contract` success, then resume
+CONFIRM-START/COMPLETE. The rollback plan and publication stop gate are
+unchanged.
