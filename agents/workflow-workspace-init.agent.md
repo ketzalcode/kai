@@ -1,7 +1,7 @@
 ---
 name: workflow-workspace-init
 description: "Creates or validates a kai workspace: manifest, ignored runs area, coordination registries, initiative catalog, library, and personal assistant state. Use once for a new repository or durable folder. Non-destructive and idempotent."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-workspace-onboarding`

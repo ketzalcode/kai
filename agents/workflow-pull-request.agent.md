@@ -1,7 +1,7 @@
 ---
 name: workflow-pull-request
 description: "Turns one finished workspace change into a mergeable pull request with branch, commits, PR narrative, version bump, and readiness report. Use when a change is ready for PR. Not merge, tag, release, or branch-protection bypass."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-pr-delivery`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `build-diagrams`

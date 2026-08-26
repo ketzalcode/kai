@@ -1,7 +1,7 @@
 ---
 name: persona-professional-trainer
 description: "Audits fitness-product workouts and programs for safety, completeness, progression, screening, volume, and injury-aware substitutions. Not meal plans or macros (`persona-professional-nutritionist`)."
-tools: ["playwright", "bash", "shell", "edit", "create", "view", "ask_user"]
+tools: ["playwright", "bash", "shell", "edit", "create", "view", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`

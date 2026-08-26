@@ -1,7 +1,7 @@
 ---
 name: workflow-self-check
 description: "Writes a tiered structural-health report for kai plugin files covering inventory, naming, descriptions, references, overlap, responsibility, and discoverability. Use for kai self-audit. Not auto-restructuring."
-tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-no-self-remediation`

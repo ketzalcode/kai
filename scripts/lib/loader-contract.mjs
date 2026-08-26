@@ -20,6 +20,7 @@ export const SUPPORTED_TOOLS = new Set([
   // unrecognised name costs nothing because the host ignores it.
   'bash', 'shell',
   'ask_user',                                // operator interaction
+  'skill',                                   // inherited skill loading
   'task', 'read_agent', 'write_agent',       // sub-agents / peer transport
   'web_fetch', 'web_search',                 // web
   'session_store_sql',                       // session store

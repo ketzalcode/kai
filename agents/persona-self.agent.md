@@ -1,7 +1,7 @@
 ---
 name: persona-self
 description: "Drafts, rewrites, and replies in the user's voice with senior-engineer professionalism. Use for messages, posts, emails, design docs, PR descriptions, and replies. Never auto-publishes."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell"]
+tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `extract-writing-style`

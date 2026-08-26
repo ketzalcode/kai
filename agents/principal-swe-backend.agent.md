@@ -1,7 +1,7 @@
 ---
 name: principal-swe-backend
 description: "Builds and reviews backend APIs, server logic, data models, migrations, consistency, and model-serving backends. Use for server-side design or implementation. Not architecture (`principal-swe-architect`) or frontend (`principal-swe-frontend`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`

@@ -1,7 +1,7 @@
 ---
 name: persona-ux-first-time-user
 description: "Simulates a first-time customer walkthrough and reports subjective flow clarity, copy, missing context, unmet expectations, and confusion points. Use for fresh-eyes feedback. Not defect QA (`principal-qa-ui`)."
-tools: ["playwright", "bash", "shell", "edit", "create", "view", "ask_user"]
+tools: ["playwright", "bash", "shell", "edit", "create", "view", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`

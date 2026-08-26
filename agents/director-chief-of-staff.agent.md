@@ -1,7 +1,7 @@
 ---
 name: director-chief-of-staff
 description: "Coordinates Kai roles to drive an outcome, work item, initiative, or incident to truthful completion. Use when asking someone to ship, run, or drive work. Not personal agenda triage (`director-executive-assistant`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-definition-of-done`, `kai-core-issue-analysis`, `kai-core-pr-delivery`, `kai-core-initiative-stewardship`
