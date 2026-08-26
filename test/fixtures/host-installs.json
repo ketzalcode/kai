@@ -190,6 +190,32 @@
       "installed-plugins/": null
     },
 
+    "missing-installed-list": {
+      "config.json": { "settings": {} },
+      "installed-plugins/": null
+    },
+
+    "missing-install-dir": {
+      "config.json": { "installedPlugins": [] }
+    },
+
+    "install-path-file": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins": { "unexpected": "file" }
+    },
+
+    "symlinked-install-dir": {
+      "config.json": { "installedPlugins": [] }
+    },
+
+    "foreign-identity": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "renamed-kai-fork",
+        "version": "1.0.0"
+      }
+    },
+
     "incomplete-uninstall": {
       "config.json": {
         "installedPlugins": [

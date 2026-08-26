@@ -143,6 +143,11 @@ metadata and every install tree, then reports one of three verdicts: `clear`
 a numbered step for you to run. Use it when `plugin list` and what you remember
 installing disagree, or after an install or uninstall was interrupted.
 
+Automation can use `npm run doctor:migration -- --json`. The JSON carries the
+verdict and finding codes; exit codes are `0` for `clear`, `2` for `blocked`,
+and `3` for `unknown`. A missing config list or install directory is `unknown`,
+never evidence that nothing is installed.
+
 It also answers the question `plugin list` doesn't: whether a plugin came from
 the marketplace or a direct install, and whether the workspace in front of you
 was scaffolded by the same plugin the host is loading. Once kai ships as

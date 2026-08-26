@@ -26,10 +26,15 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
 - **Unverifiable is distinguished from absent, everywhere.** A missing host
   home, an unreadable `config.json`, a junk `installedPlugins` entry, an
+  absent `installedPlugins` list, a missing or unreadable install directory, an
   unidentifiable install tree, and a provenance inferred from a cache path
-  rather than recorded all report `unknown` with the evidence named. Only a
-  readable config plus a readable install directory yields "nothing is
-  installed".
+  rather than recorded all report `unknown` with the evidence named. Symlinked
+  install roots are followed read-only. Only a readable config plus a fully
+  readable install directory yields "nothing is installed".
+
+- **Machine-readable migration verdicts.** `--migration-check --json` emits the
+  status and finding codes without parsing prose. Exit codes distinguish
+  `clear` (`0`), `blocked` (`2`), and `unknown` (`3`).
 
 - **Incomplete migration states are their own findings**, each with the exact
   command that resolves it: `incomplete-install` (metadata without files),

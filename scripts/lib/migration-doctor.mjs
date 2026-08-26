@@ -24,7 +24,7 @@
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -80,7 +80,7 @@ export function parseJsonc(text) {
     out += c;
   }
   try { return { ok: true, value: JSON.parse(out) }; }
-  catch (e) { return { ok: false, error: e.message }; }
+  catch { return { ok: false, error: 'invalid JSONC syntax' }; }
 }
 
 // --- path normalization ----------------------------------------------------
@@ -110,13 +110,45 @@ export function installTreeTail(cachePath) {
 // falling back to a case-insensitive one. Windows records `Installed-Plugins`
 // and `installed-plugins` interchangeably; a case-sensitive filesystem would
 // otherwise report a present tree as missing.
+function directoryEntries(dir) {
+  try {
+    return { ok: true, entries: readdirSync(dir, { withFileTypes: true }) };
+  } catch (error) {
+    return { ok: false, entries: [], error: error?.code ?? 'unreadable' };
+  }
+}
+
+function isDirectory(dir) {
+  try {
+    return statSync(dir).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 function childDir(base, name) {
-  let entries;
-  try { entries = readdirSync(base, { withFileTypes: true }); } catch { return null; }
-  const dirs = entries.filter((e) => e.isDirectory());
-  const hit = dirs.find((e) => e.name === name)
-    || dirs.find((e) => e.name.toLowerCase() === name.toLowerCase());
+  const listing = directoryEntries(base);
+  if (!listing.ok) return null;
+  const dirs = listing.entries.filter((entry) => isDirectory(join(base, entry.name)));
+  const hit = dirs.find((entry) => entry.name === name)
+    || dirs.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
   return hit ? join(base, hit.name) : null;
+}
+
+function inspectChildDir(base, name) {
+  let entries;
+  try {
+    entries = readdirSync(base, { withFileTypes: true });
+  } catch (error) {
+    return { dir: join(base, name), present: false, readable: false, error: error?.code ?? 'unreadable' };
+  }
+  const hit = entries.find((entry) => entry.name === name)
+    || entries.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
+  if (!hit) return { dir: join(base, name), present: false, readable: true, error: 'missing' };
+  const dir = join(base, hit.name);
+  if (!isDirectory(dir)) return { dir, present: true, readable: false, error: 'not-a-directory' };
+  const listing = directoryEntries(dir);
+  return { dir, present: true, readable: listing.ok, error: listing.error ?? null };
 }
 
 function resolveUnder(base, tail) {
@@ -128,11 +160,16 @@ function resolveUnder(base, tail) {
   return dir;
 }
 
-const dirNamesIn = (dir) => {
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter((e) => e.isDirectory()).map((e) => e.name).sort();
-  } catch { return []; }
+const dirNamesIn = (dir, errors) => {
+  const listing = directoryEntries(dir);
+  if (!listing.ok) {
+    errors.push(`${dir} (${listing.error})`);
+    return [];
+  }
+  return listing.entries
+    .filter((entry) => isDirectory(join(dir, entry.name)))
+    .map((entry) => entry.name)
+    .sort();
 };
 
 // --- host inventory --------------------------------------------------------
@@ -163,10 +200,12 @@ export function readHostConfig(home) {
 
   let text;
   try { text = readFileSync(path, 'utf8'); }
-  catch (e) { return { path, present: true, ok: false, error: `unreadable: ${e.message}`, entries: [] }; }
+  catch (error) {
+    return { path, present: true, ok: false, error: `could not be read (${error?.code ?? 'unreadable'})`, entries: [] };
+  }
 
   const parsed = parseJsonc(text);
-  if (!parsed.ok) return { path, present: true, ok: false, error: `not valid JSON: ${parsed.error}`, entries: [] };
+  if (!parsed.ok) return { path, present: true, ok: false, error: parsed.error, entries: [] };
 
   const raw = parsed.value?.installedPlugins;
   if (raw === undefined) return { path, present: true, ok: true, listed: false, entries: [] };
@@ -211,8 +250,8 @@ function readTree(dir, tail, provenance, basis) {
     const value = JSON.parse(readFileSync(manifest, 'utf8'));
     if (typeof value?.name === 'string' && value.name.trim()) tree.declaredName = value.name.trim();
     else tree.malformed = `${PLUGIN_MANIFEST} declares no "name"`;
-  } catch (e) {
-    tree.malformed = `${PLUGIN_MANIFEST} is not valid JSON: ${e.message}`;
+  } catch {
+    tree.malformed = `${PLUGIN_MANIFEST} could not be read as valid JSON`;
   }
   return tree;
 }
@@ -221,20 +260,32 @@ function readTree(dir, tail, provenance, basis) {
 // all yet sits in a kai-shaped directory — the second case is exactly the
 // leftover a half-finished uninstall produces.
 export const looksKai = (tree) => KAI_PLUGINS.has(tree.declaredName)
-  || (!tree.declaredName && (KAI_PLUGINS.has(tree.inferredName) || /(^|[-_])kai([-_]|$)/i.test(tree.inferredName)));
+  || KAI_PLUGINS.has(tree.inferredName)
+  || /(^|[-_])kai([-_]|$)/i.test(tree.inferredName);
 
 // Every install tree under the home, kai's or not: a config entry named `kai`
 // pointing at a tree that declares something else is a finding, and filtering
 // here would hide it as a merely missing tree.
 export function scanInstallTrees(home) {
-  const base = childDir(home, INSTALLED_DIR);
-  if (!base) return { dir: null, present: false, trees: [] };
+  const root = inspectChildDir(home, INSTALLED_DIR);
+  if (!root.present || !root.readable) {
+    return {
+      dir: root.dir,
+      present: root.present,
+      readable: false,
+      error: root.error,
+      errors: [],
+      trees: [],
+    };
+  }
 
+  const base = root.dir;
   const trees = [];
-  for (const bucket of dirNamesIn(base)) {
+  const errors = [];
+  for (const bucket of dirNamesIn(base, errors)) {
     const bucketDir = join(base, bucket);
     if (bucket.toLowerCase() === DIRECT_BUCKET) {
-      for (const name of dirNamesIn(bucketDir)) {
+      for (const name of dirNamesIn(bucketDir, errors)) {
         trees.push(readTree(join(bucketDir, name), `${bucket}/${name}`, 'direct', 'recorded'));
       }
       continue;
@@ -245,11 +296,11 @@ export function scanInstallTrees(home) {
       trees.push(readTree(bucketDir, bucket, 'unknown', 'unknown'));
       continue;
     }
-    for (const name of dirNamesIn(bucketDir)) {
+    for (const name of dirNamesIn(bucketDir, errors)) {
       trees.push(readTree(join(bucketDir, name), `${bucket}/${name}`, `marketplace:${bucket}`, 'inferred'));
     }
   }
-  return { dir: base, present: true, trees };
+  return { dir: base, present: true, readable: errors.length === 0, error: null, errors, trees };
 }
 
 // Join config metadata to what is on disk. A plugin is only "installed" when both
@@ -275,6 +326,7 @@ export function reconcileInstalls(config, scan) {
     if (tree) {
       claimed.add(tree);
       target.trees.push(tree);
+      target.provenances.add(tree.provenance);
       if (tree.declaredName && tree.declaredName !== entry.name) {
         target.mismatches.push(
           `config lists "${entry.name}" at ${dir}, but that tree's ${PLUGIN_MANIFEST} declares "${tree.declaredName}"`,
@@ -286,7 +338,9 @@ export function reconcileInstalls(config, scan) {
   const unidentified = [];
   for (const tree of scan.trees) {
     if (claimed.has(tree) || !looksKai(tree)) continue;
-    const name = tree.declaredName ?? (KAI_PLUGINS.has(tree.inferredName) ? tree.inferredName : null);
+    const name = KAI_PLUGINS.has(tree.declaredName)
+      ? tree.declaredName
+      : (!tree.declaredName && KAI_PLUGINS.has(tree.inferredName) ? tree.inferredName : null);
     if (!name) { unidentified.push(tree); continue; }
     const target = record(name);
     target.trees.push(tree);
@@ -319,8 +373,17 @@ export function readWorkspaceProvenance(root) {
   const path = join(root, '.kai', 'manifest.json');
   if (!existsSync(path)) return { path, present: false };
   let value;
-  try { value = JSON.parse(readFileSync(path, 'utf8')); }
-  catch (e) { return { path, present: true, ok: false, error: `not valid JSON: ${e.message}` }; }
+  let text;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch (error) {
+    return { path, present: true, ok: false, error: `could not be read (${error?.code ?? 'unreadable'})` };
+  }
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { path, present: true, ok: false, error: 'is not valid JSON' };
+  }
   const plugin = value?.plugin;
   if (typeof plugin !== 'string' || !plugin.trim()) {
     return { path, present: true, ok: false, error: 'manifest has no "plugin" value' };
@@ -361,17 +424,23 @@ function assessHost(host, out) {
   const { config, scan, records, unidentified, home } = host;
 
   if (!config.present) {
-    if (scan.trees.length) {
-      add('unverified', 'unreadable-metadata',
-        `${config.path} is missing while ${scan.trees.length} kai install tree(s) sit under ${scan.dir} — `
-        + 'what is installed cannot be determined from disk alone.');
-    } else {
-      add('note', 'no-install-metadata',
-        `${config.path} is missing and no kai install tree exists under ${home} — nothing is installed here.`);
-    }
+    add('unverified', 'unreadable-metadata',
+      `${config.path} is missing — install state cannot be verified from disk alone.`);
   } else if (!config.ok) {
     add('unverified', 'unreadable-metadata',
       `${config.path} could not be read as install metadata (${config.error}); no install state is claimed from it.`);
+  } else if (!config.listed) {
+    add('unverified', 'unreadable-metadata',
+      `${config.path} has no "installedPlugins" list — this host's install metadata shape is not recognized.`);
+  }
+
+  if (!scan.present) {
+    add('unverified', 'unreadable-install-tree',
+      `${scan.dir} is missing — the install-tree surface was not available, so absence is not verified.`);
+  } else if (!scan.readable) {
+    const detail = scan.errors?.length ? ` Unreadable paths: ${scan.errors.join(', ')}.` : '';
+    add('unverified', 'unreadable-install-tree',
+      `${scan.dir} could not be fully enumerated (${scan.error ?? 'nested directory unreadable'}).${detail}`);
   }
 
   for (const entry of config.entries) {
@@ -383,7 +452,8 @@ function assessHost(host, out) {
 
   for (const tree of unidentified) {
     add('unverified', 'unknown-provenance',
-      `${tree.dir} looks like a kai install tree but cannot be identified (${tree.malformed ?? 'no recognizable plugin name'}) — `
+      `${tree.dir} looks like a kai install tree but cannot be trusted as a known kai identity `
+      + `(${tree.malformed ?? `declares "${tree.declaredName}"`}) — `
       + 'treated as possibly present, never as absent.');
   }
 
@@ -422,7 +492,7 @@ function assessHost(host, out) {
     if (target.presence === 'stale') {
       add('refusal', 'stale-install',
         `"${target.name}" has a leftover install tree (${describe(target)}) — an uninstall removed the entry and left the files, which the host may still load.`);
-      for (const tree of target.trees) step(`remove the leftover install tree: ${tree.dir}`);
+      step('remove each leftover install tree named in the stale-install finding above');
     }
     if (target.entries.some((e) => !e.enabled)) {
       add('note', 'disabled-install',
@@ -444,8 +514,8 @@ function assessHost(host, out) {
       `legacy "${LEGACY_PLUGIN}" is present (${describe(legacy)}) — it must be verifiably uninstalled before any pack is installed.`);
     step(`copilot plugin uninstall ${LEGACY_PLUGIN}`);
     step(`copilot plugin list   # confirm no "${LEGACY_PLUGIN}" row remains before installing any pack`);
-    for (const tree of legacy.trees) {
-      step(`confirm the install tree is gone: ${tree.dir}   # uninstall leaves files behind on some hosts`);
+    if (legacy.trees.length) {
+      step('confirm every legacy install tree named above is gone; uninstall can leave files behind on some hosts');
     }
   }
 
@@ -464,16 +534,22 @@ function assessHost(host, out) {
   // "Nothing is installed" is a claim, so it is only made when both surfaces were
   // readable and every entry classified. Junk metadata is unknown, not empty.
   const classified = config.entries.every((e) => !e.malformed);
-  if (!records.size && !unidentified.length && config.present && config.ok && classified) {
+  const bothSurfacesReadable = config.present && config.ok && config.listed
+    && scan.present && scan.readable;
+  if (!records.size && !unidentified.length && bothSurfacesReadable && classified) {
     add('note', 'nothing-installed',
-      `no kai plugin is installed under ${home} — verified by reading ${config.path} and ${scan.dir ?? `${home}/${INSTALLED_DIR}`}.`);
+      `no kai plugin is installed under ${home} — verified by reading ${config.path} and ${scan.dir}.`);
   }
   return { legacy, core, departments };
 }
 
 function assessWorkspace(root, hostSummary, host, out) {
   const { add, step } = out;
-  if (!root) return null;
+  if (!root) {
+    add('note', 'workspace-not-inspected',
+      'no workspace root was supplied or detected; this verdict covers host install state only.');
+    return null;
+  }
 
   const provenance = readWorkspaceProvenance(root);
   if (!provenance.present) {
@@ -494,7 +570,8 @@ function assessWorkspace(root, hostSummary, host, out) {
 
   const { legacy, core } = hostSummary;
   const coreInstalled = core?.presence === 'installed';
-  const evidenceComplete = host.config.ok && host.unidentified.length === 0;
+  const evidenceComplete = host.config.ok && host.config.listed
+    && host.scan.present && host.scan.readable && host.unidentified.length === 0;
 
   if (provenance.plugin === LEGACY_PLUGIN) {
     if (legacy) {
@@ -505,7 +582,7 @@ function assessWorkspace(root, hostSummary, host, out) {
         `${provenance.path} still records "${LEGACY_PLUGIN}" while this host runs the pack install — `
         + 'the migration is applied to the host but not to the workspace.');
       step(`edit ${provenance.path}: set "plugin": "${CORE_PLUGIN}" (this one key; every other value stays as written)`);
-      step(`node <kai-plugin>/scripts/workspace-doctor.mjs --root ${root}   # confirm the workspace is still healthy after the edit`);
+      step('node <kai-plugin>/scripts/workspace-doctor.mjs --root <workspace-root>   # confirm the workspace is healthy after the edit');
     } else {
       add('note', 'workspace-provenance-current',
         `${provenance.path} records "${LEGACY_PLUGIN}" and no verified pack install was found — nothing to migrate yet.`);

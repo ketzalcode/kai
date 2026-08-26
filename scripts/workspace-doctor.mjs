@@ -14,16 +14,18 @@
 //
 // Usage:
 //   node scripts/workspace-doctor.mjs [--root <dir>]   validate a workspace
-//   node scripts/workspace-doctor.mjs --migration-check [--home <dir>] [--root <dir>]
+//   node scripts/workspace-doctor.mjs --migration-check [--home <dir>] [--root <dir>] [--json]
 //   node scripts/workspace-doctor.mjs --self-test      run against bundled fixtures
 //
-// Exit code: 0 = healthy (claimable); non-zero = errors or migration required.
+// Workspace exit code: 0 = healthy, 1 = invalid.
+// Migration exit code: 0 = clear, 2 = blocked, 3 = unknown.
 
 import {
   readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
+  readlinkSync, symlinkSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { join, resolve, dirname, basename } from 'node:path';
+import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
@@ -324,8 +326,24 @@ const VERDICT = {
   unknown: '? unknown — the install state could not be verified, so it is NOT treated as clear',
 };
 
-function reportMigration({ home, root }) {
+const migrationExitCode = (status) => (status === 'clear' ? 0 : status === 'blocked' ? 2 : 3);
+
+function reportMigration({ home, root, json = false }) {
   const res = migrationReport({ home, root });
+  if (json) {
+    const output = {
+      status: res.status,
+      codes: res.codes,
+      home: res.home,
+      root: res.root,
+      findings: res.findings,
+      steps: res.steps,
+      notices: res.notices,
+      workspace: res.workspace,
+    };
+    console.log(JSON.stringify(output, null, 2));
+    return migrationExitCode(res.status);
+  }
   console.log(`kai migration doctor (read-only) — host ${res.home}`);
   console.log(`  workspace ${root ?? '(not inspected)'}\n`);
   for (const f of res.findings) console.log(`  ${SEVERITY_MARK[f.severity]} ${f.message}`);
@@ -335,7 +353,7 @@ function reportMigration({ home, root }) {
   }
   for (const n of res.notices) console.log(`\n  ! ${n}`);
   console.log(`\n${VERDICT[res.status]}`);
-  return res.status === 'clear' ? 0 : 1;
+  return migrationExitCode(res.status);
 }
 
 // Under `corpus_visibility: local` the operator asked for kai state to stay off
@@ -598,7 +616,7 @@ const MIGRATION_CASES = [
     home: 'legacy-direct', workspace: 'monolith', status: 'blocked',
     expect: ['legacy-installed', 'workspace-provenance-current'],
     forbid: ['coexistence', 'nothing-installed'],
-    steps: [/^copilot plugin uninstall kai$/, /copilot plugin list/, /confirm the install tree is gone/],
+    steps: [/^copilot plugin uninstall kai$/, /copilot plugin list/, /confirm every legacy install tree/],
   },
   {
     label: 'clean pack set (core + one department, marketplace), workspace already migrated',
@@ -623,7 +641,7 @@ const MIGRATION_CASES = [
     label: 'stale direct install tree left behind by an uninstall',
     home: 'stale-direct', status: 'blocked',
     expect: ['stale-install', 'legacy-installed'],
-    steps: [/remove the leftover install tree/],
+    steps: [/remove each leftover install tree/],
   },
   {
     label: 'same pack installed from both a direct source and the marketplace',
@@ -652,6 +670,31 @@ const MIGRATION_CASES = [
   {
     label: 'nothing installed, and both surfaces were readable',
     home: 'absent', status: 'clear', expect: ['nothing-installed'], noSteps: true,
+  },
+  {
+    label: 'host config has no installedPlugins list',
+    home: 'missing-installed-list', status: 'unknown',
+    expect: ['unreadable-metadata'], forbid: ['nothing-installed'], noRefusal: true,
+  },
+  {
+    label: 'install directory is missing',
+    home: 'missing-install-dir', status: 'unknown',
+    expect: ['unreadable-install-tree'], forbid: ['nothing-installed'], noRefusal: true,
+  },
+  {
+    label: 'install directory path is not a directory',
+    home: 'install-path-file', status: 'unknown',
+    expect: ['unreadable-install-tree'], forbid: ['nothing-installed'], noRefusal: true,
+  },
+  {
+    label: 'symlinked install directory is followed and legacy leftovers remain blocked',
+    home: 'symlinked-install-dir', status: 'blocked',
+    expect: ['stale-install', 'legacy-installed'], forbid: ['nothing-installed'],
+  },
+  {
+    label: 'kai-shaped tree declares a foreign plugin identity',
+    home: 'foreign-identity', status: 'unknown',
+    expect: ['unknown-provenance'], forbid: ['nothing-installed'], noRefusal: true,
   },
   {
     label: 'packs installed but the workspace still records the monolith',
@@ -686,7 +729,11 @@ function materializeHostFixtures(dest) {
   const fx = JSON.parse(readFileSync(join(__dirname, '..', 'test', 'fixtures', 'host-installs.json'), 'utf8'));
   const write = (base, files) => {
     for (const [rel, content] of Object.entries(files)) {
-      const target = join(base, ...rel.split('/').filter(Boolean));
+      const target = resolve(base, ...rel.split('/').filter(Boolean));
+      const fromBase = relative(resolve(base), target);
+      if (fromBase === '..' || fromBase.startsWith(`..${sep}`) || isAbsolute(fromBase)) {
+        throw new Error(`fixture path escapes its root: ${rel}`);
+      }
       if (content === null) { mkdirSync(target, { recursive: true }); continue; }
       mkdirSync(dirname(target), { recursive: true });
       const text = Array.isArray(content) ? `${content.join('\n')}\n` : `${JSON.stringify(content, null, 2)}\n`;
@@ -695,6 +742,12 @@ function materializeHostFixtures(dest) {
   };
   for (const [name, files] of Object.entries(fx.homes)) write(join(dest, 'homes', name), files);
   for (const [name, files] of Object.entries(fx.workspaces)) write(join(dest, 'workspaces', name), files);
+
+  const linkedStore = join(dest, 'linked-install-store');
+  write(linkedStore, {
+    '_direct/RubenSaucedo--kai/plugin.json': { name: 'kai', version: '0.55.0' },
+  });
+  symlinkSync(linkedStore, join(dest, 'homes', 'symlinked-install-dir', 'installed-plugins'), 'junction');
 }
 
 // Path + content of every file below `dir`, so "this check mutates nothing" is
@@ -703,7 +756,8 @@ function snapshotTree(dir, prefix = '') {
   const out = [];
   for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) out.push(`${rel}/`, ...snapshotTree(join(dir, entry.name), rel));
+    if (entry.isSymbolicLink()) out.push(`${rel}->${readlinkSync(join(dir, entry.name))}`);
+    else if (entry.isDirectory()) out.push(`${rel}/`, ...snapshotTree(join(dir, entry.name), rel));
     else out.push(`${rel}:${readFileSync(join(dir, entry.name), 'utf8')}`);
   }
   return out;
@@ -733,6 +787,9 @@ function migrationSelfTest() {
     }
   }
   if (normalizeHostPath('C:\\a\\\\b\\') !== 'C:/a/b') fail('self-test: host path normalization did not collapse separators');
+  if (migrationExitCode('clear') !== 0 || migrationExitCode('blocked') !== 2 || migrationExitCode('unknown') !== 3) {
+    fail('self-test: migration verdict exit codes are not distinct');
+  }
 
   const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-migration-'));
   try {
@@ -766,7 +823,7 @@ function migrationSelfTest() {
       else passed++;
     }
     if (passed === MIGRATION_CASES.length) {
-      console.log(`✓ self-test: ${passed} migration scenarios verdict correctly (legacy, packs, coexistence, partial set, stale/incomplete installs, provenance collision, unknown provenance, malformed metadata, path normalization)`);
+      console.log(`✓ self-test: ${passed} migration scenarios verdict correctly (legacy, packs, coexistence, partial set, unreadable surfaces, stale/incomplete installs, provenance collision, unknown provenance, malformed metadata, path normalization)`);
     }
 
     if (snapshotTree(tmpRoot).join('\n') !== before) {
@@ -800,7 +857,7 @@ if (isEntry) {
     const rootArg = value('--root');
     const cwdIsWorkspace = existsSync(join(process.cwd(), '.kai', 'manifest.json'));
     const root = rootArg ? resolve(rootArg) : (cwdIsWorkspace ? process.cwd() : null);
-    process.exit(reportMigration({ home, root }));
+    process.exit(reportMigration({ home, root, json: argv.includes('--json') }));
   } else {
     const root = value('--root') ? resolve(value('--root')) : process.cwd();
     process.exit(report(root, checkWorkspace(root)));
