@@ -183,3 +183,100 @@ Append-only communication log mirroring
 - questions: none. Stop on ambient discovery, a third pack, or any publication surface.
 - next:      principal-swe-infra — implement, validate, obtain independent architecture review,
              then hand to workflow-ship.
+
+## NOTE 2026-08-26-1420 — principal-swe-infra: implementation + R7 evidence
+
+- Commit `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f` generates the committed,
+  unpublished `kai-core` + `kai-personal` slice at `0.64.0`. Root agents and
+  skills are unchanged; marketplace topology remains N=1 at `source: "."`.
+- Runtime assets close over local imports. Core alone carries hooks and observer
+  scripts; personal carries demo scripts. Generated packs carry no npm
+  manifests, and the emitted-tree gate rejects missing local modules, bare
+  third-party imports, and premature package manifests.
+- Verification: `npm test`; all four pack gates; 148 pack self-test checks;
+  committed-tree check; 112-file full preview; generated core observer and
+  workspace-doctor plus personal demo-zoom imported successfully.
+- **R7 negative control:** the current tree exposed no `kai-core:` or
+  `kai-personal:` providers and no duplicate contract skill. Its delegated child
+  wrote four observer records. A clean worktree at parent `31d5d110...` with no
+  `packs/` wrote the same four records under the same probe. The pack-attributable
+  provider/skill/hook delta is zero; the duplicate is pre-existing root +
+  installed-monolith behavior, not ambient pack discovery. The steward accepted
+  this causal reading and amended R7 without weakening its stop condition.
+- `git status --porcelain` was empty and `git diff --quiet HEAD` exited 0 after
+  the implementation commit.
+
+## REVIEW 2026-08-26-1412 — principal-swe-architect: APPROVED
+
+- kind:      independent-architecture
+- change_ref: `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`
+- verdict:   approved
+- findings:  Initial review found an optional-semicolon hole in the module
+             parser and stale pre-extraction comments. Both were corrected,
+             mutation-tested, regenerated where needed, and re-reviewed.
+- boundary:  Approval covers generated-tree architecture and validation. It
+             does not publish packs or certify macOS/cloud host behavior.
+
+## HANDOFF 2026-08-26-1420 — principal-swe-infra -> workflow-ship
+
+- did:       Generated and committed core + personal, closed A1-A3 and R1-R11,
+             recorded the steward-approved R7 differential, and obtained the
+             required architecture approval at the implementation SHA.
+- state:     in-review
+- needs:     Definition-of-done / release-readiness gate, then PR merge and
+             `v0.64.0` release. Publication remains forbidden.
+- artifacts: implementation commit `5a5afb0e...`; item v6; this thread.
+- evidence:  `npm test` green; full preview 112 files; marketplace N=1; R7
+             pack-attributable delta zero.
+- questions: none.
+- next:      workflow-ship.
+
+## HANDOFF 2026-08-26-1424 — workflow-ship -> @operator
+
+- did:       Ran the **PREPARE** DoD gate. Verdict **RELEASE-READY** — six of six
+             dimensions Clear, none Gap. Item **v6 -> v7, `in-review ->
+             release-ready`**, lease `null`, `resume_state: null`, `next_role:
+             "@operator"`. Wrote the ship record and stamped the initiative log.
+             **It is NOT shipped.** kai merged, pushed, tagged, released and
+             published **nothing**; the branch is still unpushed and no PR exists.
+- state:     release-ready
+- needs:     Operator deployment. Four read-only pre-merge gates first — branch
+             shape; `git diff --name-only 5a5afb0e..HEAD` limited to
+             `kai/coordination/**`, `kai/library/releases/**` and the initiative
+             log (anything else voids the architecture approval); the
+             `marketplace.json` diff being exactly the two `0.63.1 -> 0.64.0`
+             version lines; and no third pack. Then move the ship record to its
+             canonical directory in the records commit, push, open the PR, require
+             `validate / contract` `conclusion: success` on the PR head, merge, and
+             release `v0.64.0`. **No pack may be published.**
+- artifacts: kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
+             (canonical move is deploy step 5); item v7; kai/initiatives/pack-split/log.md
+- evidence:  Re-derived from the working tree at `7102f94…` (this run had no shell):
+             `packs/` = `kai-core` 44 files + `kai-personal` 22, no third pack;
+             `COMMITTED_PACKS = ['core','personal']` (`scripts/lib/pack-plan.mjs:122`);
+             one `hooks.json`, core-only, invoking a core-resident
+             `observe-subagent.mjs`; guarantee blocks in 9 of 9 personal agents and
+             0 of 7 core agents; no pack `package.json`; A1/A2 guards at
+             `pack-preview.mjs:259,241`; `.gitattributes` pins `packs/** text eol=lf`;
+             `0.64.0` coherent across all eight version locations; marketplace N=1 at
+             `source: "."` with zero pack entries; six of six dependencies terminal;
+             `main`/`origin/main`/`FETCH_HEAD` all `31d5d110…`, branch exactly two
+             commits ahead. Suite results (`npm test`, four gates, 148 checks,
+             112-file preview) remain infra-attested and are re-executed by CI.
+- questions: **One non-blocking, for `principal-product-manager`, answerable after
+             release.** `.github/plugin/marketplace.json` was edited — the two-field
+             lockstep version bump. Acceptance **R8** explicitly permits it ("only its
+             lockstep release version changes") and topology is verified unchanged at
+             N=1 with zero pack entries, so the gate cleared on the item record. The
+             dispatch HANDOFF and `ACTIVE.md` compress the stop gate to "any
+             marketplace edit"; if that stricter literal reading was intended, reverting
+             two version lines is the fix and the operator can call it before merge.
+             Separately: please post a one-line NOTE confirming the baseline-comparison
+             sentence in **R7** is steward-authored — the current attestation is
+             `principal-swe-infra`'s. The verdict does not depend on it; R7 is satisfied
+             under its original wording (4 observer records with `packs/`, the identical
+             4 without, zero pack-attributable providers).
+- next:      @operator — run the deploy handoff in the ship record, then return
+             deployment evidence to `workflow-ship` for CONFIRM-START and
+             CONFIRM-COMPLETE. Milestone `first-pack-extracted` does not advance on
+             `release-ready`.

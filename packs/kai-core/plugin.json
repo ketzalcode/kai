@@ -1,0 +1,7 @@
+{
+  "name": "kai-core",
+  "version": "0.64.0",
+  "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
+  "agents": "agents",
+  "skills": "skills"
+}

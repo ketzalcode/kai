@@ -1,7 +1,7 @@
 {
   "name": "kai",
-  "version": "0.63.1",
-  "description": "Skills + scripts wired in this repo. Node deps power kai-core-web-content-extraction; lectoria (used by kai-core-generate-audio) is pinned as a git dependency and built on install via its prepare hook — run `npm install` at the plugin root. See skills/kai-core-generate-audio/SKILL.md.",
+  "version": "0.64.0",
+  "description": "Skills + scripts wired in this repo. Node deps support optional local extraction tooling; lectoria (used by kai-core-generate-audio) is pinned as a git dependency and built on install via its prepare hook — run `npm install` at the monolith plugin root. See skills/kai-core-generate-audio/SKILL.md.",
   "private": true,
   "scripts": {
     "validate": "node scripts/validate-plugin.mjs",

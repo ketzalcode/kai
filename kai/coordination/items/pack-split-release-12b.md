@@ -27,6 +27,8 @@ touches:
 depends_on:
   - item: pack-split-host-gates
     requires: completed
+  - item: pack-split-pack-dependency-manifests
+    requires: completed
   - item: pack-split-release-12a
     requires: shipped
   - item: pack-split-onboarding-installer

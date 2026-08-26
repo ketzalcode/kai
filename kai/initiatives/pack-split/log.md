@@ -2351,3 +2351,85 @@ skill, script, marketplace or CI file was edited, and no external action was tak
 scenarios, and publishes no pack. `first-pack-extracted` remains active; the
 host-semantics spike is the next unresolved dependency before generated
 `kai-core` + `kai-personal` trees can be promoted.
+
+## 2026-08-26 — DoD gate: generated-pack-trees RELEASE-READY (branch unpushed, awaiting the human merge and `v0.64.0`)
+
+`workflow-ship` ran **PREPARE** and the verdict is **RELEASE-READY** — all six dimensions
+**Clear**, none Gap, none waived at the dimension level. Item **v6 -> v7, `in-review ->
+release-ready`**, lease `null`, `resume_state: null`, `next_role: workflow-ship ->
+"@operator"`. **It is NOT shipped.** kai merged, pushed, tagged, released and published
+**nothing** — `refs/remotes/origin/feat/29-generated-core-personal` does not exist, so the
+branch is still unpushed and there is no PR. The deploy steps belong to the operator.
+
+**The release under gate.** Branch `feat/29-generated-core-personal`, exactly two commits
+off `main` `31d5d110cb2a3f63ef6085e707bfe412a8c0b0ea`: `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`
+*feat(packs): generate core and personal trees* — the reviewed `change_ref` — and
+`7102f94be129cd2dc5b3d49b09a4b4591dd155cb` *docs(coordination): record generated pack
+review*. Local `main`, `origin/main` and `FETCH_HEAD` all read `31d5d110…`, so an
+ff/squash merge is clean and no rebase is needed; a rebase would void the review binding.
+Version `0.63.1 -> 0.64.0`.
+
+**Acceptance was re-derived from the tree, not accepted on report.** This run had **no
+shell**, so every finding is a file read: `packs/` holds exactly `kai-core` (44 files — 7
+agents, 24 skills, 11 scripts, `hooks.json`, `plugin.json`) and `kai-personal` (22 files),
+matching the item's declared 44 + 22, with **no third pack** and
+`COMMITTED_PACKS = ['core','personal']` (`scripts/lib/pack-plan.mjs:122`); one hooks
+manifest, core-only, both entries invoking a single core-resident
+`observe-subagent.mjs` (**R2/R3**); demo scripts personal-only, observer and shared `lib/*`
+core-only; the preflight **and** `## Degraded mode` blocks in **9 of 9** personal agents
+and **0 of 7** core agents (**R1** as a decided residual); **no** `package.json` under
+`packs/`, with the gate's own mutation arm asserting `kai-core/package.json` fails
+(**R11**); **A1** `existsSync(base)` guard and **A2** `.DS_Store`/`Thumbs.db` skip at
+`pack-preview.mjs:259,241`; **A3** `packs/** text eol=lf` pinned in `.gitattributes`;
+`0.64.0` coherent across all eight version locations; the proposal scoped to one Windows
+host with macOS/cloud listed unverified (**R6**); and six of six dependencies terminal.
+The suite itself — `npm test`, four pack gates, 148 self-test checks, committed-tree
+`--check`, the 112-file `--all` preview, direct imports of generated entry points —
+remains **infra-attested** and is re-executed mechanically by CI at deploy step 6, which
+fails closed.
+
+**Dimension 4 was right-sized, and its real blast radius named rather than waived away.**
+A canary, a ring and a runtime flag are **not applicable**: the trees are inert data, no
+service, no traffic, no migration, no data, and no pack is installable. But the marketplace
+entry is `source: "."`, so from `v0.64.0` every `/plugin update kai` user receives the 66
+duplicated files inside the monolith payload — and the live risk is **ambient host
+discovery**, not installation. That is precisely what **R7** measured on Windows CLI 1.0.80
+as a differential against an isolated no-`packs/` worktree at `31d5d110…`: zero
+pack-attributable provider, skill and hook delta, with the residual duplicate hook firing
+identical in the baseline. macOS and the cloud host stay **unmeasured** — the architect's
+approval says so, and `pack-split-host-gates` owns closing it. Reversibility is proven in
+code rather than asserted: `checkCommitted` returns ok with the note *"no committed packs
+configured"* when `COMMITTED_PACKS` is empty and `packs/` is absent
+(`pack-preview.mjs:259-262`), so a revert is self-consistent — it just has to carry a
+`0.64.1` bump + CHANGELOG + README, because `packs/` is a `BEHAVIOR_PREFIX`.
+
+**Two record-level frictions were surfaced, not smoothed over.** (1) The steward's dispatch
+HANDOFF and `ACTIVE.md` compress this item's stop gate to *"any marketplace edit"*, and
+`.github/plugin/marketplace.json` **was** edited — the two-field lockstep bump. The
+authoritative item record governs and acceptance **R8** permits exactly that ("only its
+lockstep release version changes"); topology is verified unchanged at **N=1**, one `kai`
+entry at `source: "."`, **zero pack entries**, so the gate's purpose holds. It is raised to
+`principal-product-manager` as a non-blocking thread question and bound mechanically as
+**deploy step 3**, which aborts on any entry change — and if the stricter literal reading
+was intended, the fix is reverting two version lines before merge. (2) `touches` omitted
+`plugin.json`, `package-lock.json` and `marketplace.json`, which the bump necessarily
+edits; all three were added as a **record-accuracy correction, not a scope expansion**,
+with no touch collision (`pack-split-release-12b` is `proposed`, no lease). Also recorded:
+**R7's amendment is attested by `principal-swe-infra`, not by a steward-authored entry** —
+non-blocking, because the evidence satisfies R7's *original* wording (the tree adds
+nothing), so a steward confirmation NOTE is hygiene rather than a gate.
+
+**Nothing was dropped and nothing downstream moved.** A4's publication guard stays with
+`pack-split-release-12b` and must land no later than the flip; macOS/cloud certification
+stays with `pack-split-host-gates`; review-lens binding stays off this critical path until
+the engineering tree in `12c`; runtime dependency manifests stay deferred to publication.
+The ship record was written at
+`kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees.md` — library
+zone, with the move to `…/02-ship-pack-split-generated-pack-trees/ship-record.md` as
+**deploy step 5** inside the same records commit, because the file tool cannot create a
+directory without a shell (same handling as the `v0.60.0` record, so no post-ship
+reconciliation is owed). **Milestone `first-pack-extracted` is unchanged** —
+`release-ready` is not `shipped`, `pack-split-first-department` and `pack-split-host-gates`
+both require this item at `shipped` and stay non-dispatchable, and CONFIRM-START /
+CONFIRM-COMPLETE still need operator deployment evidence plus the post-update R7 re-check
+against the published artifact before anything here is called shipped.

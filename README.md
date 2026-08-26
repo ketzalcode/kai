@@ -31,12 +31,17 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.63.1` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.64.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**Delegated Kai agents now load inherited skills through the host instead of
-falling back to workspace files.** Every agent declares the `skill` tool, which
-keeps inherited contracts available when one Kai role dispatches another.
+**The first generated pack slice is committed: `kai-core` + `kai-personal`.**
+Root remains the canonical source; generation copies agents, skills, routed
+scripts, each script's local module closure, and the fleet hooks exactly once.
+These trees are deliberately **unpublished and not installable from the
+marketplace**. They carry no npm manifests yet, so optional Lectoria execution
+inside a pack resolves only through `LECTORIA_BIN` or `PATH` until publication
+owns dependency installation.
+
 The pack migration remains checkable before it is possible:
 `npm run doctor:migration` is a read-only report on whether a host may install
 the pack surface: it reads the host's install metadata and every install tree,
@@ -48,7 +53,7 @@ evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew.
-kai still ships as the single `kai` plugin; no packs are published yet.
+kai still ships as the single `kai` plugin; the marketplace remains one entry.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai

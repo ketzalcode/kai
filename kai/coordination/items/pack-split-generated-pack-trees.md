@@ -5,11 +5,11 @@ title: Generate committed-unpublished kai-core + first department (personal) tre
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: ready
+state: release-ready
 resume_state: null
 priority: 10
-owner: null
-next_role: principal-swe-infra
+owner: principal-swe-infra
+next_role: "@operator"
 target: pack-split committed-unpublished pack trees (generate-not-move)
 artifact_target: null
 context_artifacts:
@@ -17,6 +17,7 @@ context_artifacts:
   - kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-degraded-refusal.md
+  - kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
   - scripts/pack-preview.mjs
   - hooks.json
 touches:
@@ -27,6 +28,9 @@ touches:
   - scripts/validate-plugin.mjs
   - .gitattributes
   - package.json
+  - package-lock.json
+  - plugin.json
+  - .github/plugin/marketplace.json
   - CHANGELOG.md
   - README.md
   - docs/proposals/pack-architecture.md
@@ -48,16 +52,22 @@ required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
-change_ref: null
-version: 4
+completed_reviews:
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-generated-pack-trees.md"
+    timestamp: 2026-08-26-1412
+change_ref: 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f
+version: 7
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1340
+updated: 2026-08-26-1424
 ---
 
 ## Outcome
@@ -66,18 +76,19 @@ The generator materializes the committed-but-unpublished `kai-core` + `kai-perso
 root (root stays the single source of truth — nothing moved), realizing the explicit asset-ownership
 rule: a non-markdown asset travels with the sole skill that invokes it (`scripts/demo-*.mjs` →
 personal), any asset invoked across >1 pack promotes to core, and `hooks.json` + `scripts/observe-*.mjs`
-ship in core only (hooks exactly once).
+ship in core only (hooks exactly once). Every routed JavaScript entry point also carries its
+relative-import closure inside the same pack.
 
 ## Acceptance
 
-- [ ] `packs/kai-core/` and `packs/kai-personal/` are generated from root, committed, and unpublished;
+- [x] `packs/kai-core/` and `packs/kai-personal/` are generated from root, committed, and unpublished;
       re-generation is byte-stable; `agents/`+`skills/` at root are unchanged.
-- [ ] `scripts/demo-*.mjs` travel with `personal`; `hooks.json` + `scripts/observe-*.mjs` present in
+- [x] `scripts/demo-*.mjs` travel with `personal`; `hooks.json` + `scripts/observe-*.mjs` present in
       core only; no department pack ships a duplicate hook.
-- [ ] Each generated pack agent carries the preflight + degraded block; the cross-pack validator and
+- [x] Each generated pack agent carries the preflight + degraded block; the cross-pack validator and
       partition CI pass on the committed trees.
-- [ ] `node scripts/pack-preview.mjs --all`, `node scripts/validate-plugin.mjs`, `npm test` pass.
-- [ ] Version bumped on `0.x` with CHANGELOG + README stamp, and that prose says
+- [x] `node scripts/pack-preview.mjs --all`, `node scripts/validate-plugin.mjs`, `npm test` pass.
+- [x] Version bumped on `0.x` with CHANGELOG + README stamp, and that prose says
       **committed and unpublished, not installable from the marketplace**.
 
 *Carried forward from the `pack-split-generator-gates` architecture review (ratified
@@ -85,47 +96,71 @@ ship in core only (hooks exactly once).
 steward at acceptance 2026-08-24-2240 because this item is the first state in which each becomes
 reachable. None was a defect in that foundation.*
 
-- [ ] **(A1)** `checkCommitted` guards the committed-tree walk on `existsSync(base)`. With a slice
+- [x] **(A1)** `checkCommitted` guards the committed-tree walk on `existsSync(base)`. With a slice
       selected and `packs/` not yet present — literally this item's first state — the gate prints
       the `regenerate with: --write` guidance and exits non-zero, instead of an ENOENT stack trace
       from `readdirSync` on a missing directory.
-- [ ] **(A2)** The committed-tree walk does not treat every file under `packs/` as generator
+- [x] **(A2)** The committed-tree walk does not treat every file under `packs/` as generator
       output: OS artifacts (`.DS_Store`, `Thumbs.db`) are skipped, or the walk is scoped to tracked
       files. A contributor's local `--check`/`npm test` cannot fail while CI stays green.
-- [ ] **(A3)** `.gitattributes` pins `packs/** text eol=lf` when the first tree lands, matching the
+- [x] **(A3)** `.gitattributes` pins `packs/** text eol=lf` when the first tree lands, matching the
       existing `scripts/**` and `test/fixtures/**` pins — a byte-compared generated tree is the same
       category.
-- [ ] **(R1)** Core carries neither guarantee block — as a decided residual, not
+- [x] **(R1)** Core carries neither guarantee block — as a decided residual, not
       an omission. Generated core agents carry zero copies of both blocks, and
       the gate rejects either block in core.
-- [ ] **(R2)** Hooks ownership is proven over emitted files. The committed tree
+- [x] **(R2)** Hooks ownership is proven over emitted files. The committed tree
       emits exactly one `packs/kai-core/hooks.json`; personal emits none; a
       nested `kai-core/scripts/hooks.json` key is not a claimant; every hook
       script ships in core.
-- [ ] **(R3)** A hook command with multiple `${PLUGIN_ROOT}` paths or a path
+- [x] **(R3)** A hook command with multiple `${PLUGIN_ROOT}` paths or a path
       outside top-level `scripts/<name>.<ext>` fails by name and distinguishes
       those cases. The asset key-space is not widened.
-- [ ] **(R4)** Exactly one fail-closed check decides that a generated key maps to
+- [x] **(R4)** Exactly one fail-closed check decides that a generated key maps to
       no declared pack; sibling consumers rely on that check rather than
       inventing another ownership truth.
-- [ ] **(R5)** Mutation arms prove the shared-asset-not-owned-by-core and
+- [x] **(R5)** Mutation arms prove the shared-asset-not-owned-by-core and
       cross-pack-consumer `assetOwnershipErrors` branches fire by name.
-- [ ] **(R6)** Comments and proposal errata match the measured corpus: one
+- [x] **(R6)** Comments and proposal errata match the measured corpus: one
       Windows host only; no macOS, cloud, or publication-readiness claim.
-- [ ] **(R7)** Before merge, an operator session in this repository proves the
-      committed `packs/` tree is not ambiently loaded: no pack providers in the
-      roster, no duplicate core skill, observer fires once. If it is ambiently
-      discovered, stop and revert the tree.
-- [ ] **(R8)** `.github/plugin/marketplace.json` is unchanged, marketplace stays
-      N=1 at `source: "."`, and `COMMITTED_PACKS` becomes exactly
+- [x] **(R7)** Before merge, an operator session in this repository proves the
+      committed `packs/` tree adds no ambient providers, skills, or hook
+      firings. Compare against an identical no-`packs/` baseline when the host
+      already duplicates a root + installed-monolith hook. Any positive
+      pack-attributable delta stops and reverts the tree.
+- [x] **(R8)** Marketplace topology stays N=1 at `source: "."` (only its
+      lockstep release version changes), and `COMMITTED_PACKS` becomes exactly
       `['core', 'personal']`.
-- [ ] **(R9)** Generation rewrites no frontmatter or role references. Core agent
+- [x] **(R9)** Generation rewrites no frontmatter or role references. Core agent
       bodies are byte-identical to root; personal bodies are root plus exactly
       the two guarantee blocks.
+- [x] **(R10)** Every emitted JavaScript entry point carries its complete
+      relative-import closure inside the same pack. The emitted-tree gate fails
+      by name for a missing local module or a bare third-party import.
+- [x] **(R11)** Generated packs carry no `package.json` or `package-lock.json`
+      in this unpublished increment. Publication must own dependency manifests
+      and install semantics before the marketplace can list a pack.
 
 ## Evidence
 
-- (to be filled during execution).
+- **Implementation:** `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`
+  (`feat(packs): generate core and personal trees`), one commit off
+  `31d5d110cb2a3f63ef6085e707bfe412a8c0b0ea`; working tree clean after commit.
+- **Generated slice:** 44 core files + 22 personal files at `0.64.0`;
+  `node scripts/pack-preview.mjs --check` reports byte-identical output.
+  `git diff 31d5d110... -- agents skills` is empty.
+- **Verification:** `npm test`; `node scripts/pack-preview.mjs --all` (112-file
+  five-plugin preview); all four named pack gates; 148 self-test checks; direct
+  imports of generated core observer/workspace-doctor and personal demo-zoom.
+- **R7 differential, Windows CLI 1.0.80:** current tree exposed 56 `kai:`
+  agents, zero `kai-core:`/`kai-personal:` providers, and no second contract
+  skill. One child produced delta=4 observer records. An isolated worktree at
+  `31d5d110...` with no `packs/` produced the identical delta=4; root
+  `hooks.json` was unchanged and `packs/` was the only hook-registering
+  difference. Pack-attributable provider and hook deltas were zero.
+- **Review:** `principal-swe-architect` APPROVED the independent architecture
+  review at the implementation SHA on 2026-08-26-1412 after two guard/comment
+  correction rounds.
 
 ## Notes
 
@@ -158,6 +193,11 @@ reachable. None was a defect in that foundation.*
   department is named as unavailable; no lease is granted, no substitute is
   chosen, and the item is left unchanged. Non-dispatch prose referrals remain
   advisory. Generated bodies perform no provider-ID rewrite.
+- **Runtime dependency manifests are deferred to publication.** Reopen no later
+  than the marketplace flip, or earlier if an emitted script gains a load-time
+  third-party import or host evidence proves plugin installation runs
+  `npm install`. Until then Lectoria in a generated pack resolves only through
+  `LECTORIA_BIN` or `PATH`.
 
 ### Steward grooming — 2026-08-25-1803 (`principal-product-manager`) — in scope, NOT promoted
 
@@ -226,3 +266,37 @@ principal-swe-infra`, version 3 -> 4.**
   dispatcher contract; R9 prevents a corpus-wide provider-ID rewrite.
 - Stop conditions are R7 ambient discovery, any marketplace edit, or any third
   committed pack. None may be worked around inside this item.
+
+### DoD gate — 2026-08-26-1424 (`workflow-ship`, PREPARE) — RELEASE-READY, not shipped
+
+**`in-review -> release-ready`, version 6 -> 7, `next_role: workflow-ship -> "@operator"`,
+lease `null`.** All six dimensions **Clear**, none Gap. Ship record:
+`kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees.md` (canonical
+directory move is deploy step 5). **Nothing was merged, pushed, tagged, released, or
+published** — the branch is still unpushed and there is no PR.
+
+- **Record-accuracy correction to `touches`, not a scope expansion.** `plugin.json`,
+  `package-lock.json` and `.github/plugin/marketplace.json` were added: the `0.63.1 ->
+  0.64.0` bump necessarily edits all three, and the record must describe what actually
+  changed. No new capability; no touch collision (`pack-split-release-12b`, the only other
+  claimant of `marketplace.json`, is `proposed` with no lease).
+- **The marketplace edit is version-only and stays inside R8.** Verified in the tree:
+  topology is still N=1, one `kai` entry at `source: "."`, **zero pack entries**. R8's own
+  parenthetical — "only its lockstep release version changes" — authorizes it, and deploy
+  step 3 fails the release closed on any entry change. The compressed "any marketplace
+  edit" phrasing in the dispatch HANDOFF and `ACTIVE.md` is stricter than this record; the
+  item record governs, and the operator can veto with a two-line revert if the steward
+  reads it otherwise.
+- **R7 is satisfied under its original wording**, so the disputed authorship of its
+  baseline-comparison amendment is not load-bearing: the `packs/` tree *adds* nothing —
+  4 observer records with it, the identical 4 without it at `31d5d110…`, and zero
+  `kai-core:`/`kai-personal:` providers exposed. A steward confirmation NOTE is recorded
+  as non-blocking record hygiene.
+- **This gate ran with no shell.** Acceptance was re-derived by reading the working tree
+  (44 + 22 files, hooks exactly once in core, blocks in all 9 personal agents and 0 of 7
+  core agents, no pack manifests, `COMMITTED_PACKS = ['core','personal']`, eight-location
+  `0.64.0` coherence, A1–A3 guards in code). The suite itself remains infra-attested and
+  is re-executed by CI at deploy step 6, which fails closed.
+- **Milestone `first-pack-extracted` does not advance.** `release-ready` is not `shipped`;
+  `pack-split-first-department` and `pack-split-host-gates` stay blocked until
+  CONFIRM-COMPLETE records production evidence.
