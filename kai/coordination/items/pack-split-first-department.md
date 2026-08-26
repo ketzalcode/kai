@@ -5,16 +5,17 @@ title: Prove kai-core + personal installs and operates over the plugin boundary
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: in-review
+state: release-ready
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: "@operator"
 target: pack-split first-department install proof
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
   - docs/proposals/pack-architecture.md
+  - kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md
 touches:
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 depends_on:
@@ -35,9 +36,9 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-first-department.md"
     timestamp: 2026-08-26-1516
 change_ref: 3b14dc6cfb693a7925c48a8c3d4446dda041c03f
-version: 9
+version: 13
 lease: null
-updated: 2026-08-26-1516
+updated: 2026-08-26-1532
 ---
 
 ## Outcome
@@ -85,6 +86,10 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
 - Independent architecture review ratified the proof at exact `change_ref`
   `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; the detailed REVIEW packet is
   in `kai/coordination/threads/pack-split-first-department.md`.
+- Six-dimension DoD gate passed 6/6 Clear at PREPARE; canonical record:
+  `kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
+- Item is `release-ready`, not shipped. The operator must merge the evidence/records
+  PR with green CI and return the exact deployment + main verification evidence.
 
 ## Notes
 

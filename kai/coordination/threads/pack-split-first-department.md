@@ -313,3 +313,47 @@ Append-only communication log mirroring
 - questions: none
 - next:      workflow-ship — prepare release readiness only; architecture has not moved
              the item to `release-ready` or `shipped`.
+
+## HANDOFF 2026-08-26-1525 — workflow-ship -> @operator
+
+- did:       **RELEASE-READY.** Ran all six DoD dimensions: scope-true Clear;
+             verified Clear; reviewed Clear; shippable-safely Clear; documented
+             Clear; coordination-closed Clear. Promoted the canonical ship record,
+             moved the item from `in-review` to `release-ready` (final PREPARE
+             record v13), cleared the workflow lease, and refreshed
+             BOARD/ACTIVE/log/deliverables. No plugin
+             behavior, reviewed reliability finding, pack tree, manifest, release
+             metadata, marketplace entry, tag, release, version, or publication was
+             changed.
+- state:     release-ready
+- needs:     Commit and push only the seven PREPARE record paths; open/refresh the
+             `docs/29-first-department-proof` PR; require green CI; merge with a
+             merge commit preserving `3b14dc6…` ancestry; then return deployment and
+             main-verification evidence. Publication stop gate: no version bump, tag,
+             GitHub release, marketplace edit, or pack publication.
+- artifacts: C:\src\kai\kai\library\releases\2026-08-26\03-ship-pack-split-first-department\ship-record.md;
+             C:\src\kai\kai\coordination\items\pack-split-first-department.md;
+             C:\src\kai\kai\coordination\threads\pack-split-first-department.md;
+             C:\src\kai\kai\initiatives\pack-split\northstar.md;
+             C:\src\kai\kai\initiatives\pack-split\deliverables.md
+- evidence:  Reviewed change_ref `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`;
+             architecture RATIFIED at that exact ref; later `4c9d205…` and
+             `6681cf2…` are records only; raw PASS packet at
+             C:\src\kai\.kai\runs\eng\2026-08-26\01-infra-pack-split-first-department\evidence\;
+             enabling v0.64.0 release already production-verified at merge
+             `2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`; captured 2026-08-26-1525
+             from workspace root C:\src\kai
+- questions: none
+- next:      @operator — execute the ship record's merge/CI steps and return PR URL,
+             merge SHA, main run URL/ID + successful conclusion, start/completion
+             timestamps, and the four read-only main verification results.
+
+## NOTE 2026-08-26-1532 — workflow-ship PREPARE record correction
+
+- corrected: Added the exact seven-path `git add` command to the deploy handoff
+             and removed a nonexistent director-summary path from the artifact list.
+             Item v12 -> v13; lifecycle remains `release-ready`, `next_role:
+             "@operator"`, lease clear.
+- scope:     Records only. No reviewed artifact, implementation, pack, manifest,
+             release metadata, marketplace state, version, tag, release, or
+             publication changed.

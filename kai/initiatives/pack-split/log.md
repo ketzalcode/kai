@@ -2553,3 +2553,26 @@ Item v8 -> v9 remains `in-review`, its review lease is clear, and `workflow-ship
 is next for the six-dimension gate using the steward-defined already-published
 enabling releases plus operator proof. Architecture did not mark the item
 `release-ready` or `shipped`; the initiative and milestone remain active/open.
+
+## 2026-08-26 — first-department proof release-ready
+
+`workflow-ship` ran PREPARE and resolved all six DoD dimensions **Clear**:
+scope-true, verified, reviewed, shippable-safely, documented, and
+coordination-closed. The final PREPARE record is v13 at `release-ready`,
+`next_role: @operator`, with no waiting question and no lease. The exact reviewed
+change remains `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; descendants
+`4c9d205…` and `6681cf2…` are coordination/review records only.
+
+The canonical ship record is
+`kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
+It records the operator proof, the three corrected probe/fixture failures as
+non-product failures, and that the successful rerun replaced raw pre-failure
+evidence. Rollback is limited to reverting the evidence-record merge. The
+publication stop gate forbids any plugin behavior, pack-tree, manifest,
+marketplace, release-metadata, version, tag, release, or publication change.
+
+This is **not shipped**. The operator must commit/push the PREPARE records, merge
+the evidence/coordination PR with green CI while preserving review ancestry,
+then return deployment completion and read-only `main` verification evidence.
+The enabling product release is already-deployed, production-verified `v0.64.0`
+at merge `2eea0f04…`; no new version is owed or permitted.

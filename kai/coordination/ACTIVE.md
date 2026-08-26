@@ -1223,3 +1223,13 @@ product or architecture defects. Item v9 stays **in-review**, lease is clear, an
 `workflow-ship` is next for the DoD gate under the steward-defined
 already-published-enablers plus operator-proof semantics. Nothing is marked
 release-ready or shipped; the initiative and milestone remain active/open.
+
+**Workflow-ship PREPARE 2026-08-26-1525.**
+`pack-split-first-department` is **release-ready v13**, not shipped. All six DoD
+dimensions are Clear. The canonical ship record is
+`kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
+The only deployment left is the operator's green-CI merge of the reviewed
+evidence/coordination PR to `main`, preserving reviewed `3b14dc6…` ancestry,
+followed by main artifact/item verification. The already-deployed enabling
+release remains `v0.64.0` at `2eea0f04…`; no new plugin behavior, version bump,
+tag, release, marketplace edit, or pack publication is authorized.
