@@ -76,3 +76,106 @@ Append-only communication log mirroring
 - questions: none. `waiting_on_questions` stays `[]`.
 - next:      **principal-swe-infra** (via the director) — design and build. This steward pass
              wrote no code, ran no command, took no lease, and dispatched nothing.
+
+## HANDOFF 2026-08-25-2140 — principal-swe-infra -> principal-swe-infra (blocked on a shell)
+
+- did:       **Built the migration doctor end to end, in the working tree, uncommitted.**
+             `ready -> in-progress`, `owner: null -> principal-swe-infra`, v2 -> v3, **no lease**
+             (sole worker, disjoint touches — same as every prior infra item here).
+             New `scripts/lib/migration-doctor.mjs`: reads `$COPILOT_HOME/config.json` (parsed as
+             **JSONC** — the real file opens with two `//` lines, so plain `JSON.parse` fails on
+             every host) and every tree under `installed-plugins/`, reconciles metadata against
+             disk, and classifies legacy `kai`, `kai-core`, department packs, and direct vs
+             marketplace provenance. `scripts/workspace-doctor.mjs` gains an opt-in
+             `--migration-check` mode (+ `npm run doctor:migration`), the printer, and a
+             16-case `migrationSelfTest()` inside the existing `--self-test`.
+             **Fail-closed:** `clear` / `blocked` / `unknown`, exit 0 only for `clear`. Legacy
+             `kai` present is a refusal with the exact uninstall + confirm steps; legacy+pack
+             coexistence is a **refusal**, not a warning. **Read-only:** no uninstall, delete or
+             rewrite anywhere, proven by a before/after byte-identical tree snapshot in the
+             self-test. **`unknown` is never success:** missing home, unreadable config, junk
+             entry, unidentifiable tree, or provenance inferred from a cache path all report
+             `unknown` with the evidence named; "nothing is installed" is claimed only when both
+             surfaces were readable and every entry classified.
+             One contract change, and it was forced: `.kai/manifest.json` `"plugin"` is now the
+             closed set `{kai, kai-core}` — the doctor previously rejected any workspace whose
+             provenance had been migrated, i.e. the migration it prescribes produced a workspace
+             its own default run failed. `schema_version` unchanged, no ladder step added.
+             Release metadata `0.62.0 -> 0.63.0` across all six locations + `package-lock.json`.
+             Packs stay unpublished: `COMMITTED_PACKS` empty, marketplace N=1, `source: "."`.
+- state:     in-progress
+- change_ref: **null — nothing was committed, so no review can bind.**
+- needs:     **A shell. This session had none** — the only tools available were file read/write,
+             grep and glob. Concretely, **none** of the following happened and none of it should
+             be read into the record as done:
+             **no branch** (`kai/feat/29-migration-doctor` does **not** exist; the edits sit
+             uncommitted on `main`), **no commit and no SHA**, **`de036ba` was never resolved to
+             a full SHA**, **`npm test` was not run**, **`workspace-doctor --self-test` was not
+             run**, **`node --check` was not run on either new/edited script**, and **CI has not
+             seen any of it**. The code was verified by careful manual review only. Treat every
+             behavioural claim above as **unverified** until the suite runs.
+             Next actor (`@operator`, or `principal-swe-infra` in a session with a shell), in
+             order: (1) create `kai/feat/29-migration-doctor` from `main`, (2) run
+             `node scripts/check-syntax.mjs`, then `node scripts/workspace-doctor.mjs --self-test`,
+             then `npm test`, (3) fix whatever the suite finds — the 16-case matrix is the
+             specification, and a case failing means the code is wrong, not the case, (4) commit
+             and record the real SHA as `change_ref`, (5) then `in-progress -> in-review`.
+             **No push, no PR, no merge, no tag, no release** was requested and none was done.
+- artifacts: scripts/lib/migration-doctor.mjs (new) · scripts/workspace-doctor.mjs ·
+             test/fixtures/host-installs.json (new) · test/README.md · docs/getting-started.md ·
+             docs/reference/plugin-structure.md ·
+             skills/kai-core-workspace-onboarding/SKILL.md · CHANGELOG.md · README.md ·
+             package.json · package-lock.json · plugin.json · .github/plugin/marketplace.json ·
+             kai/coordination/items/pack-split-migration-doctor.md (v3,
+             `### Implementation — 2026-08-25-2140`)
+- evidence:  **Verified (one host, Windows, 2026-08-25, `C:\Users\senrique\.copilot`):**
+             `config.json` is JSONC; `installedPlugins[]` records `marketplace: ""` for a direct
+             install; direct trees live at `installed-plugins/_direct/<owner>--<repo>/` and carry
+             a real `plugin.json`. That is the ground truth the detector is built on.
+             **Unverified:** the marketplace-bucket layout has **never been observed**, so any
+             non-`_direct` bucket is labelled *inferred* and never asserted; macOS and cloud
+             layouts are unverified (that is `pack-split-host-semantics-spike`, which this item
+             is informed by and not gated on). Path normalization is covered by fixtures for
+             Windows separators, a case-differing `Installed-Plugins`, doubled slashes and a
+             trailing slash — encoded, not executed.
+             **No acceptance box was ticked.** Criteria 1-4 have encoded proof that has never
+             run; the local-suite and CI-green criteria are false by construction today.
+- questions: **One, for the steward/director — not resolved here.** The dispatching instruction
+             asked for **architecture + security** review at the same exact ref; this record's
+             `review_requirements` are **`principal-security`/independent-security** and
+             **`principal-sre`/independent-reliability**. The record is authoritative and was
+             left untouched — nothing dropped, nothing added. If an architecture review is also
+             wanted, the steward adds it to `review_requirements`; a builder does not add or
+             remove its own reviewers. `waiting_on_questions` stays `[]` because this blocks the
+             review step, not the build.
+             **A second thing the reviewers should be told plainly:** the marketplace-install
+             layout is inferred from one direct-install host. `principal-sre` should read the
+             `unknown` verdict as the mitigation — the doctor refuses to call an unverified
+             layout clean — and `principal-security` should confirm the report leaks nothing
+             beyond paths the operator already owns (it prints install paths and plugin names,
+             never file contents, tokens, or `source_sha` values).
+- next:      **principal-swe-infra** in a session with a shell (or `@operator`) — branch, run the
+             suite, commit, then hand to review at that exact ref.
+
+## HANDOFF 2026-08-26-1245 — principal-swe-infra -> workflow-ship
+
+- did:       Completed the migration doctor on branch
+             `kai/feat/29-migration-doctor`. The review ref is
+             `961c86c6e948093999256e64a88f2fe31f53cfe4`; PR #163 is open and
+             mergeable. The detector now fails closed across 26 scenarios,
+             recursively inventories install trees without leaving the host
+             install root, emits no destructive guidance from incomplete
+             evidence, and provides machine-readable `0/2/3` verdicts.
+- state:     release-ready
+- evidence:  `node scripts/workspace-doctor.mjs --self-test` passed; `npm test`
+             passed; GitHub Actions run `33006110904`, job `98300155097`,
+             `validate / contract` passed at the review ref. Independent
+             security verdict `CLEAR`; independent reliability verdict `READY`.
+- artifacts: `kai/initiatives/pack-split/artifacts/security/pack-split-migration-doctor.md`;
+             `kai/initiatives/pack-split/artifacts/reliability/pack-split-migration-doctor.md`;
+             https://github.com/RubenSaucedo/kai/pull/163
+- questions: none. Marketplace, macOS, and cloud layout evidence remains owned
+             by `pack-split-host-semantics-spike`; inferred layouts stay
+             `unknown` and cannot authorize installation.
+- next:      workflow-ship — merge PR #163, release `v0.63.0`, verify the
+             published release, and persist the ship record.

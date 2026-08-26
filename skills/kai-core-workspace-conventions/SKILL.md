@@ -515,7 +515,7 @@ automatically.
 
 ```json
 {
-  "plugin": "kai",
+  "plugin": "<kai|kai-core>",
   "version": "<plugin version at scaffold time>",
   "schema_version": 2,
   "scaffolded": "<YYYY-MM-DD>",
@@ -531,6 +531,9 @@ automatically.
   "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }
 ```
+
+`plugin` records the install surface that scaffolded the workspace: `kai` for
+the legacy monolith or `kai-core` after pack migration. No third value is valid.
 
 One optional key may follow, written only on an explicit operator choice:
 

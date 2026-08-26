@@ -1,0 +1,328 @@
+{
+  "_note": [
+    "Fixture data for the pack-migration doctor (scripts/lib/migration-doctor.mjs).",
+    "Each home is a fake $COPILOT_HOME and each workspace a fake workspace root;",
+    "workspace-doctor --self-test materializes them into a temp directory, runs the",
+    "read-only report, asserts the verdict, and removes the temp tree. They are data,",
+    "not committed directories, because a host cache tree ('installed-plugins/_direct')",
+    "and an empty directory are both things a git checkout cannot reproduce faithfully.",
+    "A file value that is an object is written as JSON; an array of lines is written",
+    "verbatim, which is how the deliberately malformed files stay malformed; a key",
+    "ending in '/' creates an empty directory."
+  ],
+
+  "homes": {
+    "legacy-direct": {
+      "config.json": [
+        "// User settings belong in settings.json.",
+        "// This file is managed automatically.",
+        "{",
+        "  \"installedPlugins\": [",
+        "    {",
+        "      \"name\": \"kai\",",
+        "      \"marketplace\": \"\",",
+        "      \"version\": \"0.55.0\",",
+        "      \"installed_at\": \"2026-08-13T00:56:20.8446777Z\",",
+        "      \"cache_path\": \"C:\\\\Users\\\\dev\\\\.copilot\\\\installed-plugins\\\\_direct\\\\RubenSaucedo--kai\",",
+        "      \"enabled\": true,",
+        "      \"source\": { \"source\": \"github\", \"repo\": \"RubenSaucedo/kai\" },",
+        "      \"source_sha\": \"a879116fb2d9d125e3f83722dcabbce832a49cd6\"",
+        "    }",
+        "  ]",
+        "}"
+      ],
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai", "version": "0.55.0" }
+    },
+
+    "same-source-collision": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/Official--kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/_direct/Official--kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      },
+      "installed-plugins/_direct/Fork--kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      }
+    },
+
+    "packs-marketplace": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          },
+          {
+            "name": "kai-engineering",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-engineering",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" },
+      "installed-plugins/kai-plugins/kai-engineering/plugin.json": { "name": "kai-engineering", "version": "1.0.0" }
+    },
+
+    "coexistence": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai",
+            "marketplace": "",
+            "version": "0.55.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai" }
+          },
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai", "version": "0.55.0" },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
+    "partial-packs": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-engineering",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-engineering",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/kai-plugins/kai-engineering/plugin.json": { "name": "kai-engineering", "version": "1.0.0" }
+    },
+
+    "stale-direct": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai", "version": "0.55.0" }
+    },
+
+    "provenance-collision": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai-core",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai-core" }
+          },
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/_direct/RubenSaucedo--kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
+    "inferred-provenance": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" },
+      "installed-plugins/_direct/RubenSaucedo--kai-preview/": null
+    },
+
+    "malformed-config": {
+      "config.json": [
+        "// truncated by an interrupted write",
+        "{",
+        "  \"installedPlugins\": [",
+        "    { \"name\": \"kai\","
+      ],
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      }
+    },
+
+    "malformed-entries": {
+      "config.json": [
+        "{",
+        "  \"installedPlugins\": [",
+        "    42,",
+        "    { \"version\": \"1.0.0\", \"marketplace\": \"kai-plugins\" }",
+        "  ]",
+        "}"
+      ],
+      "installed-plugins/": null
+    },
+
+    "path-normalization": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "C:\\Users\\dev\\.copilot\\Installed-Plugins\\kai-plugins\\kai-core",
+            "enabled": true
+          },
+          {
+            "name": "kai-engineering",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins//kai-plugins/kai-engineering/",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" },
+      "installed-plugins/kai-plugins/kai-engineering/plugin.json": { "name": "kai-engineering", "version": "1.0.0" }
+    },
+
+    "absent": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/": null
+    },
+
+    "missing-installed-list": {
+      "config.json": { "settings": {} },
+      "installed-plugins/": null
+    },
+
+    "missing-install-dir": {
+      "config.json": { "installedPlugins": [] }
+    },
+
+    "install-path-file": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins": { "unexpected": "file" }
+    },
+
+    "symlinked-install-dir": {
+      "config.json": { "installedPlugins": [] }
+    },
+
+    "foreign-identity": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "renamed-kai-fork",
+        "version": "1.0.0"
+      }
+    },
+
+    "manifestless-legacy-remnant": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/_direct/RubenSaucedo--kai/agents/director.agent.md": [
+        "legacy remnant without plugin.json"
+      ]
+    },
+
+    "deep-marketplace-layout": {
+      "config.json": { "installedPlugins": [] },
+      "installed-plugins/kai-plugins/versions/1.0.0/kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      }
+    },
+
+    "provenance-disagreement": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/cache-v2/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "installed-plugins/cache-v2/kai-core/plugin.json": {
+        "name": "kai-core",
+        "version": "1.0.0"
+      }
+    },
+
+    "dangling-install-link": {
+      "config.json": { "installedPlugins": [] }
+    },
+
+    "incomplete-uninstall": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai",
+            "marketplace": "",
+            "version": "0.55.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai" }
+          }
+        ]
+      },
+      "installed-plugins/": null
+    },
+
+    "identity-mismatch": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai",
+            "marketplace": "",
+            "version": "0.55.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai" }
+          }
+        ]
+      },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    }
+  },
+
+  "workspaces": {
+    "monolith": {
+      ".kai/manifest.json": { "plugin": "kai", "version": "0.55.0", "schema_version": 2 }
+    },
+    "pack": {
+      ".kai/manifest.json": { "plugin": "kai-core", "version": "1.0.0", "schema_version": 2 }
+    },
+    "unrecognized": {
+      ".kai/manifest.json": { "plugin": "kai-fork", "version": "1.0.0", "schema_version": 2 }
+    },
+    "malformed": {
+      ".kai/manifest.json": ["{", "  \"plugin\":"]
+    }
+  }
+}

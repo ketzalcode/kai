@@ -369,6 +369,17 @@ existing step. Re-running a completed migration is a no-op. The workspace doctor
 (`node <kai-plugin>/scripts/workspace-doctor.mjs`) reports which steps a workspace
 still needs; coordinated agents refuse to claim work until the ladder is applied.
 
+**Provenance (`plugin`).** This key records which plugin scaffolded the
+workspace, and it is a **closed set**: `kai` (the monolith, what onboarding
+writes today) or `kai-core` (once kai ships as separate packs). Any other value
+is unrecognized metadata and the doctor rejects it — it is not a third mode.
+Provenance is independent of `schema_version`: it says which *plugin* wrote the
+workspace, not which *contract version* it wrote. Do not hand-edit it as part of
+a schema migration. When the pack surface ships, reconciling it is one key on
+one line, and `workspace-doctor.mjs --migration-check` reports whether it matches
+what the host actually has installed and prints the exact edit — applying that
+edit twice changes nothing, so an interrupted migration is safe to resume.
+
 ### `.kai/CONVENTIONS.md`
 
 Render the current workspace layout, routing table, initiative artifact
