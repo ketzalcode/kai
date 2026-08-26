@@ -31,20 +31,20 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.62.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.63.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**The pack partition is now CI-enforced.** Four named gates run on every push
-and pull request: the partition itself (every agent in exactly one pack, every
-skill with exactly one provider, every reviewed disposition still placing a real
-skill), id collisions across packs, a department installed with `kai-core` and
-nothing else, and contract-version skew. They fail by name, so a red build says
-which guarantee broke rather than that something did. Core's skills are held to
-the `kai-core-*` prefix in both directions — a core-provided skill without it
-and a department claiming it both fail — because duplicate plugin names are not
-a stable provider contract across host and namespace surfaces. The one skill that
-broke the invariant, `fleet-observation`, is now
-`kai-core-fleet-observation`.
+**The pack migration is now checkable before it is possible.**
+`npm run doctor:migration` is a read-only report on whether a host may install
+the pack surface: it reads the host's install metadata and every install tree,
+names what is there (legacy `kai`, `kai-core`, department packs), and separates
+a direct install from a marketplace one. It changes nothing — every repair is a
+step you run. It fails closed: legacy `kai` must be verifiably uninstalled
+before a pack install, coexistence is refused rather than warned through, and
+evidence it could not read is reported as `unknown`, never as clear. The pack
+partition stays CI-enforced by four named gates: the partition itself, id
+collisions across packs, a department installed without `kai-core`, and
+contract-version skew.
 kai still ships as the single `kai` plugin; no packs are published yet.
 
 ```text

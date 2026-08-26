@@ -1048,3 +1048,40 @@ terminal state, `1.0.0` is not cut, and the published monolith is still authorit
 `director-chief-of-staff`** — dispatch the two-item queue (`@operator` owns the spike's host
 session). **This steward pass had no shell, executed nothing, dispatched nothing, took no lease,
 and edited no implementation, release-metadata, agent, skill, script, marketplace or CI file.**
+
+**Build update 2026-08-25-2140 (`principal-swe-infra`).** `pack-split-migration-doctor`:
+**`ready -> in-progress`** (v2 -> v3, `owner: principal-swe-infra`, **no lease** — sole worker on
+a disjoint touch set), `next_role` stays `principal-swe-infra`. The migration doctor is
+**implemented end to end and entirely uncommitted**. New `scripts/lib/migration-doctor.mjs` reads
+the host's `config.json` as **JSONC** (the real file opens with `//` lines, so plain `JSON.parse`
+fails on every host — verified 2026-08-25 on one Windows host) plus every tree under
+`installed-plugins/`, reconciles metadata against disk, and classifies legacy `kai`, `kai-core`,
+department packs and **direct vs marketplace** provenance;
+`scripts/workspace-doctor.mjs` gains an opt-in `--migration-check` (`npm run doctor:migration`)
+and a **16-case** `migrationSelfTest()` inside the `--self-test` that `npm test` and
+`validate.yml` already run. **Fail closed:** `clear` / `blocked` / `unknown`, exit 0 only for
+`clear`; legacy present is a refusal with exact uninstall + confirm steps, coexistence is a
+**refusal not a warning**, and `unknown` (missing home, unreadable config, junk entry,
+unidentifiable tree, inferred provenance) is never reported as success. **Read-only**, proven by a
+before/after byte-identical fixture-tree snapshot rather than promised. One forced contract
+change: `.kai/manifest.json` `"plugin"` is now the closed set `{kai, kai-core}` — the doctor
+previously rejected any workspace whose provenance had been migrated, i.e. the migration it
+prescribes produced a workspace its own default run failed; `schema_version` unchanged, **no
+ladder step added**. `0.62.0 -> 0.63.0` across all six release locations plus `package-lock.json`.
+**Packs stay unpublished** — `COMMITTED_PACKS` empty, marketplace still **N=1** at `source: "."`,
+no `packs/` tree. **NOT complete, NOT in-review, NOT release-ready, NOT shipped, and the reason is
+stated rather than softened: that session had no shell.** There is **no branch**
+(`kai/feat/29-migration-doctor` does not exist; the edits sit uncommitted on `main`), **no
+commit, no SHA**, `de036ba` was **never resolved** to a full SHA, and **nothing was executed** —
+no `npm test`, no `--self-test`, no `node --check`, no CI. Every behavioural claim is
+**unverified**; **no acceptance box was ticked**; `change_ref` stays `null`, so **neither required
+review can bind**. `touches` was **reconciled, not expanded** (`scripts/lib/migration-doctor.mjs`,
+`test/README.md`, `docs/getting-started.md` — no new capability, gate or criterion). **One
+question routed to the steward/director, not decided here:** the dispatching instruction asked for
+**architecture + security** review, while the record requires **`principal-security`** and
+**`principal-sre`**; the record is authoritative and was left untouched — a builder does not add
+or remove its own reviewers. **Milestone `first-pack-extracted` is unmoved** — 0 required items in
+a terminal state; `first-department`, `host-gates`, `onboarding-installer` and `release-12a` all
+require this item at `shipped` and stay non-dispatchable. The `ready` queue is unchanged
+(`pack-split-host-semantics-spike`, 30, `@operator` host session). Nothing was pushed, opened as a
+PR, merged, tagged, released or published.

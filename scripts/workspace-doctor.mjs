@@ -6,13 +6,22 @@
 // onboarded) is well-formed and schema-compatible before coordinated agents act
 // on it. It uses only Node built-ins so any host can run it.
 //
+// It also carries the pack-migration check (#29): an explicit, read-only report
+// on whether this HOST may install the pack surface — legacy `kai` verifiably
+// uninstalled, no coexistence, provenance known. That check is opt-in
+// (`--migration-check`) rather than part of the default run, because the default
+// run inspects a workspace and must not depend on a host it was not asked about.
+//
 // Usage:
 //   node scripts/workspace-doctor.mjs [--root <dir>]   validate a workspace
+//   node scripts/workspace-doctor.mjs --migration-check [--home <dir>] [--root <dir>]
 //   node scripts/workspace-doctor.mjs --self-test      run against bundled fixtures
 //
 // Exit code: 0 = healthy (claimable); non-zero = errors or migration required.
 
-import { readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import {
+  readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
+} from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -21,6 +30,10 @@ import {
   LIFECYCLE, NEEDS_CHANGE_REF, REQUIRES_STATES,
   frontmatter, scalar, cleanScalar, isNull, unquote, dependsOn, lease, parseStamp,
 } from './lib/coordination.mjs';
+import {
+  WORKSPACE_PROVENANCE, LEGACY_PLUGIN, CORE_PLUGIN,
+  defaultHome, migrationReport, parseJsonc, installTreeTail, normalizeHostPath,
+} from './lib/migration-doctor.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -107,7 +120,13 @@ export function checkWorkspace(root) {
       err(`.kai/manifest.json missing required key "${k}"`);
     }
   }
-  if (m.plugin !== undefined && m.plugin !== 'kai') err('.kai/manifest.json "plugin" must be "kai"');
+  // Provenance: which plugin scaffolded this workspace. `kai` today, `kai-core`
+  // once packs are the install surface — a closed set, so a typo is still an
+  // error rather than a third mode. `--migration-check` is what reconciles the
+  // recorded value against what the host actually has installed.
+  if (m.plugin !== undefined && !WORKSPACE_PROVENANCE.has(m.plugin)) {
+    err(`.kai/manifest.json "plugin" must be "${LEGACY_PLUGIN}" (monolith) or "${CORE_PLUGIN}" (pack install)`);
+  }
   if (m.workspace_mode !== undefined && !WORKSPACE_MODES.has(m.workspace_mode)) {
     err(`.kai/manifest.json "workspace_mode" must be "repository" or "external" (found ${JSON.stringify(m.workspace_mode)})`);
   }
@@ -294,6 +313,29 @@ function report(root, res) {
   }
   console.log(`✗ workspace not claimable: ${res.errors.length} error(s)${res.migrations.length ? `, migration required` : ''} (${rel})`);
   return 1;
+}
+
+// The pack-migration verdict, printed. Read-only throughout: every repair is a
+// numbered step for the operator, never something this process performs.
+const SEVERITY_MARK = { refusal: '✗', unverified: '?', note: '✓' };
+const VERDICT = {
+  clear: '✓ clear — no legacy/pack conflict on this host; a pack install may proceed',
+  blocked: '✗ blocked — do NOT install packs here until the steps above are done and re-checked',
+  unknown: '? unknown — the install state could not be verified, so it is NOT treated as clear',
+};
+
+function reportMigration({ home, root }) {
+  const res = migrationReport({ home, root });
+  console.log(`kai migration doctor (read-only) — host ${res.home}`);
+  console.log(`  workspace ${root ?? '(not inspected)'}\n`);
+  for (const f of res.findings) console.log(`  ${SEVERITY_MARK[f.severity]} ${f.message}`);
+  if (res.steps.length) {
+    console.log('\n  remediation — run these yourself; this check changed nothing:');
+    res.steps.forEach((s, i) => console.log(`    ${i + 1}. ${s}`));
+  }
+  for (const n of res.notices) console.log(`\n  ! ${n}`);
+  console.log(`\n${VERDICT[res.status]}`);
+  return res.status === 'clear' ? 0 : 1;
 }
 
 // Under `corpus_visibility: local` the operator asked for kai state to stay off
@@ -507,7 +549,235 @@ function selfTest() {
     rmSync(tmpRoot, { recursive: true, force: true });
   }
 
+  // The pack-migration check, over its own fixture matrix.
+  if (!migrationSelfTest()) ok = false;
+
+  // A workspace whose provenance has been migrated to `kai-core` must still be a
+  // healthy workspace — otherwise the migration this doctor prescribes produces
+  // a workspace its own default run rejects.
+  const migratedRoot = mkdtempSync(join(tmpdir(), 'kai-doctor-provenance-'));
+  try {
+    cpSync(join(fx, 'repo-workspace'), migratedRoot, { recursive: true });
+    const mPath = join(migratedRoot, '.kai', 'manifest.json');
+    const manifest = JSON.parse(readFileSync(mPath, 'utf8'));
+    manifest.plugin = CORE_PLUGIN;
+    writeFileSync(mPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const migrated = checkWorkspace(migratedRoot);
+    if (migrated.errors.length === 0) {
+      console.log(`✓ self-test: a workspace migrated to plugin "${CORE_PLUGIN}" stays healthy and claimable`);
+    } else {
+      ok = false;
+      console.log(`✗ self-test: a workspace migrated to plugin "${CORE_PLUGIN}" was rejected:`);
+      migrated.errors.forEach((e) => console.log(`    ${e}`));
+    }
+
+    manifest.plugin = 'kai-fork';
+    writeFileSync(mPath, `${JSON.stringify(manifest, null, 2)}\n`);
+    const forked = checkWorkspace(migratedRoot);
+    if (/"plugin" must be/.test(forked.errors.join('\n'))) {
+      console.log('✓ self-test: an unrecognized manifest "plugin" is still rejected — provenance is a closed set');
+    } else {
+      ok = false;
+      console.log('✗ self-test: an unrecognized manifest "plugin" was accepted');
+    }
+  } finally {
+    rmSync(migratedRoot, { recursive: true, force: true });
+  }
+
   return ok ? 0 : 1;
+}
+
+// --- pack-migration self-test ----------------------------------------------
+// The scenarios the migration check must get right, each pinned to a status and
+// the finding codes behind it. `status` is asserted exactly: a case that should
+// be `unknown` must not pass as `clear`, which is the whole point of separating
+// unverifiable evidence from verified absence.
+const MIGRATION_CASES = [
+  {
+    label: 'legacy monolith installed (direct), workspace scaffolded by it',
+    home: 'legacy-direct', workspace: 'monolith', status: 'blocked',
+    expect: ['legacy-installed', 'workspace-provenance-current'],
+    forbid: ['coexistence', 'nothing-installed'],
+    steps: [/^copilot plugin uninstall kai$/, /copilot plugin list/, /confirm the install tree is gone/],
+  },
+  {
+    label: 'clean pack set (core + one department, marketplace), workspace already migrated',
+    home: 'packs-marketplace', workspace: 'pack', status: 'clear',
+    expect: ['workspace-provenance-migrated'],
+    forbid: ['legacy-installed', 'workspace-provenance-stale'],
+    noSteps: true, notices: [/start a new session/i],
+  },
+  {
+    label: 'legacy `kai` and `kai-core` installed together',
+    home: 'coexistence', status: 'blocked',
+    expect: ['coexistence', 'legacy-installed'],
+    steps: [/^copilot plugin uninstall kai$/],
+  },
+  {
+    label: 'department pack installed without kai-core',
+    home: 'partial-packs', status: 'blocked',
+    expect: ['partial-pack-set'], forbid: ['legacy-installed', 'coexistence'],
+    steps: [/copilot plugin install kai-core@kai-plugins/],
+  },
+  {
+    label: 'stale direct install tree left behind by an uninstall',
+    home: 'stale-direct', status: 'blocked',
+    expect: ['stale-install', 'legacy-installed'],
+    steps: [/remove the leftover install tree/],
+  },
+  {
+    label: 'same pack installed from both a direct source and the marketplace',
+    home: 'provenance-collision', status: 'blocked',
+    expect: ['provenance-collision'], steps: [/copilot plugin uninstall kai-core/],
+  },
+  {
+    label: 'provenance inferred from a cache path, plus an unidentifiable kai tree',
+    home: 'inferred-provenance', status: 'unknown',
+    expect: ['unknown-provenance'], forbid: ['nothing-installed'], noRefusal: true,
+  },
+  {
+    label: 'host config truncated mid-write',
+    home: 'malformed-config', status: 'unknown',
+    expect: ['unreadable-metadata'], forbid: ['nothing-installed'], noRefusal: true,
+  },
+  {
+    label: 'host config parses but its entries are junk; workspace records an unknown plugin',
+    home: 'malformed-entries', workspace: 'unrecognized', status: 'unknown',
+    expect: ['unreadable-metadata', 'workspace-provenance-unknown'], noRefusal: true,
+  },
+  {
+    label: 'Windows and macOS cache paths (case, separators, trailing slash) both resolve',
+    home: 'path-normalization', status: 'clear', noSteps: true, noRefusal: true,
+  },
+  {
+    label: 'nothing installed, and both surfaces were readable',
+    home: 'absent', status: 'clear', expect: ['nothing-installed'], noSteps: true,
+  },
+  {
+    label: 'packs installed but the workspace still records the monolith',
+    home: 'packs-marketplace', workspace: 'monolith', status: 'blocked',
+    expect: ['workspace-provenance-stale'],
+    steps: [/set "plugin": "kai-core"/, /workspace-doctor\.mjs --root/],
+  },
+  {
+    label: 'config still lists the monolith after its files were removed',
+    home: 'incomplete-uninstall', status: 'blocked',
+    expect: ['incomplete-install', 'legacy-installed'], forbid: ['stale-install'],
+  },
+  {
+    label: 'config and the install tree disagree about what is installed',
+    home: 'identity-mismatch', status: 'blocked', expect: ['identity-mismatch'],
+  },
+  {
+    label: 'workspace migrated ahead of the host, legacy still installed',
+    home: 'legacy-direct', workspace: 'pack', status: 'blocked',
+    expect: ['workspace-provenance-ahead', 'legacy-installed'],
+  },
+  {
+    label: 'workspace manifest unreadable',
+    home: 'absent', workspace: 'malformed', status: 'unknown',
+    expect: ['workspace-provenance-unreadable'], noRefusal: true,
+  },
+];
+
+// The fixtures are data rather than committed directories: a host cache tree and
+// an empty directory are both things a checkout cannot reproduce faithfully.
+function materializeHostFixtures(dest) {
+  const fx = JSON.parse(readFileSync(join(__dirname, '..', 'test', 'fixtures', 'host-installs.json'), 'utf8'));
+  const write = (base, files) => {
+    for (const [rel, content] of Object.entries(files)) {
+      const target = join(base, ...rel.split('/').filter(Boolean));
+      if (content === null) { mkdirSync(target, { recursive: true }); continue; }
+      mkdirSync(dirname(target), { recursive: true });
+      const text = Array.isArray(content) ? `${content.join('\n')}\n` : `${JSON.stringify(content, null, 2)}\n`;
+      writeFileSync(target, text);
+    }
+  };
+  for (const [name, files] of Object.entries(fx.homes)) write(join(dest, 'homes', name), files);
+  for (const [name, files] of Object.entries(fx.workspaces)) write(join(dest, 'workspaces', name), files);
+}
+
+// Path + content of every file below `dir`, so "this check mutates nothing" is
+// asserted rather than asserted-in-a-comment.
+function snapshotTree(dir, prefix = '') {
+  const out = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(`${rel}/`, ...snapshotTree(join(dir, entry.name), rel));
+    else out.push(`${rel}:${readFileSync(join(dir, entry.name), 'utf8')}`);
+  }
+  return out;
+}
+
+function migrationSelfTest() {
+  let ok = true;
+  const fail = (msg, detail = []) => { ok = false; console.log(`✗ ${msg}`); detail.forEach((d) => console.log(`    ${d}`)); };
+
+  // Host metadata is JSONC — the shipped config.json opens with two comment
+  // lines, so a plain JSON.parse fails on every real host.
+  const commented = parseJsonc('// managed\n{"a": 1, "url": "https://x/y" /* inline */}\n');
+  if (!commented.ok || commented.value.a !== 1 || commented.value.url !== 'https://x/y') {
+    fail('self-test: commented host config was not parsed with its string values intact');
+  }
+  if (parseJsonc('{"installedPlugins": [').ok) fail('self-test: truncated host config parsed as valid');
+
+  const tails = [
+    ['C:\\Users\\dev\\.copilot\\installed-plugins\\_direct\\RubenSaucedo--kai', '_direct/RubenSaucedo--kai'],
+    ['/Users/dev/.copilot/installed-plugins//kai-plugins/kai-engineering/', 'kai-plugins/kai-engineering'],
+    ['C:\\Users\\dev\\.copilot\\Installed-Plugins\\kai-plugins\\kai-core', 'kai-plugins/kai-core'],
+    ['/opt/elsewhere/kai-core', null],
+  ];
+  for (const [input, want] of tails) {
+    if (installTreeTail(input) !== want) {
+      fail(`self-test: cache path "${input}" normalized to ${JSON.stringify(installTreeTail(input))}, expected ${JSON.stringify(want)}`);
+    }
+  }
+  if (normalizeHostPath('C:\\a\\\\b\\') !== 'C:/a/b') fail('self-test: host path normalization did not collapse separators');
+
+  const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-migration-'));
+  try {
+    materializeHostFixtures(tmpRoot);
+    const before = snapshotTree(tmpRoot).join('\n');
+    const missingHome = migrationReport({ home: join(tmpRoot, 'homes', 'no-such-home') });
+    if (missingHome.status !== 'unknown' || !missingHome.codes.includes('no-host-home')) {
+      fail(`self-test: an uninspectable host home reported "${missingHome.status}" instead of unknown`);
+    }
+
+    let passed = 0;
+    for (const c of MIGRATION_CASES) {
+      const home = join(tmpRoot, 'homes', c.home);
+      const root = c.workspace ? join(tmpRoot, 'workspaces', c.workspace) : null;
+      const res = migrationReport({ home, root });
+      const problems = [];
+      if (res.status !== c.status) problems.push(`status "${res.status}", expected "${c.status}"`);
+      for (const code of c.expect ?? []) if (!res.codes.includes(code)) problems.push(`missing finding "${code}"`);
+      for (const code of c.forbid ?? []) if (res.codes.includes(code)) problems.push(`unexpected finding "${code}"`);
+      for (const re of c.steps ?? []) {
+        if (!res.steps.some((s) => re.test(s))) problems.push(`no remediation step matching ${re}`);
+      }
+      for (const re of c.notices ?? []) {
+        if (!res.notices.some((n) => re.test(n))) problems.push(`no notice matching ${re}`);
+      }
+      if (c.noSteps && res.steps.length) problems.push(`expected no remediation steps, got ${res.steps.length}`);
+      if (c.noRefusal && res.findings.some((f) => f.severity === 'refusal')) {
+        problems.push('expected no refusal-severity finding');
+      }
+      if (problems.length) fail(`self-test: migration case "${c.label}"`, [...problems, `codes: ${res.codes.join(', ') || '(none)'}`]);
+      else passed++;
+    }
+    if (passed === MIGRATION_CASES.length) {
+      console.log(`✓ self-test: ${passed} migration scenarios verdict correctly (legacy, packs, coexistence, partial set, stale/incomplete installs, provenance collision, unknown provenance, malformed metadata, path normalization)`);
+    }
+
+    if (snapshotTree(tmpRoot).join('\n') !== before) {
+      fail('self-test: the migration check modified the host/workspace fixtures — it must be read-only');
+    } else {
+      console.log('✓ self-test: the migration check left every inspected file byte-identical (read-only)');
+    }
+  } finally {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  }
+  return ok;
 }
 
 // --- main ------------------------------------------------------------------
@@ -516,11 +786,23 @@ function selfTest() {
 const isEntry = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isEntry) {
   const argv = process.argv.slice(2);
+  const value = (flag) => {
+    const i = argv.indexOf(flag);
+    return i !== -1 && argv[i + 1] ? argv[i + 1] : null;
+  };
   if (argv.includes('--self-test')) {
     process.exit(selfTest());
+  } else if (argv.includes('--migration-check')) {
+    const home = value('--home') ? resolve(value('--home')) : defaultHome();
+    // Without an explicit --root, the workspace half runs only where a workspace
+    // actually is, so a run from an unrelated directory reports on the host and
+    // says plainly that it inspected no workspace.
+    const rootArg = value('--root');
+    const cwdIsWorkspace = existsSync(join(process.cwd(), '.kai', 'manifest.json'));
+    const root = rootArg ? resolve(rootArg) : (cwdIsWorkspace ? process.cwd() : null);
+    process.exit(reportMigration({ home, root }));
   } else {
-    const ri = argv.indexOf('--root');
-    const root = ri !== -1 && argv[ri + 1] ? resolve(argv[ri + 1]) : process.cwd();
+    const root = value('--root') ? resolve(value('--root')) : process.cwd();
     process.exit(report(root, checkWorkspace(root)));
   }
 }

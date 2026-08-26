@@ -4,6 +4,68 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.63.0] - 2026-08-25
+
+### Added
+
+- **A read-only pack-migration doctor** (#29): `npm run doctor:migration` (or
+  `node scripts/workspace-doctor.mjs --migration-check`) reports whether this
+  host may install the pack surface. It reads the host's `config.json` and every
+  install tree under `installed-plugins/`, then names what it found: legacy
+  monolithic `kai`, `kai-core` and department packs, direct vs marketplace
+  provenance, and the workspace provenance recorded in `.kai/manifest.json`.
+  It changes nothing — every repair is a numbered step for the operator, proven
+  by a self-test that asserts the inspected tree is byte-identical afterwards.
+
+- **Fail-closed verdicts.** `clear` means a pack install may proceed; `blocked`
+  refuses one; `unknown` says the evidence did not settle the question and is
+  never reported as success. Legacy `kai` must be *verifiably* uninstalled
+  first, and legacy/pack coexistence is refused rather than warned through:
+  both provide the same operating contract, the host binds one by load order,
+  and a pack agent can pass its own preflight while running the stale copy.
+
+- **Unverifiable is distinguished from absent, everywhere.** A missing host
+  home, an unreadable `config.json`, a junk `installedPlugins` entry, an
+  unidentifiable install tree, and a provenance inferred from a cache path
+  rather than recorded all report `unknown` with the evidence named. Only a
+  readable config plus a readable install directory yields "nothing is
+  installed".
+
+- **Incomplete migration states are their own findings**, each with the exact
+  command that resolves it: `incomplete-install` (metadata without files),
+  `stale-install` (files without metadata), `provenance-collision` (the same
+  pack installed from both a direct source and the marketplace),
+  `identity-mismatch` (config and `plugin.json` disagree), `partial-pack-set`
+  (a department pack without `kai-core`), and the four workspace-provenance
+  states (current, stale, ahead, unconfirmed).
+
+- **`scripts/lib/migration-doctor.mjs`**, the evidence layer behind it: Node
+  built-ins only, no new dependencies, pack names derived from
+  `pack-plan.mjs` rather than restated. It parses the host config as JSONC —
+  the shipped file opens with `//` comments, so a plain `JSON.parse` fails on
+  every real host — and compares cache paths by the tail below
+  `installed-plugins/`, which is the only part that survives a Windows/macOS
+  path, mixed separators, or a case difference.
+
+- **A 16-scenario fixture matrix** in `workspace-doctor --self-test`, which
+  already runs in `npm test` and in the `validate` workflow: clean legacy,
+  clean pack set, coexistence, partial pack set, stale direct install,
+  marketplace/direct collision, inferred and unknown provenance, malformed
+  config and malformed entries, path normalization, and each workspace
+  provenance state. Every case pins the exact status, so a case that must be
+  `unknown` cannot pass as `clear`.
+
+### Changed
+
+- **`.kai/manifest.json` `"plugin"` is a closed set of `kai` and `kai-core`.**
+  The workspace doctor previously required exactly `kai`, which would reject
+  every workspace after the migration it prescribes. A third value is still an
+  error — unrecognized metadata, not a new mode.
+
+Packs remain unpublished: `COMMITTED_PACKS` is still empty and the marketplace
+index still lists exactly one plugin. This release makes the migration
+*checkable*, not available.
+
 ## [0.62.0] - 2026-08-25
 
 ### Added
@@ -2765,6 +2827,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.63.0]: https://github.com/RubenSaucedo/kai/compare/v0.62.0...v0.63.0
 [0.62.0]: https://github.com/RubenSaucedo/kai/compare/v0.61.0...v0.62.0
 [0.61.0]: https://github.com/RubenSaucedo/kai/compare/v0.60.0...v0.61.0
 [0.60.0]: https://github.com/RubenSaucedo/kai/compare/v0.59.0...v0.60.0

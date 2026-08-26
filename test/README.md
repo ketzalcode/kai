@@ -106,6 +106,32 @@ secrets (repository-mode roots are relative). The broken fixture's one
 deliberate machine-absolute path lives inside a value the doctor is expected to
 reject, not in a shipped manifest.
 
+### Pack migration — `workspace-doctor.mjs --migration-check`
+
+The same script carries the read-only pack-migration check (#29): what this
+**host** has installed, where each install came from, and whether a pack install
+may proceed. `--self-test` runs it over a 16-scenario matrix and asserts each
+verdict exactly — `clear` (may proceed), `blocked` (refused), `unknown` (the
+evidence did not settle it). A case that must be `unknown` failing as `clear` is
+a test failure, because "unverified" reported as success is the bug this check
+exists to prevent.
+
+The matrix covers a clean legacy install, a clean pack set, legacy/pack
+coexistence, a department pack without `kai-core`, a stale install tree left by
+an uninstall, metadata left by an interrupted uninstall, the same pack installed
+from both a direct source and the marketplace, config/`plugin.json` identity
+disagreement, inferred and unknown provenance, a truncated config, junk config
+entries, Windows/macOS cache-path normalization, and each workspace-provenance
+state (current, stale, ahead, unrecognized, unreadable). One assertion snapshots
+every fixture file before and after and requires them byte-identical: the check
+is read-only, and that is proven rather than promised.
+
+The fixtures live in `test/fixtures/host-installs.json` as **data**, not
+directories: a host cache tree (`installed-plugins/_direct/…`) and an empty
+directory are things a git checkout cannot reproduce faithfully, so the
+self-test materializes them into a temp directory and removes it afterwards.
+Run the check against a real host with `npm run doctor:migration`.
+
 ### Host-loader acceptance — `host-contract.mjs`
 
 Mirrors the Copilot host loader to take the acceptance view of the shipped

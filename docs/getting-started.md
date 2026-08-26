@@ -129,6 +129,27 @@ If you already ended up with both, `copilot plugin uninstall kai` removes the
 direct one and leaves the marketplace install in place; `copilot plugin list`
 shows which you have.
 
+**Check what this host actually has, before you install anything:**
+
+```powershell
+node <kai-plugin>/scripts/workspace-doctor.mjs --migration-check
+```
+
+(from a clone: `npm run doctor:migration`.) It reads the host's install
+metadata and every install tree, then reports one of three verdicts: `clear`
+(nothing conflicts), `blocked` (with the exact commands to run first), or
+`unknown` (something could not be read, so nothing is claimed). It is
+**read-only** — it never uninstalls, deletes, or edits anything; every repair is
+a numbered step for you to run. Use it when `plugin list` and what you remember
+installing disagree, or after an install or uninstall was interrupted.
+
+It also answers the question `plugin list` doesn't: whether a plugin came from
+the marketplace or a direct install, and whether the workspace in front of you
+was scaffolded by the same plugin the host is loading. Once kai ships as
+separate packs, this is the check that says whether the legacy `kai` plugin is
+verifiably gone — the packs and the monolith provide the same operating
+contract, so with both installed the host binds whichever it loaded first.
+
 **Install directly from GitHub (deprecated by the host):**
 
 ```text
