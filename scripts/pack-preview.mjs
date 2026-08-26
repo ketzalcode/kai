@@ -26,6 +26,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { parseFrontmatter, parseToolList } from './lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
@@ -66,6 +67,13 @@ const rosterAgentIds = () => readdirSync(join(ROOT, 'agents'))
 const rosterSkillIds = () => readdirSync(join(ROOT, 'skills'), { withFileTypes: true })
   .filter((e) => e.isDirectory() && existsSync(skillPath(e.name)))
   .map((e) => e.name).sort();
+
+const declaredTools = (body) => {
+  const parsed = parseFrontmatter(body);
+  return new Set(parsed.ok ? parseToolList(parsed.fm.tools) || [] : []);
+};
+
+const frontmatter = (body) => normalizeLF(body).match(/^---\n[\s\S]*?\n---/)?.[0] ?? null;
 
 
 // The preflight is written into each pack agent's OWN body, never into an
@@ -373,7 +381,11 @@ function selfTest() {
     for (const pack of Object.keys(PACKS)) {
       const dir = join(full, `kai-${pack}-preview`, 'agents');
       for (const file of readdirSync(dir)) {
-        builtAgents.push({ pack, body: readFileSync(join(dir, file), 'utf8') });
+        builtAgents.push({
+          pack,
+          id: file.replace(/\.agent\.md$/, ''),
+          body: readFileSync(join(dir, file), 'utf8'),
+        });
       }
     }
     const departmentAgents = builtAgents.filter((a) => a.pack !== 'core');
@@ -386,6 +398,12 @@ function selfTest() {
     ok(coreAgents.length === PACKS.core.length
       && coreAgents.every((a) => !a.body.includes(degraded) && !a.body.includes(block)),
     'and no core agent carries either block: kai-core cannot be absent from itself');
+    ok(builtAgents.every((a) => declaredTools(a.body).has('skill')),
+      `all ${builtAgents.length} generated agents declare skill access for delegated inherited-contract loading`);
+    ok(!declaredTools(builtAgents[0].body.replace(/,\s*"skill"/, '')).has('skill'),
+      'removing skill access from a generated agent is detected rather than false-passing from workspace files');
+    ok(builtAgents.every((a) => frontmatter(a.body) === frontmatter(readAgent(a.id))),
+      'generated agent frontmatter is a byte-identical projection of canonical source');
   } catch (e) {
     ok(false, `preflight arms threw: ${e.message}`);
   } finally {

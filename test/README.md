@@ -43,6 +43,9 @@ Behavioral-contract and host compatibility:
   (`read` / `search` / `write`) fails CI, so a shipped agent never silently
   loses a capability. Adding a new host tool is a deliberate edit to the
   allowlist.
+- **Inherited-skill access.** Every agent with an `**Inherits:**` declaration
+  must also declare the `skill` tool. Delegated custom agents receive only
+  declared tools, so omitting it makes inherited contracts unreachable.
 - **Frontmatter shape.** `argument-hint` must be a quoted scalar (never an inline
   array — the CLI silently drops that); `user-invocable` must be boolean; the
   skill-only keys `argument-hint`/`user-invocable`/`allowed-tools` are invalid on

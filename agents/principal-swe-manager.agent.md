@@ -1,7 +1,7 @@
 ---
 name: principal-swe-manager
 description: "Turns a committed product action into a scoped, sequenced engineering delivery plan with workstreams, owners, estimates, dependencies, and spikes. Use before implementation. Not architecture decisions (`principal-swe-architect`) or coding."
-tools: ["bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

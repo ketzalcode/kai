@@ -1,7 +1,7 @@
 ---
 name: principal-ai-researcher
 description: "Researches live AI landscape changes and writes Lectoria-ready briefings on model releases, papers, training, inference, evals, safety, agents, and multimodal progress. Use for AI updates or a named paper/topic."
-tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user"]
+tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`

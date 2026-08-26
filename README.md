@@ -31,10 +31,13 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.63.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.63.1` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**The pack migration is now checkable before it is possible.**
+**Delegated Kai agents now load inherited skills through the host instead of
+falling back to workspace files.** Every agent declares the `skill` tool, which
+keeps inherited contracts available when one Kai role dispatches another.
+The pack migration remains checkable before it is possible:
 `npm run doctor:migration` is a read-only report on whether a host may install
 the pack surface: it reads the host's install metadata and every install tree,
 names what is there (legacy `kai`, `kai-core`, department packs), and separates

@@ -4,6 +4,22 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.63.1] - 2026-08-26
+
+### Fixed
+
+- **Delegated agents can load inherited skills.** Every agent now declares the
+  host's `skill` tool explicitly. Copilot CLI grants that tool implicitly to a
+  directly launched custom agent, but a custom agent launched through `task`
+  receives only its declared tools. Without this declaration, delegated agents
+  could not invoke their inherited contracts and could false-pass in the kai
+  repository by reading `skills/*/SKILL.md` from the workspace.
+
+- **The contract is enforced at source and in generated previews.** Validation
+  rejects any agent that inherits skills without declaring `skill`.
+  Pack-preview tests prove all generated agents retain the canonical
+  frontmatter byte-for-byte and detect removal of delegated skill access.
+
 ## [0.63.0] - 2026-08-25
 
 ### Added
@@ -2832,6 +2848,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.63.1]: https://github.com/RubenSaucedo/kai/compare/v0.63.0...v0.63.1
 [0.63.0]: https://github.com/RubenSaucedo/kai/compare/v0.62.0...v0.63.0
 [0.62.0]: https://github.com/RubenSaucedo/kai/compare/v0.61.0...v0.62.0
 [0.61.0]: https://github.com/RubenSaucedo/kai/compare/v0.60.0...v0.61.0

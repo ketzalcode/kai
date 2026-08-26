@@ -1,7 +1,7 @@
 ---
 name: principal-data-analytics
 description: "Defines metric contracts and analyzes supplied SaaS exports for funnel, cohort, retention, segmentation, experiments, and instrumentation gaps. Use for analytical validity and causal-status judgment. Not pipelines (`principal-data-engineer`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

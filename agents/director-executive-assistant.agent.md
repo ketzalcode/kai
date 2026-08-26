@@ -1,7 +1,7 @@
 ---
 name: director-executive-assistant
 description: "Manages the operator's personal agenda, catch-up, task capture, unclear routing, and decisions waiting on them. Use when asking what needs you or who should handle it. Not driving delivery (`director-chief-of-staff`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-peer-communication`, `kai-core-decision-brief`, `kai-core-executive-consultation`, `kai-core-personal-agenda`

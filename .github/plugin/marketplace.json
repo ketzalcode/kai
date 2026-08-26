@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Plugins published by RubenSaucedo. Currently one: kai.",
-    "version": "0.63.0"
+    "version": "0.63.1"
   },
   "plugins": [
     {
       "name": "kai",
       "source": ".",
       "description": "Open-source Copilot plugin for coordinated product, growth, customer operations, engineering, trust, delivery, and personal workflows across codebases.",
-      "version": "0.63.0",
+      "version": "0.63.1",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"

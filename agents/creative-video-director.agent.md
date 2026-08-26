@@ -1,7 +1,7 @@
 ---
 name: creative-video-director
 description: "Directs product and marketing videos from product intelligence and media into briefs, storyboards, edit decisions, voiceover, and AI-video prompts. Use when planning a video, not rendering or editing one."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "task", "read_agent", "write_agent"]
+tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "task", "read_agent", "write_agent", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-content-grounding`, `video-direction`

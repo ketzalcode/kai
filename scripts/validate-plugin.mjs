@@ -314,6 +314,10 @@ for (const agent of agentFiles) {
     err(r, '`**Inherits:**` line lists no backticked skills');
     continue;
   }
+  const tools = new Set(parseToolList(agent.fm?.tools) || []);
+  if (!tools.has('skill')) {
+    err(r, 'inherits skills but its `tools` list omits `skill` — delegated agents cannot load inherited contracts');
+  }
 
   const seen = new Set();
   for (const tok of declared) {

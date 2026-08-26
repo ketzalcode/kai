@@ -1,7 +1,7 @@
 ---
 name: principal-customer-success
 description: "Builds SaaS success plans, adoption plans, health reviews, churn or renewal risk assessments, QBR briefs, and portfolio views from customer evidence. Use for post-sale outcome and risk judgment."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user"]
+tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

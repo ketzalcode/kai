@@ -1,7 +1,7 @@
 ---
 name: workflow-course-to-audio
 description: "Extracts a course, certification module, learning-path unit, or long readable web page into local markdown for later audio. Use when a URL should become listenable study material with separate knowledge checks."
-tools: ["playwright", "bash", "shell", "edit", "view", "ask_user"]
+tools: ["playwright", "bash", "shell", "edit", "view", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-generate-audio`, `kai-core-web-content-extraction`
