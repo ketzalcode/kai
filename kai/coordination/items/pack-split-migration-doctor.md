@@ -5,17 +5,18 @@ title: Migration doctor — uninstall-first, coexistence-refused, workspace-prov
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: release-ready
+state: shipped
 resume_state: null
 priority: 40
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: null
 target: pack-split migration doctor (legacy uninstall + coexistence refusal)
 artifact_target: null
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
   - scripts/workspace-doctor.mjs
   - skills/kai-core-workspace-onboarding/SKILL.md
+  - kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md
 touches:
   - scripts/workspace-doctor.mjs
   - scripts/lib/migration-doctor.mjs
@@ -54,14 +55,14 @@ completed_reviews:
     evidence: "kai/initiatives/pack-split/artifacts/reliability/pack-split-migration-doctor.md"
     timestamp: 2026-08-26-1245
 change_ref: 961c86c6e948093999256e64a88f2fe31f53cfe4
-version: 4
+version: 5
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1245
+updated: 2026-08-26-1250
 ---
 
 ## Outcome

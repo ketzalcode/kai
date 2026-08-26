@@ -2342,3 +2342,12 @@ the two-item queue; the operator owns the spike's host session.
 **This pass had no shell and executed nothing.** Every fact above is a read of the committed
 records and the working tree on `main` at `v0.62.0`. No implementation, release-metadata, agent,
 skill, script, marketplace or CI file was edited, and no external action was taken.
+
+## 2026-08-26 — migration doctor shipped (`v0.63.0`)
+
+`pack-split-migration-doctor` reached `shipped`: PR #163 merged as
+`52283b97ef92b3e15cabe2f35fdcf4ebb49c4d25`, main validation passed, and
+`v0.63.0` was published. The check is read-only, carries 26 fail-closed
+scenarios, and publishes no pack. `first-pack-extracted` remains active; the
+host-semantics spike is the next unresolved dependency before generated
+`kai-core` + `kai-personal` trees can be promoted.
