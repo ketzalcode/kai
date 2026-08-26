@@ -2527,3 +2527,29 @@ cleared `resume_state` and `waiting_on_questions`, and moved the item v6 -> v7 f
 to `in-review` with `principal-swe-architect` next. Acceptance remains 4/4 PASS. No reliability
 finding or implementation changed; the initiative and milestone remain active/open, and the
 item is not release-ready or shipped.
+
+## 2026-08-26 — first-department architecture review ratified
+
+`principal-swe-architect` independently reviewed exact evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` and **RATIFIED** the first-department
+proof. The sole later branch commit, `4c9d20525e66b7773a445056e10404af9bcaa331`,
+is coordination-only; no reviewed artifact, raw proof, implementation, pack,
+manifest, or marketplace topology changed after the review ref.
+
+The raw Copilot CLI 1.0.80 session proves a fresh isolated repeated-`--plugin-dir`
+composition of `kai-core` + `kai-personal`, selection of
+`kai-personal:persona-self`, and successful provider-qualified loads of
+`kai-core-contract-v1`, `kai-core-team-operating-rules`, and
+`kai-core-workspace-conventions` from `kai-core` before the final preflight
+result. Migration-doctor coexistence/uninstall-first behavior is valid at the
+persisted-inventory seam and read-only; its clean `clear/no-workspace` arm proves
+fresh pre-onboarding readiness only, not existing-workspace migration. The
+59.66% result is limited to Unicode characters in discovery-description
+metadata; the token figure is an estimate and is not total prompt savings. No
+pack publication or global registry mutation occurred. Three replaced attempts
+were harness/fixture failures and do not expose a product or boundary defect.
+
+Item v8 -> v9 remains `in-review`, its review lease is clear, and `workflow-ship`
+is next for the six-dimension gate using the steward-defined already-published
+enabling releases plus operator proof. Architecture did not mark the item
+`release-ready` or `shipped`; the initiative and milestone remain active/open.

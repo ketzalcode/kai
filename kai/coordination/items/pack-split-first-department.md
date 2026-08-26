@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: workflow-ship
 target: pack-split first-department install proof
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 context_artifacts:
@@ -27,16 +27,17 @@ required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
+completed_reviews:
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 3b14dc6cfb693a7925c48a8c3d4446dda041c03f
+    verdict: ratified
+    evidence: "kai/coordination/threads/pack-split-first-department.md"
+    timestamp: 2026-08-26-1516
 change_ref: 3b14dc6cfb693a7925c48a8c3d4446dda041c03f
-version: 7
-lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-26-1513
+version: 9
+lease: null
+updated: 2026-08-26-1516
 ---
 
 ## Outcome
@@ -81,6 +82,9 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
   initiative, and reliability documentation only; it changes no agents,
   skills, scripts, manifests, packs, marketplace or release metadata, or
   production code.
+- Independent architecture review ratified the proof at exact `change_ref`
+  `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; the detailed REVIEW packet is
+  in `kai/coordination/threads/pack-split-first-department.md`.
 
 ## Notes
 

@@ -186,3 +186,130 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-architect — perform the required independent-architecture review
              against the exact evidence commit.
+
+## REVIEW 2026-08-26-1516 — principal-swe-architect -> workflow-ship
+
+- kind:      `independent-architecture`
+- change_ref: `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`
+- verdict:   **RATIFIED**
+- disposition: **Endorse.** Keep the existing two-pack boundary and proof shape. The
+               smallest architecture is the one already present: the host composes
+               `kai-core` and `kai-personal` as separate providers; personal agents
+               fail closed on a versioned core contract; migration inspection remains
+               a read-only inventory seam. No new service, registry, install surface,
+               or pack publication is justified.
+- revision binding: The review is against exact evidence commit `3b14dc6…`, not the
+                    branch tip. The local branch/ref history is linear
+                    `342cd8e… -> 3b14dc6… -> 4c9d205…`; the sole descendant
+                    `4c9d20525e66b7773a445056e10404af9bcaa331` is the
+                    coordination-only handoff commit and changes no reviewed
+                    reliability artifact, raw proof, implementation, pack tree,
+                    manifest, or marketplace topology. Any later artifact or
+                    `change_ref` change invalidates this review.
+- forces:
+  - The acceptance boundary must be a real host provider boundary, not a copied-tree
+    or parser simulation.
+  - A personal agent must prove core compatibility before normal work and must load
+    inherited rules from the core provider, not merely print a requested sentinel.
+  - Transient `--plugin-dir` composition must not mutate global plugin state or
+    prematurely publish marketplace entries.
+  - The doctor owns persisted inventory/provenance inspection; direct plugin
+    directories are deliberately transient, so its coexistence proof needs a faithful
+    isolated inventory fixture at that seam.
+  - The metadata claim must remain measurable and narrow enough not to masquerade as
+    total prompt or tokenizer savings.
+- evidence:
+  - `direct-install-command.json` runs a fresh child from the empty workspace with an
+    isolated `COPILOT_HOME`, `COPILOT_PLUGIN_DIR_ONLY=true`, and two distinct repeated
+    arguments: `--plugin-dir packs\kai-core` and
+    `--plugin-dir packs\kai-personal`. It selects
+    `kai-personal:persona-self`; no global install or published marketplace source is
+    involved.
+  - Child session `45847389-6c4d-4db5-a9b2-23462741d789` is the load-bearing proof,
+    not the terminal text alone. Its first agent action invokes
+    `kai-core-contract-v1`; host telemetry records `source: plugin`,
+    `pluginName: kai-core`, the core pack path, and successful result. Subsequent
+    successful invocations load `kai-core-team-operating-rules` and
+    `kai-core-workspace-conventions` from provider `kai-core` (plus the personal
+    skill from `kai-personal`). Only then does the child return
+    `KAI_CORE_READY`, `contract: 1`, `DIRECT_OK`; shutdown records exit success and
+    zero modified files. The initial prompt requested only `DIRECT_OK`, so the
+    provider-qualified execution events and contract payload—not echo—establish the
+    preflight.
+  - The live legacy host verdict is `blocked` / `legacy-installed`. The isolated
+    staged coexistence inventory (`kai`, `kai-core`, `kai-personal`) is
+    `blocked` with both `coexistence` and `legacy-installed`; its file inventory is
+    unchanged. The staged clean inventory (`kai-core`, `kai-personal`) is
+    `clear` / `no-workspace` and unchanged. `scripts/lib/migration-doctor.mjs`
+    reaches these verdicts through read-only host/workspace/inventory APIs and emits
+    operator steps; it has no install, uninstall, registry-write, or workspace-write
+    responsibility.
+  - `clear/no-workspace` is a valid fresh pre-onboarding control, not a fixture
+    loophole: no workspace manifest is expected before onboarding, and removing it
+    prevents this repository's legacy provenance from contaminating the clean-host
+    question. It does **not** prove existing-workspace provenance migration; that
+    behavior belongs to, and was already shipped/reviewed with,
+    `pack-split-migration-doctor`. Coexistence/uninstall-first is proven by the live
+    legacy and staged three-plugin blocking arms.
+  - `measure-discovery.mjs` counts Unicode code points only in agent/skill frontmatter
+    descriptions. The arithmetic rechecks:
+    `20,063 - 8,093 = 11,970` characters,
+    `11,970 / 20,063 = 59.66%`, and at the declared heuristic of four
+    characters/token `5,015.75 - 2,023.25 = 2,992.50` estimated tokens.
+    This is discovery-description metadata only—neither total prompt savings nor an
+    exact tokenizer/billing result.
+  - Marketplace evidence remains exactly one `kai` entry at `source: "."`; the
+    isolated home records `installedPlugins: []`. The probe invokes neither plugin
+    install/uninstall nor publish, all staged writes stay under the ignored run root,
+    the doctor is read-only, and the child reports no file changes. No pack was
+    published and no global plugin registry was mutated. This conclusion is based on
+    isolated-home and inspected command/code paths, not a before/after hash of the real
+    global home; that is sufficient here because no exercised path has registry-write
+    responsibility.
+- findings:  **No blocking findings.** The three replaced probe/fixture failures are
+             harness defects, not product or boundary defects: Windows PowerShell 5.1
+             lacks `ProcessStartInfo.ArgumentList`; `$Home` collides
+             case-insensitively with `$HOME`; and the doctor correctly rejected legacy
+             repository provenance until the clean fixture used an isolated empty
+             workspace. The final packet uses PowerShell 7, `$TargetHome`, and that
+             isolated workspace. Operator-attested execution history was not treated as
+             raw proof. The raw packet README's older `powershell` invocation is a
+             non-blocking reproduction caveat; the canonical reliability artifact's
+             `pwsh.exe` command is authoritative, and preserved evidence should be
+             reproduced in a new run packet rather than overwritten.
+- boundary:  Ratification is scoped to Windows, Copilot CLI `1.0.80`, committed-
+             unpublished `kai-core` + `kai-personal`, the raw evidence IDs above, and
+             exact `change_ref 3b14dc6…`. It does not certify macOS/cloud host behavior,
+             public pack installation, pack dependency manifests, or marketplace
+             publication.
+- ship semantics: The steward-defined criterion is technically satisfiable without a
+                  pack publish: migration doctor `v0.63.0` and generated pack trees
+                  `v0.64.0` already have human-deployed, production-verified release
+                  records, and this item supplies the required operator proof against
+                  those committed-unpublished trees. `workflow-ship` still owns the DoD
+                  and terminal state; this review does not call the item shipped.
+
+## HANDOFF 2026-08-26-1516 — principal-swe-architect -> workflow-ship
+
+- did:       Ratified the sole `independent-architecture` requirement at exact
+             `change_ref 3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; item v8 -> v9,
+             state stays `in-review`, review lease cleared, and
+             `next_role: principal-swe-architect -> workflow-ship`. No target artifact,
+             implementation, pack, manifest, marketplace, or release record changed.
+- state:     in-review
+- needs:     Run the six-dimension DoD/release-readiness contract. Apply the steward's
+             evidence-only completion semantics using the already-published enabling
+             releases plus this operator proof; do not require or perform pack
+             marketplace publication.
+- artifacts: kai/coordination/items/pack-split-first-department.md (v9);
+             kai/coordination/threads/pack-split-first-department.md;
+             kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md;
+             kai/initiatives/pack-split/northstar.md;
+             kai/initiatives/pack-split/deliverables.md
+- evidence:  Exact review ref `3b14dc6…`; source revision `342cd8e…`; child session
+             `45847389-6c4d-4db5-a9b2-23462741d789`; raw packet
+             `.kai/runs/eng/2026-08-26/01-infra-pack-split-first-department/evidence/`;
+             enabling release records for `v0.63.0` and `v0.64.0`.
+- questions: none
+- next:      workflow-ship — prepare release readiness only; architecture has not moved
+             the item to `release-ready` or `shipped`.

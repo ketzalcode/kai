@@ -1203,3 +1203,23 @@ is **in-review v7**, `resume_state: null`, `waiting_on_questions: []`, with
 `principal-swe-architect` next for the required independent review bound to that exact
 `change_ref`. Acceptance remains 4/4 PASS; no reliability finding or implementation changed.
 The initiative and `first-pack-extracted` milestone remain active/open.
+
+**Independent architecture review 2026-08-26-1516
+(`principal-swe-architect`).** Exact evidence commit
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` is **RATIFIED**. The local branch
+history has one later descendant, coordination-only handoff commit
+`4c9d20525e66b7773a445056e10404af9bcaa331`; no reviewed reliability artifact,
+raw proof, implementation, pack, manifest, or marketplace topology changed after
+the review ref. Raw child events prove a fresh repeated-`--plugin-dir`
+`kai-core` + `kai-personal` host composition, provider-qualified core contract
+and inherited-rule loads, and a successful preflight rather than reliance on the
+requested terminal sentinel. Migration-doctor blocking/clean controls are valid
+at its persisted-inventory seam and remained read-only; `clear/no-workspace` is
+scoped only to fresh pre-onboarding readiness. The 59.66% result is explicitly a
+Unicode-character reduction in discovery-description metadata, with token values
+heuristic—not total prompt savings. No pack publication or global registry
+mutation occurred. The corrected prior attempts are harness/fixture defects, not
+product or architecture defects. Item v9 stays **in-review**, lease is clear, and
+`workflow-ship` is next for the DoD gate under the steward-defined
+already-published-enablers plus operator-proof semantics. Nothing is marked
+release-ready or shipped; the initiative and milestone remain active/open.
