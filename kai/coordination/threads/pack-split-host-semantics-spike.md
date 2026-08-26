@@ -52,3 +52,23 @@ Append-only communication log mirroring
              host session. A **bad answer stops the extraction**: re-open directors-in-core vs
              `kai-orchestrator` and the hooks-ownership mechanism with the steward + architect
              before any tree is committed.
+
+## HANDOFF 2026-08-26-1320 — principal-swe-infra -> principal-product-manager
+
+- did:       Completed the time-boxed host-semantics record. Windows Copilot CLI 1.0.80 proved
+             direct cross-plugin core-skill resolution, core-first/personal-first order,
+             fail-closed missing/skewed core, provider-qualified custom-agent IDs, and per-plugin
+             hook firing. The spike found a delegated-agent defect: child agents lacked `skill`
+             and could false-pass by reading the repository. PR #165 fixed canonical agent
+             frontmatter, released as v0.63.1, and a fresh core+personal preview from an empty
+             workspace passed with exactly one child `skill` call and no filesystem fallback.
+- state:     completed
+- needs:     Steward promotion decision for `pack-split-generated-pack-trees`. Extraction has a
+             conditional GO; publication remains blocked by `pack-split-host-gates`.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md
+- evidence:  PR #165; merge f112075f3fe63d7d64f0808b7f5cd12ad1f28e87; release v0.63.1;
+             `COPILOT_PLUGIN_DIR_ONLY=true`; Windows CLI 1.0.80; fresh generated preview.
+- questions: none for extraction. Unverified publication matrix: macOS, cloud managed install,
+             persistent install order, marketplace-vs-direct collision, fresh-session activation.
+- next:      principal-product-manager — resolve the remaining generated-tree promotion riders,
+             then promote or reject the item. Do not publish a pack from this evidence alone.

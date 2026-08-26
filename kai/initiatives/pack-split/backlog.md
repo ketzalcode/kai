@@ -591,3 +591,25 @@ unchanged.** No proposal was promoted into an item, no acceptance criterion was 
 from this list, and no non-negotiable moved. P2-S1's closure was verified in the tree rather than
 taken on report: `scripts/validate-plugin.mjs` no longer contains the `kai-[a-z]+` pattern, and
 its generated-body selection now runs through `parseGeneratedKey`.
+
+## Steward decision 2026-08-26 — generated pack trees promoted
+
+- **A1 — DECIDED, accepted residual.** No second core refusal. `v0.63.1`
+  added explicit `skill` access to every canonical agent and the delegated
+  cross-plugin preflight passes from an empty workspace. Reopen only if a core
+  agent reaches coordinated work with inherited skills unloaded after that fix;
+  consult security because core owns the directors and workspace initializer.
+- **N3 — DELIVERED.** Hooks claimants already resolve through
+  `parseGeneratedKey` and require a one-level `hooks.json`; generated-tree R2
+  adds a mutation proof rather than new parsing.
+- **N4, N5, proposal §147/§157 errata — PROMOTED AS RIDERS** R4/R6 on
+  `pack-split-generated-pack-trees`.
+- **Hook multi-path/nested-path diagnostics and dormant asset-ownership
+  branches — PROMOTED AS RIDERS** R3/R5. The asset key-space is not widened and
+  no second ownership source is introduced.
+- **Cross-department agent-referral degradation — DECIDED, option (b), already
+  shipped in core.** Bare role prose stays canonical. The core dispatcher reads
+  the live roster and uses the full provider-qualified ID; an absent department
+  is named, not substituted, and receives no lease. Residual: a non-director
+  dispatcher encountering an absent referral. Reopen at `first-department` or
+  `host-gates` if observed; owner `principal-product-manager`.
