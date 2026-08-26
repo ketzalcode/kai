@@ -357,3 +357,44 @@ Append-only communication log mirroring
 - scope:     Records only. No reviewed artifact, implementation, pack, manifest,
              release metadata, marketplace state, version, tag, release, or
              publication changed.
+
+## HANDOFF 2026-08-26-1538 — workflow-ship -> @operator
+
+- did:       **BLOCKED before CONFIRM-START.** Recorded the external GitHub
+             Actions event-delivery blocker without weakening the PREPARE gate.
+             Item v13 was release-ready; workflow-ship claimed it at v14 and
+             released it at v15 as `blocked` with `resume_state:
+             release-ready`. The exact reviewed `change_ref` remains
+             `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; DoD remains 6/6 Clear.
+- state:     blocked (`resume_state: release-ready`); lease clear; not deploying
+             and not shipped.
+- needs:     After GitHub Actions event delivery recovers, retrigger PR #171
+             (or open a fresh identical-ref PR), require `contract` success,
+             then resume CONFIRM-START/COMPLETE. Do not bypass branch
+             protection.
+- artifacts: kai/coordination/items/pack-split-first-department.md;
+             kai/coordination/threads/pack-split-first-department.md;
+             kai/coordination/BOARD.md;
+             kai/coordination/ACTIVE.md;
+             kai/initiatives/pack-split/log.md;
+             kai/initiatives/pack-split/deliverables.md;
+             kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md
+- evidence:  PR #169 on `docs/29-first-department-proof` emitted no check suite
+             after open, close/reopen, or synchronize via empty commit
+             `1a607b21…`; replacement PR #170 on that branch also emitted none.
+             Fresh identical-graph branch
+             `docs/29-first-department-proof-v2` and active replacement
+             https://github.com/RubenSaucedo/kai/pull/171 emitted no check suite
+             after more than two minutes. The commit check-suites API for
+             `1a607b21ae925105f994e8bc71b0a8cd2100c0ca` returned
+             `total_count: 0`; workflow `validate` is active; Actions
+             permissions are enabled/all; protected `main` strictly requires
+             GitHub Actions app check `contract` (admin enforcement false).
+             Live-web incident reporting is supporting context only; repository
+             APIs are the stronger evidence. PRs #169 and #170 are closed.
+             No merge, tag, release, version, marketplace, or publication
+             action occurred.
+- questions: none
+- next:      @operator — wait for GitHub Actions event delivery recovery, then
+             execute the exact `needs` sequence and return the successful
+             `contract` run plus deployment evidence to workflow-ship.

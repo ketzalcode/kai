@@ -2576,3 +2576,27 @@ the evidence/coordination PR with green CI while preserving review ancestry,
 then return deployment completion and read-only `main` verification evidence.
 The enabling product release is already-deployed, production-verified `v0.64.0`
 at merge `2eea0f04…`; no new version is owed or permitted.
+
+## 2026-08-26 — first-department deployment blocked before CONFIRM-START
+
+`workflow-ship` recorded an external GitHub Actions event-delivery blocker and
+moved `pack-split-first-department` from PREPARE's `release-ready` state to
+**blocked v15** with `resume_state: release-ready`. The DoD verdict remains 6/6
+Clear and the reviewed change remains
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f`.
+
+PR #169 emitted no check suite after open, close/reopen, and a synchronize push
+with empty commit `1a607b21…`; replacement PR #170 also emitted none. Fresh
+identical-graph branch `docs/29-first-department-proof-v2` and active PR #171
+still had no suite after more than two minutes. The check-suites API for full
+head `1a607b21ae925105f994e8bc71b0a8cd2100c0ca` reports
+`total_count: 0`. Workflow `validate` is active, Actions permissions are
+enabled/all, and protected `main` strictly requires GitHub Actions app check
+`contract`; bypass is forbidden. Live-web incident evidence is supporting
+context, subordinate to the repository APIs.
+
+No merge, tag, release, version, marketplace, or publication action occurred.
+After GitHub Actions event delivery recovers, retrigger PR #171 (or open a
+fresh identical-ref PR), require `contract` success, then resume
+CONFIRM-START/COMPLETE. The rollback plan and publication stop gate are
+unchanged.

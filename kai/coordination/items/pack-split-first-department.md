@@ -5,8 +5,8 @@ title: Prove kai-core + personal installs and operates over the plugin boundary
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: release-ready
-resume_state: null
+state: blocked
+resume_state: release-ready
 priority: 10
 owner: principal-swe-infra
 next_role: "@operator"
@@ -36,9 +36,9 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-first-department.md"
     timestamp: 2026-08-26-1516
 change_ref: 3b14dc6cfb693a7925c48a8c3d4446dda041c03f
-version: 13
+version: 15
 lease: null
-updated: 2026-08-26-1532
+updated: 2026-08-26-1538
 ---
 
 ## Outcome
@@ -88,8 +88,13 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
   in `kai/coordination/threads/pack-split-first-department.md`.
 - Six-dimension DoD gate passed 6/6 Clear at PREPARE; canonical record:
   `kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
-- Item is `release-ready`, not shipped. The operator must merge the evidence/records
-  PR with green CI and return the exact deployment + main verification evidence.
+- PREPARE reached `release-ready` at v13. Deployment is now paused before
+  CONFIRM-START: PRs #169, #170, and active replacement #171 received no check
+  suite, and the check-suites API reports `total_count: 0` for delivery head
+  `1a607b21ae925105f994e8bc71b0a8cd2100c0ca`.
+- Item is `blocked` at v15 with `resume_state: release-ready`, not deploying or
+  shipped. No merge, tag, release, version, marketplace, or publication action
+  occurred.
 
 ## Notes
 
@@ -98,3 +103,10 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
   install evidence against the committed-unpublished trees. No marketplace pack publication is
   permitted; the public flip remains exclusively `pack-split-release-12b`.
 - The real install is **operator-executed**; this role assembles the proof and records evidence.
+- **Deployment blocker 2026-08-26:** GitHub Actions is not delivering the
+  `pull_request` workflow/check suite. `validate` is active, Actions permissions
+  are enabled/all, and protected `main` strictly requires the GitHub Actions app
+  check `contract`. That gate must not be bypassed.
+- **Next action:** after GitHub Actions event delivery recovers, retrigger PR #171
+  (or open a fresh identical-ref PR), require `contract` success, then resume
+  CONFIRM-START/COMPLETE.

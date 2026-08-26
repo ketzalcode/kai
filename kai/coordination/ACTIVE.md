@@ -1233,3 +1233,17 @@ evidence/coordination PR to `main`, preserving reviewed `3b14dc6…` ancestry,
 followed by main artifact/item verification. The already-deployed enabling
 release remains `v0.64.0` at `2eea0f04…`; no new plugin behavior, version bump,
 tag, release, marketplace edit, or pack publication is authorized.
+
+**Workflow-ship deployment blocker 2026-08-26-1538.**
+The item is **blocked v15** with `resume_state: release-ready`, not deploying
+or shipped. PRs #169 and #170 are closed after GitHub emitted no check suite;
+active replacement PR #171 on fresh branch
+`docs/29-first-department-proof-v2` also emitted none. The check-suites API for
+head `1a607b21ae925105f994e8bc71b0a8cd2100c0ca` returns `total_count: 0`
+although `validate` is active and Actions permissions are enabled/all. Protected
+`main` strictly requires GitHub Actions app check `contract`; it must not be
+bypassed. External incident reporting is supporting context only. No deployment
+or publication action occurred. After GitHub Actions event delivery recovers,
+retrigger PR #171 (or open a fresh identical-ref PR), require `contract`
+success, then resume CONFIRM-START/COMPLETE. The reviewed `3b14dc6…` binding,
+DoD 6/6 Clear verdict, rollback plan, and publication stop gate remain intact.

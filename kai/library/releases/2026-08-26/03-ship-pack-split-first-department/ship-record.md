@@ -9,7 +9,8 @@ initiative: pack-split
 milestone: first-pack-extracted
 source_artifact: kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 canonical_path: kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md
-status: release-ready
+status: blocked
+resume_state: release-ready
 related:
   - kai/coordination/threads/pack-split-first-department.md
   - kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
@@ -18,6 +19,7 @@ evidence:
   - "coordination-only commits 4c9d20525e66b7773a445056e10404af9bcaa331 and 6681cf292fbfdd0bca7234112975886891feac3b"
   - ".kai/runs/eng/2026-08-26/01-infra-pack-split-first-department/evidence/"
   - "v0.64.0 enabling release at merge 2eea0f04f1c3dc0b4788de1e82909c5cc882e75d"
+  - "active PR #171 at delivery head 1a607b21ae925105f994e8bc71b0a8cd2100c0ca; check-suites total_count 0"
 ---
 
 # Ship Record — Core + personal first-department install proof
@@ -29,8 +31,9 @@ evidence:
 `v0.64.0` committed-unpublished `kai-core` + `kai-personal` trees install and
 operate across the plugin boundary; this item changes no plugin behavior.  
 **Change:** reviewed evidence commit
-`3b14dc6cfb693a7925c48a8c3d4446dda041c03f` on
-`docs/29-first-department-proof`.
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; active delivery branch
+`docs/29-first-department-proof-v2`, PR
+https://github.com/RubenSaucedo/kai/pull/171.
 
 The reviewed evidence commit is followed only by
 `4c9d20525e66b7773a445056e10404af9bcaa331` (coordination handoff) and
@@ -47,9 +50,11 @@ bound to `3b14dc6…`; record-only descendants do not replace the reviewed
 | 3 | reviewed | **Clear** | The sole requirement, `principal-swe-architect` / `independent-architecture`, is RATIFIED in `kai/coordination/threads/pack-split-first-department.md` at exact `change_ref 3b14dc6cfb693a7925c48a8c3d4446dda041c03f`. The review records no blocking finding and identifies later commits as records only. |
 | 4 | shippable-safely | **Clear** | Rollout-operability lens: the remaining deployment is a documentation/coordination merge to `main`, not a plugin rollout. CI-green merge is the gate; rollback reverts that merge only. No service, migration, data, runtime flag, tag, release, version bump, marketplace entry, or publication is implicated. Signals and owner are named below. |
 | 5 | documented | **Clear** | Durable proof at the reliability artifact; this canonical release record at `kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`; initiative `log.md` and `deliverables.md` stamped by PREPARE. |
-| 6 | coordination-closed | **Clear** | Item v13 is `release-ready`, `next_role: "@operator"`, lease clear, no waiting questions, and both typed dependencies are `shipped`. `BOARD.md`, `ACTIVE.md`, the thread deploy HANDOFF, log, and deliverables are refreshed together. |
+| 6 | coordination-closed | **Clear** | PREPARE closed coordination at item v13: `release-ready`, `next_role: "@operator"`, lease clear, no waiting questions, and both typed dependencies `shipped`. Item v15 now truthfully records the external deployment pause as `blocked` with `resume_state: release-ready`; BOARD/ACTIVE/thread/log/deliverables carry the same state. |
 
 **Readiness verdict: RELEASE-READY.** Six of six Clear; no Gap and no waiver.
+**Deployment status: BLOCKED before CONFIRM-START.** Readiness is preserved;
+deployment has not started.
 
 ### Probe-correction record
 
@@ -64,21 +69,50 @@ directory**, so raw pre-failure output is not preserved and is not represented
 as raw proof; the operator-provenance history remains in the reliability
 artifact.
 
+## Deployment blocker — GitHub Actions event delivery
+
+GitHub emitted no check suite for three PR attempts:
+
+- PR #169 on `docs/29-first-department-proof`: none after open,
+  close/reopen, or synchronize via empty commit `1a607b21…`.
+- PR #170 replaced #169 on the same branch: none.
+- PR #171 is the active replacement from fresh branch
+  `docs/29-first-department-proof-v2` at the identical commit graph: none after
+  more than two minutes.
+
+The check-suites API for delivery head
+`1a607b21ae925105f994e8bc71b0a8cd2100c0ca` returns `total_count: 0`.
+Workflow `validate` is active and Actions permissions are enabled/all. Protected
+`main` strictly requires GitHub Actions app check `contract` (admin enforcement
+is false). That gate is mandatory and must not be bypassed. Live-web evidence
+of a GitHub Actions incident on 2026-08-26 is supporting context only; the
+repository APIs above are stronger.
+
+No merge, tag, release, version, marketplace, or publication action occurred.
+The item is `blocked` with `resume_state: release-ready`; it is neither
+`deploying` nor `shipped`.
+
+**Next action:** after GitHub Actions event delivery recovers, retrigger PR #171
+(or open a fresh identical-ref PR), require `contract` success, then resume
+CONFIRM-START/COMPLETE.
+
 ## Rollout plan
 
 Big-bang documentation merge is proportional: there is no runtime payload to
-ramp. The operator commits the PREPARE records, pushes the existing evidence
-branch, waits for PR CI to be green, and uses a merge commit so reviewed
-`3b14dc6…` remains in ancestry.
+ramp. After GitHub Actions event delivery recovers, the operator retriggers
+active PR #171 (or opens a fresh identical-ref PR), waits for required
+`contract` success, and uses a merge commit so reviewed `3b14dc6…` remains in
+ancestry.
 
 **Blast radius:** the evidence artifact and coordination state become visible
 on `main`. Existing `v0.64.0` behavior and committed pack trees do not change.
 
 **Signals:** PR and `main` CI conclusions; reviewed artifact byte-identity;
-presence of the canonical ship record and release-ready item on `main`; zero
-diff in implementation, pack, manifest, marketplace, and release-metadata
-paths. **Owner:** `@operator` for the merge; `principal-swe-infra` for an
-evidence defect; `workflow-ship` for lifecycle confirmation.
+presence of the canonical ship record and workflow-owned lifecycle evidence on
+`main`; zero diff in implementation, pack, manifest, marketplace, and
+release-metadata paths. **Owner:** `@operator` for the merge;
+`principal-swe-infra` for an evidence defect; `workflow-ship` for lifecycle
+confirmation.
 
 ## Rollback plan
 
@@ -115,9 +149,11 @@ or plugin rollback is part of this rollback.
    must print nothing. Also run
    `git -C C:\src\kai diff --exit-code 342cd8eb9bacb7bfc8ccd3679f3f09667f1bd246..HEAD -- agents skills scripts packs hooks.json plugin.json package.json package-lock.json .github/plugin/marketplace.json CHANGELOG.md README.md`;
    it must print nothing.
-4. Push `docs/29-first-department-proof` and open or refresh its PR against
-   `main`. Wait for every required check to finish green. Return the PR URL,
-   PR head SHA, run URL/ID, and start timestamp.
+4. After GitHub Actions event delivery recovers, retrigger active PR #171 from
+   `docs/29-first-department-proof-v2` (or open a fresh identical-ref PR).
+   Require protected check `contract` to conclude `success`; do not bypass it.
+   Return the PR URL, PR head SHA, check-suite/run URL and ID, successful
+   conclusion, and start timestamp.
 5. Merge with **merge-commit ancestry preservation** (not squash/rebase), then
    wait for `main` CI at that merge SHA to finish successfully. Return the
    merge SHA, successful run URL/ID and conclusion, and completion timestamp.
@@ -138,7 +174,8 @@ failed evidence to `workflow-ship`.
 2. Prove the reviewed reliability artifact is unchanged:
    `git -C C:\src\kai diff --exit-code 3b14dc6cfb693a7925c48a8c3d4446dda041c03f..origin/main -- kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md`.
 3. Prove `main` contains this canonical ship record and the authoritative item
-   at `state: release-ready`, with its exact reviewed `change_ref`.
+   with exact reviewed `change_ref`; reconcile its workflow-owned lifecycle
+   from the recorded `resume_state: release-ready` through deployment evidence.
 4. Re-run the forbidden-path diff from source revision `342cd8e…` to the merge
    SHA; expect no output. Confirm marketplace remains one `kai` entry at
    `source: "."` and the committed packs remain unpublished.
