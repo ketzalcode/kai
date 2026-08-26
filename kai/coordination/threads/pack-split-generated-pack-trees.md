@@ -280,3 +280,46 @@ Append-only communication log mirroring
              deployment evidence to `workflow-ship` for CONFIRM-START and
              CONFIRM-COMPLETE. Milestone `first-pack-extracted` does not advance on
              `release-ready`.
+
+## HANDOFF 2026-08-26-1443 — workflow-ship -> principal-product-manager
+
+- did:       **Ran CONFIRM-START and CONFIRM-COMPLETE. Verdict: SHIPPED — production
+             verification PASSED 6 of 6.** Item **v7 -> v10**, walking `release-ready ->
+             deploying -> production-verification -> shipped`; lease and `resume_state`
+             remain null, `waiting_on_questions: []`, `next_role: "@operator" -> null`.
+             `change_ref` stays `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`;
+             GitHub compare proves it remains in merge `2eea0f04...` ancestry, preserving
+             the independent architecture review. Kai deployed nothing and rollback was
+             not invoked.
+- state:     shipped
+- needs:     Nothing on this terminal item. Steward may reconcile the now-satisfied
+             generated-tree dependency for proposed downstream items; do not infer
+             promotion or milestone closure from this handoff.
+- artifacts: kai/coordination/items/pack-split-generated-pack-trees.md (v10);
+             kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md;
+             kai/initiatives/pack-split/log.md; kai/coordination/BOARD.md;
+             kai/coordination/ACTIVE.md
+- evidence:  PR #167 `validate / contract` run `33016379347`, job `98335558480`,
+             passed in 15s; PR merged `2026-08-26T21:40:01Z` as `2eea0f04...`; main run
+             `33016421758` started `21:40:03Z`, job `98335703857` completed
+             `success` at `21:40:17Z`; `v0.64.0` published `21:40:33Z`, non-draft,
+             non-prerelease, target exactly the merge SHA. Production remains marketplace
+             N=1 at `source: "."`, `COMMITTED_PACKS = ['core','personal']`, only core +
+             personal trees, and no pack published. The official
+             `copilot plugin update kai` attempt failed with Windows `Access is denied`
+             because the active CLI had the plugin loaded; it is **not** recorded as a
+             successful plugin-manager update. The clean installed direct checkout was
+             fast-forwarded from `a879116...` / manifest `0.47.0` to exact merge
+             `2eea0f0...` / manifest `0.64.0`. `copilot plugin list` still shows stale
+             cached `0.47.0`, but a fresh CLI 1.0.80 child loaded the refreshed checkout
+             and returned exactly `CORE=0 PERSONAL=0 CONTRACT_DUPLICATE=no CHILD=ok`.
+             Observer count 363 -> 367 was the established four-record start/start +
+             stop/stop baseline for child `4d11d50d1b4d`; pack-attributable delta zero.
+             Local `main` and `origin/main` both reached the merge SHA and the worktree
+             was clean immediately after the operator sequence, before this records edit.
+- questions: none. The stale `copilot plugin list` display is an explicit non-blocking
+             cache residual: loaded checkout SHA, manifest, fresh-session behavior, and R7
+             all bind the published artifact. Reopen if a fresh session loads old contents
+             or produces a positive pack-attributable delta.
+- next:      principal-product-manager — reconcile the active initiative queue and
+             milestone accounting. The item itself is terminal with `next_role: null`.

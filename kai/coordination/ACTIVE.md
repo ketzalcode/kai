@@ -1141,3 +1141,22 @@ not a scope expansion. Ship record:
 directory move is deploy step 5). **Milestone `first-pack-extracted` does not advance** —
 `release-ready` is not `shipped`, and `first-department` / `host-gates` stay blocked until
 CONFIRM-COMPLETE.
+
+**Ship confirmation 2026-08-26-1443 (`workflow-ship`):
+`pack-split-generated-pack-trees` is SHIPPED.** Item **v7 -> v10** walked
+`release-ready -> deploying -> production-verification -> shipped`. PR #167 merged at
+`2026-08-26T21:40:01Z` as `2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`; main run
+`33016421758`, job `98335703857`, completed `success`; `v0.64.0` published non-draft,
+non-prerelease at `21:40:33Z`, targeting that exact SHA. The reviewed implementation
+`5a5afb0e...` remains in merge ancestry. Production verification passed 6 of 6:
+version/tree/topology coherent, marketplace still N=1 at `source: "."`, only committed
+core + personal trees, no pack published, fresh CLI 1.0.80 result exactly
+`CORE=0 PERSONAL=0 CONTRACT_DUPLICATE=no CHILD=ok`, and observer delta exactly the
+pre-existing four-record baseline with no pack-attributable provider/skill/hook delta.
+The official updater attempt **failed** with Windows `Access is denied`; the clean
+installed direct checkout was fast-forwarded to the merge SHA instead, and its manifest
+reads `0.64.0`. `copilot plugin list` still shows cached `0.47.0`; this is recorded as a
+non-blocking display-cache residual because the fresh session loaded the exact refreshed
+checkout and all behavior gates passed. The item is terminal (`next_role: null`);
+`first-pack-extracted` remains active and open, with downstream promotion and milestone
+accounting still steward-owned.

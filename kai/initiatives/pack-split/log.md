@@ -2433,3 +2433,40 @@ reconciliation is owed). **Milestone `first-pack-extracted` is unchanged** —
 both require this item at `shipped` and stay non-dispatchable, and CONFIRM-START /
 CONFIRM-COMPLETE still need operator deployment evidence plus the post-update R7 re-check
 against the published artifact before anything here is called shipped.
+
+## 2026-08-26 — generated pack trees shipped (`v0.64.0`)
+
+`workflow-ship` ran CONFIRM-START and CONFIRM-COMPLETE for
+`pack-split-generated-pack-trees`, moving item v7 -> v10 through `deploying` and
+`production-verification` to **`shipped`**. PR #167 merged at
+`2026-08-26T21:40:01Z` as `2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`; main validation
+run `33016421758`, job `98335703857`, succeeded at that SHA; release `v0.64.0` published
+at `21:40:33Z`, non-draft, non-prerelease, target exactly the merge commit. The reviewed
+implementation commit `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f` remains in merge
+ancestry, so the independent architecture review binding is preserved. PR run
+`33016379347`, job `98335558480`, also passed before merge. Local `main` and
+`origin/main` both reached the merge SHA and the worktree was clean after the operator
+sequence, before this records-only closure.
+
+Production verification passed 6 of 6. The merge has version `0.64.0`, only
+`packs/kai-core` + `packs/kai-personal`, `COMMITTED_PACKS = ['core','personal']`, and a
+marketplace still exactly N=1 (`kai`, `source: "."`): **no pack was published**. Main CI's
+committed-tree check passed. On Windows Copilot CLI 1.0.80, official
+`copilot plugin update kai` failed with `Access is denied` because the active CLI had the
+plugin loaded; this is not represented as a successful plugin-manager update. The clean
+installed direct checkout was safely fast-forwarded from old SHA `a879116...` / manifest
+`0.47.0` to exact merge SHA `2eea0f0...` / manifest `0.64.0`. A fresh child session then
+returned exactly `CORE=0 PERSONAL=0 CONTRACT_DUPLICATE=no CHILD=ok`; one built-in
+`explore` child produced the established four observer records (363 -> 367, duplicated
+start/start then stop/stop) and no positive pack-attributable provider, contract-skill, or
+hook delta.
+
+`copilot plugin list` still displays cached registry metadata `0.47.0`. That discrepancy
+is an explicit non-blocking residual, not hidden: the installed checkout SHA and manifest
+are current and the fresh session demonstrably loaded their contents, so the existing R7
+production contract passes. Reopen if a fresh session loads old contents or shows a
+positive pack-attributable delta. Rollback was not invoked.
+
+Milestone `first-pack-extracted` remains **open**. Two required product-change items are
+now `shipped` (`generated-pack-trees`, `migration-doctor`); promotion and sequencing of
+the remaining proposed items, and any milestone accounting, remain steward-owned.
