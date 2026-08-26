@@ -179,3 +179,18 @@ Append-only communication log mirroring
              `unknown` and cannot authorize installation.
 - next:      workflow-ship — merge PR #163, release `v0.63.0`, verify the
              published release, and persist the ship record.
+
+## SHIP 2026-08-26-1250 — workflow-ship
+
+- did:       Merged PR #163 as `52283b97ef92b3e15cabe2f35fdcf4ebb49c4d25`
+             and published `v0.63.0`. The main `validate / contract` run
+             `33007032198`, job `98303337581`, passed at the merge commit.
+- state:     shipped
+- evidence:  https://github.com/RubenSaucedo/kai/pull/163;
+             https://github.com/RubenSaucedo/kai/actions/runs/33007032198;
+             https://github.com/RubenSaucedo/kai/releases/tag/v0.63.0
+- artifacts: kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md
+- questions: none. No pack was published; inferred host layouts remain
+             fail-closed pending `pack-split-host-semantics-spike`.
+- next:      director-chief-of-staff — continue the `first-pack-extracted`
+             queue with `pack-split-host-semantics-spike`.

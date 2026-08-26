@@ -1085,3 +1085,14 @@ a terminal state; `first-department`, `host-gates`, `onboarding-installer` and `
 require this item at `shipped` and stay non-dispatchable. The `ready` queue is unchanged
 (`pack-split-host-semantics-spike`, 30, `@operator` host session). Nothing was pushed, opened as a
 PR, merged, tagged, released or published.
+
+**Ship update 2026-08-26-1250 (`workflow-ship`).** `pack-split-migration-doctor`
+is now **shipped** in `v0.63.0`: PR #163 merged as
+`52283b97ef92b3e15cabe2f35fdcf4ebb49c4d25`, main validation run
+`33007032198` passed, and the release was published at
+`2026-08-26T19:47:53Z`. Both required reviews bind implementation ref
+`961c86c6e948093999256e64a88f2fe31f53cfe4`; the durable ship record is
+`kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md`.
+The marketplace remains monolithic and no pack tree is committed. The live
+queue is now the `pack-split-host-semantics-spike`; generated pack trees remain
+proposed behind its evidence and the A1 promotion decision.
