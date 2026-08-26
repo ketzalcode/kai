@@ -382,3 +382,112 @@ PROPOSAL
 **What would change my mind (trigger to promote):** an operator actually hitting the
 misdiagnosis (reinstalling a plugin that was already installed), or the block being reopened for
 P2-D2.
+
+## Parked at the 2026-08-25-1750 DoD gate — `pack-split-ci-partition-checks`
+
+Three proposals. **N4** and **N5** are the two non-blocking residuals the
+`independent-architecture` ratification (2026-08-25-1745, bound to `change_ref
+aca16e56d3d70cf6bac5181a41c3d4a87055dccc`) recorded rather than returned; **S1** is raised by the
+ship gate itself. **None gated the release** and **none is fixed in PR #160.** N4 and N5 are parked
+rather than "fixed in passing" for one reason worth stating: the implementation is committed,
+pushed and CI-green at a ratified ref, so any edit now mints a **new** ref, un-binds the item's one
+required review and buys a full round trip — a price this gate will not pay for a comment adjective.
+
+### PROPOSAL — one adjective in `pack-plan.mjs` still outruns the measured evidence
+
+From architect residual **N4**, recorded at the 2026-08-25-1745 ratification.
+
+```
+PROPOSAL
+  problem:          scripts/lib/pack-plan.mjs:27 says "Hosts have exposed duplicate plugin names
+                    differently". The measured corpus is ONE host — Findings 5/6 in
+                    docs/proposals/pack-architecture.md — plus the still-open question at
+                    pack-architecture.md:278 ("does skill collision behaviour hold across install
+                    order, marketplace vs direct install?"). The plural asserts cross-host
+                    variation that nobody has observed. It is the same class of over-claim that
+                    caused blocking finding A2, one size smaller.
+  proposed_change:  Reword to the honest form: duplicate exposure is not a guaranteed contract and
+                    has been measured on one host only. One comment line.
+  friction_cost:    Trivial as a diff, expensive as a round trip TODAY — a new commit is a new
+                    change_ref, which un-binds the ratified independent-architecture review and
+                    costs a re-review. Free whenever that file is next legitimately open.
+  mission_tradeoff: It is a source comment, not user-facing release prose, and it asserts the
+                    ABSENCE of a guarantee rather than a resolution rule — so it cannot produce
+                    the "deterministic install order is an equivalent mitigation" inference that
+                    A2 existed to kill. The initiative's [observed] discipline is still the thing
+                    being bent, and this file is where that discipline is most load-bearing.
+  scope_target:     Whichever item next legitimately reopens scripts/lib/pack-plan.mjs — most
+                    likely pack-split-generated-pack-trees.
+  owner:            principal-swe-infra
+```
+
+**What would change my mind (trigger to promote):** a second host being measured (which either
+justifies the plural or refutes it), or this comment being cited in a design argument as evidence.
+
+### PROPOSAL — `parseGeneratedKey` is fail-closed in one consumer and fail-open in the rest
+
+From architect residual **N5**, recorded at the 2026-08-25-1745 ratification with its own reopen
+trigger.
+
+```
+PROPOSAL
+  problem:          Finding A3 made guaranteeBlockErrors (pack-plan.mjs:1069-1074) ERROR by name on
+                    a generated key that resolves to no declared pack. Its sibling consumers were
+                    not changed: packProviders (pack-plan.mjs:632) and the hooks-claimant filters
+                    in pack-preview.mjs:931-934 and validate-plugin.mjs still continue/filter on a
+                    null. The fail-closed property is therefore inconsistent across consumers of
+                    the same function — the collision gate can under-report on a key the guarantee
+                    gate rejects.
+  proposed_change:  Make the null case uniform — either every consumer errors, or the resolution
+                    itself throws and callers stop deciding independently.
+  friction_cost:    Small and local, but it touches three call sites in two files plus their
+                    mutation arms, and today it costs the same new-ref/re-review round trip as N4.
+  mission_tradeoff: Masked today, and provably so: any divergent key trips --gate partial-install
+                    loudly in the SAME CI run, so the build cannot be green while the collision
+                    gate under-reports. The residual is a shape, not a live hole — and it is the
+                    same shape as the P2-S1 bug this item just closed, one level up, which is why
+                    it is recorded rather than forgotten.
+  scope_target:     pack-split-generated-pack-trees, or whichever item next emits a generated key.
+  owner:            principal-swe-infra
+```
+
+**What would change my mind (trigger to promote), stated by the reviewer:** the first time a
+generated key is emitted from anything other than the declared pack list, **or** the first time
+`guaranteeBlockErrors` stops running in the same CI run as `packProviders`. Either removes the
+masking and turns a shape into a hole.
+
+### PROPOSAL — a user-invocable skill was renamed with no alias, and the CHANGELOG files it as an addition
+
+Raised by `workflow-ship` at the DoD gate. **Not a defect in this release** — the rename is a
+ratified initiative non-negotiable and is honestly documented. It is a **policy question** for the
+renames still ahead in the split.
+
+```
+PROPOSAL
+  problem:          fleet-observation -> kai-core-fleet-observation renames a skill whose
+                    frontmatter is user-invocable: true, with NO alias for the old name. Updates
+                    reach users through /plugin update kai or a new session, so the old invocation
+                    simply stops resolving. The 0.62.0 CHANGELOG records the rename under
+                    "### Added" rather than a Changed/Removed or breaking-change callout, which is
+                    honest but not where a user scanning for breakage looks. 22 core skills were
+                    already renamed the same way in earlier landed work, so the precedent is set
+                    and this is the 23rd and last core-prefix rename.
+  proposed_change:  Decide the policy for the remaining user-facing renames in the split: (a)
+                    whether a deprecation alias or a stub skill is ever warranted, (b) whether
+                    renames of user-invocable skills get a standing breaking-change callout in the
+                    CHANGELOG, and (c) whether 1.0.0 — the release that actually moves people
+                    between plugins — carries a single consolidated rename table.
+  friction_cost:    (a) is real work and cuts against the namespace non-negotiable (an alias IS a
+                    bare name core would still be providing). (b) and (c) are documentation
+                    conventions and cost close to nothing.
+  mission_tradeoff: The initiative's whole thesis is that bare duplicate names are not a stable
+                    provider contract, so shipping an alias would re-create exactly what the prefix
+                    removes — which is a strong argument for (a) = never. That makes (b) and (c)
+                    the load-bearing half: if aliases are off the table by design, the split's
+                    user-visible breakage has to be findable in the release notes instead.
+  scope_target:     pack-split-release-12a/12b/12c (the staged 1.0.0 release items), triaged now.
+  owner:            principal-product-manager
+```
+
+**What would change my mind (trigger to promote):** a user reporting a broken invocation after
+`0.62.0`, or the first pack extraction renaming a second user-invocable skill.

@@ -108,7 +108,7 @@ support long-term. Nobody has to approve a listing for this to work.
    skills are available in **new** sessions — start a fresh session to use them.
 
 An install is a full repository checkout, so `scripts/` ships with it and
-nothing needs cloning — that is what lets `fleet-observation` find the watcher.
+nothing needs cloning — that is what lets `kai-core-fleet-observation` find the watcher.
 
 **Already installed the direct way?** Registering the marketplace does not move
 an existing install onto it: the installed plugin keeps the source it came

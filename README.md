@@ -31,20 +31,20 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.61.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.62.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-**Groundwork for the pack split.** The build tooling now speaks one
-machine-readable pack partition, `scripts/pack-preview.mjs` is the deterministic
-pack generator (byte-stable, per-pack `plugin.json`, regenerate-and-diff), and the
-validate and release gates are multi-manifest aware — so a future `kai-core` plus
-department packs can never land outside version and release enforcement. Every
-generated department agent now carries a fail-closed core preflight: a missing or
-version-skewed `kai-core` produces a refusal, never a silent half-working agent.
-Validation also resolves every cross-pack reference — inherited, user-invoked and
-orchestrated, plus the scripts an instruction tells you to run and the single pack
-that owns `hooks.json` — so a reference that only works because everything ships
-in one directory fails now rather than after the split.
+**The pack partition is now CI-enforced.** Four named gates run on every push
+and pull request: the partition itself (every agent in exactly one pack, every
+skill with exactly one provider, every reviewed disposition still placing a real
+skill), id collisions across packs, a department installed with `kai-core` and
+nothing else, and contract-version skew. They fail by name, so a red build says
+which guarantee broke rather than that something did. Core's skills are held to
+the `kai-core-*` prefix in both directions — a core-provided skill without it
+and a department claiming it both fail — because duplicate plugin names are not
+a stable provider contract across host and namespace surfaces. The one skill that
+broke the invariant, `fleet-observation`, is now
+`kai-core-fleet-observation`.
 kai still ships as the single `kai` plugin; no packs are published yet.
 
 ```text
@@ -85,7 +85,7 @@ agents answer questions about codebases — and a withheld summary looked exactl
 like a feature that never worked. The refusal now says so, recording the shape
 of what it refused and never the text.
 
-`--sequence`, added in `v0.49.0`, is the view `fleet-observation` was
+`--sequence`, added in `v0.49.0`, is the view `kai-core-fleet-observation` was
 named for: every run in the retained history, in the order it began, each
 labelled `said` (the agent's own account) or `seen` (the host's). It lists
 only what a log recorded and never names the roles that should have been there,

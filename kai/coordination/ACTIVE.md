@@ -686,3 +686,247 @@ move rode the same records commit as the merge. Two interpretations stay parked 
 `principal-product-manager` and were **not** self-cleared here: **E1** (the northstar's "every pack"
 against a department-only ship) and **A1** (core-only coverage). **Next: none for this item
 (`next_role: null`).**
+
+**Build update 2026-08-25-1705 (`principal-swe-infra`).** `pack-split-ci-partition-checks` — the
+**last** required item of `dependency-guarantees` — is **`ready` -> `in-progress` -> `blocked`**
+(v3 -> v4, `owner: principal-swe-infra`, `resume_state: in-progress`, `next_role: "@operator"`, **no
+lease held** — holding one across a blocking question would misrepresent live work). Both
+dependencies were verified `shipped` first and the touch-conflict surface was read at **landed
+`v0.61.0`**, not at the pre-`0.61.0` files. **The implementation is complete; NOTHING WAS
+EXECUTED.** This session has **no shell** — file read/write/search only — so no command was run, the
+skill **directory could not be moved**, and **no `change_ref` could be minted**, which means the
+single required `principal-swe-architect` / `independent-architecture` review **cannot bind** and
+`completed_reviews` stays `[]`. **The working tree is knowingly RED**: `skills/fleet-observation/
+SKILL.md` now declares `name: kai-core-fleet-observation` while sitting in the old directory, so
+`loaderErrors`, `validate-plugin` and `generate-catalog` all fail until `git mv skills/
+fleet-observation skills/kai-core-fleet-observation` runs — exactly the "goes red until the rename
+lands" the item predicted, not an accident. **What landed: one partition, six pure gates.**
+`partitionErrors`, `namespaceErrors`, `providerCollisionErrors`, `contractPinErrors`,
+`availabilityErrors` and `guaranteeBlockErrors` are pure functions over plain data in
+`scripts/lib/pack-plan.mjs`, so the validator (live tree), the new `--gate` runner (live tree) and
+the self-test (mutated fixtures) execute **identical code** — a gate cannot be green in CI and red
+in the self-test because there is only one implementation, and each failure names itself exactly.
+**Four named CI steps** were added to `.github/workflows/validate.yml` after `Pack generator
+self-test` — `Partition gate (completeness, uniqueness, namespace)`, `Collision gate (agent + skill
+provider)`, `Partial-install gate (cross-pack refs, assets, hooks, guarantee blocks)`, `Version-skew
+gate (contract pins + preflight arms)` — with `--gate all` folded into `npm test`. **A5 is closed by
+deletion:** `PACK_AGENTS` and `planSkills` are **gone**, not re-exported; `build()` is a thin
+selection over `buildAll({packs:[pack]})` and the four legacy self-test checks read one hoisted
+`planPacks()`, so **one machine-readable partition** remains with no second roster to drift.
+**Namespace safety is the point of the rename, not hygiene around it:** the accepted host semantics
+are **first-found-wins / silent dedupe**, so a duplicate id does not error — it *shadows*, and the
+loser never loads; `kai-core-*` is the only thing stopping a department or third-party pack quietly
+capturing a core skill, and `fleet-observation` was the **single** core-provided skill without the
+prefix. Every reference was renamed (frontmatter, `SKILL_OWNER_OVERRIDES`, `generate-catalog.mjs`
+CATEGORIES, `test/fixtures/inventory.json` re-sorted in both lists, four docs, `README.md`),
+including `docs/proposals/pack-architecture.md:412`, which is **forced** because that line contains
+the verb "inherits" and the validator's inherit-line check rejects the stale token. **P2-S1 is
+closed properly rather than patched:** the generated-agent pin matched `/^kai-[a-z]+\/agents\//`, so
+a future pack key carrying a hyphen or a digit would have silently escaped the guarantee; it now
+resolves through `parseGeneratedKey(key, packs)` against the **declared pack list**, and a key
+resolving to no known pack is an **error, not a skip** — asserted by mutation arms using hyphenated
+and digit-bearing keys. **N2 closed** (`AGENT_REF` and `AGENT_SHAPED` both derive from one exported
+`AGENT_FAMILIES`; verified `creative-video-director` is the only `creative-*` token and all eight
+prose references resolve, so widening the docs pattern is safe). **N1 closed** (the live arm widened
+from one `workflow-doc-review` lens to the full nine, plus an arm asserting every lens is a skill on
+disk). **A real hole closed on the way past:** `CONTRACT_SKILL` and `CONTRACT_VERSION` were
+independent literals with nothing tying the skill name to the version it encodes — `contractPinErrors`
+now requires `skill.endsWith('-v' + version)`, so the next contract bump cannot ship a v2 constant
+against a v1 skill and stay green. **Decomposition Open Question 4 is ANSWERED, not deferred:** the
+director-availability work **is** complete — `director-chief-of-staff.agent.md` carries all three
+rules verbatim (lines 195/209/211) — it was merely unpinned, and `availabilityErrors` now pins it by
+**membership** over `DISPATCHING_ROLES`, never a model-computed count, so criterion 4 is ticked on
+that reading and the steward can close the question. ~45 mutation arms were added (partition 11,
+namespace 3, collision 3, `parseGeneratedKey` 5, guarantee blocks 8 incl. a hyphenated pack, contract
+pins 7, availability 4, roster shape 1, doc lenses 2) and `0.61.0 -> 0.62.0` bumped across all eight
+release locations with the dated CHANGELOG section, compare link and README `## Status` stamp.
+**Two calls made and recorded rather than escalated:** historical `CHANGELOG.md` entries naming
+`fleet-observation` are **left as history** (the validator already excludes that file from reference
+scanning, so no gate weakens), and the **touch-set expansion is declared, not hidden** — four
+release-metadata files (unavoidable given the version-bump criterion), `docs/proposals/
+pack-architecture.md` (forced by the inherit-line check) and `docs/reference/plugin-structure.md`
+(two new `npm test` rows), all added to `touches`. **Invariants preserved and read back:** root
+`agents/` + `skills/` still canonical, `COMMITTED_PACKS` still `[]`, **no `packs/` tree**, marketplace
+still **N=1** at `source: "."`, no new tool grant, counts unchanged at 56/51 (a rename moves a name,
+it does not add one). **Blocking `Q-pack-split-ci-partition-checks-01` (`kind: action`) is open to
+`@operator`:** create `kai/feat/29-ci-partition-checks`, run the `git mv`, then `--self-test`,
+`--gate all`, `--check`, `validate-plugin`, `docs:generate`, `host-contract`, `npm test`, return the
+exact output, and commit so a `change_ref` exists for the architecture review to bind. Expect the
+self-test count to move from 44 to roughly 90; **a missed regex there is a self-test defect, not a
+gate defect** — send it back rather than loosening an assertion. **Milestone `dependency-guarantees`
+stays at 4 of 5 required items `shipped`** — written, unverified code is not a shipped item, so
+`pack-split-generated-pack-trees` is **not** cleared (still `proposed`, 4 of 6 met, outside
+`scope.current`). No dependent item record was edited. Nothing was branched, committed, pushed,
+PR'd, merged, tagged, released or published. **Next: `@operator`.**
+
+**Latest — 2026-08-25-1725 (`principal-swe-architect`).** `pack-split-ci-partition-checks`:
+**independent architecture review NOT RATIFIED**, returned for two changes. Item **v5 -> v6**,
+`in-review -> in-progress`, lease `psa-2026-08-25-1720-pcg` released, **`change_ref` reset to
+`null`**, `completed_reviews` still `[]`, `next_role: principal-swe-infra`. **The design is
+endorsed; the binding is invalid.** **A1 (blocking) — the bound ref `de4fc3ad…` is not a commit and
+nothing is committed.** Read straight from `.git` (this session also had no shell): `HEAD` ->
+`kai/feat/29-ci-partition-checks`, whose ref is `16493a303c…`, **byte-identical to
+`refs/heads/main`**; the branch reflog holds exactly one entry (`branch: Created from HEAD`),
+`.git/logs/HEAD` ends at that checkout with no commit after it, and `de4fc3ad…` appears nowhere in
+the reflog. `logallrefupdates = true` rules out an unlogged commit; there is no stash log and no
+`worktrees/`; `COMMIT_EDITMSG` still holds the previous item's message. The object **does** exist as
+a loose object and `.git/index` contains `kai-core-fleet-observation`, so the `git mv` was
+**staged** — `de4fc3ad…` is almost certainly a **blob written by `git add`/`git mv`, not a commit
+SHA**. The implementation is uncommitted index/worktree state, so the review cannot bind and
+"unchanged since binding" has no baseline to be checked against; a future commit mints a *different*
+SHA, so the ref was nulled rather than left to fail the ship gate's exact-match rule silently.
+**A2 (required, minimal) — the `0.62.0` release docs publish a host-semantics claim this
+initiative's own `[observed]` evidence contradicts.** Eleven code sites plus `README.md:44-46` and
+`CHANGELOG.md:21-23` assert "the host keeps the first copy … and drops the rest silently" /
+"install order decides"; partition-lock §6.1 `[observed]` and `docs/proposals/pack-architecture.md`
+Finding 6 record **"Both are exposed, namespace-qualified. Not silent, not arbitrary."**, and
+Finding 5 namespaces agents by provider — so "first-found-wins for both agents and skills" is
+contradicted twice. **The gates are correct; only their stated reason is wrong** — no gate logic,
+mutation arm or part of the rename changes. Returned because it is the explanation an engineer reads
+when the gate fires ("install order decides" argues for replacing the namespace gate with a
+deterministic install order), because it is a **second contradictory truth about host semantics
+introduced by the item that exists to collapse duplicate truth (A5)**, and because unqualified
+`**Inherits:**` resolution under a duplicate was **never measured** — an inference now shipped as
+observed fact. **The rename and the prefix rule stand and remain correctly justified.**
+**A3 (deferred, record correction)** — `parseGeneratedKey` **skips** unknown-pack keys, it does not
+error as the handoff claims; unreachable today, reopen if a key is ever emitted from anything but
+`PACK_ORDER`. **Endorsed on substance:** six pure gates with three callers means a gate cannot be
+green in CI and red in its own proof — the right seam; A5 closed by deletion; four genuinely named
+CI steps; P2-S1 and N2 properly closed with hyphen/digit arms; contract skill/version coupled;
+availability pinned by membership; mutation arms assert specific message text; the rename is
+complete and minimal at 56/51; `0.62.0` coherent; `COMMITTED_PACKS = []`, no `packs/` tree,
+marketplace N=1. **Namespace scope challenged and found correct, not narrow** — skills-only is right
+*because* the host namespaces agents by provider and leaves skill names flat. **Acceptance boxes not
+ticked by the review** (nothing executed here; criterion 6 cannot be met while nothing is pushed) and
+**not routed to `workflow-ship`** — a ship gate cannot run without a commit. **Milestone
+`dependency-guarantees` stays at 4 of 5 required items `shipped`**; `pack-split-generated-pack-trees`
+is **not** cleared. No implementation or release file was edited. **Next: `principal-swe-infra`** —
+fix A2, correct the A3 claim, commit, supply the real SHA; re-review is a read of the wording delta.
+
+**Latest — 2026-08-25-1745 (`principal-swe-architect`).** `pack-split-ci-partition-checks`:
+**independent architecture review RATIFIED at `change_ref
+aca16e56d3d70cf6bac5181a41c3d4a87055dccc`.** Item **v7 -> v8**, state stays `in-review`, lease
+`psa-2026-08-25-1740-pcg` cleared, `next_role: principal-swe-architect -> workflow-ship`, and
+`completed_reviews` now carries `principal-swe-architect` / `independent-architecture` / `ratified`
+at this exact ref — the item's **single** review requirement is satisfied **for this ref only**; if
+the ref moves, the entry stops counting. **No design change was requested in either round** — the
+seam was endorsed at 1725 and is unchanged here; all three returns were holes in the *binding* and
+the *prose*, not in the structure. **A1 CLOSED — the ref is a real commit and is the branch tip.**
+Read straight from `.git` (this session also had **no shell**): the branch reflog now holds
+`16493a303c… -> aca16e56d3… commit: feat: enforce pack partition gates`, `HEAD` points at
+`kai/feat/29-ci-partition-checks`, `refs/heads/main` is that commit's **parent**, `COMMIT_EDITMSG`
+finally carries this item's message, and the 1725 blob `de4fc3ad…` appears nowhere in the reflog.
+**A2 CLOSED — the shipped prose now states this initiative's own `[observed]` truth.** A
+repository-wide scan for `first-found | first copy | install order | drops the rest` finds **no**
+host-resolution claim left in `scripts/`, `README.md`, `CHANGELOG.md` or `docs/`. All eleven code
+sites plus `README.md:44-47` and `CHANGELOG.md:21-24` now say duplicate-provider behaviour is **not
+a stable provider contract across host and namespace surfaces**, and justify uniqueness as
+**partition-defined ownership** rather than order control (`pack-plan.mjs:904` — "duplicate
+providers make resolution **host-dependent instead of partition-defined**"). All three forces
+behind the return are answered: the "install order decides" inference that argued for weakening the
+namespace gate is gone; the second, contradictory truth about host semantics is collapsed — the
+replacement justification is the ratified one (`pack-architecture.md` §"Legacy collision" +
+partition-lock §6: a legacy `kai` install provides the same bare name); and no unmeasured mechanism
+is published as observation any more, because the claim is now the *absence* of a guarantee rather
+than a resolution rule. **The rename rationale came back stronger, not weaker** — a documented
+monolith collision instead of an inferred host behaviour — and **no gate logic, mutation arm,
+message-name assertion or part of the rename changed** (the arms assert on message *prefixes*, which
+the rewording left intact). **A3 CLOSED, harder than the finding asked** — the return only required
+correcting the record; instead `guaranteeBlockErrors` (`pack-plan.mjs:1069-1074`) now **errors by
+name** on any generated key outside the declared pack list ("belongs to no declared pack — generated
+files must not escape guarantee validation"), placed *before* the non-agent skip, with a named
+mutation arm at `pack-preview.mjs:833-835`. It is a fail-closed guard that cannot false-positive
+today, because `materializePacks` derives every key from the same list the check resolves against;
+the reported **133 -> 134** self-test count matches exactly one added arm. **Everything endorsed at
+1725 was re-read and holds:** six pure gates over plain data with three callers (validator, `--gate`
+runner, self-test) so a gate cannot be green in CI and red in its own proof; A5 still closed by
+deletion (`PACK_AGENTS` and `planSkills` appear nowhere in `scripts/`); four named CI steps plus
+`--check`, with `npm test` running `--self-test`, `--gate all` and `--check`; P2-S1 and N2 closures;
+`CONTRACT_SKILL`/`CONTRACT_VERSION` coupling; availability by roster **membership**; the rename
+complete on disk (`skills/kai-core-fleet-observation/` present, `skills/fleet-observation/` gone) at
+**56 agents / 51 skills**; `0.62.0` coherent across all eight release locations including the
+compare link and the README `## Status` stamp; `COMMITTED_PACKS = []`, **no `packs/` tree**,
+marketplace still **N=1** at `source: "."`. **No new file, CI step, capability, or acceptance
+criterion — nothing was added or raised.** **Acceptance boxes were deliberately not ticked by this
+review, and criterion 6 is UNMET:** `refs/remotes/origin/` and `packed-refs` carry **no** entry for
+`kai/feat/29-ci-partition-checks`, so the commit is **local only** — nothing pushed, no PR, no CI
+run to be green. Criterion 5 is **operator-attested**, not machine-verified: this session executed
+nothing, so worktree/commit byte-identity and the reported run (134 checks, four gates clean,
+`validate-plugin` 56/51, full `npm test` pass) are **input, not verdict**; the ratification rests on
+the code and the `.git` reads. **Three non-blocking notes, to fix in passing rather than in a round
+trip: N4** — `pack-plan.mjs:27` ("Hosts have exposed duplicate plugin names differently") still
+outruns a corpus of one measured host plus the open question at `pack-architecture.md:278`; **N5** —
+`packProviders` and the hooks-claimant filters still *skip* an unresolvable generated key while
+`guaranteeBlockErrors` now errors on it, masked because the partial-install gate fails loudly in the
+same run, so it is a named trigger not a fix; **N6** — the item's Evidence table lists the pre-fix CI
+step names. **Milestone `dependency-guarantees` stays at 4 of 5 required items `shipped`** — a
+ratified review is not a shipped item, so `pack-split-generated-pack-trees` is **not** cleared
+(still `proposed`, outside `scope.current`), and no dependent item record was edited. Nothing was
+committed, pushed, merged, tagged, released or published, and this review edited **no**
+implementation or release file. **Next: `workflow-ship`** — run the definition-of-done gate; expect
+it to hold on criterion 6 until the branch is pushed, a PR is opened and `validate` is green with
+the four new gate steps visible.
+
+**Latest — 2026-08-25-1750 (`workflow-ship`, PREPARE).** `pack-split-ci-partition-checks`: **DoD
+gate verdict RELEASE-READY — all six dimensions Clear, none Gap.** Item **v8 -> v9,
+`in-review -> release-ready`**, `lease: null`, `resume_state: null`, `next_role: workflow-ship ->
+"@operator"`, `change_ref` **unchanged** at `aca16e56d3d70cf6bac5181a41c3d4a87055dccc`, acceptance
+criteria **1–8 all ticked** (3, 5 and 6 ticked at this gate, exactly where the ratification left
+them). **It is NOT shipped** — kai pushed, merged, tagged, released, published and deployed
+**nothing**; every deploy step belongs to the operator. Ship record written at
+`kai/library/releases/2026-08-25/04-ship-pack-split-ci-partition-checks/ship-record.md`, canonical home
+`…/04-ship-pack-split-ci-partition-checks/ship-record.md` after the operator's `git mv` in deploy
+step 2 (this environment cannot create directories). **The criterion only CI could close is closed,
+and it was read from `api.github.com` rather than accepted on report:** PR **#160** is open at head
+`63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b` with exactly two commits, and check run `contract`
+**`98018029769`** (run **`32915426171`**, `workflow_name: validate`, `run_attempt: 1`) is
+**`conclusion: success`** in **18s** at that exact head with `check-runs total_count: 1`, so nothing
+red hides behind it. **The four gates were verified as individual steps, not inferred from a green
+tick** — step 9 `Partition gate (one pack per agent, one provider per skill, kai-core-* namespace)`,
+step 10 `Collision gate (no id emitted by two packs)`, step 11 `Partial-install gate (a department
+installed with kai-core alone)`, step 12 `Version-skew gate (contract pins agree; absent or skewed
+core fails closed)`, each `success` and each name matching `validate.yml:47-55` byte-for-byte, which
+is direct proof that **the pushed workflow is the reviewed workflow**; twelve substantive steps all
+green, including the `pull_request`-only release-guard, which independently confirms the `0.62.0`
+bump. **The review still binds although the head moved, and that was checked rather than assumed:**
+the one commit past the ratified ref (`63f6da16…`) has `aca16e56…` as its **parent** and its
+**complete** diff is three files, **all under `kai/coordination/`** (`ACTIVE.md`, `BOARD.md`, the
+item) — the diff *begins* at `kai/coordination/ACTIVE.md` and *terminates* inside the item file — so
+**every implementation and release file at the PR head is byte-identical to the ratified object**.
+This is the first item in this initiative where that binding was **machine-derived** instead of
+converted wholly into an operator attestation. **Scope was derived from git objects too:** complete
+root trees (`truncated: false`) at base `16493a303c…` and head show only `.github`, `CHANGELOG.md`,
+`README.md`, `docs`, `kai`, `package-lock.json`, `package.json`, `plugin.json`, `scripts`, `skills`,
+`test` moved — all declared — while **`agents` is byte-identical on both sides
+(`c0284f31c7cd221cc2f31712f98148482c5ac49a`)**, proving no agent body changed, **no new tool grant**
+and no `**Inherits:**` line moved, and **`packs` is absent from both trees**, proven positively from
+the listings rather than a local glob. `COMMITTED_PACKS = []`, marketplace still **exactly one**
+entry at `source: "."`, `0.62.0` coherent across all eight release locations, groundwork still on
+`0.x`. **Two sub-gates waived with reasons, not skipped:** `principal-qa-ui`/UX walk and the
+product-design step, both on the northstar's recorded line that this is "a developer-facing
+packaging change with no user-facing interaction surface"; and the one acceptance-relevant check CI
+does **not** run — `generate-catalog --check` — rests on the operator-attested `npm test`,
+corroborated by reading the two artefacts it compares. **The one user-visible consequence is named,
+not waved past:** `kai-core-fleet-observation` is `user-invocable: true` and **no alias ships**, so
+anyone invoking `fleet-observation` gets nothing after `/plugin update kai` — not a Gap (the prefix
+is an initiative non-negotiable, 22 core skills were already renamed this way, and the break is in
+the `0.62.0` CHANGELOG and README `## Status`), but converted into a **release-note constraint** and
+parked as **PROPOSAL S1** for steward policy on the remaining renames. **Rollout/rollback
+right-sized:** big-bang justified (a build-time gate has no runtime path, cohort or data), so flag,
+canary, ring and runbook were **not invented**; the stated risk is that these gates fail the build
+for the *whole repository*, held acceptable by one implementation across three callers, 134 mutation
+arms asserting on specific message text, and a green run against the live tree; rollback is
+`git revert -m 1 <merge-sha>` plus a `0.63.0` bump and, if already cut, an **explicit** deletion or
+supersession of `v0.62.0` — the one artefact a revert does not clean up. **Production verification
+is 9 checks, threshold 9 of 9**, including that the four gate steps are green in the **`main`** run
+and that the merge diff under `skills/` is exactly the two rename paths. **Nothing routed was
+dropped:** **N4** and **N5** are parked as PROPOSALs in `backlog.md` rather than fixed — either fix
+mints a new ref and un-binds the one required review — and **N6** is corrected in the item record.
+**Milestone `dependency-guarantees` stays at 4 of 5 required items `shipped`** — `release-ready` is
+not `shipped`, `pack-split-generated-pack-trees` is **not** cleared (still `proposed`, 4 of 6 met,
+outside `scope.current`), and declaring the milestone met when this ships is the **steward's** call,
+as is closing decomposition **Open Question 4**, which criterion 4 now answers. **Next:
+`@operator`** — run the deploy steps (confirm the reviewed diff is unmoved, promote the record,
+push, squash-merge PR #160 **without rebasing**, watch `main`, tag and release `v0.62.0` under the
+recorded language constraints), then return the deployment evidence to `workflow-ship` for
+CONFIRM-START and CONFIRM-COMPLETE.

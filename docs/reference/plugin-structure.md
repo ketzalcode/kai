@@ -79,8 +79,8 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
-Before opening a PR, run `npm test` — nine dependency-free checks that also run
-in CI on every pull request:
+Before opening a PR, run `npm test` — the dependency-free checks below, which
+also run in CI on every pull request:
 
 | Command | Checks |
 | ------- | ------ |
@@ -93,6 +93,8 @@ in CI on every pull request:
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |
 | `npm run observe:self-test` | The subagent observer: consent gate, leak bounds, and the empty-stdout/exit-0 guarantee. |
 | `npm run observe:watch-self-test` | The ambient view: start/stop pairing, ambiguity labelling, and layout bounds. |
+| `npm run pack-preview:self-test` | The pack generator: the partition rules, the injected guarantee blocks, and the cross-pack reference resolution, each failure proven by a mutation. |
+| `npm run pack-preview:gate` | The same rules over the live tree, as four named gates — partition, collision, partial-install, version-skew — which is how CI runs them. |
 | `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
 | `node examples/proactive-runner/runner.mjs --self-test` | The kai-core-proactive-scan runner's decision, redaction, and retention core. |
 

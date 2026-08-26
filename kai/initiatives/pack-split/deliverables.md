@@ -13,6 +13,7 @@ one-way and steward-approved:
 | Release record — combined fail-closed preflight + version-compat (`0.59.0`) | dependency-guarantees | pack-split-preflight-compat | kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/01-ship-pack-split-preflight-compat/ship-record.md | **SHIPPED 2026-08-25** (`v0.59.0`, merge `67670525…`, production verification PASSED) |
 | Release record — cross-pack reference validator, invoked assets, hooks-exactly-once (`0.60.0`) | dependency-guarantees | pack-split-crosspack-validator | kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/02-ship-pack-split-crosspack-validator/ship-record.md | **SHIPPED 2026-08-25** (`v0.60.0`, merge `32a07a9a…`, `main` run `32902043562` success, production verification PASSED 7/7) |
 | Release record — canonical degraded-mode refusal instruction, CI-pinned (`0.61.0`) | dependency-guarantees | pack-split-degraded-refusal | kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/03-ship-pack-split-degraded-refusal/ship-record.md | **SHIPPED 2026-08-25** (`v0.61.0`, merge `680ca445…`, `main` run `32909692506` success, production verification PASSED 8/8) |
+| Release record — four named CI partition gates + `kai-core-*` namespace enforcement (`0.62.0`) | dependency-guarantees | pack-split-ci-partition-checks | kai/library/releases/2026-08-25/04-ship-pack-split-ci-partition-checks/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-25/04-ship-pack-split-ci-partition-checks/ship-record.md | **RELEASE-READY 2026-08-25** (PR #160 open at head `63f6da16…`, check `98018029769` success, **NOT shipped** — awaiting the operator's merge, `v0.62.0` tag/release and production verification) |
 
 The **release record** for `pack-split-degraded-refusal` was written by `workflow-ship` at the
 2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived —
@@ -41,6 +42,26 @@ gracefully, and none that a pack is generated, committed or published. Six PROPO
 blast-radius update were parked in the initiative backlog at the gate, so no reviewer finding
 ships unowned. Because the record's move into its canonical directory rode the same records
 commit as the merge, **no post-ship reconciliation is owed**.
+
+The **release record** for `pack-split-ci-partition-checks` was written by `workflow-ship` at the
+2026-08-25-1750 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, with
+`principal-qa-ui`/UX-walk and the product-design step waived on the northstar's recorded line that
+this initiative is a developer-facing packaging change with no user-facing interaction surface.
+**It is NOT shipped**, and the record is deliberately left open: PR **#160** is open at head
+`63f6da167f1ead58bc63dd5ef8e9c5f52ad1869b`, and the merge, the `v0.62.0` tag and release, and the
+9-check production verification are all still owed by the operator. The record carries the
+six-dimension evidence — including check run `contract` **`98018029769`** (run **`32915426171`**,
+`conclusion: success`, 18s, `total_count: 1`) with **the four new gates individually green as named
+steps**, which is the one criterion only CI could close — the rollout and rollback plans, the
+operator deploy handoff with its abort criteria, and the production-verification plan. Two things
+were machine-derived here rather than attested: the **review binding** (the single commit past the
+ratified `aca16e56…` is provably coordination-only, so every implementation and release file at the
+PR head is byte-identical to the reviewed object) and the **scope** (complete root-tree comparison,
+with `agents` byte-identical and `packs` absent on both sides). Three PROPOSALs were parked in the
+initiative backlog at the gate — **N4**, **N5** and the ship gate's own **S1** on renaming a
+user-invocable skill without an alias — so no finding ships unowned. Milestone
+`dependency-guarantees` stays at **4 of 5** required items `shipped` until production verification
+passes; `pack-split-generated-pack-trees` is **not** cleared.
 
 The **release record** for `pack-split-crosspack-validator` was written by `workflow-ship`
 at the 2026-08-25-1435 DoD gate (verdict **RELEASE-READY**, all six dimensions Clear, none

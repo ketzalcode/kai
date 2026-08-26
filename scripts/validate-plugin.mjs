@@ -7,6 +7,10 @@
 //   • workspace-contract consistency — the managed .gitignore block, the
 //     .kai/runs areas, initiative artifact directories, and the library/<type>
 //     set stay in sync across the manifest schema and scaffolds;
+//   • the partition — every agent in exactly one pack, every skill with exactly
+//     one provider, every reviewed override still placing a skill inheritance
+//     cannot, core's `kai-core-*` namespace held in both directions, no id
+//     emitted by two packs, and role availability decided by roster membership;
 //   • generated-pack guarantees — the canonical fail-closed core preflight and
 //     the degraded-mode refusal that follows it, byte for byte, exactly once, in
 //     every generated department agent and in neither case in a core agent, over
@@ -31,10 +35,12 @@ import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
   materializePacks, preflightBlock as canonicalPreflightBlock,
   degradedBlock as canonicalDegradedBlock, degradedBlockErrors, coreContractLines,
-  PREFLIGHT_BLOCK_REL, DEGRADED_BLOCK_REL, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  HOOKS_FILE, HOOKS_OWNER, declaredInherits, dispatchedRefs, packProviders,
+  PREFLIGHT_BLOCK_REL, DEGRADED_BLOCK_REL, CONTRACT_SKILL, REFUSAL,
+  HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
-  hooksAssignmentErrors,
+  hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern,
+  partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
+  guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -157,8 +163,10 @@ const refScanFiles = [
 ].filter(existsSync);
 
 // Backtick tokens with an agent-role prefix are unambiguous agent references;
-// no domain terms start with these prefixes.
-const AGENT_REF = /`((?:principal|workflow|director|persona|instructor)-[a-z0-9-]+)`/g;
+// no domain terms start with these prefixes. The family list is the partition's
+// (AGENT_FAMILIES), so adding a family teaches every reference check at once
+// rather than leaving this one silently narrower than the generator's.
+const AGENT_REF = agentRefPattern();
 // A kai identifier is kebab-case with at least one hyphen (skill/agent shape).
 const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
 
@@ -386,41 +394,17 @@ const generatedPacks = preflight && degraded
   ? materializePacks({ root: ROOT, version: '0.0.0-validate' })
   : new Map();
 
-if (!preflight) {
-  err(PREFLIGHT_BLOCK_REL, 'missing (canonical fail-closed core-preflight block)');
-} else {
-  if (!preflight.includes(`\`${CONTRACT_SKILL}\``)) {
-    err(PREFLIGHT_BLOCK_REL, `does not name \`${CONTRACT_SKILL}\`, so the injected block would probe nothing`);
-  }
-  if (!preflight.includes(REFUSAL)) {
-    err(PREFLIGHT_BLOCK_REL, `does not carry the exact refusal token \`${REFUSAL}\` the block promises`);
-  }
-  const demandedVersions = [...preflight.matchAll(/`contract:\s*([^`]+)`/g)]
-    .map((match) => match[1]);
-  if (demandedVersions.length !== 1 || demandedVersions[0] !== CONTRACT_VERSION) {
-    err(PREFLIGHT_BLOCK_REL, `must demand exactly one contract version and it must be ${CONTRACT_VERSION}; found ${JSON.stringify(demandedVersions)} — duplicated prose literals can drift into fail-open skew handling`);
-  }
-  if (!preflight.includes('Do not load or apply any inherited skill until this preflight passes.')) {
-    err(PREFLIGHT_BLOCK_REL, 'does not explicitly override the inherited-skill loading order — a pack agent could touch missing core skills before proving core is compatible');
-  }
-
-  // The probe itself. The version is pinned by the skill's own name, so a body
-  // reporting anything but `contract: 1` makes every injected block wrong.
-  const probeRel = `skills/${CONTRACT_SKILL}/SKILL.md`;
+// The contract version, pinned wherever it is stated: the probe skill's name,
+// the canonical block's prose, and the probe body. A skew between them is the
+// one failure a fully green build still ships — every gate keeps passing while
+// every generated department agent refuses a healthy core, or accepts a skewed
+// one. A missing block is reported here too, since it is one of the pins.
+{
   const probePath = join(ROOT, 'skills', CONTRACT_SKILL, 'SKILL.md');
-  if (!existsSync(probePath)) {
-    err(probeRel, 'missing — every generated department agent invokes this skill as its first action');
-  } else {
-    const probe = readFileSync(probePath, 'utf8').replace(/\r\n/g, '\n');
-    if (!/^KAI_CORE_READY$/m.test(probe)) {
-      err(probeRel, 'does not return the exact `KAI_CORE_READY` marker line the preflight matches on');
-    }
-    const declared = probe.match(/^contract:\s*(\S+)$/m);
-    if (!declared) err(probeRel, 'does not return a `contract: <version>` line');
-    else if (declared[1] !== CONTRACT_VERSION) {
-      err(probeRel, `returns \`contract: ${declared[1]}\`, but its name pins it to ${CONTRACT_VERSION} — a skew here is invisible to the agents that trust it`);
-    }
-  }
+  for (const e of contractPinErrors({
+    block: preflight,
+    probe: existsSync(probePath) ? readFileSync(probePath, 'utf8') : null,
+  })) err(e.file, e.msg);
 }
 
 // The refusal restates no operating rule — that is the whole reason it cannot
@@ -438,49 +422,13 @@ if (!degraded) {
 
 // The pin that decides it: what the authoritative generator actually emits. The
 // map is empty when either canonical block is missing, so this reports the copy
-// state only when there is a copy to judge.
-for (const [key, body] of generatedPacks) {
-  if (!/^kai-[a-z]+\/agents\/.+\.agent\.md$/.test(key)) continue;
-  const copies = body.split(preflight).length - 1;
-  const refusals = body.split(degraded).length - 1;
-  if (key.startsWith('kai-core/')) {
-    if (copies !== 0) {
-      err(`generated ${key}`, 'carries the core-preflight block; a core agent ships inside the pack that provides the probe, so it would only ever fail on itself');
-    }
-    if (refusals !== 0) {
-      err(`generated ${key}`, 'carries the degraded-mode refusal; a core agent ships inside kai-core, so the absence it refuses is not a state it can be in');
-    }
-    continue;
-  }
-  if (copies !== 1) {
-    err(`generated ${key}`, `carries the verbatim core-preflight block ${copies} time(s); exactly one copy is required`);
-    continue;
-  }
-  if (refusals !== 1) {
-    err(`generated ${key}`, `carries the verbatim degraded-mode refusal ${refusals} time(s); exactly one copy is required`);
-    continue;
-  }
-  const at = body.indexOf(preflight);
-  const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
-  const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
-  if (at < body.indexOf('**Inherits:**')) {
-    err(`generated ${key}`, 'places the core-preflight block before the `**Inherits:**` line it must follow');
-  } else if (inheritsBlock && at < directiveAt) {
-    err(`generated ${key}`, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
-  } else if (directiveEnd !== -1 && !/^\s*$/.test(body.slice(directiveEnd, at))) {
-    err(`generated ${key}`, 'places content between the inherited-contract directive and the core preflight — the preflight must remain the first executable instruction');
-  }
+// state only when there is a copy to judge. Which files count as generated agent
+// bodies is derived from the partition (parseGeneratedKey), never matched with a
+// name pattern a future pack key could fall outside.
+for (const e of guaranteeBlockErrors({
+  files: generatedPacks, preflight, degraded, inheritsBlock,
+})) err(e.file, e.msg);
 
-  // Order is the contract between the two blocks: the preflight decides whether
-  // core is there, and the refusal answers only after it has passed.
-  const preflightEnd = at + preflight.length;
-  const refusalAt = body.indexOf(degraded);
-  if (refusalAt < preflightEnd) {
-    err(`generated ${key}`, 'places the degraded-mode refusal before the end of the core preflight — the preflight must remain the first executable instruction, and the refusal is what a passed preflight falls to');
-  } else if (!/^\s*$/.test(body.slice(preflightEnd, refusalAt))) {
-    err(`generated ${key}`, 'places content between the core preflight and the degraded-mode refusal — the two guarantee blocks are contiguous, in that order');
-  }
-}
 if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
   err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
 }
@@ -525,6 +473,49 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
     const raw = readFileSync(skill.path, 'utf8');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
     err(rel(skill.path), 'has no firing path: no agent inherits or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The partition (who ships what)
+//
+// Everything downstream — the generated trees, the cross-pack resolution below,
+// the marketplace listing — is derived from one partition in
+// scripts/lib/pack-plan.mjs. If that partition is wrong, every derived check is
+// answering the wrong question consistently. All three failures here are silent
+// in a host: an agent in no pack ships nowhere, an agent or skill in two packs
+// has ambiguous provider ownership, and a core-provided skill without the
+// `kai-core-*` prefix collides with the legacy monolith.
+// ---------------------------------------------------------------------------
+const PARTITION_SOURCE = 'scripts/lib/pack-plan.mjs';
+{
+  const plan = planPacks(ROOT);
+  for (const msg of partitionErrors({
+    plan, agents: [...agentIds], skills: [...skillIds],
+  })) err(PARTITION_SOURCE, msg);
+
+  for (const msg of namespaceErrors({ core: plan.core, local: plan.local })) {
+    err(PARTITION_SOURCE, msg);
+  }
+
+  if (generatedPacks.size) {
+    for (const msg of providerCollisionErrors({ providers: packProviders(generatedPacks) })) {
+      err(PARTITION_SOURCE, msg);
+    }
+  }
+
+  // Role availability, at the one place it is decided. A director that recalls
+  // a roster instead of reading it, or counts it instead of testing membership,
+  // is wrong in whichever direction its guess fell — and says nothing either way.
+  for (const id of DISPATCHING_ROLES) {
+    const path = join(ROOT, 'agents', `${id}.agent.md`);
+    if (!existsSync(path)) {
+      err(`agents/${id}.agent.md`, 'missing (a lease-granting role the availability contract pins)');
+      continue;
+    }
+    for (const msg of availabilityErrors({ body: readFileSync(path, 'utf8') })) {
+      err(`agents/${id}.agent.md`, msg);
+    }
   }
 }
 
@@ -1147,7 +1138,7 @@ const SANCTIONED_GIT_DEPS = new Map([
       if (!cmd.includes('${PLUGIN_ROOT}')) {
         err(rel, `${ev} command does not use \${PLUGIN_ROOT}; it would resolve against the user's repository, not the plugin`);
       }
-      const m = cmd.match(/\$\{PLUGIN_ROOT\}\/([A-Za-z0-9_\-./]+)/);
+      const m = cmd.match(HOOK_ASSET_RE);
       if (m) {
         hookAssets.add(m[1]);
         if (!existsSync(join(ROOT, m[1]))) {
@@ -1167,8 +1158,9 @@ const SANCTIONED_GIT_DEPS = new Map([
   // extraction item's job — so today this pins the declared assignment, and it
   // fails the moment a second pack starts emitting one.
   const claimants = [...generatedPacks.keys()]
-    .filter((key) => key.endsWith(`/${HOOKS_FILE}`))
-    .map((key) => key.split('/')[0].replace(/^kai-/, ''));
+    .map((key) => parseGeneratedKey(key))
+    .filter((entry) => entry && entry.kind === 'hooks')
+    .map((entry) => entry.pack);
   for (const e of hooksAssignmentErrors({
     owners: [...new Set([HOOKS_OWNER, ...claimants])],
     hookAssets: [...hookAssets],

@@ -8,10 +8,11 @@ name: validate
 # hooks.json), and release hygiene (semver, changelog/README stamp for the current
 # version, dependency/lockfile consistency, sanctioned git deps). It also runs the
 # workspace-doctor self-test, the host-loader acceptance mirror, the release-guard
-# self-test, the pack-generator self-test and its regenerate-and-diff check, and a
-# syntax/parse check of shipped helper scripts. On pull requests it additionally
-# runs the release-guard gate: a behavior-sensitive change must carry a version
-# bump plus changelog/README updates.
+# self-test, the pack-generator self-test and its regenerate-and-diff check, the
+# four named partition gates (partition, collision, partial-install, version-skew),
+# and a syntax/parse check of shipped helper scripts. On pull requests it
+# additionally runs the release-guard gate: a behavior-sensitive change must carry
+# a version bump plus changelog/README updates.
 # Dependency-free — no install step, so it stays fast.
 
 on:
@@ -42,6 +43,16 @@ jobs:
         run: node scripts/release-guard.mjs --self-test
       - name: Pack generator self-test
         run: node scripts/pack-preview.mjs --self-test
+      # Four named gates rather than one: a red build should say which guarantee
+      # broke, and these four fail for different reasons with different fixes.
+      - name: Partition gate (one pack per agent, one provider per skill, kai-core-* namespace)
+        run: node scripts/pack-preview.mjs --gate partition
+      - name: Collision gate (no id emitted by two packs)
+        run: node scripts/pack-preview.mjs --gate collision
+      - name: Partial-install gate (a department installed with kai-core alone)
+        run: node scripts/pack-preview.mjs --gate partial-install
+      - name: Version-skew gate (contract pins agree; absent or skewed core fails closed)
+        run: node scripts/pack-preview.mjs --gate version-skew
       - name: Committed pack trees match the generator
         run: node scripts/pack-preview.mjs --check
       - name: Check helper script syntax

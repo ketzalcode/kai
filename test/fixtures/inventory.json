@@ -70,7 +70,6 @@
     "demo-zoom",
     "doc-review-rigor",
     "extract-writing-style",
-    "fleet-observation",
     "generate-html-lesson",
     "html-block-diagrams",
     "kai-core-content-grounding",
@@ -79,6 +78,7 @@
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
     "kai-core-executive-consultation",
+    "kai-core-fleet-observation",
     "kai-core-generate-audio",
     "kai-core-initiative-stewardship",
     "kai-core-issue-analysis",
@@ -136,12 +136,12 @@
       "argument_hint": ""
     },
     {
-      "name": "fleet-observation",
-      "argument_hint": ""
-    },
-    {
       "name": "generate-html-lesson",
       "argument_hint": "<path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]"
+    },
+    {
+      "name": "kai-core-fleet-observation",
+      "argument_hint": ""
     },
     {
       "name": "kai-core-generate-audio",

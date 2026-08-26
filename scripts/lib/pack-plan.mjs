@@ -24,6 +24,11 @@ export const CONTRACT_SKILL = 'kai-core-contract-v1';
 export const CONTRACT_VERSION = '1';
 export const REFUSAL = 'KAI-CORE-MISSING';
 
+// Core's owned namespace. Hosts have exposed duplicate plugin names differently,
+// so an unqualified duplicate is not a stable provider contract. A prefix core
+// alone may use removes that ambiguity; see namespaceErrors.
+export const CORE_SKILL_PREFIX = 'kai-core-';
+
 // The canonical fail-closed preflight, copied into every generated department
 // agent's own body. It lives in a file, not in this module, so the generator,
 // the preview and the CI byte-pin all assert on the same bytes — the same
@@ -100,11 +105,11 @@ export const SKILL_OWNER_OVERRIDES = {
   'demo-capture': 'personal',
   'demo-narrate': 'personal',
   'demo-zoom': 'personal',
-  'fleet-observation': 'core',
   // The probe is invoked by the injected preflight, not by an `**Inherits:**`
   // line, so inheritance cannot place it. Core provides it: a pack agent asks
   // core whether core is there.
   [CONTRACT_SKILL]: 'core',
+  'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
   'review-dependencies': 'engineering',
   'review-performance-scale': 'engineering',
@@ -531,8 +536,21 @@ const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
 // resolves to nothing is a renamed or deleted role; a token that is not shaped
-// like one (`post-only`) is an output mode, not a reference.
-const AGENT_SHAPED = /^(?:principal|workflow|director|persona|instructor|creative)-[a-z0-9-]+$/;
+// like one (`post-only`) is an output mode, not a reference. The family list is
+// defined once: two independently maintained copies drifted apart before (one
+// omitted `creative`), and the copy that under-scans fails silently.
+export const AGENT_FAMILIES = [
+  'principal', 'workflow', 'director', 'persona', 'instructor', 'creative',
+];
+
+const FAMILY_ALT = AGENT_FAMILIES.join('|');
+
+// Fresh instances, because a shared global regex carries `lastIndex` between
+// callers and would skip matches depending on who scanned first.
+export const agentShapedPattern = () => new RegExp(`^(?:${FAMILY_ALT})-[a-z0-9-]+$`);
+export const agentRefPattern = () => new RegExp(`\`((?:${FAMILY_ALT})-[a-z0-9-]+)\``, 'g');
+
+const AGENT_SHAPED = agentShapedPattern();
 
 // A non-markdown asset a shipped instruction invokes. Only top-level scripts/
 // executables qualify: scripts/lib/ is build-internal, and no shipped body tells
@@ -570,23 +588,43 @@ function agentOwners() {
   return owners;
 }
 
+// One reading of a generated-tree key, for every check that consumes generator
+// output. The pack directory set is derived from the partition itself rather
+// than matched with a pattern: `/^kai-[a-z]+\//` agrees with the five current
+// keys by coincidence, and the day one carries a hyphen or a digit
+// (`kai-customer-success`) that pack's files stop matching and skip whatever
+// guarantee the pattern was gating — silently, because a pin that selects
+// nothing reports nothing.
+export function parseGeneratedKey(key, packs = PACK_ORDER) {
+  const [dir, ...rest] = key.split('/');
+  const pack = packs.find((p) => packPluginName(p) === dir);
+  if (!pack) return null;
+  const at = { pack, dir };
+  if (rest.length === 1 && rest[0] === 'plugin.json') return { ...at, kind: 'manifest', id: null };
+  if (rest.length === 1 && rest[0] === HOOKS_FILE) return { ...at, kind: 'hooks', id: null };
+  if (rest.length === 2 && rest[0] === 'agents' && rest[1].endsWith('.agent.md')) {
+    return { ...at, kind: 'agent', id: rest[1].replace(/\.agent\.md$/, '') };
+  }
+  if (rest.length === 3 && rest[0] === 'skills' && rest[2] === 'SKILL.md') {
+    return { ...at, kind: 'skill', id: rest[1] };
+  }
+  return { ...at, kind: 'other', id: rest.join('/') };
+}
+
 // What the generator actually emits, indexed as `<kind>:<id> -> [pack, …]`.
 // Resolving references against emitted files rather than against the plan is the
 // point: the emitted tree is what a user installs, so a provider the generator
 // forgot to copy shows up here as a miss instead of as a plan that still adds up.
-export function packProviders(files) {
+export function packProviders(files, packs = PACK_ORDER) {
   const providers = new Map();
   const add = (key, pack) => {
     if (!providers.has(key)) providers.set(key, []);
     if (!providers.get(key).includes(pack)) providers.get(key).push(pack);
   };
   for (const key of files.keys()) {
-    const [dir, kind, ...rest] = key.split('/');
-    const pack = dir.replace(/^kai-/, '');
-    if (kind === 'skills' && rest.length === 2 && rest[1] === 'SKILL.md') add(`skill:${rest[0]}`, pack);
-    else if (kind === 'agents' && rest.length === 1 && rest[0].endsWith('.agent.md')) {
-      add(`agent:${rest[0].replace(/\.agent\.md$/, '')}`, pack);
-    }
+    const entry = parseGeneratedKey(key, packs);
+    if (!entry || (entry.kind !== 'skill' && entry.kind !== 'agent')) continue;
+    add(`${entry.kind}:${entry.id}`, entry.pack);
   }
   for (const list of providers.values()) list.sort();
   return providers;
@@ -758,6 +796,27 @@ export function assetOwnershipErrors({ assets, exists }) {
 // hooks.json is assigned to exactly one pack, and the scripts it runs ship in
 // that same pack. Pure: `owners` is every pack claiming the file, `hookAssets`
 // the plugin-relative commands it runs, `assets` the plan from planAssets.
+
+// The one place a hook command's plugin-relative path is recognised. The host
+// executes these on every subagent, so the validator and the CI gate read them
+// with the same expression rather than each carrying its own.
+export const HOOK_ASSET_RE = /\$\{PLUGIN_ROOT\}\/([A-Za-z0-9_\-./]+)/;
+
+// The scripts a hooks.json runs, in declaration order, deduplicated. Invalid
+// JSON yields nothing: its own error is reported where the file is parsed.
+export function hookAssetsIn(text) {
+  let cfg;
+  try { cfg = JSON.parse(text); } catch { return []; }
+  const out = new Set();
+  for (const entries of Object.values(cfg.hooks ?? {})) {
+    for (const entry of Array.isArray(entries) ? entries : []) {
+      const match = (entry.command || entry.bash || entry.powershell || '').match(HOOK_ASSET_RE);
+      if (match) out.add(match[1]);
+    }
+  }
+  return [...out];
+}
+
 export function hooksAssignmentErrors({ owners, hookAssets = [], assets = new Map(), packs = PACK_ORDER }) {
   const errs = [];
   const file = HOOKS_FILE;
@@ -793,6 +852,272 @@ export function hooksAssignmentErrors({ owners, hookAssets = [], assets = new Ma
         msg: `runs \`${asset}\`, owned by ${packPluginName(entry.owner)}, but ships in `
           + `${packPluginName(owner)} — \${PLUGIN_ROOT} resolves inside the hook's own plugin`,
       });
+    }
+  }
+  return errs;
+}
+
+// ---------------------------------------------------------------------------
+// Partition gates
+//
+// The partition above is a plan; these are the checks that make it a guarantee.
+// Every one is pure over plain data, so the self-test proves each failure by
+// name without building a fixture repository, and the validator runs the same
+// function over the live tree.
+// ---------------------------------------------------------------------------
+
+// Every agent in exactly one pack, every skill with exactly one provider, and
+// every reviewed override still pointing at a skill inheritance cannot place.
+// Returns plain message strings.
+export function partitionErrors({
+  plan, agents = [], skills = [], packs = PACKS, overrides = SKILL_OWNER_OVERRIDES,
+}) {
+  const errs = [];
+  const onDisk = new Set(agents);
+  const claimedBy = new Map();
+  for (const [pack, ids] of Object.entries(packs)) {
+    for (const id of ids) {
+      if (!onDisk.has(id)) {
+        errs.push(`the ${pack} roster names agent \`${id}\`, which is not on disk — a pack cannot ship `
+          + 'an agent that does not exist, and the miss is invisible until someone installs that pack');
+      }
+      const prior = claimedBy.get(id);
+      if (prior !== undefined) {
+        errs.push(`agent \`${id}\` is claimed by both ${packPluginName(prior)} and ${packPluginName(pack)} `
+          + '— every agent belongs to exactly one pack, or two plugins ship the same id');
+      } else claimedBy.set(id, pack);
+    }
+  }
+  for (const id of agents) {
+    if (!claimedBy.has(id)) {
+      errs.push(`agent \`${id}\` belongs to no pack — add it to PACKS, or it ships in nothing`);
+    }
+  }
+
+  const providerOf = new Map();
+  for (const id of plan.core) providerOf.set(id, 'core');
+  for (const [pack, ids] of Object.entries(plan.local ?? {})) {
+    for (const id of ids) {
+      const prior = providerOf.get(id);
+      if (prior !== undefined) {
+        errs.push(`skill \`${id}\` is provided by both ${packPluginName(prior)} and ${packPluginName(pack)} `
+          + '— duplicate providers make resolution host-dependent instead of partition-defined');
+      } else providerOf.set(id, pack);
+    }
+  }
+  const skillSet = new Set(skills);
+  for (const id of skills) {
+    if (!providerOf.has(id)) {
+      errs.push(`skill \`${id}\` has no provider — every skill on disk ships in exactly one pack`);
+    }
+  }
+  for (const [id, pack] of providerOf) {
+    if (!skillSet.has(id)) {
+      errs.push(`skill \`${id}\` is planned into ${packPluginName(pack)} but is not a skill on disk`);
+    }
+  }
+
+  const orphans = new Set(plan.orphans ?? []);
+  for (const [id, owner] of Object.entries(overrides)) {
+    if (!skillSet.has(id)) {
+      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, which is not a skill on disk — a reviewed `
+        + 'disposition for a renamed or deleted skill places nothing and says so nowhere');
+      continue;
+    }
+    if (owner !== 'core' && !packs[owner]) {
+      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\` in "${owner}", which is not a pack`);
+      continue;
+    }
+    if (!orphans.has(id)) {
+      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already inherits it — inheritance `
+        + 'places it, so the override is a second truth about one skill');
+    }
+  }
+  for (const id of orphans) {
+    if (!(id in overrides)) {
+      errs.push(`skill \`${id}\` is inherited by no agent and has no reviewed provider in `
+        + 'SKILL_OWNER_OVERRIDES — it would ship in no pack at all');
+    }
+  }
+  return errs;
+}
+
+// Core's owned namespace, in both directions: core may only provide `kai-core-*`
+// names, and no department may claim one.
+export function namespaceErrors({ core = [], local = {}, prefix = CORE_SKILL_PREFIX }) {
+  const errs = [];
+  for (const id of core) {
+    if (id.startsWith(prefix)) continue;
+    errs.push(`kai-core provides skill \`${id}\`, which does not carry the \`${prefix}*\` prefix — a `
+      + 'legacy `kai` install provides that same bare name, so provider ownership is ambiguous; '
+      + `rename it to \`${prefix}${id}\``);
+  }
+  for (const [pack, ids] of Object.entries(local)) {
+    for (const id of ids) {
+      if (!id.startsWith(prefix)) continue;
+      errs.push(`${packPluginName(pack)} provides skill \`${id}\`, which claims core's \`${prefix}*\` `
+        + 'namespace — the name promises core shipped it, so another provider makes ownership ambiguous');
+    }
+  }
+  return errs;
+}
+
+// Two packs emitting one id. Duplicate-provider behavior differs by host and
+// namespace surface, so the partition must decide ownership before installation.
+// Pure over the packProviders index.
+export function providerCollisionErrors({ providers }) {
+  const errs = [];
+  for (const [key, owners] of providers) {
+    if (owners.length < 2) continue;
+    const cut = key.indexOf(':');
+    errs.push(`${key.slice(0, cut)} \`${key.slice(cut + 1)}\` is emitted by `
+      + `${owners.map(packPluginName).join(' and ')} — duplicate providers make resolution ambiguous`);
+  }
+  return errs;
+}
+
+// The contract version, pinned everywhere it is stated. The demanded version is
+// the one thing a fully green build can still get wrong: the probe skill's name
+// carries it, the canonical block demands it in prose, and the probe body
+// reports it, so all three are held to one constant. Returns `[{ file, msg }]`.
+export function contractPinErrors({
+  block, probe, skill = CONTRACT_SKILL, version = CONTRACT_VERSION, refusal = REFUSAL,
+  blockRel = PREFLIGHT_BLOCK_REL, planRel = 'scripts/lib/pack-plan.mjs',
+}) {
+  const errs = [];
+  const probeRel = `skills/${skill}/SKILL.md`;
+  const add = (file, msg) => errs.push({ file, msg });
+
+  if (!skill.endsWith(`-v${version}`)) {
+    add(planRel, `CONTRACT_SKILL \`${skill}\` and CONTRACT_VERSION "${version}" disagree — the probe `
+      + "skill's name is the version pin, so bumping one without the other ships a block demanding a "
+      + 'version no shipped skill name promises');
+  }
+
+  if (block === null || block === undefined) {
+    add(blockRel, 'missing (canonical fail-closed core-preflight block)');
+  } else {
+    if (!block.includes(`\`${skill}\``)) {
+      add(blockRel, `does not name \`${skill}\`, so the injected block would probe nothing`);
+    }
+    if (!block.includes(refusal)) {
+      add(blockRel, `does not carry the exact refusal token \`${refusal}\` the block promises`);
+    }
+    const demanded = [...block.matchAll(/`contract:\s*([^`]+)`/g)].map((m) => m[1].trim());
+    if (demanded.length !== 1 || demanded[0] !== version) {
+      add(blockRel, `must demand exactly one contract version and it must be ${version}; found `
+        + `${JSON.stringify(demanded)} — duplicated prose literals can drift into fail-open skew handling`);
+    }
+    if (!block.includes('Do not load or apply any inherited skill until this preflight passes.')) {
+      add(blockRel, 'does not explicitly override the inherited-skill loading order — a pack agent '
+        + 'could touch missing core skills before proving core is compatible');
+    }
+  }
+
+  if (probe === null || probe === undefined) {
+    add(probeRel, 'missing — every generated department agent invokes this skill as its first action');
+    return errs;
+  }
+  const text = normalizeLF(probe);
+  if (!/^KAI_CORE_READY$/m.test(text)) {
+    add(probeRel, 'does not return the exact `KAI_CORE_READY` marker line the preflight matches on');
+  }
+  const declared = text.match(/^contract:\s*(\S+)$/m);
+  if (!declared) add(probeRel, 'does not return a `contract: <version>` line');
+  else if (declared[1] !== version) {
+    add(probeRel, `returns \`contract: ${declared[1]}\`, but its name pins it to ${version} — a skew `
+      + 'here is invisible to the agents that trust it');
+  }
+  return errs;
+}
+
+// The roles that grant leases resolve which agents a session actually exposes
+// before dispatching. Once kai ships as packs the answer stops being "all of
+// them", and both failure directions are silent — claim a role is present and
+// the director answers in its voice; claim it is missing and it refuses work the
+// operator can staff. Membership is the only sound test, so the rules that say
+// so are pinned rather than trusted to survive an unrelated edit.
+export const DISPATCHING_ROLES = ['director-chief-of-staff'];
+
+export const AVAILABILITY_RULES = [
+  { rule: 'read the roster rather than recall it', pattern: /\*\*Read the roster; do not recall it\.\*\*/ },
+  { rule: 'test membership', pattern: /\*\*Test membership\.\*\*/ },
+  { rule: 'never compute or compare counts', pattern: /\*\*Never compute or compare counts\.\*\*/ },
+];
+
+export function availabilityErrors({ body, rules = AVAILABILITY_RULES }) {
+  const text = normalizeLF(body ?? '');
+  return rules
+    .filter((r) => !r.pattern.test(text))
+    .map((r) => `grants leases but no longer states "${r.rule}" — role availability is decided by `
+      + 'membership in the roster the session exposes, never by a count over it, and a director that '
+      + 'guesses either way fails silently');
+}
+
+// The guarantee blocks, pinned into what the generator emits. This lives here
+// rather than in the validator so the function the CI gate runs is the one the
+// self-test mutates: a missing copy, a duplicate, wedged content, an inverted
+// order or a core agent carrying either block are otherwise only reachable by
+// breaking the real generator. `files` is a materializePacks map; returns
+// `[{ file, msg }]` with `file` naming the generated key.
+export function guaranteeBlockErrors({
+  files, preflight, degraded, inheritsBlock = null, packs = PACK_ORDER,
+}) {
+  const errs = [];
+  if (!preflight || !degraded) return errs;
+  const add = (key, msg) => errs.push({ file: `generated ${key}`, msg });
+
+  for (const [key, body] of files) {
+    const entry = parseGeneratedKey(key, packs);
+    if (!entry) {
+      add(key, 'belongs to no declared pack — generated files must not escape guarantee validation');
+      continue;
+    }
+    if (entry.kind !== 'agent') continue;
+    const copies = body.split(preflight).length - 1;
+    const refusals = body.split(degraded).length - 1;
+    if (entry.pack === 'core') {
+      if (copies !== 0) {
+        add(key, 'carries the core-preflight block; a core agent ships inside the pack that provides '
+          + 'the probe, so it would only ever fail on itself');
+      }
+      if (refusals !== 0) {
+        add(key, 'carries the degraded-mode refusal; a core agent ships inside kai-core, so the absence '
+          + 'it refuses is not a state it can be in');
+      }
+      continue;
+    }
+    if (copies !== 1) {
+      add(key, `carries the verbatim core-preflight block ${copies} time(s); exactly one copy is required`);
+      continue;
+    }
+    if (refusals !== 1) {
+      add(key, `carries the verbatim degraded-mode refusal ${refusals} time(s); exactly one copy is required`);
+      continue;
+    }
+    const at = body.indexOf(preflight);
+    const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
+    const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
+    if (at < body.indexOf('**Inherits:**')) {
+      add(key, 'places the core-preflight block before the `**Inherits:**` line it must follow');
+    } else if (inheritsBlock && at < directiveAt) {
+      add(key, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
+    } else if (directiveEnd !== -1 && !/^\s*$/.test(body.slice(directiveEnd, at))) {
+      add(key, 'places content between the inherited-contract directive and the core preflight — the '
+        + 'preflight must remain the first executable instruction');
+    }
+
+    // Order is the contract between the two blocks: the preflight decides
+    // whether core is there, and the refusal answers only after it has passed.
+    const preflightEnd = at + preflight.length;
+    const refusalAt = body.indexOf(degraded);
+    if (refusalAt < preflightEnd) {
+      add(key, 'places the degraded-mode refusal before the end of the core preflight — the preflight '
+        + 'must remain the first executable instruction, and the refusal is what a passed preflight '
+        + 'falls to');
+    } else if (!/^\s*$/.test(body.slice(preflightEnd, refusalAt))) {
+      add(key, 'places content between the core preflight and the degraded-mode refusal — the two '
+        + 'guarantee blocks are contiguous, in that order');
     }
   }
   return errs;

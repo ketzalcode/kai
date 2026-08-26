@@ -331,7 +331,7 @@ finished:  explore x2
 ```
 
 Run it in a **second terminal**: it does not exit, so it would block the session
-you are trying to observe. The `fleet-observation` skill knows how to find it
+you are trying to observe. The `kai-core-fleet-observation` skill knows how to find it
 inside the plugin's install directory and launch it detached, so nobody has to
 clone this repository.
 

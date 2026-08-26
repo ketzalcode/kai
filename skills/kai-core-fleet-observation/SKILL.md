@@ -1,5 +1,5 @@
 ---
-name: fleet-observation
+name: kai-core-fleet-observation
 description: "Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate."
 tools: [bash, shell, view, grep, glob]
 requires_tools: [bash, shell]

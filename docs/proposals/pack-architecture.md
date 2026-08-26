@@ -409,7 +409,7 @@ claiming work or taking a lease.
 - macOS and the cloud host — everything above is Windows CLI.
 - Collision under real **install** order, marketplace-vs-direct, and fresh
   sessions; only `--plugin-dir` order has been tested.
-- The 9 skills no agent inherits (`demo-*`, `fleet-observation`,
+- The 9 skills no agent inherits (`demo-*`, `kai-core-fleet-observation`,
   `onboard-to-codebase`, three `review-*`) are parked in core by the builder,
   which is a placeholder, not a decision.
 ## Availability resolution — how a director learns a role is missing

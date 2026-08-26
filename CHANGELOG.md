@@ -4,6 +4,69 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.62.0] - 2026-08-25
+
+### Added
+
+- **The pack partition is enforced by four named CI gates** (#29). `validate.yml`
+  runs `pack-preview --gate partition | collision | partial-install |
+  version-skew` as separate failing steps, so a red build names the guarantee
+  that broke instead of reporting that a self-test failed. Each gate is a pure
+  read of the repository, and each rule it applies is the same function the
+  self-test proves by mutation — the CI gate and its proof cannot diverge.
+  `npm test` runs `--gate all`.
+
+- **Core owns the `kai-core-*` namespace, in both directions.** A core-provided
+  skill without the prefix and a department claiming one both fail by name.
+  Duplicate plugin names are not a stable provider contract across host and
+  namespace surfaces, so core ownership is explicit instead of host-dependent.
+
+- **`fleet-observation` is now `kai-core-fleet-observation`.** The one core-
+  provided skill that broke the invariant, renamed across the partition,
+  `generate-catalog.mjs`, the golden inventory and the docs that name it. It is
+  an orphan — no agent inherits it — so no `**Inherits:**` line changed.
+  Historical CHANGELOG entries keep the old name: they describe what shipped at
+  the time, and the reference scan deliberately excludes this file.
+
+- **Partition, collision and availability checks in `validate-plugin.mjs`.**
+  Every agent belongs to exactly one pack and every pack names an agent that
+  exists; every skill has exactly one provider; every `SKILL_OWNER_OVERRIDES`
+  entry still places a real skill that inheritance cannot; no generated id is
+  emitted by two packs; and the lease-granting roles still state that role
+  availability is read from the roster by membership, never by a count over it.
+
+- **The contract version is pinned wherever it is stated.** `contractPinErrors`
+  ties the probe skill's name (`kai-core-contract-v1`), the `CONTRACT_VERSION`
+  constant, the version the canonical block demands and the version the probe
+  reports to one value. A skew between them is the one failure a fully green
+  build still ships: every gate passes while every department agent refuses a
+  healthy core.
+
+### Changed
+
+- **Generated files are identified by the partition, not by a name pattern.**
+  `parseGeneratedKey` resolves a generated key against the pack list, replacing
+  the `/^kai-[a-z]+\/agents\/.+\.agent\.md$/` pin that gated the guarantee-block
+  checks. That pattern agreed with the five current pack names by coincidence;
+  the first pack key carrying a hyphen or a digit would have skipped the
+  preflight and refusal checks in silence, because a pin that selects nothing
+  reports nothing.
+
+- **One roster truth in `pack-preview.mjs`.** The duplicated `PACK_AGENTS` list
+  and the legacy `planSkills` planner are gone; `--out` is now a selection of the
+  canonical partition, and every self-test check runs the `planPacks()` path. Four
+  checks previously asserted against the legacy copy — a CI gate could have passed
+  against stale truth.
+
+- **One agent-family list.** The reference scanner and the dispatch parser shared
+  a shape by copy; the copies had already drifted (one omitted `creative`), and
+  the one that under-scans fails silently. Both now derive from
+  `AGENT_FAMILIES`, and the self-test asserts every shipped agent id matches it.
+
+- **The `workflow-doc-review` self-test arm covers all nine lenses.** A dispatch
+  entry naming a deleted skill is dropped silently by the collector, so a
+  one-lens arm would keep passing while eight went missing.
+
 ## [0.61.0] - 2026-08-25
 
 ### Added
@@ -2702,6 +2765,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.62.0]: https://github.com/RubenSaucedo/kai/compare/v0.61.0...v0.62.0
 [0.61.0]: https://github.com/RubenSaucedo/kai/compare/v0.60.0...v0.61.0
 [0.60.0]: https://github.com/RubenSaucedo/kai/compare/v0.59.0...v0.60.0
 [0.59.0]: https://github.com/RubenSaucedo/kai/compare/v0.58.0...v0.59.0
