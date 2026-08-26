@@ -5,11 +5,11 @@ title: Generate committed-unpublished kai-core + first department (personal) tre
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: release-ready
+state: shipped
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack-split committed-unpublished pack trees (generate-not-move)
 artifact_target: null
 context_artifacts:
@@ -60,14 +60,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-generated-pack-trees.md"
     timestamp: 2026-08-26-1412
 change_ref: 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f
-version: 7
+version: 10
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1424
+updated: 2026-08-26-1443
 ---
 
 ## Outcome
@@ -300,3 +300,75 @@ published** — the branch is still unpushed and there is no PR.
 - **Milestone `first-pack-extracted` does not advance.** `release-ready` is not `shipped`;
   `pack-split-first-department` and `pack-split-host-gates` stay blocked until
   CONFIRM-COMPLETE records production evidence.
+
+## Ship — 2026-08-26-1443 (`workflow-ship`, CONFIRM-START + CONFIRM-COMPLETE): SHIPPED
+
+**Verdict: SHIPPED. Production verification PASSED 6 of 6.** Item **v7 -> v10**, walking
+`release-ready -> deploying -> production-verification -> shipped` on evidence at each step.
+`lease`, `resume_state`, and `waiting_on_questions` remain clear; `next_role: "@operator" ->
+null`. `change_ref` deliberately remains the independently reviewed implementation commit
+`5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f`. GitHub's compare graph proves that commit is an
+ancestor of merge commit `2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`; the merge preserved the
+review binding rather than rewriting it.
+
+### CONFIRM-START
+
+- PR [#167](https://github.com/RubenSaucedo/kai/pull/167) merged at
+  `2026-08-26T21:40:01Z` into `2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`.
+- The `main` deployment-validation run
+  [33016421758](https://github.com/RubenSaucedo/kai/actions/runs/33016421758) started at
+  `2026-08-26T21:40:03Z`, environment `main` / GitHub Actions, at that exact `head_sha`.
+  This evidence moved the item `release-ready -> deploying`.
+
+### CONFIRM-COMPLETE
+
+- Main job `contract`
+  [98335703857](https://github.com/RubenSaucedo/kai/actions/runs/33016421758/job/98335703857)
+  completed `success` at `2026-08-26T21:40:17Z`. Its committed-tree step passed, as did the
+  generator, partition, collision, partial-install, version-skew, contract, doctor,
+  host-loader, release-guard self-test, and syntax checks. The merge SHA has exactly one check
+  run and it is successful.
+- Release [`v0.64.0`](https://github.com/RubenSaucedo/kai/releases/tag/v0.64.0) published at
+  `2026-08-26T21:40:33Z`, non-draft and non-prerelease, with target commit exactly
+  `2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`. This evidence moved the item
+  `deploying -> production-verification`.
+
+### Production verification — 6 of 6 PASS
+
+1. **Merged artifact and review binding:** PASS — PR #167 merged, and `5a5afb0e...` remains
+   in the merge ancestry. Local `main` and `origin/main` both reached the merge SHA; the
+   worktree was clean immediately after the operator's merge/update sequence, before these
+   record-closing edits.
+2. **PR/main validation and release:** PASS — PR run `33016379347`, job `98335558480`,
+   passed at the final PR head; main run `33016421758`, job `98335703857`, and release
+   `v0.64.0` all bind the merge SHA and completed successfully.
+3. **Version, topology, and trees:** PASS — production blobs read `0.64.0`;
+   `.github/plugin/marketplace.json` remains exactly N=1 (`kai`, `source: "."`, zero pack
+   entries); `COMMITTED_PACKS` is exactly `['core', 'personal']`; the merge root has only
+   `packs/kai-core` and `packs/kai-personal`; CI's committed-tree check passed. **No pack was
+   published.**
+4. **Installed artifact:** PASS with an explicit residual — official
+   `copilot plugin update kai` failed on Windows with `Access is denied` because the active CLI
+   had the plugin loaded. This was **not** a successful plugin-manager update. The clean installed
+   direct checkout was instead fast-forwarded in place with `git pull --ff-only origin main` from
+   old SHA `a879116...` / manifest `0.47.0` to exact merge SHA `2eea0f0...`; its
+   `plugin.json` now reads `0.64.0`.
+5. **Fresh-session loaded behavior:** PASS — a fresh Copilot CLI 1.0.80 child session after that
+   checkout refresh returned exactly `CORE=0 PERSONAL=0 CONTRACT_DUPLICATE=no CHILD=ok`.
+6. **Observer differential:** PASS — consent was enabled; one built-in `explore` child changed
+   `.kai/observed.jsonl` from 363 to 367, exactly the established four-record baseline
+   (start/start, stop/stop) for session `4d11d50d1b4d`, role `explore`, agent
+   `1fb0de3084e1`. There was no positive pack-attributable provider, contract-skill, or hook
+   delta. The duplicate four-record behavior is pre-existing, not caused by packs.
+
+**Registry-cache residual does not block this item's existing production-verification contract.**
+`copilot plugin list` still displays cached registry metadata `0.47.0`, while the installed
+checkout is at the merge SHA and its manifest is `0.64.0`. The contract gates the artifact the
+fresh session actually loaded and its provider/skill/hook behavior; both are directly evidenced.
+The stale display publishes no pack, changes no loaded content, and produced no positive R7 delta.
+It remains an honest operability discrepancy, not evidence that the old artifact ran.
+
+**Rollback was never invoked.** Kai did not merge, push, tag, release, update the installed
+checkout, deploy, or roll back anything; those were operator actions. `first-pack-extracted`
+remains open: this item and `pack-split-migration-doctor` are now `shipped`, while the steward
+still owns promotion and sequencing of the remaining required items.

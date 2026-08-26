@@ -10,8 +10,8 @@ milestone: first-pack-extracted
 source_artifact: kai/coordination/items/pack-split-generated-pack-trees.md
 current_path: kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
 canonical_path: kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
-status: release-ready — PREPARE only; NOT deployed, NOT shipped
-shipped: null
+status: shipped — production verification 6/6 PASS; rollback not invoked
+shipped: 2026-08-26T21:43:39Z — v0.64.0, merge commit 2eea0f04f1c3dc0b4788de1e82909c5cc882e75d
 related:
   - kai/coordination/threads/pack-split-generated-pack-trees.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
@@ -21,22 +21,30 @@ evidence:
   - "implementation commit 5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f"
   - "coordination commit 7102f94be129cd2dc5b3d49b09a4b4591dd155cb"
   - "branch feat/29-generated-core-personal, base main 31d5d110cb2a3f63ef6085e707bfe412a8c0b0ea"
+  - "https://github.com/RubenSaucedo/kai/pull/167"
+  - "https://github.com/RubenSaucedo/kai/actions/runs/33016379347"
+  - "https://github.com/RubenSaucedo/kai/actions/runs/33016421758"
+  - "https://github.com/RubenSaucedo/kai/releases/tag/v0.64.0"
 ---
 
 # Ship Record — Generated committed-unpublished `kai-core` + `kai-personal` trees
 
 **Work item:** `pack-split-generated-pack-trees` · **Initiative:** `pack-split`
 **Target:** pack-split committed-unpublished pack trees (generate-not-move)
-**Date:** 2026-08-26 14:24 -07:00 · **Run:** `workflow-ship` (PREPARE)
-**Release candidate (one line):** the first committed — and deliberately unpublished —
+**Date:** PREPARE 2026-08-26 14:24 -07:00 · CONFIRM 2026-08-26 14:43 -07:00
+· **Run:** `workflow-ship`
+**What shipped (one line):** the first committed — and deliberately unpublished —
 generated `packs/kai-core/` (44 files) + `packs/kai-personal/` (22 files) trees,
-projected from the canonical root and prepared for `v0.64.0`.
+projected from the canonical root in `v0.64.0`.
 
 > **File placement.** PREPARE initially wrote this record flat because that run
 > had no shell. Deploy step 5 moved it to `canonical_path` before the records
 > commit.
 
-**Change:** branch `feat/29-generated-core-personal`, two commits off
+**Change:** [PR #167](https://github.com/RubenSaucedo/kai/pull/167), merged as
+`2eea0f04f1c3dc0b4788de1e82909c5cc882e75d`; reviewed implementation
+`5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f` remains in its ancestry. At PREPARE,
+branch `feat/29-generated-core-personal` was two commits off
 `main` `31d5d110cb2a3f63ef6085e707bfe412a8c0b0ea`:
 
 | commit | subject | role |
@@ -44,8 +52,9 @@ projected from the canonical root and prepared for `v0.64.0`.
 | `5a5afb0e0eb40cbaa37eb195cdfcfca3efc1e81f` | `feat(packs): generate core and personal trees` | implementation — the reviewed `change_ref` |
 | `7102f94be129cd2dc5b3d49b09a4b4591dd155cb` | `docs(coordination): record generated pack review` | coordination records only |
 
-No PR exists yet: `refs/remotes/origin/feat/29-generated-core-personal` is absent,
-so the branch is **unpushed**. Nothing is merged, tagged, released, or published.
+At PREPARE no PR existed and the branch was unpushed. That historical state is superseded
+by the deployment and production-verification record below. The generated packs remain
+**unpublished**.
 
 ## DoD gate
 
@@ -181,6 +190,9 @@ or observer-record delta appearing on a host after update.
 `workflow-ship` merged nothing, pushed nothing, tagged nothing, released nothing, and
 published nothing. Steps 1–4 are read-only pre-merge gates that fail closed.
 
+> **Completed by the operator.** This section is retained as the approved deployment
+> procedure; completion and verification evidence are recorded below.
+
 1. **Confirm the branch shape.**
    `git -C C:\src\kai log --oneline 31d5d110cb2a3f63ef6085e707bfe412a8c0b0ea..HEAD`
    → expect `5a5afb0e`, `7102f94`, plus the one records commit from step 5. Any other
@@ -218,8 +230,8 @@ Then return to `workflow-ship` with the evidence in the next section.
 
 ## Production verification
 
-Bring these back for **CONFIRM-START** (deployment started) and **CONFIRM-COMPLETE**
-(deployment succeeded, then production verified):
+The operator returned the following contract for **CONFIRM-START** and
+**CONFIRM-COMPLETE**:
 
 1. **CONFIRM-START:** PR number + URL, merge commit SHA, `main` workflow run URL/ID,
    environment, start timestamp.
@@ -239,6 +251,29 @@ Bring these back for **CONFIRM-START** (deployment started) and **CONFIRM-COMPLE
    invoke the rollback above; do not reason it away.
 
 Kai records these read-only. Kai does not execute the deployment or the rollback.
+
+### Outcome — 2026-08-26-1443: **PASSED 6 of 6. SHIPPED.**
+
+| # | check | result |
+|---|-------|--------|
+| 1 | deployment start | PR run `33016379347`, job `98335558480`, passed in 15s; PR #167 merged `2026-08-26T21:40:01Z` as `2eea0f04...`; `main` run `33016421758` started `21:40:03Z` at that exact SHA. Local `main` and `origin/main` reached the merge SHA; worktree clean immediately after the operator sequence, before this records edit — **PASS** |
+| 2 | deployment completion | Main job `98335703857` completed `success` at `21:40:17Z`; the merge has exactly one check run and it is successful. `v0.64.0` published `21:40:33Z`, non-draft, non-prerelease, target exactly the merge SHA — **PASS** |
+| 3 | review binding | GitHub compare reports `5a5afb0e...` as the merge base/ancestor of `2eea0f04...`; the merge method preserved the independently reviewed implementation commit — **PASS** |
+| 4 | version, topology, trees | Production reads `0.64.0`; marketplace N=1, one `kai` at `source: "."`, zero pack entries; `COMMITTED_PACKS = ['core','personal']`; merge root `packs/` contains only `kai-core` + `kai-personal`; CI step `Committed pack trees match the generator` succeeded. **No pack was published** — **PASS** |
+| 5 | installed artifact + fresh session | Official `copilot plugin update kai` **failed** with Windows `Access is denied` because the active CLI loaded the plugin; this was not a successful plugin-manager update. The clean installed direct checkout was fast-forwarded with `git pull --ff-only origin main` from `a879116...` / manifest `0.47.0` to exact merge `2eea0f0...` / manifest `0.64.0`. Fresh Copilot CLI 1.0.80 then returned exactly `CORE=0 PERSONAL=0 CONTRACT_DUPLICATE=no CHILD=ok` — **PASS with residual** |
+| 6 | observer differential | Consent enabled; `.kai/observed.jsonl` 363 -> 367 for one built-in `explore` child: exactly baseline start/start then stop/stop for session `4d11d50d1b4d`, role `explore`, agent `1fb0de3084e1`; no pack-attributable provider, contract-skill, or hook delta — **PASS** |
+
+**Residual — stale registry display, not a ship blocker under this contract.**
+`copilot plugin list` still reports cached registry metadata `0.47.0`, while the installed
+checkout is at exact merge `2eea0f0...` and its `plugin.json` reads `0.64.0`. The official
+updater failure is stated, not relabeled. The production contract gates the checkout the
+fresh session actually loaded and the resulting provider/skill/hook behavior; those are
+directly evidenced and all passed. The stale display neither publishes a pack nor changes
+loaded content. Reopen if a fresh session loads the old artifact or produces any positive
+pack-attributable delta.
+
+**Rollback was never invoked.** Kai performed no merge, push, tag, release, installed-checkout
+update, deployment, or rollback; it recorded the operator's actions and read-only evidence.
 
 ## Follow-ups / parked
 
