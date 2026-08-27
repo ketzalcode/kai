@@ -5,10 +5,10 @@ title: Honest guided onboarding installer — core first, verify each step, no u
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: ready
+state: in-progress
 resume_state: null
 priority: 20
-owner: null
+owner: principal-swe-infra
 next_role: principal-swe-infra
 target: pack-split onboarding guided installer
 artifact_target: null
@@ -19,6 +19,17 @@ context_artifacts:
 touches:
   - skills/kai-core-workspace-onboarding/SKILL.md
   - agents/workflow-workspace-init.agent.md
+  - scripts/validate-plugin.mjs
+  - docs/reference/agents-and-skills.md
+  - packs/
+  - plugin.json
+  - package.json
+  - package-lock.json
+  - .github/plugin/marketplace.json
+  - README.md
+  - CHANGELOG.md
+  - kai/coordination/
+  - kai/initiatives/pack-split/
 depends_on:
   - item: pack-split-generated-pack-trees
     requires: shipped
@@ -35,14 +46,14 @@ review_requirements:
     kind: doc-review
 completed_reviews: []
 change_ref: null
-version: 3
+version: 4
 lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-27-1155
+  holder: principal-swe-infra
+  token: infra-1201-onboarding
+  version_at_grant: 3
+  acquired: 2026-08-27T12:01:44-07:00
+  expires: 2026-08-27T12:31:44-07:00
+updated: 2026-08-27-1201
 ---
 
 ## Outcome
@@ -54,16 +65,37 @@ active until a new session starts.
 
 ## Acceptance
 
-- [ ] The installer prose installs core first and verifies after each step, stopping on first failure.
-- [ ] It never claims rollback it did not verify; partial state is reported precisely.
-- [ ] The fresh-session caveat is stated where the user will hit it.
-- [ ] `node scripts/validate-plugin.mjs` passes (onboarding still references the canonical style block);
+- [x] The installer prose installs core first and verifies after each step, stopping on first failure.
+- [x] It never claims rollback it did not verify; partial state is reported precisely.
+- [x] The fresh-session caveat is stated where the user will hit it.
+- [x] `node scripts/validate-plugin.mjs` passes (onboarding still references the canonical style block);
       `npm test` passes.
-- [ ] Version bumped on `0.x` with CHANGELOG + README stamp.
+- [x] Version bumped on `0.x` with CHANGELOG + README stamp.
 
 ## Evidence
 
-- (to be filled during execution).
+- `skills/kai-core-workspace-onboarding/SKILL.md` carries the closed five-pack
+  catalog, exact marketplace and install commands, read-only migration gate,
+  explicit confirmation, core-first order, per-step checks, final migration
+  check, and complete/partial/blocked result shape.
+- The availability gate browses `kai-plugins` before the first install and
+  refuses direct repository or subdirectory fallback. With packs still
+  unpublished, the guided path stops before mutating plugin state.
+- `agents/workflow-workspace-init.agent.md` selects pack-installation,
+  workspace-initialization, or combined mode and inherits the detailed
+  procedure rather than duplicating it.
+- `scripts/validate-plugin.mjs` pins the five exact install commands in
+  canonical order plus the availability, confirmation, no-rollback, failure,
+  and fresh-session contracts.
+- Full `npm test` passed at `0.66.0`, including contract validation, generated
+  catalog parity, migration-doctor fixtures, 163 pack self-tests, all pack
+  gates, generated-tree parity, and syntax checks.
+- The first full run stopped only because the host-visible agent description
+  made `docs/reference/agents-and-skills.md` stale. `npm run docs:generate`
+  refreshed it and the complete rerun passed; no behavioral check failed.
+- Root, marketplace, core, and personal release metadata is lockstep
+  `0.66.0`; CHANGELOG and README are current. Marketplace remains the single
+  monolith entry and generated packs remain unpublished.
 
 ## Notes
 

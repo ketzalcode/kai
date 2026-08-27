@@ -31,7 +31,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.65.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.66.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 **The first generated pack slice is committed: `kai-core` + `kai-personal`.**
@@ -42,6 +42,12 @@ marketplace**. Each now carries a deterministic, lockstep `package.json` and
 `package-lock.json`. Copilot copies plugin files but does not run npm, so
 optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;
 ordinary pack behavior needs no dependency installation.
+
+`workflow-workspace-init` now also carries the honest guided pack installer:
+it shows the closed pack set and exact commands, confirms the plan, installs
+core first, verifies every step, stops with precise partial state, and requires
+a fresh session. Until release 12b lists the packs, its marketplace browse gate
+stops before installation; it never falls back to unpublished direct paths.
 
 The pack migration remains checkable before it is possible:
 `npm run doctor:migration` is a read-only report on whether a host may install

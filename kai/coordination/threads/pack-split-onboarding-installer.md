@@ -54,3 +54,50 @@ Append-only communication log mirroring
 - next:      principal-swe-infra — claim a lease and implement; obtain both
              independent architecture and technical-writing reviews on one
              exact `change_ref`.
+
+## NOTE 2026-08-27-1201 — principal-swe-infra implementation lease
+
+- did:       Claimed `infra-1201-onboarding` against ready item v3. Classified
+             the onboarding skill and workflow agent as owned core modules and
+             `scripts/validate-plugin.mjs` as a shared contract gate to extend,
+             not duplicate. Kept the slice as one prompt-behavior PR with
+             generated copies, tests, and the required 0.x release metadata.
+- state:     in-progress
+- needs:     Add the closed five-pack catalog, migration and availability
+             gates, explicit-confirmation plan, core-first install order,
+             per-step verification, fail-closed partial-state reporting, and
+             fresh-session boundary. Current unpublished packs must fail at the
+             browse gate rather than falling back to direct installation.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs
+- evidence:  Reuses the existing read-only migration doctor and the host's
+             `plugin marketplace list/browse` plus `plugin list` commands.
+- questions: none
+- next:      principal-swe-infra — finish implementation, regenerate core,
+             run the full suite, bind an exact change ref, and hand both
+             required reviews the same ref.
+
+## NOTE 2026-08-27-1204 — principal-swe-infra implementation complete
+
+- did:       Added the closed pack catalog and fail-closed guided installer to
+             the canonical onboarding skill, bound workspace-init to its mode,
+             added shared static contract checks, bumped `0.65.0 -> 0.66.0`,
+             regenerated core/personal and the public catalog, and completed
+             all five acceptance criteria.
+- state:     in-progress
+- needs:     Mint the implementation commit, clear the lease, bind
+             `change_ref`, and request both required independent reviews
+             against that exact ref.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs;
+             packs/kai-core/skills/kai-core-workspace-onboarding/SKILL.md;
+             packs/kai-core/agents/workflow-workspace-init.agent.md
+- evidence:  Full `npm test` passed at `0.66.0`. The initial full run exposed
+             only a stale generated catalog after the changed agent
+             description; `npm run docs:generate` corrected it and the full
+             rerun passed. Generated packs match the generator.
+- questions: none
+- next:      principal-swe-infra — commit the implementation and perform the
+             revision-bound review handoff.

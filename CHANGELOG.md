@@ -4,6 +4,31 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.66.0] - 2026-08-27
+
+### Added
+
+- **An honest guided installer for the split pack surface.**
+  `workflow-workspace-init` now shows the closed `kai-core`,
+  `kai-engineering`, `kai-product`, `kai-gtm`, and `kai-personal` catalog,
+  includes core automatically, preserves canonical department order, and gets
+  explicit confirmation for the exact command plan.
+- **Contract checks for the load-bearing installer prose.** Validation pins the
+  core-first command order, marketplace availability gate, explicit
+  confirmation, stop-on-first-failure behavior, exact no-rollback statement,
+  and fresh-session boundary.
+
+### Changed
+
+- The installer runs the existing read-only migration doctor before proposing
+  a pack install, refuses legacy coexistence and unknown host state, verifies
+  marketplace publication before any install, then checks one enabled,
+  versioned row after each step. A failure reports verified, failed, and
+  not-attempted packs precisely; it never claims an atomic rollback.
+- Pack publication remains gated. Until release 12b lists the selected packs,
+  marketplace browsing stops the installer before it mutates plugin state; a
+  direct repository or subdirectory install is never used as a fallback.
+
 ## [0.65.0] - 2026-08-27
 
 ### Added
@@ -2909,6 +2934,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.66.0]: https://github.com/RubenSaucedo/kai/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/RubenSaucedo/kai/compare/v0.64.0...v0.65.0
 [0.64.0]: https://github.com/RubenSaucedo/kai/compare/v0.63.1...v0.64.0
 [0.63.1]: https://github.com/RubenSaucedo/kai/compare/v0.63.0...v0.63.1
