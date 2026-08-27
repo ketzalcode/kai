@@ -113,7 +113,7 @@ reject, not in a shipped manifest.
 
 The same script carries the read-only pack-migration check (#29): what this
 **host** has installed, where each install came from, and whether a pack install
-may proceed. `--self-test` runs it over a 26-scenario matrix and asserts each
+may proceed. `--self-test` runs it over a 33-scenario matrix and asserts each
 verdict exactly — `clear` (may proceed), `blocked` (refused), `unknown` (the
 evidence did not settle it). A case that must be `unknown` failing as `clear` is
 a test failure, because "unverified" reported as success is the bug this check
@@ -125,7 +125,8 @@ an uninstall, metadata left by an interrupted uninstall, the same pack installed
 from both a direct source and the marketplace, config/`plugin.json` identity
 disagreement, inferred and unknown provenance, a truncated config, junk config
 entries, missing/malformed install surfaces, symlinked install roots, foreign
-identities in kai-shaped trees, Windows/macOS cache-path normalization, and each
+identities in kai-shaped trees, Windows/macOS cache-path normalization, an
+unreadable and a non-boolean `settings.json` enabled state, and each
 workspace-provenance state (current, stale, ahead, unrecognized, unreadable).
 One assertion snapshots every fixture file before and after and requires them
 byte-identical: the check is read-only, and that is proven rather than promised.

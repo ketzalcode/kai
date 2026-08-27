@@ -14,7 +14,10 @@ name: validate
 # additionally runs the release-guard gate: a behavior-sensitive change must carry
 # a version bump plus changelog/README updates. A separate supported-Node job
 # installs each dependency-bearing generated pack from an empty cache with Git
-# disabled, then probes the pack-local Lectoria CLI and core provider root.
+# disabled, then probes the pack-local Lectoria CLI and core provider root. That
+# job's matrix and its per-leg binary assertion are both derived from the pack
+# partition (COMMITTED_PACKS and PACK_RUNTIME_DEPENDENCIES), so publishing a pack
+# never means editing this workflow to make that pack legal.
 
 on:
   pull_request:
@@ -27,6 +30,8 @@ permissions:
 jobs:
   contract:
     runs-on: ubuntu-latest
+    outputs:
+      packs: ${{ steps.runtime-matrix.outputs.packs }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,13 +66,25 @@ jobs:
       - name: Release-guard (behavior change requires a bump + release notes)
         if: github.event_name == 'pull_request'
         run: node scripts/release-guard.mjs --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }}
+      # The legs come from COMMITTED_PACKS, so publishing a pack adds its leg
+      # without anyone editing this workflow to make that pack legal. The
+      # existing required `contract` job owns the output, so derivation failure
+      # cannot turn required runtime legs into accepted skipped checks.
+      - id: runtime-matrix
+        name: Derive the runtime-dependency legs from the committed pack set
+        shell: bash
+        run: |
+          set -euo pipefail
+          packs="$(node scripts/pack-preview.mjs --ci-matrix)"
+          echo "packs=$packs" >> "$GITHUB_OUTPUT"
 
   runtime-dependencies:
+    needs: contract
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        pack: [kai-core, kai-personal]
+        pack: ${{ fromJSON(needs.contract.outputs.packs) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -90,7 +107,13 @@ jobs:
           mkdir -p "$HOME" "$npm_config_cache"
           npm ci --prefix "packs/${{ matrix.pack }}" \
             --no-audit --no-fund --foreground-scripts
-          "packs/${{ matrix.pack }}/node_modules/.bin/lectoria" --help >/dev/null
+          # Derived from PACK_RUNTIME_DEPENDENCIES: a pack that declares none
+          # installs its lockfile and asserts no binary. Captured first so a
+          # failed derivation fails the leg instead of asserting nothing.
+          binaries="$(node scripts/pack-preview.mjs --ci-runtime-binaries "${{ matrix.pack }}")"
+          for binary in $binaries; do
+            "packs/${{ matrix.pack }}/node_modules/.bin/$binary" --help >/dev/null
+          done
       - name: Probe core provider-root resolution
         if: matrix.pack == 'kai-core'
         shell: pwsh

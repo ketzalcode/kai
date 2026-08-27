@@ -62,3 +62,58 @@ Append-only communication log mirroring
              implementation rides `12c-3`'s ref. If the answer touches any pack other than
              `engineering`, or needs a new CI assertion or a partition re-lock, route it to the
              steward before `12c-3` is dispatched.
+
+## HANDOFF 2026-08-27-1552 — principal-swe-architect -> director-chief-of-staff
+
+- did:       **RATIFIED caveat (b): DO NOT BIND** — disposition **Endorse**. The three lenses are
+             *not* added to `workflow-doc-review`'s `**Inherits:**` line; they stay placed into
+             `kai-engineering` by `SKILL_OWNER_OVERRIDES` and stay dispatched at run time via the
+             `skill` tool. The decomposition's standing *bind* recommendation is **refused, with
+             reasons**. Self-granted the lease (sole active worker, no director in the loop),
+             wrote the decision artifact, closed all four acceptance lines, released the lease.
+             **Changed nothing outside `touches`:** no agent body, no override table, no
+             generator, no CI, no doc, no command run.
+- state:     completed  (v2 -> v4; v3 was the self-grant; lease cleared; owner clear)
+- needs:     Nothing from this role. One steward hygiene edit before `12c-3` is dispatched — see
+             `questions`/`next`. `12c-3`'s typed `requires: completed` dependency is satisfied.
+- workspace: C:\src\kai
+- artifacts: kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md;
+             kai/coordination/items/pack-split-review-lens-binding.md
+- evidence:  Read-only 2026-08-27 from `C:\src\kai`.
+             **Decisive:** `kai/initiatives/pack-split/northstar.md:31` — `out_of_scope`
+             *"Rewriting or re-scoping agent and skill content; this initiative relocates and
+             guards contracts, it does not redesign them."* An `**Inherits:**` line is the agent's
+             binding contract, so binding is agent-content redesign inside a publish release.
+             **Placement is identical under both options** (`kai-engineering`), so `bind` buys no
+             placement change — only a change in *how* placement is derived
+             (`scripts/lib/pack-plan.mjs:375-395`).
+             **The stated benefit is not delivered:** binding 3 leaves `workflow-doc-review`
+             inheriting 7 of 9 lenses and dispatching 2, because `review-security-privacy` and
+             `review-rollout-operability` bind to `principal-security` /
+             `principal-privacy-compliance` / `principal-sre` / `workflow-ship` instead.
+             **Overrides stay, byte-unchanged** (`pack-plan.mjs:115-117`): `orphans === overrides`
+             holds at 9 = 9, `unplaced === 0` holds, `namespaceErrors` green, and the
+             `scripts/pack-preview.mjs:440-443` assertion stays truthful *and correctly labelled*
+             (under *bind* its "engineering **orphan** disposition" label would have silently
+             become a test of inheritance).
+             **The lenses already fire:** `DISPATCH_ENTRY` (`pack-plan.mjs:814`) matches the
+             `## The dimension skills` list, so `collectReferences` already records a validated
+             orchestrated engineering→engineering reference for all three
+             (`scripts/pack-preview.mjs:713` asserts zero reference errors live).
+             **No command was run** — this is the no-change branch, so the repo's existing green
+             CI state is itself the evidence.
+- questions: none. **No operator decision remains and nothing is escalated.** Acceptance line 4's
+             steward trigger did **not** fire: the decision changes **no pack at all**, needs no
+             new CI assertion and no partition re-lock.
+- next:      director-chief-of-staff — this item is closed. Two things to carry, neither a
+             decision: (1) route a steward (`principal-product-manager`) edit to drop
+             `agents/workflow-doc-review.agent.md` from `pack-split-release-12c-3-engineering`'s
+             `touches` before it is dispatched — it is now a false claim of intent to modify a
+             root agent body, and `touches` is the parallel-safety claim; keep
+             `scripts/lib/pack-plan.mjs` there, it still changes for `COMMITTED_PACKS`.
+             (2) `12c-3`'s named risk — *"the one place in `12c` where a decision changes generator
+             behavior and not just content"* — is **retired**; that release now carries exactly one
+             kind of risk, publish protocol, like the two either side of it. The implementation
+             obligation for `12c-3` is an **assertion of absence**: zero diff to
+             `agents/workflow-doc-review.agent.md` and zero diff to `SKILL_OWNER_OVERRIDES` at its
+             reviewed `change_ref`.

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Kai core and department packs published by RubenSaucedo.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./packs/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -37,7 +37,7 @@
       "name": "kai-personal",
       "source": "./packs/kai-personal",
       "description": "kai personal department pack — the personal roles, over a required kai-core.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"

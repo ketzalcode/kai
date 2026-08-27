@@ -21,6 +21,13 @@
 //     This is the user-owned state changed by the interactive `/plugin`
 //     dashboard. Absence from the map means no user override, so config remains
 //     authoritative; an explicit override must agree or the state is unknown.
+//     Only the `name@marketplace` key shape has been measured. The bare-`name`
+//     shape this code assumes for a DIRECT install is inferred, never asserted:
+//     the one direct-monolith host measured carried an empty override map, so
+//     the key was never exercised. Consequence if the guess is wrong: a direct
+//     install with an explicit override reads as "no override" and config stands
+//     — bounded by the `legacy-installed` refusal that fires first on any such
+//     host.
 //
 //   $COPILOT_HOME/installed-plugins/_direct/<owner>--<repo>/    a direct install
 //
@@ -312,6 +319,8 @@ function reconcileEnabledState(config, settings) {
       const marketplace = entry.provenance.startsWith('marketplace:')
         ? entry.provenance.slice('marketplace:'.length)
         : null;
+      // Measured for marketplace installs only; the bare-`name` direct shape is
+      // inferred (see the settings.json note in this file's header).
       const id = marketplace ? `${entry.name}@${marketplace}` : entry.name;
       const settingEnabled = settings.values.get(id);
       if (typeof settingEnabled !== 'boolean') return entry;
@@ -555,7 +564,7 @@ function publishedPluginNames(indexPath) {
   } catch { return null; }
 }
 
-function assessHost(host, out) {
+function assessHost(host, out, { rollback = false } = {}) {
   const { add, step } = out;
   const { config, settings, scan, records, unidentified, home } = host;
   const configClassified = config.entries.every((entry) => !entry.malformed);
@@ -619,7 +628,8 @@ function assessHost(host, out) {
       add('refusal', 'provenance-collision',
         `"${target.name}" is installed from more than one source (${[...target.provenances].map(label).join(' + ')}) — `
         + 'two copies of the same plugin load together and the host binds whichever it sees first.');
-      if (config.ok && config.listed && configClassified) {
+      if (config.ok && config.listed && configClassified
+        && !(rollback && target.name === LEGACY_PLUGIN)) {
         step(`copilot plugin uninstall ${target.name}   # removes one copy; run it until \`copilot plugin list\` shows none`);
       }
     } else if (hasProvenanceDisagreement) {
@@ -641,7 +651,9 @@ function assessHost(host, out) {
       if (scan.readable) {
         add('refusal', 'incomplete-install',
           `"${target.name}" is recorded as installed (${describe(target)}) — an interrupted install or uninstall left the metadata and the disk out of step.`);
-        step(`copilot plugin uninstall ${target.name}   # clears the stale entry in ${config.path}`);
+        if (!(rollback && target.name === LEGACY_PLUGIN)) {
+          step(`copilot plugin uninstall ${target.name}   # clears the stale entry in ${config.path}`);
+        }
       } else {
         add('unverified', 'install-tree-unverified',
           `"${target.name}" is recorded as installed, but its tree could not be verified while the install directory was unreadable — `
@@ -678,6 +690,22 @@ function assessHost(host, out) {
   const actionableLegacy = legacy
     && legacyIdentityConfirmed
     && (legacy.entries.length > 0 || (config.ok && config.listed && configClassified));
+  const hostEvidenceComplete = config.present && config.ok && config.listed
+    && configClassified && scan.present && scan.readable && unidentified.length === 0;
+  const legacyEnabled = legacy?.entries.length > 0
+    && legacy.entries.every((entry) => entry.enabled === true);
+  const legacyIdentityConsistent = legacy?.entries.length === 1
+    && legacy.trees.length === 1
+    && legacy.mismatches.length === 0
+    && !legacy.entries[0].malformed
+    && !legacy.trees[0].malformed
+    && legacy.entries[0].basis === 'recorded'
+    && legacy.trees[0].declaredName === LEGACY_PLUGIN
+    && legacy.entries[0].provenance === legacy.trees[0].provenance
+    && records.size === 1;
+  const rollbackReady = Boolean(rollback && actionableLegacy
+    && legacy.presence === 'installed' && legacyEnabled && legacyIdentityConsistent
+    && packs.length === 0 && hostEvidenceComplete);
 
   if (actionableLegacy && packs.length) {
     add('refusal', 'coexistence',
@@ -685,7 +713,7 @@ function assessHost(host, out) {
       + 'both provide the core operating contract, the host binds one of them by load order, and a pack agent can pass its own '
       + 'preflight while running the stale copy. This is refused, not warned through.');
   }
-  if (actionableLegacy) {
+  if (actionableLegacy && !rollback) {
     add('refusal', 'legacy-installed',
       `legacy "${LEGACY_PLUGIN}" is present (${describe(legacy)}) — it must be verifiably uninstalled before any pack is installed.`);
     step(`copilot plugin uninstall ${LEGACY_PLUGIN}`);
@@ -693,6 +721,14 @@ function assessHost(host, out) {
     if (legacy.trees.length) {
       step('confirm every legacy install tree named above is gone; uninstall can leave files behind on some hosts');
     }
+  }
+  if (rollbackReady) {
+    add('note', 'legacy-rollback-restored',
+      `rollback intent is explicit and legacy "${LEGACY_PLUGIN}" is installed, enabled, and the only verified kai surface.`);
+  } else if (rollback) {
+    add('refusal', 'legacy-rollback-unverified',
+      `rollback intent was requested, but legacy "${LEGACY_PLUGIN}" was not verified as one installed, enabled, identity-consistent, pack-free surface — `
+      + 'workspace provenance is not safe to reverse.');
   }
 
   const core = records.get(CORE_PLUGIN);
@@ -715,7 +751,7 @@ function assessHost(host, out) {
     add('note', 'nothing-installed',
       `no kai plugin is installed under ${home} — verified by reading ${config.path} and ${scan.dir}.`);
   }
-  return { legacy: actionableLegacy || null, core, departments };
+  return { legacy: actionableLegacy || null, core, departments, rollbackReady };
 }
 
 function assessWorkspace(root, hostSummary, host, out) {
@@ -743,7 +779,7 @@ function assessWorkspace(root, hostSummary, host, out) {
     return provenance;
   }
 
-  const { legacy, core } = hostSummary;
+  const { legacy, core, rollbackReady } = hostSummary;
   const coreInstalled = core?.presence === 'installed';
   const evidenceComplete = host.config.ok && host.config.listed
     && host.scan.present && host.scan.readable && host.unidentified.length === 0;
@@ -769,6 +805,10 @@ function assessWorkspace(root, hostSummary, host, out) {
     add('refusal', 'workspace-provenance-ahead',
       `${provenance.path} records "${CORE_PLUGIN}" while legacy "${LEGACY_PLUGIN}" is still installed — `
       + 'the workspace was migrated ahead of the host, so the recorded provenance is not what is loaded.');
+    if (rollbackReady) {
+      step(`edit ${provenance.path}: set "plugin": "${LEGACY_PLUGIN}" (this one key; every other value stays as written)`);
+      step('node <kai-plugin>/scripts/workspace-doctor.mjs --root <workspace-root>   # confirm the workspace is healthy after the edit');
+    }
   } else if (coreInstalled) {
     add('note', 'workspace-provenance-migrated',
       `${provenance.path} records "${CORE_PLUGIN}", matching the installed pack surface — already migrated, re-applying changes nothing.`);
@@ -787,6 +827,7 @@ export function migrationReport({
   home = defaultHome(),
   root = null,
   marketplaceIndexPath = defaultMarketplaceIndex(),
+  rollback = false,
 } = {}) {
   const findings = [];
   const steps = [];
@@ -802,10 +843,10 @@ export function migrationReport({
     out.add('unverified', 'no-host-home',
       `no host home at ${home} — nothing was inspected, so nothing is claimed about what is installed. `
       + 'Set COPILOT_HOME or pass --home <dir> if the CLI keeps its plugins elsewhere.');
-    return finish({ home, root, findings, steps, notices, host, workspace: null });
+    return finish({ home, root, rollback, findings, steps, notices, host, workspace: null });
   }
 
-  const hostSummary = assessHost(host, out);
+  const hostSummary = assessHost(host, out, { rollback });
   const workspace = assessWorkspace(root, hostSummary, host, out);
 
   const published = publishedPluginNames(marketplaceIndexPath);
@@ -817,7 +858,7 @@ export function migrationReport({
     out.notice('plugins load at session start: run the steps above, then start a NEW session before invoking any kai agent.');
   }
 
-  return finish({ home, root, findings, steps, notices, host, workspace });
+  return finish({ home, root, rollback, findings, steps, notices, host, workspace });
 }
 
 // Fail closed: only `clear` means a pack install may proceed. `unknown` is not a

@@ -176,7 +176,18 @@ Also in `AGENTS.md` → **Releasing this plugin**:
 2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its
    `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all
    three for the current version.)
-3. `npm test`, open the PR, merge on green.
+3. `npm test`, open the PR, then **verify all three of these at the exact head you
+   are about to merge** — a later records-only commit does not inherit an earlier
+   head's evidence:
+   - `git merge-base --is-ancestor <reviewed-ref> HEAD` — every independent
+     approval was given on an ancestor of this head.
+   - `git diff --exit-code <reviewed-ref> HEAD -- . ':(exclude)kai/'` — nothing
+     outside the coordination records moved since that review, so the approvals
+     still describe the shipped change.
+   - a **fresh** CI run whose head SHA is this exact head, green on every required
+     job. Never merge on an attested equivalence, and never on a run a later
+     commit superseded.
+   Then merge on green.
 4. On the exact merge commit, register `RubenSaucedo/kai` in an isolated
    `COPILOT_HOME`, browse `kai-plugins`, install every newly published pack,
    run idempotent updates, and run the installed core migration doctor with
@@ -184,7 +195,12 @@ Also in `AGENTS.md` → **Releasing this plugin**:
    install trees disagree.
    Also run the doctor against a real direct-monolith host whose
    `settings.json` has no plugin override; it must report `legacy-installed`
-   without `enabled-state-unverified`.
+   without `enabled-state-unverified`. That probe measures the *empty* override
+   map only: the `name@marketplace` override key is measured, but the bare-`name`
+   key the doctor assumes for a **direct** install has never been exercised on a
+   real host. It is documented as inferred, not gated — see the parked
+   measurement proposal and its revisit trigger in the pack-split initiative
+   backlog.
 5. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
 
 ### Emergency rollback of the pack marketplace
@@ -196,18 +212,36 @@ push.
 1. Get operator authorization and branch from the current `main`.
 2. Make a forward patch release (for example `1.0.1`), set
    `metadata.installSurface` in `.github/plugin/marketplace.json` to
-   `legacy-rollback`, replace the pack entries with the root `kai` entry at the
-   same patch version, and add the required changelog and README notice.
+   `legacy-rollback`, replace **every** pack entry with the root `kai` entry at
+   the same patch version, and add the required changelog and README notice.
 3. Run `npm test` and the exact release guard, then merge through normal branch
    protection. The validator accepts `legacy-rollback` only at `1.0.0` or later
-   and requires the monolith while forbidding the two pack entries.
+   and requires the monolith while forbidding **every pack name the partition can
+   publish** — the set is derived from `PACKS` in `scripts/lib/pack-plan.mjs`, not
+   listed here or there, so a pack published after this runbook was written is
+   forbidden by name without anyone remembering to add it. A rollback index that
+   restored the monolith beside a still-served department pack would be the exact
+   coexistence the migration doctor refuses on a host; it is refused in the index
+   too.
 4. From an isolated home, update the marketplace, browse it, install
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
    From an already-migrated home, uninstall department packs first and
    `kai-core` last, confirm `copilot plugin list` shows neither surface, install
    `kai@kai-plugins`, then start a fresh session. Never install the restored
    monolith beside packs; the doctor correctly refuses that coexistence.
-5. Publish a forward pack restoration in a later patch by returning
+5. Reverse the workspace provenance on every workspace already migrated. Run
+   `node <kai-plugin>/scripts/workspace-doctor.mjs --migration-check --rollback
+   --root <workspace-root>`: the explicit rollback intent first requires the
+   monolith to be one installed, enabled, identity-consistent copy whose
+   recorded config provenance agrees with its tree, every pack to be absent,
+   and both host evidence surfaces to be readable. Only then does it report
+   `workspace-provenance-ahead` and emits the one-key edit that sets
+   `.kai/manifest.json` `"plugin"` back to `kai`, plus the re-check that confirms
+   the workspace is healthy afterwards. The rollback plan never emits
+   `copilot plugin uninstall kai`; without the explicit mode or complete
+   evidence, no reverse edit is offered. Run the steps it prints; the doctor
+   itself changes nothing.
+6. Publish a forward pack restoration in a later patch by returning
    `metadata.installSurface` to `packs`; never leave both surfaces listed.
 
 ---

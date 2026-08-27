@@ -14,11 +14,16 @@
 //   • gate      — the same rules the self-test proves by mutation, run over the
 //     live tree as four named CI gates (`--gate`), so a red build names the
 //     guarantee that broke.
+//   • ci        — the runtime-dependency legs CI runs, derived from the committed
+//     pack set (`--ci-matrix`) and from the declared dependency plan
+//     (`--ci-runtime-binaries <pack>`), so publishing a pack never means editing
+//     the workflow to make that pack legal.
 //
 // Run: node scripts/pack-preview.mjs --check | --write
 //      node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N] | --all
 //      node scripts/pack-preview.mjs --self-test
 //      node scripts/pack-preview.mjs --gate <partition|collision|partial-install|version-skew|all>
+//      node scripts/pack-preview.mjs --ci-matrix | --ci-runtime-binaries <pack>
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
@@ -28,9 +33,9 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { parseFrontmatter, parseToolList } from './lib/loader-contract.mjs';
 import {
-  PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  PACKS, PACKS_DIR, COMMITTED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
-  RUNTIME_ARTIFACTS,
+  RUNTIME_ARTIFACTS, PACK_RUNTIME_DEPENDENCIES, packPluginName, runtimeDependencyMatrix,
   planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
   degradedBlock, guaranteeBlocks, injectBlocks, degradedBlockErrors, coreContractLines,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
@@ -647,29 +652,68 @@ function selfTest() {
     mkt: mkt([coreEntry], 'packs'),
     canonicalVersion: '1.2.3',
     monolithName: 'kai',
-    initialPackNames: ['kai-core', 'kai-personal'],
   });
+  const publishedNames = COMMITTED_PACKS.map(packPluginName);
+  const publishableNames = PACK_ORDER.map(packPluginName);
+  const unpublishedNames = publishableNames.filter((n) => !publishedNames.includes(n));
   ok(packSurface.errors.length === 0
-    && packSurface.requiredPluginNames.join(',') === 'kai-core,kai-personal'
-    && packSurface.forbiddenPluginNames.join(',') === 'kai',
-  'the 1.x pack mode requires the initial packs and forbids the monolith');
+    && packSurface.requiredPluginNames.join(',') === publishedNames.join(',')
+    && packSurface.forbiddenPluginNames.includes('kai'),
+  `the 1.x pack mode requires exactly the committed pack set (${publishedNames.join(', ')}) and forbids the monolith`);
+  ok(unpublishedNames.length > 0
+    && unpublishedNames.every((n) => packSurface.forbiddenPluginNames.includes(n)),
+  `a packs index may not list a pack this repo has not published (${unpublishedNames.join(', ')})`);
   const rollbackSurface = marketplaceSurfacePolicy({
     mkt: mkt([kaiEntry], 'legacy-rollback'),
     canonicalVersion: '1.0.1',
     monolithName: 'kai',
-    initialPackNames: ['kai-core', 'kai-personal'],
   });
   ok(rollbackSurface.errors.length === 0
     && rollbackSurface.requiredPluginNames.join(',') === 'kai'
-    && rollbackSurface.forbiddenPluginNames.join(',') === 'kai-core,kai-personal',
-  'the 1.x emergency rollback mode requires the monolith and forbids initial packs');
+    && rollbackSurface.forbiddenPluginNames.join(',') === publishableNames.join(','),
+  `the 1.x emergency rollback mode requires the monolith and forbids all ${publishableNames.length} publishable pack names`);
+  ok(unpublishedNames.every((n) => rollbackSurface.forbiddenPluginNames.includes(n)),
+    `a pack published after this policy was written is already forbidden on the rollback surface, by name `
+    + `(${unpublishedNames.join(', ')})`);
+  // The failure R1 exists to stop: a restored monolith served beside a department
+  // pack — the coexistence the doctor refuses on a host — blessed by the index.
+  const deptEntry = {
+    name: unpublishedNames[0], source: `./packs/${unpublishedNames[0]}`, version: '1.2.3', description: 'd',
+  };
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, deptEntry], 'legacy-rollback'), {
+    requiredPluginNames: rollbackSurface.requiredPluginNames,
+    forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
+  })).some((e) => new RegExp(`entry "${unpublishedNames[0]}" is not part of the published install surface`).test(e)),
+  'a rollback index that still serves a department pack is rejected, not blessed');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry, deptEntry], 'packs'), {
+    requiredPluginNames: packSurface.requiredPluginNames,
+    forbiddenPluginNames: packSurface.forbiddenPluginNames,
+  })).some((e) => new RegExp(`entry "${unpublishedNames[0]}" is not part of the published install surface`).test(e)),
+  'a packs index that serves a pack the repo never published is rejected');
   ok(marketplaceSurfacePolicy({
     mkt: mkt([coreEntry]),
     canonicalVersion: '1.2.3',
     monolithName: 'kai',
-    initialPackNames: ['kai-core', 'kai-personal'],
   }).errors.some((e) => /must be "packs" or "legacy-rollback"/.test(e)),
   'a 1.x marketplace cannot omit its explicit install-surface mode');
+
+  // The CI runtime-dependency legs derive from the committed pack set and the
+  // declared dependency plan, proved over the WHOLE partition — not just the
+  // packs that happen to be committed today.
+  const committedLegs = runtimeDependencyMatrix();
+  ok(committedLegs.map((leg) => leg.name).join(',') === publishedNames.join(','),
+    `the CI runtime-dependency matrix is exactly the committed pack set (${publishedNames.join(', ')})`);
+  ok(committedLegs.every((leg) => leg.binaries.length === PACK_RUNTIME_DEPENDENCIES[leg.pack].length)
+    && committedLegs.some((leg) => leg.binaries.includes(RUNTIME_ARTIFACTS.lectoria.binary)),
+  'a committed leg asserts one sanctioned executable per declared runtime dependency');
+  const fullLegs = runtimeDependencyMatrix(PACK_ORDER);
+  const declaredEmpty = PACK_ORDER.filter((pack) => PACK_RUNTIME_DEPENDENCIES[pack].length === 0);
+  ok(fullLegs.length === PACK_ORDER.length
+    && fullLegs.every((leg) => leg.name === packPluginName(leg.pack)),
+  'the derivation covers the whole declared partition, so a published pack gets its leg without a CI edit');
+  ok(declaredEmpty.length > 0
+    && declaredEmpty.every((pack) => fullLegs.find((leg) => leg.pack === pack)?.binaries.length === 0),
+  `a pack declaring no runtime dependencies yields a leg with no binary to assert (${declaredEmpty.join(', ')})`);
 
   // --- cross-pack references: the live corpus ---------------------------
   // Every arm below runs against synthetic inputs, so the failure it proves is
@@ -1291,6 +1335,16 @@ if (args.includes('--self-test')) {
   process.exit(selfTest() ? 0 : 1);
 } else if (args.includes('--gate')) {
   process.exit(runGates(flag('--gate', 'all')) ? 0 : 1);
+} else if (args.includes('--ci-matrix')) {
+  process.stdout.write(`${JSON.stringify(runtimeDependencyMatrix().map((leg) => leg.name))}\n`);
+} else if (args.includes('--ci-runtime-binaries')) {
+  const name = flag('--ci-runtime-binaries');
+  const leg = runtimeDependencyMatrix().find((l) => l.name === name);
+  if (!leg) {
+    console.error(`\u2717 --ci-runtime-binaries: "${name ?? ''}" is not a committed pack`);
+    process.exit(1);
+  }
+  process.stdout.write(`${leg.binaries.join(' ')}\n`);
 } else if (args.includes('--check')) {
   const r = checkCommitted();
   if (r.ok) {

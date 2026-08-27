@@ -4,6 +4,44 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.1] - 2026-08-27
+
+Hardening only. **No pack is published in this release** — the marketplace still
+serves exactly `kai-core` and `kai-personal`.
+
+### Changed
+
+- **The published install surface is now derived, not listed.** Which plugin
+  names the marketplace index must and must not carry comes from the pack
+  partition itself. An emergency `legacy-rollback` index now forbids *every* pack
+  name the partition can publish, so restoring the monolith beside a department
+  pack published later is rejected instead of validated; a `packs` index must
+  serve exactly the committed pack set.
+- **The CI runtime-dependency matrix is derived from the committed pack set.**
+  Each leg's binary assertion comes from that pack's declared runtime
+  dependencies, so a pack that declares none installs its lockfile and asserts no
+  binary. Publishing a pack no longer means editing the workflow to make that
+  pack legal.
+- **The release runbook records its own pre-merge stop conditions** — reviewed-ref
+  ancestry, records-only equivalence, and a fresh CI run at the exact merge head.
+
+### Fixed
+
+- **Emergency rollback now reverses workspace provenance safely.** With explicit
+  `--rollback` intent, the migration doctor first verifies exactly one
+  identity-consistent monolith install with recorded config provenance is
+  enabled, every pack is absent, and both host evidence surfaces are readable.
+  Only then does it emit the one-key edit that points
+  `.kai/manifest.json` back at `kai`, plus the re-check; it never tells a rollback
+  operator to uninstall the restored monolith.
+- **Unverifiable enabled-state metadata is proven to fail closed.** Host fixtures
+  now cover an unreadable `settings.json` and a non-boolean `enabledPlugins`
+  value; both blank the enabled state `config.json` declared rather than assuming
+  it, and report `enabled-state-unverified`.
+- **The direct-install settings override-key shape is documented as inferred.**
+  Only the `name@marketplace` key has been measured on a host; the bare-`name`
+  shape assumed for a direct install has not.
+
 ## [1.0.0] - 2026-08-27
 
 ### Added
@@ -2987,6 +3025,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.1]: https://github.com/RubenSaucedo/kai/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/RubenSaucedo/kai/compare/v0.67.0...v1.0.0
 [0.67.0]: https://github.com/RubenSaucedo/kai/compare/v0.66.0...v0.67.0
 [0.66.0]: https://github.com/RubenSaucedo/kai/compare/v0.65.0...v0.66.0

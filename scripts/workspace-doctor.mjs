@@ -14,7 +14,7 @@
 //
 // Usage:
 //   node scripts/workspace-doctor.mjs [--root <dir>]   validate a workspace
-//   node scripts/workspace-doctor.mjs --migration-check [--home <dir>] [--root <dir>] [--json]
+//   node scripts/workspace-doctor.mjs --migration-check [--rollback] [--home <dir>] [--root <dir>] [--json]
 //   node scripts/workspace-doctor.mjs --self-test      run against bundled fixtures
 //
 // Workspace exit code: 0 = healthy, 1 = invalid.
@@ -353,14 +353,15 @@ function migrationInventory(report) {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function reportMigration({ home, root, json = false }) {
-  const res = migrationReport({ home, root });
+function reportMigration({ home, root, json = false, rollback = false }) {
+  const res = migrationReport({ home, root, rollback });
   if (json) {
     const output = {
       status: res.status,
       codes: res.codes,
       home: res.home,
       root: res.root,
+      rollback: res.rollback,
       findings: res.findings,
       steps: res.steps,
       notices: res.notices,
@@ -691,6 +692,18 @@ const MIGRATION_CASES = [
     expect: ['unreadable-metadata', 'workspace-provenance-unknown'], noRefusal: true,
   },
   {
+    label: 'settings.json is unreadable, so a config-enabled pack is not assumed enabled',
+    home: 'malformed-settings', status: 'unknown',
+    expect: ['enabled-state-unverified'],
+    forbid: ['nothing-installed', 'disabled-install'], noRefusal: true, noSteps: true,
+  },
+  {
+    label: 'settings.json carries a non-boolean enabled state',
+    home: 'nonboolean-enabled-state', status: 'unknown',
+    expect: ['enabled-state-unverified'],
+    forbid: ['nothing-installed', 'disabled-install'], noRefusal: true, noSteps: true,
+  },
+  {
     label: 'same pack has two direct install trees',
     home: 'same-source-collision', status: 'blocked',
     expect: ['provenance-collision'], forbid: ['nothing-installed'],
@@ -767,6 +780,44 @@ const MIGRATION_CASES = [
     label: 'workspace migrated ahead of the host, legacy still installed',
     home: 'legacy-direct', workspace: 'pack', status: 'blocked',
     expect: ['workspace-provenance-ahead', 'legacy-installed'],
+    steps: [/^copilot plugin uninstall kai$/],
+    forbidSteps: [/set "plugin": "kai"/],
+  },
+  {
+    label: 'explicit rollback reverses a migrated workspace without uninstalling the restored monolith',
+    home: 'legacy-direct', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['legacy-rollback-restored', 'workspace-provenance-ahead'],
+    forbid: ['legacy-installed', 'legacy-rollback-unverified', 'coexistence'],
+    steps: [/^edit .*set "plugin": "kai"/, /workspace-doctor\.mjs --root/],
+    forbidSteps: [/^copilot plugin uninstall kai$/, /confirm no "kai" row/, /confirm every legacy install tree/],
+  },
+  {
+    label: 'completed rollback has matching monolith workspace provenance',
+    home: 'legacy-direct', workspace: 'monolith', rollback: true, status: 'clear',
+    expect: ['legacy-rollback-restored', 'workspace-provenance-current'],
+    forbid: ['legacy-installed', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    noSteps: true, noRefusal: true,
+  },
+  {
+    label: 'rollback refuses a monolith whose install tree declares the pack identity',
+    home: 'identity-mismatch', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['identity-mismatch', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    forbid: ['legacy-rollback-restored'],
+    forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai$/],
+  },
+  {
+    label: 'rollback refuses duplicate monolith trees without uninstalling or reversing provenance',
+    home: 'duplicate-legacy', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['provenance-collision', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    forbid: ['legacy-rollback-restored'],
+    forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai/],
+  },
+  {
+    label: 'rollback refuses monolith provenance inferred from cache path',
+    home: 'inferred-legacy-provenance', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['unknown-provenance', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    forbid: ['legacy-rollback-restored'],
+    forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai/],
   },
   {
     label: 'workspace manifest unreadable',
@@ -867,13 +918,16 @@ function migrationSelfTest() {
     for (const c of MIGRATION_CASES) {
       const home = join(tmpRoot, 'homes', c.home);
       const root = c.workspace ? join(tmpRoot, 'workspaces', c.workspace) : null;
-      const res = migrationReport({ home, root });
+      const res = migrationReport({ home, root, rollback: c.rollback ?? false });
       const problems = [];
       if (res.status !== c.status) problems.push(`status "${res.status}", expected "${c.status}"`);
       for (const code of c.expect ?? []) if (!res.codes.includes(code)) problems.push(`missing finding "${code}"`);
       for (const code of c.forbid ?? []) if (res.codes.includes(code)) problems.push(`unexpected finding "${code}"`);
       for (const re of c.steps ?? []) {
         if (!res.steps.some((s) => re.test(s))) problems.push(`no remediation step matching ${re}`);
+      }
+      for (const re of c.forbidSteps ?? []) {
+        if (res.steps.some((s) => re.test(s))) problems.push(`unexpected remediation step matching ${re}`);
       }
       for (const re of c.notices ?? []) {
         if (!res.notices.some((n) => re.test(n))) problems.push(`no notice matching ${re}`);
@@ -943,6 +997,19 @@ function migrationSelfTest() {
       console.log('✓ self-test: an absent settings file falls back to managed config enabled state');
     }
 
+    // The other half of the same rule: settings that cannot be trusted must blank
+    // the state config declared, not let `enabled: true` stand unverified.
+    for (const home of ['malformed-settings', 'nonboolean-enabled-state']) {
+      const report = migrationReport({ home: join(tmpRoot, 'homes', home) });
+      const record = migrationInventory(report).find((plugin) => plugin.name === 'kai-core');
+      if (record?.enabled !== null || !report.codes.includes('enabled-state-unverified')) {
+        fail(`self-test: "${home}" did not blank the config-declared enabled state it could not verify`,
+          [`enabled: ${JSON.stringify(record?.enabled)}`, `codes: ${report.codes.join(', ') || '(none)'}`]);
+      } else {
+        console.log(`✓ self-test: unverifiable settings (${home}) blank the config enabled state instead of trusting it`);
+      }
+    }
+
     if (snapshotTree(tmpRoot).join('\n') !== before) {
       fail('self-test: the migration check modified the host/workspace fixtures — it must be read-only');
     } else {
@@ -974,7 +1041,15 @@ if (isEntry) {
     const rootArg = value('--root');
     const cwdIsWorkspace = existsSync(join(process.cwd(), '.kai', 'manifest.json'));
     const root = rootArg ? resolve(rootArg) : (cwdIsWorkspace ? process.cwd() : null);
-    process.exit(reportMigration({ home, root, json: argv.includes('--json') }));
+    process.exit(reportMigration({
+      home,
+      root,
+      json: argv.includes('--json'),
+      rollback: argv.includes('--rollback'),
+    }));
+  } else if (argv.includes('--rollback')) {
+    console.error('--rollback requires --migration-check');
+    process.exit(1);
   } else {
     const root = value('--root') ? resolve(value('--root')) : process.cwd();
     process.exit(report(root, checkWorkspace(root)));

@@ -8,7 +8,9 @@
     "and an empty directory are both things a git checkout cannot reproduce faithfully.",
     "A file value that is an object is written as JSON; an array of lines is written",
     "verbatim, which is how the deliberately malformed files stay malformed; a key",
-    "ending in '/' creates an empty directory."
+    "ending in '/' creates an empty directory. Homes whose settings.json cannot be",
+    "trusted ('malformed-settings', 'nonboolean-enabled-state') exist to prove the",
+    "doctor blanks a config-declared enabled state rather than assuming it."
   ],
 
   "homes": {
@@ -236,6 +238,46 @@
       "installed-plugins/": null
     },
 
+    "malformed-settings": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "settings.json": [
+        "// truncated by an interrupted write",
+        "{",
+        "  \"enabledPlugins\": {"
+      ],
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
+    "nonboolean-enabled-state": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "settings.json": {
+        "enabledPlugins": {
+          "kai-core@kai-plugins": "true"
+        }
+      },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
     "path-normalization": {
       "config.json": {
         "installedPlugins": [
@@ -357,6 +399,47 @@
         ]
       },
       "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
+    "duplicate-legacy": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai",
+            "marketplace": "",
+            "version": "0.55.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai" }
+          }
+        ]
+      },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      },
+      "installed-plugins/_direct/Fork--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      }
+    },
+
+    "inferred-legacy-provenance": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai",
+            "version": "0.55.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai" }
+          }
+        ]
+      },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      }
     }
   },
 
