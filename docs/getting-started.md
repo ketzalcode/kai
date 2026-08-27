@@ -76,10 +76,12 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-kai contains 56 agents and 51 skills, and you do not need to learn them. You need
-three things: **ask a front door for outcomes**, **let the work item be the
-source of truth**, and **remember that only you ship**. Everything else is
-reference material — read it when you hit the thing it describes.
+The repository contains 56 agents and 51 skills; the first published
+core-plus-personal slice installs 16 agents and 31 skills. You do not need to
+learn them. You need three things: **ask a front door for outcomes**, **let the
+work item be the source of truth**, and **remember that only you ship**.
+Everything else is reference material — read it when you hit the thing it
+describes.
 
 ## Install
 
@@ -118,6 +120,11 @@ that is what lets `kai-core-fleet-observation` find the watcher.
 Do not install packs beside legacy `kai`: both provide the operating contract,
 and which copy loads first is host-dependent.
 
+The `1.0.0` migration installs core and personal only. Engineering, product,
+and go-to-market roles remain in the repository but are not published until
+the next `1.0.x` release. Migrating now temporarily removes those roles from
+this host.
+
 1. Update the marketplace catalog.
 2. In a session still loaded from legacy `kai`, ask:
 
@@ -147,9 +154,11 @@ a numbered step for you to run. Use it when `plugin list` and what you remember
 installing disagree, or after an install or uninstall was interrupted.
 
 Automation can use `npm run doctor:migration -- --json`. The JSON carries the
-verdict and finding codes; exit codes are `0` for `clear`, `2` for `blocked`,
-and `3` for `unknown`. A missing config list or install directory is `unknown`,
-never evidence that nothing is installed.
+verdict, finding codes, and a sanitized plugin inventory with version, enabled
+state, reconciled presence, and provenance; it does not expose install-cache
+paths in that inventory. Exit codes are `0` for `clear`, `2` for `blocked`, and
+`3` for `unknown`. A missing config list, install directory, or disagreeing
+enabled-state surfaces is `unknown`, never evidence that an install is usable.
 
 It also answers the question `plugin list` does not: whether a plugin came from
 the marketplace or a direct install, and whether the workspace in front of you

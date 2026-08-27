@@ -32,12 +32,16 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
-**Copilot coding agent** (cloud).
+`v1.0.0` — the repository contains **56 agents and 51 skills** for the
+**Copilot CLI** and the **Copilot coding agent** (cloud). The first published
+pack slice installs **16 agents and 31 skills**.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus `kai-personal`; the remaining
-> department packs follow in the next `1.0.x` release. If legacy `kai` is
+> department packs follow in the next `1.0.x` release. Until then, migrating
+> removes the engineering, product, and go-to-market roles from the installed
+> host; their source remains in this repository but they are not published.
+> If legacy `kai` is
 > installed, use its `workflow-workspace-init` guided migration before removing
 > it. The guide verifies replacement availability, requires the monolith to be
 > gone, installs core first, and checks every step.

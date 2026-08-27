@@ -33,6 +33,7 @@ import {
 } from './lib/loader-contract.mjs';
 import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
+  marketplaceSurfacePolicy,
   materializePacks, preflightBlock as canonicalPreflightBlock,
   degradedBlock as canonicalDegradedBlock, degradedBlockErrors, coreContractLines,
   PREFLIGHT_BLOCK_REL, DEGRADED_BLOCK_REL, CONTRACT_SKILL, REFUSAL,
@@ -780,8 +781,13 @@ if (!existsSync(mktPath)) {
       const source = m.isRoot ? '.' : m.rel.replace(/\/plugin\.json$/, '');
       manifestsBySource[source] = { name: m.name };
     }
-    const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
-    const isPackSurface = Number.isInteger(majorVersion) && majorVersion >= 1;
+    const surface = marketplaceSurfacePolicy({
+      mkt,
+      canonicalVersion,
+      monolithName: MONOLITH_NAME,
+      initialPackNames: ['kai-core', 'kai-personal'],
+    });
+    for (const msg of surface.errors) err(MARKETPLACE_REL, msg);
     for (const msg of marketplaceConsistencyErrors({
       mkt,
       marketName: MARKETPLACE_NAME,
@@ -789,8 +795,8 @@ if (!existsSync(mktPath)) {
       canonicalVersion,
       manifestsByName,
       manifestsBySource,
-      requiredPluginNames: isPackSurface ? ['kai-core', 'kai-personal'] : [MONOLITH_NAME],
-      forbiddenPluginNames: isPackSurface ? [MONOLITH_NAME] : [],
+      requiredPluginNames: surface.requiredPluginNames,
+      forbiddenPluginNames: surface.forbiddenPluginNames,
     })) {
       err(MARKETPLACE_REL, msg);
     }
@@ -798,7 +804,7 @@ if (!existsSync(mktPath)) {
     // does not resolve to a plugin.json passes the host's schema but fails at
     // install time, on the user's machine.
     for (const entry of Array.isArray(mkt.plugins) ? mkt.plugins : []) {
-      if (typeof entry?.source === 'string') {
+      if (typeof entry?.source === 'string' && entry.source.trim()) {
         const relSrc = entry.source.replace(/^\.\/?/, '');
         const target = resolve(ROOT, relSrc);
         const targetFromRoot = relative(ROOT, target);
@@ -820,6 +826,8 @@ if (!existsSync(mktPath)) {
         } catch (e) {
           err(MARKETPLACE_REL, `entry "${entry.name}" source "${entry.source}" has invalid plugin.json: ${e.message}`);
         }
+      } else if (entry?.name) {
+        err(MARKETPLACE_REL, `entry "${entry.name}" source must be a non-empty repository-relative string`);
       }
     }
   }
@@ -888,8 +896,8 @@ if (onboarding) {
     'End the current run; a session still carrying the removed monolith must not continue the migration',
     'at the exact version reported by the browse step',
     'use its `plugins` inventory for enabled state and provenance',
-    `open \`/plugins\` in an interactive Copilot session, enable \`${guidedCorePlugin}@${MARKETPLACE}\``,
-    `open \`/plugins\`, enable \`<name>@${MARKETPLACE}\``,
+    `open \`/plugin\` in an interactive Copilot session, enable \`${guidedCorePlugin}@${MARKETPLACE}\``,
+    `open \`/plugin\`, enable \`<name>@${MARKETPLACE}\``,
     'Do not name the unavailable',
     '`copilot plugins enable` command',
     `${guidedCorePlugin}\` and every requested department are listed at one common version`,

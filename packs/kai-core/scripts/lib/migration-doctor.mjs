@@ -16,6 +16,12 @@
 //     The file carries `//` comments, so it is JSONC and plain JSON.parse fails
 //     on every real host.
 //
+//   $COPILOT_HOME/settings.json
+//     { "enabledPlugins": { "kai-core@kai-plugins": true } }
+//     This is the user-owned state changed by the interactive `/plugin`
+//     dashboard. When both files exist they must agree; disagreement is
+//     unverified rather than guessed through.
+//
 //   $COPILOT_HOME/installed-plugins/_direct/<owner>--<repo>/    a direct install
 //
 // Only the `_direct/` bucket has been observed. Any other directory under
@@ -48,6 +54,7 @@ export const MARKETPLACE = 'kai-plugins';
 export const WORKSPACE_PROVENANCE = new Set([LEGACY_PLUGIN, CORE_PLUGIN]);
 
 const CONFIG_FILE = 'config.json';
+const SETTINGS_FILE = 'settings.json';
 const INSTALLED_DIR = 'installed-plugins';
 const DIRECT_BUCKET = '_direct';
 const PLUGIN_MANIFEST = 'plugin.json';
@@ -237,10 +244,76 @@ export function readHostConfig(home) {
       version: typeof value.version === 'string' ? value.version : null,
       cachePath: typeof value.cache_path === 'string' ? value.cache_path : null,
       cacheTail: installTreeTail(value.cache_path),
-      enabled: value.enabled !== false,
+      enabled: typeof value.enabled === 'boolean' ? value.enabled : null,
     };
   });
   return { path, present: true, ok: true, listed: true, entries };
+}
+
+export function readHostSettings(home) {
+  const path = join(home, SETTINGS_FILE);
+  if (!existsSync(path)) return { path, present: false, ok: false, listed: false, values: new Map() };
+
+  let text;
+  try { text = readFileSync(path, 'utf8'); }
+  catch (error) {
+    return {
+      path, present: true, ok: false, listed: false,
+      error: `could not be read (${error?.code ?? 'unreadable'})`,
+      values: new Map(),
+    };
+  }
+
+  const parsed = parseJsonc(text);
+  if (!parsed.ok) {
+    return { path, present: true, ok: false, listed: false, error: parsed.error, values: new Map() };
+  }
+  const raw = parsed.value?.enabledPlugins;
+  if (raw === undefined) return { path, present: true, ok: true, listed: false, values: new Map() };
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return {
+      path, present: true, ok: false, listed: false,
+      error: '"enabledPlugins" is not an object',
+      values: new Map(),
+    };
+  }
+
+  const values = new Map();
+  const malformed = [];
+  for (const [id, enabled] of Object.entries(raw)) {
+    if (typeof enabled === 'boolean') values.set(id, enabled);
+    else malformed.push(id);
+  }
+  if (malformed.length) {
+    return {
+      path, present: true, ok: false, listed: true,
+      error: `non-boolean enabled state for ${malformed.map((id) => `"${id}"`).join(', ')}`,
+      values,
+    };
+  }
+  return { path, present: true, ok: true, listed: true, values };
+}
+
+function reconcileEnabledState(config, settings) {
+  if (!settings.present) return config;
+  return {
+    ...config,
+    entries: config.entries.map((entry) => {
+      if (!entry.name) return entry;
+      const marketplace = entry.provenance.startsWith('marketplace:')
+        ? entry.provenance.slice('marketplace:'.length)
+        : null;
+      const id = marketplace ? `${entry.name}@${marketplace}` : entry.name;
+      const settingEnabled = settings.values.get(id);
+      const enabled = settings.ok && settings.listed
+        && typeof settingEnabled === 'boolean'
+        && typeof entry.enabled === 'boolean'
+        && settingEnabled === entry.enabled
+        ? settingEnabled
+        : null;
+      return { ...entry, enabled, configEnabled: entry.enabled, settingEnabled: settingEnabled ?? null };
+    }),
+  };
 }
 
 // A directory basename identifies a plugin only by convention (`<owner>--<repo>`),
@@ -412,10 +485,11 @@ export function reconcileInstalls(config, scan) {
 
 export function inspectHost(home) {
   if (!existsSync(home)) return { home, exists: false };
-  const config = readHostConfig(home);
+  const settings = readHostSettings(home);
+  const config = reconcileEnabledState(readHostConfig(home), settings);
   const scan = scanInstallTrees(home);
   const { records, unidentified } = reconcileInstalls(config, scan);
-  return { home, exists: true, config, scan, records, unidentified };
+  return { home, exists: true, config, settings, scan, records, unidentified };
 }
 
 // --- workspace provenance --------------------------------------------------
@@ -476,7 +550,7 @@ function publishedPluginNames(indexPath) {
 
 function assessHost(host, out) {
   const { add, step } = out;
-  const { config, scan, records, unidentified, home } = host;
+  const { config, settings, scan, records, unidentified, home } = host;
   const configClassified = config.entries.every((entry) => !entry.malformed);
 
   if (!config.present) {
@@ -488,6 +562,14 @@ function assessHost(host, out) {
   } else if (!config.listed) {
     add('unverified', 'unreadable-metadata',
       `${config.path} has no "installedPlugins" list — this host's install metadata shape is not recognized.`);
+  }
+  if (settings.present && !settings.ok) {
+    add('unverified', 'enabled-state-unverified',
+      `${settings.path} could not be read as enabled-plugin metadata (${settings.error}); `
+      + 'installed plugins are not assumed enabled.');
+  } else if (settings.present && !settings.listed) {
+    add('unverified', 'enabled-state-unverified',
+      `${settings.path} has no "enabledPlugins" map; installed plugins are not assumed enabled.`);
   }
 
   if (!scan.present) {
@@ -575,7 +657,11 @@ function assessHost(host, out) {
           + 'the tree is not labelled stale and no removal is recommended from incomplete evidence.');
       }
     }
-    if (target.entries.some((e) => !e.enabled)) {
+    if (target.entries.some((e) => e.enabled === null)) {
+      add('unverified', 'enabled-state-unverified',
+        `"${target.name}" has no matching enabled-state evidence in both host metadata surfaces `
+        + '— config.json and settings.json must agree before this install is treated as enabled.');
+    } else if (target.entries.some((e) => e.enabled === false)) {
       add('note', 'disabled-install',
         `"${target.name}" is installed but disabled — disabled is not uninstalled; it still occupies the name and can be re-enabled.`);
     }

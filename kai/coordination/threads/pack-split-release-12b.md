@@ -146,3 +146,63 @@ Append-only communication log mirroring
              the safe inventory fields without cache paths.
 - questions: none
 - next:      principal-swe-infra — rerun the staging host proof.
+
+## NOTE 2026-08-27-1410 — principal-swe-infra
+
+- did:       Repeated the isolated staging-marketplace proof from pushed ref
+             `20d82bb723a871879cc0aa839d8ed1c3fe96878a`. Browse exposed only
+             core + personal; both installed at `1.0.0`; both update commands
+             were idempotent. The installed core doctor reported both records
+             present, enabled, exact-versioned, and sourced only from
+             `marketplace:kai-plugins`.
+- state:     in-progress
+- needs:     Exact-ref independent reliability and security review.
+- artifacts: sanitized host evidence:
+             session files/release-12b-host-probe-corrected/
+- evidence:  `91-fresh-workspace-inventory.json` exited 0 with `status: clear`
+             and no cache paths inside the `plugins` inventory.
+- questions: none
+- next:      principal-sre + principal-security — review ref `20d82bb...`.
+
+## NOTE 2026-08-27-1420 — principal-swe-infra
+
+- did:       Security approved ref `20d82bb...` with no P0/P1 findings.
+             Reliability blocked it on two valid release risks: the doctor
+             trusted only `config.json` even though `/plugin` owns
+             `settings.json`, and the default-branch marketplace flip had no
+             reviewed rollback or post-merge verification path.
+- state:     in-progress
+- needs:     Remediate both P1 findings and repeat exact-ref reviews.
+- artifacts: independent review responses retained in the session transcript.
+- evidence:  The live isolated home contains the same enabled map in
+             `config.json` and `settings.json`; the prior parser read only the
+             first. The prior post-1.0 validator also forbade a monolith restore.
+- questions: none
+- next:      principal-swe-infra — make enabled-state reconciliation and
+             emergency rollback testable and fail closed.
+
+## NOTE 2026-08-27-1430 — principal-swe-infra
+
+- did:       Remediated the reliability block. The doctor now reconciles
+             `config.json` with user-owned `settings.json`, reports unknown on
+             absence/disagreement, and exposes disabled as false. The guided
+             installer requires exact marketplace provenance and uses the
+             documented interactive `/plugin` dashboard. Marketplace metadata
+             now declares `installSurface: packs`; an operator-authorized
+             forward patch may switch to `legacy-rollback`, which requires only
+             the monolith and forbids core/personal. The contributor runbook
+             now defines the exact rollback and post-merge production probe.
+             User docs disclose that 1.0.0 installs 16 of the repository's 56
+             agents until the remaining packs publish.
+- state:     in-progress
+- needs:     Commit the remediation and obtain fresh exact-ref SRE + security
+             decisions.
+- artifacts: scripts/lib/migration-doctor.mjs;
+             scripts/workspace-doctor.mjs; test/fixtures/host-installs.json;
+             .github/plugin/marketplace.json;
+             docs/reference/plugin-structure.md
+- evidence:  Full `npm test` and exact release guard pass; 170 generator
+             self-tests include pack mode, rollback mode, missing-mode,
+             non-string source, disabled-state, and disagreement arms.
+- questions: none
+- next:      principal-swe-infra — push the remediation ref for re-review.

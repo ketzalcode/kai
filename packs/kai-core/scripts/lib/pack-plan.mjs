@@ -729,7 +729,9 @@ export function marketplaceConsistencyErrors({
 
   for (const e of entries) {
     if (!e?.name) continue;
-    if (!e.source) errs.push(`entry "${e.name}" is missing "source" (required by the host)`);
+    if (typeof e.source !== 'string' || !e.source.trim()) {
+      errs.push(`entry "${e.name}" has a non-string or missing "source" (required by the host)`);
+    }
     const sourceKey = typeof e.source === 'string'
       ? e.source.replace(/\\/g, '/').replace(/^\.\/?/, '').replace(/\/+$/, '') || '.'
       : null;
@@ -757,6 +759,36 @@ export function marketplaceConsistencyErrors({
     errs.push(`metadata.version "${mkt.metadata.version}" must equal the canonical plugin version "${canonicalVersion}"`);
   }
   return errs;
+}
+
+export function marketplaceSurfacePolicy({
+  mkt, canonicalVersion, monolithName, initialPackNames,
+}) {
+  const errors = [];
+  const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
+  const postOne = Number.isInteger(majorVersion) && majorVersion >= 1;
+  const installSurface = mkt.metadata?.installSurface;
+
+  if (!postOne) {
+    if (installSurface) {
+      errors.push('metadata.installSurface is reserved for the 1.0.0-or-later pack publication surface');
+    }
+    return {
+      errors,
+      requiredPluginNames: [monolithName],
+      forbiddenPluginNames: [],
+    };
+  }
+
+  if (!['packs', 'legacy-rollback'].includes(installSurface)) {
+    errors.push('metadata.installSurface must be "packs" or "legacy-rollback" at version 1.0.0 or later');
+  }
+  const legacyRollback = installSurface === 'legacy-rollback';
+  return {
+    errors,
+    requiredPluginNames: legacyRollback ? [monolithName] : initialPackNames,
+    forbiddenPluginNames: legacyRollback ? initialPackNames : [monolithName],
+  };
 }
 
 // ---------------------------------------------------------------------------

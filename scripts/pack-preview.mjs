@@ -34,6 +34,7 @@ import {
   planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
   degradedBlock, guaranteeBlocks, injectBlocks, degradedBlockErrors, coreContractLines,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
+  marketplaceSurfacePolicy,
   collectReferences, referenceErrors, packProviders,
   planAssets, planAssetClosure, assetOwnershipErrors, hooksAssignmentErrors,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
@@ -596,7 +597,12 @@ function selfTest() {
   ok(manifestParityErrors([{ rel: 'plugin.json', version: '1.2.3' }], '1.2.3').length === 0,
     'a lone monolith manifest at the canonical version raises no parity error (backwards compatible)');
 
-  const mkt = (plugins) => ({ name: 'kai-plugins', owner: { name: 'x' }, plugins, metadata: { version: '1.2.3' } });
+  const mkt = (plugins, installSurface) => ({
+    name: 'kai-plugins',
+    owner: { name: 'x' },
+    plugins,
+    metadata: { version: '1.2.3', ...(installSurface ? { installSurface } : {}) },
+  });
   const kaiEntry = { name: 'kai', source: '.', version: '1.2.3', description: 'd' };
   const coreEntry = { name: 'kai-core', source: './packs/kai-core', version: '1.2.3', description: 'core' };
   const known = { kai: { version: '1.2.3', description: 'd' }, 'kai-core': { version: '1.2.3', description: 'core' } };
@@ -625,10 +631,45 @@ function selfTest() {
     forbiddenPluginNames: ['kai'],
   })).length === 0,
   'the pack install surface validates without the retired monolith');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry], 'legacy-rollback'), {
+    requiredPluginNames: ['kai'],
+    forbiddenPluginNames: ['kai-core', 'kai-personal'],
+  })).length === 0,
+  'the explicit emergency rollback surface validates with only the monolith');
   ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, name: 'kai' }]), {
     requiredPluginNames: ['kai'],
   })).some((e) => /source .* contains plugin "kai-core"/.test(e)),
   'a marketplace entry whose name disagrees with its source manifest is caught');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, source: { path: './packs/kai-core' } }])))
+    .some((e) => /non-string or missing "source"/.test(e)),
+  'a marketplace entry with a non-string source is rejected');
+  const packSurface = marketplaceSurfacePolicy({
+    mkt: mkt([coreEntry], 'packs'),
+    canonicalVersion: '1.2.3',
+    monolithName: 'kai',
+    initialPackNames: ['kai-core', 'kai-personal'],
+  });
+  ok(packSurface.errors.length === 0
+    && packSurface.requiredPluginNames.join(',') === 'kai-core,kai-personal'
+    && packSurface.forbiddenPluginNames.join(',') === 'kai',
+  'the 1.x pack mode requires the initial packs and forbids the monolith');
+  const rollbackSurface = marketplaceSurfacePolicy({
+    mkt: mkt([kaiEntry], 'legacy-rollback'),
+    canonicalVersion: '1.0.1',
+    monolithName: 'kai',
+    initialPackNames: ['kai-core', 'kai-personal'],
+  });
+  ok(rollbackSurface.errors.length === 0
+    && rollbackSurface.requiredPluginNames.join(',') === 'kai'
+    && rollbackSurface.forbiddenPluginNames.join(',') === 'kai-core,kai-personal',
+  'the 1.x emergency rollback mode requires the monolith and forbids initial packs');
+  ok(marketplaceSurfacePolicy({
+    mkt: mkt([coreEntry]),
+    canonicalVersion: '1.2.3',
+    monolithName: 'kai',
+    initialPackNames: ['kai-core', 'kai-personal'],
+  }).errors.some((e) => /must be "packs" or "legacy-rollback"/.test(e)),
+  'a 1.x marketplace cannot omit its explicit install-surface mode');
 
   // --- cross-pack references: the live corpus ---------------------------
   // Every arm below runs against synthetic inputs, so the failure it proves is

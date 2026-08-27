@@ -33,6 +33,8 @@ touches:
   - scripts/lib/pack-plan.mjs
   - scripts/pack-preview.mjs
   - skills/kai-core-workspace-onboarding/SKILL.md
+  - test/fixtures/host-installs.json
+  - AGENTS.md
   - kai/coordination/
   - kai/initiatives/pack-split/
 depends_on:
@@ -53,14 +55,14 @@ review_requirements:
     kind: independent-security
 completed_reviews: []
 change_ref: null
-version: 6
+version: 7
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1400
+updated: 2026-08-27-1430
 ---
 
 ## Outcome
@@ -102,15 +104,25 @@ irreversible act that escapes release enforcement.*
   `pack-split-onboarding-installer` `shipped` v18. The item is an explicit
   typed requirement of current scope `five-pack-split-shipped`, and its
   acceptance remains unchanged.
-- Full `npm test` passes at `1.0.0`, including 165 pack self-tests, generated
+- Full `npm test` passes at `1.0.0`, including 170 pack self-tests, generated
   parity, migration-doctor fixtures, source/name marketplace validation, and
   the marketplace-sensitive release-guard arm.
 - The completed host-gate record remains GO. The first staging-marketplace
   probe proved browse, core/personal install, exact `1.0.0` rows, and idempotent
   updates. It also found that CLI 1.0.79 advertises `copilot plugins enable`
   but returns `The plugins command is not available`; the installer was
-  corrected to use migration JSON for enabled-state evidence and `/plugins`
+  corrected to use migration JSON for enabled-state evidence and `/plugin`
   for interactive recovery before review.
+- The corrected staging probe installed and idempotently updated core + personal
+  from the branch marketplace at exact `1.0.0`. The installed core doctor
+  reported both plugins `installed`, `enabled: true`, and only
+  `marketplace:kai-plugins` provenance.
+- The first independent reliability review blocked ref `20d82bb` on
+  config/settings enabled-state disagreement and the absence of a gate-legal
+  rollback/post-merge probe. Both are remediated: enabled state now fails closed
+  unless the two real host surfaces agree, fixtures cover disabled and
+  disagreement cases, and an explicit `legacy-rollback` forward-patch mode plus
+  exact post-merge verification runbook is CI-enforced.
 
 ## Notes
 

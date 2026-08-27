@@ -158,11 +158,9 @@ Two consequences, both deliberate:
   about the install contract, not a maturity badge. Groundwork for the split —
   harnesses, validators, metadata work — stays on `0.x` no matter how
   substantial, because a consumer's install command has not changed.
-- **Do not cut it while the split's failure modes are unmeasured.** `1.0.0`
-  reads as a stability promise, so it waits on the Phase 3 gates: roster
-  enumeration under the full agent set, skill collision under real install
-  order and fresh sessions, and macOS plus the cloud host. Ship the split when
-  those are closed, and ship it *as* `1.0.0`.
+- **The measured gates must be green before the marketplace flips.** `1.0.0`
+  reads as a stability promise, so the Phase 3 host, partition, dependency, and
+  migration gates are release prerequisites rather than follow-up work.
 
 Until then the pre-1.0 column above applies unchanged: breaking changes ride in
 a **minor**.
@@ -173,13 +171,37 @@ Also in `AGENTS.md` → **Releasing this plugin**:
 
 1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in
    `plugin.json` **and in `.github/plugin/marketplace.json`** (both
-   `metadata.version` and the `plugins[]` entry — CI rejects a stale index,
+   `metadata.version` and every published `plugins[]` entry — CI rejects a stale index,
    because it installs fine while reporting the wrong version).
 2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its
    `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all
    three for the current version.)
 3. `npm test`, open the PR, merge on green.
-4. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
+4. On the exact merge commit, register `RubenSaucedo/kai` in an isolated
+   `COPILOT_HOME`, browse `kai-plugins`, install every newly published pack,
+   run idempotent updates, and run the installed core migration doctor with
+   `--json`. Do not tag while names, versions, enabled state, provenance, or
+   install trees disagree.
+5. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
+
+### Emergency rollback of the pack marketplace
+
+The marketplace serves the default branch, so a broken pack flip must be
+restorable through an ordinary reviewed PR rather than an undocumented direct
+push.
+
+1. Get operator authorization and branch from the current `main`.
+2. Make a forward patch release (for example `1.0.1`), set
+   `metadata.installSurface` in `.github/plugin/marketplace.json` to
+   `legacy-rollback`, replace the pack entries with the root `kai` entry at the
+   same patch version, and add the required changelog and README notice.
+3. Run `npm test` and the exact release guard, then merge through normal branch
+   protection. The validator accepts `legacy-rollback` only at `1.0.0` or later
+   and requires the monolith while forbidding the two pack entries.
+4. From an isolated home, update the marketplace, browse it, install
+   `kai@kai-plugins`, and verify a fresh session before tagging the patch.
+5. Publish a forward pack restoration in a later patch by returning
+   `metadata.installSurface` to `packs`; never leave both surfaces listed.
 
 ---
 

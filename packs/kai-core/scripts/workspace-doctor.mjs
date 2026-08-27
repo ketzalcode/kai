@@ -337,13 +337,19 @@ const jsonText = (value) => JSON.stringify(value, null, 2)
 function migrationInventory(report) {
   if (!report.host?.records) return [];
   return [...report.host.records.values()]
-    .map((record) => ({
-      name: record.name,
-      presence: record.presence,
-      versions: [...new Set(record.entries.map((entry) => entry.version).filter(Boolean))].sort(),
-      enabled: record.entries.length ? record.entries.every((entry) => entry.enabled) : null,
-      provenances: [...record.provenances].sort(),
-    }))
+    .map((record) => {
+      const enabledStates = record.entries.map((entry) => entry.enabled);
+      const enabled = enabledStates.length && enabledStates.every((state) => state === true)
+        ? true
+        : (enabledStates.some((state) => state === false) ? false : null);
+      return {
+        name: record.name,
+        presence: record.presence,
+        versions: [...new Set(record.entries.map((entry) => entry.version).filter(Boolean))].sort(),
+        enabled,
+        provenances: [...record.provenances].sort(),
+      };
+    })
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
@@ -894,6 +900,28 @@ function migrationSelfTest() {
       fail('self-test: migration JSON inventory does not expose safe core version, enabled-state, and provenance evidence');
     } else {
       console.log('✓ self-test: migration JSON inventory exposes version, enabled state, and provenance without cache paths');
+    }
+
+    const disabledInventory = migrationInventory(migrationReport({
+      home: join(tmpRoot, 'homes', 'packs-disabled'),
+    }));
+    if (disabledInventory.find((plugin) => plugin.name === 'kai-core')?.enabled !== false) {
+      fail('self-test: an explicitly disabled core install is not exposed as disabled');
+    } else {
+      console.log('✓ self-test: migration JSON inventory exposes an explicitly disabled core install');
+    }
+
+    const disagreementReport = migrationReport({
+      home: join(tmpRoot, 'homes', 'packs-enabled-disagreement'),
+    });
+    const disagreementCore = migrationInventory(disagreementReport)
+      .find((plugin) => plugin.name === 'kai-core');
+    if (disagreementReport.status !== 'unknown'
+      || !disagreementReport.codes.includes('enabled-state-unverified')
+      || disagreementCore?.enabled !== null) {
+      fail('self-test: disagreeing config/settings enabled state did not fail closed as unknown');
+    } else {
+      console.log('✓ self-test: disagreeing enabled-state surfaces fail closed as unknown');
     }
 
     if (snapshotTree(tmpRoot).join('\n') !== before) {

@@ -120,12 +120,14 @@ request to "set up kai" is not confirmation for an unshown command set.
    migration check with `--json`.
    Continue only when one enabled `kai-core` row is present at the exact version
    reported by the browse step in the migration report's `plugins` inventory.
+   Its only provenance must be `marketplace:kai-plugins`; a direct install,
+   mixed provenance, or unknown enabled state is not verified.
    On skew, stop before every department install
    and name `copilot plugin update kai-core@kai-plugins` as the blocking action.
    If the host refuses that update because the current session has core loaded,
    end the run and perform the update from a session that does not have the pack
    loaded; then start a fresh session and re-run this installer.
-   If the row is disabled, stop and tell the operator to open `/plugins` in an
+   If the row is disabled, stop and tell the operator to open `/plugin` in an
    interactive Copilot session, enable `kai-core@kai-plugins`, start a fresh
    session, and re-run this installer. Do not name the unavailable
    `copilot plugins enable` command.
@@ -137,8 +139,9 @@ request to "set up kai" is not confirmation for an unshown command set.
    `copilot plugin list` and the migration check with `--json` after each
    command, then verify one enabled row at the same version as `kai-core` in the
    report's `plugins` inventory. For a disabled department, stop and tell the
-   operator to open `/plugins`, enable `<name>@kai-plugins`, start a fresh
+   operator to open `/plugin`, enable `<name>@kai-plugins`, start a fresh
    session, and re-run this installer.
+   Its only provenance must be `marketplace:kai-plugins`.
 5. Re-run the migration check. Completion requires `clear`, the exact selected
    pack set, no legacy `kai`, and no unverified host or workspace finding.
 

@@ -6,7 +6,8 @@
   },
   "metadata": {
     "description": "Kai core and department packs published by RubenSaucedo.",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "installSurface": "packs"
   },
   "plugins": [
     {
