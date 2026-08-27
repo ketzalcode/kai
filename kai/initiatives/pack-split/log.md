@@ -2822,3 +2822,22 @@ The steward verified all three typed dependencies and promoted exactly one next
 item: `pack-split-onboarding-installer` `proposed -> ready` at v3, priority 20,
 `owner: null`, `next_role: principal-swe-infra`. Releases 12a, 12b, and 12c
 remain proposed. Release 12b remains NO-GO.
+
+## 2026-08-27 - guided installer implementation in review
+
+`principal-swe-infra` implemented `pack-split-onboarding-installer` at
+`34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb` and moved the item to
+`in-review`.
+
+The canonical onboarding skill now carries the closed five-pack catalog,
+read-only migration gate, marketplace publication gate, one explicit command
+confirmation, core-first and canonical department order, verification after
+every step, exact partial-state reporting, no unverified rollback, and the
+fresh-session boundary. The workspace-init agent selects this mode without
+duplicating its contract. Static validation pins the load-bearing prose.
+
+Full `npm test` passed at lockstep `0.66.0` after regenerating the host-visible
+catalog and committed core/personal trees. Packs remain unpublished and the
+marketplace remains monolith-only. Independent architecture and
+technical-writing reviews are both pending at the exact implementation ref;
+release 12b remains NO-GO.

@@ -5,11 +5,11 @@ title: Honest guided onboarding installer — core first, verify each step, no u
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: in-progress
+state: in-review
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-swe-architect
 target: pack-split onboarding guided installer
 artifact_target: null
 context_artifacts:
@@ -45,15 +45,15 @@ review_requirements:
   - role: principal-technical-writer
     kind: doc-review
 completed_reviews: []
-change_ref: null
-version: 4
+change_ref: 34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb
+version: 5
 lease:
-  holder: principal-swe-infra
-  token: infra-1201-onboarding
-  version_at_grant: 3
-  acquired: 2026-08-27T12:01:44-07:00
-  expires: 2026-08-27T12:31:44-07:00
-updated: 2026-08-27-1201
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-27-1204
 ---
 
 ## Outcome

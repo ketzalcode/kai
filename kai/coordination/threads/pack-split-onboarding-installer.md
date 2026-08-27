@@ -101,3 +101,24 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-infra — commit the implementation and perform the
              revision-bound review handoff.
+
+## HANDOFF 2026-08-27-1204 — principal-swe-infra -> principal-swe-architect
+
+- did:       Committed the completed `0.66.0` guided installer as
+             `34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb`, moved
+             `in-progress -> in-review`, bound `change_ref`, and cleared the
+             implementation lease.
+- state:     in-review
+- needs:     Review install-order correctness, migration and publication
+             gates, current-session behavior, partial-state semantics, and
+             whether the static pin covers every load-bearing claim. The
+             technical-writing review runs independently against the same ref.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs;
+             docs/reference/agents-and-skills.md
+- evidence:  Full `npm test` passed; release is lockstep `0.66.0`; generated
+             packs match; marketplace remains monolith-only.
+- questions: none
+- next:      principal-swe-architect — return a revision-bound verdict at
+             `34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb`.
