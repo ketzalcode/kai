@@ -35,9 +35,10 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   CLI 1.0.79 probing showed that `copilot plugins enable` appears in help but
   returns “command is not available”; the installer no longer recommends that
   unusable command.
-- **Enabled state now reconciles both host metadata surfaces.** When
-  `config.json` and `settings.json` disagree or omit the state, migration
-  verification reports `unknown` instead of assuming the plugin is enabled.
+- **Enabled state now reconciles both host metadata surfaces.** An explicit
+  `settings.json` override must agree with managed `config.json`; malformed or
+  contradictory evidence reports `unknown`. No override falls back to the
+  managed config state used by existing direct monolith installs.
 
 ## [0.67.0] - 2026-08-27
 

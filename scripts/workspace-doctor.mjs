@@ -924,6 +924,25 @@ function migrationSelfTest() {
       console.log('✓ self-test: disagreeing enabled-state surfaces fail closed as unknown');
     }
 
+    const directNoOverride = migrationReport({
+      home: join(tmpRoot, 'homes', 'legacy-direct'),
+    });
+    const directCoreState = directNoOverride.host.records.get('kai')?.entries[0]?.enabled;
+    if (directCoreState !== true || directNoOverride.codes.includes('enabled-state-unverified')) {
+      fail('self-test: a direct install with no settings override did not retain its managed config state');
+    } else {
+      console.log('✓ self-test: an empty settings override map preserves direct-install enabled state');
+    }
+
+    const absentSettings = migrationReport({
+      home: join(tmpRoot, 'homes', 'path-normalization'),
+    });
+    if (absentSettings.codes.includes('enabled-state-unverified')) {
+      fail('self-test: an absent settings file incorrectly invalidated managed config enabled state');
+    } else {
+      console.log('✓ self-test: an absent settings file falls back to managed config enabled state');
+    }
+
     if (snapshotTree(tmpRoot).join('\n') !== before) {
       fail('self-test: the migration check modified the host/workspace fixtures — it must be read-only');
     } else {

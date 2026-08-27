@@ -157,8 +157,10 @@ Automation can use `npm run doctor:migration -- --json`. The JSON carries the
 verdict, finding codes, and a sanitized plugin inventory with version, enabled
 state, reconciled presence, and provenance; it does not expose install-cache
 paths in that inventory. Exit codes are `0` for `clear`, `2` for `blocked`, and
-`3` for `unknown`. A missing config list, install directory, or disagreeing
-enabled-state surfaces is `unknown`, never evidence that an install is usable.
+`3` for `unknown`. A missing config list, install directory, malformed settings
+file, or explicit enabled-state disagreement is `unknown`, never evidence that
+an install is usable. An absent settings override falls back to the
+CLI-managed `config.json` state.
 
 It also answers the question `plugin list` does not: whether a plugin came from
 the marketplace or a direct install, and whether the workspace in front of you

@@ -182,6 +182,9 @@ Also in `AGENTS.md` → **Releasing this plugin**:
    run idempotent updates, and run the installed core migration doctor with
    `--json`. Do not tag while names, versions, enabled state, provenance, or
    install trees disagree.
+   Also run the doctor against a real direct-monolith host whose
+   `settings.json` has no plugin override; it must report `legacy-installed`
+   without `enabled-state-unverified`.
 5. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
 
 ### Emergency rollback of the pack marketplace
@@ -200,6 +203,10 @@ push.
    and requires the monolith while forbidding the two pack entries.
 4. From an isolated home, update the marketplace, browse it, install
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
+   From an already-migrated home, uninstall department packs first and
+   `kai-core` last, confirm `copilot plugin list` shows neither surface, install
+   `kai@kai-plugins`, then start a fresh session. Never install the restored
+   monolith beside packs; the doctor correctly refuses that coexistence.
 5. Publish a forward pack restoration in a later patch by returning
    `metadata.installSurface` to `packs`; never leave both surfaces listed.
 

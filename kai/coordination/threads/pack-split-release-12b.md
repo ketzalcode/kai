@@ -206,3 +206,42 @@ Append-only communication log mirroring
              non-string source, disabled-state, and disagreement arms.
 - questions: none
 - next:      principal-swe-infra — push the remediation ref for re-review.
+
+## NOTE 2026-08-27-1450 — principal-swe-infra
+
+- did:       The reliability re-review of `062d8d2...` measured a direct
+             monolith host with `settings.json.enabledPlugins = {}` and blocked
+             the too-strict "both surfaces must contain the row" rule. Empty or
+             absent settings state means no user override; the CLI-managed
+             config remains authoritative. An explicit settings boolean must
+             agree, while malformed settings or disagreement stays unknown.
+             Added direct-monolith/no-override and absent-settings regression
+             arms. Extended rollback for users who already installed packs:
+             uninstall departments, uninstall core last, confirm absence,
+             install restored monolith, then start a fresh session.
+- state:     in-progress
+- needs:     Re-run tests, a real direct-monolith doctor probe, and exact-ref
+             reliability review.
+- artifacts: scripts/lib/migration-doctor.mjs;
+             test/fixtures/host-installs.json;
+             docs/reference/plugin-structure.md
+- evidence:  The measured current host is an enabled direct `kai` install with
+             an empty enabled override map; this case now has a fixture.
+- questions: none
+- next:      principal-swe-infra — prove the final semantics and push them.
+
+## NOTE 2026-08-27-1500 — principal-swe-infra
+
+- did:       Proved the revised semantics against both fixtures and the real
+             direct monolith host. The full suite and exact release guard pass.
+             The direct-host report is blocked only by `legacy-installed` while
+             its workspace provenance is current; no enabled-state ambiguity is
+             invented from the empty override map.
+- state:     in-progress
+- needs:     Commit and obtain exact-ref SRE + security approval.
+- artifacts: local-sensitive doctor JSON remains only in the session artifact
+             `release-12b-direct-monolith.json`.
+- evidence:  doctor exit 2; codes `legacy-installed`,
+             `workspace-provenance-current`; 170 pack self-tests pass.
+- questions: none
+- next:      principal-swe-infra — push final implementation ref.

@@ -55,14 +55,14 @@ review_requirements:
     kind: independent-security
 completed_reviews: []
 change_ref: null
-version: 7
+version: 9
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1430
+updated: 2026-08-27-1500
 ---
 
 ## Outcome
@@ -119,10 +119,16 @@ irreversible act that escapes release enforcement.*
   `marketplace:kai-plugins` provenance.
 - The first independent reliability review blocked ref `20d82bb` on
   config/settings enabled-state disagreement and the absence of a gate-legal
-  rollback/post-merge probe. Both are remediated: enabled state now fails closed
-  unless the two real host surfaces agree, fixtures cover disabled and
-  disagreement cases, and an explicit `legacy-rollback` forward-patch mode plus
-  exact post-merge verification runbook is CI-enforced.
+  rollback/post-merge probe. The follow-up reliability review then measured an
+  empty user override map on a real direct monolith host and correctly rejected
+  the first reconciliation rule as too strict. The final rule treats absence
+  from the map as no override, fails closed on explicit disagreement or
+  malformed settings, and has direct-install, disabled, disagreement, and
+  absent-file fixtures. An explicit `legacy-rollback` forward-patch mode plus
+  exact post-merge and already-migrated recovery runbooks is CI-enforced.
+- A read-only doctor run against the real current direct-monolith host exits 2
+  with exactly `legacy-installed` and `workspace-provenance-current`; it does
+  not emit `enabled-state-unverified` for the empty user override map.
 
 ## Notes
 

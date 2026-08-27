@@ -19,8 +19,8 @@
 //   $COPILOT_HOME/settings.json
 //     { "enabledPlugins": { "kai-core@kai-plugins": true } }
 //     This is the user-owned state changed by the interactive `/plugin`
-//     dashboard. When both files exist they must agree; disagreement is
-//     unverified rather than guessed through.
+//     dashboard. Absence from the map means no user override, so config remains
+//     authoritative; an explicit override must agree or the state is unknown.
 //
 //   $COPILOT_HOME/installed-plugins/_direct/<owner>--<repo>/    a direct install
 //
@@ -296,6 +296,15 @@ export function readHostSettings(home) {
 
 function reconcileEnabledState(config, settings) {
   if (!settings.present) return config;
+  if (!settings.ok) {
+    return {
+      ...config,
+      entries: config.entries.map((entry) => (
+        entry.name ? { ...entry, enabled: null, configEnabled: entry.enabled, settingEnabled: null } : entry
+      )),
+    };
+  }
+  if (!settings.listed) return config;
   return {
     ...config,
     entries: config.entries.map((entry) => {
@@ -305,10 +314,8 @@ function reconcileEnabledState(config, settings) {
         : null;
       const id = marketplace ? `${entry.name}@${marketplace}` : entry.name;
       const settingEnabled = settings.values.get(id);
-      const enabled = settings.ok && settings.listed
-        && typeof settingEnabled === 'boolean'
-        && typeof entry.enabled === 'boolean'
-        && settingEnabled === entry.enabled
+      if (typeof settingEnabled !== 'boolean') return entry;
+      const enabled = typeof entry.enabled === 'boolean' && settingEnabled === entry.enabled
         ? settingEnabled
         : null;
       return { ...entry, enabled, configEnabled: entry.enabled, settingEnabled: settingEnabled ?? null };
@@ -567,9 +574,6 @@ function assessHost(host, out) {
     add('unverified', 'enabled-state-unverified',
       `${settings.path} could not be read as enabled-plugin metadata (${settings.error}); `
       + 'installed plugins are not assumed enabled.');
-  } else if (settings.present && !settings.listed) {
-    add('unverified', 'enabled-state-unverified',
-      `${settings.path} has no "enabledPlugins" map; installed plugins are not assumed enabled.`);
   }
 
   if (!scan.present) {
@@ -659,8 +663,8 @@ function assessHost(host, out) {
     }
     if (target.entries.some((e) => e.enabled === null)) {
       add('unverified', 'enabled-state-unverified',
-        `"${target.name}" has no matching enabled-state evidence in both host metadata surfaces `
-        + '— config.json and settings.json must agree before this install is treated as enabled.');
+        `"${target.name}" has contradictory or unreadable enabled-state evidence `
+        + '— an explicit settings.json override must agree with config.json.');
     } else if (target.entries.some((e) => e.enabled === false)) {
       add('note', 'disabled-install',
         `"${target.name}" is installed but disabled — disabled is not uninstalled; it still occupies the name and can be re-enabled.`);
