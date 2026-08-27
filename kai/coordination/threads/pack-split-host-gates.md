@@ -288,3 +288,178 @@ Append-only communication log mirroring
 - questions: Q-pack-split-host-gates-04
 - next:      @operator — only the operator can authorize the external
              create/delete boundary. Release 12b remains NO-GO.
+
+## ANSWER Q-pack-split-host-gates-04 2026-08-26-1740 — @operator -> @principal-swe-infra
+
+- status: answered
+- answer: Authorized one private disposable consumer repository for the
+          default-branch cloud experiment, with Kai `main` unchanged, no pack
+          publication, and deletion after evidence preservation and review.
+- lane: operator authorization
+- provenance: operator — direct authorization in the active session
+
+## HANDOFF 2026-08-26-1740 — principal-swe-infra -> principal-swe-infra
+
+- did:       Created `RubenSaucedo/kai-pack-host-gate-consumer` and committed
+             the approved default-branch fixture at
+             `7d80b4b12942eb0acce972e1e83c36f88023fde6`. The first task
+             (`bc62f1d9…`, run `33026579996`, job `98369253049`) resolved and
+             loaded `spark`, `kai-core`, and `kai-personal` (`3/3`) and invoked
+             `kai-core-contract-v1`. The child task (`7e6cf168…`, run
+             `33026682808`, job `98369587097`) recorded
+             `task start -> nested kai-core-contract-v1 -> task success`.
+             A repeat (`47438e15…`, run `33027220466`, job `98371301103`)
+             persisted the exact `kai-personal:persona-self` target and
+             no-substitution requirement and produced the same event sequence.
+- state:     in-progress; Q-04 answered; no waiting question; lease clear;
+             `change_ref: null`
+- needs:     Commit the canonical evidence revision, bind its SHA as
+             `change_ref`, and route that exact revision to `principal-sre`.
+             SRE must explicitly judge the telemetry limitation: Actions logs
+             omit task arguments, session storage has no rows, and repository
+             `subagentStart` / `preToolUse` hooks did not fire.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/`
+- evidence:  Host-issued task/run/job/session identities above; sanitized local
+             summaries `10-consumer-provisioning.json`,
+             `20-consumer-child.json`, and
+             `30-selected-agent-telemetry.json`. No raw Copilot home,
+             credential file, session database, or auth header is retained in
+             tracked evidence.
+- questions: none
+- next:      principal-swe-infra — create the evidence commit, then
+             principal-sre — independent reliability review. Release 12b
+             remains NO-GO.
+
+## HANDOFF 2026-08-26-1745 — principal-swe-infra -> principal-sre
+
+- did:       Committed the canonical consumer-cloud evidence at exact
+             `change_ref`
+             `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`, subject
+             `docs(pack-split): record consumer cloud host proof`. Moved the
+             item `in-progress -> in-review` (v12 -> v13).
+- state:     in-review; owner `principal-swe-infra`; next
+             `principal-sre`; lease clear; no waiting question
+- needs:     Independently judge the macOS and cloud host behavior at the exact
+             change reference. Explicitly accept or reject whether the
+             host-persisted exact `kai-personal:persona-self` prompt plus
+             `task start -> nested kai-core-contract-v1 -> task success` is
+             sufficient given that exported cloud events omit task arguments
+             and repository hooks did not fire. Return a release 12b GO/NO-GO
+             recommendation and residual risks.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             kai/coordination/items/pack-split-host-gates.md
+- evidence:  `npm test` passed at the evidence revision's working tree;
+             `git diff --check` passed; credential-pattern scan of the
+             sanitized cloud run root returned no matches.
+- questions: none
+- next:      principal-sre — independent-reliability review at
+             `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`. Do not review an
+             uncommitted working tree or later coordination-only revision.
+
+## REVIEW 2026-08-26-1749 — principal-sre -> principal-swe-infra
+
+- change_ref: c4d0b376542116c0e13fbb50e4d1ae17eeea653e
+- verdict: changes required (NOT-READY)
+- findings: macOS evidence, marketplace/direct binding, empty dependency
+            inventories, and exact refusal arms hold. Cloud proves `3/3`
+            loading, fresh tasks, and a nested core invocation, but the reviewed
+            revision did not causally bind that child to
+            `kai-personal:persona-self`.
+- blocking: P1 — obtain a host-authored same-session selected-agent record;
+            P2 — bind cloud direct specs to the resolved Kai revision/provider
+            version; P2 — reconcile retained macOS positive files
+            (`KAI_CORE_READY` / `contract: 1`) with the packet's stale
+            `DIRECT_OK` / `MARKETPLACE_OK` assertions.
+- release: release 12b remains NO-GO.
+- residual: GitHub-marketplace fetch untested; direct-install deprecation;
+            cloud selected-agent telemetry unavailable at the reviewed
+            revision.
+
+## HANDOFF 2026-08-26-1752 — principal-swe-infra -> principal-swe-infra
+
+- did:       Resolved all three SRE findings without changing acceptance.
+             Cloud session storage now returns task tool call
+             `toolu_019eFjZzzD2FszpjX6GTTWXA` with
+             `agent_type: kai-personal:persona-self`; host-authored begin/end
+             markers bracket that child's nested
+             `kai-core-contract-v1` invocation. GitHub commit history at both
+             cloud plugin-resolution timestamps binds Kai `main` to
+             `fe562b9364256b159d7016d8bdc79d989bc7e3a3`, with both packs at
+             `0.64.0`. Corrected the macOS packet to assert the retained
+             `KAI_CORE_READY` / `contract: 1` output.
+- state:     in-progress (v14); `change_ref: null`; lease clear; no waiting
+             question
+- needs:     Commit the corrected evidence, bind the new SHA, and return the
+             exact revision to `principal-sre` for re-review.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/30-selected-agent-telemetry.json`;
+             `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/40-cloud-source-pin.json`
+- evidence:  cloud `tool_requests` and `events` rows for session
+             `410d2bc8-30e7-401a-ad12-13233c09a1f2`; GitHub commit-history
+             queries at `2026-08-27T00:21:57Z` and
+             `2026-08-27T00:33:29Z`; retained macOS files 16, 17, and 24.
+- questions: none
+- next:      principal-swe-infra — create the corrected evidence commit.
+
+## HANDOFF 2026-08-26-1758 — principal-swe-infra -> principal-sre
+
+- did:       Committed all SRE corrections at exact `change_ref`
+             `263452126179dd9f3a61183903a26a90c4d6b1c1`, subject
+             `docs(pack-split): bind cloud selected agent evidence`. Moved the
+             item `in-progress -> in-review` (v14 -> v15).
+- state:     in-review; owner `principal-swe-infra`; next
+             `principal-sre`; lease clear; no waiting question
+- needs:     Re-review the exact corrected revision. Confirm that
+             `tool_requests.agent_type`, host-authored subagent boundaries, and
+             the nested skill event close P1; that the timestamped GitHub
+             history and pack manifest blobs close the cloud source-pin P2; and
+             that the corrected positive macOS assertions close the packet P2.
+             Return ratified or changes required and the release 12b verdict.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             kai/coordination/items/pack-split-host-gates.md
+- evidence:  `npm test` passed; `git diff --check` passed; credential-pattern
+             scan of the sanitized cloud run root returned no matches.
+- questions: none
+- next:      principal-sre — independent re-review at
+             `263452126179dd9f3a61183903a26a90c4d6b1c1`.
+
+## REVIEW 2026-08-26-1803 — principal-sre -> principal-swe-infra
+
+- change_ref: 263452126179dd9f3a61183903a26a90c4d6b1c1
+- verdict: ratified (READY)
+- findings: P0/P1/P2 = 0/0/0. All acceptance lines pass. Tool request
+            `toolu_019eFjZzzD2FszpjX6GTTWXA` and the host-authored
+            `persona-self` subagent boundaries close exact selected-agent
+            identity. Timestamped GitHub history and manifest blobs close the
+            cloud source pin. Corrected macOS assertions match retained files.
+- release: host-gates GO. Release 12b remains NO-GO because dependency
+           manifests, onboarding, and release 12a remain unmet.
+- residual: GitHub-source marketplace fetch remains untested; Actions exports
+            omit raw task arguments; direct specs follow mutable `main`; the
+            disposable consumer repository requires cleanup.
+- blocking: none
+
+## HANDOFF 2026-08-26-1805 — principal-swe-infra -> director-chief-of-staff
+
+- did:       Recorded SRE ratification at exact `change_ref`
+             `263452126179dd9f3a61183903a26a90c4d6b1c1`, checked all acceptance
+             lines, and moved the knowledge item `in-review -> completed`
+             (v15 -> v16).
+- state:     completed; no next role; lease clear; no waiting question
+- needs:     Merge the documentation/evidence PR, remove the private disposable
+             consumer repository after preservation, reconcile
+             `first-pack-extracted`, and promote the next typed item through
+             stewardship. Do not start release 12b directly.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/coordination/items/pack-split-host-gates.md;
+             kai/coordination/threads/pack-split-host-gates.md
+- evidence:  ratified REVIEW immediately above; `npm test`; credential-safe
+             sanitized cloud summaries under the ignored canonical run root
+- questions: none
+- next:      director-chief-of-staff / principal-product-manager — milestone
+             reconciliation and next-item promotion.

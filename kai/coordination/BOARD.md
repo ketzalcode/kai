@@ -28,7 +28,7 @@ time and is never stored on a record.
 | pack-split-generated-pack-trees | Generate committed-unpublished core + personal trees | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | all 6 dependencies met ✅ 2026-08-26 | — | 2026-08-26-1443 |
 | pack-split-migration-doctor | Migration doctor — uninstall-first, coexistence-refused, provenance | pack-split | first-pack-extracted | 40 | shipped | principal-swe-infra | — | generator-gates (shipped ✅ 2026-08-25) — met | — | 2026-08-26-1250 |
 | pack-split-first-department | Prove kai-core + personal installs over the boundary | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | generated-pack-trees (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1550 |
-| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | blocked | principal-swe-infra | @operator | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | Q-pack-split-host-gates-04 | 2026-08-26-1702 |
+| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | completed | principal-swe-infra | — | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1805 |
 | pack-split-pack-dependency-manifests | Define generated-pack dependency manifests and install semantics | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | host-gates (completed — unmet) | — | 2026-08-26-1558 |
 | pack-split-onboarding-installer | Honest guided onboarding installer | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | generated-pack-trees (shipped), migration-doctor (shipped), pack-dependency-manifests (shipped — unmet) | — | 2026-08-26-1558 |
 | pack-split-release-12a | Release 12a — migration notice on 0.x | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | onboarding-installer (shipped), migration-doctor (shipped) | — | 2026-08-24-2011 |
@@ -82,3 +82,41 @@ default-branch-only behavior or direct-spec rejection. The item remains
 waits only on `Q-pack-split-host-gates-04`: operator authorization for one
 disposable default-branch consumer-repository fixture with a positive control.
 Release 12b remains NO-GO; packs remain unpublished.
+
+**Consumer cloud proof 2026-08-26-1740 (`principal-swe-infra`).**
+The operator authorized Q-04 and the private disposable consumer fixture loaded
+the marketplace control plus both direct Kai packs (`3/3`). Independent cloud
+tasks invoked the core contract in the parent and through a successful child
+task. The item resumed `blocked -> in-progress` at v12 with no waiting question.
+Selected-agent arguments are absent from exported host events and repository
+hooks did not fire; that limitation is recorded for SRE. The next step is a
+commit-bound evidence revision and independent reliability review. Release 12b
+remains NO-GO.
+
+**Review routing 2026-08-26-1745 (`principal-swe-infra`).**
+The canonical evidence is committed at
+`c4d0b376542116c0e13fbb50e4d1ae17eeea653e`. The item is `in-review` at v13
+and routes to `principal-sre` for the exact selected-agent telemetry judgment
+and release 12b recommendation. No waiting question remains; the fixture stays
+private only through review.
+
+**SRE correction pass 2026-08-26-1752.**
+SRE returned changes required at `c4d0b376…`: exact child identity, cloud
+source pin, and stale macOS positive assertions. Later-ingested cloud session
+records now name `kai-personal:persona-self` in the task arguments and bracket
+its nested core invocation. GitHub history binds the cloud source to Kai
+`fe562b936…` / pack `0.64.0`, and the macOS packet now matches the retained
+contract output. The item is back `in-progress` at v14 until the corrected
+evidence receives a new `change_ref` and SRE re-review.
+
+**SRE re-review routing 2026-08-26-1758.**
+Corrected evidence is commit-bound at
+`263452126179dd9f3a61183903a26a90c4d6b1c1`. The item is `in-review` at v15,
+routes to `principal-sre`, and retains release 12b NO-GO until ratification.
+
+**Host-gate completion 2026-08-26-1805.**
+SRE ratified exact `change_ref`
+`263452126179dd9f3a61183903a26a90c4d6b1c1` with P0/P1/P2 `0/0/0`. The
+knowledge item is `completed` at v16. Host-gates is GO; release 12b remains
+NO-GO for the downstream dependency-manifest, onboarding, and release-12a
+chain.

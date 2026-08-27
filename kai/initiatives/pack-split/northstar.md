@@ -255,3 +255,15 @@ indeterminate, not a pass. The sole blocking question is
 default-branch consumer fixture with a positive control. The milestone remains
 open at 3 of 4, downstream items remain proposed, packs remain unpublished, and
 release 12b remains **NO-GO**.
+
+**Superseding host-gate completion (2026-08-26-1805).**
+`pack-split-host-gates` is `completed` at v16. Authenticated macOS and genuine
+cloud consumer evidence pass; host session records causally bind selected
+`kai-personal:persona-self` to its nested core-contract invocation. Independent
+SRE review ratified exact `change_ref`
+`263452126179dd9f3a61183903a26a90c4d6b1c1` with P0/P1/P2 `0/0/0`.
+`first-pack-extracted` has reached 4 of 4 typed required items. The steward must
+now reconcile the milestone and decide the next scope transition; downstream
+items remain proposed until that pass. Host-gates is GO, packs remain
+unpublished, marketplace topology remains N=1 at source `.`, and release 12b
+remains NO-GO for its remaining prerequisites.

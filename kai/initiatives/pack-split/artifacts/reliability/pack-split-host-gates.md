@@ -1,16 +1,26 @@
 # Pack split host gates
 
-**Status:** BLOCKED — macOS PASS; cloud branch spike INDETERMINATE; consumer-repository authorization pending
+**Status:** COMPLETED — macOS PASS; cloud consumer PASS; SRE RATIFIED
 **Prepared:** 2026-08-26
 **macOS source pin:** `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`
-**Release 12b verdict:** **NO-GO**
+**Host-gate verdict:** **GO**
+**Release 12b verdict:** **NO-GO — downstream prerequisites remain**
 
 ## Decision
 
-Release 12b must not start. The macOS host arm passed, but the cloud branch
-spike did not provision any plugin and is indeterminate. A discriminating cloud
-experiment and the independent reliability review remain incomplete. The packs
+The host gate is complete and no longer blocks the pack split. The macOS host
+arm passed. The authorized disposable consumer repository proved that the
+cloud host resolves and loads the positive control, `kai-core`, and
+`kai-personal` from default-branch repository settings, invokes the core
+contract, and completes a `kai-personal:persona-self` child task that invokes
+that contract. Host session records now provide the exact task arguments and
+same-session begin/end markers naming the `persona-self` subagent. The packs
 remain committed and unpublished.
+
+Independent `principal-sre` review ratified exact change reference
+`263452126179dd9f3a61183903a26a90c4d6b1c1` with zero P0/P1/P2 findings. Release
+12b remains NO-GO only because pack dependency manifests, onboarding, and
+release 12a are still unmet; this host-gate record is an explicit GO.
 
 The evidence path uses the lowest persistent-install rung that exercises each
 required provenance. It does not require either pack to appear in the public
@@ -23,15 +33,12 @@ marketplace:
        |     direct both orders + directory marketplace
        |     provider events + checksums + refusal probes
        |
-       +-- branch-scoped cloud fixture
-             settings present; host made two bash calls
-             zero plugin/provider/dispatch events ----------- INDETERMINATE
-                                                              |
-                                                              v
   disposable consumer repository, DEFAULT branch
        +-- direct kai-core + kai-personal specs
        +-- default-marketplace positive control
-       +-- one read-only cloud task ------------------------- NEXT
+       +-- host resolves and loads all 3 -------------------- PASS
+       +-- core contract invocation ------------------------- PASS
+       +-- persona-self -> nested core contract -> success --- PASS
 ```
 
 This packet implements the architecture decision at
@@ -49,13 +56,13 @@ the required `principal-sre` independent reliability review.
 
 | Gate | macOS | cloud host | Status |
 | --- | --- | --- | --- |
-| Host identity and run-start `main` tip | PASS | identity PASS; provisioning indeterminate | BLOCKED |
-| Persistent core-first and personal-first install | PASS | not observed | BLOCKED |
-| Fresh-session activation | PASS | not observed | BLOCKED |
-| Cross-plugin core contract resolution | PASS | zero provider events | BLOCKED |
-| Marketplace and direct binding | PASS | direct declarative specs not exercised | BLOCKED |
+| Host identity and run-start `main` tip | PASS | PASS — host-issued task/run/session IDs and fixture SHA | PASS |
+| Persistent core-first and personal-first install | PASS | PASS — declarative direct specs resolve on each fresh task | PASS |
+| Fresh-session activation | PASS | PASS — repeated independent cloud tasks load all three plugins | PASS |
+| Cross-plugin core contract resolution | PASS | PASS — selected `persona-self` and nested `skill.invoked` events | PASS |
+| Marketplace and direct binding | PASS | PASS — `spark@copilot-plugins` plus both direct Kai specs resolve together | PASS |
 | Direct/marketplace collision refusal | PASS | not required separately | PASS |
-| Per-pack npm / `node_modules` behavior | PASS — inventories empty | not observed | PASS |
+| Per-pack npm / `node_modules` behavior | PASS — inventories empty | host does not export installed-tree inventories | PASS |
 | Exact no-core refusal | PASS | not required separately | PASS |
 | Exact `--contract 2` refusal | PASS | not required separately | PASS |
 
@@ -96,6 +103,11 @@ preserves installed-plugin and provider evidence.
 - No-core and contract-2 sessions each returned exactly
   `KAI-CORE-MISSING`. The skew provider event identifies
   `kai-core-preview`, contract `2`.
+- Retained positive-session files contain exactly
+  `KAI_CORE_READY` / `contract: 1`. The execution packet below now asserts
+  those contract lines. Its earlier `DIRECT_OK` / `MARKETPLACE_OK` prompts
+  conflicted with the contract skill's required output and did not describe the
+  accepted files.
 
 Sanitized evidence is under
 `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/macos/`.
@@ -125,39 +137,97 @@ Only the sanitized identity/result summary was retained at
 `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/99-summary.json`.
 The raw host log remains temporary session material and was not copied.
 
-## Next discriminating cloud experiment
+## Observed cloud consumer result — PASS
 
-Pending `Q-pack-split-host-gates-04`, create one disposable consumer repository
-outside `RubenSaucedo/kai`. Its **default branch** carries
-`.github/copilot/settings.json` with:
+The operator authorized `Q-pack-split-host-gates-04` and created private,
+disposable repository
+[`RubenSaucedo/kai-pack-host-gate-consumer`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer).
+Default-branch fixture commit
+`7d80b4b12942eb0acce972e1e83c36f88023fde6` declared:
 
 ```json
 {
   "enabledPlugins": {
     "RubenSaucedo/kai:packs/kai-core": true,
     "RubenSaucedo/kai:packs/kai-personal": true,
-    "<verified-default-marketplace-positive-control>": true
+    "spark@copilot-plugins": true
   }
 }
 ```
 
-Select the positive control from the host's current default-registered
-marketplace inventory and record its exact identity before the task. Run one
-read-only genuine cloud task and require host-side installed-plugin inventory,
-plugin-root evidence, and provider events; final model text is insufficient.
+The provisioning task
+[`bc62f1d9-eb90-45b7-90b0-44ade5c60da5`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/tasks/bc62f1d9-eb90-45b7-90b0-44ade5c60da5),
+run
+[`33026579996`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/actions/runs/33026579996),
+job `98369253049`, session
+`733d02f6-6eae-4610-950e-b04f6e56eae2`, resolved `spark`, `kai-core`, and
+`kai-personal`, reported `Successfully loaded 3/3 plugin(s)`, and emitted
+`skill.invoked: kai-core-contract-v1`.
 
-| Observed outcome | Disposition |
-| --- | --- |
-| All three plugins install | Cloud arm passes; route the evidence revision to `principal-sre`. |
-| Positive control installs; Kai direct specs do not | Direct subdirectory specs are unsupported in cloud settings; route to the steward/publication-dependent fallback. |
-| Nothing installs | Record an evidenced host provisioning/control-plane defect and route it accordingly. |
+The child task
+[`7e6cf168-469b-4224-9ba7-f2123207bdd3`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/tasks/7e6cf168-469b-4224-9ba7-f2123207bdd3),
+run
+[`33026682808`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/actions/runs/33026682808),
+job `98369587097`, session
+`6ff59e2a-578b-4ed1-9bf6-b5ed99af9515`, again loaded all three plugins. Host
+events then recorded `tool.execution_start: task`, nested
+`skill.invoked: kai-core-contract-v1`, and
+`tool.execution_complete: task success=true`.
 
-Creating and deleting the external repository is an operator authorization
-boundary. Infra has not created it. Temporary settings on Kai `main` are
-rejected because they would auto-install core/personal beside legacy `kai`,
-activate duplicate hooks/coexistence, persist host state, and contradict the
-committed-unpublished boundary. A temporary Kai `main` marketplace is worse and
-circular. Deferral remains a fallback only after this experiment.
+A final repeat made the requested target explicit in the host-persisted task
+record: task
+[`47438e15-4b6c-421f-97a2-f783434b7fdb`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/tasks/47438e15-4b6c-421f-97a2-f783434b7fdb),
+run
+[`33027220466`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/actions/runs/33027220466),
+job `98371301103`, session
+`410d2bc8-30e7-401a-ad12-13233c09a1f2`. The persisted prompt requires
+`agent_type kai-personal:persona-self`, forbids a built-in substitute, and
+requires the child's first action to invoke `kai-core-contract-v1`; the host
+recorded the task start, nested skill invocation, and successful task
+completion.
+
+Cloud session storage later ingested the authoritative same-session records for
+session `410d2bc8-30e7-401a-ad12-13233c09a1f2`:
+
+- `tool_requests` records tool call
+  `toolu_019eFjZzzD2FszpjX6GTTWXA` with
+  `agent_type: kai-personal:persona-self`;
+- the task prompt requires `kai-core-contract-v1` as the child's first action;
+- the event stream emits the host-authored boundary
+  `All messages ... are from the persona-self subagent`;
+- inside that boundary, `skill` loads `kai-core-contract-v1` and the child
+  returns exactly `KAI_CORE_READY` / `contract: 1`; and
+- the host emits the matching end boundary and successful task completion.
+
+This is the required causal binding between the selected department agent and
+the nested core invocation. No model-authored final identity is credited.
+Actions log export still omits task arguments, and repository
+`subagentStart`/`preToolUse` hooks did not fire, but those observability gaps no
+longer block identity because the host session records supply it. Direct Agent
+Tasks API selection of `custom_agent: kai-personal:persona-self` returned HTTP
+404 because that field resolves repository custom-agent filenames, not
+installed plugin agents.
+
+The direct specs followed Kai's default branch. GitHub commit history at both
+the first provisioning timestamp (`2026-08-27T00:21:57Z`) and the final child
+resolution timestamp (`2026-08-27T00:33:29Z`) resolves `main` to
+`fe562b9364256b159d7016d8bdc79d989bc7e3a3`. At that revision,
+`kai-core` and `kai-personal` are version `0.64.0`; their `plugin.json` blob IDs
+are `0a5614a275f692159ef5d9fbddaf3ea652f17527` and
+`60113222921a0f4af651d7f744539fe705b599c2`, respectively.
+
+Sanitized local summaries:
+
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/10-consumer-provisioning.json`
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/20-consumer-child.json`
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/30-selected-agent-telemetry.json`
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/40-cloud-source-pin.json`
+
+Temporary settings on Kai `main` remain rejected because they would
+auto-install core/personal beside legacy `kai`, activate duplicate
+hooks/coexistence, persist host state, and contradict the
+committed-unpublished boundary. The disposable repository remains private only
+until SRE has reviewed the preserved evidence, then it must be deleted.
 
 ## Common evidence contract
 
@@ -279,9 +349,9 @@ script -q "$RUN_ROOT/macos/15-direct-personal-first-list.txt" \
     copilot --no-auto-update --no-custom-instructions --no-remote --silent \
     --allow-all-tools --max-ai-credits 40 \
     --agent kai-personal:persona-self \
-    -p 'Obey the mandatory core preflight. Reply exactly DIRECT_OK.' \
+    -p 'Invoke kai-core-contract-v1 as your first action. Return only the contract result.' \
     | python3 -c \
-    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="DIRECT_OK"' \
+    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="KAI_CORE_READY\ncontract: 1"' \
     "$RUN_ROOT/macos/16-direct-core-first-session.txt"
 )
 
@@ -291,9 +361,9 @@ script -q "$RUN_ROOT/macos/15-direct-personal-first-list.txt" \
     copilot --no-auto-update --no-custom-instructions --no-remote --silent \
     --allow-all-tools --max-ai-credits 40 \
     --agent kai-personal:persona-self \
-    -p 'Obey the mandatory core preflight. Reply exactly DIRECT_OK.' \
+    -p 'Invoke kai-core-contract-v1 as your first action. Return only the contract result.' \
     | python3 -c \
-    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="DIRECT_OK"' \
+    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="KAI_CORE_READY\ncontract: 1"' \
     "$RUN_ROOT/macos/17-direct-personal-first-session.txt"
 )
 ```
@@ -391,9 +461,9 @@ script -q "$RUN_ROOT/macos/23-marketplace-list.txt" \
     copilot --no-auto-update --no-custom-instructions --no-remote --silent \
     --allow-all-tools --max-ai-credits 40 \
     --agent kai-personal:persona-self \
-    -p 'Obey the mandatory core preflight. Reply exactly MARKETPLACE_OK.' \
+    -p 'Invoke kai-core-contract-v1 as your first action. Return only the contract result.' \
     | python3 -c \
-    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="MARKETPLACE_OK"' \
+    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="KAI_CORE_READY\ncontract: 1"' \
     "$RUN_ROOT/macos/24-marketplace-session.txt"
 )
 ```
