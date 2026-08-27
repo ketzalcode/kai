@@ -201,3 +201,55 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-architect — return the architecture verdict for
              exact ref `a3d1383e316f5528c412698424b63acf1bc0f2c1`.
+
+## REVIEW 2026-08-27-1230 — principal-swe-architect
+
+- change_ref: a3d1383e316f5528c412698424b63acf1bc0f2c1
+- verdict:    ratified
+- findings:   P0 0 / P1 0 / P2 3. All eleven prior findings are closed.
+              Remaining P2s: refresh/confirmation and full requested-set
+              availability before legacy removal; exact recovery for a
+              disabled current core; pin the corrected version invariant and
+              legacy-run termination. The suggested `--json` remains
+              unsupported on the singular install commands and correctly
+              excluded.
+- evidence:   Exact ref review with source line evidence, generated-copy and
+              release/topology checks. No files edited.
+- next:       principal-technical-writer — complete the independent prose
+              verdict at the same ref; infra may batch non-blocking P2 fixes
+              with any writing correction.
+
+## REVIEW 2026-08-27-1230 — principal-technical-writer
+
+- change_ref: a3d1383e316f5528c412698424b63acf1bc0f2c1
+- verdict:    changes-required
+- findings:   P1: before telling a legacy user to remove the monolith, verify
+              every requested pack, not only core, or 12b can strand a user who
+              requested a department reserved for 12c. P1: the skill's
+              session result is conditional, but the agent and README still
+              made every complete result require a fresh session.
+- evidence:   Exact source and release 12b/12c item boundaries. No files
+              edited.
+- next:       principal-swe-infra — correct on a new ref and re-request both
+              reviews.
+
+## NOTE 2026-08-27-1230 — principal-swe-infra second correction pass
+
+- did:       Required all requested packs at one common marketplace version
+             before recommending legacy removal; added a separately confirmed
+             availability-only marketplace refresh plan; leaves the monolith
+             installed with `unknown` when proof is unavailable. Made agent and
+             README session language conditional on actual pack mutation.
+             Also named the disabled-core enable command and pinned the
+             requested-set, version, re-entry-termination, enable, and
+             conditional-session claims.
+- state:     in-review
+- needs:     Regenerate outputs, run the full suite, bind a new ref, and obtain
+             final architecture and writing verdicts at that exact ref.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs
+- evidence:  `copilot plugins enable <name> --plugin` is supported by the
+             installed Copilot CLI 1.0.79.
+- questions: none
+- next:      principal-swe-infra — verify and mint the final review ref.

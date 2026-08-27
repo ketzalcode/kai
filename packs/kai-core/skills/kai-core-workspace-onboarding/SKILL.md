@@ -35,6 +35,10 @@ Never silently add a department. `kai-core` is the only automatic inclusion.
 Install selected departments in the table order, not in the order the operator
 typed them.
 
+If the request does not name departments, ask the operator to select from rows
+2-5 before checking migration readiness. That selection is not confirmation to
+run commands; the exact command plan still needs its own approval.
+
 ### 1. Inspect before proposing an install
 
 Resolve the target workspace as `<workspace-root>`. Re-resolve `<kai-plugin>`
@@ -53,12 +57,17 @@ Uninstalling or removing a stale tree is a separate operator-approved action;
 the installer does not perform it as a hidden prerequisite.
 
 When `legacy-installed` is the only blocker, do not strand the operator between
-install surfaces. Verify that `kai-core` is listed in `kai-plugins` before
-recommending removal. Then name the re-entry sequence explicitly: run the
-doctor's uninstall and verification steps, install
-`kai-core@kai-plugins`, start a fresh session, and run this installer again from
-`kai-core`. End the current run; a session still carrying the removed monolith
-must not continue the migration.
+install surfaces. Before recommending removal, prove that `kai-core` and every
+requested department are listed at one common version. If the marketplace must
+be added or refreshed, show that availability-only command plan and get
+explicit confirmation before changing marketplace state. If availability
+cannot be proved, report `unknown` and leave the monolith installed.
+
+After availability is proved, name the re-entry sequence explicitly: run the
+doctor's uninstall and verification steps, install `kai-core@kai-plugins`,
+start a fresh session, and run this installer again from `kai-core`. End the
+current run; a session still carrying the removed monolith must not continue
+the migration.
 
 Read `copilot plugin marketplace list` and `copilot plugin list`. Record which
 marketplace and plugin rows are already present, including version and enabled
@@ -109,6 +118,9 @@ request to "set up kai" is not confirmation for an unshown command set.
    Continue only when one enabled `kai-core` row is present at the exact version
    reported by the browse step. On skew, stop before every department install
    and name `copilot plugin update kai-core@kai-plugins` as the blocking action.
+   If the row is disabled, stop and name
+   `copilot plugins enable kai-core@kai-plugins --plugin` as the blocking
+   action.
 3. If the approved plan includes the workspace provenance edit, apply only that
    edit and run
    `node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"`.
@@ -122,7 +134,7 @@ request to "set up kai" is not confirmation for an unshown command set.
 After an actual core install or update, state this exactly where the operator
 will see it:
 
-> Core installed. This session still does not have it loaded - start a new session before invoking pack agents.
+> Core installed. This session still does not have it loaded - start a fresh session before invoking pack agents.
 
 If core was kept, do not claim it is absent from the current session. Any
 department installed or updated in this run still makes the final session state

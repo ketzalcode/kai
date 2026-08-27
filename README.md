@@ -46,9 +46,9 @@ ordinary pack behavior needs no dependency installation.
 `workflow-workspace-init` now also carries the honest guided pack installer:
 it shows the closed pack set and exact commands, confirms the plan, installs
 core first, verifies every step, stops with precise partial state, and requires
-a fresh session. While any requested pack is absent from the marketplace, its
-browse gate stops before installation; it never falls back to unpublished
-direct paths.
+a fresh session after an actual pack install or update. While any requested
+pack is absent from the marketplace, its browse gate stops before installation;
+it never falls back to unpublished direct paths.
 
 The pack migration remains checkable before it is possible:
 `npm run doctor:migration` is a read-only report on whether a host may install

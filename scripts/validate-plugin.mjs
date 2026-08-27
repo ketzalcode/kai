@@ -848,12 +848,16 @@ if (onboarding) {
     'get explicit confirmation',
     'stop on the first failed or unverified step',
     'Rollback: not attempted or verified',
-    'start a new session before invoking pack agents',
+    'start a fresh session before invoking pack agents',
     'Never substitute a direct repository or subdirectory install as a fallback',
     'Pack install: complete | partial | blocked | unknown',
     'Not attempted:',
     'Legacy kai:',
     'never reuse a path into a plugin uninstalled or updated during this run',
+    'End the current run; a session still carrying the removed monolith must not continue the migration',
+    'at the exact version reported by the browse step',
+    'copilot plugins enable kai-core@kai-plugins --plugin',
+    'kai-core` and every requested department are listed at one common version',
   ]) {
     if (!onboardingProse.includes(requiredText)) {
       err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);
@@ -867,7 +871,7 @@ if (wsInit) {
     'kai-core-workspace-onboarding',
     'Never install a department before an enabled, versioned `kai-core` row',
     'Rollback: not attempted or verified',
-    'fresh session before any installed pack agent can be invoked',
+    'requires a fresh session only when the run actually installed or updated a pack',
   ]) {
     if (!workspaceInitProse.includes(requiredText)) {
       err('agents/workflow-workspace-init.agent.md', `does not bind the guided installer contract: ${JSON.stringify(requiredText)}`);

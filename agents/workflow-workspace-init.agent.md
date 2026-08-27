@@ -66,8 +66,9 @@ paths. You materialize `kai-core-workspace-conventions` by executing
 
 If pack installation was requested, run the inherited guided-installer
 procedure before step 1. Any non-complete result ends the run using the skill's
-exact result shape. A complete install still requires a fresh session before
-any installed pack agent can be invoked.
+exact result shape. A complete result requires a fresh session only when the
+run actually installed or updated a pack; preserve `no pack change` when every
+selected plugin was already current and enabled.
 
 ### 1. Resolve and inspect
 
