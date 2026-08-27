@@ -28,7 +28,7 @@ time and is never stored on a record.
 | pack-split-generated-pack-trees | Generate committed-unpublished core + personal trees | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | all 6 dependencies met ✅ 2026-08-26 | — | 2026-08-26-1443 |
 | pack-split-migration-doctor | Migration doctor — uninstall-first, coexistence-refused, provenance | pack-split | first-pack-extracted | 40 | shipped | principal-swe-infra | — | generator-gates (shipped ✅ 2026-08-25) — met | — | 2026-08-26-1250 |
 | pack-split-first-department | Prove kai-core + personal installs over the boundary | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | generated-pack-trees (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1550 |
-| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | in-progress | principal-swe-infra | principal-swe-infra | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1740 |
+| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | in-review | principal-swe-infra | principal-sre | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1745 |
 | pack-split-pack-dependency-manifests | Define generated-pack dependency manifests and install semantics | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | host-gates (completed — unmet) | — | 2026-08-26-1558 |
 | pack-split-onboarding-installer | Honest guided onboarding installer | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | generated-pack-trees (shipped), migration-doctor (shipped), pack-dependency-manifests (shipped — unmet) | — | 2026-08-26-1558 |
 | pack-split-release-12a | Release 12a — migration notice on 0.x | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | onboarding-installer (shipped), migration-doctor (shipped) | — | 2026-08-24-2011 |
@@ -92,3 +92,10 @@ Selected-agent arguments are absent from exported host events and repository
 hooks did not fire; that limitation is recorded for SRE. The next step is a
 commit-bound evidence revision and independent reliability review. Release 12b
 remains NO-GO.
+
+**Review routing 2026-08-26-1745 (`principal-swe-infra`).**
+The canonical evidence is committed at
+`c4d0b376542116c0e13fbb50e4d1ae17eeea653e`. The item is `in-review` at v13
+and routes to `principal-sre` for the exact selected-agent telemetry judgment
+and release 12b recommendation. No waiting question remains; the fixture stays
+private only through review.

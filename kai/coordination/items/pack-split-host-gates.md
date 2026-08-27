@@ -5,11 +5,11 @@ title: Host gates — macOS + cloud + install-order + fresh-session verification
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: in-progress
+state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-sre
 target: pack-split host-gate certification evidence
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
 context_artifacts:
@@ -41,15 +41,15 @@ review_requirements:
   - role: principal-sre
     kind: independent-reliability
 completed_reviews: []
-change_ref: null
-version: 12
+change_ref: c4d0b376542116c0e13fbb50e4d1ae17eeea653e
+version: 13
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1740
+updated: 2026-08-26-1745
 ---
 
 ## Outcome
@@ -72,8 +72,9 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
 
 ## Evidence
 
-- Preparation commit `c617cb8` is open as PR #173. This evidence-binding update
-  is uncommitted, so `change_ref` remains `null`.
+- Preparation landed through PR #173. Final consumer evidence is bound to
+  exact `change_ref` `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`,
+  subject `docs(pack-split): record consumer cloud host proof`.
 - macOS **PASS**: genuine GitHub-hosted Apple Silicon Actions run
   `33024791572`, job `98363497414`, at source
   `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`. Sanitized evidence is under
@@ -141,3 +142,7 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   `blocked -> in-progress`; no operator question remains. The evidence revision
   still needs a commit-bound `change_ref` and `principal-sre` review before the
   item can complete or release 12b can move from NO-GO.
+- **Review routing 2026-08-26-1745:** evidence is committed at
+  `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`; the item moved
+  `in-progress -> in-review`, routes to `principal-sre`, and preserves release
+  12b NO-GO until the independent verdict.

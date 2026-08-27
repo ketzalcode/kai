@@ -331,3 +331,30 @@ Append-only communication log mirroring
 - next:      principal-swe-infra — create the evidence commit, then
              principal-sre — independent reliability review. Release 12b
              remains NO-GO.
+
+## HANDOFF 2026-08-26-1745 — principal-swe-infra -> principal-sre
+
+- did:       Committed the canonical consumer-cloud evidence at exact
+             `change_ref`
+             `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`, subject
+             `docs(pack-split): record consumer cloud host proof`. Moved the
+             item `in-progress -> in-review` (v12 -> v13).
+- state:     in-review; owner `principal-swe-infra`; next
+             `principal-sre`; lease clear; no waiting question
+- needs:     Independently judge the macOS and cloud host behavior at the exact
+             change reference. Explicitly accept or reject whether the
+             host-persisted exact `kai-personal:persona-self` prompt plus
+             `task start -> nested kai-core-contract-v1 -> task success` is
+             sufficient given that exported cloud events omit task arguments
+             and repository hooks did not fire. Return a release 12b GO/NO-GO
+             recommendation and residual risks.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             kai/coordination/items/pack-split-host-gates.md
+- evidence:  `npm test` passed at the evidence revision's working tree;
+             `git diff --check` passed; credential-pattern scan of the
+             sanitized cloud run root returned no matches.
+- questions: none
+- next:      principal-sre — independent-reliability review at
+             `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`. Do not review an
+             uncommitted working tree or later coordination-only revision.
