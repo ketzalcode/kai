@@ -181,3 +181,23 @@ Append-only communication log mirroring
              update <name>@<marketplace>` is supported.
 - questions: none
 - next:      principal-swe-infra — verify and bind the corrected ref.
+
+## HANDOFF 2026-08-27-1221 — principal-swe-infra -> principal-swe-architect
+
+- did:       Committed the complete correction pass as
+             `a3d1383e316f5528c412698424b63acf1bc0f2c1`, rebound `change_ref`, and
+             kept the item in review. No prior review satisfies this ref.
+- state:     in-review
+- needs:     Re-review the corrected provider lifetime/re-entry, pre-mutation
+             version invariant, derived command set, browse ordering, result
+             schema, conditional session language, and release-neutral
+             availability statement. The technical-writing review runs
+             independently at the same ref.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs
+- evidence:  Full `npm test` passed after regenerated catalog and packs;
+             generated trees match; `0.66.0` remains coherent.
+- questions: none
+- next:      principal-swe-architect — return the architecture verdict for
+             exact ref `a3d1383e316f5528c412698424b63acf1bc0f2c1`.

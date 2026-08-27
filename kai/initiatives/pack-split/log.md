@@ -2841,3 +2841,14 @@ catalog and committed core/personal trees. Packs remain unpublished and the
 marketplace remains monolith-only. Independent architecture and
 technical-writing reviews are both pending at the exact implementation ref;
 release 12b remains NO-GO.
+
+Architecture and writing review of `34e7f7d4…` required corrections. The new
+ref `a3d1383e316f5528c412698424b63acf1bc0f2c1` ends a legacy-provided run before
+its provider tree is removed and defines fresh-session re-entry from
+`kai-core`; checks marketplace and installed versions before any department
+mutation; derives the command roster from `PACK_ORDER`; pins
+browse-before-install and result keys; preserves the doctor's distinct
+`unknown` state; and makes fresh-session language conditional on actual pack
+mutation. README and CHANGELOG now avoid attributing the full catalog to
+release 12b. Full `npm test` passed again; both required reviews were
+re-requested against the new ref.
