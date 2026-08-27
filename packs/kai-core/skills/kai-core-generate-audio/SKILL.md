@@ -28,13 +28,15 @@ update removes `node_modules`, run:
 npm ci --prefix "<kai-core-plugin>"
 ```
 
-That fetches the pinned graph and runs Lectoria's `prepare` build. A
-user-managed `LECTORIA_BIN` or PATH install also works, but is outside the
-pack's version pin.
+That downloads Lectoria's public prebuilt release artifact over HTTPS and npm
+verifies its pinned SHA-512 integrity. It needs network access to GitHub and the
+npm registry, but no GitHub credentials or source build. A user-managed
+`LECTORIA_BIN` or PATH install also works, but is outside the pack's version
+pin.
 
-**Node requirement.** Because `npm install` compiles lectoria from source, it
-needs a Node version lectoria supports: `^22.22.2 || ^24.15.0 || >=26.0.0`.
-On an older Node, `npm install` reports `EBADENGINE` and the build may fail.
+**Node requirement.** Lectoria requires
+`^22.22.2 || ^24.15.0 || >=26.0.0`. On an older Node, `npm ci` reports
+`EBADENGINE` and the CLI is unsupported.
 
 Voice presets are `espana`, `latino`, `intermedio`, and
 `intermedio-femenino`; the wrapper defaults to `intermedio`.
@@ -121,7 +123,7 @@ assistant: [runs: pwsh <kai-core-plugin>/scripts/generate-audio.ps1 -Source .kai
 
 ## Failure modes
 
-- **`'lectoria' is not available`**: user hasn't run `npm install` in this
+- **`'lectoria' is not available`**: user hasn't run `npm ci` in this
   repo yet, and no global lectoria is on PATH. Surface the install command
   the script prints — do not guess at alternatives.
 - **`Azure credentials missing`**: lectoria itself will print the env vars

@@ -133,6 +133,15 @@ export const PACK_RUNTIME_DEPENDENCIES = {
   personal: ['lectoria'],
 };
 
+export const RUNTIME_ARTIFACTS = {
+  lectoria: {
+    version: '0.1.0',
+    spec: 'https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz',
+    integrity: 'sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==',
+    lockKey: 'node_modules/lectoria',
+  },
+};
+
 // The plugin name a pack publishes under. Core is the required shared plugin;
 // departments are `kai-<department>`.
 export const packPluginName = (pack) => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
@@ -221,6 +230,62 @@ function projectLockPackages(packageLock, directDependencies) {
   return Object.fromEntries([...projected].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
+function runtimeDependencyContractMessages(dependencies, packages) {
+  const messages = [];
+  const sanctionedArtifacts = new Map(
+    Object.values(RUNTIME_ARTIFACTS).map((artifact) => [artifact.spec, artifact])
+  );
+
+  for (const [key, record] of Object.entries(packages)) {
+    if (key === '') continue;
+    const resolved = record.resolved;
+    let source = null;
+    if (typeof resolved !== 'string' || !resolved) {
+      messages.push(`lock record "${key}" has no immutable resolved URL`);
+    } else {
+      try {
+        source = new URL(resolved);
+      } catch {
+        messages.push(`lock record "${key}" has invalid resolved URL "${resolved}"`);
+      }
+    }
+    if (source?.protocol !== 'https:') {
+      messages.push(`lock record "${key}" must resolve over HTTPS, got "${resolved ?? 'missing'}"`);
+    } else if (source.hostname === 'registry.npmjs.org') {
+      // Registry tarballs are the default approved runtime source.
+    } else if (!sanctionedArtifacts.has(resolved)) {
+      messages.push(`lock record "${key}" resolves from unapproved runtime source "${resolved}"`);
+    }
+    if (typeof record.integrity !== 'string'
+      || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(record.integrity)) {
+      messages.push(`lock record "${key}" must carry non-empty SHA-512 integrity`);
+    }
+  }
+
+  for (const [dependency, artifact] of Object.entries(RUNTIME_ARTIFACTS)) {
+    if (!(dependency in dependencies)) continue;
+    if (dependencies[dependency] !== artifact.spec) {
+      messages.push(`runtime dependency "${dependency}" must use sanctioned artifact "${artifact.spec}"`);
+    }
+    const record = packages[artifact.lockKey];
+    if (!record) {
+      messages.push(`runtime dependency "${dependency}" has no "${artifact.lockKey}" lock record`);
+      continue;
+    }
+    if (record.version !== artifact.version) {
+      messages.push(`runtime dependency "${dependency}" must lock version "${artifact.version}"`);
+    }
+    if (record.resolved !== artifact.spec) {
+      messages.push(`runtime dependency "${dependency}" must lock sanctioned artifact "${artifact.spec}"`);
+    }
+    if (record.integrity !== artifact.integrity) {
+      messages.push(`runtime dependency "${dependency}" does not match its pinned SHA-512 integrity`);
+    }
+  }
+
+  return messages;
+}
+
 function packPackageMetadata({ pack, name, version, packageJson, packageLock }) {
   const dependencyNames = PACK_RUNTIME_DEPENDENCIES[pack];
   if (!dependencyNames) throw new Error(`no runtime dependency plan exists for pack "${pack}"`);
@@ -245,6 +310,11 @@ function packPackageMetadata({ pack, name, version, packageJson, packageLock }) 
     dependencies,
     engines: packageJson.engines ?? {},
   };
+  const projectedPackages = projectLockPackages(packageLock, dependencies);
+  const contractMessages = runtimeDependencyContractMessages(dependencies, projectedPackages);
+  if (contractMessages.length) {
+    throw new Error(`${name} runtime dependency contract is invalid:\n${contractMessages.join('\n')}`);
+  }
   const lock = {
     name,
     version,
@@ -252,7 +322,7 @@ function packPackageMetadata({ pack, name, version, packageJson, packageLock }) 
     requires: true,
     packages: {
       '': lockRoot,
-      ...projectLockPackages(packageLock, dependencies),
+      ...projectedPackages,
     },
   };
   return { packageManifest: manifest, packageLock: lock };
@@ -1129,6 +1199,14 @@ export function generatedRuntimeErrors(files, packs = PACK_ORDER) {
       hasPackage: packageJson !== null,
       hasLock: packageLock !== null,
     });
+    if (packageJson && packageLock) {
+      for (const msg of runtimeDependencyContractMessages(
+        packageJson.dependencies ?? {},
+        packageLock.packages ?? {}
+      )) {
+        errs.push({ file: `generated ${dir}/package-lock.json`, msg });
+      }
+    }
   }
 
   for (const [key, text] of files) {

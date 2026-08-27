@@ -30,6 +30,7 @@ import { parseFrontmatter, parseToolList } from './lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
+  RUNTIME_ARTIFACTS,
   planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
   degradedBlock, guaranteeBlocks, injectBlocks, degradedBlockErrors, coreContractLines,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
@@ -716,7 +717,14 @@ function selfTest() {
       dependencies: { 'third-party-runtime': '1.0.0' },
     })],
     ['kai-core/package-lock.json', JSON.stringify({
-      packages: { '': {}, 'node_modules/third-party-runtime': { version: '1.0.0' } },
+      packages: {
+        '': {},
+        'node_modules/third-party-runtime': {
+          version: '1.0.0',
+          resolved: 'https://registry.npmjs.org/third-party-runtime/-/third-party-runtime-1.0.0.tgz',
+          integrity: 'sha512-AAAA',
+        },
+      },
     })],
     ['kai-core/scripts/start.mjs', "import runtime from 'third-party-runtime/subpath';\n"],
   ]);
@@ -744,6 +752,59 @@ function selfTest() {
   ok(generatedPackageErrors(driftedLock)
     .some((e) => /reachable dependency projection/.test(e.msg)),
   'a generated lockfile that drops the pinned runtime package fails the exact projection gate');
+  const mutateGeneratedJson = (files, key, mutate) => {
+    const changed = new Map(files);
+    const value = JSON.parse(changed.get(key));
+    mutate(value);
+    changed.set(key, `${JSON.stringify(value, null, 2)}\n`);
+    return changed;
+  };
+  const changedSpec = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package.json',
+    (value) => { value.dependencies.lectoria = `${RUNTIME_ARTIFACTS.lectoria.spec}?changed`; }
+  );
+  ok(generatedRuntimeErrors(changedSpec)
+    .some((e) => /must use sanctioned artifact/.test(e.msg)),
+  'changing the direct Lectoria artifact spec fails the sanctioned-source gate');
+  const sshRuntime = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => {
+      value.packages['node_modules/lectoria'].resolved =
+        'git+ssh://git@github.com/RubenSaucedo/lectoria.git#c284b6c';
+    }
+  );
+  ok(generatedRuntimeErrors(sshRuntime)
+    .some((e) => /must resolve over HTTPS/.test(e.msg)),
+  'an SSH-resolved runtime dependency fails the transport gate');
+  const mirroredRuntime = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => {
+      value.packages['node_modules/lectoria'].resolved =
+        'https://mirror.example/lectoria-0.1.0.tgz';
+    }
+  );
+  ok(generatedRuntimeErrors(mirroredRuntime)
+    .some((e) => /unapproved runtime source/.test(e.msg)),
+  'an HTTPS mirror outside the runtime source allowlist fails by URL');
+  const weakIntegrity = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => { value.packages['node_modules/lectoria'].integrity = 'sha1-AAAA'; }
+  );
+  ok(generatedRuntimeErrors(weakIntegrity)
+    .some((e) => /must carry non-empty SHA-512 integrity/.test(e.msg)),
+  'a runtime lock record without SHA-512 integrity fails closed');
+  const changedIntegrity = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => { value.packages['node_modules/lectoria'].integrity = 'sha512-AAAA'; }
+  );
+  ok(generatedRuntimeErrors(changedIntegrity)
+    .some((e) => /does not match its pinned SHA-512 integrity/.test(e.msg)),
+  'changing the sanctioned artifact integrity fails the exact pin');
 
   // --- cross-pack references: the mutation arms -------------------------
   const providersOf = (entries) => new Map(Object.entries(entries));

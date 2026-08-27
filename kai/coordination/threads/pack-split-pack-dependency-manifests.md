@@ -289,3 +289,62 @@ Exact corrective changes required:
 - next:      principal-swe-infra — make the bounded dependency-contract
              correction and route a new exact revision back for independent
              architecture review.
+
+## NOTE 2026-08-26-1833 — correction lease
+
+- did:       Claimed the in-review correction under
+             `psinfra-1833-https` at item version 8. The accepted architecture
+             stays unchanged; this pass replaces the credential-coupled fetch,
+             adds a transport refusal gate, and repeats installation proof.
+- state:     in-review
+- needs:     Credential-free immutable HTTPS lock records, supported-Node
+             no-SSH installation evidence, a new change_ref, and architecture
+             re-review.
+- artifacts: package.json; package-lock.json; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs; packs/kai-core/package.json;
+             packs/kai-core/package-lock.json; packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json
+- evidence:  Independent review P1 at exact `e67057ec…`; no completed review
+             was recorded and the reviewer lease is clear.
+- questions: none
+- next:      principal-swe-infra — implement only the bounded HTTPS transport
+             correction.
+
+## RECOVERY 2026-08-27-1059 — principal-swe-infra -> principal-swe-infra
+
+- reclaimed:   pack-split-pack-dependency-manifests
+- stale_lease: holder=principal-swe-infra token=psinfra-1833-https
+               expired=2026-08-26T20:33:57-07:00
+- observed:    The reviewed implementation remains at `e67057ec…`; only its
+               prior correction lease and thread note were uncommitted. New
+               transport experiments found build-at-install is not
+               reproducible, and the operator approved publishing one immutable
+               Lectoria release asset.
+- disposition: safe-to-resume
+- new_lease:   holder=principal-swe-infra token=psinfra-1059-artifact
+               version_at_grant=9
+- state:       in-review
+- next:        principal-swe-infra — replace the git dependency with the
+               approved HTTPS release artifact, prove clean installs, and mint
+               a new review ref.
+
+## NOTE 2026-08-27-1121 — principal-swe-infra
+
+- did:       Expanded the touch set to `.github/workflows/validate.yml` after
+             this workstation's public npm TLS path prevented valid clean-cache
+             evidence. The workflow now runs that same proof on Node 24.15.0
+             for core and personal with empty caches, Git disabled, and no
+             credentials.
+- state:     in-review
+- needs:     Commit the corrected dependency contract, let the clean GitHub
+             runner settle the install evidence, then repeat independent
+             architecture review at the exact new ref.
+- artifacts: .github/workflows/validate.yml;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+- evidence:  Local `npm ci` logs show repeated
+             `ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE` for public registry
+             tarballs before npm exits; the deterministic generator and all
+             local contract tests remain green.
+- questions: none
+- next:      principal-swe-infra — finish the implementation ref and route it
+             through CI plus architecture review.

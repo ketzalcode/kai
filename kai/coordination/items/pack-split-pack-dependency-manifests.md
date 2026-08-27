@@ -21,6 +21,7 @@ context_artifacts:
   - scripts/generate-audio.ps1
   - scripts/demo-narrate.mjs
 touches:
+  - .github/workflows/validate.yml
   - scripts/lib/pack-plan.mjs
   - scripts/pack-preview.mjs
   - scripts/validate-plugin.mjs
@@ -53,14 +54,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: e67057ec061e9799cf7300bce972305ab01a7603
-version: 8
+version: 11
 lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-26-1828
+  holder: principal-swe-infra
+  token: psinfra-1059-artifact
+  version_at_grant: 9
+  acquired: 2026-08-27T10:59:17-07:00
+  expires: 2026-08-27T14:59:17-07:00
+updated: 2026-08-27-1121
 ---
 
 ## Outcome

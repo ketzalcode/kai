@@ -58,10 +58,10 @@
     # Preview the command without spending money
 
 .NOTES
-    Lectoria is pinned in this plugin's package.json. Install once with `npm install`
-    at the kai plugin root and the wrapper will prefer the local copy (via npx).
-    Falls back to a global `lectoria` install if one is on PATH. Azure credentials
-    are loaded from this repo's `.env` so callers don't need them exported.
+    Lectoria is pinned in this pack's package.json and package-lock.json. Install
+    it with `npm ci --prefix "<kai-core-plugin>"`; the wrapper prefers that
+    pack-local executable and falls back to PATH. Azure credentials are loaded
+    from this repo's `.env` so callers don't need them exported.
 #>
 
 [CmdletBinding()]

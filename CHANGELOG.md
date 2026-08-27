@@ -4,7 +4,7 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
-## [0.65.0] - 2026-08-26
+## [0.65.0] - 2026-08-27
 
 ### Added
 
@@ -26,6 +26,12 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   now resolve `LECTORIA_BIN`, then their own pack-local pinned install, then
   PATH, and prescribe `npm ci --prefix "<pack-root>"` when Lectoria is absent.
   The guidance also states that plugin updates may replace `node_modules`.
+
+- **Lectoria installs from an immutable public release artifact.** Pack-local
+  locks use HTTPS plus a pinned SHA-512 instead of GitHub SSH or an install-time
+  source build, so ordinary consumers need no GitHub credentials, Git client,
+  or compiler. Runtime dependency validation rejects SSH, weak integrity,
+  unapproved hosts, and drift from the sanctioned artifact.
 
 - **Departments resolve core executables through the loaded core skill
   provider.** Personal agents derive the absolute kai-core root from

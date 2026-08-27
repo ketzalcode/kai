@@ -12,8 +12,9 @@ name: validate
 # four named partition gates (partition, collision, partial-install, version-skew),
 # and a syntax/parse check of shipped helper scripts. On pull requests it
 # additionally runs the release-guard gate: a behavior-sensitive change must carry
-# a version bump plus changelog/README updates.
-# Dependency-free — no install step, so it stays fast.
+# a version bump plus changelog/README updates. A separate supported-Node job
+# installs each dependency-bearing generated pack from an empty cache with Git
+# disabled, then probes the pack-local Lectoria CLI and core provider root.
 
 on:
   pull_request:
@@ -60,3 +61,46 @@ jobs:
       - name: Release-guard (behavior change requires a bump + release notes)
         if: github.event_name == 'pull_request'
         run: node scripts/release-guard.mjs --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }}
+
+  runtime-dependencies:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: [kai-core, kai-personal]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+      - name: Install pack without Git or credentials
+        shell: bash
+        env:
+          GIT_CONFIG_NOSYSTEM: '1'
+          GIT_TERMINAL_PROMPT: '0'
+          GIT_SSH_COMMAND: /bin/false
+          npm_config_git: /bin/false
+          npm_config_registry: https://registry.npmjs.org/
+          npm_config_update_notifier: 'false'
+        run: |
+          set -euo pipefail
+          export HOME="$RUNNER_TEMP/home-${{ matrix.pack }}"
+          export npm_config_cache="$RUNNER_TEMP/cache-${{ matrix.pack }}"
+          export npm_config_userconfig="$HOME/.npmrc"
+          mkdir -p "$HOME" "$npm_config_cache"
+          npm ci --prefix "packs/${{ matrix.pack }}" \
+            --no-audit --no-fund --foreground-scripts
+          "packs/${{ matrix.pack }}/node_modules/.bin/lectoria" --help >/dev/null
+      - name: Probe core provider-root resolution
+        if: matrix.pack == 'kai-core'
+        shell: pwsh
+        run: |
+          $skillDir = Resolve-Path 'packs/kai-core/skills/kai-core-generate-audio'
+          $providerRoot = Split-Path -Parent (Split-Path -Parent $skillDir)
+          $wrapper = Join-Path $providerRoot 'scripts/generate-audio.ps1'
+          $source = Join-Path $skillDir 'SKILL.md'
+          $output = & $wrapper -Source $source -Out "$env:RUNNER_TEMP/audio" -DryRun 6>&1 |
+            Out-String
+          if ($output -notmatch '\[dry-run\] lectoria: node_modules/.bin') {
+            throw "Core wrapper did not select its pack-local Lectoria executable."
+          }

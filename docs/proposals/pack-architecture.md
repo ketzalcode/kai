@@ -427,6 +427,16 @@ claiming work or taking a lease.
   optional audio installs the pinned dependency explicitly with
   `npm ci --prefix "<pack-root>"`. `LECTORIA_BIN` and PATH remain user-managed
   fallbacks.
+- Lectoria is distributed as the immutable public release artifact
+  `https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz`
+  with npm integrity
+  `sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==`.
+  Pack installation therefore needs HTTPS access but no GitHub credentials,
+  Git client, compiler, or install-time source build.
+- Updating Lectoria requires a validated build at an exact source commit, two
+  byte-identical `npm pack` results, an immutable release asset, the new URL and
+  integrity in the canonical root lock, regenerated packs, and clean no-SSH
+  install evidence on a supported Node version.
 
 ## Availability resolution — how a director learns a role is missing
 

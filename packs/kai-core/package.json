@@ -6,6 +6,6 @@
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "dependencies": {
-    "lectoria": "github:RubenSaucedo/lectoria#c284b6cdeef96591be31201444ffebcaa463ba0c"
+    "lectoria": "https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz"
   }
 }
