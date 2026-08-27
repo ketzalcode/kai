@@ -37,3 +37,23 @@ Append-only communication log mirroring
   publication becomes possible earlier, in which case the steward re-routes the guard rather than
   waiting for `12b`.
 - Dependencies unchanged and unmet; this item remains far from executable.
+
+## NOTE 2026-08-26-1558 — principal-product-manager (steward)
+
+- did:       Corrected the typed dependency on
+             `pack-split-pack-dependency-manifests` from `completed` to
+             `shipped` and incremented the item v2 -> v3. The upstream item is
+             `delivery_class: product-change`; `completed` is knowledge-only
+             and could never truthfully satisfy this release gate.
+- state:     proposed
+- needs:     No promotion while `scope.current` remains
+             `first-pack-extracted`. Preserve all existing A4, security,
+             reliability, operator-publication, and monolith-retirement gates.
+- artifacts: kai/coordination/items/pack-split-release-12b.md;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/initiatives/pack-split/northstar.md
+- evidence:  `kai-core-work-coordination` typed dependency contract;
+             generated-tree acceptance R11; existing release-12b dependency.
+- questions: none
+- next:      principal-product-manager — keep parked until the accepted chain
+             reaches this item.

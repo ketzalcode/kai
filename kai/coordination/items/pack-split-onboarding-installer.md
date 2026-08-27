@@ -24,6 +24,8 @@ depends_on:
     requires: shipped
   - item: pack-split-migration-doctor
     requires: shipped
+  - item: pack-split-pack-dependency-manifests
+    requires: shipped
 waiting_on_questions: []
 required_for_milestone: true
 review_requirements:
@@ -33,14 +35,14 @@ review_requirements:
     kind: doc-review
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-26-1558
 ---
 
 ## Outcome
@@ -69,4 +71,8 @@ active until a new session starts.
   the installer is described honestly as guided, not transactional.
 - Install-order/verify-gate semantics owned by `principal-swe-infra`; prose co-authored by
   `principal-technical-writer` (off critical path). Doc-review guards the honesty of the prose.
-- Runs in parallel with `pack-split-host-gates` (disjoint touches).
+- **Steward DAG reconciliation 2026-08-26-1558:** onboarding now requires
+  `pack-split-pack-dependency-manifests` at `shipped`; an installer cannot state
+  truthful commands or verification semantics before the pack runtime contract
+  is settled. It therefore follows host gates and dependency manifests rather
+  than running in parallel with the host gate.

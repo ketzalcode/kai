@@ -33,7 +33,7 @@ scope:
     - Cutting 1.0.0 before the phase-3 gates are met; the number is a stability promise, not a refactor marker.
     - Re-litigating department boundaries or adding packs beyond the agreed five once the partition is locked.
   deferred:
-    - Full macOS and cloud-host certification of collision and roster-enumeration behavior; all evidence to date is Windows CLI.
+    - Full fleet certification of collision and roster-enumeration behavior. The bounded macOS arm passed on genuine GitHub-hosted Apple Silicon run 33024791572; cloud-host certification remains open after branch task 7160810a-a4e1-43eb-bc97-d6f8e2f53aad provisioned no plugins and was classified indeterminate.
     - A dispatch-probe that fails observably, stronger than roster introspection; noted open in the proposal.
     - Per-pack independent semver decoupled from the core contract version; lockstep for now.
 principles:
@@ -120,12 +120,15 @@ milestones:
     outcome: kai installs as kai-core plus selectable department packs from the marketplace — all five packs published via the staged 12a/12b/12c release, onboarding is an honest guided installer, the published monolith plugin is retired at the flip, and the split is released as 1.0.0.
     acceptance:
       - kai-core plus engineering, product, gtm, and personal packs are published to the kai-plugins marketplace, and core is never offered in the selector.
+      - Before any pack is published, generated pack manifests and runtime dependency resolution are deterministic, lockstep-versioned, and verified against the host installation behavior.
       - Onboarding installs core first, verifies after each step, stops on first failure, and never claims unverified rollback.
       - The release is cut as 1.0.0 via the staged 12a/12b/12c release only after the phase-3 host gates are met, and the published monolith plugin is retired at the flip.
     success_measures:
       - Per-session discovery-metadata cost for a focused install drops versus the whole-roster baseline.
       - Partition integrity — every agent and skill in exactly one pack.
     required_items:
+      - item: pack-split-pack-dependency-manifests
+        state: shipped
       - item: pack-split-onboarding-installer
         state: shipped
       - item: pack-split-release-12a
@@ -223,3 +226,32 @@ sit behind it. Of the three carried architect caveats: (a) the `fleet-observatio
 binding stays open and off the first-pack critical path (engineering tree, deferred);
 (c) the explicit asset-ownership rule remains owned by
 `pack-split-generated-pack-trees`.
+
+**Superseding required-items status (steward pass 2026-08-26-1558).**
+`first-pack-extracted` is **OPEN at 3 of 4** typed required items:
+`pack-split-generated-pack-trees`, `pack-split-migration-doctor`, and
+`pack-split-first-department` are `shipped`; `pack-split-host-gates` is now
+`ready` and still owes `completed`. The initiative remains `active` with
+`scope.current: [first-pack-extracted]`; no milestone or initiative closure is
+claimed. The sole executable queue head is `pack-split-host-gates` (priority
+10, `next_role: principal-swe-infra`, lease clear).
+
+The accepted downstream valve is now explicit and typed:
+`host-gates (completed) -> pack-dependency-manifests (shipped) ->
+onboarding-installer (shipped) -> release-12a (shipped) -> release-12b
+(shipped) -> release-12c (shipped)`. `pack-split-pack-dependency-manifests` is
+added to `five-pack-split-shipped.required_items`; all downstream records
+remain `proposed` while the current milestone is open. Generated trees remain
+committed and unpublished, marketplace topology remains the single monolith
+source `.`, and no fleet-observer redesign enters this chain.
+
+**Superseding host-gate state (2026-08-26-1702).**
+`pack-split-host-gates` is `blocked` at v11 with
+`resume_state: in-progress`, lease clear, and `change_ref: null`. The bounded
+macOS arm passed on genuine GitHub-hosted Apple Silicon run `33024791572`.
+Cloud task `7160810a-a4e1-43eb-bc97-d6f8e2f53aad` provisioned no plugin and is
+indeterminate, not a pass. The sole blocking question is
+`Q-pack-split-host-gates-04`, operator authorization for one disposable
+default-branch consumer fixture with a positive control. The milestone remains
+open at 3 of 4, downstream items remain proposed, packs remain unpublished, and
+release 12b remains **NO-GO**.

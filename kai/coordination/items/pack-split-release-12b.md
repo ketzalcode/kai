@@ -28,7 +28,7 @@ depends_on:
   - item: pack-split-host-gates
     requires: completed
   - item: pack-split-pack-dependency-manifests
-    requires: completed
+    requires: shipped
   - item: pack-split-release-12a
     requires: shipped
   - item: pack-split-onboarding-installer
@@ -42,14 +42,14 @@ review_requirements:
     kind: independent-security
 completed_reviews: []
 change_ref: null
-version: 2
+version: 3
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2240
+updated: 2026-08-26-1558
 ---
 
 ## Outcome
@@ -95,3 +95,6 @@ irreversible act that escapes release enforcement.*
   and `scripts/validate-plugin.mjs` to this item's `touches`. If a committed pack tree could become
   publishable **before** this item runs, the guard is needed earlier — raise it to the steward for
   re-routing rather than assuming `12b` will catch it in time.
+- **Typed-dependency correction (steward, 2026-08-26-1558).**
+  `pack-split-pack-dependency-manifests` is a `product-change`, so its terminal
+  requirement is `shipped`, not the knowledge-only `completed` state.

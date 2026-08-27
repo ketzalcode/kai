@@ -5,38 +5,52 @@ title: Host gates — macOS + cloud + install-order + fresh-session verification
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: proposed
-resume_state: null
-priority: 20
-owner: null
-next_role: principal-product-manager
+state: blocked
+resume_state: in-progress
+priority: 10
+owner: principal-swe-infra
+next_role: @operator
 target: pack-split host-gate certification evidence
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
+  - kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md
   - docs/proposals/pack-architecture.md
+  - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md
+  - kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
+  - kai/initiatives/pack-split/artifacts/reliability/pack-split-migration-doctor.md
 touches:
+  - .kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/**
+  - kai/coordination/ACTIVE.md
+  - kai/coordination/BOARD.md
+  - kai/coordination/items/pack-split-host-gates.md
+  - kai/coordination/threads/pack-split-host-gates.md
+  - kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
+  - kai/initiatives/pack-split/deliverables.md
+  - kai/initiatives/pack-split/log.md
+  - kai/initiatives/pack-split/northstar.md
 depends_on:
   - item: pack-split-first-department
     requires: shipped
   - item: pack-split-migration-doctor
     requires: shipped
-waiting_on_questions: []
+waiting_on_questions:
+  - Q-pack-split-host-gates-04
 required_for_milestone: true
 review_requirements:
   - role: principal-sre
     kind: independent-reliability
 completed_reviews: []
 change_ref: null
-version: 1
+version: 11
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-26-1702
 ---
 
 ## Outcome
@@ -51,15 +65,56 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
 - [ ] Marketplace-vs-direct install paths both produce the correct bound contract (no stale legacy copy).
 - [ ] Marketplace and direct install evidence records whether each pack root
       receives npm dependency installation or a `node_modules` tree.
+- [ ] A generated department agent carrying both guarantee blocks replies with
+      exactly `KAI-CORE-MISSING` and nothing else in both the no-core and
+      contract-skew (`--contract 2`) arms.
 - [ ] Evidence recorded at the artifact target; `principal-sre` reviews host/platform behavior.
 - [ ] Result is an explicit go / no-go for `pack-split-release-12b`.
 
 ## Evidence
 
-- (to be filled) — operator host-run transcripts + the reliability record.
+- Preparation commit `c617cb8` is open as PR #173. This evidence-binding update
+  is uncommitted, so `change_ref` remains `null`.
+- macOS **PASS**: genuine GitHub-hosted Apple Silicon Actions run
+  `33024791572`, job `98363497414`, at source
+  `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`. Sanitized evidence is under
+  `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/macos/`.
+- macOS direct installs in both orders and the run-local marketplace bind
+  `kai-personal:persona-self` to `kai-core-contract-v1` from `kai-core`
+  `0.64.0`; installed/source manifest SHA-256 values match; per-pack dependency
+  inventories are empty; collision refusal and both exact refusal arms pass.
+- Cloud branch spike **INDETERMINATE**: task
+  `7160810a-a4e1-43eb-bc97-d6f8e2f53aad`, run `33024086802`, job
+  `98361210602`, base/generated head
+  `fb04975c2969e1aca463d148b6cb1784966e20b9`. It made two bash calls and
+  emitted zero plugin discovery/install, `skill.invoked`, or `persona-self`
+  dispatch events. Sanitized summary:
+  `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/99-summary.json`.
+- The amended decision and next experiment are recorded at
+  `kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md`.
+  Release 12b remains explicitly **NO-GO**.
 
 ## Notes
 
 - **Scope (steward decision):** scoped as a **minimal smoke gate**, not full certification — the
   northstar defers full macOS/cloud certification (decomposition *Scope negotiations*).
 - Host runs are **operator-executed**; this role designs the gate + records evidence. Closes `completed`.
+- **Steward promotion 2026-08-26-1558:** promoted `proposed -> ready` after both typed
+  dependencies reached their required `shipped` state. Priority 10 makes this the sole
+  committed queue head. `principal-swe-infra` designs and records the bounded gate;
+  `@operator` executes only the external host actions. Full fleet certification and any
+  observer redesign remain out of scope.
+- **Architecture correction 2026-08-26-1645:** the public-marketplace and
+  enterprise-managed prerequisites were false constraints in the prior packet,
+  not item Acceptance. `Q-pack-split-host-gates-02` is answered and withdrawn;
+  `Q-pack-split-host-gates-01` now points to the corrected macOS packet, and
+  `Q-pack-split-host-gates-03` requests the bounded cloud branch spike. A
+  default-branch-only cloud result routes to steward escalation E1 without an
+  infra decision.
+- **Evidence amendment 2026-08-26-1702:** `Q-pack-split-host-gates-01` is
+  answered by the macOS PASS. `Q-pack-split-host-gates-03` is answered
+  indeterminate, not as default-branch-only or direct-spec rejection. The
+  smallest discriminating next step is a disposable external consumer
+  repository whose default branch carries both direct Kai specs plus a
+  default-marketplace positive control. Creating/deleting that repository is an
+  operator boundary tracked only by `Q-pack-split-host-gates-04`.

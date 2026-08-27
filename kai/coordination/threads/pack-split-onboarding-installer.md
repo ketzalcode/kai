@@ -12,3 +12,24 @@ Append-only communication log mirroring
 - evidence:  docs/proposals/pack-architecture.md "Onboarding" (guided installer, not transactional) — captured 2026-08-24 from C:\src\kai
 - questions: none
 - next:      principal-product-manager — groom milestone-by-milestone.
+
+## NOTE 2026-08-26-1558 — principal-product-manager (steward)
+
+- did:       Reconciled the accepted post-extraction DAG. Added the typed
+             dependency `pack-split-pack-dependency-manifests (requires:
+             shipped)` and incremented the item v1 -> v2. The earlier
+             parallel-with-host-gates note is superseded: truthful installer
+             commands and verification semantics depend on the host-informed
+             manifest/runtime contract.
+- state:     proposed
+- needs:     Stay parked while `scope.current` is `first-pack-extracted`.
+             After host gates complete, dependency manifests ship, and the
+             steward promotes this item, preserve core-first, stop-on-first-
+             failure, exact partial-state, and fresh-session behavior.
+- artifacts: kai/coordination/items/pack-split-onboarding-installer.md;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+- evidence:  generated-tree acceptance R11 defers manifests to publication;
+             the dependency-manifest item owns verified install semantics.
+- questions: none
+- next:      principal-product-manager — retain behind the scope valve until
+             the current milestone closes.

@@ -2630,3 +2630,111 @@ Kai merged, pushed, tagged, released, published, deployed, and rolled back
 nothing. PRs #169 and #170 remain closed historical attempts. The now-satisfied
 `pack-split-host-gates` dependency was reconciled on BOARD but the item remains
 `proposed`; steward promotion and milestone closure are not inferred.
+
+## 2026-08-26 — steward pass: first-pack 3/4; host gates promoted; downstream DAG typed
+
+`principal-product-manager` reconciled `first-pack-extracted` against its
+authoritative typed requirements. The milestone is **OPEN at 3 of 4**:
+`pack-split-generated-pack-trees`, `pack-split-migration-doctor`, and
+`pack-split-first-department` are `shipped`; `pack-split-host-gates` still owes
+`completed`. No milestone or initiative closure was taken.
+
+**Promoted:** `pack-split-host-gates` `proposed -> ready` (v1 -> v2, priority
+20 -> 10, `next_role: principal-swe-infra`). Both typed dependencies are met,
+acceptance is concrete, the item is in current scope, and its lease remains
+clear. The bounded gate stays a minimal macOS + one-cloud-host smoke, not full
+fleet certification. The previously parked P2-D1 exact-reply assertion is now
+in acceptance; no observer redesign was adopted. Operator execution remains an
+external action after infra prepares the evidence packet.
+
+**Groomed, not promoted:** accepted
+`pack-split-pack-dependency-manifests` as a required
+`five-pack-split-shipped` product change at terminal state `shipped`. Corrected
+`pack-split-release-12b` to require `shipped` rather than the knowledge-only
+`completed`, and made onboarding depend on the shipped manifest/runtime
+contract. The authoritative downstream chain is therefore
+`host-gates (completed) -> pack-dependency-manifests (shipped) ->
+onboarding-installer (shipped) -> release-12a (shipped) -> release-12b
+(shipped) -> release-12c (shipped)`. Every downstream item remains `proposed`
+while `scope.current` is `first-pack-extracted`.
+
+**Repository-state evidence:** `.git/HEAD` names
+`docs/29-first-department-shipped`; packed/local and remote refs place it at
+`30b432bb0244c36df27c924bfc0845294982d8c8`, created directly from `main`
+`9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`. The durable item and ship records
+independently establish first-department v19, PR #171 merge, main CI, and
+production verification 5/5. No repository file available to this pass
+independently establishes PR #172's required-check emission, so none is
+claimed. Generated packs stay committed and unpublished; marketplace remains
+N=1 at source `.`; `v0.64.0` remains current.
+
+**Boundary:** no item was leased or implemented; no commit, push, merge,
+publish, tag, version, marketplace topology, or fleet-observer change was made.
+
+## 2026-08-26 — host-gate packet prepared; external hosts block execution
+
+`director-chief-of-staff` serially leased the steward-promoted
+`pack-split-host-gates` item to `principal-swe-infra`. Infra prepared the
+canonical bounded gate at
+`kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md`
+and handed the item back `blocked` v4 (`resume_state: in-progress`, lease
+clear).
+
+The artifact pins source `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`,
+defines reproducible macOS partial/direct probes and a genuine managed-cloud
+task, requires host-issued identity plus sanitized checksummed transcripts,
+and states credential and abort rules. It does not infer macOS or cloud facts
+from Windows or a generic subagent.
+
+Two blocking operator actions remain:
+`Q-pack-split-host-gates-01` runs the prepared packet on an authorized macOS
+host; `Q-pack-split-host-gates-02` confirms whether an already-authorized
+managed source exists for both unpublished pack identities and, if so, runs
+the cloud packet. The current marketplace exposes only legacy `kai` at source
+`.`; no pack publication or topology change is authorized here. Release 12b
+is explicitly **NO-GO**.
+
+## 2026-08-26 — host evidence bound: macOS PASS; cloud branch spike INDETERMINATE
+
+`principal-swe-infra` bound the two operator-host results without changing
+Acceptance or milestone required states. The item remains `blocked` at v11 with
+`resume_state: in-progress`, lease clear, `change_ref: null`, and only
+`Q-pack-split-host-gates-04` open.
+
+**macOS passed.** Genuine GitHub-hosted Apple Silicon Actions run
+`33024791572`, job `98363497414`, succeeded at source
+`9a800e4e76cd6c15b9dfab01a7b1ed99c4285080` on macOS 26.5.2 / Darwin
+25.5.0 arm64 VMAPPLE with Node 24.18.0, npm 11.16.0, and Copilot CLI 1.0.80.
+Direct installs in both orders and the run-local marketplace list both packs at
+0.64.0. Host events bind `kai-personal:persona-self` to the core contract from
+`kai-core`; installed/source manifest checksums match; dependency inventories
+are empty; collision refusal and both exact `KAI-CORE-MISSING` arms pass.
+Sanitized evidence is under
+`.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/macos/`.
+
+**The cloud branch spike is indeterminate.** Task
+`7160810a-a4e1-43eb-bc97-d6f8e2f53aad`, host run `33024086802`, job
+`98361210602`, selected the branch fixture at
+`fb04975c2969e1aca463d148b6cb1784966e20b9`, but made only two bash calls:
+zero plugin discovery/install, `skill.invoked`, or `persona-self` events. With
+no positive control or plugin-root evidence, this proves neither
+default-branch-only behavior nor direct-spec rejection. Only a sanitized
+identity/result summary was retained at
+`.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/99-summary.json`;
+the raw log was not copied.
+
+The read-only Opus 5 architecture consultation selected one discriminating next
+experiment: a disposable consumer repository outside `RubenSaucedo/kai`, with
+its default branch declaring direct core/personal specs plus one
+default-marketplace positive control. All three installing passes the cloud
+arm; control-only routes to the direct-spec publication fallback; nothing
+installing records a host provisioning/control-plane defect. Temporary Kai-main
+settings, a temporary Kai-main marketplace, and premature deferral are
+rejected. Creating/deleting the scratch repository is an operator boundary;
+`Q-pack-split-host-gates-04` is the sole blocking question.
+
+Preparation commit `c617cb8` remains on PR #173, but this evidence update is
+uncommitted, so no review can bind and `change_ref` remains `null`. No plugin
+code, manifest, marketplace, version, pack, release, tag, publish, merge, or
+remote-branch action occurred. Release 12b remains **NO-GO** and
+`first-pack-extracted` remains open at 3 of 4.

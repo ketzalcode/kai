@@ -8,12 +8,14 @@ delivery_class: product-change
 state: proposed
 resume_state: null
 priority: 20
-owner: principal-swe-infra
+owner: null
 next_role: principal-product-manager
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
+  - kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
+  - kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
   - scripts/lib/pack-plan.mjs
   - skills/kai-core-generate-audio/SKILL.md
   - scripts/generate-audio.ps1
@@ -36,14 +38,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1420
+updated: 2026-08-26-1558
 ---
 
 ## Outcome
@@ -77,3 +79,8 @@ remain deterministic and version-coherent.
   change making a pack publishable.
 - This item is required before `pack-split-release-12b`; do not discover the
   install contract during the irreversible marketplace flip.
+- **Steward grooming 2026-08-26-1558:** accepted as a typed
+  `five-pack-split-shipped` requirement at terminal state `shipped`, because it
+  changes generated manifests and runtime behavior. It remains `proposed` while
+  `scope.current` is `first-pack-extracted`; `host-gates (completed)` is its
+  declared prerequisite. Promotion waits for that milestone transition.
