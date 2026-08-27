@@ -28,7 +28,7 @@ time and is never stored on a record.
 | pack-split-generated-pack-trees | Generate committed-unpublished core + personal trees | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | all 6 dependencies met ✅ 2026-08-26 | — | 2026-08-26-1443 |
 | pack-split-migration-doctor | Migration doctor — uninstall-first, coexistence-refused, provenance | pack-split | first-pack-extracted | 40 | shipped | principal-swe-infra | — | generator-gates (shipped ✅ 2026-08-25) — met | — | 2026-08-26-1250 |
 | pack-split-first-department | Prove kai-core + personal installs over the boundary | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | generated-pack-trees (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1550 |
-| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | in-progress | principal-swe-infra | principal-swe-infra | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1752 |
+| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | in-review | principal-swe-infra | principal-sre | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1758 |
 | pack-split-pack-dependency-manifests | Define generated-pack dependency manifests and install semantics | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | host-gates (completed — unmet) | — | 2026-08-26-1558 |
 | pack-split-onboarding-installer | Honest guided onboarding installer | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | generated-pack-trees (shipped), migration-doctor (shipped), pack-dependency-manifests (shipped — unmet) | — | 2026-08-26-1558 |
 | pack-split-release-12a | Release 12a — migration notice on 0.x | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | onboarding-installer (shipped), migration-doctor (shipped) | — | 2026-08-24-2011 |
@@ -108,3 +108,8 @@ its nested core invocation. GitHub history binds the cloud source to Kai
 `fe562b936…` / pack `0.64.0`, and the macOS packet now matches the retained
 contract output. The item is back `in-progress` at v14 until the corrected
 evidence receives a new `change_ref` and SRE re-review.
+
+**SRE re-review routing 2026-08-26-1758.**
+Corrected evidence is commit-bound at
+`263452126179dd9f3a61183903a26a90c4d6b1c1`. The item is `in-review` at v15,
+routes to `principal-sre`, and retains release 12b NO-GO until ratification.

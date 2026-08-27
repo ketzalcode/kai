@@ -5,11 +5,11 @@ title: Host gates — macOS + cloud + install-order + fresh-session verification
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: in-progress
+state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-sre
 target: pack-split host-gate certification evidence
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
 context_artifacts:
@@ -41,15 +41,15 @@ review_requirements:
   - role: principal-sre
     kind: independent-reliability
 completed_reviews: []
-change_ref: null
-version: 14
+change_ref: 263452126179dd9f3a61183903a26a90c4d6b1c1
+version: 15
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1752
+updated: 2026-08-26-1758
 ---
 
 ## Outcome
@@ -163,3 +163,6 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   packet assertions). The item moved `in-review -> in-progress`, cleared its
   superseded `change_ref`, and prepared all three corrections. A new evidence
   commit and re-review are required.
+- **Re-review routing 2026-08-26-1758:** corrected evidence is committed at
+  `263452126179dd9f3a61183903a26a90c4d6b1c1`. The item moved
+  `in-progress -> in-review` (v14 -> v15) and routes to `principal-sre`.

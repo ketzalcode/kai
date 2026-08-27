@@ -404,3 +404,26 @@ Append-only communication log mirroring
              `2026-08-27T00:33:29Z`; retained macOS files 16, 17, and 24.
 - questions: none
 - next:      principal-swe-infra — create the corrected evidence commit.
+
+## HANDOFF 2026-08-26-1758 — principal-swe-infra -> principal-sre
+
+- did:       Committed all SRE corrections at exact `change_ref`
+             `263452126179dd9f3a61183903a26a90c4d6b1c1`, subject
+             `docs(pack-split): bind cloud selected agent evidence`. Moved the
+             item `in-progress -> in-review` (v14 -> v15).
+- state:     in-review; owner `principal-swe-infra`; next
+             `principal-sre`; lease clear; no waiting question
+- needs:     Re-review the exact corrected revision. Confirm that
+             `tool_requests.agent_type`, host-authored subagent boundaries, and
+             the nested skill event close P1; that the timestamped GitHub
+             history and pack manifest blobs close the cloud source-pin P2; and
+             that the corrected positive macOS assertions close the packet P2.
+             Return ratified or changes required and the release 12b verdict.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             kai/coordination/items/pack-split-host-gates.md
+- evidence:  `npm test` passed; `git diff --check` passed; credential-pattern
+             scan of the sanitized cloud run root returned no matches.
+- questions: none
+- next:      principal-sre — independent re-review at
+             `263452126179dd9f3a61183903a26a90c4d6b1c1`.
