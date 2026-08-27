@@ -427,3 +427,39 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-sre — independent re-review at
              `263452126179dd9f3a61183903a26a90c4d6b1c1`.
+
+## REVIEW 2026-08-26-1803 — principal-sre -> principal-swe-infra
+
+- change_ref: 263452126179dd9f3a61183903a26a90c4d6b1c1
+- verdict: ratified (READY)
+- findings: P0/P1/P2 = 0/0/0. All acceptance lines pass. Tool request
+            `toolu_019eFjZzzD2FszpjX6GTTWXA` and the host-authored
+            `persona-self` subagent boundaries close exact selected-agent
+            identity. Timestamped GitHub history and manifest blobs close the
+            cloud source pin. Corrected macOS assertions match retained files.
+- release: host-gates GO. Release 12b remains NO-GO because dependency
+           manifests, onboarding, and release 12a remain unmet.
+- residual: GitHub-source marketplace fetch remains untested; Actions exports
+            omit raw task arguments; direct specs follow mutable `main`; the
+            disposable consumer repository requires cleanup.
+- blocking: none
+
+## HANDOFF 2026-08-26-1805 — principal-swe-infra -> director-chief-of-staff
+
+- did:       Recorded SRE ratification at exact `change_ref`
+             `263452126179dd9f3a61183903a26a90c4d6b1c1`, checked all acceptance
+             lines, and moved the knowledge item `in-review -> completed`
+             (v15 -> v16).
+- state:     completed; no next role; lease clear; no waiting question
+- needs:     Merge the documentation/evidence PR, remove the private disposable
+             consumer repository after preservation, reconcile
+             `first-pack-extracted`, and promote the next typed item through
+             stewardship. Do not start release 12b directly.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/coordination/items/pack-split-host-gates.md;
+             kai/coordination/threads/pack-split-host-gates.md
+- evidence:  ratified REVIEW immediately above; `npm test`; credential-safe
+             sanitized cloud summaries under the ignored canonical run root
+- questions: none
+- next:      director-chief-of-staff / principal-product-manager — milestone
+             reconciliation and next-item promotion.

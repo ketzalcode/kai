@@ -2738,3 +2738,27 @@ uncommitted, so no review can bind and `change_ref` remains `null`. No plugin
 code, manifest, marketplace, version, pack, release, tag, publish, merge, or
 remote-branch action occurred. Release 12b remains **NO-GO** and
 `first-pack-extracted` remains open at 3 of 4.
+
+## 2026-08-26 — host gates completed and SRE-ratified
+
+The authorized private disposable consumer fixture placed
+`spark@copilot-plugins`, `RubenSaucedo/kai:packs/kai-core`, and
+`RubenSaucedo/kai:packs/kai-personal` on its default branch. Genuine cloud
+tasks resolved and loaded all three plugins, invoked the core contract, and
+completed a selected `kai-personal:persona-self` child invocation. Later-
+ingested host session records supplied the exact task arguments and subagent
+boundaries needed to bind the child causally to its nested
+`kai-core-contract-v1` call.
+
+The first SRE review at `c4d0b376…` correctly returned changes required for
+selected-agent identity, cloud source pinning, and stale positive macOS packet
+assertions. Infra corrected all three. Timestamped GitHub history binds the
+cloud direct specs to Kai `main` `fe562b936…`, pack `0.64.0`; the macOS packet
+now asserts the retained `KAI_CORE_READY` / `contract: 1` output.
+
+Independent SRE re-review ratified exact
+`263452126179dd9f3a61183903a26a90c4d6b1c1` with P0/P1/P2 `0/0/0`.
+`pack-split-host-gates` is `completed` at v16 and the host-gate verdict is GO.
+All 4 of 4 `first-pack-extracted` requirements are satisfied. Release 12b
+remains NO-GO for dependency manifests, onboarding, and release 12a. No pack,
+marketplace entry, version, tag, or release changed.

@@ -1,20 +1,26 @@
 # Pack split host gates
 
-**Status:** IN PROGRESS — macOS PASS; cloud consumer PASS; SRE corrections prepared for re-review
+**Status:** COMPLETED — macOS PASS; cloud consumer PASS; SRE RATIFIED
 **Prepared:** 2026-08-26
 **macOS source pin:** `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`
-**Release 12b verdict:** **NO-GO**
+**Host-gate verdict:** **GO**
+**Release 12b verdict:** **NO-GO — downstream prerequisites remain**
 
 ## Decision
 
-Release 12b must not start until independent reliability review. The macOS host
-arm passed. The authorized disposable consumer repository then proved that the
+The host gate is complete and no longer blocks the pack split. The macOS host
+arm passed. The authorized disposable consumer repository proved that the
 cloud host resolves and loads the positive control, `kai-core`, and
 `kai-personal` from default-branch repository settings, invokes the core
 contract, and completes a `kai-personal:persona-self` child task that invokes
 that contract. Host session records now provide the exact task arguments and
 same-session begin/end markers naming the `persona-self` subagent. The packs
 remain committed and unpublished.
+
+Independent `principal-sre` review ratified exact change reference
+`263452126179dd9f3a61183903a26a90c4d6b1c1` with zero P0/P1/P2 findings. Release
+12b remains NO-GO only because pack dependency manifests, onboarding, and
+release 12a are still unmet; this host-gate record is an explicit GO.
 
 The evidence path uses the lowest persistent-install rung that exercises each
 required provenance. It does not require either pack to appear in the public

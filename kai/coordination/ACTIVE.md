@@ -1306,3 +1306,15 @@ or provider events and is **indeterminate**, not a pass. The item remains
 default-branch consumer fixture with a positive control. `change_ref` remains
 `null`; release 12b remains **NO-GO**; all downstream items remain proposed and
 no pack was published.
+
+**Superseding host-gate completion 2026-08-26-1805.**
+The disposable default-branch consumer fixture resolved and loaded the
+marketplace control plus `kai-core` and `kai-personal` (`3/3`). Host session
+records name `kai-personal:persona-self` in the task arguments and bracket its
+nested core-contract invocation. Timestamped GitHub history binds the direct
+specs to Kai `fe562b936…` / pack `0.64.0`. Corrected macOS assertions match
+retained output. SRE ratified exact `change_ref 2634521…` with P0/P1/P2
+`0/0/0`; `pack-split-host-gates` is `completed` at v16. The
+`first-pack-extracted` required set is now 4/4 and waits on steward
+reconciliation. Release 12b remains NO-GO for downstream prerequisites; packs
+remain unpublished.

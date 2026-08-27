@@ -18,7 +18,7 @@ one-way and steward-approved:
 | Migration-doctor release record (`0.63.0`) | first-pack-extracted | pack-split-migration-doctor | kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md | **SHIPPED 2026-08-26**; security + reliability reviews complete |
 | Generated committed-unpublished core + personal trees (`0.64.0`) | first-pack-extracted | pack-split-generated-pack-trees | kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md | **SHIPPED 2026-08-26** (`2eea0f04…`; production verification PASSED 6/6; no pack published) |
 | Core + personal real-install proof | first-pack-extracted | pack-split-first-department | kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md | **SHIPPED 2026-08-26** (PR #171; merge `9a800e4e…`; main run `33020918358` success; production verification PASSED 5/5; reviewed `change_ref 3b14dc6…` preserved; no publication/version bump) |
-| Host-gate minimal-smoke evidence | first-pack-extracted | pack-split-host-gates | kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md | — | macOS PASS; cloud branch spike INDETERMINATE; blocked on consumer-repository authorization; release 12b NO-GO |
+| Host-gate minimal-smoke evidence | first-pack-extracted | pack-split-host-gates | kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md | — | **COMPLETED 2026-08-26**; macOS + cloud PASS; SRE ratified `2634521…`; host-gates GO; release 12b still NO-GO for downstream prerequisites |
 
 The **release record** for `pack-split-first-department` is closed at
 `shipped`. `workflow-ship` deliberately restored its prior
@@ -29,14 +29,14 @@ ancestry, byte-identical reliability evidence, canonical-record presence, zero
 forbidden-path drift from `342cd8e…`, marketplace N=1 at `source: "."`, and
 unchanged unpublished pack trees. The enabling release remains `v0.64.0`;
 no version, tag, GitHub release, marketplace edit, or pack publication occurred.
-`first-pack-extracted` remains open at 3 of 4 typed requirements because
-`pack-split-host-gates` is `blocked`, not `completed`. The bounded evidence
-now records a genuine GitHub-hosted Apple Silicon macOS PASS. The branch-scoped
-cloud spike provisioned no plugin and is indeterminate, not a pass. The next
-discriminating experiment is one disposable external consumer repository whose
-default branch declares both direct Kai specs plus a default-marketplace
-positive control; creating/deleting it waits only on operator question
-`Q-pack-split-host-gates-04`. Release 12b remains NO-GO.
+`first-pack-extracted` now has all 4 of 4 typed requirements satisfied:
+three product items are `shipped` and `pack-split-host-gates` is `completed`.
+The bounded evidence records genuine GitHub-hosted Apple Silicon macOS PASS
+and cloud PASS through a disposable default-branch consumer fixture. Host
+session records bind `kai-personal:persona-self` to its nested core invocation;
+SRE ratified exact `change_ref 2634521…`. Host-gates is GO. Release 12b remains
+NO-GO for the downstream dependency-manifest, onboarding, and release-12a
+chain. Steward milestone reconciliation is next.
 
 The **release record** for `pack-split-degraded-refusal` was written by `workflow-ship` at the
 2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived —

@@ -5,11 +5,11 @@ title: Host gates — macOS + cloud + install-order + fresh-session verification
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: in-review
+state: completed
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-sre
+next_role: null
 target: pack-split host-gate certification evidence
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
 context_artifacts:
@@ -40,16 +40,22 @@ required_for_milestone: true
 review_requirements:
   - role: principal-sre
     kind: independent-reliability
-completed_reviews: []
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 263452126179dd9f3a61183903a26a90c4d6b1c1
+    verdict: ratified
+    evidence: "kai/coordination/threads/pack-split-host-gates.md"
+    timestamp: 2026-08-26-1803
 change_ref: 263452126179dd9f3a61183903a26a90c4d6b1c1
-version: 15
+version: 16
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1758
+updated: 2026-08-26-1805
 ---
 
 ## Outcome
@@ -60,21 +66,22 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
 
 ## Acceptance
 
-- [ ] Install-order + fresh-session + collision + cross-plugin resolution verified on macOS + one cloud host.
-- [ ] Marketplace-vs-direct install paths both produce the correct bound contract (no stale legacy copy).
-- [ ] Marketplace and direct install evidence records whether each pack root
+- [x] Install-order + fresh-session + collision + cross-plugin resolution verified on macOS + one cloud host.
+- [x] Marketplace-vs-direct install paths both produce the correct bound contract (no stale legacy copy).
+- [x] Marketplace and direct install evidence records whether each pack root
       receives npm dependency installation or a `node_modules` tree.
-- [ ] A generated department agent carrying both guarantee blocks replies with
+- [x] A generated department agent carrying both guarantee blocks replies with
       exactly `KAI-CORE-MISSING` and nothing else in both the no-core and
       contract-skew (`--contract 2`) arms.
-- [ ] Evidence recorded at the artifact target; `principal-sre` reviews host/platform behavior.
-- [ ] Result is an explicit go / no-go for `pack-split-release-12b`.
+- [x] Evidence recorded at the artifact target; `principal-sre` reviews host/platform behavior.
+- [x] Result is an explicit go / no-go for `pack-split-release-12b`.
 
 ## Evidence
 
-- Preparation landed through PR #173. Final consumer evidence is bound to
-  exact `change_ref` `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`,
-  subject `docs(pack-split): record consumer cloud host proof`.
+- Preparation landed through PR #173. Corrected final consumer evidence is
+  bound to exact `change_ref`
+  `263452126179dd9f3a61183903a26a90c4d6b1c1`, subject
+  `docs(pack-split): bind cloud selected agent evidence`.
 - macOS **PASS**: genuine GitHub-hosted Apple Silicon Actions run
   `33024791572`, job `98363497414`, at source
   `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`. Sanitized evidence is under
@@ -121,6 +128,10 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   `fe562b9364256b159d7016d8bdc79d989bc7e3a3`, pack version `0.64.0`.
   The macOS packet now asserts its retained
   `KAI_CORE_READY` / `contract: 1` output.
+- Independent SRE re-review at
+  `263452126179dd9f3a61183903a26a90c4d6b1c1` ratified the gate with
+  P0/P1/P2 = `0/0/0`. All prior findings are closed. The knowledge item may
+  close `completed`.
 - The amended decision and next experiment are recorded at
   `kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md`.
   Release 12b remains explicitly **NO-GO**.
@@ -166,3 +177,6 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
 - **Re-review routing 2026-08-26-1758:** corrected evidence is committed at
   `263452126179dd9f3a61183903a26a90c4d6b1c1`. The item moved
   `in-progress -> in-review` (v14 -> v15) and routes to `principal-sre`.
+- **Completion 2026-08-26-1805:** SRE ratified the exact corrected revision.
+  The item moved `in-review -> completed` (v15 -> v16). Host-gates is GO;
+  release 12b stays NO-GO only for its remaining downstream prerequisites.
