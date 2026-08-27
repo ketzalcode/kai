@@ -9,7 +9,7 @@ state: shipped
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: principal-product-manager
+next_role: null
 target: pack-split staged release 12b (the 1.0.0 flip)
 artifact_target: null
 context_artifacts:
@@ -68,14 +68,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12b.md"
     timestamp: 2026-08-27-1515
 change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
-version: 14
+version: 15
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1447
+updated: 2026-08-27-1458
 ---
 
 ## Outcome
@@ -200,6 +200,13 @@ irreversible act that escapes release enforcement.*
   ancestry and records-only equivalence passed, final-head run `33119560853`
   was green at `2296b521…`, and the local pack parity, validator, and exact
   release guard all passed before the merge published the marketplace.
+- Steward reconciliation 2026-08-27-1458: the closure records are themselves on
+  `main` at `c9c1f077784cd7e6e2d76b1ecbcd5cb4424f115f`, verified read-only from
+  `.git/HEAD -> refs/heads/main`. The publication merge
+  `88965c4ce564646ce3b935267beb783162ca8b99` and live `v1.0.0` are unchanged.
+  The item's fulfilled `next_role: principal-product-manager` handoff is now
+  discharged and cleared (v14 -> v15); `shipped`, `change_ref`, both exact-ref
+  approvals, acceptance, and production evidence are untouched.
 
 ## Notes
 
@@ -218,3 +225,9 @@ irreversible act that escapes release enforcement.*
   that a direct-install settings override key is not host-measured; reverse
   workspace manifest provenance during an emergency monolith rollback; and
   derive the rollback forbidden set from every pack before release 12c.
+- **Follow-up routing (steward, 2026-08-27-1458).** All four follow-ups above,
+  plus the pre-merge evidence-sequencing lesson from this release's PREPARE, are
+  now bound as explicit acceptance criteria (R1-R5) on
+  `pack-split-release-12c`, which is the first item that can make any of them
+  load-bearing. They are carried, not closed, and not owed by this shipped item:
+  nothing here reopens, and no further work is routed to this record.

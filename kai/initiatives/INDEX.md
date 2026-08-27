@@ -8,4 +8,4 @@ onboarding pass, without replacing hand-edited rows.
 
 | slug | status | workspace | summary | deliverables | updated |
 |------|--------|-----------|---------|--------------|---------|
-| pack-split | active | `.` (repository) | Split kai into a required shared `kai-core` plus selectable department packs; the shared operating contract stays present and dependency loss fails closed. | `kai/initiatives/pack-split/deliverables.md` | 2026-08-26 |
+| pack-split | active | `.` (repository) | Split kai into a required shared `kai-core` plus selectable department packs; the shared operating contract stays present and dependency loss fails closed. `1.0.0` pack flip is live (core + personal published, monolith retired); `five-pack-split-shipped` open at 4 of 8 after the 12c retype. | `kai/initiatives/pack-split/deliverables.md` | 2026-08-27 |

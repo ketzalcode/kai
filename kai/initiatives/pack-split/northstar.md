@@ -135,7 +135,13 @@ milestones:
         state: shipped
       - item: pack-split-release-12b
         state: shipped
-      - item: pack-split-release-12c
+      - item: pack-split-release-12c-1-hardening
+        state: shipped
+      - item: pack-split-release-12c-2-product
+        state: shipped
+      - item: pack-split-release-12c-3-engineering
+        state: shipped
+      - item: pack-split-release-12c-4-gtm
         state: shipped
 ---
 
@@ -281,3 +287,126 @@ was deleted after evidence preservation. The steward therefore closes
 Release 12b remains **NO-GO** because dependency manifests, onboarding, and
 release 12a remain unmet. Packs remain unpublished; marketplace topology,
 versions, and release state are unchanged.
+
+**Superseding steward reconciliation (2026-08-27-1458).**
+The `1.0.0` flip is live and durable: `pack-split-release-12b` is `shipped`
+(v15) at reviewed `change_ref 236f36d4…`, publication merge
+`88965c4ce564646ce3b935267beb783162ca8b99`, public `v1.0.0`, production
+verification 8/8, and its closure records are on `main` at
+`c9c1f077784cd7e6e2d76b1ecbcd5cb4424f115f`. Its fulfilled steward handoff is
+discharged (`next_role -> null`); nothing about the release moved.
+
+**`five-pack-split-shipped` is OPEN at 4 of 5** typed required items:
+`pack-split-pack-dependency-manifests`, `pack-split-onboarding-installer`,
+`pack-split-release-12a` and `pack-split-release-12b` are `shipped`;
+`pack-split-release-12c` is `proposed` and still owes `shipped`. The initiative
+stays `active` with `scope.current: [five-pack-split-shipped]`. **No milestone
+or initiative closure is claimed** — three of the five packs
+(`engineering`, `product`, `gtm`) are not generated, `COMMITTED_PACKS` is still
+`['core', 'personal']`, and the served marketplace has exactly two entries.
+
+`pack-split-release-12c` was groomed (v1 -> v2) and **deliberately not
+promoted**. Its one typed dependency is satisfied and it fits current scope, but
+the record cannot represent its own acceptance: the lifecycle is forward-only to
+`shipped` while the item requires **three** staged department publishes — three
+ship walks, three merges, three `1.0.x` tags — and its `review_requirements`
+bind one exact `change_ref`, which three trees generated at three refs cannot
+satisfy in a single `completed_reviews` list. Slicing large work is
+`principal-swe-manager`'s call, not the steward's, so `next_role` is the manager
+for a sizing pass; scope, reviews, operator-executed publishes and priority 20
+are unchanged and not reopened.
+
+The steward bound the four non-blocking follow-ups from 12b's approving SRE and
+security reviews, plus that release's pre-merge evidence-sequencing lesson, as
+acceptance **R1-R5** on 12c. **R1 is the load-bearing one:** the
+`legacy-rollback` forbidden set is hardcoded to `['kai-core', 'kai-personal']`
+at `scripts/validate-plugin.mjs:788`, so the moment a third pack is published
+the validator would accept an emergency-rollback marketplace that restores the
+monolith **beside** a still-served department pack — the coexistence the
+non-negotiables forbid. Publishing a third pack before R1 lands would put a
+validator-blessed contradiction into the one path that exists to undo a bad
+flip. R2 (no reverse-provenance remediation on `workspace-provenance-ahead`) and
+R3 (no malformed-`settings.json` fixture) are the same shape: safety-net gaps
+that a two-pack surface tolerated. R4 stays **documentation only** — measuring
+the direct-install override-key shape needs an `@operator` host session for a
+case 12c does not change, so the measurement half is parked in the backlog with
+a revisit trigger rather than made a gate.
+
+No implementation, generation, marketplace, version, tag, release, or
+publication state changed in this pass.
+
+**Superseding steward pass (2026-08-27-1523) — 12c decomposition accepted,
+mapping retyped, queue reopened.**
+
+The `principal-swe-manager` sizing pass returned `12c-1..12c-4` plus one
+knowledge decision. The steward accepted the slice, made the two scope calls the
+manager left open, and reopened an executable queue.
+
+**`five-pack-split-shipped.required_items` is retyped** from the single
+`pack-split-release-12c` entry to the four concrete release items —
+`pack-split-release-12c-1-hardening`, `pack-split-release-12c-2-product`,
+`pack-split-release-12c-3-engineering`, `pack-split-release-12c-4-gtm`, each owed
+at `shipped`. The milestone is now **OPEN at 4 of 8**:
+`pack-split-pack-dependency-manifests`, `pack-split-onboarding-installer`,
+`pack-split-release-12a` and `pack-split-release-12b` are `shipped`; the four
+`12c` items are not. `pack-split-review-lens-binding` is deliberately **not** in
+the mapping — it is a decision artifact enforced as a typed `requires: completed`
+dependency of `12c-3`, and padding the mapping with it would make the milestone
+look wider than it is.
+
+**`pack-split-release-12c` is `dropped`** as superseded by its children (v3 ->
+v4, `required_for_milestone` -> `false`, `next_role` -> `null`). It holds no
+`change_ref`, no reviews, no lease and no production state — it delivered
+nothing, so `dropped` is the only truthful terminal state; `completed` would
+claim a delivery and `proposed` would leave a non-executable ID in a queue the
+milestone no longer names. The record is retained on disk with a table of where
+each criterion went.
+
+**Decision 1 — the publish-nothing `1.0.1` is KEPT.** R1 is the gate on the only
+path that undoes a bad flip. Folded into the first three-pack publish it would
+arrive in the same irreversible ref as the risk it guards, and a revert of a bad
+publish would revert the guard with it; it would also ask `principal-sre` and
+`principal-security` to judge a rollback path and a new published surface in one
+pass, against a one-`change_ref` review binding this initiative has held since
+`preflight-compat`. Accepted cost, stated plainly: one extra release cycle that
+adds no marketplace entry and changes nothing a user sees.
+
+**Decision 2 — department order stays `product -> engineering -> gtm`.** The
+manager flagged this as the one lever where product value may override
+engineering risk; the steward looked for that evidence and it is not in the
+records. No published commitment names an order — the live `v1.0.0` note and
+`README.md:39-43` promise the remaining packs as a set. No customer-success
+packet, backlog proposal or success measure ranks the departments, and this
+milestone's acceptance names all four order-neutrally. kai develops itself from
+root source rather than the published pack surface, so deferring
+`kai-engineering` does not slow the work that publishes it. What users wait on is
+all three departments returning, and the largest tree is the only one carrying a
+root-body change with partition-placement blast radius — the worst candidate for
+an unproven publish protocol. Reversal condition recorded on `12c-2`: a recorded
+signal that a named department must reach users first.
+
+**Decision 3 — H4 stays on `12c-1`, amended to be provable there.** Placement
+rule: wherever it must be complete before the first department publish, which is
+the last release before a third pack exists. Because `COMMITTED_PACKS` is still
+`['core', 'personal']` at `1.0.1`, H4 is split at its natural seam — the
+**derivation** (matrix from the committed pack set, per-leg assertion from
+`PACK_RUNTIME_DEPENDENCIES`) lands and is self-tested at `12c-1`; the first
+**live** department leg is proved at `12c-2`, where it already is an acceptance
+line. The guarantee is unchanged: no publish PR edits CI to make its own pack
+legal.
+
+**Promotions — the `ready` queue is no longer empty.**
+`pack-split-release-12c-1-hardening` is `ready` at **priority 10**
+(`next_role: principal-swe-infra`), the single executable head of the initiative;
+`pack-split-review-lens-binding` is `ready` at **priority 20**
+(`next_role: principal-swe-architect`), running in parallel on a disjoint touch
+set. Both have owner and lease clear. `12c-2`, `12c-3` and `12c-4` stay
+`proposed` — each has an unmet typed dependency, and the steward promotes each in
+the pass that follows its predecessor's ship, so `ready` stays an executable
+queue rather than a wish list.
+
+Three of five packs remain ungenerated and unpublished, `COMMITTED_PACKS` is
+still `['core', 'personal']`, and the served marketplace has exactly two entries.
+**No milestone or initiative closure is claimed.** This pass changed no
+implementation, generated tree, marketplace, version, tag, release, or
+publication state, and dispatched nothing.

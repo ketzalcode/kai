@@ -3078,3 +3078,169 @@ absent, and today's migrating users lose those roles until it ships. This
 closure satisfies 12c's typed `shipped` dependency but does not promote it; 12c
 remains `proposed` v1 and untouched. The item lease is clear and routes to
 `principal-product-manager` for separate steward reconciliation.
+
+## 2026-08-27-1458 - steward pass: 12b reconciled; 12c hardened and held for sizing
+
+The steward closed release 12b's last coordination handoff and refused to let a
+satisfied dependency masquerade as readiness.
+
+**12b reconciled (v14 -> v15, still `shipped`).** The fulfilled
+`next_role: principal-product-manager` is discharged to `null`. Nothing about
+the release moved: reviewed `change_ref 236f36d4…`, both exact-ref approvals,
+acceptance, touches and the 8/8 production evidence are byte-unchanged. Verified
+read-only that the closure records are on `main` at
+`c9c1f077784cd7e6e2d76b1ecbcd5cb4424f115f` (`.git/HEAD -> refs/heads/main`), so
+the shipped state is durable rather than a local assertion; publication merge
+`88965c4ce564646ce3b935267beb783162ca8b99` and live `v1.0.0` are unchanged.
+
+**`five-pack-split-shipped` is OPEN at 4 of 5** typed required items. The
+initiative stays `active`. Three of five packs are not generated —
+`COMMITTED_PACKS = ['core', 'personal']`, `packs/` holds two trees, and the
+served marketplace has two entries — so no milestone or initiative closure is
+claimed.
+
+**12c groomed (v1 -> v2) and deliberately NOT promoted.** Its one typed
+dependency is satisfied and it fits `scope.current`, but the record cannot
+represent its own acceptance. The lifecycle is forward-only to `shipped`, and
+this item requires three staged department publishes: three ship walks, three
+merges, three `1.0.x` tags. Its `review_requirements` bind one exact
+`change_ref`, and three trees generated at three refs cannot sit in one
+`completed_reviews` list without breaking the "reviews bind the current ref"
+invariant enforced here since `preflight-compat`. Promoting it would have been a
+commitment to an outcome the record cannot hold. Slicing large work is
+`principal-swe-manager`'s call, not the steward's, so `next_role` is the manager
+for a sizing pass. Scope is settled and not reopened: three departments staged
+one at a time, scaffolding cleanup, `1.0.x`, both reviews, operator-executed
+publishes, priority 20. **The `ready` queue is empty** — accurate, not a stall;
+the next action is a decision, not a dispatch.
+
+**The 12b follow-ups became acceptance, not footnotes.** All four non-blocking
+findings from the approving SRE and security reviews, plus the pre-merge
+evidence-sequencing condition this release had to convert from assumption to a
+blocking stop, are now R1-R5 on 12c. **R1 is the one that changes the release
+plan:** `scripts/validate-plugin.mjs:788` hardcodes
+`initialPackNames: ['kai-core', 'kai-personal']`, so `marketplaceSurfacePolicy`
+derives the `legacy-rollback` forbidden set from two names. The moment a third
+pack is published, the validator would **accept** an emergency-rollback
+marketplace that restores the monolith while still serving
+`kai-engineering`/`kai-product`/`kai-gtm` — the monolith-plus-pack coexistence
+the non-negotiables forbid, blessed by the gate, in the only path that exists to
+undo a bad flip. It was correctly non-blocking at two packs and is a hard
+precondition at three. R2 (`migration-doctor.mjs:769` refuses
+`workspace-provenance-ahead` with no remediation step, while `:759` emits one
+for the forward case) and R3 (no malformed-`settings.json` fixture beside the
+existing `malformed-config`/`malformed-entries` homes) are the same shape:
+safety-net gaps a two-pack surface tolerated. R1-R3 and R5 are surface-wide, so
+the steward's read is that they land **before the first department publish**,
+not per department.
+
+**R4 was minimized on purpose.** The SRE asked that the direct-install
+override-key shape be *documented* as unmeasured; turning it into a measurement
+gate would require an `@operator` host session for a legacy path 12c does not
+change, since every pack 12c publishes is marketplace-provenance whose
+`name@marketplace` key shape was measured at 12b. R4 carries the documentation
+half; the measurement half is parked as a backlog `PROPOSAL` with an explicit
+revisit trigger and a stated fail-open consequence, bounded by the
+`legacy-installed` refusal that fires first.
+
+Raised, not added: `README.md:35-37` discloses the install surface as "16 agents
+and 31 skills", honest at the two-pack flip and false as departments land. It is
+routed to the manager's slice as a recommendation rather than a new checkbox,
+because it was not one of the carried review follow-ups.
+
+This pass changed no implementation, generated tree, marketplace, version, tag,
+release, or publication state, and dispatched nothing.
+
+## 2026-08-27-1523 - steward pass: 12c decomposition accepted, mapping retyped, queue reopened
+
+The manager returned `12c-1..12c-4` plus one knowledge decision. The steward
+accepted the slice, made the two scope calls the manager deliberately left open,
+retyped the milestone, retired the umbrella, and reopened an executable queue.
+
+**Milestone retyped.** `five-pack-split-shipped.required_items` no longer names
+`pack-split-release-12c`. It names the four concrete release items —
+`pack-split-release-12c-1-hardening`, `-12c-2-product`, `-12c-3-engineering`,
+`-12c-4-gtm` — each owed at `shipped`. The milestone is **OPEN at 4 of 8**.
+`pack-split-review-lens-binding` is deliberately **not** in the mapping: it is a
+decision artifact enforced as a typed `requires: completed` dependency of
+`12c-3`, and putting it in the closure mapping would make the milestone look
+wider than it is.
+
+**Umbrella dropped, truthfully.** `pack-split-release-12c` goes `proposed ->
+dropped` (v3 -> v4, `required_for_milestone -> false`, `next_role -> null`),
+superseded by its children. It holds no `change_ref`, no `completed_reviews`, no
+lease and no production state — it delivered nothing. `completed` would claim a
+delivery; leaving it `proposed` would leave a non-executable ID in a queue the
+milestone no longer names. The retype was done **first**, exactly as the manager
+asked, so the advisory flag never sat at odds with the authoritative mapping. The
+record stays on disk carrying a table of where each criterion went.
+
+**Decision 1 — the publish-nothing `1.0.1` is KEPT.** The manager priced the
+alternative honestly: fold R1-R3 + H4 into `12c-2` and run three releases instead
+of four. Refused. R1 guards the *only* path that undoes a bad flip; folded in, the
+guard arrives in the same irreversible ref as the risk it guards, and a revert of
+a bad first three-pack publish would revert the guard with it. It would also ask
+`principal-sre` and `principal-security` to judge a rollback path and a new
+published surface in one pass, against the one-`change_ref` review binding this
+initiative has held since `preflight-compat`. **Accepted cost, stated rather than
+buried:** one extra build, two reviews, one ship walk and one operator merge/tag
+for a release that adds no marketplace entry and changes nothing a user sees.
+That is the cheapest available insurance against a non-negotiable being
+validator-blessed away.
+
+**Decision 2 — department order stays `product -> engineering -> gtm`.** The
+manager flagged this as the one lever where product value may legitimately
+override engineering risk, and handed the call to the PM. The steward looked for
+that evidence in the records and it is not there. No published commitment names an
+order: the live `v1.0.0` release note and `README.md:39-43` promise the remaining
+packs as a set. No customer-success packet, backlog proposal or success measure
+ranks the departments, and this milestone's acceptance names all four
+order-neutrally. kai develops itself from root source, not from the published
+pack surface, so deferring `kai-engineering` does not slow the work that publishes
+it — worth writing down, because it is the plausible-sounding argument someone
+would reconstruct later. What users actually wait on is all three departments
+returning, and the engineering tree is the only publish carrying a root-body
+change whose blast radius reaches partition placement; putting the largest tree on
+an unproven publish protocol risks stalling everything behind it. Reversal
+condition recorded on `12c-2`: a recorded signal — customer-success packet,
+operator instruction, or adoption measure — that a named department must reach
+users first.
+
+**Decision 3 — H4 stays on `12c-1`, amended to be provable there.** The placement
+rule is "wherever it must be complete before the first department publish", and
+that is the last release before a third pack exists. But H4 as written could not
+be discharged at `1.0.1`: with `COMMITTED_PACKS = ['core', 'personal']` there is
+no department tree to run a leg against. So it is split at its natural seam — the
+**derivation** (matrix from the committed pack set, per-leg assertion from
+`PACK_RUNTIME_DEPENDENCIES`) lands and is self-tested at `12c-1` over the full
+declared partition; the first **live** department leg is proved at `12c-2`, where
+it already is an acceptance line. The load-bearing guarantee is untouched: no
+publish PR ever edits CI to make its own pack legal. A satisfiability amendment,
+not a reduction, and not new scope. Consequence: the new required check name
+`runtime-dependencies (kai-product)` first appears at `12c-2`, so the
+branch-protection question is owed there, not now.
+
+**Promotions — the `ready` queue is no longer empty.**
+`pack-split-release-12c-1-hardening`: `proposed -> ready`, priority 20 -> 10,
+`next_role -> principal-swe-infra`, owner and lease clear, v1 -> v2. It is the
+single executable head of the initiative.
+`pack-split-review-lens-binding`: `proposed -> ready`, priority 20,
+`next_role -> principal-swe-architect`, owner and lease clear, v1 -> v2. It runs
+in parallel — no upstream dependency, different owner, disjoint touch set — so
+there is no touch conflict for the director to resolve at dispatch. `12c-2`,
+`12c-3` and `12c-4` stay `proposed`: each has an unmet typed dependency, and the
+steward promotes each in the pass that follows its predecessor's ship. `ready`
+here means executable, not merely committed.
+
+**One condition attached rather than absorbed.** `12c-1` keeps the SRE + security
+review pair with no architect: it changes a validator-policy derivation, a doctor
+remediation step, a fixture corpus and a CI matrix. If the R1 derivation turns out
+to require changing the partition/marketplace-topology *contract* rather than its
+consumer, that is a scope question back to the steward and the architect is added
+then — it is not to be absorbed into the build.
+
+No `@operator` decision is owed by this pass. Three of five packs remain
+ungenerated and unpublished, `COMMITTED_PACKS` is still `['core', 'personal']`,
+the served marketplace has exactly two entries, and **no milestone or initiative
+closure is claimed**. This pass changed no implementation, generated tree,
+marketplace, version, tag, release, or publication state, and dispatched nothing.

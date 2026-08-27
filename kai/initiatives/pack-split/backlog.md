@@ -669,3 +669,39 @@ its generated-body selection now runs through `parseGeneratedKey`.
 - **Constraint:** do not route this into generated-pack extraction. R7 closed
   on a zero pack-attributable differential, not on pretending the duplicate
   does not exist.
+
+## Parked at the 2026-08-27-1458 steward pass — `pack-split-release-12b` follow-ups
+
+Four non-blocking findings from the approving 12b SRE and security reviews were
+**promoted**, not parked: they are acceptance R1-R4 on `pack-split-release-12c`,
+with the release's pre-merge evidence-sequencing lesson added as R5. One half of
+one follow-up is parked here rather than promoted, so it is not silently dropped.
+
+### PROPOSAL — measure the direct-install settings override-key shape on a real host
+
+- **Observed:** `reconcileEnabledState` (`scripts/lib/migration-doctor.mjs:316`)
+  builds the `settings.json` override key as `name@marketplace` for a
+  marketplace install and as a bare `name` for a direct install. The
+  marketplace shape is measured — 12b's live probes exercised it. The
+  **direct-install** shape is an assumption: the one real direct-monolith host
+  measured had `enabledPlugins: {}`, so the key was never exercised, and the
+  reviewer filed it as "unmeasured", asking only that it be documented.
+- **Why parked, not promoted:** measuring it needs an `@operator` host session
+  with a direct install carrying a real explicit override — a case release 12c
+  does not change, since every pack 12c publishes is marketplace-provenance.
+  Promoting it would add an external-host gate to the release that finishes the
+  split, for a path the split is retiring. R4 on 12c therefore carries the
+  **documentation** half only.
+- **Consequence if wrong:** on a direct install with an explicit override under
+  a key shape we guessed wrong, the doctor reads "no override" and lets
+  `config.json` stand as authoritative instead of reporting
+  `enabled-state-unverified`. That is a fail-*open* read on a legacy surface
+  the migration is removing, and it is bounded by the `legacy-installed`
+  refusal that fires first on any such host.
+- **Revisit if:** a direct-install override is ever observed disagreeing with
+  `config.json` on a real host; or the doctor is asked to certify enabled state
+  for a direct install rather than merely refuse it; or an `@operator` host
+  session is already being run for another reason and can carry the probe at
+  no extra cost.
+- **Owner:** `principal-sre` to specify the probe; `principal-product-manager`
+  for scheduling. Not owed by any current item.
