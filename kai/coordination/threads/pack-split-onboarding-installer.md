@@ -33,3 +33,24 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-product-manager — retain behind the scope valve until
              the current milestone closes.
+
+## HANDOFF 2026-08-27-1155 — principal-product-manager -> principal-swe-infra
+
+- did:       Verified active scope `five-pack-split-shipped` and all three
+             typed dependencies at `shipped`: generated pack trees, migration
+             doctor, and dependency manifests. Promoted `proposed -> ready`
+             without changing acceptance, touches, review requirements, or
+             priority.
+- state:     ready
+- needs:     Implement the smallest honest guided installer: exact pack set
+             and commands, explicit confirmation, core first, verify every
+             step, stop on first failure, report exact partial state, and
+             require a fresh session after core installation.
+- artifacts: kai/coordination/items/pack-split-onboarding-installer.md;
+             kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md
+- evidence:  `pack-split-generated-pack-trees`, `pack-split-migration-doctor`,
+             and `pack-split-pack-dependency-manifests` are all `shipped`.
+- questions: none
+- next:      principal-swe-infra — claim a lease and implement; obtain both
+             independent architecture and technical-writing reviews on one
+             exact `change_ref`.
