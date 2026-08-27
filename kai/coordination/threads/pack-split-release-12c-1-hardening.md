@@ -202,3 +202,19 @@ Append-only communication log mirroring
              both current runtime-binary queries = `lectoria`.
 - questions: none
 - next:      principal-swe-infra — create the reviewable implementation ref.
+
+## HANDOFF 2026-08-27-1640 — principal-swe-infra -> principal-sre
+
+- did:       Committed the complete 1.0.1 hardening implementation and the
+             settled review-lens decision at exact ref
+             `ca622854699cb8e0b64087033b99f27d2201cc7a`.
+- state:     in-review
+- needs:     Independent reliability review at the exact ref. Security review
+             runs independently against the same ref.
+- artifacts: `.github/workflows/validate.yml`; `scripts/lib/pack-plan.mjs`;
+             `scripts/pack-preview.mjs`; `scripts/lib/migration-doctor.mjs`;
+             `scripts/workspace-doctor.mjs`; `docs/reference/plugin-structure.md`
+- evidence:  Full `npm test` passed; 178 generator checks; 28 migration
+             scenarios; exact release guard passed against `origin/main`.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.

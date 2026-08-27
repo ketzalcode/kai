@@ -5,11 +5,11 @@ title: Release 12c-1 — pre-publish surface hardening (rollback derivation, pro
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: in-progress
+state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-sre
 target: pack-split pre-publish hardening release (1.0.1; no marketplace surface change)
 artifact_target: null
 context_artifacts:
@@ -50,15 +50,15 @@ review_requirements:
   - role: principal-security
     kind: independent-security
 completed_reviews: []
-change_ref: null
-version: 4
+change_ref: ca622854699cb8e0b64087033b99f27d2201cc7a
+version: 5
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1630
+updated: 2026-08-27-1640
 ---
 
 ## Outcome
@@ -126,32 +126,21 @@ step, and cannot land on a CI matrix that ignores it.
 
 ## Evidence
 
-- (to be filled) — reviewed `change_ref`, both independent approvals at that exact ref, CI run at
-  final head, operator merge/tag/release for `1.0.1`.
+- Review ref: `ca622854699cb8e0b64087033b99f27d2201cc7a`.
+- `node scripts/release-guard.mjs --base origin/main --head HEAD`:
+  `✓ release-guard: behavior change is bumped and release-noted`.
+- `npm test`: passed; migration doctor 28 scenarios; pack-preview 178 checks.
+- CI smoke: matrix `["kai-core","kai-personal"]`; both current runtime-binary
+  queries return only `lectoria`.
+- Pending: exact-ref SRE and security approvals, fresh final-head CI, merge,
+  production verification, tag and GitHub release.
 
-### Build pass 2026-08-27-1612 (`principal-swe-infra`) — implemented in the working tree, NOT committed
+### Build pass 2026-08-27-1612 (`principal-swe-infra`)
 
-Every acceptance criterion is **written**; **none is verified**. The build session held no shell,
-so nothing was executed, generated, branched or committed. Boxes stay unticked because the proof
-for nearly every line is a command output that does not exist yet. `C:\src\kai` carries an
-uncommitted implementation on the working tree — see the thread for the full file list and the
-blocking question.
-
-| Criterion | Written where | Verified |
-| --- | --- | --- |
-| R1 derivation | `scripts/lib/pack-plan.mjs:794-829` — `marketplaceSurfacePolicy` takes `publishedPackNames = COMMITTED_PACKS.map(packPluginName)` and `publishablePackNames = PACK_ORDER.map(packPluginName)`; `legacy-rollback` forbids **every** publishable name, `packs` requires exactly the committed set and forbids the monolith plus every unpublished name. Literal removed from `scripts/validate-plugin.mjs`. | no |
-| R1 self-test | `scripts/pack-preview.mjs:649-700` — eight arms, including a `legacy-rollback` index that still serves a department pack and a `packs` index serving an unpublished pack, both asserted by derived name. | no |
-| R1 docs | `docs/reference/plugin-structure.md` §Emergency rollback steps 2-3, re-derived from the partition instead of restating a count. | no |
-| R2 reverse remediation | `scripts/lib/migration-doctor.mjs:781-789` — two `step(...)` calls on `workspace-provenance-ahead` mirroring the forward shape at `:765-769`, conditioned on a deliberate rollback so it does not contradict the `legacy-installed` uninstall steps on the same path. Runbook match: new §Emergency rollback step 5. | no |
-| R3 fixtures | `test/fixtures/host-installs.json` — `malformed-settings` (truncated JSONC) and `nonboolean-enabled-state` (`"kai-core@kai-plugins": "true"`). Both drive `readSettings` to `ok: false`, so `reconcileEnabledState` blanks the config-declared `enabled: true` **and** `assessHost` emits `enabled-state-unverified`. Cases + a direct blanking assertion in `scripts/workspace-doctor.mjs`; matrix 26 -> 28. | no |
-| R4 documentation | `scripts/lib/migration-doctor.mjs:19-25` (header) and `:321-323` (at the override-key computation). Documentation only; no measurement gate added. | no |
-| R5 codified | `docs/reference/plugin-structure.md` §Release steps 3 — the three pre-merge stop conditions (ancestry, records-only equivalence diff, fresh CI at the actual final head). | no |
-| R5 applied | Requires a commit and a CI run. | **not started** |
-| H4 derivation | `runtimeDependencyMatrix()` at `scripts/lib/pack-plan.mjs:154-170` + `RUNTIME_ARTIFACTS.lectoria.binary`; `--ci-matrix` / `--ci-runtime-binaries` in `scripts/pack-preview.mjs`; `.github/workflows/validate.yml` gains a `runtime-dependency-matrix` job feeding `runtime-dependencies` via `fromJSON`, and the per-leg loop asserts only the binaries the pack declares. Partition-wide arms at `scripts/pack-preview.mjs:702-715` prove a `[]`-dependency pack yields a leg with no binary. | no |
-| `1.0.1` coherence | Root `plugin.json`/`package.json`/`package-lock.json`, `.github/plugin/marketplace.json` (metadata + both entries), both pack manifests and lockfiles, CHANGELOG section + compare link, README stamp. | no |
-| Surface unchanged | `.github/plugin/marketplace.json` still lists exactly `kai-core` + `kai-personal` at `installSurface: packs`; `COMMITTED_PACKS` untouched; no tree generated. | by inspection only |
-
-Not run, and required before this can move to `in-review`: `npm test`, `node scripts/pack-preview.mjs --write` (the committed pack trees were **hand-mirrored**, so byte parity against the generator is unproven), `node scripts/pack-preview.mjs --check`, `node scripts/release-guard.mjs --base origin/main --head HEAD`, and a `--ci-matrix` / `--ci-runtime-binaries` smoke check. No branch, no commit, no PR, no tag, no publication.
+The initial build session wrote the implementation but had no shell, so its
+verification claims were intentionally withheld. The shell-capable continuation
+below regenerated the committed trees, replaced the unsafe draft CI shape, and
+produced the evidence that moved this item to `in-review`.
 
 ### Shell-capable continuation 2026-08-27-1630 (`principal-swe-infra`)
 
