@@ -5,11 +5,11 @@ title: Honest guided onboarding installer — core first, verify each step, no u
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: release-ready
+state: shipped
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack-split onboarding guided installer
 artifact_target: null
 context_artifacts:
@@ -60,14 +60,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-onboarding-installer.md"
     timestamp: 2026-08-27-1255
 change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
-version: 14
+version: 18
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1257
+updated: 2026-08-27-1304
 ---
 
 ## Outcome
@@ -88,6 +88,29 @@ active until a new session starts.
 
 ## Evidence
 
+- **Production verification passed 7/7.** Root package/plugin, marketplace
+  metadata and monolith entry, core, and personal are all `0.66.0`; README and
+  CHANGELOG name `0.66.0`. Marketplace contains exactly one plugin, `kai` at
+  source `.`, and no pack entries are published.
+- Operator-supplied checks report
+  `node scripts/pack-preview.mjs --check` passing and
+  `node scripts/validate-plugin.mjs` passing with 56 agents and 51 skills.
+  Rollback was not invoked. Release 12b remains NO-GO; packs remain
+  unpublished and the marketplace remains monolith-only.
+- **CONFIRM-COMPLETE:** exact-main validate run
+  `https://github.com/RubenSaucedo/kai/actions/runs/33111113566` succeeded at
+  merge `3be962442c6251e35a6524e3952fb3313513e257`; jobs `contract`,
+  `runtime-dependencies (kai-core)`, and
+  `runtime-dependencies (kai-personal)` all succeeded. Public GitHub release
+  `v0.66.0` is non-draft and non-prerelease, targets that exact merge, and was
+  published at `2026-08-27T20:00:05Z`.
+- **CONFIRM-START:** the operator merged PR #177 without squash or rebase at
+  `2026-08-27T19:59:23Z`. PR head
+  `1f4a23c772d0c5bc067e616c411d51b769208d30` became merge
+  `3be962442c6251e35a6524e3952fb3313513e257`, starting deployment of the
+  `0.66.0` monolith release. Reviewed ref
+  `82e98bcfe595e6d885843e90aa8a704d4478bb45` remains an ancestor; later PR
+  changes are coordination, initiative, and ship-record paths only.
 - `skills/kai-core-workspace-onboarding/SKILL.md` carries the closed five-pack
   catalog, exact marketplace and install commands, read-only migration gate,
   explicit confirmation, core-first order, per-step checks, final migration

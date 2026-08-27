@@ -420,3 +420,72 @@ Append-only communication log mirroring
 - questions: none
 - next:      @operator — execute the authorized ship sequence and return
              evidence to workflow-ship.
+
+## HANDOFF 2026-08-27-1304 — @operator -> workflow-ship
+
+- did:       **CONFIRM-START evidence supplied.** PR #177 merged without
+             squash or rebase at `2026-08-27T19:59:23Z`, moving the item
+             `release-ready` v15 -> `deploying` v16.
+- state:     deploying
+- needs:     Confirm exact-merge main validation and successful public
+             `v0.66.0` publication before entering production verification.
+- artifacts: https://github.com/RubenSaucedo/kai/pull/177;
+             https://github.com/RubenSaucedo/kai/actions/runs/33111113566;
+             kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md
+- evidence:  PR head `1f4a23c772d0c5bc067e616c411d51b769208d30`;
+             merge `3be962442c6251e35a6524e3952fb3313513e257`;
+             reviewed ref `82e98bcfe595e6d885843e90aa8a704d4478bb45`
+             remains in ancestry and later paths are record-only.
+- questions: none
+- next:      workflow-ship — confirm successful deployment completion, then
+             enter production verification.
+
+## NOTE 2026-08-27-1304 — workflow-ship confirm-complete
+
+- did:       **CONFIRM-COMPLETE evidence accepted.** Exact-main validate run
+             `33111113566` succeeded at merge `3be96244…`, and public GitHub
+             release `v0.66.0` targets that merge. Moved `deploying` v16 ->
+             `production-verification` v17.
+- state:     production-verification
+- needs:     Record the seven proportional production checks and close only
+             if every check passes.
+- artifacts: https://github.com/RubenSaucedo/kai/actions/runs/33111113566;
+             https://github.com/RubenSaucedo/kai/releases/tag/v0.66.0;
+             kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md
+- evidence:  Jobs `contract`, `runtime-dependencies (kai-core)`, and
+             `runtime-dependencies (kai-personal)` all succeeded; release is
+             public, non-draft, non-prerelease, and was published
+             `2026-08-27T20:00:05Z`.
+- questions: none
+- next:      workflow-ship — verify production topology, version coherence,
+             generated parity, and installer contract; rollback on failure.
+
+## HANDOFF 2026-08-27-1304 — workflow-ship -> principal-product-manager
+
+- did:       **CONFIRM-START + CONFIRM-COMPLETE closure: SHIPPED.** Walked
+             `release-ready` v15 -> `deploying` v16 ->
+             `production-verification` v17 -> `shipped` v18 without skipping
+             a state. Cleared `next_role` and the lease, preserved
+             `change_ref 82e98bcfe595e6d885843e90aa8a704d4478bb45`,
+             and did not invoke rollback.
+- state:     shipped
+- needs:     Run the separate steward reconciliation. This closure promoted
+             no downstream work; release 12b remains NO-GO and packs remain
+             unpublished.
+- artifacts: kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md;
+             kai/initiatives/pack-split/log.md;
+             kai/initiatives/pack-split/deliverables.md;
+             https://github.com/RubenSaucedo/kai/releases/tag/v0.66.0
+- evidence:  PR #177 head `1f4a23c772d0c5bc067e616c411d51b769208d30`
+             merged without squash/rebase as
+             `3be962442c6251e35a6524e3952fb3313513e257` at
+             `2026-08-27T19:59:23Z`; exact-main run `33111113566` succeeded
+             in all three jobs; public `v0.66.0` release targets the merge and
+             was published `2026-08-27T20:00:05Z`; production verification
+             passed 7/7 with version coherence, marketplace N=1 at source `.`,
+             no published pack entries, generated parity, and validator
+             result 56 agents/51 skills.
+- questions: none
+- next:      principal-product-manager — reconcile milestone progress and
+             downstream eligibility without weakening the release 12b
+             NO-GO boundary.
