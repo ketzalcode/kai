@@ -2915,3 +2915,29 @@ The guided installer shipped at v18, and both typed release-12a dependencies
 are shipped: `pack-split-onboarding-installer` and
 `pack-split-migration-doctor`. The steward promoted exactly
 `pack-split-release-12a` from `proposed` to `ready` at v2; no other item moved.
+
+## 2026-08-27-1319 - DoD PREPARE: release 12a RELEASE-READY
+
+`workflow-ship` ran all six Definition-of-Done dimensions for
+`pack-split-release-12a`; all are **Clear**. The item finished v13
+`release-ready`, lease clear, `next_role: @operator`. This is not a shipment.
+
+The exact reviewed implementation remains
+`2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`. `principal-sre` ratified it
+with P0/P1 `0/0`; its one record-only P2 was corrected without implementation
+change. `principal-technical-writer` approved with P0/P1/P2 `0/0/0`. GitHub
+compare shows pre-PREPARE PR head `194dee86fc6a16712108c4e685be6d5e96944692`
+adds only item/thread records after the reviewed commit. PR run `33112672011`
+concluded `success`; `contract`, `runtime-dependencies (kai-core)`, and
+`runtime-dependencies (kai-personal)` all succeeded. Full local `npm test` and
+the exact `origin/main` to implementation-ref release guard are recorded
+passing.
+
+The canonical ship record is
+`kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md`.
+It records merge-without-history-rewrite, exact-main CI, `v0.67.0` release,
+abort/rollback, and production-verification steps. Kai committed, pushed,
+merged, tagged, released, and published nothing. Marketplace topology remains
+exactly one `kai` entry at source `.`, packs remain unpublished, current
+install commands remain unchanged, and release 12b remains **NO-GO** until
+release 12a is production-verified and `shipped`.
