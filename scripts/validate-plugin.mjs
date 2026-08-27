@@ -763,9 +763,9 @@ for (const e of manifestParityErrors(parsedManifests.filter((m) => !m.isRoot), c
 // description. A stale entry does not fail an install -- it succeeds and reports
 // the wrong version, which is worse than a broken one. The name is checked against
 // a constant because the host uses it as the registration key with no override, so
-// renaming it silently invalidates `kai@kai-plugins` everywhere. The index may
-// list more than one plugin once packs publish; an in-repo plugin with no entry is
-// fine, because packs stay unpublished until the marketplace flip.
+// renaming it silently invalidates `kai@kai-plugins` everywhere. Which plugin names
+// the index must and must not carry is derived from the pack partition, so a pack
+// published later is covered without editing this call.
 const mktPath = join(ROOT, MARKETPLACE_REL);
 if (!existsSync(mktPath)) {
   err(MARKETPLACE_REL, 'missing — kai publishes itself as a marketplace so it can be installed without a deprecated direct install');
@@ -785,7 +785,6 @@ if (!existsSync(mktPath)) {
       mkt,
       canonicalVersion,
       monolithName: MONOLITH_NAME,
-      initialPackNames: ['kai-core', 'kai-personal'],
     });
     for (const msg of surface.errors) err(MARKETPLACE_REL, msg);
     for (const msg of marketplaceConsistencyErrors({

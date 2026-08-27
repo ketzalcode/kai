@@ -139,12 +139,36 @@ export const RUNTIME_ARTIFACTS = {
     spec: 'https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz',
     integrity: 'sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==',
     lockKey: 'node_modules/lectoria',
+    // The executable `npm ci` links into <pack>/node_modules/.bin. Declared here
+    // so CI asserts a binary the artifact actually provides, not the dependency
+    // name it happens to share today.
+    binary: 'lectoria',
   },
 };
 
 // The plugin name a pack publishes under. Core is the required shared plugin;
 // departments are `kai-<department>`.
 export const packPluginName = (pack) => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
+
+// The runtime-dependency legs CI runs, derived from the committed pack set and
+// the declared dependency plan. A pack declaring none yields a leg with nothing
+// to assert, so publishing a department never means editing the workflow to make
+// its own pack legal.
+export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
+  return packs.map((pack) => {
+    const dependencies = PACK_RUNTIME_DEPENDENCIES[pack];
+    if (!dependencies) throw new Error(`no runtime dependency plan exists for pack "${pack}"`);
+    return {
+      pack,
+      name: packPluginName(pack),
+      binaries: [...dependencies].sort().map((dependency) => {
+        const binary = RUNTIME_ARTIFACTS[dependency]?.binary;
+        if (!binary) throw new Error(`runtime dependency "${dependency}" declares no sanctioned executable`);
+        return binary;
+      }),
+    };
+  });
+}
 
 // A functional, non-marketing manifest description. Published copy is refined at
 // the marketplace flip; scaffolding only needs to say what the plugin is.
@@ -684,10 +708,10 @@ export function manifestParityErrors(manifests, canonicalVersion) {
 // more than one plugin (kai-core + departments) once packs are published, but:
 // the marketplace name is fixed, the monolith entry must remain until the flip
 // retires it, no two entries may share a name, and every entry that names an
-// in-repo plugin must agree with that plugin's own manifest. A pack manifest with
-// no entry is fine — packs stay unpublished until the marketplace flip, so their
-// absence from the index must not error. Pure: source-on-disk resolution is the
-// one FS check and stays with the caller. Returns plain message strings.
+// in-repo plugin must agree with that plugin's own manifest. Which names are
+// required and which are forbidden is the caller's decision, derived in
+// `marketplaceSurfacePolicy`. Pure: source-on-disk resolution is the one FS check
+// and stays with the caller. Returns plain message strings.
 export function marketplaceConsistencyErrors({
   mkt, marketName, monolithName, canonicalVersion, manifestsByName,
   manifestsBySource = {}, requiredPluginNames = [monolithName],
@@ -724,7 +748,7 @@ export function marketplaceConsistencyErrors({
   }
   for (const name of forbiddenPluginNames) {
     if (!counts.has(name)) continue;
-    errs.push(`entry "${name}" is retired from the published install surface and must not remain listed`);
+    errs.push(`entry "${name}" is not part of the published install surface and must not be listed`);
   }
 
   for (const e of entries) {
@@ -761,8 +785,16 @@ export function marketplaceConsistencyErrors({
   return errs;
 }
 
+// Which plugin names the published index must and must not carry. Both sets are
+// DERIVED from the partition, never listed: `packs` serves exactly the committed
+// pack set, and `legacy-rollback` restores the monolith alone — so it forbids
+// every name `packPluginName` can emit, including packs published after this
+// code was written. A literal here would silently bless a rollback index that
+// restored the monolith beside a department pack.
 export function marketplaceSurfacePolicy({
-  mkt, canonicalVersion, monolithName, initialPackNames,
+  mkt, canonicalVersion, monolithName,
+  publishedPackNames = COMMITTED_PACKS.map(packPluginName),
+  publishablePackNames = PACK_ORDER.map(packPluginName),
 }) {
   const errors = [];
   const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
@@ -784,10 +816,13 @@ export function marketplaceSurfacePolicy({
     errors.push('metadata.installSurface must be "packs" or "legacy-rollback" at version 1.0.0 or later');
   }
   const legacyRollback = installSurface === 'legacy-rollback';
+  const unpublished = publishablePackNames.filter((name) => !publishedPackNames.includes(name));
   return {
     errors,
-    requiredPluginNames: legacyRollback ? [monolithName] : initialPackNames,
-    forbiddenPluginNames: legacyRollback ? initialPackNames : [monolithName],
+    requiredPluginNames: legacyRollback ? [monolithName] : publishedPackNames,
+    forbiddenPluginNames: legacyRollback
+      ? publishablePackNames
+      : [monolithName, ...unpublished],
   };
 }
 

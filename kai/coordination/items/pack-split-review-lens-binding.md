@@ -5,11 +5,11 @@ title: Decision — bind (or refuse to bind) the three review lenses on workflow
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: knowledge
-state: ready
+state: completed
 resume_state: null
 priority: 20
 owner: null
-next_role: principal-swe-architect
+next_role: director-chief-of-staff
 target: pack-split engineering-tree review-lens binding (architect caveat b / decomposition Open Question 1)
 artifact_target: kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md
 context_artifacts:
@@ -26,14 +26,14 @@ required_for_milestone: false
 review_requirements: []
 completed_reviews: []
 change_ref: null
-version: 2
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1523
+updated: 2026-08-27-1552
 ---
 
 ## Outcome
@@ -47,22 +47,62 @@ decision.
 
 ## Acceptance
 
-- [ ] The decision is recorded at `artifact_target`: **bind** or **do not bind**, with the reason.
+- [x] The decision is recorded at `artifact_target`: **bind** or **do not bind**, with the reason.
       The decomposition's standing manager recommendation is *bind* (consistency + automatic
       placement); it is a recommendation, not a ratification.
-- [ ] The consequence for `SKILL_OWNER_OVERRIDES` (`scripts/lib/pack-plan.mjs:101-118`) is stated
+      → **DO NOT BIND** (disposition **Endorse**). Reasons: the initiative's own `out_of_scope`
+      line (`northstar.md:31`) forbids redesigning agent content; no force pulls toward bind
+      today; the "consistency" benefit is not delivered (binding 3 leaves 7-of-9 inherited,
+      2 dispatched); it fights the agent's "only fire the dimensions that apply" rule.
+- [x] The consequence for `SKILL_OWNER_OVERRIDES` (`scripts/lib/pack-plan.mjs:101-118`) is stated
       explicitly: whether the three `review-*: 'engineering'` entries are removed, kept, or become
       redundant, and whether the partition invariants the self-test asserts —
       `orphans === overrides` and `unplaced === 0` — still hold under the chosen option.
-- [ ] The exact file set the engineering publish must change is enumerated (at minimum
+      → **KEPT, byte-unchanged** (`pack-plan.mjs:115-117`); not redundant — they are the table's
+      intended population. `orphans === overrides` holds at **9 = 9**; `unplaced === 0` holds;
+      `namespaceErrors` stays green (no bare-named skill promoted to core).
+- [x] The exact file set the engineering publish must change is enumerated (at minimum
       `agents/workflow-doc-review.agent.md`, plus any `scripts/lib/pack-plan.mjs` override change),
       so that item's touch set is a claim the builder can verify rather than discover.
-- [ ] It is stated whether the decision changes **any** pack other than `engineering`. If it does,
+      → **The set is EMPTY.** Verified as an assertion of absence: zero diff to
+      `agents/workflow-doc-review.agent.md` and zero diff to `SKILL_OWNER_OVERRIDES` at `12c-3`'s
+      reviewed `change_ref`. (`scripts/lib/pack-plan.mjs` still changes there — `COMMITTED_PACKS`
+      gains `'engineering'` — for an unrelated reason.)
+- [x] It is stated whether the decision changes **any** pack other than `engineering`. If it does,
       that is a scope question routed to the steward before `12c-3` is dispatched, not absorbed.
+      → **It changes NO pack at all** — not even `engineering`. This trigger **did not fire**:
+      no scope question, no new CI assertion, no partition re-lock. The locked partition is
+      consumed exactly as ratified.
 
 ## Evidence
 
-- (to be filled) — the ratified decision artifact and the enumerated file set.
+- **Ratified decision artifact:** `kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md`
+  (`principal-swe-architect`, 2026-08-27-1547, disposition **Endorse / do not bind**).
+- **File set the engineering publish must change for this reason: empty.** Enumerated in the
+  artifact's *Implementation obligations* section as a verifiable assertion of absence.
+- Grounding read read-only 2026-08-27 from `C:\src\kai` (no file changed outside `touches`):
+  - `scripts/lib/pack-plan.mjs:115-117` — the three `review-*: 'engineering'` override entries.
+  - `scripts/lib/pack-plan.mjs:375-395` — `planPacks` inheritance-then-override placement;
+    `:381` promotes any skill inherited from >1 pack to `core`.
+  - `scripts/lib/pack-plan.mjs:1465-1487` — `partitionErrors` enforces the set equality
+    `orphans === overrides` in both directions (four arms, each proven by name at
+    `scripts/pack-preview.mjs:1008-1023`).
+  - `scripts/lib/pack-plan.mjs:1492-1511` — `namespaceErrors`: core may provide `kai-core-*` only.
+  - `scripts/lib/pack-plan.mjs:814` `DISPATCH_ENTRY` + `:938` `collectReferences` — the three
+    lenses already carry a validated **orchestrated** engineering→engineering reference from
+    `workflow-doc-review`'s `## The dimension skills` list; `referenceErrors` resolves them, and
+    `scripts/pack-preview.mjs:713` asserts zero reference errors over the live corpus.
+  - `scripts/pack-preview.mjs:436-443` — the invariant assertions; all three stay true **and
+    correctly labelled** under this verdict (they would have needed re-pointing under *bind*).
+  - `agents/workflow-doc-review.agent.md:7` (four lenses inherited), `:92-100` (nine dispatched),
+    hard rule 2 and the first anti-pattern; `skills/review-*/SKILL.md` — none `user-invocable`,
+    none declares `requires_tools`.
+  - `kai/initiatives/pack-split/northstar.md:31` — the `out_of_scope` line that decides it.
+  - `scripts/generate-catalog.mjs` — groups skills by a manual category map, never reads
+    `**Inherits:**`, so `npm run docs:check` is unaffected either way.
+- **No command was run.** This is the no-change branch, so the repository's existing green CI
+  state (`npm test` includes `pack-preview --self-test`, `--gate all`, `--check`) is itself the
+  evidence that the endorsed shape passes. No new run is needed to justify the decision.
 
 ## Notes
 
@@ -117,3 +157,42 @@ There is no touch conflict to resolve at dispatch.
   `completed`: no version, no release, no publish.
 - The decomposition's standing recommendation is *bind*. It stays a recommendation —
   the steward is not ratifying it here, and the architect may refuse it with reasons.
+
+### Architect ratification 2026-08-27-1552 (`principal-swe-architect`) — RATIFIED, `ready -> completed`
+
+**Verdict: DO NOT BIND.** Disposition **Endorse** — the current shape already fits the forces, so
+the smallest structural change that resolves them is *none*. Recorded at `artifact_target`.
+The manager's standing *bind* recommendation is **refused, with reasons**, exactly as the steward
+pass permitted.
+
+- **Why.** (1) `northstar.md:31` puts *"rewriting or re-scoping agent and skill content"*
+  out of scope — an `**Inherits:**` line is the agent's binding contract, not packaging metadata,
+  and changing it inside a publish release is the one thing this initiative says it does not do.
+  (2) No force pulls toward `bind` today: nothing is broken, dangling or ambiguous. (3) The
+  "consistency" benefit is **not delivered** — binding three leaves `workflow-doc-review`
+  inheriting 7 of 9 lenses and dispatching 2, because `review-security-privacy` and
+  `review-rollout-operability` are bound to *other* engineering agents that hold them as standing
+  contracts. The rule that actually explains the corpus is *inherited by the role that always
+  applies it, dispatched by the router that sometimes applies it*. (4) The "automatic placement"
+  benefit is already bought: `partitionErrors` guards the override table in both directions with
+  four named arms, so it cannot rot silently.
+- **Placement is identical under both options** — `kai-engineering`, exactly as the partition lock
+  ratified. Binding would only change *how* placement is derived and what the host loads into one
+  agent's context.
+- **Nothing changes anywhere.** No pack, no agent body, no override table, no generator, no CI,
+  no doc. `orphans === overrides` stays 9 = 9; `unplaced === 0` stays; `namespaceErrors` stays
+  green. Acceptance line 4's steward trigger **did not fire**.
+- **Risk retired for `12c-3`:** the Notes risk *"the one place in `12c` where a decision changes
+  generator behavior and not just content"* is discharged. `12c-3` now carries exactly one kind of
+  risk — publish protocol — like the releases either side of it.
+- **One routed follow-up, steward hygiene not a decision:** drop
+  `agents/workflow-doc-review.agent.md` from `pack-split-release-12c-3-engineering`'s `touches`
+  (it is now a false claim of intent to modify a root agent body, and `touches` is the
+  parallel-safety claim). Keep `scripts/lib/pack-plan.mjs` — it still changes there, for
+  `COMMITTED_PACKS`.
+- **No operator decision remains.** Nothing escalated.
+- **Closure:** `state ready -> in-progress -> completed`, v2 -> v4 (v3 was the self-grant),
+  lease acquired and released within this run, `owner` clear,
+  `next_role principal-swe-architect -> director-chief-of-staff`. Knowledge item: no version,
+  no release, no publish, no independent review. `12c-3`'s typed
+  `requires: completed` dependency on this item is now **satisfied**.

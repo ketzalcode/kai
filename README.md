@@ -32,9 +32,11 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.0` — the repository contains **56 agents and 51 skills** for the
+`v1.0.1` — the repository contains **56 agents and 51 skills** for the
 **Copilot CLI** and the **Copilot coding agent** (cloud). The first published
-pack slice installs **16 agents and 31 skills**.
+pack slice installs **16 agents and 31 skills**. `v1.0.1` publishes no new pack:
+it hardens the rollback, provenance, and CI-derivation paths before a third pack
+exists.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus `kai-personal`; the remaining

@@ -691,6 +691,18 @@ const MIGRATION_CASES = [
     expect: ['unreadable-metadata', 'workspace-provenance-unknown'], noRefusal: true,
   },
   {
+    label: 'settings.json is unreadable, so a config-enabled pack is not assumed enabled',
+    home: 'malformed-settings', status: 'unknown',
+    expect: ['enabled-state-unverified'],
+    forbid: ['nothing-installed', 'disabled-install'], noRefusal: true, noSteps: true,
+  },
+  {
+    label: 'settings.json carries a non-boolean enabled state',
+    home: 'nonboolean-enabled-state', status: 'unknown',
+    expect: ['enabled-state-unverified'],
+    forbid: ['nothing-installed', 'disabled-install'], noRefusal: true, noSteps: true,
+  },
+  {
     label: 'same pack has two direct install trees',
     home: 'same-source-collision', status: 'blocked',
     expect: ['provenance-collision'], forbid: ['nothing-installed'],
@@ -767,6 +779,7 @@ const MIGRATION_CASES = [
     label: 'workspace migrated ahead of the host, legacy still installed',
     home: 'legacy-direct', workspace: 'pack', status: 'blocked',
     expect: ['workspace-provenance-ahead', 'legacy-installed'],
+    steps: [/set "plugin": "kai"/, /workspace-doctor\.mjs --root/],
   },
   {
     label: 'workspace manifest unreadable',
@@ -941,6 +954,19 @@ function migrationSelfTest() {
       fail('self-test: an absent settings file incorrectly invalidated managed config enabled state');
     } else {
       console.log('✓ self-test: an absent settings file falls back to managed config enabled state');
+    }
+
+    // The other half of the same rule: settings that cannot be trusted must blank
+    // the state config declared, not let `enabled: true` stand unverified.
+    for (const home of ['malformed-settings', 'nonboolean-enabled-state']) {
+      const report = migrationReport({ home: join(tmpRoot, 'homes', home) });
+      const record = migrationInventory(report).find((plugin) => plugin.name === 'kai-core');
+      if (record?.enabled !== null || !report.codes.includes('enabled-state-unverified')) {
+        fail(`self-test: "${home}" did not blank the config-declared enabled state it could not verify`,
+          [`enabled: ${JSON.stringify(record?.enabled)}`, `codes: ${report.codes.join(', ') || '(none)'}`]);
+      } else {
+        console.log(`✓ self-test: unverifiable settings (${home}) blank the config enabled state instead of trusting it`);
+      }
     }
 
     if (snapshotTree(tmpRoot).join('\n') !== before) {

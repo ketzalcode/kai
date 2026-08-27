@@ -21,6 +21,13 @@
 //     This is the user-owned state changed by the interactive `/plugin`
 //     dashboard. Absence from the map means no user override, so config remains
 //     authoritative; an explicit override must agree or the state is unknown.
+//     Only the `name@marketplace` key shape has been measured. The bare-`name`
+//     shape this code assumes for a DIRECT install is inferred, never asserted:
+//     the one direct-monolith host measured carried an empty override map, so
+//     the key was never exercised. Consequence if the guess is wrong: a direct
+//     install with an explicit override reads as "no override" and config stands
+//     — bounded by the `legacy-installed` refusal that fires first on any such
+//     host.
 //
 //   $COPILOT_HOME/installed-plugins/_direct/<owner>--<repo>/    a direct install
 //
@@ -312,6 +319,8 @@ function reconcileEnabledState(config, settings) {
       const marketplace = entry.provenance.startsWith('marketplace:')
         ? entry.provenance.slice('marketplace:'.length)
         : null;
+      // Measured for marketplace installs only; the bare-`name` direct shape is
+      // inferred (see the settings.json note in this file's header).
       const id = marketplace ? `${entry.name}@${marketplace}` : entry.name;
       const settingEnabled = settings.values.get(id);
       if (typeof settingEnabled !== 'boolean') return entry;
@@ -769,6 +778,14 @@ function assessWorkspace(root, hostSummary, host, out) {
     add('refusal', 'workspace-provenance-ahead',
       `${provenance.path} records "${CORE_PLUGIN}" while legacy "${LEGACY_PLUGIN}" is still installed — `
       + 'the workspace was migrated ahead of the host, so the recorded provenance is not what is loaded.');
+    // The mirror of the stale case above. On a deliberate rollback to the
+    // monolith the workspace is what has to move, and it moves by the same
+    // one-key edit — so the rollback runbook prescribes no manual step the
+    // doctor cannot emit.
+    step(`if this host is being rolled back to "${LEGACY_PLUGIN}" on purpose, edit ${provenance.path}: `
+      + `set "plugin": "${LEGACY_PLUGIN}" (this one key; every other value stays as written) — `
+      + 'otherwise finish the forward migration above and leave the workspace as written');
+    step('node <kai-plugin>/scripts/workspace-doctor.mjs --root <workspace-root>   # confirm the workspace is healthy after the edit');
   } else if (coreInstalled) {
     add('note', 'workspace-provenance-migrated',
       `${provenance.path} records "${CORE_PLUGIN}", matching the installed pack surface — already migrated, re-applying changes nothing.`);
