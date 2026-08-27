@@ -25,7 +25,7 @@ Set a workspace up and keep its structure honest.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`workflow-workspace-init`](../../agents/workflow-workspace-init.agent.md) | Creates or validates a kai workspace: manifest, ignored runs area, coordination registries, initiative catalog, library, and personal assistant state. Use once for a new repository or durable folder. Non-destructive and idempotent. |
+| [`workflow-workspace-init`](../../agents/workflow-workspace-init.agent.md) | Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent. |
 | [`workflow-initiative-init`](../../agents/workflow-initiative-init.agent.md) | Creates a scope-gated kai initiative workspace with north star, milestones, artifact paths, work records, and threads. Use when a new mission or initiative starts. Not execution before PM scope approval. |
 | [`workflow-self-check`](../../agents/workflow-self-check.agent.md) | Writes a tiered structural-health report for kai plugin files covering inventory, naming, descriptions, references, overlap, responsibility, and discoverability. Use for kai self-audit. Not auto-restructuring. |
 
@@ -193,7 +193,7 @@ The shared contracts every acting agent inherits: where work goes, and what it m
 | ---- | ------------ |
 | [`kai-core-team-operating-rules`](../../skills/kai-core-team-operating-rules/SKILL.md) | Defines the universal kai role operating contract. Use whenever acting as a kai role in any workspace, including ownership, handoffs, tests, shipping, and @operator. |
 | [`kai-core-workspace-conventions`](../../skills/kai-core-workspace-conventions/SKILL.md) | Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths. |
-| [`kai-core-workspace-onboarding`](../../skills/kai-core-workspace-onboarding/SKILL.md) | Initializes and validates kai workspaces. Use when creating or repairing .kai, runs, coordination, initiatives, library, personal lane, or gitignore rules. |
+| [`kai-core-workspace-onboarding`](../../skills/kai-core-workspace-onboarding/SKILL.md) | Initializes and validates kai workspaces, and guides explicit migration to the split pack install surface. Use when installing kai packs or creating or repairing workspace state. |
 | [`kai-core-work-coordination`](../../skills/kai-core-work-coordination/SKILL.md) | Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths. |
 | [`kai-core-work-activity`](../../skills/kai-core-work-activity/SKILL.md) | Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl. |
 | [`kai-core-fleet-observation`](../../skills/kai-core-fleet-observation/SKILL.md) | Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate. |

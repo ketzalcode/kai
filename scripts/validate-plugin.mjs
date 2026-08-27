@@ -42,7 +42,9 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  PACK_ORDER, packPluginName,
 } from './lib/pack-plan.mjs';
+import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
@@ -814,6 +816,74 @@ const gitignore = readIf(join(ROOT, '.gitignore'));
 const toSet = (arr) => new Set(arr);
 const setEq = (a, b) => a && b && a.size === b.size && [...a].every((x) => b.has(x));
 const dirTokens = (s) => toSet([...s.matchAll(/([a-z][a-z0-9-]*)\//g)].map((m) => m[1]).filter((d) => d !== 'library' && d !== 'runs'));
+
+// The split installer is prose executed by an agent, so pin the load-bearing
+// order and failure semantics here instead of treating documentation presence
+// as behavioral coverage.
+const guidedInstallCommands = PACK_ORDER.map(
+  (pack) => `copilot plugin install ${packPluginName(pack)}@${MARKETPLACE}`,
+);
+const guidedCorePlugin = packPluginName('core');
+if (onboarding) {
+  const onboardingProse = onboarding.replace(/\s+/g, ' ');
+  let previousCommandIndex = -1;
+  for (const command of guidedInstallCommands) {
+    const commandIndex = onboarding.indexOf(command);
+    if (commandIndex === -1) {
+      err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing exact command \`${command}\``);
+      continue;
+    }
+    if (commandIndex <= previousCommandIndex) {
+      err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer command \`${command}\` is out of canonical core-first order`);
+    }
+    previousCommandIndex = commandIndex;
+  }
+  const marketplaceBrowse = `copilot plugin marketplace browse ${MARKETPLACE}`;
+  const browseIndex = onboarding.indexOf(marketplaceBrowse);
+  const firstInstallIndex = onboarding.indexOf(guidedInstallCommands[0]);
+  if (browseIndex === -1 || firstInstallIndex === -1 || browseIndex >= firstInstallIndex) {
+    err('skills/kai-core-workspace-onboarding/SKILL.md', 'guided installer must browse the marketplace before the first plugin install command');
+  }
+  for (const requiredText of [
+    marketplaceBrowse,
+    'get explicit confirmation',
+    'stop on the first failed or unverified step',
+    'Rollback: not attempted or verified',
+    'start a fresh session before invoking pack agents',
+    'Never substitute a direct repository or subdirectory install as a fallback',
+    'Pack install: complete | partial | blocked | unknown',
+    'Not attempted:',
+    'Legacy kai:',
+    'never reuse a path into a plugin uninstalled or updated during this run',
+    'End the current run; a session still carrying the removed monolith must not continue the migration',
+    'at the exact version reported by the browse step',
+    `copilot plugins enable ${guidedCorePlugin}@${MARKETPLACE} --plugin`,
+    `copilot plugins enable <name>@${MARKETPLACE} --plugin`,
+    `${guidedCorePlugin}\` and every requested department are listed at one common version`,
+    'partial` when at least one plugin install or update succeeded in this run',
+    'unknown` when required host, marketplace, plugin-list, version, or workspace evidence is unreadable',
+    'blocked` for every other known pre-mutation refusal or failed command',
+    'perform the update from a session that does not have the pack loaded',
+  ]) {
+    if (!onboardingProse.includes(requiredText)) {
+      err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);
+    }
+  }
+}
+if (wsInit) {
+  const workspaceInitProse = wsInit.replace(/\s+/g, ' ');
+  for (const requiredText of [
+    'Pack installation',
+    'kai-core-workspace-onboarding',
+    'Never install a department before an enabled, versioned `kai-core` row',
+    'Rollback: not attempted or verified',
+    'requires a fresh session only when the run actually installed or updated a pack',
+  ]) {
+    if (!workspaceInitProse.includes(requiredText)) {
+      err('agents/workflow-workspace-init.agent.md', `does not bind the guided installer contract: ${JSON.stringify(requiredText)}`);
+    }
+  }
+}
 
 // 1. The managed .gitignore block installed by onboarding must be byte-identical
 //    to the one committed in the repo .gitignore.

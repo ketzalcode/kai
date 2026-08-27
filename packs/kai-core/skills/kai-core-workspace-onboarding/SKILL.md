@@ -1,6 +1,6 @@
 ---
 name: kai-core-workspace-onboarding
-description: "Initializes and validates kai workspaces. Use when creating or repairing .kai, runs, coordination, initiatives, library, personal lane, or gitignore rules."
+description: "Initializes and validates kai workspaces, and guides explicit migration to the split pack install surface. Use when installing kai packs or creating or repairing workspace state."
 tools: [bash, shell, view, edit, create, grep, glob, ask_user]
 ---
 
@@ -9,6 +9,186 @@ tools: [bash, shell, view, edit, create, grep, glob, ask_user]
 This skill defines **how** a workspace becomes compliant with
 `kai-core-workspace-conventions`. `workflow-workspace-init` executes it. Other agents
 may use the validation checks, but they do not scaffold partial structures.
+
+## Pack-installation mode - guided, not transactional
+
+Use this mode only when the operator explicitly asks to install or migrate to
+the split pack surface. A skill cannot provide a checked multi-select or an
+atomic transaction. This is a **guided installer**: inspect, show one exact
+plan, get explicit confirmation, execute one step at a time, and stop on the
+first failed or unverified step.
+
+The pack catalog is closed:
+
+| order | plugin | purpose |
+|-------|--------|---------|
+| 1 | `kai-core` | Required operating contract and workspace machinery. Always included. |
+| 2 | `kai-engineering` | Engineering, architecture, security, reliability, QA, AI, docs, PR, and ship roles. |
+| 3 | `kai-product` | Product management, design, research, analytics, and product-evaluation roles. |
+| 4 | `kai-gtm` | Sales, growth, marketing, SEO, partnerships, pricing, RevOps, customer success, and support roles. |
+| 5 | `kai-personal` | Personal voice, coaching, learning, nutrition, training, and creative-video roles. |
+
+Rows 2-5 are the selectable set. Core is listed for transparency and is never
+offered as a choice.
+
+Never silently add a department. `kai-core` is the only automatic inclusion.
+Install selected departments in the table order, not in the order the operator
+typed them.
+
+If the request does not name departments, ask the operator to select from rows
+2-5 before checking migration readiness. That selection is not confirmation to
+run commands; the exact command plan still needs its own approval.
+
+### 1. Inspect before proposing an install
+
+Resolve the target workspace as `<workspace-root>`. Re-resolve `<kai-plugin>`
+before every command that uses it: use the currently verified plugin tree that
+provides the script, and never reuse a path into a plugin uninstalled or updated
+during this run. Run the existing read-only migration gate:
+
+```text
+node "<kai-plugin>/scripts/workspace-doctor.mjs" --migration-check --root "<workspace-root>"
+```
+
+If it returns `blocked` or `unknown`, install nothing. Report its exact findings
+and exact suggested steps. In particular, never install a pack while legacy
+`kai` is still installed, and never guess that an unreadable host is clean.
+Uninstalling or removing a stale tree is a separate operator-approved action;
+the installer does not perform it as a hidden prerequisite.
+
+When `legacy-installed` is the only blocker, do not strand the operator between
+install surfaces. Before recommending removal, prove that `kai-core` and every
+requested department are listed at one common version. If the marketplace must
+be added or refreshed, show that availability-only command plan and get
+explicit confirmation before changing marketplace state. If availability
+cannot be proved, report `unknown` and leave the monolith installed.
+
+After availability is proved, name the re-entry sequence explicitly: run the
+doctor's uninstall and verification steps, install `kai-core@kai-plugins`,
+start a fresh session, and run this installer again from `kai-core`. End the
+current run; a session still carrying the removed monolith must not continue
+the migration.
+
+Read `copilot plugin marketplace list` and `copilot plugin list`. Record which
+marketplace and plugin rows are already present, including version and enabled
+status. An installed-but-disabled plugin is not a verified install.
+
+### 2. Show the exact plan and confirm once
+
+Name the selected departments and show the commands in their execution order.
+The marketplace step is conditional: add it when absent; update it when already
+registered.
+
+```text
+copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin marketplace update kai-plugins
+copilot plugin marketplace browse kai-plugins
+
+copilot plugin install kai-core@kai-plugins
+copilot plugin update kai-core@kai-plugins
+copilot plugin install kai-engineering@kai-plugins
+copilot plugin install kai-product@kai-plugins
+copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-personal@kai-plugins
+```
+
+Show only the selected department install commands, but always show the
+`kai-core` step. For an already installed plugin at the marketplace version, show `keep and
+verify` instead of pretending it will be installed again. For an older plugin,
+show the exact `copilot plugin update <name>@kai-plugins` command.
+
+If `.kai/manifest.json` exists and records `"plugin": "kai"`, include the exact
+post-core edit in the plan: after `kai-core` is verified, change only that value
+to `"kai-core"` and run the ordinary workspace doctor. Every other manifest
+value stays untouched.
+
+Before any marketplace add or update, plugin install or update, or manifest
+edit, ask one explicit confirmation for this exact ordered plan. A general
+request to "set up kai" is not confirmation for an unshown command set.
+
+### 3. Execute with a verification gate after every step
+
+1. Add or update `kai-plugins`, then run
+   `copilot plugin marketplace browse kai-plugins`. Verify that `kai-core` and
+   every selected department are listed at one common version. If any is absent
+   or the listed versions differ, report the exact unavailable or skewed set and
+   stop before installing anything. Never substitute a direct repository or
+   subdirectory install as a fallback.
+2. Install, update, or keep `kai-core`, then run `copilot plugin list`.
+   Continue only when one enabled `kai-core` row is present at the exact version
+   reported by the browse step. On skew, stop before every department install
+   and name `copilot plugin update kai-core@kai-plugins` as the blocking action.
+   If the host refuses that update because the current session has core loaded,
+   end the run and perform the update from a session that does not have the pack
+   loaded; then start a fresh session and re-run this installer.
+   If the row is disabled, stop and name
+   `copilot plugins enable kai-core@kai-plugins --plugin` as the blocking
+   action.
+3. If the approved plan includes the workspace provenance edit, apply only that
+   edit and run
+   `node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"`.
+   Continue only when the workspace contract is valid.
+4. Install each selected department in canonical order. Immediately run
+   `copilot plugin list` after each command and verify one enabled row at the
+   same version as `kai-core`. For a disabled department, stop and name
+   `copilot plugins enable <name>@kai-plugins --plugin` as the blocking action.
+5. Re-run the migration check. Completion requires `clear`, the exact selected
+   pack set, no legacy `kai`, and no unverified host or workspace finding.
+
+After an actual core install or update, state this exactly where the operator
+will see it:
+
+> Core installed. This session still does not have it loaded - start a fresh session before invoking pack agents.
+
+If core was kept, do not claim it is absent from the current session. Any
+department installed or updated in this run still makes the final session state
+`start a fresh session before invoking pack agents`.
+
+Do not invoke a newly installed pack agent in the current session as a
+verification shortcut. Plugin discovery happens at session start.
+
+On any non-zero command, missing row, disabled row, version mismatch, malformed
+output, or doctor result other than the required state:
+
+- stop immediately;
+- name the command or verification that failed;
+- list the plugins verified before the failure;
+- list every selected plugin not attempted;
+- say `Rollback: not attempted or verified`;
+- do not uninstall a successful earlier step and do not claim atomic rollback.
+
+### 4. Report the exact state
+
+Return:
+
+```text
+Pack install: complete | partial | blocked | unknown
+Requested: <kai-core plus selected departments>
+Verified installed: <name@version rows, or none>
+Failed: <command/check and observed result, or none>
+Not attempted: <selected plugins, or none>
+Legacy kai: absent and verified | present | unverified
+Workspace provenance: kai-core | unchanged | not present | unverified
+Rollback: not attempted or verified
+Session: start a fresh session before invoking pack agents | no pack change
+Next: <ready, or the one exact blocking action>
+```
+
+Choose the status in this order:
+
+1. `complete` only after every selected row and the final migration check pass.
+2. `partial` when at least one plugin install or update succeeded in this run
+   but the run did not complete. Marketplace-only or manifest-only mutation
+   does not make a pack install partial.
+3. `unknown` when required host, marketplace, plugin-list, version, or workspace
+   evidence is unreadable, malformed, or otherwise cannot be settled and no
+   plugin install or update succeeded in this run. This includes availability
+   that cannot be proved while the known legacy refusal remains in force.
+4. `blocked` for every other known pre-mutation refusal or failed command when
+   no plugin install or update succeeded in this run.
+
+Do not choose the more reassuring label. A known refusal is not `unknown`, and
+a run that changed a plugin before failing is not merely `blocked`.
 
 ## Inputs
 

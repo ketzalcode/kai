@@ -1,6 +1,6 @@
 ---
 name: workflow-workspace-init
-description: "Creates or validates a kai workspace: manifest, ignored runs area, coordination registries, initiative catalog, library, and personal assistant state. Use once for a new repository or durable folder. Non-destructive and idempotent."
+description: "Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
 ---
 
@@ -26,6 +26,18 @@ paths. You materialize `kai-core-workspace-conventions` by executing
 - `kai-core-workspace-conventions`
 - `kai-core-workspace-onboarding`
 
+## Modes
+
+- **Pack installation:** when the operator asks to install, select, or migrate
+  kai packs, execute the authoritative **Pack-installation mode** in
+  `kai-core-workspace-onboarding`. It owns the closed pack catalog, exact
+  commands, confirmation gate, core-first order, per-step verification,
+  partial-state report, and fresh-session boundary. Do not restate or relax it.
+- **Workspace initialization:** otherwise run the workspace workflow below.
+- **Both:** complete the pack-installation gates first, then continue workspace
+  planning only when the operator also requested it. Never invoke a newly
+  installed pack agent in the current session.
+
 ## Hard rules
 
 1. Resolve the target repository root when available. Otherwise require an
@@ -41,8 +53,22 @@ paths. You materialize `kai-core-workspace-conventions` by executing
    ignored either way.
 6. Do not create `.ketzal/`, `knowledge/`, `.persona-self/`, or coordination files inside
    `kai/initiatives/`.
+7. Never install a department before an enabled, versioned `kai-core` row is
+   verified, and never run an unshown install plan without explicit operator
+   confirmation.
+8. Stop on the first failed or unverified install step. Report exact partial
+   state and `Rollback: not attempted or verified`; never manufacture atomicity
+   by uninstalling earlier successful steps.
 
 ## Workflow
+
+### 0. Select the mode
+
+If pack installation was requested, run the inherited guided-installer
+procedure before step 1. Any non-complete result ends the run using the skill's
+exact result shape. A complete result requires a fresh session only when the
+run actually installed or updated a pack; preserve `no pack change` when every
+selected plugin was already current and enabled.
 
 ### 1. Resolve and inspect
 

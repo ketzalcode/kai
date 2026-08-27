@@ -4,7 +4,7 @@ Initiative-scoped deferred proposals. An expansion discovered inside pack-split
 lands here (not in `kai/coordination/backlog.md`, which is for unaffiliated
 proposals). The steward grooms this list. See `kai-core-initiative-stewardship`.
 
-**Nine proposals parked, none scheduled.** Six arrived at the
+**Thirteen proposals parked, none scheduled.** Six arrived at the
 `pack-split-degraded-refusal` DoD gate (2026-08-25-1554), which also recorded a
 seventh finding as a **blast-radius update** on an existing proposal rather than
 duplicating it.
@@ -44,6 +44,48 @@ None fits the current milestone, so **all stay parked** — none is promoted:
 The one-way valve stays closed until a candidate fits `scope.current`.
 
 ## Parked proposals
+
+### PROPOSAL — verify guided-installer host commands against each published pack wave
+
+Parked by `principal-swe-architect` at final review of
+`pack-split-onboarding-installer` (ratified 2026-08-27 at exact `change_ref
+82e98bcfe595e6d885843e90aa8a704d4478bb45`). Non-blocking while marketplace
+topology remains the single monolith entry; required before the commands become
+reachable.
+
+```
+PROPOSAL
+  problem:          The guided installer fails closed on marketplace output and
+                    names update/enable recovery commands using syntax documented
+                    by Copilot CLI 1.0.79 help. No pack is published yet, so the
+                    exact browse output, version field, loaded-plugin behavior,
+                    and live recovery commands cannot be executed end to end.
+                    Marketplace registration identity is also a source-authenticity
+                    boundary once a pack can be installed.
+  proposed_change:  At release 12b, prove browse/version/install/update/enable for
+                    kai-core and kai-personal on the minimum supported CLI and
+                    confirm the registered kai-plugins source. At release 12c,
+                    repeat availability and lockstep checks for engineering,
+                    product, and gtm. After any intentionally failed mutation,
+                    re-read plugin state so partial vs unknown is evidence-based.
+                    Add stable machine-readable parsing only when the supported
+                    runtime actually exposes it.
+  friction_cost:    Publication-time host probes and evidence records; no new
+                    installer mechanism unless observed output requires one.
+  mission_tradeoff: Blocking 0.66.0 would demand live evidence for commands whose
+                    targets deliberately do not exist yet. Deferring beyond the
+                    publication wave would turn exact-looking prose into an
+                    unverified production promise.
+  scope_target:     pack-split-release-12b for core + personal;
+                    pack-split-release-12c for engineering + product + gtm.
+  owner:            principal-swe-infra for host proof; principal-security for
+                    marketplace-source authenticity.
+```
+
+**Promotion trigger:** immediately before each marketplace publication wave.
+The responsible release item must absorb the applicable checks before it can
+be release-ready; this proposal is not permission to publish first and test
+afterward.
 
 ### PROPOSAL — zero-skill pack generates a manifest pointing at a missing `skills/`
 

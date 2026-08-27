@@ -2822,3 +2822,66 @@ The steward verified all three typed dependencies and promoted exactly one next
 item: `pack-split-onboarding-installer` `proposed -> ready` at v3, priority 20,
 `owner: null`, `next_role: principal-swe-infra`. Releases 12a, 12b, and 12c
 remain proposed. Release 12b remains NO-GO.
+
+## 2026-08-27 - guided installer implementation in review
+
+`principal-swe-infra` implemented `pack-split-onboarding-installer` at
+`34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb` and moved the item to
+`in-review`.
+
+The canonical onboarding skill now carries the closed five-pack catalog,
+read-only migration gate, marketplace publication gate, one explicit command
+confirmation, core-first and canonical department order, verification after
+every step, exact partial-state reporting, no unverified rollback, and the
+fresh-session boundary. The workspace-init agent selects this mode without
+duplicating its contract. Static validation pins the load-bearing prose.
+
+Full `npm test` passed at lockstep `0.66.0` after regenerating the host-visible
+catalog and committed core/personal trees. Packs remain unpublished and the
+marketplace remains monolith-only. Independent architecture and
+technical-writing reviews are both pending at the exact implementation ref;
+release 12b remains NO-GO.
+
+Architecture and writing review of `34e7f7d4…` required corrections. The new
+ref `a3d1383e316f5528c412698424b63acf1bc0f2c1` ends a legacy-provided run before
+its provider tree is removed and defines fresh-session re-entry from
+`kai-core`; checks marketplace and installed versions before any department
+mutation; derives the command roster from `PACK_ORDER`; pins
+browse-before-install and result keys; preserves the doctor's distinct
+`unknown` state; and makes fresh-session language conditional on actual pack
+mutation. README and CHANGELOG now avoid attributing the full catalog to
+release 12b. Full `npm test` passed again; both required reviews were
+re-requested against the new ref.
+
+The technical-writing re-review found that legacy removal still proved only
+core availability and that agent/README session language remained broader than
+the skill. Final correction ref
+`e9ecce6d2de3a59ae2faaadd62114480b9b3f357` now requires the entire requested
+set at one common marketplace version before legacy removal, confirms any
+availability-only marketplace mutation separately, leaves the monolith in
+place when proof is unavailable, and requires a fresh session only after an
+actual pack install or update. It also names disabled-core recovery and pins
+the corrected high-risk prose. Full `npm test` passed; final dual reviews are
+pending at that exact ref.
+
+Final correction ref `82e98bcfe595e6d885843e90aa8a704d4478bb45`
+defines one deterministic result precedence: complete only after all checks;
+partial after any successful plugin install/update followed by failure;
+unknown for unsettled required evidence before plugin mutation; blocked for
+all other known pre-mutation refusals/failures. It also names loaded-plugin
+update recovery and disabled-department recovery, with static pins. Full
+`npm test` passed again; both exact-ref reviews are pending.
+
+Final review at `82e98bcfe595e6d885843e90aa8a704d4478bb45` is
+complete. `principal-technical-writer` approved with P0/P1/P2 `0/0/0`.
+`principal-swe-architect` ratified with P0/P1 `0/0`; its earlier command-shape
+P1 was withdrawn after Copilot CLI 1.0.79 help explicitly documented
+`name@marketplace` for both update and enable. The remaining publication-only
+host execution check is parked in the initiative backlog and must be consumed
+by release 12b/12c. The item remains `in-review`, next `workflow-ship`.
+
+`workflow-ship` ran all six Definition-of-Done dimensions at the reviewed ref;
+all are Clear. The canonical `0.66.0` ship record captures rollback, monitoring,
+and seven production checks. `pack-split-onboarding-installer` is
+**release-ready** at v14. PR #177 may now merge under standing operator
+authorization, but packs remain unpublished and release 12b remains NO-GO.
