@@ -6,11 +6,11 @@ lists only the current focus — `kai/initiatives/INDEX.md` is the permanent
 all-status catalog, and removing a terminal initiative from this file must
 never make it undiscoverable there.
 
-**Current snapshot — 2026-08-27-1306.** `pack-split` remains active in
-`five-pack-split-shipped`. The guided installer is `shipped` at v18 as public
-monolith release `v0.66.0`, with production verification 7/7 PASS and rollback
-unused. `pack-split-release-12a` is the sole ready item at v2, owner and lease
-clear, next `principal-swe-infra`; both typed dependencies are shipped.
+**Current snapshot — 2026-08-27-1319.** `pack-split` remains active in
+`five-pack-split-shipped`. `pack-split-release-12a` passed all six DoD
+dimensions and is `release-ready` at v13, lease clear, next `@operator`.
+Reviewed implementation `2b4c5b3d…` is preserved under PR #179; PR run
+`33112672011` passed contract and both runtime-dependency jobs.
 Release 12b remains **NO-GO** until release 12a ships. Packs remain unpublished
 and the marketplace remains exactly one `kai` entry at source `.`. The long
 row below retains the append-only historical trail; this snapshot supersedes

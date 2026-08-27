@@ -4,6 +4,23 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.67.0] - 2026-08-27
+
+### Added
+
+- **Migration notice for the upcoming `1.0.0` pack split.** The monolith now
+  tells installed users that `kai` will become required `kai-core` plus
+  selectable department packs, and points them to the guided migration path.
+
+### Changed
+
+- **The current install surface is deliberately unchanged.** Packs remain
+  unpublished, the marketplace still contains only `kai` at source `.`, and
+  users should not uninstall the monolith yet. The guided installer will stop
+  before removal until every requested pack is available at one marketplace
+  version; only then does it require legacy removal, install core first, and
+  verify each step.
+
 ## [0.66.0] - 2026-08-27
 
 ### Added
@@ -2934,6 +2951,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.67.0]: https://github.com/RubenSaucedo/kai/compare/v0.66.0...v0.67.0
 [0.66.0]: https://github.com/RubenSaucedo/kai/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/RubenSaucedo/kai/compare/v0.64.0...v0.65.0
 [0.64.0]: https://github.com/RubenSaucedo/kai/compare/v0.63.1...v0.64.0

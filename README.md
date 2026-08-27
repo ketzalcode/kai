@@ -31,8 +31,16 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.66.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.67.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
+
+> **Migration notice:** `kai` will become `kai-core` plus selectable
+> department packs in `v1.0.0`. Do not uninstall the current `kai` plugin yet:
+> the packs are not published. The guided installer will refuse migration
+> until every requested pack is available at one marketplace version, then
+> require legacy removal, install `kai-core` first, and verify each step.
+> Until that publication gate opens, the install and update commands below are
+> unchanged.
 
 **The first generated pack slice is committed: `kai-core` + `kai-personal`.**
 Root remains the canonical source; generation copies agents, skills, routed
