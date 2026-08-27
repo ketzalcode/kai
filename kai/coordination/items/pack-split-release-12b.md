@@ -29,8 +29,10 @@ touches:
   - docs/reference/plugin-structure.md
   - scripts/release-guard.mjs
   - scripts/validate-plugin.mjs
+  - scripts/workspace-doctor.mjs
   - scripts/lib/pack-plan.mjs
   - scripts/pack-preview.mjs
+  - skills/kai-core-workspace-onboarding/SKILL.md
   - kai/coordination/
   - kai/initiatives/pack-split/
 depends_on:
@@ -72,7 +74,7 @@ Minimal = core + one department, not five at once.
 - [ ] `kai-core` + `kai-personal` published to `kai-plugins`; `kai-core` never offered in the selector.
 - [ ] The published monolith `kai` plugin is retired at the flip.
 - [ ] `1.0.0` is cut; `plugin.json` + `package.json` agree; marketplace index matches.
-- [ ] `pack-split-host-gates` evidence is a green go before publish; `release-guard` gate passes.
+- [x] `pack-split-host-gates` evidence is a green go before publish; `release-guard` gate passes.
 
 *Carried forward from the `pack-split-generator-gates` architecture review (finding A4, ratified
 2026-08-24-2231); routed here by the steward at acceptance 2026-08-24-2240. That change did not
@@ -100,6 +102,15 @@ irreversible act that escapes release enforcement.*
   `pack-split-onboarding-installer` `shipped` v18. The item is an explicit
   typed requirement of current scope `five-pack-split-shipped`, and its
   acceptance remains unchanged.
+- Full `npm test` passes at `1.0.0`, including 165 pack self-tests, generated
+  parity, migration-doctor fixtures, source/name marketplace validation, and
+  the marketplace-sensitive release-guard arm.
+- The completed host-gate record remains GO. The first staging-marketplace
+  probe proved browse, core/personal install, exact `1.0.0` rows, and idempotent
+  updates. It also found that CLI 1.0.79 advertises `copilot plugins enable`
+  but returns `The plugins command is not available`; the installer was
+  corrected to use migration JSON for enabled-state evidence and `/plugins`
+  for interactive recovery before review.
 
 ## Notes
 

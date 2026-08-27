@@ -15,6 +15,9 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
 - **Marketplace publication integrity gates.** Marketplace-only changes now
   require a release bump and notes. Validation also rejects any entry whose
   public name disagrees with the plugin manifest at its source.
+- **Machine-readable install-state evidence for guided migration.** Migration
+  doctor JSON now includes each Kai plugin's reconciled version, enabled state,
+  presence, and provenance without exposing cache paths.
 
 ### Changed
 
@@ -25,6 +28,10 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   coexistence.
 - **Install and update commands now target packs.** Engineering, product, and
   go-to-market packs remain unpublished until the next `1.0.x` release.
+- **Disabled-plugin recovery uses the interactive `/plugins` dashboard.** Live
+  CLI 1.0.79 probing showed that `copilot plugins enable` appears in help but
+  returns “command is not available”; the installer no longer recommends that
+  unusable command.
 
 ## [0.67.0] - 2026-08-27
 

@@ -107,3 +107,42 @@ Append-only communication log mirroring
              post-flip monolith retirement, and source-manifest name mismatch.
 - questions: none
 - next:      principal-swe-infra — complete the release surface and host proof.
+
+## NOTE 2026-08-27-1350 — principal-swe-infra
+
+- did:       The first isolated staging-marketplace probe passed registration,
+             browse, `kai-core` install, `kai-personal` install, exact `1.0.0`
+             plugin rows, and idempotent update commands. It then failed the
+             advertised `copilot plugins enable` recovery command with
+             `The plugins command is not available`, both with isolated and
+             default host state.
+- state:     in-progress
+- needs:     Remove the unusable recovery command before the flip and prove
+             enabled state from a host surface that actually exists.
+- artifacts: .kai/runs are not used for this sensitive host output; sanitized
+             probe files remain in the session artifact directory only.
+- evidence:  Copilot CLI 1.0.79 help lists `plugins enable`, but live execution
+             exits 1. `config.json` in the isolated home records both installed
+             packs enabled at `1.0.0`.
+- questions: none
+- next:      principal-swe-infra — correct the installer and repeat the probe.
+
+## NOTE 2026-08-27-1356 — principal-swe-infra
+
+- did:       Corrected the pre-publication defect. Migration-doctor JSON now
+             returns a sanitized `plugins` inventory with reconciled presence,
+             versions, enabled state, and provenance. The guided installer
+             uses that evidence after each mutation and routes disabled-plugin
+             recovery to the interactive `/plugins` dashboard instead of the
+             unavailable command. Static pins and generated core copies agree.
+- state:     in-progress
+- needs:     Commit and push the corrected prospective surface, then repeat the
+             isolated staging-branch browse/install/update and JSON inventory
+             proof before exact-ref reviews.
+- artifacts: scripts/workspace-doctor.mjs;
+             skills/kai-core-workspace-onboarding/SKILL.md;
+             scripts/validate-plugin.mjs; packs/kai-core/
+- evidence:  Full `npm test` passed at `1.0.0`; migration self-test now proves
+             the safe inventory fields without cache paths.
+- questions: none
+- next:      principal-swe-infra — rerun the staging host proof.

@@ -334,6 +334,19 @@ const jsonText = (value) => JSON.stringify(value, null, 2)
     `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
   ));
 
+function migrationInventory(report) {
+  if (!report.host?.records) return [];
+  return [...report.host.records.values()]
+    .map((record) => ({
+      name: record.name,
+      presence: record.presence,
+      versions: [...new Set(record.entries.map((entry) => entry.version).filter(Boolean))].sort(),
+      enabled: record.entries.length ? record.entries.every((entry) => entry.enabled) : null,
+      provenances: [...record.provenances].sort(),
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
 function reportMigration({ home, root, json = false }) {
   const res = migrationReport({ home, root });
   if (json) {
@@ -346,6 +359,7 @@ function reportMigration({ home, root, json = false }) {
       steps: res.steps,
       notices: res.notices,
       workspace: res.workspace,
+      plugins: migrationInventory(res),
     };
     console.log(jsonText(output));
     return migrationExitCode(res.status);
@@ -867,6 +881,19 @@ function migrationSelfTest() {
     }
     if (passed === MIGRATION_CASES.length) {
       console.log(`✓ self-test: ${passed} migration scenarios verdict correctly (legacy, packs, coexistence, partial set, unreadable surfaces, stale/incomplete installs, provenance collision, unknown provenance, malformed metadata, path normalization)`);
+    }
+
+    const inventoryReport = migrationReport({
+      home: join(tmpRoot, 'homes', 'packs-marketplace'),
+      root: join(tmpRoot, 'workspaces', 'pack'),
+    });
+    const inventory = migrationInventory(inventoryReport);
+    const core = inventory.find((plugin) => plugin.name === 'kai-core');
+    if (core?.presence !== 'installed' || core.enabled !== true || !core.versions.length
+      || !core.provenances.includes('marketplace:kai-plugins')) {
+      fail('self-test: migration JSON inventory does not expose safe core version, enabled-state, and provenance evidence');
+    } else {
+      console.log('✓ self-test: migration JSON inventory exposes version, enabled state, and provenance without cache paths');
     }
 
     if (snapshotTree(tmpRoot).join('\n') !== before) {
