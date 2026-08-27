@@ -2787,3 +2787,20 @@ No later dependent item moved: onboarding and releases 12a/12b/12c remain
 onboarding, and release 12a are unmet. This pass implemented no manifest
 behavior, published no pack, changed no marketplace topology or version, and
 performed no release action.
+
+## 2026-08-27 - dependency manifests release-ready
+
+`workflow-ship` prepared `pack-split-pack-dependency-manifests` after final
+independent architecture ratification at
+`78a719f0cc32c75c66ddaad4b302985b789a5084` with P0/P1/P2 `0/0/0`.
+
+Lectoria `v0.1.0` is now a public prebuilt artifact from source commit
+`c284b6cdeef96591be31201444ffebcaa463ba0c`. Root, core, and personal lock its
+HTTPS release URL with exact SHA-512. GitHub Actions run `33104688494` passed
+the contract and clean Node 24.15.0 empty-cache runtime installs for both packs
+with Git and SSH disabled.
+
+All six Definition-of-Done dimensions are Clear. PR #175 is release-ready for
+the authorized merge and `v0.65.0` release. Packs remain unpublished,
+marketplace topology remains the single monolith entry, and release 12b remains
+NO-GO.

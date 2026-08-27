@@ -525,3 +525,90 @@ monolith-only, and release 12b remains **NO-GO**.
 - questions: none
 - next:      principal-swe-architect — final exact-ref re-review under token
              `arch-1141-final`.
+
+## REVIEW 2026-08-27-1149 — independent architecture (final)
+
+- role:       principal-swe-architect
+- kind:       independent-architecture
+- change_ref: `78a719f0cc32c75c66ddaad4b302985b789a5084`
+- parent:     `6701696d01ec099b470dbaf403c12ddfe6cfe615`
+- verdict:    **ratified**
+- disposition: **Endorse** — both accepted P2 fixes land exactly as scoped and
+               the ratified artifact boundary is otherwise byte-identical.
+- findings:   P0 0 / P1 0 / P2 0
+
+P2-1 is closed: root and generated personal demo-narrate comments now describe
+the prebuilt release. P2-2 is closed: every projected SHA-512 integrity value
+must decode to exactly 64 bytes and round-trip as canonical base64, enforced at
+generation and emitted-tree validation with a truncation mutation arm.
+
+No manifest, lockfile, workflow, skill, agent, public doc, or marketplace byte
+changed from the ratified `6701696d…` architecture. Immutable release
+provenance, the HTTPS source allowlist, offline deterministic projection,
+pack-local ownership, provider-root invocation, and clean supported-Node
+install evidence therefore carry unchanged. GitHub Actions run `33104688494`
+tested implementation-identical bytes and passed all three jobs.
+
+Residual availability risk remains: the release asset has no mirror. Deletion
+fails loudly only for opt-in audio, while substitution is blocked by integrity.
+Packs remain unpublished, marketplace topology remains monolith-only, and
+release 12b remains **NO-GO**.
+
+## HANDOFF 2026-08-27-1149 — principal-swe-architect -> workflow-ship
+
+- did:       Ratified final implementation ref
+             `78a719f0cc32c75c66ddaad4b302985b789a5084` with
+             P0/P1/P2 = 0/0/0, replaced the superseded completed-review entry,
+             and cleared the review lease. Lifecycle remains `in-review`.
+- state:     in-review
+- needs:     Prepare this exact ref for merge. Any implementation-byte change
+             invalidates the ratification and requires a new ref and review.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             kai/coordination/BOARD.md; scripts/demo-narrate.mjs;
+             scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs;
+             packs/kai-core/scripts/lib/pack-plan.mjs;
+             packs/kai-personal/scripts/demo-narrate.mjs;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  Diff `6701696d..78a719f0` changes only the two accepted findings
+             plus their generated copies and mutation test; GitHub Actions run
+             `33104688494` jobs `98631239435`, `98631239582`, and
+             `98631239746` succeeded at an implementation-identical tree.
+- questions: none
+- next:      workflow-ship — perform release-readiness preparation for PR #175
+             without publishing packs or changing marketplace topology.
+
+## NOTE 2026-08-27-1150 — workflow-ship prepare lease
+
+- did:       Claimed PREPARE under `ship-1150-deps` at item version 18 and ran
+             all six Definition-of-Done dimensions against exact reviewed ref
+             `78a719f0cc32c75c66ddaad4b302985b789a5084`.
+- state:     in-review
+- needs:     Record the release plan and move to `release-ready` only if every
+             dimension is Clear or explicitly waived.
+- artifacts: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md
+- evidence:  Six dimensions returned Clear; no UI design sub-gate triggered.
+- questions: none
+- next:      workflow-ship — write the deploy handoff and clear its lease.
+
+## HANDOFF 2026-08-27-1150 — workflow-ship -> @operator
+
+- did:       Recorded the canonical ship record, resolved all six DoD
+             dimensions Clear, moved `in-review -> release-ready`, and cleared
+             the PREPARE lease. The operator's standing authorization permits
+             Kai to execute the merge and release steps without another pause.
+- state:     release-ready
+- needs:     Merge PR #175 preserving reviewed ancestry; wait for main CI;
+             publish `v0.65.0`; verify version, topology, generated locks,
+             runtime jobs, and exact Lectoria URL/integrity. Do not publish any
+             pack or change marketplace topology.
+- artifacts: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  Final architecture review at `78a719f0…` P0/P1/P2 = 0/0/0;
+             GitHub Actions run `33104688494` all success; full local
+             `npm test`; deterministic artifact and lock evidence in the ship
+             record.
+- questions: none
+- next:      @operator — standing authorization already granted; execute the
+             recorded merge/release sequence, then return evidence to
+             workflow-ship for production verification.

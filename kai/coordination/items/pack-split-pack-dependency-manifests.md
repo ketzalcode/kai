@@ -5,14 +5,15 @@ title: Define generated-pack dependency manifests and install semantics
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: in-review
+state: release-ready
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: "@operator"
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
+  - kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
   - kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
   - kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md
@@ -44,6 +45,7 @@ touches:
   - docs/proposals/pack-architecture.md
   - kai/coordination/
   - kai/initiatives/pack-split/
+  - kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/
 depends_on:
   - item: pack-split-host-gates
     requires: completed
@@ -55,19 +57,19 @@ review_requirements:
 completed_reviews:
   - role: principal-swe-architect
     kind: independent-architecture
-    change_ref: 6701696d01ec099b470dbaf403c12ddfe6cfe615
+    change_ref: 78a719f0cc32c75c66ddaad4b302985b789a5084
     verdict: ratified
     evidence: "kai/coordination/threads/pack-split-pack-dependency-manifests.md"
-    timestamp: 2026-08-27-1137
+    timestamp: 2026-08-27-1149
 change_ref: 78a719f0cc32c75c66ddaad4b302985b789a5084
-version: 17
+version: 20
 lease:
-  holder: principal-swe-architect
-  token: arch-1141-final
-  version_at_grant: 16
-  acquired: 2026-08-27T11:41:50-07:00
-  expires: 2026-08-27T12:41:50-07:00
-updated: 2026-08-27-1141
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-27-1150
 ---
 
 ## Outcome
