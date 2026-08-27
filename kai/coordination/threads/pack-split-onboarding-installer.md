@@ -122,3 +122,62 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-architect — return a revision-bound verdict at
              `34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb`.
+
+## REVIEW 2026-08-27-1218 — principal-swe-architect
+
+- change_ref: 34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb
+- verdict:    changes-required
+- findings:   P0: one provider-root lifetime defect. The legacy migration gate
+              requires uninstalling the same tree later doctor commands reused,
+              and no safe fresh-session re-entry was defined. P1: verify kept
+              core against the browsed marketplace version before installing a
+              department; derive installer commands from `PACK_ORDER` instead
+              of restating the roster; pin browse-before-install and report
+              keys. P2: preserve `unknown`, include marketplace add in the
+              confirmation boundary, distinguish selectable departments from
+              mandatory core, and restore workspace routing nouns in the agent
+              description. Suggested `--json` was checked against Copilot CLI
+              1.0.79 and is unavailable for `marketplace browse` or
+              `plugin list`, so that optional robustness suggestion is not
+              adopted.
+- evidence:   Exact source and parent diff; full line-level review returned to
+              the session. No files edited.
+- next:       principal-swe-infra — correct on a new ref and re-request both
+              reviews.
+
+## REVIEW 2026-08-27-1218 — principal-technical-writer
+
+- change_ref: 34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb
+- verdict:    changes-required
+- findings:   P1: make the fresh-session statement conditional on actual pack
+              mutation; align the skill and agent on the `unknown` result; do
+              not imply release 12b publishes departments reserved for 12c.
+              P2: include marketplace add in the confirmation boundary and use
+              `or`, not `then`, in the pack-vs-workspace description.
+- evidence:   Exact source, release 12b/12c item boundaries, generated catalog,
+              README, and CHANGELOG. No files edited.
+- next:       principal-swe-infra — apply the minimal wording corrections and
+              regenerate affected outputs.
+
+## NOTE 2026-08-27-1218 — principal-swe-infra correction pass
+
+- did:       Accepted every P0/P1 and the applicable P2 findings. Defined a
+             fresh-session re-entry that never reuses an uninstalled provider
+             tree; added pre-mutation marketplace/version checks and exact
+             update action; derived the command set from `PACK_ORDER` and
+             `MARKETPLACE`; pinned browse ordering and report keys; preserved
+             `unknown`; clarified selectable rows, confirmation, descriptions,
+             and release-neutral availability wording. Rejected only the
+             optional `--json` suggestion after the installed Copilot CLI
+             1.0.79 help proved neither relevant command supports it.
+- state:     in-review
+- needs:     Regenerate generated outputs, rerun all tests, commit a new
+             implementation ref, and re-request both reviews at that ref.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs
+- evidence:  `copilot plugin marketplace browse --help` and
+             `copilot plugin list --help` expose no `--json`; `copilot plugin
+             update <name>@<marketplace>` is supported.
+- questions: none
+- next:      principal-swe-infra — verify and bind the corrected ref.

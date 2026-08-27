@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: principal-swe-infra
 target: pack-split onboarding guided installer
 artifact_target: null
 context_artifacts:
@@ -46,14 +46,14 @@ review_requirements:
     kind: doc-review
 completed_reviews: []
 change_ref: 34e7f7d435a12b123ccd6f9bbd6c66e53f31afcb
-version: 5
+version: 6
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1204
+updated: 2026-08-27-1218
 ---
 
 ## Outcome

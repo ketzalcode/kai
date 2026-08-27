@@ -25,7 +25,7 @@ Set a workspace up and keep its structure honest.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`workflow-workspace-init`](../../agents/workflow-workspace-init.agent.md) | Guides migration to the split kai pack install surface, then creates or validates workspace state. Core-first, verified after each step, non-destructive, and idempotent. |
+| [`workflow-workspace-init`](../../agents/workflow-workspace-init.agent.md) | Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent. |
 | [`workflow-initiative-init`](../../agents/workflow-initiative-init.agent.md) | Creates a scope-gated kai initiative workspace with north star, milestones, artifact paths, work records, and threads. Use when a new mission or initiative starts. Not execution before PM scope approval. |
 | [`workflow-self-check`](../../agents/workflow-self-check.agent.md) | Writes a tiered structural-health report for kai plugin files covering inventory, naming, descriptions, references, overlap, responsibility, and discoverability. Use for kai self-audit. Not auto-restructuring. |
 

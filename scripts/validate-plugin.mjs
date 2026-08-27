@@ -42,7 +42,9 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  PACK_ORDER, packPluginName,
 } from './lib/pack-plan.mjs';
+import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
@@ -818,13 +820,9 @@ const dirTokens = (s) => toSet([...s.matchAll(/([a-z][a-z0-9-]*)\//g)].map((m) =
 // The split installer is prose executed by an agent, so pin the load-bearing
 // order and failure semantics here instead of treating documentation presence
 // as behavioral coverage.
-const guidedInstallCommands = [
-  'copilot plugin install kai-core@kai-plugins',
-  'copilot plugin install kai-engineering@kai-plugins',
-  'copilot plugin install kai-product@kai-plugins',
-  'copilot plugin install kai-gtm@kai-plugins',
-  'copilot plugin install kai-personal@kai-plugins',
-];
+const guidedInstallCommands = PACK_ORDER.map(
+  (pack) => `copilot plugin install ${packPluginName(pack)}@${MARKETPLACE}`,
+);
 if (onboarding) {
   const onboardingProse = onboarding.replace(/\s+/g, ' ');
   let previousCommandIndex = -1;
@@ -839,13 +837,23 @@ if (onboarding) {
     }
     previousCommandIndex = commandIndex;
   }
+  const marketplaceBrowse = `copilot plugin marketplace browse ${MARKETPLACE}`;
+  const browseIndex = onboarding.indexOf(marketplaceBrowse);
+  const firstInstallIndex = onboarding.indexOf(guidedInstallCommands[0]);
+  if (browseIndex === -1 || firstInstallIndex === -1 || browseIndex >= firstInstallIndex) {
+    err('skills/kai-core-workspace-onboarding/SKILL.md', 'guided installer must browse the marketplace before the first plugin install command');
+  }
   for (const requiredText of [
-    'copilot plugin marketplace browse kai-plugins',
+    marketplaceBrowse,
     'get explicit confirmation',
     'stop on the first failed or unverified step',
     'Rollback: not attempted or verified',
     'start a new session before invoking pack agents',
     'Never substitute a direct repository or subdirectory install as a fallback',
+    'Pack install: complete | partial | blocked | unknown',
+    'Not attempted:',
+    'Legacy kai:',
+    'never reuse a path into a plugin uninstalled or updated during this run',
   ]) {
     if (!onboardingProse.includes(requiredText)) {
       err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);

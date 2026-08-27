@@ -1,6 +1,6 @@
 ---
 name: workflow-workspace-init
-description: "Guides migration to the split kai pack install surface, then creates or validates workspace state. Core-first, verified after each step, non-destructive, and idempotent."
+description: "Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent."
 tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
 ---
 
@@ -65,9 +65,9 @@ paths. You materialize `kai-core-workspace-conventions` by executing
 ### 0. Select the mode
 
 If pack installation was requested, run the inherited guided-installer
-procedure before step 1. A `blocked`, `unknown`, or `partial` pack result ends
-the run with that exact state. A complete install still requires a fresh
-session before any installed pack agent can be invoked.
+procedure before step 1. Any non-complete result ends the run using the skill's
+exact result shape. A complete install still requires a fresh session before
+any installed pack agent can be invoked.
 
 ### 1. Resolve and inspect
 

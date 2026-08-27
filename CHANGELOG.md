@@ -25,8 +25,8 @@ minor bumps (`0.x`) carry features and patch bumps carry fixes.
   marketplace publication before any install, then checks one enabled,
   versioned row after each step. A failure reports verified, failed, and
   not-attempted packs precisely; it never claims an atomic rollback.
-- Pack publication remains gated. Until release 12b lists the selected packs,
-  marketplace browsing stops the installer before it mutates plugin state; a
+- Pack publication remains gated. While any requested pack is absent from the
+  marketplace, browsing stops the installer before it mutates plugin state; a
   direct repository or subdirectory install is never used as a fallback.
 
 ## [0.65.0] - 2026-08-27
