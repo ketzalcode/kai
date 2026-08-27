@@ -288,3 +288,46 @@ Append-only communication log mirroring
 - questions: Q-pack-split-host-gates-04
 - next:      @operator — only the operator can authorize the external
              create/delete boundary. Release 12b remains NO-GO.
+
+## ANSWER Q-pack-split-host-gates-04 2026-08-26-1740 — @operator -> @principal-swe-infra
+
+- status: answered
+- answer: Authorized one private disposable consumer repository for the
+          default-branch cloud experiment, with Kai `main` unchanged, no pack
+          publication, and deletion after evidence preservation and review.
+- lane: operator authorization
+- provenance: operator — direct authorization in the active session
+
+## HANDOFF 2026-08-26-1740 — principal-swe-infra -> principal-swe-infra
+
+- did:       Created `RubenSaucedo/kai-pack-host-gate-consumer` and committed
+             the approved default-branch fixture at
+             `7d80b4b12942eb0acce972e1e83c36f88023fde6`. The first task
+             (`bc62f1d9…`, run `33026579996`, job `98369253049`) resolved and
+             loaded `spark`, `kai-core`, and `kai-personal` (`3/3`) and invoked
+             `kai-core-contract-v1`. The child task (`7e6cf168…`, run
+             `33026682808`, job `98369587097`) recorded
+             `task start -> nested kai-core-contract-v1 -> task success`.
+             A repeat (`47438e15…`, run `33027220466`, job `98371301103`)
+             persisted the exact `kai-personal:persona-self` target and
+             no-substitution requirement and produced the same event sequence.
+- state:     in-progress; Q-04 answered; no waiting question; lease clear;
+             `change_ref: null`
+- needs:     Commit the canonical evidence revision, bind its SHA as
+             `change_ref`, and route that exact revision to `principal-sre`.
+             SRE must explicitly judge the telemetry limitation: Actions logs
+             omit task arguments, session storage has no rows, and repository
+             `subagentStart` / `preToolUse` hooks did not fire.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/`
+- evidence:  Host-issued task/run/job/session identities above; sanitized local
+             summaries `10-consumer-provisioning.json`,
+             `20-consumer-child.json`, and
+             `30-selected-agent-telemetry.json`. No raw Copilot home,
+             credential file, session database, or auth header is retained in
+             tracked evidence.
+- questions: none
+- next:      principal-swe-infra — create the evidence commit, then
+             principal-sre — independent reliability review. Release 12b
+             remains NO-GO.

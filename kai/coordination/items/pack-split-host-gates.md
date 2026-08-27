@@ -5,11 +5,11 @@ title: Host gates — macOS + cloud + install-order + fresh-session verification
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: blocked
-resume_state: in-progress
+state: in-progress
+resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: @operator
+next_role: principal-swe-infra
 target: pack-split host-gate certification evidence
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
 context_artifacts:
@@ -35,22 +35,21 @@ depends_on:
     requires: shipped
   - item: pack-split-migration-doctor
     requires: shipped
-waiting_on_questions:
-  - Q-pack-split-host-gates-04
+waiting_on_questions: []
 required_for_milestone: true
 review_requirements:
   - role: principal-sre
     kind: independent-reliability
 completed_reviews: []
 change_ref: null
-version: 11
+version: 12
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1702
+updated: 2026-08-26-1740
 ---
 
 ## Outcome
@@ -90,6 +89,25 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   emitted zero plugin discovery/install, `skill.invoked`, or `persona-self`
   dispatch events. Sanitized summary:
   `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/99-summary.json`.
+- Disposable consumer cloud proof **PASS with selected-agent telemetry
+  limitation**: default-branch fixture
+  `7d80b4b12942eb0acce972e1e83c36f88023fde6` loaded
+  `spark`, `kai-core`, and `kai-personal` (`3/3`). Task
+  `bc62f1d9-eb90-45b7-90b0-44ade5c60da5`, run `33026579996`,
+  job `98369253049`, session
+  `733d02f6-6eae-4610-950e-b04f6e56eae2` invoked
+  `kai-core-contract-v1`. Task
+  `7e6cf168-469b-4224-9ba7-f2123207bdd3`, run `33026682808`,
+  job `98369587097`, session
+  `6ff59e2a-578b-4ed1-9bf6-b5ed99af9515` recorded successful
+  `task -> nested kai-core-contract-v1 -> task success`.
+- A repeat at task `47438e15-4b6c-421f-97a2-f783434b7fdb`, run
+  `33027220466`, job `98371301103`, session
+  `410d2bc8-30e7-401a-ad12-13233c09a1f2` persisted the exact
+  `kai-personal:persona-self` target and no-substitution requirement, then
+  produced the same successful nested event sequence. Exported logs omit task
+  arguments; repository hooks did not fire; this limitation is explicit for
+  SRE review.
 - The amended decision and next experiment are recorded at
   `kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md`.
   Release 12b remains explicitly **NO-GO**.
@@ -118,3 +136,8 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   repository whose default branch carries both direct Kai specs plus a
   default-marketplace positive control. Creating/deleting that repository is an
   operator boundary tracked only by `Q-pack-split-host-gates-04`.
+- **Consumer result 2026-08-26-1740:** `Q-pack-split-host-gates-04` is
+  answered and the consumer experiment is complete. The item resumed
+  `blocked -> in-progress`; no operator question remains. The evidence revision
+  still needs a commit-bound `change_ref` and `principal-sre` review before the
+  item can complete or release 12b can move from NO-GO.

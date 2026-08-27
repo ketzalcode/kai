@@ -536,3 +536,36 @@ this amendment.
 
 Release 12b remains **NO-GO**. Acceptance and required milestone states are
 unchanged.
+
+## Executed consumer-fixture outcome — 2026-08-26
+
+The operator authorized `Q-pack-split-host-gates-04`. Private disposable
+repository `RubenSaucedo/kai-pack-host-gate-consumer` placed the approved
+fixture on its default branch at
+`7d80b4b12942eb0acce972e1e83c36f88023fde6`:
+
+- `spark@copilot-plugins` as the default-marketplace positive control;
+- `RubenSaucedo/kai:packs/kai-core`; and
+- `RubenSaucedo/kai:packs/kai-personal`.
+
+The discriminating result is **all three install**. Cloud run `33026579996`
+resolved and loaded all three plugins and invoked `kai-core-contract-v1`.
+Cloud run `33026682808` then recorded a successful `task` lifecycle with the
+nested child invoking `kai-core-contract-v1`. A repeat, run `33027220466`,
+persisted an exact task prompt requiring
+`kai-personal:persona-self`, forbidding built-in substitution, and requiring
+the nested core invocation; the same task/skill/success sequence occurred.
+
+This closes the architecture question: a consumer repository's default-branch
+`.github/copilot/settings.json` accepts direct subdirectory plugin specs beside
+a default-marketplace plugin. No Kai `main` setting, Kai marketplace entry, pack
+publication, or release metadata change is required.
+
+One reliability limitation remains for `principal-sre`, not architecture, to
+accept or reject: exported Actions events omit the `task` arguments, cloud
+session storage has no rows for the sessions, and repository
+`subagentStart`/`preToolUse` hooks did not fire. The exact selected agent is
+therefore linked by the host-persisted task prompt and successful nested
+contract invocation rather than a separate selected-agent event. The
+disposable repository must remain only through evidence review and then be
+deleted.

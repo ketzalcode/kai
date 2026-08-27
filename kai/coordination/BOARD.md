@@ -28,7 +28,7 @@ time and is never stored on a record.
 | pack-split-generated-pack-trees | Generate committed-unpublished core + personal trees | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | all 6 dependencies met ✅ 2026-08-26 | — | 2026-08-26-1443 |
 | pack-split-migration-doctor | Migration doctor — uninstall-first, coexistence-refused, provenance | pack-split | first-pack-extracted | 40 | shipped | principal-swe-infra | — | generator-gates (shipped ✅ 2026-08-25) — met | — | 2026-08-26-1250 |
 | pack-split-first-department | Prove kai-core + personal installs over the boundary | pack-split | first-pack-extracted | 10 | shipped | principal-swe-infra | — | generated-pack-trees (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1550 |
-| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | blocked | principal-swe-infra | @operator | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | Q-pack-split-host-gates-04 | 2026-08-26-1702 |
+| pack-split-host-gates | Host gates — macOS + cloud + install-order evidence | pack-split | first-pack-extracted | 10 | in-progress | principal-swe-infra | principal-swe-infra | first-department (shipped ✅ 2026-08-26), migration-doctor (shipped ✅ 2026-08-26) — both met | — | 2026-08-26-1740 |
 | pack-split-pack-dependency-manifests | Define generated-pack dependency manifests and install semantics | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | host-gates (completed — unmet) | — | 2026-08-26-1558 |
 | pack-split-onboarding-installer | Honest guided onboarding installer | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | generated-pack-trees (shipped), migration-doctor (shipped), pack-dependency-manifests (shipped — unmet) | — | 2026-08-26-1558 |
 | pack-split-release-12a | Release 12a — migration notice on 0.x | pack-split | five-pack-split-shipped | 20 | proposed | — | principal-product-manager | onboarding-installer (shipped), migration-doctor (shipped) | — | 2026-08-24-2011 |
@@ -82,3 +82,13 @@ default-branch-only behavior or direct-spec rejection. The item remains
 waits only on `Q-pack-split-host-gates-04`: operator authorization for one
 disposable default-branch consumer-repository fixture with a positive control.
 Release 12b remains NO-GO; packs remain unpublished.
+
+**Consumer cloud proof 2026-08-26-1740 (`principal-swe-infra`).**
+The operator authorized Q-04 and the private disposable consumer fixture loaded
+the marketplace control plus both direct Kai packs (`3/3`). Independent cloud
+tasks invoked the core contract in the parent and through a successful child
+task. The item resumed `blocked -> in-progress` at v12 with no waiting question.
+Selected-agent arguments are absent from exported host events and repository
+hooks did not fire; that limitation is recorded for SRE. The next step is a
+commit-bound evidence revision and independent reliability review. Release 12b
+remains NO-GO.

@@ -1,16 +1,22 @@
 # Pack split host gates
 
-**Status:** BLOCKED — macOS PASS; cloud branch spike INDETERMINATE; consumer-repository authorization pending
+**Status:** IN PROGRESS — macOS PASS; cloud consumer PASS with selected-agent telemetry limitation; SRE review pending
 **Prepared:** 2026-08-26
 **macOS source pin:** `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`
 **Release 12b verdict:** **NO-GO**
 
 ## Decision
 
-Release 12b must not start. The macOS host arm passed, but the cloud branch
-spike did not provision any plugin and is indeterminate. A discriminating cloud
-experiment and the independent reliability review remain incomplete. The packs
-remain committed and unpublished.
+Release 12b must not start until independent reliability review. The macOS host
+arm passed. The authorized disposable consumer repository then proved that the
+cloud host resolves and loads the positive control, `kai-core`, and
+`kai-personal` from default-branch repository settings, invokes the core
+contract, and completes a child task that invokes that contract. The cloud host
+does not export the task tool's selected-agent arguments, and repository hooks
+did not fire in this runtime, so the exact `persona-self` target is supported by
+the host-persisted task prompt plus successful task/child events rather than a
+separate selected-agent event. `principal-sre` must accept or reject that
+residual evidence limitation. The packs remain committed and unpublished.
 
 The evidence path uses the lowest persistent-install rung that exercises each
 required provenance. It does not require either pack to appear in the public
@@ -23,15 +29,15 @@ marketplace:
        |     direct both orders + directory marketplace
        |     provider events + checksums + refusal probes
        |
-       +-- branch-scoped cloud fixture
-             settings present; host made two bash calls
-             zero plugin/provider/dispatch events ----------- INDETERMINATE
-                                                              |
-                                                              v
   disposable consumer repository, DEFAULT branch
        +-- direct kai-core + kai-personal specs
        +-- default-marketplace positive control
-       +-- one read-only cloud task ------------------------- NEXT
+       +-- host resolves and loads all 3 -------------------- PASS
+       +-- core contract invocation ------------------------- PASS
+       +-- task -> nested core contract -> success ---------- PASS*
+
+  * Exact selected-agent arguments are omitted from exported host events.
+    Review is required before this evidence limitation is accepted.
 ```
 
 This packet implements the architecture decision at
@@ -49,13 +55,13 @@ the required `principal-sre` independent reliability review.
 
 | Gate | macOS | cloud host | Status |
 | --- | --- | --- | --- |
-| Host identity and run-start `main` tip | PASS | identity PASS; provisioning indeterminate | BLOCKED |
-| Persistent core-first and personal-first install | PASS | not observed | BLOCKED |
-| Fresh-session activation | PASS | not observed | BLOCKED |
-| Cross-plugin core contract resolution | PASS | zero provider events | BLOCKED |
-| Marketplace and direct binding | PASS | direct declarative specs not exercised | BLOCKED |
+| Host identity and run-start `main` tip | PASS | PASS — host-issued task/run/session IDs and fixture SHA | PASS |
+| Persistent core-first and personal-first install | PASS | PASS — declarative direct specs resolve on each fresh task | PASS |
+| Fresh-session activation | PASS | PASS — repeated independent cloud tasks load all three plugins | PASS |
+| Cross-plugin core contract resolution | PASS | PASS — parent and nested child `skill.invoked` events | PASS* |
+| Marketplace and direct binding | PASS | PASS — `spark@copilot-plugins` plus both direct Kai specs resolve together | PASS |
 | Direct/marketplace collision refusal | PASS | not required separately | PASS |
-| Per-pack npm / `node_modules` behavior | PASS — inventories empty | not observed | PASS |
+| Per-pack npm / `node_modules` behavior | PASS — inventories empty | host does not export installed-tree inventories | PASS |
 | Exact no-core refusal | PASS | not required separately | PASS |
 | Exact `--contract 2` refusal | PASS | not required separately | PASS |
 
@@ -64,6 +70,12 @@ text. A generic Actions CLI runner still cannot substitute for the Copilot cloud
 host. The accepted macOS arm is different: it is a first-party authenticated
 Copilot CLI run on a genuine GitHub-hosted Apple Silicon macOS runner and
 preserves installed-plugin and provider evidence.
+
+`PASS*` carries one explicit limitation: the cloud host exported `task`
+start/success and the nested `kai-core-contract-v1` invocation, while omitting
+the task arguments that name `kai-personal:persona-self`. The task record
+persisted the exact operator prompt requiring that provider-qualified target and
+forbidding substitution. No final model text is used as evidence.
 
 ## Observed macOS result — PASS
 
@@ -125,39 +137,76 @@ Only the sanitized identity/result summary was retained at
 `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/99-summary.json`.
 The raw host log remains temporary session material and was not copied.
 
-## Next discriminating cloud experiment
+## Observed cloud consumer result — PASS with telemetry limitation
 
-Pending `Q-pack-split-host-gates-04`, create one disposable consumer repository
-outside `RubenSaucedo/kai`. Its **default branch** carries
-`.github/copilot/settings.json` with:
+The operator authorized `Q-pack-split-host-gates-04` and created private,
+disposable repository
+[`RubenSaucedo/kai-pack-host-gate-consumer`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer).
+Default-branch fixture commit
+`7d80b4b12942eb0acce972e1e83c36f88023fde6` declared:
 
 ```json
 {
   "enabledPlugins": {
     "RubenSaucedo/kai:packs/kai-core": true,
     "RubenSaucedo/kai:packs/kai-personal": true,
-    "<verified-default-marketplace-positive-control>": true
+    "spark@copilot-plugins": true
   }
 }
 ```
 
-Select the positive control from the host's current default-registered
-marketplace inventory and record its exact identity before the task. Run one
-read-only genuine cloud task and require host-side installed-plugin inventory,
-plugin-root evidence, and provider events; final model text is insufficient.
+The provisioning task
+[`bc62f1d9-eb90-45b7-90b0-44ade5c60da5`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/tasks/bc62f1d9-eb90-45b7-90b0-44ade5c60da5),
+run
+[`33026579996`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/actions/runs/33026579996),
+job `98369253049`, session
+`733d02f6-6eae-4610-950e-b04f6e56eae2`, resolved `spark`, `kai-core`, and
+`kai-personal`, reported `Successfully loaded 3/3 plugin(s)`, and emitted
+`skill.invoked: kai-core-contract-v1`.
 
-| Observed outcome | Disposition |
-| --- | --- |
-| All three plugins install | Cloud arm passes; route the evidence revision to `principal-sre`. |
-| Positive control installs; Kai direct specs do not | Direct subdirectory specs are unsupported in cloud settings; route to the steward/publication-dependent fallback. |
-| Nothing installs | Record an evidenced host provisioning/control-plane defect and route it accordingly. |
+The child task
+[`7e6cf168-469b-4224-9ba7-f2123207bdd3`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/tasks/7e6cf168-469b-4224-9ba7-f2123207bdd3),
+run
+[`33026682808`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/actions/runs/33026682808),
+job `98369587097`, session
+`6ff59e2a-578b-4ed1-9bf6-b5ed99af9515`, again loaded all three plugins. Host
+events then recorded `tool.execution_start: task`, nested
+`skill.invoked: kai-core-contract-v1`, and
+`tool.execution_complete: task success=true`.
 
-Creating and deleting the external repository is an operator authorization
-boundary. Infra has not created it. Temporary settings on Kai `main` are
-rejected because they would auto-install core/personal beside legacy `kai`,
-activate duplicate hooks/coexistence, persist host state, and contradict the
-committed-unpublished boundary. A temporary Kai `main` marketplace is worse and
-circular. Deferral remains a fallback only after this experiment.
+A final repeat made the requested target explicit in the host-persisted task
+record: task
+[`47438e15-4b6c-421f-97a2-f783434b7fdb`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/tasks/47438e15-4b6c-421f-97a2-f783434b7fdb),
+run
+[`33027220466`](https://github.com/RubenSaucedo/kai-pack-host-gate-consumer/actions/runs/33027220466),
+job `98371301103`, session
+`410d2bc8-30e7-401a-ad12-13233c09a1f2`. The persisted prompt requires
+`agent_type kai-personal:persona-self`, forbids a built-in substitute, and
+requires the child's first action to invoke `kai-core-contract-v1`; the host
+recorded the task start, nested skill invocation, and successful task
+completion.
+
+The host does not export the task tool's arguments in Actions logs. Cloud
+session/event storage returned no rows for these session IDs. Repository
+`subagentStart` and `preToolUse` hooks committed on the consumer default branch
+also did not fire, despite the current hooks reference documenting cloud
+support. Direct Agent Tasks API selection of
+`custom_agent: kai-personal:persona-self` returned HTTP 404 because that field
+resolves repository custom-agent filenames, not installed plugin agents. These
+are host observability/API limitations, not evidence that plugin provisioning
+or child execution failed.
+
+Sanitized local summaries:
+
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/10-consumer-provisioning.json`
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/20-consumer-child.json`
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/30-selected-agent-telemetry.json`
+
+Temporary settings on Kai `main` remain rejected because they would
+auto-install core/personal beside legacy `kai`, activate duplicate
+hooks/coexistence, persist host state, and contradict the
+committed-unpublished boundary. The disposable repository remains private only
+until SRE has reviewed the preserved evidence, then it must be deleted.
 
 ## Common evidence contract
 
