@@ -34,6 +34,40 @@
 - questions: none
 - next:      principal-sre — approve or return blocking findings.
 
+## REVIEW 2026-08-28-0010 — principal-sre
+
+- ref:       `076a9244c062ab61a0920a54f35b0dc2daebc995`
+- verdict:   blocked — one P1 documentation/operability finding.
+- finding:   Deeper migration, direct/local install, and update instructions
+             still omitted product or described it as unpublished.
+- note:      The dynamic product runtime leg being running-but-not-enforced is
+             acceptable because the required `contract` job derives it and the
+             limitation is explicit.
+
+## REVIEW 2026-08-28-0010 — principal-swe-architect
+
+- ref:       `076a9244c062ab61a0920a54f35b0dc2daebc995`
+- verdict:   blocked — one P1 acceptance gap; architecture retained.
+- finding:   The rollback regression selected the first unpublished pack
+             (`kai-engineering`) instead of proving `kai-product` rejection by
+             name as this release requires.
+
+## HANDOFF 2026-08-28-0015 — principal-swe-infra -> principal-sre
+
+- did:       Updated every install/migration/update surface to include product
+             and added an explicit `kai` + `kai-product` rollback rejection arm,
+             while retaining the future-unpublished-pack regression.
+- state:     in-review
+- needs:     Re-review exact ref
+             `31373efe880aa2676eb379920a1c599efd43ada4`; architecture re-review
+             runs independently at the same ref.
+- artifacts: `README.md`; `docs/getting-started.md`;
+             `scripts/pack-preview.mjs`
+- evidence:  Full suite passed; pack-preview 180 checks; exact release guard
+             passed.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.
+
 Append-only communication log mirroring
 `kai/coordination/items/pack-split-release-12c-2-product.md`. See `kai-core-work-coordination`.
 

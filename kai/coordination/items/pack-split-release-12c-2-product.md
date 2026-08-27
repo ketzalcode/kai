@@ -44,15 +44,15 @@ review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
-change_ref: 076a9244c062ab61a0920a54f35b0dc2daebc995
-version: 5
+change_ref: 31373efe880aa2676eb379920a1c599efd43ada4
+version: 6
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-28T00:02:00Z
+updated: 2026-08-28T00:15:00Z
 ---
 
 ## Outcome
@@ -98,14 +98,14 @@ exist when it was written.
 
 - Generated committed slice: 85 files; `kai-product` contains 9 agents, 3
   skills, and an empty runtime dependency map.
-- Full `npm test` passed with 179 pack self-tests and 33 migration scenarios.
+- Full `npm test` passed with 180 pack self-tests and 33 migration scenarios.
 - Derived CI matrix is exactly
   `["kai-core","kai-personal","kai-product"]`; the product binary query is
   empty. Branch protection currently requires only `contract`, so
   `runtime-dependencies (kai-product)` will run but is not enforced by the
   protected-check list.
 - Exact implementation ref:
-  `076a9244c062ab61a0920a54f35b0dc2daebc995`; exact release guard passed
+  `31373efe880aa2676eb379920a1c599efd43ada4`; exact release guard passed
   against `origin/main`.
 - Pending: both independent reviews, product runtime CI leg, final-head CI,
   merge/tag/release, isolated-home install probe.
