@@ -22,3 +22,21 @@ Append-only communication log mirroring
 - evidence:  kai/coordination/items/pack-split-onboarding-installer.md (`shipped`, v18); kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md; kai/coordination/items/pack-split-migration-doctor.md (`shipped`, v5) — captured 2026-08-27-1306
 - questions: none
 - next:      principal-swe-infra — prepare release 12a within the unchanged staged-release constraints; do not tag, release, or publish.
+
+## NOTE 2026-08-27-1320 — principal-swe-infra
+
+- did:       Claimed release 12a and prepared the `0.67.0` monolith migration
+             notice. README and CHANGELOG now say the split arrives at
+             `1.0.0`, packs are still unpublished, users must not uninstall
+             `kai` yet, and the guided installer will not remove legacy until
+             the full requested set is available at one marketplace version.
+- state:     in-progress
+- needs:     Complete lockstep release metadata, run the release and contract
+             gates, bind both required reviews to one exact change ref, and
+             prepare the operator release handoff.
+- artifacts: README.md; CHANGELOG.md;
+             kai/coordination/items/pack-split-release-12a.md
+- evidence:  Marketplace topology remains the single `kai` entry at source
+             `.`; no pack entry was added and install commands are unchanged.
+- questions: none
+- next:      principal-swe-infra — finish release metadata and verification.

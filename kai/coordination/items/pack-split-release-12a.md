@@ -5,10 +5,10 @@ title: Release 12a — migration notice on 0.x (no packs published)
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: ready
+state: in-progress
 resume_state: null
 priority: 20
-owner: null
+owner: principal-swe-infra
 next_role: principal-swe-infra
 target: pack-split staged release 12a (migration notice)
 artifact_target: null
@@ -34,14 +34,14 @@ review_requirements:
     kind: doc-review
 completed_reviews: []
 change_ref: null
-version: 2
+version: 3
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1306
+updated: 2026-08-27-1320
 ---
 
 ## Outcome
@@ -52,13 +52,18 @@ install surface.
 
 ## Acceptance
 
-- [ ] The migration notice is shipped in the monolith and accurately describes the coming split + migration.
-- [ ] `marketplace.json` is unchanged (still monolith); the install command has not changed.
+- [x] The migration notice is prepared in the monolith and accurately describes the coming split + migration.
+- [x] `marketplace.json` retains the monolith-only topology; the install command has not changed.
 - [ ] Release cut on `0.x` with CHANGELOG + README stamp; `node scripts/release-guard.mjs` gate passes.
 
 ## Evidence
 
-- (to be filled) — release notes + operator publish confirmation.
+- README `## Status` carries the pre-publication warning: do not uninstall
+  legacy `kai` until all requested packs are published at one marketplace
+  version; the guided path then removes legacy, installs core first, and
+  verifies each step.
+- CHANGELOG `0.67.0` records the same migration contract and explicitly states
+  that packs remain unpublished and the current install surface is unchanged.
 
 ## Notes
 
