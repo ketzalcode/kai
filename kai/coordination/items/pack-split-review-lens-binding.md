@@ -9,7 +9,7 @@ state: completed
 resume_state: null
 priority: 20
 owner: null
-next_role: director-chief-of-staff
+next_role: null
 target: pack-split engineering-tree review-lens binding (architect caveat b / decomposition Open Question 1)
 artifact_target: kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md
 context_artifacts:
@@ -26,14 +26,14 @@ required_for_milestone: false
 review_requirements: []
 completed_reviews: []
 change_ref: null
-version: 4
+version: 5
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1552
+updated: 2026-08-27T23:45:12Z
 ---
 
 ## Outcome
@@ -196,3 +196,9 @@ pass permitted.
   `next_role principal-swe-architect -> director-chief-of-staff`. Knowledge item: no version,
   no release, no publish, no independent review. `12c-3`'s typed
   `requires: completed` dependency on this item is now **satisfied**.
+
+### Steward reconciliation 2026-08-27-1645 (`principal-product-manager`)
+
+Cleared the fulfilled coordination handoff (`next_role -> null`). The item
+remains `completed`; the ratified **DO NOT BIND** decision, empty implementation
+file set, evidence, and downstream dependency satisfaction are unchanged.

@@ -1,7 +1,7 @@
 ---
 type: work-item
 id: pack-split-release-12c-3-engineering
-title: Release 12c-3 — generate and publish kai-engineering, carrying the ratified review-lens binding, on 1.0.3
+title: Release 12c-3 — generate and publish kai-engineering, preserving runtime-dispatched review lenses, on 1.0.3
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
@@ -23,7 +23,6 @@ touches:
   - packs/kai-core/
   - packs/kai-personal/
   - packs/kai-product/
-  - agents/workflow-doc-review.agent.md
   - scripts/lib/pack-plan.mjs
   - scripts/pack-preview.mjs
   - .github/workflows/validate.yml
@@ -49,29 +48,32 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1508
+updated: 2026-08-27T23:45:12Z
 ---
 
 ## Outcome
 
-`kai-engineering` — the largest department, 20 agents — is generated from root
-with the ratified review-lens binding already applied, committed, and published
-to `kai-plugins` at `1.0.3`. Four of five packs are live.
+`kai-engineering` — the largest department, 20 agents — is generated from the
+settled root tree with the three review lenses still runtime-dispatched and
+engineering-owned through the existing overrides, committed, and published to
+`kai-plugins` at `1.0.3`. Four of five packs are live.
 
 ## Acceptance
 
-- [ ] The ratified decision in `kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md`
-      is **implemented before the tree is generated** — architect caveat (b) is closed at generation
-      time, not at review time. If the verdict was *bind*, `agents/workflow-doc-review.agent.md`
-      carries the three lenses on its `**Inherits:**` line and any now-redundant
-      `SKILL_OWNER_OVERRIDES` entries are reconciled.
+- [ ] The ratified **DO NOT BIND** decision in
+      `kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md`
+      is preserved when the tree is generated: the reviewed `change_ref` has
+      **zero diff** to `agents/workflow-doc-review.agent.md` and zero diff to the
+      three existing `SKILL_OWNER_OVERRIDES` entries for `review-dependencies`,
+      `review-performance-scale`, and `review-success-metrics`. Those entries
+      remain assigned to `engineering`, and the lenses remain runtime-dispatched.
 - [ ] Partition invariants stay green under the change: the `--all` self-test still reports
       `orphans === overrides`, `unplaced === 0`, 56 of 56 agents assigned, none double-claimed, and
       no skill provided by both core and a pack.
@@ -103,20 +105,28 @@ to `kai-plugins` at `1.0.3`. Four of five packs are live.
 
 - **Release/version: `1.0.3`, inside `1.0.x`.**
 - **Size L, and the largest of the three publishes.** 20 agents
-  (`scripts/lib/pack-plan.mjs:70-84`) means the widest generated diff to review, and it is the only
-  publish that also carries a **root source change** (the `**Inherits:**` line) whose blast radius
-  reaches the partition placement logic, not just one pack's tree.
-- **Risk / unknown, named rather than absorbed:** if the binding verdict is *bind*, the three
-  `review-*` skills move from override-placement to inheritance-placement. `planPacks` asserts
-  set equality between orphans and overrides, so removing the overrides is likely required and the
-  `--all` self-test is the gate that will say so. This is contained to files already in `touches`,
-  but it is the one place in `12c` where a decision changes generator behavior and not just
-  content. If it turns out to require a new CI assertion or a partition re-lock, that is a scope
-  question for the steward — not a quiet expansion of this item.
+  (`scripts/lib/pack-plan.mjs:70-84`) means the widest generated diff to review.
+  The settled **DO NOT BIND** decision removes the previously anticipated root-agent-body change:
+  engineering publication must generate the existing tree without changing
+  `agents/workflow-doc-review.agent.md` or the three review-lens override entries.
+- **Required zero-diff obligation:** `scripts/lib/pack-plan.mjs` remains in `touches` because
+  `COMMITTED_PACKS` gains `engineering`, but its existing
+  `review-dependencies`, `review-performance-scale`, and `review-success-metrics`
+  `SKILL_OWNER_OVERRIDES` entries remain byte-unchanged. The review-lens decision requires no new
+  CI assertion, partition re-lock, generator behavior, or agent-content change.
 - **Reviews:** `principal-sre` (staged publish, no regression) and `principal-swe-architect` (the
-  generated tree **and** the implemented review-lens binding — the caveat the decomposition routed
-  here since 2026-08-24). The architect ratifying the decision upstream and reviewing its
-  implementation here is the normal separation: infra implements, architect judges.
+  generated tree and conformance to the settled zero-diff review-lens obligation). The architect
+  ratified the upstream decision and independently verifies that publication preserves it.
 - Depends on `pack-split-review-lens-binding` at `completed` — a knowledge item's terminal state —
   and on `pack-split-release-12c-2-product` at `shipped`, because the publish protocol and the
   three-pack rollback derivation are proven there first.
+
+### Steward reconciliation 2026-08-27-1645 (`principal-product-manager`)
+
+Classified as `refine-in-scope`: this corrects the item to the already-ratified
+**DO NOT BIND** decision and adds no capability or release scope. Removed the
+false root-agent touch and replaced the conditional bind path with explicit
+zero-diff obligations for the agent body and the three existing review-lens
+override entries. The item remains `proposed`; its decision dependency is
+`completed`, while `pack-split-release-12c-2-product` still must reach
+`shipped`.
