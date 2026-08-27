@@ -722,7 +722,7 @@ function selfTest() {
         'node_modules/third-party-runtime': {
           version: '1.0.0',
           resolved: 'https://registry.npmjs.org/third-party-runtime/-/third-party-runtime-1.0.0.tgz',
-          integrity: 'sha512-AAAA',
+          integrity: RUNTIME_ARTIFACTS.lectoria.integrity,
         },
       },
     })],
@@ -795,8 +795,16 @@ function selfTest() {
     (value) => { value.packages['node_modules/lectoria'].integrity = 'sha1-AAAA'; }
   );
   ok(generatedRuntimeErrors(weakIntegrity)
-    .some((e) => /must carry non-empty SHA-512 integrity/.test(e.msg)),
+    .some((e) => /must carry a complete SHA-512 integrity digest/.test(e.msg)),
   'a runtime lock record without SHA-512 integrity fails closed');
+  const truncatedIntegrity = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => { value.packages['node_modules/lectoria'].integrity = 'sha512-AAAA'; }
+  );
+  ok(generatedRuntimeErrors(truncatedIntegrity)
+    .some((e) => /must carry a complete SHA-512 integrity digest/.test(e.msg)),
+  'a truncated SHA-512 digest fails before npm installation');
   const changedIntegrity = mutateGeneratedJson(
     liveFiles,
     'kai-core/package-lock.json',

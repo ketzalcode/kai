@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: principal-swe-infra
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -52,16 +52,22 @@ required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
+completed_reviews:
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 6701696d01ec099b470dbaf403c12ddfe6cfe615
+    verdict: ratified
+    evidence: "kai/coordination/threads/pack-split-pack-dependency-manifests.md"
+    timestamp: 2026-08-27-1137
 change_ref: 6701696d01ec099b470dbaf403c12ddfe6cfe615
-version: 13
+version: 15
 lease:
-  holder: principal-swe-architect
-  token: arch-1128-artifact
-  version_at_grant: 12
-  acquired: 2026-08-27T11:28:02-07:00
-  expires: 2026-08-27T13:28:02-07:00
-updated: 2026-08-27-1128
+  holder: principal-swe-infra
+  token: psinfra-1138-p2
+  version_at_grant: 14
+  acquired: 2026-08-27T11:38:48-07:00
+  expires: 2026-08-27T12:38:48-07:00
+updated: 2026-08-27-1138
 ---
 
 ## Outcome
@@ -75,7 +81,7 @@ remain deterministic and version-coherent.
 
 - [x] Host evidence states whether marketplace and direct plugin installation
       run `npm install` or provide `node_modules` in each pack root.
-- [ ] Lectoria remediation in the canonical skill and scripts is truthful for
+- [x] Lectoria remediation in the canonical skill and scripts is truthful for
       an installed pack; root remains the single source and generated copies are
       never edited directly.
 - [x] A core-owned executable invoked by a department has one documented,

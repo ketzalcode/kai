@@ -406,3 +406,83 @@ Exact corrective changes required:
 - questions: none
 - next:      principal-swe-architect — perform the independent review under
              token `arch-1128-artifact`.
+
+## REVIEW 2026-08-27-1137 — independent architecture
+
+- role:       principal-swe-architect
+- kind:       independent-architecture
+- change_ref: `6701696d01ec099b470dbaf403c12ddfe6cfe615`
+- parent:     `b6db547c41b606c92e78e9d91fab82c554fc7d3d`
+- verdict:    **ratified**
+- disposition: **Endorse** — the accepted pack-local seam is unchanged; the
+               blocking transport and reproducibility forces are resolved by
+               the immutable public artifact.
+- findings:   P0 0 / P1 0 / P2 2
+
+The prior SSH-coupled remediation is closed: no runtime lock resolves through
+Git, and the shared contract rejects non-HTTPS and unapproved sources. The
+follow-up build-at-install finding is closed: Lectoria is a prebuilt tarball
+with exact SHA-512 integrity that npm verifies.
+
+Judged sound: release provenance and integrity; the registry plus sanctioned
+artifact allowlist; offline deterministic lock projection; pack-local runtime
+ownership; provider-root invocation; and clean Node 24.15.0 empty-cache,
+no-Git, no-credential installs for both packs in GitHub Actions run
+`33103553150`.
+
+Non-blocking P2s: `scripts/demo-narrate.mjs` retains one stale code comment
+calling Lectoria a git dependency, while every executable and user-facing
+surface is correct; the generic registry-integrity regex checks SHA-512
+algorithm and base64 shape but not digest length, while the sanctioned
+Lectoria digest is exact-matched and npm rejects real mismatches with
+`EINTEGRITY`. Neither requires a new review ref.
+
+Residual availability risk: the GitHub release asset has no mirror. Deletion
+would fail loudly and affect only opt-in audio; substitution is blocked by the
+integrity pin. Packs remain unpublished, marketplace topology remains
+monolith-only, and release 12b remains **NO-GO**.
+
+## HANDOFF 2026-08-27-1137 — principal-swe-architect -> workflow-ship
+
+- did:       Ratified exact implementation ref
+             `6701696d01ec099b470dbaf403c12ddfe6cfe615` with
+             P0/P1/P2 = 0/0/2, recorded the completed review, confirmed every
+             acceptance criterion, and cleared the review lease. Lifecycle
+             remains `in-review` until workflow-ship performs its prepare gate.
+- state:     in-review
+- needs:     Prepare this exact ref for merge. Any implementation-byte change
+             invalidates the ratification and requires a new ref and review.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             kai/coordination/BOARD.md; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs; .github/workflows/validate.yml;
+             package.json; package-lock.json; packs/kai-core/package.json;
+             packs/kai-core/package-lock.json;
+             packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json;
+             https://github.com/RubenSaucedo/lectoria/releases/tag/v0.1.0;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  GitHub Actions run `33103553150` jobs `98627299382`,
+             `98627299598`, and `98627299641` all succeeded; root, core, and
+             personal pin the release URL at
+             `sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==`;
+             later branch commits touch coordination only.
+- questions: none
+- next:      workflow-ship — perform release-readiness preparation for PR #175
+             without publishing packs or changing marketplace topology.
+
+## NOTE 2026-08-27-1138 — principal-swe-infra
+
+- did:       Accepted both non-blocking P2 review findings for immediate
+             cleanup rather than parking trivial debt. Claimed correction lease
+             `psinfra-1138-p2` at item version 14.
+- state:     in-review
+- needs:     Correct the stale demo-narrate comment and require a full 64-byte
+             SHA-512 digest for every projected registry record, then mint and
+             re-review one final implementation ref.
+- artifacts: scripts/demo-narrate.mjs; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs
+- evidence:  Independent review at `6701696d…` ratified the architecture and
+             classified both corrections P2/non-blocking.
+- questions: none
+- next:      principal-swe-infra — make only the two accepted review fixes.

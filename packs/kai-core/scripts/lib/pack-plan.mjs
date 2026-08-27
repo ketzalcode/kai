@@ -230,6 +230,15 @@ function projectLockPackages(packageLock, directDependencies) {
   return Object.fromEntries([...projected].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
 
+function hasFullSha512Integrity(value) {
+  if (typeof value !== 'string' || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    return false;
+  }
+  const digest = value.slice('sha512-'.length);
+  const bytes = Buffer.from(digest, 'base64');
+  return bytes.length === 64 && bytes.toString('base64') === digest;
+}
+
 function runtimeDependencyContractMessages(dependencies, packages) {
   const messages = [];
   const sanctionedArtifacts = new Map(
@@ -256,9 +265,8 @@ function runtimeDependencyContractMessages(dependencies, packages) {
     } else if (!sanctionedArtifacts.has(resolved)) {
       messages.push(`lock record "${key}" resolves from unapproved runtime source "${resolved}"`);
     }
-    if (typeof record.integrity !== 'string'
-      || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(record.integrity)) {
-      messages.push(`lock record "${key}" must carry non-empty SHA-512 integrity`);
+    if (!hasFullSha512Integrity(record.integrity)) {
+      messages.push(`lock record "${key}" must carry a complete SHA-512 integrity digest`);
     }
   }
 

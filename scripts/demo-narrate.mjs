@@ -304,9 +304,9 @@ export function buildMixArgs(plan, { video, out }) {
 // script that only needs a duration back. So it is treated as an external tool
 // and shelled out to, exactly as ffmpeg is.
 //
-// kai-personal pins lectoria as a git dependency, so `npm ci --prefix <root>`
-// puts it at `node_modules/.bin/lectoria`. Looking only on PATH would report it
-// absent on precisely the machines where it is correctly installed.
+// kai-personal pins a prebuilt Lectoria release, so `npm ci --prefix <root>`
+// puts it at `node_modules/.bin/lectoria`. Looking only on PATH would report
+// it absent on precisely the machines where it is correctly installed.
 export function findLectoria(env = process.env, probe = defaultProbe, exists = existsSync) {
   const explicit = env.LECTORIA_BIN;
   if (explicit) return { path: explicit, source: 'LECTORIA_BIN' };
