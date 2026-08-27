@@ -5,11 +5,11 @@ title: Release 12b — minimal 1.0.0 flip (publish core + personal, retire monol
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-review
+state: release-ready
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: "@operator"
 target: pack-split staged release 12b (the 1.0.0 flip)
 artifact_target: null
 context_artifacts:
@@ -37,6 +37,7 @@ touches:
   - AGENTS.md
   - kai/coordination/
   - kai/initiatives/pack-split/
+  - kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/
 depends_on:
   - item: pack-split-host-gates
     requires: completed
@@ -67,14 +68,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12b.md"
     timestamp: 2026-08-27-1515
 change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
-version: 10
+version: 11
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1515
+updated: 2026-08-27-1433
 ---
 
 ## Outcome
@@ -143,6 +144,23 @@ irreversible act that escapes release enforcement.*
   not emit `enabled-state-unverified` for the empty user override map.
 - Independent SRE and security reviews both approve exact implementation
   `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` with no P0/P1 findings.
+- Ship gate 2026-08-27-1433 (`workflow-ship`, PREPARE): six of six DoD
+  dimensions Clear; verdict RELEASE-READY. Record:
+  `kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md`. Verified directly from the tree at PR #181 head
+  `b0bb79faa51dd14bfb0cf7151ed6a16b0f538f92`: marketplace publishes exactly
+  `kai-core` + `kai-personal` at `1.0.0` with `installSurface: packs` and no
+  monolith entry; all seven version surfaces agree at `1.0.0`; CHANGELOG
+  `[1.0.0]` + compare link and README `v1.0.0` stamp present; A4(1) at
+  `scripts/release-guard.mjs:22`; A4(2) at `scripts/validate-plugin.mjs:822`;
+  core never selectable at `skills/kai-core-workspace-onboarding/SKILL.md:31`;
+  all four typed dependencies re-verified at their terminal states.
+- Ship-gate limits, converted to blocking pre-merge stop conditions rather than
+  assumed: this run had no shell and no GitHub API reach (`403`), so
+  reviewed-ref equivalence (`236f36d4…` vs `b0bb79fa…`) and CI run
+  `33118653686` are operator-attested, not re-executed. Deploy step 1 proves
+  equivalence with `git diff --exit-code $review HEAD -- . ':(exclude)kai/'`;
+  step 2 requires a **fresh** run at the post-PREPARE head, since the records
+  commit supersedes `33118653686`.
 
 ## Notes
 

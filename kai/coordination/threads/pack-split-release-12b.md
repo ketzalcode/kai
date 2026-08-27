@@ -285,3 +285,56 @@ Append-only communication log mirroring
 - questions: none
 - next:      workflow-ship — gate release readiness; operator acts remain
              publish/tag/retire only after post-merge verification.
+
+## HANDOFF 2026-08-27-1433 — workflow-ship -> @operator
+
+- did:       Ran the full six-dimension DoD gate against PR #181 at head
+             `b0bb79faa51dd14bfb0cf7151ed6a16b0f538f92`, bound to reviewed
+             implementation `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d`.
+             **All six dimensions Clear — verdict RELEASE-READY.** Wrote the
+             canonical ship record and moved the item `in-review ->
+             release-ready` (v10 -> v11), `lease: null`, `resume_state: null`,
+             `next_role: workflow-ship -> "@operator"`. Nothing was merged,
+             tagged, published, or deployed. Acceptance boxes 1-3 stay
+             unticked: they are the operator-executed publication acts that
+             complete at deployment, not preparation claims.
+- state:     release-ready
+- needs:     Operator execution of the recorded deploy sequence. **Two
+             mandatory pre-merge stop conditions**, because this run had no
+             shell and no GitHub API reach (`api.github.com` returned `403`),
+             so two inputs are attested rather than re-verified here:
+             (1) prove head-vs-reviewed equivalence with
+             `git diff --exit-code 236f36d4… HEAD -- . ':(exclude)kai/'` —
+             anything outside `kai/` means re-review, not merge;
+             (2) require a **fresh** green run at the post-PREPARE head — run
+             `33118653686` sits at `b0bb79fa…` and is superseded by the
+             records commit, so it is a precondition signal, not the merge
+             gate. **The merge is the publication**: the marketplace is served
+             from the default branch, so the abort window closes at merge, not
+             at tag. Run the post-merge isolated-home and real direct-monolith
+             probes **before** tagging `v1.0.0`.
+- artifacts: kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md;
+             kai/coordination/items/pack-split-release-12b.md;
+             kai/initiatives/pack-split/log.md
+- evidence:  Verified directly from the tree at `b0bb79fa…`: marketplace has
+             exactly `kai-core` + `kai-personal` at `1.0.0`,
+             `installSurface: packs`, no monolith entry; `1.0.0` coherent
+             across root plugin/package, marketplace metadata, both entries and
+             both pack manifests; CHANGELOG `[1.0.0]` + compare link
+             (`:2990`); README `v1.0.0` stamp with the honest 16-agents-of-56
+             disclosure; A4(1) `release-guard.mjs:22`; A4(2)
+             `validate-plugin.mjs:822`; core never selectable
+             (`kai-core-workspace-onboarding/SKILL.md:31-34`); unpublished
+             departments fail closed (`SKILL.md:113-118`); rollback runbook
+             `docs/reference/plugin-structure.md:190`. Both required reviews
+             approved at the same exact `change_ref` with no P0/P1. All four
+             typed dependencies re-verified: host-gates `completed` v17,
+             pack-dependency-manifests `shipped` v23, release-12a `shipped`
+             v18, onboarding-installer `shipped` v18.
+- questions: none
+- next:      @operator — execute the deploy handoff and return merge SHA,
+             exact-main run URL/ID/headSha/conclusion with all job
+             conclusions, both host-probe results, and the release URL/target/
+             timestamp. `workflow-ship` then runs CONFIRM-START and
+             CONFIRM-COMPLETE. A run URL without a successful conclusion is
+             not completion; only `workflow-ship` records rollback evidence.

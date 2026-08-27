@@ -2997,3 +2997,38 @@ terminal item v17 -> v18 without changing `shipped`, the reviewed ref, reviews,
 acceptance, or production evidence. Release 12b remains the separate `ready` v5
 queue head; release 12c remains `proposed` v1. No implementation or publication
 action occurred.
+
+## 2026-08-27-1433 - DoD PREPARE: release 12b RELEASE-READY (the 1.0.0 flip)
+
+`workflow-ship` ran the full six-dimension gate on `pack-split-release-12b`
+against PR #181 at head `b0bb79faa51dd14bfb0cf7151ed6a16b0f538f92`, bound to
+reviewed implementation `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d`. **All six
+dimensions Clear — RELEASE-READY.** The item moved `in-review -> release-ready`
+(v10 -> v11), `next_role: "@operator"`, lease clear. Nothing was merged,
+tagged, published, or deployed; the milestone is not closed.
+
+Verified directly from the tree: the marketplace publishes exactly `kai-core`
+and `kai-personal` at `1.0.0` with `installSurface: packs` and **no monolith
+entry**; `1.0.0` is coherent across all seven version surfaces; CHANGELOG
+`[1.0.0]` carries its compare link and README carries the `v1.0.0` stamp with an
+honest "16 agents and 31 skills of 56/51" disclosure. Both carried-forward A4
+criteria are real code, not intent: `.github/plugin/marketplace.json` is a
+`BEHAVIOR_FILE` in `release-guard.mjs:22`, so publication can no longer land as
+an unbumped marketplace edit, and `validate-plugin.mjs:822` rejects an entry
+whose name disagrees with the manifest at its source. The non-negotiables hold —
+core is never selectable, the slice is core plus **one** department, and
+unpublished departments fail closed rather than half-installing.
+
+Both required independent reviews (`principal-sre`, `principal-security`)
+approved the same exact ref with no P0/P1, after a genuinely adversarial chain
+that blocked two earlier refs.
+
+Two inputs were operator-attested rather than re-executed, because this run had
+no shell and no GitHub API reach (`403`): head-vs-reviewed equivalence, and CI
+run `33118653686`. Both became **blocking pre-merge stop conditions** instead of
+assumptions — a `git diff --exit-code … ':(exclude)kai/'` equivalence proof, and
+a required **fresh** run at the post-PREPARE head, since the records commit
+supersedes `33118653686`. The steering fact for the operator: **the merge is the
+publication**, because the marketplace is served from the default branch, so the
+abort window closes at merge rather than at tag, and the host probes run before
+`v1.0.0` is cut.
