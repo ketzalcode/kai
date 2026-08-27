@@ -5,11 +5,11 @@ title: Define generated-pack dependency manifests and install semantics
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: in-progress
+state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-swe-architect
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -52,15 +52,15 @@ review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
-change_ref: null
-version: 5
+change_ref: e67057ec061e9799cf7300bce972305ab01a7603
+version: 7
 lease:
-  holder: principal-swe-infra
-  token: psinfra-1818-dm65
-  version_at_grant: 3
-  acquired: 2026-08-26T18:18:04-07:00
-  expires: 2026-08-26T20:18:04-07:00
-updated: 2026-08-26-1823
+  holder: principal-swe-architect
+  token: arch-1827-dm65
+  version_at_grant: 6
+  acquired: 2026-08-26T18:27:51-07:00
+  expires: 2026-08-26T20:27:51-07:00
+updated: 2026-08-26-1827
 ---
 
 ## Outcome
@@ -72,22 +72,36 @@ remain deterministic and version-coherent.
 
 ## Acceptance
 
-- [ ] Host evidence states whether marketplace and direct plugin installation
+- [x] Host evidence states whether marketplace and direct plugin installation
       run `npm install` or provide `node_modules` in each pack root.
-- [ ] Lectoria remediation in the canonical skill and scripts is truthful for
+- [x] Lectoria remediation in the canonical skill and scripts is truthful for
       an installed pack; root remains the single source and generated copies are
       never edited directly.
-- [ ] A core-owned executable invoked by a department has one documented,
+- [x] A core-owned executable invoked by a department has one documented,
       verified resolution path under a core + department install.
-- [ ] Per-pack manifest and lockfile generation is deterministic and consistent
+- [x] Per-pack manifest and lockfile generation is deterministic and consistent
       with the lockstep release policy; this does not reopen per-pack semver.
-- [ ] The emitted-tree gate still rejects undeclared bare runtime imports.
+- [x] The emitted-tree gate still rejects undeclared bare runtime imports.
 
 ## Evidence
 
 - Host gates established that direct and directory-marketplace installation copy
   plugin files but do not run npm and do not provide `node_modules`; see
   `kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md`.
+- Implementation is bound to
+  `e67057ec061e9799cf7300bce972305ab01a7603`.
+- `npm test` passed at `0.65.0`; pack self-test passed 157 mutation and
+  determinism checks; committed-tree drift and diff-format checks passed.
+- Temporary generated `kai-core` and `kai-personal` installs each accepted
+  `npm ci`, installed 183 packages, and produced a working Lectoria executable.
+  Resolving two directories above the loaded
+  `skills/kai-core-generate-audio/` provider path reached the core wrapper,
+  whose dry-run selected core's pack-local binary. The verification host used
+  Node `24.14.0`, below the declared `24.15.0` floor, so npm emitted truthful
+  `EBADENGINE` warnings even though installation and the executable probe
+  completed successfully.
+- Packs remain unpublished and marketplace topology remains the monolith-only
+  entry at source `.`. Release 12b remains NO-GO.
 
 ## Decision
 

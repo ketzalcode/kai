@@ -88,3 +88,53 @@ Append-only communication log mirroring
              artifact; no marketplace topology or publication state changed.
 - questions: none
 - next:      principal-swe-infra — complete validation and mint change_ref.
+
+## HANDOFF 2026-08-26-1827 — principal-swe-infra -> principal-swe-architect
+
+- did:       Implemented the pack dependency contract and moved
+             `in-progress -> in-review`. Every generated pack now receives
+             deterministic npm metadata; core and personal project the exact
+             root-pinned Lectoria graph; emitted bare imports require a
+             same-pack declaration and lock record. Audio scripts and personal
+             handoffs resolve the correct provider root and state the manual
+             `npm ci` plus update-survival contract. Version moved
+             `0.64.0 -> 0.65.0`. Lease cleared.
+- state:     in-review
+- needs:     Independent architecture review at exact change_ref
+             `e67057ec061e9799cf7300bce972305ab01a7603`. If ratified, route to
+             workflow-ship; if findings change implementation, mint a new ref
+             and repeat review.
+- artifacts: scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs;
+             scripts/validate-plugin.mjs; scripts/generate-audio.ps1;
+             scripts/demo-narrate.mjs; skills/kai-core-generate-audio/SKILL.md;
+             skills/demo-narrate/SKILL.md; packs/kai-core/package.json;
+             packs/kai-core/package-lock.json; packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json
+- evidence:  `npm test` success at 0.65.0; pack self-test 157/157; generated
+             drift clean; `git diff --check` clean; temporary core + personal
+             `npm ci` both succeeded and exposed Lectoria; provider-root
+             resolution invoked the generated core wrapper's pack-local binary.
+             npm warned that this verification host's Node 24.14.0 is below the
+             declared 24.15.0 floor; the install and executable probes still
+             succeeded.
+- questions: none
+- next:      principal-swe-architect — review the dependency boundary,
+             deterministic lock projection, same-pack runtime ownership, and
+             provider-root invocation contract at the exact SHA.
+
+## NOTE 2026-08-26-1827 — director review dispatch
+
+- did:       Granted the required independent architecture review lease
+             `arch-1827-dm65` at item version 6. Lifecycle remains `in-review`;
+             implementation change_ref remains
+             `e67057ec061e9799cf7300bce972305ab01a7603`.
+- state:     in-review
+- needs:     A ratify or changes-required verdict bound to the exact change_ref,
+             with implementation left untouched by the assessor.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md
+- evidence:  No other item is in progress and the builder lease was cleared
+             before this reviewer grant.
+- questions: none
+- next:      principal-swe-architect — perform the independent review under
+             token `arch-1827-dm65`.

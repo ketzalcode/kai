@@ -1339,3 +1339,11 @@ temporary core + personal installation accepted both projected lockfiles,
 produced both Lectoria executables, and resolved the core wrapper from the
 loaded `kai-core-generate-audio` provider root. The implementation remains
 uncommitted and unreviewed; release 12b remains NO-GO and no pack is published.
+
+**Review handoff 2026-08-26-1827.**
+The dependency contract is committed at
+`e67057ec061e9799cf7300bce972305ab01a7603` and the item is `in-review`, routed
+to `principal-swe-architect` with no live lease. Full `npm test`, the 157-check
+pack self-test, committed-tree drift, and both temporary pack installs passed.
+The prior "uncommitted and unreviewed" sentence is superseded for commit state
+only: independent review is still pending. Release 12b remains NO-GO.
