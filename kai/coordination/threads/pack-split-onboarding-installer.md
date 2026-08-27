@@ -272,3 +272,50 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-architect — final verdict at
              `e9ecce6d2de3a59ae2faaadd62114480b9b3f357`.
+
+## REVIEW 2026-08-27-1242 — principal-swe-architect
+
+- change_ref: e9ecce6d2de3a59ae2faaadd62114480b9b3f357
+- verdict:    ratified
+- findings:   P0 0 / P1 0 / P2 5. Prior blocking findings remain closed.
+              Non-blocking: verify browse-version output at publication time;
+              name recovery when in-session update is refused; align unknown
+              wording; derive two validator strings; name disabled-department
+              recovery.
+- evidence:   Exact source and generated copies, release metadata, topology,
+              and host command documentation. No files edited.
+- next:       principal-technical-writer — final independent prose verdict at
+              the same ref.
+
+## REVIEW 2026-08-27-1242 — principal-technical-writer
+
+- change_ref: e9ecce6d2de3a59ae2faaadd62114480b9b3f357
+- verdict:    changes-required
+- findings:   P1: the result enum names `complete`, `partial`, `blocked`, and
+              `unknown`, but only complete and a narrow unknown case had
+              boundaries. Malformed required output had no deterministic
+              classification, contradicting the claimed exact partial state.
+- evidence:   Full procedure and all public summary claims. No files edited.
+- next:       principal-swe-infra — define status precedence and re-request
+              final dual review on a new ref.
+
+## NOTE 2026-08-27-1242 — principal-swe-infra final correction
+
+- did:       Defined deterministic status precedence: complete; partial after
+             any successful plugin mutation; unknown for unsettled required
+             evidence before plugin mutation; otherwise blocked for known
+             pre-mutation refusal/failure. Added in-session update recovery,
+             disabled-department recovery, and derived validator strings; pinned
+             every new boundary. Kept browse-version output verification routed
+             to the publication gates because `kai-plugins` is not registered
+             on this workstation and no pack is published yet.
+- state:     in-review
+- needs:     Regenerate core, run the full suite, mint the final ref, and obtain
+             both exact-ref approvals.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             scripts/validate-plugin.mjs
+- evidence:  Singular `plugin marketplace browse` has no `--json`; the plural
+             discovery command advertises JSON but is unavailable in this
+             runtime and does not prove install-config state.
+- questions: none
+- next:      principal-swe-infra — verify and bind the final ref.

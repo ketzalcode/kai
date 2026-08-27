@@ -118,6 +118,9 @@ request to "set up kai" is not confirmation for an unshown command set.
    Continue only when one enabled `kai-core` row is present at the exact version
    reported by the browse step. On skew, stop before every department install
    and name `copilot plugin update kai-core@kai-plugins` as the blocking action.
+   If the host refuses that update because the current session has core loaded,
+   end the run and perform the update from a session that does not have the pack
+   loaded; then start a fresh session and re-run this installer.
    If the row is disabled, stop and name
    `copilot plugins enable kai-core@kai-plugins --plugin` as the blocking
    action.
@@ -127,7 +130,8 @@ request to "set up kai" is not confirmation for an unshown command set.
    Continue only when the workspace contract is valid.
 4. Install each selected department in canonical order. Immediately run
    `copilot plugin list` after each command and verify one enabled row at the
-   same version as `kai-core`.
+   same version as `kai-core`. For a disabled department, stop and name
+   `copilot plugins enable <name>@kai-plugins --plugin` as the blocking action.
 5. Re-run the migration check. Completion requires `clear`, the exact selected
    pack set, no legacy `kai`, and no unverified host or workspace finding.
 
@@ -170,10 +174,21 @@ Session: start a fresh session before invoking pack agents | no pack change
 Next: <ready, or the one exact blocking action>
 ```
 
-`complete` is allowed only after every selected row and the final migration
-check pass. Use `unknown` when the migration check could not settle host or
-workspace state. Anything else incomplete is `partial` or `blocked`, never
-success-shaped.
+Choose the status in this order:
+
+1. `complete` only after every selected row and the final migration check pass.
+2. `partial` when at least one plugin install or update succeeded in this run
+   but the run did not complete. Marketplace-only or manifest-only mutation
+   does not make a pack install partial.
+3. `unknown` when required host, marketplace, plugin-list, version, or workspace
+   evidence is unreadable, malformed, or otherwise cannot be settled and no
+   plugin install or update succeeded in this run. This includes availability
+   that cannot be proved while the known legacy refusal remains in force.
+4. `blocked` for every other known pre-mutation refusal or failed command when
+   no plugin install or update succeeded in this run.
+
+Do not choose the more reassuring label. A known refusal is not `unknown`, and
+a run that changed a plugin before failing is not merely `blocked`.
 
 ## Inputs
 

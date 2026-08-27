@@ -823,6 +823,7 @@ const dirTokens = (s) => toSet([...s.matchAll(/([a-z][a-z0-9-]*)\//g)].map((m) =
 const guidedInstallCommands = PACK_ORDER.map(
   (pack) => `copilot plugin install ${packPluginName(pack)}@${MARKETPLACE}`,
 );
+const guidedCorePlugin = packPluginName('core');
 if (onboarding) {
   const onboardingProse = onboarding.replace(/\s+/g, ' ');
   let previousCommandIndex = -1;
@@ -856,8 +857,13 @@ if (onboarding) {
     'never reuse a path into a plugin uninstalled or updated during this run',
     'End the current run; a session still carrying the removed monolith must not continue the migration',
     'at the exact version reported by the browse step',
-    'copilot plugins enable kai-core@kai-plugins --plugin',
-    'kai-core` and every requested department are listed at one common version',
+    `copilot plugins enable ${guidedCorePlugin}@${MARKETPLACE} --plugin`,
+    `copilot plugins enable <name>@${MARKETPLACE} --plugin`,
+    `${guidedCorePlugin}\` and every requested department are listed at one common version`,
+    'partial` when at least one plugin install or update succeeded in this run',
+    'unknown` when required host, marketplace, plugin-list, version, or workspace evidence is unreadable',
+    'blocked` for every other known pre-mutation refusal or failed command',
+    'perform the update from a session that does not have the pack loaded',
   ]) {
     if (!onboardingProse.includes(requiredText)) {
       err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);
