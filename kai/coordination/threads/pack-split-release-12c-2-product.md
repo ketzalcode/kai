@@ -20,6 +20,20 @@
 - questions: none
 - next:      principal-swe-infra — create the reviewable implementation ref.
 
+## HANDOFF 2026-08-28-0002 — principal-swe-infra -> principal-sre
+
+- did:       Committed the complete 1.0.2 product publication at exact ref
+             `076a9244c062ab61a0920a54f35b0dc2daebc995`.
+- state:     in-review
+- needs:     Independent reliability review; architecture independently reviews
+             the generated product tree and partition placement at the same ref.
+- artifacts: `packs/kai-product/`; `.github/plugin/marketplace.json`;
+             `scripts/lib/pack-plan.mjs`; `scripts/pack-preview.mjs`
+- evidence:  Full suite passed; exact release guard passed against
+             `origin/main`; generated parity is clean.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.
+
 Append-only communication log mirroring
 `kai/coordination/items/pack-split-release-12c-2-product.md`. See `kai-core-work-coordination`.
 

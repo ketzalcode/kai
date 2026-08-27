@@ -5,11 +5,11 @@ title: Release 12c-2 — generate and publish kai-product (first three-pack publ
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-progress
+state: in-review
 resume_state: null
 priority: 30
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-sre
 target: pack-split staged department publish — kai-product
 artifact_target: null
 context_artifacts:
@@ -44,15 +44,15 @@ review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
-change_ref: null
-version: 4
+change_ref: 076a9244c062ab61a0920a54f35b0dc2daebc995
+version: 5
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27T23:58:00Z
+updated: 2026-08-28T00:02:00Z
 ---
 
 ## Outcome
@@ -83,7 +83,7 @@ exist when it was written.
       and 34 skills **from the published pack set**, and the migration notice prose is updated
       to name the packs actually published and the ones still to come — no stale "remaining
       department packs follow" claim that the release just falsified.
-- [ ] `1.0.2` is coherent across every version surface; CHANGELOG entry + compare link present;
+- [x] `1.0.2` is coherent across every version surface; CHANGELOG entry + compare link present;
       `release-guard` passes; `npm test` green.
 - [ ] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff
       (`git diff --exit-code <review> HEAD -- . ':(exclude)kai/'`), and a **fresh** CI run at the
@@ -104,8 +104,11 @@ exist when it was written.
   empty. Branch protection currently requires only `contract`, so
   `runtime-dependencies (kai-product)` will run but is not enforced by the
   protected-check list.
-- Pending: committed exact ref and release guard, both independent reviews,
-  final-head CI, merge/tag/release, isolated-home install probe.
+- Exact implementation ref:
+  `076a9244c062ab61a0920a54f35b0dc2daebc995`; exact release guard passed
+  against `origin/main`.
+- Pending: both independent reviews, product runtime CI leg, final-head CI,
+  merge/tag/release, isolated-home install probe.
 
 ## Notes
 
