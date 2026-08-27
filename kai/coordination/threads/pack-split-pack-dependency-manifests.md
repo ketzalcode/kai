@@ -385,3 +385,24 @@ Exact corrective changes required:
 - next:      principal-swe-architect — review the immutable-artifact boundary,
              source allowlist, exact integrity pin, deterministic projection,
              and clean CI installation evidence at the new change ref.
+
+## NOTE 2026-08-27-1128 — director review dispatch
+
+- did:       Granted the required independent architecture review lease
+             `arch-1128-artifact` at item version 12. Lifecycle remains
+             `in-review`; implementation change ref remains
+             `6701696d01ec099b470dbaf403c12ddfe6cfe615`.
+- state:     in-review
+- needs:     Ratify or return changes against the exact implementation ref,
+             including the clean no-Git install evidence for both generated
+             packs.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  GitHub Actions run `33103553150`: contract job passed; clean
+             Node 24.15.0 runtime-dependency jobs passed for `kai-core` and
+             `kai-personal` with empty caches, Git disabled, no credentials,
+             public npm registry, CLI probes, and core provider-root selection.
+- questions: none
+- next:      principal-swe-architect — perform the independent review under
+             token `arch-1128-artifact`.

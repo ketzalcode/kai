@@ -54,14 +54,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: 6701696d01ec099b470dbaf403c12ddfe6cfe615
-version: 12
+version: 13
 lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-27-1126
+  holder: principal-swe-architect
+  token: arch-1128-artifact
+  version_at_grant: 12
+  acquired: 2026-08-27T11:28:02-07:00
+  expires: 2026-08-27T13:28:02-07:00
+updated: 2026-08-27-1128
 ---
 
 ## Outcome
