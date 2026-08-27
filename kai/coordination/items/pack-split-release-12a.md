@@ -5,21 +5,30 @@ title: Release 12a — migration notice on 0.x (no packs published)
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-progress
+state: in-review
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-sre
 target: pack-split staged release 12a (migration notice)
 artifact_target: null
 context_artifacts:
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
   - docs/reference/plugin-structure.md
 touches:
+  - .github/plugin/marketplace.json
   - CHANGELOG.md
   - README.md
   - plugin.json
   - package.json
+  - package-lock.json
+  - packs/kai-core/plugin.json
+  - packs/kai-core/package.json
+  - packs/kai-core/package-lock.json
+  - packs/kai-personal/plugin.json
+  - packs/kai-personal/package.json
+  - packs/kai-personal/package-lock.json
+  - kai/coordination/
 depends_on:
   - item: pack-split-onboarding-installer
     requires: shipped
@@ -32,16 +41,28 @@ review_requirements:
     kind: independent-reliability
   - role: principal-technical-writer
     kind: doc-review
-completed_reviews: []
-change_ref: null
-version: 3
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620
+    verdict: ratified
+    evidence: "kai/coordination/threads/pack-split-release-12a.md"
+    timestamp: 2026-08-27-1334
+  - role: principal-technical-writer
+    kind: doc-review
+    change_ref: 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12a.md"
+    timestamp: 2026-08-27-1334
+change_ref: 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620
+version: 5
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1320
+updated: 2026-08-27-1334
 ---
 
 ## Outcome
@@ -64,6 +85,9 @@ install surface.
   verifies each step.
 - CHANGELOG `0.67.0` records the same migration contract and explicitly states
   that packs remain unpublished and the current install surface is unchanged.
+- Full `npm test` passes at `0.67.0`; `pack-preview --check` confirms the
+  committed core and personal trees match the generator, and
+  `release-guard.mjs` accepts the forward bump plus release notes.
 
 ## Notes
 

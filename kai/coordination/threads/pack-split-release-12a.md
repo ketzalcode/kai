@@ -40,3 +40,65 @@ Append-only communication log mirroring
              `.`; no pack entry was added and install commands are unchanged.
 - questions: none
 - next:      principal-swe-infra — finish release metadata and verification.
+
+## HANDOFF 2026-08-27-1327 — principal-swe-infra -> principal-sre
+
+- did:       Completed release 12a at exact implementation ref
+             `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`. The `0.67.0`
+             migration notice is prominent and fail-safe; all root,
+             marketplace, core, and personal versions are lockstep.
+- state:     in-review
+- needs:     Review deprecation and rollout safety at the exact ref, then hand
+             the same ref to `principal-technical-writer` for notice accuracy.
+- artifacts: README.md; CHANGELOG.md; .github/plugin/marketplace.json;
+             plugin.json; package.json; packs/kai-core/; packs/kai-personal/
+- evidence:  Full `npm test` passed; `node scripts/release-guard.mjs --base
+             origin/main --head 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`
+             passed; marketplace remains exactly one `kai` entry at source `.`;
+             no pack entry was added and install commands are unchanged.
+- questions: none
+- next:      principal-sre — perform independent reliability review at
+             `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`.
+
+## REVIEW 2026-08-27-1334 — principal-sre
+
+- change_ref: 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620
+- verdict:    ratified
+- findings:   P0 0 / P1 0 / P2 1. The notice, do-not-uninstall
+              warning, fail-safe availability gate, monolith-only marketplace,
+              unchanged install command, and lockstep `0.67.0` metadata are
+              safe for release 12a. The sole P2 is record-only: expand the
+              item's `touches` list to match the release metadata actually
+              changed.
+- evidence:   README.md:37-43; CHANGELOG.md:7-22;
+              skills/kai-core-workspace-onboarding/SKILL.md:53-69,111-158;
+              .github/plugin/marketplace.json:12-16. Release 12b remains
+              NO-GO.
+- next:       principal-swe-infra — reconcile the record-only touches finding;
+              no implementation ref change or re-review is required.
+
+## REVIEW 2026-08-27-1334 — principal-technical-writer
+
+- change_ref: 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620
+- verdict:    approved
+- findings:   P0 0 / P1 0 / P2 0.
+- evidence:   The notice is prominent, concise, unambiguous, consistent with
+              the guided installer, and accurately preserves the current
+              monolith-only install surface without promising publication.
+- next:       workflow-ship — run the six-dimension gate after PR CI.
+
+## NOTE 2026-08-27-1334 — principal-swe-infra
+
+- did:       Closed SRE's record-only P2 by expanding the item's `touches`
+             list to every release metadata and coordination path changed.
+             Implementation ref remains
+             `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`; both required reviews
+             now bind that exact ref.
+- state:     in-review
+- needs:     Push the reviewed change, obtain PR CI, then run
+             `workflow-ship` PREPARE.
+- artifacts: kai/coordination/items/pack-split-release-12a.md
+- evidence:  SRE ratified P0/P1 `0/0`; technical writer approved
+             P0/P1/P2 `0/0/0`.
+- questions: none
+- next:      principal-swe-infra — publish the review record and obtain PR CI.
