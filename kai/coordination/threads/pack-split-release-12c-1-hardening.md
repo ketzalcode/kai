@@ -218,3 +218,40 @@ Append-only communication log mirroring
              scenarios; exact release guard passed against `origin/main`.
 - questions: none
 - next:      principal-sre — approve or return blocking findings.
+
+## REVIEW 2026-08-27-1650 — principal-sre
+
+- ref:       `ca622854699cb8e0b64087033b99f27d2201cc7a`
+- verdict:   blocked — one P1 reliability finding.
+- finding:   The default forward-migration plan combined `uninstall kai` with
+             the new reverse-provenance step, so following the rollback runbook
+             could remove the monolith it had just restored.
+- artifact:  `.kai/runs/eng/2026-08-27/01-sre-pack-split-release-12c-1-hardening/reliability-assessment.md`
+
+## REVIEW 2026-08-27-1651 — principal-security
+
+- ref:       `ca622854699cb8e0b64087033b99f27d2201cc7a`
+- verdict:   blocked — one release-blocking P2, no P0/P1.
+- finding:   Same contradictory ordered remediation. Coverage asserted the
+             reverse step existed but did not reject the monolith uninstall.
+- artifact:  `.kai/runs/eng/2026-08-27/01-security-pack-split-release-12c-1-hardening/security-assessment.md`
+
+## HANDOFF 2026-08-27-1700 — principal-swe-infra -> principal-sre
+
+- did:       Added explicit `--rollback` intent. Reverse provenance is now
+             offered only when the monolith is verified installed and enabled,
+             every pack is absent, and host evidence is complete. Forward mode
+             keeps the uninstall plan and cannot emit the reverse edit;
+             rollback mode cannot emit `uninstall kai`.
+- state:     in-review
+- needs:     Re-review exact remediation ref
+             `dd18a20b167d776c1baa28c7c4970e4e51a4c579`; security re-review runs
+             independently against the same ref.
+- artifacts: `scripts/lib/migration-doctor.mjs`;
+             `scripts/workspace-doctor.mjs`;
+             `docs/reference/plugin-structure.md`
+- evidence:  Full `npm test` passed; 30 migration scenarios include complete
+             ordered-plan negative assertions and a completed rollback state;
+             pack-preview remains 178 checks; exact release guard passed.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.

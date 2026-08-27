@@ -50,15 +50,15 @@ review_requirements:
   - role: principal-security
     kind: independent-security
 completed_reviews: []
-change_ref: ca622854699cb8e0b64087033b99f27d2201cc7a
-version: 5
+change_ref: dd18a20b167d776c1baa28c7c4970e4e51a4c579
+version: 6
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1640
+updated: 2026-08-27-1700
 ---
 
 ## Outcome
@@ -83,10 +83,13 @@ step, and cannot land on a CI matrix that ignores it.
       still serves a department pack.
 - [x] **(R1, docs)** `docs/reference/plugin-structure.md:203` ("forbidding the two pack entries")
       is re-derived from the same source of truth rather than restating a count.
-- [x] **(R2)** `workspace-provenance-ahead` (`scripts/lib/migration-doctor.mjs:769`) emits the
-      reverse remediation step, matching the shape the forward case already has at `:759`, and
-      §Emergency rollback in `docs/reference/plugin-structure.md` matches the emitted step —
-      the runbook's "known manual gap" is closed, not documented twice.
+- [x] **(R2)** With explicit `--rollback` intent,
+      `workspace-provenance-ahead` emits the reverse remediation step only after
+      the monolith is verified installed and enabled, every pack is absent, and
+      both host evidence surfaces are readable. Forward migration never emits
+      the reverse edit, and rollback output never recommends uninstalling the
+      restored monolith. §Emergency rollback in
+      `docs/reference/plugin-structure.md` matches this fail-closed mode.
 - [x] **(R3)** A malformed-`settings.json` fixture home exists in `test/fixtures/host-installs.json`
       and covers **both** uncovered branches: the `enabled-state-unverified` finding and the
       `reconcileEnabledState` blanking path (unreadable and non-boolean `enabledPlugins`).
@@ -126,10 +129,10 @@ step, and cannot land on a CI matrix that ignores it.
 
 ## Evidence
 
-- Review ref: `ca622854699cb8e0b64087033b99f27d2201cc7a`.
+- Review ref: `dd18a20b167d776c1baa28c7c4970e4e51a4c579`.
 - `node scripts/release-guard.mjs --base origin/main --head HEAD`:
   `✓ release-guard: behavior change is bumped and release-noted`.
-- `npm test`: passed; migration doctor 28 scenarios; pack-preview 178 checks.
+- `npm test`: passed; migration doctor 30 scenarios; pack-preview 178 checks.
 - CI smoke: matrix `["kai-core","kai-personal"]`; both current runtime-binary
   queries return only `lectoria`.
 - Pending: exact-ref SRE and security approvals, fresh final-head CI, merge,
@@ -146,7 +149,7 @@ produced the evidence that moved this item to `in-review`.
 
 The blocking action was completed in the parent session. `pack-preview --write`
 regenerated both committed trees, full `npm test` passed with 178 generator
-self-tests and 28 migration scenarios, and the CI smoke output was exactly
+self-tests and 30 migration scenarios, and the CI smoke output was exactly
 `["kai-core","kai-personal"]` with `lectoria` for both current legs. The dynamic
 matrix output now comes from the existing required `contract` job rather than a
 new unprotected job, so a derivation failure fails a required check instead of
