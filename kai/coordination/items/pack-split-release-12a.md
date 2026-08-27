@@ -5,11 +5,11 @@ title: Release 12a — migration notice on 0.x (no packs published)
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: release-ready
+state: shipped
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack-split staged release 12a (migration notice)
 artifact_target: null
 context_artifacts:
@@ -58,14 +58,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12a.md"
     timestamp: 2026-08-27-1318
 change_ref: 2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620
-version: 13
+version: 18
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1319
+updated: 2026-08-27-1339
 ---
 
 ## Outcome
@@ -78,7 +78,7 @@ install surface.
 
 - [x] The migration notice is prepared in the monolith and accurately describes the coming split + migration.
 - [x] `marketplace.json` retains the monolith-only topology; the install command has not changed.
-- [ ] Release cut on `0.x` with CHANGELOG + README stamp; `node scripts/release-guard.mjs` gate passes.
+- [x] Release cut on `0.x` with CHANGELOG + README stamp; `node scripts/release-guard.mjs` gate passes.
 
 ## Evidence
 
@@ -96,9 +96,28 @@ install surface.
   and `runtime-dependencies (kai-personal)` all concluded `success`.
 - `workflow-ship` PREPARE passed all six DoD dimensions. Canonical record:
   `kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md`.
-- The production-only release-cut criterion remains open until the operator
-  merges, verifies `main`, and publishes `v0.67.0`; `release-ready` is not
-  `shipped`.
+- **CONFIRM-START:** Authoritative operator evidence records PR #179 head
+  `0f1c1d28032d8fa8d9b7e0d94389ed4545bce72f` merged without squash or
+  rebase as `b28113eb65256c00272382d6f73402ee7f0ff030` at
+  `2026-08-27T20:29:17Z`, starting deployment of `v0.67.0` to the public
+  GitHub release surface. Reviewed implementation
+  `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620` remains in ancestry; all later
+  changes are coordination, initiative, and ship-record only.
+- **CONFIRM-COMPLETE:** Exact-main run
+  `https://github.com/RubenSaucedo/kai/actions/runs/33113558866` succeeded at
+  merge `b28113eb65256c00272382d6f73402ee7f0ff030`; `contract`,
+  `runtime-dependencies (kai-core)`, and
+  `runtime-dependencies (kai-personal)` all succeeded. Public release
+  `https://github.com/RubenSaucedo/kai/releases/tag/v0.67.0` is non-draft,
+  non-prerelease, targets the exact merge, and was published
+  `2026-08-27T20:29:54Z`.
+- **Production verification passed 7/7.** Root plugin/package, marketplace
+  metadata and monolith entry, core plugin/package, and personal
+  plugin/package are all `0.67.0`; README and CHANGELOG agree. Marketplace
+  contains exactly one `kai` at source `.`, no pack entry is published,
+  `pack-preview --check` passes, and `validate-plugin` passes with 56 agents
+  and 51 skills. The notice says packs remain unpublished and users must not
+  uninstall legacy `kai` yet. Rollback was not invoked.
 
 ## Notes
 

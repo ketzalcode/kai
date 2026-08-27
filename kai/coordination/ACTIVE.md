@@ -6,15 +6,21 @@ lists only the current focus — `kai/initiatives/INDEX.md` is the permanent
 all-status catalog, and removing a terminal initiative from this file must
 never make it undiscoverable there.
 
-**Current snapshot — 2026-08-27-1319.** `pack-split` remains active in
-`five-pack-split-shipped`. `pack-split-release-12a` passed all six DoD
-dimensions and is `release-ready` at v13, lease clear, next `@operator`.
-Reviewed implementation `2b4c5b3d…` is preserved under PR #179; PR run
-`33112672011` passed contract and both runtime-dependency jobs.
-Release 12b remains **NO-GO** until release 12a ships. Packs remain unpublished
-and the marketplace remains exactly one `kai` entry at source `.`. The long
-row below retains the append-only historical trail; this snapshot supersedes
-older point-in-time status embedded in that trail.
+**Current snapshot — 2026-08-27-1339.** `pack-split` remains active in
+`five-pack-split-shipped`. The steward verified `pack-split-host-gates`
+`completed` v17, `pack-split-pack-dependency-manifests` `shipped` v23,
+`pack-split-onboarding-installer` `shipped` v18, and
+`pack-split-release-12a` `shipped` v18 after its fulfilled steward handoff was
+cleared. `pack-split-release-12b` alone moved
+`proposed` v4 -> `ready` v5 with priority 20, owner/lease clear, and
+`next_role: principal-swe-infra`; it is dependency-satisfied and executable at
+dispatch subject to the normal touch-conflict recheck. Its outcome, acceptance
+including A4, independent reliability/security reviews, touches, and
+operator-only publish/tag/monolith-retirement gates remain unchanged. Release
+12c remains exactly `proposed` and unmodified. Packs remain unpublished and the
+marketplace remains exactly one `kai` entry at source `.`. The long row below
+retains the append-only historical trail; this snapshot supersedes older
+point-in-time status embedded in that trail.
 
 | slug | why active |
 |------|------------|

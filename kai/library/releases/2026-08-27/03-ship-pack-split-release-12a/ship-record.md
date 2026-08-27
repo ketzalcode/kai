@@ -10,7 +10,8 @@ milestone: five-pack-split-shipped
 source_artifact: kai/coordination/items/pack-split-release-12a.md
 current_path: kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md
 canonical_path: kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md
-status: release-ready - awaiting operator deployment and production verification
+status: shipped - production verification 7/7 PASS; rollback not invoked
+shipped: 2026-08-27T20:29:54Z - PR 179 merge b28113eb65256c00272382d6f73402ee7f0ff030
 related:
   - kai/coordination/threads/pack-split-release-12a.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
@@ -21,14 +22,19 @@ evidence:
   - "pre-PREPARE PR head 194dee86fc6a16712108c4e685be6d5e96944692"
   - "https://github.com/RubenSaucedo/kai/actions/runs/33112672011"
   - "kai/coordination/threads/pack-split-release-12a.md"
+  - "PR head 0f1c1d28032d8fa8d9b7e0d94389ed4545bce72f"
+  - "merge b28113eb65256c00272382d6f73402ee7f0ff030"
+  - "https://github.com/RubenSaucedo/kai/actions/runs/33113558866"
+  - "https://github.com/RubenSaucedo/kai/releases/tag/v0.67.0"
 ---
 
 # Ship Record - Release 12a Migration Notice
 
 **Work item:** `pack-split-release-12a` · **Initiative:** `pack-split`  
-**Target:** `pack-split-staged-release-12a` · **Date:** 2026-08-27 13:19 -07:00  
+**Target:** `pack-split-staged-release-12a` · **Date:** PREPARE 2026-08-27
+13:19 -07:00; CONFIRM 2026-08-27 13:33 -07:00
 **Run:** `workflow-ship`  
-**What ships:** `v0.67.0` adds the monolith migration notice while preserving
+**What shipped:** `v0.67.0` adds the monolith migration notice while preserving
 the current install surface and publishing no pack.  
 **Change:** [PR #179](https://github.com/RubenSaucedo/kai/pull/179) · reviewed
 implementation `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`
@@ -42,13 +48,13 @@ implementation `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620`
 | 3 | reviewed | **Clear** | `principal-sre` ratified exact ref `2b4c5b3d…` with P0/P1 `0/0`; its sole P2 was record-only and is corrected in the item touch set without implementation change. `principal-technical-writer` approved the same ref with P0/P1/P2 `0/0/0`. GitHub compare from the reviewed ref to pre-PREPARE head `194dee86…` contains one records commit changing only the item and thread. |
 | 4 | shippable-safely | **Clear** | Rollout-operability holds proportionally: this is notice/version metadata, not a service, data migration, host mutation, or marketplace pack publication. Big-bang is appropriate; no canary, flag, alert, or runbook is invented. Health signals are PR/main CI, exact reviewed ancestry, lockstep versions, marketplace N=1 at source `.`, generated parity, and the release/tag target. Technical owner: `principal-swe-infra`; deployment owner: `@operator`. Rollback is the patch-release path below. |
 | 5 | documented | **Clear** | README and CHANGELOG carry the migration contract and `v0.67.0` compare link. This canonical release record, `kai/initiatives/pack-split/log.md`, and `deliverables.md` preserve readiness, rollback, and production-evidence requirements. |
-| 6 | coordination-closed | **Clear** | The authoritative item is `release-ready`, lease clear, next `@operator`; both typed dependencies are `shipped`; both exact-ref reviews are complete; no question is open. Thread, BOARD, ACTIVE, log, deliverables, and this deploy handoff agree. The production-only release-cut criterion remains open until CONFIRM-COMPLETE, as required by the lifecycle. |
+| 6 | coordination-closed | **Clear** | The authoritative item is `shipped` at v18, lease and fulfilled post-ship `next_role` clear; both typed dependencies are `shipped`; both exact-ref reviews remain complete; the release-cut criterion is complete; no question is open. Thread, BOARD, ACTIVE, log, deliverables, and this record agree. |
 
 **Readiness verdict: RELEASE-READY.** Six of six dimensions are Clear.  
-**Completion verdict: pending.** PR #179 is open; nothing is merged, tagged,
-released, published, deployed, or production-verified.
+**Completion verdict: SHIPPED.** Operator deployment completed successfully
+and production verification passed 7 of 7 checks; rollback was not invoked.
 
-## Rollout plan
+## Rollout plan (executed by the operator)
 
 Big-bang is justified because the production effect is a monolith notice and
 lockstep version stamp. There is no traffic cohort, runtime flag, schema, data,
@@ -83,7 +89,7 @@ No rollback changes user data, workspaces, plugin installation state, or
 published pack state. A release already pulled by a user is not undone by
 deleting a tag, which is why the post-publication rollback is a forward patch.
 
-## Deploy handoff (the human runs these - kai does not)
+## Deploy handoff (operator-executed; retained for audit)
 
 From `feat/29-release-12a-migration-notice`:
 
@@ -188,9 +194,28 @@ URL/ID/head/conclusion plus all job conclusions; release URL/tag target/status/
 timestamp; version/topology outputs; generated-parity and validator outputs.
 A run URL without a successful conclusion is not completion.
 
+## Production verification outcome
+
+The operator supplied these production facts; `workflow-ship` recorded them
+without repeating any merge, tag, release, deploy, or publish action.
+
+| # | Check | Result |
+|---|-------|--------|
+| 1 | exact-main validation | Run [`33113558866`](https://github.com/RubenSaucedo/kai/actions/runs/33113558866) succeeded at merge `b28113eb65256c00272382d6f73402ee7f0ff030`; `contract`, `runtime-dependencies (kai-core)`, and `runtime-dependencies (kai-personal)` all succeeded. **PASS** |
+| 2 | reviewed ancestry | Reviewed implementation `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620` remains in ancestry; every later change through PR head `0f1c1d28032d8fa8d9b7e0d94389ed4545bce72f` is coordination, initiative, or ship-record only. **PASS** |
+| 3 | version coherence | Root plugin/package, marketplace metadata and monolith entry, core plugin/package, and personal plugin/package are all `0.67.0`; README and CHANGELOG agree. **PASS** |
+| 4 | publication topology | Marketplace contains exactly one `kai` at source `.`; no pack entry is published. **PASS** |
+| 5 | generated parity | `node scripts/pack-preview.mjs --check` passes. **PASS** |
+| 6 | plugin contract | `node scripts/validate-plugin.mjs` passes with 56 agents and 51 skills. **PASS** |
+| 7 | notice and public release | The notice says packs are unpublished and users must not uninstall legacy `kai` yet. Public [`v0.67.0`](https://github.com/RubenSaucedo/kai/releases/tag/v0.67.0) is non-draft, non-prerelease, targets the exact merge, and was published `2026-08-27T20:29:54Z`. **PASS** |
+
+**Rollback was not invoked.**
+
 ## Follow-ups / parked
 
-- Release 12b remains **NO-GO** until this item is deployed, production
-  verification passes, and `workflow-ship` marks it `shipped`.
+- Release 12b's typed dependency on this item is satisfied. In the separate
+  steward reconciliation after this ship closure, `principal-product-manager`
+  verified all four dependencies and promoted release 12b to `ready` v5. That
+  later coordination action did not implement or publish release 12b.
 - No review finding is deferred. SRE's sole P2 was record-only and corrected.
 - Packs remain unpublished.

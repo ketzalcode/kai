@@ -57,3 +57,35 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-product-manager — keep parked until the accepted chain
              reaches this item.
+
+## HANDOFF 2026-08-27-1337 — principal-product-manager -> principal-swe-infra
+
+- did:       Verified all four typed dependencies against their authoritative
+             records; confirmed this item is a typed requirement of current
+             scope `five-pack-split-shipped` with explicit acceptance; promoted
+             only `pack-split-release-12b` from `proposed` to `ready` (v4 -> v5).
+             Priority, outcome, acceptance including both A4 criteria, review
+             requirements, touches, and operator-only release gates are
+             unchanged. No implementation, release, publication, or metadata
+             action was performed.
+- state:     ready
+- needs:     Prepare and gate only the minimal `1.0.0` core + personal flip.
+             Preserve core-out-of-selector and no-coexistence constraints.
+             Bind `principal-sre` / independent-reliability and
+             `principal-security` / independent-security to one exact future
+             `change_ref`. The operator alone publishes the marketplace
+             entries, tags `1.0.0`, and retires the monolith.
+- artifacts: kai/coordination/items/pack-split-release-12b.md;
+             kai/initiatives/pack-split/northstar.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md;
+             .github/plugin/marketplace.json;
+             docs/reference/plugin-structure.md
+- evidence:  kai/coordination/items/pack-split-host-gates.md (`completed`, v17);
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+             (`shipped`, v23);
+             kai/coordination/items/pack-split-release-12a.md (`shipped`, v17);
+             kai/coordination/items/pack-split-onboarding-installer.md
+             (`shipped`, v18) — captured 2026-08-27-1337
+- questions: none
+- next:      principal-swe-infra — dependency-satisfied release preparation;
+             do not publish, tag, retire the monolith, or run the release.

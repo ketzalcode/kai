@@ -5,11 +5,11 @@ title: Release 12b — minimal 1.0.0 flip (publish core + personal, retire monol
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: proposed
+state: ready
 resume_state: null
 priority: 20
 owner: null
-next_role: principal-product-manager
+next_role: principal-swe-infra
 target: pack-split staged release 12b (the 1.0.0 flip)
 artifact_target: null
 context_artifacts:
@@ -42,14 +42,14 @@ review_requirements:
     kind: independent-security
 completed_reviews: []
 change_ref: null
-version: 3
+version: 5
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1558
+updated: 2026-08-27-1337
 ---
 
 ## Outcome
@@ -84,6 +84,13 @@ irreversible act that escapes release enforcement.*
 ## Evidence
 
 - (to be filled) — marketplace diff + operator publish/tag confirmation + retirement confirmation.
+- Steward promotion 2026-08-27-1337: authoritative dependency records verify
+  `pack-split-host-gates` `completed` v17,
+  `pack-split-pack-dependency-manifests` `shipped` v23,
+  `pack-split-release-12a` `shipped` v17, and
+  `pack-split-onboarding-installer` `shipped` v18. The item is an explicit
+  typed requirement of current scope `five-pack-split-shipped`, and its
+  acceptance remains unchanged.
 
 ## Notes
 
