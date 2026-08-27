@@ -2863,3 +2863,11 @@ place when proof is unavailable, and requires a fresh session only after an
 actual pack install or update. It also names disabled-core recovery and pins
 the corrected high-risk prose. Full `npm test` passed; final dual reviews are
 pending at that exact ref.
+
+Final correction ref `82e98bcfe595e6d885843e90aa8a704d4478bb45`
+defines one deterministic result precedence: complete only after all checks;
+partial after any successful plugin install/update followed by failure;
+unknown for unsettled required evidence before plugin mutation; blocked for
+all other known pre-mutation refusals/failures. It also names loaded-plugin
+update recovery and disabled-department recovery, with static pins. Full
+`npm test` passed again; both exact-ref reviews are pending.

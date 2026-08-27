@@ -319,3 +319,20 @@ Append-only communication log mirroring
              runtime and does not prove install-config state.
 - questions: none
 - next:      principal-swe-infra — verify and bind the final ref.
+
+## HANDOFF 2026-08-27-1245 — principal-swe-infra -> principal-swe-architect
+
+- did:       Committed deterministic outcome semantics and remaining recovery
+             fixes as `82e98bcfe595e6d885843e90aa8a704d4478bb45`.
+             Rebound the item; no prior review counts for this ref.
+- state:     in-review
+- needs:     Final dual verdicts. Confirm status precedence cannot
+             success-shape an unknown or partial run and that prior install
+             architecture remains unchanged.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             scripts/validate-plugin.mjs;
+             packs/kai-core/skills/kai-core-workspace-onboarding/SKILL.md
+- evidence:  Full `npm test` passed at `0.66.0`; generated trees match.
+- questions: none
+- next:      principal-swe-architect — final review at
+             `82e98bcfe595e6d885843e90aa8a704d4478bb45`.
