@@ -255,3 +255,37 @@ Append-only communication log mirroring
              pack-preview remains 178 checks; exact release guard passed.
 - questions: none
 - next:      principal-sre — approve or return blocking findings.
+
+## REVIEW 2026-08-27-1710 — principal-sre
+
+- ref:       `dd18a20b167d776c1baa28c7c4970e4e51a4c579`
+- verdict:   blocked — one P1 reliability finding.
+- finding:   `rollbackReady` did not reject an identity-mismatched tree or
+             duplicate legacy installs, so unsafe evidence could still emit the
+             reverse edit.
+
+## REVIEW 2026-08-27-1711 — principal-security
+
+- ref:       `dd18a20b167d776c1baa28c7c4970e4e51a4c579`
+- verdict:   approved — no P0/P1 or blocking P2.
+- note:      Approval is historical because the reliability remediation changes
+             the implementation ref and requires a fresh exact-ref review.
+
+## HANDOFF 2026-08-27-1720 — principal-swe-infra -> principal-sre
+
+- did:       Tightened rollback readiness to exactly one enabled,
+             identity-consistent legacy install whose config entry and tree
+             agree on name and provenance. Rollback mode suppresses monolith
+             uninstall commands for duplicate/incomplete legacy evidence.
+- state:     in-review
+- needs:     Re-review exact ref
+             `1ec8d255240136b37de074f001fe2c54c01fea8c`; security re-review runs
+             independently against the same ref.
+- artifacts: `scripts/lib/migration-doctor.mjs`;
+             `scripts/workspace-doctor.mjs`;
+             `test/fixtures/host-installs.json`
+- evidence:  Full `npm test` passed; 32 migration scenarios now include
+             identity-mismatch and duplicate-monolith rollback attacks; 178
+             pack checks passed; exact release guard passed.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.

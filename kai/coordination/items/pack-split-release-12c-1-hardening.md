@@ -50,15 +50,15 @@ review_requirements:
   - role: principal-security
     kind: independent-security
 completed_reviews: []
-change_ref: dd18a20b167d776c1baa28c7c4970e4e51a4c579
-version: 6
+change_ref: 1ec8d255240136b37de074f001fe2c54c01fea8c
+version: 7
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1700
+updated: 2026-08-27-1720
 ---
 
 ## Outcome
@@ -85,8 +85,9 @@ step, and cannot land on a CI matrix that ignores it.
       is re-derived from the same source of truth rather than restating a count.
 - [x] **(R2)** With explicit `--rollback` intent,
       `workspace-provenance-ahead` emits the reverse remediation step only after
-      the monolith is verified installed and enabled, every pack is absent, and
-      both host evidence surfaces are readable. Forward migration never emits
+      exactly one identity-consistent monolith install is verified enabled,
+      every pack is absent, and both host evidence surfaces are readable.
+      Forward migration never emits
       the reverse edit, and rollback output never recommends uninstalling the
       restored monolith. §Emergency rollback in
       `docs/reference/plugin-structure.md` matches this fail-closed mode.
@@ -129,10 +130,10 @@ step, and cannot land on a CI matrix that ignores it.
 
 ## Evidence
 
-- Review ref: `dd18a20b167d776c1baa28c7c4970e4e51a4c579`.
+- Review ref: `1ec8d255240136b37de074f001fe2c54c01fea8c`.
 - `node scripts/release-guard.mjs --base origin/main --head HEAD`:
   `✓ release-guard: behavior change is bumped and release-noted`.
-- `npm test`: passed; migration doctor 30 scenarios; pack-preview 178 checks.
+- `npm test`: passed; migration doctor 32 scenarios; pack-preview 178 checks.
 - CI smoke: matrix `["kai-core","kai-personal"]`; both current runtime-binary
   queries return only `lectoria`.
 - Pending: exact-ref SRE and security approvals, fresh final-head CI, merge,
@@ -149,7 +150,7 @@ produced the evidence that moved this item to `in-review`.
 
 The blocking action was completed in the parent session. `pack-preview --write`
 regenerated both committed trees, full `npm test` passed with 178 generator
-self-tests and 30 migration scenarios, and the CI smoke output was exactly
+self-tests and 32 migration scenarios, and the CI smoke output was exactly
 `["kai-core","kai-personal"]` with `lectoria` for both current legs. The dynamic
 matrix output now comes from the existing required `contract` job rather than a
 new unprotected job, so a derivation failure fails a required check instead of
