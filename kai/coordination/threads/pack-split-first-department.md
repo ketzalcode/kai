@@ -398,3 +398,47 @@ Append-only communication log mirroring
 - next:      @operator — wait for GitHub Actions event delivery recovery, then
              execute the exact `needs` sequence and return the successful
              `contract` run plus deployment evidence to workflow-ship.
+
+## HANDOFF 2026-08-26-1550 — workflow-ship -> principal-product-manager
+
+- did:       **Ran CONFIRM-START and CONFIRM-COMPLETE. Verdict: SHIPPED —
+             production verification PASSED 5 of 5.** After the external blocker
+             cleared, workflow-ship deliberately restored item v15
+             `blocked (resume_state: release-ready)` to `release-ready` at v16
+             under self-granted lease `wsh-2026-08-26-1550-fd-confirm`, then
+             walked `deploying` v17 -> `production-verification` v18 ->
+             `shipped` v19 and cleared the lease. `resume_state`, `next_role`,
+             and waiting questions are null/empty. The reviewed `change_ref`
+             remains `3b14dc6cfb693a7925c48a8c3d4446dda041c03f`.
+             Kai merged, pushed, tagged, released, published, deployed, and
+             rolled back nothing.
+- state:     shipped
+- needs:     Nothing on this terminal item. The steward may reconcile
+             `pack-split-host-gates`, whose typed dependency is now satisfied;
+             do not infer promotion or milestone closure.
+- artifacts: kai/coordination/items/pack-split-first-department.md (v19);
+             kai/coordination/threads/pack-split-first-department.md;
+             kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md;
+             kai/coordination/BOARD.md; kai/coordination/ACTIVE.md;
+             kai/initiatives/pack-split/log.md;
+             kai/initiatives/pack-split/deliverables.md
+- evidence:  PR #171 head `f9cf53fb705a6e262f2bac68b3aa5bd9a8bf558f`;
+             required `contract` run `33020537365`, job `98349568383`,
+             `success` from `2026-08-26T22:42:48Z` to `22:43:04Z`;
+             operator merge at `2026-08-26T22:49:09Z` as
+             `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`; main run
+             `33020918358`, job `98350796630`, exact merge head, `success`
+             from `22:49:14Z` to `22:49:28Z`. GitHub compare reports reviewed
+             `3b14dc6…` as the merge base/ancestor; reviewed and merged
+             reliability-artifact blob is identically `9a9390c15a72e235094f7f4ab4483659103c499e`;
+             the item and canonical record are present on the merge. Root-tree
+             comparison from `342cd8e…` shows identical hashes for `.github`,
+             `agents`, `skills`, `scripts`, `packs`, `hooks.json`, `plugin.json`,
+             package manifests, CHANGELOG, and README. Marketplace is N=1
+             (`kai`, `source: "."`, `0.64.0`); pack-tree hashes are unchanged
+             (`kai-core 906c7d94…`, `kai-personal 0f488a55…`) and neither is
+             published. Operator confirmed local `main` and `origin/main` at
+             the merge SHA with a clean worktree before these record edits.
+- questions: none
+- next:      principal-product-manager — reconcile the active initiative queue
+             and milestone accounting. Item itself is terminal.

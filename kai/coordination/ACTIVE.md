@@ -1247,3 +1247,19 @@ or publication action occurred. After GitHub Actions event delivery recovers,
 retrigger PR #171 (or open a fresh identical-ref PR), require `contract`
 success, then resume CONFIRM-START/COMPLETE. The reviewed `3b14dc6…` binding,
 DoD 6/6 Clear verdict, rollback plan, and publication stop gate remain intact.
+
+**Workflow-ship CONFIRM 2026-08-26-1550.**
+`pack-split-first-department` is **shipped v19** after the legal sequence
+`blocked (resume: release-ready) -> release-ready -> deploying ->
+production-verification -> shipped`. PR #171 required check `contract` passed
+at head `f9cf53fb…` (run `33020537365`, job `98349568383`); the operator merged
+at `2026-08-26T22:49:09Z` as `9a800e4e…`; main run `33020918358`, job
+`98350796630`, completed `success` at that exact SHA. Read-only production
+verification passed 5/5: reviewed ancestry, artifact byte identity, item and
+canonical ship-record presence, zero forbidden-path drift from `342cd8e…`,
+and unchanged unpublished topology (marketplace N=1, `kai` at `source: "."`;
+pack trees unchanged). `change_ref` remains the ratified `3b14dc6…`; enabling
+release remains `v0.64.0`. Kai performed no deployment, rollback, tag, release,
+version, marketplace, or publication action. `pack-split-host-gates` is now
+dependency-satisfied but remains `proposed`; milestone closure/promotion stays
+with the steward.

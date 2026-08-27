@@ -17,7 +17,19 @@ one-way and steward-approved:
 | Host-semantics extraction-gate evidence | first-pack-extracted | pack-split-host-semantics-spike | kai/initiatives/pack-split/artifacts/reliability/pack-split-host-semantics-spike.md | — | completed 2026-08-26; conditional extraction GO |
 | Migration-doctor release record (`0.63.0`) | first-pack-extracted | pack-split-migration-doctor | kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/01-ship-pack-split-migration-doctor/ship-record.md | **SHIPPED 2026-08-26**; security + reliability reviews complete |
 | Generated committed-unpublished core + personal trees (`0.64.0`) | first-pack-extracted | pack-split-generated-pack-trees | kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/02-ship-pack-split-generated-pack-trees/ship-record.md | **SHIPPED 2026-08-26** (`2eea0f04…`; production verification PASSED 6/6; no pack published) |
-| Core + personal real-install proof | first-pack-extracted | pack-split-first-department | kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md | **BLOCKED** (`resume_state: release-ready`); DoD 6/6 Clear; reviewed `change_ref 3b14dc6cfb693a7925c48a8c3d4446dda041c03f`; GitHub Actions emitted no suite for active PR #171 / head `1a607b21…`; require `contract` success before CONFIRM-START/COMPLETE; no publication/version bump |
+| Core + personal real-install proof | first-pack-extracted | pack-split-first-department | kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md | **SHIPPED 2026-08-26** (PR #171; merge `9a800e4e…`; main run `33020918358` success; production verification PASSED 5/5; reviewed `change_ref 3b14dc6…` preserved; no publication/version bump) |
+
+The **release record** for `pack-split-first-department` is closed at
+`shipped`. `workflow-ship` deliberately restored its prior
+`resume_state: release-ready`, then walked `deploying` and
+`production-verification` before the terminal state. PR #171's required check
+and exact-merge main check both succeeded. Read-only verification proved review
+ancestry, byte-identical reliability evidence, canonical-record presence, zero
+forbidden-path drift from `342cd8e…`, marketplace N=1 at `source: "."`, and
+unchanged unpublished pack trees. The enabling release remains `v0.64.0`;
+no version, tag, GitHub release, marketplace edit, or pack publication occurred.
+`first-pack-extracted` remains open because `pack-split-host-gates` is still
+`proposed`; this ship satisfies its dependency but does not promote it.
 
 The **release record** for `pack-split-degraded-refusal` was written by `workflow-ship` at the
 2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived —

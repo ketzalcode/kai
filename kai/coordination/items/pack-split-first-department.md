@@ -5,11 +5,11 @@ title: Prove kai-core + personal installs and operates over the plugin boundary
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: product-change
-state: blocked
-resume_state: release-ready
+state: shipped
+resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack-split first-department install proof
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md
 context_artifacts:
@@ -36,9 +36,9 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-first-department.md"
     timestamp: 2026-08-26-1516
 change_ref: 3b14dc6cfb693a7925c48a8c3d4446dda041c03f
-version: 15
+version: 19
 lease: null
-updated: 2026-08-26-1538
+updated: 2026-08-26-1550
 ---
 
 ## Outcome
@@ -88,13 +88,24 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
   in `kai/coordination/threads/pack-split-first-department.md`.
 - Six-dimension DoD gate passed 6/6 Clear at PREPARE; canonical record:
   `kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md`.
-- PREPARE reached `release-ready` at v13. Deployment is now paused before
-  CONFIRM-START: PRs #169, #170, and active replacement #171 received no check
-  suite, and the check-suites API reports `total_count: 0` for delivery head
-  `1a607b21ae925105f994e8bc71b0a8cd2100c0ca`.
-- Item is `blocked` at v15 with `resume_state: release-ready`, not deploying or
-  shipped. No merge, tag, release, version, marketplace, or publication action
-  occurred.
+- Replacement PR #171 head `f9cf53fb705a6e262f2bac68b3aa5bd9a8bf558f`
+  passed required check `contract` in run `33020537365`, job `98349568383`,
+  then the operator merge-committed it at `2026-08-26T22:49:09Z` as
+  `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`.
+- Main validation run `33020918358`, job `98350796630`, completed `success`
+  at the exact merge SHA (`2026-08-26T22:49:14Z` to
+  `2026-08-26T22:49:28Z`).
+- Production verification passed: reviewed `3b14dc6…` is an ancestor; the
+  reliability artifact has identical blob `9a9390c15a72e235094f7f4ab4483659103c499e`
+  at the review and merge refs; the item and canonical ship record are present
+  on the merge; all forbidden top-level trees/blobs match source
+  `342cd8eb9bacb7bfc8ccd3679f3f09667f1bd246`; marketplace remains exactly one
+  `kai` entry at `source: "."`; and the `kai-core`/`kai-personal` pack trees are
+  unchanged and unpublished.
+- `workflow-ship` deliberately restored `blocked (resume: release-ready)` to
+  `release-ready` at v16, then recorded `deploying` v17,
+  `production-verification` v18, and `shipped` v19. The reviewed
+  `change_ref` remains unchanged.
 
 ## Notes
 
@@ -103,10 +114,10 @@ migration doctor enforcing uninstall-first — no public marketplace publish.
   install evidence against the committed-unpublished trees. No marketplace pack publication is
   permitted; the public flip remains exclusively `pack-split-release-12b`.
 - The real install is **operator-executed**; this role assembles the proof and records evidence.
-- **Deployment blocker 2026-08-26:** GitHub Actions is not delivering the
-  `pull_request` workflow/check suite. `validate` is active, Actions permissions
-  are enabled/all, and protected `main` strictly requires the GitHub Actions app
-  check `contract`. That gate must not be bypassed.
-- **Next action:** after GitHub Actions event delivery recovers, retrigger PR #171
-  (or open a fresh identical-ref PR), require `contract` success, then resume
-  CONFIRM-START/COMPLETE.
+- **Resolved deployment blocker 2026-08-26:** GitHub Actions emitted required
+  `contract` success for PR #171. The operator merged with ancestry preservation;
+  `main` CI and the proportional production checks passed. PRs #169 and #170
+  remain closed historical attempts.
+- This evidence/coordination deployment created no version, tag, GitHub release,
+  marketplace change, or pack publication. The enabling release remains
+  `v0.64.0`.

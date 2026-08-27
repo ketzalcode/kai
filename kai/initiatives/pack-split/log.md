@@ -2600,3 +2600,33 @@ After GitHub Actions event delivery recovers, retrigger PR #171 (or open a
 fresh identical-ref PR), require `contract` success, then resume
 CONFIRM-START/COMPLETE. The rollback plan and publication stop gate are
 unchanged.
+
+## 2026-08-26 — SHIPPED: first-department proof merged and production-verified
+
+`workflow-ship` ran CONFIRM-START and CONFIRM-COMPLETE after the external
+Actions blocker cleared. Item **v15 -> v16 (`release-ready`, deliberate restore)
+-> v17 (`deploying`) -> v18 (`production-verification`) -> v19 (`shipped`)**.
+The workflow lease was self-granted for confirmation and cleared at close;
+`resume_state: null`, `next_role: null`, no waiting questions. The independently
+ratified `change_ref` remains
+`3b14dc6cfb693a7925c48a8c3d4446dda041c03f`.
+
+PR #171 head `f9cf53fb705a6e262f2bac68b3aa5bd9a8bf558f` passed required
+`contract` run `33020537365`, job `98349568383`. The operator merge-committed
+it at `2026-08-26T22:49:09Z` as
+`9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`; main run `33020918358`,
+job `98350796630`, completed `success` at the exact merge SHA at
+`2026-08-26T22:49:28Z`.
+
+Production verification **PASSED 5 of 5**. GitHub compare proves reviewed
+`3b14dc6…` is an ancestor; the reliability artifact is byte-identical at review
+and merge (blob `9a9390c1…`); the authoritative item and canonical ship record
+are present on the merge; every forbidden top-level tree/blob is identical to
+source `342cd8e…`; and marketplace/pack topology is unchanged — exactly one
+published `kai` source `.`, while committed `kai-core` and `kai-personal` remain
+unpublished. Existing enabling release `v0.64.0` remains current.
+
+Kai merged, pushed, tagged, released, published, deployed, and rolled back
+nothing. PRs #169 and #170 remain closed historical attempts. The now-satisfied
+`pack-split-host-gates` dependency was reconciled on BOARD but the item remains
+`proposed`; steward promotion and milestone closure are not inferred.
