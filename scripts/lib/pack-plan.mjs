@@ -119,7 +119,7 @@ export const SKILL_OWNER_OVERRIDES = {
 
 // Generated trees land incrementally. Only the reviewed committed slice is
 // materialised; the full partition remains available to --all previews.
-export const COMMITTED_PACKS = ['core', 'personal'];
+export const COMMITTED_PACKS = ['core', 'personal', 'product'];
 
 // Runtime dependencies belong to the pack that directly executes them. The
 // host copies plugin trees but does not run npm, so these declarations provide

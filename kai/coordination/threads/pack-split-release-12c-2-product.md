@@ -1,5 +1,25 @@
 # Thread — pack-split-release-12c-2-product
 
+## NOTE 2026-08-27-2358 — principal-swe-infra
+
+- did:       Generated the first post-flip department publication. Added
+             `product` to the exact committed slice, generated 85 total files,
+             published `kai-product` as the third marketplace entry at 1.0.2,
+             and updated install/status documentation to the measured 25-agent,
+             34-skill surface.
+- state:     in-progress
+- needs:     Commit the implementation, run the exact release guard, then bind
+             SRE and architecture review to that ref.
+- artifacts: `packs/kai-product/`; `scripts/lib/pack-plan.mjs`;
+             `scripts/pack-preview.mjs`; `.github/plugin/marketplace.json`;
+             `README.md`; `docs/getting-started.md`
+- evidence:  Full `npm test` passed; pack-preview 179 checks; migration matrix
+             33; CI matrix is core + personal + product; product declares no
+             runtime binary. Main branch protection requires only `contract`,
+             so the product runtime leg is running-but-not-enforced.
+- questions: none
+- next:      principal-swe-infra — create the reviewable implementation ref.
+
 Append-only communication log mirroring
 `kai/coordination/items/pack-split-release-12c-2-product.md`. See `kai-core-work-coordination`.
 

@@ -12,6 +12,7 @@ service. It contains no employer-specific knowledge and ships no MCP servers.
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-product@kai-plugins
 ```
 
 **[Get started →](docs/getting-started.md)** ·
@@ -32,23 +33,21 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.1` — the repository contains **56 agents and 51 skills** for the
-**Copilot CLI** and the **Copilot coding agent** (cloud). The first published
-pack slice installs **16 agents and 31 skills**. `v1.0.1` publishes no new pack:
-it hardens the rollback, provenance, and CI-derivation paths before a third pack
-exists.
+`v1.0.2` — the repository contains **56 agents and 51 skills** for the
+**Copilot CLI** and the **Copilot coding agent** (cloud). The published
+core + personal + product slice installs **25 agents and 34 skills**.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
-> retired. Install required `kai-core` plus `kai-personal`; the remaining
-> department packs follow in the next `1.0.x` release. Until then, migrating
-> removes the engineering, product, and go-to-market roles from the installed
-> host; their source remains in this repository but they are not published.
+> retired. Install required `kai-core` plus the personal and product packs;
+> engineering and go-to-market follow in later `1.0.x` releases. Until then,
+> migrating removes those two departments from the installed host; their source
+> remains in this repository but they are not published.
 > If legacy `kai` is
 > installed, use its `workflow-workspace-init` guided migration before removing
 > it. The guide verifies replacement availability, requires the monolith to be
 > gone, installs core first, and checks every step.
 
-**The first pack slice is published: `kai-core` + `kai-personal`.**
+**Three packs are published: `kai-core` + `kai-personal` + `kai-product`.**
 Root remains the canonical source; generation copies agents, skills, routed
 scripts, each script's local module closure, and the fleet hooks exactly once.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
@@ -74,16 +73,18 @@ evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew. The marketplace publishes `kai-core` and
-`kai-personal`; the monolith is no longer listed.
+`kai-personal` and `kai-product`; the monolith is no longer listed.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-product@kai-plugins
 ```
 
 The core pack carries the fleet observer and shared workspace machinery; the
-personal pack carries personal, learning, and demo roles. A CI rule keeps every
+personal pack carries personal, learning, and demo roles; the product pack
+carries product, design, analytics, and research roles. A CI rule keeps every
 marketplace source, name, description, and version aligned with its pack
 manifest. If legacy `kai` is installed, do not install packs beside it; see
 [Getting started](docs/getting-started.md#upgrading-from-the-kai-monolith).
@@ -130,6 +131,7 @@ Release history and the reasoning behind each change live in
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-product@kai-plugins
 ```
 
 kai publishes its own marketplace index, because the host has deprecated direct
@@ -198,9 +200,9 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository contains 56 agents and 51 skills. The first published slice is
-`kai-core` plus `kai-personal`; engineering, product, and go-to-market packs
-follow in the next `1.0.x` release.
+The repository contains 56 agents and 51 skills. The published slice is
+`kai-core` plus personal and product; engineering and go-to-market follow in
+later `1.0.x` releases.
 
 You do not need to learn them. Ask a front door for an outcome and it routes.
 

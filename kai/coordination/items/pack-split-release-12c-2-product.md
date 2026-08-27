@@ -5,10 +5,10 @@ title: Release 12c-2 — generate and publish kai-product (first three-pack publ
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: ready
+state: in-progress
 resume_state: null
 priority: 30
-owner: null
+owner: principal-swe-infra
 next_role: principal-swe-infra
 target: pack-split staged department publish — kai-product
 artifact_target: null
@@ -30,6 +30,7 @@ touches:
   - package-lock.json
   - CHANGELOG.md
   - README.md
+  - docs/getting-started.md
   - kai/coordination/
   - kai/initiatives/pack-split/
 depends_on:
@@ -44,14 +45,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 3
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27T23:45:12Z
+updated: 2026-08-27T23:58:00Z
 ---
 
 ## Outcome
@@ -64,23 +65,22 @@ exist when it was written.
 
 ## Acceptance
 
-- [ ] The `kai-product` tree is **generated from root** by `pack-preview` and committed — never
+- [x] The `kai-product` tree is **generated from root** by `pack-preview` and committed — never
       hand-carved — and `pack-preview --check` reports byte parity for the whole committed slice.
-- [ ] `COMMITTED_PACKS` (`scripts/lib/pack-plan.mjs:122`) and the committed-slice self-test pin
-      (`scripts/pack-preview.mjs:580-582`, today asserting exactly `core` + `personal`) name the new
+- [x] `COMMITTED_PACKS` and the committed-slice self-test pin name the new
       slice; the pin still asserts an exact set, not a length.
 - [ ] `.github/workflows/validate.yml` runs the per-pack runtime job for `kai-product` and it
       passes for a pack that declares no runtime dependencies (`PACK_RUNTIME_DEPENDENCIES.product`
       is `[]`). The new required check name `runtime-dependencies (kai-product)` is either added to
       branch protection by `@operator` or recorded plainly as running-but-not-enforced.
-- [ ] The marketplace lists exactly `kai-core`, `kai-personal`, `kai-product` at the canonical
+- [x] The marketplace lists exactly `kai-core`, `kai-personal`, `kai-product` at the canonical
       version with `installSurface: packs` and no monolith entry; every entry `name` matches the
       `plugin.json` at its `source`.
-- [ ] **R1 holds at three packs:** a self-test arm proves a `legacy-rollback` index that still lists
+- [x] **R1 holds at three packs:** a self-test arm proves a `legacy-rollback` index that still lists
       `kai-product` is rejected. This is the first live proof of the `12c-1` derivation, not a
       restatement of it.
-- [ ] `README.md` `## Status` re-derives the published slice counts (today "16 agents and 31
-      skills") **from the published pack set**, and the `v1.0.0` migration notice prose is updated
+- [x] `README.md` `## Status` re-derives the published slice counts as 25 agents
+      and 34 skills **from the published pack set**, and the migration notice prose is updated
       to name the packs actually published and the ones still to come — no stale "remaining
       department packs follow" claim that the release just falsified.
 - [ ] `1.0.2` is coherent across every version surface; CHANGELOG entry + compare link present;
@@ -96,8 +96,16 @@ exist when it was written.
 
 ## Evidence
 
-- (to be filled) — reviewed `change_ref`, both approvals at that exact ref, final-head CI run,
-  operator merge/tag/release, isolated-home install probe, marketplace diff.
+- Generated committed slice: 85 files; `kai-product` contains 9 agents, 3
+  skills, and an empty runtime dependency map.
+- Full `npm test` passed with 179 pack self-tests and 33 migration scenarios.
+- Derived CI matrix is exactly
+  `["kai-core","kai-personal","kai-product"]`; the product binary query is
+  empty. Branch protection currently requires only `contract`, so
+  `runtime-dependencies (kai-product)` will run but is not enforced by the
+  protected-check list.
+- Pending: committed exact ref and release guard, both independent reviews,
+  final-head CI, merge/tag/release, isolated-home install probe.
 
 ## Notes
 

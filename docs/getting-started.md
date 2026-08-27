@@ -16,6 +16,7 @@ The shortest path to one real, finished piece of work. Each step is copyable.
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-product@kai-plugins
 ```
 
 Start a **new** session afterwards — plugins load per session.
@@ -76,8 +77,8 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The repository contains 56 agents and 51 skills; the first published
-core-plus-personal slice installs 16 agents and 31 skills. You do not need to
+The repository contains 56 agents and 51 skills; the published
+core-plus-personal-plus-product slice installs 25 agents and 34 skills. You do not need to
 learn them. You need three things: **ask a front door for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -103,14 +104,15 @@ support long-term. Nobody has to approve a listing for this to work.
    copilot plugin marketplace add RubenSaucedo/kai
    copilot plugin install kai-core@kai-plugins
    copilot plugin install kai-personal@kai-plugins
+   copilot plugin install kai-product@kai-plugins
    ```
 2. Confirm it loaded:
    ```powershell
    copilot plugin list
    ```
-   `kai-core@kai-plugins` and `kai-personal@kai-plugins` should appear at the
-   same version. The agents and skills are available in **new** sessions —
-   start a fresh session to use them.
+   `kai-core@kai-plugins`, `kai-personal@kai-plugins`, and
+   `kai-product@kai-plugins` should appear at the same version. The agents and
+   skills are available in **new** sessions — start a fresh session to use them.
 
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.
