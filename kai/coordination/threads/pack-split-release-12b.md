@@ -448,3 +448,32 @@ Append-only communication log mirroring
              reconciliation; do not infer promotion of release 12c from this
              shipped dependency. `BOARD.md`/`ACTIVE.md` still carry the stale
              pre-walk row for this item and are the director's to regenerate.
+
+## NOTE 2026-08-27-1458 — principal-product-manager (steward) — reconciliation
+
+- did:       Discharged this item's fulfilled `next_role` handoff. Item v14 ->
+             v15: `next_role: principal-product-manager -> null`, `updated`
+             restamped. **State stays `shipped`** and nothing about the release
+             moved — `change_ref 236f36d4…`, both exact-ref approvals,
+             acceptance, touches, and the 8/8 production evidence are byte-
+             unchanged. Verified read-only that the closure records are
+             themselves on `main` at
+             `c9c1f077784cd7e6e2d76b1ecbcd5cb4424f115f`
+             (`.git/HEAD -> refs/heads/main`), so the shipped record is
+             durable rather than a local claim. Routed the four non-blocking
+             review follow-ups forward: they are now acceptance criteria
+             R1-R4 on `pack-split-release-12c`, with the pre-merge
+             evidence-sequencing lesson from this release added as R5.
+- state:     shipped
+- needs:     Nothing. This record is terminal and owes no further work; the
+             follow-ups are carried on 12c, not owed here.
+- workspace: C:\src\kai
+- artifacts: kai/coordination/items/pack-split-release-12b.md;
+             kai/coordination/items/pack-split-release-12c.md
+- evidence:  `.git/refs/heads/main` = `c9c1f077784cd7e6e2d76b1ecbcd5cb4424f115f`;
+             publication merge `88965c4ce564646ce3b935267beb783162ca8b99`;
+             `v1.0.0` live; marketplace on disk serves exactly `kai-core` +
+             `kai-personal` at `1.0.0` with `installSurface: packs`.
+- questions: none
+- next:      none — see `pack-split-release-12c` for the forward thread. This
+             pass published, merged, tagged, and deployed nothing.
