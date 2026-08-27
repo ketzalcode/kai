@@ -799,6 +799,20 @@ const MIGRATION_CASES = [
     noSteps: true, noRefusal: true,
   },
   {
+    label: 'rollback refuses a monolith whose install tree declares the pack identity',
+    home: 'identity-mismatch', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['identity-mismatch', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    forbid: ['legacy-rollback-restored'],
+    forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai$/],
+  },
+  {
+    label: 'rollback refuses duplicate monolith trees without uninstalling or reversing provenance',
+    home: 'duplicate-legacy', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['provenance-collision', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    forbid: ['legacy-rollback-restored'],
+    forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai/],
+  },
+  {
     label: 'workspace manifest unreadable',
     home: 'absent', workspace: 'malformed', status: 'unknown',
     expect: ['workspace-provenance-unreadable'], noRefusal: true,

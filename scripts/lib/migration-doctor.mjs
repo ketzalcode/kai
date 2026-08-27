@@ -628,7 +628,8 @@ function assessHost(host, out, { rollback = false } = {}) {
       add('refusal', 'provenance-collision',
         `"${target.name}" is installed from more than one source (${[...target.provenances].map(label).join(' + ')}) — `
         + 'two copies of the same plugin load together and the host binds whichever it sees first.');
-      if (config.ok && config.listed && configClassified) {
+      if (config.ok && config.listed && configClassified
+        && !(rollback && target.name === LEGACY_PLUGIN)) {
         step(`copilot plugin uninstall ${target.name}   # removes one copy; run it until \`copilot plugin list\` shows none`);
       }
     } else if (hasProvenanceDisagreement) {
@@ -650,7 +651,9 @@ function assessHost(host, out, { rollback = false } = {}) {
       if (scan.readable) {
         add('refusal', 'incomplete-install',
           `"${target.name}" is recorded as installed (${describe(target)}) — an interrupted install or uninstall left the metadata and the disk out of step.`);
-        step(`copilot plugin uninstall ${target.name}   # clears the stale entry in ${config.path}`);
+        if (!(rollback && target.name === LEGACY_PLUGIN)) {
+          step(`copilot plugin uninstall ${target.name}   # clears the stale entry in ${config.path}`);
+        }
       } else {
         add('unverified', 'install-tree-unverified',
           `"${target.name}" is recorded as installed, but its tree could not be verified while the install directory was unreadable — `
@@ -691,8 +694,16 @@ function assessHost(host, out, { rollback = false } = {}) {
     && configClassified && scan.present && scan.readable && unidentified.length === 0;
   const legacyEnabled = legacy?.entries.length > 0
     && legacy.entries.every((entry) => entry.enabled === true);
+  const legacyIdentityConsistent = legacy?.entries.length === 1
+    && legacy.trees.length === 1
+    && legacy.mismatches.length === 0
+    && !legacy.entries[0].malformed
+    && !legacy.trees[0].malformed
+    && legacy.trees[0].declaredName === LEGACY_PLUGIN
+    && legacy.entries[0].provenance === legacy.trees[0].provenance
+    && records.size === 1;
   const rollbackReady = Boolean(rollback && actionableLegacy
-    && legacy.presence === 'installed' && legacyEnabled
+    && legacy.presence === 'installed' && legacyEnabled && legacyIdentityConsistent
     && packs.length === 0 && hostEvidenceComplete);
 
   if (actionableLegacy && packs.length) {
@@ -715,7 +726,7 @@ function assessHost(host, out, { rollback = false } = {}) {
       `rollback intent is explicit and legacy "${LEGACY_PLUGIN}" is installed, enabled, and the only verified kai surface.`);
   } else if (rollback) {
     add('refusal', 'legacy-rollback-unverified',
-      `rollback intent was requested, but legacy "${LEGACY_PLUGIN}" was not verified as the installed, enabled, pack-free surface — `
+      `rollback intent was requested, but legacy "${LEGACY_PLUGIN}" was not verified as one installed, enabled, identity-consistent, pack-free surface — `
       + 'workspace provenance is not safe to reverse.');
   }
 

@@ -232,8 +232,8 @@ push.
 5. Reverse the workspace provenance on every workspace already migrated. Run
    `node <kai-plugin>/scripts/workspace-doctor.mjs --migration-check --rollback
    --root <workspace-root>`: the explicit rollback intent first requires the
-   monolith to be installed and enabled, every pack to be absent, and both host
-   evidence surfaces to be readable. Only then does it report
+   monolith to be one installed, enabled, identity-consistent copy, every pack
+   to be absent, and both host evidence surfaces to be readable. Only then does it report
    `workspace-provenance-ahead` and emits the one-key edit that sets
    `.kai/manifest.json` `"plugin"` back to `kai`, plus the re-check that confirms
    the workspace is healthy afterwards. The rollback plan never emits

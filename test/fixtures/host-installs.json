@@ -399,6 +399,29 @@
         ]
       },
       "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
+    "duplicate-legacy": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai",
+            "marketplace": "",
+            "version": "0.55.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/_direct/RubenSaucedo--kai",
+            "enabled": true,
+            "source": { "source": "github", "repo": "RubenSaucedo/kai" }
+          }
+        ]
+      },
+      "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      },
+      "installed-plugins/_direct/Fork--kai/plugin.json": {
+        "name": "kai",
+        "version": "0.55.0"
+      }
     }
   },
 
