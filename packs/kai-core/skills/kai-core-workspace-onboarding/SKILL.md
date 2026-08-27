@@ -69,9 +69,11 @@ start a fresh session, and run this installer again from `kai-core`. End the
 current run; a session still carrying the removed monolith must not continue
 the migration.
 
-Read `copilot plugin marketplace list` and `copilot plugin list`. Record which
-marketplace and plugin rows are already present, including version and enabled
-status. An installed-but-disabled plugin is not a verified install.
+Read `copilot plugin marketplace list` and `copilot plugin list` for registered
+sources, installed names, and versions. Run the migration check with `--json`
+and use its `plugins` inventory for enabled state and provenance; `plugin list`
+does not expose enabled state on the supported CLI. An installed-but-disabled
+plugin is not a verified install.
 
 ### 2. Show the exact plan and confirm once
 
@@ -114,24 +116,32 @@ request to "set up kai" is not confirmation for an unshown command set.
    or the listed versions differ, report the exact unavailable or skewed set and
    stop before installing anything. Never substitute a direct repository or
    subdirectory install as a fallback.
-2. Install, update, or keep `kai-core`, then run `copilot plugin list`.
+2. Install, update, or keep `kai-core`, then run `copilot plugin list` and the
+   migration check with `--json`.
    Continue only when one enabled `kai-core` row is present at the exact version
-   reported by the browse step. On skew, stop before every department install
+   reported by the browse step in the migration report's `plugins` inventory.
+   Its only provenance must be `marketplace:kai-plugins`; a direct install,
+   mixed provenance, or unknown enabled state is not verified.
+   On skew, stop before every department install
    and name `copilot plugin update kai-core@kai-plugins` as the blocking action.
    If the host refuses that update because the current session has core loaded,
    end the run and perform the update from a session that does not have the pack
    loaded; then start a fresh session and re-run this installer.
-   If the row is disabled, stop and name
-   `copilot plugins enable kai-core@kai-plugins --plugin` as the blocking
-   action.
+   If the row is disabled, stop and tell the operator to open `/plugin` in an
+   interactive Copilot session, enable `kai-core@kai-plugins`, start a fresh
+   session, and re-run this installer. Do not name the unavailable
+   `copilot plugins enable` command.
 3. If the approved plan includes the workspace provenance edit, apply only that
    edit and run
    `node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"`.
    Continue only when the workspace contract is valid.
 4. Install each selected department in canonical order. Immediately run
-   `copilot plugin list` after each command and verify one enabled row at the
-   same version as `kai-core`. For a disabled department, stop and name
-   `copilot plugins enable <name>@kai-plugins --plugin` as the blocking action.
+   `copilot plugin list` and the migration check with `--json` after each
+   command, then verify one enabled row at the same version as `kai-core` in the
+   report's `plugins` inventory. For a disabled department, stop and tell the
+   operator to open `/plugin`, enable `<name>@kai-plugins`, start a fresh
+   session, and re-run this installer.
+   Its only provenance must be `marketplace:kai-plugins`.
 5. Re-run the migration check. Completion requires `clear`, the exact selected
    pack set, no legacy `kai`, and no unverified host or workspace finding.
 

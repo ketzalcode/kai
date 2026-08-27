@@ -18,7 +18,12 @@ import { execFileSync } from 'node:child_process';
 // enforcement. Everything else (README, CHANGELOG, docs, tests, workflows,
 // .env.example, LICENSE) is exempt.
 const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'scripts/', 'packs/'];
-const BEHAVIOR_FILES = new Set(['plugin.json', 'package.json', 'package-lock.json']);
+const BEHAVIOR_FILES = new Set([
+  '.github/plugin/marketplace.json',
+  'plugin.json',
+  'package.json',
+  'package-lock.json',
+]);
 
 function isBehaviorPath(p) {
   const f = p.replace(/\\/g, '/');
@@ -122,6 +127,11 @@ function selfTest() {
       expect: (r) => !r.ok && r.behaviorChanged && r.errors.some((e) => /not bumped forward/.test(e)),
     },
     {
+      name: 'a marketplace publication change is behavior-sensitive',
+      input: { changedFiles: ['.github/plugin/marketplace.json'], baseVersion: '0.15.0', headVersion: '0.15.0' },
+      expect: (r) => !r.ok && r.behaviorChanged && r.errors.some((e) => /not bumped forward/.test(e)),
+    },
+    {
       name: 'a bumped + release-noted pack-tree change passes',
       input: { changedFiles: ['packs/kai-personal/agents/persona-self.agent.md', 'CHANGELOG.md', 'README.md'], baseVersion: '0.15.0', headVersion: '0.16.0' },
       expect: (r) => r.ok && r.behaviorChanged,
@@ -146,6 +156,7 @@ function selfTest() {
   const cls = [
     ['agents/x.agent.md', true], ['skills/x/SKILL.md', true], ['scripts/x.mjs', true],
     ['packs/kai-core/plugin.json', true], ['packs/kai-personal/agents/x.agent.md', true],
+    ['.github/plugin/marketplace.json', true],
     ['plugin.json', true], ['package.json', true], ['package-lock.json', true],
     ['README.md', false], ['CHANGELOG.md', false], ['docs/x.md', false],
     ['test/fixtures/x/y.md', false], ['.github/workflows/validate.yml', false],

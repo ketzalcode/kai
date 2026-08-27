@@ -690,9 +690,14 @@ export function manifestParityErrors(manifests, canonicalVersion) {
 // one FS check and stays with the caller. Returns plain message strings.
 export function marketplaceConsistencyErrors({
   mkt, marketName, monolithName, canonicalVersion, manifestsByName,
+  manifestsBySource = {}, requiredPluginNames = [monolithName],
+  forbiddenPluginNames = [],
 }) {
   const errs = [];
   const known = manifestsByName instanceof Map ? manifestsByName : new Map(Object.entries(manifestsByName ?? {}));
+  const knownSources = manifestsBySource instanceof Map
+    ? manifestsBySource
+    : new Map(Object.entries(manifestsBySource ?? {}));
 
   if (mkt.name !== marketName) {
     errs.push(`"name" is "${mkt.name ?? 'missing'}" but every documented install says `
@@ -712,14 +717,29 @@ export function marketplaceConsistencyErrors({
   for (const [name, c] of counts) {
     if (c > 1) errs.push(`${c} entries are named "${name}" — which one an install resolves to is unspecified`);
   }
-  if (!counts.has(monolithName)) {
-    errs.push(`no entry named "${monolithName}" — the index must list this plugin or `
-      + `\`plugin install ${monolithName}@${marketName}\` cannot resolve`);
+  for (const name of requiredPluginNames) {
+    if (counts.has(name)) continue;
+    errs.push(`no entry named "${name}" — the published install surface requires `
+      + `\`plugin install ${name}@${marketName}\``);
+  }
+  for (const name of forbiddenPluginNames) {
+    if (!counts.has(name)) continue;
+    errs.push(`entry "${name}" is retired from the published install surface and must not remain listed`);
   }
 
   for (const e of entries) {
     if (!e?.name) continue;
-    if (!e.source) errs.push(`entry "${e.name}" is missing "source" (required by the host)`);
+    if (typeof e.source !== 'string' || !e.source.trim()) {
+      errs.push(`entry "${e.name}" has a non-string or missing "source" (required by the host)`);
+    }
+    const sourceKey = typeof e.source === 'string'
+      ? e.source.replace(/\\/g, '/').replace(/^\.\/?/, '').replace(/\/+$/, '') || '.'
+      : null;
+    const sourceManifest = sourceKey ? knownSources.get(sourceKey) : null;
+    if (sourceManifest?.name && sourceManifest.name !== e.name) {
+      errs.push(`entry "${e.name}" source "${e.source}" contains plugin "${sourceManifest.name}" `
+        + '— marketplace names must match the manifest at their source');
+    }
     const man = known.get(e.name);
     if (man) {
       if (e.version !== man.version) {
@@ -739,6 +759,36 @@ export function marketplaceConsistencyErrors({
     errs.push(`metadata.version "${mkt.metadata.version}" must equal the canonical plugin version "${canonicalVersion}"`);
   }
   return errs;
+}
+
+export function marketplaceSurfacePolicy({
+  mkt, canonicalVersion, monolithName, initialPackNames,
+}) {
+  const errors = [];
+  const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
+  const postOne = Number.isInteger(majorVersion) && majorVersion >= 1;
+  const installSurface = mkt.metadata?.installSurface;
+
+  if (!postOne) {
+    if (installSurface) {
+      errors.push('metadata.installSurface is reserved for the 1.0.0-or-later pack publication surface');
+    }
+    return {
+      errors,
+      requiredPluginNames: [monolithName],
+      forbiddenPluginNames: [],
+    };
+  }
+
+  if (!['packs', 'legacy-rollback'].includes(installSurface)) {
+    errors.push('metadata.installSurface must be "packs" or "legacy-rollback" at version 1.0.0 or later');
+  }
+  const legacyRollback = installSurface === 'legacy-rollback';
+  return {
+    errors,
+    requiredPluginNames: legacyRollback ? [monolithName] : initialPackNames,
+    forbiddenPluginNames: legacyRollback ? initialPackNames : [monolithName],
+  };
 }
 
 // ---------------------------------------------------------------------------

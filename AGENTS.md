@@ -99,7 +99,8 @@ document. The terminal gets the result and the link.
 These steps apply **only when your change modifies the kai plugin repo itself**
 (`agents/`, `skills/`, `scripts/`, a committed `packs/` tree, or `plugin.json`) —
 never to work done in a consumer workspace. Users pull updates with
-`/plugin update kai`, so the version is descriptive metadata, not an update gate;
+`copilot plugin update <pack>@kai-plugins`, so the version is descriptive
+metadata, not an update gate;
 keep it honest anyway.
 
 Any PR that changes shipped plugin behavior must, in the **same PR**:
@@ -142,4 +143,3 @@ surface — `kai-core` plus department packs replacing the single `kai` plugin
 maturity: groundwork for the split stays on `0.x` however substantial, because a
 consumer's install command has not changed. See **What `1.0.0` is reserved for**
 in `docs/reference/plugin-structure.md` for the gates it waits on.
-

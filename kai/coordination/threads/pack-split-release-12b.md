@@ -89,3 +89,252 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-infra — dependency-satisfied release preparation;
              do not publish, tag, retire the monolith, or run the release.
+
+## NOTE 2026-08-27-1400 — principal-swe-infra
+
+- did:       Claimed release 12b and closed both inherited A4 guard gaps.
+             Marketplace edits are now release-sensitive, and validation
+             rejects an entry whose name disagrees with the plugin manifest at
+             its source. The validator also distinguishes the pre-1.0 monolith
+             surface from the post-1.0 required core + personal surface.
+- state:     in-progress
+- needs:     Apply the minimal `1.0.0` marketplace/docs flip, run all static
+             gates, then prove browse/install/update/enable from an isolated
+             staging-branch marketplace before exact-ref reviews.
+- artifacts: scripts/release-guard.mjs; scripts/validate-plugin.mjs;
+             scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs
+- evidence:  The new self-test arms cover marketplace-only release bypass,
+             post-flip monolith retirement, and source-manifest name mismatch.
+- questions: none
+- next:      principal-swe-infra — complete the release surface and host proof.
+
+## NOTE 2026-08-27-1350 — principal-swe-infra
+
+- did:       The first isolated staging-marketplace probe passed registration,
+             browse, `kai-core` install, `kai-personal` install, exact `1.0.0`
+             plugin rows, and idempotent update commands. It then failed the
+             advertised `copilot plugins enable` recovery command with
+             `The plugins command is not available`, both with isolated and
+             default host state.
+- state:     in-progress
+- needs:     Remove the unusable recovery command before the flip and prove
+             enabled state from a host surface that actually exists.
+- artifacts: .kai/runs are not used for this sensitive host output; sanitized
+             probe files remain in the session artifact directory only.
+- evidence:  Copilot CLI 1.0.79 help lists `plugins enable`, but live execution
+             exits 1. `config.json` in the isolated home records both installed
+             packs enabled at `1.0.0`.
+- questions: none
+- next:      principal-swe-infra — correct the installer and repeat the probe.
+
+## NOTE 2026-08-27-1356 — principal-swe-infra
+
+- did:       Corrected the pre-publication defect. Migration-doctor JSON now
+             returns a sanitized `plugins` inventory with reconciled presence,
+             versions, enabled state, and provenance. The guided installer
+             uses that evidence after each mutation and routes disabled-plugin
+             recovery to the interactive `/plugins` dashboard instead of the
+             unavailable command. Static pins and generated core copies agree.
+- state:     in-progress
+- needs:     Commit and push the corrected prospective surface, then repeat the
+             isolated staging-branch browse/install/update and JSON inventory
+             proof before exact-ref reviews.
+- artifacts: scripts/workspace-doctor.mjs;
+             skills/kai-core-workspace-onboarding/SKILL.md;
+             scripts/validate-plugin.mjs; packs/kai-core/
+- evidence:  Full `npm test` passed at `1.0.0`; migration self-test now proves
+             the safe inventory fields without cache paths.
+- questions: none
+- next:      principal-swe-infra — rerun the staging host proof.
+
+## NOTE 2026-08-27-1410 — principal-swe-infra
+
+- did:       Repeated the isolated staging-marketplace proof from pushed ref
+             `20d82bb723a871879cc0aa839d8ed1c3fe96878a`. Browse exposed only
+             core + personal; both installed at `1.0.0`; both update commands
+             were idempotent. The installed core doctor reported both records
+             present, enabled, exact-versioned, and sourced only from
+             `marketplace:kai-plugins`.
+- state:     in-progress
+- needs:     Exact-ref independent reliability and security review.
+- artifacts: sanitized host evidence:
+             session files/release-12b-host-probe-corrected/
+- evidence:  `91-fresh-workspace-inventory.json` exited 0 with `status: clear`
+             and no cache paths inside the `plugins` inventory.
+- questions: none
+- next:      principal-sre + principal-security — review ref `20d82bb...`.
+
+## NOTE 2026-08-27-1420 — principal-swe-infra
+
+- did:       Security approved ref `20d82bb...` with no P0/P1 findings.
+             Reliability blocked it on two valid release risks: the doctor
+             trusted only `config.json` even though `/plugin` owns
+             `settings.json`, and the default-branch marketplace flip had no
+             reviewed rollback or post-merge verification path.
+- state:     in-progress
+- needs:     Remediate both P1 findings and repeat exact-ref reviews.
+- artifacts: independent review responses retained in the session transcript.
+- evidence:  The live isolated home contains the same enabled map in
+             `config.json` and `settings.json`; the prior parser read only the
+             first. The prior post-1.0 validator also forbade a monolith restore.
+- questions: none
+- next:      principal-swe-infra — make enabled-state reconciliation and
+             emergency rollback testable and fail closed.
+
+## NOTE 2026-08-27-1430 — principal-swe-infra
+
+- did:       Remediated the reliability block. The doctor now reconciles
+             `config.json` with user-owned `settings.json`, reports unknown on
+             absence/disagreement, and exposes disabled as false. The guided
+             installer requires exact marketplace provenance and uses the
+             documented interactive `/plugin` dashboard. Marketplace metadata
+             now declares `installSurface: packs`; an operator-authorized
+             forward patch may switch to `legacy-rollback`, which requires only
+             the monolith and forbids core/personal. The contributor runbook
+             now defines the exact rollback and post-merge production probe.
+             User docs disclose that 1.0.0 installs 16 of the repository's 56
+             agents until the remaining packs publish.
+- state:     in-progress
+- needs:     Commit the remediation and obtain fresh exact-ref SRE + security
+             decisions.
+- artifacts: scripts/lib/migration-doctor.mjs;
+             scripts/workspace-doctor.mjs; test/fixtures/host-installs.json;
+             .github/plugin/marketplace.json;
+             docs/reference/plugin-structure.md
+- evidence:  Full `npm test` and exact release guard pass; 170 generator
+             self-tests include pack mode, rollback mode, missing-mode,
+             non-string source, disabled-state, and disagreement arms.
+- questions: none
+- next:      principal-swe-infra — push the remediation ref for re-review.
+
+## NOTE 2026-08-27-1450 — principal-swe-infra
+
+- did:       The reliability re-review of `062d8d2...` measured a direct
+             monolith host with `settings.json.enabledPlugins = {}` and blocked
+             the too-strict "both surfaces must contain the row" rule. Empty or
+             absent settings state means no user override; the CLI-managed
+             config remains authoritative. An explicit settings boolean must
+             agree, while malformed settings or disagreement stays unknown.
+             Added direct-monolith/no-override and absent-settings regression
+             arms. Extended rollback for users who already installed packs:
+             uninstall departments, uninstall core last, confirm absence,
+             install restored monolith, then start a fresh session.
+- state:     in-progress
+- needs:     Re-run tests, a real direct-monolith doctor probe, and exact-ref
+             reliability review.
+- artifacts: scripts/lib/migration-doctor.mjs;
+             test/fixtures/host-installs.json;
+             docs/reference/plugin-structure.md
+- evidence:  The measured current host is an enabled direct `kai` install with
+             an empty enabled override map; this case now has a fixture.
+- questions: none
+- next:      principal-swe-infra — prove the final semantics and push them.
+
+## NOTE 2026-08-27-1500 — principal-swe-infra
+
+- did:       Proved the revised semantics against both fixtures and the real
+             direct monolith host. The full suite and exact release guard pass.
+             The direct-host report is blocked only by `legacy-installed` while
+             its workspace provenance is current; no enabled-state ambiguity is
+             invented from the empty override map.
+- state:     in-progress
+- needs:     Commit and obtain exact-ref SRE + security approval.
+- artifacts: local-sensitive doctor JSON remains only in the session artifact
+             `release-12b-direct-monolith.json`.
+- evidence:  doctor exit 2; codes `legacy-installed`,
+             `workspace-provenance-current`; 170 pack self-tests pass.
+- questions: none
+- next:      principal-swe-infra — push final implementation ref.
+
+## REVIEW 2026-08-27-1515 — principal-sre
+
+- kind:      independent-reliability
+- change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+- verdict:   approved
+- findings:  No P0/P1. The direct-monolith empty/absent override semantics,
+             explicit disagreement refusal, disabled state, generated core
+             parity, rollback mode, already-migrated recovery, post-merge
+             probe, and 16-of-56 disclosure are sound. Non-blocking: malformed
+             settings lacks a fixture; direct override-key shape is unmeasured;
+             rollback should reverse workspace provenance.
+
+## REVIEW 2026-08-27-1515 — principal-security
+
+- kind:      independent-security
+- change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+- verdict:   approved
+- findings:  No P0/P1. Enabled-state fallback does not weaken presence,
+             coexistence, provenance, identity, or partial-pack refusals.
+             Marketplace source containment, explicit surface mode, monolith/
+             pack mutual exclusion, provenance requirement, and generated
+             parity remain intact. Non-blocking: add a malformed-settings arm.
+
+## HANDOFF 2026-08-27-1516 — principal-swe-infra -> workflow-ship
+
+- did:       Bound both required approvals to exact implementation
+             `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` and moved the item to
+             in-review.
+- state:     in-review
+- needs:     Open the PR, require green CI, then PREPARE against the mergeable
+             revision. After merge, run the exact default-branch and real
+             direct-monolith probes before tagging `v1.0.0`.
+- artifacts: kai/coordination/items/pack-split-release-12b.md;
+             docs/reference/plugin-structure.md
+- evidence:  full suite and exact release guard green; independent SRE and
+             security approvals at the same change_ref.
+- questions: none
+- next:      workflow-ship — gate release readiness; operator acts remain
+             publish/tag/retire only after post-merge verification.
+
+## HANDOFF 2026-08-27-1433 — workflow-ship -> @operator
+
+- did:       Ran the full six-dimension DoD gate against PR #181 at head
+             `b0bb79faa51dd14bfb0cf7151ed6a16b0f538f92`, bound to reviewed
+             implementation `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d`.
+             **All six dimensions Clear — verdict RELEASE-READY.** Wrote the
+             canonical ship record and moved the item `in-review ->
+             release-ready` (v10 -> v11), `lease: null`, `resume_state: null`,
+             `next_role: workflow-ship -> "@operator"`. Nothing was merged,
+             tagged, published, or deployed. Acceptance boxes 1-3 stay
+             unticked: they are the operator-executed publication acts that
+             complete at deployment, not preparation claims.
+- state:     release-ready
+- needs:     Operator execution of the recorded deploy sequence. **Two
+             mandatory pre-merge stop conditions**, because this run had no
+             shell and no GitHub API reach (`api.github.com` returned `403`),
+             so two inputs are attested rather than re-verified here:
+             (1) prove head-vs-reviewed equivalence with
+             `git diff --exit-code 236f36d4… HEAD -- . ':(exclude)kai/'` —
+             anything outside `kai/` means re-review, not merge;
+             (2) require a **fresh** green run at the post-PREPARE head — run
+             `33118653686` sits at `b0bb79fa…` and is superseded by the
+             records commit, so it is a precondition signal, not the merge
+             gate. **The merge is the publication**: the marketplace is served
+             from the default branch, so the abort window closes at merge, not
+             at tag. Run the post-merge isolated-home and real direct-monolith
+             probes **before** tagging `v1.0.0`.
+- artifacts: kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md;
+             kai/coordination/items/pack-split-release-12b.md;
+             kai/initiatives/pack-split/log.md
+- evidence:  Verified directly from the tree at `b0bb79fa…`: marketplace has
+             exactly `kai-core` + `kai-personal` at `1.0.0`,
+             `installSurface: packs`, no monolith entry; `1.0.0` coherent
+             across root plugin/package, marketplace metadata, both entries and
+             both pack manifests; CHANGELOG `[1.0.0]` + compare link
+             (`:2990`); README `v1.0.0` stamp with the honest 16-agents-of-56
+             disclosure; A4(1) `release-guard.mjs:22`; A4(2)
+             `validate-plugin.mjs:822`; core never selectable
+             (`kai-core-workspace-onboarding/SKILL.md:31-34`); unpublished
+             departments fail closed (`SKILL.md:113-118`); rollback runbook
+             `docs/reference/plugin-structure.md:190`. Both required reviews
+             approved at the same exact `change_ref` with no P0/P1. All four
+             typed dependencies re-verified: host-gates `completed` v17,
+             pack-dependency-manifests `shipped` v23, release-12a `shipped`
+             v18, onboarding-installer `shipped` v18.
+- questions: none
+- next:      @operator — execute the deploy handoff and return merge SHA,
+             exact-main run URL/ID/headSha/conclusion with all job
+             conclusions, both host-probe results, and the release URL/target/
+             timestamp. `workflow-ship` then runs CONFIRM-START and
+             CONFIRM-COMPLETE. A run URL without a successful conclusion is
+             not completion; only `workflow-ship` records rollback evidence.

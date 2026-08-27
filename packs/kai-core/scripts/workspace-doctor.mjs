@@ -334,6 +334,25 @@ const jsonText = (value) => JSON.stringify(value, null, 2)
     `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`
   ));
 
+function migrationInventory(report) {
+  if (!report.host?.records) return [];
+  return [...report.host.records.values()]
+    .map((record) => {
+      const enabledStates = record.entries.map((entry) => entry.enabled);
+      const enabled = enabledStates.length && enabledStates.every((state) => state === true)
+        ? true
+        : (enabledStates.some((state) => state === false) ? false : null);
+      return {
+        name: record.name,
+        presence: record.presence,
+        versions: [...new Set(record.entries.map((entry) => entry.version).filter(Boolean))].sort(),
+        enabled,
+        provenances: [...record.provenances].sort(),
+      };
+    })
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
 function reportMigration({ home, root, json = false }) {
   const res = migrationReport({ home, root });
   if (json) {
@@ -346,6 +365,7 @@ function reportMigration({ home, root, json = false }) {
       steps: res.steps,
       notices: res.notices,
       workspace: res.workspace,
+      plugins: migrationInventory(res),
     };
     console.log(jsonText(output));
     return migrationExitCode(res.status);
@@ -867,6 +887,60 @@ function migrationSelfTest() {
     }
     if (passed === MIGRATION_CASES.length) {
       console.log(`✓ self-test: ${passed} migration scenarios verdict correctly (legacy, packs, coexistence, partial set, unreadable surfaces, stale/incomplete installs, provenance collision, unknown provenance, malformed metadata, path normalization)`);
+    }
+
+    const inventoryReport = migrationReport({
+      home: join(tmpRoot, 'homes', 'packs-marketplace'),
+      root: join(tmpRoot, 'workspaces', 'pack'),
+    });
+    const inventory = migrationInventory(inventoryReport);
+    const core = inventory.find((plugin) => plugin.name === 'kai-core');
+    if (core?.presence !== 'installed' || core.enabled !== true || !core.versions.length
+      || !core.provenances.includes('marketplace:kai-plugins')) {
+      fail('self-test: migration JSON inventory does not expose safe core version, enabled-state, and provenance evidence');
+    } else {
+      console.log('✓ self-test: migration JSON inventory exposes version, enabled state, and provenance without cache paths');
+    }
+
+    const disabledInventory = migrationInventory(migrationReport({
+      home: join(tmpRoot, 'homes', 'packs-disabled'),
+    }));
+    if (disabledInventory.find((plugin) => plugin.name === 'kai-core')?.enabled !== false) {
+      fail('self-test: an explicitly disabled core install is not exposed as disabled');
+    } else {
+      console.log('✓ self-test: migration JSON inventory exposes an explicitly disabled core install');
+    }
+
+    const disagreementReport = migrationReport({
+      home: join(tmpRoot, 'homes', 'packs-enabled-disagreement'),
+    });
+    const disagreementCore = migrationInventory(disagreementReport)
+      .find((plugin) => plugin.name === 'kai-core');
+    if (disagreementReport.status !== 'unknown'
+      || !disagreementReport.codes.includes('enabled-state-unverified')
+      || disagreementCore?.enabled !== null) {
+      fail('self-test: disagreeing config/settings enabled state did not fail closed as unknown');
+    } else {
+      console.log('✓ self-test: disagreeing enabled-state surfaces fail closed as unknown');
+    }
+
+    const directNoOverride = migrationReport({
+      home: join(tmpRoot, 'homes', 'legacy-direct'),
+    });
+    const directCoreState = directNoOverride.host.records.get('kai')?.entries[0]?.enabled;
+    if (directCoreState !== true || directNoOverride.codes.includes('enabled-state-unverified')) {
+      fail('self-test: a direct install with no settings override did not retain its managed config state');
+    } else {
+      console.log('✓ self-test: an empty settings override map preserves direct-install enabled state');
+    }
+
+    const absentSettings = migrationReport({
+      home: join(tmpRoot, 'homes', 'path-normalization'),
+    });
+    if (absentSettings.codes.includes('enabled-state-unverified')) {
+      fail('self-test: an absent settings file incorrectly invalidated managed config enabled state');
+    } else {
+      console.log('✓ self-test: an absent settings file falls back to managed config enabled state');
     }
 
     if (snapshotTree(tmpRoot).join('\n') !== before) {

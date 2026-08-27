@@ -4,6 +4,42 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.0] - 2026-08-27
+
+### Added
+
+- **The first public pack install surface.** `kai-core` and `kai-personal` are
+  published from their generated trees. Core carries the shared operating
+  contract, workspace machinery, fleet observer, and hooks; personal carries
+  the personal, learning, and demo roles.
+- **Marketplace publication integrity gates.** Marketplace-only changes now
+  require a release bump and notes. Validation also rejects any entry whose
+  public name disagrees with the plugin manifest at its source.
+- **Machine-readable install-state evidence for guided migration.** Migration
+  doctor JSON now includes each Kai plugin's reconciled version, enabled state,
+  presence, and provenance without exposing cache paths.
+- **A reviewed emergency marketplace rollback mode.** A forward patch can
+  explicitly publish only the monolith as `legacy-rollback`; validation forbids
+  mixing that surface with core or personal packs.
+
+### Changed
+
+- **The `kai` monolith is retired from the marketplace.** New installations use
+  required `kai-core` plus `kai-personal`. Existing monolith users migrate
+  through `workflow-workspace-init`, which proves replacement availability
+  before removal, installs core first, verifies every step, and refuses
+  coexistence.
+- **Install and update commands now target packs.** Engineering, product, and
+  go-to-market packs remain unpublished until the next `1.0.x` release.
+- **Disabled-plugin recovery uses the interactive `/plugin` dashboard.** Live
+  CLI 1.0.79 probing showed that `copilot plugins enable` appears in help but
+  returns “command is not available”; the installer no longer recommends that
+  unusable command.
+- **Enabled state now reconciles both host metadata surfaces.** An explicit
+  `settings.json` override must agree with managed `config.json`; malformed or
+  contradictory evidence reports `unknown`. No override falls back to the
+  managed config state used by existing direct monolith installs.
+
 ## [0.67.0] - 2026-08-27
 
 ### Added
@@ -2951,6 +2987,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.0]: https://github.com/RubenSaucedo/kai/compare/v0.67.0...v1.0.0
 [0.67.0]: https://github.com/RubenSaucedo/kai/compare/v0.66.0...v0.67.0
 [0.66.0]: https://github.com/RubenSaucedo/kai/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/RubenSaucedo/kai/compare/v0.64.0...v0.65.0

@@ -31,6 +31,9 @@
         "  ]",
         "}"
       ],
+      "settings.json": {
+        "enabledPlugins": {}
+      },
       "installed-plugins/_direct/RubenSaucedo--kai/plugin.json": { "name": "kai", "version": "0.55.0" }
     },
 
@@ -75,8 +78,54 @@
           }
         ]
       },
+      "settings.json": {
+        "enabledPlugins": {
+          "kai-core@kai-plugins": true,
+          "kai-engineering@kai-plugins": true
+        }
+      },
       "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" },
       "installed-plugins/kai-plugins/kai-engineering/plugin.json": { "name": "kai-engineering", "version": "1.0.0" }
+    },
+
+    "packs-disabled": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": false
+          }
+        ]
+      },
+      "settings.json": {
+        "enabledPlugins": {
+          "kai-core@kai-plugins": false
+        }
+      },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" }
+    },
+
+    "packs-enabled-disagreement": {
+      "config.json": {
+        "installedPlugins": [
+          {
+            "name": "kai-core",
+            "marketplace": "kai-plugins",
+            "version": "1.0.0",
+            "cache_path": "/Users/dev/.copilot/installed-plugins/kai-plugins/kai-core",
+            "enabled": true
+          }
+        ]
+      },
+      "settings.json": {
+        "enabledPlugins": {
+          "kai-core@kai-plugins": false
+        }
+      },
+      "installed-plugins/kai-plugins/kai-core/plugin.json": { "name": "kai-core", "version": "1.0.0" }
     },
 
     "coexistence": {

@@ -14,7 +14,8 @@ The shortest path to one real, finished piece of work. Each step is copyable.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
-copilot plugin install kai@kai-plugins
+copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-personal@kai-plugins
 ```
 
 Start a **new** session afterwards — plugins load per session.
@@ -75,10 +76,12 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-kai ships 56 agents and 49 skills, and you do not need to learn them. You need
-three things: **ask a front door for outcomes**, **let the work item be the
-source of truth**, and **remember that only you ship**. Everything else is
-reference material — read it when you hit the thing it describes.
+The repository contains 56 agents and 51 skills; the first published
+core-plus-personal slice installs 16 agents and 31 skills. You do not need to
+learn them. You need three things: **ask a front door for outcomes**, **let the
+work item be the source of truth**, and **remember that only you ship**.
+Everything else is reference material — read it when you hit the thing it
+describes.
 
 ## Install
 
@@ -98,36 +101,43 @@ support long-term. Nobody has to approve a listing for this to work.
 1. Register the marketplace, then install from it:
    ```powershell
    copilot plugin marketplace add RubenSaucedo/kai
-   copilot plugin install kai@kai-plugins
+   copilot plugin install kai-core@kai-plugins
+   copilot plugin install kai-personal@kai-plugins
    ```
 2. Confirm it loaded:
    ```powershell
    copilot plugin list
    ```
-   `kai@kai-plugins` should appear with the installed version. The agents and
-   skills are available in **new** sessions — start a fresh session to use them.
+   `kai-core@kai-plugins` and `kai-personal@kai-plugins` should appear at the
+   same version. The agents and skills are available in **new** sessions —
+   start a fresh session to use them.
 
-An install is a full repository checkout, so `scripts/` ships with it and
-nothing needs cloning — that is what lets `kai-core-fleet-observation` find the watcher.
+Core carries the shared scripts and fleet hooks, so nothing needs cloning —
+that is what lets `kai-core-fleet-observation` find the watcher.
 
-**Already installed the direct way?** Registering the marketplace does not move
-an existing install onto it: the installed plugin keeps the source it came
-from. **Uninstall first** — installing over the top does not replace the old
-copy, it leaves you with *both* (`kai` and `kai@kai-plugins`) loaded at once:
+### Upgrading from the `kai` monolith
 
-```powershell
-copilot plugin uninstall kai
-copilot plugin marketplace add RubenSaucedo/kai
-copilot plugin install kai@kai-plugins
-```
+Do not install packs beside legacy `kai`: both provide the operating contract,
+and which copy loads first is host-dependent.
 
-This touches only the plugin. Your workspace — `.kai/` and `kai/` — lives in
-your repository and is untouched by either command. Start a new session
-afterwards.
+The `1.0.0` migration installs core and personal only. Engineering, product,
+and go-to-market roles remain in the repository but are not published until
+the next `1.0.x` release. Migrating now temporarily removes those roles from
+this host.
 
-If you already ended up with both, `copilot plugin uninstall kai` removes the
-direct one and leaves the marketplace install in place; `copilot plugin list`
-shows which you have.
+1. Update the marketplace catalog.
+2. In a session still loaded from legacy `kai`, ask:
+
+   ```text
+   Migrate this kai installation to kai-core and kai-personal.
+   ```
+
+3. Follow the displayed plan exactly. The guide proves both packs exist at one
+   marketplace version before it tells you to uninstall legacy `kai`, then
+   installs core first and stops for a fresh session before continuing.
+
+This changes only host plugin state. Your workspace — `.kai/` and `kai/` —
+lives in your repository and is not removed.
 
 **Check what this host actually has, before you install anything:**
 
@@ -144,21 +154,26 @@ a numbered step for you to run. Use it when `plugin list` and what you remember
 installing disagree, or after an install or uninstall was interrupted.
 
 Automation can use `npm run doctor:migration -- --json`. The JSON carries the
-verdict and finding codes; exit codes are `0` for `clear`, `2` for `blocked`,
-and `3` for `unknown`. A missing config list or install directory is `unknown`,
-never evidence that nothing is installed.
+verdict, finding codes, and a sanitized plugin inventory with version, enabled
+state, reconciled presence, and provenance; it does not expose install-cache
+paths in that inventory. Exit codes are `0` for `clear`, `2` for `blocked`, and
+`3` for `unknown`. A missing config list, install directory, malformed settings
+file, or explicit enabled-state disagreement is `unknown`, never evidence that
+an install is usable. An absent settings override falls back to the
+CLI-managed `config.json` state.
 
-It also answers the question `plugin list` doesn't: whether a plugin came from
+It also answers the question `plugin list` does not: whether a plugin came from
 the marketplace or a direct install, and whether the workspace in front of you
-was scaffolded by the same plugin the host is loading. Once kai ships as
-separate packs, this is the check that says whether the legacy `kai` plugin is
-verifiably gone — the packs and the monolith provide the same operating
-contract, so with both installed the host binds whichever it loaded first.
+was scaffolded by the same plugin the host is loading. It verifies that legacy
+`kai` is gone before pack use — the packs and the monolith provide the same
+operating contract, so with both installed the host binds whichever it loaded
+first.
 
 **Install directly from GitHub (deprecated by the host):**
 
 ```text
-/plugin install RubenSaucedo/kai
+copilot plugin install RubenSaucedo/kai:packs/kai-core
+copilot plugin install RubenSaucedo/kai:packs/kai-personal
 ```
 
 This still works and is a single command, but the CLI prints:
@@ -176,7 +191,7 @@ install. Tracked in
 ```powershell
 git clone https://github.com/RubenSaucedo/kai.git
 cd kai
-copilot --plugin-dir .
+copilot --plugin-dir packs/kai-core --plugin-dir packs/kai-personal
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when
@@ -205,7 +220,8 @@ plugin itself. Refresh the catalog first, or the update has nothing new to find:
 
 ```powershell
 copilot plugin marketplace update kai-plugins
-copilot plugin update kai
+copilot plugin update kai-core@kai-plugins
+copilot plugin update kai-personal@kai-plugins
 ```
 
 Plugins are cached per session — changes only appear in **new** sessions.
@@ -220,7 +236,7 @@ bug in the CLI, so run the two commands above rather than relying on it.
 A kai *workspace* (the `.kai/`, `kai/coordination/`, `kai/initiatives/`,
 `kai/library/`, and `kai/personal/` state a repo or folder gets when onboarded)
 carries its own **`schema_version`** in `.kai/manifest.json`, independent of the
-plugin `version`. Most `/plugin update kai` releases don't change it; when one
+plugin `version`. Most pack updates do not change it; when one
 does, an existing workspace needs a one-time migration.
 
 After updating the plugin, from the workspace root run the **workspace doctor**:
