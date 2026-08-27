@@ -253,3 +253,22 @@ Append-only communication log mirroring
              installed Copilot CLI 1.0.79.
 - questions: none
 - next:      principal-swe-infra — verify and mint the final review ref.
+
+## HANDOFF 2026-08-27-1233 — principal-swe-infra -> principal-swe-architect
+
+- did:       Full corrected suite passed and the second correction is committed
+             as `e9ecce6d2de3a59ae2faaadd62114480b9b3f357`. Rebound the item to
+             that exact ref; no earlier review satisfies it.
+- state:     in-review
+- needs:     Final architecture and technical-writing reviews at the same ref.
+             Confirm requested-set availability before legacy removal,
+             conditional fresh-session language, disabled-core recovery, and
+             new static pins without reopening prior findings.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs
+- evidence:  Full `npm test` passed at `0.66.0`; generated catalog and
+             core/personal trees match.
+- questions: none
+- next:      principal-swe-architect — final verdict at
+             `e9ecce6d2de3a59ae2faaadd62114480b9b3f357`.

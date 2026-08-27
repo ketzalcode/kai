@@ -2852,3 +2852,14 @@ browse-before-install and result keys; preserves the doctor's distinct
 mutation. README and CHANGELOG now avoid attributing the full catalog to
 release 12b. Full `npm test` passed again; both required reviews were
 re-requested against the new ref.
+
+The technical-writing re-review found that legacy removal still proved only
+core availability and that agent/README session language remained broader than
+the skill. Final correction ref
+`e9ecce6d2de3a59ae2faaadd62114480b9b3f357` now requires the entire requested
+set at one common marketplace version before legacy removal, confirms any
+availability-only marketplace mutation separately, leaves the monolith in
+place when proof is unavailable, and requires a fresh session only after an
+actual pack install or update. It also names disabled-core recovery and pins
+the corrected high-risk prose. Full `npm test` passed; final dual reviews are
+pending at that exact ref.
