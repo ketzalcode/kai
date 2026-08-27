@@ -245,3 +245,43 @@ Append-only communication log mirroring
              `workspace-provenance-current`; 170 pack self-tests pass.
 - questions: none
 - next:      principal-swe-infra — push final implementation ref.
+
+## REVIEW 2026-08-27-1515 — principal-sre
+
+- kind:      independent-reliability
+- change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+- verdict:   approved
+- findings:  No P0/P1. The direct-monolith empty/absent override semantics,
+             explicit disagreement refusal, disabled state, generated core
+             parity, rollback mode, already-migrated recovery, post-merge
+             probe, and 16-of-56 disclosure are sound. Non-blocking: malformed
+             settings lacks a fixture; direct override-key shape is unmeasured;
+             rollback should reverse workspace provenance.
+
+## REVIEW 2026-08-27-1515 — principal-security
+
+- kind:      independent-security
+- change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+- verdict:   approved
+- findings:  No P0/P1. Enabled-state fallback does not weaken presence,
+             coexistence, provenance, identity, or partial-pack refusals.
+             Marketplace source containment, explicit surface mode, monolith/
+             pack mutual exclusion, provenance requirement, and generated
+             parity remain intact. Non-blocking: add a malformed-settings arm.
+
+## HANDOFF 2026-08-27-1516 — principal-swe-infra -> workflow-ship
+
+- did:       Bound both required approvals to exact implementation
+             `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` and moved the item to
+             in-review.
+- state:     in-review
+- needs:     Open the PR, require green CI, then PREPARE against the mergeable
+             revision. After merge, run the exact default-branch and real
+             direct-monolith probes before tagging `v1.0.0`.
+- artifacts: kai/coordination/items/pack-split-release-12b.md;
+             docs/reference/plugin-structure.md
+- evidence:  full suite and exact release guard green; independent SRE and
+             security approvals at the same change_ref.
+- questions: none
+- next:      workflow-ship — gate release readiness; operator acts remain
+             publish/tag/retire only after post-merge verification.

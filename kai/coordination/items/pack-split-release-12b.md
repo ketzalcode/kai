@@ -5,11 +5,11 @@ title: Release 12b — minimal 1.0.0 flip (publish core + personal, retire monol
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-progress
+state: in-review
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: workflow-ship
 target: pack-split staged release 12b (the 1.0.0 flip)
 artifact_target: null
 context_artifacts:
@@ -53,16 +53,28 @@ review_requirements:
     kind: independent-reliability
   - role: principal-security
     kind: independent-security
-completed_reviews: []
-change_ref: null
-version: 9
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12b.md"
+    timestamp: 2026-08-27-1515
+  - role: principal-security
+    kind: independent-security
+    change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12b.md"
+    timestamp: 2026-08-27-1515
+change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
+version: 10
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1500
+updated: 2026-08-27-1515
 ---
 
 ## Outcome
@@ -129,6 +141,8 @@ irreversible act that escapes release enforcement.*
 - A read-only doctor run against the real current direct-monolith host exits 2
   with exactly `legacy-installed` and `workspace-provenance-current`; it does
   not emit `enabled-state-unverified` for the empty user override map.
+- Independent SRE and security reviews both approve exact implementation
+  `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` with no P0/P1 findings.
 
 ## Notes
 
@@ -143,3 +157,7 @@ irreversible act that escapes release enforcement.*
 - **Typed-dependency correction (steward, 2026-08-26-1558).**
   `pack-split-pack-dependency-manifests` is a `product-change`, so its terminal
   requirement is `shipped`, not the knowledge-only `completed` state.
+- Non-blocking review follow-ups: add a malformed-settings fixture; document
+  that a direct-install settings override key is not host-measured; reverse
+  workspace manifest provenance during an emergency monolith rollback; and
+  derive the rollback forbidden set from every pack before release 12c.
