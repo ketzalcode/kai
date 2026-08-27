@@ -5,11 +5,11 @@ title: Host gates — macOS + cloud + install-order + fresh-session verification
 initiative: pack-split
 milestone: first-pack-extracted
 delivery_class: knowledge
-state: in-review
+state: in-progress
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-sre
+next_role: principal-swe-infra
 target: pack-split host-gate certification evidence
 artifact_target: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
 context_artifacts:
@@ -41,15 +41,15 @@ review_requirements:
   - role: principal-sre
     kind: independent-reliability
 completed_reviews: []
-change_ref: c4d0b376542116c0e13fbb50e4d1ae17eeea653e
-version: 13
+change_ref: null
+version: 14
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1745
+updated: 2026-08-26-1752
 ---
 
 ## Outcome
@@ -109,6 +109,18 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   produced the same successful nested event sequence. Exported logs omit task
   arguments; repository hooks did not fire; this limitation is explicit for
   SRE review.
+- Independent SRE review at
+  `c4d0b376542116c0e13fbb50e4d1ae17eeea653e` returned changes required:
+  exact selected-agent binding, cloud Kai source revision, and reconciliation
+  of the positive macOS packet with retained contract output.
+- Follow-up host storage now supplies the missing causal record. Tool call
+  `toolu_019eFjZzzD2FszpjX6GTTWXA` names
+  `agent_type: kai-personal:persona-self`; same-session host markers bracket
+  that subagent's nested `kai-core-contract-v1` invocation. GitHub history
+  binds both cloud resolution timestamps to Kai `main`
+  `fe562b9364256b159d7016d8bdc79d989bc7e3a3`, pack version `0.64.0`.
+  The macOS packet now asserts its retained
+  `KAI_CORE_READY` / `contract: 1` output.
 - The amended decision and next experiment are recorded at
   `kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md`.
   Release 12b remains explicitly **NO-GO**.
@@ -146,3 +158,8 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`; the item moved
   `in-progress -> in-review`, routes to `principal-sre`, and preserves release
   12b NO-GO until the independent verdict.
+- **SRE remediation 2026-08-26-1752:** SRE returned changes required at
+  `c4d0b376…` (P1 exact child identity; P2 cloud source pin; P2 stale positive
+  packet assertions). The item moved `in-review -> in-progress`, cleared its
+  superseded `change_ref`, and prepared all three corrections. A new evidence
+  commit and re-review are required.

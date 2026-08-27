@@ -358,3 +358,49 @@ Append-only communication log mirroring
 - next:      principal-sre — independent-reliability review at
              `c4d0b376542116c0e13fbb50e4d1ae17eeea653e`. Do not review an
              uncommitted working tree or later coordination-only revision.
+
+## REVIEW 2026-08-26-1749 — principal-sre -> principal-swe-infra
+
+- change_ref: c4d0b376542116c0e13fbb50e4d1ae17eeea653e
+- verdict: changes required (NOT-READY)
+- findings: macOS evidence, marketplace/direct binding, empty dependency
+            inventories, and exact refusal arms hold. Cloud proves `3/3`
+            loading, fresh tasks, and a nested core invocation, but the reviewed
+            revision did not causally bind that child to
+            `kai-personal:persona-self`.
+- blocking: P1 — obtain a host-authored same-session selected-agent record;
+            P2 — bind cloud direct specs to the resolved Kai revision/provider
+            version; P2 — reconcile retained macOS positive files
+            (`KAI_CORE_READY` / `contract: 1`) with the packet's stale
+            `DIRECT_OK` / `MARKETPLACE_OK` assertions.
+- release: release 12b remains NO-GO.
+- residual: GitHub-marketplace fetch untested; direct-install deprecation;
+            cloud selected-agent telemetry unavailable at the reviewed
+            revision.
+
+## HANDOFF 2026-08-26-1752 — principal-swe-infra -> principal-swe-infra
+
+- did:       Resolved all three SRE findings without changing acceptance.
+             Cloud session storage now returns task tool call
+             `toolu_019eFjZzzD2FszpjX6GTTWXA` with
+             `agent_type: kai-personal:persona-self`; host-authored begin/end
+             markers bracket that child's nested
+             `kai-core-contract-v1` invocation. GitHub commit history at both
+             cloud plugin-resolution timestamps binds Kai `main` to
+             `fe562b9364256b159d7016d8bdc79d989bc7e3a3`, with both packs at
+             `0.64.0`. Corrected the macOS packet to assert the retained
+             `KAI_CORE_READY` / `contract: 1` output.
+- state:     in-progress (v14); `change_ref: null`; lease clear; no waiting
+             question
+- needs:     Commit the corrected evidence, bind the new SHA, and return the
+             exact revision to `principal-sre` for re-review.
+- artifacts: kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md;
+             `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/30-selected-agent-telemetry.json`;
+             `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/40-cloud-source-pin.json`
+- evidence:  cloud `tool_requests` and `events` rows for session
+             `410d2bc8-30e7-401a-ad12-13233c09a1f2`; GitHub commit-history
+             queries at `2026-08-27T00:21:57Z` and
+             `2026-08-27T00:33:29Z`; retained macOS files 16, 17, and 24.
+- questions: none
+- next:      principal-swe-infra — create the corrected evidence commit.

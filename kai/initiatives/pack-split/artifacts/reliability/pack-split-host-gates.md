@@ -1,6 +1,6 @@
 # Pack split host gates
 
-**Status:** IN PROGRESS — macOS PASS; cloud consumer PASS with selected-agent telemetry limitation; SRE review pending
+**Status:** IN PROGRESS — macOS PASS; cloud consumer PASS; SRE corrections prepared for re-review
 **Prepared:** 2026-08-26
 **macOS source pin:** `9a800e4e76cd6c15b9dfab01a7b1ed99c4285080`
 **Release 12b verdict:** **NO-GO**
@@ -11,12 +11,10 @@ Release 12b must not start until independent reliability review. The macOS host
 arm passed. The authorized disposable consumer repository then proved that the
 cloud host resolves and loads the positive control, `kai-core`, and
 `kai-personal` from default-branch repository settings, invokes the core
-contract, and completes a child task that invokes that contract. The cloud host
-does not export the task tool's selected-agent arguments, and repository hooks
-did not fire in this runtime, so the exact `persona-self` target is supported by
-the host-persisted task prompt plus successful task/child events rather than a
-separate selected-agent event. `principal-sre` must accept or reject that
-residual evidence limitation. The packs remain committed and unpublished.
+contract, and completes a `kai-personal:persona-self` child task that invokes
+that contract. Host session records now provide the exact task arguments and
+same-session begin/end markers naming the `persona-self` subagent. The packs
+remain committed and unpublished.
 
 The evidence path uses the lowest persistent-install rung that exercises each
 required provenance. It does not require either pack to appear in the public
@@ -34,10 +32,7 @@ marketplace:
        +-- default-marketplace positive control
        +-- host resolves and loads all 3 -------------------- PASS
        +-- core contract invocation ------------------------- PASS
-       +-- task -> nested core contract -> success ---------- PASS*
-
-  * Exact selected-agent arguments are omitted from exported host events.
-    Review is required before this evidence limitation is accepted.
+       +-- persona-self -> nested core contract -> success --- PASS
 ```
 
 This packet implements the architecture decision at
@@ -58,7 +53,7 @@ the required `principal-sre` independent reliability review.
 | Host identity and run-start `main` tip | PASS | PASS — host-issued task/run/session IDs and fixture SHA | PASS |
 | Persistent core-first and personal-first install | PASS | PASS — declarative direct specs resolve on each fresh task | PASS |
 | Fresh-session activation | PASS | PASS — repeated independent cloud tasks load all three plugins | PASS |
-| Cross-plugin core contract resolution | PASS | PASS — parent and nested child `skill.invoked` events | PASS* |
+| Cross-plugin core contract resolution | PASS | PASS — selected `persona-self` and nested `skill.invoked` events | PASS |
 | Marketplace and direct binding | PASS | PASS — `spark@copilot-plugins` plus both direct Kai specs resolve together | PASS |
 | Direct/marketplace collision refusal | PASS | not required separately | PASS |
 | Per-pack npm / `node_modules` behavior | PASS — inventories empty | host does not export installed-tree inventories | PASS |
@@ -70,12 +65,6 @@ text. A generic Actions CLI runner still cannot substitute for the Copilot cloud
 host. The accepted macOS arm is different: it is a first-party authenticated
 Copilot CLI run on a genuine GitHub-hosted Apple Silicon macOS runner and
 preserves installed-plugin and provider evidence.
-
-`PASS*` carries one explicit limitation: the cloud host exported `task`
-start/success and the nested `kai-core-contract-v1` invocation, while omitting
-the task arguments that name `kai-personal:persona-self`. The task record
-persisted the exact operator prompt requiring that provider-qualified target and
-forbidding substitution. No final model text is used as evidence.
 
 ## Observed macOS result — PASS
 
@@ -108,6 +97,11 @@ forbidding substitution. No final model text is used as evidence.
 - No-core and contract-2 sessions each returned exactly
   `KAI-CORE-MISSING`. The skew provider event identifies
   `kai-core-preview`, contract `2`.
+- Retained positive-session files contain exactly
+  `KAI_CORE_READY` / `contract: 1`. The execution packet below now asserts
+  those contract lines. Its earlier `DIRECT_OK` / `MARKETPLACE_OK` prompts
+  conflicted with the contract skill's required output and did not describe the
+  accepted files.
 
 Sanitized evidence is under
 `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/macos/`.
@@ -137,7 +131,7 @@ Only the sanitized identity/result summary was retained at
 `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/99-summary.json`.
 The raw host log remains temporary session material and was not copied.
 
-## Observed cloud consumer result — PASS with telemetry limitation
+## Observed cloud consumer result — PASS
 
 The operator authorized `Q-pack-split-host-gates-04` and created private,
 disposable repository
@@ -186,21 +180,42 @@ requires the child's first action to invoke `kai-core-contract-v1`; the host
 recorded the task start, nested skill invocation, and successful task
 completion.
 
-The host does not export the task tool's arguments in Actions logs. Cloud
-session/event storage returned no rows for these session IDs. Repository
-`subagentStart` and `preToolUse` hooks committed on the consumer default branch
-also did not fire, despite the current hooks reference documenting cloud
-support. Direct Agent Tasks API selection of
-`custom_agent: kai-personal:persona-self` returned HTTP 404 because that field
-resolves repository custom-agent filenames, not installed plugin agents. These
-are host observability/API limitations, not evidence that plugin provisioning
-or child execution failed.
+Cloud session storage later ingested the authoritative same-session records for
+session `410d2bc8-30e7-401a-ad12-13233c09a1f2`:
+
+- `tool_requests` records tool call
+  `toolu_019eFjZzzD2FszpjX6GTTWXA` with
+  `agent_type: kai-personal:persona-self`;
+- the task prompt requires `kai-core-contract-v1` as the child's first action;
+- the event stream emits the host-authored boundary
+  `All messages ... are from the persona-self subagent`;
+- inside that boundary, `skill` loads `kai-core-contract-v1` and the child
+  returns exactly `KAI_CORE_READY` / `contract: 1`; and
+- the host emits the matching end boundary and successful task completion.
+
+This is the required causal binding between the selected department agent and
+the nested core invocation. No model-authored final identity is credited.
+Actions log export still omits task arguments, and repository
+`subagentStart`/`preToolUse` hooks did not fire, but those observability gaps no
+longer block identity because the host session records supply it. Direct Agent
+Tasks API selection of `custom_agent: kai-personal:persona-self` returned HTTP
+404 because that field resolves repository custom-agent filenames, not
+installed plugin agents.
+
+The direct specs followed Kai's default branch. GitHub commit history at both
+the first provisioning timestamp (`2026-08-27T00:21:57Z`) and the final child
+resolution timestamp (`2026-08-27T00:33:29Z`) resolves `main` to
+`fe562b9364256b159d7016d8bdc79d989bc7e3a3`. At that revision,
+`kai-core` and `kai-personal` are version `0.64.0`; their `plugin.json` blob IDs
+are `0a5614a275f692159ef5d9fbddaf3ea652f17527` and
+`60113222921a0f4af651d7f744539fe705b599c2`, respectively.
 
 Sanitized local summaries:
 
 - `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/10-consumer-provisioning.json`
 - `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/20-consumer-child.json`
 - `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/30-selected-agent-telemetry.json`
+- `.kai/runs/eng/2026-08-26/02-infra-pack-split-host-gates/cloud/40-cloud-source-pin.json`
 
 Temporary settings on Kai `main` remain rejected because they would
 auto-install core/personal beside legacy `kai`, activate duplicate
@@ -328,9 +343,9 @@ script -q "$RUN_ROOT/macos/15-direct-personal-first-list.txt" \
     copilot --no-auto-update --no-custom-instructions --no-remote --silent \
     --allow-all-tools --max-ai-credits 40 \
     --agent kai-personal:persona-self \
-    -p 'Obey the mandatory core preflight. Reply exactly DIRECT_OK.' \
+    -p 'Invoke kai-core-contract-v1 as your first action. Return only the contract result.' \
     | python3 -c \
-    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="DIRECT_OK"' \
+    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="KAI_CORE_READY\ncontract: 1"' \
     "$RUN_ROOT/macos/16-direct-core-first-session.txt"
 )
 
@@ -340,9 +355,9 @@ script -q "$RUN_ROOT/macos/15-direct-personal-first-list.txt" \
     copilot --no-auto-update --no-custom-instructions --no-remote --silent \
     --allow-all-tools --max-ai-credits 40 \
     --agent kai-personal:persona-self \
-    -p 'Obey the mandatory core preflight. Reply exactly DIRECT_OK.' \
+    -p 'Invoke kai-core-contract-v1 as your first action. Return only the contract result.' \
     | python3 -c \
-    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="DIRECT_OK"' \
+    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="KAI_CORE_READY\ncontract: 1"' \
     "$RUN_ROOT/macos/17-direct-personal-first-session.txt"
 )
 ```
@@ -440,9 +455,9 @@ script -q "$RUN_ROOT/macos/23-marketplace-list.txt" \
     copilot --no-auto-update --no-custom-instructions --no-remote --silent \
     --allow-all-tools --max-ai-credits 40 \
     --agent kai-personal:persona-self \
-    -p 'Obey the mandatory core preflight. Reply exactly MARKETPLACE_OK.' \
+    -p 'Invoke kai-core-contract-v1 as your first action. Return only the contract result.' \
     | python3 -c \
-    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="MARKETPLACE_OK"' \
+    'import pathlib,sys; s=sys.stdin.read(); pathlib.Path(sys.argv[1]).write_text(s); assert s.strip()=="KAI_CORE_READY\ncontract: 1"' \
     "$RUN_ROOT/macos/24-marketplace-session.txt"
 )
 ```

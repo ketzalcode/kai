@@ -561,11 +561,14 @@ This closes the architecture question: a consumer repository's default-branch
 a default-marketplace plugin. No Kai `main` setting, Kai marketplace entry, pack
 publication, or release metadata change is required.
 
-One reliability limitation remains for `principal-sre`, not architecture, to
-accept or reject: exported Actions events omit the `task` arguments, cloud
-session storage has no rows for the sessions, and repository
-`subagentStart`/`preToolUse` hooks did not fire. The exact selected agent is
-therefore linked by the host-persisted task prompt and successful nested
-contract invocation rather than a separate selected-agent event. The
-disposable repository must remain only through evidence review and then be
-deleted.
+The first reliability review found that exported Actions events alone did not
+causally bind the selected child. Cloud session storage subsequently ingested
+the missing host records for session
+`410d2bc8-30e7-401a-ad12-13233c09a1f2`: the `task` request names
+`kai-personal:persona-self`, and host-authored begin/end markers bracket that
+subagent's nested `kai-core-contract-v1` invocation. This closes the identity
+gap without relying on final model text. GitHub history also binds the mutable
+direct specs to Kai `main` revision
+`fe562b9364256b159d7016d8bdc79d989bc7e3a3` at the cloud resolution
+timestamps. The disposable repository must remain only through evidence review
+and then be deleted.
