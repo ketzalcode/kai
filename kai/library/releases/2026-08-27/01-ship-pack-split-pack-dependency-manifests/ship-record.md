@@ -10,7 +10,8 @@ milestone: five-pack-split-shipped
 source_artifact: kai/coordination/items/pack-split-pack-dependency-manifests.md
 current_path: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md
 canonical_path: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md
-status: release-ready - PR 175 approved; merge and main verification pending
+status: shipped - production verification 7/7 PASS; rollback not invoked
+shipped: 2026-08-27T18:54:26Z - PR 175 merge b3efabee20fdd4f53acd37b98227d67efbf7844a
 related:
   - kai/coordination/threads/pack-split-pack-dependency-manifests.md
   - docs/proposals/pack-architecture.md
@@ -19,15 +20,19 @@ evidence:
   - "reviewed implementation 78a719f0cc32c75c66ddaad4b302985b789a5084"
   - "https://github.com/RubenSaucedo/kai/pull/175"
   - "https://github.com/RubenSaucedo/kai/actions/runs/33104688494"
+  - "PR head 0bf33275c86f740a0046c6ddafe42806fa4d5498"
+  - "merge b3efabee20fdd4f53acd37b98227d67efbf7844a"
+  - "https://github.com/RubenSaucedo/kai/actions/runs/33105744364"
+  - "https://github.com/RubenSaucedo/kai/releases/tag/v0.65.0"
 ---
 
 # Ship Record - Generated-Pack Dependency Manifests
 
 **Work item:** `pack-split-pack-dependency-manifests`
-**Date:** PREPARE 2026-08-27 11:50 -07:00
+**Date:** PREPARE 2026-08-27 11:50 -07:00; CONFIRM 2026-08-27 11:55 -07:00
 **Run:** `workflow-ship`
 
-**What is ready:** every generated pack has deterministic npm metadata; core
+**What shipped:** every generated pack has deterministic npm metadata; core
 and personal install a prebuilt Lectoria artifact through pack-local locks;
 runtime sources and integrity fail closed before publication.
 
@@ -43,6 +48,8 @@ runtime sources and integrity fail closed before publication.
 | 6 | coordination-closed | **Clear** | Acceptance is complete, the dependency is `pack-split-host-gates (completed)`, no questions are open, the exact completed review matches the item `change_ref`, and the deploy handoff below names merge, release, rollback, and verification. |
 
 **Readiness verdict: RELEASE-READY.** Six of six dimensions are Clear.
+**Completion verdict: SHIPPED.** Production verification passed 7 of 7 checks;
+rollback was not invoked.
 
 ## Artifact boundary
 
@@ -140,3 +147,22 @@ Return these facts to this record:
 6. Exact Lectoria resolved URL and integrity in root/core/personal.
 7. `pack-preview --check` result at merged main.
 
+## Production verification outcome
+
+| # | Check | Result |
+|---|-------|--------|
+| 1 | reviewed ancestry | Reviewed implementation `78a719f0…` is an ancestor of PR head `0bf33275…`; every later path is coordination, initiative, or this release record. **PASS** |
+| 2 | deployment | PR #175 merged at `2026-08-27T18:53:41Z` as `b3efabee20fdd4f53acd37b98227d67efbf7844a`. **PASS** |
+| 3 | main validation | Run `33105744364` succeeded at the exact merge SHA. `contract`, `runtime-dependencies (kai-core)`, and `runtime-dependencies (kai-personal)` all concluded success; core provider-root probing passed. **PASS** |
+| 4 | release | `v0.65.0` is a non-draft, non-prerelease GitHub release published at `2026-08-27T18:54:26Z`; its lightweight tag targets the exact merge commit. **PASS** |
+| 5 | version and topology | Root package/plugin, marketplace metadata/entry, and core/personal package/plugin versions are all `0.65.0`; README and CHANGELOG agree. Marketplace remains N=1, `kai` at source `.`; packs remain unpublished. **PASS** |
+| 6 | dependency clamp | Root, core, and personal specs and locks carry the exact sanctioned HTTPS Lectoria URL and full SHA-512. **PASS** |
+| 7 | generated parity | `node scripts/pack-preview.mjs --check` reports `packs/ matches the generator` on merged main. **PASS** |
+
+The only CI annotations are GitHub's platform notice that `actions/checkout@v4`
+and `actions/setup-node@v4` declare the deprecated Node 20 action runtime and
+are being forced to Node 24. They did not affect any conclusion and are not a
+product failure in this item.
+
+**Rollback was not invoked.** Release 12b remains NO-GO; no generated pack was
+published and the marketplace install surface did not change.

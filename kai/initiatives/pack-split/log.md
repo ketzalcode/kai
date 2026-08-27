@@ -2804,3 +2804,21 @@ All six Definition-of-Done dimensions are Clear. PR #175 is release-ready for
 the authorized merge and `v0.65.0` release. Packs remain unpublished,
 marketplace topology remains the single monolith entry, and release 12b remains
 NO-GO.
+
+## 2026-08-27 - dependency manifests shipped; onboarding promoted
+
+PR #175 merged as `b3efabee20fdd4f53acd37b98227d67efbf7844a`.
+Main validation run `33105744364` passed all three jobs at that exact commit.
+GitHub release `v0.65.0` is public, non-draft, non-prerelease, and its tag
+targets the merge commit.
+
+Production verification passed 7/7: eight version surfaces and release docs
+agree on `0.65.0`; marketplace remains exactly one monolith entry at source
+`.`; generated packs remain unpublished; root, core, and personal retain the
+exact HTTPS Lectoria URL and SHA-512; and generated trees match the generator.
+`pack-split-pack-dependency-manifests` is **SHIPPED** at v23.
+
+The steward verified all three typed dependencies and promoted exactly one next
+item: `pack-split-onboarding-installer` `proposed -> ready` at v3, priority 20,
+`owner: null`, `next_role: principal-swe-infra`. Releases 12a, 12b, and 12c
+remain proposed. Release 12b remains NO-GO.

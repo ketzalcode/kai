@@ -5,11 +5,11 @@ title: Define generated-pack dependency manifests and install semantics
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: release-ready
+state: shipped
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: null
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -62,14 +62,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-pack-dependency-manifests.md"
     timestamp: 2026-08-27-1149
 change_ref: 78a719f0cc32c75c66ddaad4b302985b789a5084
-version: 20
+version: 23
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1150
+updated: 2026-08-27-1155
 ---
 
 ## Outcome
@@ -93,6 +93,17 @@ remain deterministic and version-coherent.
 - [x] The emitted-tree gate still rejects undeclared bare runtime imports.
 
 ## Evidence
+
+- PR #175 merged at `2026-08-27T18:53:41Z` as
+  `b3efabee20fdd4f53acd37b98227d67efbf7844a`.
+- Main validation run `33105744364` succeeded at the exact merge commit:
+  `contract`, `runtime-dependencies (kai-core)`, and
+  `runtime-dependencies (kai-personal)` all passed.
+- GitHub release `v0.65.0` is published at
+  `https://github.com/RubenSaucedo/kai/releases/tag/v0.65.0`; its tag targets
+  the exact merge commit and is neither draft nor prerelease.
+- Production verification passed 7/7 in
+  `kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md`.
 
 - Host gates established that direct and directory-marketplace installation copy
   plugin files but do not run npm and do not provide `node_modules`; see

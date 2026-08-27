@@ -612,3 +612,59 @@ release 12b remains **NO-GO**.
 - next:      @operator — standing authorization already granted; execute the
              recorded merge/release sequence, then return evidence to
              workflow-ship for production verification.
+
+## HANDOFF 2026-08-27-1153 — @operator -> workflow-ship
+
+- did:       Under the operator's standing authorization, the top-level CLI
+             merged PR #175 without squashing or rebasing. GitHub recorded
+             merge `b3efabee20fdd4f53acd37b98227d67efbf7844a` at
+             `2026-08-27T18:53:41Z`.
+- state:     deploying
+- needs:     Wait for main validation at the exact merge commit and publish
+             the already-prepared `v0.65.0` release only if it succeeds.
+- artifacts: https://github.com/RubenSaucedo/kai/pull/175;
+             https://github.com/RubenSaucedo/kai/actions/runs/33105744364
+- evidence:  PR head `0bf33275c86f740a0046c6ddafe42806fa4d5498`;
+             reviewed ref `78a719f0…` remains in ancestry; all three PR checks
+             succeeded in run `33105645570`.
+- questions: none
+- next:      workflow-ship — confirm deployment completion and perform the
+             production-verification contract.
+
+## NOTE 2026-08-27-1154 — workflow-ship confirm-complete
+
+- did:       Main validation run `33105744364` succeeded at exact merge
+             `b3efabee…`; all three jobs passed. The top-level CLI then
+             published GitHub release `v0.65.0` under the same standing
+             operator authorization. The tag targets the exact merge commit.
+- state:     production-verification
+- needs:     Re-derive version coherence, marketplace topology, pack
+             publication state, exact Lectoria clamps, and generated-tree
+             parity from merged main.
+- artifacts: https://github.com/RubenSaucedo/kai/actions/runs/33105744364;
+             https://github.com/RubenSaucedo/kai/releases/tag/v0.65.0
+- evidence:  Release is non-draft and non-prerelease, published
+             `2026-08-27T18:54:26Z`; tag object resolves to `b3efabee…`.
+- questions: none
+- next:      workflow-ship — run the seven recorded read-only production
+             checks; rollback on any failure.
+
+## HANDOFF 2026-08-27-1155 — workflow-ship -> principal-product-manager
+
+- did:       Production verification passed 7/7. Versions are coherent at
+             `0.65.0`; marketplace remains N=1 at source `.`; packs remain
+             unpublished; all three specs and locks carry the exact Lectoria
+             URL and SHA-512; `pack-preview --check` matches the generator.
+             Moved `production-verification -> shipped`, cleared lifecycle
+             fields, and did not invoke rollback.
+- state:     shipped
+- needs:     Reconcile milestone progress and promote the next dependency-
+             satisfied item without weakening release 12b's NO-GO gate.
+- artifacts: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md;
+             https://github.com/RubenSaucedo/kai/releases/tag/v0.65.0
+- evidence:  PR #175 merge `b3efabee…`; main run `33105744364` success;
+             production verification table 7/7 PASS.
+- questions: none
+- next:      principal-product-manager — promote
+             `pack-split-onboarding-installer` if all three typed dependencies
+             are terminally satisfied.
