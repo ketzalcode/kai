@@ -374,10 +374,11 @@ Soft caps — if you hit one, finish the current page cleanly, mark
 ## Audio handoff (the skill prepares; the agent offers)
 
 The skill leaves `brief.md` narration-ready. It never runs audio. The calling
-agent offers the exact command:
+agent resolves the kai-core provider root from this loaded skill's base
+directory and offers the exact absolute command:
 
 ```
-pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <abs path>\brief.md -Style verbatim -Lang en
+pwsh <resolved kai-core provider root>/scripts/generate-audio.ps1 -Source <abs path>\brief.md -Style verbatim -Lang en
 ```
 
 `.kai/runs/pulse/` is gitignored, so any audio generated under it is

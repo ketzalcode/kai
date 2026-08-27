@@ -5,11 +5,11 @@ title: Define generated-pack dependency manifests and install semantics
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: proposed
+state: in-progress
 resume_state: null
-priority: 20
-owner: null
-next_role: principal-product-manager
+priority: 10
+owner: principal-swe-infra
+next_role: principal-swe-infra
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -26,8 +26,23 @@ touches:
   - scripts/validate-plugin.mjs
   - packs/
   - skills/kai-core-generate-audio/SKILL.md
+  - skills/demo-narrate/SKILL.md
+  - skills/kai-core-pulse-digest/SKILL.md
+  - agents/instructor-teacher.agent.md
+  - agents/instructor-tutor.agent.md
+  - agents/workflow-course-to-audio.agent.md
+  - agents/workflow-weekly-pulse.agent.md
   - scripts/generate-audio.ps1
   - scripts/demo-narrate.mjs
+  - plugin.json
+  - package.json
+  - package-lock.json
+  - .github/plugin/marketplace.json
+  - README.md
+  - CHANGELOG.md
+  - docs/proposals/pack-architecture.md
+  - kai/coordination/
+  - kai/initiatives/pack-split/
 depends_on:
   - item: pack-split-host-gates
     requires: completed
@@ -38,14 +53,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 2
+version: 5
 lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-26-1558
+  holder: principal-swe-infra
+  token: psinfra-1818-dm65
+  version_at_grant: 3
+  acquired: 2026-08-26T18:18:04-07:00
+  expires: 2026-08-26T20:18:04-07:00
+updated: 2026-08-26-1823
 ---
 
 ## Outcome
@@ -70,7 +85,37 @@ remain deterministic and version-coherent.
 
 ## Evidence
 
-- (to be filled after `pack-split-host-gates` settles install behavior).
+- Host gates established that direct and directory-marketplace installation copy
+  plugin files but do not run npm and do not provide `node_modules`; see
+  `kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md`.
+
+## Decision
+
+```text
+canonical root package + lock
+            |
+            v
+ deterministic per-pack projection
+      |                       |
+      v                       v
+ kai-core                 kai-personal
+ package + lock           package + lock
+ lectoria                 lectoria
+ generate-audio.ps1       demo-narrate.mjs
+```
+
+- Runtime dependencies belong to the pack that directly executes them. Core and
+  personal each project the root-pinned Lectoria graph; other packs receive
+  valid empty manifests and lockfiles.
+- Package metadata declares a manual, pack-local
+  `npm ci --prefix "<pack-root>"` path. It does not claim the host installs npm
+  dependencies. Plugin updates may replace `node_modules`.
+- A department invokes the core-owned audio wrapper only after loading
+  `kai-core-generate-audio` and deriving the absolute kai-core root from that
+  skill's provider base directory. It never scans the Copilot cache or assumes
+  sibling plugin layout.
+- Bare runtime imports are allowed only when the same generated pack declares
+  and locks the normalized package name.
 
 ## Notes
 
@@ -84,3 +129,11 @@ remain deterministic and version-coherent.
   changes generated manifests and runtime behavior. It remains `proposed` while
   `scope.current` is `first-pack-extracted`; `host-gates (completed)` is its
   declared prerequisite. Promotion waits for that milestone transition.
+- **Steward promotion 2026-08-26-1806:** `first-pack-extracted` closed with all
+  4 of 4 typed requirements satisfied and `scope.current` advanced to
+  `five-pack-split-shipped`. The sole dependency is reconciled:
+  `pack-split-host-gates` is `completed` (SRE-ratified at
+  `263452126179dd9f3a61183903a26a90c4d6b1c1`). This item moved
+  `proposed -> ready` (v2 -> v3), priority `20 -> 10`, with no owner or lease;
+  `principal-swe-infra` is the next dispatch role. No dependency-manifest
+  behavior was implemented by this promotion.

@@ -1,6 +1,6 @@
 {
   "name": "kai-personal",
-  "version": "0.64.0",
+  "version": "0.65.0",
   "description": "kai personal department pack — the personal roles, over a required kai-core.",
   "agents": "agents",
   "skills": "skills"

@@ -26,14 +26,14 @@ scope:
     - kai-plugins marketplace
   keywords: [pack, kai-core, plugin, partition, preflight, namespace, degraded-mode, marketplace, migration, split, "1.0.0"]
   current:
-    - first-pack-extracted
+    - five-pack-split-shipped
   out_of_scope:
     - Rewriting or re-scoping agent and skill content; this initiative relocates and guards contracts, it does not redesign them.
     - Modifying the host or upstream to add native plugin-dependency declarations; kai supplies prompt-level guarantees only.
     - Cutting 1.0.0 before the phase-3 gates are met; the number is a stability promise, not a refactor marker.
     - Re-litigating department boundaries or adding packs beyond the agreed five once the partition is locked.
   deferred:
-    - Full fleet certification of collision and roster-enumeration behavior. The bounded macOS arm passed on genuine GitHub-hosted Apple Silicon run 33024791572; cloud-host certification remains open after branch task 7160810a-a4e1-43eb-bc97-d6f8e2f53aad provisioned no plugins and was classified indeterminate.
+    - Full fleet certification of collision and roster-enumeration behavior. The bounded macOS arm passed on genuine GitHub-hosted Apple Silicon run 33024791572 and the bounded disposable-consumer cloud arm passed; broader fleet certification remains deferred.
     - A dispatch-probe that fails observably, stronger than roster introspection; noted open in the proposal.
     - Per-pack independent semver decoupled from the core contract version; lockstep for now.
 principles:
@@ -267,3 +267,17 @@ now reconcile the milestone and decide the next scope transition; downstream
 items remain proposed until that pass. Host-gates is GO, packs remain
 unpublished, marketplace topology remains N=1 at source `.`, and release 12b
 remains NO-GO for its remaining prerequisites.
+
+**Superseding steward transition (2026-08-26-1806).**
+PR #174 is merged to `main` as
+`b6db547c41b606c92e78e9d91fab82c554fc7d3d`; main validation run
+`33028413182`, job `98375047081`, succeeded. The disposable consumer repository
+was deleted after evidence preservation. The steward therefore closes
+`first-pack-extracted` at 4 of 4 typed requirements and advances
+`scope.current` to `five-pack-split-shipped`.
+`pack-split-pack-dependency-manifests` is the sole promoted item:
+`proposed -> ready`, priority 10, owner and lease clear, next role
+`principal-swe-infra`. Onboarding and releases 12a/12b/12c remain `proposed`.
+Release 12b remains **NO-GO** because dependency manifests, onboarding, and
+release 12a remain unmet. Packs remain unpublished; marketplace topology,
+versions, and release state are unchanged.

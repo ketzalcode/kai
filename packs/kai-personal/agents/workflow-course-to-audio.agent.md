@@ -174,7 +174,7 @@ Folder: <workspace>/.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/
 - source.md     <Status: ok | partial | …>
 
 Ready when you are. To narrate:
-  pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <full path to module.md> -Style verbatim -Lang en
+  pwsh <resolved kai-core provider root>/scripts/generate-audio.ps1 -Source <full path to module.md> -Style verbatim -Lang en
 
 (Add -Lang en,es if you want both. -DryRun first if you want to see the cost shape.)
 
@@ -185,6 +185,10 @@ When you get back from your walk, open questions.md and self-test.
 "and then run it" — confirm explicitly, because audio generation costs
 Azure tokens. The pattern is: extraction is free + fast + safe to
 re-run; audio is paid + slow + worth thinking about before pressing go.
+
+Before printing the command, load `kai-core-generate-audio` and replace
+`<resolved kai-core provider root>` with the absolute provider root derived
+from that skill's base directory. Never derive it from this personal pack.
 
 **Zone & promotion (see `kai-core-workspace-conventions`).** Course extraction is
 **personal learning**: the draft lives ephemeral in `.kai/runs/learn/`, and if

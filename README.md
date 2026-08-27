@@ -31,16 +31,17 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.64.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v0.65.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
 **The first generated pack slice is committed: `kai-core` + `kai-personal`.**
 Root remains the canonical source; generation copies agents, skills, routed
 scripts, each script's local module closure, and the fleet hooks exactly once.
 These trees are deliberately **unpublished and not installable from the
-marketplace**. They carry no npm manifests yet, so optional Lectoria execution
-inside a pack resolves only through `LECTORIA_BIN` or `PATH` until publication
-owns dependency installation.
+marketplace**. Each now carries a deterministic, lockstep `package.json` and
+`package-lock.json`. Copilot copies plugin files but does not run npm, so
+optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;
+ordinary pack behavior needs no dependency installation.
 
 The pack migration remains checkable before it is possible:
 `npm run doctor:migration` is a read-only report on whether a host may install

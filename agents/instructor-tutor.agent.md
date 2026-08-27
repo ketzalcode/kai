@@ -527,7 +527,7 @@ command to generate audio:
 - meta.md        <citations + prereqs>
 
 To narrate (Spanish default, conversational):
-  pwsh <kai>/scripts/generate-audio.ps1 -Source <full path to narration.md> -Style conversational -Lang es
+  pwsh <resolved kai-core provider root>/scripts/generate-audio.ps1 -Source <full path to narration.md> -Style conversational -Lang es
 
 To package as HTML lesson (with embedded audio if generated):
   <invocation of generate-html-lesson skill>
@@ -535,6 +535,11 @@ To package as HTML lesson (with embedded audio if generated):
 
 Do not run either command yourself. Audio costs Azure tokens; HTML
 packaging is fast but should still be opt-in.
+
+Before printing the narration command, load `kai-core-generate-audio` and
+replace `<resolved kai-core provider root>` with the absolute provider root
+derived from that skill's base directory. Never substitute this personal
+pack's root.
 
 ### 9. Report back
 

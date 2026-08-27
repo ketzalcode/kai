@@ -48,14 +48,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-host-gates.md"
     timestamp: 2026-08-26-1803
 change_ref: 263452126179dd9f3a61183903a26a90c4d6b1c1
-version: 16
+version: 17
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-26-1805
+updated: 2026-08-26-1806
 ---
 
 ## Outcome
@@ -132,6 +132,12 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
   `263452126179dd9f3a61183903a26a90c4d6b1c1` ratified the gate with
   P0/P1/P2 = `0/0/0`. All prior findings are closed. The knowledge item may
   close `completed`.
+- PR #174 was subsequently merged to `main` as
+  `b6db547c41b606c92e78e9d91fab82c554fc7d3d`; main validation run
+  `33028413182`, job `98375047081`, succeeded at that merge.
+- After the evidence was preserved and SRE review completed, the authorized
+  disposable consumer repository
+  `RubenSaucedo/kai-pack-host-gate-consumer` was deleted.
 - The amended decision and next experiment are recorded at
   `kai/initiatives/pack-split/artifacts/decisions/pack-split-host-gates.md`.
   Release 12b remains explicitly **NO-GO**.
@@ -180,3 +186,7 @@ hard gate that must pass before the `1.0.0` flip. Closes `completed` (evidence r
 - **Completion 2026-08-26-1805:** SRE ratified the exact corrected revision.
   The item moved `in-review -> completed` (v15 -> v16). Host-gates is GO;
   release 12b stays NO-GO only for its remaining downstream prerequisites.
+- **Post-completion reconciliation 2026-08-26-1806:** PR #174 is merged and
+  main validation is green at the merge SHA; the disposable consumer
+  repository is deleted after evidence preservation. The item remains
+  `completed` (v16 -> v17); this records evidence and cleanup only.

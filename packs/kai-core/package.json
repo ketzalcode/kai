@@ -1,0 +1,11 @@
+{
+  "name": "kai-core",
+  "version": "0.65.0",
+  "private": true,
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "dependencies": {
+    "lectoria": "github:RubenSaucedo/lectoria#c284b6cdeef96591be31201444ffebcaa463ba0c"
+  }
+}

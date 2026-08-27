@@ -2762,3 +2762,28 @@ Independent SRE re-review ratified exact
 All 4 of 4 `first-pack-extracted` requirements are satisfied. Release 12b
 remains NO-GO for dependency manifests, onboarding, and release 12a. No pack,
 marketplace entry, version, tag, or release changed.
+
+## 2026-08-26 — steward transition: first pack closed; dependency manifests ready
+
+`principal-product-manager` reconciled the merged host-gate evidence. PR #174
+is on `main` as `b6db547c41b606c92e78e9d91fab82c554fc7d3d`; main validation run
+`33028413182`, job `98375047081`, succeeded. The authorized disposable
+consumer repository `RubenSaucedo/kai-pack-host-gate-consumer` was deleted
+after evidence preservation. The terminal host-gates record remains
+`completed` and is now v17 after this evidence-only reconciliation.
+
+`first-pack-extracted` is **CLOSED** with all 4 of 4 typed required items at
+their declared terminal states. The steward advanced `scope.current` to
+`five-pack-split-shipped`.
+
+Exactly one item was promoted:
+`pack-split-pack-dependency-manifests` `proposed -> ready` (v2 -> v3),
+priority 10, `owner: null`, lease clear, `next_role: principal-swe-infra`.
+Its sole dependency, `pack-split-host-gates (completed)`, is satisfied. It is
+the sole executable item.
+
+No later dependent item moved: onboarding and releases 12a/12b/12c remain
+`proposed`. Release 12b remains **NO-GO** because dependency manifests,
+onboarding, and release 12a are unmet. This pass implemented no manifest
+behavior, published no pack, changed no marketplace topology or version, and
+performed no release action.

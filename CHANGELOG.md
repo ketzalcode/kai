@@ -4,6 +4,34 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [0.65.0] - 2026-08-26
+
+### Added
+
+- **Deterministic dependency manifests for every generated pack.** The generator
+  projects exact runtime dependency specs from the canonical root
+  `package.json` and the reachable lock graph from `package-lock.json`. Core and
+  personal declare the pinned Lectoria dependency; packs with no runtime
+  dependencies receive valid empty manifests and lockfiles.
+
+- **Declared-import enforcement at the emitted boundary.** Generated JavaScript
+  may use a bare runtime import only when the same pack declares and locks its
+  package. Built-ins and relative-module closure keep their existing checks,
+  while undeclared or unlocked imports fail by package name.
+
+### Changed
+
+- **Audio installation is truthful for installed packs.** Copilot copies plugin
+  files but does not run npm. The core audio wrapper and personal demo narrator
+  now resolve `LECTORIA_BIN`, then their own pack-local pinned install, then
+  PATH, and prescribe `npm ci --prefix "<pack-root>"` when Lectoria is absent.
+  The guidance also states that plugin updates may replace `node_modules`.
+
+- **Departments resolve core executables through the loaded core skill
+  provider.** Personal agents derive the absolute kai-core root from
+  `kai-core-generate-audio` rather than assuming a monolith checkout, sibling
+  directory, or Copilot cache layout.
+
 ## [0.64.0] - 2026-08-26
 
 ### Added
@@ -2875,6 +2903,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[0.65.0]: https://github.com/RubenSaucedo/kai/compare/v0.64.0...v0.65.0
 [0.64.0]: https://github.com/RubenSaucedo/kai/compare/v0.63.1...v0.64.0
 [0.63.1]: https://github.com/RubenSaucedo/kai/compare/v0.63.0...v0.63.1
 [0.63.0]: https://github.com/RubenSaucedo/kai/compare/v0.62.0...v0.63.0
