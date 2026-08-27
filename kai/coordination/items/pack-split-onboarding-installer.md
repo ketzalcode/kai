@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: workflow-ship
 target: pack-split onboarding guided installer
 artifact_target: null
 context_artifacts:
@@ -44,16 +44,28 @@ review_requirements:
     kind: independent-architecture
   - role: principal-technical-writer
     kind: doc-review
-completed_reviews: []
+completed_reviews:
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
+    verdict: ratified
+    evidence: "kai/coordination/threads/pack-split-onboarding-installer.md"
+    timestamp: 2026-08-27-1255
+  - role: principal-technical-writer
+    kind: doc-review
+    change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-onboarding-installer.md"
+    timestamp: 2026-08-27-1255
 change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
-version: 11
+version: 12
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1245
+updated: 2026-08-27-1255
 ---
 
 ## Outcome
@@ -77,7 +89,7 @@ active until a new session starts.
 - `skills/kai-core-workspace-onboarding/SKILL.md` carries the closed five-pack
   catalog, exact marketplace and install commands, read-only migration gate,
   explicit confirmation, core-first order, per-step checks, final migration
-  check, and complete/partial/blocked result shape.
+  check, and complete/partial/blocked/unknown result shape.
 - The availability gate browses `kai-plugins` before the first install and
   refuses direct repository or subdirectory fallback. With packs still
   unpublished, the guided path stops before mutating plugin state.

@@ -336,3 +336,54 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-architect — final review at
              `82e98bcfe595e6d885843e90aa8a704d4478bb45`.
+
+## REVIEW 2026-08-27-1255 — principal-technical-writer
+
+- change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
+- verdict:    approved
+- findings:   P0 0 / P1 0 / P2 0.
+- evidence:   Deterministic status precedence is exhaustive and truthful; full
+              requested-set availability, conditional session language, exact
+              recovery actions, no-rollback reporting, and release-neutral
+              public copy are all clean. No files edited.
+- next:       principal-swe-architect — complete the final exact-ref
+              architecture ruling.
+
+## REVIEW 2026-08-27-1255 — principal-swe-architect
+
+- change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
+- verdict:    ratified
+- findings:   P0 0 / P1 0 / P2 1. The sole earlier P1 was withdrawn after
+              exact Copilot CLI 1.0.79 help proved `name@marketplace` is
+              supported by both `plugin update` and `plugins enable`.
+              Remaining non-blocking P2: publication must execute the named
+              commands and verify marketplace browse/version output against
+              live published packs.
+- evidence:   `copilot plugin update --help` documents
+              `plugin-name@marketplace-name` and example
+              `spark@copilot-plugins`; `copilot plugins enable --help`
+              documents example `spark@copilot-plugins`. Prior P0/P1 remain
+              closed; generated copies, `0.66.0`, and monolith-only marketplace
+              are clean. No files edited.
+- next:       workflow-ship — run the six-dimension gate. Treat the publication
+              host check as a routed proposal, not a dropped finding.
+
+## HANDOFF 2026-08-27-1255 — principal-swe-architect -> workflow-ship
+
+- did:       Both required reviews now satisfy exact ref
+             `82e98bcfe595e6d885843e90aa8a704d4478bb45`: architecture ratified
+             P0/P1 `0/0`; technical writing approved P0/P1/P2 `0/0/0`.
+             Routed the one publication-only host check to the initiative
+             backlog.
+- state:     in-review
+- needs:     Run all six DoD dimensions, prepare the `0.66.0` ship record, and
+             preserve marketplace N=1 plus unpublished packs.
+- artifacts: skills/kai-core-workspace-onboarding/SKILL.md;
+             agents/workflow-workspace-init.agent.md;
+             scripts/validate-plugin.mjs;
+             kai/initiatives/pack-split/backlog.md
+- evidence:  Full local `npm test`; PR #177 run `33109841093` with contract,
+             core runtime dependencies, and personal runtime dependencies all
+             success.
+- questions: none
+- next:      workflow-ship — PREPARE the release-ready gate.

@@ -2871,3 +2871,11 @@ unknown for unsettled required evidence before plugin mutation; blocked for
 all other known pre-mutation refusals/failures. It also names loaded-plugin
 update recovery and disabled-department recovery, with static pins. Full
 `npm test` passed again; both exact-ref reviews are pending.
+
+Final review at `82e98bcfe595e6d885843e90aa8a704d4478bb45` is
+complete. `principal-technical-writer` approved with P0/P1/P2 `0/0/0`.
+`principal-swe-architect` ratified with P0/P1 `0/0`; its earlier command-shape
+P1 was withdrawn after Copilot CLI 1.0.79 help explicitly documented
+`name@marketplace` for both update and enable. The remaining publication-only
+host execution check is parked in the initiative backlog and must be consumed
+by release 12b/12c. The item remains `in-review`, next `workflow-ship`.
