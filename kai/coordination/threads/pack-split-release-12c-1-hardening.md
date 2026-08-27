@@ -289,3 +289,35 @@ Append-only communication log mirroring
              pack checks passed; exact release guard passed.
 - questions: none
 - next:      principal-sre — approve or return blocking findings.
+
+## REVIEW 2026-08-27-1730 — principal-sre
+
+- ref:       `1ec8d255240136b37de074f001fe2c54c01fea8c`
+- verdict:   blocked — one P1 reliability finding.
+- finding:   A config entry whose provenance was inferred from `cache_path`
+             could agree by value with its tree and authorize the reverse edit
+             despite the existing `unknown-provenance` finding.
+
+## REVIEW 2026-08-27-1731 — principal-security
+
+- ref:       `1ec8d255240136b37de074f001fe2c54c01fea8c`
+- verdict:   blocked — one release-blocking P2, no P0/P1.
+- finding:   Same inferred-provenance authorization gap.
+
+## HANDOFF 2026-08-27-1740 — principal-swe-infra -> principal-sre
+
+- did:       `rollbackReady` now requires the legacy config entry's provenance
+             basis to be recorded. Matching an inferred cache-path value is not
+             sufficient. Added an inferred-legacy rollback fixture that must
+             block without reverse edit or monolith uninstall.
+- state:     in-review
+- needs:     Re-review exact ref
+             `5edd2a42188aba5359379b4104fafdfcada7bafc`; security re-review runs
+             independently against the same ref.
+- artifacts: `scripts/lib/migration-doctor.mjs`;
+             `scripts/workspace-doctor.mjs`;
+             `test/fixtures/host-installs.json`
+- evidence:  Full `npm test` passed; 33 migration scenarios; 178 pack checks;
+             exact release guard passed.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.
