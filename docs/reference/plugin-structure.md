@@ -230,11 +230,15 @@ push.
    `kai@kai-plugins`, then start a fresh session. Never install the restored
    monolith beside packs; the doctor correctly refuses that coexistence.
 5. Reverse the workspace provenance on every workspace already migrated. Run
-   `node <kai-plugin>/scripts/workspace-doctor.mjs --migration-check --root
-   <workspace-root>`: with the monolith restored it reports
+   `node <kai-plugin>/scripts/workspace-doctor.mjs --migration-check --rollback
+   --root <workspace-root>`: the explicit rollback intent first requires the
+   monolith to be installed and enabled, every pack to be absent, and both host
+   evidence surfaces to be readable. Only then does it report
    `workspace-provenance-ahead` and emits the one-key edit that sets
    `.kai/manifest.json` `"plugin"` back to `kai`, plus the re-check that confirms
-   the workspace is healthy afterwards. Run the steps it prints; the doctor
+   the workspace is healthy afterwards. The rollback plan never emits
+   `copilot plugin uninstall kai`; without the explicit mode or complete
+   evidence, no reverse edit is offered. Run the steps it prints; the doctor
    itself changes nothing.
 6. Publish a forward pack restoration in a later patch by returning
    `metadata.installSurface` to `packs`; never leave both surfaces listed.

@@ -564,7 +564,7 @@ function publishedPluginNames(indexPath) {
   } catch { return null; }
 }
 
-function assessHost(host, out) {
+function assessHost(host, out, { rollback = false } = {}) {
   const { add, step } = out;
   const { config, settings, scan, records, unidentified, home } = host;
   const configClassified = config.entries.every((entry) => !entry.malformed);
@@ -687,6 +687,13 @@ function assessHost(host, out) {
   const actionableLegacy = legacy
     && legacyIdentityConfirmed
     && (legacy.entries.length > 0 || (config.ok && config.listed && configClassified));
+  const hostEvidenceComplete = config.present && config.ok && config.listed
+    && configClassified && scan.present && scan.readable && unidentified.length === 0;
+  const legacyEnabled = legacy?.entries.length > 0
+    && legacy.entries.every((entry) => entry.enabled === true);
+  const rollbackReady = Boolean(rollback && actionableLegacy
+    && legacy.presence === 'installed' && legacyEnabled
+    && packs.length === 0 && hostEvidenceComplete);
 
   if (actionableLegacy && packs.length) {
     add('refusal', 'coexistence',
@@ -694,7 +701,7 @@ function assessHost(host, out) {
       + 'both provide the core operating contract, the host binds one of them by load order, and a pack agent can pass its own '
       + 'preflight while running the stale copy. This is refused, not warned through.');
   }
-  if (actionableLegacy) {
+  if (actionableLegacy && !rollback) {
     add('refusal', 'legacy-installed',
       `legacy "${LEGACY_PLUGIN}" is present (${describe(legacy)}) — it must be verifiably uninstalled before any pack is installed.`);
     step(`copilot plugin uninstall ${LEGACY_PLUGIN}`);
@@ -702,6 +709,14 @@ function assessHost(host, out) {
     if (legacy.trees.length) {
       step('confirm every legacy install tree named above is gone; uninstall can leave files behind on some hosts');
     }
+  }
+  if (rollbackReady) {
+    add('note', 'legacy-rollback-restored',
+      `rollback intent is explicit and legacy "${LEGACY_PLUGIN}" is installed, enabled, and the only verified kai surface.`);
+  } else if (rollback) {
+    add('refusal', 'legacy-rollback-unverified',
+      `rollback intent was requested, but legacy "${LEGACY_PLUGIN}" was not verified as the installed, enabled, pack-free surface — `
+      + 'workspace provenance is not safe to reverse.');
   }
 
   const core = records.get(CORE_PLUGIN);
@@ -724,7 +739,7 @@ function assessHost(host, out) {
     add('note', 'nothing-installed',
       `no kai plugin is installed under ${home} — verified by reading ${config.path} and ${scan.dir}.`);
   }
-  return { legacy: actionableLegacy || null, core, departments };
+  return { legacy: actionableLegacy || null, core, departments, rollbackReady };
 }
 
 function assessWorkspace(root, hostSummary, host, out) {
@@ -752,7 +767,7 @@ function assessWorkspace(root, hostSummary, host, out) {
     return provenance;
   }
 
-  const { legacy, core } = hostSummary;
+  const { legacy, core, rollbackReady } = hostSummary;
   const coreInstalled = core?.presence === 'installed';
   const evidenceComplete = host.config.ok && host.config.listed
     && host.scan.present && host.scan.readable && host.unidentified.length === 0;
@@ -778,14 +793,10 @@ function assessWorkspace(root, hostSummary, host, out) {
     add('refusal', 'workspace-provenance-ahead',
       `${provenance.path} records "${CORE_PLUGIN}" while legacy "${LEGACY_PLUGIN}" is still installed — `
       + 'the workspace was migrated ahead of the host, so the recorded provenance is not what is loaded.');
-    // The mirror of the stale case above. On a deliberate rollback to the
-    // monolith the workspace is what has to move, and it moves by the same
-    // one-key edit — so the rollback runbook prescribes no manual step the
-    // doctor cannot emit.
-    step(`if this host is being rolled back to "${LEGACY_PLUGIN}" on purpose, edit ${provenance.path}: `
-      + `set "plugin": "${LEGACY_PLUGIN}" (this one key; every other value stays as written) — `
-      + 'otherwise finish the forward migration above and leave the workspace as written');
-    step('node <kai-plugin>/scripts/workspace-doctor.mjs --root <workspace-root>   # confirm the workspace is healthy after the edit');
+    if (rollbackReady) {
+      step(`edit ${provenance.path}: set "plugin": "${LEGACY_PLUGIN}" (this one key; every other value stays as written)`);
+      step('node <kai-plugin>/scripts/workspace-doctor.mjs --root <workspace-root>   # confirm the workspace is healthy after the edit');
+    }
   } else if (coreInstalled) {
     add('note', 'workspace-provenance-migrated',
       `${provenance.path} records "${CORE_PLUGIN}", matching the installed pack surface — already migrated, re-applying changes nothing.`);
@@ -804,6 +815,7 @@ export function migrationReport({
   home = defaultHome(),
   root = null,
   marketplaceIndexPath = defaultMarketplaceIndex(),
+  rollback = false,
 } = {}) {
   const findings = [];
   const steps = [];
@@ -819,10 +831,10 @@ export function migrationReport({
     out.add('unverified', 'no-host-home',
       `no host home at ${home} — nothing was inspected, so nothing is claimed about what is installed. `
       + 'Set COPILOT_HOME or pass --home <dir> if the CLI keeps its plugins elsewhere.');
-    return finish({ home, root, findings, steps, notices, host, workspace: null });
+    return finish({ home, root, rollback, findings, steps, notices, host, workspace: null });
   }
 
-  const hostSummary = assessHost(host, out);
+  const hostSummary = assessHost(host, out, { rollback });
   const workspace = assessWorkspace(root, hostSummary, host, out);
 
   const published = publishedPluginNames(marketplaceIndexPath);
@@ -834,7 +846,7 @@ export function migrationReport({
     out.notice('plugins load at session start: run the steps above, then start a NEW session before invoking any kai agent.');
   }
 
-  return finish({ home, root, findings, steps, notices, host, workspace });
+  return finish({ home, root, rollback, findings, steps, notices, host, workspace });
 }
 
 // Fail closed: only `clear` means a pack install may proceed. `unknown` is not a

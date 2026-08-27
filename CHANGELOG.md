@@ -27,11 +27,12 @@ serves exactly `kai-core` and `kai-personal`.
 
 ### Fixed
 
-- **Emergency rollback now reverses workspace provenance.** With the monolith
-  restored, the migration doctor emits the one-key edit that points
-  `.kai/manifest.json` back at `kai`, plus the re-check that confirms the result
-  — the mirror of the forward migration step. The rollback runbook no longer
-  carries it as a manual gap.
+- **Emergency rollback now reverses workspace provenance safely.** With explicit
+  `--rollback` intent, the migration doctor first verifies that the monolith is
+  installed and enabled, every pack is absent, and both host evidence surfaces
+  are readable. Only then does it emit the one-key edit that points
+  `.kai/manifest.json` back at `kai`, plus the re-check; it never tells a rollback
+  operator to uninstall the restored monolith.
 - **Unverifiable enabled-state metadata is proven to fail closed.** Host fixtures
   now cover an unreadable `settings.json` and a non-boolean `enabledPlugins`
   value; both blank the enabled state `config.json` declared rather than assuming

@@ -14,7 +14,7 @@
 //
 // Usage:
 //   node scripts/workspace-doctor.mjs [--root <dir>]   validate a workspace
-//   node scripts/workspace-doctor.mjs --migration-check [--home <dir>] [--root <dir>] [--json]
+//   node scripts/workspace-doctor.mjs --migration-check [--rollback] [--home <dir>] [--root <dir>] [--json]
 //   node scripts/workspace-doctor.mjs --self-test      run against bundled fixtures
 //
 // Workspace exit code: 0 = healthy, 1 = invalid.
@@ -353,14 +353,15 @@ function migrationInventory(report) {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function reportMigration({ home, root, json = false }) {
-  const res = migrationReport({ home, root });
+function reportMigration({ home, root, json = false, rollback = false }) {
+  const res = migrationReport({ home, root, rollback });
   if (json) {
     const output = {
       status: res.status,
       codes: res.codes,
       home: res.home,
       root: res.root,
+      rollback: res.rollback,
       findings: res.findings,
       steps: res.steps,
       notices: res.notices,
@@ -779,7 +780,23 @@ const MIGRATION_CASES = [
     label: 'workspace migrated ahead of the host, legacy still installed',
     home: 'legacy-direct', workspace: 'pack', status: 'blocked',
     expect: ['workspace-provenance-ahead', 'legacy-installed'],
-    steps: [/set "plugin": "kai"/, /workspace-doctor\.mjs --root/],
+    steps: [/^copilot plugin uninstall kai$/],
+    forbidSteps: [/set "plugin": "kai"/],
+  },
+  {
+    label: 'explicit rollback reverses a migrated workspace without uninstalling the restored monolith',
+    home: 'legacy-direct', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['legacy-rollback-restored', 'workspace-provenance-ahead'],
+    forbid: ['legacy-installed', 'legacy-rollback-unverified', 'coexistence'],
+    steps: [/^edit .*set "plugin": "kai"/, /workspace-doctor\.mjs --root/],
+    forbidSteps: [/^copilot plugin uninstall kai$/, /confirm no "kai" row/, /confirm every legacy install tree/],
+  },
+  {
+    label: 'completed rollback has matching monolith workspace provenance',
+    home: 'legacy-direct', workspace: 'monolith', rollback: true, status: 'clear',
+    expect: ['legacy-rollback-restored', 'workspace-provenance-current'],
+    forbid: ['legacy-installed', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    noSteps: true, noRefusal: true,
   },
   {
     label: 'workspace manifest unreadable',
@@ -880,13 +897,16 @@ function migrationSelfTest() {
     for (const c of MIGRATION_CASES) {
       const home = join(tmpRoot, 'homes', c.home);
       const root = c.workspace ? join(tmpRoot, 'workspaces', c.workspace) : null;
-      const res = migrationReport({ home, root });
+      const res = migrationReport({ home, root, rollback: c.rollback ?? false });
       const problems = [];
       if (res.status !== c.status) problems.push(`status "${res.status}", expected "${c.status}"`);
       for (const code of c.expect ?? []) if (!res.codes.includes(code)) problems.push(`missing finding "${code}"`);
       for (const code of c.forbid ?? []) if (res.codes.includes(code)) problems.push(`unexpected finding "${code}"`);
       for (const re of c.steps ?? []) {
         if (!res.steps.some((s) => re.test(s))) problems.push(`no remediation step matching ${re}`);
+      }
+      for (const re of c.forbidSteps ?? []) {
+        if (res.steps.some((s) => re.test(s))) problems.push(`unexpected remediation step matching ${re}`);
       }
       for (const re of c.notices ?? []) {
         if (!res.notices.some((n) => re.test(n))) problems.push(`no notice matching ${re}`);
@@ -1000,7 +1020,15 @@ if (isEntry) {
     const rootArg = value('--root');
     const cwdIsWorkspace = existsSync(join(process.cwd(), '.kai', 'manifest.json'));
     const root = rootArg ? resolve(rootArg) : (cwdIsWorkspace ? process.cwd() : null);
-    process.exit(reportMigration({ home, root, json: argv.includes('--json') }));
+    process.exit(reportMigration({
+      home,
+      root,
+      json: argv.includes('--json'),
+      rollback: argv.includes('--rollback'),
+    }));
+  } else if (argv.includes('--rollback')) {
+    console.error('--rollback requires --migration-check');
+    process.exit(1);
   } else {
     const root = value('--root') ? resolve(value('--root')) : process.cwd();
     process.exit(report(root, checkWorkspace(root)));

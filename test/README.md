@@ -113,7 +113,7 @@ reject, not in a shipped manifest.
 
 The same script carries the read-only pack-migration check (#29): what this
 **host** has installed, where each install came from, and whether a pack install
-may proceed. `--self-test` runs it over a 28-scenario matrix and asserts each
+may proceed. `--self-test` runs it over a 30-scenario matrix and asserts each
 verdict exactly — `clear` (may proceed), `blocked` (refused), `unknown` (the
 evidence did not settle it). A case that must be `unknown` failing as `clear` is
 a test failure, because "unverified" reported as success is the bug this check
