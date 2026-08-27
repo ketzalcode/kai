@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: principal-swe-infra
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -53,14 +53,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: e67057ec061e9799cf7300bce972305ab01a7603
-version: 7
+version: 8
 lease:
-  holder: principal-swe-architect
-  token: arch-1827-dm65
-  version_at_grant: 6
-  acquired: 2026-08-26T18:27:51-07:00
-  expires: 2026-08-26T20:27:51-07:00
-updated: 2026-08-26-1827
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-26-1828
 ---
 
 ## Outcome
@@ -74,7 +74,7 @@ remain deterministic and version-coherent.
 
 - [x] Host evidence states whether marketplace and direct plugin installation
       run `npm install` or provide `node_modules` in each pack root.
-- [x] Lectoria remediation in the canonical skill and scripts is truthful for
+- [ ] Lectoria remediation in the canonical skill and scripts is truthful for
       an installed pack; root remains the single source and generated copies are
       never edited directly.
 - [x] A core-owned executable invoked by a department has one documented,
@@ -102,6 +102,13 @@ remain deterministic and version-coherent.
   completed successfully.
 - Packs remain unpublished and marketplace topology remains the monolith-only
   entry at source `.`. Release 12b remains NO-GO.
+- Independent architecture review at exact change ref
+  `e67057ec061e9799cf7300bce972305ab01a7603` returned
+  **changes-required**: the projected Lectoria record resolves through
+  `git+ssh://git@github.com/...`, so the documented manual `npm ci` recovery is
+  not portable to users without GitHub SSH authentication. Full evidence and
+  exact corrections are in
+  `kai/coordination/threads/pack-split-pack-dependency-manifests.md`.
 
 ## Decision
 

@@ -1347,3 +1347,11 @@ to `principal-swe-architect` with no live lease. Full `npm test`, the 157-check
 pack self-test, committed-tree drift, and both temporary pack installs passed.
 The prior "uncommitted and unreviewed" sentence is superseded for commit state
 only: independent review is still pending. Release 12b remains NO-GO.
+
+**Superseding architecture review 2026-08-26-1828.**
+Architecture returned **changes-required** at exact `e67057ec…`: projected
+Lectoria locks use `git+ssh`, so manual `npm ci` is not portable to users
+without GitHub SSH authentication. The item stays `in-review`, routes back to
+`principal-swe-infra`, and requires an HTTPS-pinned graph, a credential-free
+install probe, and a new change ref. Packs remain unpublished; release 12b
+remains NO-GO.

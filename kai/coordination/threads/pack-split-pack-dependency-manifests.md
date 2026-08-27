@@ -138,3 +138,154 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-architect — perform the independent review under
              token `arch-1827-dm65`.
+
+## REVIEW 2026-08-26-1828 — independent architecture
+
+- role:       principal-swe-architect
+- kind:       independent-architecture
+- change_ref: `e67057ec061e9799cf7300bce972305ab01a7603`
+- parent:     `b6db547c41b606c92e78e9d91fab82c554fc7d3d`
+- verdict:    **changes-required**
+- disposition: **Reshape** — preserve the pack-local ownership and deterministic
+               projection, but make the pinned source fetchable without an
+               unrelated GitHub SSH credential.
+- findings:   P0 0 / P1 1 / P2 0
+
+### Decision and forces
+
+The decision is whether this exact revision establishes a truthful,
+deterministic runtime-dependency seam for copied-but-not-installed packs.
+The controlling forces are: the host supplies neither `npm install` nor
+`node_modules`; runtime dependencies must not leak across plugin roots; manual
+recovery must work for an ordinary consumer; generation must not solve or fetch;
+and the marketplace/publication boundary must not move in this PR.
+
+The reviewed shape is:
+
+```text
+ canonical package.json + lock
+             |
+             | deterministic projection (no network)
+             v
+   +---------------------+       provider-root invocation
+   | kai-core            | <---------------- personal agent
+   | package + lock      |
+   | node_modules/.bin   |----> generate-audio.ps1
+   +---------------------+
+
+   +---------------------+
+   | kai-personal        |
+   | package + lock      |----> demo-narrate.mjs
+   | node_modules/.bin   |
+   +----------+----------+
+              |
+              | current locked fetch
+              v
+   git+ssh://git@github.com/RubenSaucedo/lectoria.git#<SHA>
+              X requires unrelated GitHub SSH authentication
+```
+
+### Findings by severity
+
+#### P1 — Manual pack remediation is credential-coupled to GitHub SSH
+
+`package.json` declares Lectoria by immutable GitHub shorthand, while the exact
+root lock record and both projected pack lockfiles resolve it as
+`git+ssh://git@github.com/RubenSaucedo/lectoria.git#c284b6c…`. The product
+contract tells any installed-pack user to run `npm ci --prefix "<pack-root>"`,
+but SSH access to GitHub requires a configured key added to a GitHub account.
+The successful temporary installs prove this workstation can install the graph;
+they do not prove the documented recovery works on a consumer with no SSH
+identity. That makes the manifests deterministic but not yet generally useful
+or truthful as the sole pack-local remediation path.
+
+Evidence:
+
+- `package-lock.json`, `packages["node_modules/lectoria"].resolved`
+- `packs/kai-core/package-lock.json`, same projected record
+- `packs/kai-personal/package-lock.json`, same projected record
+- `skills/kai-core-generate-audio/SKILL.md` and
+  `skills/demo-narrate/SKILL.md`, which prescribe pack-local `npm ci`
+- GitHub's SSH guidance requires an SSH key and account registration:
+  https://docs.github.com/en/authentication/connecting-to-github-with-ssh
+
+Exact corrective changes required:
+
+1. Change the canonical Lectoria dependency to an immutable explicit HTTPS git
+   source at the same commit (or another credential-free immutable artifact
+   that still runs the required prepare build).
+2. Regenerate the root lock and generated core/personal package files so no
+   required Lectoria fetch resolves through `git+ssh`.
+3. Add a fail-closed validator/self-test preventing a generated runtime
+   dependency advertised for manual installation from projecting an SSH fetch.
+4. Re-run core and personal `npm ci` on a supported Node version in a clean
+   environment with no usable SSH key/config, then probe both pack-local
+   Lectoria executables and the core provider-root wrapper path.
+5. Mint a new implementation `change_ref` and repeat independent architecture
+   review.
+
+### Architecture questions
+
+1. **Pack ownership/provider root — sound.** Core and personal each own the
+   dependency they directly execute. `generate-audio.ps1` resolves only core's
+   local bin; `demo-narrate.mjs` resolves only personal's local bin. Department
+   instructions derive the core wrapper from the loaded
+   `kai-core-generate-audio` provider root rather than cross-plugin
+   `node_modules` discovery or sibling/cache scanning.
+2. **Lock projection — sound apart from fetch transport.** The projection walks
+   required dependency edges and present optional/peer edges using the existing
+   lock, sorts emitted records, performs no solving or network access, and
+   throws on missing required records. Both selected pack locks were structurally
+   accepted by `npm ci`; the Node 24.14.0 `EBADENGINE` warning is not treated as
+   supported-version evidence.
+3. **Validators — sound.** Generated package and lock bytes must equal the root
+   projection. Emitted JavaScript bare imports require same-pack declaration
+   and a top-level lock record; Node built-ins remain exempt and relative
+   imports retain closure validation. Missing, malformed, drifted, undeclared,
+   and unlocked mutation arms are present.
+4. **Manifest truth — blocked by P1.** The host/update-survival wording is
+   honest, and manual install is the right seam, but its current SSH fetch adds
+   an unstated credential prerequisite.
+5. **Bounded scope — sound.** The exact change keeps the marketplace at the
+   single `kai` entry sourced from `.`, publishes no pack, adds no onboarding
+   flow, and does not flip release 12b. Version `0.65.0` remains pre-1.0 release
+   hygiene only.
+6. **Future five-pack/selected slice — sound.** Runtime plans exist for all five
+   packs, empty packs receive valid root-only locks, selected generation emits
+   only selected packs, and validators derive selected packs from emitted
+   manifests. No additional P0/P1/P2 flaw was found.
+
+### Scope truths and handoff
+
+- This correction is **refine-in-scope**: credential-free manual installation
+  is part of the committed dependency contract, not a new onboarding or
+  publication capability.
+- Packs remain committed and unpublished.
+- Marketplace topology remains monolith-only.
+- Release 12b remains **NO-GO**.
+- `completed_reviews` remains empty because this revision is not ratified.
+- state remains `in-review`; lease is cleared; next role is
+  `principal-swe-infra`.
+
+## HANDOFF 2026-08-26-1828 — principal-swe-architect -> principal-swe-infra
+
+- did:       Reviewed exact change ref `e67057ec061e9799cf7300bce972305ab01a7603`
+             and returned changes required with P0/P1/P2 = 0/1/0.
+- state:     in-review
+- needs:     Replace the SSH-resolved Lectoria source with an immutable
+             credential-free source, regenerate root and pack locks, add the
+             transport refusal test, prove clean no-SSH installs on supported
+             Node, and mint a new change ref for re-review.
+- artifacts: kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/BOARD.md;
+             kai/coordination/ACTIVE.md
+- evidence:  exact root/core/personal lock records at `e67057ec…`; generated
+             package/runtime validators in `scripts/lib/pack-plan.mjs`;
+             provider-local resolvers in `scripts/generate-audio.ps1` and
+             `scripts/demo-narrate.mjs`; GitHub SSH authentication guidance
+             linked in the review.
+- questions: none
+- next:      principal-swe-infra — make the bounded dependency-contract
+             correction and route a new exact revision back for independent
+             architecture review.
