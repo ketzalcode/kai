@@ -387,3 +387,36 @@ Append-only communication log mirroring
              success.
 - questions: none
 - next:      workflow-ship — PREPARE the release-ready gate.
+
+## NOTE 2026-08-27-1257 — workflow-ship prepare lease
+
+- did:       Claimed PREPARE as `ship-1257-onboarding` against item v12 and ran
+             all six Definition-of-Done dimensions at exact reviewed ref
+             `82e98bcfe595e6d885843e90aa8a704d4478bb45`.
+- state:     in-review
+- needs:     Write the proportional release/rollback/verification contract and
+             advance only if every dimension is Clear or waived.
+- artifacts: kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md
+- evidence:  All six dimensions Clear; no UI design sub-gate; publication host
+             residual is durably routed, not dropped.
+- questions: none
+- next:      workflow-ship — move to release-ready and clear the lease.
+
+## HANDOFF 2026-08-27-1257 — workflow-ship -> @operator
+
+- did:       Recorded the `0.66.0` ship plan, moved
+             `in-review -> release-ready`, and cleared the PREPARE lease.
+             Standing operator authorization permits the top-level CLI to
+             execute merge and release without another pause.
+- state:     release-ready
+- needs:     Merge PR #177 preserving reviewed ancestry; wait for exact-main
+             CI; publish `v0.66.0`; verify versions, topology, generated parity,
+             and installer pins. Publish no pack.
+- artifacts: kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md;
+             https://github.com/RubenSaucedo/kai/pull/177
+- evidence:  PR run `33110876495` all success; architecture ratified and
+             technical writing approved at `82e98bcf…`; later paths are
+             record-only.
+- questions: none
+- next:      @operator — execute the authorized ship sequence and return
+             evidence to workflow-ship.

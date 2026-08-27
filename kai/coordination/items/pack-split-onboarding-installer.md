@@ -5,14 +5,15 @@ title: Honest guided onboarding installer — core first, verify each step, no u
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: in-review
+state: release-ready
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: "@operator"
 target: pack-split onboarding guided installer
 artifact_target: null
 context_artifacts:
+  - kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
   - docs/proposals/pack-architecture.md
   - skills/kai-core-workspace-onboarding/SKILL.md
@@ -30,6 +31,7 @@ touches:
   - CHANGELOG.md
   - kai/coordination/
   - kai/initiatives/pack-split/
+  - kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/
 depends_on:
   - item: pack-split-generated-pack-trees
     requires: shipped
@@ -58,14 +60,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-onboarding-installer.md"
     timestamp: 2026-08-27-1255
 change_ref: 82e98bcfe595e6d885843e90aa8a704d4478bb45
-version: 12
+version: 14
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1255
+updated: 2026-08-27-1257
 ---
 
 ## Outcome

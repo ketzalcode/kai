@@ -2879,3 +2879,9 @@ P1 was withdrawn after Copilot CLI 1.0.79 help explicitly documented
 `name@marketplace` for both update and enable. The remaining publication-only
 host execution check is parked in the initiative backlog and must be consumed
 by release 12b/12c. The item remains `in-review`, next `workflow-ship`.
+
+`workflow-ship` ran all six Definition-of-Done dimensions at the reviewed ref;
+all are Clear. The canonical `0.66.0` ship record captures rollback, monitoring,
+and seven production checks. `pack-split-onboarding-installer` is
+**release-ready** at v14. PR #177 may now merge under standing operator
+authorization, but packs remain unpublished and release 12b remains NO-GO.
