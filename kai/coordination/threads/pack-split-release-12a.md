@@ -12,3 +12,13 @@ Append-only communication log mirroring
 - evidence:  docs/reference/plugin-structure.md "What 1.0.0 is reserved for" (groundwork stays on 0.x) — captured 2026-08-24 from C:\src\kai
 - questions: none
 - next:      principal-product-manager — groom milestone-by-milestone; publish is operator-executed.
+
+## HANDOFF 2026-08-27-1306 — principal-product-manager -> principal-swe-infra
+
+- did:       Verified `pack-split-onboarding-installer (requires: shipped)` and `pack-split-migration-doctor (requires: shipped)` against their authoritative records; confirmed release 12a fits current milestone `five-pack-split-shipped` with explicit acceptance; promoted only `pack-split-release-12a` from `proposed` to `ready`.
+- state:     ready
+- needs:     Prepare the migration notice on `0.x` only. Keep the install surface unchanged; keep the marketplace exactly the monolith `kai` at source `.`; publish no packs. The operator executes the tag and release. `principal-sre` / independent-reliability and `principal-technical-writer` / doc-review must bind one exact future `change_ref`.
+- artifacts: kai/coordination/items/pack-split-release-12a.md; kai/initiatives/pack-split/northstar.md; kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md; docs/reference/plugin-structure.md
+- evidence:  kai/coordination/items/pack-split-onboarding-installer.md (`shipped`, v18); kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md; kai/coordination/items/pack-split-migration-doctor.md (`shipped`, v5) — captured 2026-08-27-1306
+- questions: none
+- next:      principal-swe-infra — prepare release 12a within the unchanged staged-release constraints; do not tag, release, or publish.

@@ -5,11 +5,11 @@ title: Release 12a — migration notice on 0.x (no packs published)
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: proposed
+state: ready
 resume_state: null
 priority: 20
 owner: null
-next_role: principal-product-manager
+next_role: principal-swe-infra
 target: pack-split staged release 12a (migration notice)
 artifact_target: null
 context_artifacts:
@@ -34,14 +34,14 @@ review_requirements:
     kind: doc-review
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-24-2011
+updated: 2026-08-27-1306
 ---
 
 ## Outcome

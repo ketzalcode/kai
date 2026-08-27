@@ -2885,3 +2885,33 @@ all are Clear. The canonical `0.66.0` ship record captures rollback, monitoring,
 and seven production checks. `pack-split-onboarding-installer` is
 **release-ready** at v14. PR #177 may now merge under standing operator
 authorization, but packs remain unpublished and release 12b remains NO-GO.
+
+## 2026-08-27 - guided installer shipped
+
+The operator merged PR #177 without squash or rebase as
+`3be962442c6251e35a6524e3952fb3313513e257` at
+`2026-08-27T19:59:23Z`; reviewed ref
+`82e98bcfe595e6d885843e90aa8a704d4478bb45` remains an ancestor and later PR
+changes are record-only. Exact-main validate run `33111113566` succeeded in
+`contract`, `runtime-dependencies (kai-core)`, and
+`runtime-dependencies (kai-personal)`. Public release `v0.66.0` targets the
+exact merge and was published `2026-08-27T20:00:05Z`.
+
+Production verification passed 7/7: all root, marketplace, core, personal, and
+release-document versions are `0.66.0`; marketplace topology remains exactly
+one `kai` plugin at source `.`; no pack entry is published;
+`pack-preview --check` passes; and `validate-plugin` passes at 56 agents/51
+skills. Rollback was not invoked.
+
+`workflow-ship` walked `release-ready` v15 -> `deploying` v16 ->
+`production-verification` v17 -> `shipped` v18, preserved the reviewed
+`change_ref`, and cleared `next_role` plus the lease. This pass promoted no
+downstream work; the steward reconciles next. Release 12b remains **NO-GO**,
+packs remain unpublished, and the marketplace remains monolith-only.
+
+## 2026-08-27-1306 - steward promotion: release 12a ready
+
+The guided installer shipped at v18, and both typed release-12a dependencies
+are shipped: `pack-split-onboarding-installer` and
+`pack-split-migration-doctor`. The steward promoted exactly
+`pack-split-release-12a` from `proposed` to `ready` at v2; no other item moved.

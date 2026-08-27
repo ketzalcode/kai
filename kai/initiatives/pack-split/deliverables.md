@@ -20,7 +20,7 @@ one-way and steward-approved:
 | Core + personal real-install proof | first-pack-extracted | pack-split-first-department | kai/initiatives/pack-split/artifacts/reliability/pack-split-first-department-install.md | **promoted 2026-08-26** → kai/library/releases/2026-08-26/03-ship-pack-split-first-department/ship-record.md | **SHIPPED 2026-08-26** (PR #171; merge `9a800e4e…`; main run `33020918358` success; production verification PASSED 5/5; reviewed `change_ref 3b14dc6…` preserved; no publication/version bump) |
 | Host-gate minimal-smoke evidence | first-pack-extracted | pack-split-host-gates | kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md | — | **COMPLETED 2026-08-26**; macOS + cloud PASS; SRE ratified `2634521…`; PR #174 merged as `b6db547c…`; main validation `33028413182` / `98375047081` succeeded; disposable consumer deleted after evidence preservation; host-gates GO; release 12b still NO-GO |
 | Generated-pack dependency manifest release record (`0.65.0`) | five-pack-split-shipped | pack-split-pack-dependency-manifests | kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md | **SHIPPED 2026-08-27** (PR #175; merge `b3efabee…`; main run `33105744364` success; `v0.65.0`; production verification 7/7 PASS; packs unpublished) |
-| Guided split-pack installer release record (`0.66.0`) | five-pack-split-shipped | pack-split-onboarding-installer | kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md | **RELEASE-READY 2026-08-27** (PR #177; reviewed `82e98bcf…`; dual review clear; packs unpublished) |
+| Guided split-pack installer release record (`0.66.0`) | five-pack-split-shipped | pack-split-onboarding-installer | kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md | **SHIPPED 2026-08-27** (PR #177; merge `3be96244…`; main run `33111113566` success; `v0.66.0`; production verification 7/7 PASS; packs unpublished) |
 
 The **release record** for `pack-split-first-department` is closed at
 `shipped`. `workflow-ship` deliberately restored its prior
@@ -43,6 +43,18 @@ chain. PR #174 merged to `main` as `b6db547c…`; main validation run
 repository was deleted after evidence preservation. The steward closed
 `first-pack-extracted`, advanced scope to `five-pack-split-shipped`, and
 promoted only `pack-split-pack-dependency-manifests`.
+
+The **guided installer release record** is now closed at `shipped`.
+`workflow-ship` walked v15 `release-ready` -> v16 `deploying` -> v17
+`production-verification` -> v18 `shipped`. PR #177 merged without squash or
+rebase as `3be962442c6251e35a6524e3952fb3313513e257`; exact-main run
+`33111113566` passed all three jobs, and public release `v0.66.0` targets that
+merge. Production verification passed 7/7: all version surfaces agree,
+marketplace topology remains one monolith `kai` entry at source `.`, no pack
+entry is published, generated parity passes, and validation reports 56
+agents/51 skills. Rollback was not invoked. The steward promoted exactly
+`pack-split-release-12a` to `ready` v2. Release 12b remains **NO-GO** until
+release 12a ships; packs remain unpublished.
 
 The **release record** for `pack-split-degraded-refusal` was written by `workflow-ship` at the
 2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived —
