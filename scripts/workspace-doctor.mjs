@@ -813,6 +813,13 @@ const MIGRATION_CASES = [
     forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai/],
   },
   {
+    label: 'rollback refuses monolith provenance inferred from cache path',
+    home: 'inferred-legacy-provenance', workspace: 'pack', rollback: true, status: 'blocked',
+    expect: ['unknown-provenance', 'legacy-rollback-unverified', 'workspace-provenance-ahead'],
+    forbid: ['legacy-rollback-restored'],
+    forbidSteps: [/set "plugin": "kai"/, /^copilot plugin uninstall kai/],
+  },
+  {
     label: 'workspace manifest unreadable',
     home: 'absent', workspace: 'malformed', status: 'unknown',
     expect: ['workspace-provenance-unreadable'], noRefusal: true,

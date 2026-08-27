@@ -29,8 +29,9 @@ serves exactly `kai-core` and `kai-personal`.
 
 - **Emergency rollback now reverses workspace provenance safely.** With explicit
   `--rollback` intent, the migration doctor first verifies exactly one
-  identity-consistent monolith install is enabled, every pack is absent, and
-  both host evidence surfaces are readable. Only then does it emit the one-key edit that points
+  identity-consistent monolith install with recorded config provenance is
+  enabled, every pack is absent, and both host evidence surfaces are readable.
+  Only then does it emit the one-key edit that points
   `.kai/manifest.json` back at `kai`, plus the re-check; it never tells a rollback
   operator to uninstall the restored monolith.
 - **Unverifiable enabled-state metadata is proven to fail closed.** Host fixtures

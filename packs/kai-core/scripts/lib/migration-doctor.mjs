@@ -699,6 +699,7 @@ function assessHost(host, out, { rollback = false } = {}) {
     && legacy.mismatches.length === 0
     && !legacy.entries[0].malformed
     && !legacy.trees[0].malformed
+    && legacy.entries[0].basis === 'recorded'
     && legacy.trees[0].declaredName === LEGACY_PLUGIN
     && legacy.entries[0].provenance === legacy.trees[0].provenance
     && records.size === 1;
