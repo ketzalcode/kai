@@ -5,11 +5,11 @@ title: Release 12c-2 — generate and publish kai-product (first three-pack publ
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: proposed
+state: ready
 resume_state: null
 priority: 30
 owner: null
-next_role: principal-product-manager
+next_role: principal-swe-infra
 target: pack-split staged department publish — kai-product
 artifact_target: null
 context_artifacts:
@@ -44,14 +44,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 2
+version: 3
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1523
+updated: 2026-08-27T23:45:12Z
 ---
 
 ## Outcome
@@ -165,3 +165,15 @@ requires `shipped` and is `ready` — unmet. The steward promotes this item in t
 pass that follows `12c-1`'s ship, so the `ready` queue stays an *executable* queue.
 `next_role` stays `principal-product-manager` for that reason; priority 30 stands.
 Record content otherwise unchanged, v1 -> v2. Nothing was dispatched.
+
+### Steward promotion 2026-08-27-1645 (`principal-product-manager`) — `proposed -> ready`
+
+The sole typed dependency is now verified satisfied:
+`pack-split-release-12c-1-hardening` is `shipped` at v14 with public release
+`v1.0.1` and canonical ship record
+`kai/library/releases/2026-08-27/05-ship-pack-split-release-12c-1-hardening/ship-record.md`.
+Promoted this item to `ready` with `next_role: principal-swe-infra`; owner and
+lease remain clear. Priority 30, the confirmed
+`product -> engineering -> gtm` order, outcome, acceptance, review requirements,
+and operator publication boundary are unchanged. This is the sole executable
+next item; nothing was dispatched or implemented.

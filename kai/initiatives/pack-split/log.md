@@ -3244,3 +3244,37 @@ ungenerated and unpublished, `COMMITTED_PACKS` is still `['core', 'personal']`,
 the served marketplace has exactly two entries, and **no milestone or initiative
 closure is claimed**. This pass changed no implementation, generated tree,
 marketplace, version, tag, release, or publication state, and dispatched nothing.
+
+## 2026-08-27-2345Z - release 12c-1 hardening shipped as v1.0.1
+
+`pack-split-release-12c-1-hardening` is **shipped** at reviewed implementation
+`5edd2a42188aba5359379b4104fafdfcada7bafc`. The authorized parent/operator
+merged PR #184 as `815680bbd28faa3aa093b28c741673bb5f3b5207`; exact-main run
+`33126882590` passed all three required jobs, the isolated live probe installed
+exactly `kai-core` + `kai-personal` at `1.0.1` with a clear installed-core
+doctor, and public release `v1.0.1` targets that merge. This was hardening only:
+no department pack was published. Durable record:
+`kai/library/releases/2026-08-27/05-ship-pack-split-release-12c-1-hardening/ship-record.md`.
+`12c-2` remains unpromoted pending `principal-product-manager` reconciliation;
+no milestone or initiative closure is claimed.
+
+## 2026-08-27-1645 - steward pass: 12c-1 reconciled; product publish ready
+
+`pack-split-release-12c-1-hardening` remains truthfully `shipped` as `v1.0.1`;
+its fulfilled steward handoff is cleared without changing the reviewed ref or
+release evidence. `five-pack-split-shipped` is now **open at 5 of 8** typed
+required items.
+
+The sole dependency of `pack-split-release-12c-2-product` is verified
+`shipped`, so the confirmed first department-publish item is promoted
+`proposed -> ready` with `next_role: principal-swe-infra`, owner and lease
+clear. The settled order remains `product -> engineering -> gtm`; this product
+publish is the **sole executable next item**.
+
+The completed review-lens decision handoff is cleared without reopening it.
+`pack-split-release-12c-3-engineering` remains `proposed`, gated on product
+`shipped` plus the already-completed **DO NOT BIND** decision; its record now
+requires zero diff to `agents/workflow-doc-review.agent.md` and the three
+existing review-lens `SKILL_OWNER_OVERRIDES` entries. `12c-4` remains proposed
+behind engineering. No implementation, marketplace, version, release,
+`BOARD.md`, or `ACTIVE.md` change was made; no initiative closure is claimed.

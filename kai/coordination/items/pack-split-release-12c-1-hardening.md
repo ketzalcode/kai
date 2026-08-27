@@ -5,11 +5,11 @@ title: Release 12c-1 — pre-publish surface hardening (rollback derivation, pro
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: product-change
-state: in-review
+state: shipped
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: null
 target: pack-split pre-publish hardening release (1.0.1; no marketplace surface change)
 artifact_target: null
 context_artifacts:
@@ -63,14 +63,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12c-1-hardening.md"
     timestamp: 2026-08-27-1750
 change_ref: 5edd2a42188aba5359379b4104fafdfcada7bafc
-version: 9
+version: 15
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1750
+updated: 2026-08-27T23:45:12Z
 ---
 
 ## Outcome
@@ -112,7 +112,7 @@ step, and cannot land on a CI matrix that ignores it.
       host-measured** (the doctor assumes a bare `name` key where a marketplace install uses
       `name@marketplace`; the one measured host had an empty override map). Documentation only —
       measuring it is parked in the initiative backlog with a revisit trigger.
-- [ ] **(R5)** Before merge, this release records: reviewed-ref ancestry
+- [x] **(R5)** Before merge, this release records: reviewed-ref ancestry
       (`git merge-base --is-ancestor <review> HEAD`), the records-only equivalence diff
       (`git diff --exit-code <review> HEAD -- . ':(exclude)kai/'`), and a **fresh** CI run at the
       actual final head. No merge on an attested equivalence or on a CI run a later records commit
@@ -151,8 +151,16 @@ step, and cannot land on a CI matrix that ignores it.
   queries return only `lectoria`.
 - Independent SRE and security reviews approved the exact implementation ref
   with no P0/P1/P2 findings.
-- Pending: fresh final-head CI, merge, production verification, tag and GitHub
-  release.
+- Reviewed ref is an ancestor of final head `055c5d583491446993598ceb2f8f358dea6fb9ec`;
+  the records-only excluded-path diff was empty.
+- Fresh final-head CI run `33126804646` passed all three required jobs.
+- PR #184 merged as `815680bbd28faa3aa093b28c741673bb5f3b5207`;
+  exact-main run `33126882590` passed all three required jobs.
+- The isolated live marketplace probe found and installed exactly `kai-core` +
+  `kai-personal` at `1.0.1`; the installed doctor was clear.
+- Public non-draft, non-prerelease release:
+  `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.1`; tag target is the
+  merge commit.
 
 ### Build pass 2026-08-27-1612 (`principal-swe-infra`)
 
@@ -291,3 +299,10 @@ in favour of the extra cycle, and the cost is accepted with eyes open.**
   that; a normalizing commit or a `--renormalize` pass is the cheap fix.
 - **Nothing was executed, generated, branched, committed, tagged, published, or merged.**
   See `Q-pack-split-release-12c-1-hardening-01`.
+
+### Steward reconciliation 2026-08-27-1645 (`principal-product-manager`)
+
+The fulfilled post-ship steward handoff is discharged: `next_role` is now
+`null`, while `state: shipped`, release `v1.0.1`, the reviewed `change_ref`,
+both exact-ref approvals, and all release and production evidence remain
+unchanged.

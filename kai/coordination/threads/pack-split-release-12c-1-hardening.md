@@ -355,3 +355,77 @@ Append-only communication log mirroring
 - evidence:  SRE approved 0/0/0; security approved 0/0/0.
 - questions: none
 - next:      workflow-ship — complete the exact-head pre-merge gate.
+
+## CONFIRM-START 2026-08-27-2343Z — workflow-ship
+
+- did:       Reconstructed the six-dimension PREPARE gate as RELEASE-READY,
+             then confirmed the authorized parent/operator started deployment.
+             GitHub records PR #184 merged to production/default branch `main`
+             as `815680bbd28faa3aa093b28c741673bb5f3b5207` at
+             `2026-08-27T23:36:39Z`; exact-main run `33126882590` started at
+             `2026-08-27T23:36:42Z`.
+- state:     deploying (item v12)
+- needs:     Successful exact-main completion at the merge SHA before
+             production verification.
+- artifacts: `kai/library/releases/2026-08-27/05-ship-pack-split-release-12c-1-hardening/ship-record.md`
+- evidence:  `https://github.com/RubenSaucedo/kai/pull/184`;
+             `https://github.com/RubenSaucedo/kai/actions/runs/33126882590`
+- questions: none
+- next:      workflow-ship — CONFIRM-COMPLETE evidence is already supplied;
+             verify it without performing any external action.
+
+## CONFIRM-COMPLETE 2026-08-27-2344Z — workflow-ship
+
+- did:       Confirmed deployment completion from GitHub's successful exact-main
+             run, not from a run URL alone. Run `33126882590` completed
+             `success` at `2026-08-27T23:37:27Z`, head SHA
+             `815680bbd28faa3aa093b28c741673bb5f3b5207`. Jobs `contract`,
+             `runtime-dependencies (kai-core)`, and
+             `runtime-dependencies (kai-personal)` all concluded `success`.
+- state:     production-verification (item v13)
+- needs:     Verify live topology, installs, doctor result, and tag/release
+             integrity against the ship record.
+- artifacts: `kai/library/releases/2026-08-27/05-ship-pack-split-release-12c-1-hardening/ship-record.md`
+- evidence:  `https://github.com/RubenSaucedo/kai/actions/runs/33126882590`
+- questions: none
+- next:      workflow-ship — run the safe read-only production evidence check.
+
+## PRODUCTION VERIFICATION 2026-08-27-2345Z — workflow-ship
+
+- verdict:   PASS — five of five proportional checks in the ship record.
+- exact-main: Run `33126882590`, exact merge `815680b…`, all three required
+              jobs successful.
+- topology:  Merge marketplace is `installSurface: packs`, version `1.0.1`,
+             exactly `kai-core` + `kai-personal`; no monolith or department.
+- host:      The operator's isolated no-ref probe browsed and installed exactly
+             those two at `1.0.1`. Safe local reads corroborated exactly two
+             cache directories and both installed manifests at `1.0.1`.
+- doctor:    Operator evidence reports `status: clear`, `root: null`, no steps;
+             both plugins installed/enabled with only
+             `marketplace:kai-plugins` provenance.
+- release:   GitHub's annotated `v1.0.1` tag peels to `815680b…`; the public
+             release is non-draft, non-prerelease and was published
+             `2026-08-27T23:39:33Z`.
+- boundary:  workflow-ship performed no merge, tag, release, marketplace,
+             install, deploy, or rollback action. Raw probe state remains
+             uncommitted.
+- state:     shipped (item v14); rollback not invoked.
+
+## HANDOFF 2026-08-27-2345Z — workflow-ship -> principal-product-manager
+
+- did:       Closed `pack-split-release-12c-1-hardening` after evidenced
+             deployment and production verification. R5 is checked; reviewed
+             `change_ref 5edd2a42188aba5359379b4104fafdfcada7bafc` and both
+             approvals are retained.
+- state:     shipped (item v14); resume/wait/lease clear.
+- needs:     Steward reconciliation only: refresh derived indexes and decide
+             whether/when to promote `pack-split-release-12c-2-product`.
+- artifacts: `kai/library/releases/2026-08-27/05-ship-pack-split-release-12c-1-hardening/ship-record.md`;
+             `kai/coordination/items/pack-split-release-12c-1-hardening.md`;
+             `kai/initiatives/pack-split/log.md`
+- evidence:  PR #184; final-head run `33126804646`; merge `815680b…`;
+             exact-main run `33126882590`; isolated core+personal `1.0.1`
+             probe; `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.1`
+- questions: none
+- next:      principal-product-manager — reconcile the shipped child. No
+             `12c-2` promotion or BOARD/ACTIVE edit was performed here.
