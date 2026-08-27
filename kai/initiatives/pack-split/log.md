@@ -3032,3 +3032,49 @@ supersedes `33118653686`. The steering fact for the operator: **the merge is the
 publication**, because the marketplace is served from the default branch, so the
 abort window closes at merge rather than at tag, and the host probes run before
 `v1.0.0` is cut.
+
+## 2026-08-27-1447 - release 12b SHIPPED: the 1.0.0 pack flip is live
+
+Authoritative operator evidence closed the highest-blast-radius release in this
+initiative without skipping a state: item v11 `release-ready` -> v12 `deploying`
+-> v13 `production-verification` -> v14 `shipped`. PR #181 merged as
+`88965c4ce564646ce3b935267beb783162ca8b99` at `2026-08-27T21:45:37Z`; because
+the marketplace is served from the default branch, that merge **was** the
+publication. Exact-`main` run `33119614824` carries `headSha 88965c4c…` and
+succeeded in `contract`, `runtime-dependencies (kai-core)`, and
+`runtime-dependencies (kai-personal)`. Public, non-draft, non-prerelease
+`v1.0.0` targets the exact merge and was published `2026-08-27T21:47:13Z`, with
+the tag pointing at the merge SHA.
+
+Production verification passed 8/8. The live default-branch isolated-home probe
+browsed **exactly** `kai-core` + `kai-personal` — the monolith is retired on the
+served surface, not merely in the file — installed both at `1.0.0`, idempotently
+updated both, and the **installed** core doctor reported both records
+installed/enabled at exact `1.0.0` with only `marketplace:kai-plugins`
+provenance. The real current direct-monolith probe still exits 2 with exactly
+`legacy-installed` and `workspace-provenance-current` and no
+`enabled-state-unverified`, so the reconciliation rule the second reliability
+review forced holds on a real host after the flip. Verified read-only at the
+checked-out merge SHA: two-entry marketplace with `installSurface: packs` and no
+monolith; `1.0.0` coherent across every version surface; CHANGELOG `[1.0.0]`
+with its compare link and the README `v1.0.0` stamp; A4(1)
+`release-guard.mjs:22` and A4(2) `validate-plugin.mjs:822` intact; core never
+selectable. Generated parity and the validator are covered by the green
+`contract` job at the merge SHA. Rollback was **not** invoked. The reviewed
+implementation `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` and both exact-ref
+approvals are unchanged.
+
+Both PREPARE stop conditions were satisfied before merge. Reviewed-ref ancestry
+and the records-only equivalence diff passed at final head `2296b521…`;
+final-head run `33119560853` succeeded in all three jobs; and
+`pack-preview --check`, `validate-plugin`, and the exact release guard passed.
+The exact-`main` run then validated the published merge commit.
+
+The three publication acceptance criteria — packs published with core never
+selectable, monolith retired, `1.0.0` cut with every surface agreeing — are now
+complete. `five-pack-split-shipped` is **not** closed: release 12c still
+publishes the engineering, product, and GTM packs the README discloses as
+absent, and today's migrating users lose those roles until it ships. This
+closure satisfies 12c's typed `shipped` dependency but does not promote it; 12c
+remains `proposed` v1 and untouched. The item lease is clear and routes to
+`principal-product-manager` for separate steward reconciliation.

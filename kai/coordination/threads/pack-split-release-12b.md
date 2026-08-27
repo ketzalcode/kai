@@ -338,3 +338,113 @@ Append-only communication log mirroring
              timestamp. `workflow-ship` then runs CONFIRM-START and
              CONFIRM-COMPLETE. A run URL without a successful conclusion is
              not completion; only `workflow-ship` records rollback evidence.
+
+## HANDOFF 2026-08-27-1445 — @operator -> workflow-ship
+
+- did:       **CONFIRM-START evidence accepted.** PR #181 merged as
+             `88965c4ce564646ce3b935267beb783162ca8b99` at
+             `2026-08-27T21:45:37Z`. Because the marketplace is served from
+             the default branch, that merge **is** the publication — the
+             deployment start is the moment `kai-core` + `kai-personal`
+             became installable and the monolith entry stopped being served.
+             Moved item v11 `release-ready` -> v12 `deploying`.
+- state:     deploying
+- needs:     Confirm successful exact-`main` validation at the merge SHA and
+             successful public `v1.0.0` publication at that exact commit
+             before entering production verification.
+- artifacts: https://github.com/RubenSaucedo/kai/pull/181;
+             https://github.com/RubenSaucedo/kai/actions/runs/33119614824;
+             kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md
+- evidence:  Environment: production default branch `main` of
+             `RubenSaucedo/kai` (the served `kai-plugins` marketplace).
+             Version `1.0.0` at `88965c4c…`. Exact-`main` validate run
+             `33119614824` carries `headSha 88965c4c…`. Reviewed
+             implementation `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d`
+             remains this item's `change_ref`; the local reflog records the
+             linear branch chain `236f36d4… -> b0bb79fa… (records) ->
+             2296b521… (PREPARE records)` and a `--ff-only` fast-forward of
+             `main` onto `88965c4c…`.
+- questions: none
+- next:      workflow-ship — confirm deployment completion, then enter
+             production verification.
+
+## NOTE 2026-08-27-1447 — workflow-ship confirm-complete
+
+- did:       **CONFIRM-COMPLETE evidence accepted.** Exact-`main` run
+             `33119614824` succeeded at `headSha 88965c4c…` — the merge SHA,
+             not merely the branch — in all three required jobs. Public
+             `v1.0.0` is non-draft, non-prerelease and targets that exact
+             merge. Moved item v12 `deploying` -> v13
+             `production-verification`.
+- state:     production-verification
+- needs:     Record the production checks named in the ship record and close
+             only if version coherence, publication topology, generated
+             parity, validator, and both host probes all pass. Any failure
+             invokes the recorded forward-patch rollback through the
+             operator, not a revert of a published tag.
+- artifacts: https://github.com/RubenSaucedo/kai/actions/runs/33119614824;
+             https://github.com/RubenSaucedo/kai/releases/tag/v1.0.0;
+             kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md
+- evidence:  Jobs `contract`, `runtime-dependencies (kai-core)`, and
+             `runtime-dependencies (kai-personal)` all succeeded. Tag
+             `v1.0.0` points to the merge SHA; the release was published
+             `2026-08-27T21:47:13Z` with `targetCommitish` equal to the exact
+             merge SHA.
+- questions: none
+- next:      workflow-ship — verify production version coherence, publication
+             topology, generated parity, validator coverage, and both host
+             probes.
+
+## HANDOFF 2026-08-27-1447 — workflow-ship -> principal-product-manager
+
+- did:       **Production verification passed 8/8: SHIPPED.** Walked
+             `release-ready` v11 -> `deploying` v12 ->
+             `production-verification` v13 -> `shipped` v14 without skipping
+             a state. Ticked the three publication acceptance criteria that
+             only deployment could complete, preserved `change_ref
+             236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` and both exact-ref
+             approvals, cleared the lease, and did **not** invoke rollback.
+             kai executed no GitHub, merge, tag, publish, or production
+             action in this run — every deployment act was the operator's.
+- state:     shipped
+- needs:     Steward reconciliation of milestone progress and release 12c
+             eligibility. `five-pack-split-shipped` is **not** closed: 12c
+             still publishes the engineering, product, and GTM packs that
+             README currently discloses as absent. This closure satisfies
+             12c's typed `requires: shipped` dependency but does **not**
+             promote it — 12c stays `proposed` v1, untouched.
+- workspace: C:\src\kai
+- artifacts: kai/coordination/items/pack-split-release-12b.md;
+             kai/coordination/threads/pack-split-release-12b.md;
+             kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md;
+             kai/initiatives/pack-split/log.md
+- evidence:  PR #181 merged as `88965c4c…` at `2026-08-27T21:45:37Z`;
+             exact-`main` run
+             `https://github.com/RubenSaucedo/kai/actions/runs/33119614824`
+             at `headSha 88965c4c…` succeeded in all three jobs; public
+             `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.0`
+             targets the exact merge, published `2026-08-27T21:47:13Z`, tag
+             at the merge SHA. Live default-branch isolated-home probe
+             browsed **exactly** `kai-core` + `kai-personal`, installed both
+             at `1.0.0`, idempotently updated both, and the installed core
+             doctor reported both installed/enabled at exact `1.0.0` with
+             only `marketplace:kai-plugins` provenance. The real
+             direct-monolith probe exits 2 with exactly `legacy-installed` +
+             `workspace-provenance-current` and no
+             `enabled-state-unverified`. Verified read-only at the
+             checked-out merge SHA: two-entry marketplace with
+             `installSurface: packs` and no monolith; `1.0.0` coherent across
+             every version surface; CHANGELOG `[1.0.0]` + compare link;
+             README `v1.0.0`; A4(1) `release-guard.mjs:22`; A4(2)
+             `validate-plugin.mjs:822`; core never selectable
+             (`SKILL.md:31-34`). Parity/validator covered by the green
+             `contract` job at the merge SHA. Before merge, reviewed-ref
+             ancestry and records-only equivalence passed at final head
+             `2296b521…`; final-head run `33119560853` succeeded in all three
+             jobs; `pack-preview --check`, `validate-plugin`, and the exact
+             release guard also passed.
+- questions: none
+- next:      principal-product-manager — perform the separate steward
+             reconciliation; do not infer promotion of release 12c from this
+             shipped dependency. `BOARD.md`/`ACTIVE.md` still carry the stale
+             pre-walk row for this item and are the director's to regenerate.

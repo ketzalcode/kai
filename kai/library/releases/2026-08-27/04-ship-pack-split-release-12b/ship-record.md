@@ -10,8 +10,8 @@ milestone: five-pack-split-shipped
 source_artifact: kai/coordination/items/pack-split-release-12b.md
 current_path: kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md
 canonical_path: kai/library/releases/2026-08-27/04-ship-pack-split-release-12b/ship-record.md
-status: release-ready - PREPARE complete; not deployed, not published, not tagged
-shipped: null
+status: shipped - deployed, published, tagged, and production-verified 8/8
+shipped: 2026-08-27T21:47:13Z
 related:
   - kai/coordination/threads/pack-split-release-12b.md
   - kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md
@@ -22,6 +22,10 @@ evidence:
   - "https://github.com/RubenSaucedo/kai/pull/181"
   - "PREPARE-bound PR head b0bb79faa51dd14bfb0cf7151ed6a16b0f538f92"
   - "https://github.com/RubenSaucedo/kai/actions/runs/33118653686"
+  - "https://github.com/RubenSaucedo/kai/actions/runs/33119560853"
+  - "merge SHA 88965c4ce564646ce3b935267beb783162ca8b99 at 2026-08-27T21:45:37Z"
+  - "exact-main run https://github.com/RubenSaucedo/kai/actions/runs/33119614824 (headSha 88965c4c…, 3/3 jobs success)"
+  - "https://github.com/RubenSaucedo/kai/releases/tag/v1.0.0 published 2026-08-27T21:47:13Z"
   - "kai/coordination/threads/pack-split-release-12b.md"
   - "branch feat/29-release-12b-pack-flip"
 ---
@@ -40,8 +44,12 @@ implementation `236f36d4f7ea5b2cd02cd42f3359bb318b253c4d` · PREPARE-bound head
 `b0bb79faa51dd14bfb0cf7151ed6a16b0f538f92` · branch
 `feat/29-release-12b-pack-flip`
 
-> **Nothing here has been deployed.** This role prepared and gated the release.
-> The merge, tag, release, and publication are `@operator` actions.
+> **PREPARE-time statement (retained):** *"Nothing here has been deployed. This
+> role prepared and gated the release. The merge, tag, release, and publication
+> are `@operator` actions."* That remained true until `2026-08-27T21:45:37Z`.
+> **CONFIRM update:** `@operator` has since executed the deploy handoff; kai
+> executed no merge, tag, publish, or production action at any point. See
+> §CONFIRM for the deployment and production-verification record.
 
 > **Record location.** The caller moved the PREPARE output into its canonical
 > home before committing the release-ready state.
@@ -85,8 +93,8 @@ upstream entries). Real times are recorded here; no history was reordered.
 
 **Readiness verdict: RELEASE-READY.** Six of six dimensions Clear, with two
 attested claims converted into mechanical pre-merge stop conditions.
-**Completion verdict: NOT SHIPPED.** No deployment, publication, tag, or
-production verification has occurred.
+**Completion verdict (updated 2026-08-27 14:47 -07:00): SHIPPED.** Deployed by
+`@operator`, published, tagged, and production-verified 8/8 — see §CONFIRM.
 
 ## Rollout plan
 
@@ -275,6 +283,61 @@ conclusion; the version and topology outputs; parity and validator outputs; both
 host-probe results; and the release URL, tag target, and publication timestamp.
 A run URL without a successful conclusion is not completion.
 
+## CONFIRM — deployment and production verification (2026-08-27 14:45-14:47 -07:00)
+
+**Run:** `workflow-ship` (CONFIRM-START + CONFIRM-COMPLETE). kai performed **no**
+GitHub, merge, tag, publish, or production action in this run; every deployment
+act below was executed by `@operator` and is recorded here, not performed here.
+
+### State walk (no state skipped)
+
+| Step | Transition | Item | Trigger evidence |
+|------|-----------|------|------------------|
+| CONFIRM-START | `release-ready` -> `deploying` | v11 -> v12 | PR #181 merged as `88965c4ce564646ce3b935267beb783162ca8b99` at `2026-08-27T21:45:37Z`; environment = production default branch `main` (the served `kai-plugins` marketplace); version `1.0.0`; exact-`main` run `33119614824` opened at that `headSha`. **The merge is the publication**, so the merge timestamp *is* the deployment start. |
+| CONFIRM-COMPLETE | `deploying` -> `production-verification` | v12 -> v13 | Run [`33119614824`](https://github.com/RubenSaucedo/kai/actions/runs/33119614824) **succeeded** — conclusion, not just a URL — at `headSha 88965c4c…` in `contract`, `runtime-dependencies (kai-core)`, and `runtime-dependencies (kai-personal)`. Public `v1.0.0` published `2026-08-27T21:47:13Z`, non-draft, non-prerelease, `targetCommitish` = the exact merge SHA. |
+| VERIFY | `production-verification` -> `shipped` | v13 -> v14 | The 8/8 table below. Rollback **not** invoked. |
+
+### Production verification — 8/8
+
+| # | Check | Result | How it was established |
+|---|-------|--------|------------------------|
+| 1 | Exact-`main` CI at the merge SHA, all three jobs `success` | **Pass** | Operator evidence: run `33119614824`, `headSha 88965c4c…` = merge SHA, all three required jobs succeeded. |
+| 2 | Reviewed ancestry; later changes confined to `kai/` | **Pass** | Operator evidence: `git merge-base --is-ancestor 236f36d4… HEAD` and `git diff --exit-code 236f36d4… HEAD -- . ':(exclude)kai/'` both passed at final PR head `2296b521…`. Reflog shows the linear records-only chain `236f36d4… -> b0bb79fa… -> 2296b521…` and the merge to `88965c4c…`. |
+| 3 | Version coherence at `1.0.0` | **Pass** | Verified-here: root `plugin.json` `1.0.0`, root `package.json:3` `1.0.0`, marketplace `metadata.version` `1.0.0`, both entry versions `1.0.0`, `packs/kai-core/{plugin,package}.json` `1.0.0`, `packs/kai-personal/{plugin,package}.json` `1.0.0`; `CHANGELOG.md:7` `## [1.0.0] - 2026-08-27` with compare link `:2990`; `README.md:35,39` `v1.0.0`. Also mechanically enforced by the green `contract` job (validate-plugin release hygiene: semver + changelog/README stamp + per-manifest version agreement). |
+| 4 | Publication topology — exactly two pack entries, no monolith | **Pass** | Verified-here: `plugins` length 2 — `kai-core` -> `./packs/kai-core`, `kai-personal` -> `./packs/kai-personal`, `installSurface: packs`, **no `kai` monolith entry**. Confirmed live: the operator's default-branch probe browsed **exactly** `kai-core` + `kai-personal`. The monolith is retired on the served surface, not just in the file. |
+| 5 | `pack-preview --check` + `validate-plugin` | **Pass (transitively, verified-here)** | `.github/workflows/validate.yml` runs `node scripts/validate-plugin.mjs`, `node scripts/pack-preview.mjs --check`, the generator self-test, and all four partition gates inside the `contract` job — which concluded `success` at the merge SHA. |
+| 6 | Isolated-home host probe on the live default branch | **Pass** | Operator evidence: registered `RubenSaucedo/kai`, browsed exactly core + personal, installed `kai-core` then `kai-personal` at `1.0.0`, idempotently updated both, and the **installed** core doctor returned both records installed/enabled at exact `1.0.0` with only `marketplace:kai-plugins` provenance. |
+| 7 | Real current direct-monolith host doctor | **Pass** | Operator evidence: exits 2 with exactly `legacy-installed` and `workspace-provenance-current`, and **no** `enabled-state-unverified` — the reconciliation rule the second reliability review forced still behaves correctly on a real host. |
+| 8 | Tag and release integrity | **Pass** | Operator evidence: tag `v1.0.0` points to the merge SHA; `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.0` is public, non-draft, non-prerelease, `targetCommitish` = exact merge SHA, published `2026-08-27T21:47:13Z`. Corroborated here: `.git/refs/tags/v1.0.0` is an annotated tag object (`691033be…`), consistent with the prescribed `git tag -a`; peeling it was not possible without a shell. |
+
+**No stop condition tripped.** Marketplace topology, version coherence, both
+host probes, CI conclusions, tag target, and release visibility all match the
+pre-recorded pass criteria.
+
+### Reach and limits of this CONFIRM (stated, not glossed)
+
+This run had **no shell and no GitHub API reach**, and was instructed to take no
+GitHub or production action. Therefore:
+
+- **Verified-here** means read directly from the working tree at the
+  checked-out merge SHA (`.git/refs/heads/main` = `88965c4c…`) and from
+  plain-text git metadata (`.git/logs/HEAD`, `.git/refs/tags/v1.0.0`). A
+  residual limit: those are working-tree reads, so uncommitted local edits
+  could not be excluded mechanically.
+- **Operator evidence** means accepted from the dispatch: rows 1, 2, 6, 7, 8 and
+  the merge/publication facts. They were not re-executed here.
+
+### Recorded pre-merge stop conditions — satisfied
+
+1. Reviewed-ref ancestry and records-only equivalence passed at final PR head
+   `2296b5211e5ba07067e0ef3b9de77f92af619f13`.
+2. Fresh final-head run
+   [`33119560853`](https://github.com/RubenSaucedo/kai/actions/runs/33119560853)
+   succeeded in `contract`, `runtime-dependencies (kai-core)`, and
+   `runtime-dependencies (kai-personal)`.
+3. `pack-preview --check`, `validate-plugin`, and the exact release guard all
+   passed immediately before `gh pr merge 181 --merge`.
+
 ## Follow-ups / parked
 
 Carried forward, not dropped — all four are the non-blocking findings from the
@@ -291,13 +354,17 @@ approving SRE and security reviews, already recorded in the item Notes:
 Coordination hygiene:
 
 - `BOARD.md:35` and the `ACTIVE.md` snapshot still show this item as `ready`
-  with `next_role: principal-swe-infra`, predating the `in-progress ->
-  in-review -> release-ready` walk. Both are regenerated index views owned by
-  `director-chief-of-staff`; the item record is authoritative. Flagged for the
-  next regeneration rather than edited here.
+  with `next_role: principal-swe-infra`, now three states stale after the
+  `release-ready -> deploying -> production-verification -> shipped` walk. Both
+  are regenerated index views owned by `director-chief-of-staff`; the item
+  record is authoritative. Flagged for the next regeneration rather than edited
+  here.
 
 Dependents:
 
-- `pack-split-release-12c` requires this item at `shipped` and stays blocked
-  until production verification closes it. It is the item that publishes the
-  engineering, product, and GTM packs the README currently discloses as absent.
+- `pack-split-release-12c` required this item at `shipped`; that dependency is
+  now **satisfied**. It remains `proposed` v1 and untouched — promotion is
+  `principal-product-manager`'s steward call, not an inference from this
+  closure. It is the item that publishes the engineering, product, and GTM
+  packs the README currently discloses as absent, so the
+  `five-pack-split-shipped` milestone stays open.
