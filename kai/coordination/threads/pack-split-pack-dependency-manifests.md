@@ -348,3 +348,40 @@ Exact corrective changes required:
 - questions: none
 - next:      principal-swe-infra — finish the implementation ref and route it
              through CI plus architecture review.
+
+## HANDOFF 2026-08-27-1126 — principal-swe-infra -> principal-swe-architect
+
+- did:       Published the approved immutable Lectoria `v0.1.0` artifact from
+             exact source commit `c284b6c…`, replaced Git and install-time
+             compilation with its public HTTPS URL and pinned SHA-512, added
+             fail-closed source/integrity gates with mutation arms, regenerated
+             core and personal, and bound the correction to
+             `6701696d01ec099b470dbaf403c12ddfe6cfe615`. The builder lease is
+             clear.
+- state:     in-review
+- needs:     Let GitHub's clean Node 24.15.0 runtime-install jobs settle for
+             both packs, then independently review this exact change ref. A
+             ratified verdict must bind to `6701696d…`; otherwise return exact
+             corrections and require a new ref.
+- artifacts: .github/workflows/validate.yml; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs; package.json; package-lock.json;
+             packs/kai-core/package.json; packs/kai-core/package-lock.json;
+             packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json;
+             docs/proposals/pack-architecture.md;
+             https://github.com/RubenSaucedo/lectoria/releases/tag/v0.1.0
+- evidence:  Lectoria artifact SHA-256
+             `ddd5bef3de299364f339339b2cb604e5cf7d86981a6014a79f62e484cb7b6ef4`;
+             npm SHA-512
+             `EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==`;
+             Lectoria typecheck, lint, 171 tests, build, deterministic pack, API
+             and CLI smoke; Kai `npm test`; 162 pack mutations; repeat root
+             lock generation byte-identical; tampered integrity rejected with
+             `EINTEGRITY`; warm-cache no-Git installs and provider-root probe
+             passed on Node 24.15.0. Public-registry empty-cache proof is
+             delegated to the committed CI matrix because this workstation's
+             registry TLS path fails before package extraction.
+- questions: none
+- next:      principal-swe-architect — review the immutable-artifact boundary,
+             source allowlist, exact integrity pin, deterministic projection,
+             and clean CI installation evidence at the new change ref.

@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-swe-architect
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -53,15 +53,15 @@ review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
-change_ref: e67057ec061e9799cf7300bce972305ab01a7603
-version: 11
+change_ref: 6701696d01ec099b470dbaf403c12ddfe6cfe615
+version: 12
 lease:
-  holder: principal-swe-infra
-  token: psinfra-1059-artifact
-  version_at_grant: 9
-  acquired: 2026-08-27T10:59:17-07:00
-  expires: 2026-08-27T14:59:17-07:00
-updated: 2026-08-27-1121
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-27-1126
 ---
 
 ## Outcome
@@ -103,6 +103,16 @@ remain deterministic and version-coherent.
   completed successfully.
 - Packs remain unpublished and marketplace topology remains the monolith-only
   entry at source `.`. Release 12b remains NO-GO.
+- Lectoria `v0.1.0` is published from source commit
+  `c284b6cdeef96591be31201444ffebcaa463ba0c` as immutable public asset
+  `lectoria-0.1.0.tgz`; GitHub reports SHA-256
+  `ddd5bef3de299364f339339b2cb604e5cf7d86981a6014a79f62e484cb7b6ef4`.
+  Two local `npm pack` runs were byte-identical and the installed artifact
+  exposed both the package API and CLI without a source build.
+- Corrected implementation ref
+  `6701696d01ec099b470dbaf403c12ddfe6cfe615` uses the release URL plus pinned
+  SHA-512, rejects non-HTTPS and unapproved runtime sources, weak integrity,
+  and artifact drift, and adds clean supported-Node install probes to CI.
 - Independent architecture review at exact change ref
   `e67057ec061e9799cf7300bce972305ab01a7603` returned
   **changes-required**: the projected Lectoria record resolves through
