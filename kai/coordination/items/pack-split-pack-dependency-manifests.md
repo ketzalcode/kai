@@ -60,14 +60,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-pack-dependency-manifests.md"
     timestamp: 2026-08-27-1137
 change_ref: 78a719f0cc32c75c66ddaad4b302985b789a5084
-version: 16
+version: 17
 lease:
-  holder: null
-  token: null
-  version_at_grant: null
-  acquired: null
-  expires: null
-updated: 2026-08-27-1140
+  holder: principal-swe-architect
+  token: arch-1141-final
+  version_at_grant: 16
+  acquired: 2026-08-27T11:41:50-07:00
+  expires: 2026-08-27T12:41:50-07:00
+updated: 2026-08-27-1141
 ---
 
 ## Outcome

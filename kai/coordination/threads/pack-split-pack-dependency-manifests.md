@@ -508,3 +508,20 @@ monolith-only, and release 12b remains **NO-GO**.
 - questions: none
 - next:      principal-swe-architect — re-review only the two accepted fixes
              plus exact-ref preservation of the already-ratified architecture.
+
+## NOTE 2026-08-27-1141 — director final review dispatch
+
+- did:       Granted final independent architecture lease `arch-1141-final`
+             at item version 16 for implementation
+             `78a719f0cc32c75c66ddaad4b302985b789a5084`.
+- state:     in-review
+- needs:     Confirm both prior P2 findings are closed and no regression was
+             introduced into the ratified artifact boundary.
+- artifacts: https://github.com/RubenSaucedo/kai/pull/175;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+- evidence:  GitHub Actions run `33104688494` passed contract plus clean
+             Node 24.15.0 empty-cache runtime installs for core and personal at
+             the final implementation tree.
+- questions: none
+- next:      principal-swe-architect — final exact-ref re-review under token
+             `arch-1141-final`.
