@@ -89,3 +89,21 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-infra — dependency-satisfied release preparation;
              do not publish, tag, retire the monolith, or run the release.
+
+## NOTE 2026-08-27-1400 — principal-swe-infra
+
+- did:       Claimed release 12b and closed both inherited A4 guard gaps.
+             Marketplace edits are now release-sensitive, and validation
+             rejects an entry whose name disagrees with the plugin manifest at
+             its source. The validator also distinguishes the pre-1.0 monolith
+             surface from the post-1.0 required core + personal surface.
+- state:     in-progress
+- needs:     Apply the minimal `1.0.0` marketplace/docs flip, run all static
+             gates, then prove browse/install/update/enable from an isolated
+             staging-branch marketplace before exact-ref reviews.
+- artifacts: scripts/release-guard.mjs; scripts/validate-plugin.mjs;
+             scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs
+- evidence:  The new self-test arms cover marketplace-only release bypass,
+             post-flip monolith retirement, and source-manifest name mismatch.
+- questions: none
+- next:      principal-swe-infra — complete the release surface and host proof.

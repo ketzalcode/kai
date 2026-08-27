@@ -600,7 +600,16 @@ function selfTest() {
   const kaiEntry = { name: 'kai', source: '.', version: '1.2.3', description: 'd' };
   const coreEntry = { name: 'kai-core', source: './packs/kai-core', version: '1.2.3', description: 'core' };
   const known = { kai: { version: '1.2.3', description: 'd' }, 'kai-core': { version: '1.2.3', description: 'core' } };
-  const mktArgs = (m) => ({ mkt: m, marketName: 'kai-plugins', monolithName: 'kai', canonicalVersion: '1.2.3', manifestsByName: known });
+  const sources = { '.': { name: 'kai' }, 'packs/kai-core': { name: 'kai-core' } };
+  const mktArgs = (m, extra = {}) => ({
+    mkt: m,
+    marketName: 'kai-plugins',
+    monolithName: 'kai',
+    canonicalVersion: '1.2.3',
+    manifestsByName: known,
+    manifestsBySource: sources,
+    ...extra,
+  });
   ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry]))).length === 0,
     'the single-plugin marketplace still validates clean (no regression)');
   ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, coreEntry]))).length === 0,
@@ -611,6 +620,15 @@ function selfTest() {
   ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry])))
     .some((e) => /no entry named "kai"/.test(e)),
     'the monolith entry is still required until the flip retires it');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry]), {
+    requiredPluginNames: ['kai-core'],
+    forbiddenPluginNames: ['kai'],
+  })).length === 0,
+  'the pack install surface validates without the retired monolith');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, name: 'kai' }]), {
+    requiredPluginNames: ['kai'],
+  })).some((e) => /source .* contains plugin "kai-core"/.test(e)),
+  'a marketplace entry whose name disagrees with its source manifest is caught');
 
   // --- cross-pack references: the live corpus ---------------------------
   // Every arm below runs against synthetic inputs, so the failure it proves is

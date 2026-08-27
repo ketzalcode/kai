@@ -26,7 +26,7 @@
 // Exit code 0 = contract valid; 1 = one or more violations printed.
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   parseFrontmatter, stripQuotes, loaderErrors, parseToolList, SUPPORTED_TOOLS,
@@ -774,9 +774,23 @@ if (!existsSync(mktPath)) {
   catch (e) { err(MARKETPLACE_REL, `invalid JSON: ${e.message}`); }
   if (mkt) {
     const manifestsByName = {};
+    const manifestsBySource = {};
     for (const m of parsedManifests) if (m.name) manifestsByName[m.name] = { version: m.version, description: m.description };
+    for (const m of parsedManifests) {
+      const source = m.isRoot ? '.' : m.rel.replace(/\/plugin\.json$/, '');
+      manifestsBySource[source] = { name: m.name };
+    }
+    const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
+    const isPackSurface = Number.isInteger(majorVersion) && majorVersion >= 1;
     for (const msg of marketplaceConsistencyErrors({
-      mkt, marketName: MARKETPLACE_NAME, monolithName: MONOLITH_NAME, canonicalVersion, manifestsByName,
+      mkt,
+      marketName: MARKETPLACE_NAME,
+      monolithName: MONOLITH_NAME,
+      canonicalVersion,
+      manifestsByName,
+      manifestsBySource,
+      requiredPluginNames: isPackSurface ? ['kai-core', 'kai-personal'] : [MONOLITH_NAME],
+      forbiddenPluginNames: isPackSurface ? [MONOLITH_NAME] : [],
     })) {
       err(MARKETPLACE_REL, msg);
     }
@@ -786,9 +800,25 @@ if (!existsSync(mktPath)) {
     for (const entry of Array.isArray(mkt.plugins) ? mkt.plugins : []) {
       if (typeof entry?.source === 'string') {
         const relSrc = entry.source.replace(/^\.\/?/, '');
-        const target = relSrc === '' ? ROOT : join(ROOT, relSrc);
-        if (!existsSync(join(target, 'plugin.json'))) {
+        const target = resolve(ROOT, relSrc);
+        const targetFromRoot = relative(ROOT, target);
+        if (targetFromRoot.startsWith('..') || isAbsolute(targetFromRoot)) {
+          err(MARKETPLACE_REL, `entry "${entry.name}" source "${entry.source}" escapes the repository root`);
+          continue;
+        }
+        const sourceManifestPath = join(target, 'plugin.json');
+        if (!existsSync(sourceManifestPath)) {
           err(MARKETPLACE_REL, `entry "${entry.name}" source "${entry.source}" does not contain a plugin.json — the install would fail on the user's machine, not here`);
+          continue;
+        }
+        try {
+          const sourceManifest = JSON.parse(readFileSync(sourceManifestPath, 'utf8'));
+          if (sourceManifest.name !== entry.name) {
+            err(MARKETPLACE_REL, `entry "${entry.name}" source "${entry.source}" contains plugin `
+              + `"${sourceManifest.name ?? 'unnamed'}" — marketplace names must match their source manifest`);
+          }
+        } catch (e) {
+          err(MARKETPLACE_REL, `entry "${entry.name}" source "${entry.source}" has invalid plugin.json: ${e.message}`);
         }
       }
     }

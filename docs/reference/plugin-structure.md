@@ -122,8 +122,9 @@ skills themselves.
 ## Versioning & releases
 
 kai follows [semantic versioning](https://semver.org). Updates reach users via
-`/plugin update kai` (or a new session) — Copilot loads the plugin from the repo,
-so the version is descriptive metadata, **not** an update gate. Keep it honest:
+`copilot plugin update <pack>@kai-plugins` and a new session. Copilot loads the
+plugin from the repo, so the version is descriptive metadata, **not** an update
+gate. Keep it honest:
 any change to shipped plugin behavior bumps the version **in the same PR**. CI
 **enforces** this — a change under `agents/`, `skills/`, `scripts/`, or the
 dependency manifests that lacks a version bump plus changelog/README updates

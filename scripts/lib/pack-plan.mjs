@@ -690,9 +690,14 @@ export function manifestParityErrors(manifests, canonicalVersion) {
 // one FS check and stays with the caller. Returns plain message strings.
 export function marketplaceConsistencyErrors({
   mkt, marketName, monolithName, canonicalVersion, manifestsByName,
+  manifestsBySource = {}, requiredPluginNames = [monolithName],
+  forbiddenPluginNames = [],
 }) {
   const errs = [];
   const known = manifestsByName instanceof Map ? manifestsByName : new Map(Object.entries(manifestsByName ?? {}));
+  const knownSources = manifestsBySource instanceof Map
+    ? manifestsBySource
+    : new Map(Object.entries(manifestsBySource ?? {}));
 
   if (mkt.name !== marketName) {
     errs.push(`"name" is "${mkt.name ?? 'missing'}" but every documented install says `
@@ -712,14 +717,27 @@ export function marketplaceConsistencyErrors({
   for (const [name, c] of counts) {
     if (c > 1) errs.push(`${c} entries are named "${name}" — which one an install resolves to is unspecified`);
   }
-  if (!counts.has(monolithName)) {
-    errs.push(`no entry named "${monolithName}" — the index must list this plugin or `
-      + `\`plugin install ${monolithName}@${marketName}\` cannot resolve`);
+  for (const name of requiredPluginNames) {
+    if (counts.has(name)) continue;
+    errs.push(`no entry named "${name}" — the published install surface requires `
+      + `\`plugin install ${name}@${marketName}\``);
+  }
+  for (const name of forbiddenPluginNames) {
+    if (!counts.has(name)) continue;
+    errs.push(`entry "${name}" is retired from the published install surface and must not remain listed`);
   }
 
   for (const e of entries) {
     if (!e?.name) continue;
     if (!e.source) errs.push(`entry "${e.name}" is missing "source" (required by the host)`);
+    const sourceKey = typeof e.source === 'string'
+      ? e.source.replace(/\\/g, '/').replace(/^\.\/?/, '').replace(/\/+$/, '') || '.'
+      : null;
+    const sourceManifest = sourceKey ? knownSources.get(sourceKey) : null;
+    if (sourceManifest?.name && sourceManifest.name !== e.name) {
+      errs.push(`entry "${e.name}" source "${e.source}" contains plugin "${sourceManifest.name}" `
+        + '— marketplace names must match the manifest at their source');
+    }
     const man = known.get(e.name);
     if (man) {
       if (e.version !== man.version) {

@@ -5,10 +5,10 @@ title: Release 12b — minimal 1.0.0 flip (publish core + personal, retire monol
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: ready
+state: in-progress
 resume_state: null
 priority: 20
-owner: null
+owner: principal-swe-infra
 next_role: principal-swe-infra
 target: pack-split staged release 12b (the 1.0.0 flip)
 artifact_target: null
@@ -20,10 +20,19 @@ touches:
   - .github/plugin/marketplace.json
   - plugin.json
   - package.json
+  - package-lock.json
+  - packs/kai-core/
+  - packs/kai-personal/
   - CHANGELOG.md
   - README.md
+  - docs/getting-started.md
+  - docs/reference/plugin-structure.md
   - scripts/release-guard.mjs
   - scripts/validate-plugin.mjs
+  - scripts/lib/pack-plan.mjs
+  - scripts/pack-preview.mjs
+  - kai/coordination/
+  - kai/initiatives/pack-split/
 depends_on:
   - item: pack-split-host-gates
     requires: completed
@@ -42,14 +51,14 @@ review_requirements:
     kind: independent-security
 completed_reviews: []
 change_ref: null
-version: 5
+version: 6
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1337
+updated: 2026-08-27-1400
 ---
 
 ## Outcome
@@ -71,12 +80,12 @@ create the exemption — `.github/plugin/marketplace.json` was always exempt —
 **second** marketplace entry legal, and this item is the flip. Publication must not be the one
 irreversible act that escapes release enforcement.*
 
-- [ ] **(A4)** Publication sits **inside** release enforcement: `.github/plugin/marketplace.json` is
+- [x] **(A4)** Publication sits **inside** release enforcement: `.github/plugin/marketplace.json` is
       classified behavior-sensitive by `release-guard` (a `BEHAVIOR_FILE`/prefix), or publication is
       gated by an equivalent explicit mechanism recorded as a decision. Flipping a pack from
       unpublished to published cannot land as a pure marketplace edit with no bump, no CHANGELOG,
       and no README stamp.
-- [ ] **(A4)** `validate-plugin.mjs` asserts that every marketplace entry's `name` matches the
+- [x] **(A4)** `validate-plugin.mjs` asserts that every marketplace entry's `name` matches the
       `name` inside the `plugin.json` at that entry's `source` — neither the pure helper
       (`marketplaceConsistencyErrors`) nor the caller's filesystem check asserts this today, so an
       entry can point at the wrong pack.

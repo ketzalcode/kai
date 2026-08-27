@@ -5,15 +5,15 @@
     "url": "https://github.com/RubenSaucedo"
   },
   "metadata": {
-    "description": "Plugins published by RubenSaucedo. Currently one: kai.",
-    "version": "0.67.0"
+    "description": "Kai core and department packs published by RubenSaucedo.",
+    "version": "1.0.0"
   },
   "plugins": [
     {
-      "name": "kai",
-      "source": ".",
-      "description": "Open-source Copilot plugin for coordinated product, growth, customer operations, engineering, trust, delivery, and personal workflows across codebases.",
-      "version": "0.67.0",
+      "name": "kai-core",
+      "source": "./packs/kai-core",
+      "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
+      "version": "1.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -29,6 +29,29 @@
         "skills",
         "saas",
         "engineering",
+        "workflow-automation"
+      ]
+    },
+    {
+      "name": "kai-personal",
+      "source": "./packs/kai-personal",
+      "description": "kai personal department pack — the personal roles, over a required kai-core.",
+      "version": "1.0.0",
+      "author": {
+        "name": "RubenSaucedo",
+        "url": "https://github.com/RubenSaucedo"
+      },
+      "homepage": "https://github.com/RubenSaucedo/kai",
+      "repository": "https://github.com/RubenSaucedo/kai",
+      "license": "MIT",
+      "keywords": [
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "personal",
+        "learning",
         "workflow-automation"
       ]
     }

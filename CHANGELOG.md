@@ -4,6 +4,28 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.0] - 2026-08-27
+
+### Added
+
+- **The first public pack install surface.** `kai-core` and `kai-personal` are
+  published from their generated trees. Core carries the shared operating
+  contract, workspace machinery, fleet observer, and hooks; personal carries
+  the personal, learning, and demo roles.
+- **Marketplace publication integrity gates.** Marketplace-only changes now
+  require a release bump and notes. Validation also rejects any entry whose
+  public name disagrees with the plugin manifest at its source.
+
+### Changed
+
+- **The `kai` monolith is retired from the marketplace.** New installations use
+  required `kai-core` plus `kai-personal`. Existing monolith users migrate
+  through `workflow-workspace-init`, which proves replacement availability
+  before removal, installs core first, verifies every step, and refuses
+  coexistence.
+- **Install and update commands now target packs.** Engineering, product, and
+  go-to-market packs remain unpublished until the next `1.0.x` release.
+
 ## [0.67.0] - 2026-08-27
 
 ### Added
@@ -2951,6 +2973,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.0]: https://github.com/RubenSaucedo/kai/compare/v0.67.0...v1.0.0
 [0.67.0]: https://github.com/RubenSaucedo/kai/compare/v0.66.0...v0.67.0
 [0.66.0]: https://github.com/RubenSaucedo/kai/compare/v0.65.0...v0.66.0
 [0.65.0]: https://github.com/RubenSaucedo/kai/compare/v0.64.0...v0.65.0

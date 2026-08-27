@@ -10,7 +10,8 @@ service. It contains no employer-specific knowledge and ships no MCP servers.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
-copilot plugin install kai@kai-plugins
+copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-personal@kai-plugins
 ```
 
 **[Get started →](docs/getting-started.md)** ·
@@ -31,32 +32,30 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v0.67.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
+`v1.0.0` — **56 agents and 51 skills**, for the **Copilot CLI** and the
 **Copilot coding agent** (cloud).
 
-> **Migration notice:** `kai` will become `kai-core` plus selectable
-> department packs in `v1.0.0`. Do not uninstall the current `kai` plugin yet:
-> the packs are not published. The guided installer will refuse migration
-> until every requested pack is available at one marketplace version, then
-> require legacy removal, install `kai-core` first, and verify each step.
-> Until that publication gate opens, the install and update commands below are
-> unchanged.
+> **`v1.0.0` changes the install surface.** The published monolith `kai` is
+> retired. Install required `kai-core` plus `kai-personal`; the remaining
+> department packs follow in the next `1.0.x` release. If legacy `kai` is
+> installed, use its `workflow-workspace-init` guided migration before removing
+> it. The guide verifies replacement availability, requires the monolith to be
+> gone, installs core first, and checks every step.
 
-**The first generated pack slice is committed: `kai-core` + `kai-personal`.**
+**The first pack slice is published: `kai-core` + `kai-personal`.**
 Root remains the canonical source; generation copies agents, skills, routed
 scripts, each script's local module closure, and the fleet hooks exactly once.
-These trees are deliberately **unpublished and not installable from the
-marketplace**. Each now carries a deterministic, lockstep `package.json` and
-`package-lock.json`. Copilot copies plugin files but does not run npm, so
+Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
+Copilot copies plugin files but does not run npm, so
 optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;
 ordinary pack behavior needs no dependency installation.
 
 `workflow-workspace-init` now also carries the honest guided pack installer:
 it shows the closed pack set and exact commands, confirms the plan, installs
 core first, verifies every step, stops with precise partial state, and requires
-a fresh session after an actual pack install or update. While any requested
-pack is absent from the marketplace, its browse gate stops before installation;
-it never falls back to unpublished direct paths.
+a fresh session after an actual pack install or update. If a requested
+department is not yet published, its browse gate stops before removal or
+installation; it never falls back to unpublished direct paths.
 
 The pack migration remains checkable before it is possible:
 `npm run doctor:migration` is a read-only report on whether a host may install
@@ -68,21 +67,20 @@ before a pack install, coexistence is refused rather than warned through, and
 evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
-contract-version skew.
-kai still ships as the single `kai` plugin; the marketplace remains one entry.
+contract-version skew. The marketplace publishes `kai-core` and
+`kai-personal`; the monolith is no longer listed.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
-copilot plugin install kai@kai-plugins
+copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-personal@kai-plugins
 ```
 
-A marketplace install was measured to be a **full repository checkout** — all
-56 agents and `scripts/` — so the fleet observer stays reachable without a
-clone. The direct form remains documented as a fallback while the host honours
-it, and a CI rule keeps the index from drifting out of step with the version it
-claims to ship. If you already installed the direct way, **uninstall first** —
-installing over the top leaves you with both copies; see
-[Getting started](docs/getting-started.md#install).
+The core pack carries the fleet observer and shared workspace machinery; the
+personal pack carries personal, learning, and demo roles. A CI rule keeps every
+marketplace source, name, description, and version aligned with its pack
+manifest. If legacy `kai` is installed, do not install packs beside it; see
+[Getting started](docs/getting-started.md#upgrading-from-the-kai-monolith).
 
 Before that, a rendering fix reported from a real macOS run.
 
@@ -124,7 +122,8 @@ Release history and the reasoning behind each change live in
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
-copilot plugin install kai@kai-plugins
+copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-personal@kai-plugins
 ```
 
 kai publishes its own marketplace index, because the host has deprecated direct
@@ -193,10 +192,9 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-56 agents and 51 skills, grouped by the judgment they own — direction,
-engineering, delivery, trust & reliability, product, customer operations,
-revenue, growth & analytics, AI research, learning, exploration, content, and
-personal.
+The repository contains 56 agents and 51 skills. The first published slice is
+`kai-core` plus `kai-personal`; engineering, product, and go-to-market packs
+follow in the next `1.0.x` release.
 
 You do not need to learn them. Ask a front door for an outcome and it routes.
 
@@ -206,10 +204,11 @@ You do not need to learn them. Ask a front door for an outcome and it routes.
 
 See **[Getting started → Install](docs/getting-started.md#install)** for the
 Copilot CLI, the cloud coding agent, and the optional audio and browser-automation
-setup. To update an already-installed plugin, refresh the catalog and then the
-plugin — `copilot plugin marketplace update kai-plugins` followed by
-`copilot plugin update kai` — and start a new session; to migrate an existing
-workspace after an update, see
+setup. To update, refresh the catalog, then update each installed pack:
+`copilot plugin marketplace update kai-plugins`,
+`copilot plugin update kai-core@kai-plugins`, and
+`copilot plugin update kai-personal@kai-plugins`. Start a new session; to
+migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
 
 ## Workspace
