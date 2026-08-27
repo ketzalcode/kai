@@ -21,7 +21,7 @@ one-way and steward-approved:
 | Host-gate minimal-smoke evidence | first-pack-extracted | pack-split-host-gates | kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md | — | **COMPLETED 2026-08-26**; macOS + cloud PASS; SRE ratified `2634521…`; PR #174 merged as `b6db547c…`; main validation `33028413182` / `98375047081` succeeded; disposable consumer deleted after evidence preservation; host-gates GO; release 12b still NO-GO |
 | Generated-pack dependency manifest release record (`0.65.0`) | five-pack-split-shipped | pack-split-pack-dependency-manifests | kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md | **SHIPPED 2026-08-27** (PR #175; merge `b3efabee…`; main run `33105744364` success; `v0.65.0`; production verification 7/7 PASS; packs unpublished) |
 | Guided split-pack installer release record (`0.66.0`) | five-pack-split-shipped | pack-split-onboarding-installer | kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/02-ship-pack-split-onboarding-installer/ship-record.md | **SHIPPED 2026-08-27** (PR #177; merge `3be96244…`; main run `33111113566` success; `v0.66.0`; production verification 7/7 PASS; packs unpublished) |
-| Release 12a migration-notice record (`0.67.0`) | five-pack-split-shipped | pack-split-release-12a | kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md | **RELEASE-READY 2026-08-27** (reviewed `2b4c5b3d…`; PR #179 open; PR run `33112672011` success; not shipped; packs unpublished) |
+| Release 12a migration-notice record (`0.67.0`) | five-pack-split-shipped | pack-split-release-12a | kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md | **SHIPPED 2026-08-27** (PR #179; merge `b28113eb…`; main run `33113558866` success; public `v0.67.0`; production verification 7/7 PASS; packs unpublished) |
 
 The **release record** for `pack-split-first-department` is closed at
 `shipped`. `workflow-ship` deliberately restored its prior
@@ -57,11 +57,21 @@ agents/51 skills. Rollback was not invoked. The steward promoted exactly
 `pack-split-release-12a` to `ready` v2. Release 12b remains **NO-GO** until
 release 12a ships; packs remain unpublished.
 
-The **release 12a migration-notice record** is prepared at `release-ready`.
-All six DoD dimensions are Clear at item v13. PR #179 remains open and
-unmerged; no `v0.67.0` tag or release has been created. The operator must merge,
-verify exact-main CI, publish the release, and return production evidence.
-Release 12b remains **NO-GO** and no pack is published.
+The **release 12a migration-notice record** is closed at `shipped`.
+`workflow-ship` walked v14 `release-ready` -> v15 `deploying` -> v16
+`production-verification` -> v17 `shipped`. PR #179 merged without squash or
+rebase as `b28113eb65256c00272382d6f73402ee7f0ff030`; exact-main run
+`33113558866` passed all three jobs, and public release `v0.67.0` targets that
+merge. Production verification passed 7/7: all version surfaces agree,
+marketplace topology remains one monolith `kai` entry at source `.`, no pack
+entry is published, generated parity passes, validation reports 56 agents/51
+skills, and the pre-publication notice remains intact. Rollback was not
+invoked. Release 12b was subsequently promoted by the steward to `ready` v5
+after all four dependencies were verified. It is executable at dispatch subject
+to the normal touch-conflict recheck, but it was not implemented or published
+in this task. Release 12c remains `proposed` v1.
+The fulfilled post-ship steward handoff was then cleared as a coordination-only
+reconciliation, leaving release 12a terminal at `shipped` v18.
 
 The **release record** for `pack-split-degraded-refusal` was written by `workflow-ship` at the
 2026-08-25-1554 DoD gate — verdict **RELEASE-READY**, all six dimensions **Clear**, none waived —

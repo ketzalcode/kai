@@ -163,3 +163,105 @@ Append-only communication log mirroring
              No release verdict, implementation, or release metadata changed.
 - state:     release-ready — not shipped
 - next:      @operator — execute the recorded deploy handoff.
+
+## HANDOFF 2026-08-27-1333 — @operator -> workflow-ship
+
+- did:       **CONFIRM-START evidence accepted.** PR #179 head
+             `0f1c1d28032d8fa8d9b7e0d94389ed4545bce72f` merged without
+             squash or rebase as
+             `b28113eb65256c00272382d6f73402ee7f0ff030` at
+             `2026-08-27T20:29:17Z`. Moved item v14 `release-ready` -> v15
+             `deploying`.
+- state:     deploying
+- needs:     Confirm successful exact-main validation and successful public
+             `v0.67.0` publication at the exact merge before entering
+             production verification.
+- artifacts: https://github.com/RubenSaucedo/kai/pull/179;
+             https://github.com/RubenSaucedo/kai/actions/runs/33113558866;
+             kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md
+- evidence:  Reviewed implementation
+             `2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620` remains in ancestry;
+             every later change is coordination, initiative, or ship-record
+             only.
+- questions: none
+- next:      workflow-ship — confirm deployment completion, then enter
+             production verification.
+
+## NOTE 2026-08-27-1333 — workflow-ship confirm-complete
+
+- did:       **CONFIRM-COMPLETE evidence accepted.** Exact-main run
+             `33113558866` succeeded at merge `b28113eb…`; all three jobs
+             passed. Public release `v0.67.0` is non-draft, non-prerelease,
+             and targets that exact merge. Moved item v15 `deploying` -> v16
+             `production-verification`.
+- state:     production-verification
+- needs:     Record the proportional production checks and close only if
+             version, topology, generated parity, validator, and notice checks
+             all pass.
+- artifacts: https://github.com/RubenSaucedo/kai/actions/runs/33113558866;
+             https://github.com/RubenSaucedo/kai/releases/tag/v0.67.0;
+             kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md
+- evidence:  Jobs `contract`, `runtime-dependencies (kai-core)`, and
+             `runtime-dependencies (kai-personal)` all succeeded; release was
+             published `2026-08-27T20:29:54Z`.
+- questions: none
+- next:      workflow-ship — verify production version coherence, publication
+             topology, generated parity, validator output, and notice.
+
+## HANDOFF 2026-08-27-1333 — workflow-ship -> principal-product-manager
+
+- did:       **Production verification passed 7/7: SHIPPED.** Walked
+             `release-ready` v14 -> `deploying` v15 ->
+             `production-verification` v16 -> `shipped` v17 without skipping
+             a state. Preserved `change_ref
+             2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620` and both completed
+             exact-ref reviews, completed the release-cut acceptance
+             criterion, cleared the lease, and did not invoke rollback.
+- state:     shipped
+- needs:     Reconcile milestone progress and release 12b eligibility as the
+             initiative steward. This closure did not promote or modify
+             release 12b; packs remain unpublished.
+- workspace: C:\src\kai
+- artifacts: kai/coordination/items/pack-split-release-12a.md;
+             kai/coordination/threads/pack-split-release-12a.md;
+             kai/library/releases/2026-08-27/03-ship-pack-split-release-12a/ship-record.md;
+             kai/initiatives/pack-split/northstar.md;
+             kai/initiatives/pack-split/log.md;
+             kai/initiatives/pack-split/deliverables.md;
+             kai/coordination/BOARD.md;
+             kai/coordination/ACTIVE.md
+- evidence:  PR #179 head
+             `0f1c1d28032d8fa8d9b7e0d94389ed4545bce72f` merged without
+             squash/rebase as
+             `b28113eb65256c00272382d6f73402ee7f0ff030` at
+             `2026-08-27T20:29:17Z`; exact-main run
+             `https://github.com/RubenSaucedo/kai/actions/runs/33113558866`
+             succeeded in all three jobs; public release
+             `https://github.com/RubenSaucedo/kai/releases/tag/v0.67.0`
+             targets the merge and was published
+             `2026-08-27T20:29:54Z`; production verification passed 7/7 with
+             coherent `0.67.0` versions, marketplace N=1 at source `.`, no
+             published pack entries, generated parity, validator result 56
+             agents/51 skills, and the pre-publication notice intact.
+- questions: none
+- next:      principal-product-manager — perform the separate steward
+             reconciliation; do not infer promotion of release 12b from this
+             shipped dependency.
+
+## NOTE 2026-08-27-1339 — director-chief-of-staff reconciliation
+
+- did:       Reconciled the completed steward handoff. The steward separately
+             verified all four release-12b dependencies and promoted only
+             `pack-split-release-12b` to `ready` v5. Cleared this terminal
+             item's fulfilled `next_role`; its state, reviewed ref, reviews,
+             acceptance, and production evidence are unchanged.
+- state:     shipped v18
+- needs:     none for release 12a
+- artifacts: kai/coordination/items/pack-split-release-12a.md;
+             kai/coordination/items/pack-split-release-12b.md;
+             kai/coordination/threads/pack-split-release-12b.md
+- evidence:  `pack-split-release-12b` HANDOFF 2026-08-27-1337 records the
+             dependency verification and steward-owned promotion.
+- questions: none
+- next:      none — release 12a is terminal; release 12b is a separate ready
+             item and was not implemented or published in this task.

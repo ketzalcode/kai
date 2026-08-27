@@ -2941,3 +2941,59 @@ merged, tagged, released, and published nothing. Marketplace topology remains
 exactly one `kai` entry at source `.`, packs remain unpublished, current
 install commands remain unchanged, and release 12b remains **NO-GO** until
 release 12a is production-verified and `shipped`.
+
+## 2026-08-27-1333 - release 12a SHIPPED
+
+Authoritative operator evidence closed the staged release lifecycle without
+skipping a state: item v14 `release-ready` -> v15 `deploying` -> v16
+`production-verification` -> v17 `shipped`. PR #179 head
+`0f1c1d28032d8fa8d9b7e0d94389ed4545bce72f` merged without squash or rebase
+as `b28113eb65256c00272382d6f73402ee7f0ff030` at
+`2026-08-27T20:29:17Z`. Exact-main run `33113558866` succeeded in
+`contract`, `runtime-dependencies (kai-core)`, and
+`runtime-dependencies (kai-personal)`. Public `v0.67.0` targets the exact
+merge and was published `2026-08-27T20:29:54Z`.
+
+Production verification passed 7/7: root, marketplace, core, and personal
+version surfaces plus README/CHANGELOG agree at `0.67.0`; marketplace remains
+exactly one `kai` entry at source `.`; no pack entry is published;
+`pack-preview --check` passes; `validate-plugin` passes with 56 agents/51
+skills; and the notice still says packs are unpublished and users must not
+uninstall legacy `kai` yet. Reviewed implementation
+`2b4c5b3d3c7e757f0cb3cf5ae6fc68964ad7c620` and both completed reviews remain
+unchanged. Rollback was not invoked.
+
+The release-cut acceptance criterion is complete. Release 12b remains
+`proposed`; this closure satisfies its release-12a dependency but does not
+promote it. The item lease is clear and routes next to
+`principal-product-manager` for separate steward reconciliation.
+
+## 2026-08-27-1337 - steward promotion: release 12b ready
+
+The steward verified the exact typed dependency chain against authoritative
+records: `pack-split-host-gates` is `completed` v17;
+`pack-split-pack-dependency-manifests` is `shipped` v23;
+`pack-split-release-12a` is `shipped` v17; and
+`pack-split-onboarding-installer` is `shipped` v18.
+
+`pack-split-release-12b` fits current scope `five-pack-split-shipped`, is an
+explicit typed milestone requirement, and retains explicit acceptance. The
+steward promoted only that item `proposed` v4 -> `ready` v5, preserved priority
+20, outcome, both A4 criteria, independent reliability and security reviews,
+all touches, and the operator-only marketplace publish, tag, and monolith
+retirement gates. The lease is clear and `next_role` is
+`principal-swe-infra`; the item is dependency-satisfied and therefore
+executable at dispatch subject to the normal touch-conflict recheck.
+
+Release 12c remains exactly `proposed` and unmodified. This pass changed no
+implementation, release metadata, pack, marketplace, documentation, script,
+tag, release, or publication state.
+
+## 2026-08-27-1339 - director reconciliation: release 12a handoff closed
+
+The steward promotion completed release 12a's only post-ship coordination
+handoff. The director cleared its fulfilled `next_role` and incremented the
+terminal item v17 -> v18 without changing `shipped`, the reviewed ref, reviews,
+acceptance, or production evidence. Release 12b remains the separate `ready` v5
+queue head; release 12c remains `proposed` v1. No implementation or publication
+action occurred.
