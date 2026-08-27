@@ -5,11 +5,11 @@ title: Release 12b — minimal 1.0.0 flip (publish core + personal, retire monol
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: release-ready
+state: shipped
 resume_state: null
 priority: 20
 owner: principal-swe-infra
-next_role: "@operator"
+next_role: principal-product-manager
 target: pack-split staged release 12b (the 1.0.0 flip)
 artifact_target: null
 context_artifacts:
@@ -68,14 +68,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12b.md"
     timestamp: 2026-08-27-1515
 change_ref: 236f36d4f7ea5b2cd02cd42f3359bb318b253c4d
-version: 11
+version: 14
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1433
+updated: 2026-08-27-1447
 ---
 
 ## Outcome
@@ -86,9 +86,9 @@ Minimal = core + one department, not five at once.
 
 ## Acceptance
 
-- [ ] `kai-core` + `kai-personal` published to `kai-plugins`; `kai-core` never offered in the selector.
-- [ ] The published monolith `kai` plugin is retired at the flip.
-- [ ] `1.0.0` is cut; `plugin.json` + `package.json` agree; marketplace index matches.
+- [x] `kai-core` + `kai-personal` published to `kai-plugins`; `kai-core` never offered in the selector.
+- [x] The published monolith `kai` plugin is retired at the flip.
+- [x] `1.0.0` is cut; `plugin.json` + `package.json` agree; marketplace index matches.
 - [x] `pack-split-host-gates` evidence is a green go before publish; `release-guard` gate passes.
 
 *Carried forward from the `pack-split-generator-gates` architecture review (finding A4, ratified
@@ -109,7 +109,6 @@ irreversible act that escapes release enforcement.*
 
 ## Evidence
 
-- (to be filled) — marketplace diff + operator publish/tag confirmation + retirement confirmation.
 - Steward promotion 2026-08-27-1337: authoritative dependency records verify
   `pack-split-host-gates` `completed` v17,
   `pack-split-pack-dependency-manifests` `shipped` v23,
@@ -161,6 +160,46 @@ irreversible act that escapes release enforcement.*
   equivalence with `git diff --exit-code $review HEAD -- . ':(exclude)kai/'`;
   step 2 requires a **fresh** run at the post-PREPARE head, since the records
   commit supersedes `33118653686`.
+- Both PREPARE stop conditions were then satisfied before merge:
+  `git merge-base --is-ancestor 236f36d4... HEAD` and the records-only
+  `git diff --exit-code ... ':(exclude)kai/'` passed at final head
+  `2296b5211e5ba07067e0ef3b9de77f92af619f13`; `pack-preview --check`,
+  `validate-plugin`, and the exact release guard passed; final-head run
+  `33119560853` succeeded in all three required jobs.
+- Deployment (operator-executed, 2026-08-27): PR #181 merged as
+  `88965c4ce564646ce3b935267beb783162ca8b99` at `2026-08-27T21:45:37Z`. **The
+  merge is the publication** — the marketplace is served from the default
+  branch. Exact-`main` validate run `33119614824` has
+  `headSha 88965c4ce564646ce3b935267beb783162ca8b99` and succeeded in all three
+  required jobs: `contract`, `runtime-dependencies (kai-core)`, and
+  `runtime-dependencies (kai-personal)`. Tag `v1.0.0` points at the merge SHA;
+  the public, non-draft, non-prerelease release
+  `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.0` targets the exact
+  merge and was published `2026-08-27T21:47:13Z`.
+- Production verification 2026-08-27-1447 (`workflow-ship`, CONFIRM): 8 of 8
+  checks pass. Live default-branch isolated-home probe registered
+  `RubenSaucedo/kai`, browsed **exactly** `kai-core` + `kai-personal`,
+  installed both at `1.0.0`, idempotently updated both, and the **installed**
+  core doctor reported both records installed/enabled at exact `1.0.0` with
+  only `marketplace:kai-plugins` provenance. The real current direct-monolith
+  probe exits 2 with exactly `legacy-installed` and
+  `workspace-provenance-current`, and no `enabled-state-unverified`. Verified
+  read-only from the checked-out merge SHA (`.git/HEAD -> refs/heads/main ->
+  88965c4c…`): marketplace publishes exactly two entries with
+  `installSurface: packs` and **no monolith entry**; `1.0.0` is coherent across
+  root `plugin.json`/`package.json`, marketplace `metadata.version`, both entry
+  versions, and both pack `plugin.json`/`package.json`; CHANGELOG `[1.0.0]`
+  (`:7`) with its compare link (`:2990`) and README `v1.0.0` stamp (`:35`,
+  `:39`); A4(1) `scripts/release-guard.mjs:22`; A4(2)
+  `scripts/validate-plugin.mjs:822`; core never selectable
+  (`skills/kai-core-workspace-onboarding/SKILL.md:31-34`). Generated parity and
+  the validator are covered by the green `contract` job, which runs
+  `validate-plugin.mjs` and `pack-preview.mjs --check` at the merge SHA
+  (`.github/workflows/validate.yml`). Rollback was **not** invoked.
+- The recorded pre-merge sequence completed without deviation: reviewed-ref
+  ancestry and records-only equivalence passed, final-head run `33119560853`
+  was green at `2296b521…`, and the local pack parity, validator, and exact
+  release guard all passed before the merge published the marketplace.
 
 ## Notes
 
