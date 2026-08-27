@@ -622,8 +622,19 @@ function selfTest() {
   });
   const kaiEntry = { name: 'kai', source: '.', version: '1.2.3', description: 'd' };
   const coreEntry = { name: 'kai-core', source: './packs/kai-core', version: '1.2.3', description: 'core' };
-  const known = { kai: { version: '1.2.3', description: 'd' }, 'kai-core': { version: '1.2.3', description: 'core' } };
-  const sources = { '.': { name: 'kai' }, 'packs/kai-core': { name: 'kai-core' } };
+  const productEntry = {
+    name: 'kai-product', source: './packs/kai-product', version: '1.2.3', description: 'product',
+  };
+  const known = {
+    kai: { version: '1.2.3', description: 'd' },
+    'kai-core': { version: '1.2.3', description: 'core' },
+    'kai-product': { version: '1.2.3', description: 'product' },
+  };
+  const sources = {
+    '.': { name: 'kai' },
+    'packs/kai-core': { name: 'kai-core' },
+    'packs/kai-product': { name: 'kai-product' },
+  };
   const mktArgs = (m, extra = {}) => ({
     mkt: m,
     marketName: 'kai-plugins',
@@ -697,6 +708,11 @@ function selfTest() {
     forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
   })).some((e) => new RegExp(`entry "${unpublishedNames[0]}" is not part of the published install surface`).test(e)),
   'a rollback index that still serves a department pack is rejected, not blessed');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, productEntry], 'legacy-rollback'), {
+    requiredPluginNames: rollbackSurface.requiredPluginNames,
+    forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
+  })).some((e) => /entry "kai-product" is not part of the published install surface/.test(e)),
+  'the first published department is rejected by name if a rollback index still serves it');
   ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry, deptEntry], 'packs'), {
     requiredPluginNames: packSurface.requiredPluginNames,
     forbiddenPluginNames: packSurface.forbiddenPluginNames,

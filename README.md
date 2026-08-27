@@ -214,8 +214,9 @@ See **[Getting started → Install](docs/getting-started.md#install)** for the
 Copilot CLI, the cloud coding agent, and the optional audio and browser-automation
 setup. To update, refresh the catalog, then update each installed pack:
 `copilot plugin marketplace update kai-plugins`,
-`copilot plugin update kai-core@kai-plugins`, and
-`copilot plugin update kai-personal@kai-plugins`. Start a new session; to
+`copilot plugin update kai-core@kai-plugins`,
+`copilot plugin update kai-personal@kai-plugins`, and
+`copilot plugin update kai-product@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
 
