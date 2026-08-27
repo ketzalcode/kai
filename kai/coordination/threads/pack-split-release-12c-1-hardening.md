@@ -321,3 +321,37 @@ Append-only communication log mirroring
              exact release guard passed.
 - questions: none
 - next:      principal-sre — approve or return blocking findings.
+
+## REVIEW 2026-08-27-1750 — principal-sre
+
+- ref:       `5edd2a42188aba5359379b4104fafdfcada7bafc`
+- verdict:   approved — READY; P0/P1/P2 = 0/0/0.
+- evidence:  Exact diff reviewed; rollback readiness requires explicit intent,
+             one enabled identity-consistent entry/tree, recorded config
+             provenance matching the tree, no other kai records, complete host
+             evidence, and no unidentified trees. All named unsafe states block
+             without reverse or monolith-uninstall steps.
+- remaining: Fresh final-head CI and release verification only.
+
+## REVIEW 2026-08-27-1750 — principal-security
+
+- ref:       `5edd2a42188aba5359379b4104fafdfcada7bafc`
+- verdict:   approved — P0/P1/P2 = 0/0/0.
+- evidence:  No rollback authorization confusion remains; generated core
+             copies match root and the marketplace remains core + personal.
+- note:      Direct-install settings override-key measurement remains
+             documented/non-blocking. Actions matrix interpolation remains
+             defense-in-depth only with no concrete privilege path.
+
+## HANDOFF 2026-08-27-1750 — principal-sre -> workflow-ship
+
+- did:       Both required independent reviews approved exact implementation
+             ref `5edd2a42188aba5359379b4104fafdfcada7bafc`.
+- state:     in-review
+- needs:     Commit these records, prove review ancestry and records-only
+             equivalence, then require fresh CI at that actual final head.
+- artifacts: `kai/coordination/items/pack-split-release-12c-1-hardening.md`;
+             `kai/coordination/threads/pack-split-release-12c-1-hardening.md`
+- evidence:  SRE approved 0/0/0; security approved 0/0/0.
+- questions: none
+- next:      workflow-ship — complete the exact-head pre-merge gate.

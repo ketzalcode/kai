@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-sre
+next_role: workflow-ship
 target: pack-split pre-publish hardening release (1.0.1; no marketplace surface change)
 artifact_target: null
 context_artifacts:
@@ -49,16 +49,28 @@ review_requirements:
     kind: independent-reliability
   - role: principal-security
     kind: independent-security
-completed_reviews: []
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 5edd2a42188aba5359379b4104fafdfcada7bafc
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12c-1-hardening.md"
+    timestamp: 2026-08-27-1750
+  - role: principal-security
+    kind: independent-security
+    change_ref: 5edd2a42188aba5359379b4104fafdfcada7bafc
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12c-1-hardening.md"
+    timestamp: 2026-08-27-1750
 change_ref: 5edd2a42188aba5359379b4104fafdfcada7bafc
-version: 8
+version: 9
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1740
+updated: 2026-08-27-1750
 ---
 
 ## Outcome
@@ -137,8 +149,10 @@ step, and cannot land on a CI matrix that ignores it.
 - `npm test`: passed; migration doctor 33 scenarios; pack-preview 178 checks.
 - CI smoke: matrix `["kai-core","kai-personal"]`; both current runtime-binary
   queries return only `lectoria`.
-- Pending: exact-ref SRE and security approvals, fresh final-head CI, merge,
-  production verification, tag and GitHub release.
+- Independent SRE and security reviews approved the exact implementation ref
+  with no P0/P1/P2 findings.
+- Pending: fresh final-head CI, merge, production verification, tag and GitHub
+  release.
 
 ### Build pass 2026-08-27-1612 (`principal-swe-infra`)
 
