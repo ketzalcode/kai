@@ -486,3 +486,25 @@ monolith-only, and release 12b remains **NO-GO**.
              classified both corrections P2/non-blocking.
 - questions: none
 - next:      principal-swe-infra — make only the two accepted review fixes.
+
+## HANDOFF 2026-08-27-1140 — principal-swe-infra -> principal-swe-architect
+
+- did:       Closed both P2 findings from the ratified `6701696d…` review:
+             demo-narrate now names the prebuilt release artifact, and generic
+             SHA-512 validation requires canonical base64 decoding to exactly
+             64 bytes. Added a truncated-digest mutation arm, regenerated the
+             packs, and minted final implementation ref
+             `78a719f0cc32c75c66ddaad4b302985b789a5084`. Builder lease cleared.
+- state:     in-review
+- needs:     Repeat independent architecture review against `78a719f0…`.
+             Earlier review evidence remains historical and does not satisfy
+             the exact-ref gate.
+- artifacts: scripts/demo-narrate.mjs; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs;
+             packs/kai-core/scripts/lib/pack-plan.mjs;
+             packs/kai-personal/scripts/demo-narrate.mjs
+- evidence:  Final `npm test` passed on Node 24.15.0; pack self-test increased
+             to 163 checks; generated-tree and syntax gates remain clean.
+- questions: none
+- next:      principal-swe-architect — re-review only the two accepted fixes
+             plus exact-ref preservation of the already-ratified architecture.

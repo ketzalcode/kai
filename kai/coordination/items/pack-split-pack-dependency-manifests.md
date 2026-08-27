@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 10
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-swe-architect
 target: pack dependency manifests and runtime installation contract
 artifact_target: null
 context_artifacts:
@@ -59,15 +59,15 @@ completed_reviews:
     verdict: ratified
     evidence: "kai/coordination/threads/pack-split-pack-dependency-manifests.md"
     timestamp: 2026-08-27-1137
-change_ref: 6701696d01ec099b470dbaf403c12ddfe6cfe615
-version: 15
+change_ref: 78a719f0cc32c75c66ddaad4b302985b789a5084
+version: 16
 lease:
-  holder: principal-swe-infra
-  token: psinfra-1138-p2
-  version_at_grant: 14
-  acquired: 2026-08-27T11:38:48-07:00
-  expires: 2026-08-27T12:38:48-07:00
-updated: 2026-08-27-1138
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-27-1140
 ---
 
 ## Outcome
@@ -119,6 +119,10 @@ remain deterministic and version-coherent.
   `6701696d01ec099b470dbaf403c12ddfe6cfe615` uses the release URL plus pinned
   SHA-512, rejects non-HTTPS and unapproved runtime sources, weak integrity,
   and artifact drift, and adds clean supported-Node install probes to CI.
+- Final implementation ref
+  `78a719f0cc32c75c66ddaad4b302985b789a5084` also closes both non-blocking
+  architecture findings: the shipped demo comment names the release artifact,
+  and every projected SHA-512 value must decode to the complete 64-byte digest.
 - Independent architecture review at exact change ref
   `e67057ec061e9799cf7300bce972305ab01a7603` returned
   **changes-required**: the projected Lectoria record resolves through
