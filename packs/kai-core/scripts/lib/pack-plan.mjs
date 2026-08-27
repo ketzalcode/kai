@@ -121,6 +121,27 @@ export const SKILL_OWNER_OVERRIDES = {
 // materialised; the full partition remains available to --all previews.
 export const COMMITTED_PACKS = ['core', 'personal'];
 
+// Runtime dependencies belong to the pack that directly executes them. The
+// host copies plugin trees but does not run npm, so these declarations provide
+// a deterministic `npm ci --prefix <pack-root>` contract rather than implying
+// dependencies are installed automatically.
+export const PACK_RUNTIME_DEPENDENCIES = {
+  core: ['lectoria'],
+  engineering: [],
+  product: [],
+  gtm: [],
+  personal: ['lectoria'],
+};
+
+export const RUNTIME_ARTIFACTS = {
+  lectoria: {
+    version: '0.1.0',
+    spec: 'https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz',
+    integrity: 'sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==',
+    lockKey: 'node_modules/lectoria',
+  },
+};
+
 // The plugin name a pack publishes under. Core is the required shared plugin;
 // departments are `kai-<department>`.
 export const packPluginName = (pack) => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
@@ -146,6 +167,174 @@ const listAgentIds = (root) => readdirSync(join(root, 'agents'))
 
 const listSkillIds = (root) => readdirSync(join(root, 'skills'))
   .filter((d) => existsSync(skillFile(root, d))).sort();
+
+function readPackageMetadata(root) {
+  const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  const packageLock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
+  if (packageLock.lockfileVersion !== 3 || !packageLock.packages?.['']) {
+    throw new Error('package-lock.json must be lockfileVersion 3 with a packages[""] record');
+  }
+  return { packageJson, packageLock };
+}
+
+function parentPackageKey(key) {
+  const marker = '/node_modules/';
+  const at = key.lastIndexOf(marker);
+  return at === -1 ? '' : key.slice(0, at);
+}
+
+function lockedDependencyKey(packages, fromKey, dependency) {
+  let scope = fromKey;
+  while (true) {
+    const candidate = scope
+      ? `${scope}/node_modules/${dependency}`
+      : `node_modules/${dependency}`;
+    if (packages[candidate]) return candidate;
+    if (!scope) return null;
+    scope = parentPackageKey(scope);
+  }
+}
+
+function projectLockPackages(packageLock, directDependencies) {
+  const source = packageLock.packages;
+  const projected = new Map();
+  const queue = Object.keys(directDependencies).map((name) => {
+    const key = lockedDependencyKey(source, '', name);
+    if (!key) throw new Error(`package-lock.json has no resolved package for runtime dependency "${name}"`);
+    return key;
+  });
+
+  while (queue.length) {
+    const key = queue.shift();
+    if (projected.has(key)) continue;
+    const node = source[key];
+    if (!node) throw new Error(`package-lock.json is missing required package record "${key}"`);
+    projected.set(key, node);
+
+    for (const dependency of Object.keys(node.dependencies ?? {})) {
+      const child = lockedDependencyKey(source, key, dependency);
+      if (!child) {
+        throw new Error(`package-lock.json cannot resolve "${dependency}" required by "${key}"`);
+      }
+      queue.push(child);
+    }
+    for (const dependency of [
+      ...Object.keys(node.optionalDependencies ?? {}),
+      ...Object.keys(node.peerDependencies ?? {}),
+    ]) {
+      const child = lockedDependencyKey(source, key, dependency);
+      if (child) queue.push(child);
+    }
+  }
+
+  return Object.fromEntries([...projected].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
+function hasFullSha512Integrity(value) {
+  if (typeof value !== 'string' || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    return false;
+  }
+  const digest = value.slice('sha512-'.length);
+  const bytes = Buffer.from(digest, 'base64');
+  return bytes.length === 64 && bytes.toString('base64') === digest;
+}
+
+function runtimeDependencyContractMessages(dependencies, packages) {
+  const messages = [];
+  const sanctionedArtifacts = new Map(
+    Object.values(RUNTIME_ARTIFACTS).map((artifact) => [artifact.spec, artifact])
+  );
+
+  for (const [key, record] of Object.entries(packages)) {
+    if (key === '') continue;
+    const resolved = record.resolved;
+    let source = null;
+    if (typeof resolved !== 'string' || !resolved) {
+      messages.push(`lock record "${key}" has no immutable resolved URL`);
+    } else {
+      try {
+        source = new URL(resolved);
+      } catch {
+        messages.push(`lock record "${key}" has invalid resolved URL "${resolved}"`);
+      }
+    }
+    if (source?.protocol !== 'https:') {
+      messages.push(`lock record "${key}" must resolve over HTTPS, got "${resolved ?? 'missing'}"`);
+    } else if (source.hostname === 'registry.npmjs.org') {
+      // Registry tarballs are the default approved runtime source.
+    } else if (!sanctionedArtifacts.has(resolved)) {
+      messages.push(`lock record "${key}" resolves from unapproved runtime source "${resolved}"`);
+    }
+    if (!hasFullSha512Integrity(record.integrity)) {
+      messages.push(`lock record "${key}" must carry a complete SHA-512 integrity digest`);
+    }
+  }
+
+  for (const [dependency, artifact] of Object.entries(RUNTIME_ARTIFACTS)) {
+    if (!(dependency in dependencies)) continue;
+    if (dependencies[dependency] !== artifact.spec) {
+      messages.push(`runtime dependency "${dependency}" must use sanctioned artifact "${artifact.spec}"`);
+    }
+    const record = packages[artifact.lockKey];
+    if (!record) {
+      messages.push(`runtime dependency "${dependency}" has no "${artifact.lockKey}" lock record`);
+      continue;
+    }
+    if (record.version !== artifact.version) {
+      messages.push(`runtime dependency "${dependency}" must lock version "${artifact.version}"`);
+    }
+    if (record.resolved !== artifact.spec) {
+      messages.push(`runtime dependency "${dependency}" must lock sanctioned artifact "${artifact.spec}"`);
+    }
+    if (record.integrity !== artifact.integrity) {
+      messages.push(`runtime dependency "${dependency}" does not match its pinned SHA-512 integrity`);
+    }
+  }
+
+  return messages;
+}
+
+function packPackageMetadata({ pack, name, version, packageJson, packageLock }) {
+  const dependencyNames = PACK_RUNTIME_DEPENDENCIES[pack];
+  if (!dependencyNames) throw new Error(`no runtime dependency plan exists for pack "${pack}"`);
+
+  const dependencies = {};
+  for (const dependency of [...dependencyNames].sort()) {
+    const spec = packageJson.dependencies?.[dependency];
+    if (!spec) throw new Error(`package.json does not declare pack runtime dependency "${dependency}"`);
+    dependencies[dependency] = spec;
+  }
+
+  const manifest = {
+    name,
+    version,
+    private: true,
+    engines: packageJson.engines ?? {},
+    dependencies,
+  };
+  const lockRoot = {
+    name,
+    version,
+    dependencies,
+    engines: packageJson.engines ?? {},
+  };
+  const projectedPackages = projectLockPackages(packageLock, dependencies);
+  const contractMessages = runtimeDependencyContractMessages(dependencies, projectedPackages);
+  if (contractMessages.length) {
+    throw new Error(`${name} runtime dependency contract is invalid:\n${contractMessages.join('\n')}`);
+  }
+  const lock = {
+    name,
+    version,
+    lockfileVersion: 3,
+    requires: true,
+    packages: {
+      '': lockRoot,
+      ...projectedPackages,
+    },
+  };
+  return { packageManifest: manifest, packageLock: lock };
+}
 
 // Every skill named on an agent's single `**Inherits:**` line, as written —
 // including one that does not exist, which is a reference miss rather than a
@@ -223,6 +412,7 @@ export function planManifests({
   root = REPO_ROOT, version = '0.0.0-preview', packs = PACK_ORDER,
 } = {}) {
   const plan = planPacks(root);
+  const packageMetadata = readPackageMetadata(root);
   const selected = [...new Set(packs)];
   const unknown = selected.filter((pack) => !PACKS[pack]);
   if (unknown.length) throw new Error(`unknown pack(s): ${unknown.join(', ')}`);
@@ -236,8 +426,18 @@ export function planManifests({
     const manifest = { name, version, description: packDescription(pack) };
     if (agents.length) manifest.agents = 'agents';
     manifest.skills = 'skills';
+    const npm = packPackageMetadata({ pack, name, version, ...packageMetadata });
 
-    return { pack, name, dir: name, kind: isCore ? 'core' : 'department', agents, skills, manifest };
+    return {
+      pack,
+      name,
+      dir: name,
+      kind: isCore ? 'core' : 'department',
+      agents,
+      skills,
+      manifest,
+      ...npm,
+    };
   });
 }
 
@@ -256,6 +456,8 @@ export function materializePacks({
   const selected = new Set(manifests.map((entry) => entry.pack));
   for (const p of manifests) {
     files.set(`${p.dir}/plugin.json`, `${JSON.stringify(p.manifest, null, 2)}\n`);
+    files.set(`${p.dir}/package.json`, `${JSON.stringify(p.packageManifest, null, 2)}\n`);
+    files.set(`${p.dir}/package-lock.json`, `${JSON.stringify(p.packageLock, null, 2)}\n`);
     for (const id of p.agents) {
       const body = normalizeLF(readAgentBody(root, id));
       // Core agents carry neither block: they ship inside kai-core, so the
@@ -273,6 +475,10 @@ export function materializePacks({
     assets,
     exists: (asset) => existsSync(join(root, ...asset.split('/'))),
     read: (asset) => readFileSync(join(root, ...asset.split('/')), 'utf8'),
+    dependencies: new Map(PACK_ORDER.map((pack) => [
+      pack,
+      new Set(PACK_RUNTIME_DEPENDENCIES[pack]),
+    ])),
   });
   if (closure.errors.length) {
     throw new Error(closure.errors.map((e) => `${e.file}: ${e.msg}`).join('\n'));
@@ -624,6 +830,8 @@ export function parseGeneratedKey(key, packs = PACK_ORDER) {
   if (!pack) return null;
   const at = { pack, dir };
   if (rest.length === 1 && rest[0] === 'plugin.json') return { ...at, kind: 'manifest', id: null };
+  if (rest.length === 1 && rest[0] === 'package.json') return { ...at, kind: 'package', id: null };
+  if (rest.length === 1 && rest[0] === 'package-lock.json') return { ...at, kind: 'lock', id: null };
   if (rest.length === 1 && rest[0] === HOOKS_FILE) return { ...at, kind: 'hooks', id: null };
   if (rest.length === 2 && rest[0] === 'agents' && rest[1].endsWith('.agent.md')) {
     return { ...at, kind: 'agent', id: rest[1].replace(/\.agent\.md$/, '') };
@@ -869,9 +1077,14 @@ function resolveRelativeModule(asset, specifier, exists) {
   return moduleCandidates(asset, specifier).find(exists) ?? null;
 }
 
+function barePackageName(specifier) {
+  const parts = specifier.split('/');
+  return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
+}
+
 // Top-level assets are routed by their invoking bodies. Their relative module
 // dependencies must travel with them or the copied entry point cannot load.
-export function planAssetClosure({ assets, read, exists }) {
+export function planAssetClosure({ assets, read, exists, dependencies = new Map() }) {
   const files = new Map();
   const errors = [];
   for (const [asset, entry] of assets) {
@@ -893,11 +1106,14 @@ export function planAssetClosure({ assets, read, exists }) {
       for (const specifier of moduleSpecifiers(read(current))) {
         if (NODE_MODULES.has(specifier)) continue;
         if (!specifier.startsWith('.')) {
-          errors.push({
-            file: current,
-            msg: `imports bare module \`${specifier}\` — generated packs intentionally carry no npm `
-              + 'manifest until publication owns dependency installation',
-          });
+          const dependency = barePackageName(specifier);
+          if (!dependencies.get(entry.owner)?.has(dependency)) {
+            errors.push({
+              file: current,
+              msg: `imports undeclared bare module \`${specifier}\` — add \`${dependency}\` to `
+                + `${packPluginName(entry.owner)}'s runtime dependency plan`,
+            });
+          }
           continue;
         }
         const dependency = resolveRelativeModule(current, specifier, exists);
@@ -918,28 +1134,111 @@ export function planAssetClosure({ assets, read, exists }) {
   };
 }
 
-// Validate the emitted runtime surface itself. This pins the manifest deferral
-// and proves every copied JavaScript entry point can resolve its local modules.
+function parseGeneratedJson(files, key, errs) {
+  const text = files.get(key);
+  if (text === undefined) return null;
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    errs.push({ file: `generated ${key}`, msg: `is not valid JSON (${error.message})` });
+    return null;
+  }
+}
+
+// Validate package metadata against the exact deterministic projection of the
+// root dependency graph. Generated trees declare installation; the host does
+// not perform it.
+export function generatedPackageErrors(files, {
+  root = REPO_ROOT,
+  packs = PACK_ORDER,
+} = {}) {
+  const errs = [];
+  const selected = packs.filter((pack) => files.has(`${packPluginName(pack)}/plugin.json`));
+
+  for (const pack of selected) {
+    const dir = packPluginName(pack);
+    const pluginKey = `${dir}/plugin.json`;
+    const packageKey = `${dir}/package.json`;
+    const lockKey = `${dir}/package-lock.json`;
+    const plugin = parseGeneratedJson(files, pluginKey, errs);
+    const packageJson = parseGeneratedJson(files, packageKey, errs);
+    const packageLock = parseGeneratedJson(files, lockKey, errs);
+
+    if (!files.has(packageKey)) {
+      errs.push({ file: `generated ${packageKey}`, msg: 'is missing from the generated pack' });
+    }
+    if (!files.has(lockKey)) {
+      errs.push({ file: `generated ${lockKey}`, msg: 'is missing from the generated pack' });
+    }
+    if (!plugin || !packageJson || !packageLock) continue;
+
+    const [expected] = planManifests({ root, version: plugin.version, packs: [pack] });
+    const expectedPackage = `${JSON.stringify(expected.packageManifest, null, 2)}\n`;
+    const expectedLock = `${JSON.stringify(expected.packageLock, null, 2)}\n`;
+    if (normalizeLF(files.get(packageKey)) !== expectedPackage) {
+      errs.push({
+        file: `generated ${packageKey}`,
+        msg: 'does not match the deterministic runtime dependency projection from root package.json',
+      });
+    }
+    if (normalizeLF(files.get(lockKey)) !== expectedLock) {
+      errs.push({
+        file: `generated ${lockKey}`,
+        msg: 'does not match the deterministic reachable dependency projection from root package-lock.json',
+      });
+    }
+  }
+  return errs;
+}
+
+// Validate the emitted runtime surface itself. Every copied JavaScript entry
+// point must resolve local modules and declare each bare runtime dependency in
+// the same pack's manifest and lockfile.
 export function generatedRuntimeErrors(files, packs = PACK_ORDER) {
   const errs = [];
+  const packageState = new Map();
+  for (const pack of packs) {
+    const dir = packPluginName(pack);
+    const packageJson = parseGeneratedJson(files, `${dir}/package.json`, errs);
+    const packageLock = parseGeneratedJson(files, `${dir}/package-lock.json`, errs);
+    packageState.set(pack, {
+      dependencies: packageJson?.dependencies ?? {},
+      locked: packageLock?.packages ?? {},
+      hasPackage: packageJson !== null,
+      hasLock: packageLock !== null,
+    });
+    if (packageJson && packageLock) {
+      for (const msg of runtimeDependencyContractMessages(
+        packageJson.dependencies ?? {},
+        packageLock.packages ?? {}
+      )) {
+        errs.push({ file: `generated ${dir}/package-lock.json`, msg });
+      }
+    }
+  }
+
   for (const [key, text] of files) {
     const entry = parseGeneratedKey(key, packs);
     if (!entry) continue;
-    if (entry.kind === 'other' && (entry.id === 'package.json' || entry.id === 'package-lock.json')) {
-      errs.push({
-        file: `generated ${key}`,
-        msg: 'must not ship before the publication work owns pack dependency installation',
-      });
-      continue;
-    }
     if (entry.kind !== 'other' || !JAVASCRIPT_ASSET.test(entry.id)) continue;
     for (const specifier of moduleSpecifiers(text)) {
       if (NODE_MODULES.has(specifier)) continue;
       if (!specifier.startsWith('.')) {
-        errs.push({
-          file: `generated ${key}`,
-          msg: `imports bare module \`${specifier}\` but this generated pack has no npm manifest`,
-        });
+        const dependency = barePackageName(specifier);
+        const state = packageState.get(entry.pack);
+        if (!state?.hasPackage || !(dependency in state.dependencies)) {
+          errs.push({
+            file: `generated ${key}`,
+            msg: `imports undeclared bare module \`${specifier}\`; ${entry.dir}/package.json `
+              + `must declare \`${dependency}\` as a runtime dependency`,
+          });
+        } else if (!state.hasLock || !state.locked[`node_modules/${dependency}`]) {
+          errs.push({
+            file: `generated ${key}`,
+            msg: `imports bare module \`${specifier}\`, but ${entry.dir}/package-lock.json `
+              + `has no \`node_modules/${dependency}\` record`,
+          });
+        }
         continue;
       }
       const dependency = moduleCandidates(entry.id, specifier)

@@ -220,10 +220,11 @@ count, skip a source), honour and re-plan.
 
 ### 3. Generate audio for sources that need it (parallelize where safe)
 
-For each source whose audio doesn't already exist, invoke the
-`kai-core-generate-audio` skill via the wrapper script (`scripts/generate-audio.ps1`
-in the kai checkout). Pass `-Lang es` (Spanish default) and `-Style
-conversational` unless the operator overrode.
+For each source whose audio doesn't already exist, load
+`kai-core-generate-audio`, resolve the kai-core provider root from that skill's
+base directory, and invoke its absolute `scripts/generate-audio.ps1` path. Never
+derive the script from this personal pack's root. Pass `-Lang es` (Spanish
+default) and `-Style conversational` unless the operator overrode.
 
 If the host supports parallel async shells, you can launch a few in
 parallel — but be mindful of Azure OpenAI TPM quota. For sources

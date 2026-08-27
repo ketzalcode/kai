@@ -2762,3 +2762,45 @@ Independent SRE re-review ratified exact
 All 4 of 4 `first-pack-extracted` requirements are satisfied. Release 12b
 remains NO-GO for dependency manifests, onboarding, and release 12a. No pack,
 marketplace entry, version, tag, or release changed.
+
+## 2026-08-26 — steward transition: first pack closed; dependency manifests ready
+
+`principal-product-manager` reconciled the merged host-gate evidence. PR #174
+is on `main` as `b6db547c41b606c92e78e9d91fab82c554fc7d3d`; main validation run
+`33028413182`, job `98375047081`, succeeded. The authorized disposable
+consumer repository `RubenSaucedo/kai-pack-host-gate-consumer` was deleted
+after evidence preservation. The terminal host-gates record remains
+`completed` and is now v17 after this evidence-only reconciliation.
+
+`first-pack-extracted` is **CLOSED** with all 4 of 4 typed required items at
+their declared terminal states. The steward advanced `scope.current` to
+`five-pack-split-shipped`.
+
+Exactly one item was promoted:
+`pack-split-pack-dependency-manifests` `proposed -> ready` (v2 -> v3),
+priority 10, `owner: null`, lease clear, `next_role: principal-swe-infra`.
+Its sole dependency, `pack-split-host-gates (completed)`, is satisfied. It is
+the sole executable item.
+
+No later dependent item moved: onboarding and releases 12a/12b/12c remain
+`proposed`. Release 12b remains **NO-GO** because dependency manifests,
+onboarding, and release 12a are unmet. This pass implemented no manifest
+behavior, published no pack, changed no marketplace topology or version, and
+performed no release action.
+
+## 2026-08-27 - dependency manifests release-ready
+
+`workflow-ship` prepared `pack-split-pack-dependency-manifests` after final
+independent architecture ratification at
+`78a719f0cc32c75c66ddaad4b302985b789a5084` with P0/P1/P2 `0/0/0`.
+
+Lectoria `v0.1.0` is now a public prebuilt artifact from source commit
+`c284b6cdeef96591be31201444ffebcaa463ba0c`. Root, core, and personal lock its
+HTTPS release URL with exact SHA-512. GitHub Actions run `33104688494` passed
+the contract and clean Node 24.15.0 empty-cache runtime installs for both packs
+with Git and SSH disabled.
+
+All six Definition-of-Done dimensions are Clear. PR #175 is release-ready for
+the authorized merge and `v0.65.0` release. Packs remain unpublished,
+marketplace topology remains the single monolith entry, and release 12b remains
+NO-GO.

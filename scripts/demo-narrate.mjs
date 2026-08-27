@@ -41,6 +41,7 @@ import { parseScreenplay, parseTake } from './demo-capture.mjs';
 
 const TAKE_SCHEMA = 'kai.demo-narration-take/v1';
 const PLAN_SCHEMA = 'kai.demo-narration-plan/v1';
+const PLUGIN_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // Silence between beats. Speech that butts straight onto the previous line reads
 // as one run-on sentence; this is the smallest pause that still sounds authored.
@@ -303,20 +304,15 @@ export function buildMixArgs(plan, { video, out }) {
 // script that only needs a duration back. So it is treated as an external tool
 // and shelled out to, exactly as ffmpeg is.
 //
-// Where it lives is not a guess. kai pins lectoria as a git dependency, so
-// `npm install` puts it at `node_modules/.bin/lectoria` -- not on PATH, and not
-// global. `kai-core-generate-audio` already resolves it that way; looking only on PATH
-// would report it absent on precisely the machines where it is correctly
-// installed, with a message accurate about what it checked and wrong about the
-// conclusion.
+// kai-personal pins a prebuilt Lectoria release, so `npm ci --prefix <root>`
+// puts it at `node_modules/.bin/lectoria`. Looking only on PATH would report
+// it absent on precisely the machines where it is correctly installed.
 export function findLectoria(env = process.env, probe = defaultProbe, exists = existsSync) {
   const explicit = env.LECTORIA_BIN;
   if (explicit) return { path: explicit, source: 'LECTORIA_BIN' };
 
-  // The plugin root is two levels up from this file (scripts/demo-narrate.mjs).
-  const root = dirname(dirname(fileURLToPath(import.meta.url)));
   for (const name of process.platform === 'win32' ? ['lectoria.cmd', 'lectoria.ps1', 'lectoria'] : ['lectoria']) {
-    const local = join(root, 'node_modules', '.bin', name);
+    const local = join(PLUGIN_ROOT, 'node_modules', '.bin', name);
     if (exists(local)) return { path: local, source: 'node_modules/.bin' };
   }
 
@@ -327,9 +323,10 @@ export function findLectoria(env = process.env, probe = defaultProbe, exists = e
 // what was checked -- a bare "not found" sends people looking in the wrong place.
 export const LECTORIA_MISSING = [
   'lectoria was not found, so narration cannot be synthesised. Checked LECTORIA_BIN,',
-  "this plugin's node_modules/.bin, and PATH.",
-  'Run `npm install` in the plugin (lectoria is pinned there as a git dependency), or set',
-  'LECTORIA_BIN to its executable. Note lectoria needs Node ^22.22.2 || ^24.15.0 || >=26.0.0,',
+  "this kai-personal plugin's node_modules/.bin, and PATH.",
+  `Run \`npm ci --prefix "${PLUGIN_ROOT}"\` to install the dependency pinned by this pack,`,
+  'or set LECTORIA_BIN to its executable. Plugin updates may replace node_modules, so rerun',
+  'npm ci when the local executable is absent. Lectoria needs Node ^22.22.2 || ^24.15.0 || >=26.0.0,',
   'so a version error can look like an install problem.',
   'Nothing was recorded as narrated.',
 ].join(' ');

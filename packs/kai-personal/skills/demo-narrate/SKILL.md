@@ -62,12 +62,18 @@ So a beat spans the visual states it describes:
 Beats live **inside `demo_screenplay.json`**, beside the actions. Same story,
 same author, same sitting, one thing to review.
 
+**Resolving the script path.** Resolve `<kai-personal-plugin>` from this loaded
+skill's base directory: start at
+`<kai-personal-plugin>/skills/demo-narrate/` and go up two directories. Invoke
+the absolute `<kai-personal-plugin>/scripts/demo-narrate.mjs`; do not assume the
+user's current directory is a plugin checkout.
+
 ## The workflow
 
 ### 1. Estimate before spending anything
 
 ```bash
-node scripts/demo-narrate.mjs --estimate demo_screenplay.json
+node <kai-personal-plugin>/scripts/demo-narrate.mjs --estimate demo_screenplay.json
 ```
 
 Characters and a projected length at 130 wpm. It makes no paid call, and every
@@ -77,7 +83,7 @@ authorising one.
 ### 2. Synthesise, once per line
 
 ```bash
-node scripts/demo-narrate.mjs --synthesize demo_screenplay.json --out clips/ --voice en-US-AvaMultilingualNeural
+node <kai-personal-plugin>/scripts/demo-narrate.mjs --synthesize demo_screenplay.json --out clips/ --voice en-US-AvaMultilingualNeural
 ```
 
 Writes `clips/demo_narration_take.json` — the measured, paid output. It is a
@@ -106,11 +112,16 @@ tool is that it never is.
 
 `lectoria` is an optional external tool, discovered at run time exactly like
 `ffmpeg`. It is resolved in a fixed order — `LECTORIA_BIN`, then this plugin's
-`node_modules/.bin/lectoria` (where the pinned git dependency lands), then a
-global install on PATH — and the pinned copy wins over a stray global, so a demo
-is narrated by the version this plugin pins. If it is absent the tool says which
-places it looked and narration is unavailable; it does not degrade into
+`node_modules/.bin/lectoria` (where the pinned release artifact lands), then a
+global install on PATH — and the pinned copy wins over a stray global, so a
+demo is narrated by the version this plugin pins. If it is absent the tool says
+which places it looked and narration is unavailable; it does not degrade into
 something silent that looks like it worked.
+
+Copilot installs kai-personal's files but does not run npm. Before synthesis,
+run `npm ci --prefix "<kai-personal-plugin>"`; rerun it after a plugin update
+whenever the local executable is absent. Estimation, placement, and mixing do
+not need Lectoria.
 
 Synthesis needs Azure Speech configured in the environment lectoria reads:
 `AZURE_SPEECH_REGION`, plus either `AZURE_SPEECH_KEY` or
@@ -122,7 +133,7 @@ another region.
 ### 3. Place it against the recording
 
 ```bash
-node scripts/demo-narrate.mjs --place demo_screenplay.json demo_take.json demo_narration_take.json --out demo_narration_plan.json
+node <kai-personal-plugin>/scripts/demo-narrate.mjs --place demo_screenplay.json demo_take.json demo_narration_take.json --out demo_narration_plan.json
 ```
 
 Each beat starts at the later of its earliest honest position and the moment the
@@ -133,7 +144,7 @@ a rejection.
 ### 4. Mix onto the finished render
 
 ```bash
-node scripts/demo-narrate.mjs --mix demo_narration_plan.json --video demo-focused.mp4 --out narrated.mp4
+node <kai-personal-plugin>/scripts/demo-narrate.mjs --mix demo_narration_plan.json --video demo-focused.mp4 --out narrated.mp4
 ```
 
 Prints the ffmpeg command. The video is **copied, not re-encoded**, so

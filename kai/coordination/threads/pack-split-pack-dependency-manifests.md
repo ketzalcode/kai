@@ -25,3 +25,590 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-product-manager — promote only after the current milestone
              closes; then `principal-swe-infra` owns implementation.
+
+## HANDOFF 2026-08-26-1806 — principal-product-manager -> principal-swe-infra
+
+- did:       Reconciled `first-pack-extracted` at 4 of 4 typed requirements,
+             advanced `scope.current` to `five-pack-split-shipped`, and promoted
+             this item alone `proposed -> ready` (v2 -> v3, priority 20 -> 10).
+             Its sole dependency, `pack-split-host-gates (completed)`, is met.
+             Owner and lease remain clear.
+- state:     ready
+- needs:     Implement only the accepted dependency-manifest/runtime contract,
+             preserve root-generated packs and lockstep semver, keep emitted
+             bare-import refusal intact, and obtain the required independent
+             architecture review before release routing. Do not publish packs,
+             alter marketplace topology, or start onboarding/release items.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/initiatives/pack-split/northstar.md;
+             kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md
+- evidence:  PR #174 merged to main as
+             `b6db547c41b606c92e78e9d91fab82c554fc7d3d`; main validation run
+             `33028413182`, job `98375047081`, succeeded; host-gates is
+             completed and SRE-ratified at `263452126179dd9f3a61183903a26a90c4d6b1c1`;
+             the disposable consumer repository was deleted after evidence
+             preservation.
+- questions: none
+- next:      principal-swe-infra — sole executable item; claim under a fresh
+             lease before implementation.
+
+## NOTE 2026-08-26-1818 — principal-swe-infra
+
+- did:       Claimed the sole executable item under lease
+             `psinfra-1818-dm65`, moved `ready -> in-progress`, and reconciled
+             the declared touch set with the implementation already present in
+             this same operator-authorized, single-worker session. No other
+             item is in progress and no conflicting lease exists.
+- state:     in-progress
+- needs:     Complete generated manifests, audio resolution, release hygiene,
+             exact-tree validation, and the required independent architecture
+             review before moving to in-review.
+- artifacts: scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs;
+             scripts/validate-plugin.mjs; packs/kai-core; packs/kai-personal;
+             skills/kai-core-generate-audio/SKILL.md;
+             skills/demo-narrate/SKILL.md
+- evidence:  pack-preview self-test passed 155 checks before the final
+             documentation and release-metadata pass; generated kai-core lock
+             accepted `npm ci` and produced a working `lectoria --help`.
+- questions: none
+- next:      principal-swe-infra — finish the bounded dependency-contract
+             increment, then bind review to a git change_ref.
+
+## NOTE 2026-08-26-1823 — principal-swe-infra
+
+- did:       Reconciled the touch set to include the canonical pack-architecture
+             proposal after replacing its now-stale "no package manifests"
+             statement with the settled host and `npm ci` contract.
+- state:     in-progress
+- needs:     Final regeneration, full validation, and commit-bound architecture
+             review.
+- artifacts: docs/proposals/pack-architecture.md;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+- evidence:  Host behavior remains sourced from the completed reliability
+             artifact; no marketplace topology or publication state changed.
+- questions: none
+- next:      principal-swe-infra — complete validation and mint change_ref.
+
+## HANDOFF 2026-08-26-1827 — principal-swe-infra -> principal-swe-architect
+
+- did:       Implemented the pack dependency contract and moved
+             `in-progress -> in-review`. Every generated pack now receives
+             deterministic npm metadata; core and personal project the exact
+             root-pinned Lectoria graph; emitted bare imports require a
+             same-pack declaration and lock record. Audio scripts and personal
+             handoffs resolve the correct provider root and state the manual
+             `npm ci` plus update-survival contract. Version moved
+             `0.64.0 -> 0.65.0`. Lease cleared.
+- state:     in-review
+- needs:     Independent architecture review at exact change_ref
+             `e67057ec061e9799cf7300bce972305ab01a7603`. If ratified, route to
+             workflow-ship; if findings change implementation, mint a new ref
+             and repeat review.
+- artifacts: scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs;
+             scripts/validate-plugin.mjs; scripts/generate-audio.ps1;
+             scripts/demo-narrate.mjs; skills/kai-core-generate-audio/SKILL.md;
+             skills/demo-narrate/SKILL.md; packs/kai-core/package.json;
+             packs/kai-core/package-lock.json; packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json
+- evidence:  `npm test` success at 0.65.0; pack self-test 157/157; generated
+             drift clean; `git diff --check` clean; temporary core + personal
+             `npm ci` both succeeded and exposed Lectoria; provider-root
+             resolution invoked the generated core wrapper's pack-local binary.
+             npm warned that this verification host's Node 24.14.0 is below the
+             declared 24.15.0 floor; the install and executable probes still
+             succeeded.
+- questions: none
+- next:      principal-swe-architect — review the dependency boundary,
+             deterministic lock projection, same-pack runtime ownership, and
+             provider-root invocation contract at the exact SHA.
+
+## NOTE 2026-08-26-1827 — director review dispatch
+
+- did:       Granted the required independent architecture review lease
+             `arch-1827-dm65` at item version 6. Lifecycle remains `in-review`;
+             implementation change_ref remains
+             `e67057ec061e9799cf7300bce972305ab01a7603`.
+- state:     in-review
+- needs:     A ratify or changes-required verdict bound to the exact change_ref,
+             with implementation left untouched by the assessor.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md
+- evidence:  No other item is in progress and the builder lease was cleared
+             before this reviewer grant.
+- questions: none
+- next:      principal-swe-architect — perform the independent review under
+             token `arch-1827-dm65`.
+
+## REVIEW 2026-08-26-1828 — independent architecture
+
+- role:       principal-swe-architect
+- kind:       independent-architecture
+- change_ref: `e67057ec061e9799cf7300bce972305ab01a7603`
+- parent:     `b6db547c41b606c92e78e9d91fab82c554fc7d3d`
+- verdict:    **changes-required**
+- disposition: **Reshape** — preserve the pack-local ownership and deterministic
+               projection, but make the pinned source fetchable without an
+               unrelated GitHub SSH credential.
+- findings:   P0 0 / P1 1 / P2 0
+
+### Decision and forces
+
+The decision is whether this exact revision establishes a truthful,
+deterministic runtime-dependency seam for copied-but-not-installed packs.
+The controlling forces are: the host supplies neither `npm install` nor
+`node_modules`; runtime dependencies must not leak across plugin roots; manual
+recovery must work for an ordinary consumer; generation must not solve or fetch;
+and the marketplace/publication boundary must not move in this PR.
+
+The reviewed shape is:
+
+```text
+ canonical package.json + lock
+             |
+             | deterministic projection (no network)
+             v
+   +---------------------+       provider-root invocation
+   | kai-core            | <---------------- personal agent
+   | package + lock      |
+   | node_modules/.bin   |----> generate-audio.ps1
+   +---------------------+
+
+   +---------------------+
+   | kai-personal        |
+   | package + lock      |----> demo-narrate.mjs
+   | node_modules/.bin   |
+   +----------+----------+
+              |
+              | current locked fetch
+              v
+   git+ssh://git@github.com/RubenSaucedo/lectoria.git#<SHA>
+              X requires unrelated GitHub SSH authentication
+```
+
+### Findings by severity
+
+#### P1 — Manual pack remediation is credential-coupled to GitHub SSH
+
+`package.json` declares Lectoria by immutable GitHub shorthand, while the exact
+root lock record and both projected pack lockfiles resolve it as
+`git+ssh://git@github.com/RubenSaucedo/lectoria.git#c284b6c…`. The product
+contract tells any installed-pack user to run `npm ci --prefix "<pack-root>"`,
+but SSH access to GitHub requires a configured key added to a GitHub account.
+The successful temporary installs prove this workstation can install the graph;
+they do not prove the documented recovery works on a consumer with no SSH
+identity. That makes the manifests deterministic but not yet generally useful
+or truthful as the sole pack-local remediation path.
+
+Evidence:
+
+- `package-lock.json`, `packages["node_modules/lectoria"].resolved`
+- `packs/kai-core/package-lock.json`, same projected record
+- `packs/kai-personal/package-lock.json`, same projected record
+- `skills/kai-core-generate-audio/SKILL.md` and
+  `skills/demo-narrate/SKILL.md`, which prescribe pack-local `npm ci`
+- GitHub's SSH guidance requires an SSH key and account registration:
+  https://docs.github.com/en/authentication/connecting-to-github-with-ssh
+
+Exact corrective changes required:
+
+1. Change the canonical Lectoria dependency to an immutable explicit HTTPS git
+   source at the same commit (or another credential-free immutable artifact
+   that still runs the required prepare build).
+2. Regenerate the root lock and generated core/personal package files so no
+   required Lectoria fetch resolves through `git+ssh`.
+3. Add a fail-closed validator/self-test preventing a generated runtime
+   dependency advertised for manual installation from projecting an SSH fetch.
+4. Re-run core and personal `npm ci` on a supported Node version in a clean
+   environment with no usable SSH key/config, then probe both pack-local
+   Lectoria executables and the core provider-root wrapper path.
+5. Mint a new implementation `change_ref` and repeat independent architecture
+   review.
+
+### Architecture questions
+
+1. **Pack ownership/provider root — sound.** Core and personal each own the
+   dependency they directly execute. `generate-audio.ps1` resolves only core's
+   local bin; `demo-narrate.mjs` resolves only personal's local bin. Department
+   instructions derive the core wrapper from the loaded
+   `kai-core-generate-audio` provider root rather than cross-plugin
+   `node_modules` discovery or sibling/cache scanning.
+2. **Lock projection — sound apart from fetch transport.** The projection walks
+   required dependency edges and present optional/peer edges using the existing
+   lock, sorts emitted records, performs no solving or network access, and
+   throws on missing required records. Both selected pack locks were structurally
+   accepted by `npm ci`; the Node 24.14.0 `EBADENGINE` warning is not treated as
+   supported-version evidence.
+3. **Validators — sound.** Generated package and lock bytes must equal the root
+   projection. Emitted JavaScript bare imports require same-pack declaration
+   and a top-level lock record; Node built-ins remain exempt and relative
+   imports retain closure validation. Missing, malformed, drifted, undeclared,
+   and unlocked mutation arms are present.
+4. **Manifest truth — blocked by P1.** The host/update-survival wording is
+   honest, and manual install is the right seam, but its current SSH fetch adds
+   an unstated credential prerequisite.
+5. **Bounded scope — sound.** The exact change keeps the marketplace at the
+   single `kai` entry sourced from `.`, publishes no pack, adds no onboarding
+   flow, and does not flip release 12b. Version `0.65.0` remains pre-1.0 release
+   hygiene only.
+6. **Future five-pack/selected slice — sound.** Runtime plans exist for all five
+   packs, empty packs receive valid root-only locks, selected generation emits
+   only selected packs, and validators derive selected packs from emitted
+   manifests. No additional P0/P1/P2 flaw was found.
+
+### Scope truths and handoff
+
+- This correction is **refine-in-scope**: credential-free manual installation
+  is part of the committed dependency contract, not a new onboarding or
+  publication capability.
+- Packs remain committed and unpublished.
+- Marketplace topology remains monolith-only.
+- Release 12b remains **NO-GO**.
+- `completed_reviews` remains empty because this revision is not ratified.
+- state remains `in-review`; lease is cleared; next role is
+  `principal-swe-infra`.
+
+## HANDOFF 2026-08-26-1828 — principal-swe-architect -> principal-swe-infra
+
+- did:       Reviewed exact change ref `e67057ec061e9799cf7300bce972305ab01a7603`
+             and returned changes required with P0/P1/P2 = 0/1/0.
+- state:     in-review
+- needs:     Replace the SSH-resolved Lectoria source with an immutable
+             credential-free source, regenerate root and pack locks, add the
+             transport refusal test, prove clean no-SSH installs on supported
+             Node, and mint a new change ref for re-review.
+- artifacts: kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/BOARD.md;
+             kai/coordination/ACTIVE.md
+- evidence:  exact root/core/personal lock records at `e67057ec…`; generated
+             package/runtime validators in `scripts/lib/pack-plan.mjs`;
+             provider-local resolvers in `scripts/generate-audio.ps1` and
+             `scripts/demo-narrate.mjs`; GitHub SSH authentication guidance
+             linked in the review.
+- questions: none
+- next:      principal-swe-infra — make the bounded dependency-contract
+             correction and route a new exact revision back for independent
+             architecture review.
+
+## NOTE 2026-08-26-1833 — correction lease
+
+- did:       Claimed the in-review correction under
+             `psinfra-1833-https` at item version 8. The accepted architecture
+             stays unchanged; this pass replaces the credential-coupled fetch,
+             adds a transport refusal gate, and repeats installation proof.
+- state:     in-review
+- needs:     Credential-free immutable HTTPS lock records, supported-Node
+             no-SSH installation evidence, a new change_ref, and architecture
+             re-review.
+- artifacts: package.json; package-lock.json; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs; packs/kai-core/package.json;
+             packs/kai-core/package-lock.json; packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json
+- evidence:  Independent review P1 at exact `e67057ec…`; no completed review
+             was recorded and the reviewer lease is clear.
+- questions: none
+- next:      principal-swe-infra — implement only the bounded HTTPS transport
+             correction.
+
+## RECOVERY 2026-08-27-1059 — principal-swe-infra -> principal-swe-infra
+
+- reclaimed:   pack-split-pack-dependency-manifests
+- stale_lease: holder=principal-swe-infra token=psinfra-1833-https
+               expired=2026-08-26T20:33:57-07:00
+- observed:    The reviewed implementation remains at `e67057ec…`; only its
+               prior correction lease and thread note were uncommitted. New
+               transport experiments found build-at-install is not
+               reproducible, and the operator approved publishing one immutable
+               Lectoria release asset.
+- disposition: safe-to-resume
+- new_lease:   holder=principal-swe-infra token=psinfra-1059-artifact
+               version_at_grant=9
+- state:       in-review
+- next:        principal-swe-infra — replace the git dependency with the
+               approved HTTPS release artifact, prove clean installs, and mint
+               a new review ref.
+
+## NOTE 2026-08-27-1121 — principal-swe-infra
+
+- did:       Expanded the touch set to `.github/workflows/validate.yml` after
+             this workstation's public npm TLS path prevented valid clean-cache
+             evidence. The workflow now runs that same proof on Node 24.15.0
+             for core and personal with empty caches, Git disabled, and no
+             credentials.
+- state:     in-review
+- needs:     Commit the corrected dependency contract, let the clean GitHub
+             runner settle the install evidence, then repeat independent
+             architecture review at the exact new ref.
+- artifacts: .github/workflows/validate.yml;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+- evidence:  Local `npm ci` logs show repeated
+             `ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE` for public registry
+             tarballs before npm exits; the deterministic generator and all
+             local contract tests remain green.
+- questions: none
+- next:      principal-swe-infra — finish the implementation ref and route it
+             through CI plus architecture review.
+
+## HANDOFF 2026-08-27-1126 — principal-swe-infra -> principal-swe-architect
+
+- did:       Published the approved immutable Lectoria `v0.1.0` artifact from
+             exact source commit `c284b6c…`, replaced Git and install-time
+             compilation with its public HTTPS URL and pinned SHA-512, added
+             fail-closed source/integrity gates with mutation arms, regenerated
+             core and personal, and bound the correction to
+             `6701696d01ec099b470dbaf403c12ddfe6cfe615`. The builder lease is
+             clear.
+- state:     in-review
+- needs:     Let GitHub's clean Node 24.15.0 runtime-install jobs settle for
+             both packs, then independently review this exact change ref. A
+             ratified verdict must bind to `6701696d…`; otherwise return exact
+             corrections and require a new ref.
+- artifacts: .github/workflows/validate.yml; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs; package.json; package-lock.json;
+             packs/kai-core/package.json; packs/kai-core/package-lock.json;
+             packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json;
+             docs/proposals/pack-architecture.md;
+             https://github.com/RubenSaucedo/lectoria/releases/tag/v0.1.0
+- evidence:  Lectoria artifact SHA-256
+             `ddd5bef3de299364f339339b2cb604e5cf7d86981a6014a79f62e484cb7b6ef4`;
+             npm SHA-512
+             `EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==`;
+             Lectoria typecheck, lint, 171 tests, build, deterministic pack, API
+             and CLI smoke; Kai `npm test`; 162 pack mutations; repeat root
+             lock generation byte-identical; tampered integrity rejected with
+             `EINTEGRITY`; warm-cache no-Git installs and provider-root probe
+             passed on Node 24.15.0. Public-registry empty-cache proof is
+             delegated to the committed CI matrix because this workstation's
+             registry TLS path fails before package extraction.
+- questions: none
+- next:      principal-swe-architect — review the immutable-artifact boundary,
+             source allowlist, exact integrity pin, deterministic projection,
+             and clean CI installation evidence at the new change ref.
+
+## NOTE 2026-08-27-1128 — director review dispatch
+
+- did:       Granted the required independent architecture review lease
+             `arch-1128-artifact` at item version 12. Lifecycle remains
+             `in-review`; implementation change ref remains
+             `6701696d01ec099b470dbaf403c12ddfe6cfe615`.
+- state:     in-review
+- needs:     Ratify or return changes against the exact implementation ref,
+             including the clean no-Git install evidence for both generated
+             packs.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  GitHub Actions run `33103553150`: contract job passed; clean
+             Node 24.15.0 runtime-dependency jobs passed for `kai-core` and
+             `kai-personal` with empty caches, Git disabled, no credentials,
+             public npm registry, CLI probes, and core provider-root selection.
+- questions: none
+- next:      principal-swe-architect — perform the independent review under
+             token `arch-1128-artifact`.
+
+## REVIEW 2026-08-27-1137 — independent architecture
+
+- role:       principal-swe-architect
+- kind:       independent-architecture
+- change_ref: `6701696d01ec099b470dbaf403c12ddfe6cfe615`
+- parent:     `b6db547c41b606c92e78e9d91fab82c554fc7d3d`
+- verdict:    **ratified**
+- disposition: **Endorse** — the accepted pack-local seam is unchanged; the
+               blocking transport and reproducibility forces are resolved by
+               the immutable public artifact.
+- findings:   P0 0 / P1 0 / P2 2
+
+The prior SSH-coupled remediation is closed: no runtime lock resolves through
+Git, and the shared contract rejects non-HTTPS and unapproved sources. The
+follow-up build-at-install finding is closed: Lectoria is a prebuilt tarball
+with exact SHA-512 integrity that npm verifies.
+
+Judged sound: release provenance and integrity; the registry plus sanctioned
+artifact allowlist; offline deterministic lock projection; pack-local runtime
+ownership; provider-root invocation; and clean Node 24.15.0 empty-cache,
+no-Git, no-credential installs for both packs in GitHub Actions run
+`33103553150`.
+
+Non-blocking P2s: `scripts/demo-narrate.mjs` retains one stale code comment
+calling Lectoria a git dependency, while every executable and user-facing
+surface is correct; the generic registry-integrity regex checks SHA-512
+algorithm and base64 shape but not digest length, while the sanctioned
+Lectoria digest is exact-matched and npm rejects real mismatches with
+`EINTEGRITY`. Neither requires a new review ref.
+
+Residual availability risk: the GitHub release asset has no mirror. Deletion
+would fail loudly and affect only opt-in audio; substitution is blocked by the
+integrity pin. Packs remain unpublished, marketplace topology remains
+monolith-only, and release 12b remains **NO-GO**.
+
+## HANDOFF 2026-08-27-1137 — principal-swe-architect -> workflow-ship
+
+- did:       Ratified exact implementation ref
+             `6701696d01ec099b470dbaf403c12ddfe6cfe615` with
+             P0/P1/P2 = 0/0/2, recorded the completed review, confirmed every
+             acceptance criterion, and cleared the review lease. Lifecycle
+             remains `in-review` until workflow-ship performs its prepare gate.
+- state:     in-review
+- needs:     Prepare this exact ref for merge. Any implementation-byte change
+             invalidates the ratification and requires a new ref and review.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             kai/coordination/BOARD.md; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs; .github/workflows/validate.yml;
+             package.json; package-lock.json; packs/kai-core/package.json;
+             packs/kai-core/package-lock.json;
+             packs/kai-personal/package.json;
+             packs/kai-personal/package-lock.json;
+             https://github.com/RubenSaucedo/lectoria/releases/tag/v0.1.0;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  GitHub Actions run `33103553150` jobs `98627299382`,
+             `98627299598`, and `98627299641` all succeeded; root, core, and
+             personal pin the release URL at
+             `sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==`;
+             later branch commits touch coordination only.
+- questions: none
+- next:      workflow-ship — perform release-readiness preparation for PR #175
+             without publishing packs or changing marketplace topology.
+
+## NOTE 2026-08-27-1138 — principal-swe-infra
+
+- did:       Accepted both non-blocking P2 review findings for immediate
+             cleanup rather than parking trivial debt. Claimed correction lease
+             `psinfra-1138-p2` at item version 14.
+- state:     in-review
+- needs:     Correct the stale demo-narrate comment and require a full 64-byte
+             SHA-512 digest for every projected registry record, then mint and
+             re-review one final implementation ref.
+- artifacts: scripts/demo-narrate.mjs; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs
+- evidence:  Independent review at `6701696d…` ratified the architecture and
+             classified both corrections P2/non-blocking.
+- questions: none
+- next:      principal-swe-infra — make only the two accepted review fixes.
+
+## HANDOFF 2026-08-27-1140 — principal-swe-infra -> principal-swe-architect
+
+- did:       Closed both P2 findings from the ratified `6701696d…` review:
+             demo-narrate now names the prebuilt release artifact, and generic
+             SHA-512 validation requires canonical base64 decoding to exactly
+             64 bytes. Added a truncated-digest mutation arm, regenerated the
+             packs, and minted final implementation ref
+             `78a719f0cc32c75c66ddaad4b302985b789a5084`. Builder lease cleared.
+- state:     in-review
+- needs:     Repeat independent architecture review against `78a719f0…`.
+             Earlier review evidence remains historical and does not satisfy
+             the exact-ref gate.
+- artifacts: scripts/demo-narrate.mjs; scripts/lib/pack-plan.mjs;
+             scripts/pack-preview.mjs;
+             packs/kai-core/scripts/lib/pack-plan.mjs;
+             packs/kai-personal/scripts/demo-narrate.mjs
+- evidence:  Final `npm test` passed on Node 24.15.0; pack self-test increased
+             to 163 checks; generated-tree and syntax gates remain clean.
+- questions: none
+- next:      principal-swe-architect — re-review only the two accepted fixes
+             plus exact-ref preservation of the already-ratified architecture.
+
+## NOTE 2026-08-27-1141 — director final review dispatch
+
+- did:       Granted final independent architecture lease `arch-1141-final`
+             at item version 16 for implementation
+             `78a719f0cc32c75c66ddaad4b302985b789a5084`.
+- state:     in-review
+- needs:     Confirm both prior P2 findings are closed and no regression was
+             introduced into the ratified artifact boundary.
+- artifacts: https://github.com/RubenSaucedo/kai/pull/175;
+             kai/coordination/items/pack-split-pack-dependency-manifests.md
+- evidence:  GitHub Actions run `33104688494` passed contract plus clean
+             Node 24.15.0 empty-cache runtime installs for core and personal at
+             the final implementation tree.
+- questions: none
+- next:      principal-swe-architect — final exact-ref re-review under token
+             `arch-1141-final`.
+
+## REVIEW 2026-08-27-1149 — independent architecture (final)
+
+- role:       principal-swe-architect
+- kind:       independent-architecture
+- change_ref: `78a719f0cc32c75c66ddaad4b302985b789a5084`
+- parent:     `6701696d01ec099b470dbaf403c12ddfe6cfe615`
+- verdict:    **ratified**
+- disposition: **Endorse** — both accepted P2 fixes land exactly as scoped and
+               the ratified artifact boundary is otherwise byte-identical.
+- findings:   P0 0 / P1 0 / P2 0
+
+P2-1 is closed: root and generated personal demo-narrate comments now describe
+the prebuilt release. P2-2 is closed: every projected SHA-512 integrity value
+must decode to exactly 64 bytes and round-trip as canonical base64, enforced at
+generation and emitted-tree validation with a truncation mutation arm.
+
+No manifest, lockfile, workflow, skill, agent, public doc, or marketplace byte
+changed from the ratified `6701696d…` architecture. Immutable release
+provenance, the HTTPS source allowlist, offline deterministic projection,
+pack-local ownership, provider-root invocation, and clean supported-Node
+install evidence therefore carry unchanged. GitHub Actions run `33104688494`
+tested implementation-identical bytes and passed all three jobs.
+
+Residual availability risk remains: the release asset has no mirror. Deletion
+fails loudly only for opt-in audio, while substitution is blocked by integrity.
+Packs remain unpublished, marketplace topology remains monolith-only, and
+release 12b remains **NO-GO**.
+
+## HANDOFF 2026-08-27-1149 — principal-swe-architect -> workflow-ship
+
+- did:       Ratified final implementation ref
+             `78a719f0cc32c75c66ddaad4b302985b789a5084` with
+             P0/P1/P2 = 0/0/0, replaced the superseded completed-review entry,
+             and cleared the review lease. Lifecycle remains `in-review`.
+- state:     in-review
+- needs:     Prepare this exact ref for merge. Any implementation-byte change
+             invalidates the ratification and requires a new ref and review.
+- artifacts: kai/coordination/items/pack-split-pack-dependency-manifests.md;
+             kai/coordination/threads/pack-split-pack-dependency-manifests.md;
+             kai/coordination/BOARD.md; scripts/demo-narrate.mjs;
+             scripts/lib/pack-plan.mjs; scripts/pack-preview.mjs;
+             packs/kai-core/scripts/lib/pack-plan.mjs;
+             packs/kai-personal/scripts/demo-narrate.mjs;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  Diff `6701696d..78a719f0` changes only the two accepted findings
+             plus their generated copies and mutation test; GitHub Actions run
+             `33104688494` jobs `98631239435`, `98631239582`, and
+             `98631239746` succeeded at an implementation-identical tree.
+- questions: none
+- next:      workflow-ship — perform release-readiness preparation for PR #175
+             without publishing packs or changing marketplace topology.
+
+## NOTE 2026-08-27-1150 — workflow-ship prepare lease
+
+- did:       Claimed PREPARE under `ship-1150-deps` at item version 18 and ran
+             all six Definition-of-Done dimensions against exact reviewed ref
+             `78a719f0cc32c75c66ddaad4b302985b789a5084`.
+- state:     in-review
+- needs:     Record the release plan and move to `release-ready` only if every
+             dimension is Clear or explicitly waived.
+- artifacts: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md
+- evidence:  Six dimensions returned Clear; no UI design sub-gate triggered.
+- questions: none
+- next:      workflow-ship — write the deploy handoff and clear its lease.
+
+## HANDOFF 2026-08-27-1150 — workflow-ship -> @operator
+
+- did:       Recorded the canonical ship record, resolved all six DoD
+             dimensions Clear, moved `in-review -> release-ready`, and cleared
+             the PREPARE lease. The operator's standing authorization permits
+             Kai to execute the merge and release steps without another pause.
+- state:     release-ready
+- needs:     Merge PR #175 preserving reviewed ancestry; wait for main CI;
+             publish `v0.65.0`; verify version, topology, generated locks,
+             runtime jobs, and exact Lectoria URL/integrity. Do not publish any
+             pack or change marketplace topology.
+- artifacts: kai/library/releases/2026-08-27/01-ship-pack-split-pack-dependency-manifests/ship-record.md;
+             https://github.com/RubenSaucedo/kai/pull/175
+- evidence:  Final architecture review at `78a719f0…` P0/P1/P2 = 0/0/0;
+             GitHub Actions run `33104688494` all success; full local
+             `npm test`; deterministic artifact and lock evidence in the ship
+             record.
+- questions: none
+- next:      @operator — standing authorization already granted; execute the
+             recorded merge/release sequence, then return evidence to
+             workflow-ship for production verification.

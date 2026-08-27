@@ -30,12 +30,13 @@ import { parseFrontmatter, parseToolList } from './lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
+  RUNTIME_ARTIFACTS,
   planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
   degradedBlock, guaranteeBlocks, injectBlocks, degradedBlockErrors, coreContractLines,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   collectReferences, referenceErrors, packProviders,
-  planAssets, assetOwnershipErrors, hooksAssignmentErrors,
-  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  planAssets, planAssetClosure, assetOwnershipErrors, hooksAssignmentErrors,
+  generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES,
@@ -489,8 +490,10 @@ function selfTest() {
   ok([...m1.values()].every((v) => !v.includes('\r')),
     'generated files are LF-normalised, so output is identical on a CRLF checkout');
   ok(m1.has('kai-core/plugin.json') && m1.has('kai-personal/plugin.json')
+    && m1.has('kai-core/package.json') && m1.has('kai-core/package-lock.json')
+    && m1.has('kai-personal/package.json') && m1.has('kai-personal/package-lock.json')
     && m1.has('kai-personal/agents/persona-self.agent.md'),
-    'the materialised tree places a per-pack plugin.json and copied agent bodies');
+    'the materialised tree places per-pack plugin and npm manifests with copied agent bodies');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
     'the authoritative generator injects the canonical preflight into department agents');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(degraded),
@@ -513,6 +516,19 @@ function selfTest() {
     'a department manifest carries per-pack agents and skills paths');
   ok(manifests.every((p) => p.manifest.version === '9.9.9-selftest'),
     'every planned manifest stamps the version it was generated with (lockstep)');
+  ok(coreM.packageManifest.dependencies.lectoria
+    && personalM.packageManifest.dependencies.lectoria
+    && coreM.packageLock.packages['node_modules/lectoria']
+    && personalM.packageLock.packages['node_modules/lectoria']
+    && !coreM.packageManifest.devDependencies
+    && !coreM.packageLock.packages['node_modules/playwright'],
+  'core and personal project the exact pinned lectoria dependency and its reachable lock graph');
+  const emptyPack = planManifests({
+    root: ROOT, version: '9.9.9-selftest', packs: ['engineering'],
+  })[0];
+  ok(Object.keys(emptyPack.packageManifest.dependencies).length === 0
+    && Object.keys(emptyPack.packageLock.packages).length === 1,
+  'a pack with no runtime dependencies still gets a valid empty manifest and lockfile');
 
   let scratch = null;
   try {
@@ -646,6 +662,23 @@ function selfTest() {
     exists: (a) => existsSync(join(ROOT, ...a.split('/'))),
   }).length === 0,
   'every invoked script exists and is reachable from the pack that invokes it');
+  const bareAsset = new Map([['scripts/start.mjs', {
+    asset: 'scripts/start.mjs',
+    consumers: [{ from: 'skills/x/SKILL.md', pack: 'core' }],
+    packs: new Set(['core']),
+    owner: 'core',
+  }]]);
+  const bareClosure = (dependencies) => planAssetClosure({
+    assets: bareAsset,
+    exists: () => true,
+    read: () => "import runtime from '@scope/runtime/subpath';\n",
+    dependencies,
+  });
+  ok(bareClosure(new Map()).errors
+    .some((e) => /add `@scope\/runtime` to kai-core's runtime dependency plan/.test(e.msg)),
+  'asset closure rejects an undeclared scoped bare import by package name');
+  ok(bareClosure(new Map([['core', new Set(['@scope/runtime'])]])).errors.length === 0,
+    'asset closure accepts the same bare import after the owning pack declares it');
   const liveFiles = materializePacks({ root: ROOT, version: '9.9.9-selftest' });
   ok(liveFiles.has('kai-core/hooks.json')
     && !liveFiles.has('kai-personal/hooks.json')
@@ -656,8 +689,10 @@ function selfTest() {
   'materialization emits hooks once and closes each routed script over its relative modules');
   ok(generatedKeyErrors(liveFiles).length === 0,
     'every live generated key belongs to a declared pack');
+  ok(generatedPackageErrors(liveFiles).length === 0,
+    'every emitted package manifest and lockfile matches the deterministic root projection');
   ok(generatedRuntimeErrors(liveFiles).length === 0,
-    'every emitted JavaScript asset resolves locally without an npm manifest');
+    'every emitted JavaScript asset resolves locally and declares each bare runtime import');
   ok(generatedKeyErrors(new Map([['kai-unknown/plugin.json', '{}']]))
     .some((e) => /belongs to no declared pack/.test(e.msg)),
   'a generated key outside the declared pack set fails in the one shared check');
@@ -674,13 +709,110 @@ function selfTest() {
   ok(generatedRuntimeErrors(new Map([
     ['kai-core/plugin.json', '{}'],
     ['kai-core/scripts/start.mjs', "import runtime from 'third-party-runtime';\n"],
-  ])).some((e) => /imports bare module `third-party-runtime`/.test(e.msg)),
-  'a copied entry point with an npm dependency fails while pack manifests are deferred');
-  ok(generatedRuntimeErrors(new Map([
+  ])).some((e) => /imports undeclared bare module `third-party-runtime`/.test(e.msg)),
+  'a copied entry point with an undeclared npm dependency fails by name');
+  const declaredRuntime = new Map([
     ['kai-core/plugin.json', '{}'],
-    ['kai-core/package.json', '{}'],
-  ])).some((e) => /publication work owns pack dependency installation/.test(e.msg)),
-  'a generated npm manifest fails until publication owns its installation contract');
+    ['kai-core/package.json', JSON.stringify({
+      dependencies: { 'third-party-runtime': '1.0.0' },
+    })],
+    ['kai-core/package-lock.json', JSON.stringify({
+      packages: {
+        '': {},
+        'node_modules/third-party-runtime': {
+          version: '1.0.0',
+          resolved: 'https://registry.npmjs.org/third-party-runtime/-/third-party-runtime-1.0.0.tgz',
+          integrity: RUNTIME_ARTIFACTS.lectoria.integrity,
+        },
+      },
+    })],
+    ['kai-core/scripts/start.mjs', "import runtime from 'third-party-runtime/subpath';\n"],
+  ]);
+  ok(generatedRuntimeErrors(declaredRuntime).length === 0,
+    'a bare subpath import passes when its package is declared and locked in the same pack');
+  const missingDeclaration = new Map(declaredRuntime);
+  missingDeclaration.set('kai-core/package.json', JSON.stringify({ dependencies: {} }));
+  ok(generatedRuntimeErrors(missingDeclaration)
+    .some((e) => /must declare `third-party-runtime`/.test(e.msg)),
+  'deleting the package declaration makes the same bare import fail');
+  const missingLock = new Map(declaredRuntime);
+  missingLock.set('kai-core/package-lock.json', JSON.stringify({ packages: { '': {} } }));
+  ok(generatedRuntimeErrors(missingLock)
+    .some((e) => /has no `node_modules\/third-party-runtime` record/.test(e.msg)),
+  'deleting the lock record makes the same bare import fail');
+  const missingPackage = new Map(liveFiles);
+  missingPackage.delete('kai-core/package.json');
+  ok(generatedPackageErrors(missingPackage)
+    .some((e) => /package\.json.*missing from the generated pack/.test(`${e.file} ${e.msg}`)),
+  'deleting a generated package manifest fails the deterministic package gate');
+  const driftedLock = new Map(liveFiles);
+  const lock = JSON.parse(driftedLock.get('kai-personal/package-lock.json'));
+  delete lock.packages['node_modules/lectoria'];
+  driftedLock.set('kai-personal/package-lock.json', `${JSON.stringify(lock, null, 2)}\n`);
+  ok(generatedPackageErrors(driftedLock)
+    .some((e) => /reachable dependency projection/.test(e.msg)),
+  'a generated lockfile that drops the pinned runtime package fails the exact projection gate');
+  const mutateGeneratedJson = (files, key, mutate) => {
+    const changed = new Map(files);
+    const value = JSON.parse(changed.get(key));
+    mutate(value);
+    changed.set(key, `${JSON.stringify(value, null, 2)}\n`);
+    return changed;
+  };
+  const changedSpec = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package.json',
+    (value) => { value.dependencies.lectoria = `${RUNTIME_ARTIFACTS.lectoria.spec}?changed`; }
+  );
+  ok(generatedRuntimeErrors(changedSpec)
+    .some((e) => /must use sanctioned artifact/.test(e.msg)),
+  'changing the direct Lectoria artifact spec fails the sanctioned-source gate');
+  const sshRuntime = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => {
+      value.packages['node_modules/lectoria'].resolved =
+        'git+ssh://git@github.com/RubenSaucedo/lectoria.git#c284b6c';
+    }
+  );
+  ok(generatedRuntimeErrors(sshRuntime)
+    .some((e) => /must resolve over HTTPS/.test(e.msg)),
+  'an SSH-resolved runtime dependency fails the transport gate');
+  const mirroredRuntime = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => {
+      value.packages['node_modules/lectoria'].resolved =
+        'https://mirror.example/lectoria-0.1.0.tgz';
+    }
+  );
+  ok(generatedRuntimeErrors(mirroredRuntime)
+    .some((e) => /unapproved runtime source/.test(e.msg)),
+  'an HTTPS mirror outside the runtime source allowlist fails by URL');
+  const weakIntegrity = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => { value.packages['node_modules/lectoria'].integrity = 'sha1-AAAA'; }
+  );
+  ok(generatedRuntimeErrors(weakIntegrity)
+    .some((e) => /must carry a complete SHA-512 integrity digest/.test(e.msg)),
+  'a runtime lock record without SHA-512 integrity fails closed');
+  const truncatedIntegrity = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => { value.packages['node_modules/lectoria'].integrity = 'sha512-AAAA'; }
+  );
+  ok(generatedRuntimeErrors(truncatedIntegrity)
+    .some((e) => /must carry a complete SHA-512 integrity digest/.test(e.msg)),
+  'a truncated SHA-512 digest fails before npm installation');
+  const changedIntegrity = mutateGeneratedJson(
+    liveFiles,
+    'kai-core/package-lock.json',
+    (value) => { value.packages['node_modules/lectoria'].integrity = 'sha512-AAAA'; }
+  );
+  ok(generatedRuntimeErrors(changedIntegrity)
+    .some((e) => /does not match its pinned SHA-512 integrity/.test(e.msg)),
+  'changing the sanctioned artifact integrity fails the exact pin');
 
   // --- cross-pack references: the mutation arms -------------------------
   const providersOf = (entries) => new Map(Object.entries(entries));
@@ -985,6 +1117,7 @@ function gateCollision() {
   const files = materializePacks({ root: ROOT, version: GATE_VERSION });
   return [
     ...generatedKeyErrors(files).map((e) => `${e.file}: ${e.msg}`),
+    ...generatedPackageErrors(files).map((e) => `${e.file}: ${e.msg}`),
     ...generatedRuntimeErrors(files).map((e) => `${e.file}: ${e.msg}`),
     ...providerCollisionErrors({ providers: packProviders(files) }),
   ];
@@ -1010,6 +1143,7 @@ function gatePartialInstall() {
     .map((entry) => entry.pack);
   return [
     ...generatedKeyErrors(files),
+    ...generatedPackageErrors(files),
     ...generatedRuntimeErrors(files),
     ...referenceErrors({ refs, providers: packProviders(files) }),
     ...assetOwnershipErrors({

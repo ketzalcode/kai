@@ -195,7 +195,7 @@ Top 3 this week:
 What needs you: <one line>
 
 To listen to the Brief:
-  pwsh <kai-plugin>/scripts/generate-audio.ps1 -Source <abs>\brief.md -Style verbatim -Lang en
+  pwsh <resolved kai-core provider root>/scripts/generate-audio.ps1 -Source <abs>\brief.md -Style verbatim -Lang en
 
 {If career page on:} Want me to hand <post candidate> to persona-self to draft,
 or have the career-mentor weigh the promotion signal?
@@ -203,6 +203,9 @@ or have the career-mentor weigh the promotion signal?
 
 **Do not** run the audio command. **Do not** draft the post. **Do not** commit
 anything.
+
+Resolve the command's kai-core provider root from the inherited
+`kai-core-pulse-digest` skill base directory before printing it.
 
 ## When to ask
 

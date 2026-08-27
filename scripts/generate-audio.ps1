@@ -58,10 +58,10 @@
     # Preview the command without spending money
 
 .NOTES
-    Lectoria is pinned in this plugin's package.json. Install once with `npm install`
-    at the kai plugin root and the wrapper will prefer the local copy (via npx).
-    Falls back to a global `lectoria` install if one is on PATH. Azure credentials
-    are loaded from this repo's `.env` so callers don't need them exported.
+    Lectoria is pinned in this pack's package.json and package-lock.json. Install
+    it with `npm ci --prefix "<kai-core-plugin>"`; the wrapper prefers that
+    pack-local executable and falls back to PATH. Azure credentials are loaded
+    from this repo's `.env` so callers don't need them exported.
 #>
 
 [CmdletBinding()]
@@ -85,34 +85,55 @@ $ErrorActionPreference = 'Stop'
 # so paths must resolve against the user's cwd.
 $callerCwd = (Get-Location).Path
 
-# Verify lectoria is available — prefer the local npm install (so the wrapper
-# travels with this repo), fall back to a global install if needed. The local
-# bin is `lectoria.cmd` on Windows and `lectoria` (no extension) on macOS/Linux,
-# so check both.
-$repoRoot      = Split-Path -Parent $PSScriptRoot
-$repoBinDir    = Join-Path $repoRoot 'node_modules' '.bin'
-$repoLectoria  = Join-Path $repoBinDir 'lectoria.cmd'
-$repoLectoriaP = Join-Path $repoBinDir 'lectoria'
-$useNpx        = $false
+# Resolve lectoria from an explicit override, this pack's pinned install, or
+# PATH. Copilot copies plugin files but does not run npm for installed packs.
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$lectoriaExecutable = $null
+$lectoriaSource = $null
 
-if ((Test-Path $repoLectoria) -or (Test-Path $repoLectoriaP)) {
-    $useNpx = $true
-}
-else {
-    $lectoriaCmd = Get-Command lectoria -ErrorAction SilentlyContinue
-    if (-not $lectoriaCmd) {
-        Write-Error @"
-'lectoria' is not available. Either:
-
-  # Install locally in this repo (recommended — travels with the codebase):
-  cd $repoRoot
-  npm install
-
-  # Or install globally:
-  npm install -g git+https://github.com/RubenSaucedo/lectoria.git
-"@
+if ($env:LECTORIA_BIN) {
+    $explicit = Get-Command $env:LECTORIA_BIN -ErrorAction SilentlyContinue
+    if (-not $explicit) {
+        Write-Error "LECTORIA_BIN points to '$($env:LECTORIA_BIN)', but that executable does not exist."
         exit 1
     }
+    $lectoriaExecutable = $explicit.Source
+    $lectoriaSource = 'LECTORIA_BIN'
+}
+
+if (-not $lectoriaExecutable) {
+    $repoBinDir = Join-Path $repoRoot 'node_modules' '.bin'
+    foreach ($name in @('lectoria.cmd', 'lectoria.ps1', 'lectoria')) {
+        $candidate = Join-Path $repoBinDir $name
+        if (Test-Path -LiteralPath $candidate) {
+            $lectoriaExecutable = $candidate
+            $lectoriaSource = 'node_modules/.bin'
+            break
+        }
+    }
+}
+
+if (-not $lectoriaExecutable) {
+    $pathCommand = Get-Command lectoria -ErrorAction SilentlyContinue
+    if ($pathCommand) {
+        $lectoriaExecutable = $pathCommand.Source
+        $lectoriaSource = 'PATH'
+    }
+}
+
+if (-not $lectoriaExecutable) {
+    Write-Error @"
+'lectoria' is not available. Copilot installs the plugin files but does not run npm.
+
+Install the dependency pinned by this pack:
+
+  npm ci --prefix "$repoRoot"
+
+Then retry. Plugin updates may replace node_modules, so rerun that command when
+the local executable is absent. Alternatively, set LECTORIA_BIN to a durable
+user-managed executable or place lectoria on PATH.
+"@
+    exit 1
 }
 
 # Load repo .env so callers don't need Azure vars exported in their shell. This
@@ -154,14 +175,11 @@ if ($NoDistribute) { $lectoriaArgs += '--no-distribute' }
 if ($NoRecursive)  { $lectoriaArgs += '--no-recursive' }
 if ($Voice)        { $lectoriaArgs += @('--voice', $Voice) }
 
-$cmdLine = if ($useNpx) {
-    "npx --no-install lectoria $($lectoriaArgs -join ' ')"
-} else {
-    "lectoria $($lectoriaArgs -join ' ')"
-}
+$cmdLine = "& `"$lectoriaExecutable`" $($lectoriaArgs -join ' ')"
 
 if ($DryRun) {
     Write-Host "[dry-run] $cmdLine"
+    Write-Host "[dry-run] lectoria: $lectoriaSource"
     Write-Host "[dry-run] cwd     : $callerCwd"
     Write-Host "[dry-run] source  : $resolvedSource"
     Write-Host "[dry-run] out     : $resolvedOut"
@@ -169,11 +187,5 @@ if ($DryRun) {
 }
 
 Write-Host $cmdLine -ForegroundColor Cyan
-if ($useNpx) {
-    # --no-install: never reach into the registry, only use what's already in
-    # this repo's node_modules. Avoids surprise downloads + waits.
-    & npx --no-install lectoria @lectoriaArgs
-} else {
-    & lectoria @lectoriaArgs
-}
+& $lectoriaExecutable @lectoriaArgs
 exit $LASTEXITCODE

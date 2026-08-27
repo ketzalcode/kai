@@ -416,14 +416,27 @@ That is the strongest evidence so far for keeping directors in core. The
 condition from Phase 1 stands unchanged: resolve availability **before**
 claiming work or taking a lease.
 
-### Still not verified
+### Phase 3 verification update
 
-- macOS and the cloud host — everything above is Windows CLI.
-- Collision under real **install** order, marketplace-vs-direct, and fresh
-  sessions; only `--plugin-dir` order has been tested.
-- Pack-local npm dependency installation. The committed trees intentionally
-  carry no `package.json` or lockfile; publication owns that contract. Until
-  then optional Lectoria execution resolves through `LECTORIA_BIN` or `PATH`.
+- Genuine macOS and cloud host gates passed; the canonical evidence is
+  `kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md`.
+- Real install order, direct versus directory-marketplace loading, fresh
+  sessions, and selected-agent execution were exercised by those gates.
+- The host copies plugin files but does not run npm or provide `node_modules`.
+  Generated packs now carry deterministic `package.json` and lockfiles, and
+  optional audio installs the pinned dependency explicitly with
+  `npm ci --prefix "<pack-root>"`. `LECTORIA_BIN` and PATH remain user-managed
+  fallbacks.
+- Lectoria is distributed as the immutable public release artifact
+  `https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz`
+  with npm integrity
+  `sha512-EBC2cPfS8AiCK1VvXPJZbxua6MlhswGwSLiJqXQPlA8Repn6KcvjyfSNMgIp5/04LEzHvK2fEEBSFTA8A9tXWw==`.
+  Pack installation therefore needs HTTPS access but no GitHub credentials,
+  Git client, compiler, or install-time source build.
+- Updating Lectoria requires a validated build at an exact source commit, two
+  byte-identical `npm pack` results, an immutable release asset, the new URL and
+  integrity in the canonical root lock, regenerated packs, and clean no-SSH
+  install evidence on a supported Node version.
 
 ## Availability resolution — how a director learns a role is missing
 

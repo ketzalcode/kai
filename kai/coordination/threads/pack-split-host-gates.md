@@ -463,3 +463,21 @@ Append-only communication log mirroring
 - questions: none
 - next:      director-chief-of-staff / principal-product-manager — milestone
              reconciliation and next-item promotion.
+
+## NOTE 2026-08-26-1806 — principal-product-manager post-completion reconciliation
+
+- did:       Recorded that PR #174 merged to `main` as
+             `b6db547c41b606c92e78e9d91fab82c554fc7d3d`, main validation run
+             `33028413182` / job `98375047081` succeeded, and the authorized
+             disposable consumer repository was deleted after evidence
+             preservation.
+- state:     completed (unchanged; item v16 -> v17 for evidence reconciliation)
+- needs:     none for host gates; the steward has advanced the initiative and
+             promoted only `pack-split-pack-dependency-manifests`.
+- artifacts: kai/coordination/items/pack-split-host-gates.md;
+             kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md;
+             kai/initiatives/pack-split/northstar.md
+- evidence:  merge SHA and successful main run/job above; SRE ratification
+             remains bound to `263452126179dd9f3a61183903a26a90c4d6b1c1`.
+- questions: none
+- next:      none — host-gates is terminal `completed`.

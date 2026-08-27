@@ -41,7 +41,7 @@ import {
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
-  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -400,6 +400,7 @@ const generatedPacks = preflight && degraded
   : new Map();
 
 for (const e of generatedKeyErrors(generatedPacks)) err(e.file, e.msg);
+for (const e of generatedPackageErrors(generatedPacks, { root: ROOT })) err(e.file, e.msg);
 for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
 
 // The contract version, pinned wherever it is stated: the probe skill's name,
