@@ -80,7 +80,7 @@ All output for a single run lives in:
 For `workflow-product-explore`, the run folder contains only raw local evidence
 such as `screenshots/`, trace, and non-secret capture metadata. It must not
 create `report.md` or the product map there; the map goes only to the
-canonical initiative `artifact_target`.
+canonical initiative `artifact_targets` entry.
 
 - Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
   loaded north star, or `kai-core-workspace-conventions`. Never substitute the calling

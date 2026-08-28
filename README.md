@@ -35,15 +35,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.6` — all **56 agents and 51 skills** are published across five packs for
+`v1.1.0` — all **56 agents and 52 skills** are published across five packs for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
-Agents and skills now use documented primary aliases for shell, file, search,
-delegation, and combined web capabilities. Three search-only roles retain the
-accepted `web_search` name to avoid widening them to fetch access. Live probes
-on CLI 1.0.79 and 1.0.81 exercised the replacement capabilities in both direct
-and delegated launches; the noninteractive probe cannot observe interactive
-startup warnings.
+Every role now loads one universal asset-lifecycle contract. Generated work
+separates execution completion from artifact disposition and validity, requires
+classification before durable output is left behind, preserves superseded or
+retracted history, and adds asset/backlog/ownership sweeps to initiative
+closure. Workspace enforcement rolls out separately as warn, reconcile, then
+error.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus the personal, product, engineering,

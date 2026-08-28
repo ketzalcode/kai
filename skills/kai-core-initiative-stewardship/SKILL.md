@@ -119,15 +119,32 @@ An initiative reaches its declared outcome only when every milestone ID in
 `scope.current` has a non-empty typed `required_items` list and every listed
 item reached its declared terminal state: `completed` for research/decision
 work or `shipped` for production delivery. Planning items and unlisted optional
-work do not satisfy the milestone. Then:
+work do not satisfy the milestone.
+
+The steward then applies `kai-core-asset-lifecycle` and proves four closure
+sweeps:
+
+1. **Work:** every required item reached its typed terminal state.
+2. **Assets:** every required artifact exists and none remains scratch, draft,
+   unknown, provisional, or invalidated.
+3. **Backlog:** every entry is promoted, carried to a named successor, parked
+   in the workspace authority, or dropped with a reason.
+4. **Ownership:** every maintained current asset names a validity owner and
+   revalidation date or event.
+
+Then:
 
 - Move the northstar to `completed` for research/decision initiatives or
   `shipped` for production-delivery initiatives, write the closing `log.md`
   entry, and drop the slug from `kai/coordination/ACTIVE.md`.
 - Require a non-empty `deliverables.md`, a stable
   `kai/initiatives/<slug>/director-summary.md`, and exact workspace paths before
-  closure; update `kai/initiatives/INDEX.md` with their locations.
+  closure. Both identify current, historical, superseded, retracted, carried,
+  and discarded outputs; update `kai/initiatives/INDEX.md` with their locations.
 - Archive (`status: archived`) once it's no longer a live reference.
+- Archiving operational records does not move published assets or change their
+  validity. Each asset receives an explicit publish-and-maintain, carry,
+  freeze-as-history, supersede, retract, or discard disposition.
 - **`paused`** when priorities shift — the scope is still valid, just not
   now; say why in the log so a later steward can resume it.
 
@@ -169,9 +186,9 @@ invoke this pass, but the steward remains the decision owner.
 4. **Steward, don't build.** The steward orders and prunes work; it doesn't
    write, review, or ship the diff — the acting agents own that.
 5. **Done is earned.** Every current milestone must have a non-empty typed
-   required-item mapping and every item must reach its declared `completed` or
-   `shipped` terminal state. Update the initiative and
-   `kai/coordination/ACTIVE.md` only then.
+   required-item mapping, every item must reach its declared `completed` or
+   `shipped` terminal state, and the asset/backlog/ownership sweeps must pass.
+   Update the initiative and `kai/coordination/ACTIVE.md` only then.
 6. **Leave a trail.** Every promote / reprioritize / pause / ship is one
    line in `log.md`.
 7. **Leave a findable outcome.** Do not close an initiative until its summary
@@ -187,6 +204,8 @@ invoke this pass, but the steward remains the decision owner.
   mission.
 - ❌ Leaving an initiative `active` after all milestone requirements are met, or
   `kai/coordination/ACTIVE.md` pointing at a slug nobody's working.
+- ❌ Closing an initiative while a required asset is draft, provisional,
+  unknown, invalidated, ownerless, or missing its carry/supersession decision.
 - ❌ Turning the steward into a bottleneck that owns execution — it owns
   what's-next, not how-it's-built.
 - ❌ Splitting stewardship across two roles so no one is accountable.

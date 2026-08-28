@@ -4,7 +4,7 @@ description: "Turns AI research or product ideas into ticket-grade applied desig
 tools: ["web", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

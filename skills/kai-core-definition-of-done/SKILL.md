@@ -50,7 +50,7 @@ doesn't apply to this change is waived, not faked-Clear).
 | 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. For a net-new/materially-changed user-facing surface, that set **must include** a `principal-product-designer` design-conformance verdict on the current `change_ref`, **unless** a recorded product-design waiver applies (see the sub-gate below). |
 | 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. Run the `review-rollout-operability` lens here. |
 | 5 | **documented** | Will the next person understand what shipped? | Reusable decisions/designs are promoted to `kai/library/`; user-facing / operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
-| 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, and parked ideas are in the committed backlog. |
+| 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, parked ideas are in the committed backlog, and every generated asset passed the `kai-core-asset-lifecycle` close transaction. |
 
 Dimension 4 **reuses `review-rollout-operability`** — don't re-derive the
 rollout/reversibility questions; apply that lens and record its verdict.
@@ -170,6 +170,10 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
    product-design waiver bound to that `change_ref`. Missing both is a Gap owned by
    `principal-product-designer`; a green build and a QA/UX-walk do not satisfy it,
    and a self-declared "it's minor" is not a waiver.
+8. **Asset completion is separate from production completion.** Generated
+   reports, decisions, plans, designs, and release records carry disposition,
+   validity, authority, owner, and revision metadata. A shipped item does not
+   make every document it produced permanently current.
 
 ## Anti-patterns
 

@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **51 skills** (11 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **56 agents** and **52 skills** (11 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -192,6 +192,7 @@ The shared contracts every acting agent inherits: where work goes, and what it m
 | Name | What it owns |
 | ---- | ------------ |
 | [`kai-core-team-operating-rules`](../../skills/kai-core-team-operating-rules/SKILL.md) | Defines the universal kai role operating contract. Use whenever acting as a kai role in any workspace, including ownership, handoffs, tests, shipping, and @operator. |
+| [`kai-core-asset-lifecycle`](../../skills/kai-core-asset-lifecycle/SKILL.md) | Defines universal generated-asset completion, disposition, validity, ownership, freshness, supersession, and initiative closure rules. |
 | [`kai-core-workspace-conventions`](../../skills/kai-core-workspace-conventions/SKILL.md) | Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths. |
 | [`kai-core-workspace-onboarding`](../../skills/kai-core-workspace-onboarding/SKILL.md) | Initializes and validates kai workspaces, and guides explicit migration to the split pack install surface. Use when installing kai packs or creating or repairing workspace state. |
 | [`kai-core-work-coordination`](../../skills/kai-core-work-coordination/SKILL.md) | Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths. |

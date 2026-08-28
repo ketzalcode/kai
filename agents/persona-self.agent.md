@@ -4,7 +4,7 @@ description: "Drafts, rewrites, and replies in the user's voice with senior-engi
 tools: ["read", "edit", "search", "ask_user", "execute", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `extract-writing-style`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `extract-writing-style`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

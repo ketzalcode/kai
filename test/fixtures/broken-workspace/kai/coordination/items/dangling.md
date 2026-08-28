@@ -12,6 +12,8 @@ owner: null
 next_role: principal-swe-frontend
 target: sample
 artifact_target: C:\Users\someone\out\report.md
+artifact_targets:
+  - ../escaped/report.md
 context_artifacts: []
 touches:
   - web/src/sample/**

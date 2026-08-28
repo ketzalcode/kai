@@ -9,6 +9,8 @@ tools: [execute, read, search]
 This skill is the single source of truth for **where** kai agents read and
 write. Domain agents own what they produce; this contract owns where it lands.
 `workflow-workspace-init` materializes it through `kai-core-workspace-onboarding`.
+`kai-core-asset-lifecycle` separately owns whether that output is scratch,
+working, published, archived, current, stale, or superseded.
 
 **Never invent an output path.** Resolve the target workspace first, then use
 the canonical path for the artifact type. If an output does not fit this
@@ -347,9 +349,9 @@ that initiative:
 | Director closure summary | `kai/initiatives/<slug>/director-summary.md` |
 | Deliverable index | `kai/initiatives/<slug>/deliverables.md` |
 
-The creator sets `artifact_target` to this canonical workspace-root-relative
-path. An operator-supplied path may override it only when it remains within the
-resolved workspace and the item records the reason.
+The creator lists every canonical workspace-root-relative path in
+`artifact_targets`. An operator-supplied path may override a target only when
+it remains within the resolved workspace and the item records the reason.
 
 Unaffiliated durable work goes to the matching `kai/library/<type>/` location
 rather than creating an artificial initiative.
@@ -402,25 +404,48 @@ Rules:
 Heavy binaries remain ignored even below `kai/library/`: `*.mp3`, `*.har`,
 `*.zip`, `audio/`, `raw/`, and `screenshots/`.
 
-### Library frontmatter
+### Durable asset frontmatter
 
 ```yaml
 ---
-type: <library type>
+asset_id: <stable-id>
+asset_class: <investigation|report|decision|design|spec|plan|review|...>
+type: <legacy library lane when promoted, or domain document type>
 title: <human title>
-slug: <kebab-slug>
+item: <producing-item-id>
+produced_by: <role>
 created: <YYYY-MM-DD>
-source: <agent + source path>
-target: <feature, document, repository, or URL>
+revision: 1
 initiative: <slug or null>
 source_artifact: <initiative artifact path or null>
-related: []
+target: <feature, document, repository, URL, or operator-private subject>
+disposition:
+  status: <working|published|personal|archived|retracted>
+  reason: <why>
+completion:
+  authority: <role>
+  verdict: <pending|accepted|bounced>
+  at: <YYYY-MM-DD-HHMM or null>
+  revision_at_verdict: <integer or null>
+validity:
+  status: <unknown|provisional|current|stale|expired|superseded|invalidated|retired>
+  owner: <role>
+  as_of: <YYYY-MM-DD>
+  revalidate_by: <YYYY-MM-DD or null>
+  basis: []
+supersedes: <asset-id or null>
+superseded_by: <asset-id or null>
 evidence:
   - path: <exact workspace-root-relative path>
     source: <tool/site/reviewer>
     captured: <YYYY-MM-DD-HHMM or n/a>
 ---
 ```
+
+Domain-specific fields may follow, but they never replace the lifecycle header.
+Legacy library frontmatter remains readable until migration. New and materially
+revised durable assets use this shape and the state rules in
+`kai-core-asset-lifecycle`.
 
 ## Initiatives
 
@@ -597,7 +622,8 @@ before claiming work. `.kai/` itself did not move, so the discovery anchor
 2. Require `.kai/manifest.json` for coordinated work.
 3. Check `kai/coordination/ACTIVE.md` and load only matching initiatives.
 4. Use `.kai/runs/` for raw evidence and scratch.
-5. Use the canonical initiative artifact path for initiative-owned output.
+5. Use the canonical initiative artifact paths for initiative-owned output and
+   record all of them in `artifact_targets`.
 6. Promote to `kai/library/` only through the explicit promotion rule.
 7. Use `kai/personal/` only for personal material.
 8. Resolve personal state against the current Kai workspace; linked workspaces
@@ -605,4 +631,6 @@ before claiming work. `.kai/` itself did not move, so the discovery anchor
 9. Record exact workspace-root-relative paths; never abbreviate with `.../`.
 10. Create a run area or library type directory on the way to writing your
     first file there; an absent output lane is normal, not a defect.
-11. Never create a root or artifact lane outside this contract.
+11. Apply `kai-core-asset-lifecycle` before durable placement and before ending
+    any asset-producing run.
+12. Never create a root or artifact lane outside this contract.

@@ -64,9 +64,9 @@ Initiative output defaults to `kai/initiatives/<slug>/artifacts/`:
 | Growth / analytics / experiments | `artifacts/{growth,analytics,experiments}/<item-id>.md` |
 | Data engineering / brand / localization | `artifacts/{data-engineering,brand,localization}/<item-id>.md` |
 
-(Full table in the skill.) The item's `artifact_target` is set to the canonical
-workspace-root-relative path; an operator override must stay inside this
-workspace and be recorded on the item.
+(Full table in the skill.) The item's `artifact_targets` list contains every
+canonical workspace-root-relative path; an operator override must stay inside
+this workspace and be recorded on the item.
 
 ## Promotion to the library
 

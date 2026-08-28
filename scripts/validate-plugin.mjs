@@ -210,6 +210,7 @@ for (const p of refScanFiles) {
 // agent names. The `**Inherits:**` line is that machine-checkable declaration.
 // ---------------------------------------------------------------------------
 const BASELINE_SKILL = 'kai-core-team-operating-rules';
+const ASSET_LIFECYCLE_SKILL = 'kai-core-asset-lifecycle';
 const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
 
 // Agents that do bounded, delegated work must declare that they are running.
@@ -332,6 +333,9 @@ for (const agent of agentFiles) {
 
   if (!seen.has(BASELINE_SKILL)) {
     err(r, `must inherit \`${BASELINE_SKILL}\` (the shared operating contract)`);
+  }
+  if (!seen.has(ASSET_LIFECYCLE_SKILL)) {
+    err(r, `must inherit \`${ASSET_LIFECYCLE_SKILL}\` (every run must classify generated assets or explicitly declare none)`);
   }
   if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('kai-core-workspace-conventions')) {
     err(r, 'coordinating roles must inherit `kai-core-workspace-conventions`');

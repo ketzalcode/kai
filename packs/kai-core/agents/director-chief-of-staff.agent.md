@@ -4,7 +4,7 @@ description: "Coordinates Kai roles to drive an outcome, work item, initiative, 
 tools: ["execute", "read", "edit", "search", "ask_user", "agent", "read_agent", "write_agent", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-definition-of-done`, `kai-core-issue-analysis`, `kai-core-pr-delivery`, `kai-core-initiative-stewardship`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-definition-of-done`, `kai-core-issue-analysis`, `kai-core-pr-delivery`, `kai-core-initiative-stewardship`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -163,7 +163,7 @@ An item is executable only when its lifecycle state is dispatchable:
 
 - the steward has approved its priority and scope;
 - acceptance is explicit;
-- any file-producing item's required `artifact_target` is explicit and inside
+- any file-producing item's required `artifact_targets` are explicit and inside
   the recorded workspace;
 - all typed `depends_on` requirements reached their declared state;
 - `waiting_on_questions` is empty, except for the explicit answered-question

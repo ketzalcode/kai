@@ -4,7 +4,7 @@ description: "Designs interaction models for approved product needs and reviews 
 tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `ui-mockup`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `ui-mockup`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -94,7 +94,7 @@ You inherit `kai-core-scope-discipline`, `kai-core-design-grounding`, `ui-mockup
   or derive it per `kai-core-design-grounding` when absent;
 - relevant UX/domain/QA research;
 - target viewports, accessibility requirements, and known platform constraints;
-- canonical `artifact_target`:
+- canonical `artifact_targets` entry:
   `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`.
 
 If an existing product surface has no sufficient/current map, ask the director
@@ -140,7 +140,7 @@ in the item. Otherwise use the canonical design path without asking.
 9. Give engineering design acceptance criteria without prescribing code.
 10. Record unresolved product, domain, technical, or operator questions to the
     correct role.
-11. Write the decision at the exact `artifact_target`, update the item/thread,
+11. Write the decision at the exact `artifact_targets` entry, update the item/thread,
     set `change_ref` to the commit SHA of the artifact revision, move to
     `in-review`, and hand
     off to `principal-product-manager` for the required

@@ -30,7 +30,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   LIFECYCLE, NEEDS_CHANGE_REF, REQUIRES_STATES,
-  frontmatter, scalar, cleanScalar, isNull, unquote, dependsOn, lease, parseStamp,
+  frontmatter, scalar, cleanScalar, isNull, unquote, dependsOn, lease, listBlock, parseStamp,
 } from './lib/coordination.mjs';
 import {
   WORKSPACE_PROVENANCE, LEGACY_PLUGIN, CORE_PLUGIN,
@@ -247,6 +247,10 @@ export function checkWorkspace(root) {
         const reason = badPath(scalar(fm, key));
         if (reason) err(`${rel}: ${key} is a ${reason}; durable paths must be workspace-root-relative`);
       }
+      for (const target of listBlock(fm, 'artifact_targets')) {
+        const reason = badPath(target);
+        if (reason) err(`${rel}: artifact_targets entry "${target}" is a ${reason}; durable paths must be workspace-root-relative`);
+      }
 
       const dlist = dependsOn(fm);
       for (const d of dlist) {
@@ -437,6 +441,7 @@ function selfTest() {
     { label: 'non-SHA change_ref', re: /must be a git commit\/PR-head SHA/i },
     { label: 'dangling dependency', re: /unknown item/i },
     { label: 'machine-absolute artifact path', re: /machine-absolute/i },
+    { label: 'plural artifact path escape', re: /artifact_targets entry .*path escaping/i },
   ];
   if (bad.errors.length === 0) {
     ok = false; console.log('✗ self-test: broken fixture was NOT rejected');

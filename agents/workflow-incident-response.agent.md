@@ -4,7 +4,7 @@ description: "Runs incident command for SaaS operational, security, data, or ava
 tools: ["execute", "read", "edit", "search", "ask_user", "agent", "read_agent", "write_agent", "web", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -295,11 +295,12 @@ required_for_milestone: false
 next_role: workflow-incident-response
 touches:
   - incident-command:<environment>:<target>
-artifact_target: kai/initiatives/<slug>/artifacts/incidents/<item-id>.md
+artifact_targets:
+  - kai/initiatives/<slug>/artifacts/incidents/<item-id>.md
 ```
 
-For an unaffiliated incident, set `artifact_target` to
-`kai/library/investigations/<incident-id>/incident-record.md` instead.
+For an unaffiliated incident, set the sole `artifact_targets` entry to
+`kai/library/investigations/<incident-id>/incident-record.md`.
 
 Explicit operator invocation or an evidence-backed active-impact handoff from
 `workflow-support-triage`, `workflow-ship`, `principal-security`, or

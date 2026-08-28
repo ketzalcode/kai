@@ -11,7 +11,13 @@ priority: 20
 owner: principal-swe-frontend
 next_role: principal-qa-ui
 target: web
-artifact_target: kai/initiatives/csv-export/artifacts/design-ui.md
+artifact_expectation: owed
+artifact_class: interaction-design
+durability: durable
+completion_authority: principal-product-designer
+validity_owner: principal-product-designer
+artifact_targets:
+  - kai/initiatives/csv-export/artifacts/design-ui.md
 context_artifacts:
   - kai/initiatives/csv-export/artifacts/brief.md
   - kai/initiatives/csv-export/artifacts/design-ui.md

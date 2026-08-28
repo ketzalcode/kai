@@ -4,7 +4,7 @@ description: "Mentors IC-track career progression through intake, check-ins, rev
 tools: ["read", "edit", "search", "ask_user", "execute", "web_search", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

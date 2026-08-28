@@ -4,7 +4,7 @@ description: "Manages the operator's personal agenda, catch-up, task capture, un
 tools: ["execute", "read", "edit", "search", "ask_user", "agent", "read_agent", "write_agent", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-peer-communication`, `kai-core-decision-brief`, `kai-core-executive-consultation`, `kai-core-personal-agenda`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-peer-communication`, `kai-core-decision-brief`, `kai-core-executive-consultation`, `kai-core-personal-agenda`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

@@ -49,7 +49,7 @@ or when a current map already covers the exact surfaces and state.
 
 **Storage boundary:** for initiative work, the canonical product map is
 `kai/initiatives/<slug>/artifacts/product-map.md`. The work item's
-`artifact_target` must name that path unless an operator-approved override is
+`artifact_targets` must contain that path unless an operator-approved override is
 recorded. Unaffiliated exploration requires an explicit target under
 `kai/library/investigations/`; never infer an initiative.
 
@@ -156,7 +156,7 @@ from a different product version.
 
 The explorer records:
 
-- exact `artifact_target`;
+- exact `artifact_targets`;
 - exact evidence paths;
 - journeys verified;
 - blocked/unknown areas;

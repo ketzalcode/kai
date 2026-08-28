@@ -11,7 +11,13 @@ priority: 10
 owner: principal-swe-backend
 next_role: null
 target: reporting-service
-artifact_target: kai/initiatives/csv-export/artifacts/design-api.md
+artifact_expectation: owed
+artifact_class: implementation-design
+durability: durable
+completion_authority: principal-swe-architect
+validity_owner: principal-swe-backend
+artifact_targets:
+  - kai/initiatives/csv-export/artifacts/design-api.md
 context_artifacts:
   - kai/initiatives/csv-export/artifacts/brief.md
   - kai/initiatives/csv-export/artifacts/decision.md

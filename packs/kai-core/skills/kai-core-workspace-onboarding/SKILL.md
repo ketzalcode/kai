@@ -537,7 +537,7 @@ step whose version is above the manifest's `schema_version`, in order, then set
   1. relative links **inside** moved files still resolve, because the four roots
      move together;
   2. every reference **from outside** the moved roots — a workspace-root-relative
-     path recorded in a work item, an `artifact_target`, a `context_artifacts`
+     path recorded in a work item, an `artifact_targets` entry, a `context_artifacts`
      entry, a README link — is rewritten to `kai/…`. Scan all tracked text in the
      workspace, not just the moved trees;
   3. regenerate `.kai/CONVENTIONS.md`, which documents the schema-1 layout and is
@@ -594,7 +594,7 @@ State that it is derived from `kai/coordination/items/*.md`.
 ### `kai/coordination/items/README.md`
 
 Document the authoritative work-item schema, lifecycle, typed dependencies,
-lease, version, touch set, questions, review requirements, artifact target, and
+lease, version, touch set, questions, review requirements, artifact targets, and
 evidence rules from `kai-core-work-coordination`.
 
 ### `kai/coordination/threads/README.md`

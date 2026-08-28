@@ -4,6 +4,33 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.1.0] - 2026-08-28
+
+### Added
+
+- **A universal generated-asset lifecycle.** The new
+  `kai-core-asset-lifecycle` contract separates work execution, artifact
+  disposition, artifact validity, and initiative closure. It defines
+  expectation and durability declarations, stable metadata, independent
+  acceptance, freshness, bidirectional supersession, retraction, migration,
+  and the generator close transaction.
+
+### Changed
+
+- **Every agent now loads the lifecycle contract.** All 56 role profiles and
+  their generated mirrors inherit it, and validation rejects a profile that
+  omits it.
+- **Existing core contracts now share one completion vocabulary.** Work
+  coordination uses plural artifact targets and pre-dispatch expectations;
+  workspace conventions define lifecycle metadata; knowledge completion
+  requires scope, grounding, acceptance, and disposition; initiative closure
+  adds work, asset, backlog, and ownership sweeps; production completion keeps
+  asset validity separate from deployment truth.
+- **Enforcement is explicitly staged.** Existing records remain readable as
+  legacy `unknown`; later releases add doctor/catalog warnings, reconcile the
+  current workspace, and only then promote unresolved lifecycle gaps to
+  closure errors.
+
 ## [1.0.6] - 2026-08-28
 
 ### Changed
@@ -3103,6 +3130,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.1.0]: https://github.com/RubenSaucedo/kai/compare/v1.0.6...v1.1.0
 [1.0.6]: https://github.com/RubenSaucedo/kai/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/RubenSaucedo/kai/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/RubenSaucedo/kai/compare/v1.0.3...v1.0.4

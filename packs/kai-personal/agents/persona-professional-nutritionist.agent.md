@@ -4,7 +4,7 @@ description: "Audits fitness-product meal plans, macros, pantry suggestions, and
 tools: ["playwright", "execute", "edit", "read", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

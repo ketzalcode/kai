@@ -9,6 +9,7 @@ discoverable in `kai/initiatives/INDEX.md`.
 |------------|--------|-------------------|-----------|-----------------------|
 | area-plugins | active (operator-directed) | `allowlist-repair` + `decisions-locked` | `.` (repository) | `kai/coordination/items/area-plugins-*.md` + `kai/coordination/threads/area-plugins-*.md` |
 | workspace-corpus-contract | active (operator-approved 2026-08-28) | `corpus-honesty` (architecture ratified; four decision items proposed) | `.` (repository) | `kai/initiatives/workspace-corpus-contract/northstar.md` + `kai/coordination/items/{area-plugins-initiative-archive, area-plugins-backlog-contract, area-plugins-design-output-contract, area-plugins-workspace-storage-modes}.md` + their threads |
+| asset-lifecycle-contract | active (operator-approved 2026-08-28) | `contract-bound` | `.` (repository) | `kai/initiatives/asset-lifecycle-contract/northstar.md` + `kai/coordination/items/asset-lifecycle-*.md` |
 
 `area-plugins` refactors kai from the shipped v1.0.4 five-pack topology to
 area-focused standalone plugins over an **optional** `kai-core`. The operator

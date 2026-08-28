@@ -223,8 +223,8 @@ Media handling rules:
 Resolve the workspace via `kai-core-workspace-conventions`.
 
 - **Initiative work:** the three artifacts live in the bundle directory
-  `kai/initiatives/<slug>/artifacts/marketing/`. The work item's `artifact_target`
-  is that **directory**; the three contract files (`product_exploration_report.md`,
+  `kai/initiatives/<slug>/artifacts/marketing/`. The work item's
+  `artifact_targets` contains that **directory**; the three contract files (`product_exploration_report.md`,
   `product_context.json`, `media_manifest.json`) are its mandatory contents.
   Paths stay inside the recorded workspace. `delivery_class: knowledge` — it
   completes, it does not ship.
