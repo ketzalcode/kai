@@ -1,5 +1,106 @@
 # Thread — pack-split-release-12c-2-product
 
+## NOTE 2026-08-27-2358 — principal-swe-infra
+
+- did:       Generated the first post-flip department publication. Added
+             `product` to the exact committed slice, generated 85 total files,
+             published `kai-product` as the third marketplace entry at 1.0.2,
+             and updated install/status documentation to the measured 25-agent,
+             34-skill surface.
+- state:     in-progress
+- needs:     Commit the implementation, run the exact release guard, then bind
+             SRE and architecture review to that ref.
+- artifacts: `packs/kai-product/`; `scripts/lib/pack-plan.mjs`;
+             `scripts/pack-preview.mjs`; `.github/plugin/marketplace.json`;
+             `README.md`; `docs/getting-started.md`
+- evidence:  Full `npm test` passed; pack-preview 179 checks; migration matrix
+             33; CI matrix is core + personal + product; product declares no
+             runtime binary. Main branch protection requires only `contract`,
+             so the product runtime leg is running-but-not-enforced.
+- questions: none
+- next:      principal-swe-infra — create the reviewable implementation ref.
+
+## HANDOFF 2026-08-28-0002 — principal-swe-infra -> principal-sre
+
+- did:       Committed the complete 1.0.2 product publication at exact ref
+             `076a9244c062ab61a0920a54f35b0dc2daebc995`.
+- state:     in-review
+- needs:     Independent reliability review; architecture independently reviews
+             the generated product tree and partition placement at the same ref.
+- artifacts: `packs/kai-product/`; `.github/plugin/marketplace.json`;
+             `scripts/lib/pack-plan.mjs`; `scripts/pack-preview.mjs`
+- evidence:  Full suite passed; exact release guard passed against
+             `origin/main`; generated parity is clean.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.
+
+## REVIEW 2026-08-28-0010 — principal-sre
+
+- ref:       `076a9244c062ab61a0920a54f35b0dc2daebc995`
+- verdict:   blocked — one P1 documentation/operability finding.
+- finding:   Deeper migration, direct/local install, and update instructions
+             still omitted product or described it as unpublished.
+- note:      The dynamic product runtime leg being running-but-not-enforced is
+             acceptable because the required `contract` job derives it and the
+             limitation is explicit.
+
+## REVIEW 2026-08-28-0010 — principal-swe-architect
+
+- ref:       `076a9244c062ab61a0920a54f35b0dc2daebc995`
+- verdict:   blocked — one P1 acceptance gap; architecture retained.
+- finding:   The rollback regression selected the first unpublished pack
+             (`kai-engineering`) instead of proving `kai-product` rejection by
+             name as this release requires.
+
+## HANDOFF 2026-08-28-0015 — principal-swe-infra -> principal-sre
+
+- did:       Updated every install/migration/update surface to include product
+             and added an explicit `kai` + `kai-product` rollback rejection arm,
+             while retaining the future-unpublished-pack regression.
+- state:     in-review
+- needs:     Re-review exact ref
+             `31373efe880aa2676eb379920a1c599efd43ada4`; architecture re-review
+             runs independently at the same ref.
+- artifacts: `README.md`; `docs/getting-started.md`;
+             `scripts/pack-preview.mjs`
+- evidence:  Full suite passed; pack-preview 180 checks; exact release guard
+             passed.
+- questions: none
+- next:      principal-sre — approve or return blocking findings.
+
+## REVIEW 2026-08-28-0025 — principal-sre
+
+- ref:       `31373efe880aa2676eb379920a1c599efd43ada4`
+- verdict:   approved — READY; no P0/P1.
+- evidence:  All install, migration, direct/local, list, and update guidance
+             includes product; the generated three-pack topology, no-dependency
+             runtime leg, rollback policy, and release plan are coherent.
+- note:      The product runtime check runs but is not independently required
+             by branch protection; final-head CI remains the merge gate.
+
+## REVIEW 2026-08-28-0025 — principal-swe-architect
+
+- ref:       `31373efe880aa2676eb379920a1c599efd43ada4`
+- verdict:   approved — no P0/P1 architecture findings.
+- evidence:  Root remains canonical; product is exactly 9 agents/3 skills,
+             provider-unique and generator-derived; manifests and marketplace
+             agree; the product-specific and future-pack rollback regressions
+             are distinct and green.
+
+## HANDOFF 2026-08-28-0025 — principal-swe-architect -> workflow-ship
+
+- did:       Both required independent reviews approved exact implementation
+             ref `31373efe880aa2676eb379920a1c599efd43ada4`.
+- state:     in-review
+- needs:     Commit these records, prove reviewed ancestry and non-`kai/`
+             equivalence, then require fresh final-head CI including
+             `runtime-dependencies (kai-product)`.
+- artifacts: `kai/coordination/items/pack-split-release-12c-2-product.md`;
+             `kai/coordination/threads/pack-split-release-12c-2-product.md`
+- evidence:  SRE approved; architecture approved; no P0/P1.
+- questions: none
+- next:      workflow-ship — complete exact-head pre-merge gates.
+
 Append-only communication log mirroring
 `kai/coordination/items/pack-split-release-12c-2-product.md`. See `kai-core-work-coordination`.
 

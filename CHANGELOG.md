@@ -4,6 +4,22 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.2] - 2026-08-27
+
+### Added
+
+- **The product department pack is published.** `kai-product` is generated from
+  the canonical root and joins `kai-core` and `kai-personal` in the marketplace,
+  bringing the published slice to 25 agents and 34 skills.
+
+### Changed
+
+- **Department publication no longer requires a CI workflow edit.** The derived
+  runtime matrix adds `kai-product` automatically and verifies its intentionally
+  empty runtime dependency set.
+- **Install and status documentation now matches the live three-pack surface.**
+  Engineering and go-to-market remain the only unpublished departments.
+
 ## [1.0.1] - 2026-08-27
 
 Hardening only. **No pack is published in this release** — the marketplace still
@@ -3025,6 +3041,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.2]: https://github.com/RubenSaucedo/kai/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/RubenSaucedo/kai/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/RubenSaucedo/kai/compare/v0.67.0...v1.0.0
 [0.67.0]: https://github.com/RubenSaucedo/kai/compare/v0.66.0...v0.67.0
