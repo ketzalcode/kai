@@ -1,7 +1,7 @@
 ---
 name: principal-engineer-career-mentor
 description: "Mentors IC-track career progression through intake, check-ins, reviews, spot consults, cert planning, and visibility nudges. Use for career strategy. Not executing a chosen learning path (`instructor-path-mentor`)."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "web_search", "skill"]
+tools: ["read", "edit", "search", "ask_user", "execute", "web_search", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`

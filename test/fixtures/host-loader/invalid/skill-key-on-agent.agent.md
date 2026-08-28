@@ -1,7 +1,7 @@
 ---
 name: skill-key-on-agent
 description: An agent that carries a skill-only frontmatter key (user-invocable).
-tools: [view]
+tools: [read]
 user-invocable: true
 ---
 

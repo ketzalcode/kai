@@ -1,7 +1,7 @@
 ---
 name: tools-not-array
 description: A skill whose tools value is a bare scalar instead of an inline array.
-tools: view
+tools: read
 user-invocable: false
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: workflow-issue-analysis
 description: "Turns one issue into a grounded problem statement, verified assumption, viable options, and chosen approach handoff. Use at issue intake before implementation. Not coding or creating work items."
-tools: ["bash", "shell", "view", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-issue-analysis`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `build-diagrams`

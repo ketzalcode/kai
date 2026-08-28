@@ -1,8 +1,8 @@
 ---
 name: demo-narrate
 description: "Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording."
-tools: [bash, shell, view, edit, create, grep, glob]
-requires_tools: [bash, shell]
+tools: [execute, read, edit, search]
+requires_tools: [execute]
 user-invocable: true
 ---
 

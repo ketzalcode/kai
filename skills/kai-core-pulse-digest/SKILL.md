@@ -1,7 +1,7 @@
 ---
 name: kai-core-pulse-digest
 description: "Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes."
-tools: [bash, shell, view, edit, create, grep, glob, ask_user]
+tools: [execute, read, edit, search, ask_user]
 ---
 
 # Pulse Digest

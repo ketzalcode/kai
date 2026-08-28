@@ -142,3 +142,54 @@ as 16 identifiers, not 15.
 The item is `in-review`, exact-ref review is complete, and `next_role` is
 `workflow-ship` / main agent for fresh PR-head CI and publication preparation.
 Nothing is called shipped.
+
+## 2026-08-28-0125 — Steward adjudication: the migrate stop is lifted, the outcome shrinks to the evidence, P5(a) is promoted
+
+`principal-product-manager` (steward) adjudicated `principal-swe-architect`'s
+**CHANGES REQUESTED** review of `f093c5a2678ee1ecf9c25a88015110a1fbd057cd`, the
+214-file tool-alias migration. The review requested **zero code changes in the
+declaration files** — its three P0s were an authorization question, an efficacy
+question, and a scope-promotion question. All three are answered; **the P1s and
+P2s are not**, and the required architecture review stays unmet.
+
+**The §12.4 measure-before-migrate stop is LIFTED, on recorded operator
+authority.** The operator authorized the area-plugin direction and then directed
+explicitly that the tool warnings be fixed and the work proceed one by one; the
+implementation sequence recorded **after the probe shipped as `[1.0.5]`** names
+migrating root agents and skills while preserving capabilities. The lift is not a
+bypass: A23 conditioned the fix on a replacement *proven safe* by the probe —
+met on `1.0.79` and `1.0.81`, direct and delegated — the probe did report first,
+and §12.3 makes the stop structurally unliftable by any further measurement, so
+only the operator could ever clear it. The residual risk accepted is **efficacy,
+not capability**. The lift is bounded to the declaration migration.
+
+**Milestone 0's outcome is AMENDED rather than claimed satisfied.** The steward
+verified first-hand that `edit` — one of the three reported warning names —
+survives on **55 of 56 agents and 29 of 51 skills**, because it is the documented
+primary alias. So the change is *predicted not to silence the `edit` warning*.
+The amended promise is smaller and true: `create` and `grep` are eliminated
+(`observed`), capability is intact, and **interactive-startup warning silence is
+`unobserved` and is collected by the operator after deployment as `shipped`-gate
+evidence — never a merge gate, and no noninteractive proxy may be invented for
+it.** A standing pre-commitment was recorded: if `edit` still warns, the
+disposition is **B2** — document the drift, file upstream — never a re-spelling
+to an undocumented name, which is the defect this milestone exists to end.
+
+**Backlog P5(a) — the 102 skill declaration sites — is PROMOTED** into
+`area-plugins-tool-allowlist-fix`, whose `touches` widened and whose enumeration
+box moved from 112 to the true 214. Three grounds, not one: explicit operator
+direction naming skills, the fired trigger, and a mechanical coupling
+(`validate-plugin.mjs:657-672` forced the six `requires_tools:` lines to move
+with the agents). **P5(b) — deriving the third `SUPPORTED_TOOLS` copy — stays
+parked** as a mechanism addition.
+
+**Deviation recorded, not absorbed:** §7.2's expand/migrate/contract sequence
+collapsed into one commit, so no window exists in which both vocabularies
+validate. Accepted with its cost named.
+
+The item is `in-review` at `f093c5a` with the `changes-requested` verdict
+recorded and `satisfies_requirement: false`. `principal-swe-infra` owes the §7.3
+capability-loss disclosure table, the three named carve-out clauses, and
+**observed** gate output including `--check` byte parity. **Nothing is called
+shipped, and warning disappearance remains an operator observation nobody has
+made.** No implementation file was modified by this pass.

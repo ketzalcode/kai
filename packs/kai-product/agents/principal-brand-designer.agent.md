@@ -1,7 +1,7 @@
 ---
 name: principal-brand-designer
 description: "Creates SaaS visual-identity systems, brand guidelines, visual-asset direction, and brand critique from positioning and brand evidence. Use for logo, color, typography, iconography, or illustration. Not product UI (`principal-product-designer`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `html-block-diagrams`

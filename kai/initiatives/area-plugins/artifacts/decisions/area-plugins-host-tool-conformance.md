@@ -971,6 +971,11 @@ and `1.0.81`**, direct and delegated.
 authored on this evidence.** Branch selection still requires validator-channel
 evidence that prompt mode structurally cannot provide.
 
+**Superseded stop, 2026-08-28:** scope-brief A28 and the steward ruling in
+`kai/coordination/threads/area-plugins-tool-allowlist-fix.md` lift this stop
+after the `v1.0.5` runtime-safety evidence. Interactive warning silence remains
+post-install operator evidence and is not claimed by the migration.
+
 ### 12.5 Reports
 
 `host-tool-probe-targeted-1.0.81.json` (current) and

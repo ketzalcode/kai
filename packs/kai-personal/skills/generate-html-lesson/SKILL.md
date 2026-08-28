@@ -1,7 +1,7 @@
 ---
 name: generate-html-lesson
 description: "Markdown-to-HTML lesson generation. Use when creating a self-contained visual lesson page, often as the companion to generated audio or an instructor flow."
-tools: [view, grep, glob, edit, create, ask_user]
+tools: [read, search, edit, ask_user]
 user-invocable: true
 argument-hint: <path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]
 ---

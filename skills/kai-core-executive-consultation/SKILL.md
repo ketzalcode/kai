@@ -1,7 +1,7 @@
 ---
 name: kai-core-executive-consultation
 description: "Private role-consultation method for the executive assistant. Use when a decision brief needs facts or independent judgment from real kai roles without impersonation."
-tools: [bash, shell, view, edit, create, grep, glob]
+tools: [execute, read, edit, search]
 ---
 
 # Executive Consultation

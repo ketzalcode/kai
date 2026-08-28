@@ -1,6 +1,6 @@
 {
   "name": "kai-product",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "kai product department pack — the product roles, over a required kai-core.",
   "agents": "agents",
   "skills": "skills"

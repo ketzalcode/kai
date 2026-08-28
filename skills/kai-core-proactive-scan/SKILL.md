@@ -1,7 +1,7 @@
 ---
 name: kai-core-proactive-scan
 description: "Defines runner-invoked proactive notifications. Use when an external cadence scans workspaces for newly actionable decisions, replies, actions, or release-ready items."
-tools: [bash, shell, view, edit, create, grep, glob]
+tools: [execute, read, edit, search]
 ---
 
 # Proactive Scan

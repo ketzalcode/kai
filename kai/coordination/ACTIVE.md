@@ -57,15 +57,22 @@ proposes enters delivery scope without a fresh operator decision. Fleet-observer
 UX is deferred with a trigger as the unaffiliated
 `area-plugins-fleet-observer-ux`.
 
-**Known limit — this pointer is ahead of its north stars.** No agent in this
-session has a shell, so neither `kai/initiatives/area-plugins/` nor
-`kai/initiatives/workspace-corpus-contract/` could be created. Both initiatives'
-missions, scope, non-negotiables, milestones, and measures are durably recorded
-in `kai/coordination/threads/area-plugins-scope-brief.md` (the steward's accepted
-`BRIEF` plus amendments A1–A16) and, for the corpus initiative, in the three
-contract threads listed in its row above. They are transcribed into
-`northstar.md` files once one operator `mkdir` creates each directory. These rows
-state that rather than implying a north star exists.
+**Partly resolved — corrected 2026-08-28-0125 by the steward.** The earlier note
+here said neither initiative directory could be created because no session had a
+shell. That is now **false for `area-plugins`**: `kai/initiatives/area-plugins/`
+exists and carries the canonical `northstar.md` (status `active`, owner
+`principal-product-manager`), `backlog.md` (the `proposal_channel`), `log.md`,
+`deliverables.md`, and `artifacts/decisions/`. **The north star is authoritative
+for `area-plugins`; this row is the pointer.** The scope brief
+(`kai/coordination/threads/area-plugins-scope-brief.md`, `BRIEF` plus amendments
+A1–A28) remains the amendment trail behind it, not a substitute for it.
+
+It remains true for **`workspace-corpus-contract`**: no
+`kai/initiatives/workspace-corpus-contract/` exists, so that initiative's
+mission, scope, non-negotiables, milestones, and measures live only in the three
+contract threads listed in its row above, and are transcribed into a
+`northstar.md` once its directory is created. That row states this rather than
+implying a north star exists.
 
 `pack-split` is `shipped` and closed; it is not active, and nothing in either
 initiative modifies `kai/initiatives/pack-split/**`. It is, however, the first

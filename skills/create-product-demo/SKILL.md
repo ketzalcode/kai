@@ -1,8 +1,8 @@
 ---
 name: create-product-demo
 description: "Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks."
-tools: [bash, shell, view, edit, create, grep, glob]
-requires_tools: [bash, shell]
+tools: [execute, read, edit, search]
+requires_tools: [execute]
 user-invocable: true
 ---
 

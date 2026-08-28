@@ -87,7 +87,7 @@ the initiative copy remains provenance.
 When one agent needs something from another, the **`kai-core-peer-communication`**
 contract reconciles the three ways that question can travel — a cheap
 **inline consult** (simulate the peer's lane), a **live peer** agent (the
-Copilot CLI's background `task`/`write_agent` messaging, for real
+Copilot CLI's background `agent`/`write_agent` messaging, for real
 independent judgment), or a **durable thread** `QUESTION`/`ANSWER` — into
 one rule: transport is a performance choice, the thread is the record.
 Anything that blocks an item, crosses a session, or changes a

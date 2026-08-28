@@ -1,7 +1,7 @@
 ---
 name: review-alternatives
 description: "Alternatives review lens. Use when a doc must justify the chosen option against tradeoffs, missing options, do-nothing, buy/build, or smaller steps."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Alternatives

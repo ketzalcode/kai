@@ -1,7 +1,7 @@
 ---
 name: workflow-customer-feedback
 description: "Synthesizes supplied SaaS surveys, NPS/CSAT, reviews, interviews, and feature requests into de-identified themes and owner routing. Use when customer feedback needs privacy-first clustering. Not product scoping or customer replies."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

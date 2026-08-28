@@ -1,7 +1,7 @@
 ---
 name: workflow-incident-response
 description: "Runs incident command for SaaS operational, security, data, or availability events: SEV, leads, timeline, action packets, status drafts, recovery evidence, and record. Use when an incident starts. Not production actions or breach/legal declarations."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "task", "read_agent", "write_agent", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "agent", "read_agent", "write_agent", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

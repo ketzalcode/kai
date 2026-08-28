@@ -1,7 +1,7 @@
 ---
 name: instructor-tutor
 description: "Authors concrete-first lessons for any subject in Explain, Lesson, or Series mode. Use when the operator needs a gap topic taught from scratch. Not packaging existing markdown (`instructor-teacher`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web_search", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-generate-audio`, `generate-html-lesson`

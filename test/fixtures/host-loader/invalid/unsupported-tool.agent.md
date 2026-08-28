@@ -1,7 +1,7 @@
 ---
 name: unsupported-tool
 description: An agent that declares a tool the Copilot host does not expose.
-tools: [view, teleport]
+tools: [read, teleport]
 ---
 
 # unsupported-tool (malformed fixture)

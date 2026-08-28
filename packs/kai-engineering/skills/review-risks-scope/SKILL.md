@@ -1,7 +1,7 @@
 ---
 name: review-risks-scope
 description: "Risks and scope review lens. Use when checking whether risks, mitigations, assumptions, in-scope work, and out-of-scope work are explicit."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Risks & Scope

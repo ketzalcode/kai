@@ -1,7 +1,7 @@
 ---
 name: research-before-coding
 description: "Enforces research before non-trivial code changes. Use when investigating ownership, reusable code, and tradeoffs before editing."
-tools: [view, grep, glob, bash, shell]
+tools: [read, search, execute]
 user-invocable: true
 argument-hint: "optional task or area description"
 ---

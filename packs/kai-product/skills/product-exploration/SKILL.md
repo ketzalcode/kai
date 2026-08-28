@@ -1,7 +1,7 @@
 ---
 name: product-exploration
 description: "Provides neutral live-product mapping. Use when PM, design, QA, domain, or engineering need an evidence-backed navigation model without UX evaluation."
-tools: [playwright, view, edit, ask_user]
+tools: [playwright, read, edit, ask_user]
 ---
 
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.

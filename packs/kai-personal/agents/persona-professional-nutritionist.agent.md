@@ -1,7 +1,7 @@
 ---
 name: persona-professional-nutritionist
 description: "Audits fitness-product meal plans, macros, pantry suggestions, and projection math for nutrition accuracy, macro safety, micronutrient gaps, and allergen risk. Not exercise programming (`persona-professional-trainer`)."
-tools: ["playwright", "bash", "shell", "edit", "create", "view", "ask_user", "skill"]
+tools: ["playwright", "execute", "edit", "read", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`

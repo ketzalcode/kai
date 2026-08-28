@@ -1,7 +1,7 @@
 ---
 name: kai-core-definition-of-done
 description: "Release-readiness and production-completion gate. Use when deciding whether work can move to in-review, release-ready, or shipped."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Definition of Done

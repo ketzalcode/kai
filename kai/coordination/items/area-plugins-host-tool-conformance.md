@@ -5,11 +5,11 @@ title: Live host-tool conformance probe — measure the real allowlist vocabular
 initiative: area-plugins
 milestone: allowlist-repair
 delivery_class: product-change
-state: in-review
+state: shipped
 resume_state: null
 priority: 1
 owner: null
-next_role: workflow-ship
+next_role: null
 target: A reproducible probe that measures what the live Copilot CLI accepts and grants, replacing hand-maintained guesswork
 artifact_target: kai/initiatives/area-plugins/artifacts/decisions/area-plugins-host-tool-conformance.md
 context_artifacts:
@@ -69,14 +69,14 @@ completed_reviews:
     satisfies_design_gate: true
     satisfies_requirement: true
 change_ref: 4d711779408c8f675a740b5e243686d9e66a5ce4
-version: 13
+version: 14
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-28-0115
+updated: 2026-08-28-0215
 ---
 
 ## Outcome
@@ -250,10 +250,16 @@ answered by measurement; `waiting_on_questions` is empty and the item is no
 longer `blocked`.
 
 **Exact-ref review complete.** `principal-swe-architect` approved implementation
-commit `4d711779408c8f675a740b5e243686d9e66a5ce4` at 2026-08-28-0112. The item is
-`in-review`, the implementation review satisfies the declared requirement, and
-`next_role` is `workflow-ship` for fresh PR-head CI and publication preparation.
-This is not a shipped claim.
+commit `4d711779408c8f675a740b5e243686d9e66a5ce4` at 2026-08-28-0112.
+
+**Shipped 2026-08-28-0215.** PR
+[PR #194](https://github.com/RubenSaucedo/kai/pull/194) merged to exact main SHA
+`71ee251d637443c897dad5b8412f3827d886d6ce`; main workflow
+[`33153960244`](https://github.com/RubenSaucedo/kai/actions/runs/33153960244)
+passed; tag and release
+[`v1.0.5`](https://github.com/RubenSaucedo/kai/releases/tag/v1.0.5) were
+published. The probe is now durable release behavior rather than an
+implementation-only claim.
 
 ### Wildcard fact — status of the correction
 

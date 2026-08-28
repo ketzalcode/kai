@@ -1,7 +1,7 @@
 ---
 name: a-different-name
 description: An agent whose frontmatter name does not equal its file id.
-tools: [view]
+tools: [read]
 ---
 
 # name-mismatch (malformed fixture)

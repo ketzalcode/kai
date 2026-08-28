@@ -1,7 +1,7 @@
 ---
 name: review-success-metrics
 description: "Success metrics review lens. Use when a doc needs measurable goals, baselines, targets, instrumentation, or checks for gameable proxy metrics."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Success Metrics

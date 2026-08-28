@@ -1,7 +1,7 @@
 ---
 name: onboard-to-codebase
 description: "Fast codebase onboarding report. Use when mapping an unfamiliar repo's stack, commands, architecture, conventions, patterns, and gotchas for future sessions."
-tools: [view, grep, glob, bash, shell, edit]
+tools: [read, search, execute, edit]
 user-invocable: true
 argument-hint: "optional focus, e.g. frontend only or auth subsystem"
 ---

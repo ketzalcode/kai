@@ -1,7 +1,7 @@
 ---
 name: principal-linkedin-strategist
 description: "Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "task", "read_agent", "write_agent", "skill"]
+tools: ["read", "edit", "search", "ask_user", "execute", "agent", "read_agent", "write_agent", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-content-grounding`, `linkedin-content`

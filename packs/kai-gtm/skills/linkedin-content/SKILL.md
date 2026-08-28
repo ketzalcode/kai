@@ -1,7 +1,7 @@
 ---
 name: linkedin-content
 description: "LinkedIn content method for grounded product intelligence. Use when drafting posts, angle matrices, calendars, or carousel outlines from product_context.json."
-tools: [view, edit, create, grep, glob, ask_user, bash, shell]
+tools: [read, edit, search, ask_user, execute]
 ---
 
 # LinkedIn Content

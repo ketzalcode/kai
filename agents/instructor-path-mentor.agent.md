@@ -1,7 +1,7 @@
 ---
 name: instructor-path-mentor
 description: "Stewards a whole certification or structured learning path over time: plan, status, advance, review, and update. Use after choosing the path. Not career strategy (`principal-engineer-career-mentor`)."
-tools: ["view", "edit", "create", "grep", "glob", "ask_user", "bash", "shell", "web_search", "skill"]
+tools: ["read", "edit", "search", "ask_user", "execute", "web_search", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-generate-audio`

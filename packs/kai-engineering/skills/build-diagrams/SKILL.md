@@ -1,7 +1,7 @@
 ---
 name: build-diagrams
 description: "Shared diagram vocabulary and ASCII-first rules. Use when writing a design, decision, or engineering doc, or a README, needing system, data, flow, state, or topology diagrams."
-tools: [view, grep, glob, edit]
+tools: [read, search, edit]
 ---
 
 # Build Diagrams

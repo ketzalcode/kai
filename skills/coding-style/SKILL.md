@@ -1,7 +1,7 @@
 ---
 name: coding-style
 description: "User coding preferences. Use when writing, editing, or refactoring code, especially to keep changes simple, readable, composed, and aligned with repo conventions."
-tools: [view, grep, glob, edit]
+tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"
 ---

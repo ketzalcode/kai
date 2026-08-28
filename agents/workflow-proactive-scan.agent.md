@@ -1,7 +1,7 @@
 ---
 name: workflow-proactive-scan
 description: "Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "skill"]
+tools: ["execute", "read", "edit", "search", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-personal-agenda`, `kai-core-proactive-scan`

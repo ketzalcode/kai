@@ -1,7 +1,7 @@
 ---
 name: principal-qa-ui
 description: "Manually tests a website UI for objective defects: overlap, overflow, broken controls, console or network errors with visible impact, focus order, and viewport layout breaks. Use for QA passes. Not fresh-eyes UX (`persona-ux-first-time-user`)."
-tools: ["playwright", "bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user", "skill"]
+tools: ["playwright", "execute", "edit", "read", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `kai-core-web-evaluation`

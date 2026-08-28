@@ -1,7 +1,7 @@
 ---
 name: principal-swe-infra
 description: "Builds and reviews infrastructure, platform, CI/CD, deployment, IaC, containers, build tooling, secrets, and observability. Use for rollout, rollback, cloud, networking, or pipeline judgment. Not backend code (`principal-swe-backend`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "skill"]
+tools: ["execute", "read", "edit", "search", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`

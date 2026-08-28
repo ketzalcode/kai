@@ -35,12 +35,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.5` — all **56 agents and 51 skills** are published across five packs for
+`v1.0.6` — all **56 agents and 51 skills** are published across five packs for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
-The repository now includes an isolated host-tool conformance probe that keeps
-validator warnings separate from runtime grants. It changes no agent or skill
-tool declaration.
+Agents and skills now use documented primary aliases for shell, file, search,
+delegation, and combined web capabilities. Three search-only roles retain the
+accepted `web_search` name to avoid widening them to fetch access. Live probes
+on CLI 1.0.79 and 1.0.81 exercised the replacement capabilities in both direct
+and delegated launches; the noninteractive probe cannot observe interactive
+startup warnings.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus the personal, product, engineering,
@@ -109,11 +112,10 @@ disappears. The terminal is restored on every exit path, not just `ctrl-c`.
 
 Before that, two fixes found by actually running the thing.
 
-A live agent run showed that 54 of 56 agents had **no shell on Windows**: they
-declared the `bash` tool, and the host drops that name silently rather than
-mapping it per-OS. Agents and skills now declare both `bash` and `shell`,
-with a CI rule keeping the pair together. That had disabled every
-script-running contract on the platform, which is why nothing had ever written
+A live agent run showed that 54 of 56 agents had **no shell on Windows**. The
+portable primary alias is now `execute`; a CI rule rejects the retired
+host-specific spellings. The earlier failure had disabled every script-running
+contract on the platform, which is why nothing had ever written
 `.kai/activity.jsonl`.
 
 Watching the observer showed the second: an opted-in summary was withheld

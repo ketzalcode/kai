@@ -1,7 +1,7 @@
 ---
 name: html-block-diagrams
 description: "Block-diagram vocabulary for HTML artifacts: five CSS arrangements and a self-contained palette. Use when an HTML artifact or an exported image needs a rich diagram."
-tools: [view, create, edit, grep, glob]
+tools: [read, edit, search]
 ---
 
 # HTML Block Diagrams

@@ -1,7 +1,7 @@
 ---
 name: principal-swe-frontend
 description: "Builds and reviews frontend TypeScript, React, CSS, components, hooks, accessibility, and styling architecture. Use for UI implementation or design judgment. Not backend (`principal-swe-backend`) or infra (`principal-swe-infra`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "skill"]
+tools: ["execute", "read", "edit", "search", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-pr-delivery`, `build-diagrams`, `research-before-coding`, `pr-sizing`, `coding-style`, `kai-core-design-grounding`

@@ -1,7 +1,7 @@
 ---
 name: review-ux-accessibility
 description: "UX and accessibility review lens. Use when a user-facing UI doc needs flows, states, edge cases, keyboard, focus, screen-reader, contrast, or motion review."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: UX & Accessibility

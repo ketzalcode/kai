@@ -1,8 +1,8 @@
 ---
 name: demo-capture
 description: "Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work."
-tools: [bash, shell, view, edit, create, grep, glob]
-requires_tools: [bash, shell]
+tools: [execute, read, edit, search]
+requires_tools: [execute]
 user-invocable: true
 ---
 

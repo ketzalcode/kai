@@ -13,12 +13,11 @@ export const COMPATIBLE_TOOLS = [
 ];
 
 export const REPO_TOOLS = [
-  'view', 'create', 'edit', 'grep', 'glob',
-  'bash', 'shell',
+  ...PRIMARY_TOOLS,
   'ask_user',
   'skill',
-  'task', 'read_agent', 'write_agent',
-  'web_fetch', 'web_search',
+  'read_agent', 'write_agent',
+  'web_search',
   'session_store_sql',
   'playwright',
 ];

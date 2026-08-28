@@ -1,7 +1,7 @@
 ---
 name: principal-partnerships
 description: "Designs SaaS partner strategy, partner-fit assessments, integration partnerships, channel/reseller programs, and co-sell or co-marketing plans. Use for partnership judgment, not legal terms or outbound contact."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

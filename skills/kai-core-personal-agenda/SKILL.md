@@ -1,7 +1,7 @@
 ---
 name: kai-core-personal-agenda
 description: "Operator agenda assembly. Use when producing the current workspace's what-needs-you view from inbox tasks, @operator questions, release gates, and nudges."
-tools: [bash, shell, view, edit, create, grep, glob]
+tools: [execute, read, edit, search]
 ---
 
 # Personal Agenda

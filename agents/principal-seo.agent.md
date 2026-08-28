@@ -1,7 +1,7 @@
 ---
 name: principal-seo
 description: "Audits a site's technical SEO, content alignment, and agentic-search readiness (llms.txt, schema, AI-bot directives). Use when asking whether Google and AI search engines can find and parse a site. Not general UI defects (`principal-qa-ui`)."
-tools: ["playwright", "bash", "shell", "edit", "create", "view", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["playwright", "execute", "edit", "read", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-web-evaluation`, `kai-core-no-self-remediation`

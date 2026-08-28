@@ -1,7 +1,7 @@
 ---
 name: kai-core-workspace-conventions
 description: "Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths."
-tools: [bash, shell, view, grep, glob]
+tools: [execute, read, search]
 ---
 
 # Workspace Conventions

@@ -4,6 +4,21 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.6] - 2026-08-28
+
+### Changed
+
+- **Agent and skill tool declarations use portable primary aliases.** Shell,
+  file, search, delegation, and combined web families now declare `execute`,
+  `read`, `edit`, `search`, `agent`, and `web`. Fine-grained host tools remain
+  explicit where required, including `web_search` for three search-only roles.
+  Live CLI 1.0.79 and 1.0.81 probes exercised the replacement capabilities in
+  both direct and delegated launches (see the area-plugin host-tool
+  conformance decision, section 12.2). Interactive warning silence remains
+  unverified because prompt mode does not expose that startup channel.
+- **The validator now rejects retired spellings.** Root declarations and all
+  generated pack mirrors share the same vocabulary and remain byte-aligned.
+
 ## [1.0.5] - 2026-08-27
 
 ### Added
@@ -3088,6 +3103,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.6]: https://github.com/RubenSaucedo/kai/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/RubenSaucedo/kai/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/RubenSaucedo/kai/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/RubenSaucedo/kai/compare/v1.0.2...v1.0.3

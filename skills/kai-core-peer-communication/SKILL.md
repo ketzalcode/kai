@@ -1,7 +1,7 @@
 ---
 name: kai-core-peer-communication
 description: "Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread."
-tools: [bash, shell, view, grep, glob]
+tools: [execute, read, search]
 ---
 
 # Peer Communication

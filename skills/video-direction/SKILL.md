@@ -1,7 +1,7 @@
 ---
 name: video-direction
 description: "Creates video creative direction from product intelligence and media. Use when planning briefs, storyboards, edit decisions, voiceover, or AI video prompts."
-tools: [view, edit, create, grep, glob, ask_user, bash, shell]
+tools: [read, edit, search, ask_user, execute]
 ---
 
 # Video Direction

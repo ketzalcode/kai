@@ -1,8 +1,8 @@
 ---
 name: demo-zoom
 description: "Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass."
-tools: [bash, shell, view, edit, create, grep, glob]
-requires_tools: [bash, shell]
+tools: [execute, read, edit, search]
+requires_tools: [execute]
 user-invocable: true
 ---
 

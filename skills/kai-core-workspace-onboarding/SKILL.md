@@ -1,7 +1,7 @@
 ---
 name: kai-core-workspace-onboarding
 description: "Initializes and validates kai workspaces, and guides explicit migration to the split pack install surface. Use when installing kai packs or creating or repairing workspace state."
-tools: [bash, shell, view, edit, create, grep, glob, ask_user]
+tools: [execute, read, edit, search, ask_user]
 ---
 
 # Workspace Onboarding

@@ -1,7 +1,7 @@
 ---
 name: review-dependencies
 description: "Dependencies review lens. Use when work crosses team, service, API, upstream/downstream, sign-off, breaking-change, or third-party boundaries."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Coordination & Dependencies

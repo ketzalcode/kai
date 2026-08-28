@@ -1,7 +1,7 @@
 ---
 name: kai-core-initiative-stewardship
 description: "Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative."
-tools: [bash, shell, view, edit, grep, glob, ask_user]
+tools: [execute, read, edit, search, ask_user]
 ---
 
 # Initiative Stewardship

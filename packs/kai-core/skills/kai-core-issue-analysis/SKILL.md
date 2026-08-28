@@ -1,7 +1,7 @@
 ---
 name: kai-core-issue-analysis
 description: "Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner."
-tools: [bash, shell, view, grep, glob, ask_user, web_search, web_fetch]
+tools: [execute, read, search, ask_user, web]
 ---
 
 # Issue Analysis

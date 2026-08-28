@@ -1,7 +1,7 @@
 ---
 name: kai-core-contract-v1
 description: "Reports that kai-core is installed and which contract version it provides. Invoked as the first action of every kai department pack agent."
-tools: [view]
+tools: [read]
 ---
 
 # kai core contract v1

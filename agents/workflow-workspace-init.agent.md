@@ -1,7 +1,7 @@
 ---
 name: workflow-workspace-init
 description: "Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-workspace-onboarding`

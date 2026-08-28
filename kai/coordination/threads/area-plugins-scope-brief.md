@@ -2129,3 +2129,118 @@ modified in this pass.** Zero writes to `scripts/`, `packs/`, `plugin.json`,
 `agents/`, `skills/`, or `kai/initiatives/pack-split/**`.
 `area-plugins-m2-claim-surface-pin` and `area-plugins-host-tool-conformance` were
 **not edited**.
+
+---
+
+### A28 — The measure-before-migrate stop is LIFTED, milestone 0's outcome is AMENDED to what the evidence supports, and backlog P5(a) is PROMOTED.
+
+**Supersedes the corresponding clauses of A23.** A23 stands as the record of what
+was known on 2026-08-27; where this amendment differs, this one governs. Nothing
+in A23 is rewritten.
+
+Written while adjudicating `principal-swe-architect`'s CHANGES REQUESTED review
+of `f093c5a2678ee1ecf9c25a88015110a1fbd057cd`
+(`kai/coordination/threads/area-plugins-tool-allowlist-fix.md`, REVIEW
+2026-08-28-0112). That review requested **zero code changes in the 214
+declaration files** — its three P0s were an authorization question, an efficacy
+question, and a scope-promotion question, two of which it routed to me and one to
+the operator.
+
+#### 1. The §12.4 stop condition is LIFTED, on recorded operator authority
+
+The conformance decision's §12.4 barred selecting any §7.2 branch and authoring
+any declaration migration, because `findings.warning_free_spelling_exists` is
+`null`. **It is lifted, with provenance:** the operator, after brainstorming the
+area-plugin architecture, said *"Yes I like that, lets use actually 'plugins'
+for the folder naming I wanted to suggest that also, the rest I like. Please
+proceed"*, then directed explicitly that the tool warnings be fixed and the work
+proceed one by one; and the implementation sequence recorded **after the probe
+shipped as `[1.0.5]`** directs migrating the root agents and skills while
+preserving capabilities. That instruction post-dates the evidence that raised the
+stop.
+
+**A lift, not a bypass. Four grounds, and the third decides it:**
+
+1. **A23 conditioned the fix on a replacement "proven safe by the probe" —
+   *safe*, not *effective*.** The probe closed safety on `1.0.79` and `1.0.81`,
+   direct and delegated. `f093c5a` replaces and never deletes.
+2. **A23's constraint 1 held.** The probe was the first implementation and
+   reported before any body was edited.
+3. **The stop is structurally unliftable by engineering.** Decision §12.3: prompt
+   mode cannot reproduce the interactive startup warning surface. No measurement
+   any agent can run will ever produce `warning_free_spelling_exists`; only the
+   operator, on an interactive launch, **after an install**. A gate clearable
+   only by observing the deployed result of the change it blocks is a deadlock,
+   and sitting inside it would be process theatre wearing restraint's clothes.
+4. **The residual risk is the operator's to accept and is bounded.** It is
+   **efficacy** — a warning may persist — not **capability**, which was measured
+   and closed.
+
+**Bounded to the declaration migration.** It authorizes nothing about topology,
+plugin identity, marketplace naming, or the milestone-1 bar; the A11 three-clause
+carve-out still binds and is still unclaimed.
+
+#### 2. Milestone 0's outcome is AMENDED — and I am naming the shrink rather than letting it pass
+
+The reviewer's P0-1 is correct and I verified its premise myself: **`edit`, one
+of the three reported warning names, survives on 55 of 56 agents and 29 of 51
+skills.** On this initiative's own evidence the change is **predicted not to
+silence the `edit` warning**.
+
+| reported warned name | after `f093c5a` | label |
+|---|---|---|
+| `create` | folded into `edit`; zero declarations remain | `observed` |
+| `grep` | replaced by `search`; zero declarations remain | `observed` |
+| `edit` | retained deliberately as the documented primary alias | may still warn — `unobserved` |
+
+**The amended outcome:** the declarations are correct and runtime-safe, capability
+is intact, two of three warning spellings are eliminated, and **interactive
+warning silence is `unobserved` — collected by the operator after deployment, as
+`shipped`-gate evidence, never as a merge gate. No noninteractive proxy is
+required, because none is possible.**
+
+**The pre-commitment that matters most.** If `edit` still warns post-install, the
+disposition is **not** another declaration change. Re-spelling `edit` would mean
+declaring an undocumented name to quiet a validator that disagrees with its own
+documentation — the exact defect this milestone exists to end. The residue routes
+to §7.2 **B2**: document the benign drift with its evidence and file upstream.
+
+**What this costs, stated plainly.** Milestone 0 promised "the warnings stop." It
+now promises "the declarations are correct, capability is intact, and two of three
+warning spellings are gone." That is a smaller promise. The alternatives were to
+claim a silence nobody has seen, or to block indefinitely on an observation that
+cannot be made until after we ship. Shrinking the promise to fit the evidence is
+the honest move available.
+
+#### 3. `PROPOSAL-3`/backlog **P5(a) is PROMOTED**; **P5(b) stays parked**
+
+A23 deferred both halves. The trigger has fired, and the operator's sequence names
+skills explicitly, so **the 102 skill declaration sites move into
+`area-plugins-tool-allowlist-fix`** — its `touches` widens to `skills/` and
+`scripts/lib/loader-contract.mjs`, and its enumeration box moves from 112 to the
+true 214. Part of it was never an independent scope choice: the six
+`requires_tools:` lines are mechanically coupled to the agents' `bash`+`shell` →
+`execute` move by `validate-plugin.mjs:657-672`.
+
+**P5(b) — deriving the third `SUPPORTED_TOOLS` copy — stays parked** as a
+mechanism addition. `f093c5a` edits both copies in lockstep, which is forced
+collateral of byte parity, not de-duplication. **No agent may cite this amendment
+to build (b).** Promotion record: `kai/initiatives/area-plugins/backlog.md`.
+
+#### 4. What this amendment does NOT do
+
+It does not clear P1-2 (carve-out clauses named, **observed** gates including
+`--check` parity), P1-3 (the §7.3 capability-loss disclosure table), or the four
+P2s — all `principal-swe-infra`'s, all open. It does not mark the architecture
+review satisfied; the recorded verdict stays `changes-requested` with
+`satisfies_requirement: false`. It advances nothing toward `shipped`.
+
+**Deviation recorded rather than absorbed:** §7.2's expand → migrate → contract
+(PR-A1..A4) collapsed into one commit, so no window exists in which both
+vocabularies validate. Accepted as consistent with the operator's "one by one"
+pacing at item granularity, with the cost named — the change is still revertible
+as a single commit and lockstep versioning holds.
+
+**Unchanged by this amendment.** Mission, vision, all fourteen non-negotiables,
+scope `targets`, every `out_of_scope` bullet, every `deferred` entry, the
+milestone order, all eight critical operator decision boundaries, and A1–A27.

@@ -1,7 +1,7 @@
 ---
 name: kai-core-decision-brief
 description: "Decision brief packaging for the executive assistant. Use when an operator decision or deploy gate needs options, tradeoffs, role positions, recommendation, and next actions."
-tools: [bash, shell, view, edit, create, grep, glob]
+tools: [execute, read, edit, search]
 ---
 
 # Decision Brief

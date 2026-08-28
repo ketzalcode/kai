@@ -232,12 +232,12 @@ const ACTIVITY_EXEMPT = new Map([
   ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
   ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
   // These two DO bounded work worth seeing, and are exempt for a worse reason:
-  // they hold no `bash` tool, and `kai-core-work-activity` needs one to append. Granting
+  // they hold no `execute` tool, and `kai-core-work-activity` needs one to append. Granting
   // a shell to a research-and-write role purely so it can log would trade a
   // sandbox boundary for observability, which is the wrong way round. They stay
   // invisible until the delegating agent can record on their behalf.
-  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `bash`'],
-  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `bash`'],
+  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `execute`'],
+  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `execute`'],
 ]);
 const CONTRACT_HEADING = /^## (?:Contracts you inherit|Inherited contracts)[^\n]*\n/gm;
 const blockPath = join(ROOT, 'scripts/lib/inherits-block.txt');
@@ -613,7 +613,7 @@ const ASSESSOR_ROLES = [
 //
 // A skill whose procedure is mandatory can require a capability the agent must
 // actually hold: `kai-core-work-activity` tells an agent to run `scripts/activity.mjs`,
-// which is impossible without `bash`. Nothing otherwise connects the two, so a
+// which is impossible without `execute`. Nothing otherwise connects the two, so a
 // well-meant tool removal ("assessors should not hold shell") can silently
 // break a contract the same agent is required to follow.
 //
@@ -667,40 +667,6 @@ const ASSESSOR_ROLES = [
         }
       }
     }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Shell tools are declared in the portable pair
-// ---------------------------------------------------------------------------
-// `bash` alone grants no shell on Windows. The host does not map it per-OS and
-// does not complain: it drops the name and hands the agent a toolset with no
-// way to run anything, so every script-running contract fails silently on the
-// platform. `shell` resolves to the platform terminal. Declaring both is the
-// only form that works everywhere, and this check stops the pair from being
-// split again by a well-meant tidy-up.
-// ---------------------------------------------------------------------------
-{
-  const checkPair = (file, list, field) => {
-    if (!list) return;
-    const has = new Set(list);
-    if (has.has('bash') && !has.has('shell')) {
-      err(file, `\`${field}\` names \`bash\` without \`shell\` — on Windows that grants no shell at all; declare both`);
-    }
-    if (has.has('shell') && !has.has('bash')) {
-      err(file, `\`${field}\` names \`shell\` without \`bash\` — declare both so the pair stays portable`);
-    }
-  };
-  for (const agent of agentFiles) {
-    const parsed = parseFrontmatter(readFileSync(agent.path, 'utf8'));
-    if (!parsed.ok) continue;
-    checkPair(rel(agent.path), parseToolList(parsed.fm.tools), 'tools');
-  }
-  for (const skill of skillFiles) {
-    const parsed = parseFrontmatter(readFileSync(skill.path, 'utf8'));
-    if (!parsed.ok) continue;
-    checkPair(rel(skill.path), parseToolList(parsed.fm.tools), 'tools');
-    checkPair(rel(skill.path), parseToolList(parsed.fm.requires_tools), 'requires_tools');
   }
 }
 

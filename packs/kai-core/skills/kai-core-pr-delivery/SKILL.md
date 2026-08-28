@@ -1,7 +1,7 @@
 ---
 name: kai-core-pr-delivery
 description: "PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff."
-tools: [bash, shell, view, edit, create, grep, glob]
+tools: [execute, read, edit, search]
 ---
 
 # PR Delivery

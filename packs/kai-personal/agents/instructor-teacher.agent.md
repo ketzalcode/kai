@@ -1,7 +1,7 @@
 ---
 name: instructor-teacher
 description: "Turns chaptered markdown - course units, book chapters, study notes - into paired HTML and audio lessons, one per source file, on any subject. Use after a learning module is extracted, or for a folder of related notes."
-tools: ["bash", "shell", "edit", "view", "grep", "glob", "ask_user", "skill"]
+tools: ["execute", "edit", "read", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-generate-audio`, `generate-html-lesson`

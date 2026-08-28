@@ -1,7 +1,7 @@
 ---
 name: extract-writing-style
 description: "Portable voice-profile extraction. Use when persona-self needs the user's writing style captured from past messages or refreshed after voice drift."
-tools: [bash, shell, view, edit, ask_user, session_store_sql]
+tools: [execute, read, edit, ask_user, session_store_sql]
 ---
 
 # Extract Writing Style

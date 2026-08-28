@@ -13,17 +13,13 @@
 // Kai's declared tool vocabulary is a lint heuristic, not a host allowlist.
 // Whether a live host recognises a name is a separate, measured question.
 export const SUPPORTED_TOOLS = new Set([
-  'view', 'create', 'edit', 'grep', 'glob', // files & content
-  // Shell. `bash` does NOT map per-OS: on Windows the host silently drops it
-  // and grants no shell at all, while `shell` resolves to the platform's
-  // terminal (measured -- an agent declaring only `bash` got view/skill/sql and
-  // no way to run anything). Declaring both is the portable form, and an
-  // unrecognised name costs nothing because the host ignores it.
-  'bash', 'shell',
+  // Documented primary aliases. Live 1.0.79 and 1.0.81 probes exercised these
+  // capabilities in both direct and delegated custom-agent launches.
+  'execute', 'read', 'edit', 'search', 'agent', 'web', 'todo',
   'ask_user',                                // operator interaction
   'skill',                                   // inherited skill loading
-  'task', 'read_agent', 'write_agent',       // sub-agents / peer transport
-  'web_fetch', 'web_search',                 // web
+  'read_agent', 'write_agent',               // peer transport
+  'web_search',                              // search-only web access
   'session_store_sql',                       // session store
   'playwright',                              // browser MCP
 ]);

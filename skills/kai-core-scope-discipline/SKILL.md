@@ -1,7 +1,7 @@
 ---
 name: kai-core-scope-discipline
 description: "Governs assessment-versus-action scope boundaries. Use when assessors, PM, design, or SWE roles must avoid silently expanding approved scope."
-tools: [bash, shell, view, grep, glob]
+tools: [execute, read, search]
 ---
 
 # Scope Discipline

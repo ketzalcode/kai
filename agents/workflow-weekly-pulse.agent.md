@@ -1,7 +1,7 @@
 ---
 name: workflow-weekly-pulse
 description: "Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_fetch", "web_search", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-generate-audio`, `kai-core-pulse-digest`, `kai-core-web-content-extraction`

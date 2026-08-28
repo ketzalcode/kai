@@ -1,7 +1,7 @@
 ---
 name: kai-core-content-grounding
 description: "Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence."
-tools: [view, edit, grep, glob]
+tools: [read, edit, search]
 ---
 
 # Content Grounding

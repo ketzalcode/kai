@@ -1,7 +1,7 @@
 ---
 name: pr-sizing
 description: "PR sizing method. Use when planning a feature, large refactor, or multi-file change into independently shippable, reviewable increments."
-tools: [view, grep, glob, edit]
+tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional feature description"
 ---

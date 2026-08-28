@@ -1,7 +1,7 @@
 ---
 name: review-rationale
 description: "Rationale review lens. Use when pressure-testing a doc's problem statement, premises, reasoning chain, or why this solution follows."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Rationale

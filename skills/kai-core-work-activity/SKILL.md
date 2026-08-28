@@ -1,8 +1,8 @@
 ---
 name: kai-core-work-activity
 description: "Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl."
-tools: [bash, shell, view, grep, glob]
-requires_tools: [bash, shell]
+tools: [execute, read, search]
+requires_tools: [execute]
 ---
 
 # Work Activity

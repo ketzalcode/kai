@@ -1,7 +1,7 @@
 ---
 name: kai-core-team-operating-rules
 description: "Defines the universal kai role operating contract. Use whenever acting as a kai role in any workspace, including ownership, handoffs, tests, shipping, and @operator."
-tools: [bash, shell, view, grep, glob]
+tools: [execute, read, search]
 ---
 
 # Team Operating Rules

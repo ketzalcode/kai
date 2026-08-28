@@ -1,7 +1,7 @@
 ---
 name: workflow-doc-review
 description: "Produces one consolidated substance review for a design doc, PRD, RFC, strategy doc, or proposal. Use when a draft document needs routed multi-lens review. Not implementation or auto-posting."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`, `kai-core-no-self-remediation`

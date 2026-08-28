@@ -1,7 +1,7 @@
 ---
 name: ui-mockup
 description: "Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision."
-tools: [view, create, edit, grep, glob, ask_user, playwright]
+tools: [read, edit, search, ask_user, playwright]
 ---
 
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.

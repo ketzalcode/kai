@@ -1,7 +1,7 @@
 ---
 name: principal-solutions-architect
 description: "Turns buyer requirements, environment, and integration evidence into SaaS technical discovery, solution fit, feasibility, POC scope, objections, and questionnaire guidance. Use pre-sale. Not roadmap, pricing, implementation, or attestations."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

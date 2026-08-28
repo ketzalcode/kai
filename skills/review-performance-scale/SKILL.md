@@ -1,7 +1,7 @@
 ---
 name: review-performance-scale
 description: "Performance and scale review lens. Use when a doc proposes a service, API, data path, latency budget, volume, concurrency, or load-sensitive work."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Performance & Scale

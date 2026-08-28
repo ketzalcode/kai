@@ -1,7 +1,7 @@
 ---
 name: kai-core-generate-audio
 description: "Markdown-to-audio lesson generation. Use when converting notes, READMEs, course content, or drafts into multilingual narrated audio with lectoria."
-tools: [bash, shell, view]
+tools: [execute, read]
 user-invocable: true
 argument-hint: "optional source path or single .md file"
 ---

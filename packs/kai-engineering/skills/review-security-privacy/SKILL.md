@@ -1,7 +1,7 @@
 ---
 name: review-security-privacy
 description: "Security and privacy review lens. Use when a doc touches data, auth, PII, secrets, trust boundaries, threat surface, or external sharing."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Security & Privacy

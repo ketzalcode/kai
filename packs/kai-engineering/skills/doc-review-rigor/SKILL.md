@@ -1,7 +1,7 @@
 ---
 name: doc-review-rigor
 description: "Document review rigor method. Use from review dimension skills or workflow-doc-review when judging load-bearing claims, evidence, confidence, and value."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Doc Review Rigor

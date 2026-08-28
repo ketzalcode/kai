@@ -1,7 +1,7 @@
 ---
 name: principal-ai-applied-engineer
 description: "Turns AI research or product ideas into ticket-grade applied designs with architecture, FE/BE work, eval, rollout, risk, cost, latency, and build/no-build guidance. Use when deciding how to ship AI."
-tools: ["web_search", "web_fetch", "view", "edit", "create", "glob", "grep", "ask_user", "skill"]
+tools: ["web", "read", "edit", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-scope-discipline`, `research-before-coding`, `pr-sizing`, `coding-style`

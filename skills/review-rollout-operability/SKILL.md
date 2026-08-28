@@ -1,7 +1,7 @@
 ---
 name: review-rollout-operability
 description: "Rollout and operability review lens. Use when production changes need staged rollout, rollback, kill switch, monitoring, alerts, on-call, or runbooks."
-tools: [bash, shell, view, grep, glob, web_search, web_fetch]
+tools: [execute, read, search, web]
 ---
 
 # Review: Rollout & Operability

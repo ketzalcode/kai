@@ -1,7 +1,7 @@
 ---
 name: principal-sales
 description: "Turns SaaS deal, account, discovery, and competitive evidence into qualification, discovery, deal strategy, objections, proposals, forecasts, and win/loss guidance. Use for pre-sale sales judgment. Not pricing authority or solution design."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`

@@ -1,7 +1,7 @@
 ---
 name: kai-core-work-coordination
 description: "Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths."
-tools: [bash, shell, view, edit, create, grep, glob]
+tools: [execute, read, edit, search]
 ---
 
 # Work Coordination

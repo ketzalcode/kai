@@ -13,7 +13,7 @@ capability is absent, and a few features simply require the richer host.
 |---|---|---|
 | Agents + skills (the declarative core) | ✅ | ✅ |
 | File-based coordination (BOARD, threads, initiatives) | ✅ | ✅ |
-| Live peer sub-agents (`task` / `write_agent` / `read_agent`) | ✅ | ❌ — fall back to durable threads |
+| Live peer sub-agents (`agent` / `write_agent` / `read_agent`) | ✅ | ❌ — fall back to durable threads |
 | Web search / fetch | ✅ built-in | ⚠️ only if the repo configures a web MCP tool |
 | Browser automation (Playwright: `kai-core-web-evaluation`, `kai-core-web-content-extraction`) | ✅ local + localhost targets | ⚠️ public URLs only; no localhost |
 | Local shell scripts (`kai-core-generate-audio`, extractors) | ✅ | ⚠️ depends on the runner's toolchain |

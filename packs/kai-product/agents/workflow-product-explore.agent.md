@@ -1,7 +1,7 @@
 ---
 name: workflow-product-explore
 description: "Produces an evidence-backed live-product map, and optionally a neutral design-system extract. Use when peers need a product surface explored without rediscovery. Not UX evaluation, defect filing, scope, or design recommendations."
-tools: ["playwright", "bash", "shell", "view", "edit", "grep", "glob", "ask_user", "skill"]
+tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-design-grounding`, `product-exploration`

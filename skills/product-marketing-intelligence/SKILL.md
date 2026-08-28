@@ -1,7 +1,7 @@
 ---
 name: product-marketing-intelligence
 description: "Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work."
-tools: [playwright, bash, shell, view, edit, create, grep, glob, ask_user, web_search, web_fetch]
+tools: [playwright, execute, read, edit, search, ask_user, web]
 ---
 
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.

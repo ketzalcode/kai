@@ -1,7 +1,7 @@
 ---
 name: workflow-ship
 description: "Orchestrates release prepare, human deployment start, and completion confirmation with deploy, rollback, verification, and smoke-check records. Use when a release moves from in-review to shipped. Not deployment execution."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-definition-of-done`, `review-rollout-operability`

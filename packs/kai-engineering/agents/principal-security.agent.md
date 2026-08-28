@@ -1,7 +1,7 @@
 ---
 name: principal-security
 description: "Produces SaaS threat models, security designs, change reviews, vulnerability triage, privacy-engineering assessments, and incident-security guidance. Use when authorized evidence needs security judgment. Not compliance sign-off."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `review-security-privacy`

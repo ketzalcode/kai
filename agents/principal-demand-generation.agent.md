@@ -1,7 +1,7 @@
 ---
 name: principal-demand-generation
 description: "Designs SaaS campaign strategy, briefs, lifecycle/nurture email, channel mix, lead handoff, and demand diagnosis from approved positioning. Use for demand gen. Not PLG lifecycle experiments (`principal-growth`)."
-tools: ["bash", "shell", "view", "edit", "create", "grep", "glob", "ask_user", "web_search", "web_fetch", "skill"]
+tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-content-grounding`

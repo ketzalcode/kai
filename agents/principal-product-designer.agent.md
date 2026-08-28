@@ -1,7 +1,7 @@
 ---
 name: principal-product-designer
 description: "Designs interaction models for approved product needs and reviews implementation against the approved design. Use after PM scope exists. Not product scope (`principal-product-manager`) or visual brand (`principal-brand-designer`)."
-tools: ["playwright", "bash", "shell", "view", "create", "edit", "grep", "glob", "ask_user", "skill"]
+tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `ui-mockup`

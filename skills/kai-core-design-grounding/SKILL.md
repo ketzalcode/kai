@@ -1,7 +1,7 @@
 ---
 name: kai-core-design-grounding
 description: "Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language."
-tools: [view, create, edit, grep, glob]
+tools: [read, edit, search]
 ---
 
 # Design Grounding
