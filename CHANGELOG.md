@@ -4,6 +4,21 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.4] - 2026-08-27
+
+### Added
+
+- **The go-to-market department pack is published.** `kai-gtm` completes the
+  five-pack marketplace, exposing all 56 agents and 51 skills.
+
+### Changed
+
+- **The staged split is now the permanent published topology.** Generation,
+  marketplace policy, rollback policy, and CI all use the full locked partition.
+- **Install, migration, status, and rollback documentation describe the finished
+  five-pack surface.** Partial-slice disclosures and future-pack promises are
+  removed.
+
 ## [1.0.3] - 2026-08-27
 
 ### Added
@@ -3057,6 +3072,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.4]: https://github.com/RubenSaucedo/kai/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/RubenSaucedo/kai/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/RubenSaucedo/kai/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/RubenSaucedo/kai/compare/v1.0.0...v1.0.1

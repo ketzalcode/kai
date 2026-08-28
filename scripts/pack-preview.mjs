@@ -5,8 +5,7 @@
 //   • generate  — materialise the pack trees from the LIVE root roster, byte-stably,
 //     with a per-pack plugin.json. `--write` lands them under packs/; `--check`
 //     regenerates and diffs so a hand-edit or a stale copy fails. The reviewed
-//     committed slice currently contains kai-core, kai-personal, kai-product, and
-//     kai-engineering.
+//     committed surface contains the full five-pack partition.
 //   • preview   — a throwaway committed-slice or five-plugin build (`--out`/`--all`) that
 //     answers the host-behaviour questions gating the split: does a fail-closed
 //     preflight hold on a real agent, what happens when core is absent or
@@ -488,7 +487,7 @@ function selfTest() {
   'losing the install remedy fails: a refusal with no way out is a dead end');
 
   // --- generator determinism + committed-tree gate -----------------------
-  const selectedPacks = ['core', 'personal', 'product', 'engineering'];
+  const selectedPacks = [...PACK_ORDER];
   const m1 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
   const m2 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
   ok([...m1.keys()].join('\n') === [...m2.keys()].join('\n')
@@ -499,13 +498,16 @@ function selfTest() {
   ok(m1.has('kai-core/plugin.json') && m1.has('kai-personal/plugin.json')
     && m1.has('kai-product/plugin.json')
     && m1.has('kai-engineering/plugin.json')
+    && m1.has('kai-gtm/plugin.json')
     && m1.has('kai-core/package.json') && m1.has('kai-core/package-lock.json')
     && m1.has('kai-personal/package.json') && m1.has('kai-personal/package-lock.json')
     && m1.has('kai-product/package.json') && m1.has('kai-product/package-lock.json')
     && m1.has('kai-engineering/package.json') && m1.has('kai-engineering/package-lock.json')
+    && m1.has('kai-gtm/package.json') && m1.has('kai-gtm/package-lock.json')
     && m1.has('kai-personal/agents/persona-self.agent.md')
     && m1.has('kai-product/agents/principal-product-manager.agent.md')
-    && m1.has('kai-engineering/agents/principal-swe-infra.agent.md'),
+    && m1.has('kai-engineering/agents/principal-swe-infra.agent.md')
+    && m1.has('kai-gtm/agents/principal-sales.agent.md'),
     'the materialised tree places per-pack plugin and npm manifests with copied agent bodies');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
     'the authoritative generator injects the canonical preflight into department agents');
@@ -516,14 +518,15 @@ function selfTest() {
   'and neither into a core agent, which ships inside the pack whose absence they cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
     'core provides the probe the injected block tells department agents to invoke');
-  ok(![...m1.keys()].some((key) => key.startsWith('kai-gtm/')),
-  'the committed four-pack slice does not materialise the unselected go-to-market department');
+  ok(PACK_ORDER.every((pack) => [...m1.keys()].some((key) => key.startsWith(`${packPluginName(pack)}/`))),
+  'the committed surface materialises every pack in the locked partition');
 
   const manifests = planManifests({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
   const coreM = manifests.find((p) => p.pack === 'core');
   const personalM = manifests.find((p) => p.pack === 'personal');
   const productM = manifests.find((p) => p.pack === 'product');
   const engineeringM = manifests.find((p) => p.pack === 'engineering');
+  const gtmM = manifests.find((p) => p.pack === 'gtm');
   ok(coreM && coreM.manifest.name === 'kai-core' && coreM.manifest.skills === 'skills',
     'the generator plans a kai-core manifest with a skills path');
   ok(personalM && personalM.manifest.name === 'kai-personal'
@@ -535,19 +538,24 @@ function selfTest() {
   ok(engineeringM && engineeringM.manifest.name === 'kai-engineering'
     && engineeringM.manifest.agents === 'agents' && engineeringM.manifest.skills === 'skills',
   'the engineering manifest carries the generated department paths');
+  ok(gtmM && gtmM.manifest.name === 'kai-gtm'
+    && gtmM.manifest.agents === 'agents' && gtmM.manifest.skills === 'skills',
+  'the go-to-market manifest carries the generated department paths');
   ok(manifests.every((p) => p.manifest.version === '9.9.9-selftest'),
     'every planned manifest stamps the version it was generated with (lockstep)');
   ok(coreM.packageManifest.dependencies.lectoria
     && personalM.packageManifest.dependencies.lectoria
     && Object.keys(productM.packageManifest.dependencies).length === 0
     && Object.keys(engineeringM.packageManifest.dependencies).length === 0
+    && Object.keys(gtmM.packageManifest.dependencies).length === 0
     && coreM.packageLock.packages['node_modules/lectoria']
     && personalM.packageLock.packages['node_modules/lectoria']
     && Object.keys(productM.packageLock.packages).length === 1
     && Object.keys(engineeringM.packageLock.packages).length === 1
+    && Object.keys(gtmM.packageLock.packages).length === 1
     && !coreM.packageManifest.devDependencies
     && !coreM.packageLock.packages['node_modules/playwright'],
-  'runtime manifests project lectoria only into core and personal, leaving product and engineering empty');
+  'runtime manifests project lectoria only into core and personal, leaving other departments empty');
   const emptyPack = planManifests({
     root: ROOT, version: '9.9.9-selftest', packs: ['engineering'],
   })[0];
@@ -601,12 +609,8 @@ function selfTest() {
   } finally {
     if (scratch) rmSync(scratch, { recursive: true, force: true });
   }
-  ok(COMMITTED_PACKS.length === 4
-    && COMMITTED_PACKS[0] === 'core'
-    && COMMITTED_PACKS[1] === 'personal'
-    && COMMITTED_PACKS[2] === 'product'
-    && COMMITTED_PACKS[3] === 'engineering',
-  'the committed slice is exactly core plus personal plus product plus engineering');
+  ok(COMMITTED_PACKS.join(',') === PACK_ORDER.join(','),
+  'the committed surface is exactly the full declared partition');
   const missingBase = join(tmpdir(), `kai-pack-missing-${process.pid}`);
   const missingCheck = checkCommitted({ root: ROOT, base: missingBase, version: '9.9.9-selftest' });
   ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`)
@@ -639,17 +643,22 @@ function selfTest() {
     name: 'kai-engineering', source: './packs/kai-engineering', version: '1.2.3',
     description: 'engineering',
   };
+  const gtmEntry = {
+    name: 'kai-gtm', source: './packs/kai-gtm', version: '1.2.3', description: 'gtm',
+  };
   const known = {
     kai: { version: '1.2.3', description: 'd' },
     'kai-core': { version: '1.2.3', description: 'core' },
     'kai-product': { version: '1.2.3', description: 'product' },
     'kai-engineering': { version: '1.2.3', description: 'engineering' },
+    'kai-gtm': { version: '1.2.3', description: 'gtm' },
   };
   const sources = {
     '.': { name: 'kai' },
     'packs/kai-core': { name: 'kai-core' },
     'packs/kai-product': { name: 'kai-product' },
     'packs/kai-engineering': { name: 'kai-engineering' },
+    'packs/kai-gtm': { name: 'kai-gtm' },
   };
   const mktArgs = (m, extra = {}) => ({
     mkt: m,
@@ -699,9 +708,8 @@ function selfTest() {
     && packSurface.requiredPluginNames.join(',') === publishedNames.join(',')
     && packSurface.forbiddenPluginNames.includes('kai'),
   `the 1.x pack mode requires exactly the committed pack set (${publishedNames.join(', ')}) and forbids the monolith`);
-  ok(unpublishedNames.length > 0
-    && unpublishedNames.every((n) => packSurface.forbiddenPluginNames.includes(n)),
-  `a packs index may not list a pack this repo has not published (${unpublishedNames.join(', ')})`);
+  ok(unpublishedNames.length === 0,
+  'the finished packs index publishes every pack in the locked partition');
   const rollbackSurface = marketplaceSurfacePolicy({
     mkt: mkt([kaiEntry], 'legacy-rollback'),
     canonicalVersion: '1.0.1',
@@ -711,18 +719,14 @@ function selfTest() {
     && rollbackSurface.requiredPluginNames.join(',') === 'kai'
     && rollbackSurface.forbiddenPluginNames.join(',') === publishableNames.join(','),
   `the 1.x emergency rollback mode requires the monolith and forbids all ${publishableNames.length} publishable pack names`);
-  ok(unpublishedNames.every((n) => rollbackSurface.forbiddenPluginNames.includes(n)),
-    `a pack published after this policy was written is already forbidden on the rollback surface, by name `
-    + `(${unpublishedNames.join(', ')})`);
+  ok(publishableNames.every((n) => rollbackSurface.forbiddenPluginNames.includes(n)),
+    'every published pack is forbidden on the rollback surface by derived name');
   // The failure R1 exists to stop: a restored monolith served beside a department
   // pack — the coexistence the doctor refuses on a host — blessed by the index.
-  const deptEntry = {
-    name: unpublishedNames[0], source: `./packs/${unpublishedNames[0]}`, version: '1.2.3', description: 'd',
-  };
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, deptEntry], 'legacy-rollback'), {
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, gtmEntry], 'legacy-rollback'), {
     requiredPluginNames: rollbackSurface.requiredPluginNames,
     forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
-  })).some((e) => new RegExp(`entry "${unpublishedNames[0]}" is not part of the published install surface`).test(e)),
+  })).some((e) => /entry "kai-gtm" is not part of the published install surface/.test(e)),
   'a rollback index that still serves a department pack is rejected, not blessed');
   ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, productEntry], 'legacy-rollback'), {
     requiredPluginNames: rollbackSurface.requiredPluginNames,
@@ -734,11 +738,11 @@ function selfTest() {
     forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
   })).some((e) => /entry "kai-engineering" is not part of the published install surface/.test(e)),
   'the engineering department is rejected by name if a rollback index still serves it');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry, deptEntry], 'packs'), {
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry, gtmEntry], 'packs'), {
     requiredPluginNames: packSurface.requiredPluginNames,
     forbiddenPluginNames: packSurface.forbiddenPluginNames,
-  })).some((e) => new RegExp(`entry "${unpublishedNames[0]}" is not part of the published install surface`).test(e)),
-  'a packs index that serves a pack the repo never published is rejected');
+  })).some((e) => /no entry named/.test(e)),
+  'a partial packs index is rejected when the full partition is published');
   ok(marketplaceSurfacePolicy({
     mkt: mkt([coreEntry]),
     canonicalVersion: '1.2.3',

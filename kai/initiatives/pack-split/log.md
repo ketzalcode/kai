@@ -3437,3 +3437,31 @@ actions, and version `1.0.4` are unchanged.
 the initiative remains `active`. No GTM implementation, generated tree,
 marketplace change, dispatch, milestone closure, or initiative closure
 occurred.
+
+## 2026-08-27-1745 - GTM 1.0.4 implementation and reviews complete
+
+`principal-swe-infra` reconciled the bounded final implementation for
+`pack-split-release-12c-4-gtm` and moved the item
+`ready -> in-progress -> in-review` (v2 -> v4). The implementation is bound to
+exact ref `1ad873725e62f53efd0c0005edd897e1672c915b`.
+
+Full `npm test` passed against the exact commit's working content. All five
+packs generated with 139 files; `kai-gtm` contains 11 agents and 2 skills, and
+the complete partition is 56 agents and 51 skills. `COMMITTED_PACKS`
+explicitly aliases `PACK_ORDER`, confirming the final scaffolding collapse is
+the anticipated identity rather than a new generator contract. The staged
+marketplace contains exactly five packs at `1.0.4`; rollback validation forbids
+every pack name, and the runbook removes the four department packs before core
+last. No canonical root agent or skill body changed.
+
+Independent SRE and architecture reviews both bind to
+`1ad873725e62f53efd0c0005edd897e1672c915b`. Each verdict is **APPROVED** with
+P0/P1/P2 = **0/0/0**. After serial reviewer grants and releases, the item is
+v8 with its lease clear and `next_role: workflow-ship`.
+
+`workflow-ship` is requested to prove reviewed-ref ancestry, records-only
+equivalence, and fresh CI at the actual final head, then coordinate the
+operator-executed merge, live isolated-home browse/install/update/doctor probe,
+annotated `v1.0.4` tag, and public release. The item remains `in-review`;
+`five-pack-split-shipped` remains open at 7 of 8. No publication, tag, release,
+production verification, milestone closure, or initiative closure is claimed.

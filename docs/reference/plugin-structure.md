@@ -225,8 +225,9 @@ push.
    too.
 4. From an isolated home, update the marketplace, browse it, install
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
-   From an already-migrated home, uninstall department packs first and
-   `kai-core` last, confirm `copilot plugin list` shows neither surface, install
+   From an already-migrated home, uninstall `kai-personal`, `kai-product`,
+   `kai-engineering`, and `kai-gtm` first, then uninstall `kai-core` last.
+   Confirm `copilot plugin list` shows neither surface, then install
    `kai@kai-plugins`, then start a fresh session. Never install the restored
    monolith beside packs; the doctor correctly refuses that coexistence.
 5. Reverse the workspace provenance on every workspace already migrated. Run

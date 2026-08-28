@@ -57,3 +57,94 @@ Append-only communication log mirroring
 - questions: none
 - next:      principal-swe-infra — implement the existing `1.0.4` release
              scope only. Do not close the milestone or initiative.
+
+## HANDOFF 2026-08-27-1745 — principal-swe-infra -> principal-sre
+
+- did:       Reconciled the committed bounded implementation and moved the
+             item `ready -> in-progress -> in-review` (v2 -> v4) under a
+             sole-actor builder lease that is now clear. Bound implementation
+             and review to exact ref
+             `1ad873725e62f53efd0c0005edd897e1672c915b`.
+- state:     in-review; owner `principal-swe-infra`; next `principal-sre`;
+             lease clear; no waiting question
+- needs:     Independent reliability review, followed by the separately
+             required architecture review at the same exact ref.
+- workspace: C:\src\kai
+- artifacts: `packs/kai-gtm/`; `scripts/lib/pack-plan.mjs`;
+             `scripts/pack-preview.mjs`; `.github/plugin/marketplace.json`;
+             `kai/coordination/items/pack-split-release-12c-4-gtm.md`
+- evidence:  Full `npm test` passed; all five packs generated with 139 files;
+             GTM is 11 agents/2 skills and the full partition is 56/51.
+             `COMMITTED_PACKS` explicitly aliases `PACK_ORDER`; the
+             marketplace is exactly five packs at `1.0.4`; rollback forbids
+             every pack name and removes four departments before core; no
+             canonical root agent or skill body changed.
+- questions: none
+- next:      principal-sre — approve or return reliability findings against
+             this exact ref.
+
+## REVIEW 2026-08-27-1745 — principal-sre
+
+- kind:      independent-reliability
+- ref:       `1ad873725e62f53efd0c0005edd897e1672c915b`
+- verdict:   **APPROVED**; P0/P1/P2 = 0/0/0.
+- evidence:  Full `npm test` passed; the staged marketplace is exactly five
+             packs at `1.0.4`; rollback validation forbids every pack name;
+             the operator runbook removes all four department packs before
+             core last.
+- boundary:  Fresh final-head CI, merge, live marketplace install/update/doctor
+             probe, tag, and release remain pending. No production action was
+             performed.
+
+## HANDOFF 2026-08-27-1745 — principal-sre -> principal-swe-architect
+
+- did:       Recorded the independent reliability approval at exact ref
+             `1ad873725e62f53efd0c0005edd897e1672c915b`, P0/P1/P2 = 0/0/0,
+             and released the reviewer lease (v5 -> v6).
+- state:     in-review; SRE review complete; architecture review unmet
+- needs:     Independent architecture review of the final generated partition,
+             canonical-root boundary, and collapsed scaffolding at the same
+             exact ref.
+- workspace: C:\src\kai
+- artifacts: `kai/coordination/items/pack-split-release-12c-4-gtm.md`;
+             `kai/coordination/threads/pack-split-release-12c-4-gtm.md`
+- evidence:  Revision-bound REVIEW entry above.
+- questions: none
+- next:      principal-swe-architect — complete the remaining exact-ref review.
+
+## REVIEW 2026-08-27-1745 — principal-swe-architect
+
+- kind:      independent-architecture
+- ref:       `1ad873725e62f53efd0c0005edd897e1672c915b`
+- verdict:   **APPROVED**; P0/P1/P2 = 0/0/0.
+- evidence:  The generated surface is coherent: five packs, 139 files, GTM
+             11 agents/2 skills, and full partition 56/51.
+             `COMMITTED_PACKS` explicitly aliases `PACK_ORDER`; marketplace
+             topology is exactly five entries at `1.0.4`; canonical root
+             agent and skill bodies are unchanged.
+- boundary:  This review changes no plugin behavior and performs no merge,
+             production probe, tag, or release.
+
+## HANDOFF 2026-08-27-1745 — principal-swe-architect -> workflow-ship
+
+- did:       Recorded the remaining independent architecture approval against
+             exact implementation ref
+             `1ad873725e62f53efd0c0005edd897e1672c915b`, P0/P1/P2 = 0/0/0,
+             and released the reviewer lease (v7 -> v8). Both required reviews
+             now match the item's `change_ref`.
+- state:     in-review; owner `principal-swe-infra`; next `workflow-ship`;
+             lease clear; no waiting question
+- needs:     Prove reviewed-ref ancestry, records-only equivalence, and fresh
+             CI at the actual final head. Then coordinate the human merge,
+             live isolated-home browse/install/update/doctor probe, annotated
+             `v1.0.4` tag, and public release.
+- workspace: C:\src\kai
+- artifacts: `kai/coordination/items/pack-split-release-12c-4-gtm.md`;
+             `kai/coordination/threads/pack-split-release-12c-4-gtm.md`;
+             `kai/initiatives/pack-split/log.md`
+- evidence:  Both exact-ref REVIEW entries above; full `npm test` and bounded
+             implementation evidence in the builder handoff.
+- questions: none
+- next:      workflow-ship — complete final-head release-readiness gates. Do
+             not claim merge, publication, tag, release, or production
+             verification before human execution and evidence.

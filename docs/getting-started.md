@@ -18,6 +18,7 @@ copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
+copilot plugin install kai-gtm@kai-plugins
 ```
 
 Start a **new** session afterwards — plugins load per session.
@@ -78,9 +79,7 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The repository contains 56 agents and 51 skills; the published
-core-plus-personal-plus-product-plus-engineering slice installs 45 agents and
-49 skills. You do not need to
+The full 56-agent, 51-skill surface is published across five packs. You do not need to
 learn them. You need three things: **ask a front door for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -108,15 +107,16 @@ support long-term. Nobody has to approve a listing for this to work.
    copilot plugin install kai-personal@kai-plugins
    copilot plugin install kai-product@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
+   copilot plugin install kai-gtm@kai-plugins
    ```
 2. Confirm it loaded:
    ```powershell
    copilot plugin list
    ```
    `kai-core@kai-plugins`, `kai-personal@kai-plugins`, and
-   `kai-product@kai-plugins`, and `kai-engineering@kai-plugins` should appear at
-   the same version. The agents and skills are available in **new** sessions —
-   start a fresh session to use them.
+   `kai-product@kai-plugins`, `kai-engineering@kai-plugins`, and
+   `kai-gtm@kai-plugins` should appear at the same version. The agents and skills
+   are available in **new** sessions — start a fresh session to use them.
 
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.
@@ -126,16 +126,15 @@ that is what lets `kai-core-fleet-observation` find the watcher.
 Do not install packs beside legacy `kai`: both provide the operating contract,
 and which copy loads first is host-dependent.
 
-The current migration installs core, personal, product, and engineering.
-Go-to-market roles remain in the repository but are not published yet.
-Migrating now temporarily removes those roles from this host.
+The current migration installs the complete five-pack surface: core, personal,
+product, engineering, and go-to-market.
 
 1. Update the marketplace catalog.
 2. In a session still loaded from legacy `kai`, ask:
 
    ```text
    Migrate this kai installation to kai-core, kai-personal, kai-product, and
-   kai-engineering.
+   kai-engineering, and kai-gtm.
    ```
 
 3. Follow the displayed plan exactly. The guide proves all selected packs exist at one
@@ -182,6 +181,7 @@ copilot plugin install RubenSaucedo/kai:packs/kai-core
 copilot plugin install RubenSaucedo/kai:packs/kai-personal
 copilot plugin install RubenSaucedo/kai:packs/kai-product
 copilot plugin install RubenSaucedo/kai:packs/kai-engineering
+copilot plugin install RubenSaucedo/kai:packs/kai-gtm
 ```
 
 This still works and is a single command, but the CLI prints:
@@ -199,7 +199,7 @@ install. Tracked in
 ```powershell
 git clone https://github.com/RubenSaucedo/kai.git
 cd kai
-copilot --plugin-dir packs/kai-core --plugin-dir packs/kai-personal --plugin-dir packs/kai-product --plugin-dir packs/kai-engineering
+copilot --plugin-dir packs/kai-core --plugin-dir packs/kai-personal --plugin-dir packs/kai-product --plugin-dir packs/kai-engineering --plugin-dir packs/kai-gtm
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when
@@ -232,6 +232,7 @@ copilot plugin update kai-core@kai-plugins
 copilot plugin update kai-personal@kai-plugins
 copilot plugin update kai-product@kai-plugins
 copilot plugin update kai-engineering@kai-plugins
+copilot plugin update kai-gtm@kai-plugins
 ```
 
 Plugins are cached per session — changes only appear in **new** sessions.

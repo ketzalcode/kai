@@ -5,11 +5,11 @@ title: Release 12c-4 — generate and publish kai-gtm, remove split scaffolding,
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: ready
+state: in-review
 resume_state: null
 priority: 50
-owner: null
-next_role: principal-swe-infra
+owner: principal-swe-infra
+next_role: workflow-ship
 target: pack-split final department publish — kai-gtm — plus scaffolding removal and five-pack finalization
 artifact_target: null
 context_artifacts:
@@ -45,16 +45,28 @@ review_requirements:
     kind: independent-reliability
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
-change_ref: null
-version: 2
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 1ad873725e62f53efd0c0005edd897e1672c915b
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12c-4-gtm.md"
+    timestamp: 2026-08-27-1745
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 1ad873725e62f53efd0c0005edd897e1672c915b
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12c-4-gtm.md"
+    timestamp: 2026-08-27-1745
+change_ref: 1ad873725e62f53efd0c0005edd897e1672c915b
+version: 8
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1736
+updated: 2026-08-27-1745
 ---
 
 ## Outcome
@@ -66,24 +78,24 @@ describes a finished five-pack install rather than a migration in progress.
 
 ## Acceptance
 
-- [ ] The `kai-gtm` tree is **generated from root** by `pack-preview` and committed;
+- [x] The `kai-gtm` tree is **generated from root** by `pack-preview` and committed;
       `pack-preview --check` reports byte parity for the whole committed slice.
-- [ ] `COMMITTED_PACKS` now equals the full declared partition. The incremental-slice scaffolding
+- [x] `COMMITTED_PACKS` now equals the full declared partition. The incremental-slice scaffolding
       is either **collapsed** (the constant and its "only the reviewed committed slice is
       materialised" contract are no longer needed) or **explicitly retained** with a stated reason
       in the record; the committed-slice self-test still asserts an exact set, never a length.
 - [ ] `.github/workflows/validate.yml` covers all five packs; the new required check is added to
       branch protection by `@operator` or recorded as running-but-not-enforced.
-- [ ] The marketplace lists exactly the five published packs at the canonical version with
+- [x] The marketplace lists exactly the five published packs at the canonical version with
       `installSurface: packs`, no monolith entry; `kai-core` is still never offered in the selector
       (`skills/kai-core-workspace-onboarding/SKILL.md`); the derived rollback set rejects an index
       listing any of the five.
-- [ ] **Split scaffolding removed:** `README.md` no longer carries the "the remaining department
+- [x] **Split scaffolding removed:** `README.md` no longer carries the "the remaining department
       packs follow in the next `1.0.x` release" promise or a partial-slice disclosure — `## Status`
       re-derives the full published surface — and `docs/reference/plugin-structure.md` describes a
       five-pack marketplace, including the rollback runbook's uninstall order for four department
       packs plus core last.
-- [ ] `1.0.4` is coherent across every version surface; CHANGELOG entry + compare link present;
+- [x] `1.0.4` is coherent across every version surface; CHANGELOG entry + compare link present;
       `release-guard` passes; `npm test` green.
 - [ ] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff, and a
       **fresh** CI run at the actual final head.
@@ -96,9 +108,27 @@ describes a finished five-pack install rather than a migration in progress.
 
 ## Evidence
 
-- (to be filled) — reviewed `change_ref`, both approvals at that exact ref, final-head CI run,
-  operator merge/tag/release, isolated-home install probe, marketplace diff, five-pack surface
-  proof.
+- Exact implementation ref:
+  `1ad873725e62f53efd0c0005edd897e1672c915b`.
+- Full `npm test` passed against this exact commit's working content. The
+  committed five-pack generation produced 139 files with byte parity.
+- `kai-gtm` contains exactly 11 agents and 2 skills. The complete partition is
+  56 agents and 51 skills.
+- `COMMITTED_PACKS` explicitly aliases `PACK_ORDER`; the finalization is the
+  bounded identity anticipated by this item, not a new generator contract.
+- The staged marketplace contains exactly five pack entries at `1.0.4`, with
+  no monolith entry. The rollback validation forbids every pack name, and the
+  runbook removes the four department packs before removing core last.
+- No canonical root agent or skill body changed. Root remains the source of
+  truth for all generated pack content.
+- Independent SRE review approved exact ref
+  `1ad873725e62f53efd0c0005edd897e1672c915b` with verdict **APPROVED** and
+  P0/P1/P2 = 0/0/0.
+- Independent architecture review approved the same exact ref with verdict
+  **APPROVED** and P0/P1/P2 = 0/0/0.
+- Both required reviews match `change_ref`. Fresh final-head CI,
+  operator-executed merge, live isolated-home marketplace probe, annotated
+  `v1.0.4` tag, and public release remain pending under `workflow-ship`.
 
 ## Notes
 
