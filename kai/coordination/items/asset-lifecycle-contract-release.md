@@ -5,11 +5,11 @@ title: Ship the universal asset lifecycle contract
 initiative: asset-lifecycle-contract
 milestone: contract-bound
 delivery_class: product-change
-state: in-progress
+state: in-review
 resume_state: null
 priority: 1
 owner: principal-swe-infra
-next_role: principal-swe-infra
+next_role: principal-swe-architect
 target: universal generated-asset behavior
 artifact_expectation: owed
 artifact_class: architecture-decision
@@ -47,15 +47,15 @@ review_requirements:
   - role: principal-swe-architect
     kind: architecture-contract
 completed_reviews: []
-change_ref: null
-version: 2
+change_ref: 91c8195b6c7afef1ea35772e0dab9937615a423b
+version: 3
 lease:
-  holder: principal-swe-infra
-  token: lifecycle-2026-08-28-1551
-  version_at_grant: 1
-  acquired: 2026-08-28-1551
-  expires: 2026-08-28-2359
-updated: 2026-08-28-1551
+  holder: null
+  token: null
+  version_at_grant: null
+  acquired: null
+  expires: null
+updated: 2026-08-28-1632
 ---
 
 ## Outcome
@@ -66,12 +66,17 @@ separate execution, disposition, validity, and closure semantics.
 
 ## Acceptance
 
-- [ ] The new skill defines the complete operator-approved lifecycle.
-- [ ] All 56 root agents and their generated mirrors inherit it.
-- [ ] Validation rejects an omitted lifecycle contract.
-- [ ] Release metadata and generated documentation are current.
-- [ ] The full repository suite passes.
+- [x] The new skill defines the complete operator-approved lifecycle.
+- [x] All 56 root agents and their generated mirrors inherit it.
+- [x] Validation rejects an omitted lifecycle contract.
+- [x] Release metadata and generated documentation are current.
+- [x] The full repository suite passes.
 
 ## Evidence
 
-- Filled as implementation, review, CI, merge, and release progress.
+- Implementation revision:
+  `91c8195b6c7afef1ea35772e0dab9937615a423b`.
+- `npm test` passed after generated catalog, pack trees, and inventory were
+  refreshed.
+- Initial architecture review bounced on five schema-2 staging contradictions;
+  all five were corrected before the implementation revision was committed.
