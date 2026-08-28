@@ -2,7 +2,7 @@
 type: initiative
 title: Pack split — kai-core plus department packs
 slug: pack-split
-status: active
+status: shipped
 horizon: 2026-Q4
 mission: Make kai installable as a required shared core plus selectable department packs, so a project loads only the departments it needs without losing the shared operating contract.
 vision: kai ships as kai-core plus individually installable department packs from the marketplace, sharing one always-present operating contract with dependency loss that fails closed, released as 1.0.0.
@@ -460,3 +460,26 @@ The initiative stays `active` with
 `scope.current: [five-pack-split-shipped]`. No GTM implementation, generated
 pack, marketplace change, dispatch, milestone closure, or initiative closure
 is claimed.
+
+**Final milestone closure (steward pass 2026-08-27-1753).**
+
+`five-pack-split-shipped` is **CLOSED at 8 of 8** typed required items. The
+authoritative item records for `pack-split-pack-dependency-manifests`,
+`pack-split-onboarding-installer`, `pack-split-release-12a`,
+`pack-split-release-12b`, and `pack-split-release-12c-1-hardening` through
+`pack-split-release-12c-4-gtm` each read `state: shipped`, with clear leases
+and no waiting questions. Canonical ship record 08 proves the final served
+surface: exactly `kai-core`, `kai-personal`, `kai-product`,
+`kai-engineering`, and `kai-gtm`, all at `1.0.4`; all five install in a fresh
+isolated probe; the installed-core doctor is clear and marketplace-only; and
+the marketplace contains no monolith entry. Release 12b retains the initial
+monolith-retirement evidence.
+
+The milestone outcome, acceptance, and success intent are satisfied. The
+initiative itself deliberately remains `active`, not `shipped`, because the
+mandatory director-authored
+`kai/initiatives/pack-split/director-summary.md` is absent. The steward created
+and promoted `pack-split-director-summary` as the sole ready closure item for
+`director-chief-of-staff`. After that knowledge item completes, the steward can
+make the final initiative state transition and remove this slug from
+`ACTIVE.md`. No plugin behavior changed in this closure pass.

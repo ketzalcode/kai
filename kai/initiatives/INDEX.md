@@ -8,4 +8,4 @@ onboarding pass, without replacing hand-edited rows.
 
 | slug | status | workspace | summary | deliverables | updated |
 |------|--------|-----------|---------|--------------|---------|
-| pack-split | active | `.` (repository) | Split kai into a required shared `kai-core` plus selectable department packs; the shared operating contract stays present and dependency loss fails closed. Engineering is live at `1.0.3`; `five-pack-split-shipped` is open at 7 of 8, with GTM `1.0.4` the sole ready next release item. | `kai/initiatives/pack-split/deliverables.md` | 2026-08-27 |
+| pack-split | shipped | `.` (repository) | `kai/initiatives/pack-split/director-summary.md` | `kai/initiatives/pack-split/deliverables.md` | 2026-08-27 |

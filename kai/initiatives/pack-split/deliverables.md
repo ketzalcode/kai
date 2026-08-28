@@ -7,6 +7,7 @@ one-way and steward-approved:
 
 | deliverable | milestone | source item | artifact path | promoted to library | status |
 |-------------|-----------|-------------|---------------|---------------------|--------|
+| Director closure summary | initiative closure | pack-split-director-summary | kai/initiatives/pack-split/director-summary.md | — | **COMPLETED 2026-08-27**; stable operator entry point; final steward closure complete |
 | Locked five-pack partition (authoritative docs) | partition-lock | pack-split-partition-lock | kai/initiatives/pack-split/artifacts/docs/pack-split-partition-lock.md | — | completed / accepted |
 | Engineering delivery decomposition (14-item build & ship plan) | dependency-guarantees | pack-split-engineering-decomposition | kai/initiatives/pack-split/artifacts/decisions/pack-split-engineering-decomposition.md | — | completed / accepted |
 | Release record — pack generator + multi-manifest gates (`0.58.0`) | dependency-guarantees | pack-split-generator-gates | kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **promoted 2026-08-25** → kai/library/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md | **SHIPPED 2026-08-25** (`v0.58.0`, merge `47aa0549…`) |
@@ -27,6 +28,7 @@ one-way and steward-approved:
 | Release 12c-2 product-pack record (`1.0.2`) | five-pack-split-shipped | pack-split-release-12c-2-product | kai/library/releases/2026-08-27/06-ship-pack-split-release-12c-2-product/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/06-ship-pack-split-release-12c-2-product/ship-record.md | **SHIPPED 2026-08-27** (PR #186; merge `1dd6f019…`; exact-main run `33128452012` success; public `v1.0.2`; product live) |
 | Architecture review — engineering pack publication (`1.0.3`) | five-pack-split-shipped | pack-split-release-12c-3-engineering | kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md | — | **APPROVED 2026-08-27** at `27804def…`; P0/P1/P2 0/0/0 |
 | Release 12c-3 engineering-pack record (`1.0.3`) | five-pack-split-shipped | pack-split-release-12c-3-engineering | kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md | **SHIPPED 2026-08-27** (PR #188; merge `5b8ef7ee…`; exact-main run `33129961905` success; public `v1.0.3`; engineering live) |
+| Release 12c-4 GTM/five-pack-finalization record (`1.0.4`) | five-pack-split-shipped | pack-split-release-12c-4-gtm | kai/library/releases/2026-08-27/08-ship-pack-split-release-12c-4-gtm/ship-record.md | **promoted 2026-08-27** -> kai/library/releases/2026-08-27/08-ship-pack-split-release-12c-4-gtm/ship-record.md | **SHIPPED 2026-08-27** (PR #190; merge `049764c9…`; exact-main run `33130883171` success; public `v1.0.4`; all five packs live; milestone **CLOSED 8/8**) |
 
 The **release record** for `pack-split-first-department` is closed at
 `shipped`. `workflow-ship` deliberately restored its prior
@@ -230,3 +232,32 @@ proposal **A1**, bound as a promotion precondition on `pack-split-generated-pack
 (`generated-pack-trees`, `migration-doctor`, `first-department`, `host-gates`) have produced **no
 deliverable yet** — the next durable outputs owed are the host-semantics reliability record and
 the migration doctor's release record.
+
+## Final closure reconciliation — 2026-08-27-1753
+
+The steward verified the eight authoritative
+`five-pack-split-shipped.required_items` records at their declared terminal
+state:
+
+| required item | required | canonical state |
+|---------------|----------|-----------------|
+| pack-split-pack-dependency-manifests | shipped | shipped |
+| pack-split-onboarding-installer | shipped | shipped |
+| pack-split-release-12a | shipped | shipped |
+| pack-split-release-12b | shipped | shipped |
+| pack-split-release-12c-1-hardening | shipped | shipped |
+| pack-split-release-12c-2-product | shipped | shipped |
+| pack-split-release-12c-3-engineering | shipped | shipped |
+| pack-split-release-12c-4-gtm | shipped | shipped |
+
+`five-pack-split-shipped` is therefore **CLOSED 8/8**. Release record 04
+retains the `1.0.0` marketplace flip and monolith retirement. Records 06, 07,
+and 08 retain the product, engineering, and GTM publication probes; record 08
+proves the final five-pack `1.0.4` surface.
+
+The mandatory non-delivery closure artifact now exists at
+`kai/initiatives/pack-split/director-summary.md`, and
+`pack-split-director-summary` is `completed`. This index is non-empty and
+closure-complete. The steward moved the initiative `active -> shipped` on
+2026-08-27-1802 after re-verifying all four typed milestone mappings. No plugin
+behavior changed.

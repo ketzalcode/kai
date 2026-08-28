@@ -5,11 +5,11 @@ title: Release 12c-4 — generate and publish kai-gtm, remove split scaffolding,
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-review
+state: shipped
 resume_state: null
 priority: 50
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: null
 target: pack-split final department publish — kai-gtm — plus scaffolding removal and five-pack finalization
 artifact_target: null
 context_artifacts:
@@ -59,14 +59,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12c-4-gtm.md"
     timestamp: 2026-08-27-1745
 change_ref: 1ad873725e62f53efd0c0005edd897e1672c915b
-version: 8
+version: 15
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1745
+updated: 2026-08-27-1753
 ---
 
 ## Outcome
@@ -84,7 +84,7 @@ describes a finished five-pack install rather than a migration in progress.
       is either **collapsed** (the constant and its "only the reviewed committed slice is
       materialised" contract are no longer needed) or **explicitly retained** with a stated reason
       in the record; the committed-slice self-test still asserts an exact set, never a length.
-- [ ] `.github/workflows/validate.yml` covers all five packs; the new required check is added to
+- [x] `.github/workflows/validate.yml` covers all five packs; the new required check is added to
       branch protection by `@operator` or recorded as running-but-not-enforced.
 - [x] The marketplace lists exactly the five published packs at the canonical version with
       `installSurface: packs`, no monolith entry; `kai-core` is still never offered in the selector
@@ -97,12 +97,12 @@ describes a finished five-pack install rather than a migration in progress.
       packs plus core last.
 - [x] `1.0.4` is coherent across every version surface; CHANGELOG entry + compare link present;
       `release-guard` passes; `npm test` green.
-- [ ] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff, and a
+- [x] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff, and a
       **fresh** CI run at the actual final head.
-- [ ] **Operator-executed publication:** merge is the publish; isolated-home browse, install of the
+- [x] **Operator-executed publication:** merge is the publish; isolated-home browse, install of the
       newly published pack, idempotent update, installed-core doctor `--json`; then tag `v1.0.4` at
       the exact merge SHA and cut the release. This role prepares and gates only.
-- [ ] The milestone evidence for `five-pack-split-shipped` is assembled for the steward: five live
+- [x] The milestone evidence for `five-pack-split-shipped` is assembled for the steward: five live
       entries, version coherence, the per-publish install probes, and the retired monolith. The
       **closure call itself is the steward's**, not this item's.
 
@@ -126,9 +126,41 @@ describes a finished five-pack install rather than a migration in progress.
   P0/P1/P2 = 0/0/0.
 - Independent architecture review approved the same exact ref with verdict
   **APPROVED** and P0/P1/P2 = 0/0/0.
-- Both required reviews match `change_ref`. Fresh final-head CI,
-  operator-executed merge, live isolated-home marketplace probe, annotated
-  `v1.0.4` tag, and public release remain pending under `workflow-ship`.
+- Both required reviews match `change_ref`; the final-head, deployment, live
+  probe, tag, and release evidence that followed is recorded below.
+- GitHub compare proves reviewed ref
+  `1ad873725e62f53efd0c0005edd897e1672c915b` is the direct parent of final PR
+  head `ad9326990a10519e379cb6475064535f4a051553`; the sole post-review commit
+  changes only `kai/` records. Final head and squash merge
+  `049764c9909a3e41fb1135287a74a6314c1a8529` share tree
+  `82d50304f2993f04b679ea433c2a7670c397cc62`.
+- Final-head CI run `33130820714` concluded `success` with exactly six
+  successful jobs: `contract` plus runtime-dependency legs for all five packs.
+  The GTM leg is therefore recorded as running-but-not-enforced; branch
+  protection enforcement is not asserted.
+- The operator merged PR #190 to `main` as
+  `049764c9909a3e41fb1135287a74a6314c1a8529` at
+  `2026-08-28T00:48:29Z`. Exact-main CI run `33130883171` concluded `success`
+  at that exact SHA with the same six successful jobs.
+- Operator production evidence from a fresh isolated no-ref probe browsed
+  exactly `kai-core`, `kai-personal`, `kai-product`, `kai-engineering`, and
+  `kai-gtm`; installed all five at `1.0.4`; idempotently updated GTM; and
+  returned doctor `status: clear`, all five enabled, with marketplace-only
+  provenance.
+- Annotated tag `v1.0.4` peels to the merge SHA. GitHub release
+  `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.4` targets that SHA,
+  is public, non-draft, and non-prerelease, and was published at
+  `2026-08-28T00:49:59Z`.
+- Durable ship record:
+  `kai/library/releases/2026-08-27/08-ship-pack-split-release-12c-4-gtm/ship-record.md`.
+- The milestone evidence bundle is indexed in
+  `kai/initiatives/pack-split/deliverables.md`: release 12b records the retired
+  monolith and initial core/personal probe; records 06, 07, and 08 retain the
+  product, engineering, and GTM publication probes; record 08 proves the final
+  five live entries and lockstep `1.0.4` surface.
+- The item is shipped and its milestone evidence is assembled. Milestone and
+  initiative closure remain explicitly unclaimed for
+  `principal-product-manager`.
 
 ## Notes
 
@@ -166,3 +198,18 @@ the bounded final-publish outcome, existing cleanup condition, both independent
 review requirements, operator-only publication boundary, and release version
 `1.0.4` are unchanged. No GTM implementation, generated tree, marketplace
 change, dispatch, milestone closure, or initiative closure occurred.
+
+### Steward reconciliation 2026-08-27-1753 (`principal-product-manager`)
+
+Cleared the fulfilled post-ship handoff (`next_role -> null`) after verifying
+this authoritative record is `shipped`, its lease and question list are clear,
+both exact-ref approvals remain bound to
+`1ad873725e62f53efd0c0005edd897e1672c915b`, and canonical ship record 08
+retains the operator merge, successful final-head and exact-main CI, isolated
+five-pack marketplace proof, annotated `v1.0.4`, and public release.
+
+This item now owes nothing. The steward separately closed
+`five-pack-split-shipped` at 8 of 8 typed requirements. Initiative closure is
+not claimed here: the required `director-summary.md` does not yet exist, and
+that director-owned closure artifact is tracked by
+`pack-split-director-summary`. No plugin behavior or release fact changed.

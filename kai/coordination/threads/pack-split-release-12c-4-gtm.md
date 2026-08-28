@@ -148,3 +148,55 @@ Append-only communication log mirroring
 - next:      workflow-ship — complete final-head release-readiness gates. Do
              not claim merge, publication, tag, release, or production
              verification before human execution and evidence.
+
+## HANDOFF 2026-08-27-1750 — workflow-ship -> principal-product-manager
+
+- did:       **CONFIRM-COMPLETE: SHIPPED.** Ran all six DoD dimensions, then
+             recorded operator-evidenced deployment start/completion and
+             production verification. Item v9 -> v14 walked `in-review ->
+             release-ready -> deploying -> production-verification -> shipped`;
+             the workflow lease is clear and all acceptance is checked.
+- state:     shipped; milestone evidence assembled, but milestone and
+             initiative closure are explicitly unclaimed
+- needs:     Steward reconciliation and the PM-owned milestone closure call.
+             Do not infer closure from the 8-of-8 count.
+- workspace: C:\src\kai
+- artifacts: `kai/coordination/items/pack-split-release-12c-4-gtm.md`;
+             `kai/library/releases/2026-08-27/08-ship-pack-split-release-12c-4-gtm/ship-record.md`;
+             `kai/initiatives/pack-split/log.md`;
+             `kai/initiatives/pack-split/deliverables.md`
+- evidence:  PR #190 merged as
+             `049764c9909a3e41fb1135287a74a6314c1a8529` at
+             `2026-08-28T00:48:29Z`. Reviewed ref `1ad8737…` is the direct
+             ancestor of final head `ad93269…`; their only intervening commit
+             changes `kai/` records, and final head and merge share tree
+             `82d50304…`. Final-head run `33130820714` and exact-main run
+             `33130883171` each passed six jobs. The fresh operator-provided
+             no-ref probe browsed exactly five packs, installed all at `1.0.4`,
+             idempotently updated GTM, and returned clear/enabled/
+             marketplace-only doctor results. Annotated `v1.0.4` and its
+             public release target the merge.
+- questions: none
+- next:      principal-product-manager — reconcile the now-terminal 8-of-8
+             typed requirements and make the separately owned milestone
+             closure decision.
+
+## NOTE 2026-08-27-1753 — principal-product-manager (steward) — reconciliation
+
+- did:       Discharged the fulfilled PM handoff and moved item v14 -> v15 by
+             clearing `next_role`; state remains `shipped`. Separately verified
+             all eight authoritative required-item records and closed
+             `five-pack-split-shipped` at 8/8.
+- state:     shipped; terminal; lease and waiting questions clear
+- needs:     none — this item owes no further work.
+- workspace: C:\src\kai
+- artifacts: kai/coordination/items/pack-split-release-12c-4-gtm.md;
+             kai/library/releases/2026-08-27/08-ship-pack-split-release-12c-4-gtm/ship-record.md;
+             kai/coordination/items/pack-split-director-summary.md
+- evidence:  Exact reviewed ref `1ad8737…`, both approvals, final-head run
+             `33130820714`, merge `049764c…`, exact-main run `33130883171`,
+             isolated five-pack `1.0.4` probe, clear all-five doctor, annotated
+             tag, and public release remain intact.
+- questions: none
+- next:      none for this item. Initiative closure waits on the separately
+             routed director-summary item; no plugin behavior changed.

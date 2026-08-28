@@ -3465,3 +3465,98 @@ operator-executed merge, live isolated-home browse/install/update/doctor probe,
 annotated `v1.0.4` tag, and public release. The item remains `in-review`;
 `five-pack-split-shipped` remains open at 7 of 8. No publication, tag, release,
 production verification, milestone closure, or initiative closure is claimed.
+
+## 2026-08-27-1750 - release 12c-4 GTM shipped as v1.0.4
+
+`workflow-ship` completed retrospective PREPARE, CONFIRM-START, and
+CONFIRM-COMPLETE for `pack-split-release-12c-4-gtm`. All six DoD dimensions
+are Clear. Item v9 -> v14 walked `in-review -> release-ready -> deploying ->
+production-verification -> shipped`; all acceptance is checked, the lease is
+clear, and reviewed implementation ref
+`1ad873725e62f53efd0c0005edd897e1672c915b` remains unchanged.
+
+The reviewed ref is the direct parent of final PR head
+`ad9326990a10519e379cb6475064535f4a051553`; the sole post-review commit changes
+only `kai/` records. Final head and squash merge
+`049764c9909a3e41fb1135287a74a6314c1a8529` share tree
+`82d50304f2993f04b679ea433c2a7670c397cc62`. Final-head run `33130820714`
+and exact-main run `33130883171` each passed `contract` plus all five
+runtime-dependency legs.
+
+The operator-provided fresh no-ref probe browsed exactly core, personal,
+product, engineering, and GTM; installed all five at `1.0.4`; idempotently
+updated GTM; and returned doctor `status: clear`, all enabled, with
+marketplace-only provenance. Annotated tag `v1.0.4` peels to the merge. The
+public, non-draft, non-prerelease GitHub release targets that SHA and was
+published at `2026-08-28T00:49:59Z`. Rollback was not invoked.
+
+Durable record:
+`kai/library/releases/2026-08-27/08-ship-pack-split-release-12c-4-gtm/ship-record.md`.
+The operator performed all external actions; this run changed documentation and
+coordination only.
+
+All 8 of 8 typed `five-pack-split-shipped` requirements are now at their
+required terminal states, and the evidence bundle is assembled for the
+steward. **No milestone or initiative closure is claimed.** The closure call
+remains with `principal-product-manager`.
+
+## 2026-08-27-1753 - steward closure: final milestone CLOSED; director summary remains
+
+`principal-product-manager` verified the authoritative records rather than
+inferring completion from the board:
+
+- `pack-split-pack-dependency-manifests` — `shipped` v23
+- `pack-split-onboarding-installer` — `shipped` v18
+- `pack-split-release-12a` — `shipped` v18
+- `pack-split-release-12b` — `shipped` v15
+- `pack-split-release-12c-1-hardening` — `shipped` v15
+- `pack-split-release-12c-2-product` — `shipped` v13
+- `pack-split-release-12c-3-engineering` — `shipped` v15
+- `pack-split-release-12c-4-gtm` — `shipped` v14 at verification, then v15
+  after the fulfilled PM handoff was cleared
+
+Every record has a clear lease and no waiting question. Canonical ship record
+08 retains operator merge `049764c…`, successful final-head run `33130820714`,
+successful exact-main run `33130883171`, the fresh isolated probe that browsed
+and installed exactly five packs at `1.0.4`, a clear/enabled/
+marketplace-only doctor result for all five, and the annotated public release.
+Release 12b's canonical record retains the monolith-retirement evidence.
+
+The steward therefore closes `five-pack-split-shipped` at **8 of 8**. Its
+outcome and acceptance are satisfied: all five named packs are live, core is
+not selector-offered, the lockstep/generated/runtime gates shipped,
+onboarding is the verified core-first guided installer, the staged
+12a/12b/12c path completed, and the monolith is retired.
+
+The initiative does **not** move `active -> shipped` in this pass. Closure
+requires a non-empty, director-authored
+`kai/initiatives/pack-split/director-summary.md`, and that file is absent.
+The steward created `pack-split-director-summary`, promoted it
+`proposed -> ready` at priority 10, and routed it to
+`director-chief-of-staff`. `ACTIVE.md` remains truthful until that knowledge
+item completes; no operator decision is required. No plugin behavior, release,
+marketplace, tag, or production state changed.
+
+## 2026-08-27-1802 - final steward closure: initiative shipped
+
+`principal-product-manager` re-read the authoritative typed requirements for
+all four non-empty milestone mappings. `partition-lock` is closed 1/1,
+`dependency-guarantees` 5/5, `first-pack-extracted` 4/4, and
+`five-pack-split-shipped` 8/8; every mapped item remains at its declared
+`completed` or `shipped` terminal state, with no live lease or waiting
+question.
+
+The director-authored
+`kai/initiatives/pack-split/director-summary.md` and canonical
+`kai/initiatives/pack-split/deliverables.md` are non-empty and exact. The
+closure summary retains the final five-pack `1.0.4` production evidence and
+the `1.0.0` monolith-retirement result, while the backlog and evidence caveats
+remain parked and unchanged.
+
+The steward therefore moved the north star `active -> shipped`, removed the
+initiative from `kai/coordination/ACTIVE.md`, recorded exact summary and
+deliverables paths in `kai/initiatives/INDEX.md`, refreshed the board closure
+narrative, and cleared the fulfilled `next_role` on
+`pack-split-director-summary` at v5. No scope was reopened. This pass changed
+records only: no plugin behavior, source, release metadata, marketplace state,
+tag, deployment, or production claim changed.
