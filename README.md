@@ -13,6 +13,7 @@ copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
+copilot plugin install kai-engineering@kai-plugins
 ```
 
 **[Get started →](docs/getting-started.md)** ·
@@ -33,21 +34,22 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.2` — the repository contains **56 agents and 51 skills** for the
+`v1.0.3` — the repository contains **56 agents and 51 skills** for the
 **Copilot CLI** and the **Copilot coding agent** (cloud). The published
-core + personal + product slice installs **25 agents and 34 skills**.
+core + personal + product + engineering slice installs **45 agents and 49 skills**.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
-> retired. Install required `kai-core` plus the personal and product packs;
-> engineering and go-to-market follow in later `1.0.x` releases. Until then,
-> migrating removes those two departments from the installed host; their source
+> retired. Install required `kai-core` plus the personal, product, and
+> engineering packs; go-to-market follows in a later `1.0.x` release. Until then,
+> migrating removes that department from the installed host; its source
 > remains in this repository but they are not published.
 > If legacy `kai` is
 > installed, use its `workflow-workspace-init` guided migration before removing
 > it. The guide verifies replacement availability, requires the monolith to be
 > gone, installs core first, and checks every step.
 
-**Three packs are published: `kai-core` + `kai-personal` + `kai-product`.**
+**Four packs are published: `kai-core` + `kai-personal` + `kai-product` +
+`kai-engineering`.**
 Root remains the canonical source; generation copies agents, skills, routed
 scripts, each script's local module closure, and the fleet hooks exactly once.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
@@ -72,19 +74,21 @@ before a pack install, coexistence is refused rather than warned through, and
 evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
-contract-version skew. The marketplace publishes `kai-core` and
-`kai-personal` and `kai-product`; the monolith is no longer listed.
+contract-version skew. The marketplace publishes `kai-core`, `kai-personal`, `kai-product`, and
+`kai-engineering`; the monolith is no longer listed.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
+copilot plugin install kai-engineering@kai-plugins
 ```
 
 The core pack carries the fleet observer and shared workspace machinery; the
 personal pack carries personal, learning, and demo roles; the product pack
-carries product, design, analytics, and research roles. A CI rule keeps every
+carries product, design, analytics, and research roles; the engineering pack
+carries engineering, security, reliability, data, and delivery roles. A CI rule keeps every
 marketplace source, name, description, and version aligned with its pack
 manifest. If legacy `kai` is installed, do not install packs beside it; see
 [Getting started](docs/getting-started.md#upgrading-from-the-kai-monolith).
@@ -132,6 +136,7 @@ copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
+copilot plugin install kai-engineering@kai-plugins
 ```
 
 kai publishes its own marketplace index, because the host has deprecated direct
@@ -201,8 +206,8 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 ## What it ships
 
 The repository contains 56 agents and 51 skills. The published slice is
-`kai-core` plus personal and product; engineering and go-to-market follow in
-later `1.0.x` releases.
+`kai-core` plus personal, product, and engineering; go-to-market follows in a
+later `1.0.x` release.
 
 You do not need to learn them. Ask a front door for an outcome and it routes.
 
@@ -216,7 +221,8 @@ setup. To update, refresh the catalog, then update each installed pack:
 `copilot plugin marketplace update kai-plugins`,
 `copilot plugin update kai-core@kai-plugins`,
 `copilot plugin update kai-personal@kai-plugins`, and
-`copilot plugin update kai-product@kai-plugins`. Start a new session; to
+`copilot plugin update kai-product@kai-plugins`, and
+`copilot plugin update kai-engineering@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
 

@@ -8,4 +8,4 @@ onboarding pass, without replacing hand-edited rows.
 
 | slug | status | workspace | summary | deliverables | updated |
 |------|--------|-----------|---------|--------------|---------|
-| pack-split | active | `.` (repository) | Split kai into a required shared `kai-core` plus selectable department packs; the shared operating contract stays present and dependency loss fails closed. Product is live at `1.0.2`; `five-pack-split-shipped` is open at 6 of 8, with engineering the sole ready next release and GTM still proposed. | `kai/initiatives/pack-split/deliverables.md` | 2026-08-27 |
+| pack-split | active | `.` (repository) | Split kai into a required shared `kai-core` plus selectable department packs; the shared operating contract stays present and dependency loss fails closed. Product is live at `1.0.2`; `five-pack-split-shipped` is open at 6 of 8, with engineering `1.0.3` in independent review at `27804def…` and GTM still proposed. | `kai/initiatives/pack-split/deliverables.md` | 2026-08-27 |

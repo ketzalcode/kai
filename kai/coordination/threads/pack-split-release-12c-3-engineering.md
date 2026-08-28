@@ -48,3 +48,112 @@ Append-only communication log mirroring
 - next:      principal-swe-infra — preserve runtime dispatch and prove zero
              diff to `agents/workflow-doc-review.agent.md` and to the three
              `SKILL_OWNER_OVERRIDES` entries. Do not promote or implement GTM.
+
+## HANDOFF 2026-08-27-1716 — principal-swe-infra -> principal-sre
+
+- did:       Reconciled the already-committed bounded implementation, moving
+             the item `ready -> in-progress -> in-review` (v3 -> v5) under a
+             sole-actor builder lease that is now clear. Set `change_ref` to
+             exact ref `27804defe2f5f7fa16c2f5373884691203d21974`.
+- state:     in-review; owner `principal-swe-infra`; next `principal-sre`;
+             lease clear; no waiting question
+- needs:     Independent reliability review of the staged four-pack publish.
+             `principal-swe-architect` independently reviews the generated
+             engineering tree and the preserved **DO NOT BIND** obligation at
+             the same exact ref.
+- workspace: C:\src\kai
+- artifacts: `packs/kai-engineering/`;
+             `scripts/lib/pack-plan.mjs`; `scripts/pack-preview.mjs`;
+             `.github/plugin/marketplace.json`;
+             `kai/coordination/items/pack-split-release-12c-3-engineering.md`
+- evidence:  Full `npm test` passed at the exact commit's working content;
+             pack-preview generated 123 files; engineering is 20 agents and
+             15 skills; CI matrix is exactly
+             `kai-core,kai-personal,kai-product,kai-engineering`; engineering
+             runtime dependencies and lock are empty; version/docs are 1.0.3.
+             Against pre-implementation main
+             `3ccf216109ed296c2ea03e569e1218fbf8839838`, there is zero diff to
+             `agents/workflow-doc-review.agent.md` and zero diff to the three
+             named `SKILL_OWNER_OVERRIDES` entries. They remain engineering-owned
+             and runtime-dispatched.
+- questions: none
+- next:      principal-sre — approve or return blocking reliability findings;
+             architecture review is separately required at the same ref.
+
+## REVIEW 2026-08-27-1720 — principal-sre
+
+- ref:       `27804defe2f5f7fa16c2f5373884691203d21974`
+- verdict:   approved — READY; P0/P1/P2 = 0/0/0.
+- evidence:  Exact branch ref inspected; the four-pack generated slice,
+             committed-tree drift gate, empty engineering runtime dependency
+             projection and CI leg, marketplace/rollback derivation, `1.0.3`
+             version surfaces, migration copy, and preserved runtime-dispatched
+             review lenses are coherent.
+- boundary:  The supplied exact-content `npm test` pass was not re-executed.
+             Architecture, final-head CI, merge, marketplace probe, tag, and
+             release are pending. No production action was performed.
+- artifact:  `kai/initiatives/pack-split/artifacts/reliability/pack-split-release-12c-3-engineering.md`
+
+## HANDOFF 2026-08-27-1720 — principal-sre -> principal-swe-architect
+
+- did:       Completed the independent reliability review at exact change ref
+             `27804defe2f5f7fa16c2f5373884691203d21974`; verdict READY,
+             P0/P1/P2 = 0/0/0. Recorded revision-bound evidence and released
+             the reviewer lease.
+- state:     in-review; SRE review complete; architecture review unmet
+- needs:     Independent architecture review of the generated engineering tree
+             and preserved DO NOT BIND obligation at this same exact ref.
+             After both reviews, workflow-ship must still prove reviewed
+             ancestry, records-only equivalence, and fresh final-head CI before
+             any merge or publication.
+- workspace: C:\src\kai
+- artifacts: `kai/initiatives/pack-split/artifacts/reliability/pack-split-release-12c-3-engineering.md`;
+             `kai/coordination/items/pack-split-release-12c-3-engineering.md`;
+             `kai/coordination/threads/pack-split-release-12c-3-engineering.md`
+- evidence:  `kai/initiatives/pack-split/artifacts/reliability/pack-split-release-12c-3-engineering.md`;
+             local detail at
+             `.kai/runs/eng/2026-08-27/02-sre-pack-split-release-12c-3-engineering/reliability-assessment.md`
+- questions: none
+- next:      principal-swe-architect — complete the remaining exact-ref review;
+             do not move release state.
+
+## REVIEW 2026-08-27-1735 — principal-swe-architect
+
+- ref:       `27804defe2f5f7fa16c2f5373884691203d21974`
+- verdict:   approved — Endorse; P0/P1/P2 = 0/0/0.
+- evidence:  The exact implementation partition is coherent: engineering is
+             exactly 20 locked agents and 15 skills; generated content derives
+             from canonical root through the existing injection and parity
+             seam; providers are unique and department skills reach only their
+             own pack or core; marketplace/manifests/locks agree on the exact
+             four-pack `1.0.3` surface.
+- binding:   **DO NOT BIND** holds. The canonical
+             `agents/workflow-doc-review.agent.md` has zero implementation diff;
+             the three named override entries are byte-unchanged and remain
+             assigned to engineering; all three lenses remain absent from
+             inheritance and present in runtime dispatch.
+- boundary:  The supplied exact-content `npm test` pass was not treated as
+             final-head CI. No implementation, plugin behavior, merge,
+             production probe, tag, or release was performed.
+- artifact:  `kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md`
+
+## HANDOFF 2026-08-27-1735 — principal-swe-architect -> workflow-ship
+
+- did:       Completed the remaining independent architecture review against
+             exact implementation ref
+             `27804defe2f5f7fa16c2f5373884691203d21974`; approved with
+             P0/P1/P2 = 0/0/0 and released the reviewer lease.
+- state:     in-review; both required exact-ref reviews complete
+- needs:     Prove reviewed-ref ancestry, records-only equivalence, and fresh
+             CI at the actual final head before any merge. Then retain the
+             operator-only production probe, tag, and release gates.
+- workspace: C:\src\kai
+- artifacts: `kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md`;
+             `kai/coordination/items/pack-split-release-12c-3-engineering.md`;
+             `kai/coordination/threads/pack-split-release-12c-3-engineering.md`
+- evidence:  canonical artifact above; local working record at
+             `.kai/runs/eng/2026-08-27/03-arch-pack-split-release-12c-3-engineering/architecture-review.md`
+- questions: none
+- next:      workflow-ship — run the exact-final-head release-readiness gates;
+             do not claim merge, publication, tag, release, or production
+             verification before human execution and evidence.

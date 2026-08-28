@@ -4,6 +4,22 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.3] - 2026-08-27
+
+### Added
+
+- **The engineering department pack is published.** `kai-engineering` is
+  generated from the canonical root and joins the three existing packs,
+  bringing the published slice to 45 agents and 49 skills.
+
+### Changed
+
+- **The runtime-dispatched review lenses keep their settled ownership.**
+  Engineering publishes `review-dependencies`, `review-performance-scale`, and
+  `review-success-metrics` without binding them into `workflow-doc-review`.
+- **Install and migration documentation now matches the live four-pack
+  surface.** Go-to-market is the only unpublished department.
+
 ## [1.0.2] - 2026-08-27
 
 ### Added
@@ -3041,6 +3057,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.3]: https://github.com/RubenSaucedo/kai/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/RubenSaucedo/kai/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/RubenSaucedo/kai/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/RubenSaucedo/kai/compare/v0.67.0...v1.0.0

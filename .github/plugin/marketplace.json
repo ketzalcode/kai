@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Kai core and department packs published by RubenSaucedo.",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./packs/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -37,7 +37,7 @@
       "name": "kai-personal",
       "source": "./packs/kai-personal",
       "description": "kai personal department pack — the personal roles, over a required kai-core.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -60,7 +60,7 @@
       "name": "kai-product",
       "source": "./packs/kai-product",
       "description": "kai product department pack — the product roles, over a required kai-core.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -77,6 +77,29 @@
         "product",
         "design",
         "analytics"
+      ]
+    },
+    {
+      "name": "kai-engineering",
+      "source": "./packs/kai-engineering",
+      "description": "kai engineering department pack — the engineering roles, over a required kai-core.",
+      "version": "1.0.3",
+      "author": {
+        "name": "RubenSaucedo",
+        "url": "https://github.com/RubenSaucedo"
+      },
+      "homepage": "https://github.com/RubenSaucedo/kai",
+      "repository": "https://github.com/RubenSaucedo/kai",
+      "license": "MIT",
+      "keywords": [
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "engineering",
+        "security",
+        "reliability"
       ]
     }
   ]

@@ -1,0 +1,7 @@
+{
+  "name": "kai-engineering",
+  "version": "1.0.3",
+  "description": "kai engineering department pack — the engineering roles, over a required kai-core.",
+  "agents": "agents",
+  "skills": "skills"
+}

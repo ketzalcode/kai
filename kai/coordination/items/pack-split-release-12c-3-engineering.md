@@ -5,11 +5,11 @@ title: Release 12c-3 — generate and publish kai-engineering, preserving runtim
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: ready
+state: in-review
 resume_state: null
 priority: 40
-owner: null
-next_role: principal-swe-infra
+owner: principal-swe-infra
+next_role: workflow-ship
 target: pack-split staged department publish — kai-engineering
 artifact_target: null
 context_artifacts:
@@ -32,6 +32,7 @@ touches:
   - package-lock.json
   - CHANGELOG.md
   - README.md
+  - docs/getting-started.md
   - kai/coordination/
   - kai/initiatives/pack-split/
 depends_on:
@@ -46,16 +47,28 @@ review_requirements:
     kind: independent-reliability
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
-change_ref: null
-version: 3
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 27804defe2f5f7fa16c2f5373884691203d21974
+    verdict: approved
+    evidence: "kai/initiatives/pack-split/artifacts/reliability/pack-split-release-12c-3-engineering.md"
+    timestamp: 2026-08-27-1720
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 27804defe2f5f7fa16c2f5373884691203d21974
+    verdict: approved
+    evidence: "kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md"
+    timestamp: 2026-08-27-1735
+change_ref: 27804defe2f5f7fa16c2f5373884691203d21974
+version: 9
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1709
+updated: 2026-08-27-1735
 ---
 
 ## Outcome
@@ -67,26 +80,26 @@ engineering-owned through the existing overrides, committed, and published to
 
 ## Acceptance
 
-- [ ] The ratified **DO NOT BIND** decision in
+- [x] The ratified **DO NOT BIND** decision in
       `kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md`
       is preserved when the tree is generated: the reviewed `change_ref` has
       **zero diff** to `agents/workflow-doc-review.agent.md` and zero diff to the
       three existing `SKILL_OWNER_OVERRIDES` entries for `review-dependencies`,
       `review-performance-scale`, and `review-success-metrics`. Those entries
       remain assigned to `engineering`, and the lenses remain runtime-dispatched.
-- [ ] Partition invariants stay green under the change: the `--all` self-test still reports
+- [x] Partition invariants stay green under the change: the `--all` self-test still reports
       `orphans === overrides`, `unplaced === 0`, 56 of 56 agents assigned, none double-claimed, and
       no skill provided by both core and a pack.
-- [ ] The `kai-engineering` tree is **generated from root** by `pack-preview` and committed;
+- [x] The `kai-engineering` tree is **generated from root** by `pack-preview` and committed;
       `pack-preview --check` reports byte parity for the whole committed slice.
-- [ ] `COMMITTED_PACKS` and the committed-slice self-test pin name the new slice as an exact set.
+- [x] `COMMITTED_PACKS` and the committed-slice self-test pin name the new slice as an exact set.
 - [ ] `.github/workflows/validate.yml` runs the per-pack runtime job for `kai-engineering` and it
       passes with no declared runtime dependencies; the new required check is added to branch
       protection by `@operator` or recorded as running-but-not-enforced.
-- [ ] The marketplace lists exactly the four published packs at the canonical version with
+- [x] The marketplace lists exactly the four published packs at the canonical version with
       `installSurface: packs`, no monolith entry, and every entry `name` matching its source
       manifest; the derived rollback set rejects an index that still lists `kai-engineering`.
-- [ ] `README.md` `## Status` slice counts are re-derived from the published pack set and the
+- [x] `README.md` `## Status` slice counts are re-derived from the published pack set and the
       migration notice names what is published and what remains.
 - [ ] `1.0.3` is coherent across every version surface; CHANGELOG entry + compare link present;
       `release-guard` passes; `npm test` green.
@@ -98,8 +111,57 @@ engineering-owned through the existing overrides, committed, and published to
 
 ## Evidence
 
-- (to be filled) — reviewed `change_ref`, both approvals at that exact ref, final-head CI run,
-  operator merge/tag/release, isolated-home install probe, marketplace diff.
+- Exact implementation ref:
+  `27804defe2f5f7fa16c2f5373884691203d21974`; the checked-out
+  `feat/29-publish-engineering-pack` ref resolves to that full SHA.
+- Relative to pre-implementation `main`
+  `3ccf216109ed296c2ea03e569e1218fbf8839838`, the cumulative implementation
+  has **zero diff** to `agents/workflow-doc-review.agent.md`. The
+  `review-dependencies`, `review-performance-scale`, and
+  `review-success-metrics` entries in `SKILL_OWNER_OVERRIDES` are also
+  byte-unchanged and remain assigned to `engineering`. **DO NOT BIND** is
+  preserved; all three lenses remain runtime-dispatched.
+- Full `npm test` passed against this exact commit's working content. That
+  covers validation, docs parity, partition/collision/partial-install/version-skew
+  gates, pack-generator self-test, and committed-tree byte parity.
+- `pack-preview` generated 123 files. `kai-engineering` contains exactly
+  20 agents and 15 skills; the full partition remains 56 of 56 agents,
+  none double-claimed, `orphans === overrides`, `unplaced === 0`, and no
+  skill is provided by both core and a department pack.
+- `COMMITTED_PACKS` and its exact-set self-test name
+  `core,personal,product,engineering`. The derived CI matrix is exactly
+  `kai-core,kai-personal,kai-product,kai-engineering`.
+- `packs/kai-engineering/package.json` declares no runtime dependencies;
+  its lock records the same empty dependency set. The generated runtime
+  leg therefore installs the lock and asserts no binary. Remote final-head
+  CI and protected-check enforcement remain part of the R5 gate.
+- The marketplace contains exactly `kai-core`, `kai-personal`,
+  `kai-product`, and `kai-engineering`, with `installSurface: packs`, no
+  monolith entry, and source-manifest names aligned. The rollback
+  regression rejects an index that still serves `kai-engineering`.
+- Root, marketplace, generated-pack manifests/locks, README status,
+  CHANGELOG section, and compare link are coherent at `1.0.3`. README and
+  migration guidance report the four-pack 45-agent/49-skill published
+  slice and identify go-to-market as the only unpublished department.
+- Reviews are now requested from `principal-sre` and
+  `principal-swe-architect`, independently, against this exact ref.
+  No review approval, final-head CI, merge, tag, release, publication, or
+  production verification is claimed.
+- Independent SRE review approved exact ref
+  `27804defe2f5f7fa16c2f5373884691203d21974` with verdict **READY** and
+  P0/P1/P2 = 0/0/0. Evidence:
+  `kai/initiatives/pack-split/artifacts/reliability/pack-split-release-12c-3-engineering.md`.
+  Architecture, final-head CI, merge, production probe, tag, and release were
+  pending at that review.
+- Independent architecture review approved exact ref
+  `27804defe2f5f7fa16c2f5373884691203d21974` with disposition **Endorse** and
+  P0/P1/P2 = 0/0/0. It independently inspected the 20-agent/15-skill
+  engineering partition, canonical-root generation and drift gate, cross-pack
+  provider rules, four-pack marketplace/version shape, and the byte-unchanged
+  **DO NOT BIND** seam. Evidence:
+  `kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md`.
+  Both required reviews now match `change_ref`; the item remains `in-review`
+  for final-head CI, merge, production probe, tag, and release.
 
 ## Notes
 

@@ -5,7 +5,8 @@
 //   • generate  — materialise the pack trees from the LIVE root roster, byte-stably,
 //     with a per-pack plugin.json. `--write` lands them under packs/; `--check`
 //     regenerates and diffs so a hand-edit or a stale copy fails. The reviewed
-//     committed slice currently contains kai-core, kai-personal, and kai-product.
+//     committed slice currently contains kai-core, kai-personal, kai-product, and
+//     kai-engineering.
 //   • preview   — a throwaway committed-slice or five-plugin build (`--out`/`--all`) that
 //     answers the host-behaviour questions gating the split: does a fail-closed
 //     preflight hold on a real agent, what happens when core is absent or
@@ -487,7 +488,7 @@ function selfTest() {
   'losing the install remedy fails: a refusal with no way out is a dead end');
 
   // --- generator determinism + committed-tree gate -----------------------
-  const selectedPacks = ['core', 'personal', 'product'];
+  const selectedPacks = ['core', 'personal', 'product', 'engineering'];
   const m1 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
   const m2 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
   ok([...m1.keys()].join('\n') === [...m2.keys()].join('\n')
@@ -497,11 +498,14 @@ function selfTest() {
     'generated files are LF-normalised, so output is identical on a CRLF checkout');
   ok(m1.has('kai-core/plugin.json') && m1.has('kai-personal/plugin.json')
     && m1.has('kai-product/plugin.json')
+    && m1.has('kai-engineering/plugin.json')
     && m1.has('kai-core/package.json') && m1.has('kai-core/package-lock.json')
     && m1.has('kai-personal/package.json') && m1.has('kai-personal/package-lock.json')
     && m1.has('kai-product/package.json') && m1.has('kai-product/package-lock.json')
+    && m1.has('kai-engineering/package.json') && m1.has('kai-engineering/package-lock.json')
     && m1.has('kai-personal/agents/persona-self.agent.md')
-    && m1.has('kai-product/agents/principal-product-manager.agent.md'),
+    && m1.has('kai-product/agents/principal-product-manager.agent.md')
+    && m1.has('kai-engineering/agents/principal-swe-infra.agent.md'),
     'the materialised tree places per-pack plugin and npm manifests with copied agent bodies');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
     'the authoritative generator injects the canonical preflight into department agents');
@@ -512,14 +516,14 @@ function selfTest() {
   'and neither into a core agent, which ships inside the pack whose absence they cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
     'core provides the probe the injected block tells department agents to invoke');
-  ok(![...m1.keys()].some((key) => key.startsWith('kai-engineering/')
-    || key.startsWith('kai-gtm/')),
-  'the committed core, personal, and product slice does not materialise unselected departments');
+  ok(![...m1.keys()].some((key) => key.startsWith('kai-gtm/')),
+  'the committed four-pack slice does not materialise the unselected go-to-market department');
 
   const manifests = planManifests({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
   const coreM = manifests.find((p) => p.pack === 'core');
   const personalM = manifests.find((p) => p.pack === 'personal');
   const productM = manifests.find((p) => p.pack === 'product');
+  const engineeringM = manifests.find((p) => p.pack === 'engineering');
   ok(coreM && coreM.manifest.name === 'kai-core' && coreM.manifest.skills === 'skills',
     'the generator plans a kai-core manifest with a skills path');
   ok(personalM && personalM.manifest.name === 'kai-personal'
@@ -528,17 +532,22 @@ function selfTest() {
   ok(productM && productM.manifest.name === 'kai-product'
     && productM.manifest.agents === 'agents' && productM.manifest.skills === 'skills',
   'the product manifest carries the generated department paths');
+  ok(engineeringM && engineeringM.manifest.name === 'kai-engineering'
+    && engineeringM.manifest.agents === 'agents' && engineeringM.manifest.skills === 'skills',
+  'the engineering manifest carries the generated department paths');
   ok(manifests.every((p) => p.manifest.version === '9.9.9-selftest'),
     'every planned manifest stamps the version it was generated with (lockstep)');
   ok(coreM.packageManifest.dependencies.lectoria
     && personalM.packageManifest.dependencies.lectoria
     && Object.keys(productM.packageManifest.dependencies).length === 0
+    && Object.keys(engineeringM.packageManifest.dependencies).length === 0
     && coreM.packageLock.packages['node_modules/lectoria']
     && personalM.packageLock.packages['node_modules/lectoria']
     && Object.keys(productM.packageLock.packages).length === 1
+    && Object.keys(engineeringM.packageLock.packages).length === 1
     && !coreM.packageManifest.devDependencies
     && !coreM.packageLock.packages['node_modules/playwright'],
-  'runtime manifests project lectoria only into core and personal, leaving product empty');
+  'runtime manifests project lectoria only into core and personal, leaving product and engineering empty');
   const emptyPack = planManifests({
     root: ROOT, version: '9.9.9-selftest', packs: ['engineering'],
   })[0];
@@ -592,11 +601,12 @@ function selfTest() {
   } finally {
     if (scratch) rmSync(scratch, { recursive: true, force: true });
   }
-  ok(COMMITTED_PACKS.length === 3
+  ok(COMMITTED_PACKS.length === 4
     && COMMITTED_PACKS[0] === 'core'
     && COMMITTED_PACKS[1] === 'personal'
-    && COMMITTED_PACKS[2] === 'product',
-  'the committed slice is exactly core plus personal plus product');
+    && COMMITTED_PACKS[2] === 'product'
+    && COMMITTED_PACKS[3] === 'engineering',
+  'the committed slice is exactly core plus personal plus product plus engineering');
   const missingBase = join(tmpdir(), `kai-pack-missing-${process.pid}`);
   const missingCheck = checkCommitted({ root: ROOT, base: missingBase, version: '9.9.9-selftest' });
   ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`)
@@ -625,15 +635,21 @@ function selfTest() {
   const productEntry = {
     name: 'kai-product', source: './packs/kai-product', version: '1.2.3', description: 'product',
   };
+  const engineeringEntry = {
+    name: 'kai-engineering', source: './packs/kai-engineering', version: '1.2.3',
+    description: 'engineering',
+  };
   const known = {
     kai: { version: '1.2.3', description: 'd' },
     'kai-core': { version: '1.2.3', description: 'core' },
     'kai-product': { version: '1.2.3', description: 'product' },
+    'kai-engineering': { version: '1.2.3', description: 'engineering' },
   };
   const sources = {
     '.': { name: 'kai' },
     'packs/kai-core': { name: 'kai-core' },
     'packs/kai-product': { name: 'kai-product' },
+    'packs/kai-engineering': { name: 'kai-engineering' },
   };
   const mktArgs = (m, extra = {}) => ({
     mkt: m,
@@ -713,6 +729,11 @@ function selfTest() {
     forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
   })).some((e) => /entry "kai-product" is not part of the published install surface/.test(e)),
   'the first published department is rejected by name if a rollback index still serves it');
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, engineeringEntry], 'legacy-rollback'), {
+    requiredPluginNames: rollbackSurface.requiredPluginNames,
+    forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
+  })).some((e) => /entry "kai-engineering" is not part of the published install surface/.test(e)),
+  'the engineering department is rejected by name if a rollback index still serves it');
   ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry, deptEntry], 'packs'), {
     requiredPluginNames: packSurface.requiredPluginNames,
     forbiddenPluginNames: packSurface.forbiddenPluginNames,
