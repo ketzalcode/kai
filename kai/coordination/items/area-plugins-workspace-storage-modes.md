@@ -11,8 +11,8 @@ priority: 40
 owner: null
 next_role: principal-swe-infra
 target: corpus_visibility — the onboarding choice, its honesty, and its switch path
-artifact_target: null
-artifact_target_status: blocked-on-directory-creation; the binding product requirement is the DECISION in this item's thread
+artifact_target: kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-workspace-storage-modes.md
+artifact_target_status: "directory now exists (operator approved the initiative 2026-08-28); canonical transcription is a separate steward/owner pass and remains OWED — the binding product requirement is still the DECISION in this item's thread. Ratified target architecture: kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md (see its §5, §11, and §14 settled calls)."
 id_provenance: "ID assigned by the operator in the 2026-08-27-2113 second revision while these concerns were still inside area-plugins. Membership is the `initiative:` field, not the ID prefix; this item belongs to workspace-corpus-contract per scope-brief A10."
 context_artifacts:
   - kai/coordination/threads/area-plugins-workspace-storage-modes.md
@@ -23,9 +23,12 @@ context_artifacts:
   - scripts/workspace-doctor.mjs
   - .kai/manifest.json
   - .gitignore
+  - kai/initiatives/workspace-corpus-contract/northstar.md
+  - kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md
 touches:
   - kai/coordination/items/area-plugins-workspace-storage-modes.md
   - kai/coordination/threads/area-plugins-workspace-storage-modes.md
+  - kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-workspace-storage-modes.md
 depends_on: []
 waiting_on_questions: []
 required_for_milestone: true
@@ -34,14 +37,14 @@ review_requirements:
     kind: scope-acceptance
 completed_reviews: []
 change_ref: null
-version: 1
+version: 3
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-2113
+updated: 2026-08-28-1352
 ---
 
 ## Outcome
@@ -90,4 +93,9 @@ open. The record names the mechanism; a separate implementation item builds it.
   is private**, and `workspace-doctor.mjs:406` remediates a mode switch by telling
   the operator to `git rm --cached` — which, followed literally, removes the
   corpus from `HEAD` for every other clone.
+- **2026-08-28:** operator approved `workspace-corpus-contract` and the
+  audience-based workspace model. Directory now exists; `artifact_target`
+  updated to its canonical (still-owed) path. Ratified target architecture:
+  `kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`.
+  Item `state` unchanged (`proposed`) — steward promotion is a separate pass.
 - Filled as work progresses.

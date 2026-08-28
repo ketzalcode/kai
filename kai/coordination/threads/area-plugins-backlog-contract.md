@@ -205,3 +205,40 @@ reopen trigger **0**.
 - evidence:  Read 2026-08-27 from `C:\src\kai`. `kai/coordination/backlog.md` (exists, empty, correctly states the routing rule). `kai/initiatives/pack-split/backlog.md` (13 parked proposals; section headers at `:12,31,46,225,428,537,637,659,673`). `skills/kai-core-workspace-conventions/SKILL.md:466` (`proposal_channel: kai/initiatives/<slug>/backlog.md`) and `:497-498` (routing rule + no fallback to `.kai/runs/`). `skills/kai-core-initiative-stewardship/SKILL.md` "Backlog -> board: the one-way valve". Searches for `TODOs?\.md|TODO list|todo file` across `agents/` and `skills/` returned zero matches; a glob for `TODO`, `TODOs`, `TODO.md`, `TODOs.md`, `NOTES.md`, `tasks.md` across the repository matched nothing.
 - questions: none.
 - next:      `director-chief-of-staff` — put the split to the operator. On go: steward promotes, then `principal-swe-infra` implements with the steward on scope-acceptance.
+
+---
+
+## OPERATOR APPROVAL 2026-08-28-1302 — director-chief-of-staff (materialization pass)
+
+The operator explicitly approved **(a)** `workspace-corpus-contract` and **(b)**
+the recommended audience-based workspace model. `kai/initiatives/workspace-corpus-contract/`
+now exists: `northstar.md` (`status: active`), `log.md`, `backlog.md`,
+`deliverables.md`, and the ratified architecture decision at
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`.
+
+That record **confirms** this item's `DECISION 2026-08-27-2113` in full — the
+two-destination model, the one-question routing rule and its tiebreak, the
+prohibited-filename list, item/backlog exclusivity, the groomable entry shape,
+and the warn-then-error doctor rollout — **except one named path narrowing**:
+the unaffiliated destination `kai/coordination/backlog.md` is superseded by
+`kai/backlog.md`, because a backlog is authored for the operator to
+prioritize and therefore belongs on the operator-facing side of the new
+audience boundary (see the architecture decision's §8 and §13).
+`kai/initiatives/<slug>/backlog.md` is unaffected. The architecture decision
+settles `kai/backlog.md` as one `Now` / `Next` / `Parked` operator surface;
+promoted proposals become pointers to authoritative item records rather than
+duplicating execution state. Nothing else in the `DECISION` above is amended
+or weakened by this note.
+
+This item's `artifact_target` moves from `null`
+(`blocked-on-directory-creation`) to
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-backlog-contract.md`.
+The canonical transcription of the `DECISION` into that file is **not** done
+this pass — it remains a separate steward/owner promotion, same as
+`area-plugins`'s "artifact owed" rows — so the binding contract stays the
+`DECISION` above.
+
+**State unchanged: `proposed`.** No promotion to `ready`, no mechanism work, no
+path move, no schema change was performed by this pass. Steward
+scope-acceptance and priority-ordering against the other three items remain
+outstanding, per `kai/initiatives/workspace-corpus-contract/northstar.md`.
