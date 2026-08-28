@@ -5,11 +5,11 @@ title: Migrate every tool-allowlist declaration across all 56 agents, all 51 ski
 initiative: area-plugins
 milestone: allowlist-repair
 delivery_class: product-change
-state: in-review
+state: production-verification
 resume_state: null
 priority: 1
 owner: null
-next_role: principal-swe-infra
+next_role: "@operator"
 target: agent and skill frontmatter tool allowlists (root agents/ + skills/ + their generated mirrors) and the shared SUPPORTED_TOOLS contract
 artifact_target: null
 artifact_target_status: not-applicable — this is a product-change item, not knowledge work. The durable record is this item plus its thread. (Corrected 2026-08-28-0125: the prior "blocked-on-directory-creation" note is stale; kai/initiatives/area-plugins/ exists and carries northstar.md, backlog.md, log.md and artifacts/decisions/.)
@@ -42,7 +42,8 @@ touches:
   - package.json
   - package-lock.json
 depends_on: []
-waiting_on_questions: []
+waiting_on_questions:
+  - Q-area-plugins-tool-allowlist-fix-02
 required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
@@ -66,14 +67,14 @@ completed_reviews:
     timestamp: 2026-08-28-0207
     satisfies_requirement: true
 change_ref: 4db3c907142ea510b4d5ec7f02668029d616d1c2
-version: 6
+version: 9
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-28-0215
+updated: 2026-08-28-0240
 ---
 
 ## Outcome
@@ -220,6 +221,19 @@ item is open must route through `principal-swe-manager` for sequencing.
   `pack-preview --check`, `release-guard`, and full `npm test` passed. The only
   open acceptance is the explicitly post-install interactive warning
   observation.
+
+- **2026-08-28-0240 — release deployment complete; production verification
+  pending.** PR [#195](https://github.com/RubenSaucedo/kai/pull/195) passed
+  exact-head CI and merged as
+  `c23e752ca5f92b28657267d5c1ff0296fc0ff932`. Exact-main workflow
+  [`33159065597`](https://github.com/RubenSaucedo/kai/actions/runs/33159065597)
+  passed, and tag/release
+  [`v1.0.6`](https://github.com/RubenSaucedo/kai/releases/tag/v1.0.6) is public.
+  The lifecycle walked `in-review -> release-ready -> deploying ->
+  production-verification` without treating publication as proof of the
+  interactive warning channel. The remaining check belongs to `@operator`:
+  update the installed packs, launch one Kai agent interactively, and report
+  whether `create`, `edit`, or `grep` warnings remain.
 
 - **2026-08-27-2138 — `principal-swe-infra` diagnosis (no `agents/**` or
   `packs/**` file edited).** Full record in the thread. Six boxes remain

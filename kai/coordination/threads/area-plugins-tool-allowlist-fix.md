@@ -1515,6 +1515,43 @@ documentation plus an upstream report — not to another declaration change.
 
 ---
 
+## RELEASE RECORD 2026-08-28-0240 — workflow-ship
+
+| phase | transition | evidence |
+|---|---|---|
+| PREPARE | `in-review` v6 -> `release-ready` v7 | PR #195 exact head `ba7840e272e5e5f5a9bac69bb624197ce4216b0c`; all required checks passed |
+| CONFIRM-START | `release-ready` v7 -> `deploying` v8 | PR #195 merged to main as `c23e752ca5f92b28657267d5c1ff0296fc0ff932` |
+| CONFIRM-COMPLETE | `deploying` v8 -> `production-verification` v9 | exact-main workflow `33159065597` passed; public release `v1.0.6` targets main |
+
+Rollback was not invoked. The release artifact is public and the implementation
+is deployed through the marketplace source. This does **not** establish the
+interactive validator result: prompt mode cannot expose that startup channel.
+
+## QUESTION Q-area-plugins-tool-allowlist-fix-02 2026-08-28-0240 — workflow-ship -> @operator
+- status: open
+- kind: action
+- blocking: yes
+- context: `v1.0.6` is published and exact-main CI passed. The only unchecked
+  acceptance criterion is the real interactive startup warning observation.
+- ask: Update the installed Kai packs, launch one Kai agent interactively, and
+  report whether warnings for `create`, `edit`, or `grep` remain. If only
+  `edit` remains, the pre-agreed disposition is to document the benign host
+  drift and file it upstream; do not change declarations again.
+- answer_by: before `area-plugins-tool-allowlist-fix` can move from
+  `production-verification` to `shipped`
+
+## HANDOFF 2026-08-28-0240 — workflow-ship -> @operator
+
+- did: PR #195 merged, exact-main CI passed, and `v1.0.6` was published.
+- state: `production-verification`
+- needs: one interactive launch after updating the installed packs; report the
+  startup warning result.
+- evidence: PR #195; main `c23e752`; workflow `33159065597`; release `v1.0.6`.
+- next: answer `Q-area-plugins-tool-allowlist-fix-02`; the director then closes
+  the item or records the residual `edit` drift and upstream issue.
+
+---
+
 ## REVIEW 2026-08-28-0157 — principal-security · independent-security (exact ref, bounded to P2-1)
 
 - **verdict:** **APPROVED** — **CONDITIONAL** in security terms — P0 **0** / P1 **0** / P2 **3**
