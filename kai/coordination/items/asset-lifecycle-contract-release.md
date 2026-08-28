@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 1
 owner: principal-swe-infra
-next_role: principal-swe-architect
+next_role: workflow-pull-request
 target: universal generated-asset behavior
 artifact_expectation: owed
 artifact_class: architecture-decision
@@ -28,9 +28,17 @@ touches:
   - skills/kai-core-workspace-conventions/**
   - skills/kai-core-initiative-stewardship/**
   - skills/kai-core-definition-of-done/**
+  - skills/kai-core-workspace-onboarding/**
+  - skills/kai-core-design-grounding/**
+  - skills/kai-core-web-evaluation/**
+  - skills/product-exploration/**
+  - skills/product-marketing-intelligence/**
   - scripts/validate-plugin.mjs
+  - scripts/workspace-doctor.mjs
   - scripts/generate-catalog.mjs
   - docs/reference/agents-and-skills.md
+  - examples/e2e-feature-delivery/**
+  - test/fixtures/**
   - packs/**
   - plugin.json
   - package.json
@@ -38,6 +46,8 @@ touches:
   - .github/plugin/marketplace.json
   - README.md
   - CHANGELOG.md
+  - .kai/CONVENTIONS.md
+  - kai/initiatives/INDEX.md
   - kai/initiatives/asset-lifecycle-contract/**
   - kai/coordination/**
 depends_on: []
@@ -46,16 +56,26 @@ required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: architecture-contract
-completed_reviews: []
+completed_reviews:
+  - role: principal-swe-architect
+    kind: architecture-contract
+    phase: implementation
+    change_ref: 91c8195b6c7afef1ea35772e0dab9937615a423b
+    verdict: approved
+    evidence: kai/coordination/threads/asset-lifecycle-contract-release.md (REVIEW 2026-08-28-1642)
+    record_revision: kai/initiatives/asset-lifecycle-contract/artifacts/decisions/asset-lifecycle-contract.md revision 2
+    timestamp: 2026-08-28-1642
+    satisfies_design_gate: true
+    satisfies_requirement: true
 change_ref: 91c8195b6c7afef1ea35772e0dab9937615a423b
-version: 3
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-28-1632
+updated: 2026-08-28-1642
 ---
 
 ## Outcome
@@ -80,3 +100,5 @@ separate execution, disposition, validity, and closure semantics.
   refreshed.
 - Initial architecture review bounced on five schema-2 staging contradictions;
   all five were corrected before the implementation revision was committed.
+- Exact-ref architecture review accepted all five corrections and the generated
+  topology with no blockers at `91c8195b6c7afef1ea35772e0dab9937615a423b`.

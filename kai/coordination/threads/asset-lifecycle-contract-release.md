@@ -43,3 +43,31 @@
 - evidence: `npm test` exit 0; implementation commit `91c8195`
 - questions: none
 - next: principal-swe-architect — exact-revision architecture-contract review
+
+## REVIEW 2026-08-28-1642 — principal-swe-architect
+
+- kind: architecture-contract
+- phase: implementation
+- change_ref: `91c8195b6c7afef1ea35772e0dab9937615a423b`
+- verdict: approved
+- findings:
+  - B1 PASS — binding surfaces use only schema-2 placement; future corpus paths
+    remain explicitly gated.
+  - B2 PASS — personal disposition and its authority exception are bounded to
+    operator-private factual and preference maintenance.
+  - B3 PASS — durable working and published assets cannot be discarded.
+  - B4 PASS — legacy unknown validity can move directly to honest non-current
+    states.
+  - B5 PASS — plural targets are additive, legacy singular targets remain
+    readable and validated, and library compatibility fields remain intact.
+  - TOPOLOGY PASS — all 56 root agents and 56 generated mirrors inherit the
+    core-owned lifecycle skill.
+- blockers: none
+- residual_risks:
+  - Tighten summary wording around the bounded personal-authority exception.
+  - Clarify personal promotion and expiry transitions when doctor/catalog
+    enforcement is implemented.
+  - Keep lifecycle axes separate in future contract wording.
+- evidence: independent Opus architecture review of
+  `65d9c7f..91c8195b`; full `npm test` green.
+- next: workflow-pull-request — deliver the accepted implementation for CI

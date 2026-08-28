@@ -6,17 +6,17 @@ item: asset-lifecycle-contract-release
 initiative: asset-lifecycle-contract
 produced_by: principal-swe-infra
 created: 2026-08-28
-revision: 1
+revision: 2
 disposition:
   status: working
-  reason: Implementation is in progress and exact-revision acceptance is pending.
+  reason: Exact-revision architecture acceptance is complete; release is pending.
 completion:
   authority: principal-product-manager
-  verdict: pending
-  at: null
-  revision_at_verdict: null
+  verdict: accepted
+  at: 2026-08-28-1642
+  revision_at_verdict: 2
 validity:
-  status: provisional
+  status: current
   owner: principal-product-manager
   as_of: 2026-08-28
   revalidate_by: null
@@ -28,10 +28,13 @@ validity:
     - Backstage singular ownership
     - MADR, adr-tools, and Log4brains decision supersession
     - dbt-core v1.12 freshness thresholds
+    - Exact-ref architecture review accepted implementation revision 91c8195b6c7afef1ea35772e0dab9937615a423b
 supersedes: null
 superseded_by: null
 evidence:
   - kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md
+  - kai/coordination/threads/asset-lifecycle-contract-release.md
+  - 91c8195b6c7afef1ea35772e0dab9937615a423b
 ---
 
 # Decision: separate work execution from asset lifecycle
