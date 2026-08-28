@@ -40,9 +40,62 @@ time and is never stored on a record.
 | pack-split-release-12c-3-engineering | Release 12c-3 — generate and publish kai-engineering, preserving runtime-dispatched review lenses, on 1.0.3 | pack-split | five-pack-split-shipped | 40 | shipped | principal-swe-infra | — | release-12c-2-product (shipped ✅ 2026-08-27), review-lens-binding (completed ✅ 2026-08-27) — both met | — | 2026-08-27-1736 |
 | pack-split-release-12c-4-gtm | Release 12c-4 — generate and publish kai-gtm, remove split scaffolding, finalize on 1.0.4 | pack-split | five-pack-split-shipped | 50 | shipped | principal-swe-infra | — | release-12c-3-engineering (shipped ✅ 2026-08-27) — met | — | 2026-08-27-1753 |
 | pack-split-director-summary | Write the stable director closure summary for pack-split | pack-split | five-pack-split-shipped | 10 | completed | — | — | release-12c-4-gtm (shipped ✅ 2026-08-27) — met | — | 2026-08-27-1802 |
+| area-plugins-scope-brief | PM scope brief — area-focused standalone plugins over an optional core | area-plugins | decisions-locked | 10 | completed | — | — | — | — | 2026-08-27-1839 |
+| area-plugins-optional-core-architecture | Architecture — optional core, dual-path standalone/full mode, composability | area-plugins | decisions-locked | 10 | completed | — | — | scope-brief (completed ✅ 2026-08-27) — met | — | 2026-08-27-1906 |
+| area-plugins-taxonomy-decision | Architecture — area plugin taxonomy, incl. creative-video-director placement | area-plugins | decisions-locked | 20 | completed | — | — | scope-brief (completed ✅ 2026-08-27) — met | — | 2026-08-27-1906 |
+| area-plugins-migration-architecture | Architecture — marketplace rename, packs/ -> plugins/, v1.0.4 user migration | area-plugins | decisions-locked | 30 | completed | — | principal-product-manager | scope-brief, taxonomy-decision (completed ✅) — met | — | 2026-08-27-2228 |
+| area-plugins-taxonomy-round-3 | Round-3 taxonomy — nine plugins, kai-directors + kai-project-management accepted | area-plugins | decisions-locked | 5 | completed | — | — | — | — | 2026-08-27-2225 |
+| area-plugins-host-tool-conformance | P0 — live host-tool conformance probe (first implementation) | area-plugins | allowlist-repair | 1 | blocked | — | principal-swe-architect | — | Q-area-plugins-tool-allowlist-fix-01 | 2026-08-27-2205 |
+| area-plugins-m2-decomposition | Decompose optional-core-contract into sequenced shippable PRs | area-plugins | optional-core-contract | 10 | completed | — | director-chief-of-staff | optional-core-architecture (completed ✅), taxonomy-decision (completed ✅) — both met | — | 2026-08-27-1944 |
+| area-plugins-m2-standalone-copy | Standalone-mode user-facing copy (C1 mode line, two paths, disclaimers) | area-plugins | optional-core-contract | 10 | completed | — | — | — | — | 2026-08-27-2015 |
+| area-plugins-m2-planpacks-prefix | D3 — planPacks() prefix condition, asserted byte-neutral | area-plugins | optional-core-contract | 20 | ready | — | principal-swe-infra | migration-architecture (completed ✅ 2026-08-27) — **MET; executable, implementation withheld** | — | 2026-08-27-1944 |
+| area-plugins-m2-standalone-floor | Name and pin the standalone operating floor | area-plugins | optional-core-contract | 30 | ready | — | principal-swe-infra | planpacks-prefix (ready) — **unmet** | — | 2026-08-27-1944 |
+| area-plugins-m2-claim-surface-pin | CLAIM_SKILLS core-only + --gate partition extension (C2 predecessor) | area-plugins | optional-core-contract | 40 | ready | — | principal-swe-infra | standalone-floor, planpacks-prefix — **unmet** | — | 2026-08-27-1944 |
+| area-plugins-m2-mode-selection | Three-way mode selection (full / standalone / refuse) | area-plugins | optional-core-contract | 50 | ready | — | principal-swe-infra | claim-surface-pin (requires **shipped** — C2) — **unmet**; standalone-copy (completed ✅) — met | — | 2026-08-27-1944 |
+| area-plugins-m2-standalone-proof | Prove standalone behavior in preview and CI | area-plugins | optional-core-contract | 60 | ready | — | principal-swe-infra | mode-selection — **unmet** | — | 2026-08-27-1944 |
+| area-plugins-m2-doctor-standalone | Doctor must stop reporting a core-less install as blocked (steward ruling (a)) | area-plugins | optional-core-contract | 70 | ready | — | principal-swe-infra | mode-selection — **unmet** | — | 2026-08-27-1944 |
+| area-plugins-m2-docs-two-modes | Document the two modes and the upgrade transition | area-plugins | optional-core-contract | 80 | ready | — | principal-technical-writer | mode-selection, standalone-proof — **unmet** | — | 2026-08-27-1944 |
+| area-plugins-tool-allowlist-fix | P0 — tool-allowlist warnings: root cause and conditional fix | area-plugins | allowlist-repair | 1 | blocked | — | @operator | — | Q-area-plugins-tool-allowlist-fix-01 | 2026-08-27-2140 |
+| area-plugins-taxonomy-round-2 | Second-round taxonomy — kai-directors, kai-project-management, full map | area-plugins | decisions-locked | 5 | completed | — | — | — | — | 2026-08-27-2140 |
+| area-plugins-distributed-agents-proposal | Proposal framing — distributed multi-PC agent communication | area-plugins | decisions-locked | 90 | completed | — | — | — | — | 2026-08-27-2130 |
+| area-plugins-readme-clarity | P0 — README/install clarity, planned against the final taxonomy | area-plugins | surface-rename | 90 | proposed | — | principal-technical-writer | final taxonomy — **unmet** | — | 2026-08-27-2125 |
+| area-plugins-initiative-archive | P0 — initiative archive semantics | workspace-corpus-contract | — | 10 | proposed | — | principal-swe-infra | operator split go/no-go — **unmet** | — | 2026-08-27-2125 |
+| area-plugins-backlog-contract | P0 — one workspace + one initiative backlog destination | workspace-corpus-contract | — | 20 | proposed | — | principal-swe-infra | operator split go/no-go — **unmet** | — | 2026-08-27-2125 |
+| area-plugins-design-output-contract | P0 — canonical design/mock output paths | workspace-corpus-contract | — | 30 | proposed | — | principal-swe-infra | operator split go/no-go — **unmet** | — | 2026-08-27-2125 |
+| area-plugins-workspace-storage-modes | P0 — tracked / local-private workspace storage modes | workspace-corpus-contract | — | 40 | proposed | — | principal-swe-infra | operator split go/no-go — **unmet** | — | 2026-08-27-2125 |
+| area-plugins-fleet-observer-ux | Fleet-observer UX redesign — deferred until after the P0s | — | — | 900 | proposed | — | principal-product-manager | P0s + topology — **unmet** | — | 2026-08-27-2125 |
 
 Regenerated by `director-chief-of-staff` from the item records; if a row here
 disagrees with its item file, the item record wins.
+
+**Director pass 2026-08-27-2245 — initiative artifacts materialized; nine-plugin taxonomy accepted;
+milestone 1 closable.** 24 `area-plugins`-prefixed rows. Every lease is clear; no stale lease found.
+
+The main agent **overrode two director/steward recommendations**, accepting `kai-directors` as an
+executive routing layer with a bounded standalone exception, and `kai-project-management` seeded
+from the core coordination workflows. Round 3 implemented the override and reconciled at
+**56 agents / 51 skills**. Two round-2 mechanical findings were upheld and load-bearing: the
+engineering weld held (`workflow-ship` / `workflow-pull-request` / `workflow-issue-analysis` stayed
+in `kai-engineering`), which is the reason the nine-plugin map compiles at all.
+
+`area-plugins-migration-architecture` reached `completed` after **four** independent reliability
+reviews (0P0/4P1 -> 0P0/1P1 -> 0P0/1P1 -> 0P0/0P1, `satisfies_requirement: true`). Its four P2
+conditions ride with PR A-3's implementation and reopen no architecture. Milestone
+`decisions-locked` is now closable by the steward.
+
+`area-plugins-m2-planpacks-prefix`'s dependency is **met** and it is executable — but implementation
+is **withheld** under the main agent's standing instruction not to edit shipped plugin behavior yet.
+`area-plugins-m2-claim-surface-pin`'s typed edge was re-pointed from the superseded round 2 to
+round 3 by director reconciliation.
+
+**Milestone order:** `allowlist-repair` -> `decisions-locked` -> `optional-core-contract` ->
+`surface-rename` -> `area-taxonomy-split` -> `migration-complete`, with `allowlist-repair` led by the
+live conformance probe rather than a rename.
+
+**Recorded honestly:** every gate, byte-parity, and CI claim across this initiative is `reported`,
+never `observed` — no shell has existed in any session, so nothing has been executed. Thirteen
+enumerated checks must be `observed` green before `area-taxonomy-split` merges. `pack-split`'s 23
+terminal rows above are the archive noise the `workspace-corpus-contract` proposal addresses.
 
 **Steward pass 2026-08-27-1802 — initiative SHIPPED; closure complete.**
 The steward re-read all 18 authoritative typed required-item records across
