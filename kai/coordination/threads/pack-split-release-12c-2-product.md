@@ -68,6 +68,39 @@
 - questions: none
 - next:      principal-sre — approve or return blocking findings.
 
+## REVIEW 2026-08-28-0025 — principal-sre
+
+- ref:       `31373efe880aa2676eb379920a1c599efd43ada4`
+- verdict:   approved — READY; no P0/P1.
+- evidence:  All install, migration, direct/local, list, and update guidance
+             includes product; the generated three-pack topology, no-dependency
+             runtime leg, rollback policy, and release plan are coherent.
+- note:      The product runtime check runs but is not independently required
+             by branch protection; final-head CI remains the merge gate.
+
+## REVIEW 2026-08-28-0025 — principal-swe-architect
+
+- ref:       `31373efe880aa2676eb379920a1c599efd43ada4`
+- verdict:   approved — no P0/P1 architecture findings.
+- evidence:  Root remains canonical; product is exactly 9 agents/3 skills,
+             provider-unique and generator-derived; manifests and marketplace
+             agree; the product-specific and future-pack rollback regressions
+             are distinct and green.
+
+## HANDOFF 2026-08-28-0025 — principal-swe-architect -> workflow-ship
+
+- did:       Both required independent reviews approved exact implementation
+             ref `31373efe880aa2676eb379920a1c599efd43ada4`.
+- state:     in-review
+- needs:     Commit these records, prove reviewed ancestry and non-`kai/`
+             equivalence, then require fresh final-head CI including
+             `runtime-dependencies (kai-product)`.
+- artifacts: `kai/coordination/items/pack-split-release-12c-2-product.md`;
+             `kai/coordination/threads/pack-split-release-12c-2-product.md`
+- evidence:  SRE approved; architecture approved; no P0/P1.
+- questions: none
+- next:      workflow-ship — complete exact-head pre-merge gates.
+
 Append-only communication log mirroring
 `kai/coordination/items/pack-split-release-12c-2-product.md`. See `kai-core-work-coordination`.
 

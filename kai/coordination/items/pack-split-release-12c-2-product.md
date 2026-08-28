@@ -9,7 +9,7 @@ state: in-review
 resume_state: null
 priority: 30
 owner: principal-swe-infra
-next_role: principal-sre
+next_role: workflow-ship
 target: pack-split staged department publish — kai-product
 artifact_target: null
 context_artifacts:
@@ -43,16 +43,28 @@ review_requirements:
     kind: independent-reliability
   - role: principal-swe-architect
     kind: independent-architecture
-completed_reviews: []
+completed_reviews:
+  - role: principal-sre
+    kind: independent-reliability
+    change_ref: 31373efe880aa2676eb379920a1c599efd43ada4
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12c-2-product.md"
+    timestamp: 2026-08-28-0025
+  - role: principal-swe-architect
+    kind: independent-architecture
+    change_ref: 31373efe880aa2676eb379920a1c599efd43ada4
+    verdict: approved
+    evidence: "kai/coordination/threads/pack-split-release-12c-2-product.md"
+    timestamp: 2026-08-28-0025
 change_ref: 31373efe880aa2676eb379920a1c599efd43ada4
-version: 6
+version: 7
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-28T00:15:00Z
+updated: 2026-08-28T00:25:00Z
 ---
 
 ## Outcome
@@ -107,8 +119,10 @@ exist when it was written.
 - Exact implementation ref:
   `31373efe880aa2676eb379920a1c599efd43ada4`; exact release guard passed
   against `origin/main`.
-- Pending: both independent reviews, product runtime CI leg, final-head CI,
-  merge/tag/release, isolated-home install probe.
+- Independent SRE and architecture reviews approved the exact implementation
+  ref with no P0/P1 findings.
+- Pending: product runtime CI leg, final-head CI, merge/tag/release,
+  isolated-home install probe.
 
 ## Notes
 
