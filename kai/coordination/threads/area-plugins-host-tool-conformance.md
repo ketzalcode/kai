@@ -359,3 +359,383 @@ waivable: dimension 2 cannot be waived on a change whose entire purpose is to
 replace assertion with measurement, and dimension 3 is a declared review
 requirement. Nothing here is `release-ready`, and nothing here is `shipped` —
 `shipped` still requires the operator to deploy and verify.
+
+---
+
+## ANSWER Q-area-plugins-host-tool-conformance-01 2026-08-27-2245 — @operator -> @principal-swe-infra
+- status: answered
+- answer: The main shell-bearing agent is authorized to run the probe. Route implementation to `principal-swe-infra`; no separate operator action is required to author, plan, or execute the bounded temp-directory probe. The implementation must still show `--plan` before `--run` and record the live result rather than selecting a migration branch from documentation.
+- lane: in-lane
+- provenance: operator (direct instruction, transcribed by `principal-swe-architect`)
+
+---
+
+## REVIEW 2026-08-27-2245 — principal-swe-architect · independent-architecture (design)
+
+- kind: `independent-architecture`
+- phase: design
+- change_ref: null
+- record_revision: `kai/initiatives/area-plugins/artifacts/decisions/area-plugins-host-tool-conformance.md`, revised 2026-08-27-2245 while item version 3 was leased
+- verdict: **APPROVED**
+- disposition: **Reshape** — retain the two-channel/two-launch-mode probe, correct the wildcard rationale, make warning-channel observability explicit, separate synthetic fixtures from live evidence, and defer baseline drift commands until evidence creates the need
+- satisfies_design_gate: true
+- satisfies_change_ref_gate: false
+
+**Lease verified before the design and thread writes:** item version `3`,
+holder `principal-swe-architect`, token
+`apx-htc-arch-20260827-2245-r1`, `version_at_grant: 2`,
+`expires: 2026-08-27-2345`. Matched. No collision.
+
+### Decision and forces
+
+**Decision reviewed:** whether the proposed probe is the smallest trustworthy
+seam for deciding a warning-free tool spelling without erasing deliberate
+agent privilege boundaries.
+
+- Validator acceptance and runtime grants are different facts; the observed
+  warned-and-working case requires two independent fields.
+- Direct and delegated custom-agent launch already differ for at least one
+  capability, so either launch mode alone can produce a globally wrong answer.
+- The probe runs against a live host and model; self-report cannot establish a
+  grant, and warning silence cannot establish validator acceptance unless a
+  deliberate bogus token proves that warnings were observable.
+- Raw CLI output can contain credentials and absolute user paths. It is local
+  evidence, not a fixture or a commit candidate.
+- This item must measure before any 214-file declaration migration. It must not
+  grow into a permanent certification service or a new CI gate.
+
+### Review results
+
+| surface | verdict | binding revision |
+|---|---|---|
+| Validator-warning vs runtime-grant channels | **Endorse** | Keep independent values and `warned_and_granted`; add channel status so a missing bogus-control warning makes validator results `unobserved`, never `silent`. |
+| Direct and delegated launch matrix | **Endorse** | Run every default row in both modes. Run singleton `--deep` only for tokens a migration would change; those singleton results are mandatory before that diff. |
+| Safety and redaction | **Endorse after Reshape** | Temp plugin/workspace remain outside the repo; report only redacted normalized data; retain raw transcripts only in temp/local ignored evidence. `--plan` precedes `--run`. This is architecture review, not security acceptance. |
+| Machine-readable schema | **Endorse after Reshape** | Keep schema/probe versions, host identity, per-run validity, independent validator/grant axes, findings, caveats, and exit `3` for unknown. Add top-level channel observability and omit temp transcript paths from normalized output. |
+| Fixture strategy | **Reshape** | Pure parser/classifier fixtures are minimal and synthetic. A live transcript is integration evidence, not a unit fixture, and is never committed. |
+| Smallest implementation scope | **Reshape** | First pass is the two scripts, synthetic fixtures/self-test, package wiring, the already-accepted loader-contract wording correction and its coupled assertion/generated mirror, plus release metadata forced by existing gates. Defer `--update`, `--check`, a committed live baseline, CI host execution, and every declaration edit. |
+
+### Factual correction
+
+Official GitHub documentation explicitly states that omitting `tools` **or**
+using `tools: ["*"]` enables all available tools; `tools: []` disables all
+tools. `["*"]` is not an unrecognized token. Source opened during this review:
+<https://docs.github.com/en/copilot/reference/custom-agents-configuration#tools>.
+
+The revised decision still rejects wildcard and omission **for Kai** because
+both are valid broad grants that erase explicit least-privilege intent and
+automatically include current and future host/MCP tools. The prior rationale
+was factually wrong; the policy conclusion remains correct.
+
+### Review binding
+
+This approval binds to the revised **design record**, with `change_ref: null`
+because no implementation exists yet. It authorizes implementation to start.
+It does **not** satisfy the product-change exact-ref gate: after
+`principal-swe-infra` produces a `change_ref`, architecture review confirms that
+the implementation conforms to this design before release routing.
+
+---
+
+## HANDOFF 2026-08-27-2245 — principal-swe-architect -> principal-swe-infra
+
+- did:       Corrected the official `tools: ["*"]` semantics and approved the revised host-tool probe design. Bound the review to the dated design revision with no implementation ref. Closed the operator-action blocker from Q-01.
+- state:     `ready` (written in item version 4 after this handoff); no implementation has started
+- needs:     Implement only the first-pass scope in the approved review: preserve independent validator/runtime evidence; run direct and delegated arms; enforce bogus-control observability; use synthetic classifier fixtures; redact before persistence; print `--plan` before the authorized live `--run`; produce a machine-readable report and implementation `change_ref`. Do not edit any agent/skill declaration or choose B1/B2/B3 before live evidence.
+- artifacts: `kai/initiatives/area-plugins/artifacts/decisions/area-plugins-host-tool-conformance.md`; `kai/coordination/items/area-plugins-host-tool-conformance.md`; `kai/coordination/threads/area-plugins-host-tool-conformance.md`
+- evidence:  GitHub Docs `Custom agents configuration#tools`, fetched 2026-08-27; canonical design sections 4–5 and architecture review above. No script, plugin behavior, agent body, skill body, or generated plugin tree was edited in this review; no command was run.
+- questions: none
+- next:      `principal-swe-infra` — implement the approved bounded probe and loader-contract correction, then return the exact implementation `change_ref` for conformance review.
+
+---
+
+## MEASUREMENT 2026-08-28-0055 — director-chief-of-staff (records-only reconciliation)
+
+The main agent implemented the probe in the working tree and **executed it**.
+This entry records the observed evidence. Records-only: no script, manifest,
+agent, or skill was edited by this pass, and no claim below was executed by me —
+each is `reported` from the main agent's run except where the report files
+themselves are cited.
+
+### Implementation defects fixed before measurement
+
+Each would have produced a confidently wrong result rather than an obvious
+failure, which is why they are recorded rather than folded into "it works now":
+
+1. **Qualified agent names.** Local `--plugin-dir` agents require
+   `<ephemeral-plugin>:<agent>`; unqualified names exited `1`. The probe now
+   qualifies selected, delegated, and helper agents. Unqualified, this would
+   have read as a capability denial rather than a naming error — a false
+   negative pointing straight at the wrong conclusion.
+2. **Outer `--allow-all-tools`.** Added so host permission policy cannot
+   masquerade as an inner agent-allowlist denial. The scratch workspace remains
+   isolated. Without it, the probe would have measured the permission prompt,
+   not the allowlist.
+3. **`--copilot-entry <absolute versioned index.js>`.** A PATH `.cmd` shim
+   reported `1.0.79` externally while `spawnSync('copilot')` still resolved the
+   active `1.0.81` executable — so **version attribution was wrong before this
+   fix**. Exact-version execution is now proven by `host.copilot_version` plus
+   the resolved path.
+4. **`--rows`** for bounded retries.
+
+**Offline self-test: 11/11 passed.**
+
+### Runtime channel — `observed` on BOTH 1.0.79 and 1.0.81
+
+| row | direct | delegated | capabilities |
+|---|---|---|---|
+| `R2-primary` | valid | valid | read / edit / create / search / execute / agent — all exercised successfully |
+| `R8-repo-current` | valid | valid | same set, exercised successfully |
+| `R9-control` | valid | — | `read` + `search` worked; `write` / `execute` / `agent` did not |
+
+`R9-control` behaved exactly as "only `read` plus bogus names are effective"
+predicts, which confirms the documented **"unrecognized names are ignored"**
+rule against the live binary in both directions rather than accepting it from
+documentation.
+
+### Validator channel — `unobserved`, and deliberately not upgraded
+
+Neither noninteractive prompt path emitted validator warnings, **including for
+the bogus controls**. Prompt mode cannot reproduce the interactive startup
+warning surface.
+
+This is recorded as `unobserved` — **not** as "no warnings occur." The
+user-reported interactive-startup warning **remains real and is not refuted by
+this run**. The two-channel design exists precisely to stop a channel that
+cannot see anything from being reported as clean, and here it did its job.
+
+### What the evidence supports
+
+The official primary aliases are **runtime-safe on both `1.0.79` and `1.0.81`**.
+Absence of interactive warnings is **not** claimed. Branch selection (B1/B2/B3)
+still requires the validator channel, which remains unobserved.
+
+### Reports — retained, not committed
+
+`host-tool-probe-targeted-1.0.81.json` (current) and
+`host-tool-probe-targeted-1.0.79.json` (retained; launched through
+`<redacted>/1.0.79/index.js`, report self-identifying CLI `1.0.79`). Both are
+session files. **No live baseline is
+committed**, preserving the design's separation of synthetic parser fixtures
+from live host evidence.
+
+Full runs showed occasional model/delegated transcript timeout and truncation;
+bounded `--rows` retries collect the missing evidence without relaunching the
+full matrix.
+
+### Correction of a superseded statement in this thread
+
+Line 139 of this thread states "`*` is not in the documented vocabulary." That
+is **wrong** and was written during the design pass, which had no web tool
+bound. Official documentation supports `tools: ["*"]` and omission as *enable
+all available tools*, and `tools: []` as *disable all tools*. The architecture
+review already corrected this at line 422 of this thread and in §5 of the
+decision artifact.
+
+**Kai's rejection of `["*"]` and omission stands unchanged** — as a deliberate
+least-privilege policy for autonomously dispatched agents, never as a claim that
+the host fails to recognize the token. Line 139 is **not rewritten**: this
+thread is the audit trail, and deleting a superseded claim would conceal that
+the correction happened.
+
+### State
+
+`blocked -> in-progress`; `Q-area-plugins-tool-allowlist-fix-01` answered by
+measurement; `waiting_on_questions` empty. `change_ref` stays `null` because the
+working tree is **uncommitted**, so the declared exact-ref architecture review
+has nothing to bind to. `next_role: principal-swe-architect`, **dispatch gated
+on the main agent producing a commit SHA**.
+
+---
+
+## HANDOFF 2026-08-28-0055 — director-chief-of-staff -> principal-swe-architect (gated)
+
+- did:       Records-only reconciliation of the executed probe. Recorded four pre-measurement implementation fixes, the 11/11 offline self-test, the observed runtime results across two CLI versions, and the honestly-unobserved validator channel. Cleared the operator blocker on this item and on `area-plugins-tool-allowlist-fix`. Re-asserted the wildcard correction and left the superseded line 139 intact as audit history. No script, manifest, agent, or skill was edited.
+- state:     in-progress (not `in-review` — no `change_ref` exists yet)
+- needs:     **Exact-ref architecture conformance review**, confirming the implemented probe matches the approved design. Blocked until the main agent commits the working tree and a `change_ref` SHA exists; the recorded design review carries `satisfies_requirement: false` and `requires_exact_ref_confirmation: true`, so it cannot stand in for this.
+- artifacts: `kai/coordination/items/area-plugins-host-tool-conformance.md` (v9); `kai/initiatives/area-plugins/artifacts/decisions/area-plugins-host-tool-conformance.md`; `kai/initiatives/area-plugins/log.md`
+- evidence:  `reported` from the main agent's run — the two session reports, the 11/11 offline self-test, and the per-row runtime outcomes. `observed` by this pass — only the coordination records themselves. Nothing was executed here; no gate, `npm test`, or parity check has been run in any director session.
+- questions: none blocking.
+- next:      `principal-swe-architect`, on the commit SHA. The validator channel remains `unobserved`, so **no B1/B2/B3 branch may be selected and no declaration migration authored** on this evidence alone.
+
+---
+
+## EVIDENCE ADDENDUM 2026-08-27-2245 — principal-swe-architect
+
+The architecture review was grounded directly in the current seams, not only
+the submitted design:
+
+- `scripts/lib/loader-contract.mjs:1-17,75-99` — the external-host
+  source-of-truth claim, hand-maintained vocabulary, and Kai's current
+  missing/empty/unsupported checks.
+- `scripts/host-contract.mjs:1-17,175-199` — explicitly a deterministic host
+  mirror, plus the `/unsupported tool/i` fixture coupling.
+- `scripts/validate-plugin.mjs:237-241,648-672,836-838` — the two intentional
+  no-shell agents, `requires_tools` enforcement, and shared allowlist seam.
+- `scripts/lib/pack-plan.mjs:869-872,973` — only top-level script references in
+  shipped agent/skill bodies enter asset closure.
+- `scripts/release-guard.mjs:17-27` and `package.json` — `scripts/` is already
+  behavior-sensitive and the existing test chain is the right home for the
+  offline self-test.
+
+All were file reads. No executable validation was run because this review
+changed records only.
+
+---
+
+## IMPLEMENTATION 2026-08-27-2251 — principal-swe-infra
+
+**Lease:** self-granted from item version 4 as
+`htc-20260827-2251-i1`; the current holder/token/version were re-read during the
+pass. No competing lease or overlapping in-progress item was observed.
+
+### Authored
+
+- Added `scripts/host-tool-probe.mjs` and the pure
+  `scripts/lib/tool-conformance.mjs`.
+- Added synthetic fixtures under `test/fixtures/host-tool-probe/`. No live
+  transcript or baseline is committed.
+- Added deterministic machine JSON, explicit validator/runtime channels,
+  direct/delegated rows R0-R9, optional singleton `--deep` rows, bogus-control
+  observability, side-effect-backed grants, redaction before persistence,
+  fail-closed `0/1/3` exits, and repository-content snapshots around live runs.
+- The live harness creates one throwaway plugin and workspace per invocation
+  under the OS temp root, uses `--plugin-dir` without installing anything,
+  strips credential-bearing environment variables, and removes scratch state
+  unless `--keep-temp` is explicit.
+- Added `--plan`, `--run`, `--self-test`, and the operator-requested offline,
+  explicit-path `--update` / `--check` modes. The last two postdate the 2245
+  architecture review and must be included in exact-ref conformance review.
+  They create no default baseline and do not run the host.
+- Corrected `SUPPORTED_TOOLS` to a Kai lint heuristic, changed the coupled
+  malformed-fixture assertion, and updated its generated `kai-core` mirror.
+- Wired the offline self-test into `package.json` / full `npm test`; updated
+  test/reference documentation; bumped `1.0.4 -> 1.0.5` across root,
+  marketplace, lockfile, and expected generated pack surfaces; added CHANGELOG
+  and README status entries.
+
+### Static evidence observed in this pass
+
+- `agents/**` and `skills/**` contain no reference to
+  `scripts/host-tool-probe.mjs`; no declaration file was edited.
+- No `1.0.4` version remains in root/marketplace/pack JSON version fields.
+- Marketplace metadata plus all five plugin entries report `1.0.5`.
+- The only generated copy of `loader-contract.mjs` remains under
+  `packs/kai-core/scripts/lib/`, matching the root correction.
+- The fixture directory contains synthetic classifier inputs only; no captured
+  host transcript or live baseline exists.
+
+### Execution blocker
+
+This session exposes repository read/write/search tools but no process runner.
+It cannot execute `node`, `npm`, `git`, or `copilot`. Therefore:
+
+- `node scripts/host-tool-probe.mjs --self-test` — **not run**.
+- `node scripts/host-tool-probe.mjs --plan` — **not run**; exact argv was not
+  runtime-inspected.
+- Live `--run` — **not attempted**, because the required plan-first check could
+  not happen. No login, credential, or isolation safety rule was weakened.
+- `node scripts/pack-preview.mjs --write`, `--check`, and `--gate all` —
+  **not run**. The expected generated files are present but not generator-proven.
+- `node scripts/check-syntax.mjs`, targeted host-contract validation, and full
+  `npm test` — **not run**.
+- No git `change_ref` can be produced while the requested changes remain
+  uncommitted and this session has no git runner.
+
+No live finding exists. In particular,
+`warning_free_spelling_exists`, `delegation_differs`, and `bogus_ignored` remain
+unknown; no B1/B2/B3 migration branch was selected.
+
+---
+
+## HANDOFF 2026-08-27-2251 — principal-swe-infra -> principal-swe-infra / principal-swe-architect
+
+- did:       Authored the bounded probe implementation, classifier, synthetic fixtures, explicit offline baseline modes, loader-contract correction, package wiring, documentation, `1.0.5` release surfaces, and expected generated pack updates. Left all changes uncommitted.
+- state:     `blocked` (item version 8, lease cleared); implementation exists but has no executable verification or `change_ref`
+- needs:     A shell-bearing `principal-swe-infra` continuation must run `npm run host-tool-probe:self-test`, then `npm run host-tool-probe:plan` and inspect every exact argv. Only if that plan is isolated and noninteractive may it run `npm run host-tool-probe`; stop on login/credential exposure. Then run `node scripts/pack-preview.mjs --write`, `npm run pack-preview:check`, `npm run pack-preview:gate`, targeted syntax/host-contract checks, and full `npm test`. Record the redacted live findings without committing a transcript/baseline, create the implementation SHA after the main agent approves the uncommitted diff, and route that exact ref to `principal-swe-architect`.
+- artifacts: `scripts/host-tool-probe.mjs`; `scripts/lib/tool-conformance.mjs`; `test/fixtures/host-tool-probe/`; `kai/initiatives/area-plugins/artifacts/decisions/area-plugins-host-tool-conformance.md`; this thread; item version 8
+- evidence:  Static file reads/searches listed in the implementation record above. All executable checks and the live result are explicitly `not run`; no live fixture was committed.
+- questions: none — this is an execution-capability blocker, not a decision for `@operator`
+- next:      shell-bearing `principal-swe-infra` for plan-first verification and a change ref; then `principal-swe-architect` for the required exact-ref implementation conformance review
+
+---
+
+## REVIEW 2026-08-28-0112 — principal-swe-architect · independent-architecture (implementation)
+
+- kind: `independent-architecture`
+- phase: implementation
+- change_ref: `4d711779408c8f675a740b5e243686d9e66a5ce4`
+- verdict: **APPROVED**
+- disposition: **Endorse**
+- findings: P0 `0`, P1 `0`, P2 `2` — both record-only corrections applied; no implementation revision requested
+- satisfies_design_gate: true
+- satisfies_change_ref_gate: true
+- satisfies_requirement: true
+
+**Lease verified before every durable write:** item version `10`, holder
+`principal-swe-architect`, token `htc-arch-20260828-0058-r2`,
+`version_at_grant: 9`. No collision.
+
+### Decision and forces
+
+**Decision reviewed:** whether exact commit
+`4d711779408c8f675a740b5e243686d9e66a5ce4` implements the approved bounded
+host-tool evidence seam without widening agent privilege, mutating the repo, or
+claiming an unobserved warning fix.
+
+- Permission policy must not masquerade as an inner allowlist denial.
+- Direct and delegated custom-agent launches must both be measured.
+- Validator observations and runtime side effects must remain independent.
+- Exact CLI version attribution must survive launcher-shim substitution.
+- Live transcripts may contain credentials and user paths and must not become
+  committed fixtures or baselines.
+- This item must not alter any agent/skill declaration or select a migration
+  branch while validator warnings remain unobserved.
+
+### Conformance and trust-boundary result
+
+Source inspection found the required qualified
+`<ephemeral-plugin>:<agent>` names, outer `--allow-all-tools`, OS-temp plugin and
+workspace materialization, direct/delegated loops, absolute
+`--copilot-entry`, bounded `--rows`, deterministic JSON, synthetic offline
+fixtures, explicit opt-in network probing, credential-variable filtering,
+redaction before persistence, transcript non-retention, and repository-content
+snapshots. Child-process argv is fixed and passed with `shell: false`; caller
+paths are explicit local CLI capabilities rather than model-controlled input.
+No command-injection or implicit path-escape route was found.
+
+The exact branch ref and HEAD resolve to the reviewed SHA. No live report or
+baseline is committed, package/marketplace/pack versions read `1.0.5`, and the
+root/generated loader-contract wording matches. Full `npm test` before the
+commit, including generated parity, is **reported operator evidence** and was
+not rerun by this reviewer.
+
+The runtime reports are classified narrowly: R2 and R8 exercised
+read/edit/create/search/execute/agent in direct and delegated launches on
+`1.0.79` and `1.0.81`; R9 exercised only read/search and did not exercise
+write/execute/agent. Validator warnings remained `unobserved`; no warning fix,
+warning-free spelling, or migration branch is claimed.
+
+### P2 corrections applied
+
+1. Durable records had copied an absolute user-home path from session evidence.
+   Canonical item/decision records now use
+   `<redacted>/1.0.79/index.js`, preserving version attribution without
+   environment disclosure.
+2. The records said R9 independently confirmed ignored-name semantics despite
+   `findings.bogus_ignored: null`, and called R8 a 15-name set despite listing
+   16. R9 is now runtime corroboration only, and R8 is counted as 16.
+
+`tools: ["*"]` is officially supported as an all-tools grant. Kai's rejection
+is correctly retained as least-privilege policy, not parser compatibility.
+
+---
+
+## HANDOFF 2026-08-28-0112 — principal-swe-architect -> workflow-ship / main agent
+- did:       Approved exact-ref architecture conformance for `4d711779408c8f675a740b5e243686d9e66a5ce4`; applied two record-only P2 corrections; changed no implementation code.
+- state:     `in-review`; required implementation review complete at the exact `change_ref`
+- needs:     Open/update the PR, run fresh required CI at the PR head, verify only records changed after the reviewed ref, then prepare publication. Do not claim shipped before human deployment/publication and verification.
+- artifacts: `kai/coordination/items/area-plugins-host-tool-conformance.md`; `kai/coordination/threads/area-plugins-host-tool-conformance.md`; `kai/initiatives/area-plugins/artifacts/decisions/area-plugins-host-tool-conformance.md`; `kai/initiatives/area-plugins/log.md`
+- evidence:  source inspection at workspace root `C:\src\kai`; branch ref `fix/192-host-tool-conformance` -> `4d711779408c8f675a740b5e243686d9e66a5ce4`; prior full `npm test` is reported operator evidence, not rerun here
+- questions: none
+- next:      `workflow-ship` / main agent — PR-head CI and publication preparation; initiative summary `kai/initiatives/area-plugins/log.md`, deliverable index `kai/initiatives/area-plugins/deliverables.md`

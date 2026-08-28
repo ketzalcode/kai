@@ -35,8 +35,12 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.0.4` — all **56 agents and 51 skills** are published across five packs for
+`v1.0.5` — all **56 agents and 51 skills** are published across five packs for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
+
+The repository now includes an isolated host-tool conformance probe that keeps
+validator warnings separate from runtime grants. It changes no agent or skill
+tool declaration.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus the personal, product, engineering,

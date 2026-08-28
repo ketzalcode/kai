@@ -1,6 +1,6 @@
 # kai plugin tests
 
-Five dependency-free, CI-enforced guards protect the plugin. All run on every
+Six dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
@@ -11,9 +11,13 @@ PR and push to `main` and must stay fast:
   the generated **consumer-workspace** contract, exercised against committed
   golden fixtures.
 - **`npm run host-contract`** (`scripts/host-contract.mjs --self-test`) — the
-  **host-loader acceptance** mirror: the discoverable inventory a host would
-  expose matches a committed golden snapshot, and malformed frontmatter fixtures
-  are rejected.
+  **Kai frontmatter acceptance** heuristic: the expected discoverable inventory
+  matches a committed golden snapshot, and malformed frontmatter fixtures are
+  rejected.
+- **`npm run host-tool-probe:self-test`**
+  (`scripts/host-tool-probe.mjs --self-test`) — the offline parser,
+  warning/grant classifier, redaction, determinism, and read-only contract for
+  the optional live host probe.
 - **`npm run release-guard:self-test`** (`scripts/release-guard.mjs --self-test`)
   — the decision core of the release gate: a behavior-sensitive change must carry
   a version bump plus changelog/README updates; docs/test-only changes are exempt.
@@ -23,7 +27,7 @@ PR and push to `main` and must stay fast:
   every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
   (skipped cleanly where `pwsh` is unavailable).
 
-`npm test` runs all five.
+`npm test` runs all six.
 
 ## Deterministic checks (in CI)
 
@@ -38,11 +42,10 @@ Structural (original):
 
 Behavioral-contract and host compatibility:
 
-- **Host-tool allowlist.** Every declared `tools:` entry must be a real host
-  tool in `SUPPORTED_TOOLS`. A typo or an unsupported generic alias
-  (`read` / `search` / `write`) fails CI, so a shipped agent never silently
-  loses a capability. Adding a new host tool is a deliberate edit to the
-  allowlist.
+- **Kai tool-vocabulary lint.** Every declared `tools:` entry must be in
+  `SUPPORTED_TOOLS`, Kai's explicit least-privilege vocabulary. This is a lint
+  heuristic, not a claim about the live host parser. The host-tool probe measures
+  validator warnings and runtime grants independently.
 - **Inherited-skill access.** Every agent with an `**Inherits:**` declaration
   must also declare the `skill` tool. Delegated custom agents receive only
   declared tools, so omitting it makes inherited contracts unreachable.
@@ -138,16 +141,15 @@ self-test materializes them into a temp directory and removes it afterwards.
 Run the check against a real host with `npm run doctor:migration`. Add `-- --json`
 for automation; exit codes are `0` clear, `2` blocked, and `3` unknown.
 
-### Host-loader acceptance — `host-contract.mjs`
+### Kai frontmatter acceptance — `host-contract.mjs`
 
-Mirrors the Copilot host loader to take the acceptance view of the shipped
-inventory. The shared loader contract lives in `scripts/lib/loader-contract.mjs`
-and is imported by **both** this mirror and `validate-plugin.mjs`, so the two
-can never drift. `--self-test` asserts:
+Applies Kai's deterministic authoring rules to the shipped inventory. The
+shared contract lives in `scripts/lib/loader-contract.mjs` and is imported by
+both this guard and `validate-plugin.mjs`, so Kai's two lint paths cannot drift.
+It does not claim to reproduce the live host parser. `--self-test` asserts:
 
-- **The discoverable inventory is host-loadable and matches a golden snapshot.**
-  Every agent/skill is loaded exactly as a host would; any loader rejection is a
-  failure (a broken entry never silently drops from the roster). The resulting
+- **The expected discoverable inventory matches a golden snapshot.** Every
+  agent/skill must satisfy Kai's authoring rules. The resulting
   inventory — agent roster, skill roster, and the user-invocable skill surface
   (name + `argument-hint`) — is diffed against `test/fixtures/inventory.json`, so
   a roster or invocation-surface change is explicit and reviewable in the PR.
@@ -155,20 +157,29 @@ can never drift. `--self-test` asserts:
   intended.
 - **Malformed frontmatter is rejected before release.** The fixtures under
   `test/fixtures/host-loader/invalid/` each reproduce a real load-time failure
-  class — the #23 `argument-hint`-as-inline-array bug, a non-array `tools`, an
-  unsupported tool, a skill-only key on an agent, and a name/id mismatch — and
-  the loader must reject each for the expected reason.
+  class — the #23 `argument-hint`-as-inline-array bug, a non-array `tools`, a
+  tool outside Kai's vocabulary, a skill-only key on an agent, and a name/id
+  mismatch — and the guard must reject each for the expected reason.
 - **The README quickstart mirrors a passing scenario.** The README status stamp
   (`**N agents and M skills**`) must equal the live loadable inventory, and every
   `npm run <script>` the README documents must exist in `package.json`.
 
-## Host-backed checks (not yet automated)
+## Host-backed checks
 
-The mirror above is deterministic — it reproduces the host's *loader contract*,
-not a live host. Mounting the plugin in a **real** Copilot host (asserting the
-inventory loads in-process, scaffolding a scratch workspace, and exercising
-degraded CLI/cloud paths) is the remaining host-backed layer, tracked in #33. It
-belongs in a separate, possibly release-gated, job so the checks above stay fast.
+`npm run host-tool-probe:plan` prints the exact direct/delegated matrix,
+throwaway frontmatter, and `copilot` argv without writing or spawning. After
+reviewing that plan, `npm run host-tool-probe` runs against an isolated plugin
+and workspace outside the repository and writes a redacted report under
+`.kai/runs/eng/`. The live run is manual: CI executes only the synthetic
+`host-tool-probe:self-test`, so it needs no host binary, credentials, or network.
+Use `--rows R2-primary,R8-repo-current,R9-control` for a bounded retry, and
+`--copilot-entry <absolute-versioned-index.js>` to measure a retained CLI build
+without allowing the active launcher shim to substitute a newer version.
+`--update --from <report> --baseline <file>` and the matching `--check` compare
+explicit, normalized redacted reports; the repository carries no live baseline.
+
+Broader in-process inventory, degraded CLI/cloud, and fleet certification remain
+tracked in #33.
 
 ## Manual-only coverage (needs a host)
 

@@ -4,6 +4,22 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
 minor bumps (`0.x`) carry features and patch bumps carry fixes.
 
+## [1.0.5] - 2026-08-27
+
+### Added
+
+- **An isolated live host-tool conformance probe.** The plan-first harness runs
+  direct and delegated matrices against a throwaway plugin and workspace,
+  records validator warnings separately from runtime grants, verifies testable
+  grants through scratch-workspace evidence, emits deterministic redacted JSON,
+  and has offline synthetic self-tests.
+
+### Fixed
+
+- **The tool vocabulary is now described as Kai's lint heuristic, not host
+  parser truth.** Official `tools: ["*"]` support remains documented while Kai
+  continues to reject wildcard and omission on least-privilege grounds.
+
 ## [1.0.4] - 2026-08-27
 
 ### Added
@@ -3072,6 +3088,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[1.0.5]: https://github.com/RubenSaucedo/kai/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/RubenSaucedo/kai/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/RubenSaucedo/kai/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/RubenSaucedo/kai/compare/v1.0.1...v1.0.2

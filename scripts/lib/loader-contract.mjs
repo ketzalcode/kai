@@ -1,16 +1,17 @@
-// Shared host-loader contract for the kai plugin.
+// Shared authoring contract for kai's agent/skill frontmatter.
 //
-// This is the single source of truth for how a Copilot host parses and accepts
-// an agent/skill's frontmatter. Both guards import it so they can never drift:
+// Single source of truth for what kai declares and requires of its own entries,
+// not for how a Copilot host parses them; no file here can hold that authority.
+// Host behaviour is measured by scripts/host-tool-probe.mjs. Both guards import
+// this contract so they cannot drift from each other:
 //   • validate-plugin.mjs — proves the shipped source obeys the contract;
-//   • host-contract.mjs    — mirrors the host loader to build the discoverable
-//     inventory and prove malformed frontmatter is rejected before release.
+//   • host-contract.mjs    — builds the expected discoverable inventory and
+//     proves malformed kai frontmatter is rejected before release.
 //
 // Dependency-free (no imports) so any host/runner can load it.
 
-// Every declared tool must be a name the Copilot host actually exposes. Adding a
-// genuinely new host tool is a deliberate edit here; a typo or an unsupported
-// generic alias (read / search / write) is caught before release.
+// Kai's declared tool vocabulary is a lint heuristic, not a host allowlist.
+// Whether a live host recognises a name is a separate, measured question.
 export const SUPPORTED_TOOLS = new Set([
   'view', 'create', 'edit', 'grep', 'glob', // files & content
   // Shell. `bash` does NOT map per-OS: on Windows the host silently drops it
@@ -70,8 +71,7 @@ export function parseToolList(rawTools) {
   return t.slice(1, -1).split(',').map((x) => stripQuotes(x)).filter(Boolean);
 }
 
-// The loader contract for a single entry. Returns the list of violation messages
-// the host would reject the entry for (empty = the host loads it cleanly).
+// The authoring contract for a single kai entry.
 export function loaderErrors(kind, id, fm) {
   const out = [];
 
@@ -81,17 +81,19 @@ export function loaderErrors(kind, id, fm) {
 
   if (!stripQuotes(fm.description)) out.push('frontmatter `description` is missing or empty');
 
-  // tools: required on every agent and skill, a non-empty inline array of names
-  // the host exposes.
+  // Kai requires a non-empty explicit list so least privilege is declared
+  // rather than inherited through the host's omission or wildcard semantics.
   if (fm.tools === undefined) {
-    out.push('frontmatter is missing `tools`');
+    out.push('kai requires an explicit non-empty frontmatter `tools` array');
   } else if (!isInlineArray(fm.tools)) {
     out.push('frontmatter `tools` must be an inline array like [a, b]');
   } else if (isEmptyInlineArray(fm.tools)) {
-    out.push('frontmatter `tools` array is empty');
+    out.push('kai requires the frontmatter `tools` array to be non-empty');
   } else {
     for (const tool of parseToolList(fm.tools) || []) {
-      if (!SUPPORTED_TOOLS.has(tool)) out.push(`declares unsupported tool "${tool}" (not in the host allowlist)`);
+      if (!SUPPORTED_TOOLS.has(tool)) {
+        out.push(`declares "${tool}", which is not in kai's tool vocabulary (SUPPORTED_TOOLS)`);
+      }
     }
   }
 

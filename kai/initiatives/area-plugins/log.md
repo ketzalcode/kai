@@ -72,3 +72,73 @@ stripped before it reports.
 
 GitHub issue **#192** records the distributed multi-PC agents proposal as an
 external, implementation-free proposal.
+
+## 2026-08-28-0055 — Host-tool probe executed; records-only reconciliation
+
+The main agent implemented `scripts/host-tool-probe.mjs` plus its pure
+classifier in the working tree and **executed it**. This entry records the
+evidence; the director pass was records-only and edited no script, manifest,
+agent, or skill.
+
+**Four defects were fixed before any result was trusted** — qualified
+`<ephemeral-plugin>:<agent>` names (unqualified exited `1` and would have read
+as a capability denial), outer `--allow-all-tools` (so permission policy could
+not masquerade as an allowlist denial), `--copilot-entry` (a PATH `.cmd` shim
+reported `1.0.79` while `spawnSync` resolved the active `1.0.81`, so **version
+attribution was wrong**), and `--rows` for bounded retries. Offline self-test
+**11/11**.
+
+**Runtime channel is `observed` on both `1.0.79` and `1.0.81`.** `R2-primary`
+and `R8-repo-current` were valid direct *and* delegated, exercising
+read/edit/create/search/execute/agent successfully. `R9-control` behaved exactly
+as "only `read` plus bogus names are effective" predicts, confirming the
+documented unrecognized-names-are-ignored rule against the live binary.
+
+**Validator channel is honestly `unobserved`.** No noninteractive prompt path
+emitted warnings, including for bogus controls; prompt mode cannot reproduce the
+interactive startup warning surface. The user-reported interactive warning
+**remains real and is not refuted**. The two-channel design held: a channel that
+could see nothing was not reported clean.
+
+So the official primary aliases are runtime-safe on both versions, and **no
+declaration migration or B1/B2/B3 branch may be selected** on this evidence
+alone. No live baseline was committed.
+
+The operator blocker `Q-area-plugins-tool-allowlist-fix-01` is cleared on both
+`area-plugins-host-tool-conformance` and `area-plugins-tool-allowlist-fix`. The
+conformance item stays **`in-progress`, not `in-review`**: the working tree is
+uncommitted, so `change_ref` is `null` and the declared exact-ref architecture
+review has nothing to bind to.
+
+**Wildcard fact re-asserted:** `tools: ["*"]` and omission are documented and
+supported (enable all available tools); `tools: []` disables all. Kai rejects
+all three for its own entries as a **least-privilege policy**, never as a claim
+that the host does not recognize the token. One superseded contrary statement
+survives at
+`kai/coordination/threads/area-plugins-host-tool-conformance.md:139` and is
+deliberately left intact — it is corrected in the same thread at line 422 and
+again in the item and decision artifact, and erasing it would hide that the
+correction happened.
+
+## 2026-08-28-0112 — Exact-ref host-tool architecture review approved
+
+`principal-swe-architect` approved implementation commit
+`4d711779408c8f675a740b5e243686d9e66a5ce4` with disposition **Endorse**.
+The review found P0 `0`, P1 `0`, P2 `2`; both P2s were record-only and were
+corrected without changing implementation code.
+
+The approved shape uses qualified local-plugin agents, outer
+`--allow-all-tools`, OS-temp isolation, direct/delegated channels, exact
+`--copilot-entry`, bounded `--rows`, redaction, deterministic JSON, and offline
+synthetic self-tests. No live baseline or report is committed, no declaration
+migration is present, and version surfaces remain `1.0.5`.
+
+The corrections remove an absolute user-home path from durable evidence and
+narrow the R9 claim: read/search-only runtime behavior corroborates the
+documented ignored-name rule, but with validator warnings unobserved,
+`findings.bogus_ignored` remains `null`. The R8 set is also correctly counted
+as 16 identifiers, not 15.
+
+The item is `in-review`, exact-ref review is complete, and `next_role` is
+`workflow-ship` / main agent for fresh PR-head CI and publication preparation.
+Nothing is called shipped.

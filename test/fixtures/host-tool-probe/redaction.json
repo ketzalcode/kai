@@ -1,0 +1,10 @@
+{
+  "github_prefix": "ghp",
+  "github_value": "abcdefghijklmnopqrstuvwxyz123456",
+  "authorization_scheme": "Bearer",
+  "authorization_value": "fixture-secret-token-value",
+  "home_paths": [
+    "C:\\Users\\alice\\private\\workspace",
+    "/home/alice/private/workspace"
+  ]
+}

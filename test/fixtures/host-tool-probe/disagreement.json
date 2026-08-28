@@ -1,0 +1,20 @@
+{
+  "row": {
+    "id": "R10-execute",
+    "label": "singleton",
+    "declared": ["execute"]
+  },
+  "launch": "direct",
+  "execution": {
+    "status": 0,
+    "stdout": "<<<KAI-PROBE-BEGIN>>>\n{\"self_reported\":[\"execute\"],\"read_nonce\":null,\"search_file\":null,\"skill_nonce\":null}\n<<<KAI-PROBE-END>>>\n",
+    "stderr": "",
+    "durationMs": 50,
+    "timedOut": false,
+    "truncated": false,
+    "error": null
+  },
+  "evidence": {
+    "execute": false
+  }
+}

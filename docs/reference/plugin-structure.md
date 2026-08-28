@@ -84,10 +84,11 @@ also run in CI on every pull request:
 
 | Command | Checks |
 | ------- | ------ |
-| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, the `**Inherits:**` declaration, at least one firing path per skill, host-tool allowlist, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
+| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, the `**Inherits:**` declaration, at least one firing path per skill, Kai tool-vocabulary lint, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
 | `npm run docs:check` | The generated agent/skill catalog matches the shipped surface. |
 | `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces, plus the pack-migration scenario matrix. |
-| `npm run host-contract` | Host-loader acceptance — the discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
+| `npm run host-contract` | Kai frontmatter acceptance heuristic — the expected discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
+| `npm run host-tool-probe:self-test` | Offline parser/classifier, redaction, determinism, and read-only checks for the optional live host-tool probe. |
 | `npm run release-guard:self-test` | The behavior-change-requires-a-bump decision core. |
 | `npm run activity:self-test` | The activity-log contract: the item/log boundary, privacy bounds, and concurrent-writer integrity. |
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |

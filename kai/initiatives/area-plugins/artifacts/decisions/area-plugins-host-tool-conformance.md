@@ -26,6 +26,22 @@ result, not by the documentation.
 > `observed`. The probe is **specified, not authored** (§4.8 gives the argument
 > for and against authoring it now, and rules against).
 
+> **Architecture review — 2026-08-27 22:45 local.** **Approved after
+> Reshape**, bound to this revised design rather than an implementation ref.
+> The review corrects the wildcard fact, keeps explicit enumeration as Kai's
+> least-privilege policy, makes validator-channel observability explicit,
+> separates synthetic parser fixtures from live host evidence, and defers
+> baseline-update/drift commands that are not needed for the first probe.
+> Implementation conformance still requires review against the eventual
+> `change_ref`.
+>
+> **Operator implementation amendment — 2026-08-27 22:51 local.** The current
+> implementation instruction explicitly adds `--update` and `--check`. They are
+> therefore in scope as offline operations over an explicit redacted report and
+> explicit baseline path. This does **not** authorize a committed live baseline,
+> live-host CI, or an implicit baseline location. Exact-ref architecture review
+> must include these two modes because they postdate the design review above.
+
 ---
 
 ## 1. Context — what changed, and why it changes the plan
@@ -33,16 +49,20 @@ result, not by the documentation.
 ### 1.1 The operator's documented vocabulary, recorded verbatim
 
 Official GitHub documentation for the Copilot CLI custom-agent tool schema,
-**observed 2026-08-27 by the operator**, reported to this role:
+independently opened during architecture review on 2026-08-27:
 
 - Portable PRIMARY aliases: `execute`, `read`, `edit`, `search`, `agent`, `web`, `todo`
 - COMPATIBLE aliases: `shell` / `Bash` / `powershell`; `Read` / `NotebookRead`;
   `Edit` / `MultiEdit` / `Write`; `Grep` / `Glob`; `custom-agent` / `Task`
+- **Enable all available tools:** omit `tools` or use `tools: ["*"]`.
+- **Disable all tools:** use `tools: []`.
 - **Unrecognized names are ignored.**
 
-This is `reported`. I hold no web tool this session and did not open the page.
-It is recorded verbatim because it is the **baseline the probe measures against**,
-not because it is settled.
+Source: [GitHub Docs — Custom agents configuration, Tools](https://docs.github.com/en/copilot/reference/custom-agents-configuration#tools).
+The aliases above remain the operator-supplied baseline; the wildcard,
+omission, empty-list, and unknown-name semantics are now independently
+`observed`. The live probe measures whether the current CLI conforms to that
+published contract; it does not redefine the contract from warning text.
 
 ### 1.2 The drift, stated precisely
 
@@ -173,11 +193,10 @@ report. Everything the host touches is a temp tree removed on exit.
  |   3. classify -- scripts/lib/tool-conformance.mjs (pure, no I/O) --+       |
  +-------------------------------------------------------------------|-------+
                                                                      |
-     REPO BOUNDARY (one reviewed write)                              v
+     REPO BOUNDARY (redacted machine report only)                    v
  +--------------------------------------------------------------------------+
- |  test/fixtures/host-tool-conformance.json     committed, redacted baseline |
- |  --check re-runs live and diffs against it -> drift is detected, not       |
- |  rediscovered by a user reading log noise                                  |
+ |  .kai/runs/eng/host-tool-conformance-*.json   local, ignored evidence       |
+ |  synthetic fixtures test classification; no live transcript is committed   |
  +--------------------------------------------------------------------------+
 ```
 
@@ -259,18 +278,18 @@ row yields `grant_direct` and `grant_delegated`. `--deep` adds R10.
 | run | declares | what only this row can settle |
 |---|---|---|
 | `R0 omitted` | no `tools:` key at all | Does the host grant a default base set? Settles additive-vs-gating. |
-| `R1 wildcard` | `tools: ["*"]` | Is `*` a wildcard, an ignored unknown, or a parse error? (§5) |
+| `R1 wildcard` | `tools: ["*"]` | Does the live CLI grant all available tools on both launch paths as documented, and which broad grants result? (§5) |
 | `R2 primary` | all 7 primary aliases | **Does a warning-free spelling exist?** If `edit` still warns here, it does not. |
 | `R3 shell-family` | `shell`, `Bash`, `powershell` | which member is silent, which is granted, per-OS |
 | `R4 read-family` | `Read`, `NotebookRead` | " |
 | `R5 edit-family` | `Edit`, `MultiEdit`, `Write` | " |
 | `R6 search-family` | `Grep`, `Glob` | **`Grep` is documented and reportedly warns** — the sharpest drift probe |
 | `R7 agent-family` | `custom-agent`, `Task` | " , plus it is the delegation transport itself |
-| `R8 repo-current` | the 15 identifiers the repo declares today | reproduces the live defect exactly; the before-picture of any diff |
+| `R8 repo-current` | the 16 identifiers the repo declares today | reproduces the live defect exactly; the before-picture of any diff |
 | `R9 control` | `read` + `kai-not-a-tool` + `zzz_bogus_42` | **confirms "unrecognized names are ignored" on the live binary** — bogus must warn while `read` still works |
 | `R10 singleton` (`--deep`) | exactly ONE identifier, one run each | clean attribution: a grant observed here is attributable to that one name |
 
-The 15 repo identifiers R8 must carry, `observed` from
+The 16 repo identifiers R8 must carry, `observed` from
 `scripts/lib/loader-contract.mjs:14-28`: `view`, `create`, `edit`, `grep`,
 `glob`, `bash`, `shell`, `ask_user`, `skill`, `task`, `read_agent`,
 `write_agent`, `web_fetch`, `web_search`, `session_store_sql`, `playwright`
@@ -278,6 +297,9 @@ The 15 repo identifiers R8 must carry, `observed` from
 prior pass's frequency table — R8 carries all of them regardless).
 
 Union coverage: 7 primary + 13 compatible + 16 repo + 2 bogus, deduplicated.
+`--deep` is optional for broad diagnosis, but becomes mandatory for each token
+whose spelling a migration would change. Do not pay for every singleton unless
+the result can affect the diff.
 
 ### 4.4 Output schema
 
@@ -293,6 +315,14 @@ Machine-readable, redacted, diffable. Abridged but structurally exact:
     "copilot_resolved_path": "<redacted to basename + parent>",
     "platform": "win32", "arch": "x64", "os_release": "10.0.26100",
     "node_version": "v22.22.2"
+  },
+  "channels": {
+    "validator": {
+      "status": "observed",
+      "control_run": "R9-control",
+      "rule": "silent is valid only when the bogus control warning was observed"
+    },
+    "runtime": { "status": "observed" }
   },
   "runs": [{
     "id": "R2-primary", "launch": "direct",
@@ -318,7 +348,7 @@ Machine-readable, redacted, diffable. Abridged but structurally exact:
         { "tool": "execute", "self_reported": "present", "exercised": "fail" }
       ]
     },
-    "transcript_sha256": "…", "transcript_path": "<tmp>/R2-primary.log"
+    "transcript_sha256": "…", "transcript_retained": false
   }],
   "matrix": {
     "edit": {
@@ -347,6 +377,11 @@ Machine-readable, redacted, diffable. Abridged but structurally exact:
 branches on (§7). `findings.delegation_differs` is the single field the
 capability-loss risk branches on.
 
+`validator: silent` is legal only after the bogus control proves that the
+launch mode exposes validator warnings. If R9 does not surface its deliberate
+unknown-name warning, `channels.validator.status` and every validator result are
+`unobserved`; absence of text is never converted to `silent`.
+
 ### 4.5 Where it lives — and the `packs/` check the dispatch demanded
 
 **Files (both additive, neither ever mirrored):**
@@ -355,6 +390,7 @@ capability-loss risk branches on.
 |---|---|
 | `scripts/host-tool-probe.mjs` | I/O shell: materialise, spawn, capture, redact, write |
 | `scripts/lib/tool-conformance.mjs` | pure classification core, no I/O — what `--self-test` exercises |
+| `test/fixtures/host-tool-probe/` | minimal synthetic warning, delimiter, malformed-output, disagreement, and redaction fixtures; no captured live transcript |
 
 This split is the repo's own clearest convention (`scripts/lib/pack-plan.mjs`
 pure ↔ `scripts/pack-preview.mjs` I/O), and here it earns its keep: the pure core
@@ -414,7 +450,7 @@ priority 8 says the established layout wins.
 
 ```text
 node scripts/host-tool-probe.mjs --self-test
-      offline. Classifies committed fixture transcripts. No host, no network,
+      offline. Classifies committed synthetic fixtures. No host, no network,
       no temp tree. This is the leg that joins `npm test`.
 
 node scripts/host-tool-probe.mjs --plan
@@ -427,33 +463,35 @@ node scripts/host-tool-probe.mjs --run [--deep] [--allow-network]
       live. Requires `copilot` on PATH. Default --out:
       .kai/runs/eng/host-tool-conformance-<version>-<stamp>.json  (gitignored)
 
-node scripts/host-tool-probe.mjs --update
-      promote the most recent report to test/fixtures/host-tool-conformance.json
-      (the same --update convention as host-contract.mjs)
-
-node scripts/host-tool-probe.mjs --check
-      live run + structural diff against the committed baseline; prints the
-      drift. Operator/manual gate — NOT in `npm test`, because CI has no CLI.
+node scripts/host-tool-probe.mjs --update --from <report> --baseline <file>
+node scripts/host-tool-probe.mjs --check  --from <report> --baseline <file>
+      Offline only. Validate an already-redacted report, normalize capture time
+      and run duration, then explicitly write or compare a caller-selected
+      baseline. There is no default or committed live baseline.
 ```
 
-`package.json` additions (specified, not written): `host-tool-probe`,
-`host-tool-probe:self-test`, `host-tool-probe:plan`, `host-tool-probe:update`,
-`host-tool-probe:check`; and `--self-test` appended to the `test` chain.
+`package.json` additions for the first implementation (specified, not written):
+`host-tool-probe`, `host-tool-probe:self-test`, `host-tool-probe:plan`,
+`host-tool-probe:update`, `host-tool-probe:check`; and `--self-test` appended to
+the `test` chain.
 
 **Exit codes**, mirroring `workspace-doctor --migration-check`'s honesty
 convention rather than inventing a new one:
 
-- `0` — self-test passed, or a live run matched the baseline
-- `1` — a failure or a real drift from the baseline
+- `0` — self-test passed, or a live run produced a complete valid measurement
+- `1` — a self-test, classification, spawn, or verified exercise failed
 - `3` — **`unknown`**: the host was unreachable, timed out, or produced no
   parseable evidence. **Never reported as success.** A probe that cannot measure
   must not look like a probe that measured nothing wrong.
 
 ### 4.7 Self-test contract — the eight assertions
 
-`--self-test` runs the pure core over committed fixture transcripts in
-`test/fixtures/host-tool-probe/`. Each assertion states the rule it protects, in
-the repo's existing `ok(cond, 'what this proves')` style:
+`--self-test` runs the pure core over minimal **synthetic** fixtures in
+`test/fixtures/host-tool-probe/`. Synthetic inputs are correct here: they
+exercise parser and classifier branches deterministically, while the live run
+is separate integration evidence in `.kai/runs/`. No raw or redacted live
+transcript is committed as a unit fixture. Each assertion states the rule it
+protects, in the repo's existing `ok(cond, 'what this proves')` style:
 
 1. **The collapse-proof assertion.** A transcript carrying
    `Unknown tool name in the tool allowlist: "edit"` **and** a `<<<KAI-PROBE>>>`
@@ -472,12 +510,12 @@ the repo's existing `ok(cond, 'what this proves')` style:
 5. **Fail closed.** A truncated transcript or non-zero exit marks the run
    `valid: false`, excludes it from `findings`, and still writes the report with
    the caveat. A partial measurement never becomes a whole verdict.
-6. **Redaction before commit.** A fixture transcript seeded with `ghp_`-shaped
+6. **Redaction before persistence.** A fixture transcript seeded with `ghp_`-shaped
    and `Bearer`-shaped strings and an absolute home path emits a report
-   containing none of them. *The baseline is committed to a public repo; a live
-   CLI transcript is exactly the place a token or a user's home path leaks.*
+   containing none of them. *A live CLI transcript is exactly the place a token
+   or a user's home path leaks; even ignored evidence must be safe to inspect.*
 7. **Determinism.** Identical fixture input yields byte-identical output modulo
-   `host` and `captured`. Without this, `--check` diffs noise.
+   `host` and `captured`. Without this, a later structural diff is noise.
 8. **Read-only over the repo.** Snapshot every file under `REPO_ROOT` before and
    after `--self-test`; assert byte-identical except the explicit `--out` target.
    *Proven, not promised — the same assertion `--migration-check` already makes.*
@@ -494,59 +532,42 @@ The argument against, which wins:
   `scripts/`), `release-guard` (behavior path → version bump + CHANGELOG), and
   `npm test` once `--self-test` is wired in. Committing code into gates I cannot
   execute is the "apply without a plan" anti-pattern with the labels swapped.
-- The self-test needs **committed fixture transcripts**, and a realistic transcript
-  is a recording of a host I have never run. Fabricating one and then asserting
-  against it produces a self-test that proves my imagination is self-consistent.
 - The design is about to receive `principal-swe-architect` independent-architecture
   review. A verdict that changes the run matrix or the schema after the code is
   written wastes the write.
 
-**Ruling: specify, do not commit.** §4.1–§4.7 are written to be implemented
-mechanically by a shell-bearing pass — path, argv, schema, exit codes, and eight
-named assertions. That pass writes the fixtures **from a real transcript the
-operator captures**, not from imagination.
+**Ruling for the design pass: specify, do not commit.** Architecture review has
+now closed. The shell-bearing implementation pass may author the two scripts
+and synthetic fixtures mechanically from §4.1–§4.7, then capture live evidence
+separately. It must not wait for or commit a real transcript.
 
 ---
 
 ## 5. Ruling — `tools: ['*']` and omission vs least privilege
+**Rejected for Kai. Keep explicit enumeration.** This is a policy ruling, not a
+host-syntax ruling: official GitHub documentation explicitly supports both
+`tools: ["*"]` and omission as **enable all available tools**.
 
-**Rejected. Both of them. Keep explicit enumeration.** The main agent warned this
-might be unacceptable; it is, and for four reasons that compound.
-
-**1. `*` is not in the documented vocabulary — so the documented rule makes it
-mean the opposite of what it looks like.** §1.1 lists 7 primary and 13 compatible
-aliases, and states plainly that **unrecognized names are ignored**. `*` is not
-among them. Applying the documented rule literally, `tools: ["*"]` is one
-unrecognized name, ignored, leaving an agent that has declared an **effectively
-empty allowlist**. On the direct path that may be harmless if a base set exists.
-On the **delegated** path, where 0.63.1 established an agent receives *only* its
-declared tools, the plain reading is that it receives **nothing**. Rolling `['*']`
-across 56 agents is a plausible silent, total capability wipe on the path this
-repo runs on. `R1` in the run matrix exists solely to test this, and until it
-returns, `['*']` is a change whose worst case is catastrophic and whose best case
-is a quieter log.
-
-**2. Omission carries the same defect plus a second one.** Omission only works if
-the host base-grants — the exact hypothesis under test. And it is *already known
-to fail for one tool*: 0.63.1 exists because a delegated agent did **not**
-implicitly receive `skill`. Beyond that, omission deletes the repo's only
-machine-readable statement of intent. Three mechanisms read the declared array
-and all three go dark: `requires_tools` enforcement
-(`validate-plugin.mjs:648-672`), the per-agent capability-loss disclosure rule
-(§7.3), and any future audit of what a dispatched agent may do in a user's repo.
-
-**3. Least privilege here is a designed boundary, not a slogan.** These agents
+**1. Least privilege here is a designed boundary, not a slogan.** These agents
 are dispatched autonomously into someone else's repository.
 `validate-plugin.mjs:237-241` records that `principal-ai-researcher` and
 `principal-ai-applied-engineer` hold **no shell by design** — an explicit,
-reviewed privilege boundary. A wildcard erases it and hands a shell to two agents
-documented as not having one. Six skills' `requires_tools` gates become
-unverifiable. Priority 2 is not negotiable against a log line.
+reviewed privilege boundary. Wildcard or omission erases it and includes current
+and future host and configured MCP tools. Six skills' `requires_tools` gates
+also become unverifiable.
 
-**4. The asymmetry settles it.** Cost of keeping enumeration: a cosmetic warning
-that this design has now proven benign on the direct path. Cost of `['*']` or
-omission: an unbounded, unauditable grant with a plausible silent-zero failure
-mode on the delegated path. Not close.
+**2. Explicit enumeration is the repo's machine-readable statement of intent.**
+`requires_tools` enforcement (`validate-plugin.mjs:648-672`), the per-agent
+capability-loss disclosure (§7.3), and privilege audit all depend on it.
+
+**3. The asymmetry settles it.** Cost of keeping enumeration: validator warnings
+while the host and documentation drift. Cost of wildcard or omission: a valid
+but unbounded grant that silently widens whenever the host or configured MCP
+surface grows. A warning is not grounds to remove a deliberate boundary.
+
+R1 remains in the probe as a conformance and blast-radius control, not because
+the token's documented meaning is unknown. `*` is not added to
+`SUPPORTED_TOOLS` because that list enforces Kai's narrower authoring policy.
 
 ### 5.1 Should the loader contract stop rejecting a missing `tools:` key and an empty array?
 
@@ -554,10 +575,11 @@ Current behaviour, `observed` at `scripts/lib/loader-contract.mjs:83-89`: a
 missing `tools` key is rejected (`frontmatter is missing 'tools'`), and
 `tools: []` is rejected (`frontmatter 'tools' array is empty`).
 
-**Keep both rejections. Change only what they claim.** The rejections are
-*correct as kai's authoring rules* and *wrong as statements about the host* — the
-host demonstrably accepts agents with no frontmatter at all (its built-in agent
-types have none). So the check stays and the framing is corrected:
+**Keep both rejections. Change only what they claim.** Official host semantics
+are: omission enables all tools, `["*"]` enables all tools, and `[]` disables
+all tools. Kai intentionally accepts none of those three forms for its own
+entries: it requires a non-empty explicit enumeration. So the checks stay and
+the framing is corrected:
 
 > not — "the host would reject this"
 > but — "kai requires an explicit, non-empty allowlist: least privilege is
@@ -601,8 +623,8 @@ Replace the header:
 // Single source of truth for what kai declares and requires of its OWN entries —
 // not for how a Copilot host parses them; no file here can hold that authority.
 // Host behaviour is measured, dated and recorded by scripts/host-tool-probe.mjs
-// against test/fixtures/host-tool-conformance.json. Both guards import this so
-// they cannot drift from each other:
+// in its versioned machine-readable report. Both guards import this so they
+// cannot drift from each other:
 ```
 
 Replace the `SUPPORTED_TOOLS` preamble (`:11-13`):
@@ -793,6 +815,8 @@ in the loop, so each item is classified rather than quietly built.
 | §6.2 loader-contract header/message correction (+ `host-contract.mjs:179`) | **in scope** | Item acceptance box 4 names it explicitly. Not written — STOP CONDITION forbids editing that file this pass. |
 | `--self-test` added to the `npm test` chain | **in scope** | Offline, deterministic, no host. Same terms as every other guard. |
 | Version bump + CHANGELOG for PR-A1 | **forced, not creep** | `release-guard.mjs:20` makes `scripts/` behavior-sensitive. Not a choice. |
+| Explicit-path, offline `--update` / `--check` commands | **in scope by operator amendment** | The 2026-08-27 22:51 implementation instruction adds them. They consume only already-redacted reports and create no default baseline. |
+| A committed live baseline | **Defer** | No reviewed live report exists, so the design still forbids inventing or committing one. |
 | `--check` wired into CI as a required gate | **`expands-scope`** | Needs a CLI binary and credentials in CI. **PROPOSAL** (§6.3 step 3). |
 | `validate-plugin` failing on `assumed`/stale `SUPPORTED_TOOLS` entries | **`expands-scope`** | Adds a gate. **PROPOSAL** (§6.3 step 3). |
 | Migrating 214 declarations | **`expands-scope` relative to THIS item** | Branch-dependent, steward-gated, and B2 contradicts the committed Outcome. **PROPOSAL-2, still open.** |
@@ -816,9 +840,9 @@ about.
    declaring `agents/` and `skills/`. Prior art: 0.49.1's live run and the
    pack-split first-install proof both used repeated `--plugin-dir`.
 3. **One host, one OS, one build.** This is a measurement, not a specification.
-   `caveats` says so, and the committed baseline is keyed by
-   `host.copilot_version` + `platform` so a second measurement extends the record
-   rather than overwriting it.
+   `caveats` says so, and every report is keyed by `host.copilot_version` +
+   `platform` so a second measurement is compared rather than mistaken for the
+   same environment.
 4. **The search-family proof is corroborating, not exclusive** — a read tool could
    brute-force the needle. Recorded honestly as *search-family capability present*.
 5. **A model that refuses the probe prompt** yields an empty `<<<KAI-PROBE>>>`
@@ -859,10 +883,16 @@ about.
 - The prior pass's full enumeration: 56 root agents + 56 mirrors + 51 root skills
   + 51 mirrors = **214** declaration files.
 
+**`observed during architecture review`** — official external contract:
+
+- GitHub Docs, *Custom agents configuration* → *Tools*, fetched 2026-08-27:
+  omission and `tools: ["*"]` enable all available tools; `tools: []` disables
+  all tools; unrecognized names are ignored.
+  <https://docs.github.com/en/copilot/reference/custom-agents-configuration#tools>
+
 **`reported`** — supplied by the operator or the dispatch, not verified here:
 
-- The documented primary/compatible alias vocabulary and the "unrecognized names
-  are ignored" rule (§1.1). No web tool was bound this session.
+- The operator-supplied primary/compatible alias baseline (§1.1).
 - The live CLI warning on lowercase `create`, `edit`, `grep`, with runtime
   capability retained.
 
@@ -875,8 +905,158 @@ claim above depends on an execution I did not perform.
 
 ## 11. Open question
 
-`Q-area-plugins-host-tool-conformance-01` — the first live probe run. Recorded in
-full in `kai/coordination/threads/area-plugins-host-tool-conformance.md`,
-`kind: action`, `blocking: yes`, to `@operator`. It cannot be answered by any
-role in this repo without a shell, and no branch in §7.2 may be selected without
-it.
+`Q-area-plugins-host-tool-conformance-01` is **answered** in
+`kai/coordination/threads/area-plugins-host-tool-conformance.md`: the main
+shell-bearing agent is authorized to run the bounded probe, so no operator-action
+blocker remains. The live measurement is now implementation evidence owned by
+`principal-swe-infra`; no branch in §7.2 may be selected before it exists.
+
+---
+
+## 12. Measurement results — executed 2026-08-28
+
+Recorded by `director-chief-of-staff` in a records-only reconciliation. The main
+agent implemented the probe in the working tree and executed it. Everything in
+this section is **`reported`** from that run; no director session has ever had a
+shell, and nothing here was executed by the recorder.
+
+### 12.1 Defects fixed before measurement
+
+Four implementation defects were found and fixed *before* any result was
+trusted. They are recorded because each would have yielded a confidently wrong
+answer rather than a visible failure:
+
+| # | defect | why it mattered |
+|---|---|---|
+| 1 | Local `--plugin-dir` agents require qualified `<ephemeral-plugin>:<agent>`; unqualified names exited `1` | An unqualified run reads as a **capability denial**, not a naming error — a false negative aimed at the wrong conclusion. Selected, delegated, and helper agents are now qualified. |
+| 2 | Outer CLI `--allow-all-tools` missing | Host **permission policy** could masquerade as an inner agent-allowlist denial. The probe would have measured the prompt, not the allowlist. Scratch workspace remains isolated. |
+| 3 | PATH `.cmd` shim reported `1.0.79` while `spawnSync('copilot')` resolved the active `1.0.81` | **Version attribution was wrong.** `--copilot-entry <absolute versioned index.js>` now proves exact-version execution via `host.copilot_version` + resolved path. |
+| 4 | No bounded retry | Full runs hit occasional model/delegated transcript timeout and truncation. `--rows` collects missing evidence without relaunching the full matrix. |
+
+**Offline self-test: 11/11 passed.**
+
+### 12.2 Runtime channel — `observed`, on both 1.0.79 and 1.0.81
+
+| row | direct | delegated | outcome |
+|---|---|---|---|
+| `R2-primary` | valid | valid | read / edit / create / search / execute / agent all exercised successfully |
+| `R8-repo-current` | valid | valid | same capabilities exercised successfully |
+| `R9-control` | valid | — | `read` + `search` worked; `write` / `execute` / `agent` did not |
+
+`R9-control` matches "only `read` plus bogus names are effective" at runtime:
+bogus names granted no tested capability while the real `read` declaration
+remained effective. This corroborates the documented
+**unrecognized-names-are-ignored** rule, but does not independently prove
+validator treatment; with that channel unobserved,
+`findings.bogus_ignored` correctly remains `null`.
+
+### 12.3 Validator channel — `unobserved`
+
+Neither noninteractive prompt path emitted validator warnings, **including for
+the bogus controls**. Prompt mode cannot reproduce the interactive startup
+warning surface.
+
+Recorded as `unobserved`, **not** as "no warnings occur." The user-reported
+interactive-startup warning **remains real and is not refuted**. §4's
+non-collapsing two-channel requirement is what forced this distinction, and it
+held under measurement — a channel that could see nothing was not reported clean.
+
+### 12.4 What this settles, and what it does not
+
+**Settles:** the official primary aliases are **runtime-safe on both `1.0.79`
+and `1.0.81`**, direct and delegated.
+
+**Does not settle:** anything about interactive validator warnings. Therefore
+**no §7.2 branch (B1/B2/B3) may be selected and no declaration migration may be
+authored on this evidence.** Branch selection still requires validator-channel
+evidence that prompt mode structurally cannot provide.
+
+### 12.5 Reports
+
+`host-tool-probe-targeted-1.0.81.json` (current) and
+`host-tool-probe-targeted-1.0.79.json` (retained; launched through
+`<redacted>/1.0.79/index.js`, report self-identifying CLI `1.0.79`). Both are
+**session files**.
+
+**No live baseline is committed**, preserving §4's separation of synthetic
+parser fixtures from live host evidence.
+
+### 12.6 Status
+
+Implementation exists in the working tree and is **uncommitted**, so
+`change_ref` is `null` and the declared exact-ref architecture review has
+nothing to bind to. The item is `in-progress` with
+`next_role: principal-swe-architect`, dispatch **gated on a commit SHA**. The
+design review recorded at 2026-08-27-2245 carries `satisfies_requirement: false`
+and `requires_exact_ref_confirmation: true` and cannot substitute for it.
+
+---
+
+## 12. Implementation status — 2026-08-27 22:51 local
+
+The approved first-pass shape is authored in
+`scripts/host-tool-probe.mjs`, `scripts/lib/tool-conformance.mjs`, and synthetic
+fixtures under `test/fixtures/host-tool-probe/`. The implementation:
+
+- keeps validator observations and runtime grants in separate fields;
+- runs every default row through direct and delegated launch plans;
+- refuses to call warning silence observable unless both bogus controls warn;
+- verifies runtime grants with scratch-workspace side effects and keeps
+  self-report separate;
+- redacts before report persistence and retains no transcript;
+- materializes every live plugin and workspace under the OS temp root, never
+  installs the plugin, and snapshots repository content around the live run;
+- provides deterministic `--plan`, explicit-path offline `--update` and
+  `--check`, live `--run`, and offline `--self-test` modes.
+
+The source and release surfaces are updated to `1.0.5`, including the expected
+generated pack files. No agent or skill declaration changed, and no live report
+or baseline was committed.
+
+**Execution evidence is still absent.** This tool session exposes file
+read/write/search operations but no process runner, so it could not execute
+`node`, `npm`, `git`, or `copilot`. In particular, `--plan` was not executed;
+therefore the live probe was correctly not attempted. Syntax, self-test,
+generator parity, pack gates, and full `npm test` remain mandatory before this
+implementation can receive a `change_ref` or exact-ref architecture review.
+
+---
+
+## 13. Exact-ref architecture conformance review — 2026-08-28 01:12 local
+
+- **Disposition:** Endorse
+- **Change ref:** `4d711779408c8f675a740b5e243686d9e66a5ce4`
+- **Verdict:** **APPROVED**
+- **Findings:** P0 `0`, P1 `0`, P2 `2` — both record-only corrections applied
+  below; no implementation revision requested.
+
+The implementation matches the approved seam: qualified local-plugin agent
+names; outer `--allow-all-tools`; isolated temp plugins/workspaces; separate
+validator and runtime channels; direct and delegated launch plans; exact
+`--copilot-entry`; bounded `--rows`; deterministic redacted JSON; synthetic
+offline fixtures/self-tests; and no default network probe or committed live
+baseline. Fixed argv with `shell: false`, caller-explicit output/baseline paths,
+credential-variable filtering, transcript non-retention, and repository
+snapshots expose no command-injection, implicit path-escape, or silent
+repository-mutation path in the reviewed shape.
+
+Two P2 record defects were corrected during review:
+
+1. Durable records had reintroduced an absolute user-home path that the probe
+   itself redacts. It is now `<redacted>/1.0.79/index.js`; version attribution
+   remains anchored by `host.copilot_version` and the versioned entry basename.
+2. The record overstated R9 as independent proof that bogus names were ignored
+   even though the validator channel was unobserved, and called R8 a 15-name set
+   despite its 16 entries. R9 is now classified as runtime corroboration,
+   `findings.bogus_ignored` remains `null`, and R8 is correctly counted as 16.
+
+The targeted `1.0.79` and `1.0.81` JSON reports remain session-only evidence.
+They support runtime safety for R2/R8 and the stated R9 runtime control, not a
+warning fix. The interactive warning remains unobserved in prompt mode and
+unfixed. `tools: ["*"]` remains documented host syntax and rejected only by
+Kai's explicit least-privilege policy.
+
+The branch ref and worktree HEAD resolve to the reviewed SHA. Full `npm test`,
+including probe self-test and generated-pack parity, is prior-run evidence
+reported by the operator; it was not rerun in this review environment.
+`workflow-ship` must obtain fresh CI at the PR head before publication.

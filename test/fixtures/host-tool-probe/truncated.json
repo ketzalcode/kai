@@ -1,0 +1,20 @@
+{
+  "row": {
+    "id": "R10-edit",
+    "label": "singleton",
+    "declared": ["edit"]
+  },
+  "launch": "direct",
+  "execution": {
+    "status": 0,
+    "stdout": "<<<KAI-PROBE-BEGIN>>>\n{\"self_reported\":[\"edit\"]",
+    "stderr": "",
+    "durationMs": 40,
+    "timedOut": false,
+    "truncated": true,
+    "error": null
+  },
+  "evidence": {
+    "edit": true
+  }
+}

@@ -5,11 +5,11 @@ title: Repair every invalid tool-allowlist declaration across all 56 agents and 
 initiative: area-plugins
 milestone: allowlist-repair
 delivery_class: product-change
-state: blocked
-resume_state: ready
+state: ready
+resume_state: null
 priority: 1
 owner: null
-next_role: "@operator"
+next_role: principal-swe-infra
 target: agent frontmatter tool allowlists (root agents/ + generated packs/*/agents/)
 artifact_target: null
 artifact_target_status: blocked-on-directory-creation; durable record is this item's thread until kai/initiatives/area-plugins/ exists
@@ -29,21 +29,21 @@ touches:
   - package.json
   - package-lock.json
 depends_on: []
-waiting_on_questions: [Q-area-plugins-tool-allowlist-fix-01]
+waiting_on_questions: []
 required_for_milestone: true
 review_requirements:
   - role: principal-swe-architect
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 3
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-2138
+updated: 2026-08-28-0055
 ---
 
 ## Outcome

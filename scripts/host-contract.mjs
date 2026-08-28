@@ -1,17 +1,16 @@
 #!/usr/bin/env node
-// host-contract — mirror the Copilot host loader to prove the plugin's advertised
-// inventory is loadable and that malformed frontmatter is rejected before release.
+// host-contract — apply kai's authoring contract to the advertised inventory
+// and prove malformed frontmatter is rejected before release.
 //
-// `validate-plugin.mjs` proves the source obeys the loader contract. This guard
-// takes the acceptance view: it loads every agent/skill exactly as a host would,
+// `validate-plugin.mjs` proves the source obeys the authoring contract. This
+// guard applies the same rules to every agent and skill,
 // asserts the resulting discoverable inventory matches a committed golden
 // snapshot (so a roster change is explicit and reviewable in the diff), and
 // asserts a set of deliberately malformed fixtures are each rejected by the
 // loader — the exact class of bug (#23) that shipped while CI stayed green.
 //
-// It is a deterministic *mirror* of the loader, not a live host. Model-graded
-// scenarios (CLI/cloud degraded behavior) remain a manual/host-backed follow-up;
-// see test/README.md.
+// It is a deterministic lint heuristic, not a live-host parser. Live validator
+// and runtime behavior are measured separately by host-tool-probe.mjs.
 //
 // Usage:
 //   node scripts/host-contract.mjs             verify inventory + README counts
@@ -47,7 +46,7 @@ function collect() {
   return out;
 }
 
-// Load one entry through the loader contract. { ok, errors, fm }.
+// Check one entry through Kai's authoring contract. { ok, errors, fm }.
 function load(entry) {
   const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
   if (!pf.ok) return { ok: false, errors: [`invalid frontmatter: ${pf.reason}`], fm: {} };
@@ -55,7 +54,7 @@ function load(entry) {
   return { ok: errs.length === 0, errors: errs, fm: pf.fm };
 }
 
-// The discoverable inventory a host would expose: the agent and skill rosters,
+// The discoverable inventory kai expects: the agent and skill rosters,
 // and the user-invocable skill surface (name + argument hint). Loader failures
 // are reported separately — a broken entry never silently drops from the roster.
 function buildInventory() {
@@ -91,11 +90,11 @@ function buildInventory() {
 const canon = (o) => JSON.stringify(o, null, 2) + '\n';
 
 // --- checks ----------------------------------------------------------------
-// Assert the live inventory loads cleanly and equals the committed golden.
+// Assert the source inventory satisfies Kai's rules and equals the golden.
 function checkInventory(errors) {
   const { inventory, loadErrors } = buildInventory();
   for (const le of loadErrors) {
-    for (const m of le.errors) errors.push(`${le.file}: host would reject this entry — ${m}`);
+    for (const m of le.errors) errors.push(`${le.file}: kai rejects this entry — ${m}`);
   }
   if (!existsSync(GOLDEN)) {
     errors.push(`${rel(GOLDEN)}: golden inventory is missing — run \`npm run host-contract:update\``);
@@ -134,7 +133,7 @@ function diffInventory(golden, live) {
 }
 
 // The README status stamp advertises the roster size; it must mirror the live,
-// host-loadable inventory so the quickstart never claims a roster that fails.
+// linted inventory so the quickstart never claims a roster that fails.
 function checkReadmeCounts(errors, inventory) {
   const readmePath = join(ROOT, 'README.md');
   if (!existsSync(readmePath)) { errors.push('README.md is missing'); return; }
@@ -176,7 +175,7 @@ function checkReadmeScripts(errors) {
 const INVALID_FIXTURES = [
   { file: 'argument-hint-array.skill.md', kind: 'skill', re: /argument-hint.*inline array/i },
   { file: 'tools-not-array.skill.md', kind: 'skill', re: /tools.*inline array/i },
-  { file: 'unsupported-tool.agent.md', kind: 'agent', re: /unsupported tool/i },
+  { file: 'unsupported-tool.agent.md', kind: 'agent', re: /not in kai's tool vocabulary/i },
   { file: 'skill-key-on-agent.agent.md', kind: 'agent', re: /skill-only/i },
   { file: 'name-mismatch.agent.md', kind: 'agent', re: /name .* must equal/i },
 ];
@@ -221,9 +220,9 @@ if (argv.includes('--self-test')) checkInvalidFixtures(errors);
 
 if (errors.length === 0) {
   const mode = argv.includes('--self-test') ? ' + malformed fixtures rejected' : '';
-  console.log(`✓ host-loader acceptance: ${inventory.counts.agents} agents, ${inventory.counts.skills} skills loadable, inventory matches golden${mode}`);
+  console.log(`✓ kai frontmatter acceptance: ${inventory.counts.agents} agents, ${inventory.counts.skills} skills lint cleanly, inventory matches golden${mode}`);
   process.exit(0);
 }
-console.error(`✗ host-loader acceptance: ${errors.length} violation(s)\n`);
+console.error(`✗ kai frontmatter acceptance: ${errors.length} violation(s)\n`);
 for (const e of errors) console.error(`  ${e}`);
 process.exit(1);
