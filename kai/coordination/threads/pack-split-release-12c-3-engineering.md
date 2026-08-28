@@ -30,3 +30,21 @@ Append-only communication log mirroring
              this item.
 - next:      principal-product-manager — groom and promote. No tree was generated, no marketplace
              edited, nothing merged, tagged or published.
+
+## HANDOFF 2026-08-27-1709 — principal-product-manager -> principal-swe-infra
+
+- did:       Steward-promoted `pack-split-release-12c-3-engineering`
+             `proposed -> ready` (v2 -> v3). Both typed dependencies are met:
+             product is `shipped`; review-lens binding is `completed`.
+- state:     ready
+- needs:     Build the bounded `1.0.3` engineering publish to one reviewable
+             ref, then obtain the required SRE and architecture reviews.
+- artifacts: `kai/coordination/items/pack-split-release-12c-3-engineering.md`;
+             `kai/initiatives/pack-split/artifacts/decisions/pack-split-review-lens-binding.md`
+- evidence:  `pack-split-release-12c-2-product` is `shipped` at v13;
+             `pack-split-review-lens-binding` is `completed` at v5. The
+             ratified decision is **DO NOT BIND**.
+- questions: none
+- next:      principal-swe-infra — preserve runtime dispatch and prove zero
+             diff to `agents/workflow-doc-review.agent.md` and to the three
+             `SKILL_OWNER_OVERRIDES` entries. Do not promote or implement GTM.

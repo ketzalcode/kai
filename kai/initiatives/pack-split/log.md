@@ -3278,3 +3278,52 @@ requires zero diff to `agents/workflow-doc-review.agent.md` and the three
 existing review-lens `SKILL_OWNER_OVERRIDES` entries. `12c-4` remains proposed
 behind engineering. No implementation, marketplace, version, release,
 `BOARD.md`, or `ACTIVE.md` change was made; no initiative closure is claimed.
+
+## 2026-08-27-1705 - release 12c-2 product pack shipped as v1.0.2
+
+`pack-split-release-12c-2-product` is **shipped** at reviewed implementation
+`31373efe880aa2676eb379920a1c599efd43ada4`. The operator merged PR #186 to
+`main` as `1dd6f019df8a4ca8023df18a6bf32b8a7d1759e2`; fresh final-head run
+`33128391926` and exact-main run `33128452012` each passed `contract` plus the
+core, personal, and product runtime-dependency jobs.
+
+Production verification passed: a brand-new isolated no-ref marketplace probe
+returned exactly `kai-core`, `kai-personal`, and `kai-product`; all three
+installed at `1.0.2`; the idempotent product update reported already latest at
+`v1.0.2`; and the installed-core doctor returned `status: clear` with all three
+enabled and solely `marketplace:kai-plugins` provenance. Annotated tag `v1.0.2`
+peels to the merge, and the public non-draft, non-prerelease release was
+published at `2026-08-28T00:05:21Z`. Durable record:
+`kai/library/releases/2026-08-27/06-ship-pack-split-release-12c-2-product/ship-record.md`.
+
+`five-pack-split-shipped` is now **open at 6 of 8** typed required items.
+Engineering and go-to-market remain unshipped; no milestone or initiative
+closure is claimed. `pack-split-release-12c-3-engineering` was not promoted:
+the product steward owns that separate reconciliation and promotion pass. This
+workflow closure changed only canonical coordination/release records, not plugin
+behavior or generated pack files.
+
+## 2026-08-27-1709 - steward pass: product reconciled; engineering solely ready
+
+`pack-split-release-12c-2-product` remains truthfully `shipped` as `v1.0.2`.
+Its fulfilled PM handoff is cleared (`next_role -> null`, v12 -> v13) without
+changing the reviewed ref, approvals, canonical ship record, operator
+merge/tag/release, or production evidence.
+
+Both typed dependencies of `pack-split-release-12c-3-engineering` are verified
+at their required terminal states: product is `shipped`, and
+`pack-split-review-lens-binding` is `completed`. Engineering therefore moves
+`proposed -> ready` (v2 -> v3), priority 40,
+`next_role: principal-swe-infra`, owner and lease clear. It is the sole ready
+next release item.
+
+The architecture boundary is unchanged and explicit in acceptance: the three
+review lenses remain runtime-dispatched and are not bound into
+`workflow-doc-review`; the reviewed engineering ref must retain zero diff to
+the canonical agent body and to the three named `SKILL_OWNER_OVERRIDES`
+entries. `pack-split-release-12c-4-gtm` remains `proposed` behind engineering
+`shipped`; it is not promoted.
+
+`five-pack-split-shipped` remains **open at 6 of 8** and the initiative remains
+`active`. No implementation, generated pack, marketplace, plugin behavior,
+version, tag, release, publication, or dispatch occurred.

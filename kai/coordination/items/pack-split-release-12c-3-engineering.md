@@ -5,11 +5,11 @@ title: Release 12c-3 — generate and publish kai-engineering, preserving runtim
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: proposed
+state: ready
 resume_state: null
 priority: 40
 owner: null
-next_role: principal-product-manager
+next_role: principal-swe-infra
 target: pack-split staged department publish — kai-engineering
 artifact_target: null
 context_artifacts:
@@ -48,14 +48,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 2
+version: 3
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27T23:45:12Z
+updated: 2026-08-27-1709
 ---
 
 ## Outcome
@@ -130,3 +130,18 @@ zero-diff obligations for the agent body and the three existing review-lens
 override entries. The item remains `proposed`; its decision dependency is
 `completed`, while `pack-split-release-12c-2-product` still must reach
 `shipped`.
+
+### Steward promotion 2026-08-27-1709 (`principal-product-manager`) — `proposed -> ready`
+
+Both typed dependencies are verified at their required terminal states:
+`pack-split-release-12c-2-product` is `shipped` at v13 after the fulfilled
+handoff was cleared, and `pack-split-review-lens-binding` is `completed` at v5.
+Promoted this item as the sole ready next release item with
+`next_role: principal-swe-infra`; owner and lease remain clear.
+
+The accepted architecture is not reopened: the three review lenses remain
+runtime-dispatched and engineering-owned through the existing overrides.
+Engineering acceptance still requires zero diff to the canonical
+`workflow-doc-review` body and to the three named `SKILL_OWNER_OVERRIDES`
+entries. No implementation, generated tree, marketplace entry, version, tag,
+release, or publication changed in this promotion. `12c-4` remains proposed.

@@ -410,3 +410,30 @@ still `['core', 'personal']`, and the served marketplace has exactly two entries
 **No milestone or initiative closure is claimed.** This pass changed no
 implementation, generated tree, marketplace, version, tag, release, or
 publication state, and dispatched nothing.
+
+**Superseding steward pass (2026-08-27-1709) — product reconciled; engineering
+is the sole ready next release.**
+
+`five-pack-split-shipped` is **OPEN at 6 of 8** typed required items.
+`pack-split-release-12c-1-hardening` and
+`pack-split-release-12c-2-product` are `shipped`; engineering and GTM remain
+outstanding. The initiative stays `active` with
+`scope.current: [five-pack-split-shipped]`.
+
+Both engineering dependencies are verified:
+`pack-split-release-12c-2-product` is `shipped` and
+`pack-split-review-lens-binding` is `completed`.
+`pack-split-release-12c-3-engineering` therefore moves `proposed -> ready` at
+priority 40 with `next_role: principal-swe-infra`, owner and lease clear. It is
+the **sole ready next release item**.
+
+The settled architecture remains a hard acceptance boundary: the three review
+lenses stay runtime-dispatched and must not be added to
+`workflow-doc-review`'s inherited contract. The reviewed engineering ref must
+show zero diff to `agents/workflow-doc-review.agent.md` and zero diff to the
+three `SKILL_OWNER_OVERRIDES` entries for `review-dependencies`,
+`review-performance-scale`, and `review-success-metrics`.
+
+`pack-split-release-12c-4-gtm` remains `proposed` behind engineering
+`shipped`; it is not promoted. No implementation, generated pack, marketplace,
+plugin behavior, version, release, publication, or dispatch occurred.

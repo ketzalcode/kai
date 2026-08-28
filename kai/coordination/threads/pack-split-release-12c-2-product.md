@@ -167,3 +167,43 @@ Append-only communication log mirroring
              running-but-not-enforced. Not blocking today.
 - next:      principal-product-manager — promote after `12c-1` ships. Nothing was dispatched,
              generated, published, merged, tagged or deployed.
+
+## HANDOFF 2026-08-27-1705 — workflow-ship -> principal-product-manager
+
+- did:       **CONFIRM-COMPLETE: SHIPPED.** Ran the full six-dimension gate,
+             recorded PREPARE and the operator-evidenced deployment start and
+             completion, then verified production 5 of 5. Item v8 -> v12 walked
+             `in-review -> release-ready -> deploying ->
+             production-verification -> shipped`; workflow lease cleared.
+- state:     shipped
+- needs:     Steward reconciliation only. Engineering promotion remains
+             separate PM work and was not performed in this closure.
+- artifacts: `kai/coordination/items/pack-split-release-12c-2-product.md`;
+             `kai/library/releases/2026-08-27/06-ship-pack-split-release-12c-2-product/ship-record.md`;
+             `kai/initiatives/pack-split/log.md`
+- evidence:  PR #186 merged as
+             `1dd6f019df8a4ca8023df18a6bf32b8a7d1759e2` at
+             `2026-08-28T00:03:44Z`; final-head run `33128391926` and
+             exact-main run `33128452012` each passed contract plus core,
+             personal, and product runtime jobs. The fresh isolated no-ref
+             marketplace probe returned exactly all three packs at `1.0.2`;
+             installs, idempotent product update, clear doctor, annotated tag,
+             and public release all passed.
+- questions: none
+- next:      principal-product-manager — reconcile this shipped requirement
+             and separately decide/promote `pack-split-release-12c-3-engineering`.
+
+## NOTE 2026-08-27-1709 — principal-product-manager
+
+- did:       Reconciled the fulfilled post-ship handoff and cleared
+             `next_role` without changing any release, review, or production
+             evidence.
+- state:     shipped (v13)
+- needs:     none — this item is terminal.
+- artifacts: `kai/coordination/items/pack-split-release-12c-2-product.md`;
+             `kai/library/releases/2026-08-27/06-ship-pack-split-release-12c-2-product/ship-record.md`
+- evidence:  The authoritative item retains reviewed ref `31373efe…`, both
+             exact-ref approvals, merge `1dd6f019…`, successful final-head and
+             exact-main runs, isolated marketplace proof, tag, and public release.
+- questions: none
+- next:      none — engineering promotion is recorded on its own item/thread.

@@ -5,11 +5,11 @@ title: Release 12c-2 — generate and publish kai-product (first three-pack publ
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-review
+state: shipped
 resume_state: null
 priority: 30
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: null
 target: pack-split staged department publish — kai-product
 artifact_target: null
 context_artifacts:
@@ -57,14 +57,14 @@ completed_reviews:
     evidence: "kai/coordination/threads/pack-split-release-12c-2-product.md"
     timestamp: 2026-08-28-0025
 change_ref: 31373efe880aa2676eb379920a1c599efd43ada4
-version: 7
+version: 13
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-28T00:25:00Z
+updated: 2026-08-27-1709
 ---
 
 ## Outcome
@@ -81,7 +81,7 @@ exist when it was written.
       hand-carved — and `pack-preview --check` reports byte parity for the whole committed slice.
 - [x] `COMMITTED_PACKS` and the committed-slice self-test pin name the new
       slice; the pin still asserts an exact set, not a length.
-- [ ] `.github/workflows/validate.yml` runs the per-pack runtime job for `kai-product` and it
+- [x] `.github/workflows/validate.yml` runs the per-pack runtime job for `kai-product` and it
       passes for a pack that declares no runtime dependencies (`PACK_RUNTIME_DEPENDENCIES.product`
       is `[]`). The new required check name `runtime-dependencies (kai-product)` is either added to
       branch protection by `@operator` or recorded plainly as running-but-not-enforced.
@@ -97,10 +97,10 @@ exist when it was written.
       department packs follow" claim that the release just falsified.
 - [x] `1.0.2` is coherent across every version surface; CHANGELOG entry + compare link present;
       `release-guard` passes; `npm test` green.
-- [ ] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff
+- [x] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff
       (`git diff --exit-code <review> HEAD -- . ':(exclude)kai/'`), and a **fresh** CI run at the
       actual final head. No merge on an attested equivalence or a superseded run.
-- [ ] **Operator-executed publication:** the merge to the default branch *is* the publish. From an
+- [x] **Operator-executed publication:** the merge to the default branch *is* the publish. From an
       isolated `COPILOT_HOME`, browse `kai-plugins`, install `kai-product` beside core, run an
       idempotent update, and run the installed core migration doctor with `--json`; then tag
       `v1.0.2` at the exact merge SHA and cut the release. This role prepares and gates; it never
@@ -121,8 +121,35 @@ exist when it was written.
   against `origin/main`.
 - Independent SRE and architecture reviews approved the exact implementation
   ref with no P0/P1 findings.
-- Pending: product runtime CI leg, final-head CI, merge/tag/release,
-  isolated-home install probe.
+- Reviewed ref `31373efe880aa2676eb379920a1c599efd43ada4` is the merge base
+  of final PR head `999147e4a67414ff4182c26a47eebe495d415903` and merge
+  `1dd6f019df8a4ca8023df18a6bf32b8a7d1759e2`; the post-review compare
+  changes only this item's two `kai/coordination/` records.
+- Final-head CI run `33128391926` and exact-main run `33128452012` both
+  completed successfully with `contract` and all three runtime-dependency jobs,
+  including the empty-dependency `kai-product` leg. Runtime jobs remain
+  running-but-not-enforced because branch protection requires only `contract`.
+- The operator's fresh no-ref marketplace probe returned exactly `kai-core`,
+  `kai-personal`, and `kai-product`; all three installed at `1.0.2`; the
+  idempotent product update reported already latest at `v1.0.2`; and the
+  installed-core doctor returned `status: clear`, all three enabled, with only
+  `marketplace:kai-plugins` provenance.
+- PR #186 merged to `main` as
+  `1dd6f019df8a4ca8023df18a6bf32b8a7d1759e2`; annotated tag `v1.0.2`
+  peels to that merge, and the public non-draft, non-prerelease release was
+  published at `2026-08-28T00:05:21Z`.
+- Canonical ship record:
+  `kai/library/releases/2026-08-27/06-ship-pack-split-release-12c-2-product/ship-record.md`.
+
+## Ship closure
+
+**Verdict: SHIPPED.** `workflow-ship` walked the evidenced lifecycle
+`in-review -> release-ready -> deploying -> production-verification -> shipped`
+(v8 -> v12). Deployment started with the operator merge at
+`2026-08-28T00:03:44Z`; exact-main CI completed successfully at
+`2026-08-28T00:04:29Z`; the fresh marketplace install/update/doctor probe and
+public annotated tag/release passed. No product behavior or generated pack file
+was changed during closure.
 
 ## Notes
 
@@ -202,3 +229,10 @@ lease remain clear. Priority 30, the confirmed
 `product -> engineering -> gtm` order, outcome, acceptance, review requirements,
 and operator publication boundary are unchanged. This is the sole executable
 next item; nothing was dispatched or implemented.
+
+### Steward reconciliation 2026-08-27-1709 (`principal-product-manager`)
+
+Cleared the fulfilled post-ship handoff (`next_role -> null`) after verifying
+the authoritative record is `shipped` with its reviewed ref, both approvals,
+canonical ship record, operator merge/tag/release, and production verification
+intact. No release fact or implementation state changed.
