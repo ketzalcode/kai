@@ -5,11 +5,11 @@ title: Release 12c-4 — generate and publish kai-gtm, remove split scaffolding,
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: proposed
+state: ready
 resume_state: null
 priority: 50
 owner: null
-next_role: principal-product-manager
+next_role: principal-swe-infra
 target: pack-split final department publish — kai-gtm — plus scaffolding removal and five-pack finalization
 artifact_target: null
 context_artifacts:
@@ -47,14 +47,14 @@ review_requirements:
     kind: independent-architecture
 completed_reviews: []
 change_ref: null
-version: 1
+version: 2
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1508
+updated: 2026-08-27-1736
 ---
 
 ## Outcome
@@ -120,3 +120,19 @@ describes a finished five-pack install rather than a migration in progress.
 - **Milestone closure is not an acceptance criterion here.** `five-pack-split-shipped` closes when
   the steward verifies its typed `required_items`; this item produces the evidence for that pass
   and stops.
+
+### Steward promotion 2026-08-27-1736 (`principal-product-manager`) — `proposed -> ready`
+
+The sole typed dependency is verified satisfied:
+`pack-split-release-12c-3-engineering` is truthfully `shipped` at v14 with
+operator merge, successful final-head and exact-main CI, isolated marketplace
+production verification, annotated `v1.0.3`, public release, and canonical ship
+record
+`kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md`.
+
+Promoted this item as the **sole ready next release item** with
+`next_role: principal-swe-infra`; owner and lease remain clear. Priority 50,
+the bounded final-publish outcome, existing cleanup condition, both independent
+review requirements, operator-only publication boundary, and release version
+`1.0.4` are unchanged. No GTM implementation, generated tree, marketplace
+change, dispatch, milestone closure, or initiative closure occurred.

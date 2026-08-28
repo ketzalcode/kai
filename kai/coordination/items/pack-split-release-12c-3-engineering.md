@@ -5,11 +5,11 @@ title: Release 12c-3 — generate and publish kai-engineering, preserving runtim
 initiative: pack-split
 milestone: five-pack-split-shipped
 delivery_class: operational
-state: in-review
+state: shipped
 resume_state: null
 priority: 40
 owner: principal-swe-infra
-next_role: workflow-ship
+next_role: null
 target: pack-split staged department publish — kai-engineering
 artifact_target: null
 context_artifacts:
@@ -61,14 +61,14 @@ completed_reviews:
     evidence: "kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md"
     timestamp: 2026-08-27-1735
 change_ref: 27804defe2f5f7fa16c2f5373884691203d21974
-version: 9
+version: 15
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-1735
+updated: 2026-08-27-1736
 ---
 
 ## Outcome
@@ -93,7 +93,7 @@ engineering-owned through the existing overrides, committed, and published to
 - [x] The `kai-engineering` tree is **generated from root** by `pack-preview` and committed;
       `pack-preview --check` reports byte parity for the whole committed slice.
 - [x] `COMMITTED_PACKS` and the committed-slice self-test pin name the new slice as an exact set.
-- [ ] `.github/workflows/validate.yml` runs the per-pack runtime job for `kai-engineering` and it
+- [x] `.github/workflows/validate.yml` runs the per-pack runtime job for `kai-engineering` and it
       passes with no declared runtime dependencies; the new required check is added to branch
       protection by `@operator` or recorded as running-but-not-enforced.
 - [x] The marketplace lists exactly the four published packs at the canonical version with
@@ -101,11 +101,11 @@ engineering-owned through the existing overrides, committed, and published to
       manifest; the derived rollback set rejects an index that still lists `kai-engineering`.
 - [x] `README.md` `## Status` slice counts are re-derived from the published pack set and the
       migration notice names what is published and what remains.
-- [ ] `1.0.3` is coherent across every version surface; CHANGELOG entry + compare link present;
+- [x] `1.0.3` is coherent across every version surface; CHANGELOG entry + compare link present;
       `release-guard` passes; `npm test` green.
-- [ ] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff, and a
+- [x] **(R5)** Before merge: reviewed-ref ancestry, the records-only equivalence diff, and a
       **fresh** CI run at the actual final head.
-- [ ] **Operator-executed publication:** merge is the publish; isolated-home browse, install,
+- [x] **Operator-executed publication:** merge is the publish; isolated-home browse, install,
       idempotent update and installed-core doctor `--json`; then tag `v1.0.3` at the exact merge SHA
       and cut the release. This role prepares and gates only.
 
@@ -162,6 +162,32 @@ engineering-owned through the existing overrides, committed, and published to
   `kai/initiatives/pack-split/artifacts/decisions/pack-split-release-12c-3-engineering-architecture-review.md`.
   Both required reviews now match `change_ref`; the item remains `in-review`
   for final-head CI, merge, production probe, tag, and release.
+- GitHub compare confirms reviewed ref `27804defe2f5f7fa16c2f5373884691203d21974`
+  is an ancestor of final PR head
+  `24c2c752d0757e8d9617a6fbcc5de1d1e4f14cf4`; every post-review file is under
+  `kai/`. Final head and squash merge
+  `5b8ef7ee38ec1a841e5020047a8ca43d0ca4be27` share tree
+  `9cd0f9aff0775a552475abb4cced7ed34f5577bb`, proving exact content
+  equivalence.
+- Final-head run `33129894592` and exact-main run `33129961905` both concluded
+  `success`; each contains exactly five successful jobs: `contract` and the
+  runtime-dependency legs for `kai-core`, `kai-personal`, `kai-product`, and
+  `kai-engineering`. The engineering leg ran with no declared runtime
+  dependency. Branch protection enforcement was not asserted; the acceptance
+  alternative records the leg as running-but-not-enforced.
+- Operator production evidence: PR #188 merged to `main` as
+  `5b8ef7ee38ec1a841e5020047a8ca43d0ca4be27` at
+  `2026-08-28T00:30:49Z`; a fresh no-ref isolated marketplace probe browsed
+  exactly core, personal, product, and engineering, installed all four at
+  `1.0.3`, idempotently updated engineering, and returned installed-core doctor
+  `status: clear`, `enabled: true`, with marketplace-only provenance for all
+  four.
+- Annotated tag `v1.0.3` peels to the merge SHA. GitHub release
+  `https://github.com/RubenSaucedo/kai/releases/tag/v1.0.3` targets that SHA,
+  is non-draft and non-prerelease, and was published
+  `2026-08-28T00:32:21Z`.
+- Durable ship record:
+  `kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md`.
 
 ## Notes
 
@@ -207,3 +233,11 @@ Engineering acceptance still requires zero diff to the canonical
 `workflow-doc-review` body and to the three named `SKILL_OWNER_OVERRIDES`
 entries. No implementation, generated tree, marketplace entry, version, tag,
 release, or publication changed in this promotion. `12c-4` remains proposed.
+
+### Steward reconciliation 2026-08-27-1736 (`principal-product-manager`)
+
+Cleared the fulfilled post-ship handoff (`next_role -> null`) after verifying
+the authoritative item is `shipped` with both exact-ref approvals, successful
+final-head and exact-main CI, operator merge and marketplace probe, annotated
+`v1.0.3`, public release, and the canonical ship record intact. No release fact,
+implementation state, scope, or version changed.

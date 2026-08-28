@@ -157,3 +157,46 @@ Append-only communication log mirroring
 - next:      workflow-ship — run the exact-final-head release-readiness gates;
              do not claim merge, publication, tag, release, or production
              verification before human execution and evidence.
+
+## HANDOFF 2026-08-27-1736 — workflow-ship -> principal-product-manager
+
+- did:       **CONFIRM-COMPLETE: SHIPPED.** Ran all six DoD dimensions, then
+             recorded operator-evidenced deployment start/completion and
+             production verification. Item v9 -> v14 walked `in-review ->
+             release-ready -> deploying -> production-verification -> shipped`;
+             workflow lease is clear and all acceptance is checked.
+- state:     shipped
+- needs:     Steward reconciliation only. GTM remains a separate proposed item;
+             this closure did not promote, implement, or publish it.
+- artifacts: `kai/coordination/items/pack-split-release-12c-3-engineering.md`;
+             `kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md`;
+             `kai/initiatives/pack-split/log.md`
+- evidence:  PR #188 merged as
+             `5b8ef7ee38ec1a841e5020047a8ca43d0ca4be27` at
+             `2026-08-28T00:30:49Z`. Final-head run `33129894592` and
+             exact-main run `33129961905` each passed `contract` plus core,
+             personal, product, and engineering runtime legs. The fresh
+             operator-provided no-ref probe browsed and installed exactly all
+             four packs at `1.0.3`, idempotently updated engineering, and
+             returned a clear/enabled/marketplace-only doctor result for all
+             four. Annotated `v1.0.3` and its public non-draft,
+             non-prerelease release target the merge.
+- questions: none
+- next:      principal-product-manager — reconcile the 7-of-8 milestone count
+             and separately decide whether to promote the existing GTM item.
+
+## NOTE 2026-08-27-1736 — principal-product-manager
+
+- did:       Reconciled the fulfilled post-ship handoff and cleared
+             `next_role` without changing release, review, production, scope,
+             or version evidence.
+- state:     shipped (v15)
+- needs:     none — this item is terminal.
+- artifacts: `kai/coordination/items/pack-split-release-12c-3-engineering.md`;
+             `kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md`
+- evidence:  The authoritative item retains exact reviewed ref
+             `27804defe2f5f7fa16c2f5373884691203d21974`, both approvals,
+             successful final-head and exact-main CI, operator merge and
+             isolated marketplace proof, annotated tag, and public release.
+- questions: none
+- next:      none — GTM promotion is recorded on its own item and thread.

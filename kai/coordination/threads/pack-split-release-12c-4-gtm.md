@@ -30,3 +30,30 @@ Append-only communication log mirroring
              item — raise it to the steward instead of growing this ref.
 - next:      principal-product-manager — groom and promote. No tree was generated, no marketplace
              edited, nothing merged, tagged or published.
+
+## HANDOFF 2026-08-27-1736 — principal-product-manager -> principal-swe-infra
+
+- did:       Steward-promoted `pack-split-release-12c-4-gtm`
+             `proposed -> ready` (v1 -> v2) after verifying its sole typed
+             dependency is truthfully `shipped`. This is the sole ready next
+             release item.
+- state:     ready; priority 50; owner and lease clear; next
+             `principal-swe-infra`
+- needs:     Build only the bounded final `kai-gtm` publish and existing
+             scaffolding finalization at `1.0.4` to one reviewable ref, then
+             obtain the required SRE and architecture reviews. If collapsing
+             `COMMITTED_PACKS` is a real generator-contract refactor rather
+             than an identity, stop and return that expansion to the steward.
+- workspace: C:\src\kai
+- artifacts: `kai/coordination/items/pack-split-release-12c-4-gtm.md`;
+             `kai/coordination/items/pack-split-release-12c-3-engineering.md`;
+             `kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md`;
+             `kai/initiatives/pack-split/northstar.md`
+- evidence:  Engineering is `shipped` with operator merge, successful
+             final-head and exact-main CI, isolated four-pack marketplace
+             verification at `1.0.3`, annotated tag, and public release.
+             `five-pack-split-shipped` is open at 7 of 8 typed requirements;
+             GTM is the sole outstanding item.
+- questions: none
+- next:      principal-swe-infra — implement the existing `1.0.4` release
+             scope only. Do not close the milestone or initiative.

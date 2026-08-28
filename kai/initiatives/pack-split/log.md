@@ -3382,3 +3382,58 @@ equivalence, and fresh final-head CI. Merge, isolated-home production probe,
 tag, and release remain pending human execution. Engineering is not yet
 published, GTM remains proposed, and `five-pack-split-shipped` stays open at
 6 of 8; no milestone or initiative closure is claimed.
+
+## 2026-08-27-1736 - release 12c-3 engineering pack shipped as v1.0.3
+
+`workflow-ship` completed retrospective PREPARE, CONFIRM-START, and
+CONFIRM-COMPLETE for `pack-split-release-12c-3-engineering`. All six DoD
+dimensions are Clear. Item v9 -> v14 walked `in-review -> release-ready ->
+deploying -> production-verification -> shipped`; all acceptance is checked,
+the lease is clear, and the reviewed implementation remains
+`27804defe2f5f7fa16c2f5373884691203d21974`.
+
+PR #188 final head `24c2c752d0757e8d9617a6fbcc5de1d1e4f14cf4` retains the
+reviewed ref in ancestry and changes only `kai/` afterward. Final head and
+squash merge `5b8ef7ee38ec1a841e5020047a8ca43d0ca4be27` share tree
+`9cd0f9aff0775a552475abb4cced7ed34f5577bb`. Final-head run `33129894592`
+and exact-main run `33129961905` each passed `contract` plus all four runtime
+legs: core, personal, product, and engineering.
+
+The operator-provided fresh no-ref probe browsed exactly those four marketplace
+packs, installed each at `1.0.3`, idempotently updated engineering, and returned
+installed-core doctor `status: clear`, `enabled: true`, with marketplace-only
+provenance for all four. Annotated tag `v1.0.3` peels to the merge. The public,
+non-draft, non-prerelease GitHub release targets that SHA and was published at
+`2026-08-28T00:32:21Z`. Rollback was not invoked.
+
+Durable record:
+`kai/library/releases/2026-08-27/07-ship-pack-split-release-12c-3-engineering/ship-record.md`.
+The operator performed all external actions; this run changed documentation and
+coordination only.
+
+`five-pack-split-shipped` is now **open at 7 of 8** typed required items.
+`pack-split-release-12c-4-gtm` remains proposed. No GTM promotion,
+implementation, publication, milestone closure, or initiative closure is
+claimed.
+
+## 2026-08-27-1736 - steward promoted GTM as the sole ready final release
+
+`principal-product-manager` verified the authoritative engineering item and
+canonical ship record before opening the final release valve.
+`pack-split-release-12c-3-engineering` is truthfully `shipped`: operator merge,
+successful final-head and exact-main CI, isolated four-pack marketplace
+production verification, annotated `v1.0.3`, and the public release are all
+evidenced. Its fulfilled post-ship handoff is cleared without changing any
+release fact.
+
+`pack-split-release-12c-4-gtm` moved `proposed -> ready` (v1 -> v2) at priority
+50 with `next_role: principal-swe-infra`; owner and lease remain clear. It is
+the **sole ready next release item**, and its sole typed dependency is met. The
+existing final-publish scope, conditional scaffolding-removal boundary,
+required independent SRE and architecture reviews, operator-only publication
+actions, and version `1.0.4` are unchanged.
+
+`five-pack-split-shipped` remains **open at 7 of 8** typed required items and
+the initiative remains `active`. No GTM implementation, generated tree,
+marketplace change, dispatch, milestone closure, or initiative closure
+occurred.

@@ -437,3 +437,26 @@ three `SKILL_OWNER_OVERRIDES` entries for `review-dependencies`,
 `pack-split-release-12c-4-gtm` remains `proposed` behind engineering
 `shipped`; it is not promoted. No implementation, generated pack, marketplace,
 plugin behavior, version, release, publication, or dispatch occurred.
+
+**Superseding steward pass (2026-08-27-1736) — engineering reconciled; GTM is
+the sole ready final release.**
+
+`five-pack-split-shipped` is **OPEN at 7 of 8** typed required items.
+`pack-split-release-12c-3-engineering` is truthfully `shipped` as public
+`v1.0.3`, with operator merge, successful final-head and exact-main CI,
+isolated four-pack marketplace verification, annotated tag, and release
+retained in the canonical ship record. Its fulfilled steward handoff is
+cleared.
+
+The final required item, `pack-split-release-12c-4-gtm`, moves
+`proposed -> ready` at priority 50 with `next_role: principal-swe-infra`;
+owner and lease remain clear. Its sole dependency is met, and it is the
+**sole ready next release item**. The existing bounded final-publish scope,
+conditional scaffolding-removal boundary, independent SRE and architecture
+reviews, operator-only publication actions, and `1.0.4` version remain
+unchanged.
+
+The initiative stays `active` with
+`scope.current: [five-pack-split-shipped]`. No GTM implementation, generated
+pack, marketplace change, dispatch, milestone closure, or initiative closure
+is claimed.
