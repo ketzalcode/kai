@@ -3,12 +3,12 @@
 Operational focus pointer, not the permanent record. Terminal initiatives remain
 discoverable in `kai/initiatives/INDEX.md`.
 
-**Current snapshot — 2026-08-27-2113.**
+**Current snapshot — 2026-08-28-1352.**
 
 | initiative | status | current milestone | workspace | authoritative records |
 |------------|--------|-------------------|-----------|-----------------------|
 | area-plugins | active (operator-directed) | `allowlist-repair` + `decisions-locked` | `.` (repository) | `kai/coordination/items/area-plugins-*.md` + `kai/coordination/threads/area-plugins-*.md` |
-| workspace-corpus-contract | **proposed — awaiting operator go** | `corpus-honesty` (not started) | `.` (repository) | `kai/coordination/items/{area-plugins-initiative-archive, area-plugins-backlog-contract, area-plugins-design-output-contract, area-plugins-workspace-storage-modes}.md` + their threads |
+| workspace-corpus-contract | active (operator-approved 2026-08-28) | `corpus-honesty` (architecture ratified; four decision items proposed) | `.` (repository) | `kai/initiatives/workspace-corpus-contract/northstar.md` + `kai/coordination/items/{area-plugins-initiative-archive, area-plugins-backlog-contract, area-plugins-design-output-contract, area-plugins-workspace-storage-modes}.md` + their threads |
 
 `area-plugins` refactors kai from the shipped v1.0.4 five-pack topology to
 area-focused standalone plugins over an **optional** `kai-core`. The operator
@@ -42,13 +42,15 @@ identity may be created from it until `area-plugins-taxonomy-round-2` reaches
 **The initiative was SPLIT at the 2113 revision (scope-brief A10).** Four of the
 operator's nine P0 concerns — workspace storage modes, initiative archive
 semantics, the backlog contract, and the design-output contract — touch none of
-`area-plugins`' targets and moved to a new `proposed` initiative,
-`workspace-corpus-contract`. Splitting was the steward's call, made because an
-initiative that never closes is exactly the noise the operator's own concern #7
-describes. **`workspace-corpus-contract` needs an operator go/no-go**; its four
-items are `proposed` with cleared leases and are not dispatchable until then.
-Their `area-plugins-` ID prefix is operator-assigned provenance, not membership —
-membership is the `initiative:` field.
+`area-plugins`' targets and moved to a new initiative, `workspace-corpus-contract`.
+Splitting was the steward's call, made because an initiative that never closes
+is exactly the noise the operator's own concern #7 describes. **The operator
+approved `workspace-corpus-contract` and the recommended audience-based
+workspace model on 2026-08-28.** Its four items remain `proposed` with cleared
+leases pending steward scope-acceptance and priority-ordering — approval
+unblocked the initiative, not automatic dispatch. Their `area-plugins-` ID
+prefix is operator-assigned provenance, not membership — membership is the
+`initiative:` field.
 
 **Out of `area-plugins` delivery scope, recorded so it is not rediscovered:**
 distributed multi-PC agent communication is proposal-only and routed to
@@ -67,12 +69,19 @@ for `area-plugins`; this row is the pointer.** The scope brief
 (`kai/coordination/threads/area-plugins-scope-brief.md`, `BRIEF` plus amendments
 A1–A28) remains the amendment trail behind it, not a substitute for it.
 
-It remains true for **`workspace-corpus-contract`**: no
-`kai/initiatives/workspace-corpus-contract/` exists, so that initiative's
-mission, scope, non-negotiables, milestones, and measures live only in the three
-contract threads listed in its row above, and are transcribed into a
-`northstar.md` once its directory is created. That row states this rather than
-implying a north star exists.
+It remains true for **`workspace-corpus-contract`** that no path move, schema
+change, onboarding/doctor change, mock placement, backlog enforcement, or
+archive mechanic has been implemented — the operator's 2026-08-28 approval
+ratified the initiative and its target architecture, not any mechanism. What
+is no longer true: **`kai/initiatives/workspace-corpus-contract/` now
+exists**, carrying the canonical `northstar.md` (`status: active`, owner
+`principal-product-manager`), `backlog.md`, `log.md`, `deliverables.md`, and
+`artifacts/decisions/workspace-corpus-contract-architecture.md` — the ratified
+audience-based architecture (agent-facing `.kai/` vs. operator-facing `kai/`)
+that reconciles all four founding contracts without rewriting any of them.
+**The north star is authoritative for `workspace-corpus-contract`; this row is
+the pointer.** The four contract threads listed in its row above remain the
+authoritative record of each item's own `DECISION 2026-08-27-2113`, unchanged.
 
 `pack-split` is `shipped` and closed; it is not active, and nothing in either
 initiative modifies `kai/initiatives/pack-split/**`. It is, however, the first

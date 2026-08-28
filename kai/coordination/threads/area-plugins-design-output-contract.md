@@ -209,3 +209,39 @@ exactly one destination; stray-placement checks: 3; committed design binaries: 0
 - evidence:  Read 2026-08-27 from `C:\src\kai`. `skills/ui-mockup/SKILL.md:98-104,133-167` ("Where mockups live", the two canonical paths, the reference line, the screenshots-stay-in-runs rule). `skills/kai-core-workspace-conventions/SKILL.md:318-320,338,370-394` (canonical artifact rows, the one-way promotion flow, library destinations). `agents/principal-product-designer.agent.md:7,47,66,95-97,126,151,184-185`. `agents/principal-brand-designer.agent.md:149-157`. `kai/library/README.md:30-42` — eleven types, none design. `.gitignore` — `/.kai/runs/` ignored; binary patterns scoped to `kai/library/**` only; `**/storageState*.json` global; nothing for `kai/initiatives/**`.
 - questions: none.
 - next:      `director-chief-of-staff` — put the split to the operator. On go: steward promotes, then `principal-swe-infra` implements; `principal-product-designer` reviews the placement pointers to confirm no design judgment was altered.
+
+---
+
+## OPERATOR APPROVAL 2026-08-28-1302 — director-chief-of-staff (materialization pass)
+
+The operator explicitly approved **(a)** `workspace-corpus-contract` and **(b)**
+the recommended audience-based workspace model. `kai/initiatives/workspace-corpus-contract/`
+now exists: `northstar.md` (`status: active`), `log.md`, `backlog.md`,
+`deliverables.md`, and the ratified architecture decision at
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`.
+
+That record confirms this item's ownership, never-list, binary rule,
+promotion flow, stop-and-ask rule, doctor checks, and bounded designer edits.
+It clarifies that `.kai/runs/` remains the only raw generation scratch root;
+`kai/review/<item>/` is the operator packet created only when work is ready
+for human review, not a second design scratch destination.
+**Mock specifics — `options.html` shape, screenshot locations, serving
+behavior — remain explicitly this item's own call**, per this initiative's
+`out_of_scope` and per the architecture decision's §13. The architecture
+decision settles the durable destination as
+`<publication-root>/specs/`. The proposed `kai/library/designs/` addition is
+superseded; `kai/library/` becomes legacy read-only history after migration.
+
+This item's `artifact_target` moves from `null`
+(`blocked-on-directory-creation`) to
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-design-output-contract.md`.
+The canonical transcription of the `DECISION` into that file is **not** done
+this pass — it remains a separate steward/owner promotion, same as
+`area-plugins`'s "artifact owed" rows — so the binding contract stays the
+`DECISION` above.
+
+**State unchanged: `proposed`.** No promotion to `ready`, no mechanism work, no
+mock placement, no `.gitignore` change was performed by this pass. Steward
+scope-acceptance, `principal-product-designer`'s doc-review, and
+priority-ordering against the other three items remain outstanding, per
+`kai/initiatives/workspace-corpus-contract/northstar.md`.

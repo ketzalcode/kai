@@ -230,3 +230,32 @@ count-naming confirmation: 100%; records lost in a mode switch: **0**.
 - evidence:  Read 2026-08-27 from `C:\src\kai`. `skills/kai-core-workspace-conventions/SKILL.md:145-165,541-544`. `skills/kai-core-workspace-onboarding/SKILL.md:292-330` (detect-then-ask, incl. step 4's private-implies-committed inference) and `:460-513` (the inverted `local` verification and the deliberate non-reconciliation of the field). `agents/workflow-workspace-init.agent.md:51,77,94,147,184`. `scripts/workspace-doctor.mjs:140-142,386-415,519-559` (validation, `local` drift detection incl. the `git rm --cached` remediation at `:406`, and the self-test asserting an absent value stays healthy). `.kai/manifest.json` — `"corpus_visibility": "committed"`. `.gitignore` — the managed block, with `/.kai/runs/` and `/kai/personal/` ignored under both modes. Noise figures for the R4 finding: 23 of 38 item records, 23 of 36 threads, 23 of 36 `BOARD.md` rows are `pack-split`.
 - questions: none blocking. One flagged for infra rather than the operator: whether `committed`-mode tracked-verification (R5) is an error or a warning is a mechanism call, but if it is made a warning, say why in the record — a silent belief that handoffs survive when they do not is the more dangerous drift.
 - next:      `director-chief-of-staff` — put the split to the operator. On go: steward promotes, then `principal-swe-infra` authors the mechanism record against R1–R5, with the steward on scope-acceptance. The honesty constraint in R2 is the acceptance line most likely to fail; it is not negotiable downward.
+
+---
+
+## OPERATOR APPROVAL 2026-08-28-1302 — director-chief-of-staff (materialization pass)
+
+The operator explicitly approved **(a)** `workspace-corpus-contract` and **(b)**
+the recommended audience-based workspace model. `kai/initiatives/workspace-corpus-contract/`
+now exists: `northstar.md` (`status: active`), `log.md`, `backlog.md`,
+`deliverables.md`, and the ratified architecture decision at
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`.
+That record reconciles this item's `DECISION 2026-08-27-2113` (R1–R5) under one
+audience boundary (`.kai/` agent/machine-facing, `kai/` operator-facing) —
+**confirming R1, R2, R4 as written, and extending R3's switch-safety requirement
+across the wider `.kai/state/` + `.kai/archive/` footprint** (see its §11 and
+§13). Nothing in the `DECISION` above is amended, weakened, or superseded by
+this note.
+
+This item's `artifact_target` moves from `null`
+(`blocked-on-directory-creation`) to
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-workspace-storage-modes.md`.
+The canonical transcription of the `DECISION` into that file is **not** done
+this pass — it remains a separate steward/owner promotion, same as
+`area-plugins`'s "artifact owed" rows — so the binding requirement stays the
+`DECISION` above.
+
+**State unchanged: `proposed`.** No promotion to `ready`, no mechanism work,
+no path move, no schema change, no doctor/onboarding change was performed by
+this pass. Steward scope-acceptance and priority-ordering against the other
+three items remain outstanding, per `kai/initiatives/workspace-corpus-contract/northstar.md`.

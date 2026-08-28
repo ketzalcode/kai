@@ -4,15 +4,15 @@ id: area-plugins-initiative-archive
 title: Initiative archive semantics — close, complete, archive, and stop a shipped initiative from occupying the live coordination surface
 initiative: workspace-corpus-contract
 milestone: corpus-honesty
-delivery_class: product-change
+delivery_class: knowledge
 state: proposed
 resume_state: null
 priority: 10
 owner: null
 next_role: principal-swe-infra
 target: initiative lifecycle and the live coordination surface
-artifact_target: null
-artifact_target_status: blocked-on-directory-creation; the binding contract is the DECISION in this item's thread
+artifact_target: kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-initiative-archive.md
+artifact_target_status: "directory now exists (operator approved the initiative 2026-08-28); canonical transcription is a separate steward/owner pass and remains OWED — the binding contract is still the DECISION in this item's thread. Ratified target architecture: kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md (see its §6, §13, and §14 settled sequencing call)."
 id_provenance: "ID assigned by the operator in the 2026-08-27-2113 second revision while these concerns were still inside area-plugins. Membership is the `initiative:` field, not the ID prefix; this item belongs to workspace-corpus-contract per scope-brief A10."
 context_artifacts:
   - kai/coordination/threads/area-plugins-initiative-archive.md
@@ -23,15 +23,12 @@ context_artifacts:
   - kai/initiatives/INDEX.md
   - kai/coordination/ACTIVE.md
   - kai/coordination/BOARD.md
+  - kai/initiatives/workspace-corpus-contract/northstar.md
+  - kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md
 touches:
-  - skills/kai-core-initiative-stewardship/SKILL.md
-  - skills/kai-core-workspace-conventions/SKILL.md
-  - skills/kai-core-work-coordination/SKILL.md
-  - scripts/workspace-doctor.mjs
-  - kai/initiatives/README.md
-  - kai/coordination/items/README.md
-  - kai/coordination/
-  - docs/workspaces.md
+  - kai/coordination/items/area-plugins-initiative-archive.md
+  - kai/coordination/threads/area-plugins-initiative-archive.md
+  - kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-initiative-archive.md
 depends_on: []
 waiting_on_questions: []
 required_for_milestone: true
@@ -42,42 +39,41 @@ review_requirements:
     kind: scope-acceptance
 completed_reviews: []
 change_ref: null
-version: 1
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-2113
+updated: 2026-08-28-1344
 ---
 
 ## Outcome
 
-`archived` becomes a real, verifiable initiative state with defined mechanics:
-a terminal initiative leaves every live operational surface, keeps every record
-and link resolvable, and a workspace doctor can prove that no completed
-initiative is still presenting itself as active.
+A reviewed decision contract defines how `archived` will become a real,
+verifiable initiative state: a terminal initiative leaves every live
+operational surface, keeps every record and link resolvable, and can later be
+proved by the workspace doctor.
 
 ## Acceptance
 
 - [ ] The **Initiative archive contract** (`DECISION 2026-08-27-2113` in this
-      item's thread) is implemented as written, or every deviation is recorded
-      and accepted by the steward.
-- [ ] `archived` is defined — destination, mechanics, and preconditions — in
-      `kai-core-initiative-stewardship` and `kai/initiatives/README.md`, which
-      today **name** the state and define nothing about it.
-- [ ] `INDEX.md` gains an archive location for archived rows; `ACTIVE.md` gains
-      its stated invariant; `BOARD.md` gains the archived-initiative footer.
-- [ ] Every archived item record and thread resolves at its new path, and
-      `kai/coordination/archive/<slug>/README.md` maps every old path to its new
-      one. **Nothing is deleted, truncated, merged, or rewritten.**
-- [ ] `workspace-doctor` implements the four archive assertions in §8 of the
-      contract and self-tests them.
-- [ ] `pack-split` is archived as the first application: its 23 item records and
-      23 threads move, its 23 board rows leave the live table, its 13 parked
-      proposals are disposed per §7, and `kai/initiatives/pack-split/**` content
-      is **not modified** — only referenced.
+      item's thread) is transcribed to `artifact_target` and reconciled against
+      the ratified audience boundary.
+- [ ] The record defines `archived` destination, mechanics, preconditions,
+      resolution-table behavior, backlog disposition, and the exact
+      `INDEX.md` / `.kai/state/ACTIVE.md` / `.kai/state/BOARD.md` effects.
+- [ ] Every superseded legacy path is named, including the archive directory,
+      board-footer link, and INDEX pointer; the target is consistently
+      `.kai/archive/<slug>/`.
+- [ ] The record specifies the four future doctor assertions and uses
+      `pack-split` as a fully enumerated first-application example without
+      moving a file in this knowledge item.
+- [ ] The implementation follow-on is named
+      `workspace-corpus-initiative-archive`, depends on
+      `workspace-corpus-state-migration`, and owns the actual move, doctor
+      checks, and first archive.
 - [ ] Verified honestly: a run that cannot be executed in this environment is
       `reported`, not `observed`.
 
@@ -92,4 +88,14 @@ initiative is still presenting itself as active.
   dated sections with no closure disposition. `archived` is named at
   `skills/kai-core-initiative-stewardship/SKILL.md:59,130` and
   `kai/initiatives/README.md:69` and defined nowhere.
+- **2026-08-28:** operator approved `workspace-corpus-contract` and the
+  audience-based workspace model. Directory now exists; `artifact_target`
+  updated to its canonical (still-owed) path. Ratified target architecture
+  narrows this item's §3 destination from `kai/coordination/archive/` to
+  `.kai/archive/` — see
+  `kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`
+  §6/§13. The settled sequence moves live coordination to `.kai/state/`
+  before archive implementation, so the archive never ships at an interim
+  legacy path. Item `state` unchanged (`proposed`) — steward promotion is a
+  separate pass.
 - Filled as work progresses.

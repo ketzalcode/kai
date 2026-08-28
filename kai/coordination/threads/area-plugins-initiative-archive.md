@@ -277,3 +277,41 @@ Falsifiable: today **61%** of that directory is a shipped initiative. Target:
 - evidence:  Read 2026-08-27 from `C:\src\kai`. Directory listings of `kai/coordination/items/` (39 files incl. README; 23 `pack-split-*`) and `kai/coordination/threads/` (37 incl. README; 23 `pack-split-*`). `kai/coordination/BOARD.md:20-42` — 23 `pack-split` rows of 36. `kai/coordination/ACTIVE.md` — one row (`area-plugins`), plus a closing sentence about `pack-split`. `kai/initiatives/INDEX.md` — `pack-split` `shipped` with summary and deliverables paths. `kai/initiatives/pack-split/backlog.md` — 13 parked proposals across 6 dated sections, no closure disposition. `skills/kai-core-initiative-stewardship/SKILL.md:59,130` and `kai/initiatives/README.md:69` — `archived` named, undefined. `kai/initiatives/pack-split/**` was read only; nothing under it was written.
 - questions: **Q1 (operator):** may the archive add exactly one additive pointer line to `kai/initiatives/pack-split/deliverables.md`, or should the resolution table be discoverable through `INDEX.md` alone? Non-negotiable #13 currently forbids the former.
 - next:      `director-chief-of-staff` — put the split to the operator. On go: steward promotes, then `principal-swe-infra` implements, with `principal-swe-architect` on independent-architecture and the steward on scope-acceptance.
+
+---
+
+## OPERATOR APPROVAL 2026-08-28-1302 — director-chief-of-staff (materialization pass)
+
+The operator explicitly approved **(a)** `workspace-corpus-contract` and **(b)**
+the recommended audience-based workspace model. `kai/initiatives/workspace-corpus-contract/`
+now exists: `northstar.md` (`status: active`), `log.md`, `backlog.md`,
+`deliverables.md`, and the ratified architecture decision at
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`.
+
+That record **confirms** this item's `DECISION 2026-08-27-2113` in full —
+lifecycle model, no-delete/no-rewrite rule, the `kai/initiatives/<slug>/**`
+never-moves call, parked-proposal disposition, the four doctor assertions,
+the resolution-table mechanic, preconditions/timing, and the `pack-split`
+first-application plan including routed **Q1** on the one additive
+`deliverables.md` line — **except one named path narrowing**: §3's
+destination `kai/coordination/archive/<slug>/` is superseded by
+`.kai/archive/<slug>/`, because archived operational records are agent-facing
+history and belong on the agent-facing side of the new audience boundary (see
+the architecture decision's §6 and §13). The sequence is settled:
+live coordination moves to `.kai/state/` before archive implementation, so
+this item never writes to an interim legacy archive path.
+Nothing else in the `DECISION` above is amended or weakened by this note.
+
+This item's `artifact_target` moves from `null`
+(`blocked-on-directory-creation`) to
+`kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-initiative-archive.md`.
+The canonical transcription of the `DECISION` into that file is **not** done
+this pass — it remains a separate steward/owner promotion, same as
+`area-plugins`'s "artifact owed" rows — so the binding contract stays the
+`DECISION` above.
+
+**State unchanged: `proposed`.** No promotion to `ready`, no mechanism work, no
+path move, no schema change was performed by this pass. Steward
+scope-acceptance, the `independent-architecture` review, and priority-ordering
+against the other three items remain outstanding, per
+`kai/initiatives/workspace-corpus-contract/northstar.md`.

@@ -4,15 +4,15 @@ id: area-plugins-design-output-contract
 title: Canonical design and mock destinations — initiative-owned, ad-hoc/private, and unaffiliated-durable — with enforcement
 initiative: workspace-corpus-contract
 milestone: corpus-honesty
-delivery_class: product-change
+delivery_class: knowledge
 state: proposed
 resume_state: null
 priority: 30
 owner: null
 next_role: principal-swe-infra
 target: design and mockup output placement
-artifact_target: null
-artifact_target_status: blocked-on-directory-creation; the binding contract is the DECISION in this item's thread
+artifact_target: kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-design-output-contract.md
+artifact_target_status: "directory now exists (operator approved the initiative 2026-08-28); canonical transcription is a separate steward/owner pass and remains OWED — the binding contract is still the DECISION in this item's thread. Mock specifics (options.html, screenshot locations, serving behavior) remain this item's own call, explicitly deferred by the ratified architecture: kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md. The publication lane is settled: kai/library/ becomes legacy after migration and new durable designs publish under <publication-root>/specs/."
 id_provenance: "ID assigned by the operator in the 2026-08-27-2113 second revision while these concerns were still inside area-plugins. Membership is the `initiative:` field, not the ID prefix; this item belongs to workspace-corpus-contract per scope-brief A10."
 context_artifacts:
   - kai/coordination/threads/area-plugins-design-output-contract.md
@@ -22,14 +22,12 @@ context_artifacts:
   - agents/principal-brand-designer.agent.md
   - kai/library/README.md
   - .gitignore
+  - kai/initiatives/workspace-corpus-contract/northstar.md
+  - kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md
 touches:
-  - skills/kai-core-workspace-conventions/SKILL.md
-  - skills/ui-mockup/SKILL.md
-  - agents/principal-product-designer.agent.md
-  - agents/principal-brand-designer.agent.md
-  - scripts/workspace-doctor.mjs
-  - skills/kai-core-workspace-onboarding/SKILL.md
-  - kai/library/README.md
+  - kai/coordination/items/area-plugins-design-output-contract.md
+  - kai/coordination/threads/area-plugins-design-output-contract.md
+  - kai/initiatives/workspace-corpus-contract/artifacts/decisions/area-plugins-design-output-contract.md
 depends_on: []
 waiting_on_questions: []
 required_for_milestone: true
@@ -40,47 +38,43 @@ review_requirements:
     kind: scope-acceptance
 completed_reviews: []
 change_ref: null
-version: 1
+version: 4
 lease:
   holder: null
   token: null
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-27-2113
+updated: 2026-08-28-1344
 ---
 
 ## Outcome
 
-A designer never has to choose a path. Every design or mock has exactly one
-canonical destination determined by two questions, the unaffiliated-durable hole
-is closed, binaries stay out of the committed tree, and a doctor run can find a
-design that landed somewhere else.
+A reviewed decision contract gives every design or mock exactly one canonical
+destination, closes the unaffiliated-durable hole, defines the binary rule, and
+specifies how later validation finds misplaced output.
 
 ## Acceptance
 
 - [ ] The **Design-output contract** (`DECISION 2026-08-27-2113` in this item's
-      thread) is implemented as written, or every deviation is recorded and
-      accepted by the steward.
-- [ ] The three destinations and the two routing questions are stated once,
-      authoritatively, in `kai-core-workspace-conventions`, and `ui-mockup`,
-      `principal-product-designer`, and `principal-brand-designer` point at that
-      statement instead of restating it.
-- [ ] The unaffiliated-durable hole is closed: `kai/library/` gains a `designs/`
-      type with its row in `kai/library/README.md`. **This is the one addition
-      in the contract** and it is the minimum needed to make "exactly one
-      destination" true for every case.
-- [ ] The prohibited destinations are named explicitly, including a repo-root
+      thread) is transcribed to `artifact_target` and reconciled against the
+      ratified audience boundary.
+- [ ] The record keeps `.kai/runs/` as the only raw generation scratch root,
+      defines `kai/review/<item>/` as the human review packet rather than a
+      second scratch root, and routes unaffiliated durable designs to
+      `<publication-root>/specs/`.
+- [ ] The prohibited destinations are specified, including a repo-root
       `design/`, `mockups/`, or `ux/` folder, `docs/`, session-state, temp
       directories, and the calling agent's cwd.
-- [ ] The binary rule is enforced, not just written: the managed `.gitignore`
-      block covers heavy binaries under `kai/initiatives/**` as it already does
-      under `kai/library/**`.
-- [ ] `workspace-doctor` implements the three checks in §6 of the contract and
-      self-tests them.
-- [ ] **No designer persona, judgment, procedure, or prose is redesigned.** The
-      only permitted edits to the two designer agent bodies are the placement
-      pointers. Anything beyond that is out of scope and returns to the steward.
+- [ ] The binary rule, publication-root ignore requirement, one-way promotion
+      rule, and three future doctor checks are specified.
+- [ ] Mock-specific decisions (`options.html`, screenshots, serving) remain
+      explicit follow-up questions rather than being guessed in this item.
+- [ ] The implementation follow-on is named
+      `workspace-corpus-design-placement`, depends on
+      `workspace-corpus-state-migration` and
+      `workspace-corpus-publication-migration`, and owns the bounded skill,
+      agent-pointer, ignore, migration, and doctor changes.
 - [ ] Verified honestly: a run that cannot be executed in this environment is
       `reported`, not `observed`.
 
@@ -98,4 +92,13 @@ design that landed somewhere else.
   has no canonical home and a designer falls through exactly there; and
   `.gitignore` ignores heavy binaries under `kai/library/**` but **not** under
   `kai/initiatives/**`.
+- **2026-08-28:** operator approved `workspace-corpus-contract` and the
+  audience-based workspace model. Directory now exists; `artifact_target`
+  updated to its canonical (still-owed) path. Mock specifics remain this
+  item's own call, unchanged, per the ratified architecture at
+  `kai/initiatives/workspace-corpus-contract/artifacts/decisions/workspace-corpus-contract-architecture.md`
+  §13. The durable destination is settled as
+  `<publication-root>/specs/`; `kai/library/` becomes legacy read-only history
+  after migration. Item `state` unchanged (`proposed`) — steward promotion is
+  a separate pass.
 - Filled as work progresses.
