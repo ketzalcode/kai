@@ -24,6 +24,7 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { append, read, runs, buildRecord, safeNote, digest, LOG_REL, FORBIDDEN_FIELDS } from './lib/activity.mjs';
+import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -82,7 +83,12 @@ function main(argv) {
     return 0;
   }
 
-  const root = resolve(args.root || process.cwd());
+  const resolved = resolveWorkspaceRoot({ explicitRoot: args.root, cwd: process.cwd() });
+  if (!resolved.ok) {
+    console.error(`activity: ${resolved.reason}`);
+    return 1;
+  }
+  const root = resolved.root;
 
   if (cmd === 'show') {
     const log = read(root);
@@ -163,6 +169,74 @@ function selfTest() {
     'durations parse to seconds');
   ok(parseDuration('soon') === null, 'an unparseable duration is rejected rather than guessed');
 
+  // Shared workspace resolver (scripts/lib/workspace-resolve.mjs): every CLI
+  // that used to grow its own ad-hoc root logic defers to this one function.
+  {
+    const wsTmp = mkdtempSync(join(tmpdir(), 'kai-activity-ws-'));
+    try {
+      const withManifest = (...segments) => {
+        const dir = join(wsTmp, ...segments);
+        mkdirSync(join(dir, '.kai'), { recursive: true });
+        writeFileSync(join(dir, '.kai', 'manifest.json'), '{}');
+        return dir;
+      };
+
+      // explicit root
+      const explicitWs = withManifest('explicit-ws');
+      const explicitR = resolveWorkspaceRoot({ explicitRoot: explicitWs, cwd: wsTmp, env: {} });
+      ok(explicitR.ok && explicitR.root === explicitWs && explicitR.source === 'explicit',
+        'an explicit caller root resolves directly and wins over everything else');
+
+      // upward discovery
+      const searchWs = withManifest('search-ws');
+      mkdirSync(join(searchWs, 'a', 'b', 'c'), { recursive: true });
+      const searchR = resolveWorkspaceRoot({ cwd: join(searchWs, 'a', 'b', 'c'), env: {} });
+      ok(searchR.ok && searchR.root === searchWs && searchR.source === 'search',
+        'a cwd nested under the workspace resolves upward to the manifest that carries it');
+
+      // explicit root is validated in place, never searched upward: naming a
+      // non-workspace subdirectory of a real workspace must fail, not
+      // silently retarget the ancestor that cwd search would have found.
+      const explicitNested = resolveWorkspaceRoot({ explicitRoot: join(searchWs, 'a', 'b', 'c'), env: {} });
+      ok(!explicitNested.ok && /never searched upward/.test(explicitNested.reason),
+        'an explicit root naming a non-workspace subdirectory fails instead of resolving upward to its ancestor');
+
+      // env override
+      const envWs = withManifest('env-ws');
+      const envR = resolveWorkspaceRoot({ cwd: wsTmp, env: { KAI_WORKSPACE_ROOT: envWs } });
+      ok(envR.ok && envR.root === envWs && envR.source === 'env',
+        'KAI_WORKSPACE_ROOT is honored when no explicit root is given');
+      const explicitBeatsEnv = resolveWorkspaceRoot({ explicitRoot: explicitWs, cwd: wsTmp, env: { KAI_WORKSPACE_ROOT: envWs } });
+      ok(explicitBeatsEnv.ok && explicitBeatsEnv.root === explicitWs,
+        'an explicit root wins over KAI_WORKSPACE_ROOT, not merely over cwd');
+
+      // invalid override
+      const relativeEnv = resolveWorkspaceRoot({ cwd: wsTmp, env: { KAI_WORKSPACE_ROOT: 'relative/path' } });
+      ok(!relativeEnv.ok && /absolute/.test(relativeEnv.reason),
+        'a relative KAI_WORKSPACE_ROOT is refused rather than resolved against an unstated base');
+      const noManifestDir = join(wsTmp, 'no-manifest-here');
+      mkdirSync(noManifestDir, { recursive: true });
+      const unmanifestedEnv = resolveWorkspaceRoot({ cwd: wsTmp, env: { KAI_WORKSPACE_ROOT: noManifestDir } });
+      ok(!unmanifestedEnv.ok && /manifest/.test(unmanifestedEnv.reason),
+        'an absolute KAI_WORKSPACE_ROOT with no manifest.json is refused, not silently accepted');
+
+      // missing workspace
+      const emptyDir = join(wsTmp, 'nothing-here');
+      mkdirSync(emptyDir, { recursive: true });
+      const missing = resolveWorkspaceRoot({ cwd: emptyDir, env: {} });
+      ok(!missing.ok && /manifest/.test(missing.reason),
+        'a directory with no manifest anywhere upward reports a clear not-found, not a guess');
+
+      // the one deliberate behavior change: a bare .git no longer counts
+      const gitOnlyDir = join(wsTmp, 'git-only-repo');
+      mkdirSync(join(gitOnlyDir, '.git'), { recursive: true });
+      const gitOnly = resolveWorkspaceRoot({ cwd: gitOnlyDir, env: {} });
+      ok(!gitOnly.ok, 'a bare .git with no .kai/manifest.json is no longer treated as a kai workspace');
+    } finally {
+      rmSync(wsTmp, { recursive: true, force: true });
+    }
+  }
+
   // Fold: open vs stopped vs overdue.
   const recs = [
     { t: nowSec - 3600, src: 'declared', e: 'start', role: 'r1', run: 'run1', next_report_by: nowSec - 1800 },
@@ -215,6 +289,8 @@ function selfTest() {
     // End-to-end through the CLI an agent actually invokes.
     const cli = join(REPO_ROOT, 'scripts', 'activity.mjs');
     const e2eRoot = mkdtempSync(join(tmpdir(), 'kai-activity-e2e-'));
+    mkdirSync(join(e2eRoot, '.kai'), { recursive: true });
+    writeFileSync(join(e2eRoot, '.kai', 'manifest.json'), '{}');
     const s1 = spawnSync(process.execPath, [cli, 'start', '--root', e2eRoot, '--role', 'principal-swe-backend',
       '--run', 'abc123def4', '--item', 'export-audit', '--for', '30m'], { encoding: 'utf8' });
     const s2 = spawnSync(process.execPath, [cli, 'stop', '--root', e2eRoot, '--role', 'principal-swe-backend',
@@ -231,6 +307,8 @@ function selfTest() {
     ok(Math.abs(written.t - Math.floor(Date.now() / 1000)) < 120,
       'a written record stamps epoch SECONDS, the same unit as next_report_by');
     const liveRoot = mkdtempSync(join(tmpdir(), 'kai-activity-live-'));
+    mkdirSync(join(liveRoot, '.kai'), { recursive: true });
+    writeFileSync(join(liveRoot, '.kai', 'manifest.json'), '{}');
     spawnSync(process.execPath, [cli, 'start', '--root', liveRoot, '--role', 'principal-sre',
       '--run', 'aaaa1111bb', '--for', '30m'], { encoding: 'utf8' });
     const folded = runs(read(liveRoot).records)[0];

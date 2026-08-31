@@ -4,6 +4,31 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [2.2.0] - 2026-08-31
+
+### Added
+
+- **`KAI_WORKSPACE_ROOT`** is a new, validated environment override for
+  resolving the kai workspace root, for a caller with no natural cwd (a
+  detached hook, a CI job). It must be absolute and must itself carry
+  `.kai/manifest.json`.
+
+### Changed
+
+- **Workspace-root resolution is now one shared function.**
+  `scripts/lib/workspace-resolve.mjs` replaces the ad-hoc root logic that had
+  drifted across `observe-subagent`, `observe-watch`, `work-status`, and
+  `activity`. Precedence is: an explicit caller root (`--root`), validated
+  directly at that exact path; then `KAI_WORKSPACE_ROOT`; then an upward
+  search from cwd for `.kai/manifest.json`; then a clear not-found error. An
+  explicit root or env override naming a non-workspace directory now fails
+  instead of silently resolving to an ancestor workspace. A bare `.kai/`
+  directory or a bare `.git` no longer count as a workspace on their own; the
+  manifest is the one sentinel. The subagent-observer hook resolves strictly
+  from the subagent's own `cwd` and never honors `KAI_WORKSPACE_ROOT`, so an
+  ambient override set for other tooling can never redirect an observed event
+  to an unrelated workspace.
+
 ## [2.1.0] - 2026-08-31
 
 ### Changed
@@ -3168,6 +3193,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[2.2.0]: https://github.com/RubenSaucedo/kai/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/RubenSaucedo/kai/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/RubenSaucedo/kai/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/RubenSaucedo/kai/compare/v1.0.6...v1.1.0

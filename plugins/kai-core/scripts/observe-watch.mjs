@@ -32,7 +32,7 @@
 import { readFileSync, existsSync, watch, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse as parsePath } from 'node:path';
+import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
 
 export const OBSERVED_REL = '.kai/observed.jsonl';
 // The writer rotates at MAX_BYTES, so the previous generation is where an
@@ -94,14 +94,8 @@ export function safeText(value, max = 120) {
 // ---------------------------------------------------------------------------
 export function findWorkspace(cwd) {
   if (typeof cwd !== 'string' || !cwd) return null;
-  let dir = cwd;
-  for (let i = 0; i < 64; i++) {
-    if (existsSync(join(dir, '.kai')) || existsSync(join(dir, '.git'))) return dir;
-    const up = dirname(dir);
-    if (up === dir || up === parsePath(dir).root) return null;
-    dir = up;
-  }
-  return null;
+  const r = resolveWorkspaceRoot({ cwd });
+  return r.ok ? r.root : null;
 }
 
 // A record is skipped, never fatal. The writer appends concurrently, so a torn
@@ -1396,11 +1390,12 @@ if (isEntry) {
     selfTest();
   } else {
     const rootFlag = argv.indexOf('--root');
-    const root = findWorkspace(rootFlag !== -1 ? argv[rootFlag + 1] : process.cwd());
-    if (!root) {
-      console.error('observe-watch: no workspace found (looked for a .kai or .git directory)');
+    const r = resolveWorkspaceRoot({ explicitRoot: rootFlag !== -1 ? argv[rootFlag + 1] : null, cwd: process.cwd() });
+    if (!r.ok) {
+      console.error(`observe-watch: ${r.reason}`);
       process.exit(2);
     }
+    const root = r.root;
     if (!existsSync(join(root, OBSERVED_REL)) && !existsSync(join(root, ACTIVITY_REL))) {
       // Only when *neither* log exists. The declared tier stands on its own --
       // it is the only tier that records kai's own agents -- so telling an
