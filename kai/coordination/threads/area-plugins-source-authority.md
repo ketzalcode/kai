@@ -50,3 +50,15 @@
 - note: `--check` regeneration guidance is broad for an unknown-file failure;
   the `unexpected: <path>` diagnostic remains explicit and fail-closed.
 - next: workflow-pull-request — open the source-authority release PR.
+
+## SHIP 2026-08-31-1049 — workflow-pull-request
+
+- pull_request: #200
+- merge_ref: `bb8bfa9ed42550b987807bf4ac1a3c22bc2a58cf`
+- release: `v2.1.0`
+- verification: PR-head validation and exact merged-main run `33421442191`
+  passed all six jobs.
+- disposition: shipped; plugin-local sources are authoritative and root
+  duplicates are absent.
+- next: principal-swe-infra — retire the remaining root release manifest in its
+  own cleanup PR.

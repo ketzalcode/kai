@@ -5,11 +5,11 @@ title: Make plugin-local agents and skills authoritative
 initiative: area-plugins
 milestone: surface-rename
 delivery_class: product-change
-state: in-review
+state: shipped
 resume_state: null
 priority: 2
 owner: principal-swe-infra
-next_role: workflow-pull-request
+next_role: null
 target: one authoritative source per agent and skill
 artifact_expectation: none
 artifact_expectation_reason: The durable result is the repository source tree, validation, and release record.
@@ -65,7 +65,7 @@ lease:
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-31-1040
+updated: 2026-08-31-1049
 ---
 
 ## Outcome
@@ -85,7 +85,7 @@ replaces complete source bodies.
 - [x] Generation writes only manifests, locks, routed assets, hooks, and managed
   regions.
 - [x] Exact-ref architecture review accepts the migration.
-- [ ] PR-head and merged-main validation pass.
+- [x] PR-head and merged-main validation pass.
 
 ## Evidence
 
@@ -101,3 +101,5 @@ replaces complete source bodies.
   checks, all four named gates, generator parity, and syntax validation.
 - Exact-ref architecture review accepted `c95a013` with no blockers or
   important findings.
+- PR #200 merged as `bb8bfa9ed42550b987807bf4ac1a3c22bc2a58cf`;
+  exact-main validation passed and release `v2.1.0` was published.
