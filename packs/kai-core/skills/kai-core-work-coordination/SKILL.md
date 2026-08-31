@@ -74,7 +74,13 @@ priority: 20
 owner: null
 next_role: principal-swe-frontend
 target: checkout-flow
-artifact_target: null
+artifact_expectation: none
+artifact_expectation_reason: The durable result is the product change and its release record.
+artifact_class: null
+durability: null
+completion_authority: null
+validity_owner: null
+artifact_targets: []
 context_artifacts: []
 touches:
   - web/src/checkout/**
@@ -122,8 +128,15 @@ Rules:
   ordered by dependencies, then `updated`.
 - **`next_role`** is the role the director should dispatch when the item is
   ready. It is not necessarily the current owner.
-- **`artifact_target`** is the exact workspace-root-relative or absolute output
-  path for a file-producing item. Initiative items default to the canonical
+- **`artifact_expectation`** is `owed` or `none`, declared before `ready`.
+  `none` requires `artifact_expectation_reason`; it is valid for spikes,
+  conversational or routing work, and implementation items whose durable result
+  is the product change rather than a separate generated artifact.
+- **`artifact_class`**, **`durability`**, **`completion_authority`**, and
+  **`validity_owner`** are required when an asset is owed. Their semantics come
+  from `kai-core-asset-lifecycle`.
+- **`artifact_targets`** lists every exact workspace-root-relative output path
+  for an asset-producing item. Initiative items default to the canonical
   location from `kai-core-workspace-conventions`:
   `kai/initiatives/<slug>/artifacts/product-map.md`,
   `kai/initiatives/<slug>/artifacts/marketing/` (bundle directory),
@@ -156,6 +169,8 @@ Rules:
   An unaffiliated incident-command item uses
   `kai/library/investigations/<incident-id>/incident-record.md` for its sanitized
   closure record; raw incident evidence remains in `.kai/runs/`.
+  `artifact_target` is the legacy singular field and remains readable during
+  migration; new or revised records use `artifact_targets`.
 - **`context_artifacts`** lists exact paths to required factual maps, product
   briefs, designs, decisions, and other inputs. Peers read these instead of
   rediscovering context.
@@ -450,8 +465,9 @@ reviewer:
 3. appends a HANDOFF;
 4. sets `next_role` to the next unmet reviewer, or `workflow-ship` when all
    requirements are satisfied for a `product-change` or `operational` item;
-   for `knowledge`, the owning role verifies acceptance and moves the item to
-   `completed`.
+   for `knowledge`, the named completion authority accepts the exact asset
+   revision, the owning role clears the four `kai-core-asset-lifecycle`
+   dimensions, and then moves the item to `completed`.
 
 Only reviews matching the current `change_ref` count. Whenever implementation
 changes, update `change_ref`; earlier reviews remain historical but become
@@ -474,6 +490,9 @@ Append every handoff to `kai/coordination/threads/<item-id>.md`:
 - state:     <state written to the item record>
 - needs:     <next acceptance criteria>
 - artifacts: <paths, diff, PR, reports>
+- asset_state: <disposition + validity, or "none — <reason>">
+- authority: <role + accepted|pending|bounced>
+- revalidation: <owner + date/event, or "not applicable — <reason>">
 - evidence:  <workspace-root-relative paths + source/tool + capture timestamp>
 - questions: <open question IDs or "none">
 - next:      <role and why>
@@ -659,6 +678,8 @@ acceptance are explicit.
 3. Parallel work is controlled by dependencies and `touches`, not target name.
 4. `depends_on` contains typed item dependencies; questions have their own IDs.
 5. Every acting run ends with updated state, evidence, and a HANDOFF.
-6. `shipped` requires confirmed production deployment and verification.
-7. Directors orchestrate; stewards prioritize; principals judge and act in
+6. Every generated asset is closed through `kai-core-asset-lifecycle`; no
+   unclassified durable output may survive a run.
+7. `shipped` requires confirmed production deployment and verification.
+8. Directors orchestrate; stewards prioritize; principals judge and act in
    their lanes.

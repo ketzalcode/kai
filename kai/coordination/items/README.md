@@ -21,7 +21,14 @@ priority: <int, lower runs first>
 owner: null
 next_role: <role to dispatch>
 target: <feature/system/area>
-artifact_target: <canonical output path or null>
+artifact_expectation: owed | none
+artifact_expectation_reason: <required when none>
+artifact_class: <required when owed>
+durability: ephemeral | working | durable | published
+completion_authority: <required when owed>
+validity_owner: <required when owed>
+artifact_targets:
+  - <canonical output path>
 context_artifacts: []
 touches: []
 depends_on:
@@ -115,12 +122,17 @@ thread; when an item first becomes `blocked` its prior state is copied to
 `change_ref` each review matched — only reviews matching the *current*
 `change_ref` count.
 
-## Artifact target and evidence
+## Asset expectation, targets, and evidence
 
-`artifact_target` is the exact workspace-root-relative (or, in external mode,
-absolute) output path for a file-producing item — initiative items default to
-the canonical `kai/initiatives/<slug>/artifacts/...` location defined in
-`kai-core-workspace-conventions` and `.kai/CONVENTIONS.md`. `context_artifacts`
-lists required inputs peers should read instead of rediscovering context.
-Evidence and artifact paths are always exact and workspace-root-relative —
-never session-state-relative or abbreviated with `.../`.
+Every item declares `artifact_expectation: owed | none` before `ready`.
+`none` requires a reason. `owed` requires an asset class, durability,
+completion authority, validity owner, and at least one exact
+`artifact_targets` entry. Initiative targets default to the canonical
+`kai/initiatives/<slug>/artifacts/...` locations defined in
+`kai-core-workspace-conventions` and `.kai/CONVENTIONS.md`.
+
+`context_artifacts` lists required inputs peers should read instead of
+rediscovering context. Evidence and artifact paths are always exact and
+workspace-root-relative — never session-state-relative or abbreviated with
+`.../`. Full disposition, validity, freshness, revision, and supersession rules
+come from `kai-core-asset-lifecycle`.

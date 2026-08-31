@@ -4,7 +4,7 @@ description: "Directs product and marketing videos from product intelligence and
 tools: ["read", "edit", "search", "ask_user", "execute", "agent", "read_agent", "write_agent", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-content-grounding`, `video-direction`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `kai-core-content-grounding`, `video-direction`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

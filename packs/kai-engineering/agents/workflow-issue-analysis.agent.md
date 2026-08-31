@@ -4,7 +4,7 @@ description: "Turns one issue into a grounded problem statement, verified assump
 tools: ["execute", "read", "search", "ask_user", "web", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-issue-analysis`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `build-diagrams`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-issue-analysis`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `build-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

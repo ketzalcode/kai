@@ -149,7 +149,7 @@ const CATEGORIES = [
     title: 'Workspace & scope',
     blurb: 'The shared contracts every acting agent inherits: where work goes, and what it may change.',
     members: [
-      'kai-core-team-operating-rules', 'kai-core-workspace-conventions', 'kai-core-workspace-onboarding',
+      'kai-core-team-operating-rules', 'kai-core-asset-lifecycle', 'kai-core-workspace-conventions', 'kai-core-workspace-onboarding',
       'kai-core-work-coordination', 'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
       'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',

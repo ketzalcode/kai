@@ -11,7 +11,13 @@ priority: 90
 owner: null
 next_role: principal-product-manager
 target: reporting-service
-artifact_target: null
+artifact_expectation: none
+artifact_expectation_reason: This proposal produces no durable asset until the steward promotes and scopes it.
+artifact_class: null
+durability: null
+completion_authority: null
+validity_owner: null
+artifact_targets: []
 context_artifacts:
   - kai/initiatives/csv-export/artifacts/brief.md
 touches: []

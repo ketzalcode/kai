@@ -127,9 +127,12 @@ Before acting:
 
 1. Read the item, its latest thread HANDOFF, relevant initiative context, and
    every `context_artifacts` path.
-2. Confirm acceptance, dependencies, open questions, touch-set safety, version,
+2. Apply `kai-core-asset-lifecycle`: confirm `artifact_expectation`, durability,
+   completion authority, validity owner, and exact targets before producing any
+   output. `artifact_expectation: none` is valid only with a reason.
+3. Confirm acceptance, dependencies, open questions, touch-set safety, version,
    and lease — including the dispatched lease `token` and `version_at_grant`.
-3. Claim the item according to `kai-core-work-coordination`. Leases are granted serially
+4. Claim the item according to `kai-core-work-coordination`. Leases are granted serially
    by a single grantor; before every state-changing write, re-verify your
    `holder`/`token`/`version` still match the dispatch and stop with a
    `COLLISION` record if they do not.
@@ -143,7 +146,10 @@ Before stopping:
    through the item's unmet `review_requirements`; never skip directly to ship.
 4. Update item state, evidence, version, next role, and lease. Keep the actual
    changed paths inside the declared `touches` set, or report the expansion.
-5. Append a structured HANDOFF to the item thread.
+5. Apply the asset close transaction: classify every generated file, write
+   durable metadata, resolve revision or supersession, and record disposition,
+   validity, authority, owner, and exact `artifact_targets`.
+6. Append a structured HANDOFF to the item thread.
 
 Never leave coordinated work silently in progress.
 
@@ -152,8 +158,9 @@ relative to it. The final handoff names that root and the exact paths to the
 initiative summary and deliverable index; abbreviated paths such as `.../` are
 not sufficient.
 
-A file-producing coordinated item receives the canonical `artifact_target`
-from `kai-core-workspace-conventions`. Initiative maps, briefs, research, designs, and
+A file-producing coordinated item receives canonical `artifact_targets` from
+`kai-core-workspace-conventions` and lifecycle metadata from
+`kai-core-asset-lifecycle`. Initiative maps, briefs, research, designs, and
 decisions live under `kai/initiatives/<slug>/artifacts/`; recorded operator
 overrides must remain inside the resolved workspace.
 
@@ -177,6 +184,10 @@ Research, plans, and product decisions use `delivery_class: knowledge` and end
 at `completed` after acceptance, required reviews, and coordination close.
 Research-only initiatives likewise end at `status: completed`. Never label
 non-production work `shipped`.
+
+Item completion does not freeze asset truth. A completed item remains completed
+when its artifact later becomes stale, invalidated, retired, or superseded;
+create revalidation or replacement work and update the asset lifecycle instead.
 
 ## Communication
 

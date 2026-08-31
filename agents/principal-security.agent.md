@@ -4,7 +4,7 @@ description: "Produces SaaS threat models, security designs, change reviews, vul
 tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `review-security-privacy`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-no-self-remediation`, `kai-core-peer-communication`, `review-security-privacy`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

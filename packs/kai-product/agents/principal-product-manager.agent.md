@@ -4,7 +4,7 @@ description: "Owns product scope and initiative stewardship: product briefs, sma
 tools: ["execute", "edit", "read", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -192,7 +192,7 @@ BRIEF is a `delivery_class: knowledge` item. It requires:
 - accepted source evidence/triage;
 - current product map for an existing surface;
 - initiative mission, scope, non-negotiables, and success measures;
-- canonical `artifact_target`:
+- canonical `artifact_targets` entry:
   `kai/initiatives/<slug>/artifacts/briefs/<item-id>.md`.
 
 Write:

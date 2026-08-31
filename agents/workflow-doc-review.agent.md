@@ -4,7 +4,7 @@ description: "Produces one consolidated substance review for a design doc, PRD, 
 tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`, `kai-core-no-self-remediation`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `doc-review-rigor`, `review-alternatives`, `review-rationale`, `review-risks-scope`, `review-ux-accessibility`, `kai-core-no-self-remediation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

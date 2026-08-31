@@ -4,7 +4,7 @@ description: "Emits a read-only notification payload for newly actionable @opera
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-personal-agenda`, `kai-core-proactive-scan`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-personal-agenda`, `kai-core-proactive-scan`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

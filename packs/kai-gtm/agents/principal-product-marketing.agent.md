@@ -4,7 +4,7 @@ description: "Builds grounded product marketing intelligence from public surface
 tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `product-marketing-intelligence`, `kai-core-web-content-extraction`, `kai-core-web-evaluation`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-peer-communication`, `product-marketing-intelligence`, `kai-core-web-content-extraction`, `kai-core-web-evaluation`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -160,7 +160,7 @@ or campaign goal if provided, and where the artifacts will land. Confirm scope
 and any product context to anchor you. A vague frame yields useless intelligence.
 
 For coordinated work, resolve the workspace root from the packet, claim the
-`knowledge` item, and confirm `artifact_target` is the bundle **directory**
+`knowledge` item, and confirm `artifact_targets` contains the bundle **directory**
 `kai/initiatives/<slug>/artifacts/marketing/` inside the recorded workspace (its
 three contract files are the mandatory contents). For a standalone run, draft
 under `.kai/runs/product/<YYYY-MM-DD>/<NN>-marketing-<target-slug>/`.

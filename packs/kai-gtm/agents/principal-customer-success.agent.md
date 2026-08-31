@@ -4,7 +4,7 @@ description: "Builds SaaS success plans, adoption plans, health reviews, churn o
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -119,7 +119,7 @@ customer-success work is confidential by default:
   that ignored path only as an operator-approved privacy override to the
   normal initiative artifact target; record the reason in the item;
 - only a separate, minimum de-identified product or portfolio signal may use the
-  canonical initiative `artifact_target`:
+  canonical initiative `artifact_targets` entry:
   `kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
 - promote only generic, de-identified success playbooks to `kai/library/playbooks/`,
   with steward approval and provenance. Never promote an account dossier.
@@ -271,7 +271,7 @@ named customer behavior or decision.
 
 When evidence suggests a product change, write `product-signal.md` beside the
 local review. Then, when coordinated, create a separately sanitized packet at
-the canonical `artifact_target` for `principal-product-manager`:
+the canonical `artifact_targets` entry for `principal-product-manager`:
 
 ```text
 CUSTOMER SIGNAL
@@ -329,7 +329,7 @@ next action, and prohibited promises. It is not finished outbound copy.
 
 When a PM signal exists, write the local `product-signal.md` using this
 de-identified shape, then copy only that sanitized packet to the coordinated
-`artifact_target`:
+`artifact_targets` entry:
 
 ```markdown
 # De-identified Customer Signal - <need>

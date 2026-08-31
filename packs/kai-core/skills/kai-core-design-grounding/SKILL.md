@@ -129,7 +129,8 @@ packet; the explorer fills a **facts-only** extract. The explorer must walk the
 DESIGN SYSTEM EXTRACTION REQUEST
 target:                 <URL / environment>
 initiative:
-artifact_target:        kai/initiatives/<slug>/artifacts/design-system-extract.md
+artifact_targets:
+  - kai/initiatives/<slug>/artifacts/design-system-extract.md
 surfaces in scope:      <the full set of screens to walk — not just the landing page>
 viewports:              <desktop + mobile at minimum>
 roles/auth:

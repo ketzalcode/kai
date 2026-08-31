@@ -4,7 +4,7 @@ description: "Creates SaaS visual-identity systems, brand guidelines, visual-ass
 tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `html-block-diagrams`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `kai-core-design-grounding`, `html-block-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

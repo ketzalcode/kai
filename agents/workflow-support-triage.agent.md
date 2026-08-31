@@ -4,7 +4,7 @@ description: "Classifies supplied SaaS tickets and conversations, screens incide
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-scope-discipline`, `kai-core-peer-communication`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -289,7 +289,7 @@ When a durable signal is justified, write `support-signal.md`:
 ## Coordination behavior
 
 - A coordinated queue sweep is `delivery_class: knowledge`; account-specific
-  `artifact_target` stays local only with an operator-approved privacy override.
+  `artifact_targets` entry stays local only with an operator-approved privacy override.
 - A sanitized support pattern is a separate `delivery_class: knowledge` item
   using the canonical support artifact path.
 - Incident candidates route immediately and do not wait for the support item to

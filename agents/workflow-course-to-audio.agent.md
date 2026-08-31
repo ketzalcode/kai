@@ -4,7 +4,7 @@ description: "Extracts a course, certification module, learning-path unit, or lo
 tools: ["playwright", "execute", "edit", "read", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-generate-audio`, `kai-core-web-content-extraction`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-generate-audio`, `kai-core-web-content-extraction`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

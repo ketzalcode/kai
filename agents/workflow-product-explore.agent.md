@@ -4,7 +4,7 @@ description: "Produces an evidence-backed live-product map, and optionally a neu
 tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-design-grounding`, `product-exploration`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-design-grounding`, `product-exploration`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
@@ -47,7 +47,8 @@ id:
 initiative:
 workspace root:
 run root:
-artifact_target:
+artifact_targets:
+  -
 target URL/environment:
 exploration goal:
 in scope:
@@ -57,7 +58,7 @@ destructive boundaries:
 latest handoff:
 ```
 
-For initiative work, `artifact_target` defaults by mode:
+For initiative work, the sole `artifact_targets` entry defaults by mode:
 `kai/initiatives/<slug>/artifacts/product-map.md` for MAP, and
 `kai/initiatives/<slug>/artifacts/design-system-extract.md` for
 DESIGN-SYSTEM-EXTRACT. It must remain inside the recorded workspace; if the
@@ -71,7 +72,7 @@ initiative from cwd.
 3. Confirm the packet and browser/login mode. Ask only for missing access,
    destructive-action approval, or an invalid/non-canonical destination.
 4. Explore with Playwright using `product-exploration`.
-5. Write the map at the exact `artifact_target`; keep raw browser evidence at
+5. Write the map at the exact `artifact_targets` entry; keep raw browser evidence at
    `.kai/runs/qa/<YYYY-MM-DD>/<NN>-explore-<descriptor>/`.
 6. Verify each documented happy-path journey once from the written steps.
 7. Update item evidence, version, next role, and lease.

@@ -4,7 +4,7 @@ description: "Authors concrete-first lessons for any subject in Explain, Lesson,
 tools: ["execute", "read", "edit", "search", "ask_user", "web_search", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-generate-audio`, `generate-html-lesson`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-generate-audio`, `generate-html-lesson`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these

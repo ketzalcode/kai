@@ -4,7 +4,7 @@ description: "Turns one finished workspace change into a mergeable pull request 
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-pr-delivery`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `build-diagrams`
+**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-pr-delivery`, `kai-core-scope-discipline`, `kai-core-peer-communication`, `build-diagrams`
 
 > Load and apply every skill listed above before you act — they are part of your
 > instructions, not background reading. If one cannot be loaded, these
