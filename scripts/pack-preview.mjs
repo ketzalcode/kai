@@ -267,7 +267,21 @@ const isDerivedOwnedKey = (key) => {
   return entry.kind === 'other' && key.startsWith(`${entry.dir}/scripts/`);
 };
 
+const isSourceCompanionKey = (key, root) => {
+  const [dir, area, id, ...rest] = key.split('/');
+  if (area !== 'skills' || rest.length === 0) return false;
+  return sourceSkillFiles(root)
+    .some((entry) => packPluginName(entry.pack) === dir && entry.id === id);
+};
+
 const derivedFiles = (files) => new Map([...files].filter(([key]) => !isSourceKey(key)));
+
+function cleanStaleDerivedFiles(base, files) {
+  for (const key of walkCommitted(base)) {
+    if (files.has(key) || !isDerivedOwnedKey(key)) continue;
+    rmSync(join(base, ...key.split('/')), { force: true });
+  }
+}
 
 function managedAgentDrift(root) {
   const drift = [];
@@ -311,7 +325,9 @@ export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
     if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs:    ${relPath}`);
   }
   for (const key of walkCommitted(base)) {
-    if (!expected.has(key) && isDerivedOwnedKey(key)) drift.push(`unexpected: ${key}`);
+    if (!expected.has(key) && !isSourceKey(key) && !isSourceCompanionKey(key, root)) {
+      drift.push(`unexpected: ${key}`);
+    }
   }
   return { ok: drift.length === 0, drift };
 }
@@ -345,10 +361,7 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, content);
   }
-  for (const key of walkCommitted(base)) {
-    if (files.has(key) || !isDerivedOwnedKey(key)) continue;
-    rmSync(join(base, ...key.split('/')), { force: true });
-  }
+  cleanStaleDerivedFiles(base, files);
   return { written: files.size, managed, dir: base };
 }
 
@@ -663,15 +676,26 @@ function selfTest() {
     writeFileSync(victim, `${readFileSync(victim, 'utf8')}tampered`);
     ok(checkSelected().length > 0,
       'a hand-edit to a committed tree is caught as drift');
+    writeFileSync(victim, generated.get('kai-core/plugin.json'));
     const companion = join(scratch, 'kai-personal', 'skills', 'demo-zoom', 'reference.md');
     mkdirSync(dirname(companion), { recursive: true });
     writeFileSync(companion, 'authoritative companion\n');
+    const stray = join(scratch, 'kai-gtm', 'notes.md');
+    writeFileSync(stray, 'unowned\n');
     const staleScript = join(scratch, 'kai-personal', 'scripts', 'stale-generated.mjs');
     mkdirSync(dirname(staleScript), { recursive: true });
     writeFileSync(staleScript, 'stale\n');
-    writeCommitted({ root: ROOT, base: scratch, version: '9.9.9-selftest' });
+    const scratchCheck = checkCommitted({
+      root: ROOT, base: scratch, version: '9.9.9-selftest',
+    });
+    ok(scratchCheck.drift.includes('unexpected: kai-gtm/notes.md')
+      && !scratchCheck.drift.some((d) => d.includes('reference.md')),
+    'unknown plugin files are reported while skill companion files remain valid source');
+    cleanStaleDerivedFiles(scratch, derivedFiles(generated));
     ok(existsSync(companion),
       '--write preserves skill companion files outside the derived-file ownership boundary');
+    ok(existsSync(stray),
+      '--write never deletes an unknown file merely because validation reports it');
     ok(!existsSync(staleScript),
       '--write still removes stale routed scripts that are inside its ownership boundary');
   } catch (e) {
