@@ -35,6 +35,7 @@ import {
 } from './lib/coordination.mjs';
 import { checkWorkspace } from './workspace-doctor.mjs';
 import { read as readActivity, runs } from './lib/activity.mjs';
+import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
@@ -481,13 +482,18 @@ if (isEntry) {
     process.exit(selfTest());
   } else {
     const rootIdx = argv.indexOf('--root');
-    const root = resolve(rootIdx === -1 ? process.cwd() : argv[rootIdx + 1] || process.cwd());
-    const r = collect(root);
-    if (argv.includes('--json')) console.log(JSON.stringify(r, null, 2));
-    else console.log(render(r));
+    const r = resolveWorkspaceRoot({ explicitRoot: rootIdx === -1 ? null : argv[rootIdx + 1], cwd: process.cwd() });
+    if (!r.ok) {
+      console.error(`work-status: ${r.reason}`);
+      process.exit(2);
+    }
+    const root = r.root;
+    const status = collect(root);
+    if (argv.includes('--json')) console.log(JSON.stringify(status, null, 2));
+    else console.log(render(status));
     // Exit non-zero only for coordination that cannot be trusted — not for
     // ordinary blocked work, which is a normal state of a healthy board.
-    if (!r.ok) process.exit(2);
-    process.exit(r.findings.some((f) => f.section === 'integrity') ? 1 : 0);
+    if (!status.ok) process.exit(2);
+    process.exit(status.findings.some((f) => f.section === 'integrity') ? 1 : 0);
   }
 }

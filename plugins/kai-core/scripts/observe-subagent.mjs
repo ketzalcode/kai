@@ -34,11 +34,12 @@
 // path-scrubbed TLDR through the same `safeNote` boundary the declared log uses.
 
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, statSync, renameSync, rmSync } from 'node:fs';
-import { join, dirname, parse as parsePath } from 'node:path';
+import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { digest, looksAbsolute, safeNote, MAX_NOTE, MAX_LINE, MAX_BYTES } from './lib/activity.mjs';
+import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
 
 export const OBSERVED_REL = '.kai/observed.jsonl';
 export const CONSENT_REL = '.kai/observer-consent';
@@ -56,20 +57,21 @@ const NAME_RE = /^[a-z0-9-]{1,60}$/;
 // ---------------------------------------------------------------------------
 // Workspace resolution
 //
-// The payload gives an absolute `cwd`. We walk up for a marker rather than
-// writing beside it, so a subagent spawned in a subdirectory still records to
-// the workspace root -- and so the absolute path itself is never persisted.
+// The payload gives an absolute `cwd`, which is the ambient location the host
+// reported. Unlike an operator's explicit --root, this was never asserted to
+// already be the workspace root, so it is the one caller that legitimately
+// searches upward for the manifest rather than being validated in place.
+// `env` is injectable and defaults to real `process.env` for a general
+// caller; the hook path below passes `{}` explicitly so a subagent event can
+// never be redirected to an unrelated workspace by an ambient override (see
+// `main`). We search upward rather than writing beside `cwd` so a subagent
+// spawned in a subdirectory still records to the workspace root above it --
+// and so the absolute path itself is never persisted.
 // ---------------------------------------------------------------------------
-export function findWorkspace(cwd) {
+export function findWorkspace(cwd, env = process.env) {
   if (typeof cwd !== 'string' || !cwd) return null;
-  let dir = cwd;
-  for (let i = 0; i < 64; i++) {
-    if (existsSync(join(dir, '.kai')) || existsSync(join(dir, '.git'))) return dir;
-    const up = dirname(dir);
-    if (up === dir || up === parsePath(dir).root) return null;
-    dir = up;
-  }
-  return null;
+  const r = resolveWorkspaceRoot({ cwd, env });
+  return r.ok ? r.root : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +236,11 @@ export function main(argv, stdinText, now = Date.now()) {
   } catch {
     return { ok: false, reason: 'payload was not JSON' };
   }
-  const root = findWorkspace(payload && payload.cwd);
+  // The hook's workspace/consent boundary is defined by where the subagent
+  // ran, never by an unrelated operator override -- env is disabled here on
+  // purpose, not merely defaulted, so a real KAI_WORKSPACE_ROOT set for other
+  // tooling can never redirect an observed event to a different workspace.
+  const root = findWorkspace(payload && payload.cwd, {});
   if (!root) return { ok: false, reason: 'no workspace root found' };
   if (!hasConsent(root)) return { ok: false, reason: 'observer not enabled for this workspace' };
   return appendObserved(
@@ -260,6 +266,7 @@ function selfTest() {
 
   const tmp = join(tmpdir(), `kai-observe-${process.pid}`);
   mkdirSync(join(tmp, '.kai'), { recursive: true });
+  writeFileSync(join(tmp, '.kai', 'manifest.json'), '{}');
   const payload = (extra = {}) => ({
     sessionId: 'session-uuid-abc',
     timestamp: Date.now(),
@@ -370,6 +377,29 @@ function selfTest() {
   ok(JSON.parse(withSum).tldr === 'Shipped it.', 'end to end, the summary opt-in stores the derived line');
   writeFileSync(join(tmp, CONSENT_REL), 'enabled\n');
 
+  // --- the hook's workspace boundary ignores KAI_WORKSPACE_ROOT -----------
+  // Operator/admin CLIs may honor an ambient override, but the hook observes
+  // wherever the subagent actually ran -- a real KAI_WORKSPACE_ROOT pointing
+  // at an unrelated workspace must never redirect an observed event there.
+  {
+    const unrelatedWs = join(tmpdir(), `kai-observe-unrelated-${process.pid}`);
+    mkdirSync(join(unrelatedWs, '.kai'), { recursive: true });
+    writeFileSync(join(unrelatedWs, '.kai', 'manifest.json'), '{}');
+    rmSync(join(tmp, OBSERVED_REL), { force: true });
+    const prevEnvRoot = process.env.KAI_WORKSPACE_ROOT;
+    process.env.KAI_WORKSPACE_ROOT = unrelatedWs;
+    try {
+      main(['subagentStop'], JSON.stringify(payload({ agentId: 'agent-3', response: 'Ignored the override.' })));
+    } finally {
+      if (prevEnvRoot === undefined) delete process.env.KAI_WORKSPACE_ROOT;
+      else process.env.KAI_WORKSPACE_ROOT = prevEnvRoot;
+    }
+    ok(existsSync(join(tmp, OBSERVED_REL)), 'the record lands in the payload cwd workspace, not an ambient override');
+    ok(!existsSync(join(unrelatedWs, OBSERVED_REL)),
+      'a real KAI_WORKSPACE_ROOT set in the environment never redirects a hook event to an unrelated workspace');
+    rmSync(unrelatedWs, { recursive: true, force: true });
+  }
+
   // --- malformed input never escalates ------------------------------------
   ok(!main(['subagentStart'], 'not json').ok, 'a non-JSON payload is refused without throwing');
   ok(!main(['subagentStart'], '{}').ok, 'a payload with no cwd is refused without throwing');
@@ -406,11 +436,12 @@ function adminCli(argv) {
     const i = argv.indexOf(`--${name}`);
     return i !== -1 && argv[i + 1] && !argv[i + 1].startsWith('-') ? argv[i + 1] : null;
   };
-  const root = findWorkspace(flag('root') || process.cwd());
-  if (!root) {
-    console.error('observe-subagent: no workspace found (looked for a .kai or .git directory)');
+  const r = resolveWorkspaceRoot({ explicitRoot: flag('root'), cwd: process.cwd() });
+  if (!r.ok) {
+    console.error(`observe-subagent: ${r.reason}`);
     process.exit(2);
   }
+  const root = r.root;
   const marker = join(root, CONSENT_REL);
 
   if (argv.includes('--enable')) {

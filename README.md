@@ -35,7 +35,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v2.1.0` — all **56 agents and 52 skills** are published across five plugins for
+`v2.2.0` — all **56 agents and 52 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
 Each agent and skill now has exactly one authoritative source inside its owning
