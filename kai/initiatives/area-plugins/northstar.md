@@ -191,6 +191,8 @@ milestones:
     required_items:
       - item: area-plugins-surface-tree-rename
         state: shipped
+      - item: area-plugins-source-authority
+        state: shipped
   - id: area-taxonomy-split
     outcome: The nine-plugin topology is realised — kai-personal dissolved into kai-learning, kai-assistant and kai-wellness; kai-core decomposed into kai-directors, kai-project-management and a technical core — with every new identity born at @kai, under plugins/, carrying the final dual-path contract.
     acceptance:

@@ -19,10 +19,11 @@
 //
 // Exit code: 0 = acceptance holds; non-zero = a violation is printed.
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, loaderErrors, stripQuotes, isUserInvocable } from './lib/loader-contract.mjs';
+import { sourceAgentFiles, sourceSkillFiles } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const GOLDEN = join(ROOT, 'test', 'fixtures', 'inventory.json');
@@ -30,20 +31,7 @@ const rel = (p) => p.slice(ROOT.length + 1).replace(/\\/g, '/');
 
 // --- collect entries the way the host discovers them -----------------------
 function collect() {
-  const agentsDir = join(ROOT, 'agents');
-  const skillsDir = join(ROOT, 'skills');
-  const out = [];
-  for (const f of readdirSync(agentsDir)) {
-    if (!f.endsWith('.agent.md')) continue;
-    out.push({ kind: 'agent', id: f.replace(/\.agent\.md$/, ''), path: join(agentsDir, f) });
-  }
-  for (const d of readdirSync(skillsDir)) {
-    const p = join(skillsDir, d, 'SKILL.md');
-    if (statSync(join(skillsDir, d)).isDirectory() && existsSync(p)) {
-      out.push({ kind: 'skill', id: d, path: p });
-    }
-  }
-  return out;
+  return [...sourceAgentFiles(ROOT), ...sourceSkillFiles(ROOT)];
 }
 
 // Check one entry through Kai's authoring contract. { ok, errors, fm }.

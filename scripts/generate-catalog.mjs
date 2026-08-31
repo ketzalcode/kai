@@ -17,10 +17,11 @@
 // Run: `node scripts/generate-catalog.mjs`          (write)
 //      `node scripts/generate-catalog.mjs --check`  (fail on drift; used by npm test)
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, stripQuotes, isUserInvocable } from './lib/loader-contract.mjs';
+import { sourceAgentFiles, sourceSkillFiles } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'docs', 'reference', 'agents-and-skills.md');
@@ -209,20 +210,15 @@ const CATEGORIES = [
 // ---------------------------------------------------------------------------
 function readAll() {
   const items = new Map();
-  const agentsDir = join(ROOT, 'agents');
-  for (const f of readdirSync(agentsDir).filter((n) => n.endsWith('.agent.md'))) {
-    const id = f.replace(/\.agent\.md$/, '');
-    const pf = parseFrontmatter(readFileSync(join(agentsDir, f), 'utf8'));
-    if (!pf.ok) throw new Error(`agents/${f}: ${pf.reason}`);
-    items.set(id, { id, kind: 'agent', fm: pf.fm, path: `agents/${f}` });
+  for (const entry of sourceAgentFiles(ROOT)) {
+    const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
+    if (!pf.ok) throw new Error(`${entry.rel}: ${pf.reason}`);
+    items.set(entry.id, { id: entry.id, kind: 'agent', fm: pf.fm, path: entry.rel });
   }
-  const skillsDir = join(ROOT, 'skills');
-  for (const d of readdirSync(skillsDir)) {
-    const p = join(skillsDir, d, 'SKILL.md');
-    if (!statSync(join(skillsDir, d)).isDirectory() || !existsSync(p)) continue;
-    const pf = parseFrontmatter(readFileSync(p, 'utf8'));
-    if (!pf.ok) throw new Error(`skills/${d}/SKILL.md: ${pf.reason}`);
-    items.set(d, { id: d, kind: 'skill', fm: pf.fm, path: `skills/${d}/SKILL.md` });
+  for (const entry of sourceSkillFiles(ROOT)) {
+    const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
+    if (!pf.ok) throw new Error(`${entry.rel}: ${pf.reason}`);
+    items.set(entry.id, { id: entry.id, kind: 'skill', fm: pf.fm, path: entry.rel });
   }
   return items;
 }
@@ -301,7 +297,7 @@ function build(items) {
       out.push('| ---- | ------------ |');
       for (const m of cat.members) {
         const item = items.get(m);
-        const link = item.kind === 'agent' ? `../../agents/${m}.agent.md` : `../../skills/${m}/SKILL.md`;
+        const link = `../../${item.path}`;
         out.push(`| [\`${m}\`](${link}) | ${cell(stripQuotes(item.fm.description || ''))} |`);
       }
       out.push('');

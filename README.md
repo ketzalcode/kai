@@ -35,12 +35,13 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v2.0.0` — all **56 agents and 52 skills** are published across five plugins for
+`v2.1.0` — all **56 agents and 52 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
-The committed install trees now live under `plugins/`. Marketplace install
-names are unchanged in this release; the move removes the misleading `packs/`
-repository name before plugin-local agents and skills become authoritative.
+Each agent and skill now has exactly one authoritative source inside its owning
+`plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
+are gone. Generation is limited to derived manifests, dependency locks, routed
+scripts, and one explicitly marked dependency-guard region in department agents.
 
 Every role now loads one universal asset-lifecycle contract. Generated work
 separates execution completion from artifact disposition and validity, requires
@@ -59,9 +60,9 @@ error.
 
 **All five plugins are published: `kai-core` + `kai-personal` + `kai-product` +
 `kai-engineering` + `kai-gtm`.**
-Root remains the canonical source during this transition; generation copies
-agents, skills, routed
-scripts, each script's local module closure, and the fleet hooks exactly once.
+Plugin-local agent and skill files are the canonical source. Generation refreshes
+routed scripts, each script's local module closure, the fleet hooks, manifests,
+dependency locks, and marked dependency-guard regions.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
 Copilot copies plugin files but does not run npm, so
 optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;

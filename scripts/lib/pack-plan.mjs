@@ -3,9 +3,9 @@
 // validator (scripts/validate-plugin.mjs) both import from here, so the five-pack
 // partition is defined once and every path agrees on it byte-for-byte.
 //
-// Read-only and pure: this module reads root agents/skills and computes plans and
-// gate decisions. Writing generated trees to disk is the caller's job (the
-// generator), so nothing here mutates the working tree.
+// Read-only and pure: this module reads plugin-local agents/skills and computes
+// plans and gate decisions. Writing derived files or managed regions to disk is
+// the caller's job, so nothing here mutates the working tree.
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
@@ -47,6 +47,13 @@ export const DEGRADED_BLOCK_REL = 'scripts/lib/degraded-block.txt';
 // behavior-sensitive, the validator discovers manifests under it, and the
 // generator writes the reviewed committed slice there.
 export const PACKS_DIR = 'plugins';
+
+export const GUARANTEE_REGION_OPEN =
+  '<!-- >>> kai core dependency guard (managed by pack-preview) >>> -->';
+export const GUARANTEE_REGION_CLOSE =
+  '<!-- <<< kai core dependency guard <<< -->';
+const LEGACY_GUARANTEE_REGION_OPEN =
+  '<!-- >>> kai core dependency guard (managed by pack-preview) >>>';
 
 // The host executes hooks.json itself, on every subagent, for everyone who
 // installs the plugin that ships it. Two installed packs carrying it means the
@@ -183,14 +190,120 @@ function packDescription(pack) {
 // committed tree compares cleanly regardless of the checkout's line endings.
 export const normalizeLF = (text) => text.replace(/\r\n/g, '\n');
 
-const readAgentBody = (root, id) => readFileSync(join(root, 'agents', `${id}.agent.md`), 'utf8');
-const skillFile = (root, id) => join(root, 'skills', id, 'SKILL.md');
+const sourceRel = (pack, ...parts) => `${PACKS_DIR}/${packPluginName(pack)}/${parts.join('/')}`;
+const sourcePath = (root, pack, ...parts) => join(root, ...sourceRel(pack, ...parts).split('/'));
 
-const listAgentIds = (root) => readdirSync(join(root, 'agents'))
-  .filter((f) => f.endsWith('.agent.md')).map((f) => f.replace(/\.agent\.md$/, ''));
+export function sourceAgentFiles(root = REPO_ROOT) {
+  const files = [];
+  for (const pack of PACK_ORDER) {
+    const dir = sourcePath(root, pack, 'agents');
+    if (!existsSync(dir)) continue;
+    for (const f of readdirSync(dir).filter((name) => name.endsWith('.agent.md')).sort()) {
+      files.push({
+        pack,
+        id: f.replace(/\.agent\.md$/, ''),
+        kind: 'agent',
+        path: join(dir, f),
+        rel: sourceRel(pack, 'agents', f),
+      });
+    }
+  }
+  return files;
+}
 
-const listSkillIds = (root) => readdirSync(join(root, 'skills'))
-  .filter((d) => existsSync(skillFile(root, d))).sort();
+export function sourceSkillFiles(root = REPO_ROOT) {
+  const files = [];
+  for (const pack of PACK_ORDER) {
+    const dir = sourcePath(root, pack, 'skills');
+    if (!existsSync(dir)) continue;
+    for (const d of readdirSync(dir).sort()) {
+      const path = join(dir, d, 'SKILL.md');
+      if (!existsSync(path)) continue;
+      files.push({
+        pack,
+        id: d,
+        kind: 'skill',
+        path,
+        rel: sourceRel(pack, 'skills', d, 'SKILL.md'),
+      });
+    }
+  }
+  return files;
+}
+
+export function agentSourceFile(root, id) {
+  return sourceAgentFiles(root).find((entry) => entry.id === id)?.path ?? null;
+}
+
+export function skillSourceFile(root, id) {
+  return sourceSkillFiles(root).find((entry) => entry.id === id)?.path ?? null;
+}
+
+export function sourceFileErrors({
+  agents = sourceAgentFiles(), skills = sourceSkillFiles(),
+} = {}) {
+  const errors = [];
+  for (const [kind, files] of [['agent', agents], ['skill', skills]]) {
+    const byId = new Map();
+    for (const file of files) {
+      if (!byId.has(file.id)) byId.set(file.id, []);
+      byId.get(file.id).push(file);
+    }
+    for (const [id, copies] of byId) {
+      if (copies.length < 2) continue;
+      errors.push({
+        file: copies.map((copy) => copy.rel).join(', '),
+        msg: `${kind} "${id}" has ${copies.length} plugin-local source files — exactly one source is allowed`,
+      });
+    }
+  }
+  return errors;
+}
+
+export function sourcePlacementErrors({
+  agents = sourceAgentFiles(), skills = sourceSkillFiles(), plan, packs = PACKS,
+} = {}) {
+  const errors = [];
+  const expectedAgentPack = new Map();
+  for (const [pack, ids] of Object.entries(packs)) {
+    for (const id of ids) expectedAgentPack.set(id, pack);
+  }
+  for (const entry of agents) {
+    const expected = expectedAgentPack.get(entry.id);
+    if (!expected || expected === entry.pack) continue;
+    errors.push({
+      file: entry.rel,
+      msg: `agent "${entry.id}" belongs in ${packPluginName(expected)}, not ${packPluginName(entry.pack)}`,
+    });
+  }
+
+  if (!plan) return errors;
+  const expectedSkillPack = new Map();
+  for (const id of plan.core) expectedSkillPack.set(id, 'core');
+  for (const [pack, ids] of Object.entries(plan.local)) {
+    for (const id of ids) expectedSkillPack.set(id, pack);
+  }
+  for (const entry of skills) {
+    const expected = expectedSkillPack.get(entry.id);
+    if (!expected || expected === entry.pack) continue;
+    errors.push({
+      file: entry.rel,
+      msg: `skill "${entry.id}" belongs in ${packPluginName(expected)}, not ${packPluginName(entry.pack)}`,
+    });
+  }
+  return errors;
+}
+
+const readAgentBody = (root, id) => {
+  const path = agentSourceFile(root, id);
+  if (!path) throw new Error(`agent "${id}" belongs to no declared plugin`);
+  return readFileSync(path, 'utf8');
+};
+const skillFile = (root, id) => skillSourceFile(root, id);
+
+const listAgentIds = (root) => sourceAgentFiles(root).map((file) => file.id);
+
+const listSkillIds = (root) => sourceSkillFiles(root).map((file) => file.id).sort();
 
 function readPackageMetadata(root) {
   const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
@@ -373,7 +486,7 @@ export function declaredInherits(body) {
 // filtered to those that exist on disk (a named-but-absent skill is a separate
 // validator concern, not a partition input).
 export function inheritedSkills(root, body) {
-  return declaredInherits(body).filter((s) => existsSync(skillFile(root, s)));
+  return declaredInherits(body).filter((s) => skillFile(root, s) !== null);
 }
 
 // Assign every skill on disk to exactly one provider. The mechanical rule handles
@@ -465,17 +578,15 @@ export function planManifests({
   });
 }
 
-// Materialise the whole partition into an in-memory map of pack-relative path ->
-// file content (LF-normalised, sorted keys). Skill bodies and core agent bodies
-// are copied verbatim from root — root stays the single source of truth and
-// nothing is moved. Department agent bodies additionally carry the guarantee
-// blocks (below). Routed scripts carry their relative module closure so every
-// copied entry point remains loadable inside its pack.
+// Materialise the installable surface into an in-memory map of pack-relative
+// path -> file content (LF-normalised, sorted keys). Agent and skill bodies are
+// already authoritative inside their owning plugin and are read in place.
+// Routed scripts carry their relative module closure so every copied entry point
+// remains loadable inside its plugin.
 export function materializePacks({
   root = REPO_ROOT, version = '0.0.0-preview', packs = PACK_ORDER,
 } = {}) {
   const files = new Map();
-  const blocks = guaranteeBlocks(root);
   const manifests = planManifests({ root, version, packs });
   const selected = new Set(manifests.map((entry) => entry.pack));
   for (const p of manifests) {
@@ -484,14 +595,12 @@ export function materializePacks({
     files.set(`${p.dir}/package-lock.json`, `${JSON.stringify(p.packageLock, null, 2)}\n`);
     for (const id of p.agents) {
       const body = normalizeLF(readAgentBody(root, id));
-      // Core agents carry neither block: they ship inside kai-core, so the
-      // preflight could only ever fail on itself and the absence the refusal
-      // describes is not a state a core agent can be in.
-      files.set(`${p.dir}/agents/${id}.agent.md`,
-        p.kind === 'core' ? body : injectBlocks(body, blocks));
+      files.set(`${p.dir}/agents/${id}.agent.md`, body);
     }
     for (const id of p.skills) {
-      files.set(`${p.dir}/skills/${id}/SKILL.md`, normalizeLF(readFileSync(skillFile(root, id), 'utf8')));
+      const path = skillFile(root, id);
+      if (!path) throw new Error(`skill "${id}" has no plugin-local source file`);
+      files.set(`${p.dir}/skills/${id}/SKILL.md`, normalizeLF(readFileSync(path, 'utf8')));
     }
   }
   const assets = planAssets(collectReferences(root));
@@ -536,6 +645,72 @@ export const degradedBlock = (root = REPO_ROOT) => readBlock(root, DEGRADED_BLOC
 // the preflight has passed. Defined once so the generator, the preview and the
 // validator cannot disagree about it.
 export const guaranteeBlocks = (root = REPO_ROOT) => [preflightBlock(root), degradedBlock(root)];
+
+export const guaranteeRegion = (root = REPO_ROOT) => [
+  GUARANTEE_REGION_OPEN,
+  ...guaranteeBlocks(root),
+  GUARANTEE_REGION_CLOSE,
+].join('\n\n');
+
+// Department agents carry one explicitly managed region. `--write` may replace
+// this region without treating the rest of the authoritative agent body as
+// generated output. Missing regions are inserted at the same safe anchor the
+// original pack generator used; malformed half-regions fail closed.
+export function syncGuaranteeRegion(body, root = REPO_ROOT) {
+  const normalized = normalizeLF(body);
+  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
+  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
+  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
+  const openMarker = canonicalOpenAt !== -1
+    ? GUARANTEE_REGION_OPEN
+    : legacyOpenAt !== -1 ? LEGACY_GUARANTEE_REGION_OPEN : null;
+  const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
+  if ((openAt === -1) !== (closeAt === -1)) {
+    throw new Error('agent has only one core dependency guard marker');
+  }
+  const region = guaranteeRegion(root);
+  if (openAt === -1) {
+    const [preflight, degraded] = guaranteeBlocks(root);
+    const preflightAt = normalized.indexOf(preflight);
+    const degradedAt = normalized.indexOf(degraded);
+    if ((preflightAt === -1) !== (degradedAt === -1)) {
+      throw new Error('agent has only one legacy core dependency guard block');
+    }
+    if (preflightAt !== -1) {
+      const preflightEnd = preflightAt + preflight.length;
+      if (degradedAt < preflightEnd
+        || normalized.slice(preflightEnd, degradedAt).trim() !== '') {
+        throw new Error('agent legacy core dependency guard blocks are not adjacent');
+      }
+      return `${normalized.slice(0, preflightAt)}${region}${normalized.slice(degradedAt + degraded.length)}`;
+    }
+    return injectBlocks(normalized, [region]);
+  }
+  if (normalized.indexOf(GUARANTEE_REGION_OPEN, openAt + openMarker.length) !== -1
+    || normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN, openAt + openMarker.length) !== -1
+    || normalized.indexOf(GUARANTEE_REGION_CLOSE, closeAt + 1) !== -1) {
+    throw new Error('agent has more than one core dependency guard region');
+  }
+  if (closeAt < openAt) throw new Error('agent core dependency guard closes before it opens');
+  const end = closeAt + GUARANTEE_REGION_CLOSE.length;
+  return `${normalized.slice(0, openAt)}${region}${normalized.slice(end)}`;
+}
+
+export function removeGuaranteeRegion(body) {
+  const normalized = normalizeLF(body);
+  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
+  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
+  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
+  const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
+  if (openAt === -1 && closeAt === -1) return normalized;
+  if (openAt === -1 || closeAt === -1 || closeAt < openAt) {
+    throw new Error('agent has a malformed core dependency guard region');
+  }
+  const end = closeAt + GUARANTEE_REGION_CLOSE.length;
+  const before = normalized.slice(0, openAt).replace(/\n+$/, '');
+  const after = normalized.slice(end).replace(/^\n+/, '');
+  return `${before}\n\n${after}`;
+}
 
 // Splice the ordered blocks into an agent body, LF throughout: splicing LF lines
 // into a CRLF checkout would leave the generated agent with mixed endings. One
@@ -986,7 +1161,10 @@ export function collectReferences(root = REPO_ROOT) {
   const inherited = new Set();
   for (const id of listAgentIds(root).sort()) {
     const body = readAgentBody(root, id);
-    const from = `agents/${id}.agent.md`;
+    const fromPath = agentSourceFile(root, id);
+    const from = fromPath
+      ? fromPath.slice(root.length + 1).replace(/\\/g, '/')
+      : `agent:${id}`;
     const pack = agentOf.get(id) ?? null;
     for (const skill of declaredInherits(body)) {
       inherited.add(skill);
@@ -1000,8 +1178,9 @@ export function collectReferences(root = REPO_ROOT) {
   }
 
   for (const id of listSkillIds(root)) {
-    const raw = normalizeLF(readFileSync(skillFile(root, id), 'utf8'));
-    const from = `skills/${id}/SKILL.md`;
+    const path = skillFile(root, id);
+    const raw = normalizeLF(readFileSync(path, 'utf8'));
+    const from = path.slice(root.length + 1).replace(/\\/g, '/');
     const pack = skillOf.get(id) ?? null;
     const firings = [];
     if (inherited.has(id)) firings.push('inherited');
@@ -1662,6 +1841,9 @@ export function guaranteeBlockErrors({
         add(key, 'carries the degraded-mode refusal; a core agent ships inside kai-core, so the absence '
           + 'it refuses is not a state it can be in');
       }
+      if (body.includes(GUARANTEE_REGION_OPEN) || body.includes(GUARANTEE_REGION_CLOSE)) {
+        add(key, 'carries managed dependency-guard markers; core agents must carry no guard region');
+      }
       continue;
     }
     if (copies !== 1) {
@@ -1672,6 +1854,11 @@ export function guaranteeBlockErrors({
       add(key, `carries the verbatim degraded-mode refusal ${refusals} time(s); exactly one copy is required`);
       continue;
     }
+    if (body.split(GUARANTEE_REGION_OPEN).length !== 2
+      || body.split(GUARANTEE_REGION_CLOSE).length !== 2) {
+      add(key, 'must carry exactly one complete managed dependency-guard region');
+      continue;
+    }
     const at = body.indexOf(preflight);
     const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
     const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
@@ -1679,7 +1866,8 @@ export function guaranteeBlockErrors({
       add(key, 'places the core-preflight block before the `**Inherits:**` line it must follow');
     } else if (inheritsBlock && at < directiveAt) {
       add(key, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
-    } else if (directiveEnd !== -1 && !/^\s*$/.test(body.slice(directiveEnd, at))) {
+    } else if (directiveEnd !== -1
+      && !/^\s*$/.test(body.slice(directiveEnd, at).replace(GUARANTEE_REGION_OPEN, ''))) {
       add(key, 'places content between the inherited-contract directive and the core preflight — the '
         + 'preflight must remain the first executable instruction');
     }

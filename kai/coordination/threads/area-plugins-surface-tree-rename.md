@@ -28,3 +28,14 @@
 - note: `required_items[].state: shipped` is the milestone's required terminal
   threshold, not a claim that the item is already shipped.
 - next: workflow-pull-request — open the path-only release PR
+
+## SHIP 2026-08-31-0953 — workflow-pull-request
+
+- pull_request: #199
+- merge_ref: `c99acec205daaad2ee2bffc7c29244ffde1b0804`
+- release: `v2.0.0`
+- verification: Exact merged-main validation run `33414504696` passed all six
+  jobs.
+- disposition: shipped; the repository product tree is `plugins/` and the old
+  `packs/` path is absent.
+- next: principal-swe-infra — establish plugin-local source authority.

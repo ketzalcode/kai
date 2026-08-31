@@ -3,7 +3,7 @@
 These are the **repo-local** rules for changing kai itself. They apply to work
 inside this repository only.
 
-> **The shared operating contract lives in `skills/kai-core-team-operating-rules/SKILL.md`,
+> **The shared operating contract lives in `plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md`,
 > not here.** A plugin's own root `AGENTS.md` is never loaded as custom
 > instructions in a consumer workspace — the host reads `AGENTS.md` only from
 > the user's repository root and working directory. Rules placed here reach kai
@@ -15,10 +15,10 @@ inside this repository only.
 
 | Concern | Home |
 | --- | --- |
-| Role taxonomy, ownership boundaries, acting-agent loop, test ownership, completion ladder, communication, `@operator` | `skills/kai-core-team-operating-rules/SKILL.md` |
-| Workspace roots, schema version, artifact targets | `skills/kai-core-workspace-conventions/SKILL.md` |
-| Item lifecycle, leases, handoffs | `skills/kai-core-work-coordination/SKILL.md` |
-| Persona-specific craft | `agents/*.agent.md` |
+| Role taxonomy, ownership boundaries, acting-agent loop, test ownership, completion ladder, communication, `@operator` | `plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md` |
+| Workspace roots, schema version, artifact targets | `plugins/kai-core/skills/kai-core-workspace-conventions/SKILL.md` |
+| Item lifecycle, leases, handoffs | `plugins/kai-core/skills/kai-core-work-coordination/SKILL.md` |
+| Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
 
 ## Declaring inherited contracts
