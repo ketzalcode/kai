@@ -43,7 +43,9 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
-  PACK_ORDER, packPluginName,
+  PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, sourceFileErrors,
+  sourcePlacementErrors,
+  agentSourceFile, skillSourceFile,
 } from './lib/pack-plan.mjs';
 import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
@@ -56,35 +58,30 @@ const rel = (p) => p.slice(ROOT.length + 1).replace(/\\/g, '/');
 // ---------------------------------------------------------------------------
 // Collect agents and skills
 // ---------------------------------------------------------------------------
-const agentsDir = join(ROOT, 'agents');
-const skillsDir = join(ROOT, 'skills');
+const agentFiles = sourceAgentFiles(ROOT);
+const skillFiles = sourceSkillFiles(ROOT);
+for (const e of sourceFileErrors({ agents: agentFiles, skills: skillFiles })) err(e.file, e.msg);
 
-const agentFiles = readdirSync(agentsDir)
-  .filter((f) => f.endsWith('.agent.md'))
-  .map((f) => ({
-    id: f.replace(/\.agent\.md$/, ''),
-    kind: 'agent',
-    path: join(agentsDir, f),
-  }));
-
-// Any non-.gitkeep, non-*.agent.md file under agents/ is a mistake.
-for (const f of readdirSync(agentsDir)) {
-  if (f === '.gitkeep' || f.endsWith('.agent.md')) continue;
-  if (statSync(join(agentsDir, f)).isFile()) {
-    err(`agents/${f}`, 'unexpected file in agents/ (expected <name>.agent.md)');
+for (const pack of PACK_ORDER) {
+  const pluginRoot = join(ROOT, 'plugins', packPluginName(pack));
+  const agentsDir = join(pluginRoot, 'agents');
+  if (existsSync(agentsDir)) {
+    for (const f of readdirSync(agentsDir)) {
+      if (f === '.gitkeep' || f.endsWith('.agent.md')) continue;
+      if (statSync(join(agentsDir, f)).isFile()) {
+        err(rel(join(agentsDir, f)), 'unexpected file in agents/ (expected <name>.agent.md)');
+      }
+    }
   }
-}
-
-const skillFiles = [];
-for (const d of readdirSync(skillsDir)) {
-  const dirPath = join(skillsDir, d);
-  if (!statSync(dirPath).isDirectory()) continue;
-  const skillPath = join(dirPath, 'SKILL.md');
-  if (!existsSync(skillPath)) {
-    err(`skills/${d}`, 'skill folder is missing SKILL.md');
-    continue;
+  const skillsDir = join(pluginRoot, 'skills');
+  if (!existsSync(skillsDir)) continue;
+  for (const d of readdirSync(skillsDir)) {
+    const dirPath = join(skillsDir, d);
+    if (!statSync(dirPath).isDirectory()) continue;
+    if (!existsSync(join(dirPath, 'SKILL.md'))) {
+      err(rel(dirPath), 'skill folder is missing SKILL.md');
+    }
   }
-  skillFiles.push({ id: d, kind: 'skill', path: skillPath });
 }
 
 const allFiles = [...agentFiles, ...skillFiles];
@@ -276,11 +273,11 @@ if (!styleBlock) {
   }
   // Onboarding is what installs the block in a consumer workspace; if it stops
   // naming the canonical file, the block ships to nobody.
-  const onboarding = join(ROOT, 'skills/kai-core-workspace-onboarding/SKILL.md');
-  if (existsSync(onboarding)) {
+  const onboarding = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
+  if (onboarding && existsSync(onboarding)) {
     const ob = readFileSync(onboarding, 'utf8');
     if (!ob.includes('scripts/lib/communication-style-block.md')) {
-      err('skills/kai-core-workspace-onboarding/SKILL.md', 'does not reference scripts/lib/communication-style-block.md, so the opt-in style block would never reach a consumer workspace');
+      err(rel(onboarding), 'does not reference scripts/lib/communication-style-block.md, so the opt-in style block would never reach a consumer workspace');
     }
   }
 }
@@ -416,10 +413,10 @@ for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
 // every generated department agent refuses a healthy core, or accepts a skewed
 // one. A missing block is reported here too, since it is one of the pins.
 {
-  const probePath = join(ROOT, 'skills', CONTRACT_SKILL, 'SKILL.md');
+  const probePath = skillSourceFile(ROOT, CONTRACT_SKILL);
   for (const e of contractPinErrors({
     block: preflight,
-    probe: existsSync(probePath) ? readFileSync(probePath, 'utf8') : null,
+    probe: probePath && existsSync(probePath) ? readFileSync(probePath, 'utf8') : null,
   })) err(e.file, e.msg);
 }
 
@@ -506,6 +503,9 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
 const PARTITION_SOURCE = 'scripts/lib/pack-plan.mjs';
 {
   const plan = planPacks(ROOT);
+  for (const e of sourcePlacementErrors({ agents: agentFiles, skills: skillFiles, plan })) {
+    err(e.file, e.msg);
+  }
   for (const msg of partitionErrors({
     plan, agents: [...agentIds], skills: [...skillIds],
   })) err(PARTITION_SOURCE, msg);
@@ -524,13 +524,13 @@ const PARTITION_SOURCE = 'scripts/lib/pack-plan.mjs';
   // a roster instead of reading it, or counts it instead of testing membership,
   // is wrong in whichever direction its guess fell — and says nothing either way.
   for (const id of DISPATCHING_ROLES) {
-    const path = join(ROOT, 'agents', `${id}.agent.md`);
-    if (!existsSync(path)) {
-      err(`agents/${id}.agent.md`, 'missing (a lease-granting role the availability contract pins)');
+    const path = agentSourceFile(ROOT, id);
+    if (!path || !existsSync(path)) {
+      err(`agent:${id}`, 'missing (a lease-granting role the availability contract pins)');
       continue;
     }
     for (const msg of availabilityErrors({ body: readFileSync(path, 'utf8') })) {
-      err(`agents/${id}.agent.md`, msg);
+      err(rel(path), msg);
     }
   }
 }
@@ -596,7 +596,7 @@ const ASSESSOR_ROLES = [
 ];
 {
   if (!skillIds.has(ASSESSOR_CONTRACT)) {
-    err(`skills/${ASSESSOR_CONTRACT}/SKILL.md`, 'missing (the assessor write contract the roster depends on)');
+    err(`skill:${ASSESSOR_CONTRACT}`, 'missing (the assessor write contract the roster depends on)');
   }
   for (const id of ASSESSOR_ROLES) {
     const agent = agentFiles.find((a) => a.id === id);
@@ -675,11 +675,11 @@ const ASSESSOR_ROLES = [
 }
 
 // ---------------------------------------------------------------------------
-// Plugin manifests (the monolith + any committed pack trees)
+// Plugin manifests (retired-root release metadata + installable plugins)
 //
-// The repo currently carries the root monolith plus committed kai-core and
-// kai-personal manifests. Every check iterates the discovered set, while a
-// checkout with no plugins/ still reduces to the original single-manifest path.
+// Root plugin.json remains temporarily as the lockstep version authority, but
+// the retired monolith is no longer installable and therefore has no agent or
+// skill directories. Only plugin-local manifests are checked as host surfaces.
 // ---------------------------------------------------------------------------
 const MARKETPLACE_REL = '.github/plugin/marketplace.json';
 const MARKETPLACE_NAME = 'kai-plugins';
@@ -691,11 +691,12 @@ for (const m of manifests) {
   let pj;
   try { pj = JSON.parse(readFileSync(m.path, 'utf8')); }
   catch (e) { err(m.rel, `invalid JSON: ${e.message}`); continue; }
-  // Declared agent/skill paths must resolve, relative to the manifest's own
-  // directory (root for the monolith, the pack dir for a pack).
-  for (const key of ['agents', 'skills']) {
-    if (!pj[key]) err(m.rel, `missing "${key}" path`);
-    else if (!existsSync(join(m.dir, pj[key]))) err(m.rel, `"${key}" path "${pj[key]}" does not exist`);
+  // Installable plugin paths must resolve relative to their own manifest.
+  if (!m.isRoot) {
+    for (const key of ['agents', 'skills']) {
+      if (!pj[key]) err(m.rel, `missing "${key}" path`);
+      else if (!existsSync(join(m.dir, pj[key]))) err(m.rel, `"${key}" path "${pj[key]}" does not exist`);
+    }
   }
   if (!pj.version) err(m.rel, 'missing "version"');
   parsedManifests.push({ rel: m.rel, dir: m.dir, isRoot: m.isRoot, name: pj.name, version: pj.version, description: pj.description });
@@ -814,10 +815,18 @@ if (!existsSync(mktPath)) {
 // area is added to the manifest but forgotten in a scaffold; these catch it.
 // ---------------------------------------------------------------------------
 const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-const conventions = readIf(join(ROOT, 'skills/kai-core-workspace-conventions/SKILL.md'));
-const onboarding = readIf(join(ROOT, 'skills/kai-core-workspace-onboarding/SKILL.md'));
-const wsInit = readIf(join(ROOT, 'agents/workflow-workspace-init.agent.md'));
-const initiativeInit = readIf(join(ROOT, 'agents/workflow-initiative-init.agent.md'));
+const conventionsPath = skillSourceFile(ROOT, 'kai-core-workspace-conventions');
+const onboardingPath = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
+const wsInitPath = agentSourceFile(ROOT, 'workflow-workspace-init');
+const initiativeInitPath = agentSourceFile(ROOT, 'workflow-initiative-init');
+const conventions = conventionsPath ? readIf(conventionsPath) : null;
+const onboarding = onboardingPath ? readIf(onboardingPath) : null;
+const wsInit = wsInitPath ? readIf(wsInitPath) : null;
+const initiativeInit = initiativeInitPath ? readIf(initiativeInitPath) : null;
+const conventionsRel = conventionsPath ? rel(conventionsPath) : 'skill:kai-core-workspace-conventions';
+const onboardingRel = onboardingPath ? rel(onboardingPath) : 'skill:kai-core-workspace-onboarding';
+const wsInitRel = wsInitPath ? rel(wsInitPath) : 'agent:workflow-workspace-init';
+const initiativeInitRel = initiativeInitPath ? rel(initiativeInitPath) : 'agent:workflow-initiative-init';
 const gitignore = readIf(join(ROOT, '.gitignore'));
 
 const toSet = (arr) => new Set(arr);
@@ -837,11 +846,11 @@ if (onboarding) {
   for (const command of guidedInstallCommands) {
     const commandIndex = onboarding.indexOf(command);
     if (commandIndex === -1) {
-      err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing exact command \`${command}\``);
+      err(onboardingRel, `guided installer is missing exact command \`${command}\``);
       continue;
     }
     if (commandIndex <= previousCommandIndex) {
-      err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer command \`${command}\` is out of canonical core-first order`);
+      err(onboardingRel, `guided installer command \`${command}\` is out of canonical core-first order`);
     }
     previousCommandIndex = commandIndex;
   }
@@ -849,7 +858,7 @@ if (onboarding) {
   const browseIndex = onboarding.indexOf(marketplaceBrowse);
   const firstInstallIndex = onboarding.indexOf(guidedInstallCommands[0]);
   if (browseIndex === -1 || firstInstallIndex === -1 || browseIndex >= firstInstallIndex) {
-    err('skills/kai-core-workspace-onboarding/SKILL.md', 'guided installer must browse the marketplace before the first plugin install command');
+    err(onboardingRel, 'guided installer must browse the marketplace before the first plugin install command');
   }
   for (const requiredText of [
     marketplaceBrowse,
@@ -876,7 +885,7 @@ if (onboarding) {
     'perform the update from a session that does not have the pack loaded',
   ]) {
     if (!onboardingProse.includes(requiredText)) {
-      err('skills/kai-core-workspace-onboarding/SKILL.md', `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);
+      err(onboardingRel, `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);
     }
   }
 }
@@ -890,7 +899,7 @@ if (wsInit) {
     'requires a fresh session only when the run actually installed or updated a pack',
   ]) {
     if (!workspaceInitProse.includes(requiredText)) {
-      err('agents/workflow-workspace-init.agent.md', `does not bind the guided installer contract: ${JSON.stringify(requiredText)}`);
+      err(wsInitRel, `does not bind the guided installer contract: ${JSON.stringify(requiredText)}`);
     }
   }
 }
@@ -909,7 +918,7 @@ function managedBlock(text) {
 const giBlock = managedBlock(gitignore);
 const obBlock = managedBlock(onboarding);
 if (giBlock === null) err('.gitignore', 'missing the managed "# >>> kai workspace" block');
-if (obBlock === null) err('skills/kai-core-workspace-onboarding/SKILL.md', 'missing the managed gitignore block template');
+if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block template');
 if (giBlock && obBlock && giBlock !== obBlock) {
   err('.gitignore', 'managed gitignore block differs from the kai-core-workspace-onboarding template (they must stay identical)');
 }
@@ -922,14 +931,14 @@ const obAreasM = onboarding && onboarding.match(/\n\s*(qa\/[^\n]*)\n/);
 const obAreas = obAreasM ? dirTokens(obAreasM[1]) : null;
 const wiAreasM = wsInit && wsInit.match(/runs\/\{([^}]*)\}/s);
 const wiAreas = wiAreasM ? dirTokens(wiAreasM[1]) : null;
-if (!mAreas) err('skills/kai-core-workspace-conventions/SKILL.md', 'could not locate the manifest "areas" list');
-if (!obAreas) err('skills/kai-core-workspace-onboarding/SKILL.md', 'could not locate the runs/ area scaffold');
-if (!wiAreas) err('agents/workflow-workspace-init.agent.md', 'could not locate the runs/ area scaffold');
+if (!mAreas) err(conventionsRel, 'could not locate the manifest "areas" list');
+if (!obAreas) err(onboardingRel, 'could not locate the runs/ area scaffold');
+if (!wiAreas) err(wsInitRel, 'could not locate the runs/ area scaffold');
 if (mAreas && obAreas && !setEq(mAreas, obAreas)) {
-  err('skills/kai-core-workspace-onboarding/SKILL.md', `runs/ areas ${JSON.stringify([...obAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
+  err(onboardingRel, `runs/ areas ${JSON.stringify([...obAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
 }
 if (mAreas && wiAreas && !setEq(mAreas, wiAreas)) {
-  err('agents/workflow-workspace-init.agent.md', `runs/ areas ${JSON.stringify([...wiAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
+  err(wsInitRel, `runs/ areas ${JSON.stringify([...wiAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
 }
 
 // 2b. Every concrete `.kai/runs/<area>/` literal in a shipped agent or skill must
@@ -1022,14 +1031,14 @@ const obLib = obLibM ? dirTokens(obLibM[1]) : null;
 const wiLibM = wsInit && wsInit.match(/library\/\{([^}]*)\}/s);
 const wiLib = wiLibM ? dirTokens(wiLibM[1]) : null;
 const tableLib = libTypesFromTable(conventions);
-if (!tableLib) err('skills/kai-core-workspace-conventions/SKILL.md', 'could not locate the "Library types" table');
-if (tableLib && !obLib) err('skills/kai-core-workspace-onboarding/SKILL.md', 'could not locate the library/ scaffold');
-if (tableLib && !wiLib) err('agents/workflow-workspace-init.agent.md', 'could not locate the library/ scaffold');
+if (!tableLib) err(conventionsRel, 'could not locate the "Library types" table');
+if (tableLib && !obLib) err(onboardingRel, 'could not locate the library/ scaffold');
+if (tableLib && !wiLib) err(wsInitRel, 'could not locate the library/ scaffold');
 if (tableLib && obLib && !setEq(tableLib, obLib)) {
-  err('skills/kai-core-workspace-onboarding/SKILL.md', `library/ types ${JSON.stringify([...obLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
+  err(onboardingRel, `library/ types ${JSON.stringify([...obLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
 }
 if (tableLib && wiLib && !setEq(tableLib, wiLib)) {
-  err('agents/workflow-workspace-init.agent.md', `library/ types ${JSON.stringify([...wiLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
+  err(wsInitRel, `library/ types ${JSON.stringify([...wiLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
 }
 
 // 4. Initiative artifact directories must match between the canonical workspace
@@ -1039,13 +1048,13 @@ const conventionArtifacts = conventionArtifactsM ? dirTokens(conventionArtifacts
 const wiArtifactsM = initiativeInit && initiativeInit.match(/kai\/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\nkai\/coordination\//);
 const wiArtifacts = wiArtifactsM ? dirTokens(wiArtifactsM[1]) : null;
 if (!conventionArtifacts) {
-  err('skills/kai-core-workspace-conventions/SKILL.md', 'could not locate the initiative artifacts/ scaffold');
+  err(conventionsRel, 'could not locate the initiative artifacts/ scaffold');
 }
 if (!wiArtifacts) {
-  err('agents/workflow-initiative-init.agent.md', 'could not locate the initiative artifacts/ scaffold');
+  err(initiativeInitRel, 'could not locate the initiative artifacts/ scaffold');
 }
 if (conventionArtifacts && wiArtifacts && !setEq(conventionArtifacts, wiArtifacts)) {
-  err('agents/workflow-initiative-init.agent.md', `initiative artifact directories ${JSON.stringify([...wiArtifacts].sort())} differ from workspace conventions ${JSON.stringify([...conventionArtifacts].sort())}`);
+  err(initiativeInitRel, `initiative artifact directories ${JSON.stringify([...wiArtifacts].sort())} differ from workspace conventions ${JSON.stringify([...conventionArtifacts].sort())}`);
 }
 
 // ---------------------------------------------------------------------------

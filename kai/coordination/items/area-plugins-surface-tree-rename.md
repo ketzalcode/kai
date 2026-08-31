@@ -5,11 +5,11 @@ title: Rename the committed product tree from packs to plugins
 initiative: area-plugins
 milestone: surface-rename
 delivery_class: product-change
-state: in-review
+state: shipped
 resume_state: null
 priority: 1
 owner: principal-swe-infra
-next_role: workflow-pull-request
+next_role: null
 target: committed plugin tree naming
 artifact_expectation: none
 artifact_expectation_reason: The durable result is the repository tree, validation, and release record.
@@ -64,7 +64,7 @@ lease:
   version_at_grant: null
   acquired: null
   expires: null
-updated: 2026-08-31-0927
+updated: 2026-08-31-0953
 ---
 
 ## Outcome
@@ -91,3 +91,5 @@ at `packs/`.
   named gates, and `plugins/` generator parity.
 - Exact-ref architecture review accepted the path, content, marketplace, CI,
   release, and documentation changes with no blockers.
+- PR #199 merged as `c99acec205daaad2ee2bffc7c29244ffde1b0804`; exact-main
+  validation passed and release `v2.0.0` was published.

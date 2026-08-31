@@ -2,10 +2,10 @@
 // The deterministic pack generator, and the host-behaviour preview it grew from.
 //
 // Two jobs, one partition (scripts/lib/pack-plan.mjs):
-//   • generate  — materialise the pack trees from the LIVE root roster, byte-stably,
-//     with a per-plugin plugin.json. `--write` lands them under plugins/; `--check`
-//     regenerates and diffs so a hand-edit or a stale copy fails. The reviewed
-//     committed surface contains the full five-pack partition.
+//   • generate  — refresh derived files around the LIVE plugin-local roster,
+//     byte-stably, with a per-plugin plugin.json. `--write` also synchronises the
+//     marked dependency-guard region without replacing authoritative bodies;
+//     `--check` reports derived or managed-region drift.
 //   • preview   — a throwaway committed-slice or five-plugin build (`--out`/`--all`) that
 //     answers the host-behaviour questions gating the split: does a fail-closed
 //     preflight hold on a real agent, what happens when core is absent or
@@ -45,7 +45,10 @@ import {
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern,
-  hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES,
+  hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
+  sourceAgentFiles, sourceSkillFiles, sourceFileErrors, sourcePlacementErrors,
+  syncGuaranteeRegion, removeGuaranteeRegion,
+  GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -64,17 +67,14 @@ export {
 // one #29 named. It is a SELECTION of the canonical partition (PACKS.personal),
 // never a second roster to keep in step.
 
-const readAgent = (id) => readFileSync(join(ROOT, 'agents', `${id}.agent.md`), 'utf8');
-const skillPath = (id) => join(ROOT, 'skills', id, 'SKILL.md');
+const readAgent = (id) => readFileSync(agentSourceFile(ROOT, id), 'utf8');
+const skillPath = (id) => skillSourceFile(ROOT, id);
 
 // Every agent and skill on disk, which is what the partition is checked against:
 // the roster in PACKS is a claim about this list, not a substitute for it.
-const rosterAgentIds = () => readdirSync(join(ROOT, 'agents'))
-  .filter((f) => f.endsWith('.agent.md')).map((f) => f.replace(/\.agent\.md$/, '')).sort();
+const rosterAgentIds = () => sourceAgentFiles(ROOT).map((entry) => entry.id).sort();
 
-const rosterSkillIds = () => readdirSync(join(ROOT, 'skills'), { withFileTypes: true })
-  .filter((e) => e.isDirectory() && existsSync(skillPath(e.name)))
-  .map((e) => e.name).sort();
+const rosterSkillIds = () => sourceSkillFiles(ROOT).map((entry) => entry.id).sort();
 
 const declaredTools = (body) => {
   const parsed = parseFrontmatter(body);
@@ -137,7 +137,7 @@ const contractSkillText = (contract) => (contract === 1
 // The five-pack partition (PACKS) and the skill->provider rule (planPacks) are
 // defined once in scripts/lib/pack-plan.mjs and imported above.
 
-function writePlugin(dir, name, description, agentIds, skills, blocks) {
+function writePlugin(dir, name, description, agentIds, skills) {
   mkdirSync(dir, { recursive: true });
   const manifest = { name, version: '0.0.0-preview', description, skills: 'skills' };
   if (agentIds.length) manifest.agents = 'agents';
@@ -146,8 +146,7 @@ function writePlugin(dir, name, description, agentIds, skills, blocks) {
     mkdirSync(join(dir, 'agents'), { recursive: true });
     for (const id of agentIds) {
       const body = readAgent(id);
-      writeFileSync(join(dir, 'agents', `${id}.agent.md`),
-        blocks.length ? injectBlocks(body, blocks) : normalizeLF(body));
+      writeFileSync(join(dir, 'agents', `${id}.agent.md`), normalizeLF(body));
     }
   }
   for (const s of skills) writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'));
@@ -165,18 +164,17 @@ export function buildAll({ out, packs = Object.keys(PACKS).filter((p) => p !== '
   if (withCore) {
     const dir = join(out, 'kai-core-preview');
     writePlugin(dir, 'kai-core-preview', 'Preview of the kai shared core. Not for use.',
-      PACKS.core, plan.core, []);
+      PACKS.core, plan.core);
     // plan.core already copied the real probe; this rewrite is what a --contract
     // other than 1 uses to build a core the agents must refuse.
     writeSkill(dir, CONTRACT_SKILL, contractSkillText(contract));
     built.push({ name: 'kai-core-preview', dir, agents: PACKS.core.length });
   }
 
-  const blocks = guaranteeBlocks();
   for (const p of packs) {
     const dir = join(out, `kai-${p}-preview`);
     writePlugin(dir, `kai-${p}-preview`, `Preview of the kai ${p} department. Not for use.`,
-      PACKS[p], plan.local[p], blocks);
+      PACKS[p], plan.local[p]);
     built.push({ name: `kai-${p}-preview`, dir, agents: PACKS[p].length });
   }
   return { built, plan };
@@ -226,12 +224,11 @@ export function build({ out, withCore = true, contract = 1, pack = 'personal' })
 // ---------------------------------------------------------------------------
 // Committed pack trees — the deterministic generator (materialise + diff)
 //
-// Unlike the preview above, this path is the authoritative generator: it copies
-// skill and core-agent bodies verbatim from root (root stays the single source of
-// truth), injects the canonical fail-closed preflight and the degraded-mode
-// refusal that follows it into every department agent, stamps a per-pack
-// plugin.json, routes non-markdown assets and hooks by the reviewed ownership
-// plan, and normalises to LF so output is byte-identical on every platform.
+// Unlike the preview above, this path generates only derived plugin files:
+// manifests, dependency locks, routed non-markdown assets, and hooks. Agent and
+// skill bodies are authoritative in plugins/ and are never replaced wholesale.
+// `--write` may update only the explicitly marked core-dependency guard region
+// inside department agents.
 // ---------------------------------------------------------------------------
 
 // Stamp generated packs in lockstep with the monolith. Falls back to the preview
@@ -258,10 +255,36 @@ function walkCommitted(base) {
   return out;
 }
 
-// Regenerate the plugin trees from root and diff against what is committed. Drift —
-// a hand-edit, a stale copy, a missing or an extra file — fails, so a committed
-// tree can only ever be exactly what the generator produces. A configured slice
-// with no plugins/ directory fails with the command that regenerates it.
+const isSourceKey = (key) => {
+  const entry = parseGeneratedKey(key);
+  return entry?.kind === 'agent' || entry?.kind === 'skill';
+};
+
+const derivedFiles = (files) => new Map([...files].filter(([key]) => !isSourceKey(key)));
+
+function managedAgentDrift(root) {
+  const drift = [];
+  for (const entry of sourceAgentFiles(root)) {
+    const raw = normalizeLF(readFileSync(entry.path, 'utf8'));
+    try {
+      if (entry.pack === 'core') {
+        if (raw.includes(GUARANTEE_REGION_OPEN) || raw.includes(GUARANTEE_REGION_CLOSE)) {
+          drift.push(`differs:    ${entry.rel} (core agents must not carry the dependency guard)`);
+        }
+      } else if (syncGuaranteeRegion(raw, root) !== raw) {
+        drift.push(`differs:    ${entry.rel} (managed core dependency guard)`);
+      }
+    } catch (e) {
+      drift.push(`differs:    ${entry.rel} (${e.message})`);
+    }
+  }
+  return drift;
+}
+
+// Regenerate derived files and diff them against what is committed. Agent and
+// skill bodies are source: only the department agents' marked guard region is
+// mechanically pinned. A configured tree that is absent fails with the command
+// that regenerates its derived surface.
 export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (!existsSync(base)) {
     if (COMMITTED_PACKS.length === 0) {
@@ -273,33 +296,53 @@ export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
       note: `committed packs are configured — regenerate with: node scripts/pack-preview.mjs --write`,
     };
   }
-  const expected = materializePacks({ root, version, packs: COMMITTED_PACKS });
-  const drift = [];
+  const expected = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
+  const drift = managedAgentDrift(root);
   for (const [relPath, content] of expected) {
     const abs = join(base, ...relPath.split('/'));
     if (!existsSync(abs)) { drift.push(`missing:    ${relPath}`); continue; }
     if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs:    ${relPath}`);
   }
   for (const key of walkCommitted(base)) {
-    if (!expected.has(key)) drift.push(`unexpected: ${key}`);
+    if (!expected.has(key) && !isSourceKey(key)) drift.push(`unexpected: ${key}`);
   }
   return { ok: drift.length === 0, drift };
 }
 
-// Materialise the trees to `base`, replacing any existing tree so the output is
-// exactly the reviewed committed slice with no stale leftovers.
+// Update managed agent regions, then materialise derived files without deleting
+// authoritative agent or skill sources.
 export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (COMMITTED_PACKS.length === 0) {
     throw new Error('no committed packs configured; the extraction item must set COMMITTED_PACKS first');
   }
-  rmSync(base, { recursive: true, force: true });
-  const files = materializePacks({ root, version, packs: COMMITTED_PACKS });
+  let managed = 0;
+  for (const entry of sourceAgentFiles(root)) {
+    const raw = normalizeLF(readFileSync(entry.path, 'utf8'));
+    if (entry.pack === 'core') {
+      const next = removeGuaranteeRegion(raw);
+      if (next !== raw) {
+        writeFileSync(entry.path, next);
+        managed += 1;
+      }
+      continue;
+    }
+    const next = syncGuaranteeRegion(raw, root);
+    if (next !== raw) {
+      writeFileSync(entry.path, next);
+      managed += 1;
+    }
+  }
+  const files = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
   for (const [relPath, content] of files) {
     const abs = join(base, ...relPath.split('/'));
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, content);
   }
-  return { written: files.size, dir: base };
+  for (const key of walkCommitted(base)) {
+    if (files.has(key) || isSourceKey(key)) continue;
+    rmSync(join(base, ...key.split('/')), { force: true });
+  }
+  return { written: files.size, managed, dir: base };
 }
 
 // ---------------------------------------------------------------------------
@@ -328,19 +371,24 @@ function selfTest() {
   // --- the canonical fail-closed preflight -------------------------------
   const block = preflightBlock();
   const degraded = degradedBlock();
-  const injected = injectBlocks(readAgent(PACKS.personal[0]), guaranteeBlocks());
+  const sourceBody = readAgent(PACKS.personal[0]);
+  const injected = syncGuaranteeRegion(sourceBody);
   const injectedLines = injected.split('\n');
   const iInherits = injectedLines.findIndex((l) => l.startsWith('**Inherits:**'));
   const iPreflight = injectedLines.findIndex((l) => l.startsWith('## Core preflight'));
   ok(iInherits !== -1 && iPreflight > iInherits
-    && injectedLines[iPreflight - 1] === '' && injectedLines[iPreflight - 2]?.startsWith('>'),
+    && injectedLines[iPreflight - 1] === ''
+    && injectedLines[iPreflight - 2] === GUARANTEE_REGION_OPEN
+    && injectedLines[iPreflight - 4]?.startsWith('>'),
   'the preflight lands after the whole inherits directive, not between the line and the directive that binds it');
   ok(injected.split(block).length === 2,
-    'the canonical block is copied in verbatim, exactly once');
+    'the managed region carries the canonical block verbatim, exactly once');
   ok(injected.split('**Inherits:**').length === 2,
     'injection does not duplicate the inherits line CI pins to exactly one');
   ok(injected.includes(REFUSAL),
     'the agent carries the exact refusal token the test asserts on');
+  ok(injected.includes(GUARANTEE_REGION_OPEN) && injected.includes(GUARANTEE_REGION_CLOSE),
+    'the dependency guard is bounded by markers so it can change without replacing the source body');
   ok(/^---\n/.test(injected) && !injected.includes('\r'),
     'frontmatter still opens the file and endings are uniform LF, so the host can load it');
 
@@ -510,9 +558,9 @@ function selfTest() {
     && m1.has('kai-gtm/agents/principal-sales.agent.md'),
     'the materialised tree places per-pack plugin and npm manifests with copied agent bodies');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
-    'the authoritative generator injects the canonical preflight into department agents');
+    'the authoritative department source carries the canonical preflight');
   ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(degraded),
-    'and the degraded refusal alongside it, from the same authoritative path');
+    'and the degraded refusal alongside it in the same managed region');
   ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(block)
     && !m1.get(`kai-core/agents/${id}.agent.md`).includes(degraded)),
   'and neither into a core agent, which ships inside the pack whose absence they cover');
@@ -575,9 +623,9 @@ function selfTest() {
       writeFileSync(abs, content);
     }
     const checkSelected = () => {
-      const expected = materializePacks({
+      const expected = derivedFiles(materializePacks({
         root: ROOT, version: '9.9.9-selftest', packs: selectedPacks,
-      });
+      }));
       const drift = [];
       for (const [relPath, content] of expected) {
         const abs = join(scratch, ...relPath.split('/'));
@@ -587,15 +635,17 @@ function selfTest() {
       return drift;
     };
     ok(checkSelected().length === 0,
-      'a freshly generated tree passes the regenerate-and-diff check with no drift');
+      'freshly generated derived files pass the regenerate-and-diff check with no drift');
 
-    // Softening the refusal in a shipped tree is the drift this whole pin
-    // exists to catch, so it is proven on the exact file it would land in.
+    // Agent bodies are source, so ordinary edits are not generator drift. The
+    // marked guard remains replaceable and independently pinned.
     const agentPath = join(scratch, 'kai-personal', 'agents', 'persona-self.agent.md');
     const original = readFileSync(agentPath, 'utf8');
     writeFileSync(agentPath, original.replace(degraded, degraded.replace('Refuse', 'Consider refusing')));
-    ok(checkSelected().some((d) => d.includes('kai-personal/agents/persona-self.agent.md')),
-      'a softened refusal inside a generated agent is caught as drift, on that exact file');
+    ok(checkSelected().length === 0,
+      'editing an authoritative agent body is not misclassified as generated-file drift');
+    ok(syncGuaranteeRegion(readFileSync(agentPath, 'utf8')) !== readFileSync(agentPath, 'utf8'),
+      'but a softened managed refusal is detected and can be restored without replacing the body');
     writeFileSync(agentPath, original);
     ok(checkSelected().length === 0,
       'and restoring it clears the drift, so the check reports state rather than history');
@@ -777,10 +827,12 @@ function selfTest() {
   const firing = (path, kind) => liveRefs.filter((r) => r.firing.includes(path) && r.kind === kind);
   const carries = (path, kind, from, target) => firing(path, kind)
     .some((r) => r.from === from && r.target === target);
+  const agentRel = (id) => sourceAgentFiles(ROOT).find((entry) => entry.id === id)?.rel;
+  const skillRel = (id) => sourceSkillFiles(ROOT).find((entry) => entry.id === id)?.rel;
 
-  ok(carries('inherited', 'skill', 'agents/persona-self.agent.md', 'kai-core-team-operating-rules'),
+  ok(carries('inherited', 'skill', agentRel('persona-self'), 'kai-core-team-operating-rules'),
     'the inherited path is really collected: a department agent inheriting the core contract is seen');
-  ok(carries('orchestrated', 'skill', 'agents/workflow-doc-review.agent.md', 'review-rationale'),
+  ok(carries('orchestrated', 'skill', agentRel('workflow-doc-review'), 'review-rationale'),
     'the orchestrated path is really collected: a dispatched lens is seen as a reference');
 
   // The whole lens set, not one sample. A dispatch entry naming a skill that no
@@ -794,15 +846,15 @@ function selfTest() {
     'review-security-privacy', 'review-success-metrics', 'review-ux-accessibility',
   ];
   const missingLenses = DOC_REVIEW_LENSES
-    .filter((lens) => !carries('orchestrated', 'skill', 'agents/workflow-doc-review.agent.md', lens));
+    .filter((lens) => !carries('orchestrated', 'skill', agentRel('workflow-doc-review'), lens));
   ok(missingLenses.length === 0,
     `all ${DOC_REVIEW_LENSES.length} doc-review lenses are collected as dispatched references `
     + `(missing: ${missingLenses.join(', ') || 'none'})`);
   ok(DOC_REVIEW_LENSES.every((lens) => rosterSkills.includes(lens)),
     'and every dispatched lens is a skill on disk, so a renamed lens cannot be silently dropped');
-  ok(carries('orchestrated', 'agent', 'agents/principal-swe-manager.agent.md', 'principal-product-manager'),
+  ok(carries('orchestrated', 'agent', agentRel('principal-swe-manager'), 'principal-product-manager'),
     'agent-to-agent dispatch is really collected, across the department boundary');
-  ok(carries('user-invoked', 'asset', 'skills/demo-zoom/SKILL.md', 'scripts/demo-zoom.mjs'),
+  ok(carries('user-invoked', 'asset', skillRel('demo-zoom'), 'scripts/demo-zoom.mjs'),
     'the user-invoked path is really collected, down to the script the skill tells you to run');
   ok(firing('inherited', 'skill').length > 100 && firing('orchestrated', 'agent').length > 5
     && firing('user-invoked', 'skill').length > 5 && liveRefs.some((r) => r.kind === 'asset'),
@@ -1118,6 +1170,21 @@ function selfTest() {
   ok(partitionMsgs({ plan: { ...cleanPlan, orphans: ['personal-skill'] } })
     .some((m) => /has no reviewed provider in SKILL_OWNER_OVERRIDES/.test(m)),
   'an orphan with no reviewed disposition fails by name: it would ship in no pack at all');
+  ok(sourceFileErrors({
+    agents: [
+      { id: 'persona-b', rel: 'plugins/kai-personal/agents/persona-b.agent.md' },
+      { id: 'persona-b', rel: 'plugins/kai-gtm/agents/persona-b.agent.md' },
+    ],
+    skills: [],
+  }).some((e) => /exactly one source is allowed/.test(e.msg)),
+  'duplicating an agent across plugin-local source trees fails by id');
+  ok(sourcePlacementErrors({
+    agents: [{ id: 'persona-b', pack: 'gtm', rel: 'plugins/kai-gtm/agents/persona-b.agent.md' }],
+    skills: [{ id: 'personal-skill', pack: 'core', rel: 'plugins/kai-core/skills/personal-skill/SKILL.md' }],
+    plan: cleanPlan,
+    packs: { core: ['director-a'], personal: ['persona-b'] },
+  }).length === 2,
+  'a source file placed outside its planned plugin fails for both agents and skills');
 
   // --- core's namespace, in both directions -----------------------------
   ok(namespaceErrors({ core: plan.core, local: plan.local }).length === 0,
@@ -1162,7 +1229,7 @@ function selfTest() {
   const departmentBody = (over = {}) => {
     const { first = block, second = degraded, wedge = '', pack = 'personal' } = over;
     return [`kai-${pack}/agents/persona-x.agent.md`,
-      `---\nname: persona-x\n---\n\n${inherits}\n\n${first}\n${wedge}\n${second}\n\nbody\n`];
+      `---\nname: persona-x\n---\n\n${inherits}\n\n${GUARANTEE_REGION_OPEN}\n\n${first}\n${wedge}\n${second}\n\n${GUARANTEE_REGION_CLOSE}\n\nbody\n`];
   };
   const blockMsgs = (entries, packs = ['core', 'personal']) => guaranteeBlockErrors({
     files: new Map(entries), preflight: block, degraded, packs,
@@ -1410,7 +1477,7 @@ if (args.includes('--self-test')) {
   process.exit(1);
 } else if (args.includes('--write')) {
   const r = writeCommitted();
-  console.log(`pack-preview --write: ${r.written} file(s) -> ${r.dir}`);
+  console.log(`pack-preview --write: ${r.written} derived file(s), ${r.managed} managed agent region(s) -> ${r.dir}`);
 } else if (args.includes('--all')) {
   const packsArg = flag('--packs', '');
   const out = flag('--out');

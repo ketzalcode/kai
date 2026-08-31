@@ -10,14 +10,15 @@ for people changing kai itself. If you are *using* kai, you want
 
 ```
 kai/
-├── plugin.json         # plugin manifest (name, version, paths)
+├── plugin.json         # temporary lockstep release metadata
 ├── README.md           # the landing page
 ├── AGENTS.md           # contributor rules for this repo only
 ├── CHANGELOG.md        # every release
 ├── LICENSE             # MIT
-├── agents/             # one .agent.md per persona
-├── skills/             # one folder per skill (each with SKILL.md)
-├── plugins/            # committed installable plugin trees
+├── plugins/            # authoritative installable plugin trees
+│   └── <plugin>/
+│       ├── agents/     # authoritative role profiles
+│       └── skills/     # authoritative skills and contracts
 ├── scripts/            # dependency-free Node ESM: validators, doctor, generators
 ├── docs/               # this documentation set
 ├── examples/           # committed, CI-validated example workspaces
@@ -95,7 +96,7 @@ also run in CI on every pull request:
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |
 | `npm run observe:self-test` | The subagent observer: consent gate, leak bounds, and the empty-stdout/exit-0 guarantee. |
 | `npm run observe:watch-self-test` | The ambient view: start/stop pairing, ambiguity labelling, and layout bounds. |
-| `npm run pack-preview:self-test` | The pack generator: the partition rules, the injected guarantee blocks, and the cross-pack reference resolution, each failure proven by a mutation. |
+| `npm run pack-preview:self-test` | Plugin-source planning: partition rules, managed guarantee regions, derived-file generation, and cross-plugin reference resolution, each failure proven by a mutation. |
 | `npm run pack-preview:gate` | The same rules over the live tree, as four named gates — partition, collision, partial-install, version-skew — which is how CI runs them. |
 | `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
 | `node examples/proactive-runner/runner.mjs --self-test` | The kai-core-proactive-scan runner's decision, redaction, and retention core. |

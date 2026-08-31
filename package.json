@@ -1,7 +1,7 @@
 {
   "name": "kai",
-  "version": "2.0.0",
-  "description": "Skills + scripts wired in this repo. Lectoria is pinned once at the canonical root and projected into the generated packs that execute it; Copilot does not run npm for installed plugins. See skills/kai-core-generate-audio/SKILL.md.",
+  "version": "2.1.0",
+  "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; derived runtime files are refreshed by pack-preview.",
   "private": true,
   "scripts": {
     "validate": "node scripts/validate-plugin.mjs",

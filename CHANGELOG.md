@@ -4,6 +4,26 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [2.1.0] - 2026-08-31
+
+### Changed
+
+- **Plugin-local agents and skills are now authoritative.** Validators,
+  documentation generation, host inventory, reference analysis, previews, and
+  partition planning all read the single source inside each owning
+  `plugins/<plugin>/` tree.
+- **Generation now owns only derived output.** `pack-preview --write` refreshes
+  manifests, dependency locks, routed runtime assets, and the explicitly marked
+  core-dependency guard region. It no longer replaces complete agent or skill
+  files.
+- **Catalog links now point to the owning plugin source.** Contributor-facing
+  references resolve directly to the file that ships.
+
+### Removed
+
+- **Duplicate root agent and skill trees.** The transitional `agents/` and
+  `skills/` copies are deleted; validation rejects duplicate plugin-local ids.
+
 ## [2.0.0] - 2026-08-31
 
 ### Changed
@@ -3148,6 +3168,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[2.1.0]: https://github.com/RubenSaucedo/kai/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/RubenSaucedo/kai/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/RubenSaucedo/kai/compare/v1.0.6...v1.1.0
 [1.0.6]: https://github.com/RubenSaucedo/kai/compare/v1.0.5...v1.0.6
