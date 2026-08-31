@@ -12,12 +12,12 @@
 import { execFileSync } from 'node:child_process';
 
 // Behavior-sensitive = the plugin's shipped surface. A change here is a release
-// and must carry a version bump + release notes. `packs/` is the committed pack
-// tree: a generated department/core tree ships to users the same way agents/ and
-// skills/ do, so a change to it must never land outside version/release
+// and must carry a version bump + release notes. `plugins/` is the committed
+// tree: generated department/core plugins ship to users the same way root
+// agents and skills do, so a change to it must never land outside version/release
 // enforcement. Everything else (README, CHANGELOG, docs, tests, workflows,
 // .env.example, LICENSE) is exempt.
-const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'scripts/', 'packs/'];
+const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'scripts/', 'plugins/'];
 const BEHAVIOR_FILES = new Set([
   '.github/plugin/marketplace.json',
   'plugin.json',
@@ -123,7 +123,7 @@ function selfTest() {
     },
     {
       name: 'a committed pack-tree change is behavior-sensitive',
-      input: { changedFiles: ['packs/kai-core/plugin.json'], baseVersion: '0.15.0', headVersion: '0.15.0' },
+      input: { changedFiles: ['plugins/kai-core/plugin.json'], baseVersion: '0.15.0', headVersion: '0.15.0' },
       expect: (r) => !r.ok && r.behaviorChanged && r.errors.some((e) => /not bumped forward/.test(e)),
     },
     {
@@ -133,7 +133,7 @@ function selfTest() {
     },
     {
       name: 'a bumped + release-noted pack-tree change passes',
-      input: { changedFiles: ['packs/kai-personal/agents/persona-self.agent.md', 'CHANGELOG.md', 'README.md'], baseVersion: '0.15.0', headVersion: '0.16.0' },
+      input: { changedFiles: ['plugins/kai-personal/agents/persona-self.agent.md', 'CHANGELOG.md', 'README.md'], baseVersion: '0.15.0', headVersion: '0.16.0' },
       expect: (r) => r.ok && r.behaviorChanged,
     },
     {
@@ -155,7 +155,7 @@ function selfTest() {
   // Path classification spot-checks.
   const cls = [
     ['agents/x.agent.md', true], ['skills/x/SKILL.md', true], ['scripts/x.mjs', true],
-    ['packs/kai-core/plugin.json', true], ['packs/kai-personal/agents/x.agent.md', true],
+    ['plugins/kai-core/plugin.json', true], ['plugins/kai-personal/agents/x.agent.md', true],
     ['.github/plugin/marketplace.json', true],
     ['plugin.json', true], ['package.json', true], ['package-lock.json', true],
     ['README.md', false], ['CHANGELOG.md', false], ['docs/x.md', false],

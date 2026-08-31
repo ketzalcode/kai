@@ -3,7 +3,7 @@
 //
 // Two jobs, one partition (scripts/lib/pack-plan.mjs):
 //   • generate  — materialise the pack trees from the LIVE root roster, byte-stably,
-//     with a per-pack plugin.json. `--write` lands them under packs/; `--check`
+//     with a per-plugin plugin.json. `--write` lands them under plugins/; `--check`
 //     regenerates and diffs so a hand-edit or a stale copy fails. The reviewed
 //     committed surface contains the full five-pack partition.
 //   • preview   — a throwaway committed-slice or five-plugin build (`--out`/`--all`) that
@@ -258,10 +258,10 @@ function walkCommitted(base) {
   return out;
 }
 
-// Regenerate the pack trees from root and diff against what is committed. Drift —
+// Regenerate the plugin trees from root and diff against what is committed. Drift —
 // a hand-edit, a stale copy, a missing or an extra file — fails, so a committed
 // tree can only ever be exactly what the generator produces. A configured slice
-// with no packs/ directory fails with the command that regenerates it.
+// with no plugins/ directory fails with the command that regenerates it.
 export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (!existsSync(base)) {
     if (COMMITTED_PACKS.length === 0) {
@@ -615,15 +615,15 @@ function selfTest() {
   const missingCheck = checkCommitted({ root: ROOT, base: missingBase, version: '9.9.9-selftest' });
   ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`)
     && /regenerate with/.test(missingCheck.note),
-  'a configured slice with no packs directory fails with regeneration guidance, not ENOENT');
+  'a configured slice with no plugins directory fails with regeneration guidance, not ENOENT');
 
   // --- multi-manifest gate helpers (shared with validate-plugin) ---------
   const parity = manifestParityErrors(
     [{ rel: 'plugin.json', version: '1.2.3' },
-      { rel: 'packs/kai-core/plugin.json', version: '1.2.3' },
-      { rel: 'packs/kai-personal/plugin.json', version: '0.9.0' }],
+      { rel: 'plugins/kai-core/plugin.json', version: '1.2.3' },
+      { rel: 'plugins/kai-personal/plugin.json', version: '0.9.0' }],
     '1.2.3');
-  ok(parity.length === 1 && parity[0].rel === 'packs/kai-personal/plugin.json',
+  ok(parity.length === 1 && parity[0].rel === 'plugins/kai-personal/plugin.json',
     'manifest parity flags exactly the pack whose version drifts from canonical');
   ok(manifestParityErrors([{ rel: 'plugin.json', version: '1.2.3' }], '1.2.3').length === 0,
     'a lone monolith manifest at the canonical version raises no parity error (backwards compatible)');
@@ -635,16 +635,16 @@ function selfTest() {
     metadata: { version: '1.2.3', ...(installSurface ? { installSurface } : {}) },
   });
   const kaiEntry = { name: 'kai', source: '.', version: '1.2.3', description: 'd' };
-  const coreEntry = { name: 'kai-core', source: './packs/kai-core', version: '1.2.3', description: 'core' };
+  const coreEntry = { name: 'kai-core', source: './plugins/kai-core', version: '1.2.3', description: 'core' };
   const productEntry = {
-    name: 'kai-product', source: './packs/kai-product', version: '1.2.3', description: 'product',
+    name: 'kai-product', source: './plugins/kai-product', version: '1.2.3', description: 'product',
   };
   const engineeringEntry = {
-    name: 'kai-engineering', source: './packs/kai-engineering', version: '1.2.3',
+    name: 'kai-engineering', source: './plugins/kai-engineering', version: '1.2.3',
     description: 'engineering',
   };
   const gtmEntry = {
-    name: 'kai-gtm', source: './packs/kai-gtm', version: '1.2.3', description: 'gtm',
+    name: 'kai-gtm', source: './plugins/kai-gtm', version: '1.2.3', description: 'gtm',
   };
   const known = {
     kai: { version: '1.2.3', description: 'd' },
@@ -655,10 +655,10 @@ function selfTest() {
   };
   const sources = {
     '.': { name: 'kai' },
-    'packs/kai-core': { name: 'kai-core' },
-    'packs/kai-product': { name: 'kai-product' },
-    'packs/kai-engineering': { name: 'kai-engineering' },
-    'packs/kai-gtm': { name: 'kai-gtm' },
+    'plugins/kai-core': { name: 'kai-core' },
+    'plugins/kai-product': { name: 'kai-product' },
+    'plugins/kai-engineering': { name: 'kai-engineering' },
+    'plugins/kai-gtm': { name: 'kai-gtm' },
   };
   const mktArgs = (m, extra = {}) => ({
     mkt: m,
@@ -693,7 +693,7 @@ function selfTest() {
     requiredPluginNames: ['kai'],
   })).some((e) => /source .* contains plugin "kai-core"/.test(e)),
   'a marketplace entry whose name disagrees with its source manifest is caught');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, source: { path: './packs/kai-core' } }])))
+  ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, source: { path: './plugins/kai-core' } }])))
     .some((e) => /non-string or missing "source"/.test(e)),
   'a marketplace entry with a non-string source is rejected');
   const packSurface = marketplaceSurfacePolicy({
@@ -1447,8 +1447,8 @@ if (args.includes('--self-test')) {
   console.log(`pack: ${r.packDir}`);
   reportPreflight(out);
 } else {
-  console.log('usage: node scripts/pack-preview.mjs --check          (regenerate + diff committed packs/)');
-  console.log('       node scripts/pack-preview.mjs --write          (materialise committed packs/)');
+  console.log('usage: node scripts/pack-preview.mjs --check          (regenerate + diff committed plugins/)');
+  console.log('       node scripts/pack-preview.mjs --write          (materialise committed plugins/)');
   console.log('       node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
   console.log('       node scripts/pack-preview.mjs --all --out <dir>');
   console.log('       node scripts/pack-preview.mjs --self-test');

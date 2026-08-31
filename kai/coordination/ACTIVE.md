@@ -3,11 +3,11 @@
 Operational focus pointer, not the permanent record. Terminal initiatives remain
 discoverable in `kai/initiatives/INDEX.md`.
 
-**Current snapshot — 2026-08-28-1352.**
+**Current snapshot — 2026-08-31-0914.**
 
 | initiative | status | current milestone | workspace | authoritative records |
 |------------|--------|-------------------|-----------|-----------------------|
-| area-plugins | active (operator-directed) | `allowlist-repair` + `decisions-locked` | `.` (repository) | `kai/coordination/items/area-plugins-*.md` + `kai/coordination/threads/area-plugins-*.md` |
+| area-plugins | active (operator-directed) | `allowlist-repair` + `decisions-locked` + `surface-rename` | `.` (repository) | `kai/coordination/items/area-plugins-*.md` + `kai/coordination/threads/area-plugins-*.md` |
 | workspace-corpus-contract | active (operator-approved 2026-08-28) | `corpus-honesty` (architecture ratified; four decision items proposed) | `.` (repository) | `kai/initiatives/workspace-corpus-contract/northstar.md` + `kai/coordination/items/{area-plugins-initiative-archive, area-plugins-backlog-contract, area-plugins-design-output-contract, area-plugins-workspace-storage-modes}.md` + their threads |
 | asset-lifecycle-contract | active (operator-approved 2026-08-28) | `contract-bound` | `.` (repository) | `kai/initiatives/asset-lifecycle-contract/northstar.md` + `kai/coordination/items/asset-lifecycle-*.md` |
 
@@ -25,6 +25,11 @@ self-promoted by the director.
 A11):**
 `allowlist-repair -> decisions-locked -> optional-core-contract ->
 surface-rename -> area-taxonomy-split -> migration-complete`
+
+The operator activated `surface-rename` on 2026-08-31 after merging the
+universal lifecycle contract. The committed tree rename lands first; plugin
+source authority and monolith retirement follow as separately reviewable
+changes.
 
 **Two concurrent frontiers, deliberately.** `allowlist-repair` (a frontmatter
 tool-allowlist repair across all 56 agent bodies and their generated mirrors) and

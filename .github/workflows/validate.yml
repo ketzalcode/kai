@@ -105,20 +105,20 @@ jobs:
           export npm_config_cache="$RUNNER_TEMP/cache-${{ matrix.pack }}"
           export npm_config_userconfig="$HOME/.npmrc"
           mkdir -p "$HOME" "$npm_config_cache"
-          npm ci --prefix "packs/${{ matrix.pack }}" \
+          npm ci --prefix "plugins/${{ matrix.pack }}" \
             --no-audit --no-fund --foreground-scripts
           # Derived from PACK_RUNTIME_DEPENDENCIES: a pack that declares none
           # installs its lockfile and asserts no binary. Captured first so a
           # failed derivation fails the leg instead of asserting nothing.
           binaries="$(node scripts/pack-preview.mjs --ci-runtime-binaries "${{ matrix.pack }}")"
           for binary in $binaries; do
-            "packs/${{ matrix.pack }}/node_modules/.bin/$binary" --help >/dev/null
+            "plugins/${{ matrix.pack }}/node_modules/.bin/$binary" --help >/dev/null
           done
       - name: Probe core provider-root resolution
         if: matrix.pack == 'kai-core'
         shell: pwsh
         run: |
-          $skillDir = Resolve-Path 'packs/kai-core/skills/kai-core-generate-audio'
+          $skillDir = Resolve-Path 'plugins/kai-core/skills/kai-core-generate-audio'
           $providerRoot = Split-Path -Parent (Split-Path -Parent $skillDir)
           $wrapper = Join-Path $providerRoot 'scripts/generate-audio.ps1'
           $source = Join-Path $skillDir 'SKILL.md'

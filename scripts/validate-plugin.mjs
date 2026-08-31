@@ -679,7 +679,7 @@ const ASSESSOR_ROLES = [
 //
 // The repo currently carries the root monolith plus committed kai-core and
 // kai-personal manifests. Every check iterates the discovered set, while a
-// checkout with no packs/ still reduces to the original single-manifest path.
+// checkout with no plugins/ still reduces to the original single-manifest path.
 // ---------------------------------------------------------------------------
 const MARKETPLACE_REL = '.github/plugin/marketplace.json';
 const MARKETPLACE_NAME = 'kai-plugins';
