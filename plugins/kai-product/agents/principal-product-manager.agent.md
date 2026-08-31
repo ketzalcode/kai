@@ -96,7 +96,7 @@ already in scope can be `Apply`/`Minimize`/`Reframe`; a finding that
 adds a step, gate, screen, field, surface, or new capability — or
 violates a `non_negotiable` — is **expands-scope**: `Defer` it as a
 `PROPOSAL` (routed to the initiative's `proposal_channel`, default the
-committed backlog `kai/initiatives/<slug>/backlog.md`) rather than `Apply`-ing
+committed backlog `.kai/state/initiatives/<slug>/backlog.md`) rather than `Apply`-ing
 it into the
 build. When unsure, defer. Centralizing the scope call here keeps the
 upstream assessors unbiased and the judgment consistent in one place.
@@ -110,7 +110,7 @@ own the north star's state
 `ACTIVE.md` honest; **groom the backlog** and **promote** parked entries into authoritative
 `ready` item records when they now fit `scope.current` — the one-way valve
 kai-core-scope-discipline's deferrals flow *into* and only you open *out*;
-**prioritize** authoritative `kai/coordination/items/*.md` records and their derived
+**prioritize** authoritative `.kai/state/items/*.md` records and their derived
 `ready` queue by value-to-mission (pulling
 `principal-swe-manager` to size/sequence large or parallel work); sweep the
 items/board for stalled, blocked, or orphaned work; and **call the initiative
@@ -145,8 +145,8 @@ STEWARD uses the initiative pass and does not require a UX report.
 
 CUSTOMER-SIGNAL requires a de-identified packet from
 `principal-customer-success` or `workflow-support-triage`, normally
-`kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md` or
-`kai/initiatives/<slug>/artifacts/support/<item-id>.md`. Do not request or copy the
+`.kai/state/initiatives/<slug>/artifacts/customer-success/<item-id>.md` or
+`.kai/state/initiatives/<slug>/artifacts/support/<item-id>.md`. Do not request or copy the
 local account/ticket review unless the operator explicitly authorizes access for
 a named decision; the packet should contain enough product signal to triage.
 
@@ -197,7 +197,7 @@ BRIEF is a `delivery_class: knowledge` item. It requires:
 - current product map for an existing surface;
 - initiative mission, scope, non-negotiables, and success measures;
 - canonical `artifact_targets` entry:
-  `kai/initiatives/<slug>/artifacts/briefs/<item-id>.md`.
+  `.kai/state/initiatives/<slug>/artifacts/briefs/<item-id>.md`.
 
 Write:
 
@@ -237,12 +237,12 @@ HANDOFF, and return the item to the designer when revisions are needed.
 ## Steward pass
 
 1. Read the initiative's `northstar.md`, `log.md`, backlog, authoritative
-   `kai/coordination/items/*.md` records, and relevant threads.
+   `.kai/state/items/*.md` records, and relevant threads.
 2. If the north star is `proposed`, validate mission, vision, current milestone
    IDs, acceptance, success measures, non-negotiables, owner, and explicit
    out-of-scope boundaries. Ask the operator only for genuine product choices.
 3. Activate an accepted initiative by setting `status: active`, updating
-   `kai/coordination/ACTIVE.md`, and logging the decision.
+   `.kai/state/ACTIVE.md`, and logging the decision.
 4. Classify backlog/proposed work against the thin core. Keep expansions parked;
    create or promote only work that fits current milestones.
 5. Set steward-owned `priority` and `next_role`. Require outcome, acceptance,
@@ -263,7 +263,7 @@ HANDOFF, and return the item to the designer when revisions are needed.
    required-item list, every listed item reached its declared `completed` or
    `shipped` state with evidence, and the director has written a non-empty
    `deliverables.md` plus `director-summary.md`. Update status,
-   `kai/coordination/ACTIVE.md`,
+   `.kai/state/ACTIVE.md`,
    `INDEX.md`, and `log.md`.
 
 Return changed item IDs, ready order, parked proposals, scope decisions, and any
@@ -351,7 +351,7 @@ Folder layout (parallel to `-ux` and `-qa` runs, all under the day's folder):
 ```
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Before triaging, glance at
-`kai/coordination/ACTIVE.md`. If this feedback concerns the active initiative's `scope`
+`.kai/state/ACTIVE.md`. If this feedback concerns the active initiative's `scope`
 (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and frame the smallest change toward it — then stamp
 `initiative: <slug>` in any promoted frontmatter. If it's a side report or an
@@ -364,8 +364,8 @@ the `.kai/runs/` root is gitignored by
 `workflow-workspace-init`, so you never manage `.gitignore` yourself. If a
 triage is worth distributing, the operator passes `--share` and you promote
 the curated copy to
-`kai/library/qa-findings/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md` with library
-frontmatter.
+`<project-root>/<publication-root>/qa-findings/<YYYY-MM-DD>/<NN>-pm-<descriptor>/triage.md`
+with durable asset metadata.
 
 ## Report scaffold
 

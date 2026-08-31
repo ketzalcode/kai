@@ -62,11 +62,11 @@ const NAME_RE = /^[a-z0-9-]{1,60}$/;
 // already be the workspace root, so it is the one caller that legitimately
 // searches upward for the manifest rather than being validated in place.
 // `env` is injectable and defaults to real `process.env` for a general
-// caller; the hook path below passes `{}` explicitly so a subagent event can
-// never be redirected to an unrelated workspace by an ambient override (see
-// `main`). We search upward rather than writing beside `cwd` so a subagent
-// spawned in a subdirectory still records to the workspace root above it --
-// and so the absolute path itself is never persisted.
+// caller; the hook path below removes only `KAI_WORKSPACE_ROOT`, preserving
+// `KAI_HOME` for external registry discovery. We search upward rather than
+// writing beside `cwd` so a subagent spawned in a subdirectory still records
+// to the workspace root above it -- and so the absolute path itself is never
+// persisted.
 // ---------------------------------------------------------------------------
 export function findWorkspace(cwd, env = process.env) {
   if (typeof cwd !== 'string' || !cwd) return null;
@@ -228,7 +228,7 @@ function readStdin() {
   }
 }
 
-export function main(argv, stdinText, now = Date.now()) {
+export function main(argv, stdinText, now = Date.now(), env = process.env) {
   const event = argv.find((a) => !a.startsWith('-')) || '';
   let payload;
   try {
@@ -237,10 +237,12 @@ export function main(argv, stdinText, now = Date.now()) {
     return { ok: false, reason: 'payload was not JSON' };
   }
   // The hook's workspace/consent boundary is defined by where the subagent
-  // ran, never by an unrelated operator override -- env is disabled here on
-  // purpose, not merely defaulted, so a real KAI_WORKSPACE_ROOT set for other
-  // tooling can never redirect an observed event to a different workspace.
-  const root = findWorkspace(payload && payload.cwd, {});
+  // ran, never by an unrelated operator override. Preserve KAI_HOME so external
+  // registry discovery still works, but remove KAI_WORKSPACE_ROOT so ambient
+  // tooling cannot redirect an observed event to another workspace.
+  const resolverEnv = { ...env };
+  delete resolverEnv.KAI_WORKSPACE_ROOT;
+  const root = findWorkspace(payload && payload.cwd, resolverEnv);
   if (!root) return { ok: false, reason: 'no workspace root found' };
   if (!hasConsent(root)) return { ok: false, reason: 'observer not enabled for this workspace' };
   return appendObserved(
@@ -398,6 +400,41 @@ function selfTest() {
     ok(!existsSync(join(unrelatedWs, OBSERVED_REL)),
       'a real KAI_WORKSPACE_ROOT set in the environment never redirects a hook event to an unrelated workspace');
     rmSync(unrelatedWs, { recursive: true, force: true });
+  }
+
+  // --- custom KAI_HOME remains available for external discovery -----------
+  {
+    const customRoot = join(tmpdir(), `kai-observe-external-${process.pid}`);
+    const projectRoot = join(customRoot, 'project');
+    const workspaceRoot = join(customRoot, 'workspace');
+    const kaiHome = join(customRoot, 'home');
+    mkdirSync(projectRoot, { recursive: true });
+    mkdirSync(join(workspaceRoot, '.kai'), { recursive: true });
+    mkdirSync(kaiHome, { recursive: true });
+    writeFileSync(join(workspaceRoot, '.kai', 'manifest.json'), `${JSON.stringify({
+      schema_version: 3,
+      storage_mode: 'external',
+      workspace_id: 'observer-external-workspace',
+      projects: [{ id: 'fixture', path: projectRoot }],
+    }, null, 2)}\n`);
+    writeFileSync(join(workspaceRoot, CONSENT_REL), 'enabled\n');
+    writeFileSync(join(kaiHome, 'workspaces.json'), `${JSON.stringify({
+      schema_version: 1,
+      workspaces: [{
+        project_root: projectRoot,
+        workspace_root: workspaceRoot,
+        workspace_id: 'observer-external-workspace',
+      }],
+    }, null, 2)}\n`);
+    const observed = main(
+      ['subagentStop'],
+      JSON.stringify(payload({ cwd: projectRoot, agentId: 'agent-4', response: 'External event.' })),
+      Date.now(),
+      { KAI_HOME: kaiHome, KAI_WORKSPACE_ROOT: tmp },
+    );
+    ok(observed.ok && existsSync(join(workspaceRoot, OBSERVED_REL)),
+      'a hook preserves custom KAI_HOME discovery while ignoring KAI_WORKSPACE_ROOT');
+    rmSync(customRoot, { recursive: true, force: true });
   }
 
   // --- malformed input never escalates ------------------------------------

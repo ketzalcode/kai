@@ -197,20 +197,20 @@ Output to: `<working-root>/product/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/cata
   the date-first run grammar.
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Before cataloging bets,
-glance at `kai/coordination/ACTIVE.md`. If this product area falls inside the active
+glance at `.kai/state/ACTIVE.md`. If this product area falls inside the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and weight your prioritization toward it — then
 stamp `initiative: <slug>` in the promoted frontmatter. If it's a side
 exploration or an unrelated surface, load nothing and work context-free.
 
-**Zone & promotion (see `kai-core-workspace-conventions`):** `catalog.md` defaults
-to the **library** zone. Write the working draft at the path above — the
+**Draft and publication (see `kai-core-workspace-conventions`):** Write the
+working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
-so you never manage `.gitignore` yourself — then promote the curated catalog
+so you never manage `.gitignore` yourself — then publish the accepted catalog
 to
-`kai/library/investigations/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`
-with library frontmatter so it travels via `git pull`. Keep it local-only if the operator
-passes `--local`.
+`<project-root>/<publication-root>/investigations/<YYYY-MM-DD>/<NN>-strategy-<target-slug>/catalog.md`
+with durable asset metadata. Keep it private when the operator does not approve
+publication.
 
 ## Catalog scaffold
 

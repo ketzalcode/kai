@@ -201,7 +201,7 @@ Write the full local working brief to:
 Keep raw partner terms, named-account material, and private economics local. For
 coordinated work, write the aggregate brief to:
 
-`kai/initiatives/<slug>/artifacts/partnerships/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/partnerships/<item-id>.md`
 
 Use:
 

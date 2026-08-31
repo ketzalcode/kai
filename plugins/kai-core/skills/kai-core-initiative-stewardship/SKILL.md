@@ -60,17 +60,17 @@ Drive the northstar `status` through
 Use `completed` when every milestone is knowledge/decision work; use `shipped`
 when any milestone requires production delivery. `proposed -> active` requires
 an accepted thin core, milestones, and success measures. Keep
-`kai/coordination/ACTIVE.md`
+`.kai/state/ACTIVE.md`
 truthful — it should list exactly the initiatives that are actually the focus,
-no stale slugs. Keep `kai/initiatives/INDEX.md` as the all-status catalog with
+no stale slugs. Keep `.kai/state/initiatives/INDEX.md` as the all-status catalog with
 workspace, summary, and deliverable pointers. Append each
 steering decision (promote, reprioritize, pause, ship) to the
 initiative's `log.md` so the trail survives.
 
 ### 2. Groom the backlog
 
-Review the committed backlog (`kai/initiatives/<slug>/backlog.md` and the
-unaffiliated `kai/coordination/backlog.md`) against the **thin core** (`mission`,
+Review the committed backlog (`.kai/state/initiatives/<slug>/backlog.md` and the
+unaffiliated `.kai/state/backlog.md`) against the **thin core** (`mission`,
 `scope.current`, `principles.non_negotiable[]`). For each parked entry:
 
 - **Fits the current scope and matters now** → promote it (duty 3).
@@ -102,8 +102,8 @@ invent or override the priority:
 
 ### 4. Keep coordination state honest
 
-Sweep authoritative `kai/coordination/items/*.md` records, using
-`kai/coordination/BOARD.md` as the
+Sweep authoritative `.kai/state/items/*.md` records, using
+`.kai/state/BOARD.md` as the
 human index, for the failure modes self-routing can't catch alone:
 
 - **Stalled `in-progress`** — an item sitting with no recent `updated` and
@@ -136,12 +136,18 @@ Then:
 
 - Move the northstar to `completed` for research/decision initiatives or
   `shipped` for production-delivery initiatives, write the closing `log.md`
-  entry, and drop the slug from `kai/coordination/ACTIVE.md`.
+  entry, and drop the slug from `.kai/state/ACTIVE.md`.
 - Require a non-empty `deliverables.md`, a stable
-  `kai/initiatives/<slug>/director-summary.md`, and exact workspace paths before
+  `.kai/state/initiatives/<slug>/director-summary.md`, and exact workspace paths before
   closure. Both identify current, historical, superseded, retracted, carried,
-  and discarded outputs; update `kai/initiatives/INDEX.md` with their locations.
-- Archive (`status: archived`) once it's no longer a live reference.
+  and discarded outputs; update `.kai/state/initiatives/INDEX.md` with their locations.
+- Terminal initiatives leave `.kai/state/ACTIVE.md` immediately but remain in
+  `.kai/state/initiatives/INDEX.md`; completion must never make them
+  undiscoverable.
+- Archive (`status: archived`) once the initiative is no longer a live
+  reference. Move closed operational records to
+  `.kai/archive/initiatives/<slug>/` and update the index to the archive path.
+  Do not move accepted project publications.
 - Archiving operational records does not move published assets or change their
   validity. Each asset receives an explicit publish-and-maintain, carry,
   freeze-as-history, supersede, retract, or discard disposition.
@@ -169,7 +175,7 @@ it when:
 
 A pass, in order: **groom** the backlog → **promote** the fits to `ready`
 → **reprioritize** `ready` by value-to-mission → **sweep** stalled/blocked/
-orphaned item records → **update** `kai/coordination/ACTIVE.md`, `INDEX.md`,
+orphaned item records → **update** `.kai/state/ACTIVE.md`, `INDEX.md`,
 deliverables, and
 the northstar `status` → **log** a one-line summary. The Chief of Staff may
 invoke this pass, but the steward remains the decision owner.
@@ -188,7 +194,7 @@ invoke this pass, but the steward remains the decision owner.
 5. **Done is earned.** Every current milestone must have a non-empty typed
    required-item mapping, every item must reach its declared `completed` or
    `shipped` terminal state, and the asset/backlog/ownership sweeps must pass.
-   Update the initiative and `kai/coordination/ACTIVE.md` only then.
+   Update the initiative and `.kai/state/ACTIVE.md` only then.
 6. **Leave a trail.** Every promote / reprioritize / pause / ship is one
    line in `log.md`.
 7. **Leave a findable outcome.** Do not close an initiative until its summary
@@ -203,7 +209,7 @@ invoke this pass, but the steward remains the decision owner.
 - ❌ Prioritizing the easy or the loudest item over the one that moves the
   mission.
 - ❌ Leaving an initiative `active` after all milestone requirements are met, or
-  `kai/coordination/ACTIVE.md` pointing at a slug nobody's working.
+  `.kai/state/ACTIVE.md` pointing at a slug nobody's working.
 - ❌ Closing an initiative while a required asset is draft, provisional,
   unknown, invalidated, ownerless, or missing its carry/supersession decision.
 - ❌ Turning the steward into a bottleneck that owns execution — it owns

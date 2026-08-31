@@ -80,8 +80,8 @@ Read and apply:
 - `kai-core-issue-analysis` — when intake starts from an issue rather than an outcome,
   establish the approach before dispatching anyone to build it.
 
-The authoritative work state is `kai/coordination/items/<item-id>.md`, not a
-possibly stale row in `kai/coordination/BOARD.md`.
+The authoritative work state is `.kai/state/items/<item-id>.md`, not a
+possibly stale row in `.kai/state/BOARD.md`.
 
 ## Invocation modes
 
@@ -114,10 +114,10 @@ absolute path verbatim in every dispatch. State it before launching peers.
 
 ### 1. Load and reconcile
 
-1. Read `kai/initiatives/INDEX.md` and `kai/coordination/ACTIVE.md` under the initiative's
+1. Read `.kai/state/initiatives/INDEX.md` and `.kai/state/ACTIVE.md` under the initiative's
    recorded workspace root.
 2. Read the relevant north star and its current milestone definitions.
-3. Read `kai/coordination/items/*.md`; treat these as authoritative.
+3. Read `.kai/state/items/*.md`; treat these as authoritative.
 4. Read relevant threads, especially the latest HANDOFF and open questions.
 5. Rebuild the concise `BOARD.md` index if it has drifted.
 6. Identify stale leases, contradictory state, missing acceptance, unresolved
@@ -258,7 +258,7 @@ milestone: <id or —>
 workspace root: <absolute target workspace root>
 workspace mode: <repository | external>
 run root: <absolute path to .kai/runs>
-artifact index: <absolute path to kai/initiatives/<slug>/deliverables.md>
+artifact index: <absolute path to .kai/state/initiatives/<slug>/deliverables.md>
 artifact target: <exact approved output path or none>
 context artifacts: <kind + exact path>
 outcome: <outcome>
@@ -292,7 +292,7 @@ For work involving an existing live user journey:
    it to the steward for scope/priority. Do not make exploration an automatic
    tax on code-only or already-mapped work.
 3. Set the exploration target to
-   `kai/initiatives/<slug>/artifacts/product-map.md` unless the item records an
+   `.kai/state/initiatives/<slug>/artifacts/product-map.md` unless the item records an
    operator-approved override.
 4. Create/route a PM `BRIEF` knowledge item depending on the factual map and
    accepted evidence. Its completed artifact defines user job, need, desired
@@ -363,7 +363,7 @@ After each peer returns:
 - invoke `workflow-ship` only for reviewed `product-change` / `operational`
   items with the required evidence;
 - refresh `BOARD.md`.
-- refresh `kai/initiatives/INDEX.md` when initiative status or deliverables change.
+- refresh `.kai/state/initiatives/INDEX.md` when initiative status or deliverables change.
 
 Do not mark work complete based solely on a peer's chat response. Durable state
 and evidence must agree.
@@ -384,7 +384,7 @@ Continue until one of these is true:
 
 When all milestone-required items have reached their required terminal states,
 but before the steward changes the initiative status, write
-`kai/initiatives/<slug>/director-summary.md` as the stable operator entry point,
+`.kai/state/initiatives/<slug>/director-summary.md` as the stable operator entry point,
 using this minimum scaffold (sections may add detail but none may be omitted):
 
 ```markdown
@@ -406,7 +406,7 @@ using this minimum scaffold (sections may add detail but none may be omitted):
 <links to principals' decision records — indexed, not restated>
 
 ## Deliverables
-<workspace-root-relative path to kai/initiatives/<slug>/deliverables.md and the key artifacts>
+<workspace-root-relative path to .kai/state/initiatives/<slug>/deliverables.md and the key artifacts>
 
 ## Open / deferred
 <remaining questions, PROPOSALs, waived residual risk, or "none">

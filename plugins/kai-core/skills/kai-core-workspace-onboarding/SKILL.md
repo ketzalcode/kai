@@ -6,80 +6,55 @@ tools: [execute, read, edit, search, ask_user]
 
 # Workspace Onboarding
 
-This skill defines **how** a workspace becomes compliant with
-`kai-core-workspace-conventions`. `workflow-workspace-init` executes it. Other agents
-may use the validation checks, but they do not scaffold partial structures.
+This skill materializes `kai-core-workspace-conventions`.
+`workflow-workspace-init` executes it. Other roles may validate the result but
+must not scaffold a partial workspace.
 
-## Pack-installation mode - guided, not transactional
+## Pack installation mode
 
-Use this mode only when the operator explicitly asks to install or migrate to
-the split pack surface. A skill cannot provide a checked multi-select or an
-atomic transaction. This is a **guided installer**: inspect, show one exact
-plan, get explicit confirmation, execute one step at a time, and stop on the
-first failed or unverified step.
+Use this mode only when the operator asks to install, select, update, or migrate
+Kai plugins. It is guided and fail-closed, not transactional: inspect, show the
+exact plan, get explicit confirmation, execute one step at a time, and stop on
+the first failed or unverified step.
 
-The pack catalog is closed:
+The catalog is closed:
 
-| order | plugin | purpose |
-|-------|--------|---------|
-| 1 | `kai-core` | Required operating contract and workspace machinery. Always included. |
-| 2 | `kai-engineering` | Engineering, architecture, security, reliability, QA, AI, docs, PR, and ship roles. |
-| 3 | `kai-product` | Product management, design, research, analytics, and product-evaluation roles. |
-| 4 | `kai-gtm` | Sales, growth, marketing, SEO, partnerships, pricing, RevOps, customer success, and support roles. |
-| 5 | `kai-personal` | Personal voice, coaching, learning, nutrition, training, and creative-video roles. |
+| Order | Plugin | Purpose |
+|---|---|---|
+| 1 | `kai-core` | Required operating contract, workspace tools, and fleet hooks. |
+| 2 | `kai-engineering` | Engineering, architecture, reliability, security, data, AI, QA, docs, PR, and ship roles. |
+| 3 | `kai-product` | Product, design, research, analytics, brand, and product-evaluation roles. |
+| 4 | `kai-gtm` | Sales, growth, marketing, SEO, pricing, partnerships, RevOps, customer success, and support roles. |
+| 5 | `kai-personal` | Personal assistant, learning, coaching, nutrition, training, and creative roles. |
 
-Rows 2-5 are the selectable set. Core is listed for transparency and is never
-offered as a choice.
+Core is always included. Never silently add a department.
 
-Never silently add a department. `kai-core` is the only automatic inclusion.
-Install selected departments in the table order, not in the order the operator
-typed them.
+### Inspect
 
-If the request does not name departments, ask the operator to select from rows
-2-5 before checking migration readiness. That selection is not confirmation to
-run commands; the exact command plan still needs its own approval.
+Before showing an install plan:
 
-### 1. Inspect before proposing an install
+1. Resolve the current Kai plugin directory again before each command that uses
+   it; never reuse a path into a plugin uninstalled or updated during this run.
+2. Run:
 
-Resolve the target workspace as `<workspace-root>`. Re-resolve `<kai-plugin>`
-before every command that uses it: use the currently verified plugin tree that
-provides the script, and never reuse a path into a plugin uninstalled or updated
-during this run. Run the existing read-only migration gate:
+   ```text
+   node "<kai-plugin>/scripts/workspace-doctor.mjs" --migration-check --root "<workspace-root>"
+   ```
 
-```text
-node "<kai-plugin>/scripts/workspace-doctor.mjs" --migration-check --root "<workspace-root>"
-```
+3. Read `copilot plugin marketplace list`, `copilot plugin list`, and the
+   migration check's JSON inventory; use its `plugins` inventory for enabled
+   state and provenance.
+4. Refuse installation when legacy `kai`, mixed provenance, unreadable host
+   state, disabled plugins, or version skew remains unresolved.
+5. Prove `kai-core` and every selected department exist at one marketplace
+   version before recommending removal of the monolith.
 
-If it returns `blocked` or `unknown`, install nothing. Report its exact findings
-and exact suggested steps. In particular, never install a pack while legacy
-`kai` is still installed, and never guess that an unreadable host is clean.
-Uninstalling or removing a stale tree is a separate operator-approved action;
-the installer does not perform it as a hidden prerequisite.
+Do not infer enabled state from `plugin list`; use the migration inventory.
+Never substitute a direct repository or subdirectory install as a fallback.
 
-When `legacy-installed` is the only blocker, do not strand the operator between
-install surfaces. Before recommending removal, prove that `kai-core` and every
-requested department are listed at one common version. If the marketplace must
-be added or refreshed, show that availability-only command plan and get
-explicit confirmation before changing marketplace state. If availability
-cannot be proved, report `unknown` and leave the monolith installed.
+### Plan and confirm
 
-After availability is proved, name the re-entry sequence explicitly: run the
-doctor's uninstall and verification steps, install `kai-core@kai-plugins`,
-start a fresh session, and run this installer again from `kai-core`. End the
-current run; a session still carrying the removed monolith must not continue
-the migration.
-
-Read `copilot plugin marketplace list` and `copilot plugin list` for registered
-sources, installed names, and versions. Run the migration check with `--json`
-and use its `plugins` inventory for enabled state and provenance; `plugin list`
-does not expose enabled state on the supported CLI. An installed-but-disabled
-plugin is not a verified install.
-
-### 2. Show the exact plan and confirm once
-
-Name the selected departments and show the commands in their execution order.
-The marketplace step is conditional: add it when absent; update it when already
-registered.
+Show the exact ordered commands that will run:
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -94,86 +69,49 @@ copilot plugin install kai-gtm@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 ```
 
-Show only the selected department install commands, but always show the
-`kai-core` step. For an already installed plugin at the marketplace version, show `keep and
-verify` instead of pretending it will be installed again. For an older plugin,
-show the exact `copilot plugin update <name>@kai-plugins` command.
+Show only selected department commands. Show `keep and verify` instead of an
+install command when the exact enabled marketplace version is already present.
+Get one explicit confirmation for the displayed plan before changing
+marketplace state, plugins, or workspace provenance.
 
-If `.kai/manifest.json` exists and records `"plugin": "kai"`, include the exact
-post-core edit in the plan: after `kai-core` is verified, change only that value
-to `"kai-core"` and run the ordinary workspace doctor. Every other manifest
-value stays untouched.
+When the only safe path is to uninstall legacy `kai`, prove `kai-core` and every
+requested department are listed at one common version, then show the re-entry
+sequence. End the current run; a session still carrying the removed monolith
+must not continue the migration.
 
-Before any marketplace add or update, plugin install or update, or manifest
-edit, ask one explicit confirmation for this exact ordered plan. A general
-request to "set up kai" is not confirmation for an unshown command set.
+### Execute
 
-### 3. Execute with a verification gate after every step
-
-1. Add or update `kai-plugins`, then run
-   `copilot plugin marketplace browse kai-plugins`. Verify that `kai-core` and
-   every selected department are listed at one common version. If any is absent
-   or the listed versions differ, report the exact unavailable or skewed set and
-   stop before installing anything. Never substitute a direct repository or
-   subdirectory install as a fallback.
-2. Install, update, or keep `kai-core`, then run `copilot plugin list` and the
-   migration check with `--json`.
-   Continue only when one enabled `kai-core` row is present at the exact version
-   reported by the browse step in the migration report's `plugins` inventory.
-   Its only provenance must be `marketplace:kai-plugins`; a direct install,
-   mixed provenance, or unknown enabled state is not verified.
-   On skew, stop before every department install
-   and name `copilot plugin update kai-core@kai-plugins` as the blocking action.
-   If the host refuses that update because the current session has core loaded,
-   end the run and perform the update from a session that does not have the pack
-   loaded; then start a fresh session and re-run this installer.
-   If the row is disabled, stop and tell the operator to open `/plugin` in an
-   interactive Copilot session, enable `kai-core@kai-plugins`, start a fresh
-   session, and re-run this installer. Do not name the unavailable
+1. Add or update the marketplace and verify all requested plugins are present
+   at one version.
+2. Install, update, or keep `kai-core`. Verify one enabled
+   `marketplace:kai-plugins` row at the exact version reported by the browse
+   step. If the host refuses an update because this session has core loaded,
+   perform the update from a session that does not have the pack loaded.
+   If core is disabled, tell the operator to open `/plugin` in an interactive
+   Copilot session, enable `kai-core@kai-plugins`, start a fresh session, and
+   re-run the installer. Do not name the unavailable
    `copilot plugins enable` command.
-3. If the approved plan includes the workspace provenance edit, apply only that
-   edit and run
-   `node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"`.
-   Continue only when the workspace contract is valid.
-4. Install each selected department in canonical order. Immediately run
-   `copilot plugin list` and the migration check with `--json` after each
-   command, then verify one enabled row at the same version as `kai-core` in the
-   report's `plugins` inventory. For a disabled department, stop and tell the
-   operator to open `/plugin`, enable `<name>@kai-plugins`, start a fresh
-   session, and re-run this installer.
-   Its only provenance must be `marketplace:kai-plugins`.
-5. Re-run the migration check. Completion requires `clear`, the exact selected
-   pack set, no legacy `kai`, and no unverified host or workspace finding.
+3. Install each selected department in catalog order. Verify the same version,
+   enabled state, and provenance immediately after each command. If one is
+   disabled, tell the operator to open `/plugin`, enable
+   `<name>@kai-plugins`, start a fresh session, and re-run the installer.
+4. Re-run the migration check. Completion requires `clear`, no legacy
+   monolith, and the exact requested pack set.
 
-After an actual core install or update, state this exactly where the operator
-will see it:
+Stop on the first non-zero command or unverified result. Do not uninstall
+earlier successful steps to manufacture rollback.
+
+After an actual core install or update, say:
 
 > Core installed. This session still does not have it loaded - start a fresh session before invoking pack agents.
 
-If core was kept, do not claim it is absent from the current session. Any
-department installed or updated in this run still makes the final session state
-`start a fresh session before invoking pack agents`.
+Any department installed or updated also requires a fresh session.
 
-Do not invoke a newly installed pack agent in the current session as a
-verification shortcut. Plugin discovery happens at session start.
-
-On any non-zero command, missing row, disabled row, version mismatch, malformed
-output, or doctor result other than the required state:
-
-- stop immediately;
-- name the command or verification that failed;
-- list the plugins verified before the failure;
-- list every selected plugin not attempted;
-- say `Rollback: not attempted or verified`;
-- do not uninstall a successful earlier step and do not claim atomic rollback.
-
-### 4. Report the exact state
-
-Return:
+### Report
 
 ```text
 Pack install: complete | partial | blocked | unknown
-Requested: <kai-core plus selected departments>
+Requested: <core plus selected departments>
 Verified installed: <name@version rows, or none>
 Failed: <command/check and observed result, or none>
 Not attempted: <selected plugins, or none>
@@ -181,560 +119,329 @@ Legacy kai: absent and verified | present | unverified
 Workspace provenance: kai-core | unchanged | not present | unverified
 Rollback: not attempted or verified
 Session: start a fresh session before invoking pack agents | no pack change
-Next: <ready, or the one exact blocking action>
+Next: <ready, or one blocking action>
 ```
 
-Choose the status in this order:
+Choose `partial` when at least one plugin install or update succeeded in this
+run. Choose `unknown` when required host, marketplace, plugin-list, version, or
+workspace evidence is unreadable. Choose `blocked` for every other known
+pre-mutation refusal or failed command when no plugin install or update
+succeeded.
 
-1. `complete` only after every selected row and the final migration check pass.
-2. `partial` when at least one plugin install or update succeeded in this run
-   but the run did not complete. Marketplace-only or manifest-only mutation
-   does not make a pack install partial.
-3. `unknown` when required host, marketplace, plugin-list, version, or workspace
-   evidence is unreadable, malformed, or otherwise cannot be settled and no
-   plugin install or update succeeded in this run. This includes availability
-   that cannot be proved while the known legacy refusal remains in force.
-4. `blocked` for every other known pre-mutation refusal or failed command when
-   no plugin install or update succeeded in this run.
+## Workspace inputs
 
-Do not choose the more reassuring label. A known refusal is not `unknown`, and
-a run that changed a plugin before failing is not merely `blocked`.
+Resolve:
 
-## Inputs
-
-- exact runtime absolute `workspace_root`;
-- `workspace_mode`: `repository` or `external`;
+- absolute target project root;
+- storage mode: `external`, `repo-local`, or `shared`;
+- durable absolute external workspace root when using `external`;
+- stable kebab-case project ID;
+- project-relative `publication_root`, defaulting to `docs/kai`;
 - plugin version from `plugin.json`;
-- operator approval before changing a non-empty workspace.
+- operator approval for moves, conflicts, and any non-empty target.
 
-No root-name customization and no legacy compatibility aliases are supported.
+Never use session-state or temp storage.
 
-## Required structure
+## Inspect and plan
 
-Onboarding creates the **spine** — the paths that must exist before any agent
-can resolve a root, claim work, or route an artifact. Create missing paths
-without overwriting existing content:
+Inspect:
+
+- an in-tree `.kai/manifest.json`;
+- the `$KAI_HOME/workspaces.json` registry;
+- existing `.kai/` state and retired layouts;
+- `.gitignore` and tracked Kai paths;
+- the configured publication root;
+- an existing managed communication-style block in `AGENTS.md`.
+
+Show:
+
+- exact paths to create or keep;
+- exact conflicts;
+- every proposed migration move and reference rewrite;
+- registry changes;
+- the managed ignore block;
+- publication files to create;
+- whether `AGENTS.md` would change.
+
+Do not write into a non-empty target until the operator approves that plan.
+
+## Scaffold
+
+Create missing private structure idempotently:
 
 ```text
-.kai/manifest.json
-.kai/CONVENTIONS.md
-.kai/runs/                          (ignored; areas created on first use)
-kai/coordination/ACTIVE.md
-kai/coordination/BOARD.md
-kai/coordination/backlog.md
-kai/coordination/items/README.md
-kai/coordination/threads/README.md
-kai/initiatives/README.md
-kai/initiatives/INDEX.md
-kai/library/README.md
-kai/personal/
-  README.md
-  inbox.md
-  agenda.md
-  workspaces.md
-  consultations/
-  decisions/
-  proactive/
-  identity/
+.kai/
+  manifest.json
+  CONVENTIONS.md
+  state/
+    ACTIVE.md
+    BOARD.md
+    backlog.md
+    items/README.md
+    threads/README.md
+    initiatives/
+      README.md
+      INDEX.md
+  runs/
+  review/
+  archive/
+  personal/
     README.md
-    voice.md
-    career-snapshot.md
-    skills-inventory.md
-    current-work.md
-    career-goals.md
-  lessons/ courses/ certs/ growth/
+    inbox.md
+    agenda.md
+    workspaces.md
+    consultations/
+    decisions/
+    proactive/
+    identity/
+      README.md
+      voice.md
+      career-snapshot.md
+      skills-inventory.md
+      current-work.md
+      career-goals.md
+    lessons/
+    courses/
+    certs/
+    growth/
 ```
 
-That is roughly **ten tracked files**, plus the ignored `kai/personal/` lane,
-which is seeded in full.
+Do not create initiative slug directories. `workflow-initiative-init` owns
+them. Run area subdirectories are created on first use.
 
-### Lanes materialized on first use
-
-Two lanes are **output-only**: nothing reads them at startup, and both are
-deferred until something writes into them. The agent about to write creates the
-missing directory on the way, in the same action, and never pre-creates a lane
-it is not writing to:
+For the publication root, create from
+`templates/publication/` only when the configured path is absent:
 
 ```text
-.kai/runs/
-  qa/ eng/ product/ revenue/ support/ review/ ship/ incident/ ai/ learn/ lessons/ pulse/ content/
-kai/library/
-  reviews/ dev-designs/ investigations/ briefings/ qa-findings/
-  lessons/ digests/ learnings/ releases/ playbooks/ content/
+<project-root>/<publication-root>/
+  README.md
+  decisions/
+  specs/
+  reports/
 ```
 
-An absent lane is **not** a defect and never blocks work: the workspace doctor
-does not require one, and no agent may refuse to act because a lane it is about
-to create does not yet exist. Creation is idempotent — check, create if missing,
-proceed — so concurrent writers converge on the same tree.
+Never overwrite a project-native index or create `docs/kai` when another
+publication root was selected.
 
-Why exactly these two and nothing else:
+## Manifest
 
-- `kai/library/<type>/` is **tracked**, and git cannot track an empty directory.
-  A pre-created lane therefore never survives a clone: a teammate would receive
-  a workspace shaped differently from the one onboarding reported building.
-  Materializing a lane with its first real file makes the tracked tree and the
-  reported tree the same thing.
-- `.kai/runs/<area>/` is ignored and inherently per-run; a run directory is
-  created when a run happens.
+Write schema 3:
 
-Everything an agent **reads** — the manifest, the coordination registries, the
-initiative index, and the whole `kai/personal/` lane including the identity
-stubs and the proactive state directory — stays in the spine. `kai/personal/`
-is gitignored, so it is never cloned and the empty-directory problem does not
-apply to it; deferring it would only risk an agent finding its own startup state
-missing.
+```json
+{
+  "plugin": "kai-core",
+  "version": "<plugin-version>",
+  "schema_version": 3,
+  "scaffolded": "<YYYY-MM-DD>",
+  "workspace_id": "<stable-id>",
+  "storage_mode": "<external|repo-local|shared>",
+  "workspace_root": "<absolute external root or '.'>",
+  "state": ".kai/state",
+  "runs": ".kai/runs",
+  "review": ".kai/review",
+  "archive": ".kai/archive",
+  "personal": ".kai/personal",
+  "projects": [
+    {
+      "id": "<project-id>",
+      "path": "<absolute external project path or '.'>",
+      "publication_root": "docs/kai"
+    }
+  ],
+  "areas": [
+    "qa", "eng", "product", "revenue", "support", "review",
+    "ship", "incident", "ai", "learn", "lessons", "pulse", "content"
+  ]
+}
+```
 
-There are **no onboarding profiles and no layout modes.** A lane's path is the
-same whenever it appears; only the moment of creation is deferred. An operator
-who wants to browse the complete structure can ask `workflow-workspace-init` to
-materialize every lane at once — a one-shot local convenience that records no
-state, changes no contract, and (being empty) still will not survive a clone.
+Preserve `workspace_id` across re-runs and moves. Reconcile missing fixed keys
+without changing operator-selected project IDs, paths, publication roots, or
+storage mode.
 
-Initiative slug directories and their `artifacts/` subtrees are created by
-`workflow-initiative-init`, not by general onboarding.
+For `external`, write or replace the one machine registry row that pairs the
+project root, workspace root, and manifest `workspace_id`. Use:
 
-## Corpus visibility
+```text
+node "<kai-plugin>/scripts/workspace-doctor.mjs" --adopt "<project-root>" --root "<workspace-root>"
+```
 
-Before installing the ignore block in repository mode, resolve whether the
-working corpus is published with the repository. The answer is recorded in
-`.kai/manifest.json` as `corpus_visibility` **only when the operator gives it**;
-an inferred default is left absent, because absence already means `committed`
-and writing a value nobody chose would make a guess indistinguishable from a
-decision on the next run.
+Forgetting a binding uses `--forget "<project-root>"`; it never deletes
+workspace files.
 
-**Detect first, ask only when it matters.**
-
-1. Read any existing `corpus_visibility` from the manifest. If present, honor it
-   and do not re-ask — the decision was already made.
-2. Otherwise resolve the publication target explicitly. Take the remote the
-   branch tracks, or `origin` when there is no upstream; if several remotes
-   disagree, name them and ask rather than picking one. Read its visibility with
-   `gh repo view <owner>/<repo> --json visibility -q .visibility`, passing the
-   resolved slug rather than relying on the ambient directory.
-3. Treat visibility as **unknown** — not private — whenever `gh` is missing,
-   unauthenticated, errors, or the remote is not GitHub. A host name does not
-   reveal whether a repository is public, so never infer visibility from the
-   URL. A fork's visibility is its own, not the upstream's.
-4. If the repository is **private**, use `committed` and do not ask. Say which
-   remote that conclusion came from, so a later change of visibility is
-   traceable to a stated assumption rather than a silent one.
-5. If the repository is **public**, has **no remote**, or its visibility is
-   **unknown**, ask the operator exactly once. A repository with no remote is
-   not a private repository — it is one that has not been published *yet*, and
-   the corpus accumulates long before the first `git push`.
-
-**The question is not "public or private" — it is who the corpus is for.** Put
-both options and their costs to the operator plainly:
-
-- **`committed`** — the corpus is part of the project. Collaborators clone it,
-  review design notes in PRs, and share coordination state. If the repository is
-  public, everything in `kai/coordination/`, `kai/initiatives/`, and textual
-  `kai/library/` — backlog items and decision records included — is published
-  the next time it is pushed.
-- **`local`** — the corpus is the operator's working state that happens to live
-  in this repository. `/kai/` and `/.kai/` are ignored wholesale, so untracked
-  kai state is excluded from ordinary `git add` and never reaches the remote.
-  Anything **already tracked stays committable** until it is untracked (see
-  below), and this says nothing about the product changes agents make — only
-  about kai's own state.
-
-`local` narrows durability to **this checkout**. The corpus does not survive a
-clone, and it is invisible to teammates, other machines, CI, cloud agents, and
-clean worktrees. Agents sharing one synchronized working tree still coordinate
-normally, so it is not single-user — it is single-checkout. Say this before the
-operator chooses.
-
-Never infer `local` from repository visibility, and never change a recorded
-value without asking.
-
-### Already-published state
-
-Adding a path to `.gitignore` does not untrack a file, and it cannot unpublish
-one. If tracked kai paths already exist when the operator chooses `local`, say
-so and do not claim privacy that does not exist:
-
-- list the tracked paths (`git ls-files -- kai .kai`);
-- state that until they are untracked, `local` does **not** hold for them: they
-  remain staged, committed, and pushed like any other tracked file;
-- state that `git rm --cached` stops future commits but **leaves the content in
-  history and on every existing clone and fork**;
-- if the repository is public and was already pushed, say plainly that the
-  content is public and only the operator can decide whether rewriting history
-  or rotating anything sensitive is warranted.
-
-Take no destructive action. Untracking is the operator's explicit call. Until it
-happens, onboarding reports the contract as **blocked** rather than complete —
-`local` was requested and is not in force, and reporting success would tell the
-operator their state is private when it is not. The workspace doctor enforces
-the same condition on every later run.
-
-## Communication style (opt-in)
-
-kai's agents are bound by `kai-core-team-operating-rules`. The **main CLI agent** — the
-top-level assistant that collects their results and replies to the human — is
-not a kai agent and loads no kai agent file. The only thing that reaches it is
-the host's own instruction discovery, which reads `AGENTS.md` from the user's
-repository root and working directory.
-
-So kai offers, once, to install a managed **communication style** block into the
-workspace's `AGENTS.md`. It is **opt-in and off by default**: many people want
-the agents and skills and nothing else.
-
-**Ask plainly, and say who it binds:**
-
-> kai can add a short communication-style block to this repository's
-> `AGENTS.md` — reply with the recommendation first, don't narrate routine
-> steps, and never drop failures or unverified claims to stay brief.
-> `AGENTS.md` is committed, so it applies to **everyone working in this
-> repository**, including the Copilot coding agent — not just you. kai marks
-> its own block and can update or remove it later without touching anything you
-> wrote. Add it?
-
-Do not ask in a workspace whose `AGENTS.md` already contains the block; honor
-what is there. Record nothing in the manifest: the block's presence in
-`AGENTS.md` *is* the state, and a second source could disagree with it.
-
-**Installing it:**
-
-- The text is the verbatim contents of the plugin's
-  `scripts/lib/communication-style-block.md`, markers included. Never
-  paraphrase it — a style block that drifts per workspace cannot be updated or
-  recognized later.
-- **Append** to an existing `AGENTS.md`, never replace it, and never reorder or
-  reword a line the user wrote. Create the file with only the block if absent.
-- If a kai block is already present, replace **exactly** the marked region.
-- On removal, delete the marked region and nothing else.
-- Leave the file untracked-or-tracked exactly as it was; do not stage or commit
-  it. Say that the file changed and that the operator commits it.
-
-The markers are what make "you can ask kai to remove it" true. Without them,
-kai would have to guess which lines are its own, and the safe guess is to touch
-nothing — which is the same as never being able to update it.
-
-Under `corpus_visibility: local` this block is still offered. `AGENTS.md` is the
-repository's own file, not kai workspace state, and it is not covered by
-`/kai/` or `/.kai/` — so it *is* committed and published. Say so when the
-operator has just chosen to keep kai's corpus off the remote, or the two
-decisions will look contradictory.
-
-## Repository-mode ignore block
-
-Install or replace exactly one managed block:
+## Git rules
 
 <!-- kai:allow-legacy-roots -->
+
+### `external`
+
+Do not create project `.kai/` state. The project may have no Kai-specific
+ignore rule. If the external workspace is itself a Git repository, apply the
+shared/private rules there; otherwise report Git checks as not applicable.
+
+### `repo-local`
+
+Install:
+
 ```gitignore
 # >>> kai workspace (managed by workflow-workspace-init) >>>
-# Raw kai runs and personal material are local-only.
-/.kai/runs/
+# Kai operational state stays local to this checkout.
+/.kai/
+# Retired private state remains protected until an approved migration removes it.
 /kai/personal/
-# The declared activity log is ephemeral, local, and never committed.
-/.kai/activity.jsonl
-/.kai/activity.jsonl.1
-# Observed subagent events and the consent marker are local-only: the payload
-# they derive from carries absolute paths and full response text.
-/.kai/observed.jsonl
-/.kai/observed.jsonl.1
-/.kai/observer-consent
-# Retired local state stays private during explicit migration.
-/.persona-self/
-/.kai/local.json
-# Retired schema-1 root-level personal lane stays private until migration completes.
-/personal/
-# Heavy binaries stay ignored inside the committed library.
-kai/library/**/*.mp3
-kai/library/**/*.har
-kai/library/**/*.zip
-kai/library/**/audio/
-kai/library/**/raw/
-kai/library/**/screenshots/
 **/storageState*.json
 # <<< kai workspace <<<
 ```
 
-`.kai/manifest.json` and `.kai/CONVENTIONS.md` must remain trackable. After
-writing the block, verify:
+Verify `git ls-files -- .kai` is empty and `.kai/` is ignored. If files are
+already tracked, report the exact paths and block completion. Never run
+`git rm --cached` or rewrite history without explicit authorization.
 
-- `.kai/runs/` is ignored;
-- `kai/personal/` is ignored;
-- a legacy root-level `personal/` is ignored until migration completes;
-- a legacy `.persona-self/` is ignored until migration completes;
-- a legacy `.kai/local.json` is ignored until deletion is approved;
-- `.kai/manifest.json`, `.kai/CONVENTIONS.md`, `kai/coordination/`,
-  `kai/initiatives/`, and textual `kai/library/` files are not ignored.
-<!-- /kai:allow-legacy-roots -->
+### `shared`
 
-### Under `corpus_visibility: local`
-
-Append two more lines to the same managed block:
+Install:
 
 ```gitignore
-# The working corpus stays local: this repository publishes code, not kai state.
-/kai/
-/.kai/
+# >>> kai workspace (managed by workflow-workspace-init) >>>
+# Kai runtime, review, archive, and personal state remain private.
+/.kai/runs/
+/.kai/review/
+/.kai/archive/
+/.kai/personal/
+/.kai/activity.jsonl
+/.kai/activity.jsonl.1
+/.kai/observed.jsonl
+/.kai/observed.jsonl.1
+/.kai/observer-consent
+/.kai/local.json
+# Retired private state remains protected until an approved migration removes it.
+/kai/personal/
+**/storageState*.json
+# <<< kai workspace <<<
 ```
 
-The last two verification points **invert**: `kai/coordination/`,
-`kai/initiatives/`, textual `kai/library/`, `.kai/manifest.json`, and
-`.kai/CONVENTIONS.md` must all be *ignored*. Every other check is unchanged, and
-the structural contract is identical — only git's view of it differs. Verify the
-inverted expectation explicitly rather than skipping it: an unverified `local`
-workspace is one commit away from publishing exactly what the operator asked to
-keep off the remote.
+Verify `.kai/manifest.json`, `.kai/CONVENTIONS.md`, and `.kai/state/` are
+trackable. Verify every listed private path is ignored.
 
-If these checks fail, onboarding fails. Do not allow browser or evidence runs
-to write credentials or raw state before ignore validation succeeds.
+Publication paths follow the project's own Git policy. Onboarding creates or
+updates them only through an explicit publication plan.
 
-External mode uses the same structure but modifies and verifies `.gitignore`
-only when the external directory is already a Git repository. For a non-Git
-external workspace, report ignore checks as `n/a (not version-controlled)`;
-do not fail onboarding or claim the paths are gitignored.
+<!-- /kai:allow-legacy-roots -->
 
 ## Seed files
 
-### `.kai/manifest.json`
+- `.kai/CONVENTIONS.md` summarizes the resolved storage mode, project bindings,
+  private lanes, publication root, and artifact-target grammar.
+- `.kai/state/ACTIVE.md` lists only currently active initiatives.
+- `.kai/state/BOARD.md` contains the derived table:
 
-Use the exact schema from `kai-core-workspace-conventions`, including fixed roots for
-`.kai/runs`, `coordination`, `initiatives`, `library`, and `personal`, and the
-current `areas` list. Repository mode persists `workspace_root: "."`; external
-mode persists the operator-confirmed absolute root.
+  ```markdown
+  | id | title | initiative | milestone | priority | state | owner | next | depends-on | waiting-on | updated |
+  ```
 
-**Reconcile an existing manifest to the current schema** rather than patching a
-single field. Plan one idempotent migration that:
+- `.kai/state/items/README.md` documents authoritative item state, typed
+  dependencies, leases, versions, review bindings, artifact targets, and
+  evidence.
+- `.kai/state/threads/README.md` documents append-only `HANDOFF`, `QUESTION`,
+  `ANSWER`, and recovery packets.
+- `.kai/state/backlog.md` is the only unaffiliated proposal backlog.
+- `.kai/state/initiatives/INDEX.md` is the durable all-status catalog:
 
-- adds any missing fixed-root keys and any `areas` entries the current schema
-  defines but the file lacks (e.g. a workspace predating the `content` area);
-- removes retired fields (e.g. `workspace_kind`);
-- preserves every other value and the operator-confirmed root verbatim.
+  ```markdown
+  | slug | status | workspace | summary | deliverables | updated |
+  ```
 
-`corpus_visibility` is deliberately **not** added by reconciliation. It is
-optional, its absence means `committed`, and inventing a value would answer a
-question only the operator can answer. It is written when the operator is asked
-(see **Corpus visibility**) and preserved verbatim thereafter.
+- `.kai/state/initiatives/README.md` documents initiative schema, milestones,
+  artifacts, stewardship, closure, and archive behavior.
+- `.kai/personal/` stubs are created only when missing. Never invent identity,
+  career, agenda, or decision content.
 
-In a non-empty workspace, show the exact manifest diff with the rest of the
-onboarding plan before applying it. This reconciliation is what "matches the
-current fixed schema" means — a re-run brings an old manifest fully up to date.
+## Communication style
 
-**Schema-version migration ladder.** `schema_version` (independent of the plugin
-`version`) drives upgrades deterministically. The current contract is
-**schema version 2**. Migrations are an ordered, idempotent ladder — apply each
-step whose version is above the manifest's `schema_version`, in order, then set
-`schema_version` to the current value:
+The main CLI agent does not inherit Kai skills. Offer once to append the
+canonical managed block from
+`scripts/lib/communication-style-block.md` to the project's `AGENTS.md`.
 
-- **→ 1 (baseline / pre-schema):** a manifest with no `schema_version` (or `0`)
-  is a pre-schema workspace. Add `schema_version: 1`, apply the fixed-root/`areas`
-  reconciliation above, and remove retired fields. No coordination-record changes.
-<!-- kai:allow-legacy-roots -->
-- **→ 2 (working corpus moves under `kai/`):** a schema-1 workspace keeps
-  `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
-  root. Move each to `kai/<root>/` **preserving history** (`git mv` when the path
-  is tracked; the `personal/` lane is gitignored and therefore untracked, so move
-  it with a plain filesystem move), add the `corpus` root and the `kai/`-prefixed
-  root values to the manifest, and re-install the managed ignore block so
-  `kai/personal/` is ignored. `.kai/` does not move — the sentinel path is
-  unchanged. Then repoint references:
-  1. relative links **inside** moved files still resolve, because the four roots
-     move together;
-  2. every reference **from outside** the moved roots — a workspace-root-relative
-     path recorded in a work item, an `artifact_targets` entry, a `context_artifacts`
-     entry, a README link — is rewritten to `kai/…`. Scan all tracked text in the
-     workspace, not just the moved trees;
-  3. regenerate `.kai/CONVENTIONS.md`, which documents the schema-1 layout and is
-     guaranteed stale.
+The choice is opt-in. Explain that `AGENTS.md` belongs to the project and may
+be committed even when the workspace is external or repo-local. Append or
+replace only the marked Kai region. Never rewrite user-authored content and
+never stage or commit the file.
 
-  Show every move and every rewrite before applying, and report them after.
-  The migration is **idempotent and resumable**: bump `schema_version` to `2`
-  **last**, only after the moves and rewrites verify clean, so an interrupted
-  run re-enters at → 2 and finishes rather than declaring success. If a bare root
-  and its `kai/` counterpart both exist, stop with a split-brain error and let
-  the operator reconcile — never merge silently. A root-level directory that
-  merely shares a name but holds no kai content (a product's own `library/` or
-  `personal/`) is **not** kai state: leave it alone.
-<!-- /kai:allow-legacy-roots -->
-
-When a future release changes the generated workspace contract it appends the
-next numbered step here and bumps the current version; it never rewrites an
-existing step. Re-running a completed migration is a no-op. The workspace doctor
-(`node <kai-plugin>/scripts/workspace-doctor.mjs`) reports which steps a workspace
-still needs; coordinated agents refuse to claim work until the ladder is applied.
-
-**Provenance (`plugin`).** This key records which plugin scaffolded the
-workspace, and it is a **closed set**: `kai` (the monolith, what onboarding
-writes today) or `kai-core` (once kai ships as separate packs). Any other value
-is unrecognized metadata and the doctor rejects it — it is not a third mode.
-Provenance is independent of `schema_version`: it says which *plugin* wrote the
-workspace, not which *contract version* it wrote. Do not hand-edit it as part of
-a schema migration. When the pack surface ships, reconciling it is one key on
-one line, and `workspace-doctor.mjs --migration-check` reports whether it matches
-what the host actually has installed and prints the exact edit — applying that
-edit twice changes nothing, so an interrupted migration is safe to resume.
-
-### `.kai/CONVENTIONS.md`
-
-Render the current workspace layout, routing table, initiative artifact
-defaults, library promotion invariant, and coordination authority. The skill is
-authoritative if this rendered file ever drifts.
-
-### `kai/coordination/ACTIVE.md`
-
-Seed an empty focus pointer explaining that each active row names an initiative
-slug and why it is active.
-
-### `kai/coordination/BOARD.md`
-
-Seed:
-
-```markdown
-| id | title | initiative | milestone | priority | state | owner | next | depends-on | waiting-on | updated |
-```
-
-State that it is derived from `kai/coordination/items/*.md`.
-
-### `kai/coordination/items/README.md`
-
-Document the authoritative work-item schema, lifecycle, typed dependencies,
-lease, version, touch set, questions, review requirements, artifact targets, and
-evidence rules from `kai-core-work-coordination`.
-
-### `kai/coordination/threads/README.md`
-
-Document append-only `HANDOFF`, `QUESTION`, `ANSWER`, and recovery packets from
-`kai-core-work-coordination`.
-
-### `kai/coordination/backlog.md`
-
-Explain that this is the sink for unaffiliated deferred proposals.
-Initiative-scoped proposals belong in `kai/initiatives/<slug>/backlog.md`.
-
-### `kai/initiatives/INDEX.md`
-
-Seed:
-
-```markdown
-| slug | status | workspace | summary | deliverables | updated |
-```
-
-On re-runs, add missing rows discovered from
-`kai/initiatives/*/northstar.md` without replacing hand-edited rows.
-
-### `kai/initiatives/README.md`
-
-Document the north-star schema, lifecycle, scope gate, stewardship, stable
-milestones, `artifacts/` defaults, deliverable index, and closure summary.
-
-### `kai/library/README.md`
-
-Document allowed types, required frontmatter, one-way steward-approved
-promotion, provenance, and text-only commit rules.
-
-### `kai/personal/README.md`
-
-Document the ignored workspace-local personal lane: operational
-`inbox.md`/`agenda.md`, optional linked-workspace registry, consultation
-records, decision briefs, identity/career files, and learning material. Explain
-that linked workspaces contribute read-only coordination signals and that
-personal material is never promoted automatically.
-
-### Personal operational and identity stubs
-
-Create only when missing:
-
-- `kai/personal/inbox.md` — the `kai-core-personal-agenda` task/reminder schema.
-- `kai/personal/agenda.md` — derived on demand; not hand-maintained.
-- `kai/personal/workspaces.md` — fenced YAML with `workspaces: []`.
-- `kai/personal/consultations/` — private consultation records.
-- `kai/personal/decisions/` — private operator decision briefs.
-- `kai/personal/proactive/` — kai-core-proactive-scan delivery ledger (`snapshot.json`),
-  `outbox/`, and a `channels.md` stub with `consent: no` by default. Used by an
-  external runner; see `kai-core-proactive-scan`. Never committed.
-- `kai/personal/identity/README.md` — ownership and privacy of the identity files.
-- `kai/personal/identity/voice.md` — stub owned by `extract-writing-style`, with
-  frontmatter `status: stub`.
-- `kai/personal/identity/career-snapshot.md`,
-  `kai/personal/identity/skills-inventory.md`,
-  `kai/personal/identity/current-work.md`, and
-  `kai/personal/identity/career-goals.md` — stubs owned by
-  `principal-engineer-career-mentor`; each carries `status: stub`.
-
-Never invent identity or career content and never overwrite populated files.
-
-## Legacy and partial-layout handling
+## Schema-2 migration
 
 <!-- kai:allow-legacy-roots -->
-The new contract does not preserve or write legacy roots. If `.ketzal/`,
-`knowledge/`, `.persona-self/`, `.kai/local.json`, a **schema-1 root-level
-`coordination/`, `initiatives/`, `library/`, or `personal/`**, or operational
-files under
-`kai/initiatives/items`,
-`kai/initiatives/threads`, `kai/initiatives/ACTIVE.md`, or `kai/initiatives/BOARD.md`
-exist:
+Schema 2 may contain manifest keys `workspace_mode`, `corpus_visibility`,
+`kai`, `corpus`, `coordination`, `initiatives`, `library`, and `personal`, plus
+the visible paths `kai/coordination/`, `kai/initiatives/`, `kai/library/`, and
+`kai/personal/`.
 
-1. report every detected legacy path;
-2. propose exact source-to-destination moves;
-3. ask before moving or rewriting user content;
-4. never create both layouts as a compatibility strategy;
-5. never delete the legacy source automatically.
+Migration is consented and classified:
 
-A root-level directory only counts as **retired kai state** when it actually
-holds kai content — `coordination/` with `items/`, `threads/`, `BOARD.md`,
-`ACTIVE.md`, or `backlog.md`; `initiatives/` with `INDEX.md`; `library/` with
-one of the canonical library types; `personal/` with `inbox.md`, `agenda.md`,
-`identity/`, `consultations/`, or `decisions/`. A product's own root-level
-`library/`, `personal/`, or `docs`-style folder that shares a generic name but
-holds none of those markers is **not** kai state. Do not touch it, do not report
-it as legacy, and do not treat it as split-brain — avoiding exactly that
-collision is why the corpus moved under `kai/`.
+1. choose `storage_mode`, project binding, and `publication_root`;
+2. stop if both old and new destinations contain conflicting content;
+3. move coordination to `.kai/state/`;
+4. move initiative working records to `.kai/state/initiatives/`;
+5. move personal state to `.kai/personal/`;
+6. move raw evidence to `.kai/runs/`;
+7. move review-ready drafts to `.kai/review/`;
+8. classify former library and initiative artifacts individually:
+   - accepted current project knowledge may publish;
+   - active working material stays under its initiative;
+   - closed operational history may archive;
+   - stale, unknown, or rejected material remains private until classified;
+9. rewrite every workspace-relative reference and `artifact_targets` entry;
+10. install and verify the selected mode's ignore rules;
+11. register external project bindings when required;
+12. write schema-3 manifest keys and `schema_version: 3` last;
+13. run the workspace doctor.
+
+Never bulk publish the old library. Never keep both layouts as aliases. Earlier
+root-level `coordination/`, `initiatives/`, `library/`, `personal/`,
+`.persona-self/`, `knowledge/`, and `.kai/local.json` are migration inputs only
+when their content proves they are Kai state; generic product directories with
+the same names are untouched.
 <!-- /kai:allow-legacy-roots -->
 
-For `.persona-self/`, propose file-for-file moves into `kai/personal/identity/`.
-Do not create fresh identity stubs alongside populated legacy files; migration
-must be explicit so the user's private profile is not forked.
+## Validate
 
-For `.kai/local.json`, report that the pointer is retired and propose deletion.
-Keep it ignored until the operator approves deletion; never expose its
-machine-local absolute path through `git status`.
-
-For `knowledge/` (an earlier root that mixed research, decisions, and notes),
-**never bulk-move it** — the whole point of the current contract is to split it.
-Classify each artifact and propose a per-item destination, operator-confirmed:
-
-- initiative-scoped research or decisions → `kai/initiatives/<slug>/artifacts/research/`
-  or `kai/initiatives/<slug>/artifacts/decisions/`;
-- cross-initiative reusable outcomes → the matching `kai/library/<type>/`;
-- raw or regenerable scratch → `.kai/runs/`.
-
-An item whose classification is ambiguous stays put until the operator decides;
-do not guess a destination.
-
-For `.ketzal/` (a retired kai home/runs root), propose moving its raw runs and
-evidence under `.kai/runs/` and any committed contract/metadata under `.kai/`,
-operator-confirmed; never recreate `.ketzal/`.
-
-If a required new path conflicts with an existing file or incompatible
-directory, stop with the exact conflict.
-
-## Idempotence
-
-- Create missing paths.
-- Keep matching paths.
-- Ask before replacing divergent seeded files.
-- Never delete user content.
-- Never commit, stage, or push.
-- Re-running a valid workspace produces no semantic changes.
-
-## Validation result
-
-Return:
+Run:
 
 ```text
-Workspace: <absolute root>
-Mode: <repository|external>
-Contract: valid | blocked
-Created: <paths>
-Kept: <paths>
-Legacy detected: <paths or none>
-Conflicts: <paths or none>
-Ignore checks: <pass/fail details>
-Next: <workspace ready or exact blocking action>
+node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
 ```
+
+For external mode, require registry pairing. Confirm:
+
+- schema version, fixed roots, storage mode, workspace ID, and project bindings;
+- Git behavior for the selected mode;
+- coordination item and dependency integrity;
+- no split-brain legacy roots;
+- no seeded file was overwritten;
+- the configured publication root is inside the selected project;
+- only accepted assets were published.
+
+Before every publication write, resolve the real project root and every
+existing destination ancestor again. Refuse a symlink or junction that escapes
+the real project root; the doctor's earlier result is not authority after the
+filesystem changes.
+
+## Result
+
+```text
+Workspace: ready | blocked | unknown
+Storage: external | repo-local | shared
+Workspace root: <absolute path>
+Project: <id and absolute path>
+Publication root: <project-relative path>
+Registry: paired | n/a | blocked | unknown
+Git contract: verified | n/a | blocked | unknown
+Created: <paths or none>
+Kept: <paths or none>
+Migrated: <moves or none>
+Published: <paths or none>
+Conflicts: <paths or none>
+Next: <ready, or one exact blocking action>
+```
+
+Ready requires a healthy doctor result and every applicable registry and Git
+check. Re-running a ready workspace is a no-op.

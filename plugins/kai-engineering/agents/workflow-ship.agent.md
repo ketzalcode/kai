@@ -117,8 +117,8 @@ match rigor to blast radius.
    trigger CI/CD, or touch production. You write the commands; the human
    runs them. No exceptions "to be helpful."
 5. **Evidence, not assertion.** Every Clear links its proof — the test run,
-   the QA report path, the flag/rollback mechanism, the promoted library
-   entry. An unbacked Clear is a Gap.
+   the QA report path, the flag/rollback mechanism, and the published release
+   record. An unbacked Clear is a Gap.
 6. **Nothing silently dropped.** A review finding you're not shipping is a
    `PROPOSAL` in the committed backlog (per `kai-core-scope-discipline` /
    `kai-core-work-coordination`), never a deleted comment.
@@ -139,7 +139,7 @@ The full contract lives in `kai-core-definition-of-done`. In one glance:
 | 2 | **verified** | tests/build green; `principal-qa-ui` ran; UX walked if user-facing; **an approved design exists if the surface is net-new/materially-changed** (its designer conformance verdict is confirmed under dim-3), unless a recorded product-design waiver applies | the test run, the qa report path, the approved design artifact |
 | 3 | **reviewed** | review findings resolved or deferred; **designer conformance verdict on this `change_ref` for a net-new/materially-changed user-facing surface**, or a recorded product-design waiver | the review artifact, the resolutions, the designer verdict or waiver |
 | 4 | **shippable-safely** | rollout + reversibility proportional to blast radius | the flag/canary, the rollback/kill switch, the alerts/owner |
-| 5 | **documented** | durable decisions promoted, ops docs updated, initiative `log.md` stamped | the `kai/library/` paths, the log entry |
+| 5 | **documented** | accepted decisions published, ops docs updated, initiative `log.md` stamped | the `<project-root>/<publication-root>/` paths, the log entry |
 | 6 | **coordination-closed** | item record and thread are ready for deployment handoff | the item version, thread, and open dependencies/questions |
 
 ## Output location and shape
@@ -154,21 +154,20 @@ Output to:
 - `ship` is a registered area (see `kai-core-workspace-conventions`); flavor `ship`.
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Read
-`kai/coordination/ACTIVE.md` and the authoritative item record. If the item serves the active
+`.kai/state/ACTIVE.md` and the authoritative item record. If the item serves the active
 initiative, load its `northstar.md` — dimension 1 (scope-true) is tested
 against its `scope.current` and `non_negotiable[]`, and you stamp the ship
 in its `log.md`. If the item is unaffiliated (`initiative: —`), skip the
 initiative load.
 
-**Zone & promotion (see `kai-core-workspace-conventions`).** `ship-record.md`
-defaults to the **library** zone — a record of what shipped, the DoD
-evidence, and the rollback plan is durable and auditable. Write the draft
-under `.kai/runs/ship/…` (gitignored run root), then on PREPARE promote the
-curated record to
-`<workspace-root>/kai/library/releases/<YYYY-MM-DD>/<NN>-ship-<item-id>/ship-record.md`
-with library frontmatter (`type: releases`, `initiative: <slug>`), so the
-team can `git pull` "what shipped and how to reverse it." Keep it local
-with `--local`.
+**Draft and publication (see `kai-core-workspace-conventions`).**
+`ship-record.md` is durable and auditable. Write the draft under
+`.kai/runs/ship/…` (gitignored run root), then on PREPARE publish the accepted
+record to
+`<project-root>/<publication-root>/releases/<YYYY-MM-DD>/<NN>-ship-<item-id>/ship-record.md`
+with durable asset metadata (`type: releases`, `initiative: <slug>`), so the
+team can `git pull` "what shipped and how to reverse it." Keep it private when
+the operator does not approve publication.
 
 ### Ship-record scaffold
 
@@ -225,7 +224,7 @@ back.
 ## Workflow
 
 1. **Locate the item and its context.** Read the authoritative
-   `kai/coordination/items/<id>.md` and its thread. `kai/coordination/BOARD.md` is only
+   `.kai/state/items/<id>.md` and its thread. `.kai/state/BOARD.md` is only
    an index.
    If no item exists, create a proposed item and route it through the steward;
    do not manufacture release approval.

@@ -418,8 +418,8 @@ claiming work or taking a lease.
 
 ### Phase 3 verification update
 
-- Genuine macOS and cloud host gates passed; the canonical evidence is
-  `kai/initiatives/pack-split/artifacts/reliability/pack-split-host-gates.md`.
+- Genuine macOS and cloud host gates passed; the original operational evidence
+  remains available in the pull-request and Git history that shipped the split.
 - Real install order, direct versus directory-marketplace loading, fresh
   sessions, and selected-agent execution were exercised by those gates.
 - The host copies plugin files but does not run npm or provide `node_modules`.

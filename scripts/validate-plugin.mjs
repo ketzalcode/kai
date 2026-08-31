@@ -909,8 +909,8 @@ if (wsInit) {
   }
 }
 
-// 1. The managed .gitignore block installed by onboarding must be byte-identical
-//    to the one committed in the repo .gitignore.
+// 1. The source repository dogfoods external mode, while onboarding documents
+//    mode-specific managed blocks. Both must keep recognizable markers.
 function managedBlock(text) {
   if (!text) return null;
   const start = text.indexOf('# >>> kai workspace');
@@ -924,27 +924,14 @@ const giBlock = managedBlock(gitignore);
 const obBlock = managedBlock(onboarding);
 if (giBlock === null) err('.gitignore', 'missing the managed "# >>> kai workspace" block');
 if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block template');
-if (giBlock && obBlock && giBlock !== obBlock) {
-  err('.gitignore', 'managed gitignore block differs from the kai-core-workspace-onboarding template (they must stay identical)');
+if (giBlock && !giBlock.includes('/.kai/')) {
+  err('.gitignore', 'external-mode dogfood block must ignore the repository-root .kai directory');
 }
 
-// 2. The .kai/runs areas must match across the manifest schema and the two
-//    scaffolds that create the run directories.
+// 2. The .kai/runs areas must match the documented manifest and fixture.
 const mAreasM = conventions && conventions.match(/"areas":\s*\[([^\]]*)\]/);
 const mAreas = mAreasM ? toSet(mAreasM[1].split(',').map((x) => stripQuotes(x)).filter(Boolean)) : null;
-const obAreasM = onboarding && onboarding.match(/\n\s*(qa\/[^\n]*)\n/);
-const obAreas = obAreasM ? dirTokens(obAreasM[1]) : null;
-const wiAreasM = wsInit && wsInit.match(/runs\/\{([^}]*)\}/s);
-const wiAreas = wiAreasM ? dirTokens(wiAreasM[1]) : null;
 if (!mAreas) err(conventionsRel, 'could not locate the manifest "areas" list');
-if (!obAreas) err(onboardingRel, 'could not locate the runs/ area scaffold');
-if (!wiAreas) err(wsInitRel, 'could not locate the runs/ area scaffold');
-if (mAreas && obAreas && !setEq(mAreas, obAreas)) {
-  err(onboardingRel, `runs/ areas ${JSON.stringify([...obAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
-}
-if (mAreas && wiAreas && !setEq(mAreas, wiAreas)) {
-  err(wsInitRel, `runs/ areas ${JSON.stringify([...wiAreas].sort())} differ from manifest areas ${JSON.stringify([...mAreas].sort())}`);
-}
 
 // 2b. Every concrete `.kai/runs/<area>/` literal in a shipped agent or skill must
 //     resolve to a registered run area. Placeholder segments like
@@ -966,19 +953,11 @@ if (mAreas) {
   }
 }
 
-// 2c. Schema 2 moved the working corpus under `kai/`. A single shipped prompt,
-//     doc, or distributed example still naming a bare root would silently
-//     recreate the retired schema-1 layout beside the real one (split-brain),
-//     so a root segment is only accepted when it is immediately parented by
-//     `kai/`. Text that deliberately names the retired roots — legacy
-//     detection, the migration ladder, retired ignore rules — must say so
-//     explicitly by wrapping the region in `<!-- kai:allow-legacy-roots -->` …
-//     `<!-- /kai:allow-legacy-roots -->`, so the exemption is a decision on the
-//     record rather than a keyword coincidence.
-const ROOT_SEGMENT = /(coordination|initiatives|library|personal)[/\\]/g;
+// 2c. Schema 3 removes the visible kai/ corpus. Shipped prompts, docs, and
+//     examples may name schema-2 paths only inside an explicit migration region.
+const RETIRED_CORPUS = /(^|[^.])kai[/\\](coordination|initiatives|library|personal)(?=[/\\`'"\s.,;:)\]]|$)/g;
 const LEGACY_OPEN = /<!--\s*kai:allow-legacy-roots\s*-->/;
 const LEGACY_CLOSE = /<!--\s*\/kai:allow-legacy-roots\s*-->/;
-const TREE_LINE = /[├└│]/;
 const corpusScanFiles = [...allFiles.map((f) => f.path), ...publicDocFiles()];
 for (const extra of ['AGENTS.md', 'README.md']) {
   const p = join(ROOT, extra);
@@ -1003,70 +982,36 @@ for (const path of corpusScanFiles) {
     if (LEGACY_OPEN.test(line)) { exempt = true; return; }
     if (LEGACY_CLOSE.test(line)) { exempt = false; return; }
     if (exempt) return;
-    // Tree diagrams render the roots as indented children of `kai/`.
-    if (TREE_LINE.test(line)) return;
-    for (const m of line.matchAll(ROOT_SEGMENT)) {
-      const before = line.slice(0, m.index);
-      // Correctly parented — the only accepted form.
-      if (/kai[/\\]$/.test(before)) continue;
-      // Part of a longer identifier (`sub-library/`, `mylibrary/`), not a root.
-      if (/[\w-]$/.test(before)) continue;
-      const key = `${m[1]}:${i}`;
+    for (const m of line.matchAll(RETIRED_CORPUS)) {
+      const retiredRoot = m[2];
+      const key = `${retiredRoot}:${i}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      err(rel(path), `line ${i + 1} references the retired schema-1 root \`${m[1]}/\` — the working corpus lives at \`kai/${m[1]}/\` (a bare root forks the workspace; wrap deliberate legacy text in <!-- kai:allow-legacy-roots -->)`);
+      err(rel(path), `line ${i + 1} references retired schema-2 path \`kai/${retiredRoot}\`; use .kai state or the project publication root, or wrap deliberate migration text in <!-- kai:allow-legacy-roots -->`);
     }
   });
-  if (exempt) err(rel(path), 'an unclosed <!-- kai:allow-legacy-roots --> region suppresses bare-root checking to end of file');
+  if (exempt) err(rel(path), 'an unclosed <!-- kai:allow-legacy-roots --> region suppresses retired-path checking to end of file');
 }
 
-// 3. The library/<type>/ set must match across the conventions "Library types"
-//    table and the two library scaffolds.
-function libTypesFromTable(text) {
-  if (!text) return null;
-  const start = text.indexOf('### Library types');
-  if (start === -1) return null;
-  const rest = text.slice(start + 1);
-  const nextHeading = rest.search(/\n#{2,3} /);
-  const section = nextHeading === -1 ? rest : rest.slice(0, nextHeading);
-  return toSet([...section.matchAll(/`kai\/library\/([a-z0-9-]+)\/`/g)].map((m) => m[1]));
-}
-const obLibM = onboarding && onboarding.match(/\nkai\/library\/\r?\n([\s\S]*?)\r?\n```/);
-const obLib = obLibM ? dirTokens(obLibM[1]) : null;
-const wiLibM = wsInit && wsInit.match(/library\/\{([^}]*)\}/s);
-const wiLib = wiLibM ? dirTokens(wiLibM[1]) : null;
-const tableLib = libTypesFromTable(conventions);
-if (!tableLib) err(conventionsRel, 'could not locate the "Library types" table');
-if (tableLib && !obLib) err(onboardingRel, 'could not locate the library/ scaffold');
-if (tableLib && !wiLib) err(wsInitRel, 'could not locate the library/ scaffold');
-if (tableLib && obLib && !setEq(tableLib, obLib)) {
-  err(onboardingRel, `library/ types ${JSON.stringify([...obLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
-}
-if (tableLib && wiLib && !setEq(tableLib, wiLib)) {
-  err(wsInitRel, `library/ types ${JSON.stringify([...wiLib].sort())} differ from the conventions Library types table ${JSON.stringify([...tableLib].sort())}`);
-}
-
-// 4. Initiative artifact directories must match between the canonical workspace
-//    tree and the bounded workflow that creates an initiative.
-const conventionArtifactsM = conventions && conventions.match(/artifacts\/\r?\n([\s\S]*?)\r?\n   ├─ library\//);
-const conventionArtifacts = conventionArtifactsM ? dirTokens(conventionArtifactsM[1]) : null;
-const wiArtifactsM = initiativeInit && initiativeInit.match(/kai\/initiatives\/<slug>\/artifacts\/\r?\n([\s\S]*?)\r?\nkai\/coordination\//);
-const wiArtifacts = wiArtifactsM ? dirTokens(wiArtifactsM[1]) : null;
-if (!conventionArtifacts) {
-  err(conventionsRel, 'could not locate the initiative artifacts/ scaffold');
-}
-if (!wiArtifacts) {
-  err(initiativeInitRel, 'could not locate the initiative artifacts/ scaffold');
-}
-if (conventionArtifacts && wiArtifacts && !setEq(conventionArtifacts, wiArtifacts)) {
-  err(initiativeInitRel, `initiative artifact directories ${JSON.stringify([...wiArtifacts].sort())} differ from workspace conventions ${JSON.stringify([...conventionArtifacts].sort())}`);
+// 3. The authoritative documents must expose the schema-3 private/public split.
+for (const [path, text] of [
+  [conventionsRel, conventions],
+  [onboardingRel, onboarding],
+  [wsInitRel, wsInit],
+]) {
+  for (const required of ['.kai/state', 'publication_root', 'storage_mode']) {
+    if (!text?.includes(required)) err(path, `does not bind schema-3 workspace concept ${JSON.stringify(required)}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Fixtures — a self-contained repository-mode workspace manifest that must match
-// the documented schema and canonical areas, with no machine-specific paths.
+// Fixtures — a self-contained shared workspace manifest that must match schema 3.
 // ---------------------------------------------------------------------------
-const REQUIRED_MANIFEST_KEYS = ['plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode', 'workspace_root', 'kai', 'runs', 'corpus', 'coordination', 'initiatives', 'library', 'personal', 'areas'];
+const REQUIRED_MANIFEST_KEYS = [
+  'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_id',
+  'storage_mode', 'workspace_root', 'state', 'runs', 'review', 'archive',
+  'personal', 'projects', 'areas',
+];
 const fixtureManifest = join(ROOT, 'test/fixtures/repo-workspace/.kai/manifest.json');
 if (existsSync(fixtureManifest)) {
   const fr = 'test/fixtures/repo-workspace/.kai/manifest.json';
@@ -1077,17 +1022,14 @@ if (existsSync(fixtureManifest)) {
     for (const k of REQUIRED_MANIFEST_KEYS) {
       if (!(k in fx)) err(fr, `manifest missing required key "${k}"`);
     }
-    if (fx.plugin !== 'kai') err(fr, 'manifest "plugin" must be "kai"');
-    if (!Number.isInteger(fx.schema_version)) {
-      err(fr, 'manifest "schema_version" must be an integer');
-    }
-    if (fx.workspace_mode === 'repository' && fx.workspace_root !== '.') {
-      err(fr, 'repository-mode "workspace_root" must be "."');
-    }
-    for (const [k, v] of Object.entries(fx)) {
-      if (typeof v === 'string' && /^[A-Za-z]:[\\/]|^\/[A-Za-z]/.test(v)) {
-        err(fr, `manifest value for "${k}" looks like a machine-specific absolute path`);
-      }
+    if (fx.plugin !== 'kai-core') err(fr, 'manifest "plugin" must be "kai-core"');
+    if (fx.schema_version !== 3) err(fr, 'manifest "schema_version" must be 3');
+    if (fx.storage_mode !== 'shared') err(fr, 'fixture "storage_mode" must be "shared"');
+    if (fx.workspace_root !== '.') err(fr, 'shared fixture "workspace_root" must be "."');
+    if (fx.state !== '.kai/state') err(fr, 'fixture "state" must be ".kai/state"');
+    if (!Array.isArray(fx.projects) || fx.projects.length !== 1
+      || fx.projects[0].path !== '.' || fx.projects[0].publication_root !== 'docs/kai') {
+      err(fr, 'fixture must bind one local project with publication_root "docs/kai"');
     }
     if (mAreas && !setEq(toSet(fx.areas || []), mAreas)) {
       err(fr, 'fixture manifest areas differ from the documented manifest areas');

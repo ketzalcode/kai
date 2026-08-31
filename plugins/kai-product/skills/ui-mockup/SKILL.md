@@ -147,25 +147,26 @@ area — **no new run area, no new library type**:
   screenshots/            # optional grounding evidence (heavy — stays here)
 ```
 
-The human-reviewed mock is committed **alongside the design artifact**:
+The review-ready mock moves to the private review lane:
 
 ```text
-kai/initiatives/<slug>/artifacts/designs/<item-id>-mockups/options.html
+.kai/review/designs/<item-id>/options.html
 ```
 
-and referenced from `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`:
+and is referenced from the working design artifact:
 
 ```markdown
 ## Options considered
 
-Visual mockups: `./<item-id>-mockups/options.html`  (fidelity: ASCII | HTML | mock-kit)
+Visual mockups: `.kai/review/designs/<item-id>/options.html`  (fidelity: ASCII | HTML | mock-kit)
 Recommended: Option B — <why>.
 Human confirmation: <picked by operator | delegated>, <timestamp>.
 ```
 
 Screenshots stay in the run folder as local evidence (heavy binaries aren't
-committed), referenced by path — the same "promote the text, not the binaries"
-pattern as `kai-core-web-evaluation`.
+published), referenced by path. Acceptance may publish a specification or
+report under the selected project's publication root; `options.html` remains
+private review material.
 
 ## Hard rules
 

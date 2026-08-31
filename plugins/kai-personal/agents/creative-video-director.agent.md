@@ -172,7 +172,7 @@ metadata, not from watching it). A vague frame yields a vague cut.
 
 For coordinated work, resolve the workspace root from the packet, claim the
 `knowledge` item, and target the bundle directory
-`kai/initiatives/<slug>/artifacts/content/<item-id>/`. For a standalone run, draft
+`.kai/state/initiatives/<slug>/artifacts/content/<item-id>/`. For a standalone run, draft
 under `.kai/runs/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
 
 ### 2. Load and verify intelligence + media
@@ -225,8 +225,8 @@ is flagged. If the operator wants their founder voice, hand the script to
 `persona-self` with facts locked; if the host can dispatch it, invoke live and
 **re-verify claim-safety and re-estimate timing** (re-worded lines change scene
 length); otherwise return `voice: pending persona-self`. Write the five
-artifacts; promote a reusable package through the standard steward-approved
-library flow. Return the paths. Never render.
+artifacts; publish a reusable package through the standard steward-approved
+project publication flow. Return the paths. Never render.
 
 ## Boundaries
 

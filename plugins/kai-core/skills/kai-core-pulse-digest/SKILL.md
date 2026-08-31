@@ -138,7 +138,7 @@ landscape:                    # optional — external watch via web_search, not 
 
 career:                       # optional — enables Page 3
   enabled: true
-  persona_self: true          # read kai/personal/identity/ for voice + promo rubric
+  persona_self: true          # read .kai/personal/identity/ for voice + promo rubric
   target_level: senior
 ```
 ````
@@ -167,7 +167,7 @@ One run per week:
 
 ## Gitignore — privacy first
 
-A weekly pulse of internal chat is **sensitive**, like `kai/personal/identity/`. It
+A weekly pulse of internal chat is **sensitive**, like `.kai/personal/identity/`. It
 stays in the **run root** — `.kai/runs/pulse/` — which
 `workflow-workspace-init` gitignores **wholesale** (see
 `kai-core-workspace-conventions`). You do **not** patch `.gitignore` yourself; the
@@ -175,9 +175,10 @@ whole working root is ignored, so the digest is private by default.
 
 Unlike other curated outputs, the pulse digest defaults to the **local**
 zone, not knowledge — privacy wins. To share a specific week, the operator
-explicitly passes `--share`, and only then does the calling agent promote
-that week's `brief.md` to `kai/library/digests/<YYYY-Www>/` with frontmatter.
-The skill never promotes or commits on its own.
+explicitly passes `--share`, and only then does the calling agent publish that
+week's `brief.md` to
+`<project-root>/<publication-root>/digests/<YYYY-Www>/` with durable asset
+metadata. The skill never publishes or commits on its own.
 
 ## Window resolution
 
@@ -316,7 +317,7 @@ Keep it small — a map, not a mural.>
 ### Promotion signal (toward <target_level>)
 
 <2–4 lines: which of this week's items map to the rubric in
-`kai/personal/identity/career-goals.md`, and the one gap worth closing. Honest, not
+`.kai/personal/identity/career-goals.md`, and the one gap worth closing. Honest, not
 cheerleading. Defer the real review to the career mentor.>
 
 ---

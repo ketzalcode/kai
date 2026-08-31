@@ -374,7 +374,7 @@ const payloadWith = (over = {}) => ({
   status: 'signals',
   gaps: [],
   signals: [
-    { key: 'r:item-1:Q-2', hash: 'h1', kind: 'decision', state: 'new', summary: 'Approve the pricing change', workspace: 'labora', path: 'kai/coordination/threads/item-1.md', answer_by: '2026-08-09' },
+    { key: 'r:item-1:Q-2', hash: 'h1', kind: 'decision', state: 'new', summary: 'Approve the pricing change', workspace: 'labora', path: '.kai/state/threads/item-1.md', answer_by: '2026-08-09' },
   ],
   ...over,
 });
@@ -398,7 +398,7 @@ function selfTest() {
   d = run(payloadWith({ status: 'none', signals: [] }), CONSENTED);
   ok('self-test: none skips without failing', d.decision === 'skip' && d.exitCode === 0, d.reason);
 
-  d = run(payloadWith({ status: 'error', gaps: [{ root: 'sel', reason: 'missing kai/coordination/items/pricing.md' }] }), CONSENTED);
+  d = run(payloadWith({ status: 'error', gaps: [{ root: 'sel', reason: 'missing .kai/state/items/pricing.md' }] }), CONSENTED);
   ok('self-test: error fails loudly and reports the gap count', d.decision === 'fail' && d.exitCode === 1 && /1 gap\(s\)/.test(d.reason), d.reason);
   ok('self-test: the error reason classifies the gap instead of quoting the model', /unreadable/.test(d.reason) && !/pricing\.md/.test(d.reason), d.reason);
 
@@ -458,12 +458,12 @@ function selfTest() {
   ok('self-test: a trailing comment is stripped without truncating a quoted value', hashed.channel?.secret_ref === 'KAI_NOTIFY_WEBHOOK', JSON.stringify(hashed));
 
   // --- redaction ----------------------------------------------------------
-  const leaky = redact(payloadWith({ gaps: [{ root: 'labora', reason: 'unreadable: kai/coordination/threads/pricing.md' }] }));
+  const leaky = redact(payloadWith({ gaps: [{ root: 'labora', reason: 'unreadable: .kai/state/threads/pricing.md' }] }));
   ok('self-test: a gap reason naming a path is classified, not copied', !JSON.stringify(leaky).includes('pricing.md') && leaky.gap_reasons[0] === 'unreadable', JSON.stringify(leaky.gap_reasons));
   const r = redact(payloadWith({ gaps: [{ root: 'other', reason: 'unreadable' }] }));
   const serialized = JSON.stringify(r);
   ok('self-test: redacted diagnostic drops signal summaries', !serialized.includes('Approve the pricing change'));
-  ok('self-test: redacted diagnostic drops item paths and workspace labels', !serialized.includes('kai/coordination') && !serialized.includes('labora'));
+  ok('self-test: redacted diagnostic drops item paths and workspace labels', !serialized.includes('.kai/state') && !serialized.includes('labora'));
   ok('self-test: redacted diagnostic keeps actionable shape', r.status === 'signals' && r.signal_count === 1 && r.by_kind.decision === 1 && r.gap_reasons[0] === 'unreadable');
 
   // --- retention ----------------------------------------------------------

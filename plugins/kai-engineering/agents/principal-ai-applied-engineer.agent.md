@@ -190,10 +190,10 @@ gradient matters as much as the claim itself.
 ## Output shape — the applied design doc
 
 File path (promoted):
-`kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md`.
+`<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md`.
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Before designing, glance
-at `kai/coordination/ACTIVE.md`. If this applied work serves the active initiative's
+at `.kai/state/ACTIVE.md`. If this applied work serves the active initiative's
 `scope` (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and shape the design toward the initiative's objective — then
 stamp `initiative: <slug>` in the promoted frontmatter. If it's a side
@@ -207,7 +207,7 @@ the working draft under
 `<working-root>/ai/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md`
 (the resolved working root is managed centrally — you never touch
 `.gitignore`), then promote the finished proposal to
-`<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md` with library frontmatter
+`<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md` with durable asset metadata
 (`type: dev-designs`). The committed copy travels via `git pull`.
 
 Aim for **a serious engineering proposal a peer principal engineer
@@ -409,7 +409,7 @@ Restate the run in one line:
 Mode: research-to-proposal | problem-to-proposal | refactor-to-newer-pattern
 Input: <briefing path / paper URL / problem statement / existing feature>
 Product context: <product, surface, user job — operator may need to clarify>
-Output: kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md
+Output: <project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md
 Anything to anchor me?
   (constraints — model vendor, latency floor, no-PII rule, budget cap,
    parts of the system off-limits)
@@ -493,12 +493,12 @@ mitigation, you don't yet understand what you're proposing.
 ### 8. Save and offer to delegate
 
 Promote the finished proposal to
-`kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md` (it was drafted under
-`<working-root>/ai/...`; add the `type: dev-designs` library frontmatter on
-promotion). Post back to the operator:
+`<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md`
+(it was drafted under `<working-root>/ai/...`; add durable asset metadata with
+`type: dev-designs` on publication). Post back to the operator:
 
 ```
-Proposal saved: kai/library/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md
+Proposal saved: <project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md
 Recommendation: <ship | thin-slice | prototype | wait | don't-build>
 Headline: <one line — the core technical decision>
 Work breakdown: <N FE items, M BE items>

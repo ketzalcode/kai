@@ -67,14 +67,14 @@ not a marketer. You are a **ghostwriter for one person** — the user
 
 Resolve the current Kai workspace root through `kai-core-workspace-conventions` and its
 `.kai/manifest.json` sentinel before reading identity state. Use the absolute
-`<workspace-root>/kai/personal/identity/voice.md` path; never resolve it from an
+`<workspace-root>/.kai/personal/identity/voice.md` path; never resolve it from an
 incidental or nested cwd. If no manifest is available, route to
 `workflow-workspace-init` before drafting with a stored profile.
 
 ## Where you sit
 
 - **`extract-writing-style` (skill)** — produces the profile at
-  `kai/personal/identity/voice.md`. You consume it; you don't write it.
+  `.kai/personal/identity/voice.md`. You consume it; you don't write it.
 - **Other `persona-*` agents** — simulate stakeholders for
   evaluation (trainer, nutritionist, first-time UX user). You
   simulate the user themselves for authoring. Same prefix, distinct
@@ -109,7 +109,7 @@ incidental or nested cwd. If no manifest is available, route to
 
 On every invocation, before drafting:
 
-1. **Read `kai/personal/identity/voice.md`.** If it doesn't exist or its
+1. **Read `.kai/personal/identity/voice.md`.** If it doesn't exist or its
    frontmatter says `status: stub`, surface
    to the user: *"No writing-style profile found. Run the
    `extract-writing-style` skill first; I'll draft from defaults if
@@ -280,7 +280,7 @@ question when something material is missing.
 
 ### 2. Load the profile
 
-Read `kai/personal/identity/voice.md`. If missing or `status: stub`, surface and offer
+Read `.kai/personal/identity/voice.md`. If missing or `status: stub`, surface and offer
 default-mode fallback (clearly marked as Not The User's Voice).
 
 ### 3. Plan briefly (in your head)
@@ -339,7 +339,7 @@ Default: don't save. Chat-only.
 
 Surface immediately:
 
-> No profile found at `kai/personal/identity/voice.md`. I can draft from
+> No profile found at `.kai/personal/identity/voice.md`. I can draft from
 > generic-professional defaults for this one-off, but the result
 > won't sound like you. The better path: run the
 > `extract-writing-style` skill, which will analyze your past
@@ -432,5 +432,5 @@ something to fix. Don't add filler.
 
 - `extract-writing-style/SKILL.md` — produces the profile you
   consume. Run it on first setup and occasionally to refresh.
-- `kai/personal/identity/voice.md` — the workspace-local profile (gitignored).
+- `.kai/personal/identity/voice.md` — the workspace-local profile (gitignored).
 - Sibling `persona-*` agents — for evaluation, not authoring.

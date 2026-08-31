@@ -14,6 +14,9 @@
 //
 // Usage:
 //   node scripts/workspace-doctor.mjs [--root <dir>]   validate a workspace
+//   node scripts/workspace-doctor.mjs --registry [--json]
+//   node scripts/workspace-doctor.mjs --adopt <project-dir> --root <external-workspace>
+//   node scripts/workspace-doctor.mjs --forget <project-dir>
 //   node scripts/workspace-doctor.mjs --migration-check [--rollback] [--home <dir>] [--root <dir>] [--json]
 //   node scripts/workspace-doctor.mjs --self-test      run against bundled fixtures
 //
@@ -22,11 +25,12 @@
 
 import {
   readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
-  lstatSync, readlinkSync, symlinkSync,
+  lstatSync, readlinkSync, renameSync, symlinkSync, realpathSync, openSync, closeSync, unlinkSync,
 } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
 import { tmpdir } from 'node:os';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   LIFECYCLE, NEEDS_CHANGE_REF, REQUIRES_STATES,
@@ -36,51 +40,59 @@ import {
   WORKSPACE_PROVENANCE, LEGACY_PLUGIN, CORE_PLUGIN,
   defaultHome, migrationReport, parseJsonc, installTreeTail, normalizeHostPath,
 } from './lib/migration-doctor.mjs';
+import {
+  defaultKaiHome, loadWorkspaceRegistry, readWorkspaceManifest, registryPath, resolveWorkspaceRoot,
+} from './lib/workspace-resolve.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // --- Contract constants the current plugin generates -----------------------
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 const REQUIRED_MANIFEST_KEYS = [
-  'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_mode',
-  'workspace_root', 'kai', 'runs', 'corpus', 'coordination', 'initiatives',
-  'library', 'personal', 'areas',
+  'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_id',
+  'storage_mode', 'workspace_root', 'state', 'runs', 'review', 'archive',
+  'personal', 'projects', 'areas',
 ];
-// Schema 2 moved the working corpus under kai/. Roots are resolved from the
-// manifest so the doctor never assumes a layout the workspace does not have.
-const CORPUS_ROOTS = ['coordination', 'initiatives', 'library', 'personal'];
-// Whether the working corpus is published with the repository. Optional: an
-// absent key means "committed", which is what every workspace scaffolded before
-// this key existed already does — so its absence needs no migration.
-const CORPUS_VISIBILITIES = new Set(['committed', 'local']);
 const DEFAULT_ROOTS = {
-  corpus: 'kai',
-  coordination: 'kai/coordination',
-  initiatives: 'kai/initiatives',
-  library: 'kai/library',
-  personal: 'kai/personal',
-};
-// Files that only kai creates. A bare root directory is treated as retired kai
-// content — rather than an unrelated product folder of the same generic name —
-// only when at least one of these is present inside it.
-const KAI_ROOT_MARKERS = {
-  coordination: ['items', 'threads', 'BOARD.md', 'ACTIVE.md', 'backlog.md'],
-  initiatives: ['INDEX.md'],
-  library: ['dev-designs', 'qa-findings', 'briefings', 'investigations', 'learnings', 'playbooks'],
-  personal: ['inbox.md', 'agenda.md', 'identity', 'consultations', 'decisions'],
+  state: '.kai/state',
+  runs: '.kai/runs',
+  review: '.kai/review',
+  archive: '.kai/archive',
+  personal: '.kai/personal',
 };
 const CANONICAL_AREAS = new Set([
   'qa', 'eng', 'product', 'revenue', 'support', 'review', 'ship', 'incident',
   'ai', 'learn', 'lessons', 'pulse', 'content',
 ]);
-const WORKSPACE_MODES = new Set(['repository', 'external']);
+const STORAGE_MODES = new Set(['external', 'repo-local', 'shared']);
+const REQUIRES_EXISTING_ARTIFACTS = new Set([
+  'in-review', 'completed', 'release-ready', 'deploying', 'production-verification', 'shipped',
+]);
+const PROJECT_ID = /^[a-z][a-z0-9-]*$/;
+const WORKSPACE_ID = /^[a-z0-9][a-z0-9-]{7,}$/i;
+const RETIRED_SCHEMA_2_KEYS = [
+  'workspace_mode', 'corpus_visibility', 'kai', 'corpus',
+  'coordination', 'initiatives', 'library',
+];
+const REQUIRED_SCHEMA_3_PATHS = new Map([
+  ['.kai/CONVENTIONS.md', 'file'],
+  ['.kai/state/ACTIVE.md', 'file'],
+  ['.kai/state/BOARD.md', 'file'],
+  ['.kai/state/backlog.md', 'file'],
+  ['.kai/state/items', 'directory'],
+  ['.kai/state/threads', 'directory'],
+  ['.kai/state/initiatives/INDEX.md', 'file'],
+]);
 
-// A durable path must be workspace-root-relative: no machine-absolute root,
-// no UNC share, no session-state, no parent-escape, no abbreviated `.../`.
+// A durable path is workspace-relative or project-qualified: no
+// machine-absolute root, UNC share, session-state, parent escape, or `.../`.
 function badPath(p) {
   const t = unquote(p);
   if (isNull(t) || t === '[]') return null;
-  const norm = t.replace(/\\/g, '/');
+  const projectTarget = /^project:([a-z][a-z0-9-]*):(.*)$/i.exec(t);
+  const candidate = projectTarget ? projectTarget[2] : t;
+  if (projectTarget && !candidate.trim()) return 'project target with no relative path';
+  const norm = candidate.replace(/\\/g, '/');
   if (t.startsWith('\\\\') || norm.startsWith('//')) return 'UNC / share path';
   if (/^[A-Za-z]:\//.test(norm) || norm.startsWith('/')) return 'machine-absolute path';
   if (t.includes('.../')) return 'abbreviated `.../` path';
@@ -89,14 +101,177 @@ function badPath(p) {
   return null;
 }
 
-// --- validation ------------------------------------------------------------
-function looksLikeKaiRoot(root, key) {
-  const dir = join(root, key);
-  if (!existsSync(dir)) return false;
-  return (KAI_ROOT_MARKERS[key] || []).some((marker) => existsSync(join(dir, marker)));
+function normalized(path) {
+  const value = canonicalPath(path);
+  return process.platform === 'win32' ? value.toLowerCase() : value;
 }
 
-export function checkWorkspace(root) {
+function canonicalPath(path) {
+  let existing = resolve(path);
+  const tail = [];
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) break;
+    tail.unshift(basename(existing));
+    existing = parent;
+  }
+  const canonical = existsSync(existing) ? realpathSync(existing) : existing;
+  return resolve(canonical, ...tail);
+}
+
+function resolvedProjectPath(root, projectPath) {
+  return isAbsolute(projectPath) ? resolve(projectPath) : resolve(root, projectPath);
+}
+
+function nestedScalar(fmLines, section, key) {
+  let inSection = false;
+  for (const line of fmLines) {
+    if (line === `${section}:`) {
+      inSection = true;
+      continue;
+    }
+    if (!inSection) continue;
+    if (/^\S/.test(line)) return undefined;
+    const match = line.match(new RegExp(`^\\s+${key}:\\s?(.*)$`));
+    if (match) return cleanScalar(match[1]);
+  }
+  return undefined;
+}
+
+function provenLegacyRoots(root) {
+  return ['kai/coordination', 'kai/initiatives', 'kai/library', 'kai/personal']
+    .filter((base) => {
+      const path = join(root, ...base.split('/'));
+      if (!existsSync(path)) return false;
+      try {
+        return readdirSync(path).length > 0;
+      } catch {
+        return true;
+      }
+    });
+}
+
+function escapesRoot(root, candidate) {
+  const rel = relative(canonicalPath(root), canonicalPath(candidate));
+  return rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel);
+}
+
+function inspectPrivateLanes(root) {
+  const gitRoots = [];
+  const symbolicLinks = [];
+  const unreadable = [];
+  for (const lane of ['.kai/runs', '.kai/review', '.kai/archive', '.kai/personal']) {
+    const laneRoot = join(root, ...lane.split('/'));
+    let laneStat;
+    try {
+      laneStat = lstatSync(laneRoot);
+    } catch (error) {
+      if (error.code === 'ENOENT') continue;
+      unreadable.push(`${lane}: ${error.message}`);
+      continue;
+    }
+    if (laneStat.isSymbolicLink()) {
+      symbolicLinks.push(lane);
+      continue;
+    }
+    const pending = [laneRoot];
+    while (pending.length) {
+      const current = pending.pop();
+      let entries;
+      try {
+        entries = readdirSync(current, { withFileTypes: true });
+      } catch (error) {
+        unreadable.push(`${relative(root, current).replace(/\\/g, '/')}: ${error.message}`);
+        continue;
+      }
+      for (const entry of entries) {
+        const path = join(current, entry.name);
+        if (entry.name === '.git') {
+          gitRoots.push(relative(root, current).replace(/\\/g, '/') || '.');
+          continue;
+        }
+        if (entry.isSymbolicLink()) {
+          symbolicLinks.push(relative(root, path).replace(/\\/g, '/'));
+          continue;
+        }
+        if (entry.isDirectory()) pending.push(path);
+      }
+    }
+  }
+  return { gitRoots, symbolicLinks, unreadable };
+}
+
+function checkGitMode(root, mode, err, warn) {
+  const git = (args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true });
+  const tree = git(['rev-parse', '--is-inside-work-tree']);
+  if (tree.error || tree.status !== 0 || tree.stdout.trim() !== 'true') {
+    if (mode !== 'external') warn(`storage_mode "${mode}" is not inside a readable git work tree`);
+    return;
+  }
+  const top = git(['rev-parse', '--show-toplevel']);
+  if (top.status !== 0 || !top.stdout.trim()) {
+    warn(`storage_mode "${mode}" could not resolve the containing git work tree`);
+    return;
+  }
+  const gitRoot = resolve(top.stdout.trim());
+  const workspaceRel = relative(gitRoot, root).replace(/\\/g, '/');
+  if (workspaceRel === '..' || workspaceRel.startsWith('../') || isAbsolute(workspaceRel)) {
+    err(`storage_mode "${mode}" workspace is outside the containing git work tree`);
+    return;
+  }
+  const inWorkspace = (path) => workspaceRel ? `${workspaceRel}/${path}` : path;
+  const tracked = spawnSync(
+    'git',
+    ['-C', gitRoot, 'ls-files', '--', inWorkspace('.kai')],
+    { encoding: 'utf8', windowsHide: true },
+  );
+  const trackedPaths = tracked.status === 0 && tracked.stdout.trim()
+    ? tracked.stdout.trim().split(/\r?\n/)
+    : [];
+  const workspaceTrackedPath = (path) => {
+    const normalizedPath = path.replace(/\\/g, '/');
+    return workspaceRel && normalizedPath.startsWith(`${workspaceRel}/`)
+      ? normalizedPath.slice(workspaceRel.length + 1)
+      : normalizedPath;
+  };
+  const ignored = (path) => spawnSync(
+    'git',
+    ['-C', gitRoot, 'check-ignore', '--no-index', '-q', '--', inWorkspace(path)],
+    { encoding: 'utf8', windowsHide: true },
+  ).status === 0;
+  const privatePrefixes = ['.kai/runs/', '.kai/review/', '.kai/personal/', '.kai/archive/'];
+  const privateFiles = new Set([
+    '.kai/activity.jsonl', '.kai/activity.jsonl.1', '.kai/observed.jsonl',
+    '.kai/observed.jsonl.1', '.kai/observer-consent', '.kai/local.json',
+  ]);
+  const trackedPrivate = trackedPaths
+    .map(workspaceTrackedPath)
+    .filter((path) => privateFiles.has(path) || privatePrefixes.some((prefix) => path.startsWith(prefix)));
+
+  if (mode === 'repo-local') {
+    if (trackedPaths.length) {
+      err(`storage_mode "repo-local" has ${trackedPaths.length} tracked .kai path(s); the private workspace must be untracked`);
+    }
+    if (!ignored('.kai/')) {
+      err('storage_mode "repo-local" requires the entire .kai/ directory to be ignored');
+    }
+  }
+  if (mode === 'shared' || mode === 'external') {
+    if (ignored('.kai/manifest.json') || ignored('.kai/state/BOARD.md')) {
+      err(`storage_mode "${mode}" requires .kai/manifest.json and .kai/state/ to remain trackable in a version-controlled workspace`);
+    }
+    if (trackedPrivate.length) {
+      err(`storage_mode "${mode}" has ${trackedPrivate.length} tracked private .kai path(s): ${trackedPrivate.join(', ')}`);
+    }
+    for (const path of [...privatePrefixes, ...privateFiles]) {
+      if (!ignored(path)) err(`storage_mode "${mode}" requires "${path}" to be ignored`);
+    }
+  }
+}
+
+// --- validation ------------------------------------------------------------
+export function checkWorkspace(root, options = {}) {
+  root = resolve(root);
   const errors = [];
   const warnings = [];
   const migrations = [];
@@ -109,46 +284,52 @@ export function checkWorkspace(root) {
     err('.kai/manifest.json is missing — the workspace is not onboarded. Run workflow-workspace-init.');
     return { errors, warnings, migrations };
   }
-  let m;
-  try { m = JSON.parse(readFileSync(manifestPath, 'utf8')); }
-  catch (e) { err(`.kai/manifest.json is not valid JSON: ${e.message}`); return { errors, warnings, migrations }; }
+  const manifestResult = readWorkspaceManifest(root);
+  if (!manifestResult.ok) {
+    err(manifestResult.reason);
+    return { errors, warnings, migrations };
+  }
+  const m = manifestResult.manifest;
+  if (!m || typeof m !== 'object' || Array.isArray(m)) {
+    err('.kai/manifest.json must contain a JSON object');
+    return { errors, warnings, migrations };
+  }
 
   for (const k of REQUIRED_MANIFEST_KEYS) {
     if (!(k in m)) {
       if (k === 'schema_version') continue; // handled by migration logic below
-      // `corpus` arrived with schema 2; a schema-1 manifest is legitimately
-      // missing it and is already told to migrate.
-      if (k === 'corpus' && Number.isInteger(m.schema_version) && m.schema_version < 2) continue;
+      if (Number.isInteger(m.schema_version) && m.schema_version < CURRENT_SCHEMA_VERSION) continue;
       err(`.kai/manifest.json missing required key "${k}"`);
     }
   }
-  // Provenance: which plugin scaffolded this workspace. `kai` today, `kai-core`
-  // once packs are the install surface — a closed set, so a typo is still an
-  // error rather than a third mode. `--migration-check` is what reconciles the
-  // recorded value against what the host actually has installed.
   if (m.plugin !== undefined && !WORKSPACE_PROVENANCE.has(m.plugin)) {
     err(`.kai/manifest.json "plugin" must be "${LEGACY_PLUGIN}" (monolith) or "${CORE_PLUGIN}" (pack install)`);
   }
-  if (m.workspace_mode !== undefined && !WORKSPACE_MODES.has(m.workspace_mode)) {
-    err(`.kai/manifest.json "workspace_mode" must be "repository" or "external" (found ${JSON.stringify(m.workspace_mode)})`);
+  if (m.workspace_id !== undefined && !WORKSPACE_ID.test(m.workspace_id)) {
+    err('.kai/manifest.json "workspace_id" must be a stable UUID or UUID-like identifier');
   }
-  if (m.workspace_mode === 'repository' && m.workspace_root !== '.') {
-    err('.kai/manifest.json repository-mode "workspace_root" must be "."');
+  if (m.storage_mode !== undefined && !STORAGE_MODES.has(m.storage_mode)) {
+    err(`.kai/manifest.json "storage_mode" must be "external", "repo-local", or "shared" (found ${JSON.stringify(m.storage_mode)})`);
   }
-  // A typo here would silently publish a corpus the operator asked to keep
-  // local, so an unrecognized value is an error rather than a fallback.
-  if (m.corpus_visibility !== undefined && !CORPUS_VISIBILITIES.has(m.corpus_visibility)) {
-    err(`.kai/manifest.json "corpus_visibility" must be "committed" or "local" (found ${JSON.stringify(m.corpus_visibility)})`);
-  } else if (m.corpus_visibility === 'local') {
-    checkLocalCorpusPrivacy(root, err, warn);
+  if (['repo-local', 'shared'].includes(m.storage_mode) && m.workspace_root !== '.') {
+    err(`.kai/manifest.json ${m.storage_mode} "workspace_root" must be "."`);
   }
-  if (Array.isArray(m.areas)) {
+  if (m.storage_mode === 'external') {
+    if (!isAbsolute(m.workspace_root || '')) {
+      err('.kai/manifest.json external "workspace_root" must be absolute');
+    } else if (normalized(m.workspace_root) !== normalized(root)) {
+      err(`.kai/manifest.json external "workspace_root" resolves to "${resolve(m.workspace_root)}", not "${root}"`);
+    }
+  }
+  if (Number.isInteger(m.schema_version) && m.schema_version >= CURRENT_SCHEMA_VERSION && !Array.isArray(m.areas)) {
+    err('.kai/manifest.json "areas" must be an array');
+  } else if (Array.isArray(m.areas)) {
     const a = new Set(m.areas);
+    if (a.size !== m.areas.length) err('.kai/manifest.json "areas" must not contain duplicates');
     for (const x of a) if (!CANONICAL_AREAS.has(x)) err(`.kai/manifest.json declares unknown run area "${x}"`);
     for (const x of CANONICAL_AREAS) if (!a.has(x)) err(`.kai/manifest.json is missing run area "${x}"`);
   }
 
-  // schema_version compatibility + migration plan
   const sv = m.schema_version;
   if (sv === undefined || sv === 0) {
     migrations.push(`schema_version absent → migrate to ${CURRENT_SCHEMA_VERSION} (add schema_version, reconcile fixed roots/areas, drop retired fields).`);
@@ -159,42 +340,289 @@ export function checkWorkspace(root) {
     for (let v = sv + 1; v <= CURRENT_SCHEMA_VERSION; v++) migrations.push(`apply migration step → ${v} (see kai-core-workspace-onboarding ladder).`);
     err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_SCHEMA_VERSION}; migration required before claiming work.`);
   } else if (sv > CURRENT_SCHEMA_VERSION) {
-    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update the plugin (/plugin update kai) before claiming work.`);
+    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update kai-core before claiming work.`);
   }
 
-  // Resolve corpus roots from the manifest rather than assuming a layout.
+  if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
+    for (const retired of RETIRED_SCHEMA_2_KEYS) {
+      if (retired in m) err(`.kai/manifest.json still contains retired schema-2 key "${retired}"`);
+    }
+    const contractPaths = new Map([['.kai', 'directory'], ...REQUIRED_SCHEMA_3_PATHS]);
+    for (const [requiredPath, expectedType] of contractPaths) {
+      const fullPath = join(root, ...requiredPath.split('/'));
+      if (!existsSync(fullPath)) {
+        err(`schema-3 workspace is missing required path "${requiredPath}"`);
+      } else if (escapesRoot(root, fullPath)) {
+        err(`schema-3 path "${requiredPath}" resolves outside the workspace through a symbolic link or junction`);
+      } else if (
+        (expectedType === 'file' && !lstatSync(fullPath).isFile())
+        || (expectedType === 'directory' && !lstatSync(fullPath).isDirectory())
+      ) {
+        err(`schema-3 path "${requiredPath}" must be a ${expectedType}`);
+      }
+    }
+    for (const lane of Object.values(DEFAULT_ROOTS)) {
+      const lanePath = join(root, ...lane.split('/'));
+      if (existsSync(lanePath) && escapesRoot(root, lanePath)) {
+        err(`schema-3 path "${lane}" resolves outside the workspace through a symbolic link or junction`);
+      }
+    }
+    for (const legacyRoot of provenLegacyRoots(root)) {
+      err(`schema-3 workspace still contains retired schema-2 root "${legacyRoot}"`);
+    }
+    const privateLanes = inspectPrivateLanes(root);
+    for (const path of privateLanes.symbolicLinks) {
+      err(`private workspace path "${path}" is a symbolic link or junction; private lanes must not redirect writes`);
+    }
+    for (const path of privateLanes.gitRoots) {
+      err(`private workspace path "${path}" contains a nested Git repository`);
+    }
+    for (const detail of privateLanes.unreadable) {
+      err(`private workspace path is unreadable: ${detail}`);
+    }
+  }
+
   const rootOf = (key) => {
     const v = m[key];
     return typeof v === 'string' && v.trim() ? v.trim().replace(/\/+$/, '') : DEFAULT_ROOTS[key];
   };
-  for (const key of CORPUS_ROOTS) {
+  for (const key of Object.keys(DEFAULT_ROOTS)) {
     const declared = rootOf(key);
-    if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION && declared !== DEFAULT_ROOTS[key]) {
-      err(`.kai/manifest.json "${key}" must be "${DEFAULT_ROOTS[key]}" (found "${declared}"); the layout is a contract constant, not a per-workspace setting.`);
-    }
-    // Split-brain guard: a leftover schema-1 root alongside its schema-2 home
-    // silently forks the workspace. A bare directory only counts when it holds
-    // kai's own marker files — a product repository is entitled to its own
-    // `library/` or `personal/` folder, which is precisely why kai moved.
-    if (looksLikeKaiRoot(root, key) && existsSync(join(root, ...DEFAULT_ROOTS[key].split('/')))) {
-      err(`split-brain layout: a retired schema-1 "${key}/" holding kai content coexists with "${DEFAULT_ROOTS[key]}/"; finish the schema 1 → 2 migration and remove the retired root before claiming work.`);
+    if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION && m[key] !== DEFAULT_ROOTS[key]) {
+      err(`.kai/manifest.json "${key}" must be exactly "${DEFAULT_ROOTS[key]}" (found ${JSON.stringify(m[key])}); the layout is a contract constant, not a per-workspace setting.`);
     }
   }
-  if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION && rootOf('corpus') !== DEFAULT_ROOTS.corpus) {
-    err(`.kai/manifest.json "corpus" must be "${DEFAULT_ROOTS.corpus}" (found "${rootOf('corpus')}"); the layout is a contract constant, not a per-workspace setting.`);
+
+  const projectIds = new Set();
+  const projectPublicationRoots = new Map();
+  const projectRoots = new Map();
+  if (!Array.isArray(m.projects) || m.projects.length === 0) {
+    if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
+      err('.kai/manifest.json "projects" must contain at least one project binding');
+    }
+  } else {
+    for (const [index, project] of m.projects.entries()) {
+      const prefix = `.kai/manifest.json projects[${index}]`;
+      if (!project || typeof project !== 'object') {
+        err(`${prefix} must be an object`);
+        continue;
+      }
+      if (!PROJECT_ID.test(project.id || '')) err(`${prefix}.id must be kebab-case`);
+      else if (projectIds.has(project.id)) err(`${prefix}.id "${project.id}" is duplicated`);
+      else projectIds.add(project.id);
+      if (typeof project.path !== 'string' || !project.path.trim()) {
+        err(`${prefix}.path is required`);
+      } else {
+        const pathReason = !isAbsolute(project.path) && project.path !== '.'
+          ? 'must be absolute or "."'
+          : null;
+        if (pathReason) err(`${prefix}.path ${pathReason}`);
+        if (project.path === '.' && m.storage_mode === 'external') {
+          err(`${prefix}.path cannot be "." for an external workspace`);
+        }
+        if (project.path !== '.' && !isAbsolute(project.path)) {
+          err(`${prefix}.path must be absolute`);
+        }
+        if (project.path === '.' && !['repo-local', 'shared'].includes(m.storage_mode)) {
+          err(`${prefix}.path "." is only valid for repo-local or shared storage`);
+        }
+      }
+      const publicationReason = badPath(project.publication_root);
+      const normalizedPublicationRoot = typeof project.publication_root === 'string'
+        ? project.publication_root.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '')
+        : '';
+      if (typeof project.publication_root !== 'string' || !project.publication_root.trim()) {
+        err(`${prefix}.publication_root is required`);
+      } else if (publicationReason) {
+        err(`${prefix}.publication_root is a ${publicationReason}`);
+      } else if (
+        normalizedPublicationRoot.toLowerCase() === '.kai'
+        || normalizedPublicationRoot.toLowerCase().startsWith('.kai/')
+      ) {
+        err(`${prefix}.publication_root must be outside .kai/`);
+      } else if (PROJECT_ID.test(project.id || '')) {
+        projectPublicationRoots.set(project.id, normalizedPublicationRoot);
+      }
+      if (typeof project.path === 'string') {
+        const projectRoot = resolvedProjectPath(root, project.path);
+        if (PROJECT_ID.test(project.id || '')) projectRoots.set(project.id, projectRoot);
+        if (!existsSync(projectRoot)) err(`${prefix}.path does not exist: "${projectRoot}"`);
+        if (
+          m.storage_mode === 'external'
+          && existsSync(projectRoot)
+          && (!escapesRoot(root, projectRoot) || !escapesRoot(projectRoot, root))
+        ) {
+          err(`${prefix}.path overlaps the external workspace root; external workspaces must remain outside their bound projects`);
+        }
+        const publicationRoot = resolve(projectRoot, project.publication_root || '.');
+        const rel = relative(projectRoot, publicationRoot);
+        if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+          err(`${prefix}.publication_root escapes project "${project.id || index}"`);
+        } else {
+          const realProjectRoot = canonicalPath(projectRoot);
+          const realPublicationRoot = canonicalPath(publicationRoot);
+          const realRel = relative(realProjectRoot, realPublicationRoot);
+          if (realRel === '..' || realRel.startsWith(`..${sep}`) || isAbsolute(realRel)) {
+            err(`${prefix}.publication_root resolves outside project "${project.id || index}" through a symbolic link or junction`);
+          }
+        }
+      }
+    }
   }
-  const coordinationRoot = rootOf('coordination');
+
+  if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
+    checkGitMode(root, m.storage_mode, err, warn);
+  }
+
+  if (m.storage_mode === 'external' && !options.allowUnregisteredExternal) {
+    const registry = loadWorkspaceRegistry(options.env || process.env);
+    if (!registry.ok) {
+      err(registry.reason);
+    } else {
+      if (!registry.entries.some((entry) => entry.workspace_id === m.workspace_id)) {
+        err(`external workspace is not registered in "${registry.path}"; run workspace-doctor --adopt <project-dir> --root "${root}"`);
+      }
+      for (const project of Array.isArray(m.projects) ? m.projects : []) {
+        if (!project || typeof project !== 'object' || typeof project.path !== 'string') continue;
+        const projectRoot = resolvedProjectPath(root, project.path);
+        const matches = registry.entries.filter(
+          (entry) => normalized(entry.project_root) === normalized(projectRoot),
+        );
+        if (matches.length !== 1) {
+          err(`external project "${project.id}" has ${matches.length} registry bindings in "${registry.path}"; exactly one is required`);
+          continue;
+        }
+        const [match] = matches;
+        if (match.workspace_id !== m.workspace_id || normalized(match.workspace_root) !== normalized(root)) {
+          err(`external project "${project.id}" is not paired with this workspace in "${registry.path}"`);
+        }
+      }
+    }
+  }
+
+  const coordinationRoot = rootOf('state');
+  const validateArtifactTarget = (target, label, itemContract) => {
+    const cleanTarget = unquote(target || '');
+    const reason = badPath(cleanTarget);
+    if (reason) {
+      err(`${label} is a ${reason}; use a private .kai/ path or project:<id>:<relative-path>`);
+      return;
+    }
+    if (isNull(cleanTarget) || cleanTarget === '[]') return;
+
+    const projectTarget = /^project:([a-z][a-z0-9-]*):(.*)$/i.exec(cleanTarget);
+    if (!projectTarget) {
+      const privatePath = cleanTarget.replace(/\\/g, '/').replace(/^\.\//, '');
+      if (!privatePath.startsWith('.kai/')) {
+        err(`${label} is an unqualified project path; public targets must use project:<id>:<relative-path>`);
+        return;
+      }
+      const targetPath = resolve(root, ...privatePath.split('/'));
+      if (escapesRoot(root, targetPath)) {
+        err(`${label} resolves outside the workspace through a symbolic link or junction`);
+      } else if (REQUIRES_EXISTING_ARTIFACTS.has(itemContract.state) && !existsSync(targetPath)) {
+        err(`${label} does not exist for item state "${itemContract.state}"`);
+      }
+      return;
+    }
+
+    const [, projectId, rawPublicPath] = projectTarget;
+    if (!projectIds.has(projectId)) {
+      err(`${label} names unknown manifest project "${projectId}"`);
+      return;
+    }
+    const publicPath = rawPublicPath.replace(/\\/g, '/').replace(/^\.\//, '');
+    const publicationRoot = projectPublicationRoots.get(projectId);
+    if (publicationRoot && publicPath !== publicationRoot && !publicPath.startsWith(`${publicationRoot}/`)) {
+      err(`${label} escapes project "${projectId}" publication_root "${publicationRoot}"`);
+      return;
+    }
+    const projectRoot = projectRoots.get(projectId);
+    if (!projectRoot) return;
+    const targetPath = resolve(projectRoot, ...publicPath.split('/'));
+    const realRel = relative(canonicalPath(projectRoot), canonicalPath(targetPath));
+    if (realRel === '..' || realRel.startsWith(`..${sep}`) || isAbsolute(realRel)) {
+      err(`${label} resolves outside project "${projectId}" through a symbolic link or junction`);
+      return;
+    }
+    if (!existsSync(targetPath)) {
+      if (REQUIRES_EXISTING_ARTIFACTS.has(itemContract.state)) {
+        err(`${label} does not exist for item state "${itemContract.state}"`);
+      }
+      return;
+    }
+    if (!targetPath.toLowerCase().endsWith('.md')) return;
+    const assetFrontmatter = frontmatter(readFileSync(targetPath, 'utf8'));
+    if (!assetFrontmatter) {
+      err(`${label} points to a published Markdown asset with no lifecycle frontmatter`);
+      return;
+    }
+    const disposition = nestedScalar(assetFrontmatter, 'disposition', 'status');
+    const verdict = nestedScalar(assetFrontmatter, 'completion', 'verdict');
+    const revision = scalar(assetFrontmatter, 'revision');
+    const acceptedRevision = nestedScalar(assetFrontmatter, 'completion', 'revision_at_verdict');
+    const validity = nestedScalar(assetFrontmatter, 'validity', 'status');
+    const requiredMetadata = new Map([
+      ['asset_id', scalar(assetFrontmatter, 'asset_id')],
+      ['asset_class', scalar(assetFrontmatter, 'asset_class')],
+      ['item', scalar(assetFrontmatter, 'item')],
+      ['produced_by', scalar(assetFrontmatter, 'produced_by')],
+      ['created', scalar(assetFrontmatter, 'created')],
+      ['revision', revision],
+      ['disposition.status', disposition],
+      ['completion.authority', nestedScalar(assetFrontmatter, 'completion', 'authority')],
+      ['completion.verdict', verdict],
+      ['validity.status', validity],
+      ['validity.owner', nestedScalar(assetFrontmatter, 'validity', 'owner')],
+    ]);
+    const missingMetadata = [...requiredMetadata]
+      .filter(([, value]) => isNull(value))
+      .map(([key]) => key);
+    if (missingMetadata.length) {
+      err(`${label} points to a published Markdown asset missing lifecycle metadata: ${missingMetadata.join(', ')}`);
+    }
+    const assetItem = scalar(assetFrontmatter, 'item');
+    if (!isNull(assetItem) && assetItem !== itemContract.id) {
+      err(`${label} points to a project asset owned by item "${assetItem}", not "${itemContract.id}"`);
+    }
+    const assetClass = scalar(assetFrontmatter, 'asset_class');
+    const completionAuthority = nestedScalar(assetFrontmatter, 'completion', 'authority');
+    const validityOwner = nestedScalar(assetFrontmatter, 'validity', 'owner');
+    for (const [field, declared, actual] of [
+      ['asset_class', itemContract.artifactClass, assetClass],
+      ['completion.authority', itemContract.completionAuthority, completionAuthority],
+      ['validity.owner', itemContract.validityOwner, validityOwner],
+    ]) {
+      if (isNull(declared)) {
+        err(`${label} cannot validate published asset ${field} because the work item declaration is missing`);
+      } else if (actual !== declared) {
+        err(`${label} published asset ${field} "${actual}" does not match work item declaration "${declared}"`);
+      }
+    }
+    if (!isNull(completionAuthority) && completionAuthority === scalar(assetFrontmatter, 'produced_by')) {
+      err(`${label} points to a project asset accepted by its own producer "${completionAuthority}"`);
+    }
+    if (disposition !== 'published' || verdict !== 'accepted') {
+      err(`${label} points to a project asset that is not accepted and published`);
+    }
+    if (validity !== 'current') {
+      err(`${label} points to a project asset whose validity is not current`);
+    }
+    if (isNull(revision) || acceptedRevision !== revision) {
+      err(`${label} points to a project asset whose accepted revision does not match its current revision`);
+    }
+  };
 
   // 2. Coordination items ---------------------------------------------------
   const itemsDir = join(root, ...coordinationRoot.split('/'), 'items');
   const itemIds = new Set();
   const deps = new Map(); // id -> [depId]
-  if (existsSync(itemsDir)) {
+  if (existsSync(itemsDir) && lstatSync(itemsDir).isDirectory()) {
     // README.md is the lane's own scaffold file, not a work item.
     const files = readdirSync(itemsDir).filter((f) => f.endsWith('.md') && f !== 'README.md');
     for (const f of files) {
       const id = basename(f, '.md');
-      const rel = `${coordinationRoot}/items/${f}`;
+      const rel = `${coordinationRoot}/items/${f}`.replace(/\\/g, '/');
       const fm = frontmatter(readFileSync(join(itemsDir, f), 'utf8'));
       if (!fm) { err(`${rel}: missing YAML frontmatter`); continue; }
       itemIds.add(id);
@@ -243,13 +671,19 @@ export function checkWorkspace(root) {
         }
       }
 
+      const itemContract = {
+        id,
+        state,
+        artifactClass: scalar(fm, 'artifact_class'),
+        completionAuthority: scalar(fm, 'completion_authority'),
+        validityOwner: scalar(fm, 'validity_owner'),
+      };
       for (const key of ['artifact_target']) {
-        const reason = badPath(scalar(fm, key));
-        if (reason) err(`${rel}: ${key} is a ${reason}; durable paths must be workspace-root-relative`);
+        const target = scalar(fm, key);
+        validateArtifactTarget(target, `${rel}: ${key}`, itemContract);
       }
       for (const target of listBlock(fm, 'artifact_targets')) {
-        const reason = badPath(target);
-        if (reason) err(`${rel}: artifact_targets entry "${target}" is a ${reason}; durable paths must be workspace-root-relative`);
+        validateArtifactTarget(target, `${rel}: artifact_targets entry "${target}"`, itemContract);
       }
 
       const dlist = dependsOn(fm);
@@ -271,7 +705,7 @@ export function checkWorkspace(root) {
 
   // 3. BOARD drift ----------------------------------------------------------
   const boardPath = join(root, ...coordinationRoot.split('/'), 'BOARD.md');
-  if (existsSync(boardPath) && itemIds.size > 0) {
+  if (existsSync(boardPath) && lstatSync(boardPath).isFile() && itemIds.size > 0) {
     const board = readFileSync(boardPath, 'utf8');
     const rowIds = new Set(
       [...board.matchAll(/^\|\s*([a-z][a-z0-9-]+)\s*\|/gm)].map((x) => x[1]).filter((x) => x !== 'id'),
@@ -357,6 +791,31 @@ function migrationInventory(report) {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
+function reportRegistry({ env, json = false }) {
+  const registry = loadWorkspaceRegistry(env);
+  if (!registry.ok) {
+    console.error(`workspace registry: ${registry.reason}`);
+    return 1;
+  }
+  if (json) {
+    console.log(jsonText({
+      path: registry.path,
+      kai_home: defaultKaiHome(env),
+      workspaces: registry.entries,
+    }));
+    return 0;
+  }
+  console.log(`kai workspace registry — ${registry.path}`);
+  if (!registry.entries.length) {
+    console.log('  (empty)');
+    return 0;
+  }
+  for (const entry of registry.entries) {
+    console.log(`  ${entry.project_root} -> ${entry.workspace_root} (${entry.workspace_id})`);
+  }
+  return 0;
+}
+
 function reportMigration({ home, root, json = false, rollback = false }) {
   const res = migrationReport({ home, root, rollback });
   if (json) {
@@ -387,254 +846,700 @@ function reportMigration({ home, root, json = false, rollback = false }) {
   return migrationExitCode(res.status);
 }
 
-// Under `corpus_visibility: local` the operator asked for kai state to stay off
-// the remote. That promise is kept by git, not by the manifest, so it has to be
-// verified against git rather than assumed from the recorded value — a manifest
-// saying `local` over a .gitignore that never got the block is exactly the
-// silent failure the setting exists to prevent. Only invoked for `local`, so a
-// `committed` workspace keeps the doctor's historical behaviour of never
-// shelling out at all.
-function checkLocalCorpusPrivacy(root, err, warn) {
-  const git = (args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true });
-  const tree = git(['rev-parse', '--is-inside-work-tree']);
-  if (tree.error || tree.status !== 0 || tree.stdout.trim() !== 'true') {
-    warn('corpus_visibility is "local" but this workspace is not a git work tree (or git is unavailable), so the exclusion could not be verified. Nothing is claimed about what a remote would receive.');
-    return;
+const registryWait = new Int32Array(new SharedArrayBuffer(4));
+
+function processIsAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== 'ESRCH';
   }
-  // .gitignore never untracks anything. A tracked file stays committable no
-  // matter what the ignore block says, so this is an error and not a warning.
-  const tracked = git(['ls-files', '--', 'kai', '.kai']);
-  if (tracked.status === 0 && tracked.stdout.trim()) {
-    const files = tracked.stdout.trim().split(/\r?\n/);
-    const sample = files.slice(0, 3).join(', ');
-    err(`corpus_visibility is "local" but ${files.length} kai path(s) are tracked by git (e.g. ${sample}${files.length > 3 ? ', …' : ''}); ignoring a path does not untrack it, so this state is still committable. Untrack them ("git rm --cached") or record corpus_visibility "committed".`);
+}
+
+function recoverDeadRegistryLock(lockPath) {
+  let owner;
+  try {
+    owner = JSON.parse(readFileSync(lockPath, 'utf8'));
+  } catch {
+    return false;
   }
-  // check-ignore reports the EFFECTIVE rule, so a later negation or a
-  // hand-edited block is caught rather than inferred from the block's text.
-  for (const p of ['kai/coordination', '.kai/manifest.json']) {
-    const r = git(['check-ignore', '--no-index', '-q', '--', p]);
-    if (r.status === 1) {
-      err(`corpus_visibility is "local" but "${p}" is not ignored; re-install the managed .gitignore block from kai-core-workspace-onboarding.`);
-    } else if (r.status !== 0) {
-      warn(`corpus_visibility is "local" but git could not evaluate ignore rules for "${p}"; the exclusion is unverified.`);
+  if (typeof owner.token !== 'string' || processIsAlive(owner.pid)) return false;
+
+  const claimPath = `${lockPath}.reclaim-${owner.token.replace(/[^a-z0-9.-]/gi, '_')}`;
+  let claim;
+  try {
+    claim = openSync(claimPath, 'wx');
+  } catch {
+    return false;
+  }
+  try {
+    let current;
+    try {
+      current = JSON.parse(readFileSync(lockPath, 'utf8'));
+    } catch {
+      return false;
+    }
+    if (current.token !== owner.token || processIsAlive(current.pid)) return false;
+    unlinkSync(lockPath);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    closeSync(claim);
+    rmSync(claimPath, { force: true });
+  }
+}
+
+function withRegistryLock(env, action) {
+  const path = registryPath(env);
+  const lockPath = `${path}.lock`;
+  const ownerToken = `${process.pid}:${randomUUID()}`;
+  mkdirSync(dirname(path), { recursive: true });
+  const deadline = Date.now() + 5000;
+  let lock;
+  while (Date.now() < deadline) {
+    try {
+      lock = openSync(lockPath, 'wx');
+      writeFileSync(lock, `${JSON.stringify({ pid: process.pid, token: ownerToken })}\n`);
+      break;
+    } catch (error) {
+      if (error.code !== 'EEXIST') return { ok: false, reason: `cannot lock workspace registry: ${error.message}` };
+      if (recoverDeadRegistryLock(lockPath)) continue;
+      Atomics.wait(registryWait, 0, 0, 50);
+    }
+  }
+  if (lock === undefined) return { ok: false, reason: `workspace registry is busy: ${lockPath}` };
+  try {
+    return action();
+  } finally {
+    closeSync(lock);
+    try {
+      const currentOwner = JSON.parse(readFileSync(lockPath, 'utf8'));
+      if (currentOwner.token === ownerToken) unlinkSync(lockPath);
+    } catch {
+      // The mutation remains valid; never remove a lock whose ownership cannot be proven.
     }
   }
 }
 
+function writeRegistryUnlocked(entries, env = process.env) {
+  const path = registryPath(env);
+  mkdirSync(dirname(path), { recursive: true });
+  const next = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  const body = { schema_version: 1, workspaces: entries };
+  writeFileSync(next, `${JSON.stringify(body, null, 2)}\n`);
+  const deadline = Date.now() + 2000;
+  try {
+    while (true) {
+      try {
+        renameSync(next, path);
+        return path;
+      } catch (error) {
+        if (!['EPERM', 'EACCES', 'EBUSY'].includes(error.code) || Date.now() >= deadline) throw error;
+        sleepSync(25);
+      }
+    }
+  } finally {
+    if (existsSync(next)) rmSync(next, { force: true });
+  }
+}
+
+function writeRegistry(entries, env = process.env) {
+  return withRegistryLock(env, () => ({ ok: true, path: writeRegistryUnlocked(entries, env) }));
+}
+
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+export function adoptWorkspace({ root, projectRoot, env = process.env }) {
+  root = resolve(root);
+  projectRoot = resolve(projectRoot);
+  const checked = checkWorkspace(root, { allowUnregisteredExternal: true });
+  if (checked.errors.length) {
+    return { ok: false, reason: `workspace is invalid: ${checked.errors[0]}` };
+  }
+  const manifest = readWorkspaceManifest(root).manifest;
+  if (manifest.storage_mode !== 'external') {
+    return { ok: false, reason: 'only external workspaces need machine-local registry adoption' };
+  }
+  const project = manifest.projects.find(
+    (candidate) => normalized(resolvedProjectPath(root, candidate.path)) === normalized(projectRoot),
+  );
+  if (!project) {
+    return { ok: false, reason: `manifest does not bind project "${projectRoot}"` };
+  }
+  return withRegistryLock(env, () => {
+    const registry = loadWorkspaceRegistry(env);
+    if (!registry.ok) return registry;
+    const canonicalProjectRoot = canonicalPath(projectRoot);
+    const canonicalWorkspaceRoot = canonicalPath(root);
+    const retained = registry.entries.filter(
+      (entry) => normalized(entry.project_root) !== normalized(canonicalProjectRoot),
+    );
+    retained.push({
+      project_root: canonicalProjectRoot,
+      workspace_root: canonicalWorkspaceRoot,
+      workspace_id: manifest.workspace_id,
+    });
+    retained.sort((left, right) => left.project_root.localeCompare(right.project_root));
+    return { ok: true, path: writeRegistryUnlocked(retained, env) };
+  });
+}
+
+export function forgetWorkspace({ projectRoot, env = process.env }) {
+  projectRoot = resolve(projectRoot);
+  return withRegistryLock(env, () => {
+    const registry = loadWorkspaceRegistry(env);
+    if (!registry.ok) return registry;
+    const retained = registry.entries.filter(
+      (entry) => normalized(entry.project_root) !== normalized(projectRoot),
+    );
+    if (retained.length === registry.entries.length) {
+      return { ok: false, reason: `project "${projectRoot}" is not registered` };
+    }
+    return { ok: true, path: writeRegistryUnlocked(retained, env) };
+  });
+}
 
 function selfTest() {
   const fx = join(__dirname, '..', 'test', 'fixtures');
-  let ok = true;
+  let failed = 0;
+  const ok = (condition, message, details = []) => {
+    if (condition) console.log(`✓ self-test: ${message}`);
+    else {
+      failed++;
+      console.log(`✗ self-test: ${message}`);
+      details.forEach((detail) => console.log(`    ${detail}`));
+    }
+  };
+
   const good = checkWorkspace(join(fx, 'repo-workspace'));
-  if (good.errors.length !== 0) {
-    ok = false; console.log('✗ self-test: healthy fixture reported errors:'); good.errors.forEach((e) => console.log(`    ${e}`));
-  } else if (good.warnings.length !== 0) {
-    ok = false; console.log('✗ self-test: healthy fixture reported warnings:'); good.warnings.forEach((w) => console.log(`    ${w}`));
-  } else {
-    console.log('✓ self-test: healthy fixture passes (0 errors, 0 warnings)');
-  }
+  ok(good.errors.length === 0, 'healthy schema-3 shared fixture passes', good.errors);
 
   const bad = checkWorkspace(join(fx, 'broken-workspace'));
-  const expected = [
-    { label: 'pre-schema migration', re: /pre-versioned|migration required/i },
-    { label: 'missing change_ref', re: /requires a non-null change_ref/i },
-    { label: 'non-SHA change_ref', re: /must be a git commit\/PR-head SHA/i },
-    { label: 'dangling dependency', re: /unknown item/i },
-    { label: 'machine-absolute artifact path', re: /machine-absolute/i },
-    { label: 'plural artifact path escape', re: /artifact_targets entry .*path escaping/i },
-  ];
-  if (bad.errors.length === 0) {
-    ok = false; console.log('✗ self-test: broken fixture was NOT rejected');
-  } else {
-    const joined = bad.errors.join('\n');
-    const missing = expected.filter((x) => !x.re.test(joined));
-    if (missing.length) {
-      ok = false; console.log(`✗ self-test: broken fixture missing expected error class(es): ${missing.map((x) => x.label).join(', ')}`);
-    } else {
-      console.log(`✓ self-test: broken fixture rejected with all ${expected.length} expected error classes (${bad.errors.length} error(s))`);
-    }
-  }
+  const badText = bad.errors.join('\n');
+  ok(
+    /migration .*required/i.test(badText)
+      && /requires a non-null change_ref/i.test(badText)
+      && /unknown item/i.test(badText),
+    'broken fixture reports migration, item, and dependency failures',
+    bad.errors,
+  );
 
-  // Split-brain fixture: an incomplete schema 1 -> 2 migration that left a bare
-  // root holding kai content alongside its kai/ counterpart must be refused.
-  const split = checkWorkspace(join(fx, 'splitbrain-workspace'));
-  if (/split-brain layout/i.test(split.errors.join('\n'))) {
-    console.log(`✓ self-test: split-brain fixture rejected (${split.errors.length} error(s))`);
-  } else {
-    ok = false;
-    console.log('✗ self-test: split-brain fixture was NOT rejected (coexisting coordination/ and kai/coordination/)');
-  }
+  const concurrency = checkWorkspace(join(fx, 'concurrency-workspace'));
+  const concurrencyText = concurrency.errors.join('\n');
+  ok(
+    /has no token/i.test(concurrencyText)
+      && /has no version_at_grant/i.test(concurrencyText)
+      && /strictly less/i.test(concurrencyText)
+      && /stale-work recovery signal/i.test(concurrency.warnings.join('\n')),
+    'coordination lease integrity still fails closed',
+    [...concurrency.errors, ...concurrency.warnings],
+  );
 
-  // Product-collision fixture: a healthy schema-2 workspace whose *product*
-  // owns unrelated root-level library/ and personal/ directories must NOT be
-  // mistaken for a half-migrated workspace.
-  const collide = checkWorkspace(join(fx, 'product-collision-workspace'));
-  if (/split-brain layout/i.test(collide.errors.join('\n'))) {
-    ok = false;
-    console.log('✗ self-test: product-collision fixture false-positived on product-owned library/ or personal/');
-  } else {
-    console.log('✓ self-test: product-owned root-level library/ and personal/ are not mistaken for retired kai roots');
-  }
-
-
-  // Spine-only fixture: a freshly onboarded workspace with the full spine
-  // committed and no output lane yet materialized. `.kai/runs/<area>/` and
-  // `kai/library/<type>/` are created on first write, so this is the normal
-  // state between onboarding and first use — and must be claimable.
-  const spine = checkWorkspace(join(fx, 'spine-workspace'));
-  if (spine.errors.length === 0 && spine.migrations.length === 0) {
-    console.log('✓ self-test: spine-only workspace with no materialized lanes is healthy');
-  } else {
-    ok = false;
-    console.log(`✗ self-test: spine-only workspace was rejected (${spine.errors.length} error(s), ${spine.migrations.length} migration(s))`);
-    for (const e of [...spine.errors, ...spine.migrations]) console.log(`    ${e}`);
-  }
-
-  // Committed end-to-end example: the shipped documentation must stay a valid
-  // workspace, or a new user's first reference is wrong.
   const example = checkWorkspace(join(__dirname, '..', 'examples', 'e2e-feature-delivery'));
-  if (example.errors.length === 0 && example.migrations.length === 0) {
-    console.log('✓ self-test: examples/e2e-feature-delivery is a healthy, claimable workspace');
-  } else {
-    ok = false;
-    console.log(`✗ self-test: examples/e2e-feature-delivery is not healthy (${example.errors.length} error(s))`);
-    for (const e of [...example.errors, ...example.migrations]) console.log(`    ${e}`);
-  }
+  ok(example.errors.length === 0, 'end-to-end schema-3 example is claimable', example.errors);
 
-  // that skipped the version increment are rejected) and stale-lease recovery
-  // (an expired but tokened lease is surfaced as a warning).
-  const conc = checkWorkspace(join(fx, 'concurrency-workspace'));
-  const concErr = conc.errors.join('\n');
-  const concWarn = conc.warnings.join('\n');
-  const tokenErr = /lease held by .* but has no token/i.test(concErr);
-  const vagErr = /lease held by .* but has no version_at_grant/i.test(concErr);
-  const racyErr = /version_at_grant \d+ must be strictly less than the item version/i.test(concErr);
-  const staleWarn = /stale-work recovery signal/i.test(concWarn);
-  if (tokenErr && vagErr && racyErr && staleWarn) {
-    console.log(`✓ self-test: concurrency fixture detects un-tokened + racy (increment-skipping) grants as collisions (${conc.errors.length} error(s)) and the stale-lease recovery signal (${conc.warnings.length} warning(s))`);
-  } else {
-    ok = false;
-    console.log('✗ self-test: concurrency fixture did not surface the expected lease findings:');
-    if (!tokenErr) console.log('    missing error: un-tokened held lease');
-    if (!vagErr) console.log('    missing error: held lease without version_at_grant');
-    if (!racyErr) console.log('    missing error: version_at_grant >= version (increment-skipping grant)');
-    if (!staleWarn) console.log('    missing warning: expired lease stale-work recovery signal');
-  }
+  const publicationTemplates = ['decision.md', 'spec.md', 'report.md'].map((name) => ({
+    name,
+    fm: frontmatter(readFileSync(join(__dirname, '..', 'plugins', 'kai-core', 'templates', 'publication', name), 'utf8')),
+  }));
+  ok(
+    publicationTemplates.every(({ fm }) => fm && scalar(fm, 'item') === '<work-item-id>'),
+    'publication templates declare the owning work item',
+    publicationTemplates.filter(({ fm }) => !fm || scalar(fm, 'item') !== '<work-item-id>').map(({ name }) => name),
+  );
 
-  // corpus_visibility: optional, and its ABSENCE must stay healthy — every
-  // workspace scaffolded before the key existed omits it and must not be forced
-  // into a migration. `local` is equally valid; only an unrecognized value is
-  // rejected, because a typo would silently publish a corpus meant to stay off
-  // a public remote.
-  const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-doctor-'));
+  const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-schema3-'));
   try {
-    const variant = (value, prepare) => {
-      const dir = join(tmpRoot, `vis-${String(value)}-${Math.random().toString(36).slice(2, 8)}`);
-      cpSync(join(fx, 'repo-workspace'), dir, { recursive: true });
-      const mPath = join(dir, '.kai', 'manifest.json');
-      const m = JSON.parse(readFileSync(mPath, 'utf8'));
-      m.corpus_visibility = value;
-      writeFileSync(mPath, `${JSON.stringify(m, null, 2)}\n`);
-      if (prepare) prepare(dir);
-      return checkWorkspace(dir);
-    };
-    const git = (dir, args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8', windowsHide: true });
+    const publicationWorkspace = join(tmpRoot, 'publication-workspace');
+    cpSync(join(fx, 'repo-workspace'), publicationWorkspace, { recursive: true });
+    const publicationItem = join(publicationWorkspace, '.kai', 'state', 'items', 'sample-api.md');
+    const originalItem = readFileSync(publicationItem, 'utf8');
+    const publicationItemText = (target) => originalItem.replace(
+      'artifact_target: null',
+      [
+        'artifact_expectation: owed',
+        'artifact_class: design',
+        'completion_authority: principal-product-manager',
+        'validity_owner: principal-swe-architect',
+        `artifact_target: ${target}`,
+      ].join('\n'),
+    );
+    writeFileSync(
+      publicationItem,
+      publicationItemText('project:fixture:docs/kai/reports/sample-api.md'),
+    );
+    const missingPublication = checkWorkspace(publicationWorkspace);
+    ok(/does not exist for item state "in-review"/i.test(missingPublication.errors.join('\n')),
+      'review-stage items cannot claim missing published targets',
+      missingPublication.errors);
 
-    const badVis = variant('private');
-    if (/"corpus_visibility" must be "committed" or "local"/.test(badVis.errors.join('\n'))) {
-      console.log('✓ self-test: an unrecognized corpus_visibility is rejected rather than defaulted');
-    } else {
-      ok = false;
-      console.log('✗ self-test: corpus_visibility "private" was NOT rejected');
-    }
+    const publishedAsset = join(publicationWorkspace, 'docs', 'kai', 'reports', 'sample-api.md');
+    mkdirSync(dirname(publishedAsset), { recursive: true });
+    writeFileSync(publishedAsset, [
+      '---',
+      'asset_id: sample-api',
+      'asset_class: design',
+      'item: sample-api',
+      'produced_by: principal-swe-architect',
+      'created: 2026-08-31',
+      'revision: 2',
+      'disposition:',
+      '  status: published',
+      'completion:',
+      '  authority: principal-product-manager',
+      '  verdict: pending',
+      '  revision_at_verdict: 1',
+      'validity:',
+      '  status: provisional',
+      '  owner: principal-swe-architect',
+      '---',
+      '',
+      '# Sample API',
+      '',
+    ].join('\n'));
+    const unacceptedPublication = checkWorkspace(publicationWorkspace);
+    ok(/not accepted and published|accepted revision does not match/i.test(unacceptedPublication.errors.join('\n')),
+      'a public target is rejected until its current revision is accepted',
+      unacceptedPublication.errors);
 
-    // Not a git work tree: the exclusion cannot be verified, so it is reported
-    // as unverified rather than either failed or quietly assumed to hold.
-    const nonGit = variant('local');
-    if (nonGit.errors.length === 0 && /could not be verified/i.test(nonGit.warnings.join('\n'))) {
-      console.log('✓ self-test: "local" outside a git work tree warns that the exclusion is unverified, and claims nothing');
-    } else {
-      ok = false;
-      console.log('✗ self-test: "local" outside a git work tree did not report an unverified exclusion');
-      [...nonGit.errors, ...nonGit.warnings].forEach((e) => console.log(`    ${e}`));
-    }
+    writeFileSync(publishedAsset, [
+      '---',
+      'asset_id: sample-api',
+      'asset_class: design',
+      'item: sample-api',
+      'produced_by: principal-swe-architect',
+      'created: 2026-08-31',
+      'revision: 2',
+      'disposition:',
+      '  status: published',
+      'completion:',
+      '  authority: principal-product-manager',
+      '  verdict: accepted',
+      '  revision_at_verdict: 2',
+      'validity:',
+      '  status: current',
+      '  owner: principal-swe-architect',
+      '---',
+      '',
+      '# Sample API',
+      '',
+    ].join('\n'));
+    const acceptedPublication = checkWorkspace(publicationWorkspace);
+    ok(acceptedPublication.errors.length === 0,
+      'an accepted current project-qualified revision remains claimable',
+      acceptedPublication.errors);
 
-    const gitAvailable = spawnSync('git', ['--version'], { encoding: 'utf8', windowsHide: true }).status === 0;
-    if (!gitAvailable) {
-      console.log('~ self-test: git unavailable — skipped the corpus_visibility drift checks');
-    } else {
-      // The failure the setting exists to prevent: the manifest says "local"
-      // while git happily tracks the corpus and no ignore rule covers it.
-      const exposed = variant('local', (dir) => {
-        git(dir, ['init', '-q']);
-        // safecrlf would abort the add on this repo's LF fixtures under a
-        // Windows checkout, leaving an empty index and a hollow assertion.
-        git(dir, ['-c', 'core.safecrlf=false', '-c', 'core.autocrlf=false', 'add', '-A']);
-      });
-      const exposedJoined = exposed.errors.join('\n');
-      const sawTracked = /kai path\(s\) are tracked by git/.test(exposedJoined);
-      const sawUnignored = /is not ignored/.test(exposedJoined);
-      if (sawTracked && sawUnignored) {
-        console.log('✓ self-test: "local" over a tracked, unignored corpus is rejected — the recorded value is verified against git, not trusted');
-      } else {
-        ok = false;
-        console.log('✗ self-test: "local" over a tracked, unignored corpus was not fully rejected:');
-        if (!sawTracked) console.log('    missing error: tracked kai paths');
-        if (!sawUnignored) console.log('    missing error: corpus not ignored');
+    writeFileSync(publishedAsset, readFileSync(publishedAsset, 'utf8').replace(
+      'item: sample-api',
+      'item: another-item',
+    ));
+    const mismatchedAssetItem = checkWorkspace(publicationWorkspace);
+    ok(/owned by item "another-item", not "sample-api"/i.test(mismatchedAssetItem.errors.join('\n')),
+      'a published asset remains bound to the item that claims it',
+      mismatchedAssetItem.errors);
+    writeFileSync(publishedAsset, readFileSync(publishedAsset, 'utf8').replace(
+      'item: another-item',
+      'item: sample-api',
+    ));
+
+    writeFileSync(publishedAsset, readFileSync(publishedAsset, 'utf8').replace(
+      '  authority: principal-product-manager',
+      '  authority: principal-swe-architect',
+    ));
+    const mismatchedAuthority = checkWorkspace(publicationWorkspace);
+    ok(/completion\.authority .* does not match work item declaration/i.test(mismatchedAuthority.errors.join('\n')),
+      'published acceptance must come from the work item declared authority',
+      mismatchedAuthority.errors);
+    writeFileSync(publishedAsset, readFileSync(publishedAsset, 'utf8').replace(
+      '  authority: principal-swe-architect',
+      '  authority: principal-product-manager',
+    ));
+
+    writeFileSync(publishedAsset, readFileSync(publishedAsset, 'utf8').replace(
+      '  status: current',
+      '  status: invalidated',
+    ));
+    const invalidatedPublication = checkWorkspace(publicationWorkspace);
+    ok(/validity is not current/i.test(invalidatedPublication.errors.join('\n')),
+      'an invalidated public revision is no longer claimable',
+      invalidatedPublication.errors);
+
+    writeFileSync(publishedAsset, readFileSync(publishedAsset, 'utf8').replace(
+      '  status: invalidated',
+      '  status: current',
+    ));
+
+    writeFileSync(
+      publicationItem,
+      publicationItemText('project:fixture:reports/sample-api.md'),
+    );
+    const escapedPublication = checkWorkspace(publicationWorkspace);
+    ok(/escapes project .* publication_root/i.test(escapedPublication.errors.join('\n')),
+      'project-qualified artifact targets cannot bypass the configured publication root',
+      escapedPublication.errors);
+
+    writeFileSync(
+      publicationItem,
+      publicationItemText('docs/kai/reports/sample-api.md'),
+    );
+    const unqualifiedPublication = checkWorkspace(publicationWorkspace);
+    ok(/unqualified project path/i.test(unqualifiedPublication.errors.join('\n')),
+      'public artifact targets cannot bypass project qualification',
+      unqualifiedPublication.errors);
+
+    const incompleteWorkspace = join(tmpRoot, 'incomplete-workspace');
+    cpSync(join(fx, 'repo-workspace'), incompleteWorkspace, { recursive: true });
+    rmSync(join(incompleteWorkspace, '.kai', 'CONVENTIONS.md'));
+    mkdirSync(join(incompleteWorkspace, 'kai', 'personal'), { recursive: true });
+    writeFileSync(join(incompleteWorkspace, 'kai', 'personal', 'inbox.md'), '# Legacy inbox\n');
+    mkdirSync(join(incompleteWorkspace, 'kai', 'initiatives', 'orphaned'), { recursive: true });
+    writeFileSync(join(incompleteWorkspace, 'kai', 'initiatives', 'orphaned', 'northstar.md'), '# Legacy initiative\n');
+    const incomplete = checkWorkspace(incompleteWorkspace);
+    ok(
+      /missing required path ".kai\/CONVENTIONS.md"/i.test(incomplete.errors.join('\n'))
+        && /retired schema-2 root "kai\/personal"/i.test(incomplete.errors.join('\n'))
+        && /retired schema-2 root "kai\/initiatives"/i.test(incomplete.errors.join('\n')),
+      'schema-3 validation rejects incomplete and split-brain layouts',
+      incomplete.errors,
+    );
+
+    const malformedWorkspace = join(tmpRoot, 'malformed-workspace');
+    cpSync(join(fx, 'repo-workspace'), malformedWorkspace, { recursive: true });
+    const malformedManifestPath = join(malformedWorkspace, '.kai', 'manifest.json');
+    const malformedManifest = JSON.parse(readFileSync(malformedManifestPath, 'utf8'));
+    malformedManifest.state = null;
+    malformedManifest.areas = {};
+    writeFileSync(malformedManifestPath, `${JSON.stringify(malformedManifest, null, 2)}\n`);
+    rmSync(join(malformedWorkspace, '.kai', 'state', 'items'), { recursive: true });
+    writeFileSync(join(malformedWorkspace, '.kai', 'state', 'items'), 'not a directory\n');
+    const malformed = checkWorkspace(malformedWorkspace);
+    ok(
+      /"state" must be exactly ".kai\/state"/i.test(malformed.errors.join('\n'))
+        && /"areas" must be an array/i.test(malformed.errors.join('\n'))
+        && /path ".kai\/state\/items" must be a directory/i.test(malformed.errors.join('\n')),
+      'malformed schema-3 roots and path types fail as validation errors',
+      malformed.errors,
+    );
+
+    const scalarManifestWorkspace = join(tmpRoot, 'scalar-manifest-workspace');
+    cpSync(join(fx, 'repo-workspace'), scalarManifestWorkspace, { recursive: true });
+    writeFileSync(join(scalarManifestWorkspace, '.kai', 'manifest.json'), 'null\n');
+    const scalarManifest = checkWorkspace(scalarManifestWorkspace);
+    ok(/manifest\.json must contain a JSON object/i.test(scalarManifest.errors.join('\n')),
+      'valid JSON scalars fail as manifest validation errors',
+      scalarManifest.errors);
+    const scalarManifestProject = join(tmpRoot, 'scalar-manifest-project');
+    const scalarManifestEnv = { KAI_HOME: join(tmpRoot, 'scalar-manifest-home') };
+    mkdirSync(scalarManifestProject, { recursive: true });
+    writeRegistry([{
+      project_root: scalarManifestProject,
+      workspace_root: scalarManifestWorkspace,
+      workspace_id: 'scalar-manifest-workspace',
+    }], scalarManifestEnv);
+    const scalarResolution = resolveWorkspaceRoot({ cwd: scalarManifestProject, env: scalarManifestEnv });
+    ok(!scalarResolution.ok && /must contain a JSON object/i.test(scalarResolution.reason),
+      'registry discovery rejects scalar external manifests without throwing',
+      [scalarResolution.reason]);
+
+    const malformedExternalWorkspace = join(tmpRoot, 'malformed-external-workspace');
+    cpSync(join(fx, 'external-workspace'), malformedExternalWorkspace, { recursive: true });
+    const malformedExternalManifestPath = join(malformedExternalWorkspace, '.kai', 'manifest.json');
+    const malformedExternalManifest = JSON.parse(readFileSync(malformedExternalManifestPath, 'utf8'));
+    malformedExternalManifest.workspace_root = malformedExternalWorkspace;
+    malformedExternalManifest.projects = [null];
+    writeFileSync(malformedExternalManifestPath, `${JSON.stringify(malformedExternalManifest, null, 2)}\n`);
+    const malformedExternal = checkWorkspace(malformedExternalWorkspace, {
+      env: { KAI_HOME: join(tmpRoot, 'malformed-external-home') },
+    });
+    ok(/projects\[0\] must be an object/i.test(malformedExternal.errors.join('\n')),
+      'malformed external project entries fail without crashing registry validation',
+      malformedExternal.errors);
+
+    const repoLocalWorkspace = join(tmpRoot, 'repo-local-workspace');
+    cpSync(join(fx, 'repo-workspace'), repoLocalWorkspace, { recursive: true });
+    const repoLocalManifestPath = join(repoLocalWorkspace, '.kai', 'manifest.json');
+    const repoLocalManifest = JSON.parse(readFileSync(repoLocalManifestPath, 'utf8'));
+    repoLocalManifest.storage_mode = 'repo-local';
+    writeFileSync(repoLocalManifestPath, `${JSON.stringify(repoLocalManifest, null, 2)}\n`);
+    writeFileSync(join(repoLocalWorkspace, '.gitignore'), [
+      '!/.kai/',
+      '!/.kai/**',
+      '/.kai/manifest.json',
+      '/.kai/state/BOARD.md',
+      '',
+    ].join('\n'));
+    spawnSync('git', ['init', '--quiet', repoLocalWorkspace], { encoding: 'utf8', windowsHide: true });
+    const partiallyIgnored = checkWorkspace(repoLocalWorkspace);
+    ok(/requires the entire \.kai\/ directory to be ignored/i.test(partiallyIgnored.errors.join('\n')),
+      'repo-local mode rejects sentinel-only ignore rules',
+      partiallyIgnored.errors);
+    writeFileSync(join(repoLocalWorkspace, '.gitignore'), '/.kai/\n');
+    const fullyIgnored = checkWorkspace(repoLocalWorkspace);
+    ok(fullyIgnored.errors.length === 0,
+      'repo-local mode accepts a fully ignored private workspace',
+      fullyIgnored.errors);
+
+    const privateTargetWorkspace = join(tmpRoot, 'private-target-workspace');
+    const outsidePrivateTarget = join(tmpRoot, 'outside-private-target');
+    cpSync(join(fx, 'repo-workspace'), privateTargetWorkspace, { recursive: true });
+    mkdirSync(outsidePrivateTarget, { recursive: true });
+    symlinkSync(outsidePrivateTarget, join(privateTargetWorkspace, '.kai', 'state', 'escaped-artifacts'), 'junction');
+    const privateTargetItem = join(privateTargetWorkspace, '.kai', 'state', 'items', 'sample-api.md');
+    writeFileSync(
+      privateTargetItem,
+      readFileSync(privateTargetItem, 'utf8').replace(
+        'artifact_target: null',
+        'artifact_target: .kai/state/escaped-artifacts/sample-api.md',
+      ),
+    );
+    const escapedPrivateTarget = checkWorkspace(privateTargetWorkspace);
+    ok(/artifact_target resolves outside the workspace/i.test(escapedPrivateTarget.errors.join('\n')),
+      'private artifact targets cannot escape through state-tree links',
+      escapedPrivateTarget.errors);
+
+    const linkedPrivateWorkspace = join(tmpRoot, 'linked-private-workspace');
+    const outsidePrivateLane = join(tmpRoot, 'outside-private-lane');
+    cpSync(join(fx, 'repo-workspace'), linkedPrivateWorkspace, { recursive: true });
+    mkdirSync(outsidePrivateLane, { recursive: true });
+    symlinkSync(outsidePrivateLane, join(linkedPrivateWorkspace, '.kai', 'runs'), 'junction');
+    const linkedPrivate = checkWorkspace(linkedPrivateWorkspace);
+    ok(/schema-3 path ".kai\/runs" resolves outside the workspace/i.test(linkedPrivate.errors.join('\n')),
+      'private lanes cannot escape the workspace through a symbolic link or junction',
+      linkedPrivate.errors);
+
+    const danglingPrivateWorkspace = join(tmpRoot, 'dangling-private-workspace');
+    const removedPrivateTarget = join(tmpRoot, 'removed-private-target');
+    cpSync(join(fx, 'repo-workspace'), danglingPrivateWorkspace, { recursive: true });
+    mkdirSync(removedPrivateTarget, { recursive: true });
+    symlinkSync(removedPrivateTarget, join(danglingPrivateWorkspace, '.kai', 'review'), 'junction');
+    rmSync(removedPrivateTarget, { recursive: true });
+    const danglingPrivate = checkWorkspace(danglingPrivateWorkspace);
+    ok(/private workspace path ".kai\/review" is a symbolic link or junction/i.test(danglingPrivate.errors.join('\n')),
+      'dangling private-lane links fail closed',
+      danglingPrivate.errors);
+
+    const nestedGitWorkspace = join(tmpRoot, 'nested-git-workspace');
+    cpSync(join(fx, 'repo-workspace'), nestedGitWorkspace, { recursive: true });
+    mkdirSync(join(nestedGitWorkspace, '.kai', 'runs', 'cloned-evidence', '.git'), { recursive: true });
+    const nestedGit = checkWorkspace(nestedGitWorkspace);
+    ok(/private workspace path .* contains a nested Git repository/i.test(nestedGit.errors.join('\n')),
+      'private lanes cannot hide independently tracked Git repositories',
+      nestedGit.errors);
+
+    const privatePublicationWorkspace = join(tmpRoot, 'private-publication-workspace');
+    cpSync(join(fx, 'repo-workspace'), privatePublicationWorkspace, { recursive: true });
+    const privateManifestPath = join(privatePublicationWorkspace, '.kai', 'manifest.json');
+    const privateManifest = JSON.parse(readFileSync(privateManifestPath, 'utf8'));
+    privateManifest.projects[0].publication_root = './.KaI';
+    writeFileSync(privateManifestPath, `${JSON.stringify(privateManifest, null, 2)}\n`);
+    const privatePublication = checkWorkspace(privatePublicationWorkspace);
+    ok(/publication_root must be outside .kai/i.test(privatePublication.errors.join('\n')),
+      'publication_root cannot alias the private .kai control tree',
+      privatePublication.errors);
+
+    const linkedPublicationWorkspace = join(tmpRoot, 'linked-publication-workspace');
+    const outsidePublication = join(tmpRoot, 'outside-publication');
+    cpSync(join(fx, 'repo-workspace'), linkedPublicationWorkspace, { recursive: true });
+    mkdirSync(outsidePublication, { recursive: true });
+    symlinkSync(outsidePublication, join(linkedPublicationWorkspace, 'docs'), 'junction');
+    const linkedPublication = checkWorkspace(linkedPublicationWorkspace);
+    ok(/symbolic link or junction/i.test(linkedPublication.errors.join('\n')),
+      'publication_root cannot escape the project through a symbolic link or junction',
+      linkedPublication.errors);
+
+    const overlappingProjectRoot = join(tmpRoot, 'overlapping-project');
+    const overlappingWorkspaceRoot = join(overlappingProjectRoot, 'external-workspace');
+    mkdirSync(overlappingProjectRoot, { recursive: true });
+    cpSync(join(fx, 'external-workspace'), overlappingWorkspaceRoot, { recursive: true });
+    const overlappingManifestPath = join(overlappingWorkspaceRoot, '.kai', 'manifest.json');
+    const overlappingManifest = JSON.parse(readFileSync(overlappingManifestPath, 'utf8'));
+    overlappingManifest.workspace_root = overlappingWorkspaceRoot;
+    overlappingManifest.projects[0].path = overlappingProjectRoot;
+    writeFileSync(overlappingManifestPath, `${JSON.stringify(overlappingManifest, null, 2)}\n`);
+    const overlapping = checkWorkspace(overlappingWorkspaceRoot, { allowUnregisteredExternal: true });
+    ok(/overlaps the external workspace root/i.test(overlapping.errors.join('\n')),
+      'external workspaces cannot be nested in or contain their bound projects',
+      overlapping.errors);
+
+    const projectRoot = join(tmpRoot, 'project');
+    const workspaceRoot = join(tmpRoot, 'workspace');
+    mkdirSync(projectRoot, { recursive: true });
+    cpSync(join(fx, 'external-workspace'), workspaceRoot, { recursive: true });
+    const manifestPath = join(workspaceRoot, '.kai', 'manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.workspace_root = workspaceRoot;
+    manifest.projects[0].path = projectRoot;
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const env = { KAI_HOME: join(tmpRoot, 'home') };
+    const unregistered = checkWorkspace(workspaceRoot, { env });
+    ok(/--adopt/i.test(unregistered.errors.join('\n')),
+      'an external workspace is not claimable before registry adoption',
+      unregistered.errors);
+
+    const adopted = adoptWorkspace({ root: workspaceRoot, projectRoot, env });
+    ok(adopted.ok, 'external workspace adoption writes the machine-local registry', [adopted.reason]);
+    const registered = checkWorkspace(workspaceRoot, { env });
+    ok(registered.errors.length === 0, 'adopted external workspace validates its registry pairing', registered.errors);
+
+    if (adopted.ok) {
+      const selfPath = fileURLToPath(import.meta.url);
+      const cliEnv = { ...process.env, ...env };
+      const registryCli = spawnSync(
+        process.execPath,
+        [selfPath, '--registry', '--json', '--kai-home', env.KAI_HOME],
+        { encoding: 'utf8', env: cliEnv, windowsHide: true },
+      );
+      let registryJson = null;
+      try {
+        registryJson = JSON.parse(registryCli.stdout);
+      } catch {
+        registryJson = null;
       }
+      ok(registryCli.status === 0 && registryJson?.workspaces?.length === 1,
+        'the registry CLI reports populated JSON without crashing',
+        [registryCli.stderr, registryCli.stdout].filter(Boolean));
 
-      const honored = variant('local', (dir) => {
-        git(dir, ['init', '-q']);
-        writeFileSync(join(dir, '.gitignore'), '/kai/\n/.kai/\n');
+      const resolvedCli = spawnSync(
+        process.execPath,
+        [selfPath],
+        { cwd: projectRoot, encoding: 'utf8', env: cliEnv, windowsHide: true },
+      );
+      ok(resolvedCli.status === 0 && /workspace healthy/i.test(resolvedCli.stdout),
+        'the default doctor resolves a registered external workspace from the project',
+        [resolvedCli.stderr, resolvedCli.stdout].filter(Boolean));
+
+      const registeredEntries = loadWorkspaceRegistry(env).entries;
+      writeRegistry([...registeredEntries, {
+        project_root: registeredEntries[0].project_root,
+        workspace_root: join(tmpRoot, 'duplicate-workspace'),
+        workspace_id: 'duplicate-workspace',
+      }], env);
+      const duplicateBinding = checkWorkspace(workspaceRoot, { env });
+      ok(/exactly one is required/i.test(duplicateBinding.errors.join('\n')),
+        'duplicate external project bindings fail closed',
+        duplicateBinding.errors);
+      writeRegistry(registeredEntries, env);
+
+      const concurrentHome = join(tmpRoot, 'concurrent-home');
+      const concurrentEnv = { ...process.env, KAI_HOME: concurrentHome };
+      const concurrentProjects = ['alpha', 'beta'].map((name) => {
+        const concurrentProject = join(tmpRoot, `concurrent-project-${name}`);
+        const concurrentWorkspace = join(tmpRoot, `concurrent-workspace-${name}`);
+        mkdirSync(concurrentProject, { recursive: true });
+        cpSync(join(fx, 'external-workspace'), concurrentWorkspace, { recursive: true });
+        const concurrentManifestPath = join(concurrentWorkspace, '.kai', 'manifest.json');
+        const concurrentManifest = JSON.parse(readFileSync(concurrentManifestPath, 'utf8'));
+        concurrentManifest.workspace_id = `concurrent-workspace-${name}`;
+        concurrentManifest.workspace_root = concurrentWorkspace;
+        concurrentManifest.projects[0].id = name;
+        concurrentManifest.projects[0].path = concurrentProject;
+        writeFileSync(concurrentManifestPath, `${JSON.stringify(concurrentManifest, null, 2)}\n`);
+        return { project: concurrentProject, workspace: concurrentWorkspace };
       });
-      if (honored.errors.length === 0) {
-        console.log('✓ self-test: a correctly excluded "local" workspace is healthy');
-      } else {
-        ok = false;
-        console.log('✗ self-test: a correctly excluded "local" workspace was rejected:');
-        honored.errors.forEach((e) => console.log(`    ${e}`));
+      const concurrentLogs = [];
+      for (const candidate of concurrentProjects) {
+        const logPath = `${candidate.workspace}.log`;
+        const log = openSync(logPath, 'w');
+        spawn(
+          process.execPath,
+          [selfPath, '--adopt', candidate.project, '--root', candidate.workspace],
+          { env: concurrentEnv, stdio: ['ignore', log, log], windowsHide: true },
+        );
+        closeSync(log);
+        concurrentLogs.push(logPath);
       }
+      const concurrentDeadline = Date.now() + 15000;
+      let concurrentRegistry = { ok: true, entries: [] };
+      while (Date.now() < concurrentDeadline) {
+        concurrentRegistry = loadWorkspaceRegistry({ KAI_HOME: concurrentHome });
+        if (concurrentRegistry.ok && concurrentRegistry.entries.length === concurrentProjects.length) break;
+        sleepSync(25);
+      }
+      ok(concurrentRegistry.ok && concurrentRegistry.entries.length === concurrentProjects.length,
+        'concurrent registry adoption preserves every project binding',
+        [
+          ...(concurrentRegistry.ok
+            ? concurrentRegistry.entries.map((entry) => JSON.stringify(entry))
+            : [concurrentRegistry.reason]),
+          ...concurrentLogs.flatMap((path) => {
+            const output = existsSync(path) ? readFileSync(path, 'utf8').trim() : '';
+            return output ? [`${basename(path)}: ${output}`] : [];
+          }),
+        ]);
+
+      const staleEnv = { KAI_HOME: join(tmpRoot, 'stale-lock-home') };
+      const staleRegistryPath = registryPath(staleEnv);
+      mkdirSync(dirname(staleRegistryPath), { recursive: true });
+      const deadOwner = spawnSync(process.execPath, ['-e', 'process.exit(0)'], { windowsHide: true });
+      writeFileSync(`${staleRegistryPath}.lock`, `${JSON.stringify({
+        pid: deadOwner.pid,
+        token: 'stale-owner-token',
+      })}\n`);
+      const recoveredWrite = writeRegistry([], staleEnv);
+      ok(recoveredWrite.ok && !existsSync(`${staleRegistryPath}.lock`),
+        'a registry mutation safely recovers a lock whose recorded owner exited',
+        [recoveredWrite.reason].filter(Boolean));
+
+      const registry = loadWorkspaceRegistry(env);
+      registry.entries[0].workspace_id = 'mismatched-workspace';
+      writeRegistry(registry.entries, env);
+      const mismatched = checkWorkspace(workspaceRoot, { env });
+      ok(/not paired|not registered/i.test(mismatched.errors.join('\n')),
+        'registry and manifest workspace ids cannot drift silently', mismatched.errors);
+
+      writeRegistry([{
+        project_root: projectRoot,
+        workspace_root: workspaceRoot,
+        workspace_id: manifest.workspace_id,
+      }], env);
+      const forgotten = forgetWorkspace({ projectRoot, env });
+      ok(forgotten.ok && loadWorkspaceRegistry(env).entries.length === 0,
+        'forget removes one project binding without deleting workspace state', [forgotten.reason]);
+
+      const emptyRegistryCli = spawnSync(
+        process.execPath,
+        [selfPath, '--registry', '--kai-home', env.KAI_HOME],
+        { encoding: 'utf8', env: cliEnv, windowsHide: true },
+      );
+      ok(emptyRegistryCli.status === 0 && /\(empty\)/.test(emptyRegistryCli.stdout),
+        'the registry CLI reports an empty registry',
+        [emptyRegistryCli.stderr, emptyRegistryCli.stdout].filter(Boolean));
+
+      writeFileSync(registryPath(env), '{not-json\n');
+      const malformedRegistryCli = spawnSync(
+        process.execPath,
+        [selfPath, '--registry', '--kai-home', env.KAI_HOME],
+        { encoding: 'utf8', env: cliEnv, windowsHide: true },
+      );
+      ok(malformedRegistryCli.status === 1 && /not valid JSON/i.test(malformedRegistryCli.stderr),
+        'the registry CLI fails clearly on malformed registry data',
+        [malformedRegistryCli.stderr, malformedRegistryCli.stdout].filter(Boolean));
+
+      writeFileSync(registryPath(env), `${JSON.stringify({
+        schema_version: 1,
+        workspaces: [{ project_root: null, workspace_root: workspaceRoot, workspace_id: manifest.workspace_id }],
+      }, null, 2)}\n`);
+      const malformedEntryCli = spawnSync(
+        process.execPath,
+        [selfPath, '--registry', '--kai-home', env.KAI_HOME],
+        { encoding: 'utf8', env: cliEnv, windowsHide: true },
+      );
+      ok(malformedEntryCli.status === 1 && /missing string "project_root"/i.test(malformedEntryCli.stderr),
+        'the registry CLI fails clearly on malformed registry entries',
+        [malformedEntryCli.stderr, malformedEntryCli.stdout].filter(Boolean));
     }
   } finally {
     rmSync(tmpRoot, { recursive: true, force: true });
   }
 
-  // The pack-migration check, over its own fixture matrix.
-  if (!migrationSelfTest()) ok = false;
-
-  // A workspace whose provenance has been migrated to `kai-core` must still be a
-  // healthy workspace — otherwise the migration this doctor prescribes produces
-  // a workspace its own default run rejects.
-  const migratedRoot = mkdtempSync(join(tmpdir(), 'kai-doctor-provenance-'));
-  try {
-    cpSync(join(fx, 'repo-workspace'), migratedRoot, { recursive: true });
-    const mPath = join(migratedRoot, '.kai', 'manifest.json');
-    const manifest = JSON.parse(readFileSync(mPath, 'utf8'));
-    manifest.plugin = CORE_PLUGIN;
-    writeFileSync(mPath, `${JSON.stringify(manifest, null, 2)}\n`);
-    const migrated = checkWorkspace(migratedRoot);
-    if (migrated.errors.length === 0) {
-      console.log(`✓ self-test: a workspace migrated to plugin "${CORE_PLUGIN}" stays healthy and claimable`);
-    } else {
-      ok = false;
-      console.log(`✗ self-test: a workspace migrated to plugin "${CORE_PLUGIN}" was rejected:`);
-      migrated.errors.forEach((e) => console.log(`    ${e}`));
-    }
-
-    manifest.plugin = 'kai-fork';
-    writeFileSync(mPath, `${JSON.stringify(manifest, null, 2)}\n`);
-    const forked = checkWorkspace(migratedRoot);
-    if (/"plugin" must be/.test(forked.errors.join('\n'))) {
-      console.log('✓ self-test: an unrecognized manifest "plugin" is still rejected — provenance is a closed set');
-    } else {
-      ok = false;
-      console.log('✗ self-test: an unrecognized manifest "plugin" was accepted');
-    }
-  } finally {
-    rmSync(migratedRoot, { recursive: true, force: true });
-  }
-
-  return ok ? 0 : 1;
+  if (!migrationSelfTest()) failed++;
+  return failed === 0 ? 0 : 1;
 }
 
 // --- pack-migration self-test ----------------------------------------------
@@ -1052,11 +1957,54 @@ if (isEntry) {
       json: argv.includes('--json'),
       rollback: argv.includes('--rollback'),
     }));
+  } else if (argv.includes('--registry')) {
+    const env = value('--kai-home')
+      ? { ...process.env, KAI_HOME: resolve(value('--kai-home')) }
+      : process.env;
+    process.exit(reportRegistry({ env, json: argv.includes('--json') }));
+  } else if (value('--adopt')) {
+    const root = value('--root');
+    if (!root) {
+      console.error('--adopt requires --root <external-workspace>');
+      process.exit(1);
+    }
+    const env = value('--kai-home')
+      ? { ...process.env, KAI_HOME: resolve(value('--kai-home')) }
+      : process.env;
+    const result = adoptWorkspace({ root, projectRoot: value('--adopt'), env });
+    if (!result.ok) {
+      console.error(`workspace adoption failed: ${result.reason}`);
+      process.exit(1);
+    }
+    console.log(`workspace adopted in ${result.path}`);
+    process.exit(0);
+  } else if (value('--forget')) {
+    const env = value('--kai-home')
+      ? { ...process.env, KAI_HOME: resolve(value('--kai-home')) }
+      : process.env;
+    const result = forgetWorkspace({ projectRoot: value('--forget'), env });
+    if (!result.ok) {
+      console.error(`workspace removal failed: ${result.reason}`);
+      process.exit(1);
+    }
+    console.log(`workspace binding removed from ${result.path}; workspace files were not deleted`);
+    process.exit(0);
   } else if (argv.includes('--rollback')) {
     console.error('--rollback requires --migration-check');
     process.exit(1);
   } else {
-    const root = value('--root') ? resolve(value('--root')) : process.cwd();
-    process.exit(report(root, checkWorkspace(root)));
+    const resolvedWorkspace = resolveWorkspaceRoot({
+      explicitRoot: value('--root'),
+      cwd: process.cwd(),
+      env: process.env,
+    });
+    if (!resolvedWorkspace.ok) {
+      console.error(`workspace-doctor: ${resolvedWorkspace.reason}`);
+      process.exit(1);
+    }
+    process.exit(report(
+      resolvedWorkspace.root,
+      checkWorkspace(resolvedWorkspace.root, { env: process.env }),
+    ));
   }
 }

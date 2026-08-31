@@ -7,9 +7,9 @@
   "kai": ".kai",
   "runs": ".kai/runs",
   "corpus": "kai",
-  "coordination": "kai/coordination",
-  "initiatives": "kai/initiatives",
-  "library": "kai/library",
-  "personal": "kai/personal",
+  "coordination": ".kai/state",
+  "initiatives": ".kai/state/initiatives",
+  "library": "docs/kai",
+  "personal": ".kai/personal",
   "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }

@@ -179,11 +179,11 @@ to a locked span; if it cannot, return `voice: pending persona-self` and do not
 claim completion.
 
 Write ad-hoc drafts to `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`;
-coordinated work writes to `kai/initiatives/<slug>/artifacts/content/<item-id>/` with
-a `kai-core-work-coordination` handoff; a reusable pack promotes to
-`kai/library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/` through the standard
-steward-approved library flow. Return the paths and claim-safety summary. Never
-post.
+coordinated work writes to `.kai/state/initiatives/<slug>/artifacts/content/<item-id>/` with
+a `kai-core-work-coordination` handoff; a reusable pack publishes to
+`<project-root>/<publication-root>/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`
+through the standard steward-approved publication flow. Return the paths and
+claim-safety summary. Never post.
 
 ## Boundaries
 

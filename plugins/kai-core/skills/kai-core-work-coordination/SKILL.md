@@ -17,14 +17,12 @@ dispatch and reconcile work across the team.
 
 ## Why durable, per-item state
 
-Coordination must survive sessions, machines, CLI/cloud boundaries, and branch
-handoffs, so it lives under the target workspace's `kai/coordination/`. In a
-repository workspace this surface is committed. In an operator-confirmed
-external workspace it is durable local state and must not be described as
-committed unless that directory is actually version-controlled. The same caveat
-applies to a repository workspace recorded as `corpus_visibility: local`: the
-surface is durable only within that checkout, so it does not cross machines,
-clones, CI, or cloud agents, and must not be described as committed.
+Coordination must survive sessions and handoffs, so it lives under the target
+workspace's `.kai/state/`. In `shared` mode this surface may be committed. In
+`repo-local` mode it is durable only within that checkout, so it does not cross
+machines, clones, CI, or cloud agents. In `external` mode it is durable at the
+registered workspace root and must not be described as committed unless that
+directory is actually version-controlled.
 
 A single mutable board is not safe as the authoritative store: two agents
 working in parallel would edit the same file and create conflicts or overwrite
@@ -40,7 +38,7 @@ Parallel agents normally touch different item and thread files.
 ## Coordination surface
 
 ```text
-kai/coordination/
+.kai/state/
   ACTIVE.md
   BOARD.md                    # derived index; director-maintained
   items/
@@ -48,7 +46,7 @@ kai/coordination/
   threads/
     <item-id>.md              # HANDOFF + QUESTION/ANSWER history
   backlog.md
-kai/initiatives/
+.kai/state/initiatives/
   INDEX.md
   <initiative-slug>/
     northstar.md
@@ -135,40 +133,46 @@ Rules:
 - **`artifact_class`**, **`durability`**, **`completion_authority`**, and
   **`validity_owner`** are required when an asset is owed. Their semantics come
   from `kai-core-asset-lifecycle`.
-- **`artifact_targets`** lists every exact workspace-root-relative output path
-  for an asset-producing item. Initiative items default to the canonical
+- **`artifact_targets`** lists every exact private workspace path or
+  project-qualified public path for an asset-producing item. Public paths use
+  `project:<project-id>:<publication-root-relative-path>` so an external
+  workspace never pretends project files live below the workspace root.
+  Initiative items default to the canonical private
   location from `kai-core-workspace-conventions`:
-  `kai/initiatives/<slug>/artifacts/product-map.md`,
-  `kai/initiatives/<slug>/artifacts/marketing/` (bundle directory),
-  `kai/initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
-  `kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md` (de-identified signal),
-  `kai/initiatives/<slug>/artifacts/support/<item-id>.md` (de-identified signal),
-  `kai/initiatives/<slug>/artifacts/feedback/<item-id>.md` (de-identified signal),
-  `kai/initiatives/<slug>/artifacts/growth/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/analytics/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/experiments/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/pricing/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/sales/<item-id>.md` (de-identified deal brief),
-  `kai/initiatives/<slug>/artifacts/solutions/<item-id>.md` (sanitized solution brief),
-  `kai/initiatives/<slug>/artifacts/security/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/reliability/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/incidents/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/compliance/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/briefs/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/research/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`,
-  `kai/initiatives/<slug>/artifacts/docs/<item-id>.md` (technical writing / docs),
-  `kai/initiatives/<slug>/artifacts/revops/<item-id>.md` (revenue-operations brief),
-  `kai/initiatives/<slug>/artifacts/campaigns/<item-id>.md` (demand-gen campaign plan),
-  `kai/initiatives/<slug>/artifacts/partnerships/<item-id>.md` (de-identified partnership brief),
-  `kai/initiatives/<slug>/artifacts/localization/<item-id>.md` (localization report),
-  `kai/initiatives/<slug>/artifacts/data-engineering/<item-id>.md` (data-engineering design),
-  `kai/initiatives/<slug>/artifacts/brand/<item-id>.md` (brand / visual-identity system), or
-  `kai/initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
-  override is allowed only inside the resolved workspace and must be recorded.
+  `.kai/state/initiatives/<slug>/artifacts/product-map.md`,
+  `.kai/state/initiatives/<slug>/artifacts/marketing/` (bundle directory),
+  `.kai/state/initiatives/<slug>/artifacts/content/<item-id>/` (content bundle),
+  `.kai/state/initiatives/<slug>/artifacts/customer-success/<item-id>.md` (de-identified signal),
+  `.kai/state/initiatives/<slug>/artifacts/support/<item-id>.md` (de-identified signal),
+  `.kai/state/initiatives/<slug>/artifacts/feedback/<item-id>.md` (de-identified signal),
+  `.kai/state/initiatives/<slug>/artifacts/growth/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/analytics/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/experiments/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/pricing/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/sales/<item-id>.md` (de-identified deal brief),
+  `.kai/state/initiatives/<slug>/artifacts/solutions/<item-id>.md` (sanitized solution brief),
+  `.kai/state/initiatives/<slug>/artifacts/security/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/reliability/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/incidents/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/compliance/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/briefs/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/research/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/designs/<item-id>.md`,
+  `.kai/state/initiatives/<slug>/artifacts/docs/<item-id>.md` (technical writing / docs),
+  `.kai/state/initiatives/<slug>/artifacts/revops/<item-id>.md` (revenue-operations brief),
+  `.kai/state/initiatives/<slug>/artifacts/campaigns/<item-id>.md` (demand-gen campaign plan),
+  `.kai/state/initiatives/<slug>/artifacts/partnerships/<item-id>.md` (de-identified partnership brief),
+  `.kai/state/initiatives/<slug>/artifacts/localization/<item-id>.md` (localization report),
+  `.kai/state/initiatives/<slug>/artifacts/data-engineering/<item-id>.md` (data-engineering design),
+  `.kai/state/initiatives/<slug>/artifacts/brand/<item-id>.md` (brand / visual-identity system), or
+  `.kai/state/initiatives/<slug>/artifacts/decisions/<item-id>.md`. An operator-approved
+  override is allowed only inside the resolved workspace, or inside the
+  selected project's configured publication root using the project-qualified
+  form, and must be recorded.
   An unaffiliated incident-command item uses
-  `kai/library/investigations/<incident-id>/incident-record.md` for its sanitized
-  closure record; raw incident evidence remains in `.kai/runs/`.
+  `project:<project-id>:docs/kai/reports/incidents/<incident-id>.md` when that
+  project's configured `publication_root` is `docs/kai`; raw incident evidence
+  remains in `.kai/runs/`.
   `artifact_target` is the legacy singular field and remains readable during
   migration; new or revised records use `artifact_targets`.
 - **`context_artifacts`** lists exact paths to required factual maps, product
@@ -209,11 +213,12 @@ Rules:
   (non-null `holder`) must carry a non-null `token` and `version_at_grant`.
   Grants are issued serially by a single grantor (see *Claiming work safely*),
   never raced for by parallel peers.
-- **Artifact/evidence paths** are workspace-root-relative in durable records.
-  Repository metadata stores `workspace.root: .`; external mode may store an
-  absolute root. Dispatch packets carry the resolved runtime absolute root.
-  Never write session-state-relative, incidental-cwd, or abbreviated `.../`
-  paths.
+- **Artifact/evidence paths** are private workspace-relative paths or
+  project-qualified public paths in durable records. Repository metadata stores
+  `workspace.root: .`; external mode may store an absolute root. Dispatch
+  packets carry the resolved runtime absolute root. Never write
+  session-state-relative, incidental-cwd, clone-specific, or abbreviated
+  `.../` paths.
 
 ## BOARD.md
 
@@ -482,7 +487,7 @@ revision; only then may the owning designer close it as `completed`.
 
 ## HANDOFF packet
 
-Append every handoff to `kai/coordination/threads/<item-id>.md`:
+Append every handoff to `.kai/state/threads/<item-id>.md`:
 
 ```markdown
 ## HANDOFF <YYYY-MM-DD-HHMM> — <from-role> -> <to-role>
@@ -658,8 +663,8 @@ persistent remediation or a novel production change remains proposed scope.
 
 Scope-expanding proposals remain committed:
 
-1. Active initiative: `kai/initiatives/<initiative-slug>/backlog.md`.
-2. No initiative: `kai/coordination/backlog.md`.
+1. Active initiative: `.kai/state/initiatives/<initiative-slug>/backlog.md`.
+2. No initiative: `.kai/state/backlog.md`.
 
 If the target workspace is not onboarded, stop and onboard it before recording
 a coordinated proposal. Durable proposals never fall back to the ephemeral

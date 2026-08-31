@@ -1,7 +1,7 @@
 # Channels — proactive notification bindings (local · gitignored)
 #
-# TEMPLATE. Your real file lives at kai/personal/proactive/channels.md, which is
-# gitignored (the whole kai/personal/ lane is). It binds ONE consented channel for
+# TEMPLATE. Your real file lives at .kai/personal/proactive/channels.md, which is
+# gitignored (the whole .kai/personal/ lane is). It binds ONE consented channel for
 # v1. It stores a secret_ref — the NAME of a secret your runner holds — never the
 # secret itself. Webhook URLs, tokens, and channel IDs live in the runner's
 # secret store (e.g. GitHub Actions secrets), not here and not in git.
@@ -17,7 +17,7 @@ channel:
 Notes:
 
 - kai's `workflow-proactive-scan` only **emits** the payload to
-  `kai/personal/proactive/outbox/`. Your external runner reads consent here and
+  `.kai/personal/proactive/outbox/`. Your external runner reads consent here and
   performs the delivery, resolving `secret_ref` from its own secret store.
 - No `consent: yes` → the payload stays in the outbox and nothing is sent.
 - v1 targets exactly one channel; multiple channels need per-channel delivery

@@ -30,24 +30,17 @@ to work in:
 Initialize this repository as a kai workspace.
 ```
 
-`workflow-workspace-init` seeds about ten tracked files: `.kai/manifest.json`,
-`.kai/CONVENTIONS.md`, the coordination registries, the initiative index, the
-library README — plus the gitignored `kai/personal/` lane, so the personal
-agents find their own state on first run. It does **not** pre-create run areas
-or library types; those two output-only lanes appear when something first writes
-to them, so your tree only ever contains lanes you actually used. See
+`workflow-workspace-init` asks where operational state should live:
+
+- **external** keeps the project free of Kai state and pairs it through the
+  machine-local registry;
+- **repo-local** uses project `.kai/` but ignores it completely;
+- **shared** allows the manifest, conventions, and `.kai/state/` to be tracked.
+
+It also confirms the project publication root, defaulting to `docs/kai`.
+Private coordination, drafts, evidence, and personal state remain under
+`.kai/`; only accepted project knowledge publishes. See
 [Workspace model](workspaces.md) for the full contract.
-
-If you would rather see the whole vocabulary on disk up front, ask for it:
-
-```text
-Initialize this repository as a kai workspace, and materialize every run area
-and library type now so I can see the full layout.
-```
-
-That is a **local convenience, not a different mode**. The extra directories are
-empty, and git cannot track an empty directory, so they will not survive a clone
-— the durable footprint is identical either way.
 
 **3. Ask for the work, not for a role.** The front door routes it:
 
@@ -141,8 +134,8 @@ product, engineering, and go-to-market.
    marketplace version before it tells you to uninstall legacy `kai`, then
    installs core first and stops for a fresh session before continuing.
 
-This changes only host plugin state. Your workspace — `.kai/` and `kai/` —
-lives in your repository and is not removed.
+This changes only host plugin state. Workspace migration is a separate,
+explicit operation because schema 3 may move private state outside the project.
 
 **Check what this host actually has, before you install anything:**
 
@@ -244,11 +237,9 @@ bug in the CLI, so run the commands above rather than relying on it.
 
 ## Upgrading a workspace after a plugin update
 
-A kai *workspace* (the `.kai/`, `kai/coordination/`, `kai/initiatives/`,
-`kai/library/`, and `kai/personal/` state a repo or folder gets when onboarded)
-carries its own **`schema_version`** in `.kai/manifest.json`, independent of the
-plugin `version`. Most pack updates do not change it; when one
-does, an existing workspace needs a one-time migration.
+A Kai workspace carries its own **`schema_version`** in `.kai/manifest.json`,
+independent of plugin `version`. Most plugin updates do not change it. A
+workspace-contract change requires a one-time migration.
 
 After updating the plugin, from the workspace root run the **workspace doctor**:
 
@@ -260,8 +251,8 @@ node <kai-plugin>/scripts/workspace-doctor.mjs
 `/plugin` install path.) The doctor is read-only and dependency-free. It:
 
 - verifies `.kai/manifest.json` is present, well-formed, and schema-compatible;
-- if `schema_version` is behind, prints the **deterministic migration ladder**
-  to apply (defined in `kai-core-workspace-onboarding`);
+- if `schema_version` is behind, identifies the migration required by
+  `kai-core-workspace-onboarding`;
 - validates generated coordination state — item schemas, lifecycle states,
   `change_ref`-bound reviews, typed dependencies and cycles, lease shape/expiry,
   path containment, and `BOARD.md` drift.
@@ -273,12 +264,12 @@ doctor, so the upgrade path is explicit rather than silent. Re-running a
 completed migration is a no-op.
 
 <!-- kai:allow-legacy-roots -->
-> **Upgrading from schema 1?** Workspaces onboarded before v0.27.0 keep
-> `coordination/`, `initiatives/`, `library/`, and `personal/` at the workspace
-> root. Run the doctor from the workspace root — it detects the old schema,
-> prints the migration plan, and blocks coordinated work until the four roots
-> move under `kai/`. `.kai/` stays where it is. Never leave both layouts in
-> place: that is a split-brain workspace and the doctor refuses it.
+> **Upgrading from schema 2?** Choose `external`, `repo-local`, or `shared`,
+> then classify the former `kai/coordination/`, `kai/initiatives/`,
+> `kai/library/`, and `kai/personal/` content. Coordination and initiative work
+> become `.kai/state/`; personal state becomes `.kai/personal/`; only accepted
+> current project knowledge publishes. The migration never bulk publishes the
+> old library and never keeps both layouts.
 <!-- /kai:allow-legacy-roots -->
 
 ## Audio setup (optional)

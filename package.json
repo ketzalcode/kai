@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; derived runtime files are refreshed by pack-preview.",
   "private": true,
   "scripts": {

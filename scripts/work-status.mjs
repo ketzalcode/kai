@@ -3,7 +3,7 @@
 //
 // Answers one question: **where must I intervene?**
 //
-// It reads the authoritative item records under <root>/kai/coordination/items/
+// It reads the authoritative item records under <root>/.kai/state/items/
 // (never BOARD.md, which is itself a derived index and can drift) and prints
 // only what needs attention. Healthy work is counted, not listed.
 //
@@ -101,11 +101,11 @@ function readItems(coordRoot) {
   if (!existsSync(dir)) return [];
   const out = [];
   for (const f of readdirSync(dir)) {
-    if (!f.endsWith('.md')) continue;
+    if (!f.endsWith('.md') || f === 'README.md') continue;
     const path = join(dir, f);
     const raw = readFileSync(path, 'utf8');
     const fm = frontmatter(raw);
-    const rel = `kai/coordination/items/${f}`;
+    const rel = `.kai/state/items/${f}`;
     if (!fm) { out.push({ id: basename(f, '.md'), path, rel, unparseable: true }); continue; }
     out.push({
       id: scalar(fm, 'id') || basename(f, '.md'),
@@ -285,15 +285,13 @@ function gitContext(root) {
 }
 
 function findCoordRoot(root) {
-  for (const c of [join(root, 'kai', 'coordination'), join(root, 'coordination')]) {
-    if (existsSync(join(c, 'items'))) return c;
-  }
-  return null;
+  const stateRoot = join(root, '.kai', 'state');
+  return existsSync(join(stateRoot, 'items')) ? stateRoot : null;
 }
 
 export function collect(root, now = Date.now()) {
   const coordRoot = findCoordRoot(root);
-  if (!coordRoot) return { ok: false, reason: 'no coordination/items directory found under this root' };
+  if (!coordRoot) return { ok: false, reason: 'no .kai/state/items directory found under this root' };
   const items = readItems(coordRoot);
   const threads = new Map();
   for (const it of items) threads.set(it.id, readThreadQuestions(coordRoot, it.id));
@@ -429,7 +427,7 @@ function selfTest() {
   // The activity overlay (see the kai-core-work-activity skill). It must add exactly one
   // checkable fact and must cost nothing when the log is absent.
   const nowSec = Math.floor(NOW / 1000);
-  const mkItems = [{ id: 'all-good', rel: 'kai/coordination/items/all-good.md', unparseable: false }];
+  const mkItems = [{ id: 'all-good', rel: '.kai/state/items/all-good.md', unparseable: false }];
   const absent = overlay(mkItems, { present: false, records: [], skipped: 0 }, NOW);
   ok(absent.findings.length === 0 && absent.live === null, 'an absent log produces no finding and no overlay');
 

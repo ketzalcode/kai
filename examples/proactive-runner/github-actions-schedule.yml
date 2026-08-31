@@ -12,7 +12,7 @@
 #                         The built-in GITHUB_TOKEN does NOT carry Copilot
 #                         permissions and will not work.
 #   KAI_NOTIFY_WEBHOOK    your channel's real URL/token. Its NAME must match the
-#                         `secret_ref` in kai/personal/proactive/channels.md
+#                         `secret_ref` in .kai/personal/proactive/channels.md
 #                         exactly, or the run fails rather than delivering.
 #
 # Paths below assume you copied examples/proactive-runner/runner.mjs into your
@@ -43,7 +43,7 @@ jobs:
         with:
           node-version: "22"
 
-      # Hosted runners start clean and `kai/personal/` is gitignored, so the dedup
+      # Hosted runners start clean and `.kai/personal/` is gitignored, so the dedup
       # ledger MUST be persisted across runs or every signal looks new.
       #
       # Cache ONLY snapshot.json. The outbox holds notification summaries — real
@@ -53,7 +53,7 @@ jobs:
       - name: Restore proactive ledger
         uses: actions/cache/restore@v4
         with:
-          path: kai/personal/proactive/snapshot.json
+          path: .kai/personal/proactive/snapshot.json
           key: kai-proactive-${{ github.repository }}
           restore-keys: kai-proactive-${{ github.repository }}
 
@@ -63,21 +63,21 @@ jobs:
       # 1) SCAN (read-only). Real non-interactive invocation: -p runs a single
       #    prompt and exits. Tools are granted narrowly rather than with
       #    --allow-all-tools: the scan is specified read-only, so it needs to read
-      #    the workspace and write only under kai/personal/proactive/.
+      #    the workspace and write only under .kai/personal/proactive/.
       - name: kai proactive scan
         id: scan
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p kai/personal/proactive/outbox
+          mkdir -p .kai/personal/proactive/outbox
           copilot -p "phase: scan; selected workspace root: ${GITHUB_WORKSPACE}" \
             --agent workflow-proactive-scan \
             --allow-tool 'view' --allow-tool 'grep' --allow-tool 'glob' \
             --allow-tool 'create' --allow-tool 'edit' \
             --deny-tool 'bash' \
             --no-color --log-level error
-          payload=$(ls -t kai/personal/proactive/outbox/*.json 2>/dev/null | head -n1 || true)
+          payload=$(ls -t .kai/personal/proactive/outbox/*.json 2>/dev/null | head -n1 || true)
           if [ -z "$payload" ]; then echo "::error::scan produced no payload"; exit 1; fi
           echo "payload=$payload" >> "$GITHUB_OUTPUT"
 
@@ -96,7 +96,7 @@ jobs:
         run: |
           node examples/proactive-runner/runner.mjs plan \
             --payload "$PAYLOAD" \
-            --channels kai/personal/proactive/channels.md \
+            --channels .kai/personal/proactive/channels.md \
             --secret KAI_NOTIFY_WEBHOOK
 
       # 3) DELIVER — only when the gate said so, and fail loudly on HTTP errors.
@@ -146,11 +146,11 @@ jobs:
         run: |
           if [ "${{ steps.ack.outputs.acked }}" = "true" ]; then
             node examples/proactive-runner/runner.mjs retain \
-              --outbox kai/personal/proactive/outbox \
+              --outbox .kai/personal/proactive/outbox \
               --acked "$NOTIFICATION_ID" --keep 5
           else
             node examples/proactive-runner/runner.mjs retain \
-              --outbox kai/personal/proactive/outbox --keep 5
+              --outbox .kai/personal/proactive/outbox --keep 5
           fi
 
       # 6) DIAGNOSTICS — on any failure, upload a redacted summary. It carries
@@ -189,5 +189,5 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: kai/personal/proactive/snapshot.json
+          path: .kai/personal/proactive/snapshot.json
           key: kai-proactive-${{ github.repository }}-${{ github.run_id }}

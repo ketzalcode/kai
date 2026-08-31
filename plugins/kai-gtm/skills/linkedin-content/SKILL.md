@@ -148,12 +148,13 @@ Resolve the workspace via `kai-core-workspace-conventions`.
 - **Ad-hoc / standalone** review-then-post drafts default to the ignored run
   area: `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
 - **Coordinated (initiative) work** writes the bundle to
-  `kai/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
+  `.kai/state/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
   knowledge` and the normal `kai-core-work-coordination` handoff.
-- **A reusable pack** the operator wants to keep is promoted through the standard
-  `kai-core-workspace-conventions` library flow (steward-approved, recorded in
-  `deliverables.md`) to `kai/library/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
-  Library frontmatter goes on the Markdown index only; the JSON matrix stays
+- **A reusable pack** the operator wants to keep is published through the
+  standard `kai-core-workspace-conventions` approval flow and recorded in
+  `deliverables.md` at
+  `<project-root>/<publication-root>/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
+  Durable asset metadata goes on the Markdown index only; the JSON matrix stays
   valid JSON. Never overwrite a prior pack — new runs get the next per-day index.
 
 Nothing here is ever committed as "published," and the method touches no network.

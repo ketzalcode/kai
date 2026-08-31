@@ -214,7 +214,7 @@ Write the local review under:
 Keep any referenced raw/user-level detail local. For coordinated work, write the
 sanitized certificate to:
 
-`kai/initiatives/<slug>/artifacts/experiments/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/experiments/<item-id>.md`
 
 ```markdown
 # Experiment Integrity Review - <experiment-id>

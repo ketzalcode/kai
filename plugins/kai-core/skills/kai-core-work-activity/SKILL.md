@@ -20,7 +20,7 @@ avoids.
 
 | | Item record | Activity log |
 |---|---|---|
-| Path | `kai/coordination/items/<id>.md` | `.kai/activity.jsonl` (gitignored) |
+| Path | `.kai/state/items/<id>.md` | `.kai/activity.jsonl` (gitignored) |
 | Shape | compare-and-swap, versioned | append-only, one line per record |
 | Carries | state, ownership, reviews, verdicts | who, which item, when they report next |
 | Changes | ~10x per item, across days | ~2x per agent run |

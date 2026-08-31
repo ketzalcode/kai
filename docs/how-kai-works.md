@@ -35,9 +35,10 @@ validates the full workspace contract for either a repository or a durable
 standalone folder and seeds private assistant and identity stubs.
 
 ```
- repository or ──► workflow-workspace-init ──► .kai/ + kai/coordination/
- standalone folder                              + kai/initiatives/ + kai/library/
-                                                 + kai/personal/identity + assistant state
+ project ──► workflow-workspace-init ──► external | repo-local | shared workspace
+                                              │
+                                              ├─► .kai/state + runs + review + archive
+                                              └─► project publication root (default docs/kai)
 ```
 
 **0b · North star (optional, spans weeks/months)** — run
@@ -50,7 +51,7 @@ and activates it; later agents load it only when work matches its scope.
                                                        │
                                       PM/steward approves + activates
                                                        ▼
-                                      kai/coordination/ACTIVE.md points to the north star
+                                      .kai/state/ACTIVE.md points to the north star
                                                             ▼
    any later agent, before substantial work:  target in scope? ──yes──► load + steer toward it
                                                             └──no──► work context-free (no pollution)
@@ -213,17 +214,17 @@ leads; the operator performs every production action.
  a topic ──► instructor-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
             (Explain-in-chat / Lesson / Series modes — any subject)
 
- a whole cert ──► instructor-path-mentor ──► kai/personal/learning/<slug>.md  (plan · progress · review)
+ a whole cert ──► instructor-path-mentor ──► .kai/personal/learning/<slug>.md  (plan · progress · review)
                  (dispatches the three above per objective; tracks where you are)
 ```
 
-**5 · Writing & career (`kai/personal/identity/`)** — one workspace-local profile folder powers both your voice and career track.
+**5 · Writing & career (`.kai/personal/identity/`)** — one workspace-local profile folder powers both your voice and career track.
 
 ```
- chat history / ──► extract-writing-style ──► kai/personal/identity/voice.md ──┬─► persona-self ──► draft in your voice
+ chat history / ──► extract-writing-style ──► .kai/personal/identity/voice.md ──┬─► persona-self ──► draft in your voice
  PR comments / samples                          (workspace profile)        │   (Draft / Rewrite / Reply)
                                                                            │
- first-run intake ──► principal-engineer-career-mentor ──► kai/personal/identity/career-*.md ─┘
+ first-run intake ──► principal-engineer-career-mentor ──► .kai/personal/identity/career-*.md ─┘
                       (weekly · quarterly · spot · cert · visibility modes)  └─► honest guidance, never auto-posts
 ```
 
@@ -264,7 +265,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
                                          ├─► kai-core-executive-consultation ──► real roles + private attributed brief
                                          ├─► kai-core-decision-brief ──► private brief: options + positions + recommendation
                                          ├─► workflow-weekly-pulse      (what happened)
-                                         └─► kai-core-personal-agenda ──► kai/personal/agenda.md
+                                         └─► kai-core-personal-agenda ──► .kai/personal/agenda.md
                                              (all enabled workspaces + inbox + nudges)
                                                   │  ranked "what needs you"
                                                   ▼
@@ -323,7 +324,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
 | Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `kai-core-executive-consultation`) |
 | Package a decision waiting on me into options + a recommendation | `director-executive-assistant` (via `kai-core-decision-brief`) |
-| Capture a task or reminder | `director-executive-assistant` (→ `kai/personal/inbox.md`) |
+| Capture a task or reminder | `director-executive-assistant` (→ `.kai/personal/inbox.md`) |
 | Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |

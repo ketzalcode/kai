@@ -271,11 +271,11 @@ domain-local decision**, write exactly one file to the `eng` area (see
   the dated `eng/<YYYY-MM-DD>/` area. Never create a top-level
   `backend/` folder.
 
-**Zone & promotion (see `kai-core-workspace-conventions`):** `design.md` drafts in
-the gitignored `.kai/runs/` root. Promote it to
-`<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-backend-<target-slug>/design.md` with library
-frontmatter only when it's a durable decision worth sharing via
-`git pull`; keep it local-only otherwise.
+**Zone & publication (see `kai-core-workspace-conventions`):** `design.md` drafts
+in the gitignored `.kai/runs/` root. Publish it to
+`<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-backend-<target-slug>/design.md`
+with accepted lifecycle metadata only when it is durable project knowledge;
+keep it local-only otherwise.
 
 You also inherit **`build-diagrams`** — a `design.md` carries **at least
 one diagram** of its central structure, drawn from the standard catalog

@@ -25,7 +25,7 @@ insight from one or more roles.
 - **Active-item decision:** if the answer blocks or changes coordinated work,
   use a real peer and require the Chief of Staff or owning role to transcribe the
   load-bearing `QUESTION`/`ANSWER` into
-  `kai/coordination/threads/<item-id>.md` per `kai-core-peer-communication`.
+  `.kai/state/threads/<item-id>.md` per `kai-core-peer-communication`.
 
 The private consultation record is useful to the operator, but it never replaces
 the committed thread when team correctness depends on the answer.
@@ -88,14 +88,14 @@ The bridge copies only the canonical QUESTION/ANSWER fields, sanitized
 team-relevant context, necessary evidence paths, and provenance. It must not
 copy the private operator-intent paragraph, personal context, current workspace's
 private paths, or
-`kai/personal/consultations/` path into committed coordination.
+`.kai/personal/consultations/` path into committed coordination.
 
 ## Private record
 
 Write one gitignored record:
 
 ```text
-kai/personal/consultations/<c-YYYY-NNNN>.md
+.kai/personal/consultations/<c-YYYY-NNNN>.md
 ```
 
 Shape:
@@ -155,7 +155,7 @@ Return:
 Consultation: <id + complete|partial|dispatch-queue>
 Roles: <consulted roles + provenance>
 Workspaces: <validated labels>
-Record: <absolute kai/personal/consultations/<id>.md path>
+Record: <absolute .kai/personal/consultations/<id>.md path>
 Agreement: <one line>
 Disagreement: <one line or none>
 Team bridge: <thread path/question IDs or not required>

@@ -196,9 +196,10 @@ from that skill's base directory. Never derive it from this personal pack.
 
 **Zone & promotion (see `kai-core-workspace-conventions`).** Course extraction is
 **personal learning**: the draft lives ephemeral in `.kai/runs/learn/`, and if
-the user keeps it, it graduates to **`kai/personal/courses/`** (gitignored, yours) —
-*not* to `kai/library/`. Only `--share` into `kai/library/lessons/` when the
-material is team-relevant work knowledge rather than personal study.
+the user keeps it, it graduates to **`.kai/personal/courses/`** (gitignored) —
+not to project publication. Only `--share` into
+`<project-root>/<publication-root>/lessons/` when the material is team-relevant
+work knowledge rather than personal study.
 
 ### 6. Handle the unhappy paths
 

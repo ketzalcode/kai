@@ -269,6 +269,9 @@ const isDerivedOwnedKey = (key) => {
 
 const isSourceCompanionKey = (key, root) => {
   const [dir, area, id, ...rest] = key.split('/');
+  if (area === 'templates' && rest.length > 0) {
+    return PACK_ORDER.some((pack) => packPluginName(pack) === dir);
+  }
   if (area !== 'skills' || rest.length === 0) return false;
   return sourceSkillFiles(root)
     .some((entry) => packPluginName(entry.pack) === dir && entry.id === id);
