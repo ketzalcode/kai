@@ -244,7 +244,7 @@ minimize sensitive payloads even locally.
 
 For coordinated work, write a sanitized assessment/control brief to:
 
-`kai/initiatives/<slug>/artifacts/security/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/security/<item-id>.md`
 
 If exact exploit detail, private topology, customer identity, or incident data is
 needed, keep it local and cite an evidence ID in the sanitized artifact.

@@ -148,7 +148,7 @@ Output to: `<working-root>/review/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md`
   the date-first run grammar.
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Before reviewing, glance
-at `kai/coordination/ACTIVE.md`. If the doc under review concerns the active
+at `.kai/state/ACTIVE.md`. If the doc under review concerns the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and test the doc's argument against it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's an unrelated doc,
@@ -157,9 +157,9 @@ load nothing and review context-free.
 **Zone & promotion (see `kai-core-workspace-conventions`):** reusable `review.md`
 outputs default to the **library** zone. Write the working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
-so you never manage `.gitignore` yourself — then promote the curated review
-to `kai/library/reviews/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md` with library
-frontmatter
+so you never manage `.gitignore` yourself — then publish the accepted review
+to `<project-root>/<publication-root>/reviews/<YYYY-MM-DD>/<NN>-doc-<doc-slug>/review.md`
+with durable asset metadata
 so it travels via `git pull`. Keep it local-only if the operator passes
 `--local`.
 

@@ -23,27 +23,27 @@ per-role positions, and a sourced recommendation — through `kai-core-decision-
 
 ## The two files
 
-Personal operational state lives in the ignored `kai/personal/` lane of the current
+Personal operational state lives in the ignored `.kai/personal/` lane of the current
 Kai workspace (see `kai-core-workspace-conventions`). Two files, mirroring how
-`kai/coordination/` separates authoritative items from the derived board:
+`.kai/state/` separates authoritative items from the derived board:
 
 | File | Role | Analogue |
 |------|------|----------|
-| `kai/personal/inbox.md` | **authoritative** — the tasks and reminders *you* own, not tied to any coordination item | `kai/coordination/items/` |
-| `kai/personal/agenda.md` | **derived** — the ranked "what needs you" view, re-rendered each run from inbox + coordination signals + nudges | `kai/coordination/BOARD.md` |
+| `.kai/personal/inbox.md` | **authoritative** — the tasks and reminders *you* own, not tied to any coordination item | `.kai/state/items/` |
+| `.kai/personal/agenda.md` | **derived** — the ranked "what needs you" view, re-rendered each run from inbox + coordination signals + nudges | `.kai/state/BOARD.md` |
 
-Both are gitignored (the `kai/personal/` lane is ignored wholesale). You never
+Both are gitignored (the `.kai/personal/` lane is ignored wholesale). You never
 commit them, and you never write agenda/inbox state anywhere else.
 
 ## Anchoring
 
 The agenda belongs to the **current Kai workspace** resolved through
 `kai-core-workspace-conventions` and its `.kai/manifest.json` sentinel.
-`kai/personal/inbox.md`, identity/cadence sources, and the rendered
-`kai/personal/agenda.md` always resolve against that workspace.
+`.kai/personal/inbox.md`, identity/cadence sources, and the rendered
+`.kai/personal/agenda.md` always resolve against that workspace.
 
-Coordination **signals** come from the current workspace's `kai/coordination/` plus every
-enabled root in `kai/personal/workspaces.md`. Resolve and validate the registry per
+Coordination **signals** come from the current workspace's `.kai/state/` plus every
+enabled root in `.kai/personal/workspaces.md`. Resolve and validate the registry per
 `kai-core-workspace-conventions`; label every surfaced line with its workspace. When the
 operator names an additional Kai root, the calling assistant confirms its
 label and records it in the registry before scanning it. Never write into a
@@ -53,14 +53,14 @@ linked workspace from here.
 
 Three categories, with optional linked-workspace discovery:
 
-### A. Derived team signals (read-only, from `kai/coordination/`)
+### A. Derived team signals (read-only, from `.kai/state/`)
 
 Surface only what genuinely needs **the operator** — the human who owns vision,
 final business boundaries, requested replies/actions, and the deploy button.
 Routine scope promotion and priority remain steward-owned. Map each coordination
 fact to exactly one agenda section:
 
-| Signal (from `kai/coordination/`) | Detection | Section |
+| Signal (from `.kai/state/`) | Detection | Section |
 |---|---|---|
 | Decision awaiting you | a thread `QUESTION` addressed to `@operator` with `kind: decision` and no matching answered `ANSWER`; if blocking, its ID must also appear in the item's `waiting_on_questions` | ⛔ Decisions |
 | Question addressed to you | an open thread `QUESTION` addressed to `@operator` with `kind: reply` and no matching `ANSWER` | ✉️ Awaiting reply |
@@ -70,7 +70,7 @@ fact to exactly one agenda section:
 | Overdue operator request | an unanswered `@operator` question whose `answer_by` timestamp passed | raise within its existing section |
 
 Read items and threads as authoritative; never infer a decision the records
-don't show. If `kai/coordination/` is absent (no team workspace), skip section A and
+don't show. If `.kai/state/` is absent (no team workspace), skip section A and
 say so — never fabricate team signals.
 
 Because threads are append-only, "open" always means **no matching answered
@@ -81,7 +81,7 @@ A `proposed` item by itself is **not** an operator signal. The initiative
 steward owns promotion and priority. Surface a proposed item only when its
 thread contains an explicit open `@operator` question under the rules above.
 
-### B. Personal inbox (`kai/personal/inbox.md`)
+### B. Personal inbox (`.kai/personal/inbox.md`)
 
 The tasks and reminders you own directly. This is the one input you type into;
 everything else is derived. Schema below.
@@ -92,14 +92,14 @@ Freshness checks against the current workspace, each a gentle "you're due":
 
 - **Weekly pulse** — newest `.kai/runs/pulse/<YYYY-Www>/` older than 7 days →
   nudge `workflow-weekly-pulse`.
-- **Career check-in** — the cadence stated in `kai/personal/identity/career-goals.md`
+- **Career check-in** — the cadence stated in `.kai/personal/identity/career-goals.md`
   (or last career run) overdue → nudge `principal-engineer-career-mentor`.
-- **Voice profile** — `kai/personal/identity/voice.md` missing or stale → nudge
+- **Voice profile** — `.kai/personal/identity/voice.md` missing or stale → nudge
   `extract-writing-style`.
 
 Nudges are awareness, never auto-runs. Skip any whose source doesn't exist.
 
-## `kai/personal/inbox.md` schema
+## `.kai/personal/inbox.md` schema
 
 Human-first markdown; a task's **state is the section it sits in**. Keep it terse.
 
@@ -196,7 +196,7 @@ occurrence. Never open a second live occurrence before the current one is done.
   question is emitted by Source A in this render** (so it isn't shown twice). If
   Source A does *not* surface it (e.g. an in-progress item with no open
   `@operator` question), the personal reminder shows normally — it never silently
-  disappears. Prefer tracking team work in `kai/coordination/`; a personal mirror is
+  disappears. Prefer tracking team work in `.kai/state/`; a personal mirror is
   for a reminder the team records don't already carry.
 - **Append-only history.** Completing or dismissing moves a line to `## Done`;
   recurrence rolls forward via `next:`; nothing is deleted.
@@ -219,7 +219,7 @@ never the whole inbox, and never more than the role needs to act:
 This mirrors `kai-core-executive-consultation`'s minimize-personal-context rule: opt-in
 per field, minimum necessary.
 
-## `kai/personal/agenda.md` schema
+## `.kai/personal/agenda.md` schema
 
 The derived view. Sections are ordered by *who is waiting on you* — others
 first, then your own commitments, then cadence. Each line = source + exact path
@@ -231,25 +231,25 @@ first, then your own commitments, then cadence. Each line = source + exact path
 **Signals from:** <workspace label(s)>  ·  **Open:** <N> · **Waiting:** <N> · **Proposed:** <N>
 
 ## ⛔ Decisions blocking others
-- <item-id> (<workspace>) — <one-line decision> [Q-<item-id>-NN] → **assemble a decision brief** (`kai-core-decision-brief`) · `kai/coordination/threads/<id>.md`
+- <item-id> (<workspace>) — <one-line decision> [Q-<item-id>-NN] → **assemble a decision brief** (`kai-core-decision-brief`) · `.kai/state/threads/<id>.md`
 
 ## ✉️ Awaiting your reply
-- <item-id> — <question in one line> → **draft a reply** (persona-self) · `kai/coordination/threads/<id>.md`
+- <item-id> — <question in one line> → **draft a reply** (persona-self) · `.kai/state/threads/<id>.md`
 
 ## ⚡ Actions blocking others
-- <item-id> — <operator-only action> → **perform the action, then answer Q-…** · `kai/coordination/threads/<id>.md`
+- <item-id> — <operator-only action> → **perform the action, then answer Q-…** · `.kai/state/threads/<id>.md`
 
 ## 🚀 Ready for you to ship
-- <item-id> — <what's release-ready> → **deploy, then workflow-ship CONFIRM-START** · `kai/coordination/items/<id>.md`
+- <item-id> — <what's release-ready> → **deploy, then workflow-ship CONFIRM-START** · `.kai/state/items/<id>.md`
 
 ## ✅ Your tasks
-- [ ] (t-2026-0142) <title> · due:<date> → **<next action>** · `kai/personal/inbox.md`
+- [ ] (t-2026-0142) <title> · due:<date> → **<next action>** · `.kai/personal/inbox.md`
 
 ## 📥 Proposed — acknowledge to commit
-- (t-2026-0146) <title> · src:<calendar|message> · <remind_at> → **accept or dismiss** · `kai/personal/inbox.md`
+- (t-2026-0146) <title> · src:<calendar|message> · <remind_at> → **accept or dismiss** · `.kai/personal/inbox.md`
 
 ## ⏳ Waiting — follow-up due
-- (t-2026-0144) <title> · waiting_on:<owner> · chase:<remind_at> → **nudge <owner>** (their deliverable; your follow-up) · `kai/personal/inbox.md`
+- (t-2026-0144) <title> · waiting_on:<owner> · chase:<remind_at> → **nudge <owner>** (their deliverable; your follow-up) · `.kai/personal/inbox.md`
 
 ## 🔔 Nudges
 - Weekly pulse due (last run <YYYY-Www>) → `workflow-weekly-pulse`
@@ -291,18 +291,18 @@ The agenda is a **view**, not a trigger. This skill and its caller:
 - **never** answer a thread, approve scope, send a message, commit, or deploy on
   the operator's behalf — every item lists the action for the operator (or a
   specialist) to take, and stops there;
-- write only two paths: `kai/personal/agenda.md` (rendered) and `kai/personal/inbox.md`
+- write only two paths: `.kai/personal/agenda.md` (rendered) and `.kai/personal/inbox.md`
   (operator-driven capture, acknowledgement, state change, recurrence
   roll-forward, and snooze maturation) — both in the ignored personal lane;
-- never promote personal state to `kai/library/` or commit it;
-- read `kai/coordination/`, `.kai/runs/pulse/`, and `kai/personal/identity/` strictly
+- never promote personal state to `<publication-root>/` or commit it;
+- read `.kai/state/`, `.kai/runs/pulse/`, and `.kai/personal/identity/` strictly
   read-only.
 
 ## Output contract
 
 When a render finishes:
 
-1. `kai/personal/agenda.md` exists in the current workspace with a generated timestamp and
+1. `.kai/personal/agenda.md` exists in the current workspace with a generated timestamp and
    the ranked sections above.
 2. Every line names its source, an exact workspace-root-relative path, and one
    next action.
@@ -310,7 +310,7 @@ When a render finishes:
    operator actions; `proposed` tasks are shown as suggestions, not commitments.
 4. No personal task duplicates a coordination signal, and no coordination record
    changed. Nothing was sent, committed, deployed, or answered.
-5. `kai/personal/inbox.md` is unchanged except for an explicit operator task capture,
+5. `.kai/personal/inbox.md` is unchanged except for an explicit operator task capture,
    acknowledgement, state change, or recurrence roll-forward.
 6. The caller receives: the agenda path, per-section counts (open / waiting /
    proposed), the single top item, and whether any source was absent and skipped.
@@ -319,8 +319,8 @@ When a render finishes:
 
 - ❌ Acting on an agenda line — answering, approving, deploying, sending —
   without explicit operator confirmation.
-- ❌ Writing agenda or inbox anywhere but `kai/personal/`, or committing them.
-- ❌ Inventing a decision or question the `kai/coordination/` records don't show.
+- ❌ Writing agenda or inbox anywhere but `.kai/personal/`, or committing them.
+- ❌ Inventing a decision or question the `.kai/state/` records don't show.
 - ❌ Re-narrating the week — that's `kai-core-pulse-digest`; the agenda is open loops only.
 - ❌ Ordering by recency instead of who's-blocked-and-by-when.
 - ❌ Surfacing a `snoozed` task before its `snooze_until`, or a `proposed` task
@@ -329,5 +329,5 @@ When a render finishes:
   occurrence of a recurring task.
 - ❌ Sharing more personal fields with a subagent than the task requires, or
   sharing a `tag:private` task without explicit go-ahead.
-- ❌ Printing empty sections, or claiming team signals when no `kai/coordination/`
+- ❌ Printing empty sections, or claiming team signals when no `.kai/state/`
   workspace is resolved.

@@ -99,7 +99,7 @@ You inherit `kai-core-scope-discipline`, `kai-core-design-grounding`, `ui-mockup
 - relevant UX/domain/QA research;
 - target viewports, accessibility requirements, and known platform constraints;
 - canonical `artifact_targets` entry:
-  `kai/initiatives/<slug>/artifacts/designs/<item-id>.md`.
+  `.kai/state/initiatives/<slug>/artifacts/designs/<item-id>.md`.
 
 If an existing product surface has no sufficient/current map, ask the director
 for `workflow-product-explore`. Do not rediscover the app yourself or design

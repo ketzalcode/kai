@@ -196,9 +196,9 @@ before/after of the one element that moved is enough for a copy tweak, and a
 full-surface pair is warranted for a layout change. What is not acceptable is a
 reviewer having to run the branch locally to find out what changed.
 
-This is not only for the reviewer. QA's evidence lives under `.kai/runs/` and
-`kai/library/**/screenshots/`, both **gitignored and local-only** — so it dies
-with the run folder. The PR is the **only durable home** for before/after
+This is not only for the reviewer. Raw QA screenshots live under `.kai/runs/`
+and are private runtime evidence, so they die with the run folder. The PR is
+the **only durable home** for before/after
 evidence, and putting it there means the next person reads the PR instead of
 re-running Playwright.
 

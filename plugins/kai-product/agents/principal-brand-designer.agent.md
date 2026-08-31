@@ -190,7 +190,7 @@ Write the full local working exploration to:
 
 For coordinated work, write the brand system/guidelines to:
 
-`kai/initiatives/<slug>/artifacts/brand/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/brand/<item-id>.md`
 
 Use:
 

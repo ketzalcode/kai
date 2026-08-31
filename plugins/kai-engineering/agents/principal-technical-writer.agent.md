@@ -196,7 +196,7 @@ Write the full local working draft to:
 Keep internal-only notes, unreleased context, and raw SME threads local. For
 coordinated work, write the documentation artifact to:
 
-`kai/initiatives/<slug>/artifacts/docs/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/docs/<item-id>.md`
 
 Use:
 

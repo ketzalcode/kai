@@ -1,16 +1,22 @@
 {
-  "plugin": "kai",
+  "plugin": "kai-core",
   "version": "0.1.0",
-  "schema_version": 2,
+  "schema_version": 3,
   "scaffolded": "2026-01-01",
-  "workspace_mode": "repository",
+  "workspace_id": "fixture-concurrency-workspace",
+  "storage_mode": "shared",
   "workspace_root": ".",
-  "kai": ".kai",
+  "state": ".kai/state",
   "runs": ".kai/runs",
-  "corpus": "kai",
-  "coordination": "kai/coordination",
-  "initiatives": "kai/initiatives",
-  "library": "kai/library",
-  "personal": "kai/personal",
+  "review": ".kai/review",
+  "archive": ".kai/archive",
+  "personal": ".kai/personal",
+  "projects": [
+    {
+      "id": "fixture",
+      "path": ".",
+      "publication_root": "docs/kai"
+    }
+  ],
   "areas": ["qa", "eng", "product", "revenue", "support", "review", "ship", "incident", "ai", "learn", "lessons", "pulse", "content"]
 }

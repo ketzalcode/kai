@@ -63,7 +63,7 @@ timestamp or `next-dispatch`.
 |-----------|-----------|:--------------------------:|:---------:|------|-------|
 | **Inline consult** | You load the peer's `*.agent.md`, adopt its mental model, and answer the packet *in that voice* yourself. | **No — you're simulating the peer.** | No (unless transcribed) | Cheapest | Same run, same context |
 | **Live peer** | The host exposes background agents (the Copilot CLI's `task` / `write_agent` / `read_agent`): spawn or message the *real* peer agent, loaded with its agent file, and read its reply. | **Yes — the peer's own reasoning.** | No (unless transcribed) | Medium (a real agent turn) | Same session, separate context |
-| **Durable thread** | Append the QUESTION and its ANSWER to `kai/coordination/threads/<item-id>.md`. | Whoever answers (a real role, later) | **Yes — committed** | Async latency | Across sessions, machines, cloud |
+| **Durable thread** | Append the QUESTION and its ANSWER to `.kai/state/threads/<item-id>.md`. | Whoever answers (a real role, later) | **Yes — committed** | Async latency | Across sessions, machines, cloud |
 
 The packet is identical across all three. What differs is **who really
 answers** and **whether it survives**.
@@ -91,7 +91,7 @@ answer lives is a correctness choice.** So:
 1. **Any exchange that blocks a work item, crosses a session, or changes
    a decision MUST land on the thread** — whichever live transport carried
    it. Transcribe the packet (a one-line "answered live via <transport>" is
-   enough provenance) into `kai/coordination/threads/<item-id>.md`.
+   enough provenance) into `.kai/state/threads/<item-id>.md`.
 2. **A blocking QUESTION flips the item to `blocked`** (per
    `kai-core-work-coordination`), copying the current state to `resume_state` only when
    first entering blocked, and adds the ID to `waiting_on_questions`.

@@ -241,7 +241,7 @@ categories, schemas, and de-identified examples.
 
 For coordinated work, write a sanitized assessment/policy to:
 
-`kai/initiatives/<slug>/artifacts/compliance/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/compliance/<item-id>.md`
 
 ```markdown
 # Privacy & Compliance Assessment - <target>

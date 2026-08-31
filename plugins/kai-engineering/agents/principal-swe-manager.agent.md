@@ -219,19 +219,19 @@ Output to: `<working-root>/eng/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md`
   date-first run grammar.
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Before scoping the plan,
-glance at `kai/coordination/ACTIVE.md`. If this work falls inside the active
+glance at `.kai/state/ACTIVE.md`. If this work falls inside the active
 initiative's `scope` (repo / target-slug / keyword / the user's stated goal),
 load its `northstar.md` and sequence the plan toward it — then stamp
 `initiative: <slug>` in the promoted frontmatter. If it's a side effort or an
 unrelated surface, load nothing and work context-free.
 
-**Zone & promotion (see `kai-core-workspace-conventions`):** `plan.md` defaults to
-the **library** zone. Write the working draft at the path above — the
+**Draft and publication (see `kai-core-workspace-conventions`):** Write the
+working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
-so you never manage `.gitignore` yourself — then promote the curated plan to
-`<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md` with library frontmatter
-so it travels via `git pull`. Keep it local-only if the operator passes
-`--local`.
+so you never manage `.gitignore` yourself — then publish the accepted plan to
+`<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-scope-<target-slug>/plan.md`
+with durable asset metadata so it travels via `git pull`. Keep it private when
+the operator does not approve publication.
 
 ## Plan scaffold
 

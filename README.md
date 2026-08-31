@@ -26,7 +26,7 @@ copilot plugin install kai-gtm@kai-plugins
 | ---------- | ----- |
 | **Install it and finish one real thing** | [Getting started](docs/getting-started.md) — install, initialize, first request |
 | **Understand the model before I commit** | [How kai works](docs/how-kai-works.md) — which role fires when, and why |
-| **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — the `.kai/` + `kai/` contract |
+| **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
 | **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/host-capabilities.md) — what differs, and how it degrades |
 | **Change kai itself** | [Plugin structure](docs/reference/plugin-structure.md) — layout, tests, release policy |
@@ -35,8 +35,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v2.2.0` — all **56 agents and 52 skills** are published across five plugins for
+`v3.0.0` — all **56 agents and 52 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
+
+Workspace schema 3 keeps operational state under `.kai/`, supports
+zero-footprint external workspaces through a machine-local registry, and
+publishes only accepted project knowledge to a configurable documentation root.
+This repository no longer commits its former operational workspace. Maintainers
+can pair this checkout with an external workspace without adding Kai state to
+the source tree.
 
 Each agent and skill now has exactly one authoritative source inside its owning
 `plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
@@ -163,8 +170,9 @@ for it and for the coding-agent path.
 Initialize this repository as a kai workspace.
 ```
 
-This seeds about ten tracked files. It does not scatter directories across your
-repo root, and it does not pre-create lanes you never use.
+Choose `external` for no Kai files in the repository, `repo-local` for an
+ignored `.kai/`, or `shared` for team-visible state. Public project knowledge is
+published separately under the configured documentation root.
 
 **3. Ask for the work, not for a role.** The front door routes it:
 
@@ -187,7 +195,8 @@ implementation, security and QA review independently. A role that disagrees with
 you says so.
 
 **A durable record instead of a chat log.** Work state lives in
-`kai/coordination/items/`, handoffs in threads, outputs in initiative artifacts.
+`.kai/state/items/`, handoffs in `.kai/state/threads/`, and working initiative
+artifacts stay private until deliberately published.
 Close the session, come back next week, and the state is still authoritative —
 readable by you and by the next agent.
 
@@ -241,8 +250,9 @@ migrate an existing workspace after an update, see
 
 ## Workspace
 
-kai writes into two roots: a hidden `.kai/` control plane and a visible `kai/`
-working corpus. Nothing else lands in your repository root.
+kai keeps operational state under `.kai/`. It can live outside the repository,
+inside it but ignored, or inside it as shared state. Accepted project knowledge
+publishes to a configurable root that defaults to `docs/kai/`.
 
 **[The full workspace contract →](docs/workspaces.md)**
 

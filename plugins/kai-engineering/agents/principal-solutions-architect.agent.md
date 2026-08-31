@@ -227,7 +227,7 @@ Keep raw customer environment detail, architecture diagrams with identifying
 information, and questionnaire source material local. For coordinated work, write
 the minimum sanitized brief to:
 
-`kai/initiatives/<slug>/artifacts/solutions/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/solutions/<item-id>.md`
 
 Use:
 
@@ -262,7 +262,7 @@ Use:
    gated by `principal-security` or `principal-privacy-compliance` before it can
    be sent.
 3. A required-but-missing capability is a kai-core-scope-discipline `PROPOSAL` to the
-   initiative proposal channel (or `kai/coordination/backlog.md`) for the PM steward,
+   initiative proposal channel (or `.kai/state/backlog.md`) for the PM steward,
    never a commitment in your brief.
 4. Actual POC provisioning, customer-system access, and SOW signing are operator
    actions, not deliverables of this role.

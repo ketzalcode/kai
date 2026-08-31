@@ -30,7 +30,7 @@ inferred one. There are exactly two kinds:
 
 - **A thread decision** — an open `QUESTION` addressed to `@operator` with
   `kind: decision` and no matching answered `ANSWER` in
-  `kai/coordination/threads/<item-id>.md`.
+  `.kai/state/threads/<item-id>.md`.
 - **A deploy gate** — an item in `release-ready`, the deploy button only the
   operator presses. It usually carries no `@operator` question; the item state
   *is* the pending decision (go / defer / cancel).
@@ -54,12 +54,12 @@ manufacture a decision.
    Re-read the item `version`/`state` so a later bridge acts on current truth.
    Allocate a stable `d-<YYYY>-<NNNN>` brief ID that wraps that question/item;
    never invent a second question identity. The private record always lives in
-   the **current** workspace's `kai/personal/decisions/`, even when the decision
+   the **current** workspace's `.kai/personal/decisions/`, even when the decision
    belongs to a linked workspace.
 2. **Read the record, not your memory.** Read the authoritative
-   `kai/coordination/items/<item-id>.md`, the full `kai/coordination/threads/<item-id>.md`,
+   `.kai/state/items/<item-id>.md`, the full `.kai/state/threads/<item-id>.md`,
    every `context_artifacts` path, and any related
-   `kai/personal/consultations/<c-*>.md`. The thread and item are truth; a stale
+   `.kai/personal/consultations/<c-*>.md`. The thread and item are truth; a stale
    `BOARD.md` row is not.
 3. **Extract the options actually on the table.** List the real alternatives the
    thread/artifacts contain — including "do nothing / defer" when it is live.
@@ -76,7 +76,7 @@ manufacture a decision.
    a role's position — an independent position comes from the real role.
 5. **Assemble** the brief with the schema below. Attribute every position and
    preserve disagreement; do not blend the roles into a false consensus.
-6. **Record privately** under `kai/personal/decisions/<d-YYYY-NNNN>.md` in the
+6. **Record privately** under `.kai/personal/decisions/<d-YYYY-NNNN>.md` in the
    ignored personal lane.
 7. **Present and stop** at the operator's decision boundary. Offer to execute
    each `your move` action on their explicit go-ahead — never before.
@@ -86,7 +86,7 @@ manufacture a decision.
 Write one gitignored record:
 
 ```text
-kai/personal/decisions/<d-YYYY-NNNN>.md
+.kai/personal/decisions/<d-YYYY-NNNN>.md
 ```
 
 Shape:
@@ -97,7 +97,7 @@ Shape:
 **ID:** <d-YYYY-NNNN>  ·  **Packages:** <Q-item-id-NN | release-ready item-id>
 **Created:** <YYYY-MM-DD HH:MM local>
 **Status:** open | decided | superseded
-**Workspace:** <label>  ·  **Item:** <item-id> (`kai/coordination/items/<id>.md`)
+**Workspace:** <label>  ·  **Item:** <item-id> (`.kai/state/items/<id>.md`)
 **Decide by:** <answer_by timestamp, or "no stated deadline">
 
 ## The decision
@@ -152,9 +152,9 @@ role — **never** by the assistant writing coordination. Two paths:
 
 **Thread decision.** The operator states the choice. The
 `director-chief-of-staff` or owning role transcribes an `ANSWER` to
-`kai/coordination/threads/<item-id>.md` with the answerer as `@operator` and
+`.kai/state/threads/<item-id>.md` with the answerer as `@operator` and
 `provenance: operator`, carrying only the sanitized selected option and minimal
-team-relevant rationale — never a `kai/personal/` path or private reasoning. Per
+team-relevant rationale — never a `.kai/personal/` path or private reasoning. Per
 `kai-core-work-coordination`, that role removes the question ID from
 `waiting_on_questions` only if it is present, and restores the exact
 `resume_state` only once **every** blocking question is answered, and only when
@@ -170,7 +170,7 @@ Then the assistant updates the private brief to `Status: decided`, records the
 chosen option, and links the authoritative thread `ANSWER` or ship HANDOFF.
 
 The private brief is a worksheet. It never replaces the committed record, and a
-durable **team** decision/ADR (`kai/initiatives/<slug>/artifacts/decisions/`)
+durable **team** decision/ADR (`.kai/state/initiatives/<slug>/artifacts/decisions/`)
 remains owned by the deciding role — not written here.
 
 ## Hard rules
@@ -189,12 +189,12 @@ remains owned by the deciding role — not written here.
 5. **Preserve disagreement.** Do not manufacture consensus or hide the losing
    option's advocate.
 6. **Private stays private.** The brief lives only under the current workspace's
-   ignored `kai/personal/decisions/`; never commit it, never send a peer more
+   ignored `.kai/personal/decisions/`; never commit it, never send a peer more
    personal context than its gap-filling question needs.
 7. **The record is truth.** The decision returns to the coordination thread or
    ship record through the authorized role; the brief only points at it.
 8. **Bridge only sanitized fields.** The team-facing record gets the selected
-   option and minimal team-relevant rationale; a `kai/personal/` path, the private
+   option and minimal team-relevant rationale; a `.kai/personal/` path, the private
    brief, or personal reasoning never enters committed coordination.
 
 ## Output contract
@@ -204,7 +204,7 @@ Return:
 ```text
 Decision brief: <d-id + open|decided>
 Packages: <Q-item-id-NN | release-ready item-id>
-Record: <absolute kai/personal/decisions/<d-id>.md path>
+Record: <absolute .kai/personal/decisions/<d-id>.md path>
 Options: <count, with the recommended lean or "balanced">
 Recommendation: <one line + owning role, or "no role lean">
 Blocked until decided: <one line or none>
@@ -219,6 +219,6 @@ Your move: <the single decision + who records it on your go-ahead>
   decision.
 - ❌ Attributing a position to a role you actually simulated inline.
 - ❌ Re-consulting roles whose positions the thread already records.
-- ❌ Writing the outcome into `kai/coordination/` yourself instead of routing it to
+- ❌ Writing the outcome into `.kai/state/` yourself instead of routing it to
   the Chief of Staff or owning role.
-- ❌ Storing the brief anywhere but the current workspace's ignored `kai/personal/`.
+- ❌ Storing the brief anywhere but the current workspace's ignored `.kai/personal/`.

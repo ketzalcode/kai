@@ -194,7 +194,7 @@ The full synthesis stays ignored and may contain verbatim material. For a
 decision-relevant pattern, write a separately sanitized signal and, when
 coordinated, copy only that packet to:
 
-`kai/initiatives/<slug>/artifacts/feedback/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/feedback/<item-id>.md`
 
 The committed packet contains no name, contact, company, raw path, or verbatim
 quote that could identify a customer.

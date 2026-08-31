@@ -117,9 +117,9 @@ path.
 
 These lesson deliverables default to the **working (local)** zone. To
 **share** them — so they travel via `git pull` — the operator passes
-`--share` and the calling agent promotes the markdown to
-`kai/library/lessons/<goal-slug>/<source-slug>/` with frontmatter (raw snapshots and
-audio never promote — regenerable).
+`--share` and the calling agent publishes the markdown to
+`<project-root>/<publication-root>/lessons/<goal-slug>/<source-slug>/` with
+durable asset metadata. Raw snapshots and audio remain private and regenerable.
 
 ## Login pause pattern
 
@@ -384,8 +384,9 @@ If the agent hits a cap, it should:
 - ❌ Leaving raw HTML tags in the markdown output — clean it or drop
   it.
 - ❌ Auto-committing anything, or hand-patching `.gitignore`. The `.kai/runs/`
-  working root is ignored centrally; markdown is local by default and shared
-  by promotion to `kai/library/lessons/`. The agent never runs git.
+  working root is ignored centrally; markdown is private by default and shared
+  by publication to `<project-root>/<publication-root>/lessons/`. The agent
+  never runs git.
 - ❌ Bypassing the login-pause pattern by guessing creds.
 - ❌ Inferring content for sections that didn't render. Always write
   `_Content not extracted: <reason>_`.
@@ -400,7 +401,7 @@ When the skill finishes a run:
    `module.md` or has a `failed:` reason listed.
 3. The run lives under the gitignored `.kai/runs/learn/` run root; no
    per-folder `.gitignore` patching is done. Markdown defaults to local;
-   promote to `kai/library/lessons/` with `--share`.
+   publish to `<project-root>/<publication-root>/lessons/` with `--share`.
 4. The calling agent receives: run folder path, unit count, word
    count, question count, and any partial / failure flags.
 5. No commits, no audio generation, no auto-cleanup. The user owns

@@ -282,7 +282,7 @@ Keep raw exports, user/account/channel identifiers, exact confidential spend,
 and small-cell details local. For coordinated work, write the minimum aggregate
 brief to:
 
-`kai/initiatives/<slug>/artifacts/growth/<item-id>.md`
+`.kai/state/initiatives/<slug>/artifacts/growth/<item-id>.md`
 
 Use:
 

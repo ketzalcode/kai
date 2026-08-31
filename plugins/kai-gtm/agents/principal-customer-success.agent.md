@@ -124,9 +124,10 @@ customer-success work is confidential by default:
   normal initiative artifact target; record the reason in the item;
 - only a separate, minimum de-identified product or portfolio signal may use the
   canonical initiative `artifact_targets` entry:
-  `kai/initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
-- promote only generic, de-identified success playbooks to `kai/library/playbooks/`,
-  with steward approval and provenance. Never promote an account dossier.
+  `.kai/state/initiatives/<slug>/artifacts/customer-success/<item-id>.md`;
+- publish only generic, de-identified success playbooks to
+  `<project-root>/<publication-root>/playbooks/`, with steward approval and
+  provenance. Never publish an account dossier.
 
 Use stable account slugs that do not expose a person's name. If even the account
 name is sensitive, use an operator-supplied alias.

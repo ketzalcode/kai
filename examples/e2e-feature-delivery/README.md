@@ -18,32 +18,30 @@ node scripts/workspace-doctor.mjs --root examples/e2e-feature-delivery
 ## What's here
 
 ```text
-.kai/manifest.json                                  schema 2, repository mode
-kai/coordination/ACTIVE.md                          what the team is on
-kai/coordination/BOARD.md                           derived index
-kai/coordination/items/csv-export-api.md            shipped
-kai/coordination/items/csv-export-ui.md             in-review, awaiting QA
-kai/coordination/items/csv-export-scheduling.md     proposed, never built
-kai/coordination/threads/csv-export-api.md          need -> prod, no skipped state
-kai/coordination/threads/csv-export-ui.md           design review, QA pending
-kai/initiatives/INDEX.md
-kai/initiatives/csv-export/artifacts/brief.md       the accepted need
-kai/initiatives/csv-export/artifacts/decision.md    streaming vs. file, with the
+.kai/manifest.json                                  schema 3, shared mode
+.kai/state/ACTIVE.md                          what the team is on
+.kai/state/BOARD.md                           derived index
+.kai/state/items/csv-export-api.md            shipped
+.kai/state/items/csv-export-ui.md             in-review, awaiting QA
+.kai/state/items/csv-export-scheduling.md     proposed, never built
+.kai/state/threads/csv-export-api.md          need -> prod, no skipped state
+.kai/state/threads/csv-export-ui.md           design review, QA pending
+.kai/state/initiatives/INDEX.md
+.kai/state/initiatives/csv-export/artifacts/brief.md       the accepted need
+.kai/state/initiatives/csv-export/artifacts/decision.md    streaming vs. file, with the
                                                     rejected options and a
                                                     revisit trigger
-kai/initiatives/csv-export/artifacts/design-api.md  the endpoint design
-kai/initiatives/csv-export/artifacts/design-ui.md   the approved UI design
-kai/initiatives/csv-export/artifacts/ship-log.md    readiness verdict, deploy
+.kai/state/initiatives/csv-export/artifacts/design-api.md  the endpoint design
+.kai/state/initiatives/csv-export/artifacts/design-ui.md   the approved UI design
+.kai/state/initiatives/csv-export/artifacts/ship-log.md    readiness verdict, deploy
                                                     handoff, production
                                                     verification
 ```
 
-Note what is **absent**: no `kai/library/` types and no `.kai/runs/` areas. Those
-two output-only lanes are created on first write, so this workspace contains
-only the ones it actually used — and it used neither. The doctor reports it
-healthy anyway; an absent output lane is not a defect. `kai/personal/` is absent
-for a different reason: it is gitignored everywhere, so it never appears in a
-committed snapshot even though onboarding does seed it.
+Note what is **absent**: no public `docs/kai/` artifact and no `.kai/runs/`,
+`.kai/review/`, `.kai/archive/`, or `.kai/personal/` content. Publication is
+intentional rather than automatic, and the private lanes are ignored in shared
+mode. Their absence is not a defect.
 
 The commit SHAs (`4f1c8ae`, `9b2d017`) belong to the fictional `reporting-service`
 and `web` repositories this workspace describes; they do not resolve in the kai

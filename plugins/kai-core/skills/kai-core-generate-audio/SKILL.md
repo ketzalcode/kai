@@ -10,7 +10,7 @@ argument-hint: "optional source path or single .md file"
 
 Convert markdown into narrated audio in English + Spanish so the user
 can listen while moving. Sister to bongo's `kai-core-generate-audio` skill — but
-bongo bakes in Microsoft-work paths (`kai/library/dev-designs/`); this one
+bongo bakes in Microsoft-work paths (`<publication-root>/dev-designs/`); this one
 stays **cwd-relative** so you can run it from any project.
 
 Wraps the [lectoria](https://github.com/RubenSaucedo/lectoria) CLI
@@ -63,7 +63,7 @@ and Linux where `pwsh` is available.
 
 **Use bongo's `kai-core-generate-audio` skill instead when:**
 - The user is working in the bongo repo and means their dev-designs.
-  bongo's defaults (`kai/library/dev-designs/` -> `kai/library/audio/`) are
+  bongo's defaults (`<publication-root>/dev-designs/` -> `<publication-root>/audio/`) are
   more convenient there.
 
 ## Examples
@@ -118,7 +118,7 @@ assistant: [runs: pwsh <kai-core-plugin>/scripts/generate-audio.ps1 -Source .kai
 6. **Tell the user where the audio landed**: by default `./audio/`
    relative to their cwd. Audio is heavy and regenerable — the `.kai/runs/`
    working root is gitignored wholesale, and `*.mp3`/`audio/` stay ignored
-   even inside `kai/library/`, so audio never bloats the repo (see
+   even inside `<publication-root>/`, so audio never bloats the repo (see
    `kai-core-workspace-conventions`).
 
 ## Failure modes

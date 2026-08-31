@@ -259,12 +259,12 @@ Resolve the workspace via `kai-core-workspace-conventions`.
 
 - **Ad-hoc / standalone**: `.kai/runs/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
 - **Coordinated (initiative)**: the bundle writes to
-  `kai/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
+  `.kai/state/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
   knowledge` and a `kai-core-work-coordination` handoff.
-- **Reusable direction** promotes through the standard steward-approved library
-  flow to `kai/library/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`. Existing media
-  is referenced from `media_manifest.json`, never copied into the committed
-  bundle; heavy binaries stay under ignored `.kai/runs/`.
+- **Reusable direction** publishes through the standard approval flow to
+  `<project-root>/<publication-root>/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
+  Existing media is referenced from `media_manifest.json`, never copied into
+  the published bundle; heavy binaries stay under ignored `.kai/runs/`.
 
 ## Voicing
 

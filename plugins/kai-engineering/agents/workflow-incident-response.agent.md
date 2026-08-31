@@ -185,9 +185,9 @@ credentials or unnecessary sensitive payloads.
 The sanitized durable artifact is:
 
 - initiative-owned:
-  `kai/initiatives/<slug>/artifacts/incidents/<item-id>.md`;
+  `.kai/state/initiatives/<slug>/artifacts/incidents/<item-id>.md`;
 - unaffiliated:
-  `kai/library/investigations/<incident-id>/incident-record.md`.
+  `<project-root>/<publication-root>/reports/incidents/<incident-id>.md`.
 
 During active response, keep the detailed record local and put only sanitized
 status/decision metadata in coordination. At CLOSE, write the sanitized incident
@@ -332,11 +332,12 @@ next_role: workflow-incident-response
 touches:
   - incident-command:<environment>:<target>
 artifact_targets:
-  - kai/initiatives/<slug>/artifacts/incidents/<item-id>.md
+  - .kai/state/initiatives/<slug>/artifacts/incidents/<item-id>.md
 ```
 
 For an unaffiliated incident, set the sole `artifact_targets` entry to
-`kai/library/investigations/<incident-id>/incident-record.md`.
+`project:<project-id>:docs/kai/reports/incidents/<incident-id>.md` when that
+project's configured `publication_root` is `docs/kai`.
 
 Explicit operator invocation or an evidence-backed active-impact handoff from
 `workflow-support-triage`, `workflow-ship`, `principal-security`, or

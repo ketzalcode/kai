@@ -37,7 +37,7 @@ update, a pure problem write-up with no proposal yet).
   latency, operability, lock-in)? Or are the rejected options
   strawmanned?
 - **The obvious missing alternatives.** Hunt specifically for:
-  - **compose vs build** — is there an existing kai/library/service/internal
+  - **compose vs build** — is there an existing <publication-root>/service/internal
     component that already does this?
   - **buy vs build** — was a vendor/managed option weighed?
   - **defer to platform** — should this live one layer down (the

@@ -252,9 +252,9 @@ trip-up section.
 Folder: `.kai/runs/lessons/<goal-slug>/<NN>-tutor-<slug>/`
 
 **Zone & promotion (see `kai-core-workspace-conventions`).** A lesson is **personal
-growth**, so it drafts ephemeral here and graduates to **`kai/personal/lessons/`**
-(gitignored, yours across machines) when worth keeping — *not* to
-`kai/library/`. Only `--share` it into `kai/library/lessons/` when the lesson is
+growth**, so it drafts ephemeral here and graduates to **`.kai/personal/lessons/`**
+(gitignored) when worth keeping — not to project publication. Only `--share`
+it into `<project-root>/<publication-root>/lessons/` when the lesson is
 genuinely team-relevant work knowledge.
 
 Where:
@@ -500,7 +500,8 @@ concepts (CAP theorem, B-trees, French `passé composé`), you don't
 need to ground — your existing knowledge is the source.
 
 If the operator has a recent AI researcher briefing under
-`kai/library/briefings/` that's relevant, glob and read it; that's a
+`<project-root>/<publication-root>/briefings/` that is relevant, glob and read
+it; that is a
 higher-signal input than fresh web search.
 
 ### 3. Plan the lesson (in your head, briefly)

@@ -68,7 +68,7 @@ personal  -> archived | discarded
 | `draft` | Selected for review but not accepted or authoritative. |
 | `working` | Durable initiative-owned material still being developed. |
 | `published` | Accepted at its canonical durable path and eligible to be cited as current when validity permits. |
-| `personal` | Durable operator-private or personal operational material under `kai/personal/`; never a team publication by default. |
+| `personal` | Durable operator-private or personal operational material under `.kai/personal/`; never a team publication by default. |
 | `archived` | Preserved history that is not a current working authority. |
 | `retracted` | Preserved at its canonical path but explicitly unsafe or incorrect; the reason is mandatory. |
 | `discarded` | Intentionally removed scratch, draft, or operator-authorized personal output; team-facing working or published assets cannot be discarded. |
@@ -132,7 +132,7 @@ durability: durable              # ephemeral | working | durable | published
 completion_authority: principal-product-manager
 validity_owner: principal-data-analytics
 artifact_targets:
-  - kai/initiatives/retention/artifacts/research/churn.md
+  - .kai/state/initiatives/retention/artifacts/research/churn.md
 ```
 
 Rules:
@@ -168,7 +168,7 @@ initiative: retention-2026
 produced_by: principal-data-analytics
 created: 2026-08-28
 revision: 1
-source_artifact: kai/initiatives/retention-2026/artifacts/research/churn.md
+source_artifact: .kai/state/initiatives/retention-2026/artifacts/research/churn.md
 target: retention decision
 
 disposition:
@@ -231,7 +231,7 @@ remain separate from this asset verdict.
 The producer does not self-accept a team-facing durable asset unless the
 operator explicitly records that exception. Personal operational state is the
 bounded exception: derived agenda, inbox, proactive, consultation, and identity
-maintenance under `kai/personal/` may name the owning personal role as
+maintenance under `.kai/personal/` may name the owning personal role as
 completion authority when it records facts or operator-supplied preferences
 rather than making a decision on the operator's behalf. Personal decisions,
 recommendations, and learning-path commitments still require the operator or a
@@ -302,30 +302,33 @@ change at those paths:
 .kai/runs/<run>                 scratch or draft
         |
         v
-kai/initiatives/<slug>/...      working or published-in-place
+.kai/state/initiatives/<slug>/...      working initiative record
         |
         v
-kai/library/<type>/             promoted cross-initiative authority
+<project-root>/<publication-root>/...  accepted project authority
 
-kai/personal/...                personal operator-private state
+.kai/personal/...                personal operator-private state
+.kai/review/...                  selected material awaiting acceptance
+.kai/archive/...                 closed operational history
 ```
 
 Rules:
 
 1. Scratch and raw evidence stay under `.kai/runs/`.
-2. Draft review material remains in the run folder until accepted; schema 2 has
-   no separate `kai/review/` lane.
-3. An accepted initiative asset may publish in place. Steward-approved
-   cross-initiative promotion uses `kai/library/<type>/`; under schema 2 the
-   initiative source remains read-only provenance and the library path becomes
-   canonical for reuse. The ratified future workspace contract may replace
-   this with move-only publication only when its path migration ships.
-4. `published` requires `completion.verdict: accepted` for the exact revision.
-5. `personal` assets stay under `kai/personal/` and follow that lane's privacy
+2. Drafts selected for review move to `.kai/review/<class>/<item-id>/`.
+   Design options use `.kai/review/designs/<item-id>/options.html`.
+3. Initiative artifacts remain private working records under `.kai/state/`.
+   Acceptance does not publish them automatically.
+4. Intentional publication writes the accepted decision, specification, or
+   report under the target project's configured `publication_root`. The public
+   path becomes canonical; the private source remains provenance or moves to
+   `.kai/archive/` at closure.
+5. `published` requires `completion.verdict: accepted` for the exact revision.
+6. `personal` assets stay under `.kai/personal/` and follow that lane's privacy
    and ownership rules; they are never promoted automatically.
-6. Published durable assets are archived, superseded, retired, or retracted;
+7. Published durable assets are archived, superseded, retired, or retracted;
    never discarded.
-7. Binaries and sensitive raw evidence remain governed by their owning domain
+8. Binaries and sensitive raw evidence remain governed by their owning domain
    contract and do not become safe to commit merely because text metadata
    exists.
 
@@ -376,9 +379,9 @@ RETRACT WITH <reason>
 DISCARD                         # scratch or draft only
 ```
 
-Published assets remain at their canonical paths. Moving operational item and
-thread records to the ratified future `.kai/archive/` lane is gated on the
-separate workspace-corpus migration; this contract does not create that path.
+Published assets remain at their canonical project paths. Closed operational
+records may move to `.kai/archive/` only after `ACTIVE.md`, the initiative
+index, deliverables, and summary no longer depend on their live locations.
 
 ## Migration rule
 

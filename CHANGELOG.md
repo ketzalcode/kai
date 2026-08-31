@@ -4,6 +4,42 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [3.0.0] - 2026-08-31
+
+### Added
+
+- **Three explicit workspace storage modes.** `external` leaves no Kai files in
+  the project, `repo-local` keeps an ignored `.kai/`, and `shared` permits
+  trackable coordination state while keeping runs, review material, archives,
+  and personal state private.
+- **Registry-backed external discovery.** `$KAI_HOME/workspaces.json` binds
+  absolute project roots to external workspace roots and `workspace_id`.
+  `workspace-doctor --adopt`, `--forget`, and `--registry` manage and inspect
+  the binding. Registry and manifest disagreement fails closed.
+- **Explicit project publication.** Each manifest project binding carries a
+  `publication_root`, normally `docs/kai`, with templates for decisions,
+  specifications, and reports.
+
+### Changed
+
+- **Workspace schema 3 removes the visible `kai/` working corpus.** Live
+  coordination and initiatives move to `.kai/state/`; personal state moves to
+  `.kai/personal/`; review-ready drafts and closed operational history have
+  dedicated `.kai/review/` and `.kai/archive/` lanes.
+- **All shipped agents and skills use the private/public boundary.** Working
+  artifacts stay private until accepted, design options use
+  `.kai/review/designs/<item-id>/options.html`, and public paths resolve through
+  the selected project rather than the workspace root.
+- **Workspace validation now checks schema-3 roots, project bindings, storage
+  mode Git behavior, and external registry pairing.**
+
+### Removed
+
+- **The repository's tracked dogfood workspace.** Root `.kai/` and `kai/`
+  operational records are removed from the source tree. Current durable
+  workspace and asset-lifecycle decisions are published under `docs/kai/`;
+  prior operational history remains available through Git and pull requests.
+
 ## [2.2.0] - 2026-08-31
 
 ### Added
@@ -3193,6 +3229,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[3.0.0]: https://github.com/RubenSaucedo/kai/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/RubenSaucedo/kai/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/RubenSaucedo/kai/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/RubenSaucedo/kai/compare/v1.1.0...v2.0.0

@@ -204,19 +204,19 @@ an ADR-style record to:
   engineering artifacts together.
 
 **Initiative gating (see `kai-core-workspace-conventions`).** Before deciding, glance at
-`kai/coordination/ACTIVE.md`. If this decision lives inside the active initiative's
+`.kai/state/ACTIVE.md`. If this decision lives inside the active initiative's
 `scope` (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and weigh options against it — then stamp `initiative: <slug>`
 in the promoted frontmatter. If it's a side investigation or an unrelated
 component, load nothing and work context-free.
 
-**Zone & promotion (see `kai-core-workspace-conventions`):** `decision.md` defaults
-to the **library** zone. Write the working draft at the path above — the
+**Draft and publication (see `kai-core-workspace-conventions`):** Write the
+working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,
-so you never manage `.gitignore` yourself — then promote the curated record
-to `<workspace-root>/kai/library/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target-slug>/decision.md`
-with library frontmatter so the decision travels via `git pull`. Keep it local-only if
-the operator passes `--local`.
+so you never manage `.gitignore` yourself — then publish the accepted record
+to `<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target-slug>/decision.md`
+with durable asset metadata so the decision travels via `git pull`. Keep it
+private when the operator does not approve publication.
 
 You also inherit **`build-diagrams`** — a `decision.md` carries **at least
 one diagram** of the structure the call turns on, drawn from the standard

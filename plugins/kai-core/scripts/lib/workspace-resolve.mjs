@@ -1,80 +1,207 @@
-// The one workspace-root resolver every kai CLI defers to.
+// Shared workspace discovery for every kai CLI.
 //
-// Before this module, `observe-subagent`/`observe-watch` each grew their own
-// upward walk (accepting a bare `.kai/` OR a bare `.git` as a stopping point),
-// while `activity`/`work-status` did no resolution at all -- just whatever
-// `--root` or `process.cwd()` happened to be. Three shapes answering the same
-// question is exactly the drift kai-core-workspace-conventions exists to prevent, so
-// this is the single place that answer lives.
+// Resolution precedence:
+//   1. exact explicit root
+//   2. exact KAI_WORKSPACE_ROOT
+//   3. in-tree .kai/manifest.json
+//   4. machine-local project registry
 //
-// Precedence, highest first:
-//   1. an explicit root the caller already knows (e.g. --root) -- validated
-//      directly at that exact path, never searched upward. An explicit root
-//      is a caller assertion "this IS the workspace"; silently retargeting an
-//      ancestor when the caller named a non-workspace subdirectory would be a
-//      surprise, not a convenience, so this fails instead of guessing.
-//   2. KAI_WORKSPACE_ROOT -- an absolute, directly-validated override for a
-//      caller with no natural cwd (a detached hook, a CI job). Same rule as
-//      an explicit root: it must name the workspace root itself and is never
-//      searched upward, so an operator override can never silently escape to
-//      an unrelated ancestor workspace.
-//   3. an upward search from cwd -- the one tier that walks, because cwd is
-//      ambient (a subagent or a terminal can be anywhere inside the tree) and
-//      was never asserted to already be the root.
-//
-// A bare `.kai/` directory or a bare `.git` no longer qualify on their own --
-// `.kai/manifest.json` is the one bootstrap sentinel the conventions define,
-// and this module does not add registry or schema semantics on top of it: it
-// only answers "is there a manifest here", nothing about its contents.
-//
-// Node built-ins only; imported by checks CI runs with no install step.
+// The registry is what makes an external workspace rediscoverable without
+// leaving kai files in the project repository.
 
-import { existsSync } from 'node:fs';
-import { dirname, isAbsolute, join, parse as parsePath, resolve as resolvePath } from 'node:path';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { homedir } from 'node:os';
+import {
+  dirname, isAbsolute, join, parse as parsePath, relative, resolve as resolvePath, sep,
+} from 'node:path';
 
 export const MANIFEST_REL = join('.kai', 'manifest.json');
+export const REGISTRY_FILE = 'workspaces.json';
+const MAX_SEARCH_DEPTH = 64;
+
+function normalizePath(path) {
+  let existing = resolvePath(path);
+  const tail = [];
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) break;
+    tail.unshift(existing.slice(parent.length).replace(/^[\\/]+/, ''));
+    existing = parent;
+  }
+  const canonical = existsSync(existing) ? realpathSync(existing) : existing;
+  const resolved = resolvePath(canonical, ...tail);
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+}
+
+function isWithin(parent, candidate) {
+  const rel = relative(normalizePath(parent), normalizePath(candidate));
+  return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+}
 
 function hasManifest(dir) {
   return existsSync(join(dir, MANIFEST_REL));
 }
 
-// Bounded so a symlink loop or a filesystem with no real root cannot spin
-// forever -- 64 levels is far past any real repository nesting depth.
-const MAX_SEARCH_DEPTH = 64;
+function readJson(path) {
+  try {
+    return { ok: true, value: JSON.parse(readFileSync(path, 'utf8')) };
+  } catch (error) {
+    return { ok: false, reason: `${path} is not valid JSON: ${error.message}` };
+  }
+}
+
+export function defaultKaiHome(env = process.env) {
+  return resolvePath(env.KAI_HOME || join(homedir(), '.kai'));
+}
+
+export function registryPath(env = process.env) {
+  return join(defaultKaiHome(env), REGISTRY_FILE);
+}
 
 export function searchUpward(startDir) {
   let dir = resolvePath(startDir);
-  for (let i = 0; i < MAX_SEARCH_DEPTH; i++) {
+  for (let depth = 0; depth < MAX_SEARCH_DEPTH; depth++) {
     if (hasManifest(dir)) return dir;
-    const up = dirname(dir);
-    if (up === dir || up === parsePath(dir).root) return null;
-    dir = up;
+    const parent = dirname(dir);
+    if (parent === dir || parent === parsePath(dir).root) return null;
+    dir = parent;
   }
   return null;
+}
+
+export function readWorkspaceManifest(root) {
+  const path = join(resolvePath(root), MANIFEST_REL);
+  if (!existsSync(path)) {
+    return { ok: false, reason: `no ${MANIFEST_REL} in workspace root "${resolvePath(root)}"` };
+  }
+  const parsed = readJson(path);
+  if (!parsed.ok) return parsed;
+  if (!parsed.value || typeof parsed.value !== 'object' || Array.isArray(parsed.value)) {
+    return { ok: false, reason: `${path} must contain a JSON object` };
+  }
+  return { ok: true, path, manifest: parsed.value };
+}
+
+export function loadWorkspaceRegistry(env = process.env) {
+  const path = registryPath(env);
+  if (!existsSync(path)) return { ok: true, path, entries: [] };
+  const parsed = readJson(path);
+  if (!parsed.ok) return parsed;
+  if (parsed.value?.schema_version !== 1 || !Array.isArray(parsed.value.workspaces)) {
+    return { ok: false, reason: `${path} must contain schema_version 1 and a workspaces array` };
+  }
+  for (const [index, entry] of parsed.value.workspaces.entries()) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return { ok: false, reason: `${path} workspaces[${index}] must be an object` };
+    }
+    for (const key of ['project_root', 'workspace_root', 'workspace_id']) {
+      if (typeof entry[key] !== 'string' || !entry[key].trim()) {
+        return { ok: false, reason: `${path} workspaces[${index}] is missing string "${key}"` };
+      }
+    }
+    if (!isAbsolute(entry.project_root) || !isAbsolute(entry.workspace_root)) {
+      return { ok: false, reason: `${path} workspaces[${index}] project_root and workspace_root must be absolute` };
+    }
+  }
+  return { ok: true, path, entries: parsed.value.workspaces };
+}
+
+function validateRegisteredWorkspace(entry, projectRoot) {
+  if (!entry || typeof entry !== 'object') {
+    return { ok: false, reason: 'workspace registry contains a non-object entry' };
+  }
+  for (const key of ['project_root', 'workspace_root', 'workspace_id']) {
+    if (typeof entry[key] !== 'string' || !entry[key].trim()) {
+      return { ok: false, reason: `workspace registry entry is missing "${key}"` };
+    }
+  }
+  if (!isAbsolute(entry.project_root) || !isAbsolute(entry.workspace_root)) {
+    return { ok: false, reason: 'workspace registry paths must be absolute' };
+  }
+  if (normalizePath(entry.project_root) !== normalizePath(projectRoot)) {
+    return { ok: false, reason: 'workspace registry project path changed during resolution' };
+  }
+
+  const manifestResult = readWorkspaceManifest(entry.workspace_root);
+  if (!manifestResult.ok) return manifestResult;
+  const manifest = manifestResult.manifest;
+  if (manifest.schema_version !== 3) {
+    return {
+      ok: false,
+      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3`,
+    };
+  }
+  if (manifest.storage_mode !== 'external') {
+    return {
+      ok: false,
+      reason: `registered workspace manifest storage_mode must be "external", found ${JSON.stringify(manifest.storage_mode)}`,
+    };
+  }
+  if (manifest.workspace_id !== entry.workspace_id) {
+    return {
+      ok: false,
+      reason: `workspace registry id "${entry.workspace_id}" does not match manifest id ${JSON.stringify(manifest.workspace_id)}`,
+    };
+  }
+  if (!Array.isArray(manifest.projects)) {
+    return { ok: false, reason: 'registered workspace manifest has no projects array' };
+  }
+  const bindsProject = manifest.projects.some((project) => {
+    if (!project || typeof project.path !== 'string') return false;
+    const manifestProject = isAbsolute(project.path)
+      ? project.path
+      : resolvePath(entry.workspace_root, project.path);
+    return normalizePath(manifestProject) === normalizePath(projectRoot);
+  });
+  if (!bindsProject) {
+    return {
+      ok: false,
+      reason: `workspace manifest "${manifestResult.path}" does not bind registered project "${projectRoot}"`,
+    };
+  }
+  return { ok: true, root: realpathSync(entry.workspace_root) };
+}
+
+export function findRegisteredWorkspace(cwd, env = process.env) {
+  const registry = loadWorkspaceRegistry(env);
+  if (!registry.ok) return registry;
+  const matches = registry.entries
+    .filter((entry) => typeof entry?.project_root === 'string' && isAbsolute(entry.project_root))
+    .filter((entry) => isWithin(entry.project_root, cwd))
+    .sort((left, right) => normalizePath(right.project_root).length - normalizePath(left.project_root).length);
+  if (!matches.length) return { ok: true, root: null, registryPath: registry.path };
+
+  const projectRoot = realpathSync(matches[0].project_root);
+  const duplicate = matches.filter(
+    (entry) => normalizePath(entry.project_root) === normalizePath(projectRoot),
+  );
+  if (duplicate.length > 1) {
+    return {
+      ok: false,
+      reason: `workspace registry has ${duplicate.length} entries for project "${projectRoot}"`,
+    };
+  }
+  const validated = validateRegisteredWorkspace(matches[0], projectRoot);
+  if (!validated.ok) return validated;
+  return { ok: true, root: validated.root, projectRoot, registryPath: registry.path };
 }
 
 /**
  * Resolve the workspace root a CLI should operate against.
  *
- * @param {object} [opts]
- * @param {string|null} [opts.explicitRoot] - a caller-known root (e.g. --root).
- *   Wins over the env override and cwd; validated directly at that exact
- *   path, never searched upward -- a named non-workspace directory fails
- *   rather than silently resolving to an ancestor.
- * @param {string} [opts.cwd] - the upward-search start when no explicit root
- *   is given. Defaults to `process.cwd()`.
- * @param {NodeJS.ProcessEnv} [opts.env] - defaults to `process.env`; injectable
- *   so tests never have to mutate real process state, and so a caller that
- *   must never honor an operator override (the subagent hook) can pass `{}`.
- * @returns {{ok: true, root: string, source: 'explicit'|'env'|'search'} | {ok: false, reason: string}}
+ * @returns {{ok: true, root: string, source: 'explicit'|'env'|'search'|'registry', projectRoot?: string}
+ *   | {ok: false, reason: string}}
  */
 export function resolveWorkspaceRoot(opts = {}) {
   const { explicitRoot, cwd = process.cwd(), env = process.env } = opts;
 
   if (explicitRoot) {
-    const dir = resolvePath(explicitRoot);
-    if (hasManifest(dir)) return { ok: true, root: dir, source: 'explicit' };
-    return { ok: false, reason: `no ${MANIFEST_REL} in explicit root "${dir}" -- an explicit root is validated directly, never searched upward` };
+    const root = resolvePath(explicitRoot);
+    if (hasManifest(root)) return { ok: true, root, source: 'explicit' };
+    return {
+      ok: false,
+      reason: `no ${MANIFEST_REL} in explicit root "${root}" -- explicit roots are validated directly and never searched upward`,
+    };
   }
 
   const envRoot = env.KAI_WORKSPACE_ROOT;
@@ -82,13 +209,28 @@ export function resolveWorkspaceRoot(opts = {}) {
     if (!isAbsolute(envRoot)) {
       return { ok: false, reason: `KAI_WORKSPACE_ROOT must be an absolute path, got "${envRoot}"` };
     }
-    if (!hasManifest(envRoot)) {
-      return { ok: false, reason: `KAI_WORKSPACE_ROOT "${envRoot}" has no ${MANIFEST_REL} -- not an onboarded kai workspace` };
+    const root = resolvePath(envRoot);
+    if (!hasManifest(root)) {
+      return { ok: false, reason: `KAI_WORKSPACE_ROOT "${root}" has no ${MANIFEST_REL}` };
     }
-    return { ok: true, root: envRoot, source: 'env' };
+    return { ok: true, root, source: 'env' };
   }
 
   const found = searchUpward(cwd);
   if (found) return { ok: true, root: found, source: 'search' };
-  return { ok: false, reason: `no kai workspace found -- looked for ${MANIFEST_REL} from "${resolvePath(cwd)}" upward` };
+
+  const registered = findRegisteredWorkspace(cwd, env);
+  if (!registered.ok) return registered;
+  if (registered.root) {
+    return {
+      ok: true,
+      root: registered.root,
+      source: 'registry',
+      projectRoot: registered.projectRoot,
+    };
+  }
+  return {
+    ok: false,
+    reason: `no kai workspace found from "${resolvePath(cwd)}"; no in-tree manifest or registry binding exists`,
+  };
 }

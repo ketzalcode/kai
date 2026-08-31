@@ -1,0 +1,10 @@
+.kai/runs/
+.kai/review/
+.kai/archive/
+.kai/personal/
+.kai/activity.jsonl
+.kai/activity.jsonl.1
+.kai/observed.jsonl
+.kai/observed.jsonl.1
+.kai/observer-consent
+.kai/local.json

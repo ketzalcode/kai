@@ -137,8 +137,8 @@ genuinely apply.
 Two you must actively check for rather than wait to be told:
 
 - **A user-visible surface changed** → before/after screenshots are required.
-  QA evidence under `.kai/runs/` and `kai/library/**/screenshots/` is gitignored
-  and dies with the run folder, so it cannot be linked by path — upload it
+  QA screenshots under `.kai/runs/` are private runtime evidence and die with
+  the run folder, so they cannot be linked by path — upload them
   (`github-pr-media`). If no before/after exists, request it rather than opening
   a UI PR without it.
 - **The change alters a structure or flow** → include a small `build-diagrams`
