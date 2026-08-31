@@ -34,7 +34,7 @@ discovers custom instructions from *your* repository root and working directory
 because `plugin.json` has no instruction component type.
 
 So kai's shared operating contract ships as a **skill**,
-[`kai-core-team-operating-rules`](../skills/kai-core-team-operating-rules/SKILL.md), and every
+[`kai-core-team-operating-rules`](../plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md), and every
 agent opens with an `**Inherits:**` line naming its contracts plus a verbatim
 directive to load them:
 

@@ -15,7 +15,7 @@ tools: ["read", "edit", "search", "ask_user", "execute", "agent", "read_agent", 
 > progress; never call something `shipped` that a human has not deployed and
 > verified; and escalate to `@operator` only for a decision no kai role owns.
 
-<!-- >>> kai core dependency guard (managed by pack-preview) >>>
+<!-- >>> kai core dependency guard (managed by pack-preview) >>> -->
 
 ## Core preflight — before anything else
 

@@ -49,9 +49,11 @@ export const DEGRADED_BLOCK_REL = 'scripts/lib/degraded-block.txt';
 export const PACKS_DIR = 'plugins';
 
 export const GUARANTEE_REGION_OPEN =
-  '<!-- >>> kai core dependency guard (managed by pack-preview) >>>';
+  '<!-- >>> kai core dependency guard (managed by pack-preview) >>> -->';
 export const GUARANTEE_REGION_CLOSE =
   '<!-- <<< kai core dependency guard <<< -->';
+const LEGACY_GUARANTEE_REGION_OPEN =
+  '<!-- >>> kai core dependency guard (managed by pack-preview) >>>';
 
 // The host executes hooks.json itself, on every subagent, for everyone who
 // installs the plugin that ships it. Two installed packs carrying it means the
@@ -656,7 +658,12 @@ export const guaranteeRegion = (root = REPO_ROOT) => [
 // original pack generator used; malformed half-regions fail closed.
 export function syncGuaranteeRegion(body, root = REPO_ROOT) {
   const normalized = normalizeLF(body);
-  const openAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
+  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
+  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
+  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
+  const openMarker = canonicalOpenAt !== -1
+    ? GUARANTEE_REGION_OPEN
+    : legacyOpenAt !== -1 ? LEGACY_GUARANTEE_REGION_OPEN : null;
   const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
   if ((openAt === -1) !== (closeAt === -1)) {
     throw new Error('agent has only one core dependency guard marker');
@@ -679,7 +686,8 @@ export function syncGuaranteeRegion(body, root = REPO_ROOT) {
     }
     return injectBlocks(normalized, [region]);
   }
-  if (normalized.indexOf(GUARANTEE_REGION_OPEN, openAt + 1) !== -1
+  if (normalized.indexOf(GUARANTEE_REGION_OPEN, openAt + openMarker.length) !== -1
+    || normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN, openAt + openMarker.length) !== -1
     || normalized.indexOf(GUARANTEE_REGION_CLOSE, closeAt + 1) !== -1) {
     throw new Error('agent has more than one core dependency guard region');
   }
@@ -690,7 +698,9 @@ export function syncGuaranteeRegion(body, root = REPO_ROOT) {
 
 export function removeGuaranteeRegion(body) {
   const normalized = normalizeLF(body);
-  const openAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
+  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
+  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
+  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
   const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
   if (openAt === -1 && closeAt === -1) return normalized;
   if (openAt === -1 || closeAt === -1 || closeAt < openAt) {

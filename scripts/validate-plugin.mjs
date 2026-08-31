@@ -61,6 +61,11 @@ const rel = (p) => p.slice(ROOT.length + 1).replace(/\\/g, '/');
 const agentFiles = sourceAgentFiles(ROOT);
 const skillFiles = sourceSkillFiles(ROOT);
 for (const e of sourceFileErrors({ agents: agentFiles, skills: skillFiles })) err(e.file, e.msg);
+for (const retiredRoot of ['agents', 'skills']) {
+  if (existsSync(join(ROOT, retiredRoot))) {
+    err(`${retiredRoot}/`, 'retired root source tree has reappeared — agents and skills are authoritative only inside plugins/');
+  }
+}
 
 for (const pack of PACK_ORDER) {
   const pluginRoot = join(ROOT, 'plugins', packPluginName(pack));

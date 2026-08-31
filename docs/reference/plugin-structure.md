@@ -32,6 +32,13 @@ root `AGENTS.md` never loads in a consumer workspace — see
 [Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
 for why the shared rules ship as a skill instead.
 
+Agent and skill files are edited only in their owning plugin. Department agents
+carry one region bounded by `kai core dependency guard` HTML-comment markers;
+`npm run pack-preview -- --write` may replace only that region. Do not hand-edit
+inside the markers. Core agents carry no guard region. Skill companion files may
+live beside `SKILL.md`; derived-file cleanup is restricted to manifests, locks,
+hooks, and routed `scripts/`.
+
 ## How a skill reaches a session
 
 A skill is not loaded because it exists. It is loaded on demand, and there are

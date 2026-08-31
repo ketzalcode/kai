@@ -5,7 +5,7 @@ title: Make plugin-local agents and skills authoritative
 initiative: area-plugins
 milestone: surface-rename
 delivery_class: product-change
-state: in_progress
+state: in-progress
 resume_state: null
 priority: 2
 owner: principal-swe-infra

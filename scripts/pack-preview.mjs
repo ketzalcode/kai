@@ -260,6 +260,13 @@ const isSourceKey = (key) => {
   return entry?.kind === 'agent' || entry?.kind === 'skill';
 };
 
+const isDerivedOwnedKey = (key) => {
+  const entry = parseGeneratedKey(key);
+  if (!entry) return false;
+  if (['manifest', 'package', 'lock', 'hooks'].includes(entry.kind)) return true;
+  return entry.kind === 'other' && key.startsWith(`${entry.dir}/scripts/`);
+};
+
 const derivedFiles = (files) => new Map([...files].filter(([key]) => !isSourceKey(key)));
 
 function managedAgentDrift(root) {
@@ -304,7 +311,7 @@ export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
     if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs:    ${relPath}`);
   }
   for (const key of walkCommitted(base)) {
-    if (!expected.has(key) && !isSourceKey(key)) drift.push(`unexpected: ${key}`);
+    if (!expected.has(key) && isDerivedOwnedKey(key)) drift.push(`unexpected: ${key}`);
   }
   return { ok: drift.length === 0, drift };
 }
@@ -339,7 +346,7 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
     writeFileSync(abs, content);
   }
   for (const key of walkCommitted(base)) {
-    if (files.has(key) || isSourceKey(key)) continue;
+    if (files.has(key) || !isDerivedOwnedKey(key)) continue;
     rmSync(join(base, ...key.split('/')), { force: true });
   }
   return { written: files.size, managed, dir: base };
@@ -389,6 +396,8 @@ function selfTest() {
     'the agent carries the exact refusal token the test asserts on');
   ok(injected.includes(GUARANTEE_REGION_OPEN) && injected.includes(GUARANTEE_REGION_CLOSE),
     'the dependency guard is bounded by markers so it can change without replacing the source body');
+  ok(GUARANTEE_REGION_OPEN.endsWith('-->') && GUARANTEE_REGION_CLOSE.endsWith('-->'),
+    'both guard markers are closed HTML comments, so the instructions between them remain visible');
   ok(/^---\n/.test(injected) && !injected.includes('\r'),
     'frontmatter still opens the file and endings are uniform LF, so the host can load it');
 
@@ -654,6 +663,17 @@ function selfTest() {
     writeFileSync(victim, `${readFileSync(victim, 'utf8')}tampered`);
     ok(checkSelected().length > 0,
       'a hand-edit to a committed tree is caught as drift');
+    const companion = join(scratch, 'kai-personal', 'skills', 'demo-zoom', 'reference.md');
+    mkdirSync(dirname(companion), { recursive: true });
+    writeFileSync(companion, 'authoritative companion\n');
+    const staleScript = join(scratch, 'kai-personal', 'scripts', 'stale-generated.mjs');
+    mkdirSync(dirname(staleScript), { recursive: true });
+    writeFileSync(staleScript, 'stale\n');
+    writeCommitted({ root: ROOT, base: scratch, version: '9.9.9-selftest' });
+    ok(existsSync(companion),
+      '--write preserves skill companion files outside the derived-file ownership boundary');
+    ok(!existsSync(staleScript),
+      '--write still removes stale routed scripts that are inside its ownership boundary');
   } catch (e) {
     ok(false, `committed-tree check round-trip threw: ${e.message}`);
   } finally {
