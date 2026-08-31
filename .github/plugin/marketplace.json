@@ -6,15 +6,15 @@
   },
   "metadata": {
     "description": "Kai core and department packs published by RubenSaucedo.",
-    "version": "1.1.0",
+    "version": "2.0.0",
     "installSurface": "packs"
   },
   "plugins": [
     {
       "name": "kai-core",
-      "source": "./packs/kai-core",
+      "source": "./plugins/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -35,9 +35,9 @@
     },
     {
       "name": "kai-personal",
-      "source": "./packs/kai-personal",
+      "source": "./plugins/kai-personal",
       "description": "kai personal department pack — the personal roles, over a required kai-core.",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -58,9 +58,9 @@
     },
     {
       "name": "kai-product",
-      "source": "./packs/kai-product",
+      "source": "./plugins/kai-product",
       "description": "kai product department pack — the product roles, over a required kai-core.",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -81,9 +81,9 @@
     },
     {
       "name": "kai-engineering",
-      "source": "./packs/kai-engineering",
+      "source": "./plugins/kai-engineering",
       "description": "kai engineering department pack — the engineering roles, over a required kai-core.",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -104,9 +104,9 @@
     },
     {
       "name": "kai-gtm",
-      "source": "./packs/kai-gtm",
+      "source": "./plugins/kai-gtm",
       "description": "kai gtm department pack — the gtm roles, over a required kai-core.",
-      "version": "1.1.0",
+      "version": "2.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"

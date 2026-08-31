@@ -1,8 +1,26 @@
 # Changelog
 
 All notable changes to the **kai** plugin are documented here. The format is
-based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Being pre-1.0,
-minor bumps (`0.x`) carry features and patch bumps carry fixes.
+based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
+follow semantic versioning.
+
+## [2.0.0] - 2026-08-31
+
+### Changed
+
+- **The committed product tree is now `plugins/`.** The five installable plugin
+  directories moved from `packs/` without changing their contents, names, or
+  marketplace install commands. Generator, validation, CI, direct-development,
+  and marketplace source paths now derive from the new tree name.
+- **The repository layout now distinguishes product from workspace state.**
+  `plugins/` contains installable product trees; root `agents/` and `skills/`
+  remain transitional canonical sources until the next source-authority
+  refactor; `.kai/` and `kai/` remain this repository's own dogfood workspace.
+
+### Removed
+
+- **The deprecated `packs/` repository path.** Direct subdirectory installs and
+  local `--plugin-dir` development commands must use `plugins/<plugin>`.
 
 ## [1.1.0] - 2026-08-28
 
@@ -3130,6 +3148,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[2.0.0]: https://github.com/RubenSaucedo/kai/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/RubenSaucedo/kai/compare/v1.0.6...v1.1.0
 [1.0.6]: https://github.com/RubenSaucedo/kai/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/RubenSaucedo/kai/compare/v1.0.4...v1.0.5

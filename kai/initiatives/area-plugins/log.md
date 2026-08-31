@@ -193,3 +193,10 @@ capability-loss disclosure table, the three named carve-out clauses, and
 **observed** gate output including `--check` byte parity. **Nothing is called
 shipped, and warning disappearance remains an operator observation nobody has
 made.** No implementation file was modified by this pass.
+
+## 2026-08-31-0914 — Source authority overridden
+
+The operator directed that plugin-local agents and skills become authoritative,
+`packs/` become `plugins/`, and compatibility with the old root monolith layout
+is not required. The physical rename ships first; root source removal follows
+after byte-neutrality is proven.

@@ -97,7 +97,7 @@ document. The terminal gets the result and the link.
 ## Releasing this plugin
 
 These steps apply **only when your change modifies the kai plugin repo itself**
-(`agents/`, `skills/`, `scripts/`, a committed `packs/` tree, or `plugin.json`) —
+(`agents/`, `skills/`, `scripts/`, a committed `plugins/` tree, or `plugin.json`) —
 never to work done in a consumer workspace. Users pull updates with
 `copilot plugin update <pack>@kai-plugins`, so the version is descriptive
 metadata, not an update gate;
@@ -122,7 +122,7 @@ Any PR that changes shipped plugin behavior must, in the **same PR**:
 4. Run `npm test`, then open the PR.
 
 CI **enforces** all of this: a behavior-sensitive change (`agents/`, `skills/`,
-`scripts/`, a committed `packs/` tree, or the dependency manifests) that lacks a
+`scripts/`, a committed `plugins/` tree, or the dependency manifests) that lacks a
 version bump plus changelog/README updates fails the `release-guard` gate, and the
 static checks reject a missing changelog section/link, a stale README stamp, a
 stale generated catalog, or a `package.json` ↔ `package-lock.json` mismatch. Docs-

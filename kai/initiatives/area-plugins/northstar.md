@@ -38,6 +38,7 @@ scope:
   current:
     - allowlist-repair
     - decisions-locked
+    - surface-rename
   out_of_scope:
     - Rewriting or re-scoping agent and skill content. This initiative relocates agents and re-contracts loading; it does not redesign personas or prose. "Areas" is a packaging word, and packaging work that starts editing agent bodies has left scope. Read with the A1 generator-derived-identity-string exception, not against it.
     - Adding agents or capabilities. No area gets a new agent to make it feel complete, and no area is justified by an agent that does not exist yet. A dedicated principal project/program manager agent is explicitly deferred, not authorized.
@@ -71,7 +72,11 @@ principles:
     - "Several installed areas compose without ambiguity: unique skill IDs, exactly one provider per skill, exactly one hooks.json owner, generated-root determinism, and byte-parity --check preserved."
     - No 1.0.4 user is silently stranded, and old and new plugin identities never coexist in one workspace. The derived legacy-rollback forbidden set continues to cover every publishable identity, old and new.
     - Small reviewable PRs and lockstep versions. Each milestone is independently shippable and reversible; a milestone may span more than one release, but every release must be revertible on its own.
-    - Root agents/ and skills/ stay the single source of truth. Plugin trees are generated and committed, never hand-carved.
+    - Plugin-local agents/ and skills/ become the single source of truth. During
+      the staged migration, root agents/ and skills/ remain temporary canonical
+      inputs only until the source-authority item deletes them. Derived
+      manifests, dependency locks, routed scripts, and managed guarantee blocks
+      remain generated and byte-checked.
     - No new plugin identity is published under a marketplace name or an operating contract that has already been decided to change.
     - pack-split is shipped and closed. Nothing under kai/initiatives/pack-split/** is modified, and no rename rewrites historical records.
     - "BOUNDED EXCEPTION — kai-directors standalone. kai-directors is an executive routing layer, not a department: the human is CEO and its two agents are the front doors over the other plugins. With no core installed it MAY perform read-only discovery and routing, and MAY offer to install core. It MUST NOT (a) claim leases, (b) create canonical coordination records, or (c) impersonate full delivery. With core installed it gains durable orchestration. This exception is bounded to kai-directors and to exactly those three prohibitions; it is #6 restated at that plugin's boundary, not a relaxation of it. No other plugin may cite it, it grants nothing beyond read-only routing plus an install offer, and widening it — or extending it to a second plugin — is a fresh operator decision, not a design refinement."
@@ -183,10 +188,9 @@ milestones:
       - The folder move and the marketplace rename do not land in the same PR.
     success_measures:
       - No 1.0.4 user is stranded.
-    required_items: []   # UNMINTED — no item record exists for this milestone today.
-                         # See "Required-items status" below. This milestone cannot
-                         # close until items are minted; an empty list is a gate, not
-                         # a formality.
+    required_items:
+      - item: area-plugins-surface-tree-rename
+        state: shipped
   - id: area-taxonomy-split
     outcome: The nine-plugin topology is realised — kai-personal dissolved into kai-learning, kai-assistant and kai-wellness; kai-core decomposed into kai-directors, kai-project-management and a technical core — with every new identity born at @kai, under plugins/, carrying the final dual-path contract.
     acceptance:
@@ -223,6 +227,19 @@ milestones:
 ---
 
 # Area plugins — nine installable areas over an optional kai-core
+
+## Operator amendment — 2026-08-31
+
+The operator retired the root-source architecture and waived compatibility with
+the old repository layout. The committed product tree moves from `packs/` to
+`plugins/`, then plugin-local agent and skill files become authoritative and the
+root `agents/`, `skills/`, and monolith manifest are removed. This supersedes
+the former root-source non-negotiable without changing the settled nine-plugin
+membership.
+
+The repository's `kai/` and `.kai/` directories are not plugin copies or legacy
+install surfaces. They remain this repository's dogfood workspace and continue
+under the separately approved workspace-corpus migration.
 
 Thin core for the initiative. The authoritative decision history — the accepted
 product scope and every amendment A1–A21 — lives in

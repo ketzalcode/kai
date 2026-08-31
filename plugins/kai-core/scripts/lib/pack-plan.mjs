@@ -46,7 +46,7 @@ export const DEGRADED_BLOCK_REL = 'scripts/lib/degraded-block.txt';
 // The default committed-tree root. release-guard classifies changes under it as
 // behavior-sensitive, the validator discovers manifests under it, and the
 // generator writes the reviewed committed slice there.
-export const PACKS_DIR = 'packs';
+export const PACKS_DIR = 'plugins';
 
 // The host executes hooks.json itself, on every subagent, for everyone who
 // installs the plugin that ships it. Two installed packs carrying it means the
@@ -662,8 +662,8 @@ export function degradedBlockErrors({
   return errs;
 }
 
-// Every committed plugin manifest: the root monolith plus any pack tree under
-// packs/. The validator applies version parity across the root monolith and
+// Every committed plugin manifest: the root monolith plus any plugin tree under
+// plugins/. The validator applies version parity across the root monolith and
 // every committed generated pack it discovers here.
 export function discoverManifests(root = REPO_ROOT, packsDir = PACKS_DIR) {
   const found = [];

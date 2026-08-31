@@ -17,6 +17,7 @@ kai/
 ├── LICENSE             # MIT
 ├── agents/             # one .agent.md per persona
 ├── skills/             # one folder per skill (each with SKILL.md)
+├── plugins/            # committed installable plugin trees
 ├── scripts/            # dependency-free Node ESM: validators, doctor, generators
 ├── docs/               # this documentation set
 ├── examples/           # committed, CI-validated example workspaces
@@ -127,9 +128,10 @@ kai follows [semantic versioning](https://semver.org). Updates reach users via
 plugin from the repo, so the version is descriptive metadata, **not** an update
 gate. Keep it honest:
 any change to shipped plugin behavior bumps the version **in the same PR**. CI
-**enforces** this — a change under `agents/`, `skills/`, `scripts/`, or the
-dependency manifests that lacks a version bump plus changelog/README updates
-fails the `release-guard` gate; docs- and test-only changes stay exempt.
+**enforces** this — a change under `agents/`, `skills/`, `scripts/`,
+`plugins/`, or the dependency manifests that lacks a version bump plus
+changelog/README updates fails the `release-guard` gate; docs- and test-only
+changes stay exempt.
 
 | Change | Pre-1.0 (`0.x`) | Post-1.0 |
 | ------ | --------------- | -------- |
@@ -143,7 +145,7 @@ Cutting `1.0.0` is a deliberate stability milestone, not automatic.
 ### What `1.0.0` is reserved for
 
 **`1.0.0` is the release in which packs become the install surface** — where
-`kai` stops being a single plugin and `kai-core` plus department packs replace
+`kai` stops being a single plugin and `kai-core` plus department plugins replace
 it (see [the pack architecture proposal](../proposals/pack-architecture.md) and
 issue #29). Nothing else takes the major.
 
@@ -243,7 +245,7 @@ push.
    `copilot plugin uninstall kai`; without the explicit mode or complete
    evidence, no reverse edit is offered. Run the steps it prints; the doctor
    itself changes nothing.
-6. Publish a forward pack restoration in a later patch by returning
+6. Publish a forward plugin restoration in a later patch by returning
    `metadata.installSurface` to `packs`; never leave both surfaces listed.
 
 ---

@@ -177,11 +177,11 @@ first.
 **Install directly from GitHub (deprecated by the host):**
 
 ```text
-copilot plugin install RubenSaucedo/kai:packs/kai-core
-copilot plugin install RubenSaucedo/kai:packs/kai-personal
-copilot plugin install RubenSaucedo/kai:packs/kai-product
-copilot plugin install RubenSaucedo/kai:packs/kai-engineering
-copilot plugin install RubenSaucedo/kai:packs/kai-gtm
+copilot plugin install RubenSaucedo/kai:plugins/kai-core
+copilot plugin install RubenSaucedo/kai:plugins/kai-personal
+copilot plugin install RubenSaucedo/kai:plugins/kai-product
+copilot plugin install RubenSaucedo/kai:plugins/kai-engineering
+copilot plugin install RubenSaucedo/kai:plugins/kai-gtm
 ```
 
 This still works and is a single command, but the CLI prints:
@@ -199,7 +199,7 @@ install. Tracked in
 ```powershell
 git clone https://github.com/RubenSaucedo/kai.git
 cd kai
-copilot --plugin-dir packs/kai-core --plugin-dir packs/kai-personal --plugin-dir packs/kai-product --plugin-dir packs/kai-engineering --plugin-dir packs/kai-gtm
+copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-gtm
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when

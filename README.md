@@ -35,8 +35,12 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v1.1.0` — all **56 agents and 52 skills** are published across five packs for
+`v2.0.0` — all **56 agents and 52 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
+
+The committed install trees now live under `plugins/`. Marketplace install
+names are unchanged in this release; the move removes the misleading `packs/`
+repository name before plugin-local agents and skills become authoritative.
 
 Every role now loads one universal asset-lifecycle contract. Generated work
 separates execution completion from artifact disposition and validity, requires
@@ -53,9 +57,10 @@ error.
 > it. The guide verifies replacement availability, requires the monolith to be
 > gone, installs core first, and checks every step.
 
-**All five packs are published: `kai-core` + `kai-personal` + `kai-product` +
+**All five plugins are published: `kai-core` + `kai-personal` + `kai-product` +
 `kai-engineering` + `kai-gtm`.**
-Root remains the canonical source; generation copies agents, skills, routed
+Root remains the canonical source during this transition; generation copies
+agents, skills, routed
 scripts, each script's local module closure, and the fleet hooks exactly once.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
 Copilot copies plugin files but does not run npm, so
@@ -79,7 +84,7 @@ before a pack install, coexistence is refused rather than warned through, and
 evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
-contract-version skew. The marketplace publishes all five packs; the monolith is no longer listed.
+contract-version skew. The marketplace publishes all five plugins; the monolith is no longer listed.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -212,7 +217,7 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's full 56-agent, 51-skill surface is published across
+The repository's full 56-agent, 52-skill surface is published across
 `kai-core`, personal, product, engineering, and go-to-market.
 
 You do not need to learn them. Ask a front door for an outcome and it routes.
