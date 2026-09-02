@@ -8,12 +8,13 @@ follow semantic versioning.
 
 ### Added
 
-- **`kai-core-create-agent` authoring contract.** The user-invocable skill
+- **`kai-core-create-agent` authoring contract.** The focused user-invocable skill
   distinguishes durable roles from workflows, personas, instructors, and
   reusable skills; requires a permanent role to earn its slot; and defines
   authority, execution profile, model policy, least-privilege tools, inherited
-  skills, handoffs, acceptance cases, canonical anatomy, and migration rules
-  before an agent is created.
+  skills, handoffs, acceptance cases, and canonical anatomy before one agent is
+  created or refined. Detailed taxonomy, template, and Kai-repository guidance
+  load progressively from reference files.
 - **Staged durable-role naming enforcement.** New role identities use
   `<provider-family>-<posture>-<scope>`, with provider families tied to the five
   installable plugins and controlled `lead`, `builder`, `reviewer`, `operator`,
@@ -22,6 +23,9 @@ follow semantic versioning.
 
 ### Changed
 
+- **Agent Skills no longer require the custom-agent `tools` field.** New skills
+  follow the Agent Skills schema and inherit host capabilities; existing skills
+  that declare `tools` remain validated for compatibility.
 - **Agent model frontmatter follows one portable Kai shape.** An optional
   `model` must be one quoted scalar string; YAML collections and non-string
   scalars are rejected until measured host behavior supports another shape

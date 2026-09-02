@@ -20,8 +20,8 @@ plugin's own contributors. Anything load-bearing belongs here.
 ## Role taxonomy
 
 New durable-role identities use `<provider-family>-<posture>-<scope>`, as
-defined by `kai-core-create-agent`. The provider family names installation and
-broad accountability; posture names authority:
+defined by the `kai-core-create-agent` taxonomy reference. The provider family
+names installation and broad accountability; posture names authority:
 
 - **`*-lead-*`** roles own expensive domain decisions or role-level acceptance.
   `lead` is authority, not seniority, creativity, or model prestige.

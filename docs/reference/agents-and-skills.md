@@ -214,7 +214,7 @@ Classify, name, scope, and validate a new or redesigned Kai role before it joins
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | Designs, creates, or redesigns Kai agents with explicit identity, authority, reasoning profile, tools, skills, handoffs, and validation. |
+| [`kai-core-create-agent`](../../plugins/kai-core/skills/kai-core-create-agent/SKILL.md) | Creates or refines one Kai agent from a tested identity, authority boundary, execution profile, routing contract, and focused instruction set. |
 
 ### Engineering craft
 

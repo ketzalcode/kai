@@ -81,10 +81,11 @@ export function loaderErrors(kind, id, fm) {
 
   if (!stripQuotes(fm.description)) out.push('frontmatter `description` is missing or empty');
 
-  // Kai requires a non-empty explicit list so least privilege is declared
-  // rather than inherited through the host's omission or wildcard semantics.
+  // Custom agents use `tools` to control host capabilities. Agent Skills do not
+  // define this field, but existing Kai skills may still carry it; validate it
+  // when present without requiring it on new skills.
   if (fm.tools === undefined) {
-    out.push('kai requires an explicit non-empty frontmatter `tools` array');
+    if (kind === 'agent') out.push('kai agents require an explicit non-empty frontmatter `tools` array');
   } else if (!isInlineArray(fm.tools)) {
     out.push('frontmatter `tools` must be an inline array like [a, b]');
   } else if (isEmptyInlineArray(fm.tools)) {

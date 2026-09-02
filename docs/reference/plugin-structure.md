@@ -39,7 +39,7 @@ inside the markers. Core agents carry no guard region. Skill companion files may
 live beside `SKILL.md`; derived-file cleanup is restricted to manifests, locks,
 hooks, and routed `scripts/`.
 
-## Creating or redesigning an agent
+## Creating or refining an agent
 
 Run the user-invocable `kai-core-create-agent` skill before adding a role. It
 classifies the need as a durable role, workflow, persona, instructor, or reusable
@@ -51,8 +51,8 @@ New durable roles use `<provider-family>-<posture>-<scope>`. Provider families
 are `core`, `personal`, `prod`, `eng`, and `gtm`; postures are `lead`, `builder`,
 `reviewer`, `operator`, `coordinator`, and `advisor`. Existing seniority-based
 identities remain valid during the staged migration, but they are not templates
-for new roles. Migrate agents by classifying their behavior, never by replacing
-prefixes mechanically.
+for new roles. This skill handles one agent at a time; a fleet-wide identity
+migration belongs to a separate procedure.
 
 ## How a skill reaches a session
 
