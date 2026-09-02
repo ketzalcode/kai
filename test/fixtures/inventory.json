@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 52
+    "skills": 53
   },
   "agents": [
     "creative-video-director",
@@ -75,6 +75,7 @@
     "kai-core-asset-lifecycle",
     "kai-core-content-grounding",
     "kai-core-contract-v1",
+    "kai-core-create-agent",
     "kai-core-decision-brief",
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
@@ -139,6 +140,10 @@
     {
       "name": "generate-html-lesson",
       "argument_hint": "<path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]"
+    },
+    {
+      "name": "kai-core-create-agent",
+      "argument_hint": "[design|create|redesign] <agent need or existing agent id>"
     },
     {
       "name": "kai-core-fleet-observation",

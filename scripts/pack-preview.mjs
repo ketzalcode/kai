@@ -44,7 +44,8 @@ import {
   planAssets, planAssetClosure, assetOwnershipErrors, hooksAssignmentErrors,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern,
+  guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
+  agentTaxonomyErrors, requiresCoordinatedRunContracts,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, sourceFileErrors, sourcePlacementErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
@@ -1090,6 +1091,9 @@ function selfTest() {
   ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'principal-gone' })], {})
     .some((m) => /orchestrated reference to agent `principal-gone` resolves to no pack/.test(m)),
   'an orchestrated dispatch of an agent that no longer exists fails by name');
+  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'eng-buidler-frontend' })], {})
+    .some((m) => /orchestrated reference to agent `eng-buidler-frontend` resolves to no pack/.test(m)),
+  'an orchestrated dispatch with a mistyped new posture fails as a dangling agent reference');
   ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'persona-self' })], { 'agent:persona-self': ['personal'] })
     .length === 0,
   'but dispatching a real agent in another pack is allowed: a referral degrades, it does not fail to load');
@@ -1347,6 +1351,36 @@ function selfTest() {
   // --- one family list for every agent-shaped token ---------------------
   ok(rosterAgents.every((id) => agentShapedPattern().test(id)),
     'every shipped agent id matches the agent-shaped pattern the reference checks use (one family list, not two)');
+  ok(agentShapedPattern().test('eng-builder-frontend'),
+    'the agent-shaped reference pattern recognizes the new provider-posture-scope grammar');
+  ok(!agentShapedPattern().test('core-workspace-conventions')
+    && !agentShapedPattern().test('prod-roadmap'),
+  'generic provider-domain terms are not misclassified as agent ids without a controlled posture');
+  ok(agentCandidatePattern().test('eng-buidler-frontend'),
+    'a provider-family dispatch with a mistyped posture remains an agent candidate and fails as unresolved');
+  ok(agentTaxonomyErrors({ id: 'eng-builder-frontend', pack: 'engineering' }).length === 0,
+    'a new durable-role id with matching provider, posture, and scope passes');
+  ok(agentTaxonomyErrors({ id: 'eng-creator-frontend', pack: 'engineering' })
+    .some((m) => /posture.*not one of/.test(m)),
+  'an ungoverned posture fails by name');
+  ok(agentTaxonomyErrors({ id: 'eng-builder-frontend', pack: 'product' })
+    .some((m) => /belongs to kai-engineering/.test(m)),
+  'a durable-role family placed in the wrong provider fails by name');
+  ok(agentTaxonomyErrors({ id: 'prod-lead', pack: 'product' })
+    .some((m) => /family>-<posture>-<scope/.test(m)),
+  'a durable-role id without scope fails by name');
+  ok(agentTaxonomyErrors({ id: 'eng-builder-fe', pack: 'engineering' })
+    .some((m) => /full responsibility words/.test(m)),
+  'an abbreviated durable-role scope fails by name');
+  ok(agentTaxonomyErrors({ id: 'principal-new-role', pack: 'engineering' })
+    .some((m) => /migration-only/.test(m)),
+  'a new agent cannot extend a retired family during staged migration');
+  ok(agentTaxonomyErrors({ id: 'principal-swe-frontend', pack: 'engineering' }).length === 0,
+    'an existing retired-family id remains valid during staged migration');
+  ok(requiresCoordinatedRunContracts('eng-builder-frontend')
+    && requiresCoordinatedRunContracts('core-coordinator-staff')
+    && !requiresCoordinatedRunContracts('persona-ux-first-time-user'),
+  'new durable roles retain inherited workspace and activity obligations while personas do not');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;

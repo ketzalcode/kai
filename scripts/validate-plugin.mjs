@@ -39,7 +39,8 @@ import {
   PREFLIGHT_BLOCK_REL, DEGRADED_BLOCK_REL, CONTRACT_SKILL, REFUSAL,
   HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
-  hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern,
+  hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
+  requiresCoordinatedRunContracts,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
@@ -92,6 +93,10 @@ for (const pack of PACK_ORDER) {
 const allFiles = [...agentFiles, ...skillFiles];
 const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
+
+for (const f of agentFiles) {
+  for (const msg of agentTaxonomyErrors(f)) err(f.rel, msg);
+}
 
 // ---------------------------------------------------------------------------
 // Frontmatter + host-loader contract (shared with host-contract.mjs)
@@ -168,10 +173,9 @@ const refScanFiles = [
   ...publicDocFiles(),
 ].filter(existsSync);
 
-// Backtick tokens with an agent-role prefix are unambiguous agent references;
-// no domain terms start with these prefixes. The family list is the partition's
-// (AGENT_FAMILIES), so adding a family teaches every reference check at once
-// rather than leaving this one silently narrower than the generator's.
+// Backtick tokens matching either a supported kind prefix or the complete new
+// provider-posture-scope prefix are agent references. Requiring the posture
+// segment keeps generic domain terms such as `core-workspace` out of this scan.
 const AGENT_REF = agentRefPattern();
 // A kai identifier is kebab-case with at least one hyphen (skill/agent shape).
 const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
@@ -213,7 +217,6 @@ for (const p of refScanFiles) {
 // ---------------------------------------------------------------------------
 const BASELINE_SKILL = 'kai-core-team-operating-rules';
 const ASSET_LIFECYCLE_SKILL = 'kai-core-asset-lifecycle';
-const COORDINATING_FAMILIES = ['director', 'principal', 'workflow'];
 
 // Agents that do bounded, delegated work must declare that they are running.
 //
@@ -339,13 +342,13 @@ for (const agent of agentFiles) {
   if (!seen.has(ASSET_LIFECYCLE_SKILL)) {
     err(r, `must inherit \`${ASSET_LIFECYCLE_SKILL}\` (every run must classify generated assets or explicitly declare none)`);
   }
-  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0]) && !seen.has('kai-core-workspace-conventions')) {
-    err(r, 'coordinating roles must inherit `kai-core-workspace-conventions`');
+  if (requiresCoordinatedRunContracts(agent.id) && !seen.has('kai-core-workspace-conventions')) {
+    err(r, 'durable and coordinating roles must inherit `kai-core-workspace-conventions`');
   }
-  if (COORDINATING_FAMILIES.includes(agent.id.split('-')[0])
+  if (requiresCoordinatedRunContracts(agent.id)
     && !seen.has(ACTIVITY_SKILL)
     && !ACTIVITY_EXEMPT.has(agent.id)) {
-    err(r, `coordinating roles must inherit \`${ACTIVITY_SKILL}\`, or be listed in ACTIVITY_EXEMPT with a reason `
+    err(r, `durable and coordinating roles must inherit \`${ACTIVITY_SKILL}\`, or be listed in ACTIVITY_EXEMPT with a reason `
       + '(the host observes no plugin agent, so this log is the only evidence the role ran)');
   }
   if (ACTIVITY_EXEMPT.has(agent.id) && seen.has(ACTIVITY_SKILL)) {

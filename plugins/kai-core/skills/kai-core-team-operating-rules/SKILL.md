@@ -19,6 +19,26 @@ plugin's own contributors. Anything load-bearing belongs here.
 
 ## Role taxonomy
 
+New durable-role identities use `<provider-family>-<posture>-<scope>`, as
+defined by `kai-core-create-agent`. The provider family names installation and
+broad accountability; posture names authority:
+
+- **`*-lead-*`** roles own expensive domain decisions or role-level acceptance.
+  `lead` is authority, not seniority, creativity, or model prestige.
+- **`*-builder-*`** roles implement within accepted scope and decisions. They
+  retain local reversible judgment and never self-approve independent review.
+- **`*-reviewer-*`** roles issue independent, revision-bound verdicts and do not
+  implement fixes in the same review run.
+- **`*-operator-*`** roles execute stateful operational procedures and capture
+  evidence without crossing human-only production, credential, spend, send,
+  merge, or publish gates.
+- **`*-coordinator-*`** roles route, sequence, reconcile, and escalate without
+  replacing domain judgment.
+- **`*-advisor-*`** roles recommend without lifecycle or acceptance authority.
+
+The existing families below remain binding while agents migrate one at a time;
+they are not templates for new durable roles:
+
 - **`director-*`** agents orchestrate, delegate, reconcile, and escalate. They
   do not substitute their judgment for the roles they direct.
 - **`principal-*`** agents own domain judgment and act within their lane.

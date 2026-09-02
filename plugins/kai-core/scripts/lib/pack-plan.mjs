@@ -63,11 +63,12 @@ const LEGACY_GUARANTEE_REGION_OPEN =
 export const HOOKS_FILE = 'hooks.json';
 export const HOOKS_OWNER = 'core';
 
-// Every one of the 56 agents belongs to exactly one pack. `core` is the org spine
-// and workspace machinery — the roles meaningful with no department installed.
-// Insertion order is the emission order (see PACK_ORDER); it matches the locked
-// partition doc's evidence, so do not reorder without re-locking that artifact.
-export const PACKS = {
+// The migration baseline freezes every id that existed before the
+// provider-posture-scope taxonomy. New agents go in NEW_AGENT_IDS, including
+// new workflows/personas/instructors; adding a retired-family id there fails.
+// Keeping the baseline separate makes "no new principal/director/creative
+// agents" enforceable without blocking one-at-a-time migration.
+const MIGRATION_BASELINE_PACKS = {
   core: [
     'director-chief-of-staff', 'director-executive-assistant', 'workflow-workspace-init',
     'workflow-self-check', 'workflow-proactive-scan', 'workflow-weekly-pulse',
@@ -100,6 +101,19 @@ export const PACKS = {
   ],
 };
 
+export const NEW_AGENT_IDS = {
+  core: [],
+  engineering: [],
+  product: [],
+  gtm: [],
+  personal: [],
+};
+
+export const PACKS = Object.fromEntries(
+  Object.keys(MIGRATION_BASELINE_PACKS)
+    .map((pack) => [pack, [...MIGRATION_BASELINE_PACKS[pack], ...NEW_AGENT_IDS[pack]]]),
+);
+
 // Deterministic pack emission order: core first, then the departments in the
 // partition's declared order. Fixed so a generated tree and a validator walk
 // list the same packs in the same sequence every run.
@@ -117,6 +131,7 @@ export const SKILL_OWNER_OVERRIDES = {
   // line, so inheritance cannot place it. Core provides it: a pack agent asks
   // core whether core is there.
   [CONTRACT_SKILL]: 'core',
+  'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
   'review-dependencies': 'engineering',
@@ -1025,21 +1040,88 @@ const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
 // resolves to nothing is a renamed or deleted role; a token that is not shaped
-// like one (`post-only`) is an output mode, not a reference. The family list is
-// defined once: two independently maintained copies drifted apart before (one
-// omitted `creative`), and the copy that under-scans fails silently.
-export const AGENT_FAMILIES = [
-  'principal', 'workflow', 'director', 'persona', 'instructor', 'creative',
+// like one (`post-only`) is an output mode, not a reference. Baseline families
+// remain recognized during the staged migration. New durable roles use their
+// provider family plus a controlled posture and scope.
+export const ROLE_FAMILY_PACK = Object.freeze({
+  core: 'core',
+  personal: 'personal',
+  prod: 'product',
+  eng: 'engineering',
+  gtm: 'gtm',
+});
+
+export const ROLE_POSTURES = Object.freeze([
+  'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
+]);
+
+const RETIRED_AGENT_FAMILIES = [
+  'principal', 'director', 'creative',
 ];
 
-const FAMILY_ALT = AGENT_FAMILIES.join('|');
+const KIND_AGENT_FAMILIES = [
+  'workflow', 'persona', 'instructor',
+];
+
+export const AGENT_FAMILIES = [
+  ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
+];
+
+const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
+const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
+const ROLE_POSTURE_ALT = ROLE_POSTURES.join('|');
+const AGENT_ID_SOURCE = `(?:(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
+  + `|(?:${ROLE_FAMILY_ALT})-(?:${ROLE_POSTURE_ALT})-[a-z0-9-]+)`;
+const AGENT_CANDIDATE_SOURCE = `(?:(?:${RETIRED_OR_KIND_ALT}|${ROLE_FAMILY_ALT})-[a-z0-9-]+)`;
 
 // Fresh instances, because a shared global regex carries `lastIndex` between
 // callers and would skip matches depending on who scanned first.
-export const agentShapedPattern = () => new RegExp(`^(?:${FAMILY_ALT})-[a-z0-9-]+$`);
-export const agentRefPattern = () => new RegExp(`\`((?:${FAMILY_ALT})-[a-z0-9-]+)\``, 'g');
+export const agentShapedPattern = () => new RegExp(`^${AGENT_ID_SOURCE}$`);
+export const agentCandidatePattern = () => new RegExp(`^${AGENT_CANDIDATE_SOURCE}$`);
+export const agentRefPattern = () => new RegExp(`\`(${AGENT_ID_SOURCE})\``, 'g');
 
 const AGENT_SHAPED = agentShapedPattern();
+const AGENT_CANDIDATE = agentCandidatePattern();
+const RETIRED_AGENT_IDS = new Set(
+  Object.values(MIGRATION_BASELINE_PACKS).flat()
+    .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
+);
+
+// The new grammar can coexist with legacy ids while roles are migrated one or
+// two at a time. Once an id enters a provider-family namespace, however, its
+// posture and placement are enforced immediately.
+export function agentTaxonomyErrors({ id, pack }) {
+  const [family, posture, ...scope] = (id ?? '').split('-');
+  if (RETIRED_AGENT_FAMILIES.includes(family)) {
+    return RETIRED_AGENT_IDS.has(id)
+      ? []
+      : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
+  }
+  if (KIND_AGENT_FAMILIES.includes(family)) return [];
+  if (!(family in ROLE_FAMILY_PACK)) return [];
+
+  const errs = [];
+  if (ROLE_FAMILY_PACK[family] !== pack) {
+    errs.push(`agent family \`${family}-*\` belongs to ${packPluginName(ROLE_FAMILY_PACK[family])}, `
+      + `not ${packPluginName(pack)}`);
+  }
+  if (!ROLE_POSTURES.includes(posture)) {
+    errs.push(`agent posture \`${posture || '(missing)'}\` is not one of: ${ROLE_POSTURES.join(', ')}`);
+  }
+  if (scope.length === 0 || scope.some((part) => !part)) {
+    errs.push('new durable-role ids must use `<family>-<posture>-<scope>`');
+  }
+  if (scope.some((part) => ['fe', 'be', 'swe'].includes(part))) {
+    errs.push('agent scope must use full responsibility words (`frontend`, `backend`, `software`), not `fe`, `be`, or `swe`');
+  }
+  return errs;
+}
+
+export function requiresCoordinatedRunContracts(id) {
+  const [family, posture] = (id ?? '').split('-');
+  if (['director', 'principal', 'workflow'].includes(family)) return true;
+  return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
+}
 
 // A non-markdown asset a shipped instruction invokes. Only top-level scripts/
 // executables qualify: scripts/lib/ is build-internal, and no shipped body tells
@@ -1172,7 +1254,7 @@ export function collectReferences(root = REPO_ROOT) {
     }
     for (const token of dispatchedRefs(body)) {
       if (skillOf.has(token)) { dispatched.add(token); add(from, pack, 'orchestrated', 'skill', token); }
-      else if (agentOf.has(token) || AGENT_SHAPED.test(token)) add(from, pack, 'orchestrated', 'agent', token);
+      else if (agentOf.has(token) || AGENT_CANDIDATE.test(token)) add(from, pack, 'orchestrated', 'agent', token);
     }
     for (const asset of assetRefs(body)) add(from, pack, 'orchestrated', 'asset', asset);
   }

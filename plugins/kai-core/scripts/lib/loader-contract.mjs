@@ -60,6 +60,10 @@ const isEmptyInlineArray = (v) => (v ?? '').replace(/[[\]\s]/g, '') === '';
 // leading `[` catches YAML-valid variants a strict `[...]` match would miss,
 // e.g. `[foo] # comment` or a multiline flow array — all rejected by the host.
 const startsInlineArray = (v) => (v ?? '').trim().startsWith('[');
+const isQuotedString = (v) => {
+  const t = (v ?? '').trim();
+  return (t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"));
+};
 
 export function parseToolList(rawTools) {
   const t = (rawTools ?? '').trim();
@@ -108,6 +112,18 @@ export function loaderErrors(kind, id, fm) {
   if (fm['user-invocable'] !== undefined) {
     const uv = fm['user-invocable'].trim();
     if (uv !== 'true' && uv !== 'false') out.push('frontmatter `user-invocable` must be `true` or `false`');
+  }
+
+  // Kai requires a quoted string so YAML booleans, numbers, nulls, collections,
+  // tags, and aliases cannot masquerade as a portable model identifier.
+  if (fm.model !== undefined) {
+    if (kind !== 'agent') {
+      out.push('frontmatter key `model` is agent-only and not valid on a skill');
+    } else if (!isQuotedString(fm.model)) {
+      out.push('frontmatter `model` must be one quoted scalar string');
+    } else if (!stripQuotes(fm.model)) {
+      out.push('frontmatter `model` is present but empty');
+    }
   }
 
   // Schema separation: the skill-only affordances are invalid on an agent.
