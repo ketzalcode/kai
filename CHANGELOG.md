@@ -26,14 +26,15 @@ follow semantic versioning.
 - **Agent Skills no longer require the custom-agent `tools` field.** New skills
   follow the Agent Skills schema and inherit host capabilities; existing skills
   that declare `tools` remain validated for compatibility.
-- **Agent model frontmatter follows one portable Kai shape.** An optional
-  `model` must be one quoted scalar string; YAML collections and non-string
-  scalars are rejected until measured host behavior supports another shape
-  consistently.
+- **Agent model frontmatter follows one portable Kai shape.** Existing agents
+  may omit `model`; new agents must use the quoted approved model mapped from
+  their execution profile. YAML collections and non-string scalars are
+  rejected until measured host behavior supports another shape consistently.
 - **Agent models come from a reviewed set.** `claude-opus-5` is approved for
   judgment and review; `claude-sonnet-5` is approved for execution, operations,
-  coordination, advisory, procedures, teaching, and simulation. New durable
-  roles also declare the versioned `kai-agent-v1` identity contract.
+  coordination, advisory, procedures, teaching, and simulation. Every new agent
+  also declares the versioned `kai-agent-v1` identity contract, and validator
+  checks keep the shipped taxonomy and model tables aligned with their constants.
 - **The self-check and contributor reference recognize the staged taxonomy.**
   They direct new authoring through `kai-core-create-agent` without pretending
   that the existing fleet has already migrated.

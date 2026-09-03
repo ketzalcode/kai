@@ -48,6 +48,7 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
   agentTaxonomyErrors, requiresCoordinatedRunContracts, agentIdentityContractErrors,
+  agentPromptLimitErrors, agentAuthoringReferenceErrors,
   ROLE_PROFILE_MODELS,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors, sourcePlacementErrors,
@@ -1397,6 +1398,9 @@ function selfTest() {
   'a new agent cannot extend a retired family during staged migration');
   ok(agentTaxonomyErrors({ id: 'principal-swe-frontend', pack: 'engineering' }).length === 0,
     'an existing retired-family id remains valid during staged migration');
+  ok(agentTaxonomyErrors({ id: 'analyst-market', pack: 'engineering' })
+    .some((m) => /family.*not supported/.test(m)),
+  'an agent id from an unsupported family fails with a file-scoped taxonomy error');
   ok(requiresCoordinatedRunContracts('eng-builder-frontend')
     && requiresCoordinatedRunContracts('core-coordinator-staff')
     && !requiresCoordinatedRunContracts('persona-ux-first-time-user'),
@@ -1422,9 +1426,54 @@ function selfTest() {
     fm: { model: '"claude-sonnet-5"' },
   }).some((m) => /requires frontmatter model "claude-opus-5"/.test(m)),
   'a new durable role cannot use an approved model assigned to another profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-security',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
+    fm: { model: '"claude-sonnet-5"' },
+  }).some((m) => /posture `reviewer` requires primary profile `review`/.test(m)),
+  'a durable-role posture cannot select another posture family profile');
+  ok(agentIdentityContractErrors({
+    id: 'workflow-new-release',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** procedure',
+    fm: { model: '"claude-sonnet-5"' },
+  }).length === 0,
+  'a new workflow carries the same identity, profile, and model contract');
+  ok(agentIdentityContractErrors({
+    id: 'persona-new-buyer',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** advisory',
+    fm: { model: '"claude-sonnet-5"' },
+  }).some((m) => /kind `persona` requires primary profile `simulation`/.test(m)),
+  'a new kind-prefixed agent cannot select a profile owned by another kind');
+  ok(agentIdentityContractErrors({
+    id: 'workflow-weekly-pulse',
+    body: '',
+    fm: {},
+  }).length === 0,
+  'an existing kind-prefixed agent remains migration-safe without the new identity contract');
   ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
     && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
   'the approved model set and deterministic profile mapping contain the same identifiers');
+  ok(agentPromptLimitErrors('x'.repeat(30_000)).length === 0
+    && agentPromptLimitErrors('x'.repeat(30_001)).some((m) => /host limit/.test(m)),
+  'the host prompt limit accepts 30,000 characters and rejects the first character over it');
+
+  const authoringRefs = join(ROOT, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references');
+  const taxonomyPath = join(authoringRefs, 'taxonomy.md');
+  const modelSelectionPath = join(authoringRefs, 'model-selection.md');
+  if (existsSync(taxonomyPath) && existsSync(modelSelectionPath)) {
+    const taxonomy = readFileSync(taxonomyPath, 'utf8');
+    const modelSelection = readFileSync(modelSelectionPath, 'utf8');
+    ok(agentAuthoringReferenceErrors({ taxonomy, modelSelection }).length === 0,
+      'the shipped taxonomy and model tables match their validator constants');
+    ok(agentAuthoringReferenceErrors({
+      taxonomy,
+      modelSelection: modelSelection.replace('`claude-opus-5`', '`unreviewed-model`'),
+    }).some((m) => /approved model rows/.test(m)),
+    'a model-selection table drifting from the approved mapping fails by name');
+  } else {
+    ok(false, 'the shipped taxonomy and model references exist for drift checks');
+    ok(false, 'a model-selection drift mutation can run against the shipped reference');
+  }
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;

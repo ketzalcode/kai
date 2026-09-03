@@ -12,12 +12,6 @@ for a new agent or one existing agent from the repository and the user's intent.
 
 This skill handles one agent at a time. Fleet migration is a separate procedure.
 
-## Progressive references
-
-Load each reference only at the step that names it. The Agent Skills
-specification recommends keeping `SKILL.md` under 500 lines and moving detailed
-material into one-level references loaded on demand.
-
 ## Creation sequence
 
 ### 1. Establish the missing responsibility
@@ -45,7 +39,7 @@ Use the taxonomy tables to choose:
 - kind;
 - provider family;
 - posture and scope for a durable role;
-- one primary execution profile.
+- the primary execution profile required by the posture or kind.
 
 Apply the posture tie-break in order. Use the provider whose absence should
 make the role unavailable. Cross-functional collaboration does not make a role
@@ -82,9 +76,7 @@ operator-only actions, or overlapping authority would otherwise be ambiguous.
 
 ### 5. Keep the agent focused
 
-GitHub custom-agent prompts have a 30,000-character host limit but no published
-recommended line count. Kai uses this authoring budget for a new or materially
-refined agent:
+Use this authoring budget for a new or materially refined agent:
 
 | Measure | Target | Refocus threshold |
 |---|---:|---:|

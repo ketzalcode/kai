@@ -40,11 +40,12 @@ import {
   HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
-  requiresCoordinatedRunContracts, agentIdentityContractErrors,
+  requiresCoordinatedRunContracts, agentIdentityContractErrors, agentPromptLimitErrors,
+  agentAuthoringReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
-  PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, sourceFileErrors,
+  PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile,
 } from './lib/pack-plan.mjs';
@@ -111,6 +112,26 @@ for (const f of allFiles) {
 for (const f of agentFiles.filter((entry) => entry.fm)) {
   const body = readFileSync(f.path, 'utf8');
   for (const msg of agentIdentityContractErrors({ id: f.id, body, fm: f.fm })) err(f.rel, msg);
+  for (const msg of agentPromptLimitErrors(body)) err(f.rel, msg);
+}
+
+{
+  const referenceRoot = join(ROOT, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references');
+  const taxonomyPath = join(referenceRoot, 'taxonomy.md');
+  const modelSelectionPath = join(referenceRoot, 'model-selection.md');
+  if (!existsSync(taxonomyPath)) {
+    err(rel(taxonomyPath), 'missing authoring taxonomy reference');
+  }
+  if (!existsSync(modelSelectionPath)) {
+    err(rel(modelSelectionPath), 'missing approved model reference');
+  }
+  if (existsSync(taxonomyPath) && existsSync(modelSelectionPath)) {
+    const taxonomy = readFileSync(taxonomyPath, 'utf8');
+    const modelSelection = readFileSync(modelSelectionPath, 'utf8');
+    for (const msg of agentAuthoringReferenceErrors({ taxonomy, modelSelection })) {
+      err(rel(referenceRoot), msg);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +193,7 @@ const publicDocFiles = () => {
 
 const refScanFiles = [
   ...allFiles.map((f) => f.path),
+  ...skillFiles.flatMap((skill) => skillCompanionFiles(ROOT, skill.id).map((entry) => entry.path)),
   join(ROOT, 'AGENTS.md'),
   join(ROOT, 'README.md'),
   ...publicDocFiles(),

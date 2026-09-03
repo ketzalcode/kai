@@ -6,6 +6,8 @@
 Agent creation selects from this set. It does not choose a new model during the
 task.
 
+## Approved models
+
 | Model identifier | Approved profiles | Purpose |
 |---|---|---|
 | `claude-opus-5` | `judgment`, `review` | Expensive decisions, broad trade-offs, and independent high-precision review. |

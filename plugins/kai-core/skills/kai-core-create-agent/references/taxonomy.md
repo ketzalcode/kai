@@ -87,17 +87,17 @@ Examples of the grammar, not currently shipped identities:
 
 ## Execution profiles
 
-| Profile | Typical posture | Model requirement |
+| Profile | Required posture or kind | Model requirement |
 |---|---|---|
-| `judgment` | lead, some advisors | Strong reasoning across alternatives and trade-offs. |
-| `execution` | builder | Reliable code/tool execution against accepted constraints. |
-| `review` | reviewer | Independent evidence-first analysis and calibrated findings. |
-| `operations` | operator | Reliable stateful procedure and failure handling. |
-| `coordination` | coordinator | Strong context, dependency, and synthesis handling. |
-| `advisory` | advisor | Reasoning proportional to decision cost and uncertainty. |
-| `procedure` | workflow | Efficient instruction following with explicit judgment gates. |
-| `teaching` | instructor | Adaptation proportional to subject complexity. |
-| `simulation` | persona | Fidelity proportional to the represented viewpoint. |
+| `judgment` | `lead`, `advisor` | Strong reasoning across alternatives and trade-offs. |
+| `execution` | `builder` | Reliable code/tool execution against accepted constraints. |
+| `review` | `reviewer` | Independent evidence-first analysis and calibrated findings. |
+| `operations` | `operator` | Reliable stateful procedure and failure handling. |
+| `coordination` | `coordinator` | Strong context, dependency, and synthesis handling. |
+| `advisory` | `advisor` | Reasoning proportional to decision cost and uncertainty. |
+| `procedure` | `workflow` | Efficient instruction following with explicit judgment gates. |
+| `teaching` | `instructor` | Adaptation proportional to subject complexity. |
+| `simulation` | `persona` | Fidelity proportional to the represented viewpoint. |
 
 ## Slot-earning evidence
 

@@ -1076,6 +1076,21 @@ export const ROLE_POSTURES = Object.freeze([
   'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
 ]);
 export const ROLE_IDENTITY_CONTRACT = 'kai-agent-v1';
+export const MODEL_POLICY_VERSION = 'kai-agent-models-v1';
+export const AGENT_PROMPT_HARD_LIMIT = 30_000;
+export const ROLE_POSTURE_PROFILES = Object.freeze({
+  lead: Object.freeze(['judgment']),
+  builder: Object.freeze(['execution']),
+  reviewer: Object.freeze(['review']),
+  operator: Object.freeze(['operations']),
+  coordinator: Object.freeze(['coordination']),
+  advisor: Object.freeze(['judgment', 'advisory']),
+});
+export const KIND_AGENT_PROFILES = Object.freeze({
+  workflow: Object.freeze(['procedure']),
+  persona: Object.freeze(['simulation']),
+  instructor: Object.freeze(['teaching']),
+});
 export const ROLE_PROFILE_MODELS = Object.freeze({
   judgment: 'claude-opus-5',
   review: 'claude-opus-5',
@@ -1101,11 +1116,12 @@ export const AGENT_FAMILIES = [
 ];
 
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
+const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
 const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
 const ROLE_POSTURE_ALT = ROLE_POSTURES.join('|');
 const AGENT_ID_SOURCE = `(?:(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
   + `|(?:${ROLE_FAMILY_ALT})-(?:${ROLE_POSTURE_ALT})-[a-z0-9-]+)`;
-const AGENT_CANDIDATE_SOURCE = `(?:(?:${RETIRED_OR_KIND_ALT}|${ROLE_FAMILY_ALT})-[a-z0-9-]+)`;
+const AGENT_CANDIDATE_SOURCE = `(?:(?:${AGENT_FAMILY_ALT})-[a-z0-9-]+)`;
 
 // Fresh instances, because a shared global regex carries `lastIndex` between
 // callers and would skip matches depending on who scanned first.
@@ -1119,6 +1135,7 @@ const RETIRED_AGENT_IDS = new Set(
   Object.values(MIGRATION_BASELINE_PACKS).flat()
     .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
 );
+const LEGACY_AGENT_IDS = new Set(Object.values(MIGRATION_BASELINE_PACKS).flat());
 
 // The new grammar can coexist with legacy ids while roles are migrated one or
 // two at a time. Once an id enters a provider-family namespace, however, its
@@ -1131,7 +1148,9 @@ export function agentTaxonomyErrors({ id, pack }) {
       : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
   }
   if (KIND_AGENT_FAMILIES.includes(family)) return [];
-  if (!(family in ROLE_FAMILY_PACK)) return [];
+  if (!(family in ROLE_FAMILY_PACK)) {
+    return [`agent family \`${family || '(missing)'}-*\` is not supported`];
+  }
 
   const errs = [];
   if (ROLE_FAMILY_PACK[family] !== pack) {
@@ -1157,17 +1176,19 @@ export function requiresCoordinatedRunContracts(id) {
 }
 
 export function agentIdentityContractErrors({ id, body, fm = {} }) {
-  const family = (id ?? '').split('-')[0];
-  if (!(family in ROLE_FAMILY_PACK)) return [];
+  const [family, posture] = (id ?? '').split('-');
+  const isDurableRole = family in ROLE_FAMILY_PACK;
+  const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !LEGACY_AGENT_IDS.has(id);
+  if (!isDurableRole && !isNewKind) return [];
   const marker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
   const errors = [];
-  if (!(body ?? '').includes(marker)) errors.push(`new durable role must declare ${marker}`);
+  if (!(body ?? '').includes(marker)) errors.push(`new agent must declare ${marker}`);
 
   const profiles = [...(body ?? '').matchAll(
     /^\*\*Primary profile:\*\*\s+`?([a-z][a-z-]*)`?\s*$/gm
   )].map((match) => match[1]);
   if (profiles.length !== 1) {
-    errors.push(`new durable role must declare exactly one \`**Primary profile:** <profile>\` line (found ${profiles.length})`);
+    errors.push(`new agent must declare exactly one \`**Primary profile:** <profile>\` line (found ${profiles.length})`);
     return errors;
   }
   const [profile] = profiles;
@@ -1176,11 +1197,110 @@ export function agentIdentityContractErrors({ id, body, fm = {} }) {
     errors.push(`primary profile \`${profile}\` has no approved model mapping`);
     return errors;
   }
+  const allowed = isDurableRole ? ROLE_POSTURE_PROFILES[posture] : KIND_AGENT_PROFILES[family];
+  if (!allowed?.includes(profile)) {
+    errors.push(`${isDurableRole ? `posture \`${posture}\`` : `kind \`${family}\``} requires primary profile `
+      + `${(allowed ?? []).map((value) => `\`${value}\``).join(' or ') || '(none)'}, not \`${profile}\``);
+  }
   const model = (fm.model ?? '').trim().replace(/^(['"])(.*)\1$/, '$2');
   if (!model) {
-    errors.push(`new durable role with profile \`${profile}\` must declare frontmatter model "${expected}"`);
+    errors.push(`new agent with profile \`${profile}\` must declare frontmatter model "${expected}"`);
   } else if (model !== expected) {
     errors.push(`primary profile \`${profile}\` requires frontmatter model "${expected}", not "${model}"`);
+  }
+  return errors;
+}
+
+export function agentPromptLimitErrors(body) {
+  const length = [...normalizeLF(body ?? '')].length;
+  return length > AGENT_PROMPT_HARD_LIMIT
+    ? [`agent prompt is ${length} characters, over the ${AGENT_PROMPT_HARD_LIMIT}-character host limit`]
+    : [];
+}
+
+const markdownTable = (text, heading) => {
+  const normalized = normalizeLF(text ?? '');
+  const start = normalized.indexOf(`## ${heading}\n`);
+  if (start === -1) return new Map();
+  const body = normalized.slice(start + heading.length + 4);
+  const end = body.search(/\n## /);
+  const section = end === -1 ? body : body.slice(0, end);
+  const clean = (cell) => cell.trim().replaceAll('`', '');
+  const lines = section.split('\n');
+  const tableStart = lines.findIndex((line) => /^\|.*\|$/.test(line));
+  const tableRest = tableStart === -1 ? [] : lines.slice(tableStart);
+  const tableEnd = tableRest.findIndex((line) => !/^\|.*\|$/.test(line));
+  const tableLines = tableEnd === -1 ? tableRest : tableRest.slice(0, tableEnd);
+  const rows = tableLines
+    .map((line) => line.slice(1, -1).split('|').map(clean))
+    .filter((row) => row.length > 1 && !/^[-:]+$/.test(row[0]));
+  return new Map(rows.slice(1).map((row) => [row[0], row.slice(1)]));
+};
+
+const commaValues = (value) => (value ?? '').split(',').map((item) => item.trim()).filter(Boolean).sort();
+const sameValues = (actual, expected) =>
+  actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+
+export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
+  const errors = [];
+  const compareKeys = (label, rows, expected) => {
+    const actual = [...rows.keys()].sort();
+    const wanted = [...expected].sort();
+    if (!sameValues(actual, wanted)) {
+      errors.push(`${label} rows are [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+  };
+
+  const providers = markdownTable(taxonomy, 'Provider families');
+  compareKeys('provider family', providers, Object.keys(ROLE_FAMILY_PACK));
+  for (const [family, pack] of Object.entries(ROLE_FAMILY_PACK)) {
+    const provider = providers.get(family)?.[0];
+    if (provider && provider !== packPluginName(pack)) {
+      errors.push(`provider family \`${family}\` names \`${provider}\`, expected \`${packPluginName(pack)}\``);
+    }
+  }
+
+  const postures = markdownTable(taxonomy, 'Durable-role postures');
+  compareKeys('durable-role posture', postures, ROLE_POSTURES);
+
+  const profiles = markdownTable(taxonomy, 'Execution profiles');
+  compareKeys('execution profile', profiles, Object.keys(ROLE_PROFILE_MODELS));
+  const expectedProfileKinds = new Map(Object.keys(ROLE_PROFILE_MODELS).map((profile) => [profile, []]));
+  for (const [posture, allowed] of Object.entries(ROLE_POSTURE_PROFILES)) {
+    for (const profile of allowed) expectedProfileKinds.get(profile).push(posture);
+  }
+  for (const [kind, allowed] of Object.entries(KIND_AGENT_PROFILES)) {
+    for (const profile of allowed) expectedProfileKinds.get(profile).push(kind);
+  }
+  for (const [profile, expected] of expectedProfileKinds) {
+    const actual = commaValues(profiles.get(profile)?.[0]);
+    const wanted = [...expected].sort();
+    if (!sameValues(actual, wanted)) {
+      errors.push(`execution profile \`${profile}\` applies to [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+  }
+
+  const policyMarker = `**Policy version:** \`${MODEL_POLICY_VERSION}\``;
+  if (!(modelSelection ?? '').includes(policyMarker)) {
+    errors.push(`model selection reference must declare ${policyMarker}`);
+  }
+  const models = markdownTable(modelSelection, 'Approved models');
+  const expectedModels = [...new Set(Object.values(ROLE_PROFILE_MODELS))];
+  compareKeys('approved model', models, expectedModels);
+  for (const model of expectedModels) {
+    const actual = commaValues(models.get(model)?.[0]);
+    const wanted = Object.entries(ROLE_PROFILE_MODELS)
+      .filter(([, mapped]) => mapped === model)
+      .map(([profile]) => profile)
+      .sort();
+    if (!sameValues(actual, wanted)) {
+      errors.push(`approved model \`${model}\` covers [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+  }
+
+  const identityMarker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
+  if (!(taxonomy ?? '').includes(identityMarker)) {
+    errors.push(`taxonomy reference must declare ${identityMarker}`);
   }
   return errors;
 }
@@ -1327,6 +1447,8 @@ export function collectReferences(root = REPO_ROOT) {
   for (const id of listSkillIds(root)) {
     const path = skillFile(root, id);
     const raw = normalizeLF(readFileSync(path, 'utf8'));
+    const companionBodies = skillCompanionFiles(root, id)
+      .map((entry) => normalizeLF(readFileSync(entry.path, 'utf8')));
     const from = path.slice(root.length + 1).replace(/\\/g, '/');
     const pack = skillOf.get(id) ?? null;
     const firings = [];
@@ -1337,7 +1459,9 @@ export function collectReferences(root = REPO_ROOT) {
     // plugin, so the pack that ships it must be the one that provides it.
     if (firings.includes('user-invoked')) add(from, pack, 'user-invoked', 'skill', id);
     for (const firing of firings) {
-      for (const asset of assetRefs(raw)) add(from, pack, firing, 'asset', asset);
+      for (const text of [raw, ...companionBodies]) {
+        for (const asset of assetRefs(text)) add(from, pack, firing, 'asset', asset);
+      }
     }
   }
   return refs;
