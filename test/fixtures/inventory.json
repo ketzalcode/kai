@@ -143,7 +143,7 @@
     },
     {
       "name": "kai-core-create-agent",
-      "argument_hint": "<agent need or existing agent id>"
+      "argument_hint": ""
     },
     {
       "name": "kai-core-fleet-observation",

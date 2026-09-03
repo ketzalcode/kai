@@ -30,6 +30,10 @@ follow semantic versioning.
   `model` must be one quoted scalar string; YAML collections and non-string
   scalars are rejected until measured host behavior supports another shape
   consistently.
+- **Agent models come from a reviewed set.** `claude-opus-5` is approved for
+  judgment and review; `claude-sonnet-5` is approved for execution, operations,
+  coordination, advisory, procedures, teaching, and simulation. New durable
+  roles also declare the versioned `kai-agent-v1` identity contract.
 - **The self-check and contributor reference recognize the staged taxonomy.**
   They direct new authoring through `kai-core-create-agent` without pretending
   that the existing fleet has already migrated.

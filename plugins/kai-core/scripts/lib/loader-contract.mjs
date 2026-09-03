@@ -26,6 +26,10 @@ export const SUPPORTED_TOOLS = new Set([
 
 // Skill-only affordances — their presence on an agent signals a copy-paste error.
 export const SKILL_ONLY_KEYS = ['argument-hint', 'user-invocable', 'allowed-tools'];
+export const APPROVED_AGENT_MODELS = new Set([
+  'claude-opus-5',
+  'claude-sonnet-5',
+]);
 
 export function parseFrontmatter(raw) {
   const lines = raw.split(/\r?\n/);
@@ -124,6 +128,8 @@ export function loaderErrors(kind, id, fm) {
       out.push('frontmatter `model` must be one quoted scalar string');
     } else if (!stripQuotes(fm.model)) {
       out.push('frontmatter `model` is present but empty');
+    } else if (!APPROVED_AGENT_MODELS.has(stripQuotes(fm.model))) {
+      out.push(`frontmatter model "${stripQuotes(fm.model)}" is not in Kai's approved agent model set`);
     }
   }
 

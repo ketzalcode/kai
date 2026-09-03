@@ -1,7 +1,6 @@
 ---
 name: kai-core-create-agent
 description: "Creates or refines one Kai agent from a tested identity, authority boundary, execution profile, routing contract, and focused instruction set."
-argument-hint: "<agent need or existing agent id>"
 user-invocable: true
 ---
 
@@ -13,35 +12,33 @@ for a new agent or one existing agent from the repository and the user's intent.
 
 This skill handles one agent at a time. Fleet migration is a separate procedure.
 
-## Load the relevant references
+## Progressive references
 
-- Always read [the taxonomy](references/taxonomy.md) before choosing an identity.
-- Read [the agent contract and template](references/agent-template.md) before
-  drafting the file.
-- When changing Kai itself, also follow
-  [the Kai repository checklist](references/kai-repository.md).
-
-These files are one level deep so the main skill stays focused. The Agent Skills
+Load each reference only at the step that names it. The Agent Skills
 specification recommends keeping `SKILL.md` under 500 lines and moving detailed
-reference material into files loaded on demand.
+material into one-level references loaded on demand.
 
 ## Creation sequence
 
 ### 1. Establish the missing responsibility
 
-Read the current roster, neighboring agents, available skills, provider
-boundaries, and relevant validator rules. State:
+Read the current agent roster through frontmatter `name` and `description`
+metadata first. That metadata is the routing surface, so it should identify the
+nearest role without loading every agent body. Read only the one to three
+closest agent bodies when their descriptions overlap. State:
 
 - the recurring request this role will handle;
 - the decision, implementation, review, operation, coordination, or advice it
   owns;
-- the existing role or reusable skill closest to it;
+- the existing agent closest to it;
 - the concrete output or verdict that completes its work.
 
 For an existing agent, inventory its current responsibilities before changing
 its identity or instructions.
 
 ### 2. Classify from the supported taxonomy
+
+Load [the taxonomy](references/taxonomy.md) now.
 
 Use the taxonomy tables to choose:
 
@@ -60,10 +57,13 @@ A durable role qualifies only when all six taxonomy tests have evidence:
 recurring trigger, distinct lane, stable boundary, dispatch value, independent
 output, and justified coordination cost.
 
-If it does not qualify, strengthen an existing agent or create a reusable skill
-or bounded workflow instead.
+If it does not qualify, strengthen an existing agent or recommend a bounded
+workflow. When the missing capability is reusable method rather than an
+independent role, route it to a separate skill-authoring procedure.
 
 ### 4. Define the contract before the prose
+
+Load [the agent contract and template](references/agent-template.md) now.
 
 Complete the agent contract from the template:
 
@@ -97,29 +97,17 @@ threshold, extract reusable method into a skill, remove repeated inherited
 rules, or split the role only if both halves independently earn a slot. Record a
 short justification when a focused agent still needs to exceed the target.
 
-### 6. Select tools and model from the work
+### 6. Apply the approved model policy
 
-The `tools` field belongs to
-[GitHub custom-agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration),
-not to the Agent Skills schema. In Kai agents, declare the explicit tool set
-required by the role and include `skill` so inherited contracts can load.
-Official aliases include `execute`, `read`, `edit`, `search`, `agent`, `web`,
-and `todo`; configured MCP tools use their namespaced identifiers.
-
-Choose tools from required actions rather than copying a neighbor's list.
-
-Choose a model from the execution profile and acceptance evidence:
-
-- judgment and independent review prioritize reasoning quality;
-- builders prioritize code/tool reliability, then cost;
-- operators prioritize reliable instruction following and failure handling;
-- coordinators prioritize context handling without replacing domain judgment.
-
-Model identity never appears in the agent name. If `model` is pinned, Kai
-requires one quoted scalar string supported by the target host. Otherwise omit
-it and let the host inherit its configured default.
+Load [the model selection reference](references/model-selection.md) now. Select
+the model mapped to the execution profile. Use only an approved identifier; a
+different model requires updating that reference, the validator set, and their
+tests through review.
 
 ### 7. Draft and validate
+
+When changing Kai itself, load
+[the Kai repository checklist](references/kai-repository.md) now.
 
 Create or update only the canonical source. Apply the template in order, reuse
 existing skills, and keep shared operating rules out of the role body.
@@ -129,7 +117,7 @@ Prove:
 - file name and frontmatter identity agree;
 - taxonomy and provider placement agree;
 - authority and neighboring routes are unambiguous;
-- tools and skills support the stated actions;
+- tools and skills in the template support the stated actions;
 - prompt length is inside the host limit and reviewed against the Kai target;
 - acceptance cases exercise routing, authority, output, and model/tool
   sufficiency;
@@ -148,7 +136,7 @@ Authority: <owned lane and final acceptance owner>
 Slot evidence: <pass | existing role/skill/workflow preferred>
 Source: <canonical path or none>
 Length: <authored lines / characters>
-Model policy: <pinned model or inherited default>
+Model policy: <pinned approved model>
 Validation: <commands and result>
 Decision needed: <one unresolved authority decision or none>
 ```

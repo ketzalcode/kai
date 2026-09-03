@@ -10,10 +10,11 @@ Complete the contract before writing the agent instructions.
 **Kind:** durable-role | workflow | persona | instructor
 **Provider:** <plugin>
 **Identity:** <id>
+**Identity contract:** `kai-agent-v1`
 **Posture:** <posture or n/a>
 **Scope:** <scope>
 **Execution profile:** <profile>
-**Model policy:** <quoted model id or inherited default>
+**Model policy:** <quoted approved model id>
 
 ## Need and slot evidence
 <one row for each slot-earning test>
@@ -41,7 +42,7 @@ Complete the contract before writing the agent instructions.
 
 Draft in this order:
 
-1. Frontmatter: exact name, routing description, optional quoted model, tools.
+1. Frontmatter: exact name, routing description, quoted approved model, tools.
 2. One inherited-contract declaration and canonical loading directive.
 3. Identity and mission.
 4. Authority table.
@@ -60,7 +61,7 @@ Use this shell:
 ---
 name: <agent-id>
 description: "<what it owns, when it applies, and the nearest routing distinction>"
-model: "<optional supported model id>"
+model: "<approved model id>"
 tools: [read, search, skill]
 ---
 
@@ -72,6 +73,8 @@ tools: [read, search, skill]
 
 <One paragraph: responsibility and why the role exists.>
 
+**Identity contract:** `kai-agent-v1`
+
 ## Authority
 
 | Decision or action | Role | Final acceptance |
@@ -82,7 +85,7 @@ tools: [read, search, skill]
 
 **Primary profile:** <profile>
 **Why:** <authority/work reason>
-**Model policy:** <pinned with evidence, or inherited default>
+**Model policy:** <approved model mapped from the primary profile>
 
 ## Routing
 
@@ -98,9 +101,10 @@ tools: [read, search, skill]
 ## Return shape
 ```
 
-Omit `model` when the host default is intentional. Add tools required by actual
+Use the model mapped by `model-selection.md`. Add tools required by actual
 actions. Every Kai agent includes `skill` because its inherited contracts load
-on demand.
+on demand. GitHub defines agent-profile tools and aliases in
+[custom-agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration).
 
 ## Acceptance cases
 
@@ -113,7 +117,7 @@ Define behavioral cases before finalizing prose:
 | Authority seam | The role routes a decision it does not own. |
 | Human gate | The role prepares evidence and leaves the reserved action to the operator. |
 | Completion | The output or verdict satisfies its declared done condition. |
-| Runtime fit | The selected tools and optional model complete representative work. |
+| Runtime fit | The selected tools and profile-mapped model complete representative work. |
 
 ## Focus budget
 

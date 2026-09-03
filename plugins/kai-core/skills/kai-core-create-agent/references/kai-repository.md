@@ -1,7 +1,10 @@
 # Kai repository checklist
 
-Use this checklist only when creating or refining an agent in the Kai plugin
-repository.
+This is the canonical repository checklist for `kai-core-create-agent`. A
+future agent-authoring procedure may reuse it; if a second skill needs this
+contract, promote the checklist to a shared skill rather than copying it.
+
+Use it when creating or refining an agent in the Kai plugin repository.
 
 ## Before editing
 

@@ -31,7 +31,9 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { parseFrontmatter, parseToolList } from './lib/loader-contract.mjs';
+import {
+  APPROVED_AGENT_MODELS, parseFrontmatter, parseToolList,
+} from './lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
@@ -45,9 +47,10 @@ import {
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
-  agentTaxonomyErrors, requiresCoordinatedRunContracts,
+  agentTaxonomyErrors, requiresCoordinatedRunContracts, agentIdentityContractErrors,
+  ROLE_PROFILE_MODELS,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
-  sourceAgentFiles, sourceSkillFiles, sourceFileErrors, sourcePlacementErrors,
+  sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors, sourcePlacementErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
   GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE,
 } from './lib/pack-plan.mjs';
@@ -150,7 +153,9 @@ function writePlugin(dir, name, description, agentIds, skills) {
       writeFileSync(join(dir, 'agents', `${id}.agent.md`), normalizeLF(body));
     }
   }
-  for (const s of skills) writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'));
+  for (const s of skills) {
+    writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'), skillCompanionFiles(ROOT, s));
+  }
 }
 
 // Materialise core plus any subset of the departments. A subset is the point:
@@ -203,9 +208,14 @@ export function contractSkill(contractVersion) {
   ].join('\n');
 }
 
-function writeSkill(dir, id, text) {
+function writeSkill(dir, id, text, companions = []) {
   mkdirSync(join(dir, 'skills', id), { recursive: true });
-  writeFileSync(join(dir, 'skills', id, 'SKILL.md'), text);
+  writeFileSync(join(dir, 'skills', id, 'SKILL.md'), normalizeLF(text));
+  for (const companion of companions) {
+    const target = join(dir, 'skills', id, ...companion.rel.split('/'));
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, normalizeLF(readFileSync(companion.path, 'utf8')));
+  }
 }
 
 // The two-plugin preview `--out` builds: core plus one department. It is a
@@ -258,7 +268,7 @@ function walkCommitted(base) {
 
 const isSourceKey = (key) => {
   const entry = parseGeneratedKey(key);
-  return entry?.kind === 'agent' || entry?.kind === 'skill';
+  return entry?.kind === 'agent' || entry?.kind === 'skill' || entry?.kind === 'skill-companion';
 };
 
 const isDerivedOwnedKey = (key) => {
@@ -493,6 +503,11 @@ function selfTest() {
       'removing skill access from a generated agent is detected rather than false-passing from workspace files');
     ok(builtAgents.every((a) => frontmatter(a.body) === frontmatter(readAgent(a.id))),
       'generated agent frontmatter is a byte-identical projection of canonical source');
+    const createAgentRefs = ['taxonomy.md', 'agent-template.md', 'model-selection.md', 'kai-repository.md'];
+    ok(createAgentRefs.every((file) => existsSync(join(
+      full, 'kai-core-preview', 'skills', 'kai-core-create-agent', 'references', file
+    ))),
+    'a preview carries every progressive reference required by kai-core-create-agent');
   } catch (e) {
     ok(false, `preflight arms threw: ${e.message}`);
   } finally {
@@ -592,6 +607,11 @@ function selfTest() {
   'and neither into a core agent, which ships inside the pack whose absence they cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
     'core provides the probe the injected block tells department agents to invoke');
+  ok(m1.has('kai-core/skills/kai-core-create-agent/references/taxonomy.md')
+    && m1.has('kai-core/skills/kai-core-create-agent/references/agent-template.md')
+    && m1.has('kai-core/skills/kai-core-create-agent/references/model-selection.md')
+    && m1.has('kai-core/skills/kai-core-create-agent/references/kai-repository.md'),
+  'the materialised skill surface includes progressive references, not only SKILL.md');
   ok(PACK_ORDER.every((pack) => [...m1.keys()].some((key) => key.startsWith(`${packPluginName(pack)}/`))),
   'the committed surface materialises every pack in the locked partition');
 
@@ -1381,6 +1401,30 @@ function selfTest() {
     && requiresCoordinatedRunContracts('core-coordinator-staff')
     && !requiresCoordinatedRunContracts('persona-ux-first-time-user'),
   'new durable roles retain inherited workspace and activity obligations while personas do not');
+  ok(agentIdentityContractErrors({
+    id: 'eng-builder-frontend',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
+    fm: { model: '"claude-sonnet-5"' },
+  }).length === 0,
+  'a new durable role carrying the identity contract, profile, and mapped model passes');
+  ok(agentIdentityContractErrors({ id: 'eng-builder-frontend', body: '', fm: {} })
+    .some((m) => /kai-agent-v1/.test(m)),
+  'a new durable role missing the versioned identity contract fails by name');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-security',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** review',
+    fm: {},
+  }).some((m) => /must declare frontmatter model "claude-opus-5"/.test(m)),
+  'a new durable role cannot omit the model mapped to its primary profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-security',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** review',
+    fm: { model: '"claude-sonnet-5"' },
+  }).some((m) => /requires frontmatter model "claude-opus-5"/.test(m)),
+  'a new durable role cannot use an approved model assigned to another profile');
+  ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
+    && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
+  'the approved model set and deterministic profile mapping contain the same identifiers');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;

@@ -246,6 +246,23 @@ export function sourceSkillFiles(root = REPO_ROOT) {
   return files;
 }
 
+export function skillCompanionFiles(root, id) {
+  const skill = sourceSkillFiles(root).find((entry) => entry.id === id);
+  if (!skill) return [];
+  const base = dirname(skill.path);
+  const files = [];
+  const walk = (dir, prefix = '') => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path, rel);
+      else if (rel !== 'SKILL.md') files.push({ rel, path });
+    }
+  };
+  walk(base);
+  return files;
+}
+
 export function agentSourceFile(root, id) {
   return sourceAgentFiles(root).find((entry) => entry.id === id)?.path ?? null;
 }
@@ -616,6 +633,10 @@ export function materializePacks({
       const path = skillFile(root, id);
       if (!path) throw new Error(`skill "${id}" has no plugin-local source file`);
       files.set(`${p.dir}/skills/${id}/SKILL.md`, normalizeLF(readFileSync(path, 'utf8')));
+      for (const companion of skillCompanionFiles(root, id)) {
+        files.set(`${p.dir}/skills/${id}/${companion.rel}`,
+          normalizeLF(readFileSync(companion.path, 'utf8')));
+      }
     }
   }
   const assets = planAssets(collectReferences(root));
@@ -1054,6 +1075,18 @@ export const ROLE_FAMILY_PACK = Object.freeze({
 export const ROLE_POSTURES = Object.freeze([
   'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
 ]);
+export const ROLE_IDENTITY_CONTRACT = 'kai-agent-v1';
+export const ROLE_PROFILE_MODELS = Object.freeze({
+  judgment: 'claude-opus-5',
+  review: 'claude-opus-5',
+  execution: 'claude-sonnet-5',
+  operations: 'claude-sonnet-5',
+  coordination: 'claude-sonnet-5',
+  advisory: 'claude-sonnet-5',
+  procedure: 'claude-sonnet-5',
+  teaching: 'claude-sonnet-5',
+  simulation: 'claude-sonnet-5',
+});
 
 const RETIRED_AGENT_FAMILIES = [
   'principal', 'director', 'creative',
@@ -1123,6 +1156,35 @@ export function requiresCoordinatedRunContracts(id) {
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }
 
+export function agentIdentityContractErrors({ id, body, fm = {} }) {
+  const family = (id ?? '').split('-')[0];
+  if (!(family in ROLE_FAMILY_PACK)) return [];
+  const marker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
+  const errors = [];
+  if (!(body ?? '').includes(marker)) errors.push(`new durable role must declare ${marker}`);
+
+  const profiles = [...(body ?? '').matchAll(
+    /^\*\*Primary profile:\*\*\s+`?([a-z][a-z-]*)`?\s*$/gm
+  )].map((match) => match[1]);
+  if (profiles.length !== 1) {
+    errors.push(`new durable role must declare exactly one \`**Primary profile:** <profile>\` line (found ${profiles.length})`);
+    return errors;
+  }
+  const [profile] = profiles;
+  const expected = ROLE_PROFILE_MODELS[profile];
+  if (!expected) {
+    errors.push(`primary profile \`${profile}\` has no approved model mapping`);
+    return errors;
+  }
+  const model = (fm.model ?? '').trim().replace(/^(['"])(.*)\1$/, '$2');
+  if (!model) {
+    errors.push(`new durable role with profile \`${profile}\` must declare frontmatter model "${expected}"`);
+  } else if (model !== expected) {
+    errors.push(`primary profile \`${profile}\` requires frontmatter model "${expected}", not "${model}"`);
+  }
+  return errors;
+}
+
 // A non-markdown asset a shipped instruction invokes. Only top-level scripts/
 // executables qualify: scripts/lib/ is build-internal, and no shipped body tells
 // anyone to run it.
@@ -1180,6 +1242,9 @@ export function parseGeneratedKey(key, packs = PACK_ORDER) {
   }
   if (rest.length === 3 && rest[0] === 'skills' && rest[2] === 'SKILL.md') {
     return { ...at, kind: 'skill', id: rest[1] };
+  }
+  if (rest.length >= 3 && rest[0] === 'skills') {
+    return { ...at, kind: 'skill-companion', id: rest.slice(1).join('/'), skill: rest[1] };
   }
   return { ...at, kind: 'other', id: rest.join('/') };
 }

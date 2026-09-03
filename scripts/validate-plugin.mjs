@@ -40,7 +40,7 @@ import {
   HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
-  requiresCoordinatedRunContracts,
+  requiresCoordinatedRunContracts, agentIdentityContractErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
@@ -107,6 +107,10 @@ for (const f of allFiles) {
   if (!pf.ok) { err(rel(f.path), `invalid frontmatter: ${pf.reason}`); continue; }
   f.fm = pf.fm;
   for (const msg of loaderErrors(f.kind, f.id, f.fm)) err(rel(f.path), msg);
+}
+for (const f of agentFiles.filter((entry) => entry.fm)) {
+  const body = readFileSync(f.path, 'utf8');
+  for (const msg of agentIdentityContractErrors({ id: f.id, body, fm: f.fm })) err(f.rel, msg);
 }
 
 // ---------------------------------------------------------------------------

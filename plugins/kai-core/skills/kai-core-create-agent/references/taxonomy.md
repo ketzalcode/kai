@@ -1,9 +1,16 @@
 # Kai agent taxonomy
 
+**Identity contract:** `kai-agent-v1`
+
 These tables are the supported data set for agent classification. The matching
 validator constants live in `scripts/lib/pack-plan.mjs`. Adding a value requires
 updating this reference, the validator data, its mutation tests, and the
 universal role taxonomy in `kai-core-team-operating-rules`.
+
+The provider/posture/scope taxonomy is a Kai design decision synthesized for
+this fleet, not a standard copied from another project. External sources inform
+the file naming, resource separation, host metadata, and progressive-disclosure
+rules listed under [Design basis](#design-basis).
 
 ## Kinds
 
@@ -42,12 +49,14 @@ tokens are reserved namespace abbreviations. Scope uses full words.
 
 Apply this first-match tie-break to the primary responsibility:
 
-1. Independent verdict on another role's revision: `reviewer`.
-2. Action on live or stateful operational systems: `operator`.
-3. Final domain decision or role-level acceptance: `lead`.
-4. Implementation of accepted scope in repository artifacts: `builder`.
-5. Routing or reconciliation of other roles: `coordinator`.
-6. Recommendation without acceptance authority: `advisor`.
+| Priority | Primary responsibility | Posture |
+|---:|---|---|
+| 1 | Independent verdict on another role's revision | `reviewer` |
+| 2 | Action on live or stateful operational systems | `operator` |
+| 3 | Final domain decision or role-level acceptance | `lead` |
+| 4 | Implementation of accepted scope in repository artifacts | `builder` |
+| 5 | Routing or reconciliation of other roles | `coordinator` |
+| 6 | Recommendation without acceptance authority | `advisor` |
 
 Secondary behavior comes from a neighboring role or reusable skill. If two
 responsibilities remain primary, each proposed role must independently earn a
@@ -103,8 +112,7 @@ Examples of the grammar, not currently shipped identities:
 
 ## Design basis
 
-The provider/posture/scope taxonomy is a Kai design decision, not an external
-standard. Its surrounding conventions are grounded in:
+The surrounding conventions are grounded in:
 
 - [GitHub custom-agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration):
   agent metadata, optional tools/model, and the 30,000-character prompt limit.
