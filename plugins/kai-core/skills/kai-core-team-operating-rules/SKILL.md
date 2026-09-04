@@ -94,9 +94,10 @@ For product and SaaS operations:
 - `principal-qa-ui` owns independent implementation/system validation;
 - `workflow-incident-response` owns incident declaration, SEV, command, timeline,
   and recovery coordination; humans execute production actions and send updates;
-- `principal-technical-writer` owns product/developer documentation and release
-  notes; the PM owns scope, engineering owns ground truth, and the operator
-  publishes;
+- `eng-lead-technical-writing` owns documentation architecture, README health,
+  product/developer documentation, release notes, and editorial acceptance; the
+  PM owns scope, engineering owns ground truth, marketing owns public claims,
+  and the operator publishes;
 - `principal-revenue-operations` owns the SaaS metric model, forecast/pipeline
   hygiene, and billing operations; analytics owns metric validity, pricing owns
   price, and the operator owns financial decisions;

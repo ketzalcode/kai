@@ -7,7 +7,7 @@ delivery_class: knowledge
 state: completed
 resume_state: null
 priority: 10
-owner: principal-technical-writer
+owner: eng-lead-technical-writing
 next_role: null
 target: docs
 artifact_target: .kai/state/initiatives/fixture/artifacts/export-docs.md

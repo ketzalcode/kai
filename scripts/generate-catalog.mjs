@@ -78,7 +78,7 @@ const CATEGORIES = [
     blurb: 'Need, scope, interaction design, documentation, and brand.',
     members: [
       'principal-product-manager', 'principal-product-strategist', 'principal-product-designer',
-      'principal-technical-writer', 'principal-brand-designer', 'workflow-localization',
+      'eng-lead-technical-writing', 'principal-brand-designer', 'workflow-localization',
     ],
   },
   {

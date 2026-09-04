@@ -79,7 +79,7 @@ const MIGRATION_BASELINE_PACKS = {
     'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
     'principal-sre', 'principal-security', 'principal-privacy-compliance',
     'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
-    'principal-ai-researcher', 'principal-technical-writer', 'workflow-pull-request',
+    'principal-ai-researcher', 'workflow-pull-request',
     'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
     'workflow-doc-review', 'workflow-localization',
   ],
@@ -103,7 +103,7 @@ const MIGRATION_BASELINE_PACKS = {
 
 export const NEW_AGENT_IDS = {
   core: [],
-  engineering: [],
+  engineering: ['eng-lead-technical-writing'],
   product: [],
   gtm: [],
   personal: [],

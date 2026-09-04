@@ -293,7 +293,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Model SaaS metrics (MRR/ARR, churn, NRR, CAC/LTV), run a forecast, clean pipeline, or plan billing ops | `principal-revenue-operations` |
 | Plan a campaign, lifecycle/nurture emails, channel mix, or define MQL/SQL lead handoff | `principal-demand-generation` |
 | Assess a partner, design an integration/channel program, or frame a co-sell/co-marketing motion | `principal-partnerships` |
-| Write docs, a how-to/reference/concept guide, or release notes | `principal-technical-writer` |
+| Structure or audit a README, write technical docs, or assess documentation readiness | `eng-lead-technical-writing` |
 | Design a data pipeline, warehouse model, data contract, or event-instrumentation spec | `principal-data-engineer` |
 | Define a visual brand identity, brand guidelines, or critique a visual asset | `principal-brand-designer` |
 | Audit i18n readiness, assess a locale, route translation, or QA a localized build | `workflow-localization` |

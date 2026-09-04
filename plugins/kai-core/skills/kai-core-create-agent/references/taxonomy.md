@@ -81,7 +81,7 @@ Examples of the grammar, not currently shipped identities:
 | **eng-lead-frontend-architecture** | Owns expensive frontend-wide decisions. |
 | **eng-builder-frontend** | Implements accepted frontend work. |
 | **eng-reviewer-security** | Gives an independent security verdict. |
-| **eng-lead-technical-writing** | Owns documentation structure and quality acceptance. |
+| **eng-lead-developer-experience** | Owns developer-platform usability and experience decisions. |
 | **prod-lead-product-scope** | Owns product scope decisions. |
 | **gtm-lead-sales** | Owns sales judgment without accepting commercial terms. |
 

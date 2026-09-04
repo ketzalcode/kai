@@ -4,6 +4,29 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [4.0.0] - 2026-09-03
+
+### Changed
+
+- **Technical writing now uses the first provider/posture/scope identity.**
+  `eng-lead-technical-writing` replaces `principal-technical-writer` as the
+  documentation architecture and editorial-acceptance owner. The focused role
+  preserves product and developer documentation, release notes, evidence
+  discipline, and owner handoffs while explicitly owning repository README
+  health and routing proposal review to `workflow-doc-review`.
+- **Document methods can evolve independently from role authority.** The lead
+  selects a focused document-type skill when one exists instead of embedding a
+  permanent mode catalog in the agent. Product owns scope, engineering owns
+  technical truth, marketing owns claims, localization owns locale readiness,
+  and the operator still owns merge and publication.
+
+### Removed
+
+- **BREAKING:** `principal-technical-writer` has been removed in favor of
+  `eng-lead-technical-writing`. Update direct invocations and any existing
+  `.kai/state/items/*.md` `owner:` or `next_role:` values that name the former
+  identity.
+
 ## [3.1.0] - 2026-09-02
 
 ### Added
@@ -3266,6 +3289,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[4.0.0]: https://github.com/RubenSaucedo/kai/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/RubenSaucedo/kai/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/RubenSaucedo/kai/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/RubenSaucedo/kai/compare/v2.1.0...v2.2.0

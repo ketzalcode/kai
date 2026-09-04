@@ -35,14 +35,17 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v3.1.0` — all **56 agents and 53 skills** are published across five plugins for
+`v4.0.0` — all **56 agents and 53 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
 Agent creation now has an explicit contract: provider family, operating posture,
 scope, authority, execution profile, model policy, tools, skills, handoffs, and
-acceptance cases are settled before a role joins the fleet. Existing agent IDs
-remain unchanged while representative roles are redesigned before any broader
-migration.
+acceptance cases are settled before a role joins the fleet.
+`eng-lead-technical-writing` is the first migrated role: it owns documentation
+architecture, README health, and editorial acceptance while product,
+engineering, marketing, localization, and the operator retain their factual and
+publication gates. This replaces the removed principal-technical-writer
+identity; update direct invocations and existing workspace item ownership fields.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and

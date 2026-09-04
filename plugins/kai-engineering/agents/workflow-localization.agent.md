@@ -77,7 +77,7 @@ Read and apply:
   bounded procedure.**
 - **`principal-product-designer` and `principal-swe-frontend` own UI layout and
   internationalized rendering.** You flag layout/RTL/overflow issues; they fix.
-- **`principal-technical-writer` owns source-language documentation,
+- **`eng-lead-technical-writing` owns source-language documentation,
   `principal-product-marketing` owns source-language marketing copy, and
   `principal-product-designer` owns in-product UI/UX strings.** You flag strings
   that need externalization or rewriting for translatability; each owns its source
