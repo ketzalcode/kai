@@ -17,7 +17,6 @@ Four guides and a reference. Start wherever your question is.
 | ---- | -------- |
 | [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 56 agents and 54 skills, generated from their shipped frontmatter so it cannot drift. |
 | [Plugin structure](reference/plugin-structure.md) | The layout of this repository, and what to run before opening a PR. |
-| [Agent-authoring research](reference/agent-authoring-research.md) | Specifications, open-source examples, and the design evidence behind Kai's agent-authoring contract. |
 
 **Elsewhere in the repo**
 

@@ -1342,13 +1342,13 @@ function selfTest() {
   'and a hyphenated pack is held to the same guarantee, rather than skipped by a name pattern');
   const progressiveBody = [
     'kai-personal/agents/eng-builder-x.agent.md',
-    '---\nname: eng-builder-x\n---\n\n**Identity contract:** `kai-agent-v1`\n\n## Skills on demand\n\nbody\n',
+    '---\nname: eng-builder-x\n---\n\n**Identity contract:** `kai-agent-v1`\n\nLoad `kai-core-contract-v1` first.\n',
   ];
   ok(blockMsgs([progressiveBody]).length === 0,
     'a kai-agent-v1 department agent uses progressive skill routing without the legacy dependency guard');
   ok(blockMsgs([[
     progressiveBody[0],
-    progressiveBody[1].replace('## Skills on demand', `${GUARANTEE_REGION_OPEN}\n\n${block}\n\n${degraded}\n\n${GUARANTEE_REGION_CLOSE}\n\n## Skills on demand`),
+    progressiveBody[1].replace('Load `kai-core-contract-v1` first.', `${GUARANTEE_REGION_OPEN}\n\n${block}\n\n${degraded}\n\n${GUARANTEE_REGION_CLOSE}`),
   ]]).some((m) => /must not carry the legacy core dependency guard/.test(m)),
   'a kai-agent-v1 agent carrying the legacy dependency guard fails by name');
   let duplicateV1GuardRejected = false;
@@ -1496,14 +1496,13 @@ function selfTest() {
   'an existing kind-prefixed agent remains migration-safe without the new identity contract');
   const progressiveSkillBody = [
     '**Identity contract:** `kai-agent-v1`',
-    '## Skills on demand',
+    'Invoke `kai-core-contract-v1` before the first other core skill.',
     'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
     'State the limitation once and tell the operator to install or update `kai-core`.',
-    '- **`kai-core-contract-v1`** — before the first core skill.',
-    '- **`kai-core-team-operating-rules`** — before coordinated work.',
-    '- **`kai-core-asset-lifecycle`** — before durable output.',
-    '- **`kai-core-workspace-conventions`** — before `.kai` state.',
-    '- **`kai-core-work-activity`** — before recording a run.',
+    'Read `kai-core-team-operating-rules` before coordinated work.',
+    'Load `kai-core-asset-lifecycle` before durable output.',
+    'Load `kai-core-workspace-conventions` before touching workspace state.',
+    'Load `kai-core-work-activity` before recording a run.',
   ].join('\n');
   const progressiveSkillOptions = {
     id: 'eng-builder-frontend',
@@ -1518,7 +1517,7 @@ function selfTest() {
     ],
   };
   ok(progressiveSkillRoutingErrors(progressiveSkillOptions).length === 0,
-    'a kai-agent-v1 role with explicit just-in-time routes passes');
+    'a kai-agent-v1 role that loads each contract inline at the step needing it passes');
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
     body: `${progressiveSkillBody}\n**Inherits:** \`kai-core-team-operating-rules\``,
@@ -1526,51 +1525,28 @@ function selfTest() {
   'a kai-agent-v1 role cannot restore eager inheritance');
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace('- **`kai-core-contract-v1`** — before the first core skill.\n', ''),
-  }).some((m) => /must route `kai-core-contract-v1`/.test(m)),
-  'a kai-agent-v1 role cannot omit its just-in-time core compatibility route');
+    body: progressiveSkillBody.replace('Load `kai-core-asset-lifecycle` before durable output.\n', ''),
+  }).some((m) => /must load `kai-core-asset-lifecycle`/.test(m)),
+  'a kai-agent-v1 role cannot drop a required contract');
+  ok(progressiveSkillRoutingErrors({
+    ...progressiveSkillOptions,
+    body: progressiveSkillBody.replace('kai-core-asset-lifecycle', 'kai-core-asset-lifecyle'),
+  }).some((m) => /names unknown skill `kai-core-asset-lifecyle`/.test(m)),
+  'a mistyped skill name fails as an unknown route wherever it appears');
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
     body: progressiveSkillBody.replace(
-      '## Skills on demand\n',
-      '## Skills on demand\n\n## Handoffs\n'
+      'Invoke `kai-core-contract-v1` before the first other core skill.\n',
+      'Invoke `kai-core-contract-v1` whenever it seems useful.\n'
     ),
-  }).some((m) => /must route `kai-core-contract-v1`/.test(m)),
-  'required routes outside the Skills on demand section do not satisfy the contract');
+  }).some((m) => /runs before the first other core skill/.test(m)),
+  'the core probe must still be ordered before every other core skill');
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace(
-      '- **`kai-core-asset-lifecycle`** — before durable output.',
-      '- **`kai-core-asset-lifecyle`** — before durable output.'
-    ),
-  }).some((m) => /routes unknown skill `kai-core-asset-lifecyle`/.test(m)),
-  'a mistyped on-demand skill fails as an unknown route');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace(
-      '- **`kai-core-work-activity`** — before recording a run.',
-      '- **`kai-core-work-activity`**'
-    ),
-  }).some((m) => /must include an explicit trigger/.test(m)),
-  'an on-demand skill without a trigger fails by name');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace(
-      '- **`kai-core-contract-v1`** — before the first core skill.\n',
-      ''
-    ) + '\n- **`kai-core-contract-v1`** — before the first core skill.',
-  }).some((m) => /must route `kai-core-contract-v1`/.test(m)),
-  'the core contract route must come before every other on-demand skill');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: `${progressiveSkillBody}\n- **\`kai-core-work-activity\`** — before a second run.`,
-  }).some((m) => /more than once/.test(m)),
-  'a kai-agent-v1 role cannot duplicate an on-demand skill route');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: `${progressiveSkillBody}\n\n## Handoffs\n\n- **\`kai-core-work-coordination\`** — before a handoff.`,
-  }).some((m) => /must appear under `## Skills on demand`/.test(m)),
-  'a kai-agent-v1 role cannot route a skill outside the on-demand section');
+    body: `${progressiveSkillBody}\n\n## Handoffs\n\nLoad \`kai-core-work-coordination\` before a handoff.`,
+    knownSkills: [...progressiveSkillOptions.knownSkills, 'kai-core-work-coordination'],
+  }).length === 0,
+  'a kai-agent-v1 role may load a skill from any section, because routing is inline by design');
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
     body: progressiveSkillBody.replace(

@@ -16,8 +16,8 @@ Use it when creating or refining an agent in the Kai plugin repository.
 ## Canonical source
 
 1. Edit only `plugins/<provider>/agents/<agent-id>.agent.md`.
-2. For a `kai-agent-v1` agent, declare skills under `## Skills on demand` with
-   one explicit trigger per skill. Do not add an `**Inherits:**` line.
+2. For a `kai-agent-v1` agent, name each skill in the instruction that needs it.
+   Do not add an `**Inherits:**` line or a skill manifest section.
 3. Do not add the legacy core dependency-guard region to a `kai-agent-v1`
    agent. Core availability is checked just in time before the first core skill.
 4. Add a new identity to the provider array in `NEW_AGENT_IDS` in root

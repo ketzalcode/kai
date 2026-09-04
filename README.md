@@ -42,14 +42,12 @@ Agent creation now has an explicit contract: provider family, operating posture,
 scope, authority, execution profile, model policy, host-specific tools,
 on-demand skills, handoffs, and acceptance cases are settled before a role
 joins the fleet.
-`eng-lead-technical-writing` is the first migrated role: it owns documentation
-architecture, README health, and editorial acceptance while product,
-engineering, marketing, localization, and the operator retain their factual and
-publication gates. It loads core contracts only at the workflow step that needs
-them instead of consuming their context at startup. Document structures load
-separately through the `technical-writing` skill only when a writing task needs
-them. This replaces the removed principal-technical-writer identity; update
-direct invocations and existing workspace item ownership fields.
+`eng-lead-technical-writing` is the first migrated role: it leads with writing
+craft — audience adaptation, clarity, structure, technical accuracy — and loads
+document patterns from the `technical-writing` skill only when a writing task
+needs them. Core contracts load inline at the step that needs them rather than
+at startup. This replaces the removed principal-technical-writer identity;
+update direct invocations and existing workspace item ownership fields.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and

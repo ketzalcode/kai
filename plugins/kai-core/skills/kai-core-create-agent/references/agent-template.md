@@ -70,56 +70,54 @@ tools: [read, search, skill]
 <One paragraph: responsibility and why the role exists.>
 
 **Identity contract:** `kai-agent-v1`
+**Primary profile:** <profile>
 
-## Skills on demand
+## <Craft section>
 
-Do not preload skills. Load only the skill whose trigger matches the current
-workflow step.
+<The domain judgment this role exists for. Most of the body belongs here.>
 
-- **`kai-core-contract-v1`** — before the first other core skill.
-- **`<skill-id>`** — before <specific action that needs this contract>.
+## <Craft section>
 
+<Method, quality bar, and how the role decides — not org structure.>
+
+## Kai standards
+
+Invoke `kai-core-contract-v1` before the first other core skill in a session.
 If core is unavailable or incompatible, continue only with direct, single-shot
 domain work; do not create `.kai` state or claim coordinated work. State the
 limitation once and tell the operator to install or update `kai-core`.
 
-## Authority
+Load the rest where the work calls for it: `<skill-id>` before <the specific
+action that needs it>.
 
-| Decision or action | Role | Final acceptance |
-|---|---|---|
-| ... | ... | ... |
+<Reserved actions that belong to `@operator`.>
 
-## Execution profile
+## Finish with a verdict
 
-**Primary profile:** <profile>
-**Why:** <authority/work reason>
-**Model policy:** <approved model mapped from the primary profile>
-
-## Routing
-
-| Request shape | Destination | Reason |
-|---|---|---|
-| ... | ... | ... |
-
-## Inputs and evidence
-## Operating sequence
-## Output and completion
-## Handoffs
-## Safety boundaries
-## Return shape
+<The completion condition or verdict set.>
 ```
+
+Write each skill load into the instruction that needs it. Do not collect them
+into a manifest section: a hoisted list recreates the eager `**Inherits:**`
+block this contract replaced, and forces a "do not preload" disclaimer that
+exists only to argue with its own list.
+
+The frontmatter `description` is the routing surface the host reads. It already
+states what the role owns and what it does not, so an `## Authority` or
+`## Routing` table inside the body usually restates the frontmatter in a longer
+form. Add one only where overlapping authority is genuinely ambiguous.
 
 Use the model mapped by `model-selection.md`. Add tools required by actual
 actions. Every Kai agent that dispatches skills includes `skill`.
 
 `tools` is a GitHub custom-agent profile field, not an Agent Skills standard.
-Its aliases and fallback behavior are host-specific. Kai declares it for
-least-privilege execution on supported GitHub hosts; do not present the list as
-portable or industry-standard metadata. Agent Skills separately defines an
-experimental `allowed-tools` field for skills. Kai's existing `tools` field on
-`SKILL.md` files is also a host extension, not Agent Skills metadata. Keep
-host-specific metadata explicit and load skill instructions only when their
-declared trigger applies.
+Its aliases and fallback behavior are host-specific, and other catalogs use
+vocabularies this host does not accept — VS Code Copilot Chat's `codebase` and
+`editFiles` are not portable here. The names Kai accepts are recorded, with the
+CLI versions they were measured against, beside `SUPPORTED_TOOLS` in
+`scripts/lib/loader-contract.mjs`. Agent Skills separately defines an
+experimental `allowed-tools` field for skills; new Kai skills follow the Agent
+Skills schema and do not declare `tools` at all.
 
 ## Acceptance cases
 

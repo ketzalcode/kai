@@ -1,7 +1,6 @@
 ---
 name: technical-writing
 description: "Applies audience-centered structures and verification checks for READMEs, concepts, tutorials, how-to guides, technical reference, decision records, release notes, and migration guides. Use when drafting, restructuring, or auditing technical documentation."
-tools: [execute, read, edit, search, web]
 ---
 
 # Technical Writing

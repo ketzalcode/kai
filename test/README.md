@@ -14,10 +14,6 @@ PR and push to `main` and must stay fast:
   **Kai frontmatter acceptance** heuristic: the expected discoverable inventory
   matches a committed golden snapshot, and malformed frontmatter fixtures are
   rejected.
-- **`npm run host-tool-probe:self-test`**
-  (`scripts/host-tool-probe.mjs --self-test`) — the offline parser,
-  warning/grant classifier, redaction, determinism, and read-only contract for
-  the optional live host probe.
 - **`npm run release-guard:self-test`** (`scripts/release-guard.mjs --self-test`)
   — the decision core of the release gate: a behavior-sensitive change must carry
   a version bump plus changelog/README updates; docs/test-only changes are exempt.
@@ -166,17 +162,13 @@ It does not claim to reproduce the live host parser. `--self-test` asserts:
 
 ## Host-backed checks
 
-`npm run host-tool-probe:plan` prints the exact direct/delegated matrix,
-throwaway frontmatter, and `copilot` argv without writing or spawning. After
-reviewing that plan, `npm run host-tool-probe` runs against an isolated plugin
-and workspace outside the repository and writes a redacted report under
-`.kai/runs/eng/`. The live run is manual: CI executes only the synthetic
-`host-tool-probe:self-test`, so it needs no host binary, credentials, or network.
-Use `--rows R2-primary,R8-repo-current,R9-control` for a bounded retry, and
-`--copilot-entry <absolute-versioned-index.js>` to measure a retained CLI build
-without allowing the active launcher shim to substitute a newer version.
-`--update --from <report> --baseline <file>` and the matching `--check` compare
-explicit, normalized redacted reports; the repository carries no live baseline.
+Kai's tool vocabulary was measured against a live Copilot CLI (1.0.79 and
+1.0.81, direct and delegated launches) and the result is recorded beside
+`SUPPORTED_TOOLS` in `scripts/lib/loader-contract.mjs`. The probe harness that
+produced it wrote to an uncommitted path, so it validated a parser for a report
+CI could never read; it was removed in favour of the durable note. Re-measure
+with a throwaway probe against the host you actually target, then update the
+list and its note together.
 
 Broader in-process inventory, degraded CLI/cloud, and fleet certification remain
 tracked in #33.

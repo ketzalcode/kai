@@ -23,13 +23,15 @@ inside this repository only.
 
 ## Routing shared contracts
 
-New and materially migrated agents use `kai-agent-v1`. They declare a
-`## Skills on demand` section with one explicit activation trigger per skill.
-They do not preload skills, carry an `**Inherits:**` line, or embed the legacy
-core dependency guard. They call `kai-core-contract-v1` just before their first
-other core skill. If core is unavailable, ordinary single-shot domain work may
-continue, but Kai coordination and `.kai` state may not. The agent states that
-limitation once and tells the operator to install or update `kai-core`.
+New and materially migrated agents use `kai-agent-v1`. They load each shared
+contract inline, in the instruction that needs it, rather than collecting routes
+into a manifest section — a hoisted list recreates the eager `**Inherits:**`
+block this contract replaced. They do not carry an `**Inherits:**` line or embed
+the legacy core dependency guard. They call `kai-core-contract-v1` just before
+their first other core skill. If core is unavailable, ordinary single-shot
+domain work may continue, but Kai coordination and `.kai` state may not. The
+agent states that limitation once and tells the operator to install or update
+`kai-core`.
 
 Pre-`kai-agent-v1` agents retain exactly one `**Inherits:**` line as the first
 line of the body and the verbatim directive in `scripts/lib/inherits-block.txt`:

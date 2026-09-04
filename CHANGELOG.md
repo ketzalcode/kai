@@ -10,25 +10,23 @@ follow semantic versioning.
 
 - **Technical writing now uses the first provider/posture/scope identity.**
   `eng-lead-technical-writing` replaces `principal-technical-writer` as the
-  documentation architecture and editorial-acceptance owner. The focused role
-  preserves product and developer documentation, release notes, evidence
-  discipline, and owner handoffs while explicitly owning repository README
-  health and routing proposal review to `workflow-doc-review`.
+  documentation architecture and editorial-acceptance owner. The role leads with
+  writing craft — audience adaptation, clarity, structure, technical accuracy —
+  rather than restating ownership tables the frontmatter `description` already
+  carries.
 - **Document methods can evolve independently from role authority.** The lead
   invokes the new `technical-writing` skill for audience-centered README,
   concept, task-guide, technical-reference, decision-record, and release
   patterns instead of embedding format templates in the agent. Product owns
   scope, engineering owns technical truth, marketing owns claims, localization
   owns locale readiness, and the operator still owns merge and publication.
-- **New-agent skills now load progressively.** `kai-agent-v1` roles declare
-  situational skill routes with explicit triggers instead of preloading an
-  `**Inherits:**` list. Core compatibility is checked before the first core
-  skill, not before ordinary single-shot work, and migrated agents no longer
-  embed the legacy preflight or degraded-mode blocks.
-- **Agent metadata now distinguishes standards from host extensions.** The
-  authoring template identifies `tools` as GitHub custom-agent frontmatter, not
-  Agent Skills metadata. Detailed specifications and open-source examples now
-  live in contributor documentation rather than runtime skill references.
+- **`kai-agent-v1` agents load skills inline.** A skill is named in the
+  instruction that needs it rather than hoisted into a manifest section. The
+  previous `## Skills on demand` block recreated the eager `**Inherits:**` list
+  it replaced and required a "do not preload" disclaimer that existed only to
+  argue with its own list. Validation now checks meaning — the named skill
+  exists, the core probe precedes the first other core skill, the non-blocking
+  fallback is stated — instead of policing section layout.
 - **Agent and skill descriptions are judged by routing quality, not a fixed
   character ceiling.** The provisional 250/180-character validator has been
   removed while the new agent and progressive-skill contracts are established.
@@ -39,6 +37,14 @@ follow semantic versioning.
   `eng-lead-technical-writing`. Update direct invocations and any existing
   `.kai/state/items/*.md` `owner:` or `next_role:` values that name the former
   identity.
+- **The host tool probe harness has been removed.** `scripts/host-tool-probe.mjs`,
+  `scripts/lib/tool-conformance.mjs`, its fixtures, and its five npm scripts
+  measured nothing in CI: `npm test` ran only an offline parser self-test, and
+  the live run wrote its report to an uncommitted workspace path. The measured
+  result it existed to produce — the tool names Copilot CLI 1.0.79 and 1.0.81
+  accept in direct and delegated launches — is now recorded beside
+  `SUPPORTED_TOOLS` in `scripts/lib/loader-contract.mjs`. Re-measure with a
+  throwaway probe against the host you actually target.
 
 ## [3.1.0] - 2026-09-02
 

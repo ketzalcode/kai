@@ -65,10 +65,9 @@ firing path, which ships and appears in the catalog while being unreachable.
 ```
   skills/<id>/SKILL.md
           |
-          +-- 1. agent-routed -> declared under `## Skills on demand` as
-          |                      `- **`skill-id`** — before <trigger>`.
-          |                      Workflow dispatch lists use the same shape.
-          |                      The agent invokes it only at that workflow step.
+          +-- 1. agent-routed -> named in the instruction that needs it, so the
+          |                      agent invokes it only at that workflow step.
+          |                      Not collected into a manifest section.
           |
           +-- 2. user-invoked -> `user-invocable: true` (+ `argument-hint`).
           |                      The operator runs it directly. Use for a
@@ -109,7 +108,6 @@ also run in CI on every pull request:
 | `npm run docs:check` | The generated agent/skill catalog matches the shipped surface. |
 | `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces, plus the pack-migration scenario matrix. |
 | `npm run host-contract` | Kai frontmatter acceptance heuristic — the expected discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
-| `npm run host-tool-probe:self-test` | Offline parser/classifier, redaction, determinism, and read-only checks for the optional live host-tool probe. |
 | `npm run release-guard:self-test` | The behavior-change-requires-a-bump decision core. |
 | `npm run activity:self-test` | The activity-log contract: the item/log boundary, privacy bounds, and concurrent-writer integrity. |
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |

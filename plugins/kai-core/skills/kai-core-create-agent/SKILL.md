@@ -71,8 +71,9 @@ Complete the agent contract from the template:
 8. Behavioral acceptance cases.
 
 Default to progressive loading. A `kai-agent-v1` body carries only instructions
-needed on every invocation and routes each skill at the exact workflow step that
-needs it; it never preloads a skill list.
+needed on every invocation and names each skill inside the instruction that
+needs it, at the exact workflow step; it never preloads a skill list or collects
+routes into a manifest section.
 
 Use positive routing language: "route this request to X" is clearer than a long
 list of prohibited requests. Keep explicit boundaries only where self-approval,
