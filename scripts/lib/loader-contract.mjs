@@ -29,6 +29,8 @@ export const SKILL_ONLY_KEYS = ['argument-hint', 'user-invocable', 'allowed-tool
 export const APPROVED_AGENT_MODELS = new Set([
   'claude-opus-5',
   'claude-sonnet-5',
+  'gpt-5.6-sol',
+  'gpt-5.6-terra',
 ]);
 
 export function parseFrontmatter(raw) {

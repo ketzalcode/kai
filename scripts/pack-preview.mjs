@@ -1427,6 +1427,18 @@ function selfTest() {
   }).some((m) => /requires frontmatter model "claude-opus-5"/.test(m)),
   'a new durable role cannot use an approved model assigned to another profile');
   ok(agentIdentityContractErrors({
+    id: 'eng-lead-architecture',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** technical-judgment',
+    fm: { model: '"gpt-5.6-sol"' },
+  }).length === 0,
+  'a technical lead can use the pre-approved Sol technical-judgment profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-code',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** technical-review',
+    fm: { model: '"gpt-5.6-terra"' },
+  }).length === 0,
+  'a technical reviewer can use the pre-approved Terra technical-review profile');
+  ok(agentIdentityContractErrors({
     id: 'eng-reviewer-security',
     body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
     fm: { model: '"claude-sonnet-5"' },

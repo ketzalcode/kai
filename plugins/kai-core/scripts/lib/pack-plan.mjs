@@ -1076,15 +1076,15 @@ export const ROLE_POSTURES = Object.freeze([
   'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
 ]);
 export const ROLE_IDENTITY_CONTRACT = 'kai-agent-v1';
-export const MODEL_POLICY_VERSION = 'kai-agent-models-v1';
+export const MODEL_POLICY_VERSION = 'kai-agent-models-v2';
 export const AGENT_PROMPT_HARD_LIMIT = 30_000;
 export const ROLE_POSTURE_PROFILES = Object.freeze({
-  lead: Object.freeze(['judgment']),
+  lead: Object.freeze(['judgment', 'technical-judgment']),
   builder: Object.freeze(['execution']),
-  reviewer: Object.freeze(['review']),
+  reviewer: Object.freeze(['review', 'technical-review']),
   operator: Object.freeze(['operations']),
   coordinator: Object.freeze(['coordination']),
-  advisor: Object.freeze(['judgment', 'advisory']),
+  advisor: Object.freeze(['judgment', 'technical-judgment', 'advisory']),
 });
 export const KIND_AGENT_PROFILES = Object.freeze({
   workflow: Object.freeze(['procedure']),
@@ -1093,7 +1093,9 @@ export const KIND_AGENT_PROFILES = Object.freeze({
 });
 export const ROLE_PROFILE_MODELS = Object.freeze({
   judgment: 'claude-opus-5',
+  'technical-judgment': 'gpt-5.6-sol',
   review: 'claude-opus-5',
+  'technical-review': 'gpt-5.6-terra',
   execution: 'claude-sonnet-5',
   operations: 'claude-sonnet-5',
   coordination: 'claude-sonnet-5',

@@ -90,8 +90,10 @@ Examples of the grammar, not currently shipped identities:
 | Profile | Required posture or kind | Model requirement |
 |---|---|---|
 | `judgment` | `lead`, `advisor` | Strong reasoning across alternatives and trade-offs. |
+| `technical-judgment` | `lead`, `advisor` | Repository-grounded reasoning for architecture, design, and other technical decisions. |
 | `execution` | `builder` | Reliable code/tool execution against accepted constraints. |
 | `review` | `reviewer` | Independent evidence-first analysis and calibrated findings. |
+| `technical-review` | `reviewer` | Independent review of code, tests, technical contracts, and implementation risk. |
 | `operations` | `operator` | Reliable stateful procedure and failure handling. |
 | `coordination` | `coordinator` | Strong context, dependency, and synthesis handling. |
 | `advisory` | `advisor` | Reasoning proportional to decision cost and uncertainty. |
