@@ -6,4 +6,3 @@ scripts/**/*.mjs text eol=lf
 scripts/**/*.js text eol=lf
 test/fixtures/** text eol=lf
 plugins/** text eol=lf
-docs/reference/agents-and-skills.md text eol=lf

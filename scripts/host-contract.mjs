@@ -165,9 +165,6 @@ const INVALID_FIXTURES = [
   { file: 'tools-not-array.skill.md', kind: 'skill', re: /tools.*inline array/i },
   { file: 'unsupported-tool.agent.md', kind: 'agent', re: /not in kai's tool vocabulary/i },
   { file: 'skill-key-on-agent.agent.md', kind: 'agent', re: /skill-only/i },
-  { file: 'model-array.agent.md', kind: 'agent', re: /model.*quoted scalar string/i },
-  { file: 'model-non-string.agent.md', kind: 'agent', re: /model.*quoted scalar string/i },
-  { file: 'model-unapproved.agent.md', kind: 'agent', re: /approved agent model set/i },
   { file: 'name-mismatch.agent.md', kind: 'agent', re: /name .* must equal/i },
 ];
 

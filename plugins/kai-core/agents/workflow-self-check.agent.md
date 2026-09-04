@@ -82,13 +82,7 @@ For each enabled category, produce raw findings inline with full evidence. Tier 
 
 **3.1 Inventory drift.** The inventory in `docs/reference/agents-and-skills.md` is **generated** from frontmatter by `scripts/generate-catalog.mjs`, and `npm run docs:check` fails when it drifts — so do not hand-reconcile rows. Instead check what generation cannot: that the editorial `CATEGORIES` grouping in that script still files every agent and skill under a heading that matches what it actually does, and that no category has silently become a dumping ground.
 
-**3.2 Naming convention.** Existing legacy agents may still use `principal-*`,
-`director-*`, or `creative-*` during the staged migration. New durable roles use
-the provider-family/posture/scope contract in `kai-core-create-agent`; workflows,
-personas, and instructors retain their kind-specific prefixes. Skills are
-`skills/<kebab-case>/SKILL.md`, and core-provided skills use `kai-core-*`.
-Anything outside those current or migration-safe patterns is a finding
-(severity depends on whether other files reference the off-pattern name).
+**3.2 Naming convention.** Canonical patterns: agents are `principal-<area>`, `workflow-<flow>`, or `persona-<role>`; skills are `skills/<kebab-case>/SKILL.md`. Anything off-pattern is a finding (severity depends on whether other files reference the off-pattern name).
 
 **3.3 Description drift.** Compare each agent's frontmatter `description` (and each skill's first-paragraph summary) against the actual workflow body. Drift in the produced-artifact list is high-signal; voice/wording drift is cosmetic.
 

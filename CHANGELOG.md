@@ -4,43 +4,6 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
-## [3.1.0] - 2026-09-02
-
-### Added
-
-- **`kai-core-create-agent` authoring contract.** The focused user-invocable skill
-  distinguishes durable roles from workflows, personas, instructors, and
-  reusable skills; requires a permanent role to earn its slot; and defines
-  authority, execution profile, model policy, least-privilege tools, inherited
-  skills, handoffs, acceptance cases, and canonical anatomy before one agent is
-  created or refined. Detailed taxonomy, template, and Kai-repository guidance
-  load progressively from reference files.
-- **Staged durable-role naming enforcement.** New role identities use
-  `<provider-family>-<posture>-<scope>`, with provider families tied to the five
-  installable plugins and controlled `lead`, `builder`, `reviewer`, `operator`,
-  `coordinator`, and `advisor` postures. Existing identities remain valid while
-  agents are classified individually rather than renamed mechanically.
-
-### Changed
-
-- **Agent Skills no longer require the custom-agent `tools` field.** New skills
-  follow the Agent Skills schema and inherit host capabilities; existing skills
-  that declare `tools` remain validated for compatibility.
-- **Agent model frontmatter follows one portable Kai shape.** Existing agents
-  may omit `model`; new agents must use the quoted approved model mapped from
-  their execution profile. YAML collections and non-string scalars are
-  rejected until measured host behavior supports another shape consistently.
-- **Agent models come from a reviewed set.** `claude-opus-5` covers broad
-  judgment and review, `gpt-5.6-sol` covers repository-grounded technical
-  judgment, `gpt-5.6-terra` covers technical review, and `claude-sonnet-5`
-  covers execution, operations, coordination, advisory, procedures, teaching,
-  and simulation. Every new agent also declares the versioned `kai-agent-v1`
-  identity contract, and validator checks keep the shipped taxonomy and model
-  tables aligned with their constants.
-- **The self-check and contributor reference recognize the staged taxonomy.**
-  They direct new authoring through `kai-core-create-agent` without pretending
-  that the existing fleet has already migrated.
-
 ## [3.0.0] - 2026-08-31
 
 ### Added
@@ -3266,7 +3229,6 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
-[3.1.0]: https://github.com/RubenSaucedo/kai/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/RubenSaucedo/kai/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/RubenSaucedo/kai/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/RubenSaucedo/kai/compare/v2.0.0...v2.1.0
