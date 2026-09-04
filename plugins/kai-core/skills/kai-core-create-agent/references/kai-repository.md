@@ -16,8 +16,10 @@ Use it when creating or refining an agent in the Kai plugin repository.
 ## Canonical source
 
 1. Edit only `plugins/<provider>/agents/<agent-id>.agent.md`.
-2. Use root `scripts/lib/inherits-block.txt` verbatim.
-3. Keep core dependency-guard regions generated. Core agents carry no guard.
+2. For a `kai-agent-v1` agent, declare skills under `## Skills on demand` with
+   one explicit trigger per skill. Do not add an `**Inherits:**` line.
+3. Do not add the legacy core dependency-guard region to a `kai-agent-v1`
+   agent. Core availability is checked just in time before the first core skill.
 4. Add a new identity to the provider array in `NEW_AGENT_IDS` in root
    `scripts/lib/pack-plan.mjs`.
 5. Add a new agent to exactly one `CATEGORIES` entry in root
@@ -25,20 +27,26 @@ Use it when creating or refining an agent in the Kai plugin repository.
 
 Generated copies under `plugins/kai-core/scripts/` are outputs, not sources.
 
-## Required inherited contracts
+## Required situational contracts
 
-Every agent inherits:
+Every `kai-agent-v1` agent routes:
 
-- `kai-core-team-operating-rules`;
-- `kai-core-asset-lifecycle`.
+- `kai-core-contract-v1` before its first other core skill;
+- `kai-core-team-operating-rules` before coordinated Kai work;
+- `kai-core-asset-lifecycle` before creating or changing durable output.
 
-Every durable role or workflow also inherits:
+Every durable role or workflow also routes:
 
-- `kai-core-workspace-conventions`;
-- `kai-core-work-activity`.
+- `kai-core-workspace-conventions` before accessing `.kai` state;
+- `kai-core-work-activity` before recording a bounded run.
 
-An activity exemption requires an explicit durable reason in the validator.
-Every additional inherited skill must be provided by core or the same plugin.
+Add coordination, communication, scope, or domain skills only when the agent
+has an action that triggers them. Every additional skill must be provided by
+core or the same plugin.
+
+Pre-`kai-agent-v1` agents retain the legacy `**Inherits:**` declaration and
+generated dependency guard until they are deliberately migrated. Do not copy
+those legacy mechanisms into a new or migrated agent.
 
 ## One-agent identity change
 

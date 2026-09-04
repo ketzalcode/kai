@@ -11,11 +11,10 @@
 //     one provider, every reviewed override still placing a skill inheritance
 //     cannot, core's `kai-core-*` namespace held in both directions, no id
 //     emitted by two packs, and role availability decided by roster membership;
-//   • generated-pack guarantees — the canonical fail-closed core preflight and
-//     the degraded-mode refusal that follows it, byte for byte, exactly once, in
-//     every generated department agent and in neither case in a core agent, over
-//     a probe skill whose marker and version are rigid, with the refusal held to
-//     restating no core rule;
+//   • generated-pack guarantees — legacy department agents carry the canonical
+//     fail-closed core preflight and degraded-mode refusal byte for byte, while
+//     kai-agent-v1 and core agents carry neither; the probe marker and version
+//     remain rigid and the refusal restates no core rule;
 //   • cross-pack references — every inherited, user-invoked and orchestrated
 //     reference, plus every invoked script and hooks.json itself, resolves to
 //     core or to the referring body's own pack;
@@ -40,14 +39,15 @@ import {
   HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
-  requiresCoordinatedRunContracts, agentIdentityContractErrors, agentPromptLimitErrors,
+  requiresCoordinatedRunContracts, progressiveSkillRoutingErrors,
+  agentIdentityContractErrors, agentPromptLimitErrors,
   agentAuthoringReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
-  agentSourceFile, skillSourceFile,
+  agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT,
 } from './lib/pack-plan.mjs';
 import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
@@ -235,11 +235,12 @@ for (const p of refScanFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Inherited-contract declarations
+// Skill declarations
 //
 // A plugin's own root AGENTS.md is never loaded as custom instructions in a
 // consumer workspace, so shared rules only reach a session through a skill the
-// agent names. The `**Inherits:**` line is that machine-checkable declaration.
+// agent names. kai-agent-v1 uses scoped dispatch entries; legacy agents use the
+// `**Inherits:**` line and the checks below preserve that migration baseline.
 // ---------------------------------------------------------------------------
 const BASELINE_SKILL = 'kai-core-team-operating-rules';
 const ASSET_LIFECYCLE_SKILL = 'kai-core-asset-lifecycle';
@@ -249,28 +250,13 @@ const ASSET_LIFECYCLE_SKILL = 'kai-core-asset-lifecycle';
 // This became load-bearing rather than nice-to-have: the host emits no subagent
 // lifecycle events for plugin-provided agents, so `.kai/activity.jsonl` is the
 // ONLY evidence that a kai persona ran at all. An agent in a coordinating
-// family that does not inherit `kai-core-work-activity` is invisible in both tiers, and
-// the fleet view renders it as though it never existed.
+// family that does not route `kai-core-work-activity` is invisible in both
+// tiers, and the fleet view renders it as though it never existed.
 //
-// The rule is an opt-OUT, deliberately. A new agent inherits the obligation by
+// The rule is an opt-OUT, deliberately. A new agent routes the obligation by
 // default; forgetting to exempt one costs a line of bookkeeping, while
 // forgetting to opt one in costs an agent that cannot be seen.
 const ACTIVITY_SKILL = 'kai-core-work-activity';
-// Conversational roles, exempt because they have no bounded run to report.
-// Two appends per run is the contract; a role whose "run" is an open-ended
-// conversation with the operator would emit bookkeeping noise instead, and the
-// activity skill is explicit that a drifted-from log is worse than no log.
-const ACTIVITY_EXEMPT = new Map([
-  ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
-  ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
-  // These two DO bounded work worth seeing, and are exempt for a worse reason:
-  // they hold no `execute` tool, and `kai-core-work-activity` needs one to append. Granting
-  // a shell to a research-and-write role purely so it can log would trade a
-  // sandbox boundary for observability, which is the wrong way round. They stay
-  // invisible until the delegating agent can record on their behalf.
-  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `execute`'],
-  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `execute`'],
-]);
 const CONTRACT_HEADING = /^## (?:Contracts you inherit|Inherited contracts)[^\n]*\n/gm;
 const blockPath = join(ROOT, 'scripts/lib/inherits-block.txt');
 const inheritsBlock = existsSync(blockPath)
@@ -321,6 +307,18 @@ for (const agent of agentFiles) {
   const r = rel(agent.path);
   const all = raw.split('\n');
   const lines = all.filter((l) => /^\*\*Inherits:\*\*/.test(l));
+  const progressive = raw.includes('**Identity contract:** `kai-agent-v1`');
+
+  if (progressive) {
+    for (const msg of progressiveSkillRoutingErrors({
+      id: agent.id,
+      body: raw,
+      tools: parseToolList(agent.fm?.tools) || [],
+      knownSkills: skillIds,
+      activityExempt: ACTIVITY_EXEMPT.has(agent.id),
+    })) err(r, msg);
+    continue;
+  }
 
   if (lines.length === 0) {
     err(r, 'missing a `**Inherits:** ...` line declaring its inherited skills');
@@ -413,14 +411,10 @@ for (const agent of agentFiles) {
 // ---------------------------------------------------------------------------
 // Guarantee blocks (generated department agents)
 //
-// A pack agent that cannot reach core cannot reach a skill that would tell it
-// what to do about core, so both guarantee blocks are copied into every
-// generated department agent's OWN body: the fail-closed probe first, then the
-// degraded-mode refusal for the case the probe cannot cover — core answered and
-// is compatible, and the operating contract still is not in the session. One
-// canonical file each, pinned byte for byte here, is what stops those copies
-// from drifting — the same reasoning as inherits-block.txt above. Core agents
-// are excluded from both: they ship inside kai-core itself.
+// Legacy department agents retain the fail-closed probe and degraded-mode
+// refusal in their own bodies until migration. kai-agent-v1 agents check core
+// just in time before using a core skill and carry neither block. Core agents
+// are also excluded because they ship inside kai-core itself.
 // ---------------------------------------------------------------------------
 
 const preflightPath = join(ROOT, PREFLIGHT_BLOCK_REL);
@@ -442,10 +436,8 @@ for (const e of generatedPackageErrors(generatedPacks, { root: ROOT })) err(e.fi
 for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
 
 // The contract version, pinned wherever it is stated: the probe skill's name,
-// the canonical block's prose, and the probe body. A skew between them is the
-// one failure a fully green build still ships — every gate keeps passing while
-// every generated department agent refuses a healthy core, or accepts a skewed
-// one. A missing block is reported here too, since it is one of the pins.
+// the canonical legacy block's prose, and the probe body. A missing block is
+// reported here too because unmigrated agents still depend on these pins.
 {
   const probePath = skillSourceFile(ROOT, CONTRACT_SKILL);
   for (const e of contractPinErrors({
@@ -513,9 +505,9 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
   for (const skill of skillFiles) {
     const id = skill.id;
     if (inherited.has(id) || dispatched.has(id)) continue;
-    // The version-pinned probe fires from the canonical preflight block injected
-    // into every generated department agent — a path with no `**Inherits:**`
-    // line to grep, because the monolith has no injected bodies.
+    // The version-pinned probe fires from the legacy canonical preflight and
+    // from kai-agent-v1 dispatch entries. This exception preserves old
+    // monolith validation, where generated department bodies are absent.
     if (preflight && id === CONTRACT_SKILL && preflight.includes(id)) continue;
     const raw = readFileSync(skill.path, 'utf8');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;

@@ -7,9 +7,9 @@ inside this repository only.
 > not here.** A plugin's own root `AGENTS.md` is never loaded as custom
 > instructions in a consumer workspace — the host reads `AGENTS.md` only from
 > the user's repository root and working directory. Rules placed here reach kai
-> contributors and nobody else. Anything that must bind agent behaviour in every
-> workspace belongs in the `kai-core-team-operating-rules` skill, and every agent
-> declares it on its `**Inherits:**` line.
+> contributors and nobody else. New `kai-agent-v1` agents route that contract
+> just in time before coordinated Kai work; legacy agents still declare it on
+> their `**Inherits:**` line until migration.
 
 ## Where the rules live
 
@@ -21,27 +21,29 @@ inside this repository only.
 | Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
 
-## Declaring inherited contracts
+## Routing shared contracts
 
-Every agent carries exactly one `**Inherits:**` line as the first line of its
-body, directly under the frontmatter, listing the skills that bind it, followed
-by the verbatim directive in `scripts/lib/inherits-block.txt`:
+New and materially migrated agents use `kai-agent-v1`. They declare a
+`## Skills on demand` section with one explicit activation trigger per skill.
+They do not preload skills, carry an `**Inherits:**` line, or embed the legacy
+core dependency guard. They call `kai-core-contract-v1` just before their first
+other core skill. If core is unavailable, ordinary single-shot domain work may
+continue, but Kai coordination and `.kai` state may not. The agent states that
+limitation once and tells the operator to install or update `kai-core`.
+
+Pre-`kai-agent-v1` agents retain exactly one `**Inherits:**` line as the first
+line of the body and the verbatim directive in `scripts/lib/inherits-block.txt`:
 
 ```markdown
 **Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`
 ```
 
-`npm test` enforces that the line exists exactly once and comes first, that the
-directive matches the canonical text byte for byte, that every skill it names
-exists, that every agent inherits `kai-core-team-operating-rules`, that every
-`director-*` / `principal-*` / `workflow-*` agent also inherits
-`kai-core-workspace-conventions`, and that every skill claimed by a profile's
-"Contracts you inherit" section or by inheritance prose appears on the line.
+`npm test` preserves that legacy contract while validating that
+`kai-agent-v1` roles instead provide required on-demand routes and carry no
+legacy guard.
 
-The directive is deliberately duplicated into every agent rather than
-referenced, because a skill loads on demand: an agent that never names it never
-receives it. Keeping the text in one file and pinning it in CI is what stops the
-copies from drifting.
+The legacy directive remains byte-pinned only for unmigrated agents. Do not copy
+it into a new role.
 
 The same reasoning applies to the communication-style block below, for the
 opposite reason: it must reach the **main CLI agent**, which loads no skill and

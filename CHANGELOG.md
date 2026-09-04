@@ -19,6 +19,15 @@ follow semantic versioning.
   permanent mode catalog in the agent. Product owns scope, engineering owns
   technical truth, marketing owns claims, localization owns locale readiness,
   and the operator still owns merge and publication.
+- **New-agent skills now load progressively.** `kai-agent-v1` roles declare
+  situational skill routes with explicit triggers instead of preloading an
+  `**Inherits:**` list. Core compatibility is checked before the first core
+  skill, not before ordinary single-shot work, and migrated agents no longer
+  embed the legacy preflight or degraded-mode blocks.
+- **Agent metadata now distinguishes standards from host extensions.** The
+  authoring template identifies `tools` as GitHub custom-agent frontmatter, not
+  Agent Skills metadata, and records the specifications and open-source writer
+  agents used as design evidence.
 
 ### Removed
 

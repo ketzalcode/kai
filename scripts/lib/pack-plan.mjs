@@ -30,10 +30,10 @@ export const REFUSAL = 'KAI-CORE-MISSING';
 // prefix core alone may use removes that ambiguity; see namespaceErrors.
 export const CORE_SKILL_PREFIX = 'kai-core-';
 
-// The canonical fail-closed preflight, copied into every generated department
-// agent's own body. It lives in a file, not in this module, so the generator,
-// the preview and the CI byte-pin all assert on the same bytes — the same
-// reason scripts/lib/inherits-block.txt is a file.
+// The canonical fail-closed preflight retained by legacy department agents.
+// kai-agent-v1 agents check core just in time and carry no copied guard. This
+// lives in a file so the generator, preview and CI byte-pin assert the same
+// bytes throughout the staged migration.
 export const PREFLIGHT_BLOCK_REL = 'scripts/lib/preflight-block.txt';
 
 // The canonical degraded-mode refusal, carried on the same terms. It answers the
@@ -675,11 +675,10 @@ export const preflightBlock = (root = REPO_ROOT) => readBlock(root, PREFLIGHT_BL
 
 export const degradedBlock = (root = REPO_ROOT) => readBlock(root, DEGRADED_BLOCK_REL);
 
-// The guarantee blocks every generated department agent carries, in the order
-// they must appear. The order is the contract: the preflight is the first
-// executable instruction, and the refusal is what a session falls to only once
-// the preflight has passed. Defined once so the generator, the preview and the
-// validator cannot disagree about it.
+// The guarantee blocks every legacy department agent carries, in the order they
+// must appear. kai-agent-v1 agents use progressive skill routing and omit them.
+// Defined once so the generator, preview and validator cannot disagree during
+// the staged migration.
 export const guaranteeBlocks = (root = REPO_ROOT) => [preflightBlock(root), degradedBlock(root)];
 
 export const guaranteeRegion = (root = REPO_ROOT) => [
@@ -688,12 +687,15 @@ export const guaranteeRegion = (root = REPO_ROOT) => [
   GUARANTEE_REGION_CLOSE,
 ].join('\n\n');
 
-// Department agents carry one explicitly managed region. `--write` may replace
-// this region without treating the rest of the authoritative agent body as
-// generated output. Missing regions are inserted at the same safe anchor the
-// original pack generator used; malformed half-regions fail closed.
+// Legacy department agents carry one explicitly managed region. `--write` may
+// replace it without treating the rest of the authoritative body as generated
+// output. kai-agent-v1 agents have any stale region removed. Missing legacy
+// regions are inserted at the original safe anchor; malformed half-regions fail.
 export function syncGuaranteeRegion(body, root = REPO_ROOT) {
   const normalized = normalizeLF(body);
+  if (normalized.includes(`**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``)) {
+    return removeGuaranteeRegion(normalized);
+  }
   const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
   const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
   const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
@@ -734,6 +736,13 @@ export function syncGuaranteeRegion(body, root = REPO_ROOT) {
 
 export function removeGuaranteeRegion(body) {
   const normalized = normalizeLF(body);
+  const markerLines = normalized.split('\n');
+  const openCount = markerLines.filter((line) =>
+    line === GUARANTEE_REGION_OPEN || line === LEGACY_GUARANTEE_REGION_OPEN).length;
+  const closeCount = markerLines.filter((line) => line === GUARANTEE_REGION_CLOSE).length;
+  if (openCount > 1 || closeCount > 1) {
+    throw new Error('agent has more than one core dependency guard region');
+  }
   const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
   const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
   const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
@@ -1175,6 +1184,105 @@ export function requiresCoordinatedRunContracts(id) {
   const [family, posture] = (id ?? '').split('-');
   if (['director', 'principal', 'workflow'].includes(family)) return true;
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
+}
+
+// Conversational roles have no bounded run to report. Research-only roles lack
+// `execute`, so requiring the append-based activity contract would force a
+// broader sandbox solely for observability.
+export const ACTIVITY_EXEMPT = new Map([
+  ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
+  ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
+  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `execute`'],
+  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `execute`'],
+]);
+
+export function progressiveSkillRoutingErrors({
+  id, body, tools = [], knownSkills = [], activityExempt = false,
+}) {
+  const text = normalizeLF(body ?? '');
+  if (!text.includes(`**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``)) return [];
+
+  const errors = [];
+  if (/^\*\*Inherits:\*\*/m.test(text)) {
+    errors.push(`${ROLE_IDENTITY_CONTRACT} agents route skills just in time and must not declare an eager \`**Inherits:**\` line`);
+  }
+  if (!/^## Skills on demand$/m.test(text)) {
+    errors.push(`${ROLE_IDENTITY_CONTRACT} agents must declare a \`## Skills on demand\` section`);
+  }
+
+  const available = knownSkills instanceof Set ? knownSkills : new Set(knownSkills);
+  const lines = text.split('\n');
+  const sectionStart = lines.findIndex((line) => line === '## Skills on demand');
+  const sectionEnd = sectionStart === -1
+    ? -1
+    : lines.findIndex((line, index) => index > sectionStart && /^## /.test(line));
+  const effectiveEnd = sectionEnd === -1 ? lines.length : sectionEnd;
+  const sectionLines = sectionStart === -1 ? [] : lines.slice(sectionStart + 1, effectiveEnd);
+  lines.forEach((line, index) => {
+    if (index > sectionStart && index < effectiveEnd) return;
+    const candidate = line.match(/^\s*[-*]\s+\*\*`([^`]+)`\*\*/);
+    if (candidate && (available.has(candidate[1]) || candidate[1].startsWith(CORE_SKILL_PREFIX))) {
+      errors.push(`skill route \`${candidate[1]}\` must appear under \`## Skills on demand\``);
+    }
+  });
+  const entries = [];
+  const seen = new Set();
+  for (const line of sectionLines) {
+    const candidate = line.match(/^\s*[-*]\s+\*\*`([^`]+)`\*\*/);
+    if (!candidate) continue;
+    const routed = line.match(/^\s*[-*]\s+\*\*`([^`]+)`\*\*\s+—\s+(\S.*)$/);
+    if (!routed) {
+      errors.push(`skill route \`${candidate[1]}\` must include an explicit trigger after an em dash`);
+      continue;
+    }
+    if (!/^(?:before|when|after|for)\b/i.test(routed[2])) {
+      errors.push(`skill route \`${routed[1]}\` must start its trigger with before, when, after, or for`);
+    }
+    if (seen.has(routed[1])) {
+      errors.push(`routes skill \`${routed[1]}\` more than once`);
+      continue;
+    }
+    seen.add(routed[1]);
+    entries.push({ skill: routed[1], trigger: routed[2] });
+  }
+  const routed = new Set(entries.map((entry) => entry.skill));
+  for (const skill of routed) {
+    if (!available.has(skill)) errors.push(`routes unknown skill \`${skill}\``);
+  }
+  if (entries[0]?.skill !== CONTRACT_SKILL) {
+    errors.push(`must route \`${CONTRACT_SKILL}\` first so compatibility is checked before another core skill`);
+  } else if (!/\bbefore\b.*\bfirst\b.*\bcore\b.*\bskill\b/i.test(entries[0].trigger)) {
+    errors.push(`the \`${CONTRACT_SKILL}\` route must trigger before the first other core skill`);
+  }
+
+  const required = [
+    CONTRACT_SKILL,
+    'kai-core-team-operating-rules',
+    'kai-core-asset-lifecycle',
+  ];
+  if (requiresCoordinatedRunContracts(id)) {
+    required.push('kai-core-workspace-conventions');
+    if (!activityExempt) required.push('kai-core-work-activity');
+  }
+  for (const skill of required) {
+    if (!routed.has(skill)) {
+      errors.push(`must route \`${skill}\` under \`## Skills on demand\` with an explicit activation trigger`);
+    }
+  }
+
+  const held = tools instanceof Set ? tools : new Set(tools);
+  if (routed.size > 0 && !held.has('skill')) {
+    errors.push('routes skills but its `tools` list omits `skill`');
+  }
+  if (activityExempt && routed.has('kai-core-work-activity')) {
+    errors.push('is activity-exempt but routes `kai-core-work-activity`; remove the exemption or the route');
+  }
+  if (!/If core is unavailable or incompatible,[\s\S]{0,200}\bsingle-shot\b/i.test(text)
+    || !/do not create `\.kai` state/i.test(text)
+    || !/tell\s+the operator to install or update `kai-core`/i.test(text)) {
+    errors.push('must state the non-blocking core fallback: continue single-shot, avoid `.kai` state, and tell the operator to install or update `kai-core`');
+  }
+  return errors;
 }
 
 export function agentIdentityContractErrors({ id, body, fm = {} }) {
@@ -2047,7 +2155,7 @@ export function contractPinErrors({
   }
 
   if (probe === null || probe === undefined) {
-    add(probeRel, 'missing — every generated department agent invokes this skill as its first action');
+    add(probeRel, 'missing — every legacy department agent invokes this skill as its first action');
     return errs;
   }
   const text = normalizeLF(probe);
@@ -2105,6 +2213,14 @@ export function guaranteeBlockErrors({
     if (entry.kind !== 'agent') continue;
     const copies = body.split(preflight).length - 1;
     const refusals = body.split(degraded).length - 1;
+    const progressive = body.includes(`**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``);
+    if (progressive) {
+      if (copies !== 0 || refusals !== 0
+        || body.includes(GUARANTEE_REGION_OPEN) || body.includes(GUARANTEE_REGION_CLOSE)) {
+        add(key, `uses ${ROLE_IDENTITY_CONTRACT} progressive skill routing and must not carry the legacy core dependency guard`);
+      }
+      continue;
+    }
     if (entry.pack === 'core') {
       if (copies !== 0) {
         add(key, 'carries the core-preflight block; a core agent ships inside the pack that provides '

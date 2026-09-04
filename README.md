@@ -39,13 +39,16 @@ Everything is indexed in **[docs/](docs/README.md)**.
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
 Agent creation now has an explicit contract: provider family, operating posture,
-scope, authority, execution profile, model policy, tools, skills, handoffs, and
-acceptance cases are settled before a role joins the fleet.
+scope, authority, execution profile, model policy, host-specific tools,
+on-demand skills, handoffs, and acceptance cases are settled before a role
+joins the fleet.
 `eng-lead-technical-writing` is the first migrated role: it owns documentation
 architecture, README health, and editorial acceptance while product,
 engineering, marketing, localization, and the operator retain their factual and
-publication gates. This replaces the removed principal-technical-writer
-identity; update direct invocations and existing workspace item ownership fields.
+publication gates. It loads core contracts only at the workflow step that needs
+them instead of consuming their context at startup. This replaces the removed
+principal-technical-writer identity; update direct invocations and existing
+workspace item ownership fields.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and
@@ -57,14 +60,15 @@ the source tree.
 Each agent and skill now has exactly one authoritative source inside its owning
 `plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
 are gone. Generation is limited to derived manifests, dependency locks, routed
-scripts, and one explicitly marked dependency-guard region in department agents.
+scripts, and legacy dependency-guard regions for agents not yet migrated to
+`kai-agent-v1`.
 
-Every role now loads one universal asset-lifecycle contract. Generated work
-separates execution completion from artifact disposition and validity, requires
-classification before durable output is left behind, preserves superseded or
-retracted history, and adds asset/backlog/ownership sweeps to initiative
-closure. Workspace enforcement rolls out separately as warn, reconcile, then
-error.
+Every role can route to the shared asset-lifecycle contract; `kai-agent-v1`
+roles load it when durable output is about to change. Generated work separates
+execution completion from artifact disposition and validity, preserves
+superseded or retracted history, and adds asset/backlog/ownership sweeps to
+initiative closure. Workspace enforcement rolls out separately as warn,
+reconcile, then error.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus the personal, product, engineering,
@@ -78,7 +82,7 @@ error.
 `kai-engineering` + `kai-gtm`.**
 Plugin-local agent and skill files are the canonical source. Generation refreshes
 routed scripts, each script's local module closure, the fleet hooks, manifests,
-dependency locks, and marked dependency-guard regions.
+dependency locks, and legacy marked dependency-guard regions.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
 Copilot copies plugin files but does not run npm, so
 optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;

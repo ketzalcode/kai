@@ -140,6 +140,12 @@ It is not unreachable, though: a user can run
 onboarding entirely. So the state must still be handled, just not designed
 around.
 
+> **Migration update:** The following eager preflight and refusal design remains
+> only for pre-`kai-agent-v1` agents. New and migrated agents use progressive
+> skill routing, check `kai-core-contract-v1` immediately before their first
+> other core skill, and continue ordinary single-shot domain work when core is
+> unavailable without using Kai coordination or state.
+
 Two mitigations, in order:
 
 1. A uniquely named `kai-core-contract-v1` skill returning a rigid marker,

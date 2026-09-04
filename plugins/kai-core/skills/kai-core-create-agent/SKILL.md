@@ -67,8 +67,12 @@ Complete the agent contract from the template:
 4. Output and completion condition.
 5. Handoffs.
 6. Execution profile and model policy.
-7. Tools and inherited or situational skills.
+7. Platform tools and situational skills, each with an activation trigger.
 8. Behavioral acceptance cases.
+
+Default to progressive loading. A `kai-agent-v1` body carries only instructions
+needed on every invocation and routes each skill at the exact workflow step that
+needs it; it never preloads a skill list.
 
 Use positive routing language: "route this request to X" is clearer than a long
 list of prohibited requests. Keep explicit boundaries only where self-approval,
@@ -84,10 +88,13 @@ Use this authoring budget for a new or materially refined agent:
 | Agent prompt | at most 20,000 characters | over 20,000 characters |
 | Host hard limit | — | 30,000 characters |
 
-Exclude generated dependency-guard blocks from the line target. At the refocus
-threshold, extract reusable method into a skill, remove repeated inherited
-rules, or split the role only if both halves independently earn a slot. Record a
-short justification when a focused agent still needs to exceed the target.
+For a legacy agent, exclude the generated dependency-guard region from the
+authored line target.
+
+At the refocus threshold, extract reusable method into a skill, remove repeated
+shared rules, or split the role only if both halves independently earn a slot.
+Record a short justification when a focused agent still needs to exceed the
+target.
 
 ### 6. Apply the approved model policy
 
