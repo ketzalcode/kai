@@ -514,7 +514,6 @@ function selfTest() {
       'generated agent frontmatter is a byte-identical projection of canonical source');
     const createAgentRefs = [
       'taxonomy.md', 'agent-template.md', 'model-selection.md', 'kai-repository.md',
-      'research-basis.md',
     ];
     ok(createAgentRefs.every((file) => existsSync(join(
       full, 'kai-core-preview', 'skills', 'kai-core-create-agent', 'references', file

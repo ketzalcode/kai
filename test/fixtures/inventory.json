@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 56,
-    "skills": 53
+    "skills": 54
   },
   "agents": [
     "creative-video-director",
@@ -113,6 +113,7 @@
     "review-security-privacy",
     "review-success-metrics",
     "review-ux-accessibility",
+    "technical-writing",
     "ui-mockup",
     "video-direction"
   ],

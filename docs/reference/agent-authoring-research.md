@@ -1,8 +1,10 @@
-# Agent-authoring research basis
+[kai](../../README.md) / [Docs](../README.md) / Agent-authoring research
 
-Use this reference when a proposed agent introduces a new prompt convention,
-host field, loading rule, or agent-versus-skill boundary. It records evidence,
-not a universal standard.
+# Agent-authoring research
+
+This note records the external evidence behind Kai's agent-authoring contract.
+It is contributor documentation, not runtime instructions and is never loaded
+as part of `kai-core-create-agent`.
 
 ## Authoritative specifications
 
@@ -27,11 +29,12 @@ contracts for their respective hosts.
 ## Open-source examples reviewed
 
 - [github/awesome-copilot `se-technical-writer`](https://github.com/github/awesome-copilot/blob/main/agents/se-technical-writer.agent.md)
-  uses a focused routing description and GitHub-specific tool list, but embeds
-  document templates directly in a long agent prompt.
+  provides strong audience adaptation, writing principles, document structures,
+  and verification practices. Its embedded templates are better expressed as
+  on-demand skill references in Kai.
 - [github/awesome-copilot `taxcore-technical-writer`](https://github.com/github/awesome-copilot/blob/main/agents/taxcore-technical-writer.agent.md)
-  shows the value of domain terminology and audience-specific quality checks,
-  while also showing how document methods can dominate an agent body.
+  shows the value of domain terminology and audience-specific checks, while
+  also showing how format methods can dominate an agent body.
 - [rohitg00/awesome-claude-code-toolkit `technical-writer`](https://github.com/rohitg00/awesome-claude-code-toolkit/blob/main/agents/business-product/technical-writer.md)
   centers audience, information type, verification, and editorial process.
 - [verifywise-ai/verifywise `technical-writer`](https://github.com/verifywise-ai/verifywise/blob/develop/agents/technical-writer.md)
@@ -55,10 +58,10 @@ contracts for their respective hosts.
 Examples are design inputs, not authorities. Their frontmatter and runtime
 assumptions belong to their hosts.
 
-## Kai decisions
+## Patterns adopted by Kai
 
 1. An agent owns durable authority, routing, evidence standards, and completion.
-2. Reusable document methods belong in focused skills or references.
+2. Reusable document methods belong in focused skills and references.
 3. Skills load at the workflow step that needs them; listing a skill must not
    imply eager loading.
 4. Core compatibility is checked before the first core-skill use, not before
@@ -66,10 +69,10 @@ assumptions belong to their hosts.
 5. A missing core disables Kai coordination and state, not the agent's basic
    domain capability. The agent states that limitation once and tells the
    operator to install or update `kai-core`.
-6. Frontmatter must identify which fields are host-specific. Tool access is
-   selected for actual actions and least privilege, not copied as a standard.
+6. Frontmatter identifies host-specific fields. Tool access is selected for
+   actual actions and least privilege, not copied as a standard.
 
 `eng-lead-technical-writing` earns an agent slot because information
 architecture and editorial readiness are standing authorities across document
-types. Drafting a README, tutorial, API reference, ADR, or release note is a
-bounded method and should become a focused skill when Kai codifies it.
+types. Drafting a README, tutorial, API reference, decision record, or release
+note is a bounded method supplied by the `technical-writing` skill.

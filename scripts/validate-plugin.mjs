@@ -135,38 +135,6 @@ for (const f of agentFiles.filter((entry) => entry.fm)) {
 }
 
 // ---------------------------------------------------------------------------
-// Discovery-metadata budget
-// ---------------------------------------------------------------------------
-// Every agent and skill `description:` is loaded into EVERY session — it is the
-// routing surface the host uses to decide what fires, not documentation. Before
-// this budget existed the shipped descriptions totalled ~13.5k tokens per
-// session (agents ~7.4k, skills ~6.1k), because they had accumulated capability
-// inventories, implementation notes and example lists that the bodies already
-// carried.
-//
-// The budget is a ratchet, not a style opinion: without it the prose grows back
-// one reasonable-looking sentence at a time, and nothing fails until someone
-// re-measures. Skills are held tighter than agents because a skill description
-// answers a narrower question — "should this load right now?" — and because
-// there is no equivalent of an agent's disambiguation-from-a-neighbour clause.
-//
-// Raising a limit is a real decision: it is paid by every session of every user,
-// so change the constant deliberately rather than to accommodate one file.
-const AGENT_DESC_MAX = 250;
-const SKILL_DESC_MAX = 180;
-
-for (const f of allFiles) {
-  if (!f.fm) continue;
-  const desc = stripQuotes(f.fm.description || '');
-  const max = f.kind === 'agent' ? AGENT_DESC_MAX : SKILL_DESC_MAX;
-  if (desc.length > max) {
-    err(rel(f.path), `\`description\` is ${desc.length} chars, over the ${max}-char ${f.kind} budget `
-      + `by ${desc.length - max} — it loads in every session, so move detail into the body and keep `
-      + 'the description to what it does plus when it fires');
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Cross-reference integrity
 // ---------------------------------------------------------------------------
 

@@ -116,10 +116,10 @@ actions. Every Kai agent that dispatches skills includes `skill`.
 Its aliases and fallback behavior are host-specific. Kai declares it for
 least-privilege execution on supported GitHub hosts; do not present the list as
 portable or industry-standard metadata. Agent Skills separately defines an
-experimental `allowed-tools` field for skills. See
-[the research basis](research-basis.md) before introducing a new host field or
-loading convention. Kai's existing `tools` field on `SKILL.md` files is also a
-host extension, not Agent Skills metadata.
+experimental `allowed-tools` field for skills. Kai's existing `tools` field on
+`SKILL.md` files is also a host extension, not Agent Skills metadata. Keep
+host-specific metadata explicit and load skill instructions only when their
+declared trigger applies.
 
 ## Acceptance cases
 

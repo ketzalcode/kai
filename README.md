@@ -35,7 +35,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v4.0.0` — all **56 agents and 53 skills** are published across five plugins for
+`v4.0.0` — all **56 agents and 54 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
 Agent creation now has an explicit contract: provider family, operating posture,
@@ -46,9 +46,10 @@ joins the fleet.
 architecture, README health, and editorial acceptance while product,
 engineering, marketing, localization, and the operator retain their factual and
 publication gates. It loads core contracts only at the workflow step that needs
-them instead of consuming their context at startup. This replaces the removed
-principal-technical-writer identity; update direct invocations and existing
-workspace item ownership fields.
+them instead of consuming their context at startup. Document structures load
+separately through the `technical-writing` skill only when a writing task needs
+them. This replaces the removed principal-technical-writer identity; update
+direct invocations and existing workspace item ownership fields.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and

@@ -137,6 +137,7 @@ export const SKILL_OWNER_OVERRIDES = {
   'review-dependencies': 'engineering',
   'review-performance-scale': 'engineering',
   'review-success-metrics': 'engineering',
+  'technical-writing': 'engineering',
 };
 
 // The published surface now equals the full locked partition. Retain this alias

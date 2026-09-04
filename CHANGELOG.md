@@ -15,10 +15,11 @@ follow semantic versioning.
   discipline, and owner handoffs while explicitly owning repository README
   health and routing proposal review to `workflow-doc-review`.
 - **Document methods can evolve independently from role authority.** The lead
-  selects a focused document-type skill when one exists instead of embedding a
-  permanent mode catalog in the agent. Product owns scope, engineering owns
-  technical truth, marketing owns claims, localization owns locale readiness,
-  and the operator still owns merge and publication.
+  invokes the new `technical-writing` skill for audience-centered README,
+  concept, task-guide, technical-reference, decision-record, and release
+  patterns instead of embedding format templates in the agent. Product owns
+  scope, engineering owns technical truth, marketing owns claims, localization
+  owns locale readiness, and the operator still owns merge and publication.
 - **New-agent skills now load progressively.** `kai-agent-v1` roles declare
   situational skill routes with explicit triggers instead of preloading an
   `**Inherits:**` list. Core compatibility is checked before the first core
@@ -26,8 +27,11 @@ follow semantic versioning.
   embed the legacy preflight or degraded-mode blocks.
 - **Agent metadata now distinguishes standards from host extensions.** The
   authoring template identifies `tools` as GitHub custom-agent frontmatter, not
-  Agent Skills metadata, and records the specifications and open-source writer
-  agents used as design evidence.
+  Agent Skills metadata. Detailed specifications and open-source examples now
+  live in contributor documentation rather than runtime skill references.
+- **Agent and skill descriptions are judged by routing quality, not a fixed
+  character ceiling.** The provisional 250/180-character validator has been
+  removed while the new agent and progressive-skill contracts are established.
 
 ### Removed
 
