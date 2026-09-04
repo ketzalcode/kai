@@ -31,7 +31,9 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { parseFrontmatter, parseToolList } from './lib/loader-contract.mjs';
+import {
+  APPROVED_AGENT_MODELS, parseFrontmatter, parseToolList,
+} from './lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
@@ -44,9 +46,12 @@ import {
   planAssets, planAssetClosure, assetOwnershipErrors, hooksAssignmentErrors,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern,
+  guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
+  agentTaxonomyErrors, requiresCoordinatedRunContracts, agentIdentityContractErrors,
+  agentPromptLimitErrors, agentAuthoringReferenceErrors,
+  ROLE_PROFILE_MODELS,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
-  sourceAgentFiles, sourceSkillFiles, sourceFileErrors, sourcePlacementErrors,
+  sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors, sourcePlacementErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
   GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE,
 } from './lib/pack-plan.mjs';
@@ -149,7 +154,9 @@ function writePlugin(dir, name, description, agentIds, skills) {
       writeFileSync(join(dir, 'agents', `${id}.agent.md`), normalizeLF(body));
     }
   }
-  for (const s of skills) writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'));
+  for (const s of skills) {
+    writeSkill(dir, s, readFileSync(skillPath(s), 'utf8'), skillCompanionFiles(ROOT, s));
+  }
 }
 
 // Materialise core plus any subset of the departments. A subset is the point:
@@ -202,9 +209,14 @@ export function contractSkill(contractVersion) {
   ].join('\n');
 }
 
-function writeSkill(dir, id, text) {
+function writeSkill(dir, id, text, companions = []) {
   mkdirSync(join(dir, 'skills', id), { recursive: true });
-  writeFileSync(join(dir, 'skills', id, 'SKILL.md'), text);
+  writeFileSync(join(dir, 'skills', id, 'SKILL.md'), normalizeLF(text));
+  for (const companion of companions) {
+    const target = join(dir, 'skills', id, ...companion.rel.split('/'));
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, normalizeLF(readFileSync(companion.path, 'utf8')));
+  }
 }
 
 // The two-plugin preview `--out` builds: core plus one department. It is a
@@ -257,7 +269,7 @@ function walkCommitted(base) {
 
 const isSourceKey = (key) => {
   const entry = parseGeneratedKey(key);
-  return entry?.kind === 'agent' || entry?.kind === 'skill';
+  return entry?.kind === 'agent' || entry?.kind === 'skill' || entry?.kind === 'skill-companion';
 };
 
 const isDerivedOwnedKey = (key) => {
@@ -492,6 +504,11 @@ function selfTest() {
       'removing skill access from a generated agent is detected rather than false-passing from workspace files');
     ok(builtAgents.every((a) => frontmatter(a.body) === frontmatter(readAgent(a.id))),
       'generated agent frontmatter is a byte-identical projection of canonical source');
+    const createAgentRefs = ['taxonomy.md', 'agent-template.md', 'model-selection.md', 'kai-repository.md'];
+    ok(createAgentRefs.every((file) => existsSync(join(
+      full, 'kai-core-preview', 'skills', 'kai-core-create-agent', 'references', file
+    ))),
+    'a preview carries every progressive reference required by kai-core-create-agent');
   } catch (e) {
     ok(false, `preflight arms threw: ${e.message}`);
   } finally {
@@ -591,6 +608,11 @@ function selfTest() {
   'and neither into a core agent, which ships inside the pack whose absence they cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
     'core provides the probe the injected block tells department agents to invoke');
+  ok(m1.has('kai-core/skills/kai-core-create-agent/references/taxonomy.md')
+    && m1.has('kai-core/skills/kai-core-create-agent/references/agent-template.md')
+    && m1.has('kai-core/skills/kai-core-create-agent/references/model-selection.md')
+    && m1.has('kai-core/skills/kai-core-create-agent/references/kai-repository.md'),
+  'the materialised skill surface includes progressive references, not only SKILL.md');
   ok(PACK_ORDER.every((pack) => [...m1.keys()].some((key) => key.startsWith(`${packPluginName(pack)}/`))),
   'the committed surface materialises every pack in the locked partition');
 
@@ -1090,6 +1112,9 @@ function selfTest() {
   ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'principal-gone' })], {})
     .some((m) => /orchestrated reference to agent `principal-gone` resolves to no pack/.test(m)),
   'an orchestrated dispatch of an agent that no longer exists fails by name');
+  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'eng-buidler-frontend' })], {})
+    .some((m) => /orchestrated reference to agent `eng-buidler-frontend` resolves to no pack/.test(m)),
+  'an orchestrated dispatch with a mistyped new posture fails as a dangling agent reference');
   ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'persona-self' })], { 'agent:persona-self': ['personal'] })
     .length === 0,
   'but dispatching a real agent in another pack is allowed: a referral degrades, it does not fail to load');
@@ -1347,6 +1372,120 @@ function selfTest() {
   // --- one family list for every agent-shaped token ---------------------
   ok(rosterAgents.every((id) => agentShapedPattern().test(id)),
     'every shipped agent id matches the agent-shaped pattern the reference checks use (one family list, not two)');
+  ok(agentShapedPattern().test('eng-builder-frontend'),
+    'the agent-shaped reference pattern recognizes the new provider-posture-scope grammar');
+  ok(!agentShapedPattern().test('core-workspace-conventions')
+    && !agentShapedPattern().test('prod-roadmap'),
+  'generic provider-domain terms are not misclassified as agent ids without a controlled posture');
+  ok(agentCandidatePattern().test('eng-buidler-frontend'),
+    'a provider-family dispatch with a mistyped posture remains an agent candidate and fails as unresolved');
+  ok(agentTaxonomyErrors({ id: 'eng-builder-frontend', pack: 'engineering' }).length === 0,
+    'a new durable-role id with matching provider, posture, and scope passes');
+  ok(agentTaxonomyErrors({ id: 'eng-creator-frontend', pack: 'engineering' })
+    .some((m) => /posture.*not one of/.test(m)),
+  'an ungoverned posture fails by name');
+  ok(agentTaxonomyErrors({ id: 'eng-builder-frontend', pack: 'product' })
+    .some((m) => /belongs to kai-engineering/.test(m)),
+  'a durable-role family placed in the wrong provider fails by name');
+  ok(agentTaxonomyErrors({ id: 'prod-lead', pack: 'product' })
+    .some((m) => /family>-<posture>-<scope/.test(m)),
+  'a durable-role id without scope fails by name');
+  ok(agentTaxonomyErrors({ id: 'eng-builder-fe', pack: 'engineering' })
+    .some((m) => /full responsibility words/.test(m)),
+  'an abbreviated durable-role scope fails by name');
+  ok(agentTaxonomyErrors({ id: 'principal-new-role', pack: 'engineering' })
+    .some((m) => /migration-only/.test(m)),
+  'a new agent cannot extend a retired family during staged migration');
+  ok(agentTaxonomyErrors({ id: 'principal-swe-frontend', pack: 'engineering' }).length === 0,
+    'an existing retired-family id remains valid during staged migration');
+  ok(agentTaxonomyErrors({ id: 'analyst-market', pack: 'engineering' })
+    .some((m) => /family.*not supported/.test(m)),
+  'an agent id from an unsupported family fails with a file-scoped taxonomy error');
+  ok(requiresCoordinatedRunContracts('eng-builder-frontend')
+    && requiresCoordinatedRunContracts('core-coordinator-staff')
+    && !requiresCoordinatedRunContracts('persona-ux-first-time-user'),
+  'new durable roles retain inherited workspace and activity obligations while personas do not');
+  ok(agentIdentityContractErrors({
+    id: 'eng-builder-frontend',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
+    fm: { model: '"claude-sonnet-5"' },
+  }).length === 0,
+  'a new durable role carrying the identity contract, profile, and mapped model passes');
+  ok(agentIdentityContractErrors({ id: 'eng-builder-frontend', body: '', fm: {} })
+    .some((m) => /kai-agent-v1/.test(m)),
+  'a new durable role missing the versioned identity contract fails by name');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-security',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** review',
+    fm: {},
+  }).some((m) => /must declare frontmatter model "claude-opus-5"/.test(m)),
+  'a new durable role cannot omit the model mapped to its primary profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-security',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** review',
+    fm: { model: '"claude-sonnet-5"' },
+  }).some((m) => /requires frontmatter model "claude-opus-5"/.test(m)),
+  'a new durable role cannot use an approved model assigned to another profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-lead-architecture',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** technical-judgment',
+    fm: { model: '"gpt-5.6-sol"' },
+  }).length === 0,
+  'a technical lead can use the pre-approved Sol technical-judgment profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-code',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** technical-review',
+    fm: { model: '"gpt-5.6-terra"' },
+  }).length === 0,
+  'a technical reviewer can use the pre-approved Terra technical-review profile');
+  ok(agentIdentityContractErrors({
+    id: 'eng-reviewer-security',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
+    fm: { model: '"claude-sonnet-5"' },
+  }).some((m) => /posture `reviewer` requires primary profile `review`/.test(m)),
+  'a durable-role posture cannot select another posture family profile');
+  ok(agentIdentityContractErrors({
+    id: 'workflow-new-release',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** procedure',
+    fm: { model: '"claude-sonnet-5"' },
+  }).length === 0,
+  'a new workflow carries the same identity, profile, and model contract');
+  ok(agentIdentityContractErrors({
+    id: 'persona-new-buyer',
+    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** advisory',
+    fm: { model: '"claude-sonnet-5"' },
+  }).some((m) => /kind `persona` requires primary profile `simulation`/.test(m)),
+  'a new kind-prefixed agent cannot select a profile owned by another kind');
+  ok(agentIdentityContractErrors({
+    id: 'workflow-weekly-pulse',
+    body: '',
+    fm: {},
+  }).length === 0,
+  'an existing kind-prefixed agent remains migration-safe without the new identity contract');
+  ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
+    && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
+  'the approved model set and deterministic profile mapping contain the same identifiers');
+  ok(agentPromptLimitErrors('x'.repeat(30_000)).length === 0
+    && agentPromptLimitErrors('x'.repeat(30_001)).some((m) => /host limit/.test(m)),
+  'the host prompt limit accepts 30,000 characters and rejects the first character over it');
+
+  const authoringRefs = join(ROOT, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references');
+  const taxonomyPath = join(authoringRefs, 'taxonomy.md');
+  const modelSelectionPath = join(authoringRefs, 'model-selection.md');
+  if (existsSync(taxonomyPath) && existsSync(modelSelectionPath)) {
+    const taxonomy = readFileSync(taxonomyPath, 'utf8');
+    const modelSelection = readFileSync(modelSelectionPath, 'utf8');
+    ok(agentAuthoringReferenceErrors({ taxonomy, modelSelection }).length === 0,
+      'the shipped taxonomy and model tables match their validator constants');
+    ok(agentAuthoringReferenceErrors({
+      taxonomy,
+      modelSelection: modelSelection.replace('`claude-opus-5`', '`unreviewed-model`'),
+    }).some((m) => /approved model rows/.test(m)),
+    'a model-selection table drifting from the approved mapping fails by name');
+  } else {
+    ok(false, 'the shipped taxonomy and model references exist for drift checks');
+    ok(false, 'a model-selection drift mutation can run against the shipped reference');
+  }
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;

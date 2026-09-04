@@ -26,6 +26,12 @@ export const SUPPORTED_TOOLS = new Set([
 
 // Skill-only affordances — their presence on an agent signals a copy-paste error.
 export const SKILL_ONLY_KEYS = ['argument-hint', 'user-invocable', 'allowed-tools'];
+export const APPROVED_AGENT_MODELS = new Set([
+  'claude-opus-5',
+  'claude-sonnet-5',
+  'gpt-5.6-sol',
+  'gpt-5.6-terra',
+]);
 
 export function parseFrontmatter(raw) {
   const lines = raw.split(/\r?\n/);
@@ -60,6 +66,10 @@ const isEmptyInlineArray = (v) => (v ?? '').replace(/[[\]\s]/g, '') === '';
 // leading `[` catches YAML-valid variants a strict `[...]` match would miss,
 // e.g. `[foo] # comment` or a multiline flow array — all rejected by the host.
 const startsInlineArray = (v) => (v ?? '').trim().startsWith('[');
+const isQuotedString = (v) => {
+  const t = (v ?? '').trim();
+  return (t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"));
+};
 
 export function parseToolList(rawTools) {
   const t = (rawTools ?? '').trim();
@@ -77,10 +87,11 @@ export function loaderErrors(kind, id, fm) {
 
   if (!stripQuotes(fm.description)) out.push('frontmatter `description` is missing or empty');
 
-  // Kai requires a non-empty explicit list so least privilege is declared
-  // rather than inherited through the host's omission or wildcard semantics.
+  // Custom agents use `tools` to control host capabilities. Agent Skills do not
+  // define this field, but existing Kai skills may still carry it; validate it
+  // when present without requiring it on new skills.
   if (fm.tools === undefined) {
-    out.push('kai requires an explicit non-empty frontmatter `tools` array');
+    if (kind === 'agent') out.push('kai agents require an explicit non-empty frontmatter `tools` array');
   } else if (!isInlineArray(fm.tools)) {
     out.push('frontmatter `tools` must be an inline array like [a, b]');
   } else if (isEmptyInlineArray(fm.tools)) {
@@ -108,6 +119,20 @@ export function loaderErrors(kind, id, fm) {
   if (fm['user-invocable'] !== undefined) {
     const uv = fm['user-invocable'].trim();
     if (uv !== 'true' && uv !== 'false') out.push('frontmatter `user-invocable` must be `true` or `false`');
+  }
+
+  // Kai requires a quoted string so YAML booleans, numbers, nulls, collections,
+  // tags, and aliases cannot masquerade as a portable model identifier.
+  if (fm.model !== undefined) {
+    if (kind !== 'agent') {
+      out.push('frontmatter key `model` is agent-only and not valid on a skill');
+    } else if (!isQuotedString(fm.model)) {
+      out.push('frontmatter `model` must be one quoted scalar string');
+    } else if (!stripQuotes(fm.model)) {
+      out.push('frontmatter `model` is present but empty');
+    } else if (!APPROVED_AGENT_MODELS.has(stripQuotes(fm.model))) {
+      out.push(`frontmatter model "${stripQuotes(fm.model)}" is not in Kai's approved agent model set`);
+    }
   }
 
   // Schema separation: the skill-only affordances are invalid on an agent.

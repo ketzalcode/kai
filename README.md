@@ -35,8 +35,14 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v3.0.0` — all **56 agents and 52 skills** are published across five plugins for
+`v3.1.0` — all **56 agents and 53 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
+
+Agent creation now has an explicit contract: provider family, operating posture,
+scope, authority, execution profile, model policy, tools, skills, handoffs, and
+acceptance cases are settled before a role joins the fleet. Existing agent IDs
+remain unchanged while representative roles are redesigned before any broader
+migration.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and

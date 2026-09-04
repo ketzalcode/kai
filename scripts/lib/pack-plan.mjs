@@ -63,11 +63,12 @@ const LEGACY_GUARANTEE_REGION_OPEN =
 export const HOOKS_FILE = 'hooks.json';
 export const HOOKS_OWNER = 'core';
 
-// Every one of the 56 agents belongs to exactly one pack. `core` is the org spine
-// and workspace machinery — the roles meaningful with no department installed.
-// Insertion order is the emission order (see PACK_ORDER); it matches the locked
-// partition doc's evidence, so do not reorder without re-locking that artifact.
-export const PACKS = {
+// The migration baseline freezes every id that existed before the
+// provider-posture-scope taxonomy. New agents go in NEW_AGENT_IDS, including
+// new workflows/personas/instructors; adding a retired-family id there fails.
+// Keeping the baseline separate makes "no new principal/director/creative
+// agents" enforceable without blocking one-at-a-time migration.
+const MIGRATION_BASELINE_PACKS = {
   core: [
     'director-chief-of-staff', 'director-executive-assistant', 'workflow-workspace-init',
     'workflow-self-check', 'workflow-proactive-scan', 'workflow-weekly-pulse',
@@ -100,6 +101,19 @@ export const PACKS = {
   ],
 };
 
+export const NEW_AGENT_IDS = {
+  core: [],
+  engineering: [],
+  product: [],
+  gtm: [],
+  personal: [],
+};
+
+export const PACKS = Object.fromEntries(
+  Object.keys(MIGRATION_BASELINE_PACKS)
+    .map((pack) => [pack, [...MIGRATION_BASELINE_PACKS[pack], ...NEW_AGENT_IDS[pack]]]),
+);
+
 // Deterministic pack emission order: core first, then the departments in the
 // partition's declared order. Fixed so a generated tree and a validator walk
 // list the same packs in the same sequence every run.
@@ -117,6 +131,7 @@ export const SKILL_OWNER_OVERRIDES = {
   // line, so inheritance cannot place it. Core provides it: a pack agent asks
   // core whether core is there.
   [CONTRACT_SKILL]: 'core',
+  'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
   'review-dependencies': 'engineering',
@@ -228,6 +243,23 @@ export function sourceSkillFiles(root = REPO_ROOT) {
       });
     }
   }
+  return files;
+}
+
+export function skillCompanionFiles(root, id) {
+  const skill = sourceSkillFiles(root).find((entry) => entry.id === id);
+  if (!skill) return [];
+  const base = dirname(skill.path);
+  const files = [];
+  const walk = (dir, prefix = '') => {
+    for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path, rel);
+      else if (rel !== 'SKILL.md') files.push({ rel, path });
+    }
+  };
+  walk(base);
   return files;
 }
 
@@ -601,6 +633,10 @@ export function materializePacks({
       const path = skillFile(root, id);
       if (!path) throw new Error(`skill "${id}" has no plugin-local source file`);
       files.set(`${p.dir}/skills/${id}/SKILL.md`, normalizeLF(readFileSync(path, 'utf8')));
+      for (const companion of skillCompanionFiles(root, id)) {
+        files.set(`${p.dir}/skills/${id}/${companion.rel}`,
+          normalizeLF(readFileSync(companion.path, 'utf8')));
+      }
     }
   }
   const assets = planAssets(collectReferences(root));
@@ -1025,21 +1061,251 @@ const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
 // resolves to nothing is a renamed or deleted role; a token that is not shaped
-// like one (`post-only`) is an output mode, not a reference. The family list is
-// defined once: two independently maintained copies drifted apart before (one
-// omitted `creative`), and the copy that under-scans fails silently.
-export const AGENT_FAMILIES = [
-  'principal', 'workflow', 'director', 'persona', 'instructor', 'creative',
+// like one (`post-only`) is an output mode, not a reference. Baseline families
+// remain recognized during the staged migration. New durable roles use their
+// provider family plus a controlled posture and scope.
+export const ROLE_FAMILY_PACK = Object.freeze({
+  core: 'core',
+  personal: 'personal',
+  prod: 'product',
+  eng: 'engineering',
+  gtm: 'gtm',
+});
+
+export const ROLE_POSTURES = Object.freeze([
+  'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
+]);
+export const ROLE_IDENTITY_CONTRACT = 'kai-agent-v1';
+export const MODEL_POLICY_VERSION = 'kai-agent-models-v2';
+export const AGENT_PROMPT_HARD_LIMIT = 30_000;
+export const ROLE_POSTURE_PROFILES = Object.freeze({
+  lead: Object.freeze(['judgment', 'technical-judgment']),
+  builder: Object.freeze(['execution']),
+  reviewer: Object.freeze(['review', 'technical-review']),
+  operator: Object.freeze(['operations']),
+  coordinator: Object.freeze(['coordination']),
+  advisor: Object.freeze(['judgment', 'technical-judgment', 'advisory']),
+});
+export const KIND_AGENT_PROFILES = Object.freeze({
+  workflow: Object.freeze(['procedure']),
+  persona: Object.freeze(['simulation']),
+  instructor: Object.freeze(['teaching']),
+});
+export const ROLE_PROFILE_MODELS = Object.freeze({
+  judgment: 'claude-opus-5',
+  'technical-judgment': 'gpt-5.6-sol',
+  review: 'claude-opus-5',
+  'technical-review': 'gpt-5.6-terra',
+  execution: 'claude-sonnet-5',
+  operations: 'claude-sonnet-5',
+  coordination: 'claude-sonnet-5',
+  advisory: 'claude-sonnet-5',
+  procedure: 'claude-sonnet-5',
+  teaching: 'claude-sonnet-5',
+  simulation: 'claude-sonnet-5',
+});
+
+const RETIRED_AGENT_FAMILIES = [
+  'principal', 'director', 'creative',
 ];
 
-const FAMILY_ALT = AGENT_FAMILIES.join('|');
+const KIND_AGENT_FAMILIES = [
+  'workflow', 'persona', 'instructor',
+];
+
+export const AGENT_FAMILIES = [
+  ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
+];
+
+const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
+const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
+const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
+const ROLE_POSTURE_ALT = ROLE_POSTURES.join('|');
+const AGENT_ID_SOURCE = `(?:(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
+  + `|(?:${ROLE_FAMILY_ALT})-(?:${ROLE_POSTURE_ALT})-[a-z0-9-]+)`;
+const AGENT_CANDIDATE_SOURCE = `(?:(?:${AGENT_FAMILY_ALT})-[a-z0-9-]+)`;
 
 // Fresh instances, because a shared global regex carries `lastIndex` between
 // callers and would skip matches depending on who scanned first.
-export const agentShapedPattern = () => new RegExp(`^(?:${FAMILY_ALT})-[a-z0-9-]+$`);
-export const agentRefPattern = () => new RegExp(`\`((?:${FAMILY_ALT})-[a-z0-9-]+)\``, 'g');
+export const agentShapedPattern = () => new RegExp(`^${AGENT_ID_SOURCE}$`);
+export const agentCandidatePattern = () => new RegExp(`^${AGENT_CANDIDATE_SOURCE}$`);
+export const agentRefPattern = () => new RegExp(`\`(${AGENT_ID_SOURCE})\``, 'g');
 
 const AGENT_SHAPED = agentShapedPattern();
+const AGENT_CANDIDATE = agentCandidatePattern();
+const RETIRED_AGENT_IDS = new Set(
+  Object.values(MIGRATION_BASELINE_PACKS).flat()
+    .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
+);
+const LEGACY_AGENT_IDS = new Set(Object.values(MIGRATION_BASELINE_PACKS).flat());
+
+// The new grammar can coexist with legacy ids while roles are migrated one or
+// two at a time. Once an id enters a provider-family namespace, however, its
+// posture and placement are enforced immediately.
+export function agentTaxonomyErrors({ id, pack }) {
+  const [family, posture, ...scope] = (id ?? '').split('-');
+  if (RETIRED_AGENT_FAMILIES.includes(family)) {
+    return RETIRED_AGENT_IDS.has(id)
+      ? []
+      : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
+  }
+  if (KIND_AGENT_FAMILIES.includes(family)) return [];
+  if (!(family in ROLE_FAMILY_PACK)) {
+    return [`agent family \`${family || '(missing)'}-*\` is not supported`];
+  }
+
+  const errs = [];
+  if (ROLE_FAMILY_PACK[family] !== pack) {
+    errs.push(`agent family \`${family}-*\` belongs to ${packPluginName(ROLE_FAMILY_PACK[family])}, `
+      + `not ${packPluginName(pack)}`);
+  }
+  if (!ROLE_POSTURES.includes(posture)) {
+    errs.push(`agent posture \`${posture || '(missing)'}\` is not one of: ${ROLE_POSTURES.join(', ')}`);
+  }
+  if (scope.length === 0 || scope.some((part) => !part)) {
+    errs.push('new durable-role ids must use `<family>-<posture>-<scope>`');
+  }
+  if (scope.some((part) => ['fe', 'be', 'swe'].includes(part))) {
+    errs.push('agent scope must use full responsibility words (`frontend`, `backend`, `software`), not `fe`, `be`, or `swe`');
+  }
+  return errs;
+}
+
+export function requiresCoordinatedRunContracts(id) {
+  const [family, posture] = (id ?? '').split('-');
+  if (['director', 'principal', 'workflow'].includes(family)) return true;
+  return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
+}
+
+export function agentIdentityContractErrors({ id, body, fm = {} }) {
+  const [family, posture] = (id ?? '').split('-');
+  const isDurableRole = family in ROLE_FAMILY_PACK;
+  const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !LEGACY_AGENT_IDS.has(id);
+  if (!isDurableRole && !isNewKind) return [];
+  const marker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
+  const errors = [];
+  if (!(body ?? '').includes(marker)) errors.push(`new agent must declare ${marker}`);
+
+  const profiles = [...(body ?? '').matchAll(
+    /^\*\*Primary profile:\*\*\s+`?([a-z][a-z-]*)`?\s*$/gm
+  )].map((match) => match[1]);
+  if (profiles.length !== 1) {
+    errors.push(`new agent must declare exactly one \`**Primary profile:** <profile>\` line (found ${profiles.length})`);
+    return errors;
+  }
+  const [profile] = profiles;
+  const expected = ROLE_PROFILE_MODELS[profile];
+  if (!expected) {
+    errors.push(`primary profile \`${profile}\` has no approved model mapping`);
+    return errors;
+  }
+  const allowed = isDurableRole ? ROLE_POSTURE_PROFILES[posture] : KIND_AGENT_PROFILES[family];
+  if (!allowed?.includes(profile)) {
+    errors.push(`${isDurableRole ? `posture \`${posture}\`` : `kind \`${family}\``} requires primary profile `
+      + `${(allowed ?? []).map((value) => `\`${value}\``).join(' or ') || '(none)'}, not \`${profile}\``);
+  }
+  const model = (fm.model ?? '').trim().replace(/^(['"])(.*)\1$/, '$2');
+  if (!model) {
+    errors.push(`new agent with profile \`${profile}\` must declare frontmatter model "${expected}"`);
+  } else if (model !== expected) {
+    errors.push(`primary profile \`${profile}\` requires frontmatter model "${expected}", not "${model}"`);
+  }
+  return errors;
+}
+
+export function agentPromptLimitErrors(body) {
+  const length = [...normalizeLF(body ?? '')].length;
+  return length > AGENT_PROMPT_HARD_LIMIT
+    ? [`agent prompt is ${length} characters, over the ${AGENT_PROMPT_HARD_LIMIT}-character host limit`]
+    : [];
+}
+
+const markdownTable = (text, heading) => {
+  const normalized = normalizeLF(text ?? '');
+  const start = normalized.indexOf(`## ${heading}\n`);
+  if (start === -1) return new Map();
+  const body = normalized.slice(start + heading.length + 4);
+  const end = body.search(/\n## /);
+  const section = end === -1 ? body : body.slice(0, end);
+  const clean = (cell) => cell.trim().replaceAll('`', '');
+  const lines = section.split('\n');
+  const tableStart = lines.findIndex((line) => /^\|.*\|$/.test(line));
+  const tableRest = tableStart === -1 ? [] : lines.slice(tableStart);
+  const tableEnd = tableRest.findIndex((line) => !/^\|.*\|$/.test(line));
+  const tableLines = tableEnd === -1 ? tableRest : tableRest.slice(0, tableEnd);
+  const rows = tableLines
+    .map((line) => line.slice(1, -1).split('|').map(clean))
+    .filter((row) => row.length > 1 && !/^[-:]+$/.test(row[0]));
+  return new Map(rows.slice(1).map((row) => [row[0], row.slice(1)]));
+};
+
+const commaValues = (value) => (value ?? '').split(',').map((item) => item.trim()).filter(Boolean).sort();
+const sameValues = (actual, expected) =>
+  actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+
+export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
+  const errors = [];
+  const compareKeys = (label, rows, expected) => {
+    const actual = [...rows.keys()].sort();
+    const wanted = [...expected].sort();
+    if (!sameValues(actual, wanted)) {
+      errors.push(`${label} rows are [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+  };
+
+  const providers = markdownTable(taxonomy, 'Provider families');
+  compareKeys('provider family', providers, Object.keys(ROLE_FAMILY_PACK));
+  for (const [family, pack] of Object.entries(ROLE_FAMILY_PACK)) {
+    const provider = providers.get(family)?.[0];
+    if (provider && provider !== packPluginName(pack)) {
+      errors.push(`provider family \`${family}\` names \`${provider}\`, expected \`${packPluginName(pack)}\``);
+    }
+  }
+
+  const postures = markdownTable(taxonomy, 'Durable-role postures');
+  compareKeys('durable-role posture', postures, ROLE_POSTURES);
+
+  const profiles = markdownTable(taxonomy, 'Execution profiles');
+  compareKeys('execution profile', profiles, Object.keys(ROLE_PROFILE_MODELS));
+  const expectedProfileKinds = new Map(Object.keys(ROLE_PROFILE_MODELS).map((profile) => [profile, []]));
+  for (const [posture, allowed] of Object.entries(ROLE_POSTURE_PROFILES)) {
+    for (const profile of allowed) expectedProfileKinds.get(profile).push(posture);
+  }
+  for (const [kind, allowed] of Object.entries(KIND_AGENT_PROFILES)) {
+    for (const profile of allowed) expectedProfileKinds.get(profile).push(kind);
+  }
+  for (const [profile, expected] of expectedProfileKinds) {
+    const actual = commaValues(profiles.get(profile)?.[0]);
+    const wanted = [...expected].sort();
+    if (!sameValues(actual, wanted)) {
+      errors.push(`execution profile \`${profile}\` applies to [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+  }
+
+  const policyMarker = `**Policy version:** \`${MODEL_POLICY_VERSION}\``;
+  if (!(modelSelection ?? '').includes(policyMarker)) {
+    errors.push(`model selection reference must declare ${policyMarker}`);
+  }
+  const models = markdownTable(modelSelection, 'Approved models');
+  const expectedModels = [...new Set(Object.values(ROLE_PROFILE_MODELS))];
+  compareKeys('approved model', models, expectedModels);
+  for (const model of expectedModels) {
+    const actual = commaValues(models.get(model)?.[0]);
+    const wanted = Object.entries(ROLE_PROFILE_MODELS)
+      .filter(([, mapped]) => mapped === model)
+      .map(([profile]) => profile)
+      .sort();
+    if (!sameValues(actual, wanted)) {
+      errors.push(`approved model \`${model}\` covers [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
+    }
+  }
+
+  const identityMarker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
+  if (!(taxonomy ?? '').includes(identityMarker)) {
+    errors.push(`taxonomy reference must declare ${identityMarker}`);
+  }
+  return errors;
+}
 
 // A non-markdown asset a shipped instruction invokes. Only top-level scripts/
 // executables qualify: scripts/lib/ is build-internal, and no shipped body tells
@@ -1098,6 +1364,9 @@ export function parseGeneratedKey(key, packs = PACK_ORDER) {
   }
   if (rest.length === 3 && rest[0] === 'skills' && rest[2] === 'SKILL.md') {
     return { ...at, kind: 'skill', id: rest[1] };
+  }
+  if (rest.length >= 3 && rest[0] === 'skills') {
+    return { ...at, kind: 'skill-companion', id: rest.slice(1).join('/'), skill: rest[1] };
   }
   return { ...at, kind: 'other', id: rest.join('/') };
 }
@@ -1172,7 +1441,7 @@ export function collectReferences(root = REPO_ROOT) {
     }
     for (const token of dispatchedRefs(body)) {
       if (skillOf.has(token)) { dispatched.add(token); add(from, pack, 'orchestrated', 'skill', token); }
-      else if (agentOf.has(token) || AGENT_SHAPED.test(token)) add(from, pack, 'orchestrated', 'agent', token);
+      else if (agentOf.has(token) || AGENT_CANDIDATE.test(token)) add(from, pack, 'orchestrated', 'agent', token);
     }
     for (const asset of assetRefs(body)) add(from, pack, 'orchestrated', 'asset', asset);
   }
@@ -1180,6 +1449,8 @@ export function collectReferences(root = REPO_ROOT) {
   for (const id of listSkillIds(root)) {
     const path = skillFile(root, id);
     const raw = normalizeLF(readFileSync(path, 'utf8'));
+    const companionBodies = skillCompanionFiles(root, id)
+      .map((entry) => normalizeLF(readFileSync(entry.path, 'utf8')));
     const from = path.slice(root.length + 1).replace(/\\/g, '/');
     const pack = skillOf.get(id) ?? null;
     const firings = [];
@@ -1190,7 +1461,9 @@ export function collectReferences(root = REPO_ROOT) {
     // plugin, so the pack that ships it must be the one that provides it.
     if (firings.includes('user-invoked')) add(from, pack, 'user-invoked', 'skill', id);
     for (const firing of firings) {
-      for (const asset of assetRefs(raw)) add(from, pack, firing, 'asset', asset);
+      for (const text of [raw, ...companionBodies]) {
+        for (const asset of assetRefs(text)) add(from, pack, firing, 'asset', asset);
+      }
     }
   }
   return refs;
