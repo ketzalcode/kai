@@ -11,13 +11,15 @@ follow semantic versioning.
 - **Technical writing now uses the first provider/posture/scope identity.**
   `eng-lead-technical-writing` replaces `principal-technical-writer` as the
   documentation architecture and editorial-acceptance owner. The role leads with
-  writing craft — audience adaptation, clarity, structure, technical accuracy —
-  rather than restating ownership tables the frontmatter `description` already
-  carries.
-- **Document methods can evolve independently from role authority.** The lead
-  invokes the new `technical-writing` skill for audience-centered README,
-  concept, task-guide, technical-reference, decision-record, and release
-  patterns instead of embedding format templates in the agent. Product owns
+  writing craft — audience adaptation, clarity, structure and flow, engagement,
+  and technical accuracy — rather than restating ownership tables the frontmatter
+  `description` already carries. Audience is expressed as reader intent
+  (evaluating, using, integrating, changing it, deciding, sponsoring) rather than
+  seniority, because a staff engineer meeting a new system needs the same
+  orientation a junior does.
+- **Document-type knowledge is carried inline by the role.** What distinguishes
+  a README, task guide, technical reference, concept, decision record, and
+  release note is stated in the agent rather than routed to a skill. Product owns
   scope, engineering owns technical truth, marketing owns claims, localization
   owns locale readiness, and the operator still owns merge and publication.
 - **`kai-agent-v1` agents load skills inline.** A skill is named in the

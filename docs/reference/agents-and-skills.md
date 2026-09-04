@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **54 skills** (12 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **56 agents** and **53 skills** (12 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -228,14 +228,6 @@ Per-change discipline every `principal-swe-*` agent inherits.
 | [`kai-core-pr-delivery`](../../plugins/kai-core/skills/kai-core-pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | Fast codebase onboarding report. Use when mapping an unfamiliar repo's stack, commands, architecture, conventions, patterns, and gotchas for future sessions. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | Shared diagram vocabulary and ASCII-first rules. Use when writing a design, decision, or engineering doc, or a README, needing system, data, flow, state, or topology diagrams. |
-
-### Technical writing
-
-Audience-centered methods for repository, task, reference, concept, decision, and release documentation.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`technical-writing`](../../plugins/kai-engineering/skills/technical-writing/SKILL.md) | Applies audience-centered structures and verification checks for READMEs, concepts, tutorials, how-to guides, technical reference, decision records, release notes, and migration guides. Use when drafting, restructuring, or auditing technical documentation. |
 
 ### Document review
 

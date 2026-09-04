@@ -35,7 +35,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v4.0.0` — all **56 agents and 54 skills** are published across five plugins for
+`v4.0.0` — all **56 agents and 53 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
 Agent creation now has an explicit contract: provider family, operating posture,
@@ -43,9 +43,9 @@ scope, authority, execution profile, model policy, host-specific tools,
 on-demand skills, handoffs, and acceptance cases are settled before a role
 joins the fleet.
 `eng-lead-technical-writing` is the first migrated role: it leads with writing
-craft — audience adaptation, clarity, structure, technical accuracy — and loads
-document patterns from the `technical-writing` skill only when a writing task
-needs them. Core contracts load inline at the step that needs them rather than
+craft — audience adaptation, clarity, structure and flow, engagement, technical
+accuracy — and carries its document-type knowledge inline rather than behind a
+skill. Core contracts load inline at the step that needs them rather than
 at startup. This replaces the removed principal-technical-writer identity;
 update direct invocations and existing workspace item ownership fields.
 

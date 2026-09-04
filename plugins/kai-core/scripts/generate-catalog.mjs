@@ -174,12 +174,6 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Technical writing',
-    blurb: 'Audience-centered methods for repository, task, reference, concept, decision, and release documentation.',
-    members: ['technical-writing'],
-  },
-  {
-    kind: 'skill',
     title: 'Document review',
     blurb: 'The method plus the lenses behind `workflow-doc-review`.',
     members: [
