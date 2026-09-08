@@ -1411,14 +1411,38 @@ const ASSET_REF = /(?<![A-Za-z0-9_-])scripts\/[A-Za-z0-9_-]+\.(?:mjs|js|cjs|ps1|
 // work with nothing failing. The negation guard is the whole point.
 const ROUTE_SENTENCE = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0-9-]*)`/gi;
 const ROUTE_NEGATION = /\b(?:not|never|without|avoid)\b/i;
+// Structural markdown lines form clause boundaries independent of punctuation.
+const STRUCT_LINE = /^(?:#|\s*[-*+|]|\s*\d+\.)/;
+
+// Collapse prose to a flat string while inserting a clause terminator at each
+// structural markdown boundary (heading, list item, table row, blank line).
+// This prevents a negation in a heading or bullet from scoping into the next
+// line; soft wraps inside a running paragraph are still collapsed to a space.
+function flattenProse(text) {
+  const lines = text.split('\n');
+  const parts = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) {
+      const prev = lines[i - 1];
+      const cur = lines[i];
+      if (prev.trim() === '' || cur.trim() === '' || STRUCT_LINE.test(prev) || STRUCT_LINE.test(cur)) {
+        parts.push('.');
+      }
+    }
+    parts.push(lines[i]);
+  }
+  return parts.join(' ').replace(/\s+/g, ' ');
+}
 
 export function routedSkills(body) {
-  // Strip fenced code blocks so that documented examples are not parsed as routes.
-  const stripped = normalizeLF(body ?? '').replace(/^```[\s\S]*?^```/gm, '');
-  // Collapse whitespace so line-wrapped prose is matched as a single string.
-  // Line wrapping is an authoring choice, not a contract change — same
-  // precedent as progressiveSkillRoutingErrors (~line 1224).
-  const flat = stripped.replace(/\s+/g, ' ');
+  // Strip fenced code blocks (properly closed or unterminated, indented or not)
+  // so that documented examples are not parsed as routes.
+  const stripped = normalizeLF(body ?? '')
+    .replace(/^\s*```[\s\S]*?^\s*```/gm, '')  // closed fences (possibly indented)
+    .replace(/^\s*```[\s\S]*/m, '');            // unterminated fence → strip to end
+  // Flatten to a single line, inserting clause terminators at structural
+  // boundaries so negations cannot cross into the next structural element.
+  const flat = flattenProse(stripped);
   const out = [];
   for (const m of flat.matchAll(ROUTE_SENTENCE)) {
     // Scope the negation test to the clause containing the match: look back

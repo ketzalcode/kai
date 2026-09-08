@@ -1621,6 +1621,19 @@ function selfTest() {
   ok(routedSkills('```\nInvoke `kai-core-work-acting` here.\n```')
     .length === 0,
     'an imperative inside a fenced code block is not a route');
+  // round-2 finding 1: structural boundary above a route is its own clause
+  ok(routedSkills('## Do not start\nInvoke `kai-core-work-acting`.')
+    .join() === 'kai-core-work-acting',
+    'a negation in a heading does not suppress a route on the next line');
+  ok(routedSkills('- Never do this\n- Invoke `kai-core-work-acting` now.')
+    .join() === 'kai-core-work-acting',
+    'a negation in a list item does not suppress a route in the next list item');
+  // round-2 finding 2: an unterminated fence strips to end of body
+  ok(routedSkills('```\nInvoke `kai-core-work-acting` here.').length === 0,
+    'an unterminated fence containing an imperative yields no routes');
+  // round-2 finding 3: an indented fence marker is still recognised
+  ok(routedSkills('- item\n  ```\n  Invoke `kai-core-work-acting`.\n  ```').length === 0,
+    'an indented fence inside a list item does not expose its contents as routes');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;
