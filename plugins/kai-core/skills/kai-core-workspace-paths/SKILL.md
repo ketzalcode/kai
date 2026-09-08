@@ -226,4 +226,4 @@ Three departures are real, and only these:
 | --- | --- | --- |
 | Bundle output | `.../artifacts/<domain>/<item-id>/` (a directory) | the deliverable is several files, not one document |
 | De-identified signal | `.../artifacts/<domain>/<item-id>.md`, contents de-identified | the location carries a privacy obligation, so the producing role states it |
-| Public incident report | `project:<project-id>:docs/kai/reports/incidents/<incident-id>.md` | it publishes to a project, not the private workspace; raw evidence stays in `.kai/runs/` |
+| Public incident report, unaffiliated item only | `project:<project-id>:docs/kai/reports/incidents/<incident-id>.md` | only when that project's configured `publication_root` is `docs/kai`; affiliated incidents follow the ordinary convention at `.../artifacts/incidents/<item-id>.md`; raw evidence stays in `.kai/runs/` |
