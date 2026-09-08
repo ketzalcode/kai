@@ -4,18 +4,15 @@ description: "Creates a scope-gated kai initiative workspace with north star, mi
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`
-
-> Load and apply every skill listed above before you act — they are part of your
-> instructions, not background reading. If one cannot be loaded, these
-> non-negotiables still bind you: resolve a durable target workspace root before
-> creating state, never Copilot session-state or a temp directory; stay in your
-> lane and route work outside it as a proposal instead of doing it; keep
-> coordinated work claimed, evidenced, and handed off rather than silently in
-> progress; never call something `shipped` that a human has not deployed and
-> verified; and escalate to `@operator` only for a decision no kai role owns.
-
 # Workflow — Initiative Init
+
+**Primary profile:** procedure
+
+Invoke `kai-core-contract-v1` before the first other core skill. Without
+`kai-core` this intake stays a single-shot conversation about mission and scope
+in the open: it writes no initiative files or other `.kai` state, claims no
+coordinated work, reports no Kai activity, and asks the operator to install or
+update `kai-core` before an initiative can be stood up.
 
 Turn a mission and vision into durable, executable initiative context. This is
 a bounded intake procedure, not the initiative owner and not the team
@@ -41,12 +38,12 @@ Collect or derive:
 Ask only for missing decisions that would materially change scope. Do not
 manufacture metrics or commitments the operator has not accepted.
 
-Workspace selection is a required intake decision. Resolve the workspace with
-the schema-3 precedence in `kai-core-workspace-conventions`, then select one
-project binding from its manifest. `external` uses the machine-local registry;
-`repo-local` and `shared` use an in-project `.kai/`. Never silently use Copilot
-session-state, a temp directory, or the invoking agent's cwd for coordinated
-work.
+Workspace selection is a required intake decision. Invoke
+`kai-core-workspace-paths` before resolving the workspace, then apply its
+schema-3 precedence and select one project binding from its manifest. `external`
+uses the machine-local registry; `repo-local` and `shared` use an in-project
+`.kai/`. Never silently use Copilot session-state, a temp directory, or the
+invoking agent's cwd for coordinated work.
 
 Tell the operator the resolved root before writing files.
 If the workspace manifest or required roots are missing, invoke
@@ -55,7 +52,7 @@ Do not create initiative files until onboarding completes.
 
 ## Output
 
-Create:
+Apply `kai-core-asset-producing` before creating any initiative artifact. Create:
 
 ```text
 .kai/state/initiatives/<slug>/northstar.md
@@ -230,17 +227,21 @@ normal product map, brief, research, design, or decision is not.
 ## Workflow
 
 1. Resolve and confirm the target workspace, onboard it with
-   `workflow-workspace-init` when needed, then inspect its initiative index and
-   reject duplicate/conflicting slugs.
+   `workflow-workspace-init` when needed.
+   Load `kai-core-workspace-initiative` before inspecting the initiative index,
+   then reject duplicate/conflicting slugs.
 2. Draft the thin core and milestones.
 3. Present the scope boundary and success measures for operator confirmation.
-4. Write the initiative files with `status: proposed`, seed
+4. Invoke `kai-core-work-acting` before writing durable state, then write the
+   initiative files with `status: proposed`, seed
    `deliverables.md`, and add the initiative to `.kai/state/initiatives/INDEX.md`.
-5. Seed proposed planning items in `.kai/state/items/` and empty threads in
+5. Load `kai-core-work-item` before seeding item records, then seed proposed
+   planning items in `.kai/state/items/` and empty threads in
    `.kai/state/threads/`. Do not count them as
    milestone-completion items.
 6. Append the creation entry to `log.md`.
-7. Hand off to `principal-product-manager` as steward:
+7. Load `kai-core-operating-rules` before handing work to another role, then
+   hand off to `principal-product-manager` as steward:
    - confirm mission/scope/non-negotiables;
    - accept or revise milestones;
    - set `status: active` and update `.kai/state/ACTIVE.md`;
@@ -250,7 +251,8 @@ normal product map, brief, research, design, or decision is not.
    - prioritize and promote executable items to `ready`;
    - preserve the role boundary: PM brief -> product designer for interaction
      design -> engineering only after accepted design or explicit waiver.
-8. After steward approval, hand off to `director-chief-of-staff`.
+8. Apply `kai-core-work-activity` before the handoff, then after steward
+   approval hand off to `director-chief-of-staff`.
    Resolve project-relative metadata to runtime absolute paths and include the
    exact workspace root, project root, manifest path, and deliverables path.
 

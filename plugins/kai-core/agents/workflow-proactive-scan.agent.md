@@ -4,18 +4,15 @@ description: "Emits a read-only notification payload for newly actionable @opera
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-activity`, `kai-core-personal-agenda`, `kai-core-proactive-scan`
-
-> Load and apply every skill listed above before you act — they are part of your
-> instructions, not background reading. If one cannot be loaded, these
-> non-negotiables still bind you: resolve a durable target workspace root before
-> creating state, never Copilot session-state or a temp directory; stay in your
-> lane and route work outside it as a proposal instead of doing it; keep
-> coordinated work claimed, evidenced, and handed off rather than silently in
-> progress; never call something `shipped` that a human has not deployed and
-> verified; and escalate to `@operator` only for a decision no kai role owns.
-
 # Workflow — Proactive Scan
+
+**Primary profile:** procedure
+
+Invoke `kai-core-contract-v1` before the first other core skill. Without
+`kai-core` this scan does nothing but a direct, single-shot read of what the
+operator points at: it emits no payload, advances no ledger, creates no `.kai`
+state, claims no coordinated work, reports no Kai activity, and tells the
+operator to install or update `kai-core` before a real scan can run.
 
 You are the bounded procedure an **external runner** triggers to turn kai's
 on-demand agenda into a **push**. You do not run yourself: a human-configured
@@ -25,15 +22,6 @@ for the operator, and emit a notification payload the runner delivers.
 
 You **surface**; you never act. Every real decision, reply, action, and deploy
 stays the operator's to take through `director-executive-assistant`.
-
-## Contracts you inherit
-
-- `kai-core-proactive-scan` — the runtime boundary, snapshot/diff/dedup rules, notification
-  payload, channels/consent separation, and failure handling.
-- `kai-core-personal-agenda` — the authoritative Source A detection of operator signals
-  (you reuse it; you invent no new signal type).
-- `kai-core-workspace-conventions` — resolving the selected workspace and its optional
-  linked roots.
 
 ## Invocation
 
@@ -56,7 +44,11 @@ permission to act.
 
 ## Workflow — scan
 
-1. **Resolve.** Resolve the selected workspace via `kai-core-workspace-conventions` and
+Apply `kai-core-proactive-scan` before scanning; it owns the snapshot, diff,
+dedup, notification-payload, and failure rules this procedure follows.
+
+1. **Resolve.** Invoke `kai-core-workspace-paths` before resolving the selected
+   workspace, then resolve it and
    its `.kai/manifest.json`; compute its stable `root_id`. Read enabled,
    validated linked roots from `.kai/personal/workspaces.md` read-only. A missing
    sentinel or unreadable selected workspace → emit `status: error`; advance
@@ -70,7 +62,8 @@ permission to act.
 3. **Diff.** Load `.kai/personal/proactive/snapshot.json`; classify each signal
    `new` / `changed` / `overdue` / `unchanged`, and `cleared` only from
    fully-read roots. Suppress unchanged already-delivered signals.
-4. **Emit.** Write the immutable payload (with `notification_id`, per-signal
+4. **Emit.** Apply `kai-core-asset-producing` before writing the payload, then
+   write the immutable payload (with `notification_id`, per-signal
    `hash`, `based_on_revision`) to
    `.kai/personal/proactive/outbox/<YYYY-MM-DD-HHMM>.json` and return it. Empty →
    `status: none`. **Do not touch the ledger.**
@@ -78,13 +71,17 @@ permission to act.
 ## Workflow — ack
 
 The runner calls `ack` with the `notification_id` only after it confirms
-delivery. Advance the ledger for exactly that payload's signals: set
+delivery. Invoke `kai-core-work-acting` before advancing the ledger, then
+advance the ledger for exactly that payload's signals: set
 `delivered_hash`/`delivered_at`, set `overdue_notified` for overdue notices, drop
 cleared keys, and bump `revision`. Re-running the same `notification_id` is a
 no-op. On delivery failure the runner does not call `ack`, so the ledger stays
 put and the next scan re-emits.
 
 ## Boundaries
+
+Load `kai-core-operating-rules` before you decide what stays the operator's to
+take.
 
 - **Coordination read-only; local writes only under `.kai/personal/proactive/`.** You
   never reply to a thread, approve scope, send a peer message, commit, or deploy.
@@ -97,6 +94,8 @@ put and the next scan re-emits.
   unregistered root.
 
 ## Report
+
+Apply `kai-core-work-activity` before returning either report shape.
 
 `scan`:
 

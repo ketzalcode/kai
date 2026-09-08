@@ -4,20 +4,17 @@ description: "Creates or validates kai workspace state and guides the core-first
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, `kai-core-workspace-conventions`, `kai-core-work-coordination`, `kai-core-work-activity`, `kai-core-workspace-onboarding`
-
-> Load and apply every skill listed above before you act — they are part of your
-> instructions, not background reading. If one cannot be loaded, these
-> non-negotiables still bind you: resolve a durable target workspace root before
-> creating state, never Copilot session-state or a temp directory; stay in your
-> lane and route work outside it as a proposal instead of doing it; keep
-> coordinated work claimed, evidenced, and handed off rather than silently in
-> progress; never call something `shipped` that a human has not deployed and
-> verified; and escalate to `@operator` only for a decision no kai role owns.
-
 # Workflow - Workspace Init
 
-Create, migrate, repair, or validate one Kai workspace. Execute
+**Primary profile:** procedure
+
+Invoke `kai-core-contract-v1` before the first other core skill. Without
+`kai-core` I can answer a direct question about workspace layout, but I scaffold
+no `.kai` state, run no onboarding, claim no coordinated setup, report no Kai
+activity, and tell the operator to install or update `kai-core` before a
+workspace can be created or repaired.
+
+Create, migrate, repair, or validate one Kai workspace. Invoke
 `kai-core-workspace-onboarding`; do not redefine its contract.
 
 ## Pack installation and workspace modes
@@ -52,7 +49,8 @@ If plugin installation was requested, execute the inherited guided installer.
 A non-complete result ends the run and reports
 `Rollback: not attempted or verified`.
 
-For workspace work:
+For workspace work, invoke `kai-core-workspace-paths` before resolving the
+project root:
 
 - resolve the project root;
 - inspect in-tree manifests and the `$KAI_HOME/workspaces.json` registry;
@@ -88,12 +86,13 @@ Report:
 - the exact managed `.gitignore` block;
 - the optional `AGENTS.md` managed block.
 
-Ask before applying any non-empty plan, conflict resolution, migration, or
-publication.
+Load `kai-core-operating-rules` before you touch any user file, then ask before
+applying any non-empty plan, conflict resolution, migration, or publication.
 
 ### 4. Apply
 
-Execute onboarding's schema-3 scaffold:
+Invoke `kai-core-work-acting` before writing durable state, then execute
+onboarding's schema-3 scaffold:
 
 ```text
 <workspace-root>/.kai/
@@ -117,15 +116,18 @@ For `shared`, keep `.kai/manifest.json`, `.kai/CONVENTIONS.md`, and
 `.kai/state/` trackable while ignoring runs, review, archive, personal,
 activity, and observer files.
 
-Create the configured project publication root only from approved publication
-templates. Never create a second `docs/kai` root when another target was
-selected.
+Apply `kai-core-asset-producing` before creating the configured project
+publication root, and create it only from approved publication templates. Never
+create a second `docs/kai` root when another target was selected.
 
 ### 5. Migrate when required
 
 <!-- kai:allow-legacy-roots -->
 Schema-2 `kai/coordination/`, `kai/initiatives/`, `kai/library/`, and
 `kai/personal/` are inputs, not valid schema-3 destinations.
+
+Load `kai-core-work-item` before moving coordination state, and load
+`kai-core-workspace-initiative` before moving initiative work.
 
 - move coordination to `.kai/state/`;
 - move initiative work to `.kai/state/initiatives/`;
@@ -161,6 +163,7 @@ Confirm:
 
 ### 7. Report
 
-Use onboarding's exact result shape. End only with `ready`, or one precise
+Apply `kai-core-work-activity` before reporting, then use onboarding's exact
+result shape. End only with `ready`, or one precise
 blocking action. Do not start initiative, product, engineering, research, or
 release work from this workflow.
