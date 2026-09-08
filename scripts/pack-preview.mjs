@@ -1605,6 +1605,22 @@ function selfTest() {
     .length === 1, 'a repeated route is reported once');
   ok(routedSkills('Invoke `kai-core-work-item` then apply `kai-core-work-acting`.')
     .length === 2, 'two routes on one line are both found');
+  // finding 1: negation in a prior clause must not kill a route in a later clause
+  ok(routedSkills('Do not start. Invoke `kai-core-work-acting`.')
+    .join() === 'kai-core-work-acting',
+    'negation in a prior clause does not suppress a route in a later clause');
+  // finding 2: verb and backtick on different lines (line-wrapped prose)
+  ok(routedSkills('Invoke\n`kai-core-work-acting` before writing state.')
+    .join() === 'kai-core-work-acting',
+    'a line-wrapped route whose verb and id are on different lines is found');
+  // finding 1 regression: original single-clause negation still suppressed
+  ok(routedSkills('Do not invoke `kai-core-work-granting`.')
+    .length === 0,
+    'negation in the same clause still suppresses a route');
+  // finding 3: fenced code block contents are not parsed as routes
+  ok(routedSkills('```\nInvoke `kai-core-work-acting` here.\n```')
+    .length === 0,
+    'an imperative inside a fenced code block is not a route');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;

@@ -1413,12 +1413,28 @@ const ROUTE_SENTENCE = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 const ROUTE_NEGATION = /\b(?:not|never|without|avoid)\b/i;
 
 export function routedSkills(body) {
+  // Strip fenced code blocks so that documented examples are not parsed as routes.
+  const stripped = normalizeLF(body ?? '').replace(/^```[\s\S]*?^```/gm, '');
+  // Collapse whitespace so line-wrapped prose is matched as a single string.
+  // Line wrapping is an authoring choice, not a contract change — same
+  // precedent as progressiveSkillRoutingErrors (~line 1224).
+  const flat = stripped.replace(/\s+/g, ' ');
   const out = [];
-  for (const line of normalizeLF(body ?? '').split('\n')) {
-    for (const m of line.matchAll(ROUTE_SENTENCE)) {
-      if (ROUTE_NEGATION.test(line.slice(0, m.index))) continue;
-      if (!out.includes(m[1])) out.push(m[1]);
-    }
+  for (const m of flat.matchAll(ROUTE_SENTENCE)) {
+    // Scope the negation test to the clause containing the match: look back
+    // only to the nearest preceding sentence terminator (.;:!?) so a negation
+    // in an earlier clause does not suppress a valid route in a later one.
+    const prefix = flat.slice(0, m.index);
+    const clauseStart = Math.max(
+      prefix.lastIndexOf('.'),
+      prefix.lastIndexOf(';'),
+      prefix.lastIndexOf(':'),
+      prefix.lastIndexOf('!'),
+      prefix.lastIndexOf('?'),
+    );
+    const clause = flat.slice(clauseStart + 1, m.index);
+    if (ROUTE_NEGATION.test(clause)) continue;
+    if (!out.includes(m[1])) out.push(m[1]);
   }
   return out;
 }
