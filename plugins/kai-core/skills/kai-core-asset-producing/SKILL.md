@@ -1,28 +1,17 @@
 ---
-name: kai-core-asset-lifecycle
-description: "Defines universal generated-asset completion, disposition, validity, ownership, freshness, supersession, and initiative closure rules."
+name: kai-core-asset-producing
+description: "Defines how a run produces a durable asset: pre-dispatch declaration, disposition and validity state, metadata, revision, supersession, and migration."
 tools: [read, edit, search]
 ---
 
-# Asset Lifecycle
+# Asset production
 
 Every kai role can produce an asset: a report, decision, design, plan, review,
 briefing, lesson, release record, backlog entry, or implementation artifact.
-Finishing the work that produced it does not prove the asset is durable,
-accepted, current, or still authoritative.
-
-This contract keeps four independent questions separate:
-
-```text
-EXECUTION     Did the work item reach a truthful stop?
-DISPOSITION   Where is the asset in its durability lifecycle?
-VALIDITY      Is the asset still safe to use as current guidance?
-CLOSURE       Did the initiative reconcile all work, assets, and backlog?
-```
-
-It is not a standalone trigger skill. Every kai agent inherits it. An agent
-applies it whenever a run may create, revise, publish, carry, supersede,
-archive, retract, or discard an asset.
+This contract governs producing one — what a run declares before it starts, the
+state machines and metadata every durable asset carries, and how to revise,
+supersede, or migrate it. Whether an asset is complete, fresh, promotable, or
+closeable is decided in `kai-core-asset-closing`.
 
 ## The core rule
 
@@ -118,7 +107,7 @@ proposed -> active -> paused -> completed | shipped -> archived
 ```
 
 An initiative terminal state requires the work, asset, backlog, and ownership
-sweeps defined below. Archiving the initiative moves operational records out
+sweeps defined in `kai-core-asset-closing`. Archiving the initiative moves operational records out
 of live state; it does not move or invalidate its published assets.
 
 ## Pre-dispatch declaration
@@ -207,54 +196,6 @@ apply.
 An asset ID is stable across revisions at one canonical path. A replacement
 with materially different conclusions receives a new asset ID.
 
-## Completion is a four-dimensional verdict
-
-Every asset-producing knowledge item resolves these dimensions:
-
-| Dimension | Clear when |
-|---|---|
-| `scope-true` | The output satisfies the commissioned outcome and contains no hidden scope expansion. |
-| `grounded` | Load-bearing claims cite evidence; assumptions and uncertainty are explicit. |
-| `accepted` | The named completion authority accepted this exact asset revision. |
-| `disposed` | Every output has a declared path, metadata, index relationship, disposition, validity, and closed handoff. |
-
-Each dimension is `Clear`, `Gap`, or `Waived-with-reason`. A Gap bounces the
-item to `in-progress` or `blocked`; it never becomes a terminal item by
-renaming the gap.
-
-Product and operational items additionally pass
-`kai-core-definition-of-done`. Its production safety and operability dimensions
-remain separate from this asset verdict.
-
-## Completion authority
-
-The producer does not self-accept a team-facing durable asset unless the
-operator explicitly records that exception. Personal operational state is the
-bounded exception: derived agenda, inbox, proactive, consultation, and identity
-maintenance under `.kai/personal/` may name the owning personal role as
-completion authority when it records facts or operator-supplied preferences
-rather than making a decision on the operator's behalf. Personal decisions,
-recommendations, and learning-path commitments still require the operator or a
-named independent authority.
-
-| Asset class | Default completion authority |
-|---|---|
-| Investigation, research, report, or briefing | The commissioning role |
-| Product or interaction design | `principal-product-manager` |
-| Architecture decision | Named decision owner |
-| Specification or implementation plan | The role accountable for executing it |
-| Documentation | Behavior or subject-matter owner |
-| Security, privacy, reliability, experiment, or QA assessment | The commissioning owner; assessor remains independent |
-| Incident record | Incident commander with required security/SRE evidence |
-| Content or creative package | Grounding authority plus publication owner |
-| Learning artifact | Operator or named learning-path owner |
-| Release record | `workflow-ship` against the deployed revision |
-| Personal operational state | Owning personal role for derived facts/preferences; operator for decisions or commitments |
-
-If acceptance is pending, the asset remains `draft` or `working` with
-`validity.status: provisional`. A checklist count or producer assertion is not
-acceptance.
-
 ## Revision and supersession
 
 Use a revision when the conclusion and governing basis stay materially the
@@ -274,114 +215,6 @@ Supersession is one close operation:
 5. If either direction cannot be written, leave the successor provisional and
    report the incomplete relationship. Never claim an atomic guarantee that
    markdown and the filesystem cannot provide.
-
-## Freshness and revalidation
-
-Validity is event-based first and time-based where aging is predictable.
-
-| Asset class | Default policy |
-|---|---|
-| Product maps, market research, pricing, metrics | Revalidate within 90 days and on basis change |
-| Security, privacy, compliance, reliability assessments | Revalidate within 180 days and on reviewed-revision or control change |
-| Investigations and analytical reports | Revalidate within 180 days or on basis change |
-| Specifications and plans | Current until governed work ships, changes materially, or is dropped |
-| Product/developer documentation | Revalidate when the documented surface changes |
-| Decisions, incident records, releases, lessons learned | Immutable history; supersede or amend, do not expire silently |
-
-The producer may choose a stricter policy. A longer or absent deadline requires
-a reason when the class default is time-bounded. A warning threshold may
-precede the error threshold, but crossing either changes visibility rather than
-silently changing stored history.
-
-## Placement and promotion
-
-`kai-core-workspace-conventions` owns exact paths. This contract owns the state
-change at those paths:
-
-```text
-.kai/runs/<run>                 scratch or draft
-        |
-        v
-.kai/state/initiatives/<slug>/...      working initiative record
-        |
-        v
-<project-root>/<publication-root>/...  accepted project authority
-
-.kai/personal/...                personal operator-private state
-.kai/review/...                  selected material awaiting acceptance
-.kai/archive/...                 closed operational history
-```
-
-Rules:
-
-1. Scratch and raw evidence stay under `.kai/runs/`.
-2. Drafts selected for review move to `.kai/review/<class>/<item-id>/`.
-   Design options use `.kai/review/designs/<item-id>/options.html`.
-3. Initiative artifacts remain private working records under `.kai/state/`.
-   Acceptance does not publish them automatically.
-4. Intentional publication writes the accepted decision, specification, or
-   report under the target project's configured `publication_root`. The public
-   path becomes canonical; the private source remains provenance or moves to
-   `.kai/archive/` at closure.
-5. `published` requires `completion.verdict: accepted` for the exact revision.
-6. `personal` assets stay under `.kai/personal/` and follow that lane's privacy
-   and ownership rules; they are never promoted automatically.
-7. Published durable assets are archived, superseded, retired, or retracted;
-   never discarded.
-8. Binaries and sensitive raw evidence remain governed by their owning domain
-   contract and do not become safe to commit merely because text metadata
-   exists.
-
-## Generator close transaction
-
-Before an asset-producing agent stops:
-
-1. Inventory every generated file.
-2. Keep raw evidence under `.kai/runs/`.
-3. Add complete metadata before durable placement.
-4. Resolve revision or supersession.
-5. Record each exact path in the work item's `artifact_targets` and Evidence.
-6. Resolve the four completion dimensions.
-7. Append a HANDOFF naming:
-   - execution state;
-   - asset disposition;
-   - asset validity;
-   - completion authority and verdict;
-   - validity owner and next revalidation trigger.
-8. Report any incomplete write as a Gap. Do not shape it as success.
-
-The workspace doctor provides detectability, not filesystem transactions. It
-must detect orphan assets, missing targets, incomplete supersession, invalid
-state combinations, overdue revalidation, and initiative closure blockers.
-
-## Initiative closure sweep
-
-Before `completed` or `shipped`, the steward proves:
-
-1. **Work sweep:** every required item reached its declared terminal state.
-2. **Asset sweep:** no required asset is missing, `scratch`, `draft`,
-   `unknown`, `provisional`, or `invalidated`.
-3. **Backlog sweep:** every entry is promoted, carried to a named successor,
-   parked in the workspace authority, or dropped with a reason.
-4. **Ownership sweep:** every maintained current asset has a validity owner and
-   revalidation trigger.
-5. **Outcome sweep:** `deliverables.md` and `director-summary.md` identify the
-   current, historical, superseded, and retracted outcomes.
-
-At archive, each asset receives one disposition:
-
-```text
-PUBLISH + MAINTAIN
-CARRY TO <successor-initiative>
-FREEZE AS HISTORY
-SUPERSEDE WITH <asset-id>
-RETRACT WITH <reason>
-DISCARD                         # scratch or draft only
-```
-
-Published assets remain at their canonical project paths. Closed operational
-records may move to `.kai/archive/` only after `ACTIVE.md`, the initiative
-index, deliverables, and summary no longer depend on their live locations.
 
 ## Migration rule
 
@@ -404,14 +237,9 @@ unknown assets must never appear in a current-only view.
 2. Declare `owed` or `none` before dispatch; never generate first and classify
    later.
 3. No unclassified durable output.
-4. No producer self-acceptance without an explicit operator exception.
-5. Only `current` is unqualified current guidance.
-6. Material conclusion changes create a successor, not a silent revision.
-7. Supersession links are bidirectional.
-8. Published assets are preserved; incorrect ones are retracted, not erased.
-9. Initiative closure includes work, asset, backlog, ownership, and outcome
-   sweeps.
-10. Legacy starts `unknown`; revalidation earns `current`.
+4. Material conclusion changes create a successor, not a silent revision.
+5. Supersession links are bidirectional.
+6. Legacy starts `unknown`; revalidation earns `current`.
 
 ## Anti-patterns
 
