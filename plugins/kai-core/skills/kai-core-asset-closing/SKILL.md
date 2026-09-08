@@ -127,28 +127,6 @@ Rules:
    contract and do not become safe to commit merely because text metadata
    exists.
 
-## Generator close transaction
-
-Before an asset-producing agent stops:
-
-1. Inventory every generated file.
-2. Keep raw evidence under `.kai/runs/`.
-3. Add complete metadata before durable placement.
-4. Resolve revision or supersession.
-5. Record each exact path in the work item's `artifact_targets` and Evidence.
-6. Resolve the four completion dimensions.
-7. Append a HANDOFF naming:
-   - execution state;
-   - asset disposition;
-   - asset validity;
-   - completion authority and verdict;
-   - validity owner and next revalidation trigger.
-8. Report any incomplete write as a Gap. Do not shape it as success.
-
-The workspace doctor provides detectability, not filesystem transactions. It
-must detect orphan assets, missing targets, incomplete supersession, invalid
-state combinations, overdue revalidation, and initiative closure blockers.
-
 ## Initiative closure sweep
 
 Before `completed` or `shipped`, the steward proves:
@@ -185,3 +163,4 @@ index, deliverables, and summary no longer depend on their live locations.
 3. Published assets are preserved; incorrect ones are retracted, not erased.
 4. Initiative closure includes work, asset, backlog, ownership, and outcome
    sweeps.
+5. Legacy starts `unknown`; revalidation earns `current`.

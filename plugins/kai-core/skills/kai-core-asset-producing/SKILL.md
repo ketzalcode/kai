@@ -1,6 +1,6 @@
 ---
 name: kai-core-asset-producing
-description: "Defines how a run produces a durable asset: pre-dispatch declaration, disposition and validity state, metadata, revision, supersession, and migration."
+description: "Defines how a run produces and closes out a durable asset: pre-dispatch declaration, disposition and validity state, metadata, revision, supersession, and migration."
 tools: [read, edit, search]
 ---
 
@@ -12,6 +12,15 @@ This contract governs producing one — what a run declares before it starts, th
 state machines and metadata every durable asset carries, and how to revise,
 supersede, or migrate it. Whether an asset is complete, fresh, promotable, or
 closeable is decided in `kai-core-asset-closing`.
+
+This contract keeps four independent questions separate:
+
+```text
+EXECUTION     Did the work item reach a truthful stop?
+DISPOSITION   Where is the asset in its durability lifecycle?
+VALIDITY      Is the asset still safe to use as current guidance?
+CLOSURE       Did the initiative reconcile all work, assets, and backlog?
+```
 
 ## The core rule
 
@@ -107,8 +116,9 @@ proposed -> active -> paused -> completed | shipped -> archived
 ```
 
 An initiative terminal state requires the work, asset, backlog, and ownership
-sweeps defined in `kai-core-asset-closing`. Archiving the initiative moves operational records out
-of live state; it does not move or invalidate its published assets.
+sweeps defined in `kai-core-asset-closing`. Archiving the initiative moves
+operational records out of live state; it does not move or invalidate its
+published assets.
 
 ## Pre-dispatch declaration
 
@@ -216,6 +226,28 @@ Supersession is one close operation:
    report the incomplete relationship. Never claim an atomic guarantee that
    markdown and the filesystem cannot provide.
 
+## Generator close transaction
+
+Before an asset-producing agent stops:
+
+1. Inventory every generated file.
+2. Keep raw evidence under `.kai/runs/`.
+3. Add complete metadata before durable placement.
+4. Resolve revision or supersession.
+5. Record each exact path in the work item's `artifact_targets` and Evidence.
+6. Resolve the four completion dimensions defined in `kai-core-asset-closing`.
+7. Append a HANDOFF naming:
+   - execution state;
+   - asset disposition;
+   - asset validity;
+   - completion authority and verdict;
+   - validity owner and next revalidation trigger.
+8. Report any incomplete write as a Gap. Do not shape it as success.
+
+The workspace doctor provides detectability, not filesystem transactions. It
+must detect orphan assets, missing targets, incomplete supersession, invalid
+state combinations, overdue revalidation, and initiative closure blockers.
+
 ## Migration rule
 
 Do not guess that an old asset is current. During reconciliation:
@@ -239,7 +271,6 @@ unknown assets must never appear in a current-only view.
 3. No unclassified durable output.
 4. Material conclusion changes create a successor, not a silent revision.
 5. Supersession links are bidirectional.
-6. Legacy starts `unknown`; revalidation earns `current`.
 
 ## Anti-patterns
 
