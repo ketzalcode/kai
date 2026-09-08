@@ -1224,14 +1224,9 @@ export function progressiveSkillRoutingErrors({
   // change, so the sentence checks run against a whitespace-collapsed copy.
   const flat = text.replace(/\s+/g, ' ');
   const available = knownSkills instanceof Set ? knownSkills : new Set(knownSkills);
-  const mentioned = new Set(
-    [...text.matchAll(/`([a-z0-9][a-z0-9-]*)`/g)].map((match) => match[1])
-  );
-  const routed = new Set([...mentioned].filter(
-    (name) => available.has(name) || name.startsWith(CORE_SKILL_PREFIX)
-  ));
+  const routed = new Set(routedSkills(text));
   for (const skill of routed) {
-    if (!available.has(skill)) errors.push(`names unknown skill \`${skill}\``);
+    if (!available.has(skill)) errors.push(`routes unknown skill \`${skill}\``);
   }
   if (!/`kai-core-contract-v1`[\s\S]{0,160}?\bfirst\b[\s\S]{0,80}?\bcore\b/i.test(flat)
     && !/\bbefore\b[\s\S]{0,120}?\bfirst\b[\s\S]{0,120}?`kai-core-contract-v1`/i.test(flat)) {

@@ -1499,7 +1499,7 @@ function selfTest() {
     'Invoke `kai-core-contract-v1` before the first other core skill.',
     'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
     'State the limitation once and tell the operator to install or update `kai-core`.',
-    'Read `kai-core-team-operating-rules` before coordinated work.',
+    'Load `kai-core-team-operating-rules` before coordinated work.',
     'Load `kai-core-asset-lifecycle` before durable output.',
     'Load `kai-core-workspace-conventions` before touching workspace state.',
     'Load `kai-core-work-activity` before recording a run.',
@@ -1531,7 +1531,7 @@ function selfTest() {
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
     body: progressiveSkillBody.replace('kai-core-asset-lifecycle', 'kai-core-asset-lifecyle'),
-  }).some((m) => /names unknown skill `kai-core-asset-lifecyle`/.test(m)),
+  }).some((m) => /routes unknown skill `kai-core-asset-lifecyle`/.test(m)),
   'a mistyped skill name fails as an unknown route wherever it appears');
   ok(progressiveSkillRoutingErrors({
     ...progressiveSkillOptions,
@@ -1565,6 +1565,19 @@ function selfTest() {
     activityExempt: true,
   }).some((m) => /activity-exempt/.test(m)),
   'an activity-exempt kai-agent-v1 role cannot retain the activity route');
+  // --- required contracts must be ROUTED, not merely mentioned
+  const mentionOnly = [
+    '**Identity contract:** `kai-agent-v1`',
+    'Invoke `kai-core-contract-v1` before the first other core skill.',
+    'See `kai-core-team-operating-rules` and `kai-core-asset-lifecycle` for context.',
+    'If core is unavailable or incompatible, continue single-shot;',
+    'do not create `.kai` state; tell the operator to install or update `kai-core`.',
+  ].join('\n');
+  ok(progressiveSkillRoutingErrors({
+    id: 'eng-lead-x', body: mentionOnly, tools: ['skill'],
+    knownSkills: ['kai-core-contract-v1', 'kai-core-team-operating-rules', 'kai-core-asset-lifecycle'],
+  }).some((e) => /must load `kai-core-team-operating-rules`/.test(e)),
+  'a contract that is only name-dropped does not count as loaded');
   ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
     && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
   'the approved model set and deterministic profile mapping contain the same identifiers');
