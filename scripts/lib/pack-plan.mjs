@@ -1405,6 +1405,24 @@ export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
 // anyone to run it.
 const ASSET_REF = /(?<![A-Za-z0-9_-])scripts\/[A-Za-z0-9_-]+\.(?:mjs|js|cjs|ps1|sh|py)/g;
 
+// A mention becomes a route only when an imperative verb points at it. Without
+// this, "do not invoke `x`" counts as loading x, and a route that never fires is
+// invisible: the agent silently never loads the contract and does lower-quality
+// work with nothing failing. The negation guard is the whole point.
+const ROUTE_SENTENCE = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0-9-]*)`/gi;
+const ROUTE_NEGATION = /\b(?:not|never|without|avoid)\b/i;
+
+export function routedSkills(body) {
+  const out = [];
+  for (const line of normalizeLF(body ?? '').split('\n')) {
+    for (const m of line.matchAll(ROUTE_SENTENCE)) {
+      if (ROUTE_NEGATION.test(line.slice(0, m.index))) continue;
+      if (!out.includes(m[1])) out.push(m[1]);
+    }
+  }
+  return out;
+}
+
 // Situational dispatch targets declared in a body, in declaration order.
 export function dispatchedRefs(body) {
   const out = [];

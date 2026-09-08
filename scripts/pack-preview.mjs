@@ -54,7 +54,7 @@ import {
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors, sourcePlacementErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
-  GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE,
+  GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE, routedSkills,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1589,6 +1589,22 @@ function selfTest() {
     ok(false, 'the shipped taxonomy and model references exist for drift checks');
     ok(false, 'a model-selection drift mutation can run against the shipped reference');
   }
+
+  // --- routedSkills: an imperative verb is what makes a mention a route
+  ok(routedSkills('Invoke `kai-core-work-acting` before writing state.')
+    .join() === 'kai-core-work-acting',
+  'an imperative verb immediately before a backticked id is a route');
+  ok(routedSkills('The technical counterpart to `kai-core-work-acting`.').length === 0,
+    'a bare prose mention is editorial, not a route');
+  ok(routedSkills('Do not invoke `kai-core-work-granting`; you are not the grantor.').length === 0,
+    'a negated instruction is not a route -- the dead-route bug this parser exists to catch');
+  ok(routedSkills('Load the `kai-core-asset-producing` contract first.')
+    .join() === 'kai-core-asset-producing',
+    'an optional article between the verb and the id is allowed');
+  ok(routedSkills('Load `kai-core-work-acting`.\nInvoke `kai-core-work-acting` again.')
+    .length === 1, 'a repeated route is reported once');
+  ok(routedSkills('Invoke `kai-core-work-item` then apply `kai-core-work-acting`.')
+    .length === 2, 'two routes on one line are both found');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;
