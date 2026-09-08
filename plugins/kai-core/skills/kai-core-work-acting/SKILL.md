@@ -35,6 +35,37 @@ hand off, block, review, or finish work they were dispatched.
     backlog.md
 ```
 
+## The acting loop
+
+A dispatched role runs one pass over an item it already holds. This is the
+order; the detail for each step lives in the section or skill named.
+
+Before acting:
+
+1. Read the item record, its latest HANDOFF, relevant initiative context
+   (`kai-core-workspace-initiative`), and every `context_artifacts` path.
+2. Confirm `artifact_expectation` before producing any output; `none` is valid
+   only with a reason. The declaration and asset state live in
+   `kai-core-asset-producing`.
+3. Confirm acceptance, dependencies, open questions, touch-set safety, version,
+   and lease, then re-verify the lease before each write (see **Verify before
+   every state-changing write**).
+
+Before stopping:
+
+1. Run the smallest existing validation that proves the changed behaviour.
+2. Keep the actual changed paths inside the declared `touches` set, or report
+   the expansion.
+3. Update item state, evidence, version, `next_role`, and lease, routing any
+   review through **Review routing**.
+4. Append a HANDOFF (see **HANDOFF packet**). Never leave coordinated work
+   silently in progress.
+
+Every peer receives the same absolute workspace root and writes artifact paths
+relative to it. The final handoff names that root and the exact paths to the
+initiative summary and deliverable index; abbreviated paths such as `.../` are
+not sufficient.
+
 ## Verify before every state-changing write
 
 A dispatched role receives `lease.holder`, `lease.token`, and the item
