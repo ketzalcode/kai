@@ -1065,18 +1065,40 @@ export function agentRoutingErrors({
   if (activityExempt && routed.has('kai-core-work-activity')) {
     errors.push('is activity-exempt but routes `kai-core-work-activity`; remove the exemption or the route');
   }
-  // The refusal belongs to the role, so its wording is the author's. What is
-  // load-bearing is that all three facts are present: keep working narrowly,
-  // write no shared state, and tell the operator. Pinning the sentence itself
-  // is what made 49 agents carry the same 840 characters.
-  const missing = [];
-  if (!/\b(single-shot|direct, one-off|on its own)\b/i.test(flat)) missing.push('that it continues only with direct, single-shot work');
-  if (!/`\.kai`[\s\S]{0,40}state/i.test(flat)) missing.push('that it creates no `.kai` state');
-  if (!/install or update `kai-core`/i.test(flat)) missing.push('that the operator should install or update `kai-core`');
-  if (missing.length) {
-    errors.push(`must state the core fallback in its own words, including ${missing.join(', and ')}`);
+  // The refusal belongs to the role, so its wording is the author's. A regex
+  // over prose can only check vocabulary, and checking vocabulary is how 49
+  // agents ended up carrying the same 840 characters — a short pin is still a
+  // pin. So this checks structure and literals instead: the refusal sits in the
+  // same paragraph as the core route, it names `.kai` (a path, not a phrasing
+  // choice), and it gives the operator a concrete instruction naming the
+  // package. That the agent also narrows itself to bounded direct work is a
+  // real obligation, but it is prose about intent and only a reader can judge
+  // whether a given sentence carries it. Review owns that one; CI does not
+  // pretend to.
+  const refusal = paragraphContaining(body, CONTRACT_SKILL);
+  if (refusal === null) {
+    errors.push(`must state its core fallback in the same paragraph as the \`${CONTRACT_SKILL}\` route, so the refusal is read where core is loaded`);
+  } else {
+    const missing = [];
+    if (!/`\.kai`/.test(refusal)) missing.push('what it will not write to `.kai`');
+    if (!/install or update `kai-core`/i.test(refusal)) missing.push('that the operator should install or update `kai-core`');
+    if (missing.length) {
+      errors.push(`must state the core fallback in its own words, including ${missing.join(', and ')}`);
+    }
   }
   return errors;
+}
+
+// The refusal is defined by where it sits, not by what it says: the paragraph
+// that carries the core route. Splitting on blank lines keeps that structural
+// rather than lexical, so an author may word the refusal however the role
+// demands as long as it stays next to the route it qualifies.
+function paragraphContaining(body, skillId) {
+  const needle = `\`${skillId}\``;
+  for (const para of normalizeLF(body ?? '').split(/\n\s*\n/)) {
+    if (para.includes(needle)) return para.replace(/\s+/g, ' ').trim();
+  }
+  return null;
 }
 
 // The only reader of `**Primary profile:** <profile>` and its mapping through
