@@ -7,7 +7,7 @@ tools: [execute, read, edit, search, ask_user]
 # Initiative Stewardship
 
 kai's team can now **preserve and hand off work within an item**
-(`kai-core-work-coordination`),
+(`kai-core-work-acting`),
 **stay honest at the moment of action** (`kai-core-scope-discipline`), and **ship a
 finished slice** (`kai-core-definition-of-done` + `workflow-ship`). What's still
 unowned is the layer *above* a single item: someone has to decide **what
@@ -121,7 +121,7 @@ item reached its declared terminal state: `completed` for research/decision
 work or `shipped` for production delivery. Planning items and unlisted optional
 work do not satisfy the milestone.
 
-The steward then applies `kai-core-asset-lifecycle` and proves four closure
+The steward then applies `kai-core-asset-closing` and proves four closure
 sweeps:
 
 1. **Work:** every required item reached its typed terminal state.

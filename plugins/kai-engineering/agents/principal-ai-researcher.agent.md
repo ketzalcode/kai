@@ -128,7 +128,7 @@ from the set, but you do not prune on your own.
 File path (published):
 `<project-root>/<publication-root>/briefings/<YYYY-MM-DD>-briefing.md`.
 
-**Initiative gating (see `kai-core-workspace-conventions`).** Before researching, glance
+**Initiative gating (see `kai-core-workspace-initiative`).** Before researching, glance
 at `.kai/state/ACTIVE.md`. If this topic serves the active initiative's `scope`
 (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and angle the briefing toward what the initiative needs — then

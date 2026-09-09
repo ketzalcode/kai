@@ -80,7 +80,7 @@ For initiative work:
    `.kai/state/threads/<item-id>.md`;
 3. write working artifacts below the initiative;
 4. update `deliverables.md`;
-5. apply `kai-core-asset-lifecycle` before completion.
+5. apply `kai-core-asset-producing` before completion.
 
 `.kai/state/ACTIVE.md` is only the current focus pointer.
 `.kai/state/initiatives/INDEX.md` is the permanent all-status catalog. A

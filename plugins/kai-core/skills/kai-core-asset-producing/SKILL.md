@@ -35,7 +35,7 @@ asset later becomes stale, invalidated, retired, or superseded.
 
 ### 1. Execution
 
-Execution uses the work-item lifecycle from `kai-core-work-coordination`.
+Execution uses the work-item lifecycle from `kai-core-work-granting`.
 
 ```text
 proposed -> ready -> in-progress -> in-review

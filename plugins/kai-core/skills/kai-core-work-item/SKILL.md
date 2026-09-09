@@ -90,7 +90,7 @@ Rules:
   is the product change rather than a separate generated artifact.
 - **`artifact_class`**, **`durability`**, **`completion_authority`**, and
   **`validity_owner`** are required when an asset is owed. Their semantics come
-  from `kai-core-asset-lifecycle`.
+  from `kai-core-asset-producing`.
 - **`artifact_targets`** lists every exact private workspace path, or
   project-qualified public path, for an asset-producing item. The convention is
   `.kai/state/initiatives/<slug>/artifacts/<domain>/<item-id>.md`, where

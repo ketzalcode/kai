@@ -10,7 +10,6 @@ Complete the contract before writing the agent instructions.
 **Kind:** durable-role | workflow | persona | instructor
 **Provider:** <plugin>
 **Identity:** <id>
-**Identity contract:** `kai-agent-v1`
 **Posture:** <posture or n/a>
 **Scope:** <scope>
 **Execution profile:** <profile>
@@ -69,7 +68,6 @@ tools: [read, search, skill]
 
 <One paragraph: responsibility and why the role exists.>
 
-**Identity contract:** `kai-agent-v1`
 **Primary profile:** <profile>
 
 ## <Craft section>

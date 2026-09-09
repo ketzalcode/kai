@@ -109,7 +109,7 @@ All output for a single run lives in:
 
 Runs land in the **run root** — `.kai/runs/learn/` — which
 `workflow-workspace-init` gitignores **wholesale** (see
-`kai-core-workspace-conventions`). You do **not** patch `.gitignore` per folder; the
+`kai-core-workspace-paths`). You do **not** patch `.gitignore` per folder; the
 working root is ephemeral. The extracted markdown (`module.md`,
 `questions.md`, `source.md`) and the `raw/` snapshots all live there as
 working output, and `kai-core-generate-audio` reads the markdown straight from that

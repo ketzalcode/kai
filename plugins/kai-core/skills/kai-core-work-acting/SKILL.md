@@ -179,7 +179,7 @@ reviewer:
 4. sets `next_role` to the next unmet reviewer, or `workflow-ship` when all
    requirements are satisfied for a `product-change` or `operational` item;
    for `knowledge`, the named completion authority accepts the exact asset
-   revision, the owning role clears the four `kai-core-asset-lifecycle`
+   revision, the owning role clears the four `kai-core-asset-closing`
    dimensions, and then moves the item to `completed`.
 
 Only reviews matching the current `change_ref` count. Whenever implementation
@@ -199,5 +199,5 @@ revision; only then may the owning designer close it as `completed`.
    Claiming changes `ready -> in-progress` only; later-phase leases preserve
    their lifecycle state.
 2. Every acting run ends with updated state, evidence, and a HANDOFF.
-3. Every generated asset is closed through `kai-core-asset-lifecycle`; no
+3. Every generated asset is closed through `kai-core-asset-closing`; no
    unclassified durable output may survive a run.

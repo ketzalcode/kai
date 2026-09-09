@@ -90,7 +90,7 @@ silently changing stored history.
 
 ## Placement and promotion
 
-`kai-core-workspace-conventions` owns exact paths. This contract owns the state
+`kai-core-workspace-paths` owns exact paths. This contract owns the state
 change at those paths:
 
 ```text

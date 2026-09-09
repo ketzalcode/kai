@@ -161,18 +161,18 @@ an ADR-style record to:
   a dispatch packet or loaded north star wins over this agent's cwd.
 - `<NN>` is the zero-padded per-day run index (highest existing in
   `<working-root>/eng/<YYYY-MM-DD>/` + 1); `<target-slug>` is the descriptor.
-  See `kai-core-workspace-conventions` for the date-first run grammar.
+  See `kai-core-workspace-paths` for the date-first run grammar.
 - This sits parallel to the eng-manager's `-scope/plan.md`, keeping
   engineering artifacts together.
 
-**Initiative gating (see `kai-core-workspace-conventions`).** Before deciding, glance at
+**Initiative gating (see `kai-core-workspace-initiative`).** Before deciding, glance at
 `.kai/state/ACTIVE.md`. If this decision lives inside the active initiative's
 `scope` (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and weigh options against it — then stamp `initiative: <slug>`
 in the promoted frontmatter. If it's a side investigation or an unrelated
 component, load nothing and work context-free.
 
-**Draft and publication (see `kai-core-workspace-conventions`):** Apply `kai-core-work-acting`
+**Draft and publication (see `kai-core-workspace-paths`):** Apply `kai-core-work-acting`
 before you write the
 working draft at the path above — the
 `.kai/runs/` is gitignored by `workflow-workspace-init`,

@@ -48,7 +48,7 @@ manufacture a decision.
 ## Assembly
 
 1. **Resolve.** Resolve the workspace that *owns the decision* — the current Kai
-   workspace or a validated enabled linked root (`kai-core-workspace-conventions`) — and
+   workspace or a validated enabled linked root (`kai-core-workspace-initiative`) — and
    the exact target: the item ID plus the authoritative thread path and
    `Q-<item-id>-<NN>`, or the `release-ready` item and its current ship record.
    Re-read the item `version`/`state` so a later bridge acts on current truth.
@@ -127,7 +127,7 @@ the deploy gate. One line.>
 - <item / peer / milestone that cannot move until this is answered>
 
 ## Your move
-- **Thread decision:** <the single choice> → once decided, **@<owning role or Chief of Staff> records the `@operator` ANSWER on the thread** and restores the item per `kai-core-work-coordination`.
+- **Thread decision:** <the single choice> → once decided, **@<owning role or Chief of Staff> records the `@operator` ANSWER on the thread** and restores the item per `kai-core-work-acting`.
 - **Deploy gate:** go → **you deploy** (kai never deploys), then hand the run evidence to `workflow-ship CONFIRM-START`; defer → stays `release-ready` with a recorded reason; cancel → lifecycle-authorized drop.
 - <any dependent action the operator can green-light, and the specialist who runs it>
 
@@ -155,7 +155,7 @@ role — **never** by the assistant writing coordination. Two paths:
 `.kai/state/threads/<item-id>.md` with the answerer as `@operator` and
 `provenance: operator`, carrying only the sanitized selected option and minimal
 team-relevant rationale — never a `.kai/personal/` path or private reasoning. Per
-`kai-core-work-coordination`, that role removes the question ID from
+`kai-core-work-acting`, that role removes the question ID from
 `waiting_on_questions` only if it is present, and restores the exact
 `resume_state` only once **every** blocking question is answered, and only when
 the role is authorized for that lifecycle transition.

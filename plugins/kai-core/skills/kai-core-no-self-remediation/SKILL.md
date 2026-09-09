@@ -59,10 +59,10 @@ answer is no because of something you wrote, you have remediated.
 Exactly two places:
 
 1. **Your assessment output root** — the run path your own skill resolves
-   (`kai-core-web-evaluation`, `kai-core-workspace-conventions`, or the path your profile
+   (`kai-core-web-evaluation`, `kai-core-workspace-paths`, or the path your profile
    names). Reports, findings, screenshots, evidence, scaffolds.
 2. **Coordination and activity records** — the item record, its thread, and
-   `.kai/activity.jsonl` via `kai-core-work-coordination` and `kai-core-work-activity`. These
+   `.kai/activity.jsonl` via `kai-core-work-acting` and `kai-core-work-activity`. These
    are how your review becomes visible; they are not the reviewed target.
 
 Anything else is out of bounds, including the tempting middle ground of "a

@@ -154,7 +154,7 @@ gradient matters as much as the claim itself.
 File path (promoted):
 `<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-applied-<slug>/design.md`.
 
-**Initiative gating (see `kai-core-workspace-conventions`).** Before designing, glance
+**Initiative gating (see `kai-core-workspace-initiative`).** Before designing, glance
 at `.kai/state/ACTIVE.md`. If this applied work serves the active initiative's
 `scope` (repo / target-slug / keyword / the user's stated goal), load its
 `northstar.md` and shape the design toward the initiative's objective — then

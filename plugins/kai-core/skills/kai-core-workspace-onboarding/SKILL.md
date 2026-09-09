@@ -6,7 +6,7 @@ tools: [execute, read, edit, search, ask_user]
 
 # Workspace Onboarding
 
-This skill materializes `kai-core-workspace-conventions`.
+This skill materializes `kai-core-workspace-paths` and `kai-core-workspace-initiative`.
 `workflow-workspace-init` executes it. Other roles may validate the result but
 must not scaffold a partial workspace.
 

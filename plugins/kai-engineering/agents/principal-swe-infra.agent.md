@@ -218,7 +218,7 @@ do **not** scatter standalone `.md` files.
 
 When you're **commissioned to produce a standalone design or lock a
 domain-local decision**, write exactly one file to the `eng` area (see
-`kai-core-workspace-conventions`):
+`kai-core-workspace-paths`):
 
 `<working-root>/eng/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md`
 
@@ -229,7 +229,7 @@ domain-local decision**, write exactly one file to the `eng` area (see
   the dated `eng/<YYYY-MM-DD>/` area. Never create a top-level
   `infra/` folder.
 
-**Zone & publication (see `kai-core-workspace-conventions`):** Apply `kai-core-work-acting`
+**Zone & publication (see `kai-core-workspace-paths`):** Apply `kai-core-work-acting`
 before you write the `design.md` draft
 in the gitignored `.kai/runs/` root. Apply `kai-core-asset-producing` before you publish it to
 `<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-infra-<target-slug>/design.md`

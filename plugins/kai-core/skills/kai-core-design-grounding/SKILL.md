@@ -109,7 +109,7 @@ Resolve in order, before designing:
    repo whose styling can't be read) → request a **design-system extraction** from
    `workflow-product-explore` — the same way the designer already requests
    `workflow-product-explore` for a product map (via the director /
-   `kai-core-work-coordination`, not by spawning it). The designer **does not** free-roam
+   `kai-core-work-granting`, not by spawning it). The designer **does not** free-roam
    Playwright itself: the explorer already owns neutral, whole-app navigation and
    won't over-index on one page.
 4. **Extraction coverage is insufficient** → proceed only with **explicitly

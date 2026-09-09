@@ -29,15 +29,18 @@ Generated copies under `plugins/kai-core/scripts/` are outputs, not sources.
 
 ## Required situational contracts
 
-Every `kai-agent-v1` agent routes:
+Every `kai-agent-v1` agent routes `kai-core-contract-v1` before its first other
+core skill, stating the core-unavailable refusal in its own words in the same
+paragraph. Route every other contract inline, at the instruction that needs it —
+never as a hoisted manifest:
 
-- `kai-core-contract-v1` before its first other core skill;
-- `kai-core-team-operating-rules` before coordinated Kai work;
-- `kai-core-asset-lifecycle` before creating or changing durable output.
-
-Every durable role or workflow also routes:
-
-- `kai-core-workspace-conventions` before accessing `.kai` state;
+- `kai-core-operating-rules` before coordinated Kai work;
+- `kai-core-asset-producing` before creating or changing durable output, and
+  `kai-core-asset-closing` where the role accepts, promotes, or closes one;
+- `kai-core-workspace-paths` before resolving a root or placing a file, and
+  `kai-core-workspace-initiative` before reading or writing initiative state;
+- `kai-core-work-acting` before acting on an item, with `kai-core-work-item`
+  for its record and `kai-core-work-granting` only for the lease grantor;
 - `kai-core-work-activity` before recording a bounded run.
 
 Add coordination, communication, scope, or domain skills only when the agent

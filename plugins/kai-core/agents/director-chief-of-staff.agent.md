@@ -101,7 +101,7 @@ Apply `kai-core-work-granting` before granting any lease. `executable` is a
 **derived predicate you compute here** — it is never stored on
 the item. `ready` means only that the steward committed the item and declared
 its dependencies; it does not mean the item is runnable this instant. This is
-the authoritative definition of *executable* that `kai-core-work-coordination` refers to.
+the authoritative definition of *executable* that `kai-core-work-granting` refers to.
 A downstream `ready` item simply waits here until its dependencies clear — never
 send it back to the steward for re-promotion.
 
@@ -237,7 +237,7 @@ dependencies: <ids + relevant evidence>
 touches: <paths/resources>
 latest handoff: <packet>
 open questions: <ids>
-required contracts: kai-core-work-coordination, kai-core-scope-discipline if acting,
+required contracts: kai-core-work-acting, kai-core-work-item, kai-core-scope-discipline if acting,
                     kai-core-definition-of-done self-check
 ```
 
@@ -274,7 +274,7 @@ For work involving an existing live user journey:
    reaches `completed` with PM acceptance bound to its current `change_ref`, or
    the steward/operator records an explicit product-design waiver as a `WAIVER`
    record (grantor, reason, `applies_at` item version, scope, expiry — see the
-   Design-waiver record in `kai-core-work-coordination`) in the item thread; the waiver is
+   Design-waiver record in `kai-core-work-granting`) in the item thread; the waiver is
    confirmed against the implementation `change_ref` at design-conformance review.
 7. When implementation is based on an approved design, include
    `principal-product-designer` as an independent design-conformance reviewer
@@ -309,7 +309,7 @@ After each peer returns:
 - confirm the expected lease/version and HANDOFF exist;
 - if a `COLLISION` record is present, reconcile it before any re-grant: leave a
   legitimate other holder, recover a stale lease with a fresh token per
-  `kai-core-work-coordination`, or escalate — never overwrite a live holder;
+  `kai-core-work-granting`, or escalate — never overwrite a live holder;
 - reconcile the **actual changed paths** (diff at `change_ref`, returned
   artifact/evidence paths, or `git diff --name-only`) against the item's
   declared `touches`; report any unexplained expansion, update `touches` only

@@ -119,7 +119,7 @@ assistant: [runs: pwsh <kai-core-plugin>/scripts/generate-audio.ps1 -Source .kai
    relative to their cwd. Audio is heavy and regenerable — the `.kai/runs/`
    working root is gitignored wholesale, and `*.mp3`/`audio/` stay ignored
    even inside `<publication-root>/`, so audio never bloats the repo (see
-   `kai-core-workspace-conventions`).
+   `kai-core-workspace-paths`).
 
 ## Failure modes
 

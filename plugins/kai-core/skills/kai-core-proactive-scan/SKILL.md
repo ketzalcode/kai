@@ -41,7 +41,7 @@ The runner drives two explicit phases, so a signal is neither lost nor spammed:
 
 Coordination is **read-only**. Against the **selected workspace** plus every
 enabled, validated root in its `.kai/personal/workspaces.md` (per
-`kai-core-workspace-conventions`), reuse `kai-core-personal-agenda`'s **Source A** detection —
+`kai-core-workspace-initiative`), reuse `kai-core-personal-agenda`'s **Source A** detection —
 nothing new is invented:
 
 - an open thread `QUESTION` to `@operator` (`kind: decision|reply|action`) with
