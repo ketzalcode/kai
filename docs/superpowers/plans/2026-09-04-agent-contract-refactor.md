@@ -1101,3 +1101,16 @@ State plainly: no automated check confirms an agent kept every rule it needs, an
 - Wiring `kai-core-fleet-observation` to the roles that should load it.
 - Re-deriving a body-size target from what refactored bodies actually need.
 - The release: one batched version bump across five packs, per `AGENTS.md`.
+
+## Release landmine: regenerate only what has migrated
+
+`pack-preview --write` **strips** any `kai core dependency guard` region it
+finds; it never emits one. The 29 agents in `kai-gtm`, `kai-product` and
+`kai-personal` still carry that region in their sources and still need it,
+because they have not moved to inline routes.
+
+So a blanket `--write` during the batched release would silently remove the
+guard from all 29 and break the `pack-preview.mjs:633` self-test. At release
+time, regenerate `kai-core` and `kai-engineering` only, and leave the three
+unmigrated packs' trees alone until their own migration lands. Their `--check`
+divergence — 29 guard-region drifts — is expected until then.

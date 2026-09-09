@@ -58,9 +58,10 @@ the source tree.
 
 Each agent and skill now has exactly one authoritative source inside its owning
 `plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
-are gone. Generation is limited to derived manifests, dependency locks, routed
-scripts, and the dependency-guard regions still emitted for the packs not yet
-migrated to inline routing.
+are gone. Generation is limited to derived manifests, dependency locks, and
+routed scripts. The packs not yet migrated to inline routing still carry a
+dependency-guard region in their agent sources; regeneration strips such regions
+rather than emitting them, so those packs migrate before they are regenerated.
 
 Every role can route to the shared asset contracts; roles load them when durable
 output is about to change. Generated work separates
