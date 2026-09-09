@@ -34,7 +34,7 @@ import {
   marketplaceSurfacePolicy,
   materializePacks,
   CONTRACT_SKILL,
-  HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, routedSkills, packProviders,
+  HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, routedSkills, loadedSkills, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
   requiresCoordinatedRunContracts, agentRoutingErrors,
@@ -449,9 +449,8 @@ const ASSESSOR_ROLES = [
       continue;
     }
     const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
-    const line = (raw.match(/^\*\*Inherits:\*\*.*$/m) || [''])[0];
-    if (!line.includes(`\`${ASSESSOR_CONTRACT}\``)) {
-      err(rel(agent.path), `is on the assessor roster but does not inherit \`${ASSESSOR_CONTRACT}\``);
+    if (!loadedSkills(raw).has(ASSESSOR_CONTRACT)) {
+      err(rel(agent.path), `is on the assessor roster but never loads \`${ASSESSOR_CONTRACT}\``);
     }
   }
 }
@@ -505,13 +504,12 @@ const ASSESSOR_ROLES = [
     const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
     const parsed = parseFrontmatter(raw);
     const held = new Set(parsed.ok ? parseToolList(parsed.fm.tools) || [] : []);
-    const line = (raw.match(/^\*\*Inherits:\*\*.*$/m) || [''])[0];
-    for (const m of line.matchAll(/`([^`]+)`/g)) {
-      const need = requires.get(m[1]);
+    for (const skill of loadedSkills(raw)) {
+      const need = requires.get(skill);
       if (!need) continue;
       for (const tool of need) {
         if (!held.has(tool)) {
-          err(rel(agent.path), `inherits \`${m[1]}\`, which requires the \`${tool}\` tool, but its \`tools\` list omits it`);
+          err(rel(agent.path), `loads \`${skill}\`, which requires the \`${tool}\` tool, but its \`tools\` list omits it`);
         }
       }
     }

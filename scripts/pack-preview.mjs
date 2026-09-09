@@ -46,7 +46,7 @@ import {
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
-  agentTaxonomyErrors, requiresCoordinatedRunContracts, agentRoutingErrors,
+  agentTaxonomyErrors, requiresCoordinatedRunContracts, loadedSkills, agentRoutingErrors,
   agentProfileModelErrors,
   agentPromptLimitErrors, agentAuthoringReferenceErrors,
   ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT,
@@ -1477,6 +1477,15 @@ function selfTest() {
       ),
   }).length === 0,
   'a refusal in the role\'s own words passes: the check is structural, and pinning vocabulary is what this refactor removed');
+  // --- one question, both encodings: every check that asks "does this agent
+  // --- load X" must see a routed agent and an eager one alike, or it passes
+  // --- vacuously over half the repo while the migration is in flight
+  ok(loadedSkills(routingBody).has('kai-core-work-acting'),
+  'loadedSkills reads a contract an agent routes inline');
+  ok(loadedSkills('**Inherits:** `kai-core-work-acting`').has('kai-core-work-acting'),
+  'loadedSkills reads a contract an agent still declares on the eager line');
+  ok(!loadedSkills('This agent must never load `kai-core-work-acting`.').has('kai-core-work-acting'),
+  'loadedSkills does not count a bare or negated mention as loading the contract');
   ok(agentRoutingErrors({
     ...routingOptions,
     tools: ['read'],

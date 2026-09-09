@@ -508,6 +508,16 @@ export function inheritedSkills(root, body) {
   return declaredInherits(body).filter((s) => skillFile(root, s) !== null);
 }
 
+// The one answer to "which contracts does this agent load". A migrated agent
+// routes them inline at the step that needs each one; an agent still on the
+// eager line declares them all up front. Both are the same question, so every
+// check that asks it reads this rather than picking a side and passing
+// vacuously on the other half of the repo. When the last pack migrates, the
+// eager arm disappears and this collapses to `routedSkills` alone.
+export function loadedSkills(body) {
+  return new Set([...declaredInherits(body), ...routedSkills(body)]);
+}
+
 // Assign every skill on disk to exactly one provider. The mechanical rule handles
 // inherited skills; SKILL_OWNER_OVERRIDES carries the reviewed disposition for
 // user-invocable and orchestrated skills that inheritance alone cannot place.
