@@ -140,18 +140,18 @@ It is not unreachable, though: a user can run
 onboarding entirely. So the state must still be handled, just not designed
 around.
 
-> **Migration update:** The following eager preflight and refusal design remains
-> only for pre-`kai-agent-v1` agents. New and migrated agents use progressive
-> skill routing, check `kai-core-contract-v1` immediately before their first
-> other core skill, and continue ordinary single-shot domain work when core is
-> unavailable without using Kai coordination or state.
+> **Migration update:** Agents route contracts inline — each checks
+> `kai-core-contract-v1` immediately before its first other core skill, and
+> continues ordinary single-shot domain work when core is unavailable without
+> using Kai coordination or state. The eager preflight and refusal sketch below
+> is the older shape, kept only for the packs not yet migrated.
 
 Two mitigations, in order:
 
 1. A uniquely named `kai-core-contract-v1` skill returning a rigid marker,
    invoked as a **fail-closed preflight** written into each pack agent's own
    body (not into an inherited skill — that would be circular), pinned
-   byte-for-byte in CI the way `inherits-block.txt` already is. Honest label:
+   byte-for-byte in CI the way the communication-style block already is. Honest label:
    best-effort. The model can skip it.
 2. A degraded-mode block shipped in every generated department agent for the
    distinct case where core answered compatibly but its shared contracts are
@@ -180,10 +180,10 @@ Because it restates no rules, it has nothing to drift from. It stays correct
 for free as core evolves. And migration is trivial by construction: install
 core later, the preflight passes, full behaviour resumes, nothing to change.
 
-Precedent for the mechanics already exists in this repo — `inherits-block.txt`
-is a canonical source duplicated into all 56 agents with a byte-for-byte CI
-pin. The degraded block uses the same pattern: one canonical file under
-`scripts/lib/`, copied per pack, pinned by CI.
+Precedent for the mechanics already exists in this repo — the communication-style
+block is a canonical file under `scripts/lib/` copied into a consumer's
+`AGENTS.md` with a byte-for-byte CI pin. The degraded block uses the same
+pattern: one canonical file under `scripts/lib/`, copied per pack, pinned by CI.
 
 ### 2. Legacy collision (blocking)
 
@@ -342,7 +342,7 @@ core is present and answers correctly while a *different* plugin supplies the
 rules.
 
 > **Decision: core skills must carry an owned-namespace prefix**
-> (`kai-core-team-operating-rules` rather than `team-operating-rules`), so a
+> (`kai-core-operating-rules` rather than `operating-rules`), so a
 > legacy `kai` install cannot satisfy a pack agent's inheritance by accident.
 > Renaming is what removes the ambiguity; ordering luck is not a mitigation.
 >

@@ -32,11 +32,10 @@ root `AGENTS.md` never loads in a consumer workspace — see
 [Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
 for why the shared rules ship as a skill instead.
 
-Agent and skill files are edited only in their owning plugin. Legacy department
-agents carry one region bounded by `kai core dependency guard` HTML-comment
-markers; `npm run pack-preview -- --write` may replace only that region. Do not
-hand-edit inside the markers. `kai-agent-v1` and core agents carry no guard
-region. Skill companion files may
+Agent and skill files are edited only in their owning plugin. No agent carries a
+copied core-dependency guard region; `npm run pack-preview -- --write` strips any
+leftover legacy region bounded by `kai core dependency guard` HTML-comment
+markers. Skill companion files may
 live beside `SKILL.md`; derived-file cleanup is restricted to manifests, locks,
 hooks, and routed `scripts/`.
 

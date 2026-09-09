@@ -3,67 +3,59 @@
 These are the **repo-local** rules for changing kai itself. They apply to work
 inside this repository only.
 
-> **The shared operating contract lives in `plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md`,
-> not here.** A plugin's own root `AGENTS.md` is never loaded as custom
-> instructions in a consumer workspace — the host reads `AGENTS.md` only from
-> the user's repository root and working directory. Rules placed here reach kai
-> contributors and nobody else. New `kai-agent-v1` agents route that contract
-> just in time before coordinated Kai work; legacy agents still declare it on
-> their `**Inherits:**` line until migration.
+> **The shared operating contract lives in the `kai-core` skills, not here.** A
+> plugin's own root `AGENTS.md` is never loaded as custom instructions in a
+> consumer workspace — the host reads `AGENTS.md` only from the user's
+> repository root and working directory. Rules placed here reach kai
+> contributors and nobody else. An agent routes each contract just in time, at
+> the instruction that needs it.
 
 ## Where the rules live
 
 | Concern | Home |
 | --- | --- |
-| Role taxonomy, ownership boundaries, acting-agent loop, test ownership, completion ladder, communication, `@operator` | `plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md` |
-| Workspace roots, schema version, artifact targets | `plugins/kai-core/skills/kai-core-workspace-conventions/SKILL.md` |
-| Item lifecycle, leases, handoffs | `plugins/kai-core/skills/kai-core-work-coordination/SKILL.md` |
+| Role kinds, staying in lane, test ownership, human-only gates, shipping honesty, `@operator` | `kai-core-operating-rules` |
+| Acting on granted work: verify-before-write, collisions, handoffs, review routing | `kai-core-work-acting` |
+| Granting and reconciling work: leases, lifecycle, recovery, dispatch, backlog, board | `kai-core-work-granting` |
+| The durable work-item record and its schema | `kai-core-work-item` |
+| Workspace resolution, `.kai` layout, storage modes, artifact paths | `kai-core-workspace-paths` |
+| Initiative layout, coordination, closure, and the schema-3 manifest | `kai-core-workspace-initiative` |
+| Producing and closing durable assets | `kai-core-asset-producing`, `kai-core-asset-closing` |
 | Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
 
 ## Routing shared contracts
 
-New and materially migrated agents use `kai-agent-v1`. They load each shared
-contract inline, in the instruction that needs it, rather than collecting routes
-into a manifest section — a hoisted list recreates the eager `**Inherits:**`
-block this contract replaced. They do not carry an `**Inherits:**` line or embed
-the legacy core dependency guard. They call `kai-core-contract-v1` just before
-their first other core skill. If core is unavailable, ordinary single-shot
-domain work may continue, but Kai coordination and `.kai` state may not. The
-agent states that limitation once and tells the operator to install or update
-`kai-core`.
+An agent loads each shared contract inline, in the instruction that needs it,
+never hoisted into a manifest section — a collected list recreates the eager
+preload this design removed. It carries no `**Inherits:**` line and no
+dependency-guard block. It routes `kai-core-contract-v1` just before its first
+other core skill, and in the same paragraph states, in its own words, what it
+still does and refuses when core is unavailable: ordinary single-shot domain
+work may continue, but Kai coordination and `.kai` state may not, so it tells the
+operator to install or update `kai-core` before resuming coordinated work.
 
-Pre-`kai-agent-v1` agents retain exactly one `**Inherits:**` line as the first
-line of the body and the verbatim directive in `scripts/lib/inherits-block.txt`:
+`npm test` enforces those on-demand routes and the absence of any guard block.
 
-```markdown
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`
-```
-
-`npm test` preserves that legacy contract while validating that
-`kai-agent-v1` roles instead provide required on-demand routes and carry no
-legacy guard.
-
-The legacy directive remains byte-pinned only for unmigrated agents. Do not copy
-it into a new role.
-
-The same reasoning applies to the communication-style block below, for the
-opposite reason: it must reach the **main CLI agent**, which loads no skill and
-no agent file at all. Its canonical text lives in
-`scripts/lib/communication-style-block.md`, `kai-core-workspace-onboarding` installs it
-into a consumer's `AGENTS.md` on explicit opt-in, and `npm test` fails if this
-file's copy drifts from the canonical one, if the markers are missing, or if
-onboarding stops referencing it. **Edit the canonical file, never this copy.**
+Three packs — product, go-to-market, and personal — have not migrated yet. Their
+agents still open with an `**Inherits:**` line and its eager load directive until
+they do; do not copy that mechanism into a new or migrated agent.
 
 ## Communicating with the operator
 
 The block below is the one thing kai ships that binds the **main CLI agent**
 rather than a kai agent. The host loads `AGENTS.md` from the *user's*
-repository, never from a plugin, so `kai-core-team-operating-rules` — which governs how
+repository, never from a plugin, so `kai-core-operating-rules` — which governs how
 kai roles talk to each other — cannot reach the top-level assistant that
 actually replies to a human. A consumer opts into this block at onboarding;
 kai carries it here because a style we ship and do not use ourselves is a
 recommendation nobody tested.
+
+The block's canonical text lives in `scripts/lib/communication-style-block.md`,
+`kai-core-workspace-onboarding` installs it into a consumer's `AGENTS.md` on
+explicit opt-in, and `npm test` fails if this file's copy drifts from the
+canonical one, if the markers are missing, or if onboarding stops referencing
+it. **Edit the canonical file, never this copy.**
 
 <!-- >>> kai communication style (managed by workflow-workspace-init) >>> -->
 ## Communication style

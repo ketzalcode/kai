@@ -56,10 +56,10 @@ Behavioral-contract and host compatibility:
   - the managed `.gitignore` block is byte-identical between the repo
     `.gitignore` and the `kai-core-workspace-onboarding` template agents install;
   - the `.kai/runs` **areas** match across the manifest schema
-    (`kai-core-workspace-conventions`), the onboarding scaffold, and
+    (`kai-core-workspace-initiative`), the onboarding scaffold, and
     `workflow-workspace-init`;
   - the initiative `artifacts/` directories match between
-    `kai-core-workspace-conventions` and `workflow-initiative-init`;
+    `kai-core-workspace-initiative` and `workflow-initiative-init`;
   - the `library/<type>/` set matches across the conventions "Library types"
     table and both library scaffolds.
 - **Fixture manifest schema.** `test/fixtures/repo-workspace/.kai/manifest.json`

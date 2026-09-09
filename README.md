@@ -59,11 +59,11 @@ the source tree.
 Each agent and skill now has exactly one authoritative source inside its owning
 `plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
 are gone. Generation is limited to derived manifests, dependency locks, routed
-scripts, and legacy dependency-guard regions for agents not yet migrated to
-`kai-agent-v1`.
+scripts, and the dependency-guard regions still emitted for the packs not yet
+migrated to inline routing.
 
-Every role can route to the shared asset-lifecycle contract; `kai-agent-v1`
-roles load it when durable output is about to change. Generated work separates
+Every role can route to the shared asset contracts; roles load them when durable
+output is about to change. Generated work separates
 execution completion from artifact disposition and validity, preserves
 superseded or retracted history, and adds asset/backlog/ownership sweeps to
 initiative closure. Workspace enforcement rolls out separately as warn,

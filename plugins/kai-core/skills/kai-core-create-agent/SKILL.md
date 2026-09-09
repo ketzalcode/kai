@@ -70,7 +70,7 @@ Complete the agent contract from the template:
 7. Platform tools and situational skills, each with an activation trigger.
 8. Behavioral acceptance cases.
 
-Default to progressive loading. A `kai-agent-v1` body carries only instructions
+Default to progressive loading. An agent body carries only instructions
 needed on every invocation and names each skill inside the instruction that
 needs it, at the exact workflow step; it never preloads a skill list or collects
 routes into a manifest section.

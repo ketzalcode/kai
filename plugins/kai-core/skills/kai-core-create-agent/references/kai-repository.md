@@ -16,10 +16,10 @@ Use it when creating or refining an agent in the Kai plugin repository.
 ## Canonical source
 
 1. Edit only `plugins/<provider>/agents/<agent-id>.agent.md`.
-2. For a `kai-agent-v1` agent, name each skill in the instruction that needs it.
-   Do not add an `**Inherits:**` line or a skill manifest section.
-3. Do not add the legacy core dependency-guard region to a `kai-agent-v1`
-   agent. Core availability is checked just in time before the first core skill.
+2. Name each skill in the instruction that needs it. Do not add an
+   `**Inherits:**` line or a skill manifest section.
+3. Do not add a core dependency-guard region. Core availability is checked
+   just in time before the first core skill.
 4. Add a new identity to the provider array in `NEW_AGENT_IDS` in root
    `scripts/lib/pack-plan.mjs`.
 5. Add a new agent to exactly one `CATEGORIES` entry in root
@@ -29,7 +29,7 @@ Generated copies under `plugins/kai-core/scripts/` are outputs, not sources.
 
 ## Required situational contracts
 
-Every `kai-agent-v1` agent routes `kai-core-contract-v1` before its first other
+Every agent routes `kai-core-contract-v1` before its first other
 core skill, stating the core-unavailable refusal in its own words in the same
 paragraph. Route every other contract inline, at the instruction that needs it —
 never as a hoisted manifest:
@@ -47,9 +47,8 @@ Add coordination, communication, scope, or domain skills only when the agent
 has an action that triggers them. Every additional skill must be provided by
 core or the same plugin.
 
-Pre-`kai-agent-v1` agents retain the legacy `**Inherits:**` declaration and
-generated dependency guard until they are deliberately migrated. Do not copy
-those legacy mechanisms into a new or migrated agent.
+Unmigrated department packs still open with an `**Inherits:**` line and its eager
+load directive; do not copy that mechanism into a new or migrated agent.
 
 ## One-agent identity change
 

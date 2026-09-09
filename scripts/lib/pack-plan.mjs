@@ -891,7 +891,7 @@ export function marketplaceSurfacePolicy({
 // most of the corpus a cross-pack dependency it is not.
 const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
 
-// A kai-agent-v1 body names its skills inside the instruction that needs them,
+// An agent body names its skills inside the instruction that needs them,
 // so the bullet shape above cannot be the only firing path. An imperative to
 // load a skill is still narrower than "any backticked mention": it is a
 // directive, not the editorial cross-reference ("the technical counterpart to
