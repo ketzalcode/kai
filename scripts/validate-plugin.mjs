@@ -657,15 +657,24 @@ if (!existsSync(mktPath)) {
 // area is added to the manifest but forgotten in a scaffold; these catch it.
 // ---------------------------------------------------------------------------
 const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-const conventionsPath = skillSourceFile(ROOT, 'kai-core-workspace-conventions');
+// kai-core-workspace-conventions split by reader (see its drop record): the
+// roots / storage-mode / publication-root half is kai-core-workspace-paths, and
+// the manifest / run-area half is kai-core-workspace-initiative. Each concept is
+// checked below against the file that actually carries it — concatenating the
+// two would let a concept bound in neither file pass because the word happens to
+// appear in the other.
+const pathsSkillPath = skillSourceFile(ROOT, 'kai-core-workspace-paths');
+const initiativeSkillPath = skillSourceFile(ROOT, 'kai-core-workspace-initiative');
 const onboardingPath = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
 const wsInitPath = agentSourceFile(ROOT, 'workflow-workspace-init');
 const initiativeInitPath = agentSourceFile(ROOT, 'workflow-initiative-init');
-const conventions = conventionsPath ? readIf(conventionsPath) : null;
+const pathsSkill = pathsSkillPath ? readIf(pathsSkillPath) : null;
+const initiativeSkill = initiativeSkillPath ? readIf(initiativeSkillPath) : null;
 const onboarding = onboardingPath ? readIf(onboardingPath) : null;
 const wsInit = wsInitPath ? readIf(wsInitPath) : null;
 const initiativeInit = initiativeInitPath ? readIf(initiativeInitPath) : null;
-const conventionsRel = conventionsPath ? rel(conventionsPath) : 'skill:kai-core-workspace-conventions';
+const pathsSkillRel = pathsSkillPath ? rel(pathsSkillPath) : 'skill:kai-core-workspace-paths';
+const initiativeSkillRel = initiativeSkillPath ? rel(initiativeSkillPath) : 'skill:kai-core-workspace-initiative';
 const onboardingRel = onboardingPath ? rel(onboardingPath) : 'skill:kai-core-workspace-onboarding';
 const wsInitRel = wsInitPath ? rel(wsInitPath) : 'agent:workflow-workspace-init';
 const initiativeInitRel = initiativeInitPath ? rel(initiativeInitPath) : 'agent:workflow-initiative-init';
@@ -766,9 +775,9 @@ if (giBlock && !giBlock.includes('/.kai/')) {
 }
 
 // 2. The .kai/runs areas must match the documented manifest and fixture.
-const mAreasM = conventions && conventions.match(/"areas":\s*\[([^\]]*)\]/);
+const mAreasM = initiativeSkill && initiativeSkill.match(/"areas":\s*\[([^\]]*)\]/);
 const mAreas = mAreasM ? toSet(mAreasM[1].split(',').map((x) => stripQuotes(x)).filter(Boolean)) : null;
-if (!mAreas) err(conventionsRel, 'could not locate the manifest "areas" list');
+if (!mAreas) err(initiativeSkillRel, 'could not locate the manifest "areas" list');
 
 // 2b. Every concrete `.kai/runs/<area>/` literal in a shipped agent or skill must
 //     resolve to a registered run area. Placeholder segments like
@@ -832,7 +841,7 @@ for (const path of corpusScanFiles) {
 
 // 3. The authoritative documents must expose the schema-3 private/public split.
 for (const [path, text] of [
-  [conventionsRel, conventions],
+  [pathsSkillRel, pathsSkill],
   [onboardingRel, onboarding],
   [wsInitRel, wsInit],
 ]) {

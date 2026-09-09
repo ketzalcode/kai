@@ -148,13 +148,22 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Workspace & scope',
-    blurb: 'The shared contracts every acting agent inherits: where work goes, and what it may change.',
+    blurb: 'The shared contracts every acting agent loads: where work goes, and what it may change.',
     members: [
-      'kai-core-team-operating-rules', 'kai-core-asset-lifecycle', 'kai-core-workspace-conventions', 'kai-core-workspace-onboarding',
-      'kai-core-work-coordination', 'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
+      'kai-core-operating-rules', 'kai-core-workspace-paths', 'kai-core-workspace-initiative', 'kai-core-workspace-onboarding',
+      'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
       'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
       'product-exploration', 'product-marketing-intelligence', 'kai-core-contract-v1',
+    ],
+  },
+  {
+    kind: 'skill',
+    title: 'Work coordination & artifacts',
+    blurb: 'How an acting agent claims, leases, and tracks a work item, and how it produces and closes the artifacts that work leaves behind.',
+    members: [
+      'kai-core-work-acting', 'kai-core-work-granting', 'kai-core-work-item',
+      'kai-core-asset-producing', 'kai-core-asset-closing',
     ],
   },
   {

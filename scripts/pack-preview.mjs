@@ -389,9 +389,9 @@ function selfTest() {
   const rosterSkills = rosterSkillIds();
   const core = plan.core;
   const local = plan.local.personal;
-  ok(core.includes('kai-core-team-operating-rules'),
+  ok(core.includes(CONTRACT_SKILL),
     'the universal contract is planned into core, never into the pack');
-  ok(!local.includes('kai-core-team-operating-rules'),
+  ok(!local.includes(CONTRACT_SKILL),
     'and it is not also duplicated into the pack, which is the whole point');
   ok(local.length > 0,
     'a pack that owns no skills of its own would not be testing anything');
@@ -496,7 +496,7 @@ function selfTest() {
     `the partition covers the roster exactly: ${assigned} of ${rosterSize}`);
   ok(new Set(Object.values(PACKS).flat()).size === assigned,
     'no agent is claimed by two packs, which would make its home ambiguous');
-  ok(plan.core.includes('kai-core-team-operating-rules'),
+  ok(plan.core.includes(CONTRACT_SKILL),
     'the universal contract is provided by core in the full partition too');
   const localAll = Object.values(plan.local).flat();
   ok(localAll.every((s) => !plan.core.includes(s)),
@@ -838,8 +838,8 @@ function selfTest() {
   const agentRel = (id) => sourceAgentFiles(ROOT).find((entry) => entry.id === id)?.rel;
   const skillRel = (id) => sourceSkillFiles(ROOT).find((entry) => entry.id === id)?.rel;
 
-  ok(carries('inherited', 'skill', agentRel('persona-self'), 'kai-core-team-operating-rules'),
-    'the inherited path is really collected: a department agent inheriting the core contract is seen');
+  ok(carries('loaded', 'skill', agentRel('workflow-doc-review'), 'kai-core-operating-rules'),
+    'the loaded path is really collected: an agent routing a core contract inline is seen');
   ok(carries('orchestrated', 'skill', agentRel('workflow-doc-review'), 'review-rationale'),
     'the orchestrated path is really collected: a dispatched lens is seen as a reference');
 
@@ -864,7 +864,7 @@ function selfTest() {
     'agent-to-agent dispatch is really collected, across the department boundary');
   ok(carries('user-invoked', 'asset', skillRel('demo-zoom'), 'scripts/demo-zoom.mjs'),
     'the user-invoked path is really collected, down to the script the skill tells you to run');
-  ok(firing('inherited', 'skill').length > 100 && firing('orchestrated', 'agent').length > 5
+  ok(firing('loaded', 'skill').length > 100 && firing('orchestrated', 'agent').length > 5
     && firing('user-invoked', 'skill').length > 5 && liveRefs.some((r) => r.kind === 'asset'),
   'all three firing paths and the asset path are populated, so no arm is vacuous');
   ok(referenceErrors({ refs: liveRefs, providers: liveProviders }).length === 0,
@@ -1032,15 +1032,15 @@ function selfTest() {
 
   // --- cross-pack references: the mutation arms -------------------------
   const providersOf = (entries) => new Map(Object.entries(entries));
-  const ref = (over) => ({ from: 'agents/x.agent.md', fromPack: 'engineering', firing: ['inherited'], kind: 'skill', target: 'video-direction', ...over });
+  const ref = (over) => ({ from: 'agents/x.agent.md', fromPack: 'engineering', firing: ['loaded'], kind: 'skill', target: 'video-direction', ...over });
   const messages = (refs, providers) => referenceErrors({ refs, providers: providersOf(providers) }).map((e) => e.msg);
 
   ok(messages([ref({})], { 'skill:video-direction': ['personal'] })
-    .some((m) => /inherited reference to skill `video-direction` resolves to kai-personal/.test(m)),
-  'an inherited skill provided by another department fails by name');
+    .some((m) => /loaded reference to skill `video-direction` resolves to kai-personal/.test(m)),
+  'a loaded skill provided by another department fails by name');
   ok(messages([ref({ target: 'gone-skill' })], {})
     .some((m) => /resolves to no pack/.test(m)),
-  'an inherited skill no pack provides fails as a dangling reference');
+  'a loaded skill no pack provides fails as a dangling reference');
   ok(messages([ref({ from: 'skills/create-product-demo/SKILL.md', fromPack: 'personal', firing: ['user-invoked'], target: 'create-product-demo' })],
     { 'skill:create-product-demo': ['personal', 'gtm'] })
     .some((m) => /user-invoked reference to skill `create-product-demo` is provided by kai-personal and kai-gtm/.test(m)),
@@ -1176,8 +1176,8 @@ function selfTest() {
     .some((m) => /places `personal-skill` in "nope", which is not a pack/.test(m)),
   'an override naming a pack that does not exist fails by name');
   ok(partitionMsgs({ overrides: { 'personal-skill': 'personal' } })
-    .some((m) => /but an agent already inherits it/.test(m)),
-  'an override for a skill inheritance already places fails: one skill, one truth about its provider');
+    .some((m) => /but an agent already loads it/.test(m)),
+  'an override for a skill loading already places fails: one skill, one truth about its provider');
   ok(partitionMsgs({ plan: { ...cleanPlan, orphans: ['personal-skill'] } })
     .some((m) => /has no reviewed provider in SKILL_OWNER_OVERRIDES/.test(m)),
   'an orphan with no reviewed disposition fails by name: it would ship in no pack at all');
@@ -1778,7 +1778,7 @@ if (args.includes('--self-test')) {
   for (const b of r.built) {
     console.log(`  ${b.name.padEnd(28)} ${String(b.agents).padStart(2)} agents  ${b.dir}`);
   }
-  console.log(`\ncore skills: ${r.plan.core.length} (+${r.plan.orphans.length} inherited by nobody)`);
+  console.log(`\ncore skills: ${r.plan.core.length} (+${r.plan.orphans.length} loaded by nobody)`);
   for (const [p, l] of Object.entries(r.plan.local)) {
     if (l.length) console.log(`  ${p} owns ${l.length}: ${l.join(', ')}`);
   }

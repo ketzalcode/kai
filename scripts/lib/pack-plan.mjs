@@ -106,7 +106,7 @@ export const PACKS = Object.fromEntries(
 // list the same packs in the same sequence every run.
 export const PACK_ORDER = Object.keys(PACKS);
 
-// Skills with no inherited firing path still need one explicit provider. These
+// Skills with no loaded firing path still need one explicit provider. These
 // dispositions were ratified in the partition lock; keeping them here makes the
 // generator use the reviewed decision instead of silently defaulting to core.
 export const SKILL_OWNER_OVERRIDES = {
@@ -114,10 +114,6 @@ export const SKILL_OWNER_OVERRIDES = {
   'demo-capture': 'personal',
   'demo-narrate': 'personal',
   'demo-zoom': 'personal',
-  // The probe is invoked by the injected preflight, not by an `**Inherits:**`
-  // line, so inheritance cannot place it. Core provides it: a pack agent asks
-  // core whether core is there.
-  [CONTRACT_SKILL]: 'core',
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
@@ -501,11 +497,14 @@ export function declaredInherits(body) {
   return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 }
 
-// The skills an agent inherits, read from its single `**Inherits:**` line and
-// filtered to those that exist on disk (a named-but-absent skill is a separate
-// validator concern, not a partition input).
-export function inheritedSkills(root, body) {
-  return declaredInherits(body).filter((s) => skillFile(root, s) !== null);
+// The partition input: the skills an agent loads — from its eager `**Inherits:**`
+// line and its inline routes both — filtered to those that exist on disk. A
+// named-but-absent skill is a reference miss that referenceErrors reports, not a
+// partition input; the filter keeps that distinction load-bearing instead of
+// collapsing the two concerns. `loadedSkills` (below) is the same union without
+// the filter, for the reference corpus that must see the miss.
+export function loadedSkillsOnDisk(root, body) {
+  return [...loadedSkills(body)].filter((s) => skillFile(root, s) !== null);
 }
 
 // The one answer to "which contracts does this agent load". A migrated agent
@@ -530,7 +529,7 @@ export function planPacks(root = REPO_ROOT) {
 
   const usedBy = new Map();
   for (const id of allAgents) {
-    for (const s of inheritedSkills(root, readAgentBody(root, id))) {
+    for (const s of loadedSkillsOnDisk(root, readAgentBody(root, id))) {
       if (!usedBy.has(s)) usedBy.set(s, new Set());
       usedBy.get(s).add(packOf.get(id) ?? '?');
     }
@@ -875,7 +874,7 @@ export function marketplaceSurfacePolicy({
 //
 // A department pack installs with kai-core and nothing else. Every reference a
 // shipped body makes therefore has to resolve inside its own pack or inside
-// core, on all three paths a skill can reach a session — inherited,
+// core, on all three paths a skill can reach a session — loaded,
 // user-invoked, orchestrated — plus the non-markdown assets an instruction
 // tells someone to run. In the monolith all of them resolve trivially, which is
 // exactly why the break is invisible until a user installs one pack.
@@ -1399,8 +1398,9 @@ export function packProviders(files, packs = PACK_ORDER) {
 // Every reference that must survive the plugin boundary: one record per
 // (consumer, kind, target), carrying the firing paths it travels.
 //
-//   inherited    — an agent's `**Inherits:**` line, and the assets of a skill
-//                  that reaches a session that way;
+//   loaded       — a contract an agent loads, from its eager `**Inherits:**`
+//                  line or an inline route both, and the assets of a skill that
+//                  reaches a session that way;
 //   user-invoked — a `user-invocable: true` skill's own entry point and assets,
 //                  which fire with no agent to carry a dependency for them;
 //   orchestrated — an agent's dispatch entries, and the assets in its own body,
@@ -1418,7 +1418,7 @@ export function collectReferences(root = REPO_ROOT) {
   };
 
   const dispatched = new Set();
-  const inherited = new Set();
+  const loaded = new Set();
   for (const id of listAgentIds(root).sort()) {
     const body = readAgentBody(root, id);
     const fromPath = agentSourceFile(root, id);
@@ -1426,9 +1426,14 @@ export function collectReferences(root = REPO_ROOT) {
       ? fromPath.slice(root.length + 1).replace(/\\/g, '/')
       : `agent:${id}`;
     const pack = agentOf.get(id) ?? null;
-    for (const skill of declaredInherits(body)) {
-      inherited.add(skill);
-      add(from, pack, 'inherited', 'skill', skill);
+    for (const skill of loadedSkills(body)) {
+      // A route verb before an agent id (an inline "dispatch `principal-x`") is an
+      // orchestrated referral, collected below, not a loaded contract. Skip it
+      // here unless it names a real skill, so a genuine skill-route typo still
+      // surfaces as a dangling reference rather than being silently dropped.
+      if (!skillOf.has(skill) && (agentOf.has(skill) || AGENT_CANDIDATE.test(skill))) continue;
+      loaded.add(skill);
+      add(from, pack, 'loaded', 'skill', skill);
     }
     for (const token of dispatchedRefs(body)) {
       if (skillOf.has(token)) { dispatched.add(token); add(from, pack, 'orchestrated', 'skill', token); }
@@ -1445,7 +1450,7 @@ export function collectReferences(root = REPO_ROOT) {
     const from = path.slice(root.length + 1).replace(/\\/g, '/');
     const pack = skillOf.get(id) ?? null;
     const firings = [];
-    if (inherited.has(id)) firings.push('inherited');
+    if (loaded.has(id)) firings.push('loaded');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) firings.push('user-invoked');
     if (dispatched.has(id)) firings.push('orchestrated');
     // The direct entry point: `/skills run <id>` resolves across every installed
@@ -1952,13 +1957,13 @@ export function partitionErrors({
       continue;
     }
     if (!orphans.has(id)) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already inherits it — inheritance `
+      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already loads it — loading `
         + 'places it, so the override is a second truth about one skill');
     }
   }
   for (const id of orphans) {
     if (!(id in overrides)) {
-      errs.push(`skill \`${id}\` is inherited by no agent and has no reviewed provider in `
+      errs.push(`skill \`${id}\` is loaded by no agent and has no reviewed provider in `
         + 'SKILL_OWNER_OVERRIDES — it would ship in no pack at all');
     }
   }

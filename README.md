@@ -35,7 +35,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v4.0.0` — all **56 agents and 53 skills** are published across five plugins for
+`v4.0.0` — all **56 agents and 57 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
 Agent creation now has an explicit contract: provider family, operating posture,
