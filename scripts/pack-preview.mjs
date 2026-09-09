@@ -36,19 +36,18 @@ import {
 } from './lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, DEGRADED_BLOCK_MAX, CORE_SKILL_PREFIX,
+  SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, CORE_SKILL_PREFIX,
   RUNTIME_ARTIFACTS, PACK_RUNTIME_DEPENDENCIES, packPluginName, runtimeDependencyMatrix,
-  planPacks, planManifests, materializePacks, preflightBlock, injectPreflight,
-  degradedBlock, guaranteeBlocks, injectBlocks, degradedBlockErrors, coreContractLines,
+  planPacks, planManifests, materializePacks,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   marketplaceSurfacePolicy,
   collectReferences, referenceErrors, packProviders,
   planAssets, planAssetClosure, assetOwnershipErrors, hooksAssignmentErrors,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  guaranteeBlockErrors, availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
-  agentTaxonomyErrors, requiresCoordinatedRunContracts, progressiveSkillRoutingErrors,
-  agentIdentityContractErrors,
+  availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
+  agentTaxonomyErrors, requiresCoordinatedRunContracts, agentRoutingErrors,
+  agentProfileModelErrors,
   agentPromptLimitErrors, agentAuthoringReferenceErrors,
   ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
@@ -59,13 +58,11 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// The partition, the contract-skill name, the refusal token and the canonical
-// block injection live once in scripts/lib/pack-plan.mjs. Re-exported here so
-// callers and the locked partition doc that name them on pack-preview keep
-// resolving.
+// The partition, the contract-skill name and the refusal token live once in
+// scripts/lib/pack-plan.mjs. Re-exported here so callers and the locked partition
+// doc that name them on pack-preview keep resolving.
 export {
   PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL, planPacks,
-  preflightBlock, injectPreflight, degradedBlock, guaranteeBlocks, injectBlocks,
 };
 
 // The narrow pack under test in the two-plugin preview is `personal`: the
@@ -90,13 +87,13 @@ const declaredTools = (body) => {
 const frontmatter = (body) => normalizeLF(body).match(/^---\n[\s\S]*?\n---/)?.[0] ?? null;
 
 
-// Legacy agents carry the preflight in their own bodies. This evaluator keeps
-// their absence and skew behavior deterministic during staged migration;
-// kai-agent-v1 agents instead route the probe just before their first core skill.
+// Legacy agents still carry a preflight in their own bodies; every agent now
+// routes the probe just before its first core skill. This evaluator keeps the
+// core-absent and version-skew behavior deterministic during staged migration.
 
-// Deterministic evaluation of the injected block's own rule against a built
-// preview: read what `kai-core-contract-v1` would return from the built core, if
-// any, and apply the three conditions the block states. This is what makes the
+// Deterministic evaluation of the preflight's own rule against a built preview:
+// read what `kai-core-contract-v1` would return from the built core, if any, and
+// apply the three conditions the preflight states. This is what makes the
 // core-absent and version-skew arms answerable without a live host.
 export function evaluatePreflight(out) {
   const probe = join(out, 'kai-core-preview', 'skills', CONTRACT_SKILL, 'SKILL.md');
@@ -115,7 +112,7 @@ export function evaluatePreflight(out) {
     return {
       ok: false,
       reply: REFUSAL,
-      detail: `core speaks contract ${declared[1]}, the injected block requires ${CONTRACT_VERSION} (version skew)`,
+      detail: `core speaks contract ${declared[1]}, the preflight requires ${CONTRACT_VERSION} (version skew)`,
     };
   }
   return {
@@ -401,47 +398,28 @@ function selfTest() {
   ok(core.every((s) => !local.includes(s)),
     'core and pack skill sets are disjoint: a skill has exactly one provider');
 
-  // --- the canonical fail-closed preflight -------------------------------
-  const block = preflightBlock();
-  const degraded = degradedBlock();
+  // --- one agent shape: a stale guard region is stripped, never injected ----
   const sourceBody = readAgent(PACKS.personal[0]);
-  const injected = syncGuaranteeRegion(sourceBody);
-  const injectedLines = injected.split('\n');
-  const iInherits = injectedLines.findIndex((l) => l.startsWith('**Inherits:**'));
-  const iPreflight = injectedLines.findIndex((l) => l.startsWith('## Core preflight'));
-  ok(iInherits !== -1 && iPreflight > iInherits
-    && injectedLines[iPreflight - 1] === ''
-    && injectedLines[iPreflight - 2] === GUARANTEE_REGION_OPEN
-    && injectedLines[iPreflight - 4]?.startsWith('>'),
-  'the preflight lands after the whole inherits directive, not between the line and the directive that binds it');
-  ok(injected.split(block).length === 2,
-    'the managed region carries the canonical block verbatim, exactly once');
-  ok(injected.split('**Inherits:**').length === 2,
-    'injection does not duplicate the inherits line CI pins to exactly one');
-  ok(injected.includes(REFUSAL),
-    'the agent carries the exact refusal token the test asserts on');
-  ok(injected.includes(GUARANTEE_REGION_OPEN) && injected.includes(GUARANTEE_REGION_CLOSE),
-    'the dependency guard is bounded by markers so it can change without replacing the source body');
-  ok(GUARANTEE_REGION_OPEN.endsWith('-->') && GUARANTEE_REGION_CLOSE.endsWith('-->'),
-    'both guard markers are closed HTML comments, so the instructions between them remain visible');
-  ok(/^---\n/.test(injected) && !injected.includes('\r'),
+  const stripped = syncGuaranteeRegion(sourceBody);
+  ok(!stripped.includes(GUARANTEE_REGION_OPEN) && !stripped.includes(GUARANTEE_REGION_CLOSE),
+    'syncing an agent removes any managed dependency-guard region — one is never inserted');
+  ok(/^---\n/.test(stripped) && !stripped.includes('\r'),
     'frontmatter still opens the file and endings are uniform LF, so the host can load it');
-
-  const noAnchor = injectPreflight('---\nname: x\n---\n\nbody\n', block);
-  ok(noAnchor.includes(block) && noAnchor.startsWith('---\n'),
-    'an agent with no inherits line still gets the preflight, under its frontmatter rather than above it');
-
-  // --- the canonical degraded-mode refusal -------------------------------
-  const preflightEnd = injected.indexOf(block) + block.length;
-  const refusalAt = injected.indexOf(degraded);
-  ok(injected.split(degraded).length === 2,
-    'the canonical refusal is copied in verbatim, exactly once');
-  ok(refusalAt > preflightEnd,
-    'and lands after the preflight, which stays the first executable instruction');
-  ok(/^\s*$/.test(injected.slice(preflightEnd, refusalAt)),
-    'with nothing wedged between the two guarantee blocks');
-  ok(!degraded.includes(REFUSAL),
-    `the refusal does not reuse the preflight's ${REFUSAL} token — core answered, so that token would be a lie`);
+  const withRegion = `---\nname: x\n---\n\nbody before\n\n${GUARANTEE_REGION_OPEN}\n\nsome legacy guard\n\n${GUARANTEE_REGION_CLOSE}\n\nbody after\n`;
+  const cleaned = removeGuaranteeRegion(withRegion);
+  ok(!cleaned.includes(GUARANTEE_REGION_OPEN) && !cleaned.includes(GUARANTEE_REGION_CLOSE)
+    && cleaned.includes('body before') && cleaned.includes('body after'),
+  'removeGuaranteeRegion strips a complete managed region and keeps the rest of the body');
+  ok(syncGuaranteeRegion(cleaned) === normalizeLF(cleaned),
+    'an agent that already carries no guard region is returned unchanged');
+  let malformedRejected = false;
+  try {
+    removeGuaranteeRegion(`---\nname: x\n---\n\n${GUARANTEE_REGION_OPEN}\n\nunclosed\n\nbody\n`);
+  } catch (e) {
+    malformedRejected = /malformed core dependency guard region/.test(e.message);
+  }
+  ok(malformedRejected,
+    'a half-region (open marker, no close) is rejected rather than silently left in place');
 
   const shippedProbe = normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'));
   ok(/^KAI_CORE_READY$/m.test(shippedProbe)
@@ -467,9 +445,6 @@ function selfTest() {
       `the core-absent arm fails closed with the exact ${REFUSAL} token`);
     ok(skew.reply === REFUSAL,
       'the contract-2 arm fails closed with the same exact token — absence and skew share one refusal path');
-    ok(readFileSync(join(arms, 'ready', 'kai-personal-preview', 'agents', 'persona-self.agent.md'), 'utf8')
-      .includes(block),
-    'a built department agent carries the canonical block on disk, not only in memory');
 
     // The acceptance criterion, read back off disk: every agent a full --all
     // build writes, not the one file a spot check happens to open.
@@ -487,25 +462,13 @@ function selfTest() {
       }
     }
     const departmentAgents = builtAgents.filter((a) => a.pack !== 'core');
-    const progressiveAgents = departmentAgents.filter((a) =>
-      a.body.includes('**Identity contract:** `kai-agent-v1`'));
-    const legacyDepartmentAgents = departmentAgents.filter((a) =>
-      !a.body.includes('**Identity contract:** `kai-agent-v1`'));
     const coreAgents = builtAgents.filter((a) => a.pack === 'core');
     ok(departmentAgents.length === Object.entries(PACKS)
       .filter(([pack]) => pack !== 'core').reduce((n, [, ids]) => n + ids.length, 0)
-      && legacyDepartmentAgents.every((a) => a.body.split(degraded).length === 2
-        && a.body.indexOf(degraded) > a.body.indexOf(block) + block.length),
-    `all ${legacyDepartmentAgents.length} legacy department agents from --all carry the refusal once, after the preflight`);
-    ok(progressiveAgents.length > 0
-      && progressiveAgents.every((a) => !a.body.includes(degraded)
-        && !a.body.includes(block)
-        && !a.body.includes(GUARANTEE_REGION_OPEN)
-        && !a.body.includes(GUARANTEE_REGION_CLOSE)),
-    `all ${progressiveAgents.length} kai-agent-v1 department agents omit the legacy dependency guard`);
-    ok(coreAgents.length === PACKS.core.length
-      && coreAgents.every((a) => !a.body.includes(degraded) && !a.body.includes(block)),
-    'and no core agent carries either block: kai-core cannot be absent from itself');
+      && coreAgents.length === PACKS.core.length,
+    'a full --all build writes every agent the partition assigns');
+    ok(builtAgents.every((a) => normalizeLF(a.body) === normalizeLF(readAgent(a.id))),
+    'every generated agent body is a byte-identical projection of its canonical source — the generator injects no dependency guard of its own');
     ok(builtAgents.every((a) => declaredTools(a.body).has('skill')),
       `all ${builtAgents.length} generated agents declare skill access for on-demand contract loading`);
     ok(!declaredTools(builtAgents[0].body.replace(/,\s*"skill"/, '')).has('skill'),
@@ -547,44 +510,10 @@ function selfTest() {
     && plan.local.engineering.includes('review-dependencies'),
   'the generator applies the ratified core, personal, and engineering orphan dispositions');
 
-  // --- the refusal's own rules, each failure proven by name --------------
-  // Mutations of the shipped block, so what fails is the rule and not a fixture.
-  const contractLines = coreContractLines(ROOT);
-  const shippedIds = new Set([
-    ...plan.core, ...Object.values(plan.local).flat(), ...Object.values(PACKS).flat(),
-  ]);
-  const refusalErrors = (text) => degradedBlockErrors({
-    block: text, refusalToken: REFUSAL, ids: shippedIds, contractLines,
-  });
-
-  ok(contractLines.size > 100,
-    'the shipped core contract really was read, or every "restates no rule" arm below is vacuous');
-  ok(refusalErrors(degraded).length === 0,
-    'the shipped refusal satisfies every rule the validator pins it to');
-  ok(refusalErrors(`${degraded}\n- Write your handoff into the coordination thread.`)
-    .some((m) => /affirmative instruction/.test(m)),
-  'an affirmative coordination instruction added to the block fails by name');
-  ok(refusalErrors(degraded.replace('`kai-core`', '`kai-core-work-coordination`'))
-    .some((m) => /names the shipped contract/.test(m)),
-  'citing a shipped contract fails: a refusal names none, so it can copy none');
-  ok(refusalErrors(`${degraded}\n${[...contractLines][0]}`)
-    .some((m) => /restates the shipped core contract verbatim/.test(m)),
-  'a line lifted verbatim out of core fails — that is "restates no rule", mechanically');
-  ok(refusalErrors(`${degraded}\n${REFUSAL}`)
-    .some((m) => new RegExp(`${REFUSAL}\`? token`).test(m)),
-  `reusing the ${REFUSAL} token fails: the two refusals answer different questions`);
-  ok(refusalErrors(`${degraded}\nReport \`contract: 9\` to the operator.`)
-    .some((m) => /contract version/.test(m)),
-  'a second contract-version literal fails — the fail-open skew the preflight pin already forbids');
-  ok(refusalErrors(`${degraded}\n${'x'.repeat(DEGRADED_BLOCK_MAX)}`)
-    .some((m) => /refusal budget/.test(m)),
-  'a block that outgrows the refusal budget fails before it becomes a fallback contract');
-  ok(refusalErrors(degraded.replace('single-shot', 'staged'))
-    .some((m) => /single-shot/.test(m)),
-  'dropping the single-shot instruction fails: a pause is not a refusal');
-  ok(refusalErrors(degraded.replace(/^- Tell the operator to install.*$/m, '- Do not continue.'))
-    .some((m) => /exactly one .Tell the operator to install/.test(m)),
-  'losing the install remedy fails: a refusal with no way out is a dead end');
+  // The degraded-mode refusal is no longer a shared block validated by
+  // degradedBlockErrors — every agent writes its own, and agentRoutingErrors
+  // checks the three load-bearing facts. Those mutations are proven by name in
+  // the agentRoutingErrors self-test below, not here.
 
   // --- generator determinism + committed-tree gate -----------------------
   const selectedPacks = [...PACK_ORDER];
@@ -609,15 +538,14 @@ function selfTest() {
     && m1.has('kai-engineering/agents/principal-swe-infra.agent.md')
     && m1.has('kai-gtm/agents/principal-sales.agent.md'),
     'the materialised tree places per-pack plugin and npm manifests with copied agent bodies');
-  ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(block),
-    'the authoritative department source carries the canonical preflight');
-  ok(m1.get('kai-personal/agents/persona-self.agent.md').includes(degraded),
-    'and the degraded refusal alongside it in the same managed region');
-  ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(block)
-    && !m1.get(`kai-core/agents/${id}.agent.md`).includes(degraded)),
-  'and neither into a core agent, which ships inside the pack whose absence they cover');
+  ok(m1.get('kai-personal/agents/persona-self.agent.md')
+    === normalizeLF(readAgent('persona-self')),
+  'the materialised department agent is a byte-identical copy of its authoritative source — the generator injects nothing');
+  ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(GUARANTEE_REGION_OPEN)
+    && !m1.get(`kai-core/agents/${id}.agent.md`).includes(GUARANTEE_REGION_CLOSE)),
+  'no core agent carries a dependency-guard region, which ships inside the pack whose absence it would cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
-    'core provides the probe the injected block tells department agents to invoke');
+    'core provides the probe every pack agent routes as its first action');
   ok(m1.has('kai-core/skills/kai-core-create-agent/references/taxonomy.md')
     && m1.has('kai-core/skills/kai-core-create-agent/references/agent-template.md')
     && m1.has('kai-core/skills/kai-core-create-agent/references/model-selection.md')
@@ -694,15 +622,16 @@ function selfTest() {
     ok(checkSelected().length === 0,
       'freshly generated derived files pass the regenerate-and-diff check with no drift');
 
-    // Agent bodies are source, so ordinary edits are not generator drift. The
-    // marked guard remains replaceable and independently pinned.
+    // Agent bodies are source, so ordinary edits are not generator drift. An
+    // out-of-scope agent that still carries a stale managed guard region is
+    // stripped by a sync, never re-injected.
     const agentPath = join(scratch, 'kai-personal', 'agents', 'persona-self.agent.md');
     const original = readFileSync(agentPath, 'utf8');
-    writeFileSync(agentPath, original.replace(degraded, degraded.replace('Refuse', 'Consider refusing')));
+    writeFileSync(agentPath, `${original}\n<!-- scratch edit: not a derived file -->\n`);
     ok(checkSelected().length === 0,
       'editing an authoritative agent body is not misclassified as generated-file drift');
     ok(syncGuaranteeRegion(readFileSync(agentPath, 'utf8')) !== readFileSync(agentPath, 'utf8'),
-      'but a softened managed refusal is detected and can be restored without replacing the body');
+      'an out-of-scope agent that still carries a stale guard region is detected: a sync strips it, never injects one');
     writeFileSync(agentPath, original);
     ok(checkSelected().length === 0,
       'and restoring it clears the drift, so the check reports state rather than history');
@@ -1306,72 +1235,28 @@ function selfTest() {
   ok(parsed('kai-unknown/agents/x.agent.md', ['core', 'personal']) === null,
     'a key belonging to no known pack resolves to nothing rather than to a guess');
 
-  // --- the guarantee blocks, over what the generator emits ---------------
-  const inherits = '**Inherits:** `kai-core-team-operating-rules`';
-  const departmentBody = (over = {}) => {
-    const { first = block, second = degraded, wedge = '', pack = 'personal' } = over;
-    return [`kai-${pack}/agents/persona-x.agent.md`,
-      `---\nname: persona-x\n---\n\n${inherits}\n\n${GUARANTEE_REGION_OPEN}\n\n${first}\n${wedge}\n${second}\n\n${GUARANTEE_REGION_CLOSE}\n\nbody\n`];
-  };
-  const blockMsgs = (entries, packs = ['core', 'personal']) => guaranteeBlockErrors({
-    files: new Map(entries), preflight: block, degraded, packs,
-  }).map((e) => `${e.file}: ${e.msg}`);
-
-  ok(blockMsgs([departmentBody()]).length === 0,
-    'a department agent carrying both blocks, in order, contiguously, raises nothing');
-  ok(blockMsgs([departmentBody({ first: '' })])
-    .some((m) => /carries the verbatim core-preflight block 0 time\(s\)/.test(m)),
-  'a department agent missing the preflight fails by name');
-  ok(blockMsgs([departmentBody({ first: `${block}\n${block}` })])
-    .some((m) => /carries the verbatim core-preflight block 2 time\(s\)/.test(m)),
-  'a duplicated preflight fails by name: two probes are a contradiction, not a belt and braces');
-  ok(blockMsgs([departmentBody({ second: '' })])
-    .some((m) => /carries the verbatim degraded-mode refusal 0 time\(s\)/.test(m)),
-  'a department agent missing the degraded-mode refusal fails by name');
-  ok(blockMsgs([departmentBody({ wedge: '\nDo something else first.\n' })])
-    .some((m) => /places content between the core preflight and the degraded-mode refusal/.test(m)),
-  'content wedged between the two guarantee blocks fails by name');
-  ok(blockMsgs([departmentBody({ first: degraded, second: block })])
-    .some((m) => /places the degraded-mode refusal before the end of the core preflight/.test(m)),
-  'inverting the two blocks fails: the preflight stays the first executable instruction');
-  ok(blockMsgs([departmentBody({ pack: 'core' })], ['core', 'personal'])
-    .some((m) => /carries the core-preflight block; a core agent/.test(m)),
-  'a core agent carrying the preflight fails: it would only ever fail on itself');
-  ok(blockMsgs([departmentBody({ first: '', pack: 'fleet-ops' })], ['core', 'fleet-ops'])
-    .some((m) => /kai-fleet-ops\/agents\/persona-x\.agent\.md/.test(m)),
-  'and a hyphenated pack is held to the same guarantee, rather than skipped by a name pattern');
-  const progressiveBody = [
-    'kai-personal/agents/eng-builder-x.agent.md',
-    '---\nname: eng-builder-x\n---\n\n**Identity contract:** `kai-agent-v1`\n\nLoad `kai-core-contract-v1` first.\n',
-  ];
-  ok(blockMsgs([progressiveBody]).length === 0,
-    'a kai-agent-v1 department agent uses progressive skill routing without the legacy dependency guard');
-  ok(blockMsgs([[
-    progressiveBody[0],
-    progressiveBody[1].replace('Load `kai-core-contract-v1` first.', `${GUARANTEE_REGION_OPEN}\n\n${block}\n\n${degraded}\n\n${GUARANTEE_REGION_CLOSE}`),
-  ]]).some((m) => /must not carry the legacy core dependency guard/.test(m)),
-  'a kai-agent-v1 agent carrying the legacy dependency guard fails by name');
-  let duplicateV1GuardRejected = false;
-  try {
-    syncGuaranteeRegion(
-      `${progressiveBody[1]}\n${GUARANTEE_REGION_OPEN}\n\n${block}\n\n${degraded}\n\n${GUARANTEE_REGION_CLOSE}`
-      + `\n${GUARANTEE_REGION_OPEN}\n\n${block}\n\n${degraded}\n\n${GUARANTEE_REGION_CLOSE}\n`
-    );
-  } catch (error) {
-    duplicateV1GuardRejected = /more than one core dependency guard region/.test(error.message);
-  }
-  ok(duplicateV1GuardRejected,
-    'a kai-agent-v1 migration rejects duplicate legacy guard regions instead of removing only one');
-  ok(blockMsgs([['kai-unknown/agents/persona-x.agent.md', 'body']]).length === 0,
-    'the guarantee checker relies on the shared generated-key gate instead of deciding null keys again');
-
   // --- the contract version, pinned wherever it is stated ---------------
+  // The shared preflight/refusal blocks are gone: there is one agent shape and
+  // the generator injects nothing, so guaranteeBlockErrors no longer exists.
+  // What stays pinned is the probe skill agents route by name — and the guard
+  // remover that strips a stale legacy region rather than editing around it. A
+  // migration that finds two regions must refuse, not strip one.
+  let duplicateGuardRejected = false;
+  try {
+    const region = `${GUARANTEE_REGION_OPEN}\n\nstale guard body\n\n${GUARANTEE_REGION_CLOSE}`;
+    removeGuaranteeRegion(`---\nname: x\n---\n\n${region}\n${region}\n\nbody\n`);
+  } catch (error) {
+    duplicateGuardRejected = /more than one core dependency guard region/.test(error.message);
+  }
+  ok(duplicateGuardRejected,
+    'stripping a stale guard refuses when an agent carries two regions instead of removing only one');
+
   const pinMsgs = (over) => contractPinErrors({
-    block, probe: shippedProbe, ...over,
+    probe: shippedProbe, ...over,
   }).map((e) => `${e.file}: ${e.msg}`);
 
   ok(pinMsgs({}).length === 0,
-    'the shipped block, probe and constants agree on the contract version');
+    'the shipped probe and the version constants agree on the contract version');
   ok(pinMsgs({ version: '2' })
     .some((m) => /CONTRACT_SKILL `kai-core-contract-v1` and CONTRACT_VERSION "2" disagree/.test(m)),
   'bumping the version constant without the probe skill name fails by name');
@@ -1380,16 +1265,10 @@ function selfTest() {
   'a probe reporting a version its own name does not promise fails by name');
   ok(pinMsgs({ probe: contractSkill(1).replace('KAI_CORE_READY', 'KAI_CORE_OK') })
     .some((m) => /does not return the exact `KAI_CORE_READY` marker/.test(m)),
-  'a probe whose marker drifted fails: every injected block matches on that exact line');
+  'a probe whose marker drifted fails: every preflight matches on that exact line');
   ok(pinMsgs({ probe: null })
-    .some((m) => /missing — every legacy department agent invokes this skill/.test(m)),
+    .some((m) => /missing — every pack agent invokes this skill/.test(m)),
   'a missing probe fails by name rather than by a crash in the generator');
-  ok(pinMsgs({ block: `${block}\nReport \`contract: 9\` if unsure.` })
-    .some((m) => /must demand exactly one contract version/.test(m)),
-  'a second contract-version literal in the block fails: skew handling must not fail open');
-  ok(pinMsgs({ block: block.replace(`\`${CONTRACT_SKILL}\``, '`kai-core-contract`') })
-    .some((m) => new RegExp(`does not name \`${CONTRACT_SKILL}\``).test(m)),
-  'a block naming the wrong probe fails: it would probe nothing');
 
   // --- role availability is membership, never a count -------------------
   const directorBody = readAgent(DISPATCHING_ROLES[0]);
@@ -1437,146 +1316,160 @@ function selfTest() {
     && requiresCoordinatedRunContracts('core-coordinator-staff')
     && !requiresCoordinatedRunContracts('persona-ux-first-time-user'),
   'new durable roles retain routed workspace and activity obligations while personas do not');
-  ok(agentIdentityContractErrors({
+  // --- the profile/model binding, keyed on family/posture, no marker --------
+  // agentProfileModelErrors is the live half of the old agentIdentityContractErrors:
+  // the identity-marker half went with the marker, but the profile-to-model
+  // binding has no other home. It reads `**Primary profile:**`, never a
+  // `**Identity contract:**` line, and keys on the agent id's family/posture.
+  ok(agentProfileModelErrors({
     id: 'eng-builder-frontend',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
+    body: '**Primary profile:** execution',
     fm: { model: '"claude-sonnet-5"' },
   }).length === 0,
-  'a new durable role carrying the identity contract, profile, and mapped model passes');
-  ok(agentIdentityContractErrors({ id: 'eng-builder-frontend', body: '', fm: {} })
-    .some((m) => /kai-agent-v1/.test(m)),
-  'a new durable role missing the versioned identity contract fails by name');
-  ok(agentIdentityContractErrors({
+  'a new durable role carrying a mapped primary profile and its model passes');
+  ok(agentProfileModelErrors({ id: 'eng-builder-frontend', body: '', fm: {} })
+    .some((m) => /must declare exactly one `\*\*Primary profile:\*\* <profile>` line/.test(m)),
+  'a new durable role missing its primary-profile line fails by name');
+  ok(agentProfileModelErrors({
     id: 'eng-reviewer-security',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** review',
+    body: '**Primary profile:** review',
     fm: {},
   }).some((m) => /must declare frontmatter model "claude-opus-5"/.test(m)),
   'a new durable role cannot omit the model mapped to its primary profile');
-  ok(agentIdentityContractErrors({
+  ok(agentProfileModelErrors({
     id: 'eng-reviewer-security',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** review',
+    body: '**Primary profile:** review',
     fm: { model: '"claude-sonnet-5"' },
   }).some((m) => /requires frontmatter model "claude-opus-5"/.test(m)),
   'a new durable role cannot use an approved model assigned to another profile');
-  ok(agentIdentityContractErrors({
+  ok(agentProfileModelErrors({
     id: 'eng-lead-architecture',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** technical-judgment',
+    body: '**Primary profile:** technical-judgment',
     fm: { model: '"gpt-5.6-sol"' },
   }).length === 0,
   'a technical lead can use the pre-approved Sol technical-judgment profile');
-  ok(agentIdentityContractErrors({
+  ok(agentProfileModelErrors({
     id: 'eng-reviewer-code',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** technical-review',
+    body: '**Primary profile:** technical-review',
     fm: { model: '"gpt-5.6-terra"' },
   }).length === 0,
   'a technical reviewer can use the pre-approved Terra technical-review profile');
-  ok(agentIdentityContractErrors({
+  ok(agentProfileModelErrors({
     id: 'eng-reviewer-security',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** execution',
+    body: '**Primary profile:** execution',
     fm: { model: '"claude-sonnet-5"' },
   }).some((m) => /posture `reviewer` requires primary profile `review`/.test(m)),
   'a durable-role posture cannot select another posture family profile');
-  ok(agentIdentityContractErrors({
+  ok(agentProfileModelErrors({
     id: 'workflow-new-release',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** procedure',
+    body: '**Primary profile:** procedure',
     fm: { model: '"claude-sonnet-5"' },
   }).length === 0,
-  'a new workflow carries the same identity, profile, and model contract');
-  ok(agentIdentityContractErrors({
+  'a new workflow carries the same profile and model contract');
+  ok(agentProfileModelErrors({
     id: 'persona-new-buyer',
-    body: '**Identity contract:** `kai-agent-v1`\n**Primary profile:** advisory',
+    body: '**Primary profile:** advisory',
     fm: { model: '"claude-sonnet-5"' },
   }).some((m) => /kind `persona` requires primary profile `simulation`/.test(m)),
   'a new kind-prefixed agent cannot select a profile owned by another kind');
-  ok(agentIdentityContractErrors({
+  ok(agentProfileModelErrors({
     id: 'workflow-weekly-pulse',
     body: '',
     fm: {},
   }).length === 0,
-  'an existing kind-prefixed agent remains migration-safe without the new identity contract');
-  const progressiveSkillBody = [
-    '**Identity contract:** `kai-agent-v1`',
+  'an existing kind-prefixed agent remains migration-safe without a declared profile');
+
+  // --- one agent shape: contracts routed inline, no opt-in marker -----------
+  // Brief Step 1: the failing test the one-shape rule needs. An eager
+  // **Inherits:** line is rejected for every agent, with nothing gating the
+  // check on an opt-in identity marker.
+  ok(agentRoutingErrors({
+    id: 'eng-lead-x',
+    body: '**Inherits:** `kai-core-operating-rules`\n',
+    tools: ['skill'],
+    knownSkills: ['kai-core-operating-rules'],
+  }).some((m) => /must not declare an eager `\*\*Inherits:\*\*` line/.test(m)),
+  'an eager **Inherits:** line is rejected outright, with no opt-in marker gating the one-shape rule');
+  const routingBody = [
     'Invoke `kai-core-contract-v1` before the first other core skill.',
     'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
     'State the limitation once and tell the operator to install or update `kai-core`.',
-    'Load `kai-core-team-operating-rules` before coordinated work.',
-    'Load `kai-core-asset-lifecycle` before durable output.',
-    'Load `kai-core-workspace-conventions` before touching workspace state.',
+    'Load `kai-core-operating-rules` before coordinated work.',
+    'Load `kai-core-workspace-paths` before touching workspace state.',
+    'Load `kai-core-work-acting` before acting on a coordinated item.',
     'Load `kai-core-work-activity` before recording a run.',
   ].join('\n');
-  const progressiveSkillOptions = {
+  const routingOptions = {
     id: 'eng-builder-frontend',
-    body: progressiveSkillBody,
+    body: routingBody,
     tools: ['read', 'skill'],
     knownSkills: [
       'kai-core-contract-v1',
-      'kai-core-team-operating-rules',
-      'kai-core-asset-lifecycle',
-      'kai-core-workspace-conventions',
+      'kai-core-operating-rules',
+      'kai-core-workspace-paths',
+      'kai-core-work-acting',
       'kai-core-work-activity',
     ],
   };
-  ok(progressiveSkillRoutingErrors(progressiveSkillOptions).length === 0,
-    'a kai-agent-v1 role that loads each contract inline at the step needing it passes');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: `${progressiveSkillBody}\n**Inherits:** \`kai-core-team-operating-rules\``,
+  ok(agentRoutingErrors(routingOptions).length === 0,
+    'an agent that loads each contract inline at the step needing it passes');
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: `${routingBody}\n**Inherits:** \`kai-core-operating-rules\``,
   }).some((m) => /must not declare an eager/.test(m)),
-  'a kai-agent-v1 role cannot restore eager inheritance');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace('Load `kai-core-asset-lifecycle` before durable output.\n', ''),
-  }).some((m) => /must load `kai-core-asset-lifecycle`/.test(m)),
-  'a kai-agent-v1 role cannot drop a required contract');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace('kai-core-asset-lifecycle', 'kai-core-asset-lifecyle'),
-  }).some((m) => /routes unknown skill `kai-core-asset-lifecyle`/.test(m)),
+  'an agent cannot restore eager inheritance');
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody.replace('Load `kai-core-operating-rules` before coordinated work.\n', ''),
+  }).some((m) => /must load `kai-core-operating-rules`/.test(m)),
+  'an agent cannot drop a required contract');
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody.replace('kai-core-operating-rules', 'kai-core-operating-rlues'),
+  }).some((m) => /routes unknown skill `kai-core-operating-rlues`/.test(m)),
   'a mistyped skill name fails as an unknown route wherever it appears');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace(
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody.replace(
       'Invoke `kai-core-contract-v1` before the first other core skill.\n',
       'Invoke `kai-core-contract-v1` whenever it seems useful.\n'
     ),
   }).some((m) => /runs before the first other core skill/.test(m)),
   'the core probe must still be ordered before every other core skill');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: `${progressiveSkillBody}\n\n## Handoffs\n\nLoad \`kai-core-work-coordination\` before a handoff.`,
-    knownSkills: [...progressiveSkillOptions.knownSkills, 'kai-core-work-coordination'],
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: `${routingBody}\n\n## Handoffs\n\nLoad \`kai-core-work-acting\` before a handoff.`,
   }).length === 0,
-  'a kai-agent-v1 role may load a skill from any section, because routing is inline by design');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
-    body: progressiveSkillBody.replace(
+  'an agent may load a skill from any section, because routing is inline by design');
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody.replace(
       'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.\n',
       ''
     ),
-  }).some((m) => /non-blocking core fallback/.test(m)),
-  'a kai-agent-v1 role must state its non-blocking core fallback');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
+  }).some((m) => /must state the core fallback/.test(m)),
+  'an agent must state its non-blocking core fallback');
+  ok(agentRoutingErrors({
+    ...routingOptions,
     tools: ['read'],
   }).some((m) => /omits `skill`/.test(m)),
-  'a kai-agent-v1 role cannot route skills without skill tool access');
-  ok(progressiveSkillRoutingErrors({
-    ...progressiveSkillOptions,
+  'an agent cannot route skills without skill tool access');
+  ok(agentRoutingErrors({
+    ...routingOptions,
     activityExempt: true,
   }).some((m) => /activity-exempt/.test(m)),
-  'an activity-exempt kai-agent-v1 role cannot retain the activity route');
+  'an activity-exempt role cannot retain the activity route');
   // --- required contracts must be ROUTED, not merely mentioned
   const mentionOnly = [
-    '**Identity contract:** `kai-agent-v1`',
     'Invoke `kai-core-contract-v1` before the first other core skill.',
-    'See `kai-core-team-operating-rules` and `kai-core-asset-lifecycle` for context.',
+    'See `kai-core-operating-rules` for context.',
     'If core is unavailable or incompatible, continue single-shot;',
     'do not create `.kai` state; tell the operator to install or update `kai-core`.',
   ].join('\n');
-  ok(progressiveSkillRoutingErrors({
+  ok(agentRoutingErrors({
     id: 'eng-lead-x', body: mentionOnly, tools: ['skill'],
-    knownSkills: ['kai-core-contract-v1', 'kai-core-team-operating-rules', 'kai-core-asset-lifecycle'],
-  }).some((e) => /must load `kai-core-team-operating-rules`/.test(e)),
+    knownSkills: ['kai-core-contract-v1', 'kai-core-operating-rules'],
+  }).some((e) => /must load `kai-core-operating-rules`/.test(e)),
   'a contract that is only name-dropped does not count as loaded');
   ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
     && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
@@ -1701,8 +1594,9 @@ function liveHookAssets() {
 }
 
 // A department installed with kai-core and nothing else: every reference
-// resolves, every invoked script travels with the pack that invokes it, hooks
-// has one owner, legacy guards are present, and v1 agents carry no legacy guard.
+// resolves, every invoked script travels with the pack that invokes it, and
+// hooks has one owner. There is one agent shape now, so there is no guard block
+// to police here — agent routing is gated in gateSkew.
 function gatePartialInstall() {
   const files = materializePacks({ root: ROOT, version: GATE_VERSION });
   const refs = collectReferences(ROOT);
@@ -1726,18 +1620,14 @@ function gatePartialInstall() {
       assets,
     }),
     ...hookAssetReferenceErrors(readFileSync(join(ROOT, HOOKS_FILE), 'utf8')),
-    ...guaranteeBlockErrors({
-      files, preflight: preflightBlock(), degraded: degradedBlock(),
-    }),
   ].map((e) => `${e.file}: ${e.msg}`);
 }
 
-// The contract version wherever it is stated. Legacy agents retain deterministic
-// absent/skew refusal arms; v1 agents must route the pinned probe first and state
-// their non-blocking single-shot fallback.
+// The contract version wherever it is stated, and the one agent shape: every
+// agent must route the pinned probe first, load its required contracts inline,
+// and state its non-blocking single-shot fallback.
 function gateSkew() {
   const errs = contractPinErrors({
-    block: preflightBlock(),
     probe: existsSync(skillPath(CONTRACT_SKILL))
       ? readFileSync(skillPath(CONTRACT_SKILL), 'utf8')
       : null,
@@ -1746,8 +1636,7 @@ function gateSkew() {
   const knownSkills = new Set(rosterSkillIds());
   for (const agent of sourceAgentFiles(ROOT)) {
     const body = readFileSync(agent.path, 'utf8');
-    if (!body.includes('**Identity contract:** `kai-agent-v1`')) continue;
-    for (const msg of progressiveSkillRoutingErrors({
+    for (const msg of agentRoutingErrors({
       id: agent.id,
       body,
       tools: declaredTools(body),

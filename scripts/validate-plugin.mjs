@@ -11,11 +11,10 @@
 //     one provider, every reviewed override still placing a skill inheritance
 //     cannot, core's `kai-core-*` namespace held in both directions, no id
 //     emitted by two packs, and role availability decided by roster membership;
-//   • generated-pack guarantees — legacy department agents carry the canonical
-//     fail-closed core preflight and degraded-mode refusal byte for byte, while
-//     kai-agent-v1 and core agents carry neither; the probe marker and version
-//     remain rigid and the refusal restates no core rule;
-//   • cross-pack references — every inherited, user-invoked and orchestrated
+//   • generated-pack guarantees — every agent routes its contracts inline and
+//     carries no copied dependency guard; the probe marker and contract version
+//     remain rigid at their single source, the probe skill and its body;
+//   • cross-pack references — every routed, user-invoked and orchestrated
 //     reference, plus every invoked script and hooks.json itself, resolves to
 //     core or to the referring body's own pack;
 //   • fixtures — the sample repository-mode manifest matches the schema.
@@ -33,17 +32,16 @@ import {
 import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
   marketplaceSurfacePolicy,
-  materializePacks, preflightBlock as canonicalPreflightBlock,
-  degradedBlock as canonicalDegradedBlock, degradedBlockErrors, coreContractLines,
-  PREFLIGHT_BLOCK_REL, DEGRADED_BLOCK_REL, CONTRACT_SKILL, REFUSAL,
-  HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, packProviders,
+  materializePacks,
+  CONTRACT_SKILL,
+  HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, routedSkills, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
   hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
-  requiresCoordinatedRunContracts, progressiveSkillRoutingErrors,
-  agentIdentityContractErrors, agentPromptLimitErrors,
+  requiresCoordinatedRunContracts, agentRoutingErrors,
+  agentProfileModelErrors, agentPromptLimitErrors,
   agentAuthoringReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  guaranteeBlockErrors, availabilityErrors, DISPATCHING_ROLES,
+  availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
@@ -111,7 +109,7 @@ for (const f of allFiles) {
 }
 for (const f of agentFiles.filter((entry) => entry.fm)) {
   const body = readFileSync(f.path, 'utf8');
-  for (const msg of agentIdentityContractErrors({ id: f.id, body, fm: f.fm })) err(f.rel, msg);
+  for (const msg of agentProfileModelErrors({ id: f.id, body, fm: f.fm })) err(f.rel, msg);
   for (const msg of agentPromptLimitErrors(body)) err(f.rel, msg);
 }
 
@@ -203,34 +201,14 @@ for (const p of refScanFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Skill declarations
+// Agent skill routing — one shape
 //
 // A plugin's own root AGENTS.md is never loaded as custom instructions in a
 // consumer workspace, so shared rules only reach a session through a skill the
-// agent names. kai-agent-v1 uses scoped dispatch entries; legacy agents use the
-// `**Inherits:**` line and the checks below preserve that migration baseline.
+// agent names. Every agent now routes its contracts inline, just in time; the
+// eager `**Inherits:**` line and its copied dependency guard are gone. The one
+// shape check lives in `agentRoutingErrors`, applied to every agent below.
 // ---------------------------------------------------------------------------
-const BASELINE_SKILL = 'kai-core-team-operating-rules';
-const ASSET_LIFECYCLE_SKILL = 'kai-core-asset-lifecycle';
-
-// Agents that do bounded, delegated work must declare that they are running.
-//
-// This became load-bearing rather than nice-to-have: the host emits no subagent
-// lifecycle events for plugin-provided agents, so `.kai/activity.jsonl` is the
-// ONLY evidence that a kai persona ran at all. An agent in a coordinating
-// family that does not route `kai-core-work-activity` is invisible in both
-// tiers, and the fleet view renders it as though it never existed.
-//
-// The rule is an opt-OUT, deliberately. A new agent routes the obligation by
-// default; forgetting to exempt one costs a line of bookkeeping, while
-// forgetting to opt one in costs an agent that cannot be seen.
-const ACTIVITY_SKILL = 'kai-core-work-activity';
-const CONTRACT_HEADING = /^## (?:Contracts you inherit|Inherited contracts)[^\n]*\n/gm;
-const blockPath = join(ROOT, 'scripts/lib/inherits-block.txt');
-const inheritsBlock = existsSync(blockPath)
-  ? readFileSync(blockPath, 'utf8').replace(/\r\n/g, '\n').trimEnd()
-  : null;
-if (!inheritsBlock) err('scripts/lib/inherits-block.txt', 'missing (canonical inherited-contract directive)');
 
 // ---------------------------------------------------------------------------
 // Communication-style block
@@ -272,169 +250,42 @@ if (!styleBlock) {
 
 for (const agent of agentFiles) {
   const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
-  const r = rel(agent.path);
-  const all = raw.split('\n');
-  const lines = all.filter((l) => /^\*\*Inherits:\*\*/.test(l));
-  const progressive = raw.includes('**Identity contract:** `kai-agent-v1`');
-
-  if (progressive) {
-    for (const msg of progressiveSkillRoutingErrors({
-      id: agent.id,
-      body: raw,
-      tools: parseToolList(agent.fm?.tools) || [],
-      knownSkills: skillIds,
-      activityExempt: ACTIVITY_EXEMPT.has(agent.id),
-    })) err(r, msg);
-    continue;
-  }
-
-  if (lines.length === 0) {
-    err(r, 'missing a `**Inherits:** ...` line declaring its inherited skills');
-    continue;
-  }
-  if (lines.length > 1) {
-    err(r, `has ${lines.length} \`**Inherits:**\` lines; exactly one is allowed`);
-    continue;
-  }
-
-  // The declaration must be the first body line so it is read before anything
-  // else, not buried where a model may never reach it.
-  const fm = raw.match(/^---\n[\s\S]*?\n---\n\n/);
-  const body = fm ? raw.slice(fm[0].length) : raw;
-  if (!/^\*\*Inherits:\*\*/.test(body)) {
-    err(r, '`**Inherits:**` must be the first line of the body, directly under the frontmatter');
-  }
-
-  // A skill named in the profile is inert unless the agent is told to load it,
-  // so the declaration carries a verbatim, CI-pinned directive.
-  if (inheritsBlock && !body.replace(/\r\n/g, '\n').includes(inheritsBlock)) {
-    err(r, 'missing the verbatim inherited-contract directive from scripts/lib/inherits-block.txt');
-  }
-
-  const declared = [...lines[0].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
-  if (declared.length === 0) {
-    err(r, '`**Inherits:**` line lists no backticked skills');
-    continue;
-  }
-  const tools = new Set(parseToolList(agent.fm?.tools) || []);
-  if (!tools.has('skill')) {
-    err(r, 'inherits skills but its `tools` list omits `skill` — delegated agents cannot load inherited contracts');
-  }
-
-  const seen = new Set();
-  for (const tok of declared) {
-    if (!skillIds.has(tok)) err(r, `inherits unknown skill \`${tok}\``);
-    if (seen.has(tok)) err(r, `inherits \`${tok}\` more than once`);
-    seen.add(tok);
-  }
-
-  if (!seen.has(BASELINE_SKILL)) {
-    err(r, `must inherit \`${BASELINE_SKILL}\` (the shared operating contract)`);
-  }
-  if (!seen.has(ASSET_LIFECYCLE_SKILL)) {
-    err(r, `must inherit \`${ASSET_LIFECYCLE_SKILL}\` (every run must classify generated assets or explicitly declare none)`);
-  }
-  if (requiresCoordinatedRunContracts(agent.id) && !seen.has('kai-core-workspace-conventions')) {
-    err(r, 'durable and coordinating roles must inherit `kai-core-workspace-conventions`');
-  }
-  if (requiresCoordinatedRunContracts(agent.id)
-    && !seen.has(ACTIVITY_SKILL)
-    && !ACTIVITY_EXEMPT.has(agent.id)) {
-    err(r, `durable and coordinating roles must inherit \`${ACTIVITY_SKILL}\`, or be listed in ACTIVITY_EXEMPT with a reason `
-      + '(the host observes no plugin agent, so this log is the only evidence the role ran)');
-  }
-  if (ACTIVITY_EXEMPT.has(agent.id) && seen.has(ACTIVITY_SKILL)) {
-    // Otherwise the exemption list rots into a lie about the fleet.
-    err(r, `is listed in ACTIVITY_EXEMPT but inherits \`${ACTIVITY_SKILL}\`; remove the exemption`);
-  }
-
-  // A structured "Contracts you inherit" section is the profile's own claim
-  // about what binds it; the declaration must cover all of it.
-  for (const h of raw.matchAll(CONTRACT_HEADING)) {
-    const start = h.index + h[0].length;
-    const next = raw.indexOf('\n## ', start);
-    const section = raw.slice(start, next === -1 ? raw.length : next);
-    for (const t of section.matchAll(/`([^`]+)`/g)) {
-      if (skillIds.has(t[1]) && !seen.has(t[1])) {
-        err(r, `"Contracts you inherit" names \`${t[1]}\` but the \`**Inherits:**\` line omits it`);
-      }
-    }
-  }
-
-  // Freeform prose that claims an inherited contract must match too.
-  for (const line of all) {
-    if (/^\*\*Inherits:\*\*/.test(line)) continue;
-    const verb = line.match(/\binherits?\b/i);
-    if (!verb) continue;
-    const after = verb.index + verb[0].length;
-    for (const m of line.matchAll(/`([^`]+)`/g)) {
-      if (m.index < after) continue;
-      const tok = m[1];
-      if (!skillIds.has(tok) || seen.has(tok)) continue;
-      err(r, `prose says it inherits \`${tok}\` but the \`**Inherits:**\` line omits it`);
-    }
-  }
+  for (const msg of agentRoutingErrors({
+    id: agent.id,
+    body: raw,
+    tools: parseToolList(agent.fm?.tools) || [],
+    knownSkills: skillIds,
+    activityExempt: ACTIVITY_EXEMPT.has(agent.id),
+  })) err(rel(agent.path), msg);
 }
 
 // ---------------------------------------------------------------------------
-// Guarantee blocks (generated department agents)
+// Generated surface + contract version pin
 //
-// Legacy department agents retain the fail-closed probe and degraded-mode
-// refusal in their own bodies until migration. kai-agent-v1 agents check core
-// just in time before using a core skill and carry neither block. Core agents
-// are also excluded because they ship inside kai-core itself.
+// Every agent now routes its contracts inline and carries no copied dependency
+// guard, so there is no per-agent block to pin here. What remains is the
+// materialised generated surface (keys, packages, runtime closure) and the
+// single-source contract version, held to the probe skill's name and body.
 // ---------------------------------------------------------------------------
 
-const preflightPath = join(ROOT, PREFLIGHT_BLOCK_REL);
-const preflight = existsSync(preflightPath) ? canonicalPreflightBlock(ROOT) : null;
-const degradedPath = join(ROOT, DEGRADED_BLOCK_REL);
-const degraded = existsSync(degradedPath) ? canonicalDegradedBlock(ROOT) : null;
-
-// What the authoritative generator emits, materialised once: the block pins below
-// and the cross-pack reference checks further down both resolve against the tree a
-// user would install, not against a plan that only adds up on paper. Generation
-// needs both canonical blocks, so when either is missing this stands down behind
-// the error reported for it instead of crashing the whole run.
-const generatedPacks = preflight && degraded
-  ? materializePacks({ root: ROOT, version: '0.0.0-validate' })
-  : new Map();
+// What the authoritative generator emits, materialised once: the checks below
+// and the cross-pack reference checks further down both resolve against the tree
+// a user would install, not against a plan that only adds up on paper.
+const generatedPacks = materializePacks({ root: ROOT, version: '0.0.0-validate' });
 
 for (const e of generatedKeyErrors(generatedPacks)) err(e.file, e.msg);
 for (const e of generatedPackageErrors(generatedPacks, { root: ROOT })) err(e.file, e.msg);
 for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
 
-// The contract version, pinned wherever it is stated: the probe skill's name,
-// the canonical legacy block's prose, and the probe body. A missing block is
-// reported here too because unmigrated agents still depend on these pins.
+// The contract version, pinned where it is stated: the probe skill's name and
+// the probe body. Both are held to one constant so a skew is caught even on a
+// build that is otherwise green.
 {
   const probePath = skillSourceFile(ROOT, CONTRACT_SKILL);
   for (const e of contractPinErrors({
-    block: preflight,
     probe: probePath && existsSync(probePath) ? readFileSync(probePath, 'utf8') : null,
   })) err(e.file, e.msg);
 }
-
-// The refusal restates no operating rule — that is the whole reason it cannot
-// drift from core, so it is checked rather than trusted.
-if (!degraded) {
-  err(DEGRADED_BLOCK_REL, 'missing (canonical degraded-mode refusal block)');
-} else {
-  for (const msg of degradedBlockErrors({
-    block: degraded,
-    refusalToken: REFUSAL,
-    ids: new Set([...skillIds, ...agentIds]),
-    contractLines: coreContractLines(ROOT),
-  })) err(DEGRADED_BLOCK_REL, msg);
-}
-
-// The pin that decides it: what the authoritative generator actually emits. The
-// map is empty when either canonical block is missing, so this reports the copy
-// state only when there is a copy to judge. Which files count as generated agent
-// bodies is derived from the partition (parseGeneratedKey), never matched with a
-// name pattern a future pack key could fall outside.
-for (const e of guaranteeBlockErrors({
-  files: generatedPacks, preflight, degraded, inheritsBlock,
-})) err(e.file, e.msg);
 
 if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`)) {
   err('scripts/lib/pack-plan.mjs', `does not place \`${CONTRACT_SKILL}\` in kai-core — the probe must ship with the pack whose presence it proves`);
@@ -447,7 +298,9 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
 // of them is dead on arrival while still passing every other check and
 // appearing in the catalog:
 //
-//   1. inherited    — named on some agent's `**Inherits:**` line;
+//   1. routed      — loaded inline by some agent, in the accepted
+//                     `Apply`/`Invoke` + backticked-id form, or named on a
+//                     legacy agent's `**Inherits:**` line;
 //   2. user-invoked — `user-invocable: true` in its own frontmatter, so the
 //                     operator can run it directly;
 //   3. orchestrated — declared as a dispatch entry in an agent's prose, in the
@@ -468,18 +321,15 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
   for (const agent of agentFiles) {
     const raw = readFileSync(agent.path, 'utf8');
     for (const skill of declaredInherits(raw)) inherited.add(skill);
+    for (const skill of routedSkills(raw)) inherited.add(skill);
     for (const token of dispatchedRefs(raw)) dispatched.add(token);
   }
   for (const skill of skillFiles) {
     const id = skill.id;
     if (inherited.has(id) || dispatched.has(id)) continue;
-    // The version-pinned probe fires from the legacy canonical preflight and
-    // from kai-agent-v1 dispatch entries. This exception preserves old
-    // monolith validation, where generated department bodies are absent.
-    if (preflight && id === CONTRACT_SKILL && preflight.includes(id)) continue;
     const raw = readFileSync(skill.path, 'utf8');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
-    err(rel(skill.path), 'has no firing path: no agent inherits or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
+    err(rel(skill.path), 'has no firing path: no agent routes, inherits, or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
   }
 }
 
