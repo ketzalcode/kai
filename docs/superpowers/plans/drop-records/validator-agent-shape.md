@@ -27,7 +27,7 @@ against the 29 unmigrated out-of-scope agents for the first time.
 
 | Symbol | What it enforced / did | Disposition |
 | --- | --- | --- |
-| `degradedBlockErrors` | Policed the shared degraded block: refusal budget, no affirmative instruction, names no shipped contract, restates no verbatim core line, unique refusal token, one contract-version literal, single-shot present, install remedy present. | **Deleted.** The block is gone. The load-bearing subset — continue single-shot, write no `.kai` state, tell the operator to install/update core — is enforced per agent by the three-facts check inside `agentRoutingErrors`. The block-shape rules (budget, verbatim-line, token reuse) policed a shared artifact that no longer exists and have no per-agent analogue. |
+| `degradedBlockErrors` | Policed the shared degraded block: refusal budget, no affirmative instruction, names no shipped contract, restates no verbatim core line, unique refusal token, one contract-version literal, single-shot present, install remedy present. | **Deleted.** The block is gone. Two of the load-bearing facts — name what is not written to `.kai`, tell the operator to install or update core — are enforced per agent by the structural fallback check inside `agentRoutingErrors`. The third, that the agent narrows itself to bounded direct work, is **owned by human review, not by CI** (see the amendment below). The block-shape rules (budget, verbatim-line, token reuse) policed a shared artifact that no longer exists and have no per-agent analogue. |
 | `guaranteeBlockErrors` | Required each department agent to carry the preflight + degraded blocks, verbatim, contiguous, in order; forbade core agents from carrying them. | **Deleted.** "Route the probe first" and "state the fallback" are now per-agent in `agentRoutingErrors`. "Core carries no guard region" survives as a generated-surface check in the validator and a self-test. Contiguity/order of injected blocks is meaningless once nothing is injected. |
 | `coreContractLines`, `DEGRADED_BLOCK_MAX`, `DEGRADED_QUOTE_MIN`, `DEGRADED_OPENERS` | Inputs used only by `degradedBlockErrors`. | **Deleted** with it. |
 | `preflightBlock`, `degradedBlock`, `readBlock` | Read/returned the canonical block text from the `.txt` files. | **Deleted.** No canonical block; no files. |
@@ -41,7 +41,7 @@ against the 29 unmigrated out-of-scope agents for the first time.
 
 | Old | New | Change |
 | --- | --- | --- |
-| `progressiveSkillRoutingErrors` | `agentRoutingErrors` | Removed the opt-in marker guard so it runs for every agent. Re-pointed the `required` list to the live contract ids and dropped `kai-core-asset-producing` from it (an agent that produces no artifact should not route it). Relaxed the fallback check from three exact-wording regexes to a three-facts check. Added: the eager-declaration line is rejected outright, for every agent. |
+| `progressiveSkillRoutingErrors` | `agentRoutingErrors` | Removed the opt-in marker guard so it runs for every agent. Re-pointed the `required` list to the live contract ids and dropped `kai-core-asset-producing` from it (an agent that produces no artifact should not route it). Replaced the three exact-wording regexes with a structural fallback check (see the amendment below). Added: the eager-declaration line is rejected outright, for every agent. |
 | `agentIdentityContractErrors` | `agentProfileModelErrors` | Kept only the profile→model binding, keyed on the agent id's family/posture/kind — the sole reader of `**Primary profile:**`. The identity-marker half was deleted (above). |
 
 ## Changed, not renamed
@@ -97,14 +97,13 @@ marker any longer, so this is documentation drift, not a build break.
 
 ## Borderline calls
 
-- **Migrated agents newly failing the fallback fact-regexes.** The brief's
-  Step-3 item-4 regexes were implemented verbatim. Several already-migrated
-  agents express the same facts in other words (for example "a single backend
-  read or edit" rather than "single-shot", or "persist no `.kai` record" rather
-  than "`.kai` state"), so they fail a check whose stated intent is "the three
-  facts, in any phrasing". Not resolved here: the regexes are the settled spec
-  and loosening them risks a vacuous check. Flagged for the coordinator in the
-  task report.
+- **Migrated agents newly failing the fallback fact-regexes — resolved by the
+  coordinator, see the amendment below.** The brief's Step-3 item-4 regexes were
+  implemented verbatim. Several already-migrated agents express the same facts in
+  other words (for example "a single backend read or edit" rather than the
+  literal the regex wanted, or "persist no `.kai` record" rather than putting
+  `.kai` within forty characters of the word "state"), so they failed a check
+  whose stated intent was "the three facts, in any phrasing".
 - **Agent dispatches read as skill routes.** The `routes unknown skill` arm
   (pre-existing, preserved verbatim) reads a lowercase dispatch verb before a
   backticked agent id as a skill route, so a real agent dispatch fails as an
@@ -112,3 +111,32 @@ marker any longer, so this is documentation drift, not a build break.
   was the faithful choice; the fix (teach the checker the agent roster, or
   normalise director dispatch prose) is out of this task's scope and is flagged
   as a follow-up.
+
+## Amendment: the fallback check is structural, not lexical (`28fd0fa`)
+
+The brief's three keyword regexes were implemented as written and then failed
+**17 of the 27 already-migrated agents**, whose refusals state the same facts in
+the role's own words. A short vocabulary pin is still a pin, and the design spec
+says the refusal is "one line, in its own words, where it routes core" — so the
+regexes contradicted the authority they were meant to serve.
+
+What replaced them, in `agentRoutingErrors`:
+
+| Fact | How it is now checked |
+| --- | --- |
+| The refusal sits where core is loaded | **Structural.** It must occupy the same paragraph as the `kai-core-contract-v1` route. Paragraph, not sentence, so wording is free. |
+| It names what it will not write to `.kai` | **Literal.** The paragraph must contain `` `.kai` `` — a path, not a phrasing choice. |
+| It tells the operator to install or update core | **Literal.** A concrete instruction naming the package. |
+| It narrows itself to bounded direct work | **Not checked by CI. Owned by human review.** |
+
+The fourth row is the deliberate loss. It is prose about intent: only a reader
+can judge whether "I answer one data-shape question and stop" carries the same
+obligation as "I continue single-shot". Any regex that decides it is choosing an
+approved vocabulary, which is the failure this whole refactor exists to undo. CI
+does not pretend to cover it, and this record exists so nobody later reads the
+remaining check as proof that it does.
+
+Known weakness, accepted: the check verifies co-location of two literals, not
+that a refusal exists. A paragraph that routes core, mentions `.kai`, and names
+the install remedy passes without refusing anything. Tightening it further means
+guessing at refusal vocabulary again, so review keeps this too.

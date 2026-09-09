@@ -1075,16 +1075,12 @@ export function agentRoutingErrors({
   // real obligation, but it is prose about intent and only a reader can judge
   // whether a given sentence carries it. Review owns that one; CI does not
   // pretend to.
-  const refusal = paragraphContaining(body, CONTRACT_SKILL);
-  if (refusal === null) {
-    errors.push(`must state its core fallback in the same paragraph as the \`${CONTRACT_SKILL}\` route, so the refusal is read where core is loaded`);
-  } else {
-    const missing = [];
-    if (!/`\.kai`/.test(refusal)) missing.push('what it will not write to `.kai`');
-    if (!/install or update `kai-core`/i.test(refusal)) missing.push('that the operator should install or update `kai-core`');
-    if (missing.length) {
-      errors.push(`must state the core fallback in its own words, including ${missing.join(', and ')}`);
-    }
+  const refusal = paragraphContaining(body, CONTRACT_SKILL) ?? '';
+  const missing = [];
+  if (!/`\.kai`/.test(refusal)) missing.push('what it will not write to `.kai`');
+  if (!/install or update `kai-core`/i.test(refusal)) missing.push('that the operator should install or update `kai-core`');
+  if (missing.length) {
+    errors.push(`must state the core fallback in its own words, in the same paragraph as the \`${CONTRACT_SKILL}\` route so it is read where core is loaded, including ${missing.join(', and ')}`);
   }
   return errors;
 }

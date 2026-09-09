@@ -302,7 +302,7 @@ function managedAgentDrift(root) {
         if (raw.includes(GUARANTEE_REGION_OPEN) || raw.includes(GUARANTEE_REGION_CLOSE)) {
           drift.push(`differs:    ${entry.rel} (core agents must not carry the dependency guard)`);
         }
-      } else if (syncGuaranteeRegion(raw, root) !== raw) {
+      } else if (syncGuaranteeRegion(raw) !== raw) {
         drift.push(`differs:    ${entry.rel} (managed core dependency guard)`);
       }
     } catch (e) {
@@ -359,7 +359,7 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
       }
       continue;
     }
-    const next = syncGuaranteeRegion(raw, root);
+    const next = syncGuaranteeRegion(raw);
     if (next !== raw) {
       writeFileSync(entry.path, next);
       managed += 1;
@@ -1449,6 +1449,34 @@ function selfTest() {
     ),
   }).some((m) => /must state the core fallback/.test(m)),
   'an agent must state its non-blocking core fallback');
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody.replace(
+      'State the limitation once and tell the operator to install or update `kai-core`.\n',
+      ''
+    ),
+  }).some((m) => /install or update `kai-core`/.test(m)),
+  'a fallback that never tells the operator how to fix it fails by name');
+  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody.replace(
+      'Invoke `kai-core-contract-v1` before the first other core skill.\n',
+      'Invoke `kai-core-contract-v1` before the first other core skill.\n\n## Later\n\n'
+    ),
+  }).some((m) => /same paragraph as the `kai-core-contract-v1` route/.test(m)),
+  'a fallback stranded away from the route it qualifies fails: the refusal must be read where core is loaded');  ok(agentRoutingErrors({
+    ...routingOptions,
+    body: routingBody
+      .replace(
+        'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.\n',
+        'Without core I answer one frontend question from the code in front of me and stop; nothing lands in `.kai`.\n'
+      )
+      .replace(
+        'State the limitation once and tell the operator to install or update `kai-core`.\n',
+        'The operator has to install or update `kai-core` before I rejoin coordinated work.\n'
+      ),
+  }).length === 0,
+  'a refusal in the role\'s own words passes: the check is structural, and pinning vocabulary is what this refactor removed');
   ok(agentRoutingErrors({
     ...routingOptions,
     tools: ['read'],
