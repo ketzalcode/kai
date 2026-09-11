@@ -1067,31 +1067,25 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 ## Task 13: Operator verification
 
-**Files:** none — this is a human gate, not a code change.
+**Files:** `docs/superpowers/plans/2026-09-04-agent-contract-refactor-verification.md`
 
 No behavioral test suite exists, so the accuracy claim belongs to the operator, not to this plan.
 
-- [ ] **Step 1: Present the measurements**
+- [x] **Step 1: Present the measurements**
 
-Report per-agent eager load before and after, the largest remaining body against the 30,000-character cap, and the count of routes that failed to parse — which should be zero.
+Done in the verification record. Before is the eager floor at `2ecabe7`; after is the routing ceiling at `39332f3`. Mean 30,194 → 17,529 worst case across the 26 agents that were legacy. Zero routes fail to parse, and that check now actually executes.
 
-- [ ] **Step 2: Ask the operator to run representative tasks**
+- [x] **Step 2: Ask the operator to run representative tasks**
 
-Propose three, chosen to exercise different contract sets:
+Offered and declined in favour of shipping. The three proposed tasks are written into the verification record's "How to check it for yourself" so the gate stays available after merge.
 
-1. a director dispatch that grants a lease and takes a handoff;
-2. an assessor review that must not repair what it found;
-3. a builder change that produces a durable artifact.
+- [x] **Step 3: Present the drop records**
 
-Ask the operator to compare each against today's behaviour.
+32 records in `drop-records/` — 27 agents plus 4 contracts, and the validator-shape amendment. The verification record states plainly that a drop record is a claim, not a test.
 
-- [ ] **Step 3: Present the drop records**
+- [x] **Step 4: Record what is not verified**
 
-27 agent records plus 4 contract records. These are the mitigation for the one risk nothing else covers: a body silently losing a rule it needed.
-
-- [ ] **Step 4: Record what is not verified**
-
-State plainly: no automated check confirms an agent kept every rule it needs, and no automated check confirms output quality improved.
+The verification record's "What this does not prove" section: no check confirms an agent kept every rule it needs, no check confirms quality improved, the after numbers are a ceiling, and token count is not the goal.
 
 ---
 
