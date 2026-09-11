@@ -35,19 +35,28 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v4.0.0` — all **56 agents and 57 skills** are published across five plugins for
+`v5.0.0` — all **56 agents and 57 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
-Agent creation now has an explicit contract: provider family, operating posture,
+Agents load shared contracts on demand. All 27 roles in `kai-core` and
+`kai-engineering` route each contract at the instruction that needs it, rather
+than declaring every contract they might use before reading the task. Measured
+worst case, that moved the mean prompt from 30,194 to 17,529 tokens and the
+largest role from 41,607 to 25,526 — and the old number was a floor paid every
+run, where the new one is a ceiling. There is one agent shape, with no version
+marker and no compatibility mode.
+
+Four core contracts were split by the reader they serve:
+`kai-core-team-operating-rules`, `kai-core-work-coordination`,
+`kai-core-workspace-conventions` and `kai-core-asset-lifecycle` are removed in
+favour of eight narrower ones. Consumers referencing the old ids must re-point;
+the CHANGELOG carries the mapping. `kai-product`, `kai-gtm` and `kai-personal`
+keep the eager declaration until they migrate.
+
+Agent creation has an explicit contract: provider family, operating posture,
 scope, authority, execution profile, model policy, host-specific tools,
 on-demand skills, handoffs, and acceptance cases are settled before a role
 joins the fleet.
-`eng-lead-technical-writing` is the first migrated role: it leads with writing
-craft — audience adaptation, clarity, structure and flow, engagement, technical
-accuracy — and carries its document-type knowledge inline rather than behind a
-skill. Core contracts load inline at the step that needs them rather than
-at startup. This replaces the removed principal-technical-writer identity;
-update direct invocations and existing workspace item ownership fields.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and
