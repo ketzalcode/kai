@@ -117,9 +117,25 @@ ran, and that is a separate fact from the code being right.
 **Two known loose ends,** both recorded rather than fixed: nothing pins the
 contract citations inside script error messages, or the concern table in
 `AGENTS.md`, to the contracts they name — both are correct today and both will
-rot silently on a future split. And `kai-core-initiative-stewardship` says four
-closure sweeps where `kai-core-asset-closing` lists five; that predates this
-branch.
+rot silently on a future split.
+
+**A third seam, recorded here.** `kai-core-asset-producing` (the *Generator
+close transaction*, step 6) and `kai-core-work-acting` (hard rule 3) both tell a
+producing agent to close every generated asset through
+`kai-core-asset-closing`, naming its four completion dimensions. But loading is
+an agent-level act: `collectReferences` propagates the `loaded` set only from
+agent bodies and, inside a skill, follows only asset references — a route
+sentence in a skill body never loads a second skill. So the 23 migrated agents
+that route `kai-core-asset-producing` but not `kai-core-asset-closing` do not
+load those four dimension definitions. This is deliberate, not a missing route:
+R19 scopes `kai-core-asset-closing` to the four roles that actually perform
+closure (`director-chief-of-staff`, `principal-ai-researcher`,
+`workflow-incident-response`, `workflow-ship`), and the completion-authority
+model bars a producer from self-accepting a team-facing asset — the `accepted`
+verdict is a separate authority's call, handed over at the close-transaction
+HANDOFF. The remaining seam is documentary: a producer cites four dimension
+names it cannot see, resolving the self-assessable ones from the cross-reference
+and deferring acceptance to the completion authority.
 
 ## How to check it for yourself
 

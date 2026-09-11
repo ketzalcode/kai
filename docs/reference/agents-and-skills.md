@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **57 skills** (12 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **56 agents** and **57 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -182,8 +182,8 @@ Your voice, your career, your week. Workspace-local and gitignored.
 
 ## Skills
 
-Skills are methods and contracts. Most are inherited by an agent rather than
-invoked directly — the agent names them on its `**Inherits:**` line.
+Skills are methods and contracts. Most are not invoked directly —
+an acting agent loads each one on demand, at the exact instruction that needs it.
 
 ### Workspace & scope
 

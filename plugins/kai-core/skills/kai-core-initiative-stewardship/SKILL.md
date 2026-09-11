@@ -121,7 +121,7 @@ item reached its declared terminal state: `completed` for research/decision
 work or `shipped` for production delivery. Planning items and unlisted optional
 work do not satisfy the milestone.
 
-The steward then applies `kai-core-asset-closing` and proves four closure
+The steward then applies `kai-core-asset-closing` and proves five closure
 sweeps:
 
 1. **Work:** every required item reached its typed terminal state.
@@ -131,6 +131,9 @@ sweeps:
    in the workspace authority, or dropped with a reason.
 4. **Ownership:** every maintained current asset names a validity owner and
    revalidation date or event.
+5. **Outcome:** the declared northstar outcome is reached and recorded —
+   `completed` for research/decision initiatives or `shipped` for
+   production delivery.
 
 Then:
 

@@ -38,7 +38,7 @@ Every one now has an inline route in the accepted `Load`/`Invoke`/`Apply`/`Run`
 `kai-core-contract-v1` was added at the top of the body, before the first other
 core route.
 
-### asset-closing and work-granting: not added
+### asset-closing, work-granting, and work-acting: not added
 
 - **`kai-core-asset-closing` — not added.** The assistant produces private
   personal records (agenda, decision brief, consultation, inbox) but never
@@ -49,6 +49,26 @@ core route.
 - **`kai-core-work-granting` — not added.** The assistant never grants a lease
   to another role; it reads coordination state read-only and routes delivery to
   `director-chief-of-staff`. Lease granting is the Chief of Staff's authority.
+- **`kai-core-work-acting` — not added; the requirement was corrected instead.**
+  The Task-10 required-contract list pushed `work-acting` onto every
+  `director/principal/workflow` role via `requiresCoordinatedRunContracts`,
+  which surfaced a new, permanently-red in-scope validator error for this agent:
+  `must load kai-core-work-acting at the step that needs it`. Reviewed on the
+  merits, the requirement is miscalibrated for this role. `kai-core-work-acting`
+  is the *acting half* of coordination — verify-lease-before-write, collisions,
+  handoffs, and review routing on a `.kai/state/` item the role **already
+  holds**. The executive assistant never holds a coordinated item: Hard rule 3
+  binds it to read `.kai/state/` read-only and write only private
+  `.kai/personal/`, and the body states outright that "Load-bearing team answers
+  are written by the Chief of Staff or owning role, never by you." It surfaces,
+  routes, and keeps a private agenda; it takes no lease, records no handoff, and
+  routes no review. So the fix is to the requirement, not the agent: a new
+  `ACTING_EXEMPT` map in `scripts/lib/pack-plan.mjs` exempts this role from the
+  `work-acting` requirement, mirroring the existing `ACTIVITY_EXEMPT` entry that
+  already exempts it from `work-activity` for the same conversational,
+  never-a-bounded-run reason. The base agent never inherited
+  `kai-core-work-coordination`, so nothing was dropped — no route is added, and
+  none is owed.
 
 ## The degraded-mode refusal
 

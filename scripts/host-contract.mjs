@@ -9,8 +9,8 @@
 // asserts a set of deliberately malformed fixtures are each rejected by the
 // loader — the exact class of bug (#23) that shipped while CI stayed green.
 //
-// It is a deterministic lint heuristic, not a live-host parser. Live validator
-// and runtime behavior are measured separately by host-tool-probe.mjs.
+// It is a deterministic lint heuristic, not a live-host parser. It does not
+// measure live-host runtime behaviour; that is the host's own concern.
 //
 // Usage:
 //   node scripts/host-contract.mjs             verify inventory + README counts

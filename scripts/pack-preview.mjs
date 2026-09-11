@@ -49,7 +49,7 @@ import {
   agentTaxonomyErrors, requiresCoordinatedRunContracts, loadedSkills, agentRoutingErrors,
   agentProfileModelErrors,
   agentPromptLimitErrors, agentAuthoringReferenceErrors,
-  ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT,
+  ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT, ACTING_EXEMPT,
   hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors, sourcePlacementErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
@@ -293,16 +293,21 @@ function cleanStaleDerivedFiles(base, files) {
   }
 }
 
+// Whether an agent still declares an eager `**Inherits:**` line. That single
+// fact — read from the agent's own text, with no pack allowlist or registry —
+// decides how its guard region is managed: an inheriting agent keeps the
+// region as its only core-dependency guard; a migrated agent on inline routes
+// must not carry one, so a stale region is stripped. The rule is correct for
+// every agent today and self-corrects as each remaining pack migrates.
+const declaresInherits = (body) => /^\*\*Inherits:\*\*/m.test(body);
+
 function managedAgentDrift(root) {
   const drift = [];
   for (const entry of sourceAgentFiles(root)) {
     const raw = normalizeLF(readFileSync(entry.path, 'utf8'));
     try {
-      if (entry.pack === 'core') {
-        if (raw.includes(GUARANTEE_REGION_OPEN) || raw.includes(GUARANTEE_REGION_CLOSE)) {
-          drift.push(`differs:    ${entry.rel} (core agents must not carry the dependency guard)`);
-        }
-      } else if (syncGuaranteeRegion(raw) !== raw) {
+      if (declaresInherits(raw)) continue;
+      if (syncGuaranteeRegion(raw) !== raw) {
         drift.push(`differs:    ${entry.rel} (managed core dependency guard)`);
       }
     } catch (e) {
@@ -351,15 +356,8 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
   let managed = 0;
   for (const entry of sourceAgentFiles(root)) {
     const raw = normalizeLF(readFileSync(entry.path, 'utf8'));
-    if (entry.pack === 'core') {
-      const next = removeGuaranteeRegion(raw);
-      if (next !== raw) {
-        writeFileSync(entry.path, next);
-        managed += 1;
-      }
-      continue;
-    }
-    const next = syncGuaranteeRegion(raw);
+    if (declaresInherits(raw)) continue;
+    const next = removeGuaranteeRegion(raw);
     if (next !== raw) {
       writeFileSync(entry.path, next);
       managed += 1;
@@ -1671,6 +1669,7 @@ function gateSkew() {
   }).map((e) => `${e.file}: ${e.msg}`);
 
   const knownSkills = new Set(rosterSkillIds());
+  const knownAgents = new Set(sourceAgentFiles(ROOT).map((a) => a.id));
   for (const agent of sourceAgentFiles(ROOT)) {
     const body = readFileSync(agent.path, 'utf8');
     for (const msg of agentRoutingErrors({
@@ -1678,7 +1677,9 @@ function gateSkew() {
       body,
       tools: declaredTools(body),
       knownSkills,
+      knownAgents,
       activityExempt: ACTIVITY_EXEMPT.has(agent.id),
+      actingExempt: ACTING_EXEMPT.has(agent.id),
     })) {
       errs.push(`${agent.rel}: ${msg}`);
     }

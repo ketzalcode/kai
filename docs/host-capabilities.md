@@ -45,10 +45,12 @@ Load `kai-core-work-item` before writing an item record.
 ```
 
 `npm test` enforces those routes so a required contract can never be silently
-dropped, and checks that each agent names `.kai` and gives a concrete install
-instruction in the same paragraph as its core route. That the refusal is in the
-agent's own words, and narrows it to bounded direct work, is judged in review
-rather than by CI. Because a skill loads on demand rather
+dropped, and checks that each agent names `.kai` and carries an
+install-or-update instruction that names the `kai-core` package in the same
+paragraph as its core route — a loose vocabulary-and-placement check that
+accepts any of several verbs, not one fixed phrase. What the refusal says in the
+agent's own words, and that it narrows the agent to bounded direct work, is
+judged in review rather than by CI. Because a skill loads on demand rather
 than automatically, each route sits at the step whose rule it carries. Three
 packs — product, go-to-market, and personal — have not migrated yet and still
 carry the older eager declaration until they do.

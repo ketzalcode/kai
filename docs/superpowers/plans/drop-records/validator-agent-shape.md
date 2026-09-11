@@ -126,7 +126,7 @@ What replaced them, in `agentRoutingErrors`:
 | --- | --- |
 | The refusal sits where core is loaded | **Structural.** It must occupy the same paragraph as the `kai-core-contract-v1` route. Paragraph, not sentence, so wording is free. |
 | It names what it will not write to `.kai` | **Literal.** The paragraph must contain `` `.kai` `` — a path, not a phrasing choice. |
-| It tells the operator to install or update core | **Literal.** A concrete instruction naming the package. |
+| It tells the operator to install or update core | **Vocabulary gate, loosened.** The paragraph must carry an install/add/enable/update-style verb within forty characters of `` `kai-core` ``. This began as a single fixed phrase (`install or update \`kai-core\``); that was a five-word pin, not a structural guarantee, so it was widened to a small verb alternation. A role-voiced "ask the operator to add the `kai-core` plugin" now passes as readily as "install or update `kai-core`". It checks that the package is named with an install-shaped verb, not that the exact wording matches. |
 | It narrows itself to bounded direct work | **Not checked by CI. Owned by human review.** |
 
 The fourth row is the deliberate loss. It is prose about intent: only a reader

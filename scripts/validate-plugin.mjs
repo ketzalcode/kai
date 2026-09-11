@@ -45,7 +45,7 @@ import {
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
-  agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT,
+  agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
 } from './lib/pack-plan.mjs';
 import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
@@ -255,7 +255,9 @@ for (const agent of agentFiles) {
     body: raw,
     tools: parseToolList(agent.fm?.tools) || [],
     knownSkills: skillIds,
+    knownAgents: agentIds,
     activityExempt: ACTIVITY_EXEMPT.has(agent.id),
+    actingExempt: ACTING_EXEMPT.has(agent.id),
   })) err(rel(agent.path), msg);
 }
 
