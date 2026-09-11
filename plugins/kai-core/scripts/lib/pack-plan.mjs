@@ -1045,11 +1045,7 @@ export function agentRoutingErrors({
   const errors = [];
   // An agent still on the eager regime declares this line; an agent on inline
   // routes must not. That one self-describing fact — no pack list, no registry
-  // — also scopes the route-token check below: the case-insensitive
-  // dispatch/route disambiguation only makes sense for agents whose sentences
-  // are inline routes. An eager agent's "invoke `x`" sentences are prose, and
-  // its route-shaped noise stays reported exactly as before until it migrates,
-  // at which point dropping this line turns the disambiguation on for it too.
+  // — is what tells the two regimes apart wherever they need telling apart.
   const declaresEagerInherits = /^\*\*Inherits:\*\*/m.test(text);
   if (declaresEagerInherits) {
     errors.push('an agent routes skills just in time and must not declare an eager `**Inherits:**` line');
@@ -1075,7 +1071,7 @@ export function agentRoutingErrors({
     // seen as a route here. Skip agent-shaped tokens exactly as
     // `collectReferences` does, so a genuine skill typo still surfaces while a
     // dispatch sentence is not misread as an unknown skill route.
-    if (!declaresEagerInherits && (knownAgentSet.has(skill) || AGENT_CANDIDATE.test(skill))) continue;
+    if (knownAgentSet.has(skill) || AGENT_CANDIDATE.test(skill)) continue;
     errors.push(`routes unknown skill \`${skill}\``);
   }
   if (!/`kai-core-contract-v1`[\s\S]{0,160}?\bfirst\b[\s\S]{0,80}?\bcore\b/i.test(flat)
@@ -1104,6 +1100,9 @@ export function agentRoutingErrors({
   }
   if (activityExempt && routed.has('kai-core-work-activity')) {
     errors.push('is activity-exempt but routes `kai-core-work-activity`; remove the exemption or the route');
+  }
+  if (actingExempt && routed.has('kai-core-work-acting')) {
+    errors.push('is acting-exempt but routes `kai-core-work-acting`; remove the exemption or the route');
   }
   // The refusal belongs to the role, so its wording is the author's. This is
   // not a structural check and does not pretend to be: it is a small vocabulary

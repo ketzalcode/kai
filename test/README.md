@@ -40,11 +40,10 @@ Behavioral-contract and host compatibility:
 
 - **Kai tool-vocabulary lint.** Every declared `tools:` entry must be in
   `SUPPORTED_TOOLS`, Kai's explicit least-privilege vocabulary. This is a lint
-  heuristic, not a claim about the live host parser. The host-tool probe measures
-  validator warnings and runtime grants independently.
-- **Inherited-skill access.** Every agent with an `**Inherits:**` declaration
-  must also declare the `skill` tool. Delegated custom agents receive only
-  declared tools, so omitting it makes inherited contracts unreachable.
+  heuristic, not a claim about the live host parser.
+- **Routed-skill access.** Every agent that routes at least one skill must also
+  declare the `skill` tool. Delegated custom agents receive only declared tools,
+  so omitting it makes every routed contract unreachable.
 - **Frontmatter shape.** `argument-hint` must be a quoted scalar (never an inline
   array — the CLI silently drops that); `user-invocable` must be boolean; the
   skill-only keys `argument-hint`/`user-invocable`/`allowed-tools` are invalid on

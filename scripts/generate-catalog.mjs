@@ -175,7 +175,7 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Engineering craft',
-    blurb: 'Per-change discipline every `principal-swe-*` agent inherits.',
+    blurb: 'Per-change discipline every `principal-swe-*` agent routes.',
     members: [
       'coding-style', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
       'onboard-to-codebase', 'build-diagrams',

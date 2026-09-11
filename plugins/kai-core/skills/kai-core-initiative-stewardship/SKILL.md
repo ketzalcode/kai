@@ -131,9 +131,8 @@ sweeps:
    in the workspace authority, or dropped with a reason.
 4. **Ownership:** every maintained current asset names a validity owner and
    revalidation date or event.
-5. **Outcome:** the declared northstar outcome is reached and recorded —
-   `completed` for research/decision initiatives or `shipped` for
-   production delivery.
+5. **Outcome:** `deliverables.md` and `director-summary.md` identify the
+   current, historical, superseded, and retracted outcomes.
 
 Then:
 

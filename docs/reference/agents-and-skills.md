@@ -229,7 +229,7 @@ Classify, name, scope, and validate a new or redesigned Kai role before it joins
 
 ### Engineering craft
 
-Per-change discipline every `principal-swe-*` agent inherits.
+Per-change discipline every `principal-swe-*` agent routes.
 
 | Name | What it owns |
 | ---- | ------------ |

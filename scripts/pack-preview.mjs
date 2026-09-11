@@ -620,19 +620,32 @@ function selfTest() {
     ok(checkSelected().length === 0,
       'freshly generated derived files pass the regenerate-and-diff check with no drift');
 
-    // Agent bodies are source, so ordinary edits are not generator drift. An
-    // out-of-scope agent that still carries a stale managed guard region is
-    // stripped by a sync, never re-injected.
+    // Agent bodies are source, so ordinary edits are not generator drift.
     const agentPath = join(scratch, 'kai-personal', 'agents', 'persona-self.agent.md');
     const original = readFileSync(agentPath, 'utf8');
     writeFileSync(agentPath, `${original}\n<!-- scratch edit: not a derived file -->\n`);
     ok(checkSelected().length === 0,
       'editing an authoritative agent body is not misclassified as generated-file drift');
-    ok(syncGuaranteeRegion(readFileSync(agentPath, 'utf8')) !== readFileSync(agentPath, 'utf8'),
-      'an out-of-scope agent that still carries a stale guard region is detected: a sync strips it, never injects one');
     writeFileSync(agentPath, original);
     ok(checkSelected().length === 0,
       'and restoring it clears the drift, so the check reports state rather than history');
+
+    // Which agents the drift path touches is decided by the agent's own text,
+    // not by a pack list. Exercise the shipped path in both directions: an
+    // agent still declaring `**Inherits:**` keeps the guard it depends on,
+    // and an agent on inline routes has a stale one reported.
+    const inheritedDrift = managedAgentDrift(ROOT)
+      .filter((line) => line.includes('persona-self.agent.md'));
+    ok(declaresInherits(readFileSync(agentPath, 'utf8')) && inheritedDrift.length === 0,
+      'an agent that still declares `**Inherits:**` keeps its guard region: the drift path skips it, so a regenerate never strips the guard it depends on');
+
+    const inlineAgent = `---\nname: x\n---\n\nLoad \`kai-core-contract-v1\` first.\n\n${GUARANTEE_REGION_OPEN}\n\nstale guard\n\n${GUARANTEE_REGION_CLOSE}\n`;
+    ok(!declaresInherits(inlineAgent) && syncGuaranteeRegion(inlineAgent) !== normalizeLF(inlineAgent),
+      'an agent on inline routes that still carries a guard region is reported as drift and stripped by a sync');
+
+    const midMigration = `---\nname: x\n---\n\n**Inherits:** \`kai-core-operating-rules\`\n\nLoad \`kai-core-contract-v1\` first.\n\n${GUARANTEE_REGION_OPEN}\n\nstale guard\n\n${GUARANTEE_REGION_CLOSE}\n`;
+    ok(declaresInherits(midMigration),
+      'an agent holding both an `**Inherits:**` line and inline routes counts as still inheriting, so a half-finished migration keeps its guard until the eager line is dropped');
 
     const victim = join(scratch, 'kai-core', 'plugin.json');
     writeFileSync(victim, `${readFileSync(victim, 'utf8')}tampered`);
