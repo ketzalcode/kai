@@ -37,13 +37,22 @@ with temporarily failing checks. Integration is not a claim of release
 readiness or improved runtime quality. This agreement supersedes the earlier
 per-wave validation and operator-acceptance gates for the remaining refactor.
 
+**Package-first refinement, approved later on 2026-09-12:** settle the eight
+capability packages, then complete each package's agents and skills together
+before developing more cross-package interactions. This replaces the
+previously agreed agents-first/skills-later batching. The package list and
+creative/assistant boundaries are approved; the
+[detailed ownership spec](../superpowers/specs/2026-09-12-package-boundaries-design.md)
+is awaiting operator review. Executive assistance leaves core and is redesigned
+to do personal work directly, not preserved as an organization router.
+
 Continue in this order:
 
-1. Integrate the completed `kai-core` and `kai-engineering` work.
-2. Refactor the agents in `kai-product`, `kai-gtm`, and `kai-personal` against
-   the settled core contracts, without a compatibility dialect.
-3. Refactor the remaining skills and reconcile their responsibilities with
-   the agent instructions.
+1. Integrate the completed `kai-core` and `kai-engineering` work — done in #208.
+2. Settle the eight-package ownership spec before further agent implementation.
+3. Complete each remaining capability package's agents and skills together,
+   including the redesigned assistant's extraction from core, without a
+   compatibility dialect or mandatory sibling-agent calls.
 4. Make two refinement passes across the complete agent/skill surface:
    first for role boundaries, routing, and missing obligations; then for
    clarity, task relevance, and unnecessary context.
