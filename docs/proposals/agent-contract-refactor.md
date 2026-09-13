@@ -1,6 +1,6 @@
 # Agent contract refactor — kai-core + kai-engineering
 
-**Status:** core/engineering checkpoint ready for integration; organization-wide refactor continues
+**Status:** eight-package source rollout delivered in #210; refinement and validation remain pending
 **Scope:** 7 `kai-core` agents, 20 `kai-engineering` agents, 26 `kai-core` skills
 **Goal:** one agent shape, right-sized contracts, measurably better agent
 accuracy — not a staged migration.
@@ -52,7 +52,7 @@ without another per-package approval stop. Finish their agents and skills, then
 push one branch and create one PR for the full remaining rollout. This is not
 permission to merge that PR or publish a release. The
 [remaining-package implementation plan](../superpowers/plans/2026-09-12-remaining-packages.md)
-is the active execution unit.
+records the completed source work and open PR #210.
 
 Continue in this order:
 

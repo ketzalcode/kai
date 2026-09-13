@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-12-package-boundaries-design.md`
 
+**Delivery status:** the remaining five package units are source-complete in
+[PR #210](https://github.com/RubenSaucedo/kai/pull/210), not merged. All eight
+target package directories exist on its branch. Next are the two refinement
+passes and deferred safety/runtime/test/CI consolidation, not another
+package-creation approval.
+
 ## Global Constraints
 
 - Packages describe useful capabilities a user installs, not agent prefixes or an organizational reporting chart.

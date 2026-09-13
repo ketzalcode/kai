@@ -13,8 +13,9 @@
 **Baseline:** `03c5b2c` (assistant merged in #209); prepared metadata `6.0.0`.
 
 **Execution status:** all five package units and final source integration are
-complete through `0d88533`. PR creation is the remaining controller action.
-Runtime/full-suite validation and the two refinement passes remain deferred.
+complete through `0d88533` and delivered in [PR #210](https://github.com/RubenSaucedo/kai/pull/210).
+The PR is open, not merged. Runtime/full-suite validation and the two
+refinement passes remain deferred.
 
 ## Global Constraints
 
@@ -529,7 +530,7 @@ claim is implied by source review or generation.
 
 Commit the complete integration change set with the required Copilot trailer.
 
-- [ ] **Step 5: Push the branch and create the PR.**
+- [x] **Step 5: Push the branch and create the PR.**
 
 After all eight packages are present and source review is complete:
 
