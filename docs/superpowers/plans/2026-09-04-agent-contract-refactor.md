@@ -1091,20 +1091,23 @@ The verification record's "What this does not prove" section: no check confirms 
 
 ## Follow-on, not in this plan
 
-- The `kai-gtm`, `kai-product` and `kai-personal` packs — the same treatment, once this shape is proven.
+- **2026-09-12 operator decision:** integrate core/engineering with red checks;
+  continue through the remaining packs, then skills, then two refinement
+  passes. Safety review, behavioral validation, and test/CI repair follow
+  the settled architecture, not every intermediate change. The
+  [current execution agreement](../../proposals/agent-contract-refactor.md#current-execution-agreement--2026-09-12)
+  is authoritative for this sequence.
+- The `kai-gtm`, `kai-product` and `kai-personal` packs — the same treatment,
+  without waiting for the deferred behavioral gate.
 - Wiring `kai-core-fleet-observation` to the roles that should load it.
 - Re-deriving a body-size target from what refactored bodies actually need.
-- The release: one batched version bump across five packs, per `AGENTS.md`.
+- Release publication follows final validation. The existing batched `5.0.0`
+  metadata is not evidence that a tag or GitHub release was published.
 
-## Release landmine: regenerate only what has migrated
+## Generator finding — resolved before integration
 
-`pack-preview --write` **strips** any `kai core dependency guard` region it
-finds; it never emits one. The 29 agents in `kai-gtm`, `kai-product` and
-`kai-personal` still carry that region in their sources and still need it,
-because they have not moved to inline routes.
-
-So a blanket `--write` during the batched release would silently remove the
-guard from all 29 and break the `pack-preview.mjs:633` self-test. At release
-time, regenerate `kai-core` and `kai-engineering` only, and leave the three
-unmigrated packs' trees alone until their own migration lands. Their `--check`
-divergence — 29 guard-region drifts — is expected until then.
+The earlier strip-only regeneration warning was resolved in `01ec936`.
+`pack-preview --write` preserves an agent's guard while that source still
+declares `**Inherits:**`; it strips the guard after the declaration is removed.
+There is no pack selector or pack allowlist. The former instruction to
+regenerate only two packs was not executable and must not guide follow-on work.

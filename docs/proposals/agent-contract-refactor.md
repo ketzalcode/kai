@@ -1,6 +1,6 @@
 # Agent contract refactor — kai-core + kai-engineering
 
-**Status:** active
+**Status:** core/engineering checkpoint ready for integration; organization-wide refactor continues
 **Scope:** 7 `kai-core` agents, 20 `kai-engineering` agents, 26 `kai-core` skills
 **Goal:** one agent shape, right-sized contracts, measurably better agent
 accuracy — not a staged migration.
@@ -27,6 +27,43 @@ them as objections.
    obvious.
 6. **The measure of success is agent accuracy and quality**, not file count or
    token count alone. Tokens are the means; better work is the end.
+
+---
+
+## Current execution agreement — 2026-09-12
+
+The operator approved merging the core/engineering checkpoint into `main`
+with temporarily failing checks. Integration is not a claim of release
+readiness or improved runtime quality. This agreement supersedes the earlier
+per-wave validation and operator-acceptance gates for the remaining refactor.
+
+Continue in this order:
+
+1. Integrate the completed `kai-core` and `kai-engineering` work.
+2. Refactor the agents in `kai-product`, `kai-gtm`, and `kai-personal` against
+   the settled core contracts, without a compatibility dialect.
+3. Refactor the remaining skills and reconcile their responsibilities with
+   the agent instructions.
+4. Make two refinement passes across the complete agent/skill surface:
+   first for role boundaries, routing, and missing obligations; then for
+   clarity, task relevance, and unnecessary context.
+5. Once that architecture settles, consolidate safety review, behavioral
+   exercises, validator changes, and test/CI repair into the final validation
+   phase. Assess accuracy with representative work, not token totals.
+
+Do not reopen validator implementation, repeatedly run full suites, or make
+each intermediate edit wait for a green build. Preserve known failures and
+unverified claims for the final phase; do not change checks to manufacture
+green results. Existing CI can stay enabled and report red.
+
+This defers validation work, not ordinary data protection: do not overwrite
+unrelated work, weaken repository protections, or force-push shared history.
+Record integration exceptions explicitly. Do not tag or publish this
+checkpoint as a finished release; the existing `5.0.0` metadata alone does not
+make it one.
+
+The baseline and original order below are historical planning context, not
+instructions to restart completed work.
 
 ---
 
