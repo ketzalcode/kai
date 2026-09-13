@@ -81,12 +81,27 @@ One orchestrator that fans a document out to the review lenses and aggregates th
 
 ### Product
 
-Need, scope, product strategy, and supporting documentation.
+Discovery, scope, evidence, analytics, product-led growth, and independent product assessment. UI and brand design belong to creative.
 
 | Name | What it owns |
 | ---- | ------------ |
 | [`principal-product-manager`](../../plugins/kai-product/agents/principal-product-manager.agent.md) | Owns product scope and initiative stewardship: product briefs, smallest-correct scope decisions, north stars, proposal grooming, prioritization, and truthful closure. Use before design or engineering. |
 | [`principal-product-strategist`](../../plugins/kai-product/agents/principal-product-strategist.agent.md) | Investigates future product opportunities, analogous products, fit scores, candidate actions, and smallest validating experiments. Use before scope decisions. Not current initiative stewardship (`principal-product-manager`). |
+| [`principal-data-analytics`](../../plugins/kai-product/agents/principal-data-analytics.agent.md) | Defines metric contracts and analyzes supplied SaaS exports for funnel, cohort, retention, segmentation, experiments, and instrumentation gaps. Use for analytical validity and causal-status judgment. Not pipelines (`principal-data-engineer`). |
+| [`workflow-customer-feedback`](../../plugins/kai-product/agents/workflow-customer-feedback.agent.md) | Synthesizes supplied SaaS surveys, NPS/CSAT, reviews, interviews, and feature requests into de-identified themes and owner routing. Use when customer feedback needs privacy-first clustering. Not product scoping or customer replies. |
+| [`workflow-experiment-review`](../../plugins/kai-product/agents/workflow-experiment-review.agent.md) | Gates SaaS experiment integrity before launch or after readout, covering design, metrics, exposure, peeking, comparisons, guardrails, and causal status. Use when an experiment needs independent certification. Not growth or product decisions. |
+| [`workflow-product-explore`](../../plugins/kai-product/agents/workflow-product-explore.agent.md) | Maps supplied product evidence or an authorized live surface, optionally extracting neutral visual facts. Use for reusable navigation and state evidence. Not UX evaluation, defect filing, scope, or design recommendations. |
+| [`persona-ux-first-time-user`](../../plugins/kai-product/agents/persona-ux-first-time-user.agent.md) | Simulates a first-time customer walkthrough and reports subjective flow clarity, copy, missing context, unmet expectations, and confusion points. Use for fresh-eyes feedback. Not defect QA (`principal-qa-ui`). |
+| [`principal-growth`](../../plugins/kai-product/agents/principal-growth.agent.md) | Diagnoses SaaS lifecycle growth and designs bounded experiments across acquisition, activation, engagement, retention, referral, reactivation, and paid conversion. Use for aggregate PLG growth. Not campaign demand gen (`principal-demand-generation`). |
+| [`persona-professional-nutritionist`](../../plugins/kai-product/agents/persona-professional-nutritionist.agent.md) | Audits fitness-product meal plans, macros, pantry suggestions, and projection math for nutrition accuracy, macro safety, micronutrient gaps, and allergen risk. Not exercise programming (`persona-professional-trainer`). |
+| [`persona-professional-trainer`](../../plugins/kai-product/agents/persona-professional-trainer.agent.md) | Audits fitness-product workouts and programs for safety, completeness, progression, screening, volume, and injury-aware substitutions. Not meal plans or macros (`persona-professional-nutritionist`). |
+
+### Technical writing & localization
+
+Engineering-owned documentation and bounded localization.
+
+| Name | What it owns |
+| ---- | ------------ |
 | [`eng-lead-technical-writing`](../../plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md) | Technical writing specialist for READMEs, developer guides, tutorials, API reference, and release notes. Use to draft, restructure, or audit documentation. Not product scope, public claims, translation, lessons (`instructor-tutor`), or publishing. |
 | [`workflow-localization`](../../plugins/kai-engineering/agents/workflow-localization.agent.md) | Runs SaaS i18n-readiness and locale-QA workflow for strings, formatting, pluralization, RTL, encoding, translation routing, and build checks. Use when a surface needs localization readiness. Not translating or code edits. |
 
@@ -121,17 +136,13 @@ Pre-sale motion and the commercial operating model. Only you accept terms.
 | [`principal-demand-generation`](../../plugins/kai-gtm/agents/principal-demand-generation.agent.md) | Designs SaaS campaign strategy, briefs, lifecycle/nurture email, channel mix, lead handoff, and demand diagnosis from approved positioning. Use for demand gen. Not PLG lifecycle experiments (`principal-growth`). |
 | [`principal-partnerships`](../../plugins/kai-gtm/agents/principal-partnerships.agent.md) | Designs SaaS partner strategy, partner-fit assessments, integration partnerships, channel/reseller programs, and co-sell or co-marketing plans. Use for partnership judgment, not legal terms or outbound contact. |
 
-### Growth, analytics & monetization
+### Pricing & monetization
 
-Lifecycle diagnosis, metric validity, experiment integrity, and price.
+Pricing, packaging, and commercial monetization judgment.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-growth`](../../plugins/kai-gtm/agents/principal-growth.agent.md) | Diagnoses SaaS lifecycle growth and designs bounded experiments across acquisition, activation, engagement, retention, referral, reactivation, and paid conversion. Use for aggregate PLG growth. Not campaign demand gen (`principal-demand-generation`). |
-| [`principal-data-analytics`](../../plugins/kai-product/agents/principal-data-analytics.agent.md) | Defines metric contracts and analyzes supplied SaaS exports for funnel, cohort, retention, segmentation, experiments, and instrumentation gaps. Use for analytical validity and causal-status judgment. Not pipelines (`principal-data-engineer`). |
-| [`workflow-experiment-review`](../../plugins/kai-product/agents/workflow-experiment-review.agent.md) | Gates SaaS experiment integrity before launch or after readout, covering design, metrics, exposure, peeking, comparisons, guardrails, and causal status. Use when an experiment needs independent certification. Not growth or product decisions. |
 | [`principal-pricing-monetization`](../../plugins/kai-gtm/agents/principal-pricing-monetization.agent.md) | Recommends SaaS pricing models, packaging, price changes, discount policy, and monetization experiments from supplied cost, WTP, competitive, packaging, and analytics evidence. Use for pricing judgment. |
-| [`workflow-customer-feedback`](../../plugins/kai-product/agents/workflow-customer-feedback.agent.md) | Synthesizes supplied SaaS surveys, NPS/CSAT, reviews, interviews, and feature requests into de-identified themes and owner routing. Use when customer feedback needs privacy-first clustering. Not product scoping or customer replies. |
 
 ### AI research to product
 
@@ -153,19 +164,15 @@ Author lessons, package existing material, or steward a whole path.
 | [`instructor-path-mentor`](../../plugins/kai-personal/agents/instructor-path-mentor.agent.md) | Stewards a whole certification or structured learning path over time: plan, status, advance, review, and update. Use after choosing the path. Not career strategy (`principal-engineer-career-mentor`). |
 | [`workflow-course-to-audio`](../../plugins/kai-personal/agents/workflow-course-to-audio.agent.md) | Extracts a course, certification module, learning-path unit, or long readable web page into local markdown for later audio. Use when a URL should become listenable study material with separate knowledge checks. |
 
-### Product exploration & web evaluation
+### Marketing intelligence & web quality
 
-Look at a real surface — as a tester, an auditor, or a particular kind of user.
+Grounded product marketing, search visibility, and engineering-owned UI QA.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`workflow-product-explore`](../../plugins/kai-product/agents/workflow-product-explore.agent.md) | Produces an evidence-backed live-product map, and optionally a neutral design-system extract. Use when peers need a product surface explored without rediscovery. Not UX evaluation, defect filing, scope, or design recommendations. |
 | [`principal-product-marketing`](../../plugins/kai-gtm/agents/principal-product-marketing.agent.md) | Builds grounded product marketing intelligence from public surfaces, screenshots, recordings, assets, notes, or product maps. Use when content or creative agents need reusable product context. Not product scope (`principal-product-manager`). |
 | [`principal-qa-ui`](../../plugins/kai-engineering/agents/principal-qa-ui.agent.md) | Manually tests a website UI for objective defects: overlap, overflow, broken controls, console or network errors with visible impact, focus order, and viewport layout breaks. Use for QA passes. Not fresh-eyes UX (`persona-ux-first-time-user`). |
 | [`principal-seo`](../../plugins/kai-gtm/agents/principal-seo.agent.md) | Audits a site's technical SEO, content alignment, and agentic-search readiness (llms.txt, schema, AI-bot directives). Use when asking whether Google and AI search engines can find and parse a site. Not general UI defects (`principal-qa-ui`). |
-| [`persona-ux-first-time-user`](../../plugins/kai-product/agents/persona-ux-first-time-user.agent.md) | Simulates a first-time customer walkthrough and reports subjective flow clarity, copy, missing context, unmet expectations, and confusion points. Use for fresh-eyes feedback. Not defect QA (`principal-qa-ui`). |
-| [`persona-professional-trainer`](../../plugins/kai-personal/agents/persona-professional-trainer.agent.md) | Audits fitness-product workouts and programs for safety, completeness, progression, screening, volume, and injury-aware substitutions. Not meal plans or macros (`persona-professional-nutritionist`). |
-| [`persona-professional-nutritionist`](../../plugins/kai-personal/agents/persona-professional-nutritionist.agent.md) | Audits fitness-product meal plans, macros, pantry suggestions, and projection math for nutrition accuracy, macro safety, micronutrient gaps, and allergen risk. Not exercise programming (`persona-professional-trainer`). |
 
 ### Content & distribution
 
@@ -217,9 +224,16 @@ The shared contracts every acting agent loads: where work goes, and what it may 
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-initiative-stewardship`](../../plugins/kai-core/skills/kai-core-initiative-stewardship/SKILL.md) | Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
-| [`product-exploration`](../../plugins/kai-product/skills/product-exploration/SKILL.md) | Provides neutral live-product mapping. Use when PM, design, QA, domain, or engineering need an evidence-backed navigation model without UX evaluation. |
 | [`product-marketing-intelligence`](../../plugins/kai-gtm/skills/product-marketing-intelligence/SKILL.md) | Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
+
+### Product exploration
+
+Neutral maps from supplied evidence or an authorized live surface, without design or scope judgment.
+
+| Name | What it owns |
+| ---- | ------------ |
+| [`product-exploration`](../../plugins/kai-product/skills/product-exploration/SKILL.md) | Use when product, design, QA, domain, or engineering work needs a neutral navigation model from supplied evidence or an authorized live surface. |
 
 ### Work coordination & artifacts
 

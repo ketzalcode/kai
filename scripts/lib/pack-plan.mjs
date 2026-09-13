@@ -74,17 +74,18 @@ const MIGRATION_BASELINE_PACKS = {
   ],
   product: [
     'principal-product-manager', 'principal-product-strategist',
-    'principal-data-analytics', 'persona-ux-first-time-user',
-    'workflow-product-explore', 'workflow-experiment-review', 'workflow-customer-feedback',
+    'principal-data-analytics', 'workflow-customer-feedback',
+    'workflow-experiment-review', 'workflow-product-explore',
+    'persona-ux-first-time-user', 'principal-growth',
+    'persona-professional-nutritionist', 'persona-professional-trainer',
   ],
   gtm: [
-    'principal-sales', 'principal-growth', 'principal-demand-generation',
+    'principal-sales', 'principal-demand-generation',
     'principal-product-marketing', 'principal-seo', 'principal-linkedin-strategist',
     'principal-partnerships', 'principal-pricing-monetization',
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
   ],
   personal: [
-    'persona-professional-nutritionist', 'persona-professional-trainer',
     'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
     'principal-engineer-career-mentor', 'workflow-course-to-audio',
   ],
@@ -190,6 +191,7 @@ const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
   assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
+  product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
 };
 
 function packDescription(pack) {

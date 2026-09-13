@@ -1,7 +1,7 @@
 {
   "name": "kai-product",
   "version": "6.0.0",
-  "description": "kai product department pack — the product roles, over a required kai-core.",
+  "description": "Product discovery, scope, evidence, analytics, and product-led growth over kai-core.",
   "agents": "agents",
   "skills": "skills"
 }

@@ -75,11 +75,20 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Product',
-    blurb: 'Need, scope, product strategy, and supporting documentation.',
+    blurb: 'Discovery, scope, evidence, analytics, product-led growth, and independent product assessment. UI and brand design belong to creative.',
     members: [
       'principal-product-manager', 'principal-product-strategist',
-      'eng-lead-technical-writing', 'workflow-localization',
+      'principal-data-analytics', 'workflow-customer-feedback',
+      'workflow-experiment-review', 'workflow-product-explore',
+      'persona-ux-first-time-user', 'principal-growth',
+      'persona-professional-nutritionist', 'persona-professional-trainer',
     ],
+  },
+  {
+    kind: 'agent',
+    title: 'Technical writing & localization',
+    blurb: 'Engineering-owned documentation and bounded localization.',
+    members: ['eng-lead-technical-writing', 'workflow-localization'],
   },
   {
     kind: 'agent',
@@ -104,12 +113,9 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Growth, analytics & monetization',
-    blurb: 'Lifecycle diagnosis, metric validity, experiment integrity, and price.',
-    members: [
-      'principal-growth', 'principal-data-analytics', 'workflow-experiment-review',
-      'principal-pricing-monetization', 'workflow-customer-feedback',
-    ],
+    title: 'Pricing & monetization',
+    blurb: 'Pricing, packaging, and commercial monetization judgment.',
+    members: ['principal-pricing-monetization'],
   },
   {
     kind: 'agent',
@@ -128,12 +134,10 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Product exploration & web evaluation',
-    blurb: 'Look at a real surface — as a tester, an auditor, or a particular kind of user.',
+    title: 'Marketing intelligence & web quality',
+    blurb: 'Grounded product marketing, search visibility, and engineering-owned UI QA.',
     members: [
-      'workflow-product-explore', 'principal-product-marketing', 'principal-qa-ui',
-      'principal-seo', 'persona-ux-first-time-user', 'persona-professional-trainer',
-      'persona-professional-nutritionist',
+      'principal-product-marketing', 'principal-qa-ui', 'principal-seo',
     ],
   },
   {
@@ -166,8 +170,14 @@ const CATEGORIES = [
       'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
       'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
-      'product-exploration', 'product-marketing-intelligence', 'kai-core-contract-v1',
+      'product-marketing-intelligence', 'kai-core-contract-v1',
     ],
+  },
+  {
+    kind: 'skill',
+    title: 'Product exploration',
+    blurb: 'Neutral maps from supplied evidence or an authorized live surface, without design or scope judgment.',
+    members: ['product-exploration'],
   },
   {
     kind: 'skill',

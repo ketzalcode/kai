@@ -37,7 +37,7 @@ operator to install or update `kai-core` before resuming coordinated work.
 
 `npm test` enforces those on-demand routes and the absence of any guard block.
 
-Three packs — product, go-to-market, and personal — have not migrated yet. Their
+Two packs — go-to-market and personal — have not migrated yet. Their
 agents still open with an `**Inherits:**` line and its eager load directive until
 they do; do not copy that mechanism into a new or migrated agent.
 

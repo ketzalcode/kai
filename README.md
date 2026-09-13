@@ -52,13 +52,19 @@ marketplace publication and remote availability have not been established.
 it owns `personal-assistant`, `persona-self`, and their four private methods,
 and `kai-core` no longer carries a personal front door or depends on one. The
 wider capability-package rollout is **not** finished — the remaining packages
-are still inside `kai-personal`, `kai-product`, and `kai-gtm`.
+are still inside `kai-personal` and `kai-gtm`.
 
 `kai-creative` now owns the three UI/UX, brand, and video agents, seven design
 and demo methods, and the demo runtime formerly in personal. Core plus creative
 accepts supplied briefs and evidence without marketing or assistant.
 See [the package note](docs/reference/packages/kai-creative.md) for artifacts,
 prerequisites, and runtime scenarios not executed during this source refactor.
+
+`kai-product` now owns ten discovery, scope, analytics, growth and product-audit
+roles plus `product-exploration`. Core plus product accepts supplied evidence
+without creative, engineering or commercial-package installation. See
+[the product package note](docs/reference/packages/kai-product.md) for preserved
+authority, independent assessment and runtime-unverified scenarios.
 
 Agents load shared contracts on demand. All 26 roles now in `kai-core` and
 `kai-engineering` route each contract at the instruction that needs it, rather
@@ -72,7 +78,7 @@ Four core contracts were split by the reader they serve:
 `kai-core-team-operating-rules`, `kai-core-work-coordination`,
 `kai-core-workspace-conventions` and `kai-core-asset-lifecycle` are removed in
 favour of eight narrower ones. Consumers referencing the old ids must re-point;
-the CHANGELOG carries the mapping. `kai-product`, `kai-gtm` and `kai-personal`
+the CHANGELOG carries the mapping. `kai-gtm` and `kai-personal`
 keep the eager declaration until they migrate.
 
 Agent creation has an explicit contract: provider family, operating posture,

@@ -105,7 +105,7 @@
     {
       "name": "kai-product",
       "source": "./plugins/kai-product",
-      "description": "kai product department pack — the product roles, over a required kai-core.",
+      "description": "Product discovery, scope, evidence, analytics, and product-led growth over kai-core.",
       "version": "6.0.0",
       "author": {
         "name": "RubenSaucedo",
@@ -121,7 +121,7 @@
         "agents",
         "skills",
         "product",
-        "design",
+        "discovery",
         "analytics"
       ]
     },
