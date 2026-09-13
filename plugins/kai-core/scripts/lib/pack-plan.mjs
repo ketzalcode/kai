@@ -1,6 +1,6 @@
 // The single machine-readable source of the pack partition and the per-pack
 // manifest contract. The preview/generator (scripts/pack-preview.mjs) and the
-// validator (scripts/validate-plugin.mjs) both import from here, so the five-pack
+// validator (scripts/validate-plugin.mjs) both import from here, so the pack
 // partition is defined once and every path agrees on it byte-for-byte.
 //
 // Read-only and pure: this module reads plugin-local agents/skills and computes
@@ -57,10 +57,11 @@ export const HOOKS_OWNER = 'core';
 // agents" enforceable without blocking one-at-a-time migration.
 const MIGRATION_BASELINE_PACKS = {
   core: [
-    'director-chief-of-staff', 'director-executive-assistant', 'workflow-workspace-init',
+    'director-chief-of-staff', 'workflow-workspace-init',
     'workflow-self-check', 'workflow-proactive-scan', 'workflow-weekly-pulse',
     'workflow-initiative-init',
   ],
+  assistant: ['persona-self'],
   engineering: [
     'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
     'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
@@ -82,7 +83,7 @@ const MIGRATION_BASELINE_PACKS = {
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
   ],
   personal: [
-    'persona-professional-nutritionist', 'persona-professional-trainer', 'persona-self',
+    'persona-professional-nutritionist', 'persona-professional-trainer',
     'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
     'creative-video-director', 'principal-engineer-career-mentor', 'workflow-course-to-audio',
   ],
@@ -90,6 +91,7 @@ const MIGRATION_BASELINE_PACKS = {
 
 export const NEW_AGENT_IDS = {
   core: [],
+  assistant: ['personal-assistant'],
   engineering: ['eng-lead-technical-writing'],
   product: [],
   gtm: [],
@@ -132,6 +134,7 @@ export const COMMITTED_PACKS = [...PACK_ORDER];
 // dependencies are installed automatically.
 export const PACK_RUNTIME_DEPENDENCIES = {
   core: ['lectoria'],
+  assistant: [],
   engineering: [],
   product: [],
   gtm: [],
@@ -176,11 +179,18 @@ export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
 }
 
 // A functional, non-marketing manifest description. Published copy is refined at
-// the marketplace flip; scaffolding only needs to say what the plugin is.
+// the marketplace flip; scaffolding only needs to say what the plugin is. A pack
+// whose name does not describe a department states its capability here instead,
+// because the published marketplace entry must repeat plugin.json byte-for-byte
+// (marketplaceConsistencyErrors) — two texts for one plugin is a drift the index
+// cannot hold.
+const PACK_DESCRIPTIONS = {
+  core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
+  assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
+};
+
 function packDescription(pack) {
-  return pack === 'core'
-    ? 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.'
-    : `kai ${pack} department pack — the ${pack} roles, over a required kai-core.`;
+  return PACK_DESCRIPTIONS[pack] ?? `kai ${pack} department pack — the ${pack} roles, over a required kai-core.`;
 }
 
 // The repo checks out CRLF on Windows; normalising every emitted file to LF keeps
@@ -1019,7 +1029,6 @@ export function requiresCoordinatedRunContracts(id) {
 // `execute`, so requiring the append-based activity contract would force a
 // broader sandbox solely for observability.
 export const ACTIVITY_EXEMPT = new Map([
-  ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
   ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
   ['principal-ai-researcher', 'no shell by design; cannot append without gaining `execute`'],
   ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `execute`'],
@@ -1029,13 +1038,9 @@ export const ACTIVITY_EXEMPT = new Map([
 // before-write, collisions, handoffs, and review routing on a `.kai/state/`
 // item the role already holds. A role that never holds a coordinated item —
 // it only reads team state and writes its own private lane — has nothing to
-// act on, so requiring the contract is miscalibrated. The executive assistant
-// is exactly that: it surfaces and routes, reads `.kai/state/` read-only, and
-// writes only `.kai/personal/`; load-bearing team writes are the chief of
-// staff's. It is exempt here for the same conversational reason it is exempt
-// from the activity contract above.
+// act on, so requiring the contract is miscalibrated. No shipped role claims
+// that exemption today; the map stays as the declared seam for the next one.
 export const ACTING_EXEMPT = new Map([
-  ['director-executive-assistant', 'reads team state read-only and writes only private `.kai/personal/`; never holds a coordinated item to act on'],
 ]);
 
 export function agentRoutingErrors({
@@ -1368,7 +1373,7 @@ function agentOwners() {
 
 // One reading of a generated-tree key, for every check that consumes generator
 // output. The pack directory set is derived from the partition itself rather
-// than matched with a pattern: `/^kai-[a-z]+\//` agrees with the five current
+// than matched with a pattern: `/^kai-[a-z]+\//` agrees with the current
 // keys by coincidence, and the day one carries a hyphen or a digit
 // (`kai-customer-success`) that pack's files stop matching and skip whatever
 // guarantee the pattern was gating — silently, because a pin that selects

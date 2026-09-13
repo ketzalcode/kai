@@ -40,11 +40,12 @@ refreshed by the director after reconciliation — agents never treat an
 out-of-date board row as authority. Parallel agents normally touch different
 item and thread files.
 
-For personal sessions, `director-executive-assistant` (flow 8) is the default
-start for personal or unclear intent in the current Kai workspace. It routes
-into these flows, consults real roles, and optionally includes linked-workspace
-signals in the agenda. A direct delivery request goes to the Chief of Staff, and
-direct review/design/exploration to that specialist.
+For personal work, `personal-assistant` (flow 8) handles your own tasks,
+priorities, briefings, and drafts directly, in the selected Kai workspace, when
+you ask it to. It is not a router and not a required first step: a delivery
+request goes to the Chief of Staff, and review/design/exploration goes to that
+specialist. It ships in the optional `kai-assistant` pack; core works without
+it.
 
 **0 · Onboarding (run once per workspace)** — `workflow-workspace-init`
 validates the full workspace contract for either a repository or a durable
@@ -269,23 +270,22 @@ leads; the operator performs every production action.
                 (writes via kai-core-pulse-digest; read-only)                      └─► career-mentor (weigh promotion)
 ```
 
-**8 · Personal front door** — the default start when intent is personal or
-unclear (direct delivery goes to the Chief of Staff, direct specialist work to
-the specialist); it routes into every flow above and keeps your forward agenda
-(what needs you), the complement to the weekly pulse (what happened).
+**8 · Personal assistance** (optional `kai-assistant` pack) — invoked directly
+when the work is *yours*: your tasks, your priorities, a briefing you asked for,
+a draft in your voice. It keeps your forward agenda (what needs you), the
+complement to the weekly pulse (what happened). It routes nothing and dispatches
+no one.
 
 ```
- you ──► director-executive-assistant ──┬─► persona-self             (draft in your voice)
-         (current workspace + links)     ├─► principal-engineer-career-mentor  (career)
-                                         ├─► director-chief-of-staff   (team delivery)
-                                         ├─► kai-core-executive-consultation ──► real roles + private attributed brief
-                                         ├─► kai-core-decision-brief ──► private brief: options + positions + recommendation
-                                         ├─► workflow-weekly-pulse      (what happened)
-                                         └─► kai-core-personal-agenda ──► .kai/personal/agenda.md
-                                             (all enabled workspaces + inbox + nudges)
-                                                  │  ranked "what needs you"
-                                                  ▼
-                                             you decide the next move   (never auto)
+ you ──► personal-assistant ──┬─► personal-agenda ──► .kai/personal/agenda.md
+         (selected workspace)  │   (your inbox; team signals only when you ask)
+                               ├─► decision-brief ──► private brief: options + evidence + gaps
+                               └─► write-in-user-voice ──► a draft, never sent
+                                        │  ranked "what needs you"
+                                        ▼
+                                   you decide the next move   (never auto)
+
+ you ──► persona-self ──► write-in-user-voice   (long-form or high-stakes writing)
 ```
 
 **Trigger rules of thumb:**
@@ -337,11 +337,10 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Author a brand-new lesson from a topic (any subject) | `instructor-tutor` |
 | Plan + track a whole certification/learning path | `instructor-path-mentor` |
 | Course / cert / long page → narrated audio | `workflow-course-to-audio` |
-| Start your day, "what needs me", or route to the right agent | `director-executive-assistant` |
-| Ask PM/design/engineering/other roles for perspectives and brief me | `director-executive-assistant` (via `kai-core-executive-consultation`) |
-| Package a decision waiting on me into options + a recommendation | `director-executive-assistant` (via `kai-core-decision-brief`) |
-| Capture a task or reminder | `director-executive-assistant` (→ `.kai/personal/inbox.md`) |
-| Draft a message/post/email in your voice | `persona-self` (after `extract-writing-style`) |
+| Start your day or ask "what needs me" | `personal-assistant` |
+| Package a decision you have to make into options + evidence + gaps | `personal-assistant` (via `decision-brief`) |
+| Capture a task or reminder | `personal-assistant` (→ `.kai/personal/inbox.md`) |
+| Draft a message/post/email in your voice | `personal-assistant`, or `persona-self` for long-form and high-stakes writing |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |
 | Pressure-test the substance of a doc | `workflow-doc-review` (fans out to `review-*`) |

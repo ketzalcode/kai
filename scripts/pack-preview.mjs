@@ -134,7 +134,7 @@ const contractSkillText = (contract) => (contract === 1
   ? normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'))
   : contractSkill(contract));
 
-// The five-pack partition (PACKS) and the skill->provider rule (planPacks) are
+// The pack partition (PACKS) and the skill->provider rule (planPacks) are
 // defined once in scripts/lib/pack-plan.mjs and imported above.
 
 function writePlugin(dir, name, description, agentIds, skills) {

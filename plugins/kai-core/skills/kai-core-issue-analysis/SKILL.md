@@ -31,12 +31,16 @@ chosen approach     code for THAT            increments     pull request
 | How does the existing code constrain that approach? | `research-before-coding` |
 | How is the work split? | `pr-sizing` |
 | Were alternatives fairly considered *in a document*? | `review-alternatives` |
-| Packaging a decision already recorded in coordination state | `kai-core-decision-brief` |
+| Packaging a decision already recorded in coordination state | its owner — see §5, *Stop at the authorized decision owner* |
 | How does it reach `main`? | `kai-core-pr-delivery` |
 
-`kai-core-decision-brief` is the closest neighbour and the boundary matters: it packages a
-decision **already pending** in authoritative state. This skill is what
-determines there is a decision worth making at all.
+The boundary that matters: a decision **already pending** in authoritative state
+belongs to whoever owns that call — the invoking operator, the owning
+principal or steward, or a reserved `@operator` question (§5). This skill is
+what determines there is a decision worth making at all. When the approach turns
+on a question the records do not answer, ask its owner directly per
+`kai-core-peer-communication`, or raise a proper `@operator` question on the
+thread. Never settle it by informal polling, and never decide it here.
 
 ## 0 — Proportionality: which path this issue earns
 

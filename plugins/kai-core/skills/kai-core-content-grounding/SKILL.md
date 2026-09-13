@@ -98,12 +98,13 @@ drops an attribution.
 
 ## Locked-facts voicing
 
-When a content method hands a claim-safe draft to `persona-self` for the
-operator's voice, the claim spans, numbers, attributions, and confidence
-qualifiers are **locked** (verbatim pass-through, like code and URLs).
-`persona-self` changes only connective prose. After voicing, the content method
+When a content method hands a claim-safe draft to a user-voice drafting role for
+the operator's voice, the claim spans, numbers, attributions, and confidence
+qualifiers are **locked** (verbatim pass-through, like code and URLs). Voicing
+changes only connective prose. After voicing, the content method
 **re-runs claim-safety** against the voiced copy and rejects any change to a
-locked span. Voicing never relaxes grounding.
+locked span. Voicing never relaxes grounding. Voicing is optional: a neutral or
+explicitly requested brand-voice draft is produced without it.
 
 ## Hard rules
 

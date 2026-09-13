@@ -1,33 +1,35 @@
 ---
 name: extract-writing-style
-description: "Portable voice-profile extraction. Use when persona-self needs the user's writing style captured from past messages or refreshed after voice drift."
+description: "Portable voice-profile extraction. Use when the user asks to build or refresh their writing-style profile from past messages or supplied samples."
 tools: [execute, read, edit, ask_user, session_store_sql]
 ---
 
 # Extract Writing Style
 
-This skill builds the **portable writing-style profile** that the
-`persona-self` agent consumes when drafting messages, posts, emails,
-docs, and PRs in the user's voice with a senior-engineer overlay.
+This skill builds the **portable writing-style profile** that
+`write-in-user-voice` applies when `personal-assistant` or `persona-self`
+drafts messages, posts, emails, docs, and PRs in the user's voice.
 
-The skill does the **expensive analysis once** so the agent can do
-the **cheap drafting many times** without re-deriving voice on every
+The skill does the **expensive analysis once** so the drafting method can do
+the **cheap application many times** without re-deriving voice on every
 invocation.
 
 ## When to apply
 
-- The user is setting up `persona-self` for the first time and has no
-  profile yet.
+- The user asks to set up a voice profile and has none yet.
 - The user feels their voice has drifted (adopted new vocabulary,
   shifted role, learned new patterns) and wants the profile refreshed.
 - The user wants to add a new corpus source (GitHub history, Slack
   export, pasted samples) to an existing profile.
 
+Running this is always the user's explicit request. It is never a step taken on
+the way to a draft.
+
 **Skip for:**
 
-- Drafting a single message — that's the `persona-self` agent's job;
-  it loads the existing profile and writes. Don't re-extract for one
-  draft.
+- Drafting a single message — that is `write-in-user-voice`, which reads the
+  existing profile, or drafts from supplied preferences when there isn't one.
+  Don't re-extract for one draft.
 - Simulating someone other than the user. This skill is for the
   user's own voice; impersonating other humans is off-scope.
 
@@ -38,6 +40,11 @@ A single file: `.kai/personal/identity/voice.md`.
 The folder is gitignored by default (see Privacy below). The profile
 is plain markdown with YAML frontmatter — inspectable, hand-editable,
 portable across LLMs and agent runtimes.
+
+If the extraction does not run — the user declines, the corpus is unusable, or
+the workspace is unavailable — there is no profile. Say that plainly. Never
+report a profile as written, refreshed, or available when the file does not
+exist or is still a stub.
 
 ### Profile shape
 
@@ -241,14 +248,14 @@ Beyond raw samples, the skill should derive:
 
 ### 1. Resolve the workspace and confirm scope
 
-Resolve the current Kai workspace root through `kai-core-workspace-conventions` and its
+Resolve the selected Kai workspace root through `kai-core-workspace-paths` and its
 `.kai/manifest.json` sentinel. The output path is the absolute
 `<workspace-root>/.kai/personal/identity/voice.md`; never resolve it from an
-incidental or nested cwd. If the workspace is not initialized, route to
-`workflow-workspace-init`. Also route there when required personal paths are
-missing or when legacy `.persona-self/`, `.kai/local.json`, or manifest
-`workspace_kind` state is unresolved. This skill never scaffolds or migrates
-workspace structure itself.
+incidental or nested cwd. If the workspace is not initialized, report that the
+profile cannot be stored and route to `workflow-workspace-init`. Also route
+there when required personal paths are missing or when legacy `.persona-self/`,
+`.kai/local.json`, or manifest `workspace_kind` state is unresolved. This skill
+never scaffolds or migrates workspace structure itself.
 
 If a profile already exists at `.kai/personal/identity/voice.md`:
 
@@ -410,8 +417,8 @@ Tell the user:
   the extraction).
 - Whether the `manual_overrides:` block was preserved (if pre-existing).
 - The exact next step: *"Open `.kai/personal/identity/voice.md`, skim it,
-  edit the `manual_overrides:` block if anything looks wrong, and
-  you're ready to invoke `persona-self` for drafting."*
+  edit the `manual_overrides:` block if anything looks wrong, and your
+  voice-aware drafts will use it from now on."*
 
 ## Re-running the skill (idempotency)
 
@@ -442,9 +449,13 @@ on creation. The skill must:
   identifiers** in verbatim samples. Filter aggressively.
 - **Surface borderline samples** to the user before including them.
 
-Do not offer a tracked-profile escape hatch. `persona-self` consumes only the
+Do not offer a tracked-profile escape hatch. Every consumer reads only the
 workspace-local ignored path, and removing `/.kai/personal/` protection could expose
 unrelated private state.
+
+Read only the corpus the user consented to for this extraction. Do not widen the
+window, add a repository, or pull another workspace's history to improve
+coverage without asking first and recording that consent in `sources:`.
 
 ## Insufficient-data handling
 
@@ -490,13 +501,15 @@ Don't bluff confident attributes on a thin corpus.
   liberally"* break parsers — the embedded colons and quotes are
   YAML-significant. Always use `|` block scalars for prose values.
 - ❌ Skipping the post-write YAML validation step. A broken
-  frontmatter silently breaks every consumer agent. Validate before
+  frontmatter silently breaks every consumer. Validate before
   reporting done.
+- ❌ Mining history the user did not consent to for this extraction.
+- ❌ Reporting a profile as available when none was written.
 
 ## See also
 
-- `persona-self.agent.md` — the agent that consumes this profile
-  on every draft.
+- `write-in-user-voice` — the method that applies this profile to a draft.
+- `personal-assistant` and `persona-self` — the roles that request it.
 - Sister skills: `kai-core-web-content-extraction` (different lane —
   extracts someone else's content for reading), `kai-core-web-evaluation`
   (UI evaluation, not text analysis).

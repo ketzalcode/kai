@@ -39,8 +39,8 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Direction',
-    blurb: 'The two front doors. Everything else is reachable through them.',
-    members: ['director-executive-assistant', 'director-chief-of-staff'],
+    blurb: 'Delivery coordination, on explicit request. Nothing has to be routed through it.',
+    members: ['director-chief-of-staff'],
   },
   {
     kind: 'agent',
@@ -138,10 +138,16 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
+    title: 'Personal assistance',
+    blurb: 'Your own tasks, briefings, and drafts. Invoked directly; never a router.',
+    members: ['personal-assistant', 'persona-self'],
+  },
+  {
+    kind: 'agent',
     title: 'Personal',
-    blurb: 'Your voice, your career, your week. Workspace-local and gitignored.',
+    blurb: 'Your career and your week. Workspace-local and gitignored.',
     members: [
-      'persona-self', 'principal-engineer-career-mentor', 'workflow-weekly-pulse',
+      'principal-engineer-career-mentor', 'workflow-weekly-pulse',
       'workflow-proactive-scan',
     ],
   },
@@ -209,14 +215,20 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Lessons & writing',
-    blurb: 'Turn markdown into lessons, audio, or your own voice.',
-    members: ['kai-core-generate-audio', 'generate-html-lesson', 'extract-writing-style'],
+    blurb: 'Turn markdown into lessons or audio.',
+    members: ['kai-core-generate-audio', 'generate-html-lesson'],
   },
   {
     kind: 'skill',
-    title: 'Personal',
-    blurb: 'The private methods behind the executive assistant. Never autonomous.',
-    members: ['kai-core-personal-agenda', 'kai-core-executive-consultation', 'kai-core-decision-brief', 'kai-core-proactive-scan'],
+    title: 'Assistant methods',
+    blurb: 'The private methods behind the personal assistant and persona-self. Never autonomous.',
+    members: ['personal-agenda', 'decision-brief', 'extract-writing-style', 'write-in-user-voice'],
+  },
+  {
+    kind: 'skill',
+    title: 'Operator signals',
+    blurb: 'Core\'s own reading of what the team records need a human for, plus the runner-invoked notification contract.',
+    members: ['kai-core-proactive-scan'],
   },
 ];
 

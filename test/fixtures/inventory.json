@@ -6,7 +6,6 @@
   "agents": [
     "creative-video-director",
     "director-chief-of-staff",
-    "director-executive-assistant",
     "eng-lead-technical-writing",
     "instructor-path-mentor",
     "instructor-teacher",
@@ -15,6 +14,7 @@
     "persona-professional-trainer",
     "persona-self",
     "persona-ux-first-time-user",
+    "personal-assistant",
     "principal-ai-applied-engineer",
     "principal-ai-researcher",
     "principal-brand-designer",
@@ -65,6 +65,7 @@
     "build-diagrams",
     "coding-style",
     "create-product-demo",
+    "decision-brief",
     "demo-capture",
     "demo-narrate",
     "demo-zoom",
@@ -77,10 +78,8 @@
     "kai-core-content-grounding",
     "kai-core-contract-v1",
     "kai-core-create-agent",
-    "kai-core-decision-brief",
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
-    "kai-core-executive-consultation",
     "kai-core-fleet-observation",
     "kai-core-generate-audio",
     "kai-core-initiative-stewardship",
@@ -88,7 +87,6 @@
     "kai-core-no-self-remediation",
     "kai-core-operating-rules",
     "kai-core-peer-communication",
-    "kai-core-personal-agenda",
     "kai-core-pr-delivery",
     "kai-core-proactive-scan",
     "kai-core-pulse-digest",
@@ -104,6 +102,7 @@
     "kai-core-workspace-paths",
     "linkedin-content",
     "onboard-to-codebase",
+    "personal-agenda",
     "pr-sizing",
     "product-exploration",
     "product-marketing-intelligence",
@@ -118,7 +117,8 @@
     "review-success-metrics",
     "review-ux-accessibility",
     "ui-mockup",
-    "video-direction"
+    "video-direction",
+    "write-in-user-voice"
   ],
   "user_invocable_skills": [
     {

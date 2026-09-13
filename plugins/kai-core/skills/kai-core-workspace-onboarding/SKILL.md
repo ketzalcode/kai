@@ -25,7 +25,8 @@ The catalog is closed:
 | 2 | `kai-engineering` | Engineering, architecture, reliability, security, data, AI, QA, docs, PR, and ship roles. |
 | 3 | `kai-product` | Product, design, research, analytics, brand, and product-evaluation roles. |
 | 4 | `kai-gtm` | Sales, growth, marketing, SEO, pricing, partnerships, RevOps, customer success, and support roles. |
-| 5 | `kai-personal` | Personal assistant, learning, coaching, nutrition, training, and creative roles. |
+| 5 | `kai-assistant` | Personal tasks, agendas, briefings, and user-voice drafting roles. |
+| 6 | `kai-personal` | Learning, coaching, nutrition, training, and creative roles. |
 
 Core is always included. Never silently add a department.
 
@@ -66,6 +67,7 @@ copilot plugin update kai-core@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 ```
 

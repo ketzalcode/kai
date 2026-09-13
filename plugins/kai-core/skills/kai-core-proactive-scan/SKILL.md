@@ -214,7 +214,7 @@ never part of the committed plugin:
 - The scan and its workflow **never** reply to a thread, approve scope, send a
   peer message, commit, or deploy. The **only** external effect is the configured
   notification, and the **runner** performs the delivery. Everything the operator
-  must actually do stays an on-demand action through the executive assistant.
+  must actually do stays theirs to do, on demand, with the role they choose.
 
 ## Failure surfacing
 
