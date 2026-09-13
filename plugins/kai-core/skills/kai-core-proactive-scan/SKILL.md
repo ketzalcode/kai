@@ -1,18 +1,21 @@
 ---
 name: kai-core-proactive-scan
-description: "Defines runner-invoked proactive notifications. Use when an external cadence scans workspaces for newly actionable decisions, replies, actions, or release-ready items."
+description: "Owns operator-signal interpretation (decisions, replies, actions, release-ready items) for on-demand briefings, and defines runner-invoked proactive notifications. Use when interpreting team records for a requested briefing or scan, or when an external cadence scans workspaces for newly actionable items."
 tools: [execute, read, edit, search]
 ---
 
 # Proactive Scan
 
-The executive assistant is **proactive-surface, never autonomous**: it surfaces
-what needs the operator *when invoked*. It cannot, on its own, notice that a new
-decision appeared at 2am and tell you — because **kai is a declarative prompt
-plugin: nothing in it wakes itself, watches for changes, or pushes a message.**
+kai is **proactive-surface, never autonomous**: it surfaces what needs the
+operator *when invoked* — whether an on-demand briefing asks it to interpret
+existing team records, or a scan checks for newly actionable ones. It cannot,
+on its own, notice that a new decision appeared at 2am and tell you — because
+**kai is a declarative prompt plugin: nothing in it wakes itself, watches for
+changes, or pushes a message.**
 
-This skill closes that gap honestly by splitting the problem across a hard
-**runtime boundary**.
+This skill owns operator-signal interpretation on its own, independent of any
+assistant agent, and closes the notification half of that gap honestly by
+splitting it across a hard **runtime boundary**.
 
 ## The runtime boundary
 

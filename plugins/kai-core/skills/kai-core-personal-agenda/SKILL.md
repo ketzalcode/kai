@@ -59,10 +59,14 @@ Surface only what genuinely needs **the operator** — the human who owns vision
 final business boundaries, requested replies/actions, and the deploy button.
 Routine scope promotion and priority remain steward-owned.
 
-Detection is `kai-core-proactive-scan`'s canonical **Operator signals** section
-— this skill consumes it and does not reinterpret or duplicate its rules (the
-open-question, `kind`, release-ready-gate, overdue, blocking-association, and
-missing-input distinctions all live there). Map each signal it identifies to
+When interpreting team signals for this section, load `kai-core-proactive-scan`
+and apply only its **Operator signals** section — this skill consumes that
+section and does not reinterpret or duplicate its rules (the open-question,
+`kind`, release-ready-gate, overdue, blocking-association, and missing-input
+distinctions all live there). Loading it here does not execute the scan or
+ack phases, and does not emit a notification payload or advance the delivery
+ledger — those stay `kai-core-proactive-scan`'s own read-only interpretation,
+used only for this on-demand rendering. Map each signal it identifies to
 exactly one agenda section:
 
 | Signal (`kai-core-proactive-scan` → Operator signals) | Section |
