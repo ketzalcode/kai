@@ -46,10 +46,18 @@ creative/assistant boundaries and the
 are approved. Executive assistance leaves core and is redesigned
 to do personal work directly, not preserved as an organization router.
 
+**Continuous completion, approved at 18:48 on 2026-09-12:** assistant is merged
+in #209. Continue through creative, product, marketing, revenue, and learning
+without another per-package approval stop. Finish their agents and skills, then
+push one branch and create one PR for the full remaining rollout. This is not
+permission to merge that PR or publish a release. The
+[remaining-package implementation plan](../superpowers/plans/2026-09-12-remaining-packages.md)
+is the active execution unit.
+
 Continue in this order:
 
 1. Integrate the completed `kai-core` and `kai-engineering` work — done in #208.
-2. Settle the eight-package ownership spec before further agent implementation.
+2. Settle the eight-package ownership spec — approved.
 3. Complete each remaining capability package's agents and skills together,
    including the redesigned assistant's extraction from core, without a
    compatibility dialect or mandatory sibling-agent calls.

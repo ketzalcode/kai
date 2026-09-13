@@ -4,7 +4,7 @@
 
 **Goal:** Deliver the approved eight-package structure as small, package-complete units.
 
-**Architecture:** Keep core and engineering signed off, except the approved personal-assistance extraction. Complete each remaining package's agents, methods, companion assets, and installation surface together. This file sequences separate package plans; it is not an instruction to rewrite the organization in one execution.
+**Architecture:** Keep core and engineering signed off, except necessary references to moved package capabilities. Complete each remaining package's agents, methods, companion assets, and installation surface together, continuously on one branch.
 
 **Tech Stack:** Markdown agents and skills, existing Node.js ESM packaging scripts, JSON manifests, existing package-local runtime helpers.
 
@@ -44,9 +44,11 @@ committed-source level on `kai/refactor/assistant-package`, through `166cf93`.
 It is not runtime-verified or published. Its execution record preserves the
 review outcomes, remaining limitations, and all rulings.
 
-The next planning unit is creative. Write that package plan against the
-resulting source tree when selected; do not dispatch its implementation from
-this scheduling table alone.
+**Operator correction, 2026-09-12:** continue through all missing packages
+without stopping after one or seeking another package-selection approval.
+Create one PR after the complete eight-package source surface exists. Execute
+[the remaining-package plan](2026-09-12-remaining-packages.md); package boundaries
+are implementation/review units, not pauses in authorization.
 
 ## 2. Package checkpoint
 
@@ -110,13 +112,14 @@ orchestration subsystem is scheduled by this plan.
 
 ## 5. Integration and releases
 
-Use a named refactor branch and focused commits. Neither this rollout guide
-nor the assistant plan authorizes another merge, push, tag, or publication.
+Use one named refactor branch and focused package commits. The operator has
+authorized a push and one PR after all remaining packages are complete. Do not
+merge that PR, tag, or publish a release without a subsequent request.
 
 Before any requested checkpoint PR, follow root `AGENTS.md` release metadata
 requirements once for that PR: synchronized versions, dated changelog entry
 and compare link, README stamp, and generated surfaces. Do not perform a
-version bump per prompt edit. The prepared `5.0.0` baseline is not a published
+version bump per prompt edit. The prepared `6.0.0` baseline is not a published
 release or evidence of quality.
 
 The final test/CI consolidation is deferred by the operator. If an intermediate
