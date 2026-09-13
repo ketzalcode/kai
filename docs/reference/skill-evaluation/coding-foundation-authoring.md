@@ -50,7 +50,7 @@ This establishes only the source-contract correction. It does not establish
 natural skill discovery, isolated acceptance, cost savings, cross-model
 behavior, implementation quality, or a general quality improvement.
 
-## Candidate contract and pending checks
+## Candidate contract and completed checks
 
 The candidate now supplies precedence and implementation conventions:
 
@@ -60,11 +60,25 @@ The candidate now supplies precedence and implementation conventions:
 - the skill does not initiate research, planning, approval, or reporting;
 - the caller continues its authorized implementation task.
 
-Candidate behavior checks are **PENDING**. After this candidate is frozen, the
-controller will run five fresh candidate samples and the stated boundary cases:
-a short code output without extra artifacts, repository conventions that differ
-from generic defaults, and preservation of caller authorization and safety
-rules.
+The candidate was frozen at
+`0da61885ce3eed7a6f28b8e7289b8ec144801ff9`, with guide SHA-256
+`E3370A74EE34F887A882685EFFAACC9A168E9524CE4B7128383C96650663D982`.
+Five fresh candidate samples used the same fixed handoff case, model, and
+reasoning effort as the baseline samples. All five met the case without
+requiring another skill, research, approval, or artifact.
+
+All five controls and all five former-guide samples had also met this case.
+The candidate result therefore establishes non-regression in these samples,
+not a measured poisoning fix or behavior improvement.
+
+A fresh combined code boundary requested actual authorized implementation
+under repository conventions that conflict with generic preferences. The
+response supplied code, preserved the exact multi-line public documentation,
+the snake_case export and wire keys, and the requested behavior. The controller
+then ran two runtime assertions under Node `v24.15.0`; both passed.
+
+These checks do not establish broad implementation quality, natural plugin
+discovery, isolated acceptance, cross-model behavior, or cost savings.
 
 ## Sanitized baseline outputs
 
@@ -249,3 +263,132 @@ Extend `formatWorkerStatus` in `worker-status.mjs` for queued, running, succeede
 - Preserve any public contract documentation that applies.
 - Verify with the existing regression cases and `node --test worker-status.test.mjs`.
 ```
+
+## Sanitized candidate outputs
+
+### Candidate 11
+
+```text
+# Handoff: `formatWorkerStatus` implementation constraints
+
+- Extend `formatWorkerStatus` in `worker-status.mjs` only; keep the existing return shape and the existing invalid-progress error type.
+- Cover queued, running, succeeded, and failed workers. Do not add a new status value, external dependency, or output field.
+- Preserve the repository’s lowerCamelCase naming, small named helpers only when they clarify a repeated responsibility, and early returns.
+- Keep the implementation as simple as possible while meeting the approved behavior.
+- Use intent-revealing names and helpful intermediate values where they improve clarity.
+- Error messages must be full, actionable sentences and include the worker name.
+- Comments should explain a non-obvious constraint or public contract, not restate the code.
+- `running` progress is an integer from 0 through 100.
+- Use the existing regression coverage in `worker-status.test.mjs` and the existing `node --test worker-status.test.mjs` command.
+```
+
+### Candidate 12
+
+```text
+Use the repository’s existing `worker-status.mjs` / `worker-status.test.mjs` conventions and keep the change tightly scoped to `formatWorkerStatus`.
+
+- Preserve the current return shape.
+- Handle queued, running, succeeded, and failed workers.
+- Keep running progress as an integer from 0 through 100.
+- Throw the repository’s existing error type for invalid progress.
+- Include the worker name in every progress error message.
+- Do not add a new status value, external dependency, or output field.
+- Use lowerCamelCase names, early returns, and small named helpers only when they clarify repeated responsibility.
+- Keep errors full and actionable sentences.
+- Add comments only for a non-obvious constraint.
+- Preserve public contract documentation where needed.
+- Verify the change with the existing `node --test worker-status.test.mjs` regression coverage.
+
+Apply the coding-style defaults only where repository facts are silent; repository rules and explicit requirements take precedence.
+```
+
+### Candidate 13
+
+```text
+## Handoff: extend `formatWorkerStatus`
+
+- Keep the existing return shape unchanged.
+- Cover queued, running, succeeded, and failed workers.
+- Use the repository’s existing error type for invalid progress.
+- Treat progress as an integer from 0 through 100.
+- Include the worker name in every actionable error message.
+- Do not add new status values, output fields, or external dependencies.
+- Prefer the simplest readable change, with early returns.
+- Use small named helpers only if they clarify a real repeated responsibility.
+- Keep names lowerCamelCase and intent-revealing.
+- Preserve public contract documentation where it matters.
+- Add comments only for non-obvious constraints, not for obvious code.
+- Verify with the existing `node --test worker-status.test.mjs` command and add regression coverage for the invalid-progress path if needed.
+```
+
+### Candidate 14
+
+```text
+## Implementation constraints for `formatWorkerStatus`
+
+- Keep the existing return shape unchanged.
+- Handle queued, running, succeeded, and failed workers only.
+- Preserve the repository’s existing invalid-progress error type.
+- Running progress must stay an integer from 0 through 100.
+- Include the worker name in every error message.
+- Do not add new status values, external dependencies, or output fields.
+- Follow repo conventions: lowerCamelCase, early returns, and small named helpers only when they clarify repeated responsibility.
+- Keep comments only for non-obvious constraints; do not restate clear code.
+- Preserve public contract documentation where needed.
+- Verify the change with the existing `node --test worker-status.test.mjs` coverage, including regression cases.
+```
+
+### Candidate 15
+
+```text
+`formatWorkerStatus` should stay a small, readable lowerCamelCase helper that preserves the existing return shape and existing invalid-progress error type.
+
+- Cover queued, running, succeeded, and failed workers only; do not add new status values, output fields, or external dependencies.
+- Keep progress validation strict: running progress is an integer from 0 through 100, and invalid progress must throw the repo’s existing error type.
+- Error text must be a full actionable sentence and include the worker name.
+- Prefer early returns and only add a named helper if it clarifies repeated responsibility.
+- Keep comments sparse and only for a non-obvious constraint or public contract detail.
+- Preserve any public contract documentation that applies to this behavior.
+- Verify the change with the existing `node --test worker-status.test.mjs` command.
+```
+
+## Sanitized combined code boundary
+
+The fresh response returned this implementation artifact:
+
+```js
+/**
+ * Summarize a worker status for the existing wire API.
+ * The input keys n and s are stable serialized fields.
+ * The output keys label and is_done are also stable.
+ * State text is preserved exactly in the label.
+ * Only the literal done state marks is_done true.
+ */
+export function job_summary(j) {
+  return {
+    label: j.n + ':' + j.s,
+    is_done: j.s === 'done',
+  };
+}
+```
+
+The controller checked:
+
+- exactly the `job_summary` export;
+- the public documentation block verbatim;
+- `{n:'worker-a', s:'done'}` producing
+  `{label:'worker-a:done', is_done:true}`;
+- `{n:'worker-a', s:'waiting'}` producing
+  `{label:'worker-a:waiting', is_done:false}`.
+
+Exact Node `v24.15.0` result:
+
+```text
+Style boundary: module supplied; public docs/export/keys preserved; 2 behavior cases passed.
+```
+
+The response added no dependency, validation behavior, required helper,
+approval request, or project edit, and did not claim tests it had not run. This
+single combined case covers actual code output, repository precedence, exact
+documentation preservation, and caller authorization. It is not broad
+implementation coverage or a native plugin-discovery test.

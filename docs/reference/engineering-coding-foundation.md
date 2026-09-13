@@ -9,7 +9,7 @@ within its own responsibility.
 
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
-| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source contract corrected; candidate behavior checks are pending controller sampling. |
+| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
 | `research-before-coding` | Supplies bounded change research when its trigger applies. | Existing body retained; refinement is later work. |
 | `onboard-to-codebase` | Supports explicit repository orientation. | Existing body retained; refinement is later work. |
 | `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
@@ -33,10 +33,13 @@ security, privacy, reliability, or release requirements.
   perform.
 
 The source guard rejects the former nonexistent skill reference, process-skill
-dependency, and fixed quota wording. Model-output behavior remains a separate
-authoring check; source correction alone does not establish a general quality
-improvement.
+dependency, fixed quota wording, stale description, and conflicting caller
+clauses. In the authoring screen, all five candidate handoffs met the same case
+that all five controls and all five former-guide samples had already met. This
+is non-regression, not a measured behavior improvement. One combined code
+boundary preserved the supplied repository contract and caller authorization.
 
 See
 [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
-for the observed baseline, source-contract regression, and pending checks.
+for the source-contract regression, exact sanitized outputs, boundary
+assertions, and evidence limits.
