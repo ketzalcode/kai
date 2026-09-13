@@ -1,6 +1,6 @@
 # Kai package boundaries
 
-**Status:** package structure approved; detailed spec awaiting operator review
+**Status:** approved for package-by-package implementation planning on 2026-09-12
 **Baseline:** `dc67899` — core/engineering checkpoint merged through #208
 **Scope:** package ownership and package-local functionality, not orchestration
 

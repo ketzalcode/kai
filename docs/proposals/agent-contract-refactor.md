@@ -41,9 +41,9 @@ per-wave validation and operator-acceptance gates for the remaining refactor.
 capability packages, then complete each package's agents and skills together
 before developing more cross-package interactions. This replaces the
 previously agreed agents-first/skills-later batching. The package list and
-creative/assistant boundaries are approved; the
+creative/assistant boundaries and the
 [detailed ownership spec](../superpowers/specs/2026-09-12-package-boundaries-design.md)
-is awaiting operator review. Executive assistance leaves core and is redesigned
+are approved. Executive assistance leaves core and is redesigned
 to do personal work directly, not preserved as an organization router.
 
 Continue in this order:
