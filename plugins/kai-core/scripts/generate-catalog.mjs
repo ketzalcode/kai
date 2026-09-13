@@ -119,11 +119,11 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Learning & content',
-    blurb: 'Author lessons, package existing material, or steward a whole path.',
+    title: 'Learning & career development',
+    blurb: 'Teach supplied topics, package source-faithful lessons, steward learning paths, and mentor IC engineering careers. Markdown, HTML, and audio are separate outcomes.',
     members: [
       'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
-      'workflow-course-to-audio',
+      'principal-engineer-career-mentor', 'workflow-course-to-audio',
     ],
   },
   {
@@ -149,11 +149,10 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Personal',
-    blurb: 'Your career and your week. Workspace-local and gitignored.',
+    title: 'Private workspace signals',
+    blurb: 'Core-owned weekly synthesis and explicitly requested signal scans.',
     members: [
-      'principal-engineer-career-mentor', 'workflow-weekly-pulse',
-      'workflow-proactive-scan',
+      'workflow-weekly-pulse', 'workflow-proactive-scan',
     ],
   },
   {
@@ -240,8 +239,8 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Lessons & writing',
-    blurb: 'Turn markdown into lessons or audio.',
+    title: 'Learning method & shared audio',
+    blurb: 'Learning owns the offline HTML lesson method; core owns the separately confirmed audio utility. Neither output proves the other exists.',
     members: ['kai-core-generate-audio', 'generate-html-lesson'],
   },
   {

@@ -145,16 +145,17 @@ Track the live AI landscape, then turn a finding into something buildable.
 | [`principal-ai-researcher`](../../plugins/kai-engineering/agents/principal-ai-researcher.agent.md) | Researches live AI landscape changes and writes Lectoria-ready briefings on model releases, papers, training, inference, evals, safety, agents, and multimodal progress. Use for AI updates or a named paper/topic. |
 | [`principal-ai-applied-engineer`](../../plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md) | Turns AI research or product ideas into ticket-grade applied designs with architecture, FE/BE work, eval, rollout, risk, cost, latency, and build/no-build guidance. Use when deciding how to ship AI. |
 
-### Learning & content
+### Learning & career development
 
-Author lessons, package existing material, or steward a whole path.
+Teach supplied topics, package source-faithful lessons, steward learning paths, and mentor IC engineering careers. Markdown, HTML, and audio are separate outcomes.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`instructor-tutor`](../../plugins/kai-personal/agents/instructor-tutor.agent.md) | Authors concrete-first lessons for any subject in Explain, Lesson, or Series mode. Use when the operator needs a gap topic taught from scratch. Not packaging existing markdown (`instructor-teacher`). |
-| [`instructor-teacher`](../../plugins/kai-personal/agents/instructor-teacher.agent.md) | Turns chaptered markdown - course units, book chapters, study notes - into paired HTML and audio lessons, one per source file, on any subject. Use after a learning module is extracted, or for a folder of related notes. |
-| [`instructor-path-mentor`](../../plugins/kai-personal/agents/instructor-path-mentor.agent.md) | Stewards a whole certification or structured learning path over time: plan, status, advance, review, and update. Use after choosing the path. Not career strategy (`principal-engineer-career-mentor`). |
-| [`workflow-course-to-audio`](../../plugins/kai-personal/agents/workflow-course-to-audio.agent.md) | Extracts a course, certification module, learning-path unit, or long readable web page into local markdown for later audio. Use when a URL should become listenable study material with separate knowledge checks. |
+| [`instructor-tutor`](../../plugins/kai-learning/agents/instructor-tutor.agent.md) | Authors concrete-first lessons for any subject in Explain, Lesson, or Series mode. Use when the operator needs a gap topic taught from scratch. Not packaging existing markdown (`instructor-teacher`). |
+| [`instructor-teacher`](../../plugins/kai-learning/agents/instructor-teacher.agent.md) | Packages supplied chaptered markdown into source-faithful HTML lessons, one per source file, with optional confirmed audio through core. Use for course units, book chapters, or study notes. Not original topic authoring. |
+| [`instructor-path-mentor`](../../plugins/kai-learning/agents/instructor-path-mentor.agent.md) | Stewards a whole certification or structured learning path over time: plan, status, advance, review, and update. Use after choosing the path. Not career strategy (`principal-engineer-career-mentor`). |
+| [`principal-engineer-career-mentor`](../../plugins/kai-learning/agents/principal-engineer-career-mentor.agent.md) | Mentors IC-track career progression through intake, check-ins, reviews, spot consults, cert planning, and visibility nudges. Use for career strategy. Not executing a chosen learning path (`instructor-path-mentor`). |
+| [`workflow-course-to-audio`](../../plugins/kai-learning/agents/workflow-course-to-audio.agent.md) | Extracts a course, certification module, learning-path unit, or long readable web page into local markdown for later audio. Use when a URL should become listenable study material with separate knowledge checks. |
 
 ### Marketing
 
@@ -184,13 +185,12 @@ Your own tasks, briefings, and drafts. Invoked directly; never a router.
 | [`personal-assistant`](../../plugins/kai-assistant/agents/personal-assistant.agent.md) | Manages personal tasks, priorities, briefings, and message drafts directly. Use for help with your own work. Not team delivery, specialist dispatch, or autonomous sending. |
 | [`persona-self`](../../plugins/kai-assistant/agents/persona-self.agent.md) | Drafts, rewrites, and replies in the user's voice for high-stakes or long-form writing. Use when authorial judgment matters: posts, design docs, PR narratives, sensitive replies. Never auto-publishes. |
 
-### Personal
+### Private workspace signals
 
-Your career and your week. Workspace-local and gitignored.
+Core-owned weekly synthesis and explicitly requested signal scans.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-engineer-career-mentor`](../../plugins/kai-personal/agents/principal-engineer-career-mentor.agent.md) | Mentors IC-track career progression through intake, check-ins, reviews, spot consults, cert planning, and visibility nudges. Use for career strategy. Not executing a chosen learning path (`instructor-path-mentor`). |
 | [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio. |
 | [`workflow-proactive-scan`](../../plugins/kai-core/agents/workflow-proactive-scan.agent.md) | Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys. |
 
@@ -319,14 +319,14 @@ Browser-run plumbing, content methods, and shared claim safety.
 | [`kai-core-content-grounding`](../../plugins/kai-core/skills/kai-core-content-grounding/SKILL.md) | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
 | [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
 
-### Lessons & writing
+### Learning method & shared audio
 
-Turn markdown into lessons or audio.
+Learning owns the offline HTML lesson method; core owns the separately confirmed audio utility. Neither output proves the other exists.
 
 | Name | What it owns |
 | ---- | ------------ |
 | [`kai-core-generate-audio`](../../plugins/kai-core/skills/kai-core-generate-audio/SKILL.md) | Markdown-to-audio lesson generation. Use when converting notes, READMEs, course content, or drafts into multilingual narrated audio with lectoria. |
-| [`generate-html-lesson`](../../plugins/kai-personal/skills/generate-html-lesson/SKILL.md) | Markdown-to-HTML lesson generation. Use when creating a self-contained visual lesson page, often as the companion to generated audio or an instructor flow. |
+| [`generate-html-lesson`](../../plugins/kai-learning/skills/generate-html-lesson/SKILL.md) | Markdown-to-HTML lesson generation. Use when creating a self-contained visual lesson page, often as the companion to generated audio or an instructor flow. |
 
 ### Assistant methods
 

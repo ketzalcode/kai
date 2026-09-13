@@ -13,14 +13,14 @@ copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-learning@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-revenue@kai-plugins
 ```
 
-`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` are new on this branch; their installs
+`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this branch; their installs
 work only from a marketplace or checkout that carries this refactor — their
 publication and remote availability were not established by this work.
 
@@ -46,14 +46,15 @@ Everything is indexed in **[docs/](docs/README.md)**.
 57 skills** are organized across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
-`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` are new on this refactor branch; their
+`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this refactor branch; their
 marketplace publication and remote availability have not been established.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
 and `kai-core` no longer carries a personal front door or depends on one. The
-wider capability-package rollout is **not** finished — learning and career
-roles are still inside `kai-personal`.
+eight-package source layout is now present; integration, behavioral review and
+release remain separate work. Learning and career roles moved to `kai-learning`;
+the `kai-personal` plugin is retired, not the private `.kai/personal/` data lane.
 
 `kai-creative` now owns the three UI/UX, brand, and video agents, seven design
 and demo methods, and the demo runtime formerly in personal. Core plus creative
@@ -81,6 +82,13 @@ evidence directly. `kai-gtm` is retired with no compatibility alias. See
 [the revenue package note](docs/reference/packages/kai-revenue.md) for authority,
 privacy, urgent escalation and runtime-unverified boundaries.
 
+`kai-learning` owns the five tutoring, lesson-packaging, path, IC-career and
+course-extraction roles plus the complete `generate-html-lesson` method.
+Core plus learning handles supplied topics/material/goals directly. Audio uses
+core's existing utility and requires explicit paid-processing consent and its
+runtime prerequisites; extracted Markdown, HTML and MP3s are distinct outputs.
+See [the learning package note](docs/reference/packages/kai-learning.md).
+
 Agents load shared contracts on demand. All 26 roles now in `kai-core` and
 `kai-engineering` route each contract at the instruction that needs it, rather
 than declaring every contract they might use before reading the task. Measured
@@ -93,8 +101,8 @@ Four core contracts were split by the reader they serve:
 `kai-core-team-operating-rules`, `kai-core-work-coordination`,
 `kai-core-workspace-conventions` and `kai-core-asset-lifecycle` are removed in
 favour of eight narrower ones. Consumers referencing the old ids must re-point;
-the CHANGELOG carries the mapping. Only `kai-personal`
-keeps the eager declaration until it migrates.
+the CHANGELOG carries the mapping. All capability-package agents now use
+task-local routes rather than eager declarations or dependency-guard blocks.
 
 Agent creation has an explicit contract: provider family, operating posture,
 scope, authority, execution profile, model policy, host-specific tools,
@@ -111,9 +119,8 @@ the source tree.
 Each agent and skill now has exactly one authoritative source inside its owning
 `plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
 are gone. Generation is limited to derived manifests, dependency locks, and
-routed scripts. The packs not yet migrated to inline routing still carry a
-dependency-guard region in their agent sources; regeneration strips such regions
-rather than emitting them, so those packs migrate before they are regenerated.
+routed scripts. Regeneration strips stale dependency-guard regions rather than
+emitting them; agents carry task-local routes in their authoritative sources.
 
 Every role can route to the shared asset contracts; roles load them when durable
 output is about to change. Generated work separates
@@ -123,8 +130,7 @@ initiative closure. Workspace enforcement rolls out separately as warn,
 reconcile, then error.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
-> retired. Install required `kai-core` plus the personal, product, engineering,
-> and go-to-market packs.
+> retired. Install required `kai-core` plus the selected capability packs.
 > If legacy `kai` is
 > installed, use its `workflow-workspace-init` guided migration before removing
 > it. The guide verifies replacement availability, requires the monolith to be
@@ -132,12 +138,12 @@ reconcile, then error.
 
 **The original five-package install layout was `kai-core` + `kai-personal` +
 `kai-product` + `kai-engineering` + `kai-gtm`.** This refactor adds
-`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` to the checkout
-and retires `kai-gtm`; verify availability in the
+`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning`
+to the checkout and retires `kai-gtm` and `kai-personal`; verify availability in the
 marketplace source you use rather than treating this source layout as a publication claim.
 Plugin-local agent and skill files are the canonical source. Generation refreshes
 routed scripts, each script's local module closure, the fleet hooks, manifests,
-dependency locks, and legacy marked dependency-guard regions.
+dependency locks, and removal of legacy marked dependency-guard regions.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
 Copilot copies plugin files but does not run npm, so
 optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;
@@ -162,7 +168,8 @@ partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew. The committed marketplace index lists the package
 sources rather than the monolith. This branch adds `kai-assistant`,
-`kai-creative`, `kai-marketing` and `kai-revenue` to that index and removes `kai-gtm`;
+`kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` to that index
+and removes `kai-gtm` and `kai-personal`;
 the entries alone do not establish remote
 availability or publication.
 
@@ -171,7 +178,7 @@ copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-learning@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
@@ -179,7 +186,7 @@ copilot plugin install kai-revenue@kai-plugins
 ```
 
 The core pack carries the fleet observer and shared workspace machinery;
-assistant carries personal tasks and voice; personal retains learning and career;
+assistant carries personal tasks and voice; learning carries teaching and career;
 creative carries UI/UX, visual identity, and video/demo work; product carries
 discovery, analytics, growth and fitness-product assessment; engineering carries
 implementation, security, reliability, data and delivery; marketing carries
@@ -231,7 +238,7 @@ copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-learning@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
@@ -332,7 +339,7 @@ setup. To update, refresh the catalog, then update each installed pack:
 `copilot plugin update kai-core@kai-plugins`,
 `copilot plugin update kai-assistant@kai-plugins`, and
 `copilot plugin update kai-creative@kai-plugins`, and
-`copilot plugin update kai-personal@kai-plugins`, and
+`copilot plugin update kai-learning@kai-plugins`, and
 `copilot plugin update kai-product@kai-plugins`, and
 `copilot plugin update kai-marketing@kai-plugins`, and
 `copilot plugin update kai-engineering@kai-plugins`, and

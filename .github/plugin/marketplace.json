@@ -80,9 +80,9 @@
       ]
     },
     {
-      "name": "kai-personal",
-      "source": "./plugins/kai-personal",
-      "description": "kai personal department pack — the personal roles, over a required kai-core.",
+      "name": "kai-learning",
+      "source": "./plugins/kai-learning",
+      "description": "Teaching, tutoring, learning paths, lesson production, and career development over kai-core.",
       "version": "6.0.0",
       "author": {
         "name": "RubenSaucedo",
@@ -97,9 +97,9 @@
         "copilot-plugin",
         "agents",
         "skills",
-        "personal",
+        "teaching",
         "learning",
-        "workflow-automation"
+        "career-development"
       ]
     },
     {

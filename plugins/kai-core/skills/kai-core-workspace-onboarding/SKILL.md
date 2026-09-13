@@ -26,7 +26,7 @@ The catalog is closed:
 | 3 | `kai-product` | Discovery, scope, research, analytics, product-led growth, and product-evaluation roles. |
 | 4 | `kai-revenue` | Sales, pricing, partnerships, RevOps, customer success, and support intake. No local skills; shared contracts come from core. |
 | 5 | `kai-assistant` | Personal tasks, agendas, briefings, and user-voice drafting roles. |
-| 6 | `kai-personal` | Learning and career-development roles pending the learning-package migration. |
+| 6 | `kai-learning` | Teaching, tutoring, learning paths, lesson production, and career development over kai-core. |
 | 7 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
 | 8 | `kai-marketing` | Positioning, campaigns, social content, and search visibility. |
 
@@ -73,7 +73,7 @@ copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-revenue@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
-copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-learning@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 ```

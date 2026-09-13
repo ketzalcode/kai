@@ -87,7 +87,7 @@ const MIGRATION_BASELINE_PACKS = {
     'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
   ],
-  personal: [
+  learning: [
     'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
     'principal-engineer-career-mentor', 'workflow-course-to-audio',
   ],
@@ -101,7 +101,7 @@ export const NEW_AGENT_IDS = {
   product: [],
   marketing: [],
   revenue: [],
-  personal: [],
+  learning: [],
 };
 
 export const PACKS = Object.fromEntries(
@@ -145,7 +145,7 @@ export const PACK_RUNTIME_DEPENDENCIES = {
   product: [],
   marketing: [],
   revenue: [],
-  personal: [],
+  learning: [],
 };
 
 export const RUNTIME_ARTIFACTS = {
@@ -198,6 +198,7 @@ const PACK_DESCRIPTIONS = {
   product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
   marketing: 'Positioning, campaigns, social content, and search visibility over kai-core.',
   revenue: 'Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.',
+  learning: 'Teaching, tutoring, learning paths, lesson production, and career development over kai-core.',
 };
 
 function packDescription(pack) {

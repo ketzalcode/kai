@@ -37,9 +37,10 @@ operator to install or update `kai-core` before resuming coordinated work.
 
 `npm test` enforces those on-demand routes and the absence of any guard block.
 
-Two packs — go-to-market and personal — have not migrated yet. Their
-agents still open with an `**Inherits:**` line and its eager load directive until
-they do; do not copy that mechanism into a new or migrated agent.
+All eight capability packages now use task-local routes. The retired
+go-to-market and personal plugins are not compatibility aliases; do not
+reintroduce their eager declarations or dependency guards. `.kai/personal/`
+remains the private data lane and is unrelated to plugin retirement.
 
 ## Communicating with the operator
 

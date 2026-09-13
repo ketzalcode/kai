@@ -248,7 +248,7 @@ push.
 4. From an isolated home, update the marketplace, browse it, install
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
    From an already-migrated home, uninstall every installed capability pack,
-   including `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-personal`,
+   including `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-learning`,
    `kai-product`, `kai-engineering`, and `kai-revenue` first (also remove any
    retired `kai-gtm` install still present), then uninstall
    `kai-core` last.

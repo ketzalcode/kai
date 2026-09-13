@@ -65,10 +65,9 @@ export {
   PACKS, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL, planPacks,
 };
 
-// The narrow pack under test in the two-plugin preview is `personal`: the
-// department whose removal from a default install is most defensible, and the
-// one #29 named. It is a SELECTION of the canonical partition (PACKS.personal),
-// never a second roster to keep in step.
+// The two-plugin preview defaults to learning, a capability with a real local
+// method. It selects the canonical partition, never a second roster or a
+// compatibility alias for the retired personal plugin.
 
 const readAgent = (id) => readFileSync(agentSourceFile(ROOT, id), 'utf8');
 const skillPath = (id) => skillSourceFile(ROOT, id);
@@ -217,7 +216,7 @@ function writeSkill(dir, id, text, companions = []) {
 // The two-plugin preview `--out` builds: core plus one department. It is a
 // selection of the same partition `--all` uses, so the roster it ships can no
 // longer disagree with PACKS.
-export function build({ out, withCore = true, contract = 1, pack = 'personal' }) {
+export function build({ out, withCore = true, contract = 1, pack = 'learning' }) {
   const { plan } = buildAll({ out, packs: [pack], withCore, contract });
   return {
     coreDir: withCore ? join(out, 'kai-core-preview') : null,
