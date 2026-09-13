@@ -10,6 +10,10 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-12-package-boundaries-design.md`
 
+**Execution status:** complete at the committed-source level on
+`kai/refactor/assistant-package`; see the execution record below.
+Runtime behavior, installation, and broader validation remain unverified.
+
 ## Global Constraints
 
 - Move executive assistance out of core and redesign it as personal assistance. Do not preserve the default-entry-point or organization-router behavior.
@@ -97,7 +101,7 @@ No agent-to-agent call is required between them.
   `kai-core-proactive-scan`, independent of an assistant skill or agent.
 - Task 2 consumes that section for an explicitly requested team-aware agenda.
 
-- [ ] **Step 1: Preserve the source rules before relocating them.**
+- [x] **Step 1: Preserve the source rules before relocating them.**
 
 Read Source A in full. Preserve these six distinctions in the new section:
 
@@ -111,7 +115,7 @@ Read Source A in full. Preserve these six distinctions in the new section:
    is steward work, not an operator alert.
 6. Missing or unreadable input is not evidence that an open signal cleared.
 
-- [ ] **Step 2: Make the core section authoritative.**
+- [x] **Step 2: Make the core section authoritative.**
 
 Replace `What the scan reads`' dependency on personal-agenda Source A with the
 new `Operator signals` section. Preserve the current scan/ack, hashing, ledger,
@@ -130,7 +134,7 @@ allocating an outbox payload, or advancing a delivery ledger.
 Follow that opening with the preserved rules and their record sources. Do not
 copy personal inbox, voice freshness, or career nudges into core.
 
-- [ ] **Step 3: Update the two consumers.**
+- [x] **Step 3: Update the two consumers.**
 
 In `workflow-proactive-scan`, point step 2 at the core skill's Operator signals
 section. Keep its existing `Apply` instruction for the scan contract; do not
@@ -140,7 +144,7 @@ Replace personal-agenda Source A with a reference to the canonical section
 plus its personal rendering rules. Remove the scan workflow's assertion that
 every operator action must go through `director-executive-assistant`.
 
-- [ ] **Step 4: Inspect the seam, then commit.**
+- [x] **Step 4: Inspect the seam, then commit.**
 
 Read all three changed sections together: the core scan must no longer
 require personal-agenda; the agenda may consume core. Confirm that none of the
@@ -192,7 +196,7 @@ git commit -m "refactor(core): own operator-signal interpretation independently 
   local `personal-agenda`, `decision-brief`, `extract-writing-style`, and
   `write-in-user-voice`. No required sibling package.
 
-- [ ] **Step 1: Register source ownership while moving the files.**
+- [x] **Step 1: Register source ownership while moving the files.**
 
 In `MIGRATION_BASELINE_PACKS`, remove `director-executive-assistant` from core,
 remove `persona-self` from personal, and add:
@@ -225,7 +229,7 @@ accommodate the new name.
 Move the entire source directories listed above, update skill `name:` values
 to their target IDs, and preserve companion files. Do not leave source aliases.
 
-- [ ] **Step 2: Write the assistant as a direct worker.**
+- [x] **Step 2: Write the assistant as a direct worker.**
 
 Use this frontmatter and identity, then write the task sections below:
 
@@ -273,7 +277,7 @@ Do not require agenda/identity/workspace setup to return a one-off text draft.
 Do not route lease-granting/acting contracts for private task updates that hold
 no coordinated item.
 
-- [ ] **Step 3: Refactor the personal methods without losing their data rules.**
+- [x] **Step 3: Refactor the personal methods without losing their data rules.**
 
 For `personal-agenda`, preserve the old sections **Task lifecycle**,
 **Recurrence**, **Deduplication and history**, **Ranking**, and the inbox and
@@ -302,7 +306,7 @@ Keep existing private-state filenames and record formats. Do not migrate
 existing data or delete historical consultation records. Retiring the skill
 does not authorize deleting user records it previously produced.
 
-- [ ] **Step 4: Share the voice method and migrate persona-self.**
+- [x] **Step 4: Share the voice method and migrate persona-self.**
 
 Give `write-in-user-voice` this contract:
 
@@ -347,7 +351,7 @@ Refactor `extract-writing-style` to serve both agents, keep the voice schema
 and opt-in sample selection, and use current core path contracts. Never mine
 unrelated history or imply a stored profile exists when it does not.
 
-- [ ] **Step 5: Remove the old router and close its live references.**
+- [x] **Step 5: Remove the old router and close its live references.**
 
 Delete the old director agent and executive-consultation skill after their
 replacement content exists.
@@ -379,7 +383,7 @@ optional capability is not a dependency; a mandatory load or dispatch is.
 Remove assistant prerequisites from core without rewriting unrelated core
 behavior.
 
-- [ ] **Step 6: Complete the install and discovery surface.**
+- [x] **Step 6: Complete the install and discovery surface.**
 
 Update `CATEGORIES` in `scripts/generate-catalog.mjs`:
 
@@ -421,7 +425,7 @@ frontmatter, missing companion, or incorrect package path needed to emit the
 package. Do not redesign unrelated validation policy to make it run. Report
 an unresolved emission problem rather than calling a non-emitted pack complete.
 
-- [ ] **Step 7: Record direct-use scenarios and limitations.**
+- [x] **Step 7: Record direct-use scenarios and limitations.**
 
 Create `docs/reference/packages/kai-assistant.md` with install combination
 `kai-core` + `kai-assistant`, both agent entry points, the four skill purposes,
@@ -453,7 +457,7 @@ Update README installation/status prose to describe the actual intermediate
 surface without calling the complete eight-package rollout finished. Keep its
 current version aligned with the manifests; do not claim a new published release.
 
-- [ ] **Step 8: Inspect package coherence and commit the unit.**
+- [x] **Step 8: Inspect package coherence and commit the unit.**
 
 Inspect the generated assistant manifest and source paths. Confirm both
 agents and all four skills have one source, no source remains under the old
@@ -503,3 +507,64 @@ remove protections or publish a tag to satisfy a release checklist.
 | Direct-use examples without claimed runtime evidence | Task 2 steps 7–8 |
 | Other five capability packages | Separate package units in the rollout plan |
 | Two refinement passes, final safety/testing | Rollout plan section 4; deliberately outside this first unit |
+
+## Execution record — 2026-09-12
+
+Implementation range: `2f7ad4c..166cf93`. No push, merge, tag, or publication
+was performed for this package.
+
+| Commit | Result |
+| --- | --- |
+| `fd0d110` | Core owns operator-signal interpretation |
+| `f6c143f` | Core metadata describes briefing use; agenda explicitly loads the signal method |
+| `54a37d9` | Two assistant agents, four local methods, install metadata and documentation |
+| `8f8d925` | Current brief lifecycle distinguished from protected history; publication wording qualified |
+| `166cf93` | Remaining unsupported publication claims replaced with source-layout statements |
+
+Task 1 received a focused review and fix re-review. A fresh reviewer then
+reviewed Task 2 and the full assistant/core integration together. That review
+identified two Important defects: a blanket history prohibition contradicted
+required decision-record updates, and documentation overstated publication.
+The scoped re-review of `54a37d9..166cf93` marked both addressed, also accepting
+the narrowed offer of private recording/drafting rather than execution.
+Task compliance, quality, and integration received **source-level sign-off**.
+
+Fresh final inventory inspection found the two agent files, four skill files,
+and three package manifests. `git diff --check 2f7ad4c..166cf93` was clean.
+These checks establish committed file shape and diff hygiene, not host behavior.
+
+The Task 2 implementer ran the planned generation commands, but also ran
+scoped validation functions and generated-output checks beyond the requested
+source/generation-only boundary. That process deviation is recorded, not
+relabeled as "no validators ran." No full suite, runtime scenario, installation,
+or publication verification occurred.
+
+Remaining limitations:
+
+- Approved identity/profile choices conflict with the current taxonomy/model
+  policy. That policy was not rewritten.
+- Some self-tests still name persona-self's former package path.
+- Effective `session_store_sql` access for voice extraction is not established.
+- The shared unreadable-input rule and short signal summaries received source
+  review only. No runtime notification/ack, consent, or data-preservation
+  behavior was exercised.
+- No runtime-quality, green-build, remote-availability, or release-readiness
+  claim follows from this source-level sign-off.
+
+### Rulings I made
+
+The following is the complete decision list copied from this plan's temporary
+ledger before cleanup. Wording records each ruling at the time it was made;
+the final scoped re-review described above subsequently completed.
+
+Ruling: Work in the clean named feature branch in the existing checkout rather than create an unrequested linked worktree — the checkout has no existing linked isolation or worktree preference, and the operator asked to minimize process — cost if wrong: concurrent local work could interfere; check status and preserve unrelated edits before every write/commit.
+
+Ruling: Do not install dependencies, run baseline tests, or repair validators for this execution — the operator explicitly approved deferring that work, and the plan carries that exception — cost if wrong: runtime/validation regressions can remain undetected until the final phase; all source-only evidence must be labeled.
+
+Ruling: Keep the approved personal-assistant identity even though the current taxonomy validator rejects its family/posture — the signed package spec is the design authority and test policy is deferred — cost if wrong: an in-scope naming diagnostic remains until validation policy is reconciled; no passing-validation claim is permitted.
+
+Ruling: Add an explicit conditional core-skill load in personal-agenda Source A and describe the briefing use in core's skill metadata — the inspected source has only a bare reference and the metadata advertises notifications alone — cost if wrong: additional context loads when team signals are requested; make the section boundary explicit and do not trigger scan/ack.
+
+Ruling: Use one fresh, high-capability reviewer for both Task 2 compliance and the complete assistant/core integration diff — the final task contains nearly all of the package change, so separate passes would re-read the same source with no independent implementation between them — cost if wrong: fewer independent review seats; require separate task and integration verdicts with explicit evidence limitations.
+
+Ruling: Describe only committed source/layout and prepared metadata, without replacing "six published" with "five published" — publication was not established in this task — cost if wrong: conservative release-status wording requires the reader to verify their marketplace source. The coordinator's small wording correction is included in the same forthcoming scoped re-review, not left unreviewed.

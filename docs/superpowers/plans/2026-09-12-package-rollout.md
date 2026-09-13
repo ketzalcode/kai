@@ -39,10 +39,14 @@ This order reduces ownership churn, not runtime dependencies. None of these
 packages may require the preceding package to be installed for its baseline
 direct tasks.
 
-The current executable unit is
-[the assistant plan](2026-09-12-assistant-package.md). Write each subsequent
-package plan against the resulting source tree when that package is selected.
-Do not dispatch later package implementation from this scheduling table alone.
+The [assistant plan](2026-09-12-assistant-package.md) is complete at the
+committed-source level on `kai/refactor/assistant-package`, through `166cf93`.
+It is not runtime-verified or published. Its execution record preserves the
+review outcomes, remaining limitations, and all rulings.
+
+The next planning unit is creative. Write that package plan against the
+resulting source tree when selected; do not dispatch its implementation from
+this scheduling table alone.
 
 ## 2. Package checkpoint
 
