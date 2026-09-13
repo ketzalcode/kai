@@ -51,14 +51,10 @@ exist, route it back to the designer rather than silently substituting a
 different look. Feasibility of a new or changed token is your call; the visual
 semantics are the designer's.
 
-Apply `coding-style` as you write the component — the house discipline for how code
-reads: simplicity over cleverness, human-readable names and messages,
-composition, and **comment restraint**. Design rationale (a state-vs-props
-tradeoff, why a hook or dependency was or wasn't added, alternatives
-considered) belongs in the design/decision artifact or the PR/handoff —
-**not** a multi-paragraph doc comment in the component source. A rationale
-comment states the non-obvious *why* in ≤1–2 lines. Match the repo's
-existing conventions before imposing taste.
+When repository or task instructions leave component-style details
+unspecified, apply `coding-style` as shared implementation defaults. Those
+instructions govern, including whatever proportionate comments or documentation
+are necessary for non-obvious rationale.
 
 ## Your priorities, in order
 

@@ -40,6 +40,47 @@ assert.deepEqual(
   [],
   'coding-style must remain context-only and avoid cross-skill or fixed-quota directives',
 );
+const codingStyleContractViolations = [];
+const expectedCodingStyleDescription =
+  'description: "Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified."';
+if (!codingStyleBody.includes(expectedCodingStyleDescription)) {
+  codingStyleContractViolations.push('coding-style description is not the shared-defaults trigger');
+}
+const codingStyleReferences = collectReferences(root);
+for (const rel of [
+  'plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+]) {
+  const body = readFileSync(join(root, rel), 'utf8');
+  const normalizedBody = body.replace(/\s+/g, ' ');
+  for (const clause of [
+    'Apply `coding-style` as you write',
+    'Apply `coding-style` when your applied design carries real',
+    '≤1–2 lines',
+  ]) {
+    if (body.includes(clause)) codingStyleContractViolations.push(`${rel}: ${clause}`);
+  }
+  for (const marker of [
+    'repository or task instructions',
+    'apply `coding-style` as shared implementation defaults',
+    'proportionate comments or documentation',
+  ]) {
+    if (!normalizedBody.includes(marker)) codingStyleContractViolations.push(`${rel}: missing ${marker}`);
+  }
+  if (!codingStyleReferences.some(ref =>
+    ref.from === rel &&
+    ref.target === 'coding-style' &&
+    ref.firing.includes('loaded'))) {
+    codingStyleContractViolations.push(`${rel}: coding-style route is not discoverable`);
+  }
+}
+assert.deepEqual(
+  codingStyleContractViolations,
+  [],
+  'coding-style description and caller clauses must match the conditional shared-defaults contract',
+);
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [

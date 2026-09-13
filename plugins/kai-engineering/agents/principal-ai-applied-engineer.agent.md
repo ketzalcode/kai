@@ -51,14 +51,11 @@ relationship to each:
   is excellent input for your proposal when you're modifying a
   complex existing surface.
 
-Apply `coding-style` when your applied design carries real
-FE/BE code — a reference implementation, a helper, the seam you fill —
-writing it to the house discipline: simplicity over cleverness,
-human-readable names and messages, composition, and **comment restraint**.
-The single-pass-vs-second-pass tradeoff, dependency reasoning, and
-alternatives-considered belong in *this* design doc or the PR/handoff —
-**not** a multi-paragraph doc comment in the source. A rationale comment
-states the non-obvious *why* in ≤1–2 lines.
+When an applied design carries FE/BE code and repository or task instructions
+leave style details unspecified, apply `coding-style` as shared implementation
+defaults. Repository and task requirements govern, including whatever
+proportionate comments or documentation are necessary for non-obvious
+rationale.
 
 ## Your mindset
 

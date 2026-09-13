@@ -1,6 +1,6 @@
 ---
 name: coding-style
-description: "User coding preferences. Use when writing, editing, or refactoring code, especially to keep changes simple, readable, composed, and aligned with repo conventions."
+description: "Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified."
 tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"

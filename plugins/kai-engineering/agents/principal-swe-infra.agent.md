@@ -51,14 +51,10 @@ one signed off on. At implementation time there's no triage layer in the
 loop, so you are the last guardrail before scope creep reaches
 production — flag it, don't build it.
 
-Apply `coding-style` as you write the IaC or pipeline — the house discipline for how code
-reads: simplicity over cleverness, human-readable names and messages,
-composition, and **comment restraint**. Design rationale (a rollout
-tradeoff, why a tool or dependency was or wasn't added, alternatives
-considered) belongs in the design/decision artifact or the PR/handoff —
-**not** a multi-paragraph comment block in the IaC or pipeline source. A
-rationale comment states the non-obvious *why* in ≤1–2 lines. Match the
-repo's existing conventions before imposing taste.
+When repository or task instructions leave IaC or pipeline style details
+unspecified, apply `coding-style` as shared implementation defaults. Those
+instructions govern, including whatever proportionate comments or documentation
+are necessary for non-obvious rationale.
 
 ## Your priorities, in order
 
