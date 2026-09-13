@@ -40,7 +40,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v5.0.0` is this checkout's prepared metadata version. Its **56 agents and
+`v6.0.0` is this checkout's prepared metadata version. Its **56 agents and
 57 skills** are organized across six plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
@@ -53,7 +53,7 @@ and `kai-core` no longer carries a personal front door or depends on one. The
 wider capability-package rollout is **not** finished — the remaining packages
 are still inside `kai-personal`, `kai-product`, and `kai-gtm`.
 
-Agents load shared contracts on demand. All 27 roles in `kai-core` and
+Agents load shared contracts on demand. All 26 roles now in `kai-core` and
 `kai-engineering` route each contract at the instruction that needs it, rather
 than declaring every contract they might use before reading the task. Measured
 worst case, that moved the mean prompt from 30,194 to 17,529 tokens and the

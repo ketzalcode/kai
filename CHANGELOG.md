@@ -4,6 +4,46 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [6.0.0] - 2026-09-12
+
+### Added
+
+- **`kai-assistant` capability package:** directly invoked
+  `personal-assistant` and `persona-self`, with `personal-agenda`,
+  `decision-brief`, `extract-writing-style`, and `write-in-user-voice`.
+  Personal tasks and ordinary drafts no longer require specialist dispatch.
+- An approved eight-package ownership spec and package-complete rollout plan.
+  Creative follows as a separate spec and implementation unit.
+
+### Changed
+
+- Personal assistance moves out of core. `persona-self` and
+  `extract-writing-style` move from `kai-personal` to `kai-assistant`; users
+  of those capabilities need the assistant package.
+- Core owns operator-signal interpretation independently of personal agenda
+  rendering. Reading those signals does not invoke notification scan/ack.
+- Voice profile application is shared locally by the two assistant agents.
+  Supplied-facts drafts can proceed without stored identity or workspace setup.
+- This is an intermediate refactor checkpoint. Runtime behavior, effective
+  tool grants, and final safety/test/CI validation remain unverified or
+  deferred. Prepared version metadata does not establish publication.
+
+### Removed
+
+- `director-executive-assistant`, replaced by the redesigned
+  `personal-assistant`, not a routing alias.
+- `kai-core-personal-agenda` and `kai-core-decision-brief`; their redesigned
+  methods are `personal-agenda` and `decision-brief` in `kai-assistant`.
+- `kai-core-executive-consultation` and the assistant-owned organization
+  consultation/dispatch mechanism. Existing private history is retained.
+
+### Fixed
+
+- Decision briefs permit their normal current-status and outcome updates
+  while protecting previous evidence and closed history.
+- Documentation distinguishes committed package layout from verified
+  availability or publication.
+
 ## [5.0.0] - 2026-09-11
 
 ### Changed
@@ -3366,6 +3406,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[6.0.0]: https://github.com/RubenSaucedo/kai/compare/v5.0.0...v6.0.0
 [5.0.0]: https://github.com/RubenSaucedo/kai/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/RubenSaucedo/kai/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/RubenSaucedo/kai/compare/v3.0.0...v3.1.0
