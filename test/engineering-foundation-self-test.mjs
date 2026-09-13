@@ -24,6 +24,22 @@ const parked = [
 ];
 const skills = sourceSkillFiles(root).filter(entry => entry.pack === 'engineering');
 assert.deepEqual(skills.map(entry => entry.id).sort(), keep);
+const codingStyleBody = readFileSync(
+  join(root, 'plugins', 'kai-engineering', 'skills', 'coding-style', 'SKILL.md'),
+  'utf8',
+);
+const prohibitedCodingStyleDirectives = [
+  'single-responsibility',
+  'research-before-coding',
+  'Scan 2–3 nearby files',
+  'Inline comments: ≤1 line',
+  'docs: ≤2–3 lines',
+];
+assert.deepEqual(
+  prohibitedCodingStyleDirectives.filter(directive => codingStyleBody.includes(directive)),
+  [],
+  'coding-style must remain context-only and avoid cross-skill or fixed-quota directives',
+);
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [
