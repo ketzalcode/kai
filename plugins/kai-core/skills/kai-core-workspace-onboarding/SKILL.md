@@ -23,12 +23,17 @@ The catalog is closed:
 |---|---|---|
 | 1 | `kai-core` | Required operating contract, workspace tools, and fleet hooks. |
 | 2 | `kai-engineering` | Engineering, architecture, reliability, security, data, AI, QA, docs, PR, and ship roles. |
-| 3 | `kai-product` | Product, design, research, analytics, brand, and product-evaluation roles. |
-| 4 | `kai-gtm` | Sales, growth, marketing, SEO, pricing, partnerships, RevOps, customer success, and support roles. |
+| 3 | `kai-product` | Discovery, scope, research, analytics, product-led growth, and product-evaluation roles. |
+| 4 | `kai-revenue` | Sales, pricing, partnerships, RevOps, customer success, and support intake. No local skills; shared contracts come from core. |
 | 5 | `kai-assistant` | Personal tasks, agendas, briefings, and user-voice drafting roles. |
-| 6 | `kai-personal` | Learning, coaching, nutrition, training, and creative roles. |
+| 6 | `kai-personal` | Learning and career-development roles pending the learning-package migration. |
+| 7 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
+| 8 | `kai-marketing` | Positioning, campaigns, social content, and search visibility. |
 
 Core is always included. Never silently add a department.
+`kai-gtm` is retired without an alias. Marketing, revenue and product-led growth
+now have separate owners; select replacements by the requested capability,
+not by treating revenue as the entire former go-to-market package.
 
 ### Inspect
 
@@ -66,9 +71,11 @@ copilot plugin install kai-core@kai-plugins
 copilot plugin update kai-core@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-product@kai-plugins
-copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-revenue@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-personal@kai-plugins
+copilot plugin install kai-creative@kai-plugins
+copilot plugin install kai-marketing@kai-plugins
 ```
 
 Show only selected department commands. Show `keep and verify` instead of an

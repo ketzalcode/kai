@@ -115,33 +115,26 @@ UI/UX, visual identity, and video direction from supplied needs and evidence. Pr
 | [`principal-brand-designer`](../../plugins/kai-creative/agents/principal-brand-designer.agent.md) | Creates SaaS visual-identity systems, brand guidelines, visual-asset direction, and brand critique from positioning and brand evidence. Use for logo, color, typography, iconography, or illustration. Not product UI (`principal-product-designer`). |
 | [`creative-video-director`](../../plugins/kai-creative/agents/creative-video-director.agent.md) | Directs videos from supplied factual product context, media evidence, and an approved brief into storyboards, edit decisions, voiceover, and AI-video prompts. Use for video plans or demo screenplays; rendering and synthesis are separate creative methods. |
 
-### Customer operations
+### Revenue
 
-Post-sale outcomes and bounded support intake.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`principal-customer-success`](../../plugins/kai-gtm/agents/principal-customer-success.agent.md) | Builds SaaS success plans, adoption plans, health reviews, churn or renewal risk assessments, QBR briefs, and portfolio views from customer evidence. Use for post-sale outcome and risk judgment. |
-| [`workflow-support-triage`](../../plugins/kai-gtm/agents/workflow-support-triage.agent.md) | Classifies supplied SaaS tickets and conversations, screens incident/security candidates, deduplicates, assigns impact urgency, and routes owners. Use for support intake. Not replies, closures, timelines, code edits, or incident resolution. |
-
-### Revenue & go-to-market
-
-Pre-sale motion and the commercial operating model. Only you accept terms.
+Sales, pricing, partnerships, revenue operations, customer success, and support intake from supplied evidence. Only you accept terms or contact customers.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-sales`](../../plugins/kai-gtm/agents/principal-sales.agent.md) | Turns SaaS deal, account, discovery, and competitive evidence into qualification, discovery, deal strategy, objections, proposals, forecasts, and win/loss guidance. Use for pre-sale sales judgment. Not pricing authority or solution design. |
+| [`principal-sales`](../../plugins/kai-revenue/agents/principal-sales.agent.md) | Turns SaaS deal, account, discovery, and competitive evidence into qualification, discovery, deal strategy, objections, proposals, forecasts, and win/loss guidance. Use for pre-sale sales judgment. Not pricing authority or solution design. |
+| [`principal-pricing-monetization`](../../plugins/kai-revenue/agents/principal-pricing-monetization.agent.md) | Recommends SaaS pricing models, packaging, price changes, discount policy, and monetization experiments from supplied cost, WTP, competitive, packaging, and analytics evidence. Use for pricing judgment. |
+| [`principal-partnerships`](../../plugins/kai-revenue/agents/principal-partnerships.agent.md) | Assesses supplied partner evidence into SaaS partner strategy, fit assessments, integration partnerships, channel/reseller programs, and co-sell or co-marketing plans. Not legal approval, technical feasibility or outbound contact. |
+| [`principal-revenue-operations`](../../plugins/kai-revenue/agents/principal-revenue-operations.agent.md) | Builds the SaaS revenue operating model, forecast hygiene, billing/subscription ops, and quota/territory/comp inputs. Use with supplied pipeline, billing, usage, or analytics evidence. Not pricing or sales deal judgment. |
+| [`principal-customer-success`](../../plugins/kai-revenue/agents/principal-customer-success.agent.md) | Builds SaaS success plans, adoption plans, health reviews, churn or renewal risk assessments, QBR briefs, and portfolio views from customer evidence. Use for post-sale outcome and risk judgment. |
+| [`workflow-support-triage`](../../plugins/kai-revenue/agents/workflow-support-triage.agent.md) | Classifies supplied SaaS tickets and conversations, screens incident/security candidates, deduplicates, assigns impact urgency, and routes owners. Use for support intake. Not replies, closures, timelines, code edits, or incident resolution. |
+
+### Solution architecture
+
+Engineering-owned technical fit and solution design, not commercial deal authority.
+
+| Name | What it owns |
+| ---- | ------------ |
 | [`principal-solutions-architect`](../../plugins/kai-engineering/agents/principal-solutions-architect.agent.md) | Turns buyer requirements, environment, and integration evidence into SaaS technical discovery, solution fit, feasibility, POC scope, objections, and questionnaire guidance. Use pre-sale. Not roadmap, pricing, implementation, or attestations. |
-| [`principal-revenue-operations`](../../plugins/kai-gtm/agents/principal-revenue-operations.agent.md) | Builds the SaaS revenue operating model, forecast hygiene, billing/subscription ops, and quota/territory/comp inputs. Use with supplied pipeline, billing, usage, or analytics evidence. Not pricing or sales deal judgment. |
-| [`principal-partnerships`](../../plugins/kai-gtm/agents/principal-partnerships.agent.md) | Designs SaaS partner strategy, partner-fit assessments, integration partnerships, channel/reseller programs, and co-sell or co-marketing plans. Use for partnership judgment, not legal terms or outbound contact. |
-
-### Pricing & monetization
-
-Pricing, packaging, and commercial monetization judgment.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`principal-pricing-monetization`](../../plugins/kai-gtm/agents/principal-pricing-monetization.agent.md) | Recommends SaaS pricing models, packaging, price changes, discount policy, and monetization experiments from supplied cost, WTP, competitive, packaging, and analytics evidence. Use for pricing judgment. |
 
 ### AI research to product
 

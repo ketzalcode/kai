@@ -98,24 +98,18 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Customer operations',
-    blurb: 'Post-sale outcomes and bounded support intake.',
-    members: ['principal-customer-success', 'workflow-support-triage'],
-  },
-  {
-    kind: 'agent',
-    title: 'Revenue & go-to-market',
-    blurb: 'Pre-sale motion and the commercial operating model. Only you accept terms.',
+    title: 'Revenue',
+    blurb: 'Sales, pricing, partnerships, revenue operations, customer success, and support intake from supplied evidence. Only you accept terms or contact customers.',
     members: [
-      'principal-sales', 'principal-solutions-architect', 'principal-revenue-operations',
-      'principal-partnerships',
+      'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
+      'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
     ],
   },
   {
     kind: 'agent',
-    title: 'Pricing & monetization',
-    blurb: 'Pricing, packaging, and commercial monetization judgment.',
-    members: ['principal-pricing-monetization'],
+    title: 'Solution architecture',
+    blurb: 'Engineering-owned technical fit and solution design, not commercial deal authority.',
+    members: ['principal-solutions-architect'],
   },
   {
     kind: 'agent',

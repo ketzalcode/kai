@@ -21,10 +21,10 @@ copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-revenue@kai-plugins
 ```
 
-`kai-assistant`, `kai-creative` and `kai-marketing` are new, committed source on this branch's
+`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` are new, committed source on this branch's
 checkout; their installs work only from a marketplace or checkout
 that carries this refactor — their publication and remote availability were not
 established by this work.
@@ -83,7 +83,7 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 The full 56-agent, 57-skill surface is committed across eight packs on this
 branch's checkout. This describes source ownership, not publication;
-Remote availability of `kai-assistant`, `kai-creative` and `kai-marketing` remains unverified.
+Remote availability of `kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` remains unverified.
 You do not need to learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -114,7 +114,7 @@ support long-term. Nobody has to approve a listing for this to work.
    copilot plugin install kai-product@kai-plugins
    copilot plugin install kai-marketing@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
-   copilot plugin install kai-gtm@kai-plugins
+   copilot plugin install kai-revenue@kai-plugins
    ```
 2. Confirm it loaded:
    ```powershell
@@ -124,10 +124,10 @@ support long-term. Nobody has to approve a listing for this to work.
    `kai-creative@kai-plugins`,
    `kai-personal@kai-plugins`, `kai-product@kai-plugins`, `kai-marketing@kai-plugins`,
    `kai-engineering@kai-plugins`, and
-   `kai-gtm@kai-plugins` should appear at the same version. The agents and skills
+   `kai-revenue@kai-plugins` should appear at the same version. The agents and skills
    are available in **new** sessions — start a fresh session to use them.
 
-`kai-assistant`, `kai-creative` and `kai-marketing` are committed source on this branch checkout
+`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` are committed source on this branch checkout
 only; this work did not push, tag, or publish them, so their install lines
 resolve only against a marketplace or checkout that carries this
 refactor, not necessarily the currently published marketplace index.
@@ -141,6 +141,14 @@ plus marketing. [Marketing's package note](reference/packages/kai-marketing.md)
 describes supplied factual JSON/maps/media, claim safety and optional personal
 voice. Product, creative and assistant are not baseline install dependencies.
 
+For commercial recommendations and support intake, use core plus revenue.
+[Revenue's package note](reference/packages/kai-revenue.md) covers its six roles,
+supplied-evidence baseline and urgent human escalation. It owns no local skill;
+shared skills come from core. `kai-gtm` is retired without an alias. For an old
+gtm install, verify the replacement packs are available, then explicitly select
+marketing and/or revenue (growth is product-owned), remove the old plugin through
+the host and start a fresh session. Do not delete workspace or private account data.
+
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.
 
@@ -149,15 +157,16 @@ that is what lets `kai-core-fleet-observation` find the watcher.
 Do not install packs beside legacy `kai`: both provide the operating contract,
 and which copy loads first is host-dependent.
 
-The current migration installs the complete five-pack surface: core, personal,
-product, engineering, and go-to-market.
+Select core plus the capability packs needed from the current marketplace.
+This checkout replaces go-to-market with marketing and revenue; remote
+availability must be established before removing an existing install.
 
 1. Update the marketplace catalog.
 2. In a session still loaded from legacy `kai`, ask:
 
    ```text
-   Migrate this kai installation to kai-core, kai-personal, kai-product, and
-   kai-engineering, and kai-gtm.
+   Migrate this kai installation to kai-core, kai-personal, kai-product,
+   kai-engineering, kai-marketing, and kai-revenue.
    ```
 
 3. Follow the displayed plan exactly. The guide proves all selected packs exist at one
@@ -205,7 +214,7 @@ copilot plugin install RubenSaucedo/kai:plugins/kai-personal
 copilot plugin install RubenSaucedo/kai:plugins/kai-product
 copilot plugin install RubenSaucedo/kai:plugins/kai-marketing
 copilot plugin install RubenSaucedo/kai:plugins/kai-engineering
-copilot plugin install RubenSaucedo/kai:plugins/kai-gtm
+copilot plugin install RubenSaucedo/kai:plugins/kai-revenue
 ```
 
 This still works and is a single command, but the CLI prints:
@@ -223,7 +232,7 @@ install. Tracked in
 ```powershell
 git clone https://github.com/RubenSaucedo/kai.git
 cd kai
-copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-creative --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-marketing --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-gtm
+copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-creative --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-marketing --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-revenue
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when
@@ -259,7 +268,7 @@ copilot plugin update kai-personal@kai-plugins
 copilot plugin update kai-product@kai-plugins
 copilot plugin update kai-marketing@kai-plugins
 copilot plugin update kai-engineering@kai-plugins
-copilot plugin update kai-gtm@kai-plugins
+copilot plugin update kai-revenue@kai-plugins
 ```
 
 Plugins are cached per session — changes only appear in **new** sessions.

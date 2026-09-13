@@ -17,10 +17,10 @@ copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-revenue@kai-plugins
 ```
 
-`kai-assistant`, `kai-creative` and `kai-marketing` are new on this branch; their installs
+`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` are new on this branch; their installs
 work only from a marketplace or checkout that carries this refactor — their
 publication and remote availability were not established by this work.
 
@@ -46,14 +46,14 @@ Everything is indexed in **[docs/](docs/README.md)**.
 57 skills** are organized across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
-`kai-assistant`, `kai-creative` and `kai-marketing` are new on this refactor branch; their
+`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` are new on this refactor branch; their
 marketplace publication and remote availability have not been established.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
 and `kai-core` no longer carries a personal front door or depends on one. The
-wider capability-package rollout is **not** finished — the remaining packages
-are still inside `kai-personal` and `kai-gtm`.
+wider capability-package rollout is **not** finished — learning and career
+roles are still inside `kai-personal`.
 
 `kai-creative` now owns the three UI/UX, brand, and video agents, seven design
 and demo methods, and the demo runtime formerly in personal. Core plus creative
@@ -70,9 +70,16 @@ authority, independent assessment and runtime-unverified scenarios.
 `kai-marketing` now owns four positioning, campaign, LinkedIn and search roles
 plus `product-marketing-intelligence` and `linkedin-content`. Core plus marketing
 accepts supplied facts/maps/media and neutral or requested company-brand voice;
-personal-voice enhancement is optional. Gtm retains only six revenue roles.
+personal-voice enhancement is optional.
 See [the marketing package note](docs/reference/packages/kai-marketing.md) for
 the grounding contract, ownership boundaries and runtime-unverified scenarios.
+
+`kai-revenue` owns six sales, pricing, partnerships, revenue operations,
+customer-success and support-intake roles. It has no standalone local skills;
+core plus revenue supplies the shared contracts and accepts supplied commercial
+evidence directly. `kai-gtm` is retired with no compatibility alias. See
+[the revenue package note](docs/reference/packages/kai-revenue.md) for authority,
+privacy, urgent escalation and runtime-unverified boundaries.
 
 Agents load shared contracts on demand. All 26 roles now in `kai-core` and
 `kai-engineering` route each contract at the instruction that needs it, rather
@@ -86,8 +93,8 @@ Four core contracts were split by the reader they serve:
 `kai-core-team-operating-rules`, `kai-core-work-coordination`,
 `kai-core-workspace-conventions` and `kai-core-asset-lifecycle` are removed in
 favour of eight narrower ones. Consumers referencing the old ids must re-point;
-the CHANGELOG carries the mapping. `kai-gtm` and `kai-personal`
-keep the eager declaration until they migrate.
+the CHANGELOG carries the mapping. Only `kai-personal`
+keeps the eager declaration until it migrates.
 
 Agent creation has an explicit contract: provider family, operating posture,
 scope, authority, execution profile, model policy, host-specific tools,
@@ -123,9 +130,10 @@ reconcile, then error.
 > it. The guide verifies replacement availability, requires the monolith to be
 > gone, installs core first, and checks every step.
 
-**The original five-package install layout is `kai-core` + `kai-personal` +
+**The original five-package install layout was `kai-core` + `kai-personal` +
 `kai-product` + `kai-engineering` + `kai-gtm`.** This refactor adds
-`kai-assistant`, `kai-creative` and `kai-marketing` to the checkout; verify availability in the
+`kai-assistant`, `kai-creative`, `kai-marketing` and `kai-revenue` to the checkout
+and retires `kai-gtm`; verify availability in the
 marketplace source you use rather than treating this source layout as a publication claim.
 Plugin-local agent and skill files are the canonical source. Generation refreshes
 routed scripts, each script's local module closure, the fleet hooks, manifests,
@@ -154,7 +162,8 @@ partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew. The committed marketplace index lists the package
 sources rather than the monolith. This branch adds `kai-assistant`,
-`kai-creative` and `kai-marketing` to that index; the entries alone do not establish remote
+`kai-creative`, `kai-marketing` and `kai-revenue` to that index and removes `kai-gtm`;
+the entries alone do not establish remote
 availability or publication.
 
 ```text
@@ -166,7 +175,7 @@ copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-revenue@kai-plugins
 ```
 
 The core pack carries the fleet observer and shared workspace machinery;
@@ -174,7 +183,7 @@ assistant carries personal tasks and voice; personal retains learning and career
 creative carries UI/UX, visual identity, and video/demo work; product carries
 discovery, analytics, growth and fitness-product assessment; engineering carries
 implementation, security, reliability, data and delivery; marketing carries
-positioning, campaigns, LinkedIn and search; gtm retains sales, pricing,
+positioning, campaigns, LinkedIn and search; revenue carries sales, pricing,
 partnerships, revenue operations, customer success and support. A CI rule keeps every
 marketplace source, name, description, and version aligned with its pack
 manifest. If legacy `kai` is installed, do not install packs beside it; see
@@ -226,7 +235,7 @@ copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-gtm@kai-plugins
+copilot plugin install kai-revenue@kai-plugins
 ```
 
 kai publishes its own marketplace index, because the host has deprecated direct
@@ -327,7 +336,7 @@ setup. To update, refresh the catalog, then update each installed pack:
 `copilot plugin update kai-product@kai-plugins`, and
 `copilot plugin update kai-marketing@kai-plugins`, and
 `copilot plugin update kai-engineering@kai-plugins`, and
-`copilot plugin update kai-gtm@kai-plugins`. Start a new session; to
+`copilot plugin update kai-revenue@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
 `kai-assistant`, `kai-creative` or `kai-marketing` only appears in that update list once installed

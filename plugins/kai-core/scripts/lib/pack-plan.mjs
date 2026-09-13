@@ -83,9 +83,8 @@ const MIGRATION_BASELINE_PACKS = {
     'principal-product-marketing', 'principal-demand-generation',
     'principal-linkedin-strategist', 'principal-seo',
   ],
-  gtm: [
-    'principal-sales',
-    'principal-partnerships', 'principal-pricing-monetization',
+  revenue: [
+    'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
   ],
   personal: [
@@ -101,7 +100,7 @@ export const NEW_AGENT_IDS = {
   engineering: ['eng-lead-technical-writing'],
   product: [],
   marketing: [],
-  gtm: [],
+  revenue: [],
   personal: [],
 };
 
@@ -145,7 +144,7 @@ export const PACK_RUNTIME_DEPENDENCIES = {
   engineering: [],
   product: [],
   marketing: [],
-  gtm: [],
+  revenue: [],
   personal: [],
 };
 
@@ -198,6 +197,7 @@ const PACK_DESCRIPTIONS = {
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
   product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
   marketing: 'Positioning, campaigns, social content, and search visibility over kai-core.',
+  revenue: 'Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.',
 };
 
 function packDescription(pack) {
@@ -611,7 +611,7 @@ export function planManifests({
     // Fixed key order for byte-stable JSON: name, version, description, agents, skills.
     const manifest = { name, version, description: packDescription(pack) };
     if (agents.length) manifest.agents = 'agents';
-    manifest.skills = 'skills';
+    if (skills.length) manifest.skills = 'skills';
     const npm = packPackageMetadata({ pack, name, version, ...packageMetadata });
 
     return {

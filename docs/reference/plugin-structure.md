@@ -249,7 +249,8 @@ push.
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
    From an already-migrated home, uninstall every installed capability pack,
    including `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-personal`,
-   `kai-product`, `kai-engineering`, and `kai-gtm` first, then uninstall
+   `kai-product`, `kai-engineering`, and `kai-revenue` first (also remove any
+   retired `kai-gtm` install still present), then uninstall
    `kai-core` last.
    Confirm `copilot plugin list` shows neither surface, then install
    `kai@kai-plugins`, then start a fresh session. Never install the restored
