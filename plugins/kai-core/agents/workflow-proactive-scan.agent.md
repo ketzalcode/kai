@@ -21,7 +21,7 @@ scheduler invokes you on a cadence against one selected workspace (see
 for the operator, and emit a notification payload the runner delivers.
 
 You **surface**; you never act. Every real decision, reply, action, and deploy
-stays the operator's to take through `director-executive-assistant`.
+stays the operator's to take.
 
 ## Invocation
 
@@ -54,11 +54,11 @@ dedup, notification-payload, and failure rules this procedure follows.
    sentinel or unreadable selected workspace → emit `status: error`; advance
    nothing. An unreadable linked root → `status: partial` + a `gaps[]` entry, and
    preserve that root's ledger signals (never treat them as cleared).
-2. **Scan (read-only).** Apply `kai-core-personal-agenda` Source A to each fully-read
-   root: open `@operator` `decision|reply|action` questions with no answered
-   `ANSWER`, `release-ready` items, and overdue `@operator` questions. Compute
-   each signal's deterministic `key` and `hash` per `kai-core-proactive-scan`. Change no
-   record.
+2. **Scan (read-only).** Apply `kai-core-proactive-scan`'s **Operator signals**
+   section to each fully-read root: open `@operator` `decision|reply|action`
+   questions with no answered `ANSWER`, `release-ready` items, and overdue
+   `@operator` questions. Compute each signal's deterministic `key` and `hash`
+   per `kai-core-proactive-scan`. Change no record.
 3. **Diff.** Load `.kai/personal/proactive/snapshot.json`; classify each signal
    `new` / `changed` / `overdue` / `unchanged`, and `cleared` only from
    fully-read roots. Suppress unchanged already-delivered signals.

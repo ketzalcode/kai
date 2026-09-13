@@ -57,29 +57,25 @@ Three categories, with optional linked-workspace discovery:
 
 Surface only what genuinely needs **the operator** — the human who owns vision,
 final business boundaries, requested replies/actions, and the deploy button.
-Routine scope promotion and priority remain steward-owned. Map each coordination
-fact to exactly one agenda section:
+Routine scope promotion and priority remain steward-owned.
 
-| Signal (from `.kai/state/`) | Detection | Section |
-|---|---|---|
-| Decision awaiting you | a thread `QUESTION` addressed to `@operator` with `kind: decision` and no matching answered `ANSWER`; if blocking, its ID must also appear in the item's `waiting_on_questions` | ⛔ Decisions |
-| Question addressed to you | an open thread `QUESTION` addressed to `@operator` with `kind: reply` and no matching `ANSWER` | ✉️ Awaiting reply |
-| Action only you can perform | a thread `QUESTION` addressed to `@operator` with `kind: action` and no matching answered `ANSWER`; if blocking, its ID appears in `waiting_on_questions` | ⚡ Actions |
-| Ready for you to ship | an item in `release-ready` (the human deploy gate — only the operator presses go) | 🚀 Ready to ship |
-| Blocked on you | a `blocked` item whose `waiting_on_questions` contains an open `@operator` question; classify it by that question's `kind` | ⛔, ✉️, or ⚡ |
-| Overdue operator request | an unanswered `@operator` question whose `answer_by` timestamp passed | raise within its existing section |
+Detection is `kai-core-proactive-scan`'s canonical **Operator signals** section
+— this skill consumes it and does not reinterpret or duplicate its rules (the
+open-question, `kind`, release-ready-gate, overdue, blocking-association, and
+missing-input distinctions all live there). Map each signal it identifies to
+exactly one agenda section:
 
-Read items and threads as authoritative; never infer a decision the records
-don't show. If `.kai/state/` is absent (no team workspace), skip section A and
-say so — never fabricate team signals.
+| Signal (`kai-core-proactive-scan` → Operator signals) | Section |
+|---|---|
+| Decision awaiting the operator | ⛔ Decisions |
+| Question addressed to the operator | ✉️ Awaiting reply |
+| Action only the operator can perform | ⚡ Actions |
+| Ready for the operator to ship | 🚀 Ready to ship |
+| Blocked on the operator | ⛔, ✉️, or ⚡ (classify by the blocking question's `kind`) |
+| Overdue operator request | raise within its existing section |
 
-Because threads are append-only, "open" always means **no matching answered
-ANSWER packet exists for that question ID**. Do not trust the original
-QUESTION's `status: open` after an ANSWER has been appended.
-
-A `proposed` item by itself is **not** an operator signal. The initiative
-steward owns promotion and priority. Surface a proposed item only when its
-thread contains an explicit open `@operator` question under the rules above.
+If `.kai/state/` is absent (no team workspace), skip section A and say so —
+never fabricate team signals.
 
 ### B. Personal inbox (`.kai/personal/inbox.md`)
 
