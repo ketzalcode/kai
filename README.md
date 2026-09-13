@@ -48,8 +48,8 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v7.0.0` is this checkout's prepared metadata version. Its **56 agents and
-57 skills** are organized across eight plugin directories targeting the
+`v7.0.0` is this checkout's prepared metadata version. Its **55 agents and
+47 skills** are organized across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
 `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this refactor branch; their
@@ -328,12 +328,12 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's full 56-agent, 57-skill surface has eight owners:
+The repository's full 55-agent, 47-skill surface has eight owners:
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
 | `kai-core` | 6 / 27 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 20 / 15 | Implementation, architecture, reliability, trust, technical writing |
+| `kai-engineering` | 19 / 5 | Implementation, architecture, reliability, trust, technical writing |
 | `kai-product` | 10 / 1 | Discovery, scope, evidence, analytics, product-led growth and product audits |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets and supported media production |
 | `kai-marketing` | 4 / 2 | Positioning, campaigns, social content and search visibility |

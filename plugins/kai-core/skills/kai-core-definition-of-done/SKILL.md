@@ -16,8 +16,8 @@ It is **not** a standalone trigger skill. The `workflow-ship` agent
 **owns and runs** this gate at the `in-review -> release-ready` transition,
 then confirms deployment and production verification before `shipped`. Every
 acting agent also **self-checks** against it before moving its own item to
-`in-review`, the same way `review-*` lenses inherit `doc-review-rigor` and
-`kai-core-scope-discipline` rides with the roles that can act.
+`in-review`, while `kai-core-scope-discipline` rides with the roles that can
+act.
 
 ## The core stance
 
@@ -48,12 +48,9 @@ doesn't apply to this change is waived, not faked-Clear).
 | 1 | **scope-true** | Did we build the thing we agreed to, and only that? | The diff satisfies the item's `needs`/acceptance from its thread and stays inside the initiative's `scope.current`. Anything scope-expanding was rerouted as a `PROPOSAL` (per `kai-core-scope-discipline`), not smuggled into this diff. |
 | 2 | **verified** | Do we *know* it works, or do we assume it? | Implementing principals' automated tests + build are green; relevant independent QA/system checks ran when applicable; for a user-facing surface, UI/UX validation is linked rather than assumed, and a **net-new or materially-changed** surface additionally carries **design sign-off** (see the sub-gate below). |
 | 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. For a net-new/materially-changed user-facing surface, that set **must include** a `principal-product-designer` design-conformance verdict on the current `change_ref`, **unless** a recorded product-design waiver applies (see the sub-gate below). |
-| 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. Run the `review-rollout-operability` lens here. |
+| 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. |
 | 5 | **documented** | Will the next person understand what shipped? | Accepted reusable decisions and designs publish under `<project-root>/<publication-root>/`; user-facing and operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
 | 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, parked ideas are in the committed backlog, and every generated asset passed the `kai-core-asset-producing` close transaction. |
-
-Dimension 4 **reuses `review-rollout-operability`** — don't re-derive the
-rollout/reversibility questions; apply that lens and record its verdict.
 
 Document lenses are not formal approvals. When `review_requirements` names
 `principal-security` (`independent-security`), `principal-sre`

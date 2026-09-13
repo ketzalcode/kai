@@ -66,8 +66,7 @@ doesn't have — match rigor to blast radius.
 1. **Run the whole DoD gate — all six dimensions.**
    Apply `kai-core-definition-of-done` and resolve each dimension to
    **Clear**, **Gap**, or **Waived-with-reason**. Never skip one silently.
-   Reuse `review-rollout-operability` for dimension 4, and require the exact
-   revision-bound review evidence (e.g. `independent-security`,
+   Require the exact revision-bound review evidence (e.g. `independent-security`,
    `reliability-operability`, `privacy-compliance`, `experiment-integrity`) for
    every `review_requirements` entry the item names.
 2. **Any Gap → BOUNCE.** Set the authoritative item back to `in-progress`; if
@@ -200,9 +199,8 @@ back.
 2. **Load the initiative if in scope.** Per the gating rule. Pin
    `scope.current` and `non_negotiable[]` for dimension 1.
 3. **Run the DoD gate.** Walk all six dimensions. Gather evidence — read
-   the diff, the QA report, the review artifact; apply
-   `review-rollout-operability` for dim-4. Resolve each to Clear / Gap /
-   Waived-with-reason. Be proportional.
+   the diff, the QA report, and the review artifact. Resolve each to Clear /
+   Gap / Waived-with-reason. Be proportional.
 4. **Decide readiness.** Any Gap -> **BOUNCE**. All Clear-or-Waived ->
    **RELEASE-READY**.
 5. **BOUNCE.** Set the authoritative item to `in-progress`, or capture the

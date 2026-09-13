@@ -16,8 +16,7 @@ record.**
 
 It is **not** a standalone trigger skill. `kai-core-work-acting` pulls it in
 as its durable transport, and any agent that consults a sister lane pulls
-it in for the live/inline transports — the same way `review-*` lenses pull
-in `doc-review-rigor`.
+it in for the live/inline transports.
 
 ## The one packet
 

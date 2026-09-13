@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **57 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
+kai ships **55 agents** and **47 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -70,14 +70,6 @@ Independent judgment on security, privacy, reliability, and live incidents.
 | [`principal-privacy-compliance`](../../plugins/kai-engineering/agents/principal-privacy-compliance.agent.md) | Designs SaaS privacy and compliance artifacts: DPIAs, data inventories, lawful-basis maps, DSR processes, consent, retention, notices, framework reviews, and breach-notification analysis. Not security controls. |
 | [`principal-sre`](../../plugins/kai-engineering/agents/principal-sre.agent.md) | Defines SaaS reliability contracts, readiness, recovery behavior, capacity, observability, alerting, runbooks, and reliability review. Use for production-readiness judgment. Not architecture, infra implementation, or incident command. |
 | [`workflow-incident-response`](../../plugins/kai-engineering/agents/workflow-incident-response.agent.md) | Runs incident command for SaaS operational, security, data, or availability events: SEV, leads, timeline, action packets, status drafts, recovery evidence, and record. Use when an incident starts. Not production actions or breach/legal declarations. |
-
-### Document review
-
-One orchestrator that fans a document out to the review lenses and aggregates the verdict.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`workflow-doc-review`](../../plugins/kai-engineering/agents/workflow-doc-review.agent.md) | Produces one consolidated substance review for a design doc, PRD, RFC, strategy doc, or proposal. Use when a draft document needs routed multi-lens review. Not implementation or auto-posting. |
 
 ### Product
 
@@ -259,23 +251,6 @@ Per-change discipline every `principal-swe-*` agent routes.
 | [`kai-core-pr-delivery`](../../plugins/kai-core/skills/kai-core-pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | Fast codebase onboarding report. Use when mapping an unfamiliar repo's stack, commands, architecture, conventions, patterns, and gotchas for future sessions. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | Shared diagram vocabulary and ASCII-first rules. Use when writing a design, decision, or engineering doc, or a README, needing system, data, flow, state, or topology diagrams. |
-
-### Document review
-
-The method plus the lenses behind `workflow-doc-review`.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`doc-review-rigor`](../../plugins/kai-engineering/skills/doc-review-rigor/SKILL.md) | Document review rigor method. Use from review dimension skills or workflow-doc-review when judging load-bearing claims, evidence, confidence, and value. |
-| [`review-rationale`](../../plugins/kai-engineering/skills/review-rationale/SKILL.md) | Rationale review lens. Use when pressure-testing a doc's problem statement, premises, reasoning chain, or why this solution follows. |
-| [`review-alternatives`](../../plugins/kai-engineering/skills/review-alternatives/SKILL.md) | Alternatives review lens. Use when a doc must justify the chosen option against tradeoffs, missing options, do-nothing, buy/build, or smaller steps. |
-| [`review-risks-scope`](../../plugins/kai-engineering/skills/review-risks-scope/SKILL.md) | Risks and scope review lens. Use when checking whether risks, mitigations, assumptions, in-scope work, and out-of-scope work are explicit. |
-| [`review-success-metrics`](../../plugins/kai-engineering/skills/review-success-metrics/SKILL.md) | Success metrics review lens. Use when a doc needs measurable goals, baselines, targets, instrumentation, or checks for gameable proxy metrics. |
-| [`review-security-privacy`](../../plugins/kai-engineering/skills/review-security-privacy/SKILL.md) | Security and privacy review lens. Use when a doc touches data, auth, PII, secrets, trust boundaries, threat surface, or external sharing. |
-| [`review-performance-scale`](../../plugins/kai-engineering/skills/review-performance-scale/SKILL.md) | Performance and scale review lens. Use when a doc proposes a service, API, data path, latency budget, volume, concurrency, or load-sensitive work. |
-| [`review-dependencies`](../../plugins/kai-engineering/skills/review-dependencies/SKILL.md) | Dependencies review lens. Use when work crosses team, service, API, upstream/downstream, sign-off, breaking-change, or third-party boundaries. |
-| [`review-rollout-operability`](../../plugins/kai-engineering/skills/review-rollout-operability/SKILL.md) | Rollout and operability review lens. Use when production changes need staged rollout, rollback, kill switch, monitoring, alerts, on-call, or runbooks. |
-| [`review-ux-accessibility`](../../plugins/kai-engineering/skills/review-ux-accessibility/SKILL.md) | UX and accessibility review lens. Use when a user-facing UI doc needs flows, states, edge cases, keyboard, focus, screen-reader, contrast, or motion review. |
 
 ### Design grounding
 

@@ -118,7 +118,7 @@ Source anchors:
 
 - [Research skill](../../../plugins/kai-engineering/skills/research-before-coding/SKILL.md)
 - [Coding style](../../../plugins/kai-engineering/skills/coding-style/SKILL.md)
-- [Document-review routing](../../../plugins/kai-engineering/agents/workflow-doc-review.agent.md)
+- [Document-review routing at the recorded source baseline](https://github.com/RubenSaucedo/kai/blob/1a748c017a8ccfe83128edb0f2481a67d567ef0a/plugins/kai-engineering/agents/workflow-doc-review.agent.md)
 - [Issue-analysis caller](../../../plugins/kai-engineering/agents/workflow-issue-analysis.agent.md)
 
 The source validator checks reference resolution in particular syntactic forms,

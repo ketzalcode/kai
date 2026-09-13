@@ -86,7 +86,7 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 56-agent, 57-skill surface is committed across eight packs on this
+The full 55-agent, 47-skill surface is committed across eight packs on this
 branch's checkout. This describes source ownership, not publication;
 remote availability of `kai-assistant`, `kai-creative`, `kai-marketing`,
 `kai-revenue` and `kai-learning` remains unverified.

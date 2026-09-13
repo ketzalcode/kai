@@ -18,7 +18,7 @@ this refactor; see the availability and replacement guidance in Getting started.
 
 | Page | Contents |
 | ---- | -------- |
-| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 56 agents and 57 skills, generated from their shipped frontmatter so it cannot drift. |
+| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 55 agents and 47 skills, generated from their shipped frontmatter so it cannot drift. |
 | [Package: `kai-assistant`](reference/packages/kai-assistant.md) | What the personal-assistance package owns, where its private state lives, its acceptance scenarios, and its current limitations. |
 | [Package: `kai-creative`](reference/packages/kai-creative.md) | UI/UX, visual identity and media; supplied-input boundaries and demo-runtime prerequisites. |
 | [Package: `kai-product`](reference/packages/kai-product.md) | Discovery, scope, analytics, growth and product assessment; independent acceptance boundaries. |

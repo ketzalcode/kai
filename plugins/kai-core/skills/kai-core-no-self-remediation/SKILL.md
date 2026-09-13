@@ -21,7 +21,6 @@ worth knowing why before anyone tries it again. These roles **must** write.
 Their output *is* a file:
 
 - `principal-security` writes local evidence;
-- `workflow-doc-review` writes `review.md` under a run path;
 - `principal-qa-ui` stubs and then fills `report.md`.
 
 So the needed constraint is not *whether* you may write. It is **where**:

@@ -135,9 +135,9 @@ Require `reliability-operability` review for:
 - materially changed blast radius;
 - launch without an established rollback/recovery path.
 
-Routine, reversible, low-blast-radius changes take the lightweight lens
-instead: apply `review-rollout-operability` as the document/change review for
-them; it is not SRE ceremony and does not count as SRE approval.
+Routine, reversible, low-blast-radius changes do not require formal SRE review.
+Assess them proportionally under the change's existing engineering and release
+checks; those checks do not count as SRE approval.
 
 ## Workflow
 

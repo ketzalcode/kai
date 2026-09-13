@@ -510,8 +510,6 @@ than your own read of them.
 
 - **Architectural deep-dives of the operator's own systems** →
   `principal-swe-architect`.
-- **Reviewing a specific document the operator wrote** →
-  `workflow-doc-review`.
 - **Turning a briefing into an audio lesson with diagrams and
   chapter splits** → `instructor-teacher` plus the
   `humanize-architecture-docs` + `generate-html-lesson` skills.
