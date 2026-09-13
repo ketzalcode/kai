@@ -12,6 +12,10 @@
 
 **Baseline:** `03c5b2c` (assistant merged in #209); prepared metadata `6.0.0`.
 
+**Execution status:** all five package units and final source integration are
+complete through `0d88533`. PR creation is the remaining controller action.
+Runtime/full-suite validation and the two refinement passes remain deferred.
+
 ## Global Constraints
 
 - Packages describe useful capabilities a user installs, not agent prefixes or an organizational reporting chart.
@@ -120,7 +124,7 @@ actually requires it.
 UI/interaction designs, identity systems, video direction and supported demo
 artifacts. Marketing is a possible input producer, not a required install.
 
-- [ ] **Step 1: Move source and register the creative provider.**
+- [x] **Step 1: Move source and register the creative provider.**
 
 Use this ownership entry:
 
@@ -140,7 +144,7 @@ The canonical description is:
 UI/UX, visual identity, design assets, and supported media production over kai-core.
 ```
 
-- [ ] **Step 2: Refactor the three agents and seven methods.**
+- [x] **Step 2: Refactor the three agents and seven methods.**
 
 Preserve the product designer's interaction/state/accessibility discipline and
 design-review boundary; the brand designer's visual-identity craft and evidence
@@ -157,7 +161,7 @@ vs measured take distinction, paid-synthesis consent, no automatic paid retry,
 and incomplete-output reporting. A plan is not a rendered video. Directly
 invocable capture/narration/zoom methods remain available within creative.
 
-- [ ] **Step 3: Move runtime ownership without changing media algorithms.**
+- [x] **Step 3: Move runtime ownership without changing media algorithms.**
 
 Resolve every demo helper from its loaded creative provider root, not the
 operator's cwd or a hardcoded personal directory. Trace the existing invoked
@@ -170,7 +174,7 @@ set `personal: []`; otherwise retain the declaration until the last actual
 consumer moves and record why. Do not run synthesis, recording, network media
 calls, npm installs, or helper self-tests during this refactor.
 
-- [ ] **Step 4: Generate, inspect, document and commit the complete package.**
+- [x] **Step 4: Generate, inspect, document and commit the complete package.**
 
 Correct the catalog's creative membership and marketplace entry. Generate
 using the shared sequence. Inspect agent/skill uniqueness, relative provider
@@ -204,7 +208,7 @@ surface to inspect; produces scoped briefs, neutral maps, grounded analysis,
 domain/experience assessment, and experiment judgments. Creative owns design;
 engineering owns implementation.
 
-- [ ] **Step 1: Complete the product ownership entry.**
+- [x] **Step 1: Complete the product ownership entry.**
 
 ```js
 product: [
@@ -223,7 +227,7 @@ runtime dependencies. The canonical description is:
 Product discovery, scope, evidence, analytics, and product-led growth over kai-core.
 ```
 
-- [ ] **Step 2: Refactor the ten agents and exploration method together.**
+- [x] **Step 2: Refactor the ten agents and exploration method together.**
 
 Preserve PM scope/stewardship and truthful closure; strategist opportunity
 assessment; analytics metric/causal rigor; privacy-first feedback synthesis;
@@ -240,7 +244,7 @@ steward actually closes an initiative. Remove residual ownership of UI/brand
 design and mandatory calls to creative/engineering to complete a product
 brief or assessment. Proposing the next owner is not performing their work.
 
-- [ ] **Step 3: Generate, inspect, document and commit.**
+- [x] **Step 3: Generate, inspect, document and commit.**
 
 Use the shared generation sequence. The note names all ten roles, product
 exploration, direct inputs/outputs, preserved assessment boundaries and
@@ -266,7 +270,7 @@ campaign/audience constraints; produces grounded intelligence, positioning,
 campaign/content plans and search assessments. It does not own design, product
 priority, deals, or publishing authority.
 
-- [ ] **Step 1: Register and move the marketing unit.**
+- [x] **Step 1: Register and move the marketing unit.**
 
 ```js
 marketing: [
@@ -282,7 +286,7 @@ the moved IDs from gtm. The canonical description is:
 Positioning, campaigns, social content, and search visibility over kai-core.
 ```
 
-- [ ] **Step 2: Make the four agents and two methods directly usable.**
+- [x] **Step 2: Make the four agents and two methods directly usable.**
 
 Preserve claim ledgers, provenance, the current intelligence/media schemas,
 locked factual spans, consented inputs, SEO evidence limits and assessor
@@ -295,7 +299,7 @@ intel to avoid a dependency. The LinkedIn/content baseline can be neutral or
 explicitly requested brand voice; personal voice is an optional enhancement,
 not a required assistant dispatch. Never auto-publish.
 
-- [ ] **Step 3: Generate, inspect, document and commit.**
+- [x] **Step 3: Generate, inspect, document and commit.**
 
 Use the shared generation sequence. Confirm both methods and all agents have
 one provider and no required sibling skill loads. Document representative
@@ -319,7 +323,7 @@ optional local-skill component.
 partner evidence; produces commercial recommendations and support intake
 artifacts, not contractual commitments, outbound contact, or engineering work.
 
-- [ ] **Step 1: Register and move the revenue unit.**
+- [x] **Step 1: Register and move the revenue unit.**
 
 ```js
 revenue: [
@@ -336,7 +340,7 @@ keys once no source remains there. The canonical description is:
 Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.
 ```
 
-- [ ] **Step 2: Preserve the six commercial roles' direct capabilities.**
+- [x] **Step 2: Preserve the six commercial roles' direct capabilities.**
 
 Keep pricing authority separate from sales recommendations; preserve
 evidence-backed forecasts, uncertainty, contractual/legal boundaries,
@@ -349,7 +353,7 @@ Revenue has no approved standalone local skill. Retain its actual procedures
 in the agent bodies; do not add a dummy skill or an empty-directory marker
 merely to fill the package.
 
-- [ ] **Step 3: Emit an honest agent-only local component surface.**
+- [x] **Step 3: Emit an honest agent-only local component surface.**
 
 `planManifests` currently declares `manifest.skills = 'skills'` even when the
 pack owns none. Change only that emitter statement to:
@@ -363,7 +367,7 @@ component does not remove their core access. Do not change validation rules
 or fabricate a local skill to satisfy an old expectation. This emitter change
 is needed for the actual install shape, not test cleanup.
 
-- [ ] **Step 4: Retire the old install entry, generate and commit.**
+- [x] **Step 4: Retire the old install entry, generate and commit.**
 
 Verify no authoritative agent/skill remains in gtm, then remove its marketplace
 entry and tracked generated manifests/scripts. Inspect before deleting any
@@ -391,7 +395,7 @@ commercial use and unverified runtime/connection capabilities; continue to Task 
 goals and consented source URLs; produces teaching, learning plans, extracted
 material, HTML lessons and supported audio via existing core utilities.
 
-- [ ] **Step 1: Register and move the learning unit.**
+- [x] **Step 1: Register and move the learning unit.**
 
 ```js
 learning: [
@@ -410,7 +414,7 @@ The canonical description is:
 Teaching, tutoring, learning paths, lesson production, and career development over kai-core.
 ```
 
-- [ ] **Step 2: Refactor the five roles and lesson method together.**
+- [x] **Step 2: Refactor the five roles and lesson method together.**
 
 Preserve concrete-first teaching, source-fidelity, knowledge checks, learning
 progress/history, user-owned goals, career confidentiality, and the distinction
@@ -427,7 +431,7 @@ Resolve all invoked helpers from their actual provider root. Do not leave a
 personal-plugin path after moving the source. Preserve subject scope and
 domain craft rather than inventing a new all-purpose coach.
 
-- [ ] **Step 3: Retire personal, generate and commit.**
+- [x] **Step 3: Retire personal, generate and commit.**
 
 After confirming all original personal assets moved to their approved owners,
 remove its registry/runtime keys, marketplace entry, and tracked generated
@@ -459,7 +463,7 @@ its committed work. The controller owns independent review, review fixes,
 and the authorized push/PR in step 5. A worker's self-review is not the final
 independent review and is not permission to publish the PR early.
 
-- [ ] **Step 1: Inspect the final ownership surface.**
+- [x] **Step 1: Inspect the final ownership surface.**
 
 The final tracked plugin names must be exactly:
 
@@ -485,7 +489,7 @@ remaining agents must be off the eager declaration and guard region. Report
 or fix actual missing source, lost craft, unsupported ownership or companion
 breakage; do not run policy validators to find a number to reduce.
 
-- [ ] **Step 2: Update current installation and responsibility documentation.**
+- [x] **Step 2: Update current installation and responsibility documentation.**
 
 Describe eight actual package owners and the new direct-task boundaries.
 Remove current instructions to install the retired gtm/personal packages.
@@ -497,7 +501,7 @@ Keep old names in dated historical records where they describe the past.
 Current source/runtime/docs references must not direct an operator to an
 absent plugin or helper. Preserve `.kai/personal/` workspace paths.
 
-- [ ] **Step 3: Perform the single batched PR metadata update.**
+- [x] **Step 3: Perform the single batched PR metadata update.**
 
 The public install surface removes two packages, so prepare `7.0.0` metadata:
 
@@ -514,7 +518,7 @@ Run the shared generation sequence once more and inspect the metadata diff.
 Do not install dependencies merely because versions changed; runtime
 declarations are moved, not new external libraries.
 
-- [ ] **Step 4: Record source-review findings and remaining limits.**
+- [x] **Step 4: Record source-review findings and remaining limits.**
 
 Use focused package reviews and one final integration review, not repeated
 whole-repo audits. Preserve actual fixes, any parked issues and all execution
@@ -554,3 +558,114 @@ tagging, release publication, or disabling branch protection.
 | No more package-selection stops | Operator correction and continuous task sequencing |
 | One PR; no implicit merge/publication | Task 6 step 5 |
 | Deferred safety/testing and two refinements | Existing approved rollout agreement; not silently pulled into this implementation phase |
+
+## Execution record — 2026-09-12
+
+All eight target package directories now exist on
+`kai/refactor/remaining-packages`. The old gtm/personal plugin directories and
+marketplace entries are removed without aliases; `.kai/personal/` data
+conventions remain. Against `03c5b2c`, raw inventories preserve all 56 agent
+and 57 skill IDs, without duplicate sources.
+
+| Package | Agent sources | Local skill sources |
+| --- | ---: | ---: |
+| `kai-core` | 6 | 27 |
+| `kai-engineering` | 20 | 15 |
+| `kai-product` | 10 | 1 |
+| `kai-creative` | 3 | 7 |
+| `kai-marketing` | 4 | 2 |
+| `kai-revenue` | 6 | 0 |
+| `kai-assistant` | 2 | 4 |
+| `kai-learning` | 5 | 1 |
+
+### Implementation and review
+
+| Commit | Delivered source |
+| --- | --- |
+| `2631d7a` | Creative agents, methods and media runtime |
+| `f436eeb` | Producer-neutral core evidence admission, preserving grounding/acceptance |
+| `366556c` | Product scope, growth and assessment roles |
+| `f938959` | Marketing roles and methods |
+| `666d097` | Revenue roles; gtm retirement; optional local-skill manifest component |
+| `d559696` | Learning roles/method; personal-plugin retirement |
+| `c652c6a` | Certification hard rule aligned with supplied-outline fallback |
+| `b90f333` | Eight-package install guidance and prepared `7.0.0` metadata |
+| `0d88533` | Two prompt-size fixes and verified-empty local move cleanup |
+
+Every package unit received a focused source review. Creative's two loaded
+core-input contradictions and learning's fallback contradiction were fixed
+and re-reviewed. A fresh final reviewer combined Task 6 review with
+cross-package integration review, confirming owners, IDs, components, helper
+closure, retirement guidance and metadata.
+
+That final review found two prompts over the real 30,000-character ceiling.
+The scoped fix/re-review preserved frontmatter, explicit routes, modes,
+authority, privacy/history, independent acceptance and audio consent while
+reducing the complete LF-normalized definitions:
+
+| Agent | Before | After |
+| --- | ---: | ---: |
+| `principal-product-manager` | 30,386 | 29,773 |
+| `instructor-tutor` | 30,686 | 29,847 |
+
+Both verified-empty old product skill directories were removed; their actual
+creative skill sources remain unchanged. No Important/Critical source blocker
+remained within the final review's stated coverage.
+
+### Generation and checks
+
+The existing host-inventory, catalog and pack generation commands succeeded.
+Final integration emitted 43 derived files, including core's previously
+missing canonical communication-style Markdown input. The eight package
+manifests/index and root metadata agree on prepared `7.0.0`; core and creative
+retain the existing pinned Lectoria dependency and helper closures.
+The root managed communication block stayed unchanged.
+
+One `npm test` invocation was made at PR preparation, an explicit exception to
+the per-task source/generation-only boundary. At `b90f333` it stopped at the
+initial contract validator with **57 findings**; subsequent suite stages never
+executed. That capture preceded the two prompt-size fixes and cleanup of two
+local empty directories. It is not a current diagnostic count or a successful
+full-suite result. No policy/fixture repair loop followed.
+
+Final fix evidence is raw source length/section comparison and independent
+source re-review. `git diff --check` was clean. No runtime agent scenario,
+installation, browser/clinical assessment, recording, synthesis, paid call or
+release publication was performed.
+
+### Remaining limits
+
+- Naming/profile/taxonomy policy, historical deleted-name references,
+  ordering-phrase pins, old-package fixtures and guided-installer expectations
+  remain deferred. Revenue's absent local skills component is intentional.
+- Static ownership and explicit routes do not prove effective host discovery,
+  tool grants, instruction execution, consent enforcement or output quality.
+- Record preservation, real leases/collisions, independent acceptance,
+  extraction/clinical applicability, audio/video output and installation remain
+  runtime-unverified.
+- Two refinement passes and consolidated safety, behavioral, test/CI work
+  still follow. A PR and prepared metadata do not establish release readiness.
+
+### Rulings I made
+
+This is the complete ruling list preserved from the temporary execution ledger
+before cleanup, in order. It includes the later PR-check exception rather than
+rewriting the earlier evidence boundary as if that exception had not occurred.
+
+Ruling: Continue through all six tasks without another package-selection prompt — the operator explicitly corrected the previous stop-after-one interpretation — cost if wrong: more work proceeds before another human checkpoint, bounded by the already-approved ownership spec.
+
+Ruling: Use the existing clean named-branch checkout with sequential writers rather than create a new linked worktree — this preserves the preceding execution arrangement and avoids an unrelated setup detour — cost if wrong: concurrent local changes could interfere; inspect status and preserve unrelated edits before committing.
+
+Ruling: Limit evidence to source/inventory inspection and artifact generation; do not run policy validators or test suites — the operator explicitly deferred that phase — cost if wrong: runtime and test-policy defects remain unverified, and must be recorded rather than claimed passing.
+
+Ruling: Omit the revenue manifest's local skills component when it owns no local skills — the approved design permits inline domain procedures, while the current emitter would point at a nonexistent directory — cost if wrong: legacy policy may complain about the missing optional component; do not add a dummy skill or weaken the policy here.
+
+Ruling: Correct only the content/design grounding input-admission clauses that mandate a particular producer — creative's approved supplied-input baseline otherwise conflicts with the core method it loads — cost if wrong: overly broad admission could weaken grounding; retain actual provenance, evidence coverage, metric restrictions, proposal status, and independent acceptance, and re-review those clauses.
+
+Ruling: Correct the single contradictory path-mentor hard rule directly and include it in a scoped independent re-review — its exact supplied-outline exception was already approved and present in the same file, so another implementer dispatch would add no design work — cost if wrong: a narrow source change could weaken grounding; retain dated official evidence, citation, freshness disclosure and no invented objectives.
+
+Ruling: Combine Task 6 review with the final cross-package integration review in one fresh high-capability seat — package-specific craft already received independent reviews, and a second identical integration pass would duplicate the same source — cost if wrong: fewer final independent readers; require explicit task and integration verdicts, review the cross-package seams, and state runtime/coverage limits.
+
+Ruling: Run the existing npm test entrypoint once at PR preparation, without starting a repair loop — this records the repository's PR-check evidence after implementation rather than validating each edit — cost if wrong: a deferred policy check still consumes time; record the initial failure and do not claim the rest of the suite ran.
+
+Ruling: Include the two real host-limit overages and empty-move remnants in the final source fix rather than treating every diagnostic as deferred policy — complete package files must fit the host and leave no misleading empty source directories — cost if wrong: wording compression can lose a unique obligation; preserve every domain/authority rule and verify both size and source meaning in scoped re-review.
