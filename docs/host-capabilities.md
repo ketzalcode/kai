@@ -51,9 +51,11 @@ paragraph as its core route — a loose vocabulary-and-placement check that
 accepts any of several verbs, not one fixed phrase. What the refusal says in the
 agent's own words, and that it narrows the agent to bounded direct work, is
 judged in review rather than by CI. Because a skill loads on demand rather
-than automatically, each route sits at the step whose rule it carries. Three
-packs — product, go-to-market, and personal — have not migrated yet and still
-carry the older eager declaration until they do.
+than automatically, each route sits at the step whose rule it carries. All
+eight current packages use task-local routes, without eager declarations or
+dependency-guard blocks. The current refactor was inspected at source level;
+effective tool grants, skill execution and degraded-mode behavior have not
+been rerun in either host.
 
 To check what a host actually discovered, run `copilot plugins list` (or
 `/skills` in a session) for kai's skills, and `/instructions` for the separate

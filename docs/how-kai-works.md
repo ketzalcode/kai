@@ -3,8 +3,34 @@
 # How kai works
 
 Which role fires when, and how a need travels to production. Every diagram below
-is a *scenario*, not a mandatory pipeline. If you just want to get started, the
-front doors route for you — see [Getting started](getting-started.md).
+is a *scenario*, not a mandatory pipeline. Invoke a capability directly; ask
+for coordination only when needed — see [Getting started](getting-started.md).
+
+## Package boundaries
+
+The supported baseline is **core plus the selected capability package**:
+
+| Package | Direct responsibility |
+| --- | --- |
+| `kai-core` | Shared contracts, workspace infrastructure and explicitly requested coordination |
+| `kai-engineering` | Implementation, architecture, reliability, trust and technical writing |
+| `kai-product` | Discovery, scope, evidence, analytics, growth and product-audit perspectives |
+| `kai-creative` | UI/UX, visual identity, assets and supported media production |
+| `kai-marketing` | Positioning, campaigns, social content and search |
+| `kai-revenue` | Sales, pricing, partnerships, revenue operations, success and support intake |
+| `kai-assistant` | Personal tasks, priorities, briefings and user-voice drafts |
+| `kai-learning` | Teaching, tutoring, paths, materials and career development |
+
+Supplied briefs, factual maps, media, account evidence and learning outlines can
+be direct inputs; their usual producer is not a mandatory installed sibling.
+Missing evidence narrows the answer. It never licenses invented facts or a
+simulated specialist verdict. Scope, design acceptance, independent assessment,
+commercial commitments and learning completion remain with their real owners.
+The 56 agents / 57 skills and prepared `7.0.0` metadata describe source, not
+publication or verified task execution. Retired gtm/personal plugins have no
+aliases; private `.kai/personal/` data remains unchanged.
+
+## Interaction scenarios
 
 These agents are **not a fixed pipeline** — they're a *triggered graph*.
 Each fires only when its kind of judgment is needed, and several are
@@ -43,11 +69,11 @@ item and thread files.
 For personal work, `personal-assistant` (flow 8) handles your own tasks,
 priorities, briefings, and drafts directly, in the selected Kai workspace, when
 you ask it to. It is not a router and not a required first step: a delivery
-request goes to the Chief of Staff, and review/design/exploration goes to that
+coordination request goes to the Chief of Staff, and review/design/exploration goes to that
 specialist. It ships in the optional `kai-assistant` pack; core works without
 it.
 
-**0 · Onboarding (run once per workspace)** — `workflow-workspace-init`
+**0 · Onboarding (when durable workspace state is needed)** — `workflow-workspace-init`
 validates the full workspace contract for either a repository or a durable
 standalone folder and seeds private assistant and identity stubs.
 
@@ -232,17 +258,23 @@ leads; the operator performs every production action.
             (Explain-in-chat / Lesson / Series modes — any subject)
 
  a whole cert ──► instructor-path-mentor ──► .kai/personal/learning/<slug>.md  (plan · progress · review)
-                 (dispatches the three above per objective; tracks where you are)
+                 (direct step teaching; requested local HTML/core extraction or audio)
 ```
 
-**5 · Writing & career (`.kai/personal/identity/`)** — one workspace-local profile folder powers both your voice and career track.
+Learning owns these five teaching/career/extraction roles and its HTML method.
+HTML-only needs no audio runtime. Audio requires a separate request, consent
+and core runtime; planning a step does not prove learning completion.
+
+**5 · Writing & career (`.kai/personal/identity/`)** — assistant owns voice
+methods; learning owns IC-career judgment. They can use supplied preferences
+and career facts without installing one another.
 
 ```
- chat history / ──► extract-writing-style ──► .kai/personal/identity/voice.md ──┬─► persona-self ──► draft in your voice
- PR comments / samples                          (workspace profile)        │   (Draft / Rewrite / Reply)
-                                                                           │
- first-run intake ──► principal-engineer-career-mentor ──► .kai/personal/identity/career-*.md ─┘
-                      (weekly · quarterly · spot · cert · visibility modes)  └─► honest guidance, never auto-posts
+ chat history / ──► extract-writing-style ──► .kai/personal/identity/voice.md ──► persona-self ──► draft in your voice
+ PR comments / samples                          (workspace profile)             (Draft / Rewrite / Reply)
+
+ supplied career facts ──► principal-engineer-career-mentor ──► guidance / talking points
+                            (optional selected private career records; never auto-posts)
 ```
 
 **6 · Document review** — an orchestrator fans out to the dimension lenses, then aggregates one review.

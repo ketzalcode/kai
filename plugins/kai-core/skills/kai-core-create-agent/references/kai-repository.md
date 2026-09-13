@@ -10,7 +10,7 @@ Use it when creating or refining an agent in the Kai plugin repository.
 
 1. Read root `AGENTS.md`.
 2. Read the target agent when refining one.
-3. Read neighboring agents and the skills they inherit.
+3. Read neighboring agents and the skills they route at the relevant steps.
 4. Read the current roster and taxonomy validators.
 
 ## Canonical source
@@ -47,8 +47,8 @@ Add coordination, communication, scope, or domain skills only when the agent
 has an action that triggers them. Every additional skill must be provided by
 core or the same plugin.
 
-Unmigrated department packs still open with an `**Inherits:**` line and its eager
-load directive; do not copy that mechanism into a new or migrated agent.
+All eight packages use task-local routes. No current agent uses the retired
+eager declaration or a dependency-guard region.
 
 ## One-agent identity change
 

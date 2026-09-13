@@ -1,0 +1,7 @@
+{
+  "name": "kai-learning",
+  "version": "7.0.0",
+  "description": "Teaching, tutoring, learning paths, lesson production, and career development over kai-core.",
+  "agents": "agents",
+  "skills": "skills"
+}

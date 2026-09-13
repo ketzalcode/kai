@@ -7,10 +7,14 @@ over `kai-core` — **not** organization routing.
 
 ## Install
 
-The supported baseline is core plus this package:
+The supported baseline is core plus this package. Use these commands only with
+a marketplace source containing the eight-package refactor; browse and verify
+availability first. Current `7.0.0` metadata is prepared source, not publication
+or live-host verification:
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
 ```

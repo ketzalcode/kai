@@ -62,6 +62,7 @@ const MIGRATION_BASELINE_PACKS = {
     'workflow-initiative-init',
   ],
   assistant: ['persona-self'],
+  creative: ['principal-product-designer', 'principal-brand-designer', 'creative-video-director'],
   engineering: [
     'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
     'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
@@ -72,30 +73,35 @@ const MIGRATION_BASELINE_PACKS = {
     'workflow-doc-review', 'workflow-localization',
   ],
   product: [
-    'principal-product-manager', 'principal-product-designer', 'principal-product-strategist',
-    'principal-brand-designer', 'principal-data-analytics', 'persona-ux-first-time-user',
-    'workflow-product-explore', 'workflow-experiment-review', 'workflow-customer-feedback',
+    'principal-product-manager', 'principal-product-strategist',
+    'principal-data-analytics', 'workflow-customer-feedback',
+    'workflow-experiment-review', 'workflow-product-explore',
+    'persona-ux-first-time-user', 'principal-growth',
+    'persona-professional-nutritionist', 'persona-professional-trainer',
   ],
-  gtm: [
-    'principal-sales', 'principal-growth', 'principal-demand-generation',
-    'principal-product-marketing', 'principal-seo', 'principal-linkedin-strategist',
-    'principal-partnerships', 'principal-pricing-monetization',
+  marketing: [
+    'principal-product-marketing', 'principal-demand-generation',
+    'principal-linkedin-strategist', 'principal-seo',
+  ],
+  revenue: [
+    'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
   ],
-  personal: [
-    'persona-professional-nutritionist', 'persona-professional-trainer',
+  learning: [
     'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
-    'creative-video-director', 'principal-engineer-career-mentor', 'workflow-course-to-audio',
+    'principal-engineer-career-mentor', 'workflow-course-to-audio',
   ],
 };
 
 export const NEW_AGENT_IDS = {
   core: [],
   assistant: ['personal-assistant'],
+  creative: [],
   engineering: ['eng-lead-technical-writing'],
   product: [],
-  gtm: [],
-  personal: [],
+  marketing: [],
+  revenue: [],
+  learning: [],
 };
 
 export const PACKS = Object.fromEntries(
@@ -112,10 +118,9 @@ export const PACK_ORDER = Object.keys(PACKS);
 // dispositions were ratified in the partition lock; keeping them here makes the
 // generator use the reviewed decision instead of silently defaulting to core.
 export const SKILL_OWNER_OVERRIDES = {
-  'create-product-demo': 'personal',
-  'demo-capture': 'personal',
-  'demo-narrate': 'personal',
-  'demo-zoom': 'personal',
+  'demo-capture': 'creative',
+  'demo-narrate': 'creative',
+  'demo-zoom': 'creative',
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
@@ -124,7 +129,7 @@ export const SKILL_OWNER_OVERRIDES = {
   'review-success-metrics': 'engineering',
 };
 
-// The published surface now equals the full locked partition. Retain this alias
+// The committed source surface equals the full locked partition. Retain this alias
 // so generation, marketplace policy, rollback policy, and CI share one name.
 export const COMMITTED_PACKS = [...PACK_ORDER];
 
@@ -135,10 +140,12 @@ export const COMMITTED_PACKS = [...PACK_ORDER];
 export const PACK_RUNTIME_DEPENDENCIES = {
   core: ['lectoria'],
   assistant: [],
+  creative: ['lectoria'],
   engineering: [],
   product: [],
-  gtm: [],
-  personal: ['lectoria'],
+  marketing: [],
+  revenue: [],
+  learning: [],
 };
 
 export const RUNTIME_ARTIFACTS = {
@@ -187,6 +194,11 @@ export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
 const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
   assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
+  creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
+  product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
+  marketing: 'Positioning, campaigns, social content, and search visibility over kai-core.',
+  revenue: 'Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.',
+  learning: 'Teaching, tutoring, learning paths, lesson production, and career development over kai-core.',
 };
 
 function packDescription(pack) {
@@ -600,7 +612,7 @@ export function planManifests({
     // Fixed key order for byte-stable JSON: name, version, description, agents, skills.
     const manifest = { name, version, description: packDescription(pack) };
     if (agents.length) manifest.agents = 'agents';
-    manifest.skills = 'skills';
+    if (skills.length) manifest.skills = 'skills';
     const npm = packPackageMetadata({ pack, name, version, ...packageMetadata });
 
     return {
@@ -668,6 +680,12 @@ export function materializePacks({
   if (selected.has(HOOKS_OWNER)) {
     files.set(`${packPluginName(HOOKS_OWNER)}/${HOOKS_FILE}`,
       normalizeLF(readFileSync(join(root, HOOKS_FILE), 'utf8')));
+  }
+  if (selected.has('core')) {
+    // Onboarding reads this data file; executable/module routing cannot discover it.
+    const block = 'scripts/lib/communication-style-block.md';
+    files.set(`${packPluginName('core')}/${block}`,
+      normalizeLF(readFileSync(join(root, ...block.split('/')), 'utf8')));
   }
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
 }

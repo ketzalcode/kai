@@ -1,0 +1,6 @@
+{
+  "name": "kai-revenue",
+  "version": "7.0.0",
+  "description": "Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.",
+  "agents": "agents"
+}

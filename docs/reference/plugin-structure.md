@@ -32,14 +32,21 @@ root `AGENTS.md` never loads in a consumer workspace — see
 [Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
 for why the shared rules ship as a skill instead.
 
-Agent and skill files are edited only in their owning plugin. A migrated agent
-carries no core-dependency guard region, and `npm run pack-preview -- --write`
-strips any region bounded by `kai core dependency guard` HTML-comment markers —
-so running it against the packs still on the eager declaration (product,
-go-to-market, personal) would remove a guard those agents still rely on. Migrate
-a pack before regenerating it. Skill companion files may
-live beside `SKILL.md`; derived-file cleanup is restricted to manifests, locks,
-hooks, and routed `scripts/`.
+Agent and skill files are edited only in their owning plugin. The eight owners
+are core, engineering, product, creative, marketing, revenue, assistant and
+learning, each prefixed `kai-`. Every current agent uses task-local contracts,
+not eager inheritance or a core-dependency guard. `npm run pack-preview -- --write`
+removes stale marked guards and refreshes derived files without replacing
+source bodies. Skill companions live beside `SKILL.md`; derived-file cleanup
+is restricted to manifests, locks, hooks and `scripts/`. Core also emits the
+canonical communication-style data file used by onboarding.
+
+Revenue has agents but no local skills, so its manifest omits `skills`.
+The other seven manifests declare both `agents` and `skills`. Core alone
+owns `hooks.json` (host-discovered beside its manifest) and shared runtime
+utilities. Creative owns demo scripts and their module closure. Core and
+creative each declare pinned Lectoria for their own optional audio paths;
+the other six packages have no runtime npm dependencies.
 
 ## Creating or refining an agent
 
@@ -59,8 +66,7 @@ migration belongs to a separate procedure.
 ## How a skill reaches a session
 
 A skill is not loaded because it exists. It is loaded on demand through an agent
-route or a direct user invocation. Legacy inheritance remains a temporary third
-path until each old agent migrates. What is not legitimate is a skill with no
+route or a direct user invocation. What is not legitimate is a skill with no
 firing path, which ships and appears in the catalog while being unreachable.
 
 ```
@@ -73,10 +79,6 @@ firing path, which ships and appears in the catalog while being unreachable.
           +-- 2. user-invoked -> `user-invocable: true` (+ `argument-hint`).
           |                      The operator runs it directly. Use for a
           |                      procedure a human starts on purpose.
-          |
-          +-- 3. legacy ------> named on an old agent's `**Inherits:**` line
-                                and loaded at startup. Do not use this path in
-                                a new or migrated agent.
 ```
 
 A skill can have more than one path. For example, an agent may route a skill
@@ -87,8 +89,8 @@ form is matched by that declaration shape specifically, not by any backticked
 mention, so an incidental reference cannot pass an unreachable skill off as
 reachable. That check exists because its absence produced a filed issue
 asserting that user-invocable skills "never fire" — the counting method, not the
-plugin, was wrong. Audits parse structured dispatch entries and, for legacy
-agents only, the `**Inherits:**` line; incidental prose does not count.
+plugin, was wrong. Inspect explicit task-local routes and user invocation;
+incidental prose does not establish a firing path or host execution.
 
 ## Contributing
 
@@ -100,12 +102,14 @@ New skills should:
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
 
-Before opening a PR, run `npm test` — the dependency-free checks below, which
-also run in CI on every pull request:
+The normal contribution path runs `npm test` — the dependency-free checks below,
+which also run in CI on every pull request. The approved eight-package source
+refactor defers policy/test/CI consolidation and runtime scenarios; its evidence
+is generation and raw source inspection, not a passing run of this table.
 
 | Command | Checks |
 | ------- | ------ |
-| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, progressive skill routes or legacy inheritance, at least one firing path per skill, Kai tool-vocabulary lint, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
+| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, task-local skill routes, at least one firing path per skill, Kai tool-vocabulary lint, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
 | `npm run docs:check` | The generated agent/skill catalog matches the shipped surface. |
 | `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces, plus the pack-migration scenario matrix. |
 | `npm run host-contract` | Kai frontmatter acceptance heuristic — the expected discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
@@ -131,7 +135,7 @@ changelog/README updates.
    `docs/reference/agents-and-skills.md`.
 3. Regenerate the host-loader golden with `npm run host-contract:update` and
    commit `test/fixtures/inventory.json`.
-4. For a new skill, give it a firing path — inherit it from an agent, mark it
+4. For a new skill, give it a firing path — route it at the relevant step, mark it
    `user-invocable: true`, or have an agent dispatch it by name. `npm test`
    fails until one exists.
 
@@ -159,11 +163,13 @@ changes stay exempt.
 | Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
 | Docs- or test-only | no bump (or patch) | no bump (or patch) |
 
-Cutting `1.0.0` is a deliberate stability milestone, not automatic.
+The current eight-package integration prepares `7.0.0`: removing the gtm and
+personal install names is a breaking surface change. Metadata does not mean
+the source is published or that runtime/release gates have passed.
 
-### What `1.0.0` is reserved for
+### Historical `1.0.0` milestone
 
-**`1.0.0` is the release in which packs become the install surface** — where
+**`1.0.0` was reserved for packs becoming the install surface** — where
 `kai` stops being a single plugin and `kai-core` plus department plugins replace
 it (see [the pack architecture proposal](../proposals/pack-architecture.md) and
 issue #29). Nothing else takes the major.
@@ -184,8 +190,8 @@ Two consequences, both deliberate:
   reads as a stability promise, so the Phase 3 host, partition, dependency, and
   migration gates are release prerequisites rather than follow-up work.
 
-Until then the pre-1.0 column above applies unchanged: breaking changes ride in
-a **minor**.
+That milestone is history, not the current version rule. The post-1.0 column
+now applies, including major bumps for removed install names.
 
 ### Release steps
 
@@ -193,8 +199,11 @@ Also in `AGENTS.md` → **Releasing this plugin**:
 
 1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in
    `plugin.json` **and in `.github/plugin/marketplace.json`** (both
-   `metadata.version` and every published `plugins[]` entry — CI rejects a stale index,
+   `metadata.version` and all eight current `plugins[]` entries — CI rejects a stale index,
    because it installs fine while reporting the wrong version).
+   Regenerate package manifests, locks and scripts with
+   `npm run pack-preview -- --write`; do not install dependencies for a
+   version-only change.
 2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its
    `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all
    three for the current version.)
@@ -247,8 +256,12 @@ push.
    too.
 4. From an isolated home, update the marketplace, browse it, install
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
-   From an already-migrated home, uninstall `kai-assistant`, `kai-personal`,
-   `kai-product`, `kai-engineering`, and `kai-gtm` first, then uninstall
+   From an already-migrated home, first verify the replacement monolith is
+   available at the intended version in the selected source. Only then uninstall
+   every installed capability pack,
+   including `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-learning`,
+   `kai-product`, `kai-engineering`, and `kai-revenue` first (also remove any
+   retired `kai-gtm` or `kai-personal` install still present), then uninstall
    `kai-core` last.
    Confirm `copilot plugin list` shows neither surface, then install
    `kai@kai-plugins`, then start a fresh session. Never install the restored

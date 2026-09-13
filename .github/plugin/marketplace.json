@@ -5,8 +5,8 @@
     "url": "https://github.com/RubenSaucedo"
   },
   "metadata": {
-    "description": "Kai core and department packs published by RubenSaucedo.",
-    "version": "6.0.0",
+    "description": "Kai core and capability package sources maintained by RubenSaucedo.",
+    "version": "7.0.0",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./plugins/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -37,7 +37,7 @@
       "name": "kai-assistant",
       "source": "./plugins/kai-assistant",
       "description": "Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -57,10 +57,10 @@
       ]
     },
     {
-      "name": "kai-personal",
-      "source": "./plugins/kai-personal",
-      "description": "kai personal department pack — the personal roles, over a required kai-core.",
-      "version": "6.0.0",
+      "name": "kai-creative",
+      "source": "./plugins/kai-creative",
+      "description": "UI/UX, visual identity, design assets, and supported media production over kai-core.",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -74,16 +74,39 @@
         "copilot-plugin",
         "agents",
         "skills",
-        "personal",
+        "design",
+        "creative",
+        "media"
+      ]
+    },
+    {
+      "name": "kai-learning",
+      "source": "./plugins/kai-learning",
+      "description": "Teaching, tutoring, learning paths, lesson production, and career development over kai-core.",
+      "version": "7.0.0",
+      "author": {
+        "name": "RubenSaucedo",
+        "url": "https://github.com/RubenSaucedo"
+      },
+      "homepage": "https://github.com/RubenSaucedo/kai",
+      "repository": "https://github.com/RubenSaucedo/kai",
+      "license": "MIT",
+      "keywords": [
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "teaching",
         "learning",
-        "workflow-automation"
+        "career-development"
       ]
     },
     {
       "name": "kai-product",
       "source": "./plugins/kai-product",
-      "description": "kai product department pack — the product roles, over a required kai-core.",
-      "version": "6.0.0",
+      "description": "Product discovery, scope, evidence, analytics, and product-led growth over kai-core.",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -98,7 +121,7 @@
         "agents",
         "skills",
         "product",
-        "design",
+        "discovery",
         "analytics"
       ]
     },
@@ -106,7 +129,7 @@
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
       "description": "kai engineering department pack — the engineering roles, over a required kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -126,10 +149,33 @@
       ]
     },
     {
-      "name": "kai-gtm",
-      "source": "./plugins/kai-gtm",
-      "description": "kai gtm department pack — the gtm roles, over a required kai-core.",
-      "version": "6.0.0",
+      "name": "kai-marketing",
+      "source": "./plugins/kai-marketing",
+      "description": "Positioning, campaigns, social content, and search visibility over kai-core.",
+      "version": "7.0.0",
+      "author": {
+        "name": "RubenSaucedo",
+        "url": "https://github.com/RubenSaucedo"
+      },
+      "homepage": "https://github.com/RubenSaucedo/kai",
+      "repository": "https://github.com/RubenSaucedo/kai",
+      "license": "MIT",
+      "keywords": [
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "marketing",
+        "campaigns",
+        "search"
+      ]
+    },
+    {
+      "name": "kai-revenue",
+      "source": "./plugins/kai-revenue",
+      "description": "Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -144,8 +190,8 @@
         "agents",
         "skills",
         "sales",
-        "growth",
-        "go-to-market"
+        "revenue",
+        "customer-success"
       ]
     }
   ]
