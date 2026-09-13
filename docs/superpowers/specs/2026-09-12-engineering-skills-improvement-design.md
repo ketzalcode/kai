@@ -1,6 +1,6 @@
 # Engineering skills: evidence-first improvement
 
-**Status:** design direction approved on 2026-09-12; written spec awaiting review
+**Status:** written specification approved on 2026-09-12
 **Source baseline:** `1a748c017a8ccfe83128edb0f2481a67d567ef0a` on `main`
 **Scope:** the 15 skills owned by `kai-engineering` and their invocation seams
 **Deliverable now:** this specification, not skill changes or an implementation plan
@@ -548,10 +548,10 @@ The engineering campaign is complete only when:
 - Remaining agent-source problems are identified separately for the later agent
   improvement phase.
 
-**Next approval gate:** review this written specification. After approval,
-produce an implementation plan for the evaluation pilot and its supporting
-artifacts. Do not start skill edits, a full-pack rewrite, or agent improvements
-from this document alone.
+**Implementation plan:** [Engineering Skills Pilot](../plans/2026-09-12-engineering-skills-pilot.md).
+The operator approved this specification and requested that plan on 2026-09-12.
+Execution remains a separate handoff. Do not start skill edits, a full-pack
+rewrite, or agent improvements from this document alone.
 
 ## References
 
