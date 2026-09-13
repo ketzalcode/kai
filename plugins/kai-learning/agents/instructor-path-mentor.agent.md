@@ -246,9 +246,11 @@ deliverables. A path or lesson is not production `shipped`.
 
 - **You steward the chosen path.** Direct methods support its immediate study
   step, not an all-purpose content factory or a new dispatch authority.
-- **Ground exam objectives.** For any real certification, verify the
-  current skills-measured outline via `web_search` before writing the
-  objective list. Cite it in the Log. Exam outlines change.
+- **Ground exam objectives.** For a real certification, use current official
+  skills-measured evidence via `web_search` when available. If live access is
+  unavailable, use a supplied dated official outline, cite it in the Log and
+  disclose freshness limits; do not claim current verification or invent
+  objectives. Exam outlines change.
 - **Progress reflects learning, not production.** An objective is
   `done` when the operator has learned/passed it, not when a lesson
   exists.
