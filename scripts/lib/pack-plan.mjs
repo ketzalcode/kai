@@ -79,9 +79,12 @@ const MIGRATION_BASELINE_PACKS = {
     'persona-ux-first-time-user', 'principal-growth',
     'persona-professional-nutritionist', 'persona-professional-trainer',
   ],
+  marketing: [
+    'principal-product-marketing', 'principal-demand-generation',
+    'principal-linkedin-strategist', 'principal-seo',
+  ],
   gtm: [
-    'principal-sales', 'principal-demand-generation',
-    'principal-product-marketing', 'principal-seo', 'principal-linkedin-strategist',
+    'principal-sales',
     'principal-partnerships', 'principal-pricing-monetization',
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
   ],
@@ -97,6 +100,7 @@ export const NEW_AGENT_IDS = {
   creative: [],
   engineering: ['eng-lead-technical-writing'],
   product: [],
+  marketing: [],
   gtm: [],
   personal: [],
 };
@@ -140,6 +144,7 @@ export const PACK_RUNTIME_DEPENDENCIES = {
   creative: ['lectoria'],
   engineering: [],
   product: [],
+  marketing: [],
   gtm: [],
   personal: [],
 };
@@ -192,6 +197,7 @@ const PACK_DESCRIPTIONS = {
   assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
   product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
+  marketing: 'Positioning, campaigns, social content, and search visibility over kai-core.',
 };
 
 function packDescription(pack) {

@@ -19,11 +19,12 @@ copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
+copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
 ```
 
-`kai-assistant` and `kai-creative` are new, committed source on this branch's
+`kai-assistant`, `kai-creative` and `kai-marketing` are new, committed source on this branch's
 checkout; their installs work only from a marketplace or checkout
 that carries this refactor — their publication and remote availability were not
 established by this work.
@@ -80,9 +81,9 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 56-agent, 57-skill surface is committed across seven packs on this
+The full 56-agent, 57-skill surface is committed across eight packs on this
 branch's checkout. This describes source ownership, not publication;
-Remote availability of `kai-assistant` and `kai-creative` remains unverified.
+Remote availability of `kai-assistant`, `kai-creative` and `kai-marketing` remains unverified.
 You do not need to learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -111,6 +112,7 @@ support long-term. Nobody has to approve a listing for this to work.
    copilot plugin install kai-creative@kai-plugins
    copilot plugin install kai-personal@kai-plugins
    copilot plugin install kai-product@kai-plugins
+   copilot plugin install kai-marketing@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
    copilot plugin install kai-gtm@kai-plugins
    ```
@@ -120,12 +122,12 @@ support long-term. Nobody has to approve a listing for this to work.
    ```
    `kai-core@kai-plugins`, `kai-assistant@kai-plugins`,
    `kai-creative@kai-plugins`,
-   `kai-personal@kai-plugins`, `kai-product@kai-plugins`,
+   `kai-personal@kai-plugins`, `kai-product@kai-plugins`, `kai-marketing@kai-plugins`,
    `kai-engineering@kai-plugins`, and
    `kai-gtm@kai-plugins` should appear at the same version. The agents and skills
    are available in **new** sessions — start a fresh session to use them.
 
-`kai-assistant` and `kai-creative` are committed source on this branch checkout
+`kai-assistant`, `kai-creative` and `kai-marketing` are committed source on this branch checkout
 only; this work did not push, tag, or publish them, so their install lines
 resolve only against a marketplace or checkout that carries this
 refactor, not necessarily the currently published marketplace index.
@@ -133,6 +135,11 @@ refactor, not necessarily the currently published marketplace index.
 For design and supported demo work, the baseline is core plus creative, not the
 whole roster. [Creative's package note](reference/packages/kai-creative.md)
 lists direct requests, supplied inputs, outputs, and external-tool prerequisites.
+
+For positioning, campaigns, LinkedIn drafts and search assessments, use core
+plus marketing. [Marketing's package note](reference/packages/kai-marketing.md)
+describes supplied factual JSON/maps/media, claim safety and optional personal
+voice. Product, creative and assistant are not baseline install dependencies.
 
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.
@@ -196,6 +203,7 @@ first.
 copilot plugin install RubenSaucedo/kai:plugins/kai-core
 copilot plugin install RubenSaucedo/kai:plugins/kai-personal
 copilot plugin install RubenSaucedo/kai:plugins/kai-product
+copilot plugin install RubenSaucedo/kai:plugins/kai-marketing
 copilot plugin install RubenSaucedo/kai:plugins/kai-engineering
 copilot plugin install RubenSaucedo/kai:plugins/kai-gtm
 ```
@@ -215,7 +223,7 @@ install. Tracked in
 ```powershell
 git clone https://github.com/RubenSaucedo/kai.git
 cd kai
-copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-creative --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-gtm
+copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-creative --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-marketing --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-gtm
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when
@@ -249,6 +257,7 @@ copilot plugin update kai-assistant@kai-plugins
 copilot plugin update kai-creative@kai-plugins
 copilot plugin update kai-personal@kai-plugins
 copilot plugin update kai-product@kai-plugins
+copilot plugin update kai-marketing@kai-plugins
 copilot plugin update kai-engineering@kai-plugins
 copilot plugin update kai-gtm@kai-plugins
 ```

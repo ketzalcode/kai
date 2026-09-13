@@ -247,7 +247,8 @@ push.
    too.
 4. From an isolated home, update the marketplace, browse it, install
    `kai@kai-plugins`, and verify a fresh session before tagging the patch.
-   From an already-migrated home, uninstall `kai-assistant`, `kai-personal`,
+   From an already-migrated home, uninstall every installed capability pack,
+   including `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-personal`,
    `kai-product`, `kai-engineering`, and `kai-gtm` first, then uninstall
    `kai-core` last.
    Confirm `copilot plugin list` shows neither surface, then install

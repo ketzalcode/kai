@@ -133,7 +133,6 @@ Pre-sale motion and the commercial operating model. Only you accept terms.
 | [`principal-sales`](../../plugins/kai-gtm/agents/principal-sales.agent.md) | Turns SaaS deal, account, discovery, and competitive evidence into qualification, discovery, deal strategy, objections, proposals, forecasts, and win/loss guidance. Use for pre-sale sales judgment. Not pricing authority or solution design. |
 | [`principal-solutions-architect`](../../plugins/kai-engineering/agents/principal-solutions-architect.agent.md) | Turns buyer requirements, environment, and integration evidence into SaaS technical discovery, solution fit, feasibility, POC scope, objections, and questionnaire guidance. Use pre-sale. Not roadmap, pricing, implementation, or attestations. |
 | [`principal-revenue-operations`](../../plugins/kai-gtm/agents/principal-revenue-operations.agent.md) | Builds the SaaS revenue operating model, forecast hygiene, billing/subscription ops, and quota/territory/comp inputs. Use with supplied pipeline, billing, usage, or analytics evidence. Not pricing or sales deal judgment. |
-| [`principal-demand-generation`](../../plugins/kai-gtm/agents/principal-demand-generation.agent.md) | Designs SaaS campaign strategy, briefs, lifecycle/nurture email, channel mix, lead handoff, and demand diagnosis from approved positioning. Use for demand gen. Not PLG lifecycle experiments (`principal-growth`). |
 | [`principal-partnerships`](../../plugins/kai-gtm/agents/principal-partnerships.agent.md) | Designs SaaS partner strategy, partner-fit assessments, integration partnerships, channel/reseller programs, and co-sell or co-marketing plans. Use for partnership judgment, not legal terms or outbound contact. |
 
 ### Pricing & monetization
@@ -164,23 +163,24 @@ Author lessons, package existing material, or steward a whole path.
 | [`instructor-path-mentor`](../../plugins/kai-personal/agents/instructor-path-mentor.agent.md) | Stewards a whole certification or structured learning path over time: plan, status, advance, review, and update. Use after choosing the path. Not career strategy (`principal-engineer-career-mentor`). |
 | [`workflow-course-to-audio`](../../plugins/kai-personal/agents/workflow-course-to-audio.agent.md) | Extracts a course, certification module, learning-path unit, or long readable web page into local markdown for later audio. Use when a URL should become listenable study material with separate knowledge checks. |
 
-### Marketing intelligence & web quality
+### Marketing
 
-Grounded product marketing, search visibility, and engineering-owned UI QA.
+Positioning, campaigns, LinkedIn content, and search assessments from supplied facts and evidence. Never auto-publishes.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-product-marketing`](../../plugins/kai-gtm/agents/principal-product-marketing.agent.md) | Builds grounded product marketing intelligence from public surfaces, screenshots, recordings, assets, notes, or product maps. Use when content or creative agents need reusable product context. Not product scope (`principal-product-manager`). |
+| [`principal-product-marketing`](../../plugins/kai-marketing/agents/principal-product-marketing.agent.md) | Builds grounded product marketing intelligence from public surfaces, screenshots, recordings, assets, notes, or product maps. Use when content or creative agents need reusable product context. Not product scope (`principal-product-manager`). |
+| [`principal-demand-generation`](../../plugins/kai-marketing/agents/principal-demand-generation.agent.md) | Designs SaaS campaign strategy, briefs, lifecycle/nurture email, channel mix, lead handoff, and demand diagnosis from approved positioning. Use for demand gen. Not PLG lifecycle experiments (`principal-growth`). |
+| [`principal-linkedin-strategist`](../../plugins/kai-marketing/agents/principal-linkedin-strategist.agent.md) | Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes. |
+| [`principal-seo`](../../plugins/kai-marketing/agents/principal-seo.agent.md) | Assesses technical SEO, content alignment, and agentic-search readiness from supplied HTML, headers, screenshots or authorized live evidence. Use for search visibility, not general UI defects or implementation. |
+
+### Web quality
+
+Engineering-owned UI QA, independent of marketing and search assessment.
+
+| Name | What it owns |
+| ---- | ------------ |
 | [`principal-qa-ui`](../../plugins/kai-engineering/agents/principal-qa-ui.agent.md) | Manually tests a website UI for objective defects: overlap, overflow, broken controls, console or network errors with visible impact, focus order, and viewport layout breaks. Use for QA passes. Not fresh-eyes UX (`persona-ux-first-time-user`). |
-| [`principal-seo`](../../plugins/kai-gtm/agents/principal-seo.agent.md) | Audits a site's technical SEO, content alignment, and agentic-search readiness (llms.txt, schema, AI-bot directives). Use when asking whether Google and AI search engines can find and parse a site. Not general UI defects (`principal-qa-ui`). |
-
-### Content & distribution
-
-Turn product intelligence into platform-native content. Never auto-publishes.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`principal-linkedin-strategist`](../../plugins/kai-gtm/agents/principal-linkedin-strategist.agent.md) | Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes. |
 
 ### Personal assistance
 
@@ -224,7 +224,6 @@ The shared contracts every acting agent loads: where work goes, and what it may 
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-initiative-stewardship`](../../plugins/kai-core/skills/kai-core-initiative-stewardship/SKILL.md) | Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
-| [`product-marketing-intelligence`](../../plugins/kai-gtm/skills/product-marketing-intelligence/SKILL.md) | Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
 
 ### Product exploration
@@ -307,6 +306,15 @@ Offline mockups and diagrams, video direction, and directly invocable demo plann
 | [`demo-zoom`](../../plugins/kai-creative/skills/demo-zoom/SKILL.md) | Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass. |
 | [`demo-narrate`](../../plugins/kai-creative/skills/demo-narrate/SKILL.md) | Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording. |
 
+### Marketing methods
+
+Grounded intelligence and LinkedIn drafts with provenance, claim ledgers, and optional personal voicing.
+
+| Name | What it owns |
+| ---- | ------------ |
+| [`product-marketing-intelligence`](../../plugins/kai-marketing/skills/product-marketing-intelligence/SKILL.md) | Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work. |
+| [`linkedin-content`](../../plugins/kai-marketing/skills/linkedin-content/SKILL.md) | LinkedIn content method for grounded product intelligence. Use when drafting posts, angle matrices, calendars, or carousel outlines from product_context.json. |
+
 ### Web & content
 
 Browser-run plumbing, content methods, and shared claim safety.
@@ -316,7 +324,6 @@ Browser-run plumbing, content methods, and shared claim safety.
 | [`kai-core-web-evaluation`](../../plugins/kai-core/skills/kai-core-web-evaluation/SKILL.md) | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
 | [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
 | [`kai-core-content-grounding`](../../plugins/kai-core/skills/kai-core-content-grounding/SKILL.md) | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
-| [`linkedin-content`](../../plugins/kai-gtm/skills/linkedin-content/SKILL.md) | LinkedIn content method for grounded product intelligence. Use when drafting posts, angle matrices, calendars, or carousel outlines from product_context.json. |
 | [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
 
 ### Lessons & writing

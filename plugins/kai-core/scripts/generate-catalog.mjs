@@ -108,7 +108,7 @@ const CATEGORIES = [
     blurb: 'Pre-sale motion and the commercial operating model. Only you accept terms.',
     members: [
       'principal-sales', 'principal-solutions-architect', 'principal-revenue-operations',
-      'principal-demand-generation', 'principal-partnerships',
+      'principal-partnerships',
     ],
   },
   {
@@ -134,17 +134,18 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Marketing intelligence & web quality',
-    blurb: 'Grounded product marketing, search visibility, and engineering-owned UI QA.',
+    title: 'Marketing',
+    blurb: 'Positioning, campaigns, LinkedIn content, and search assessments from supplied facts and evidence. Never auto-publishes.',
     members: [
-      'principal-product-marketing', 'principal-qa-ui', 'principal-seo',
+      'principal-product-marketing', 'principal-demand-generation',
+      'principal-linkedin-strategist', 'principal-seo',
     ],
   },
   {
     kind: 'agent',
-    title: 'Content & distribution',
-    blurb: 'Turn product intelligence into platform-native content. Never auto-publishes.',
-    members: ['principal-linkedin-strategist'],
+    title: 'Web quality',
+    blurb: 'Engineering-owned UI QA, independent of marketing and search assessment.',
+    members: ['principal-qa-ui'],
   },
   {
     kind: 'agent',
@@ -170,7 +171,7 @@ const CATEGORIES = [
       'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
       'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
-      'product-marketing-intelligence', 'kai-core-contract-v1',
+      'kai-core-contract-v1',
     ],
   },
   {
@@ -230,10 +231,16 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
+    title: 'Marketing methods',
+    blurb: 'Grounded intelligence and LinkedIn drafts with provenance, claim ledgers, and optional personal voicing.',
+    members: ['product-marketing-intelligence', 'linkedin-content'],
+  },
+  {
+    kind: 'skill',
     title: 'Web & content',
     blurb: 'Browser-run plumbing, content methods, and shared claim safety.',
     members: [
-      'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'kai-core-content-grounding', 'linkedin-content',
+      'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'kai-core-content-grounding',
       'kai-core-pulse-digest',
     ],
   },

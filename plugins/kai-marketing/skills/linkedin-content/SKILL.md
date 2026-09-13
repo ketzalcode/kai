@@ -1,18 +1,18 @@
 ---
 name: linkedin-content
 description: "LinkedIn content method for grounded product intelligence. Use when drafting posts, angle matrices, calendars, or carousel outlines from product_context.json."
-tools: [read, edit, search, ask_user, execute]
+tools: [read, edit, search, ask_user, execute, skill]
 ---
 
 # LinkedIn Content
 
 This skill converts a product's intelligence layer into **LinkedIn-native
 content that reads as a credible builder, not generic marketing copy.** It
-consumes what `principal-product-marketing` produced and turns it into posts the
-operator can review and publish.
+consumes supplied factual context and turns it into posts the operator can review
+and publish. `principal-product-marketing` is a possible producer, not a required
+call or installation.
 
-It is **not** invoked directly by the user. `principal-linkedin-strategist`
-executes it. It never posts anything.
+Use it directly or through `principal-linkedin-strategist`. It never posts anything.
 
 ## Brand-agnostic and LinkedIn-only
 
@@ -31,10 +31,20 @@ produces **LinkedIn** content only — other platforms are separate agents.
 
 ## Grounding and claim-safety
 
-**Inherits `kai-core-content-grounding`** — the product_context reference scheme, the
+Before selecting assertions, Load `kai-core-contract-v1`, then Load
+`kai-core-content-grounding` for the product_context reference scheme, the
 per-item claim ledger, the provenance treatment table, the never-fabricate rules,
 `needs_confirmation` handling, the JSON-is-sole-authority rule, bilingual
-grounding, and locked-facts voicing apply here verbatim.
+grounding, and locked-facts voicing. If compatible core is unavailable, return
+only a bounded response outline with unsupported copy omitted; no `.kai`
+drafts, coordination, claims of approval or posting. Tell the operator to
+install or update `kai-core` before coordinated content work.
+
+Supplied `product_context.json` is admissible with its actual provenance and
+proof, not independently verified merely by being supplied. If absent or thin,
+request the missing assertions in that JSON from the operator or an approved
+producer, or limit the drafts. Do not reconstruct facts from chat, require an
+upstream call, or invent intelligence.
 
 LinkedIn specifics on top of that contract: the claim ledger is **per variant**;
 run the claim-safety pass on the finished postable copy and **re-run it after any
@@ -56,7 +66,9 @@ Style controls set register/depth/structure — never truth:
 `concise` · `technical` · `founder-led` · `educational` · `launch-focused` ·
 `casual` · `executive`
 
-Default to a **neutral professional** register. Use `founder-led` /
+Default to a **neutral professional** register, or use explicitly requested
+company-brand preferences supplied in the brief. Neither needs assistant.
+Use `founder-led` /
 `founder-narrative` (first-person "I built…") only when the operator has
 **confirmed they are the founder/speaker**; otherwise a first-person founder
 voice would itself be an unsupported claim.
@@ -78,6 +90,8 @@ Every run produces **at least five materially distinct variants** — distinct b
 *angle*, *core message*, *audience*, or *CTA*, not by wording. A translation of a
 variant is **not** an additional variant, and a draft blocked in
 `needs_confirmation` does not count toward the five.
+If the evidence cannot support five, return a clearly partial supported subset
+and name the missing facts. The minimum is not permission to fabricate.
 
 ## Language
 
@@ -143,29 +157,56 @@ slide, and its own `Grounded:` refs. Never imply an asset exists when it doesn't
 
 ## Placement
 
-Resolve the workspace via `kai-core-workspace-conventions`.
+An inline draft requires no workspace or work item. Before writing files or
+reading coordination state, Load `kai-core-workspace-paths` to resolve the
+workspace/project. Load `kai-core-asset-producing` when writing the bundle,
+recording sources, revision, disposition and validity.
 
 - **Ad-hoc / standalone** review-then-post drafts default to the ignored run
   area: `.kai/runs/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
-- **Coordinated (initiative) work** writes the bundle to
+- **Coordinated (initiative) work:** Load `kai-core-workspace-initiative` for
+  the matching north star and output index. Write the bundle to
   `.kai/state/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
-  knowledge` and the normal `kai-core-work-coordination` handoff.
-- **A reusable pack** the operator wants to keep is published through the
-  standard `kai-core-workspace-conventions` approval flow and recorded in
+  knowledge`.
+- **A reusable pack** needs exact-revision acceptance by the grounding authority
+  and publication owner plus explicit operator project-publication approval.
+  Only then is its sanitized curated copy placed and recorded in
   `deliverables.md` at
   `<project-root>/<publication-root>/content/<YYYY-MM-DD>/<NN>-linkedin-<target-slug>/`.
   Durable asset metadata goes on the Markdown index only; the JSON matrix stays
   valid JSON. Never overwrite a prior pack — new runs get the next per-day index.
 
-Nothing here is ever committed as "published," and the method touches no network.
+Saving drafts is not external publication. This method never runs git or
+touches a publishing network.
+
+For actual granted work, Load `kai-core-work-acting` before acting: read
+HANDOFF, context, dependencies and touches; verify holder/token/version before
+each write and stop on collision. Load `kai-core-work-item` for targets,
+evidence, state, version, next role and lease. Load `kai-core-work-activity`
+after the grant for bounded start/stop signals. Only an authorized sole worker
+on an existing item may Load `kai-core-work-granting` to self-grant. Never
+manufacture a team item for direct drafting.
+
+Apply `kai-core-asset-closing` before durable completion: resolve scope,
+grounding, independent exact-revision acceptance, disposition and
+validity/revalidation. Unaccepted output stays provisional, not shipped.
+For an item, stop activity and append the asset/evidence HANDOFF, naming next
+role and clearing the lease. Keep raw media, PII and private metrics local;
+permission to read an input does not make it safe to disclose in public copy.
 
 ## Voicing
 
-By default, write in a credible, neutral-professional LinkedIn register. When the
-operator wants it in **their own** founder voice, hand the finished, claim-safe
-drafts to `persona-self` with the **claim spans, numbers, attributions, and
-confidence qualifiers locked** (they pass through voicing verbatim, like code and
-URLs already do). `persona-self` changes only the connective prose.
+Complete neutral or explicitly requested company-brand copy locally. Only if
+the operator explicitly requests **personal-voice enhancement** and an actual
+assistant peer is available, Load `kai-core-peer-communication` for that exchange
+and hand consented, claim-safe drafts to `persona-self` with the **claim spans,
+numbers, attributions, and confidence qualifiers locked** (they pass through
+voicing verbatim, like code and URLs already do). `persona-self` changes only
+the connective prose.
+No assistant skills or private voice-history lookup are required here. If the
+role/transport is absent, return the baseline as complete within its scope and
+mark only personal voice unavailable/not performed; never simulate enhancement
+or require installing assistant.
 
 After voicing, **re-run the claim-safety pass** against the voiced copy: if any
 locked span, number, attribution, or hedge changed, reject the voiced version.
@@ -180,8 +221,9 @@ The strategist owns final claim-safety approval; voicing never relaxes it.
 3. **Respect provenance** per the treatment table; product-claims and
    operator-provided figures are attributed, inferences are perspective, external
    is cited and never extrapolated.
-4. **JSON is the only fact source.** The report informs phrasing; new facts go
-   through `principal-product-marketing` into the JSON first.
+4. **JSON is the only fact source.** The report informs phrasing; new assertions
+   must be supplied in the JSON by the operator or an approved producer with
+   truthful provenance. Never reconstruct them from chat or require a producer call.
 5. **needs_confirmation ≠ publishable.** Unconfirmed items are excluded from copy
    or shown as explicit placeholders.
 6. **Re-verify after voicing.** Claim-safety holds against the *final* copy.
@@ -195,12 +237,13 @@ Return:
 
 ```text
 LinkedIn content: <target> — <mode>
-Source: <product_context.json path>
-Variants: <count ≥5, across angles: launch, technical, founder, …>
-Artifacts: <absolute linkedin-posts.md (+ matrix/calendar/carousel) paths>
+Source: <product_context.json path | supplied inline JSON>
+Variants: <count ≥5 across supported angles, or partial count + evidence gaps>
+Artifacts: <absolute linkedin-posts.md (+ matrix/calendar/carousel) paths | inline>
 Language: <en | es | bilingual>
 Claim-safety: <all mapped | N need confirmation (excluded from copy)>
-Voice: <neutral professional | voiced via persona-self + re-verified>
+Voice: <neutral professional | requested company brand | voiced via persona-self + re-verified>
+Personal voice: <not requested | applied | unavailable/not performed>
 Your move: <review + post manually; nothing was published>
 ```
 
