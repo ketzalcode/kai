@@ -137,9 +137,9 @@ declare its files, completion authority, provenance, and validity.
 
 Load `kai-core-content-grounding` for the assertion reference scheme, per-span
 claim ledger, provenance treatment, and never-fabricate rules. A supplied factual
-`product_context.json` satisfies that input boundary; references to marketing
-name its usual producer, not a prerequisite call. New facts must be supplied in
-that JSON with their actual provenance, not inferred from conversation.
+`product_context.json` from the operator or an approved producer is admitted by
+that contract, not independently verified by being supplied. New facts must be
+supplied in that JSON with their actual provenance, not inferred from conversation.
 Read `product_context.json` as the sole factual authority and `media_manifest.json`
 for existing assets. `product_exploration_report.md` is optional phrasing and
 context input; it never overrides `product_context.json` facts. Index the grounding references and the assets by id,

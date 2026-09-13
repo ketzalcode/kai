@@ -101,19 +101,29 @@ a fact.
 Resolve in order, before designing:
 
 1. **A fresh `design-system.md` exists for the surface** → **consume it.**
-2. **No reference, but the repo carries obvious source tokens** (CSS variables,
-   Tailwind config, a component library, existing patterns) → `principal-swe-frontend`
-   inventories the *implementation truth*; the designer drafts `design-system.md`
-   from it.
-3. **No reference and no accessible repo tokens** (e.g. an external product, or a
-   repo whose styling can't be read) → request a **design-system extraction** from
-   `workflow-product-explore` — the same way the designer already requests
-   `workflow-product-explore` for a product map (via the director /
-   `kai-core-work-granting`, not by spawning it). The designer **does not** free-roam
-   Playwright itself: the explorer already owns neutral, whole-app navigation and
-   won't over-index on one page.
-4. **Extraction coverage is insufficient** → proceed only with **explicitly
-   stated design assumptions**, or emit a `PROPOSAL` for the missing coverage.
+2. **No fresh reference, but a current source-token inventory or neutral extract
+   is supplied** → consume it to derive or refresh `design-system.md` if its
+   provenance identifies the target, source paths or observation evidence, and
+   revision/review date, and its coverage spans the **whole in-scope app**,
+   including relevant surfaces, states, and viewports. Preserve observed versus
+   implementation-truth labels; a screenshot does not prove a source token.
+   Adequate supplied evidence needs no fresh upstream extraction, sibling
+   installation, or director dispatch.
+3. **No adequate supplied evidence, but the repo carries obvious source tokens**
+   (CSS variables, Tailwind config, a component library, existing patterns) →
+   request the missing source-token inventory; `principal-swe-frontend` can
+   inventory the *implementation truth*. The designer drafts or refreshes
+   `design-system.md` from that evidence.
+4. **No adequate supplied evidence and no accessible repo tokens** (e.g. an
+   external product, or a repo whose styling can't be read) → request the missing
+   neutral **design-system extraction** evidence. The operator may supply it;
+   `workflow-product-explore` is a possible producer. If a coordinated explorer
+   extraction is requested, route it via the director / `kai-core-work-granting`,
+   not by spawning it. The designer **does not** free-roam Playwright itself:
+   neutral extraction must cover the whole in-scope app, not over-index on one page.
+5. **Supplied or newly extracted coverage is insufficient** → request the missing
+   evidence; proceed only with **explicitly stated design assumptions**, or emit
+   a `PROPOSAL` for the missing coverage.
 
 **Freshness:** if the app's UI changed since `last reviewed`, refresh the
 affected sections before grounding new work — a stale reference grounds proposals
@@ -121,8 +131,9 @@ in a look the app no longer has.
 
 ## The extraction request and the neutral extract
 
-When derivation needs the live app (case 3), the requester sends a bounded
-packet; the explorer fills a **facts-only** extract. The explorer must walk the
+When derivation still needs live-app evidence after considering supplied inputs
+(case 4), the requester sends a bounded packet; the extraction producer fills a
+**facts-only** extract. The producer must walk the
 **whole in-scope app, not only the home page**.
 
 ```text
@@ -138,7 +149,7 @@ known token sources:    <repo paths if any>
 needed by:              <the design decision this grounds>
 ```
 
-The explorer writes, at `.kai/state/initiatives/<slug>/artifacts/design-system-extract.md`,
+For a requested extraction, the producer writes, at `.kai/state/initiatives/<slug>/artifacts/design-system-extract.md`,
 **observed visual facts only — no recommendations**:
 
 ```markdown
@@ -158,6 +169,10 @@ The explorer writes, at `.kai/state/initiatives/<slug>/artifacts/design-system-e
 The **designer** then synthesizes: extract (observed) + repo/FE (implementation
 truth) → the canonical `design-system.md`, keeping the three provenance classes
 — **observed / implementation-truth / proposed** — visibly separated.
+Supplied evidence is not engineering approval or independent acceptance. A
+derived draft does not become an accepted team asset merely because its inputs
+were supplied; real FE feasibility review of new/changed tokens and the required
+independent acceptance remain necessary.
 
 ## Grounding a proposal
 
@@ -202,7 +217,10 @@ owns the scope of a system addition.
 The seam, concretely:
 
 1. **Before designing** — the designer loads `design-system.md`; if missing/stale,
-   requests extraction (explorer) and/or a source-token inventory (FE).
+   first derives or refreshes it from adequate current supplied evidence (case 2).
+   Only missing evidence requires an extraction and/or source-token inventory
+   request (cases 3–5); explorer and FE are possible producers, not required
+   installations or dispatches to consume adequate supplied evidence.
 2. **Before a design is accepted** — the design artifact names the applied
    `design-system.md` version/path, links mockups for load-bearing options, and
    lists any token/component proposals; **FE reviews feasibility** of anything

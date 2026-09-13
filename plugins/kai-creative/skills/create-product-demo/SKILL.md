@@ -20,7 +20,8 @@ If core is unavailable, you may discuss supplied demo intent in a bounded
 answer, but may not write coordinated `.kai` state; tell the operator to
 install or update core before coordinated work resumes.
 Load `kai-core-content-grounding` when drafting claimful copy: supplied factual
-JSON satisfies the producer boundary, with the same ledger and provenance rules.
+JSON from the operator or an approved producer is admitted by that contract,
+with the same ledger and provenance rules, not automatic independent verification.
 Missing facts remain unresolved, never invented for a demo.
 
 **Provider and output paths.** Resolve `<kai-creative-plugin>` by going up two

@@ -30,8 +30,8 @@ facts may continue, but coordinated `.kai` artifacts and acceptance may not;
 tell the operator to install or update core before resuming coordination.
 Load `kai-core-content-grounding` for the reference scheme, ledger, treatment
 table, and never-fabricate rules. A factual `product_context.json` supplied by
-the operator satisfies the input boundary without a marketing-agent call;
-marketing references identify the usual producer, not a required install.
+the operator or an approved producer is admitted by that contract without a
+marketing-agent call; being supplied does not independently verify its assertions.
 The voiceover script, on-screen text, and
 creative brief make claims about the product, so every factual span is entered in
 the claim ledger against a `product_context.json` reference, treated by its

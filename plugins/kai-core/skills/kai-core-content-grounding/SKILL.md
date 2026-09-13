@@ -18,14 +18,18 @@ platform-specific output on top.
 
 ## The single fact source
 
-`product_context.json` (from `principal-product-marketing`) is the **only** place
-facts come from:
+`product_context.json`, supplied by the operator or an approved producer, is the
+**only** place facts come from. `principal-product-marketing` is a possible
+producer, not a required installation or call:
 
 - `product_exploration_report.md` informs *phrasing* nuance only — never a source
   of a fact the JSON doesn't carry.
-- An operator aside is not a fact until it lands in `product_context.json` through
-  `principal-product-marketing`. If the context is missing or too thin for the
-  goal, stop and route there; never reconstruct product facts from the chat.
+- An operator aside is not an admissible assertion until it is supplied in
+  `product_context.json` with its actual assertion provenance. If the context is
+  missing or too thin for the goal, stop and request the missing assertions in
+  that JSON from the operator or an approved producer; never reconstruct product
+  facts from the chat. Supplying the JSON does not independently verify its
+  assertions or change their source/kind, proof status, or required treatment.
 
 ## The product_context reference scheme
 
@@ -114,8 +118,11 @@ explicitly requested brand-voice draft is produced without it.
 3. **Respect provenance** per the treatment table; product-claims and
    operator figures are attributed, inferences are perspective, external is cited
    and never extrapolated.
-4. **JSON is the only fact source.** The report informs phrasing; new facts go
-   through `principal-product-marketing` first.
+4. **JSON is the only fact source.** The report informs phrasing; new assertions
+   must be supplied in that JSON by the operator or an approved producer with
+   truthful provenance, never reconstructed from chat. Marketing is a possible
+   producer, not a prerequisite call; supplied assertions are not thereby
+   independently verified.
 5. **needs_confirmation ≠ publishable.** Excluded from copy or shown as an
    explicit placeholder.
 6. **Re-verify after voicing.** Claim-safety holds against the final copy.

@@ -70,7 +70,7 @@ workspace and the existing lanes:
 | Offline mockups and structural diagrams | Preserved: no CDN, npm/build, or external asset dependence in HTML output. Diagram CSS, palette mechanics, intrinsic sizing, wrapping, captions, and human visual checks are retained. Example colors are not product evidence. |
 | Exact-revision design review and PM/steward design acceptance | Preserved for coordinated DESIGN items. The required independent review remains pending if unavailable; direct design output does not invent acceptance. |
 | Brand evidence classes, contrast/legibility, ownability, no protected-mark imitation, no visual product claims | Preserved, together with identity/application ownership and operator adoption gates. |
-| Per-span factual ledger, provenance treatment, bilingual/locked-fact voicing | Shared core grounding remains authoritative for formats and evidence rules. Supplied factual JSON satisfies creative's input boundary; the usual marketing producer is not a mandatory call. No facts are reconstructed from chat. |
+| Per-span factual ledger, provenance treatment, bilingual/locked-fact voicing | Shared core grounding admits operator/approved-producer factual JSON with actual assertion provenance; marketing is a possible producer, not a mandatory call. Supplied assertions are not independently verified by admission. No facts are reconstructed from chat. |
 | Typed existing/generated/capture-required/reference-only media, source vs final clocks, shared scene IDs, cut/audio cue synchronization | Preserved. Existing assets require usable availability and paths. Estimates are labeled; metadata is not a claim to have watched media. |
 | Live-interface screenplay vs measured take | Preserved and made explicit in the method's example: semantic targets, placement/payoff intent, state spans and `start_after`; no invented source seconds, frame coordinates, or narration offsets. |
 | Measurement, failed/unsettled steps, cursor provenance, fit and duration honesty | Preserved in unchanged media algorithms. Duration comes from the finished render, not a take; human review is not replaced by arithmetic or contact-sheet generation. |
@@ -80,10 +80,15 @@ workspace and the existing lanes:
 | Eager inheritance and managed refusal guards | Retired in the three creative agents. Each probes core just before its first shared rule, states a role-specific single-shot fallback, forbids coordinated `.kai` state without core, and requests install/update. |
 | Cwd-first or personal-provider helper lookup | Retired. Every demo command resolves from the loaded creative method's provider root. |
 
-The shared core design/content contracts are not redesigned here. Their
-references to usual upstream owners do not require a sibling installation for
-supplied-input creative work. Missing evidence or required independent
-acceptance is not faked to satisfy package independence.
+The shared core design/content contracts explicitly admit supplied inputs:
+factual JSON retains each assertion's actual provenance and treatment; current
+source-token inventories or neutral extracts require sufficient provenance and
+whole-in-scope coverage before deriving or refreshing a design reference.
+Adequate supplied evidence does not require a sibling installation or dispatch.
+These are narrow input-interface corrections, not a core operating-model
+redesign. Missing evidence is requested; real FE feasibility for new/changed
+tokens and required independent acceptance are not faked. A derived draft is
+not an accepted team asset merely because its evidence was supplied.
 
 ## Runtime ownership and prerequisites
 
