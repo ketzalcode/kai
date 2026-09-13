@@ -24,16 +24,26 @@ The catalog is closed:
 | 1 | `kai-core` | Required operating contract, workspace tools, and fleet hooks. |
 | 2 | `kai-engineering` | Engineering, architecture, reliability, security, data, AI, QA, docs, PR, and ship roles. |
 | 3 | `kai-product` | Discovery, scope, research, analytics, product-led growth, and product-evaluation roles. |
-| 4 | `kai-revenue` | Sales, pricing, partnerships, RevOps, customer success, and support intake. No local skills; shared contracts come from core. |
-| 5 | `kai-assistant` | Personal tasks, agendas, briefings, and user-voice drafting roles. |
-| 6 | `kai-learning` | Teaching, tutoring, learning paths, lesson production, and career development over kai-core. |
-| 7 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
-| 8 | `kai-marketing` | Positioning, campaigns, social content, and search visibility. |
+| 4 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
+| 5 | `kai-marketing` | Positioning, campaigns, social content, and search visibility. |
+| 6 | `kai-revenue` | Sales, pricing, partnerships, RevOps, customer success, and support intake. No local skills; shared contracts come from core. |
+| 7 | `kai-assistant` | Personal tasks, agendas, briefings, and user-voice drafting roles. |
+| 8 | `kai-learning` | Teaching, tutoring, learning paths, lesson production, and career development over kai-core. |
 
-Core is always included. Never silently add a department.
-`kai-gtm` is retired without an alias. Marketing, revenue and product-led growth
-now have separate owners; select replacements by the requested capability,
-not by treating revenue as the entire former go-to-market package.
+Core is always included. Never silently add a capability package. The supported
+baseline is core plus that package; adequate supplied evidence does not require
+installing its usual producer.
+`kai-gtm` and `kai-personal` are retired without aliases:
+
+- Former gtm capabilities belong to marketing, revenue and product (growth).
+- Former personal capabilities belong to assistant (tasks/voice), learning
+  (teaching/career), creative (video/demo) and product (fitness-product audits).
+
+Select replacements by capability, not by prefix or a one-to-one rename.
+Preserve `.kai/personal/` and existing workspace/private records; plugin
+replacement is not data migration. The eight-package source and prepared
+metadata do not prove publication. New-package commands require a marketplace
+source containing this refactor.
 
 ### Inspect
 
@@ -53,7 +63,12 @@ Before showing an install plan:
 4. Refuse installation when legacy `kai`, mixed provenance, unreadable host
    state, disabled plugins, or version skew remains unresolved.
 5. Prove `kai-core` and every selected department exist at one marketplace
-   version before recommending removal of the monolith.
+   version before recommending removal of the monolith or either retired pack.
+6. Inspect the host's plugin list explicitly for retired gtm/personal installs;
+   a current-catalog migration check alone is not proof they are absent.
+   Their IDs overlap the replacements. Show their removal in the confirmed
+   plan and end the old session before replacement use. If replacement-source
+   availability is unknown, keep the existing installation and stop.
 
 Do not infer enabled state from `plugin list`; use the migration inventory.
 Never substitute a direct repository or subdirectory install as a fallback.
@@ -71,21 +86,26 @@ copilot plugin install kai-core@kai-plugins
 copilot plugin update kai-core@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-product@kai-plugins
+copilot plugin install kai-creative@kai-plugins
+copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-revenue@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-learning@kai-plugins
-copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-marketing@kai-plugins
 ```
 
-Show only selected department commands. Show `keep and verify` instead of an
+These are marketplace command forms, not evidence that the default remote
+contains this branch. Browse the selected source before any uninstall/install;
+do not bypass missing replacements with guessed branch or direct-install syntax.
+Show only selected department commands. Use `update` for a selected installed
+pack at an older version. Show `keep and verify` instead of an
 install command when the exact enabled marketplace version is already present.
 Get one explicit confirmation for the displayed plan before changing
 marketplace state, plugins, or workspace provenance.
 
-When the only safe path is to uninstall legacy `kai`, prove `kai-core` and every
+When the only safe path is to uninstall legacy `kai` or retired packages,
+prove `kai-core` and every
 requested department are listed at one common version, then show the re-entry
-sequence. End the current run; a session still carrying the removed monolith
+sequence. End the current run; a session still carrying removed plugin sources
 must not continue the migration.
 
 ### Execute
@@ -105,7 +125,7 @@ must not continue the migration.
    disabled, tell the operator to open `/plugin`, enable
    `<name>@kai-plugins`, start a fresh session, and re-run the installer.
 4. Re-run the migration check. Completion requires `clear`, no legacy
-   monolith, and the exact requested pack set.
+   monolith or retired packs in the host list, and the exact requested pack set.
 
 Stop on the first non-zero command or unverified result. Do not uninstall
 earlier successful steps to manufacture rollback.
@@ -125,6 +145,7 @@ Verified installed: <name@version rows, or none>
 Failed: <command/check and observed result, or none>
 Not attempted: <selected plugins, or none>
 Legacy kai: absent and verified | present | unverified
+Retired kai-gtm / kai-personal: absent and verified | present | unverified
 Workspace provenance: kai-core | unchanged | not present | unverified
 Rollback: not attempted or verified
 Session: start a fresh session before invoking pack agents | no pack change
@@ -369,7 +390,9 @@ updates them only through an explicit publication plan.
 
 The main CLI agent does not inherit Kai skills. Offer once to append the
 canonical managed block from
-`scripts/lib/communication-style-block.md` to the project's `AGENTS.md`.
+`scripts/lib/communication-style-block.md` under the loaded core provider root
+to the project's `AGENTS.md`. Resolve that provider from this skill's base
+directory, not the operator's cwd; the file is emitted with core.
 
 The choice is opt-in. Explain that `AGENTS.md` belongs to the project and may
 be committed even when the workspace is external or repo-local. Append or

@@ -9,7 +9,8 @@ compulsory producer calls. Missing facts narrow the answer or become a precise
 input request, not invented intelligence. A direct analysis creates no team item.
 
 This note describes inspected source and generated install artifacts, not a
-published release or live-host compatibility. Version metadata remains `6.0.0`.
+published release or live-host compatibility. The integration batch prepares
+`7.0.0`; install/update commands require a source containing this refactor.
 
 ## Ownership and obligations
 
@@ -122,6 +123,9 @@ current SEO standards were verified during the refactor.
 | Assess these route HTML/header captures and supplied search standards. | Cited observations/findings, Investigate items and explicit coverage/currency limits. | No live crawl, browser/mobile result, current-standard refresh, indexing or ranking claim without executed evidence. |
 
 ## Generation and verification limits
+
+The following results record the package unit before the `7.0.0` integration
+batch; they are not a new runtime or policy validation claim.
 
 The authorized sequence completed with exit code 0:
 

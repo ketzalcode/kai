@@ -80,8 +80,10 @@ All output for a single run lives in:
     ...
 ```
 
-- `<repo-root>` is the current working directory's git root. If not
-  in a git repo, fall back to `<cwd>/.kai/runs/learn/`.
+- `<workspace-root>` is the absolute root resolved by the calling agent.
+  Load `kai-core-workspace-paths` before placing output; use that contract's
+  resolution order, including external workspaces. If resolution fails, stop
+  before writing; never substitute a git root or incidental cwd.
 - `<goal-slug>` is the **durable learning goal** this run belongs to — a
   descriptive kebab-case slug like `learn-react`, `az-204`, or
   `prep-for-interview-vercel` — so every run toward one goal stays in one

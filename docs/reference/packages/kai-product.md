@@ -9,7 +9,8 @@ call. Missing facts remain explicit limits. Creative owns UI/brand design;
 engineering owns implementation. Naming a later owner does not perform its work.
 
 This is inspected source and emitted install metadata, not a published release
-or a live-host compatibility claim. Version metadata remains `6.0.0`.
+or a live-host compatibility claim. The integration batch prepares `7.0.0`;
+install/update commands require a source containing this refactor.
 
 ## Ownership and obligations
 

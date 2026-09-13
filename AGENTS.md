@@ -42,6 +42,12 @@ go-to-market and personal plugins are not compatibility aliases; do not
 reintroduce their eager declarations or dependency guards. `.kai/personal/`
 remains the private data lane and is unrelated to plugin retirement.
 
+The install owners are `kai-core`, `kai-engineering`, `kai-product`,
+`kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning`. Keep each source in one owning package. A capability package's
+baseline is core plus itself, with adequate supplied inputs rather than
+compulsory sibling producers. Naming-family tokens do not define install owners.
+
 ## Communicating with the operator
 
 The block below is the one thing kai ships that binds the **main CLI agent**
@@ -103,12 +109,13 @@ keep it honest anyway.
 Any PR that changes shipped plugin behavior must, in the **same PR**:
 
 1. Bump the version in **`plugin.json`**, **`package.json`**, and
-   **`.github/plugin/marketplace.json`** (both `metadata.version` and the
-   `plugins[]` entry) together — `npm version <x.y.z> --no-git-tag-version`,
+   **`.github/plugin/marketplace.json`** (both `metadata.version` and
+   every `plugins[]` entry) together — `npm version <x.y.z> --no-git-tag-version`,
    then set the other two to match. CI rejects a stale marketplace index,
    because it installs fine while reporting the wrong version. Run
    `npm install` if you touched dependencies so `package-lock.json` stays in
-   sync.
+   sync; version-only changes do not require an install. Regenerate all eight
+   package manifests/locks/scripts with `npm run pack-preview -- --write`.
 2. Add a dated **`CHANGELOG.md`** entry under the new version
    (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
    refresh the README `## Status` stamp.
@@ -134,9 +141,8 @@ while pre-1.0, both features and breaking changes are a **minor** bump and fixes
 are a **patch**; after 1.0, breaking changes are **major**, features **minor**,
 fixes **patch**. Docs- or test-only changes need no bump.
 
-**`1.0.0` is reserved** for the release in which packs become the install
-surface — `kai-core` plus department packs replacing the single `kai` plugin
-(#29). Nothing else takes the major, and it is not cut early to signal
-maturity: groundwork for the split stays on `0.x` however substantial, because a
-consumer's install command has not changed. See **What `1.0.0` is reserved for**
-in `docs/reference/plugin-structure.md` for the gates it waits on.
+The historical `1.0.0` milestone made packs the install surface (#29).
+Current changes follow the post-1.0 column. The eight-package refactor prepares
+`7.0.0` because it removes two install names; prepared metadata is not a tag,
+release, publication, or host-verification claim. Its approved source-only
+phase defers tests/policy/runtime consolidation rather than disabling CI.

@@ -4,6 +4,65 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [7.0.0] - 2026-09-12
+
+Prepared source metadata for the eight-package integration, not a tag, release
+publication, verified installation, or runtime-quality claim.
+
+### Added
+
+- **`kai-creative`:** three UI/UX, brand and video roles, seven design/demo
+  methods, and the complete demo script/module closure.
+- **`kai-marketing`:** four positioning, campaign, LinkedIn and search roles
+  with `product-marketing-intelligence` and `linkedin-content`.
+- **`kai-revenue`:** six sales, pricing, partnership, RevOps, success and
+  support-intake roles. It has no local skills and omits that manifest component.
+- **`kai-learning`:** five teaching, path, career and extraction roles with
+  the complete `generate-html-lesson` method.
+
+### Changed
+
+- The final source owners are `kai-core`, `kai-engineering`, `kai-product`,
+  `kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant` and
+  `kai-learning`. All 56 agent and 57 skill IDs at the remaining-package
+  baseline are preserved once, without duplicate source trees.
+- Product owns discovery, scope, evidence, analytics, product-led growth and
+  fitness-product assessment. Creative owns interaction and visual design;
+  marketing owns positioning/distribution; revenue owns commercial/customer
+  recommendations. Core, engineering and assistant keep their signed-off lanes.
+- All remaining agents use task-local core/local methods. Core plus the chosen
+  capability accepts adequate supplied evidence without compulsory sibling
+  producers, while preserving provenance, human authority, privacy and real
+  acceptance boundaries.
+- Lectoria remains pinned in core for shared audio and in creative for demo
+  narration. Learning has no runtime dependency; scripts and locks follow
+  their consumers. No new external library or automatic install is introduced.
+- Current install, onboarding, contributor and package references describe the
+  eight-package surface. Verify replacement availability in a source containing
+  this refactor before removing old installs. Private `.kai/personal/` data and
+  workspace schemas are unchanged.
+
+### Removed
+
+- `kai-gtm` and `kai-personal` plugin sources/entries, with no aliases. Select
+  their successors by capability; updating a retired name does not migrate it.
+- Remaining eager agent declarations and managed dependency-guard blocks.
+
+### Fixed
+
+- Core content/design interfaces accept adequate supplied evidence without
+  weakening provenance or acceptance. Certification objectives retain the
+  supplied dated official-outline fallback with explicit freshness limits.
+- Extraction output uses the resolved workspace, not incidental cwd. Audio
+  documentation identifies the actual provider-root configuration and preserves
+  wrapper behavior; notification/media algorithms are unchanged.
+- Onboarding's canonical communication-style block now emits with core rather
+  than pointing at an absent installed file. Its text is unchanged.
+
+Generation and raw source/metadata inspection are the evidence for this batch.
+Independent integration review remains with the controller; safety, behavioral,
+runtime and test/CI consolidation remain deferred. No green-build claim is made.
+
 ## [6.0.0] - 2026-09-12
 
 ### Added
@@ -3406,6 +3465,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[7.0.0]: https://github.com/RubenSaucedo/kai/compare/v6.0.0...v7.0.0
 [6.0.0]: https://github.com/RubenSaucedo/kai/compare/v5.0.0...v6.0.0
 [5.0.0]: https://github.com/RubenSaucedo/kai/compare/v4.0.0...v5.0.0
 [4.0.0]: https://github.com/RubenSaucedo/kai/compare/v3.1.0...v4.0.0

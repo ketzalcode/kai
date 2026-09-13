@@ -5,8 +5,8 @@
     "url": "https://github.com/RubenSaucedo"
   },
   "metadata": {
-    "description": "Kai core and department packs published by RubenSaucedo.",
-    "version": "6.0.0",
+    "description": "Kai core and capability package sources maintained by RubenSaucedo.",
+    "version": "7.0.0",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./plugins/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -37,7 +37,7 @@
       "name": "kai-assistant",
       "source": "./plugins/kai-assistant",
       "description": "Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -60,7 +60,7 @@
       "name": "kai-creative",
       "source": "./plugins/kai-creative",
       "description": "UI/UX, visual identity, design assets, and supported media production over kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -83,7 +83,7 @@
       "name": "kai-learning",
       "source": "./plugins/kai-learning",
       "description": "Teaching, tutoring, learning paths, lesson production, and career development over kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -106,7 +106,7 @@
       "name": "kai-product",
       "source": "./plugins/kai-product",
       "description": "Product discovery, scope, evidence, analytics, and product-led growth over kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -129,7 +129,7 @@
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
       "description": "kai engineering department pack — the engineering roles, over a required kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -152,7 +152,7 @@
       "name": "kai-marketing",
       "source": "./plugins/kai-marketing",
       "description": "Positioning, campaigns, social content, and search visibility over kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -175,7 +175,7 @@
       "name": "kai-revenue",
       "source": "./plugins/kai-revenue",
       "description": "Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.",
-      "version": "6.0.0",
+      "version": "7.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"

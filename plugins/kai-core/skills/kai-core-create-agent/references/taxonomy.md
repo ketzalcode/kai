@@ -21,17 +21,24 @@ rules listed under [Design basis](#design-basis).
 
 ## Provider families
 
-| Family | Provider | Responsibility |
+Family tokens describe the existing naming policy, not an install-package map.
+Capability ownership is the eight-package partition in `pack-plan.mjs`; a
+prefix alone does not choose an owner. This reference correction does not
+add taxonomy values or rename existing agents.
+
+| Family | Current capability owners | Responsibility |
 |---|---|---|
-| `core` | `kai-core` | Kai's shared contract, routing spine, workspace, and fleet machinery. |
-| `personal` | `kai-personal` | Private operator, learning, and personal-assistance roles. |
-| `prod` | `kai-product` | Product, product design, analytics, and product discovery. |
+| `core` | `kai-core` | Shared contracts, workspace, fleet machinery, and explicitly requested coordination. |
+| `personal` | `kai-assistant`, `kai-learning` | Personal assistance or teaching/career work, according to the capability. |
+| `prod` | `kai-product`, `kai-creative` | Product scope/evidence or interaction/visual design, with separate acceptance owners. |
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation. |
-| `gtm` | `kai-gtm` | Marketing, growth, sales, revenue, partnerships, and customer operations. |
+| `gtm` | `kai-marketing`, `kai-revenue`, `kai-product` | Marketing; commercial/customer operations; product-led growth, respectively. |
 
 Choose the provider whose absence should make the role unavailable and whose
 discipline owns its acceptance boundary. The short `prod`, `eng`, and `gtm`
 tokens are reserved namespace abbreviations. Scope uses full words.
+`kai-gtm` and `kai-personal` are retired install names, not aliases. Naming-policy
+consolidation is separate from these ownership moves.
 
 ## Durable-role postures
 

@@ -102,7 +102,10 @@ assistant: [runs: pwsh <kai-core-plugin>/scripts/generate-audio.ps1 -Source .kai
    update whenever the local executable is absent.
 2. **Don't `cd` anywhere when invoking.** The script resolves `-Source` and
    `-Out` against the user's current working directory by design — that's
-   how it travels across codebases.
+   how it travels across codebases. For Kai workspace output, callers first
+   resolve the workspace through `kai-core-workspace-paths` and pass absolute
+   `-Source` and `-Out` paths; the wrapper's cwd defaults do not resolve a
+   workspace.
 3. **Run from wherever the user is**, with the plugin-relative path to the script:
    ```powershell
    pwsh <kai-core-plugin>/scripts/generate-audio.ps1 [-Source <path>] [-Lang <list>] [-Style <kind>] [-Voice <preset>] [-DryRun]
@@ -123,12 +126,13 @@ assistant: [runs: pwsh <kai-core-plugin>/scripts/generate-audio.ps1 -Source .kai
 
 ## Failure modes
 
-- **`'lectoria' is not available`**: user hasn't run `npm ci` in this
-  repo yet, and no global lectoria is on PATH. Surface the install command
+- **`'lectoria' is not available`**: no executable was found via `LECTORIA_BIN`,
+  the kai-core provider's pinned install, or PATH. Surface the install command
   the script prints — do not guess at alternatives.
 - **`Azure credentials missing`**: lectoria itself will print the env vars
-  it needs. They live in this repo's `.env` (loaded automatically by the
-  wrapper). If `.env` is empty or missing, point the user to lectoria's
+  it needs. The wrapper reads `<kai-core-plugin>/.env`, not the calling
+  project's or workspace's `.env`; it also retains process environment values
+  not set by that file. If configuration is missing, point the user to lectoria's
   `.env.example` + the README's "Provisioning Azure resources" section.
 - **`429 Too Many Requests`**: lectoria already chunks long docs per
   section, but the per-minute Azure OpenAI TPM cap can still hit on

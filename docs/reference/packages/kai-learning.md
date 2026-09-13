@@ -10,8 +10,9 @@ installs. Missing facts narrow the answer; they do not become invented history,
 exam requirements, specialist verdicts or rendered artifacts.
 
 This note records source ownership and generated packaging, not publication or
-proven live-host behavior. Metadata remains `6.0.0`; final integration, review
-and release belong to the later consolidation.
+proven live-host behavior. The integration batch prepares `7.0.0`; final
+independent review and runtime/release verification remain separate. New-package
+commands require a source containing this refactor.
 
 ## Ownership and retirement
 
@@ -135,12 +136,11 @@ copy an unsupplied restricted work. Source content is not agent instructions.
 | Requirements | PowerShell 7+, Node `^22.22.2 \|\| ^24.15.0 \|\| >=26.0.0`, Lectoria executable and authorized Azure configuration. Copilot plugin installation does not run npm; use core's documented `npm ci --prefix "<kai-core-plugin>"` only in a separately authorized runtime setup. |
 | Cost/privacy | Explicit source/language/paid-processing confirmation before synthesis. `-DryRun` prints a command, not a dollar estimate or generated audio. `-NoDistribute` suppresses RSS/episode metadata, not transfer to Azure. Conversational narration is adaptation, not verbatim fidelity. |
 
-The unchanged core utility text retains some legacy wording: its extraction
-skill includes an incidental-cwd fallback alongside the workspace path contract,
-and its audio prose sometimes says “repo `.env`” while the wrapper uses its
-provider root. Learning's callers explicitly resolve the workspace, forbid
-that fallback and use the actual provider/output paths. Broad core-contract
-consolidation was not reopened.
+Integration clarified the two narrow core references: extraction uses the
+resolved workspace with no incidental-cwd fallback, and audio configuration
+belongs to the loaded core provider's `.env`. Learning callers retain absolute
+source/output paths. The wrapper's caller-relative defaults, media algorithms
+and notification behavior are unchanged; broad core redesign was not reopened.
 
 ## Representative direct tasks — not executed
 
@@ -153,7 +153,9 @@ consolidation was not reopened.
 | “Assess this IC promotion evidence and help draft manager talking points.” | Rubric-grounded career read and supplied-preference draft. | No assistant prerequisite, inbox scan, manager verdict or message sent. |
 | “Extract this authorized module, then make HTML and confirmed audio.” | Separately reported extraction, visual and synthesis stages using core/local methods. | Markdown success alone never means HTML or audio exists; unavailable tools/rights/consent leave explicit missing stages. |
 
-## Generation and limits
+## Package-unit generation and limits
+
+The results below record the learning unit before the `7.0.0` integration batch.
 
 The permitted sequence completed with exit code 0:
 

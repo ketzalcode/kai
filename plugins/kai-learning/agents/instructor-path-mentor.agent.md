@@ -153,8 +153,8 @@ next objective from the confirmed path and complete the requested step:
   resolved workspace/goal. Respect rights and access controls; do not copy
   restricted copyrighted material or bypass login. Playwright is required;
   missing browser/auth yields a truthful limitation, never invented text.
-  Resolve through the workspace-path contract first; do not use the extraction
-  utility's legacy incidental-cwd fallback when no workspace is resolved.
+  Resolve through the workspace-path contract first; stop before writing when
+  no workspace is resolved, rather than falling back to an incidental cwd.
 - **Package supplied Markdown** → Invoke `generate-html-lesson` directly.
   Preserve source facts, code, citations, questions and chapter boundaries;
   do not rewrite sources. Confirm output, languages and zero-to-three diagrams.

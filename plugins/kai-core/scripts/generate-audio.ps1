@@ -61,7 +61,7 @@
     Lectoria is pinned in this pack's package.json and package-lock.json. Install
     it with `npm ci --prefix "<kai-core-plugin>"`; the wrapper prefers that
     pack-local executable and falls back to PATH. Azure credentials are loaded
-    from this repo's `.env` so callers don't need them exported.
+    from the provider root's `.env` so callers don't need them exported.
 #>
 
 [CmdletBinding()]
@@ -136,9 +136,7 @@ user-managed executable or place lectoria on PATH.
     exit 1
 }
 
-# Load repo .env so callers don't need Azure vars exported in their shell. This
-# mirrors bongo's wrapper — credentials live with the repo's config, not the
-# user's profile.
+# Load the provider root's .env, not the caller's project/workspace config.
 $envFile = Join-Path $repoRoot '.env'
 if (Test-Path $envFile) {
     Get-Content $envFile | ForEach-Object {

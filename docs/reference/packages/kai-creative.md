@@ -10,8 +10,9 @@ Missing facts remain requested or explicitly unresolved.
 
 The source and generated install artifacts are part of the remaining-package
 refactor. This is not a release or a claim of marketplace availability.
-Version metadata stays at the controller's existing `6.0.0` until the batched
-release preparation.
+The integration batch prepares `7.0.0` metadata. Install/update commands require
+a source containing this refactor; final independent review and runtime/release
+verification remain separate.
 
 ## Ownership
 

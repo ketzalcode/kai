@@ -129,7 +129,7 @@ export const SKILL_OWNER_OVERRIDES = {
   'review-success-metrics': 'engineering',
 };
 
-// The published surface now equals the full locked partition. Retain this alias
+// The committed source surface equals the full locked partition. Retain this alias
 // so generation, marketplace policy, rollback policy, and CI share one name.
 export const COMMITTED_PACKS = [...PACK_ORDER];
 
@@ -680,6 +680,12 @@ export function materializePacks({
   if (selected.has(HOOKS_OWNER)) {
     files.set(`${packPluginName(HOOKS_OWNER)}/${HOOKS_FILE}`,
       normalizeLF(readFileSync(join(root, HOOKS_FILE), 'utf8')));
+  }
+  if (selected.has('core')) {
+    // Onboarding reads this data file; executable/module routing cannot discover it.
+    const block = 'scripts/lib/communication-style-block.md';
+    files.set(`${packPluginName('core')}/${block}`,
+      normalizeLF(readFileSync(join(root, ...block.split('/')), 'utf8')));
   }
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
 }
