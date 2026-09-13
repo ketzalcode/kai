@@ -215,7 +215,7 @@ export function analyze(items, threads, now) {
     }
 
     // 5. INTEGRITY — a review that certified a different revision than the one on
-    //    the item. Per kai-core-team-operating-rules, a review of an older ref no longer
+    //    the item. Per kai-core-work-acting, a review of an older ref no longer
     //    counts. Superseded reviews legitimately *remain* in the record, so this
     //    fires only when nothing re-certified that role and kind at the current
     //    ref — otherwise a normal review iteration would read as a failure.

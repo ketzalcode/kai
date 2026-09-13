@@ -30,19 +30,6 @@ export const REFUSAL = 'KAI-CORE-MISSING';
 // prefix core alone may use removes that ambiguity; see namespaceErrors.
 export const CORE_SKILL_PREFIX = 'kai-core-';
 
-// The canonical fail-closed preflight, copied into every generated department
-// agent's own body. It lives in a file, not in this module, so the generator,
-// the preview and the CI byte-pin all assert on the same bytes — the same
-// reason scripts/lib/inherits-block.txt is a file.
-export const PREFLIGHT_BLOCK_REL = 'scripts/lib/preflight-block.txt';
-
-// The canonical degraded-mode refusal, carried on the same terms. It answers the
-// one case the preflight cannot: core answered and is compatible, and the shared
-// operating contract still is not in the session. Because a refusal restates no
-// rule it has nothing to drift from; `degradedBlockErrors` below is what keeps it
-// a refusal instead of a second copy of the contract.
-export const DEGRADED_BLOCK_REL = 'scripts/lib/degraded-block.txt';
-
 // The default committed-tree root. release-guard classifies changes under it as
 // behavior-sensitive, the validator discovers manifests under it, and the
 // generator writes the reviewed committed slice there.
@@ -79,7 +66,7 @@ const MIGRATION_BASELINE_PACKS = {
     'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
     'principal-sre', 'principal-security', 'principal-privacy-compliance',
     'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
-    'principal-ai-researcher', 'principal-technical-writer', 'workflow-pull-request',
+    'principal-ai-researcher', 'workflow-pull-request',
     'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
     'workflow-doc-review', 'workflow-localization',
   ],
@@ -103,7 +90,7 @@ const MIGRATION_BASELINE_PACKS = {
 
 export const NEW_AGENT_IDS = {
   core: [],
-  engineering: [],
+  engineering: ['eng-lead-technical-writing'],
   product: [],
   gtm: [],
   personal: [],
@@ -119,7 +106,7 @@ export const PACKS = Object.fromEntries(
 // list the same packs in the same sequence every run.
 export const PACK_ORDER = Object.keys(PACKS);
 
-// Skills with no inherited firing path still need one explicit provider. These
+// Skills with no loaded firing path still need one explicit provider. These
 // dispositions were ratified in the partition lock; keeping them here makes the
 // generator use the reviewed decision instead of silently defaulting to core.
 export const SKILL_OWNER_OVERRIDES = {
@@ -127,10 +114,6 @@ export const SKILL_OWNER_OVERRIDES = {
   'demo-capture': 'personal',
   'demo-narrate': 'personal',
   'demo-zoom': 'personal',
-  // The probe is invoked by the injected preflight, not by an `**Inherits:**`
-  // line, so inheritance cannot place it. Core provides it: a pack agent asks
-  // core whether core is there.
-  [CONTRACT_SKILL]: 'core',
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
@@ -514,11 +497,24 @@ export function declaredInherits(body) {
   return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
 }
 
-// The skills an agent inherits, read from its single `**Inherits:**` line and
-// filtered to those that exist on disk (a named-but-absent skill is a separate
-// validator concern, not a partition input).
-export function inheritedSkills(root, body) {
-  return declaredInherits(body).filter((s) => skillFile(root, s) !== null);
+// The partition input: the skills an agent loads — from its eager `**Inherits:**`
+// line and its inline routes both — filtered to those that exist on disk. A
+// named-but-absent skill is a reference miss that referenceErrors reports, not a
+// partition input; the filter keeps that distinction load-bearing instead of
+// collapsing the two concerns. `loadedSkills` (below) is the same union without
+// the filter, for the reference corpus that must see the miss.
+export function loadedSkillsOnDisk(root, body) {
+  return [...loadedSkills(body)].filter((s) => skillFile(root, s) !== null);
+}
+
+// The one answer to "which contracts does this agent load". A migrated agent
+// routes them inline at the step that needs each one; an agent still on the
+// eager line declares them all up front. Both are the same question, so every
+// check that asks it reads this rather than picking a side and passing
+// vacuously on the other half of the repo. When the last pack migrates, the
+// eager arm disappears and this collapses to `routedSkills` alone.
+export function loadedSkills(body) {
+  return new Set([...declaredInherits(body), ...routedSkills(body)]);
 }
 
 // Assign every skill on disk to exactly one provider. The mechanical rule handles
@@ -533,7 +529,7 @@ export function planPacks(root = REPO_ROOT) {
 
   const usedBy = new Map();
   for (const id of allAgents) {
-    for (const s of inheritedSkills(root, readAgentBody(root, id))) {
+    for (const s of loadedSkillsOnDisk(root, readAgentBody(root, id))) {
       if (!usedBy.has(s)) usedBy.set(s, new Set());
       usedBy.get(s).add(packOf.get(id) ?? '?');
     }
@@ -666,74 +662,25 @@ export function materializePacks({
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
 }
 
-// The canonical block texts, read from disk rather than restated here: one source
-// is what the CI byte-pin pins, and prose duplicated into JS is prose that drifts.
-const readBlock = (root, relPath) =>
-  normalizeLF(readFileSync(join(root, ...relPath.split('/')), 'utf8')).trimEnd();
-
-export const preflightBlock = (root = REPO_ROOT) => readBlock(root, PREFLIGHT_BLOCK_REL);
-
-export const degradedBlock = (root = REPO_ROOT) => readBlock(root, DEGRADED_BLOCK_REL);
-
-// The guarantee blocks every generated department agent carries, in the order
-// they must appear. The order is the contract: the preflight is the first
-// executable instruction, and the refusal is what a session falls to only once
-// the preflight has passed. Defined once so the generator, the preview and the
-// validator cannot disagree about it.
-export const guaranteeBlocks = (root = REPO_ROOT) => [preflightBlock(root), degradedBlock(root)];
-
-export const guaranteeRegion = (root = REPO_ROOT) => [
-  GUARANTEE_REGION_OPEN,
-  ...guaranteeBlocks(root),
-  GUARANTEE_REGION_CLOSE,
-].join('\n\n');
-
-// Department agents carry one explicitly managed region. `--write` may replace
-// this region without treating the rest of the authoritative agent body as
-// generated output. Missing regions are inserted at the same safe anchor the
-// original pack generator used; malformed half-regions fail closed.
-export function syncGuaranteeRegion(body, root = REPO_ROOT) {
-  const normalized = normalizeLF(body);
-  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
-  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
-  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
-  const openMarker = canonicalOpenAt !== -1
-    ? GUARANTEE_REGION_OPEN
-    : legacyOpenAt !== -1 ? LEGACY_GUARANTEE_REGION_OPEN : null;
-  const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
-  if ((openAt === -1) !== (closeAt === -1)) {
-    throw new Error('agent has only one core dependency guard marker');
-  }
-  const region = guaranteeRegion(root);
-  if (openAt === -1) {
-    const [preflight, degraded] = guaranteeBlocks(root);
-    const preflightAt = normalized.indexOf(preflight);
-    const degradedAt = normalized.indexOf(degraded);
-    if ((preflightAt === -1) !== (degradedAt === -1)) {
-      throw new Error('agent has only one legacy core dependency guard block');
-    }
-    if (preflightAt !== -1) {
-      const preflightEnd = preflightAt + preflight.length;
-      if (degradedAt < preflightEnd
-        || normalized.slice(preflightEnd, degradedAt).trim() !== '') {
-        throw new Error('agent legacy core dependency guard blocks are not adjacent');
-      }
-      return `${normalized.slice(0, preflightAt)}${region}${normalized.slice(degradedAt + degraded.length)}`;
-    }
-    return injectBlocks(normalized, [region]);
-  }
-  if (normalized.indexOf(GUARANTEE_REGION_OPEN, openAt + openMarker.length) !== -1
-    || normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN, openAt + openMarker.length) !== -1
-    || normalized.indexOf(GUARANTEE_REGION_CLOSE, closeAt + 1) !== -1) {
-    throw new Error('agent has more than one core dependency guard region');
-  }
-  if (closeAt < openAt) throw new Error('agent core dependency guard closes before it opens');
-  const end = closeAt + GUARANTEE_REGION_CLOSE.length;
-  return `${normalized.slice(0, openAt)}${region}${normalized.slice(end)}`;
+// There is now one agent shape: every agent routes its contracts inline and
+// carries no copied dependency guard. Synchronising an agent therefore only ever
+// removes a stale managed region — one is never inserted. A malformed half-region
+// still fails, so a partially hand-deleted guard cannot slip through. Kept as the
+// single entry point the generator and preview call so a leftover region from the
+// legacy era is stripped on the next `--write`.
+export function syncGuaranteeRegion(body) {
+  return removeGuaranteeRegion(body);
 }
 
 export function removeGuaranteeRegion(body) {
   const normalized = normalizeLF(body);
+  const markerLines = normalized.split('\n');
+  const openCount = markerLines.filter((line) =>
+    line === GUARANTEE_REGION_OPEN || line === LEGACY_GUARANTEE_REGION_OPEN).length;
+  const closeCount = markerLines.filter((line) => line === GUARANTEE_REGION_CLOSE).length;
+  if (openCount > 1 || closeCount > 1) {
+    throw new Error('agent has more than one core dependency guard region');
+  }
   const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
   const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
   const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
@@ -748,130 +695,15 @@ export function removeGuaranteeRegion(body) {
   return `${before}\n\n${after}`;
 }
 
-// Splice the ordered blocks into an agent body, LF throughout: splicing LF lines
-// into a CRLF checkout would leave the generated agent with mixed endings. One
-// splice, in argument order — injecting twice would re-resolve the same anchor
-// and push the newer block above the preflight that has to stay first.
-export function injectBlocks(body, blocks) {
-  const lines = normalizeLF(body).split('\n');
-  const at = afterInheritsDirective(lines);
-  const spacer = lines[at] === undefined || lines[at].trim() === '' ? [] : [''];
-  const spliced = blocks.flatMap((block) => ['', ...block.split('\n')]);
-  lines.splice(at, 0, ...spliced, ...spacer);
-  return lines.join('\n');
-}
-
-// The single-block form, kept for callers that inject only the preflight.
-export const injectPreflight = (body, block) => injectBlocks(body, [block]);
-
-// The first line after the whole inherits directive block — the `**Inherits:**`
-// line plus the blockquote that binds it — so the probe never lands between a
-// rule and its own instruction. With no directive to anchor to, it goes directly
-// under the frontmatter: a pack agent that silently skipped the preflight is the
-// exact failure the block exists to prevent.
-function afterInheritsDirective(lines) {
-  const i = lines.findIndex((l) => l.startsWith('**Inherits:**'));
-  if (i === -1) return lines[0] === '---' ? lines.indexOf('---', 1) + 1 : 0;
-  let j = i + 1;
-  if (lines[j]?.trim() === '' && lines[j + 1]?.startsWith('>')) j += 1;
-  while (lines[j]?.startsWith('>')) j += 1;
-  return j;
-}
-
 // ---------------------------------------------------------------------------
-// The degraded refusal's own rules
-//
-// The block's entire value is that it restates nothing: a prohibition stays
-// correct however core evolves, while an affirmative instruction is a second
-// copy of the operating contract that drifts from it silently. So the rules
-// below allow exactly three things to be said — refuse, prohibit, install
-// `kai-core` — and reject anything that names, quotes or outgrows the contract.
-// Pure over plain data, so the preview self-test proves each failure by name.
+// The degraded refusal now belongs to each agent, not to a shared block. Every
+// agent writes its own core fallback in its own words, and agentRoutingErrors
+// checks that the three load-bearing facts are present (continue single-shot,
+// write no `.kai` state, tell the operator to install or update `kai-core`).
+// The old shared-block rules (a pinned degraded-block.txt validated by
+// degradedBlockErrors, plus coreContractLines / DEGRADED_BLOCK_MAX and friends)
+// are gone with the block they policed.
 // ---------------------------------------------------------------------------
-
-// A refusal needing more room than this has become the fallback contract it
-// exists not to be. Raising it is a decision, not a formatting fix.
-export const DEGRADED_BLOCK_MAX = 1200;
-
-// Long enough that a shared line is a lifted sentence rather than a coincidence.
-const DEGRADED_QUOTE_MIN = 40;
-
-// The two affirmative instructions the block may give — the single-shot refusal
-// and the one remedy — plus the prohibitions, which cannot drift.
-const DEGRADED_OPENERS = [/^Do not\b/, /^Never\b/, /^Refuse\b/, /^Tell the operator to install\b/];
-
-// Every substantial line of the shipped core contract, derived from the live core
-// skills so the "restates no rule" check re-derives as core evolves instead of
-// pinning a list that rots.
-export function coreContractLines(root = REPO_ROOT) {
-  const lines = new Set();
-  for (const id of listSkillIds(root)) {
-    if (!id.startsWith('kai-core-')) continue;
-    for (const line of normalizeLF(readFileSync(skillFile(root, id), 'utf8')).split('\n')) {
-      const text = line.trim();
-      if (text.length >= DEGRADED_QUOTE_MIN) lines.add(text);
-    }
-  }
-  return lines;
-}
-
-// Returns plain message strings, one per violated rule.
-export function degradedBlockErrors({
-  block, refusalToken, ids = new Set(), contractLines = new Set(),
-}) {
-  const errs = [];
-  const known = ids instanceof Set ? ids : new Set(ids);
-  const contract = contractLines instanceof Set ? contractLines : new Set(contractLines);
-  const text = normalizeLF(block);
-
-  if (!text.includes('`kai-core`')) {
-    errs.push('never names `kai-core`, so it states the problem and withholds the one thing that fixes it');
-  }
-  if (!text.includes('single-shot')) {
-    errs.push('does not say the session is single-shot — without that it reads as a pause, not a refusal');
-  }
-  if (refusalToken && text.includes(refusalToken)) {
-    errs.push(`carries the preflight's exact \`${refusalToken}\` token, which means core is missing or skewed; `
-      + 'this block covers the case where core answered, so overloading the token makes both refusals unreadable');
-  }
-  if (/`contract:/.test(text)) {
-    errs.push('states a contract version; compatibility belongs to the preflight alone, and a second version '
-      + 'literal is exactly the fail-open skew the preflight pin exists to prevent');
-  }
-  if (text.length > DEGRADED_BLOCK_MAX) {
-    errs.push(`is ${text.length} characters, over the ${DEGRADED_BLOCK_MAX}-character refusal budget — `
-      + 'a refusal that needs this much room has become the fallback contract it exists not to be');
-  }
-
-  const bullets = text.split('\n').filter((l) => /^-\s+/.test(l)).map((l) => l.replace(/^-\s+/, ''));
-  if (!bullets.length) errs.push('states no instruction at all');
-  for (const bullet of bullets) {
-    if (DEGRADED_OPENERS.some((re) => re.test(bullet))) continue;
-    errs.push(`gives the affirmative instruction "${bullet}" — the block may only refuse, prohibit, or say to `
-      + 'install `kai-core`; anything else is a coordination rule, and a coordination rule here drifts from core');
-  }
-  const opening = (re) => bullets.filter((b) => re.test(b)).length;
-  if (opening(/^Refuse\b/) !== 1) {
-    errs.push('must carry exactly one `Refuse …` instruction — the single-shot refusal is the whole block');
-  }
-  if (opening(/^Tell the operator to install\b/) !== 1) {
-    errs.push('must carry exactly one `Tell the operator to install …` instruction — one remedy, stated once');
-  }
-  if (!opening(/^(Do not|Never)\b/)) errs.push('carries no prohibition, so it refuses nothing');
-
-  for (const m of text.matchAll(/`([^`]+)`/g)) {
-    if (!known.has(m[1])) continue;
-    errs.push(`names the shipped contract \`${m[1]}\` — a refusal cites no contract, and citing one is the `
-      + 'first step to copying it');
-  }
-  for (const line of text.split('\n')) {
-    const t = line.trim();
-    if (t.length < DEGRADED_QUOTE_MIN || !contract.has(t)) continue;
-    errs.push(`restates the shipped core contract verbatim ("${t.slice(0, 60)}…") — the block states the `
-      + 'absence of the contract, it never carries a copy of it');
-  }
-  return errs;
-}
 
 // Every committed plugin manifest: the root monolith plus any plugin tree under
 // plugins/. The validator applies version parity across the root monolith and
@@ -1042,7 +874,7 @@ export function marketplaceSurfacePolicy({
 //
 // A department pack installs with kai-core and nothing else. Every reference a
 // shipped body makes therefore has to resolve inside its own pack or inside
-// core, on all three paths a skill can reach a session — inherited,
+// core, on all three paths a skill can reach a session — loaded,
 // user-invoked, orchestrated — plus the non-markdown assets an instruction
 // tells someone to run. In the monolith all of them resolve trivially, which is
 // exactly why the break is invisible until a user installs one pack.
@@ -1058,6 +890,13 @@ export function marketplaceSurfacePolicy({
 // `ui-mockup`") are editorial, and reading those as firing paths would make
 // most of the corpus a cross-pack dependency it is not.
 const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
+
+// An agent body names its skills inside the instruction that needs them,
+// so the bullet shape above cannot be the only firing path. An imperative to
+// load a skill is still narrower than "any backticked mention": it is a
+// directive, not the editorial cross-reference ("the technical counterpart to
+// `ui-mockup`") the rule above deliberately ignores.
+const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0-9-]*)`/g;
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
 // resolves to nothing is a renamed or deleted role; a token that is not shaped
@@ -1075,7 +914,6 @@ export const ROLE_FAMILY_PACK = Object.freeze({
 export const ROLE_POSTURES = Object.freeze([
   'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
 ]);
-export const ROLE_IDENTITY_CONTRACT = 'kai-agent-v1';
 export const MODEL_POLICY_VERSION = 'kai-agent-models-v2';
 export const AGENT_PROMPT_HARD_LIMIT = 30_000;
 export const ROLE_POSTURE_PROFILES = Object.freeze({
@@ -1177,14 +1015,142 @@ export function requiresCoordinatedRunContracts(id) {
   return family in ROLE_FAMILY_PACK && ROLE_POSTURES.includes(posture);
 }
 
-export function agentIdentityContractErrors({ id, body, fm = {} }) {
+// Conversational roles have no bounded run to report. Research-only roles lack
+// `execute`, so requiring the append-based activity contract would force a
+// broader sandbox solely for observability.
+export const ACTIVITY_EXEMPT = new Map([
+  ['director-executive-assistant', 'interactive routing and agenda assembly, not a bounded run'],
+  ['principal-engineer-career-mentor', 'open-ended mentoring conversation, not a bounded run'],
+  ['principal-ai-researcher', 'no shell by design; cannot append without gaining `execute`'],
+  ['principal-ai-applied-engineer', 'no shell by design; cannot append without gaining `execute`'],
+]);
+
+// `kai-core-work-acting` is the acting half of coordination: verify-lease-
+// before-write, collisions, handoffs, and review routing on a `.kai/state/`
+// item the role already holds. A role that never holds a coordinated item —
+// it only reads team state and writes its own private lane — has nothing to
+// act on, so requiring the contract is miscalibrated. The executive assistant
+// is exactly that: it surfaces and routes, reads `.kai/state/` read-only, and
+// writes only `.kai/personal/`; load-bearing team writes are the chief of
+// staff's. It is exempt here for the same conversational reason it is exempt
+// from the activity contract above.
+export const ACTING_EXEMPT = new Map([
+  ['director-executive-assistant', 'reads team state read-only and writes only private `.kai/personal/`; never holds a coordinated item to act on'],
+]);
+
+export function agentRoutingErrors({
+  id, body, tools = [], knownSkills = [], knownAgents = [], activityExempt = false, actingExempt = false,
+}) {
+  const text = normalizeLF(body ?? '');
+  const errors = [];
+  // An agent still on the eager regime declares this line; an agent on inline
+  // routes must not. That one self-describing fact — no pack list, no registry
+  // — is what tells the two regimes apart wherever they need telling apart.
+  const declaresEagerInherits = /^\*\*Inherits:\*\*/m.test(text);
+  if (declaresEagerInherits) {
+    errors.push('an agent routes skills just in time and must not declare an eager `**Inherits:**` line');
+  }
+
+  // A skill is routed wherever the instruction that needs it lives. Hoisting
+  // every route into one section reproduces the `**Inherits:**` manifest this
+  // contract removed, and forces a "do not preload" disclaimer that only exists
+  // to argue with its own list. So the checks below are semantic: the named
+  // skill must exist, the core probe and its fallback must be stated, and the
+  // agent must hold the tool that loads them. Where the sentence sits is the
+  // author's judgment. Line wrapping is an authoring choice, not a contract
+  // change, so the sentence checks run against a whitespace-collapsed copy.
+  const flat = text.replace(/\s+/g, ' ');
+  const available = knownSkills instanceof Set ? knownSkills : new Set(knownSkills);
+  const knownAgentSet = knownAgents instanceof Set ? knownAgents : new Set(knownAgents);
+  const routed = new Set(routedSkills(text));
+  for (const skill of routed) {
+    if (available.has(skill)) continue;
+    // A route verb before an agent id ("invoke `principal-x`") is a lowercase
+    // orchestrated dispatch, not a loaded contract: `ROUTE_SENTENCE` is
+    // case-insensitive where `PROSE_DISPATCH` is not, so the same sentence is
+    // seen as a route here. Skip agent-shaped tokens exactly as
+    // `collectReferences` does, so a genuine skill typo still surfaces while a
+    // dispatch sentence is not misread as an unknown skill route.
+    if (knownAgentSet.has(skill) || AGENT_CANDIDATE.test(skill)) continue;
+    errors.push(`routes unknown skill \`${skill}\``);
+  }
+  if (!/`kai-core-contract-v1`[\s\S]{0,160}?\bfirst\b[\s\S]{0,80}?\bcore\b/i.test(flat)
+    && !/\bbefore\b[\s\S]{0,120}?\bfirst\b[\s\S]{0,120}?`kai-core-contract-v1`/i.test(flat)) {
+    errors.push(`must state that \`${CONTRACT_SKILL}\` runs before the first other core skill`);
+  }
+
+  const required = [CONTRACT_SKILL, 'kai-core-operating-rules'];
+  if (requiresCoordinatedRunContracts(id)) {
+    required.push('kai-core-workspace-paths');
+    if (!actingExempt) required.push('kai-core-work-acting');
+    if (!activityExempt) required.push('kai-core-work-activity');
+  }
+  // kai-core-asset-producing is deliberately not required — an agent that
+  // produces no durable artifact should not route it. The per-role table in the
+  // rewritten agents governs where it is routed.
+  for (const skill of required) {
+    if (!routed.has(skill)) {
+      errors.push(`must load \`${skill}\` at the step that needs it`);
+    }
+  }
+
+  const held = tools instanceof Set ? tools : new Set(tools);
+  if (routed.size > 0 && !held.has('skill')) {
+    errors.push('routes skills but its `tools` list omits `skill`');
+  }
+  if (activityExempt && routed.has('kai-core-work-activity')) {
+    errors.push('is activity-exempt but routes `kai-core-work-activity`; remove the exemption or the route');
+  }
+  if (actingExempt && routed.has('kai-core-work-acting')) {
+    errors.push('is acting-exempt but routes `kai-core-work-acting`; remove the exemption or the route');
+  }
+  // The refusal belongs to the role, so its wording is the author's. This is
+  // not a structural check and does not pretend to be: it is a small vocabulary
+  // gate, deliberately loose. It confirms the refusal sits in the same
+  // paragraph as the core route, names `.kai` (a path, not a phrasing choice),
+  // and carries an install/update-style instruction that names the `kai-core`
+  // package — any of several verbs, not one fixed phrase, so a role-voiced
+  // "ask the operator to add the `kai-core` plugin" passes as readily as
+  // "install or update `kai-core`". What the role still does and refuses is the
+  // part the spec means by "its own words", and that — like the narrowing to
+  // bounded direct work — is prose about intent only a reader can judge. Review
+  // owns that; CI checks vocabulary and placement, nothing more.
+  const refusal = paragraphContaining(body, CONTRACT_SKILL) ?? '';
+  const missing = [];
+  if (!/`\.kai`/.test(refusal)) missing.push('what it will not write to `.kai`');
+  if (!/(install|reinstall|add|enable|restore|update|upgrade)[^.]{0,40}`kai-core`/i.test(refusal)) {
+    missing.push('that the operator should install or update `kai-core`');
+  }
+  if (missing.length) {
+    errors.push(`must state the core fallback in its own words, in the same paragraph as the \`${CONTRACT_SKILL}\` route so it is read where core is loaded, including ${missing.join(', and ')}`);
+  }
+  return errors;
+}
+
+// The refusal is defined by where it sits, not by what it says: the paragraph
+// that carries the core route. Splitting on blank lines keeps that structural
+// rather than lexical, so an author may word the refusal however the role
+// demands as long as it stays next to the route it qualifies.
+function paragraphContaining(body, skillId) {
+  const needle = `\`${skillId}\``;
+  for (const para of normalizeLF(body ?? '').split(/\n\s*\n/)) {
+    if (para.includes(needle)) return para.replace(/\s+/g, ' ').trim();
+  }
+  return null;
+}
+
+// The only reader of `**Primary profile:** <profile>` and its mapping through
+// ROLE_PROFILE_MODELS / ROLE_POSTURE_PROFILES / KIND_AGENT_PROFILES to an
+// approved frontmatter model. This is the live half of what used to be
+// agentIdentityContractErrors — the identity-marker half went with the marker,
+// but the profile/model binding has no other home, so it is preserved here,
+// keyed on the agent's family/posture rather than on any opt-in marker.
+export function agentProfileModelErrors({ id, body, fm = {} }) {
   const [family, posture] = (id ?? '').split('-');
   const isDurableRole = family in ROLE_FAMILY_PACK;
   const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !LEGACY_AGENT_IDS.has(id);
   if (!isDurableRole && !isNewKind) return [];
-  const marker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
   const errors = [];
-  if (!(body ?? '').includes(marker)) errors.push(`new agent must declare ${marker}`);
 
   const profiles = [...(body ?? '').matchAll(
     /^\*\*Primary profile:\*\*\s+`?([a-z][a-z-]*)`?\s*$/gm
@@ -1300,10 +1266,6 @@ export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
     }
   }
 
-  const identityMarker = `**Identity contract:** \`${ROLE_IDENTITY_CONTRACT}\``;
-  if (!(taxonomy ?? '').includes(identityMarker)) {
-    errors.push(`taxonomy reference must declare ${identityMarker}`);
-  }
   return errors;
 }
 
@@ -1312,6 +1274,64 @@ export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
 // anyone to run it.
 const ASSET_REF = /(?<![A-Za-z0-9_-])scripts\/[A-Za-z0-9_-]+\.(?:mjs|js|cjs|ps1|sh|py)/g;
 
+// A mention becomes a route only when an imperative verb points at it. Without
+// this, "do not invoke `x`" counts as loading x, and a route that never fires is
+// invisible: the agent silently never loads the contract and does lower-quality
+// work with nothing failing. The negation guard is the whole point.
+const ROUTE_SENTENCE = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0-9-]*)`/gi;
+const ROUTE_NEGATION = /\b(?:not|never|without|avoid)\b/i;
+// Structural markdown lines form clause boundaries independent of punctuation.
+const STRUCT_LINE = /^(?:#|\s*[-*+|]|\s*\d+\.)/;
+
+// Collapse prose to a flat string while inserting a clause terminator at each
+// structural markdown boundary (heading, list item, table row, blank line).
+// This prevents a negation in a heading or bullet from scoping into the next
+// line; soft wraps inside a running paragraph are still collapsed to a space.
+function flattenProse(text) {
+  const lines = text.split('\n');
+  const parts = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) {
+      const prev = lines[i - 1];
+      const cur = lines[i];
+      if (prev.trim() === '' || cur.trim() === '' || STRUCT_LINE.test(prev) || STRUCT_LINE.test(cur)) {
+        parts.push('.');
+      }
+    }
+    parts.push(lines[i]);
+  }
+  return parts.join(' ').replace(/\s+/g, ' ');
+}
+
+export function routedSkills(body) {
+  // Strip fenced code blocks (properly closed or unterminated, indented or not)
+  // so that documented examples are not parsed as routes.
+  const stripped = normalizeLF(body ?? '')
+    .replace(/^\s*```[\s\S]*?^\s*```/gm, '')  // closed fences (possibly indented)
+    .replace(/^\s*```[\s\S]*/m, '');            // unterminated fence → strip to end
+  // Flatten to a single line, inserting clause terminators at structural
+  // boundaries so negations cannot cross into the next structural element.
+  const flat = flattenProse(stripped);
+  const out = [];
+  for (const m of flat.matchAll(ROUTE_SENTENCE)) {
+    // Scope the negation test to the clause containing the match: look back
+    // only to the nearest preceding sentence terminator (.;:!?) so a negation
+    // in an earlier clause does not suppress a valid route in a later one.
+    const prefix = flat.slice(0, m.index);
+    const clauseStart = Math.max(
+      prefix.lastIndexOf('.'),
+      prefix.lastIndexOf(';'),
+      prefix.lastIndexOf(':'),
+      prefix.lastIndexOf('!'),
+      prefix.lastIndexOf('?'),
+    );
+    const clause = flat.slice(clauseStart + 1, m.index);
+    if (ROUTE_NEGATION.test(clause)) continue;
+    if (!out.includes(m[1])) out.push(m[1]);
+  }
+  return out;
+}
+
 // Situational dispatch targets declared in a body, in declaration order.
 export function dispatchedRefs(body) {
   const out = [];
@@ -1319,6 +1339,9 @@ export function dispatchedRefs(body) {
     if (/^\*\*Inherits:\*\*/.test(line)) continue;
     const m = line.match(DISPATCH_ENTRY);
     if (m && !out.includes(m[1])) out.push(m[1]);
+  }
+  for (const m of normalizeLF(body).matchAll(PROSE_DISPATCH)) {
+    if (!out.includes(m[1])) out.push(m[1]);
   }
   return out;
 }
@@ -1408,8 +1431,9 @@ export function packProviders(files, packs = PACK_ORDER) {
 // Every reference that must survive the plugin boundary: one record per
 // (consumer, kind, target), carrying the firing paths it travels.
 //
-//   inherited    — an agent's `**Inherits:**` line, and the assets of a skill
-//                  that reaches a session that way;
+//   loaded       — a contract an agent loads, from its eager `**Inherits:**`
+//                  line or an inline route both, and the assets of a skill that
+//                  reaches a session that way;
 //   user-invoked — a `user-invocable: true` skill's own entry point and assets,
 //                  which fire with no agent to carry a dependency for them;
 //   orchestrated — an agent's dispatch entries, and the assets in its own body,
@@ -1427,7 +1451,7 @@ export function collectReferences(root = REPO_ROOT) {
   };
 
   const dispatched = new Set();
-  const inherited = new Set();
+  const loaded = new Set();
   for (const id of listAgentIds(root).sort()) {
     const body = readAgentBody(root, id);
     const fromPath = agentSourceFile(root, id);
@@ -1435,9 +1459,14 @@ export function collectReferences(root = REPO_ROOT) {
       ? fromPath.slice(root.length + 1).replace(/\\/g, '/')
       : `agent:${id}`;
     const pack = agentOf.get(id) ?? null;
-    for (const skill of declaredInherits(body)) {
-      inherited.add(skill);
-      add(from, pack, 'inherited', 'skill', skill);
+    for (const skill of loadedSkills(body)) {
+      // A route verb before an agent id (an inline "dispatch `principal-x`") is an
+      // orchestrated referral, collected below, not a loaded contract. Skip it
+      // here unless it names a real skill, so a genuine skill-route typo still
+      // surfaces as a dangling reference rather than being silently dropped.
+      if (!skillOf.has(skill) && (agentOf.has(skill) || AGENT_CANDIDATE.test(skill))) continue;
+      loaded.add(skill);
+      add(from, pack, 'loaded', 'skill', skill);
     }
     for (const token of dispatchedRefs(body)) {
       if (skillOf.has(token)) { dispatched.add(token); add(from, pack, 'orchestrated', 'skill', token); }
@@ -1454,7 +1483,7 @@ export function collectReferences(root = REPO_ROOT) {
     const from = path.slice(root.length + 1).replace(/\\/g, '/');
     const pack = skillOf.get(id) ?? null;
     const firings = [];
-    if (inherited.has(id)) firings.push('inherited');
+    if (loaded.has(id)) firings.push('loaded');
     if (/^user-invocable:\s*true\s*$/m.test(raw)) firings.push('user-invoked');
     if (dispatched.has(id)) firings.push('orchestrated');
     // The direct entry point: `/skills run <id>` resolves across every installed
@@ -1961,13 +1990,13 @@ export function partitionErrors({
       continue;
     }
     if (!orphans.has(id)) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already inherits it — inheritance `
+      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already loads it — loading `
         + 'places it, so the override is a second truth about one skill');
     }
   }
   for (const id of orphans) {
     if (!(id in overrides)) {
-      errs.push(`skill \`${id}\` is inherited by no agent and has no reviewed provider in `
+      errs.push(`skill \`${id}\` is loaded by no agent and has no reviewed provider in `
         + 'SKILL_OWNER_OVERRIDES — it would ship in no pack at all');
     }
   }
@@ -2010,11 +2039,12 @@ export function providerCollisionErrors({ providers }) {
 
 // The contract version, pinned everywhere it is stated. The demanded version is
 // the one thing a fully green build can still get wrong: the probe skill's name
-// carries it, the canonical block demands it in prose, and the probe body
-// reports it, so all three are held to one constant. Returns `[{ file, msg }]`.
+// carries it and the probe body reports it, so both are held to one constant.
+// The copied preflight block that once demanded it in prose is gone — agents now
+// route the probe skill inline — so only the name pin and the probe body remain.
+// Returns `[{ file, msg }]`.
 export function contractPinErrors({
-  block, probe, skill = CONTRACT_SKILL, version = CONTRACT_VERSION, refusal = REFUSAL,
-  blockRel = PREFLIGHT_BLOCK_REL, planRel = 'scripts/lib/pack-plan.mjs',
+  probe, skill = CONTRACT_SKILL, version = CONTRACT_VERSION, planRel = 'scripts/lib/pack-plan.mjs',
 }) {
   const errs = [];
   const probeRel = `skills/${skill}/SKILL.md`;
@@ -2022,32 +2052,12 @@ export function contractPinErrors({
 
   if (!skill.endsWith(`-v${version}`)) {
     add(planRel, `CONTRACT_SKILL \`${skill}\` and CONTRACT_VERSION "${version}" disagree — the probe `
-      + "skill's name is the version pin, so bumping one without the other ships a block demanding a "
+      + "skill's name is the version pin, so bumping one without the other ships a probe demanding a "
       + 'version no shipped skill name promises');
   }
 
-  if (block === null || block === undefined) {
-    add(blockRel, 'missing (canonical fail-closed core-preflight block)');
-  } else {
-    if (!block.includes(`\`${skill}\``)) {
-      add(blockRel, `does not name \`${skill}\`, so the injected block would probe nothing`);
-    }
-    if (!block.includes(refusal)) {
-      add(blockRel, `does not carry the exact refusal token \`${refusal}\` the block promises`);
-    }
-    const demanded = [...block.matchAll(/`contract:\s*([^`]+)`/g)].map((m) => m[1].trim());
-    if (demanded.length !== 1 || demanded[0] !== version) {
-      add(blockRel, `must demand exactly one contract version and it must be ${version}; found `
-        + `${JSON.stringify(demanded)} — duplicated prose literals can drift into fail-open skew handling`);
-    }
-    if (!block.includes('Do not load or apply any inherited skill until this preflight passes.')) {
-      add(blockRel, 'does not explicitly override the inherited-skill loading order — a pack agent '
-        + 'could touch missing core skills before proving core is compatible');
-    }
-  }
-
   if (probe === null || probe === undefined) {
-    add(probeRel, 'missing — every generated department agent invokes this skill as its first action');
+    add(probeRel, 'missing — every pack agent invokes this skill as its first action');
     return errs;
   }
   const text = normalizeLF(probe);
@@ -2084,79 +2094,4 @@ export function availabilityErrors({ body, rules = AVAILABILITY_RULES }) {
     .map((r) => `grants leases but no longer states "${r.rule}" — role availability is decided by `
       + 'membership in the roster the session exposes, never by a count over it, and a director that '
       + 'guesses either way fails silently');
-}
-
-// The guarantee blocks, pinned into what the generator emits. This lives here
-// rather than in the validator so the function the CI gate runs is the one the
-// self-test mutates: a missing copy, a duplicate, wedged content, an inverted
-// order or a core agent carrying either block are otherwise only reachable by
-// breaking the real generator. `files` is a materializePacks map; returns
-// `[{ file, msg }]` with `file` naming the generated key.
-export function guaranteeBlockErrors({
-  files, preflight, degraded, inheritsBlock = null, packs = PACK_ORDER,
-}) {
-  const errs = [];
-  if (!preflight || !degraded) return errs;
-  const add = (key, msg) => errs.push({ file: `generated ${key}`, msg });
-
-  for (const [key, body] of files) {
-    const entry = parseGeneratedKey(key, packs);
-    if (!entry) continue;
-    if (entry.kind !== 'agent') continue;
-    const copies = body.split(preflight).length - 1;
-    const refusals = body.split(degraded).length - 1;
-    if (entry.pack === 'core') {
-      if (copies !== 0) {
-        add(key, 'carries the core-preflight block; a core agent ships inside the pack that provides '
-          + 'the probe, so it would only ever fail on itself');
-      }
-      if (refusals !== 0) {
-        add(key, 'carries the degraded-mode refusal; a core agent ships inside kai-core, so the absence '
-          + 'it refuses is not a state it can be in');
-      }
-      if (body.includes(GUARANTEE_REGION_OPEN) || body.includes(GUARANTEE_REGION_CLOSE)) {
-        add(key, 'carries managed dependency-guard markers; core agents must carry no guard region');
-      }
-      continue;
-    }
-    if (copies !== 1) {
-      add(key, `carries the verbatim core-preflight block ${copies} time(s); exactly one copy is required`);
-      continue;
-    }
-    if (refusals !== 1) {
-      add(key, `carries the verbatim degraded-mode refusal ${refusals} time(s); exactly one copy is required`);
-      continue;
-    }
-    if (body.split(GUARANTEE_REGION_OPEN).length !== 2
-      || body.split(GUARANTEE_REGION_CLOSE).length !== 2) {
-      add(key, 'must carry exactly one complete managed dependency-guard region');
-      continue;
-    }
-    const at = body.indexOf(preflight);
-    const directiveAt = inheritsBlock ? body.indexOf(inheritsBlock) : -1;
-    const directiveEnd = directiveAt === -1 ? -1 : directiveAt + inheritsBlock.length;
-    if (at < body.indexOf('**Inherits:**')) {
-      add(key, 'places the core-preflight block before the `**Inherits:**` line it must follow');
-    } else if (inheritsBlock && at < directiveAt) {
-      add(key, 'splits the inherited-contract directive from the `**Inherits:**` line it binds');
-    } else if (directiveEnd !== -1
-      && !/^\s*$/.test(body.slice(directiveEnd, at).replace(GUARANTEE_REGION_OPEN, ''))) {
-      add(key, 'places content between the inherited-contract directive and the core preflight — the '
-        + 'preflight must remain the first executable instruction');
-    }
-
-    // Order is the contract between the two blocks: the preflight decides
-    // whether core is there, and the refusal answers only after it has passed.
-    const preflightEnd = at + preflight.length;
-    const refusalAt = body.indexOf(degraded);
-    if (refusalAt < preflightEnd) {
-      add(key, 'places the degraded-mode refusal before the end of the core preflight — the preflight '
-        + 'must remain the first executable instruction, and the refusal is what a passed preflight '
-        + 'falls to');
-    } else if (!/^\s*$/.test(body.slice(preflightEnd, refusalAt))) {
-      add(key, 'places content between the core preflight and the degraded-mode refusal — the two '
-        + 'guarantee blocks are contiguous, in that order');
-    }
-  }
-  return errs;
 }

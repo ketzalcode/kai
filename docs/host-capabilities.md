@@ -33,21 +33,27 @@ discovers custom instructions from *your* repository root and working directory
 `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` — never from an installed plugin's folder,
 because `plugin.json` has no instruction component type.
 
-So kai's shared operating contract ships as a **skill**,
-[`kai-core-team-operating-rules`](../plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md), and every
-agent opens with an `**Inherits:**` line naming its contracts plus a verbatim
-directive to load them:
+So kai's shared contracts ship as **skills** — the universal operating rules in
+[`kai-core-operating-rules`](../plugins/kai-core/skills/kai-core-operating-rules/SKILL.md),
+with the workspace, work, and asset contracts beside it. An agent names each
+skill in the imperative, at the exact instruction that needs it, and routes
+`kai-core-contract-v1` before its first other core skill:
 
 ```markdown
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-workspace-conventions`, `kai-core-work-coordination`
+Invoke `kai-core-contract-v1` before the first other core skill.
+Load `kai-core-work-item` before writing an item record.
 ```
 
-`npm test` enforces that declaration for all 54 agents — it must be the first
-body line, carry the canonical directive, name only real skills, always include
-`kai-core-team-operating-rules`, and cover everything the profile's own "Contracts you
-inherit" section claims — so a contract can never be silently dropped. Because a
-skill loads on demand rather than automatically, the directive also inlines the
-handful of non-negotiables that must hold even if the skill is not loaded.
+`npm test` enforces those routes so a required contract can never be silently
+dropped, and checks that each agent names `.kai` and carries an
+install-or-update instruction that names the `kai-core` package in the same
+paragraph as its core route — a loose vocabulary-and-placement check that
+accepts any of several verbs, not one fixed phrase. What the refusal says in the
+agent's own words, and that it narrows the agent to bounded direct work, is
+judged in review rather than by CI. Because a skill loads on demand rather
+than automatically, each route sits at the step whose rule it carries. Three
+packs — product, go-to-market, and personal — have not migrated yet and still
+carry the older eager declaration until they do.
 
 To check what a host actually discovered, run `copilot plugins list` (or
 `/skills` in a session) for kai's skills, and `/instructions` for the separate

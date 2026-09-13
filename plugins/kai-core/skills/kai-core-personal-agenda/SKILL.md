@@ -24,7 +24,7 @@ per-role positions, and a sourced recommendation — through `kai-core-decision-
 ## The two files
 
 Personal operational state lives in the ignored `.kai/personal/` lane of the current
-Kai workspace (see `kai-core-workspace-conventions`). Two files, mirroring how
+Kai workspace (see `kai-core-workspace-initiative`). Two files, mirroring how
 `.kai/state/` separates authoritative items from the derived board:
 
 | File | Role | Analogue |
@@ -38,13 +38,13 @@ commit them, and you never write agenda/inbox state anywhere else.
 ## Anchoring
 
 The agenda belongs to the **current Kai workspace** resolved through
-`kai-core-workspace-conventions` and its `.kai/manifest.json` sentinel.
+`kai-core-workspace-initiative` and its `.kai/manifest.json` sentinel.
 `.kai/personal/inbox.md`, identity/cadence sources, and the rendered
 `.kai/personal/agenda.md` always resolve against that workspace.
 
 Coordination **signals** come from the current workspace's `.kai/state/` plus every
 enabled root in `.kai/personal/workspaces.md`. Resolve and validate the registry per
-`kai-core-workspace-conventions`; label every surfaced line with its workspace. When the
+`kai-core-workspace-initiative`; label every surfaced line with its workspace. When the
 operator names an additional Kai root, the calling assistant confirms its
 label and records it in the registry before scanning it. Never write into a
 linked workspace from here.

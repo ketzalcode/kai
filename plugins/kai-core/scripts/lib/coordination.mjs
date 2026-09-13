@@ -19,13 +19,13 @@ export const NEEDS_CHANGE_REF = new Set([
   'in-review', 'release-ready', 'deploying', 'production-verification', 'shipped',
 ]);
 
-// Valid typed-dependency "requires" gates (see kai-core-work-coordination).
+// Valid typed-dependency "requires" gates (see kai-core-work-item).
 export const REQUIRES_STATES = new Set(['in-review', 'completed', 'release-ready', 'shipped']);
 
 // States that are finished: no further role action is expected.
 export const TERMINAL = new Set(['shipped', 'completed', 'dropped']);
 
-// Deployment is a human act (see kai-core-team-operating-rules), so these states are
+// Deployment is a human act (see kai-core-operating-rules), so these states are
 // waiting on the operator by definition, not on any kai role.
 export const OPERATOR_GATED = new Set(['release-ready', 'deploying', 'production-verification']);
 

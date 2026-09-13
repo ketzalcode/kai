@@ -50,7 +50,7 @@ doesn't apply to this change is waived, not faked-Clear).
 | 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. For a net-new/materially-changed user-facing surface, that set **must include** a `principal-product-designer` design-conformance verdict on the current `change_ref`, **unless** a recorded product-design waiver applies (see the sub-gate below). |
 | 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. Run the `review-rollout-operability` lens here. |
 | 5 | **documented** | Will the next person understand what shipped? | Accepted reusable decisions and designs publish under `<project-root>/<publication-root>/`; user-facing and operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
-| 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, parked ideas are in the committed backlog, and every generated asset passed the `kai-core-asset-lifecycle` close transaction. |
+| 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, parked ideas are in the committed backlog, and every generated asset passed the `kai-core-asset-producing` close transaction. |
 
 Dimension 4 **reuses `review-rollout-operability`** — don't re-derive the
 rollout/reversibility questions; apply that lens and record its verdict.
@@ -86,7 +86,7 @@ When it triggers, readiness requires **one** of:
   `change_ref` matches the current item; **or**
 - a **recorded product-design waiver** — the steward or operator records a
   `WAIVER` (grantor, reason, `applies_at` item version, scope, expiry — the
-  Design-waiver record in `kai-core-work-coordination`) bound to the current `change_ref`.
+  Design-waiver record in `kai-core-work-granting`) bound to the current `change_ref`.
   A self-declared "this one is minor" is **not** a waiver; only the
   steward/operator grants one, and the steward/operator (not the designer)
   validates it — a waiver intentionally has no approved design to review against.

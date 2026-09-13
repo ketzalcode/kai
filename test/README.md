@@ -14,10 +14,6 @@ PR and push to `main` and must stay fast:
   **Kai frontmatter acceptance** heuristic: the expected discoverable inventory
   matches a committed golden snapshot, and malformed frontmatter fixtures are
   rejected.
-- **`npm run host-tool-probe:self-test`**
-  (`scripts/host-tool-probe.mjs --self-test`) — the offline parser,
-  warning/grant classifier, redaction, determinism, and read-only contract for
-  the optional live host probe.
 - **`npm run release-guard:self-test`** (`scripts/release-guard.mjs --self-test`)
   — the decision core of the release gate: a behavior-sensitive change must carry
   a version bump plus changelog/README updates; docs/test-only changes are exempt.
@@ -44,11 +40,10 @@ Behavioral-contract and host compatibility:
 
 - **Kai tool-vocabulary lint.** Every declared `tools:` entry must be in
   `SUPPORTED_TOOLS`, Kai's explicit least-privilege vocabulary. This is a lint
-  heuristic, not a claim about the live host parser. The host-tool probe measures
-  validator warnings and runtime grants independently.
-- **Inherited-skill access.** Every agent with an `**Inherits:**` declaration
-  must also declare the `skill` tool. Delegated custom agents receive only
-  declared tools, so omitting it makes inherited contracts unreachable.
+  heuristic, not a claim about the live host parser.
+- **Routed-skill access.** Every agent that routes at least one skill must also
+  declare the `skill` tool. Delegated custom agents receive only declared tools,
+  so omitting it makes every routed contract unreachable.
 - **Frontmatter shape.** `argument-hint` must be a quoted scalar (never an inline
   array — the CLI silently drops that); `user-invocable` must be boolean; the
   skill-only keys `argument-hint`/`user-invocable`/`allowed-tools` are invalid on
@@ -60,10 +55,10 @@ Behavioral-contract and host compatibility:
   - the managed `.gitignore` block is byte-identical between the repo
     `.gitignore` and the `kai-core-workspace-onboarding` template agents install;
   - the `.kai/runs` **areas** match across the manifest schema
-    (`kai-core-workspace-conventions`), the onboarding scaffold, and
+    (`kai-core-workspace-initiative`), the onboarding scaffold, and
     `workflow-workspace-init`;
   - the initiative `artifacts/` directories match between
-    `kai-core-workspace-conventions` and `workflow-initiative-init`;
+    `kai-core-workspace-initiative` and `workflow-initiative-init`;
   - the `library/<type>/` set matches across the conventions "Library types"
     table and both library scaffolds.
 - **Fixture manifest schema.** `test/fixtures/repo-workspace/.kai/manifest.json`
@@ -166,17 +161,13 @@ It does not claim to reproduce the live host parser. `--self-test` asserts:
 
 ## Host-backed checks
 
-`npm run host-tool-probe:plan` prints the exact direct/delegated matrix,
-throwaway frontmatter, and `copilot` argv without writing or spawning. After
-reviewing that plan, `npm run host-tool-probe` runs against an isolated plugin
-and workspace outside the repository and writes a redacted report under
-`.kai/runs/eng/`. The live run is manual: CI executes only the synthetic
-`host-tool-probe:self-test`, so it needs no host binary, credentials, or network.
-Use `--rows R2-primary,R8-repo-current,R9-control` for a bounded retry, and
-`--copilot-entry <absolute-versioned-index.js>` to measure a retained CLI build
-without allowing the active launcher shim to substitute a newer version.
-`--update --from <report> --baseline <file>` and the matching `--check` compare
-explicit, normalized redacted reports; the repository carries no live baseline.
+Kai's tool vocabulary was measured against a live Copilot CLI (1.0.79 and
+1.0.81, direct and delegated launches) and the result is recorded beside
+`SUPPORTED_TOOLS` in `scripts/lib/loader-contract.mjs`. The probe harness that
+produced it wrote to an uncommitted path, so it validated a parser for a report
+CI could never read; it was removed in favour of the durable note. Re-measure
+with a throwaway probe against the host you actually target, then update the
+list and its note together.
 
 Broader in-process inventory, degraded CLI/cloud, and fleet certification remain
 tracked in #33.

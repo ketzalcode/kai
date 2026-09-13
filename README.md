@@ -35,14 +35,28 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v3.1.0` — all **56 agents and 53 skills** are published across five plugins for
+`v5.0.0` — all **56 agents and 57 skills** are published across five plugins for
 the **Copilot CLI** and the **Copilot coding agent** (cloud).
 
-Agent creation now has an explicit contract: provider family, operating posture,
-scope, authority, execution profile, model policy, tools, skills, handoffs, and
-acceptance cases are settled before a role joins the fleet. Existing agent IDs
-remain unchanged while representative roles are redesigned before any broader
-migration.
+Agents load shared contracts on demand. All 27 roles in `kai-core` and
+`kai-engineering` route each contract at the instruction that needs it, rather
+than declaring every contract they might use before reading the task. Measured
+worst case, that moved the mean prompt from 30,194 to 17,529 tokens and the
+largest role from 41,607 to 25,526 — and the old number was a floor paid every
+run, where the new one is a ceiling. There is one agent shape, with no version
+marker and no compatibility mode.
+
+Four core contracts were split by the reader they serve:
+`kai-core-team-operating-rules`, `kai-core-work-coordination`,
+`kai-core-workspace-conventions` and `kai-core-asset-lifecycle` are removed in
+favour of eight narrower ones. Consumers referencing the old ids must re-point;
+the CHANGELOG carries the mapping. `kai-product`, `kai-gtm` and `kai-personal`
+keep the eager declaration until they migrate.
+
+Agent creation has an explicit contract: provider family, operating posture,
+scope, authority, execution profile, model policy, host-specific tools,
+on-demand skills, handoffs, and acceptance cases are settled before a role
+joins the fleet.
 
 Workspace schema 3 keeps operational state under `.kai/`, supports
 zero-footprint external workspaces through a machine-local registry, and
@@ -53,15 +67,17 @@ the source tree.
 
 Each agent and skill now has exactly one authoritative source inside its owning
 `plugins/<plugin>/` tree. The duplicate root `agents/` and `skills/` directories
-are gone. Generation is limited to derived manifests, dependency locks, routed
-scripts, and one explicitly marked dependency-guard region in department agents.
+are gone. Generation is limited to derived manifests, dependency locks, and
+routed scripts. The packs not yet migrated to inline routing still carry a
+dependency-guard region in their agent sources; regeneration strips such regions
+rather than emitting them, so those packs migrate before they are regenerated.
 
-Every role now loads one universal asset-lifecycle contract. Generated work
-separates execution completion from artifact disposition and validity, requires
-classification before durable output is left behind, preserves superseded or
-retracted history, and adds asset/backlog/ownership sweeps to initiative
-closure. Workspace enforcement rolls out separately as warn, reconcile, then
-error.
+Every role can route to the shared asset contracts; roles load them when durable
+output is about to change. Generated work separates
+execution completion from artifact disposition and validity, preserves
+superseded or retracted history, and adds asset/backlog/ownership sweeps to
+initiative closure. Workspace enforcement rolls out separately as warn,
+reconcile, then error.
 
 > **`v1.0.0` changes the install surface.** The published monolith `kai` is
 > retired. Install required `kai-core` plus the personal, product, engineering,
@@ -75,7 +91,7 @@ error.
 `kai-engineering` + `kai-gtm`.**
 Plugin-local agent and skill files are the canonical source. Generation refreshes
 routed scripts, each script's local module closure, the fleet hooks, manifests,
-dependency locks, and marked dependency-guard regions.
+dependency locks, and legacy marked dependency-guard regions.
 Each carries a deterministic, lockstep `package.json` and `package-lock.json`.
 Copilot copies plugin files but does not run npm, so
 optional audio features use `LECTORIA_BIN`, a pack-local `npm ci`, or PATH;

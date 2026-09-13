@@ -48,7 +48,7 @@ model-generated slug drifts between sessions. Take the highest rung available:
 | 2 | Coordination item id | `kai/feat/kai-59-run-path-migration` |
 | 3 | Local date `YYYY-MM-DD` | `kai/fix/2026-08-08-crlf-guard` |
 
-Rung 2 matches the run grammar in `kai-core-workspace-conventions`, whose `<descriptor>`
+Rung 2 matches the run grammar in `kai-core-workspace-paths`, whose `<descriptor>`
 already prefers the work-item key so same-epic artifacts stay greppable. A
 branch on rung 2 greps against the item, its runs, and its PR at once.
 

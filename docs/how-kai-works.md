@@ -24,6 +24,22 @@ The agents fall into a handful of independent flows. The biggest is
 into it or stand on their own. Each diagram is a *scenario*, not a
 mandatory pipeline.
 
+**Durable, per-item coordination state.** These agents are single-shot and
+stateless, but the coordination they share is not: it must survive sessions and
+handoffs, so it lives under the target workspace's `.kai/state/`. In `shared`
+mode this surface may be committed. In `repo-local` mode it is durable only
+within that checkout, so it does not cross machines, clones, CI, or cloud
+agents. In `external` mode it is durable at the registered workspace root and
+must not be described as committed unless that directory is actually
+version-controlled. A single mutable board is not safe as the authoritative
+store: two agents working in parallel would edit the same file and create
+conflicts or overwrite each other. Therefore `items/<item-id>.md` is the
+**authoritative state** for one work item, `threads/<item-id>.md` is that item's
+append-only communication log, and `BOARD.md` is a **derived human index**,
+refreshed by the director after reconciliation — agents never treat an
+out-of-date board row as authority. Parallel agents normally touch different
+item and thread files.
+
 For personal sessions, `director-executive-assistant` (flow 8) is the default
 start for personal or unclear intent in the current Kai workspace. It routes
 into these flows, consults real roles, and optionally includes linked-workspace
@@ -293,7 +309,7 @@ the specialist); it routes into every flow above and keeps your forward agenda
 | Model SaaS metrics (MRR/ARR, churn, NRR, CAC/LTV), run a forecast, clean pipeline, or plan billing ops | `principal-revenue-operations` |
 | Plan a campaign, lifecycle/nurture emails, channel mix, or define MQL/SQL lead handoff | `principal-demand-generation` |
 | Assess a partner, design an integration/channel program, or frame a co-sell/co-marketing motion | `principal-partnerships` |
-| Write docs, a how-to/reference/concept guide, or release notes | `principal-technical-writer` |
+| Structure or audit a README, write technical docs, or assess documentation readiness | `eng-lead-technical-writing` |
 | Design a data pipeline, warehouse model, data contract, or event-instrumentation spec | `principal-data-engineer` |
 | Define a visual brand identity, brand guidelines, or critique a visual asset | `principal-brand-designer` |
 | Audit i18n readiness, assess a locale, route translation, or QA a localized build | `workflow-localization` |

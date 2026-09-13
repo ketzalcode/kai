@@ -83,7 +83,7 @@ create `report.md` or the product map there; the map goes only to the
 canonical initiative `artifact_targets` entry.
 
 - Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
-  loaded north star, or `kai-core-workspace-conventions`. Never substitute the calling
+  loaded north star, or `kai-core-workspace-paths`. Never substitute the calling
   agent's repository/cwd for a different target workspace.
 - `<YYYY-MM-DD>` is the **local date** — the deterministic anchor. Every QA, UX,
   SEO, PM, persona, and explore/extract run for a day lives under it. The date is
@@ -124,7 +124,7 @@ they ran.
 
 Runs land in the resolved **working root** under `qa/`, which
 `workflow-workspace-init` gitignores **wholesale** (see
-`kai-core-workspace-conventions`). You do **not** patch `.gitignore` per folder
+`kai-core-workspace-paths`). You do **not** patch `.gitignore` per folder
 anymore: the whole working root is ephemeral by design. A run's
 `report.md`, its `screenshots/`, and the heavy artifacts (traces, HARs,
 logs) are all working output that lives there.

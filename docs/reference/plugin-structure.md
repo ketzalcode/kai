@@ -32,10 +32,12 @@ root `AGENTS.md` never loads in a consumer workspace — see
 [Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
 for why the shared rules ship as a skill instead.
 
-Agent and skill files are edited only in their owning plugin. Department agents
-carry one region bounded by `kai core dependency guard` HTML-comment markers;
-`npm run pack-preview -- --write` may replace only that region. Do not hand-edit
-inside the markers. Core agents carry no guard region. Skill companion files may
+Agent and skill files are edited only in their owning plugin. A migrated agent
+carries no core-dependency guard region, and `npm run pack-preview -- --write`
+strips any region bounded by `kai core dependency guard` HTML-comment markers —
+so running it against the packs still on the eager declaration (product,
+go-to-market, personal) would remove a guard those agents still rely on. Migrate
+a pack before regenerating it. Skill companion files may
 live beside `SKILL.md`; derived-file cleanup is restricted to manifests, locks,
 hooks, and routed `scripts/`.
 
@@ -44,7 +46,7 @@ hooks, and routed `scripts/`.
 Run the user-invocable `kai-core-create-agent` skill before adding a role. It
 classifies the need as a durable role, workflow, persona, instructor, or reusable
 skill; requires a permanent role to earn its slot; and defines authority,
-execution profile, tools, inherited skills, handoffs, and acceptance cases
+execution profile, host-specific tools, on-demand skills, handoffs, and acceptance cases
 before prose is written.
 
 New durable roles use `<provider-family>-<posture>-<scope>`. Provider families
@@ -56,42 +58,37 @@ migration belongs to a separate procedure.
 
 ## How a skill reaches a session
 
-A skill is not loaded because it exists. It is loaded on demand, and there are
-exactly three ways it can fire. All three are legitimate; what is not legitimate
-is a skill with none of them, which ships and appears in the catalog while being
-unreachable.
+A skill is not loaded because it exists. It is loaded on demand through an agent
+route or a direct user invocation. Legacy inheritance remains a temporary third
+path until each old agent migrates. What is not legitimate is a skill with no
+firing path, which ships and appears in the catalog while being unreachable.
 
 ```
   skills/<id>/SKILL.md
           |
-          +-- 1. inherited ----> named on an agent's `**Inherits:**` line.
-          |                      Loads whenever that agent runs. Use for a
-          |                      contract the role must always obey.
+          +-- 1. agent-routed -> named in the instruction that needs it, so the
+          |                      agent invokes it only at that workflow step.
+          |                      Not collected into a manifest section.
           |
           +-- 2. user-invoked -> `user-invocable: true` (+ `argument-hint`).
           |                      The operator runs it directly. Use for a
           |                      procedure a human starts on purpose.
           |
-          +-- 3. orchestrated -> declared as a dispatch entry in an agent's
-                                 prose, in the list shape
-                                 `- **`skill-id`** — when it applies`, and run
-                                 situationally. Use for a lens that would be
-                                 waste to run every time — the review lenses
-                                 `workflow-doc-review` calls only when the
-                                 change touches their subject.
+          +-- 3. legacy ------> named on an old agent's `**Inherits:**` line
+                                and loaded at startup. Do not use this path in
+                                a new or migrated agent.
 ```
 
-A skill can have more than one path: `research-before-coding` is both inherited
-by the code-writing agents and user-invocable.
+A skill can have more than one path. For example, an agent may route a skill
+that the operator can also invoke directly.
 
 `npm run validate` fails on a skill with zero firing paths. The orchestrated
 form is matched by that declaration shape specifically, not by any backticked
 mention, so an incidental reference cannot pass an unreachable skill off as
 reachable. That check exists because its absence produced a filed issue
 asserting that user-invocable skills "never fire" — the counting method, not the
-plugin, was wrong. **When auditing inheritance, parse only the `**Inherits:**`
-line**; grepping whole agent files also counts prose mentions and inflates the
-result.
+plugin, was wrong. Audits parse structured dispatch entries and, for legacy
+agents only, the `**Inherits:**` line; incidental prose does not count.
 
 ## Contributing
 
@@ -108,11 +105,10 @@ also run in CI on every pull request:
 
 | Command | Checks |
 | ------- | ------ |
-| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, the `**Inherits:**` declaration, at least one firing path per skill, Kai tool-vocabulary lint, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
+| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, progressive skill routes or legacy inheritance, at least one firing path per skill, Kai tool-vocabulary lint, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
 | `npm run docs:check` | The generated agent/skill catalog matches the shipped surface. |
 | `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces, plus the pack-migration scenario matrix. |
 | `npm run host-contract` | Kai frontmatter acceptance heuristic — the expected discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
-| `npm run host-tool-probe:self-test` | Offline parser/classifier, redaction, determinism, and read-only checks for the optional live host-tool probe. |
 | `npm run release-guard:self-test` | The behavior-change-requires-a-bump decision core. |
 | `npm run activity:self-test` | The activity-log contract: the item/log boundary, privacy bounds, and concurrent-writer integrity. |
 | `npm run status:self-test` | The exception-report rules, against fixture workspaces. |

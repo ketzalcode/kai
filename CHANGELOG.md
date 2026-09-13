@@ -4,6 +4,106 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [5.0.0] - 2026-09-11
+
+### Changed
+
+- **Agents now load shared contracts on demand instead of up front.** Every
+  agent in `kai-core` and `kai-engineering` used to open with an `**Inherits:**`
+  line naming every contract it might need, plus an injected dependency-guard
+  region ordering it to load all of them — roughly 28,800 tokens spent before
+  the agent read its task. Those 27 agents now carry inline routes: one
+  imperative sentence placed at the instruction that needs a contract, parsed
+  strictly, plus a refusal in the role's own words in the same paragraph where
+  the agent routes `kai-core-contract-v1`. Measured worst case — assuming a run
+  that loads every contract it could possibly route — the mean fell from 30,194
+  to 17,529 tokens and the largest agent from 41,607 to 25,526. The old figure
+  was a floor paid on every run; the new one is a ceiling.
+- **One agent shape.** There is no version marker, no compatibility mode, and no
+  second dialect. The validator was collapsed accordingly.
+- **Route validation now actually runs.** It had been gated behind an identity
+  marker that no agent in the repository ever declared, so the entire path
+  returned nothing for all 56 agents. With the gate gone, `eng-lead-technical-writing`
+  turned out to have been shipping six routes that pointed at nothing.
+
+### Removed
+
+- **Four core contracts, split by reader.** Each served three audiences that
+  needed a third of it. Consumers referencing the old ids must re-point:
+
+  | Removed | Replaced by |
+  | --- | --- |
+  | `kai-core-team-operating-rules` | `kai-core-operating-rules` |
+  | `kai-core-work-coordination` | `kai-core-work-acting`, `kai-core-work-granting`, `kai-core-work-item` |
+  | `kai-core-workspace-conventions` | `kai-core-workspace-paths`, `kai-core-workspace-initiative` |
+  | `kai-core-asset-lifecycle` | `kai-core-asset-producing`, `kai-core-asset-closing` |
+
+- `scripts/lib/inherits-block.txt` and the injected guard region it carried.
+
+### Fixed
+
+- A regeneration would have stripped the dependency guard from the 29 agents
+  that still need it. Guard handling is now derived from the agent's own text —
+  an agent declaring `**Inherits:**` keeps its guard, an agent on inline routes
+  does not — so it needs no pack list and self-corrects as each pack migrates.
+- The dispatch/route disambiguation that already existed for reference
+  collection is now used by route validation too, so `invoke \`principal-x\``
+  is read as an orchestrated dispatch rather than an unknown skill.
+
+### Notes
+
+- `kai-product`, `kai-gtm` and `kai-personal` — 29 agents — deliberately keep
+  the eager declaration until they migrate. Their dangling references to the
+  removed ids land with that work.
+- What this release does **not** prove is recorded in
+  `docs/superpowers/plans/2026-09-04-agent-contract-refactor-verification.md`:
+  no automated check confirms an agent kept every rule it needs, and none
+  confirms output quality improved. 32 drop records track where each rule went.
+
+## [4.0.0] - 2026-09-03
+
+### Changed
+
+- **Technical writing now uses the first provider/posture/scope identity.**
+  `eng-lead-technical-writing` replaces `principal-technical-writer` as the
+  documentation architecture and editorial-acceptance owner. The role leads with
+  writing craft — audience adaptation, clarity, structure and flow, engagement,
+  and technical accuracy — rather than restating ownership tables the frontmatter
+  `description` already carries. Audience is expressed as reader intent
+  (evaluating, using, integrating, changing it, deciding, sponsoring) rather than
+  seniority, because a staff engineer meeting a new system needs the same
+  orientation a junior does.
+- **Document-type knowledge is carried inline by the role.** What distinguishes
+  a README, task guide, technical reference, concept, decision record, and
+  release note is stated in the agent rather than routed to a skill. Product owns
+  scope, engineering owns technical truth, marketing owns claims, localization
+  owns locale readiness, and the operator still owns merge and publication.
+- **`kai-agent-v1` agents load skills inline.** A skill is named in the
+  instruction that needs it rather than hoisted into a manifest section. The
+  previous `## Skills on demand` block recreated the eager `**Inherits:**` list
+  it replaced and required a "do not preload" disclaimer that existed only to
+  argue with its own list. Validation now checks meaning — the named skill
+  exists, the core probe precedes the first other core skill, the non-blocking
+  fallback is stated — instead of policing section layout.
+- **Agent and skill descriptions are judged by routing quality, not a fixed
+  character ceiling.** The provisional 250/180-character validator has been
+  removed while the new agent and progressive-skill contracts are established.
+
+### Removed
+
+- **BREAKING:** `principal-technical-writer` has been removed in favor of
+  `eng-lead-technical-writing`. Update direct invocations and any existing
+  `.kai/state/items/*.md` `owner:` or `next_role:` values that name the former
+  identity.
+- **The host tool probe harness has been removed.** `scripts/host-tool-probe.mjs`,
+  `scripts/lib/tool-conformance.mjs`, its fixtures, and its five npm scripts
+  measured nothing in CI: `npm test` ran only an offline parser self-test, and
+  the live run wrote its report to an uncommitted workspace path. The measured
+  result it existed to produce — the tool names Copilot CLI 1.0.79 and 1.0.81
+  accept in direct and delegated launches — is now recorded beside
+  `SUPPORTED_TOOLS` in `scripts/lib/loader-contract.mjs`. Re-measure with a
+  throwaway probe against the host you actually target.
+
 ## [3.1.0] - 2026-09-02
 
 ### Added
@@ -3266,6 +3366,8 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[5.0.0]: https://github.com/RubenSaucedo/kai/compare/v4.0.0...v5.0.0
+[4.0.0]: https://github.com/RubenSaucedo/kai/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/RubenSaucedo/kai/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/RubenSaucedo/kai/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/RubenSaucedo/kai/compare/v2.1.0...v2.2.0

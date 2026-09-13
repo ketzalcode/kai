@@ -15,7 +15,7 @@ Four guides and a reference. Start wherever your question is.
 
 | Page | Contents |
 | ---- | -------- |
-| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 56 agents and 42 skills, generated from their shipped frontmatter so it cannot drift. |
+| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 56 agents and 54 skills, generated from their shipped frontmatter so it cannot drift. |
 | [Plugin structure](reference/plugin-structure.md) | The layout of this repository, and what to run before opening a PR. |
 
 **Elsewhere in the repo**

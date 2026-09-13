@@ -16,8 +16,10 @@ Use it when creating or refining an agent in the Kai plugin repository.
 ## Canonical source
 
 1. Edit only `plugins/<provider>/agents/<agent-id>.agent.md`.
-2. Use root `scripts/lib/inherits-block.txt` verbatim.
-3. Keep core dependency-guard regions generated. Core agents carry no guard.
+2. Name each skill in the instruction that needs it. Do not add an
+   `**Inherits:**` line or a skill manifest section.
+3. Do not add a core dependency-guard region. Core availability is checked
+   just in time before the first core skill.
 4. Add a new identity to the provider array in `NEW_AGENT_IDS` in root
    `scripts/lib/pack-plan.mjs`.
 5. Add a new agent to exactly one `CATEGORIES` entry in root
@@ -25,20 +27,28 @@ Use it when creating or refining an agent in the Kai plugin repository.
 
 Generated copies under `plugins/kai-core/scripts/` are outputs, not sources.
 
-## Required inherited contracts
+## Required situational contracts
 
-Every agent inherits:
+Every agent routes `kai-core-contract-v1` before its first other
+core skill, stating the core-unavailable refusal in its own words in the same
+paragraph. Route every other contract inline, at the instruction that needs it —
+never as a hoisted manifest:
 
-- `kai-core-team-operating-rules`;
-- `kai-core-asset-lifecycle`.
+- `kai-core-operating-rules` before coordinated Kai work;
+- `kai-core-asset-producing` before creating or changing durable output, and
+  `kai-core-asset-closing` where the role accepts, promotes, or closes one;
+- `kai-core-workspace-paths` before resolving a root or placing a file, and
+  `kai-core-workspace-initiative` before reading or writing initiative state;
+- `kai-core-work-acting` before acting on an item, with `kai-core-work-item`
+  for its record and `kai-core-work-granting` only for the lease grantor;
+- `kai-core-work-activity` before recording a bounded run.
 
-Every durable role or workflow also inherits:
+Add coordination, communication, scope, or domain skills only when the agent
+has an action that triggers them. Every additional skill must be provided by
+core or the same plugin.
 
-- `kai-core-workspace-conventions`;
-- `kai-core-work-activity`.
-
-An activity exemption requires an explicit durable reason in the validator.
-Every additional inherited skill must be provided by core or the same plugin.
+Unmigrated department packs still open with an `**Inherits:**` line and its eager
+load directive; do not copy that mechanism into a new or migrated agent.
 
 ## One-agent identity change
 

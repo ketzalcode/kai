@@ -1,6 +1,6 @@
 ---
 name: kai-core-contract-v1
-description: "Reports that kai-core is installed and which contract version it provides. Invoked as the first action of every kai department pack agent."
+description: "Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill."
 tools: [read]
 ---
 

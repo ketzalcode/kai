@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **56 agents** and **53 skills** (12 of the skills are directly user-invocable; the rest are inherited by the agents that need them).
+kai ships **56 agents** and **57 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -89,7 +89,7 @@ Need, scope, interaction design, documentation, and brand.
 | [`principal-product-manager`](../../plugins/kai-product/agents/principal-product-manager.agent.md) | Owns product scope and initiative stewardship: product briefs, smallest-correct scope decisions, north stars, proposal grooming, prioritization, and truthful closure. Use before design or engineering. |
 | [`principal-product-strategist`](../../plugins/kai-product/agents/principal-product-strategist.agent.md) | Investigates future product opportunities, analogous products, fit scores, candidate actions, and smallest validating experiments. Use before scope decisions. Not current initiative stewardship (`principal-product-manager`). |
 | [`principal-product-designer`](../../plugins/kai-product/agents/principal-product-designer.agent.md) | Designs interaction models for approved product needs and reviews implementation against the approved design. Use after PM scope exists. Not product scope (`principal-product-manager`) or visual brand (`principal-brand-designer`). |
-| [`principal-technical-writer`](../../plugins/kai-engineering/agents/principal-technical-writer.agent.md) | Turns shipped SaaS behavior and SME-confirmed facts into docs plans, how-to/tutorial content, API/config reference, concept explainers, release notes, and audits. Use for documentation judgment. Not product scope, translation, or marketing. |
+| [`eng-lead-technical-writing`](../../plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md) | Technical writing specialist for READMEs, developer guides, tutorials, API reference, and release notes. Use to draft, restructure, or audit documentation. Not product scope, public claims, translation, lessons (`instructor-tutor`), or publishing. |
 | [`principal-brand-designer`](../../plugins/kai-product/agents/principal-brand-designer.agent.md) | Creates SaaS visual-identity systems, brand guidelines, visual-asset direction, and brand critique from positioning and brand evidence. Use for logo, color, typography, iconography, or illustration. Not product UI (`principal-product-designer`). |
 | [`workflow-localization`](../../plugins/kai-engineering/agents/workflow-localization.agent.md) | Runs SaaS i18n-readiness and locale-QA workflow for strings, formatting, pluralization, RTL, encoding, translation routing, and build checks. Use when a surface needs localization readiness. Not translating or code edits. |
 
@@ -182,20 +182,19 @@ Your voice, your career, your week. Workspace-local and gitignored.
 
 ## Skills
 
-Skills are methods and contracts. Most are inherited by an agent rather than
-invoked directly — the agent names them on its `**Inherits:**` line.
+Skills are methods and contracts. Most are not invoked directly —
+an acting agent loads each one on demand, at the exact instruction that needs it.
 
 ### Workspace & scope
 
-The shared contracts every acting agent inherits: where work goes, and what it may change.
+The shared contracts every acting agent loads: where work goes, and what it may change.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`kai-core-team-operating-rules`](../../plugins/kai-core/skills/kai-core-team-operating-rules/SKILL.md) | Defines the universal kai role operating contract. Use whenever acting as a kai role in any workspace, including ownership, handoffs, tests, shipping, and @operator. |
-| [`kai-core-asset-lifecycle`](../../plugins/kai-core/skills/kai-core-asset-lifecycle/SKILL.md) | Defines universal generated-asset completion, disposition, validity, ownership, freshness, supersession, and initiative closure rules. |
-| [`kai-core-workspace-conventions`](../../plugins/kai-core/skills/kai-core-workspace-conventions/SKILL.md) | Defines universal workspace output routing. Use when file-producing kai agents need target roots, .kai manifest validation, or canonical artifact paths. |
+| [`kai-core-operating-rules`](../../plugins/kai-core/skills/kai-core-operating-rules/SKILL.md) | The universal rules every kai role follows: role kinds, staying in lane, test ownership, human-only gates, shipping honesty, and @operator. Load whenever acting as a kai role. |
+| [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | Defines workspace resolution, the private .kai layout, publication, storage modes, and the artifact path convention. Use when resolving a root or choosing an artifact path. |
+| [`kai-core-workspace-initiative`](../../plugins/kai-core/skills/kai-core-workspace-initiative/SKILL.md) | Defines initiative artifact layout, coordination and closure, personal state, and the schema-3 manifest. Use when working inside an initiative or validating a .kai manifest. |
 | [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | Initializes and validates kai workspaces, and guides explicit migration to the split pack install surface. Use when installing kai packs or creating or repairing workspace state. |
-| [`kai-core-work-coordination`](../../plugins/kai-core/skills/kai-core-work-coordination/SKILL.md) | Defines durable multi-agent coordination. Use when concurrent work needs item state, board, threads, backlog, leases, dependencies, handoffs, or evidence paths. |
 | [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl. |
 | [`kai-core-fleet-observation`](../../plugins/kai-core/skills/kai-core-fleet-observation/SKILL.md) | Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate. |
 | [`kai-core-definition-of-done`](../../plugins/kai-core/skills/kai-core-definition-of-done/SKILL.md) | Release-readiness and production-completion gate. Use when deciding whether work can move to in-review, release-ready, or shipped. |
@@ -206,7 +205,19 @@ The shared contracts every acting agent inherits: where work goes, and what it m
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
 | [`product-exploration`](../../plugins/kai-product/skills/product-exploration/SKILL.md) | Provides neutral live-product mapping. Use when PM, design, QA, domain, or engineering need an evidence-backed navigation model without UX evaluation. |
 | [`product-marketing-intelligence`](../../plugins/kai-gtm/skills/product-marketing-intelligence/SKILL.md) | Builds durable product marketing intelligence. Use when product surfaces, media, notes, or product maps must feed downstream content or creative work. |
-| [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | Reports that kai-core is installed and which contract version it provides. Invoked as the first action of every kai department pack agent. |
+| [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
+
+### Work coordination & artifacts
+
+How an acting agent claims, leases, and tracks a work item, and how it produces and closes the artifacts that work leaves behind.
+
+| Name | What it owns |
+| ---- | ------------ |
+| [`kai-core-work-acting`](../../plugins/kai-core/skills/kai-core-work-acting/SKILL.md) | Defines how a dispatched agent acts on work it already holds: verify-before-write, collision, handoff, question, and review-routing protocols. Use when acting on a granted item. |
+| [`kai-core-work-granting`](../../plugins/kai-core/skills/kai-core-work-granting/SKILL.md) | Defines how the single lease grantor selects, claims, and reconciles work: leases, lifecycle, recovery, dispatch, backlog, board. Use when granting or reconciling work. |
+| [`kai-core-work-item`](../../plugins/kai-core/skills/kai-core-work-item/SKILL.md) | Defines the durable work-item record: its schema, field rules, and Outcome/Acceptance/Evidence templates. Use when creating or updating a work item. |
+| [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | Defines how a run produces and closes out a durable asset: pre-dispatch declaration, disposition and validity state, metadata, revision, supersession, and migration. |
+| [`kai-core-asset-closing`](../../plugins/kai-core/skills/kai-core-asset-closing/SKILL.md) | Defines the verdicts over an existing asset: four-dimensional completion, acceptance authority, freshness, placement and promotion, and initiative closure. |
 
 ### Agent authoring
 
@@ -218,7 +229,7 @@ Classify, name, scope, and validate a new or redesigned Kai role before it joins
 
 ### Engineering craft
 
-Per-change discipline every `principal-swe-*` agent inherits.
+Per-change discipline every `principal-swe-*` agent routes.
 
 | Name | What it owns |
 | ---- | ------------ |

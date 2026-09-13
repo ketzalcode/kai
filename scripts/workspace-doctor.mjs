@@ -652,7 +652,7 @@ export function checkWorkspace(root, options = {}) {
           err(`${rel}: lease held by ${lz.holder} but has no expiry`);
         }
         if (isNull(lz.token)) {
-          err(`${rel}: lease held by ${lz.holder} but has no token (a held lease must carry a unique grant token — see kai-core-work-coordination "Claiming work safely")`);
+          err(`${rel}: lease held by ${lz.holder} but has no token (a held lease must carry a unique grant token — see kai-core-work-granting "Claiming work safely")`);
         }
         if (isNull(lz.versionAtGrant)) {
           err(`${rel}: lease held by ${lz.holder} but has no version_at_grant (the grant must be bound to the item version it was issued against)`);

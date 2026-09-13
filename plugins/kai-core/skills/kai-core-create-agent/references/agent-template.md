@@ -10,7 +10,6 @@ Complete the contract before writing the agent instructions.
 **Kind:** durable-role | workflow | persona | instructor
 **Provider:** <plugin>
 **Identity:** <id>
-**Identity contract:** `kai-agent-v1`
 **Posture:** <posture or n/a>
 **Scope:** <scope>
 **Execution profile:** <profile>
@@ -43,8 +42,8 @@ Complete the contract before writing the agent instructions.
 Draft in this order:
 
 1. Frontmatter: exact name, routing description, quoted approved model, tools.
-2. One inherited-contract declaration and canonical loading directive.
-3. Identity and mission.
+2. Identity and mission.
+3. On-demand skill routing.
 4. Authority table.
 5. Execution profile.
 6. Routing table.
@@ -65,46 +64,58 @@ model: "<approved model id>"
 tools: [read, search, skill]
 ---
 
-**Inherits:** `kai-core-team-operating-rules`, `kai-core-asset-lifecycle`, ...
-
-<canonical inherited-skill loading directive>
-
 # <Human-readable role>
 
 <One paragraph: responsibility and why the role exists.>
 
-**Identity contract:** `kai-agent-v1`
-
-## Authority
-
-| Decision or action | Role | Final acceptance |
-|---|---|---|
-| ... | ... | ... |
-
-## Execution profile
-
 **Primary profile:** <profile>
-**Why:** <authority/work reason>
-**Model policy:** <approved model mapped from the primary profile>
 
-## Routing
+## <Craft section>
 
-| Request shape | Destination | Reason |
-|---|---|---|
-| ... | ... | ... |
+<The domain judgment this role exists for. Most of the body belongs here.>
 
-## Inputs and evidence
-## Operating sequence
-## Output and completion
-## Handoffs
-## Safety boundaries
-## Return shape
+## <Craft section>
+
+<Method, quality bar, and how the role decides — not org structure.>
+
+## Kai standards
+
+Invoke `kai-core-contract-v1` before the first other core skill in a session.
+If core is unavailable or incompatible, continue only with direct, single-shot
+domain work; do not create `.kai` state or claim coordinated work. State the
+limitation once and tell the operator to install or update `kai-core`.
+
+Load the rest where the work calls for it: `<skill-id>` before <the specific
+action that needs it>.
+
+<Reserved actions that belong to `@operator`.>
+
+## Finish with a verdict
+
+<The completion condition or verdict set.>
 ```
 
+Write each skill load into the instruction that needs it. Do not collect them
+into a manifest section: a hoisted list recreates the eager `**Inherits:**`
+block this contract replaced, and forces a "do not preload" disclaimer that
+exists only to argue with its own list.
+
+The frontmatter `description` is the routing surface the host reads. It already
+states what the role owns and what it does not, so an `## Authority` or
+`## Routing` table inside the body usually restates the frontmatter in a longer
+form. Add one only where overlapping authority is genuinely ambiguous.
+
 Use the model mapped by `model-selection.md`. Add tools required by actual
-actions. Every Kai agent includes `skill` because its inherited contracts load
-on demand. GitHub defines agent-profile tools and aliases in
-[custom-agent configuration](https://docs.github.com/en/copilot/reference/custom-agents-configuration).
+actions. Every Kai agent that dispatches skills includes `skill`.
+
+`tools` is a GitHub custom-agent profile field, not an Agent Skills standard.
+Its aliases and fallback behavior are host-specific, and other catalogs use
+vocabularies this host does not accept — VS Code Copilot Chat's `codebase` and
+`editFiles` are not portable here. The names Kai accepts are recorded, with the
+CLI versions they were measured against, beside `SUPPORTED_TOOLS` in
+`scripts/lib/loader-contract.mjs`. Agent Skills separately defines an
+experimental `allowed-tools` field for skills; new Kai skills follow the Agent
+Skills schema and do not declare `tools` at all.
 
 ## Acceptance cases
 
@@ -123,11 +134,9 @@ Define behavioral cases before finalizing prose:
 
 GitHub caps a custom-agent prompt at 30,000 characters. Kai targets at most 250
 authored body lines and 20,000 characters for a new or materially refined agent.
-Generated dependency guards do not count toward the line target.
-
 Crossing either Kai target starts a focus review:
 
-1. Remove shared rules already inherited from skills.
+1. Remove shared rules already supplied by situational skills.
 2. Extract reusable method into a skill.
 3. Replace repeated prose with a table or short ordered sequence.
 4. Split only when both responsibilities independently pass the slot tests.

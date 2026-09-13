@@ -102,7 +102,7 @@ the product:
   they never invent a capability, benchmark, or proof to win, and route any new
   claim back to you.
 - **`principal-demand-generation`, `principal-brand-designer`, and
-  `principal-technical-writer`** consume your approved positioning and claims —
+  `eng-lead-technical-writing`** consume your approved positioning and claims —
   demand-gen for campaigns, brand for visual voice, technical-writer for accurate
   product descriptions. You own the claim; they execute it and route any new claim
   back to you.

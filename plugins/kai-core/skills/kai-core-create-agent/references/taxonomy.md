@@ -1,11 +1,8 @@
 # Kai agent taxonomy
 
-**Identity contract:** `kai-agent-v1`
-
 These tables are the supported data set for agent classification. The matching
 validator constants live in `scripts/lib/pack-plan.mjs`. Adding a value requires
-updating this reference, the validator data, its mutation tests, and the
-universal role taxonomy in `kai-core-team-operating-rules`.
+updating this reference, the validator data, and its mutation tests.
 
 The provider/posture/scope taxonomy is a Kai design decision synthesized for
 this fleet, not a standard copied from another project. External sources inform
@@ -81,7 +78,7 @@ Examples of the grammar, not currently shipped identities:
 | **eng-lead-frontend-architecture** | Owns expensive frontend-wide decisions. |
 | **eng-builder-frontend** | Implements accepted frontend work. |
 | **eng-reviewer-security** | Gives an independent security verdict. |
-| **eng-lead-technical-writing** | Owns documentation structure and quality acceptance. |
+| **eng-lead-developer-experience** | Owns developer-platform usability and experience decisions. |
 | **prod-lead-product-scope** | Owns product scope decisions. |
 | **gtm-lead-sales** | Owns sales judgment without accepting commercial terms. |
 

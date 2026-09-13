@@ -14,7 +14,7 @@ until they're reconciled they look like competitors. They aren't. This
 contract makes them **one protocol, three transports, one system of
 record.**
 
-It is **not** a standalone trigger skill. `kai-core-work-coordination` pulls it in
+It is **not** a standalone trigger skill. `kai-core-work-acting` pulls it in
 as its durable transport, and any agent that consults a sister lane pulls
 it in for the live/inline transports — the same way `review-*` lenses pull
 in `doc-review-rigor`.
@@ -93,7 +93,7 @@ answer lives is a correctness choice.** So:
    it. Transcribe the packet (a one-line "answered live via <transport>" is
    enough provenance) into `.kai/state/threads/<item-id>.md`.
 2. **A blocking QUESTION flips the item to `blocked`** (per
-   `kai-core-work-coordination`), copying the current state to `resume_state` only when
+   `kai-core-work-acting`), copying the current state to `resume_state` only when
    first entering blocked, and adds the ID to `waiting_on_questions`.
    Additional questions never overwrite the saved state. As answers land,
    remove their IDs one by one; the lifecycle-authorized role restores and
@@ -104,7 +104,7 @@ answer lives is a correctness choice.** So:
    output and move on. If it turns out to change the decision, it just
    became load-bearing: put it on the thread.
 
-The durable thread is owned by `kai-core-work-coordination`; this contract owns the
+The durable thread is owned by `kai-core-work-acting`; this contract owns the
 packet and the transport choice that feeds it.
 
 ## The bias guard — don't answer your own question when judgment is the point

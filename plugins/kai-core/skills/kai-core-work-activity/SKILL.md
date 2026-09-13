@@ -7,7 +7,7 @@ requires_tools: [execute]
 
 # Work Activity
 
-`kai-core-work-coordination` records what a piece of work **is**. This records what an
+`kai-core-work-item` records what a piece of work **is**. This records what an
 agent **is doing right now**. Both are needed, and they must never be the same
 file.
 
@@ -61,7 +61,7 @@ to the whole run. If you will exceed it, append a `progress` with a new window.
 ## The commands
 
 `<kai-plugin>` is the plugin install directory; `<root>` is the workspace root
-resolved per `kai-core-workspace-conventions`.
+resolved per `kai-core-workspace-paths`.
 
 ```bash
 # once per run, at the top

@@ -78,7 +78,7 @@ const CATEGORIES = [
     blurb: 'Need, scope, interaction design, documentation, and brand.',
     members: [
       'principal-product-manager', 'principal-product-strategist', 'principal-product-designer',
-      'principal-technical-writer', 'principal-brand-designer', 'workflow-localization',
+      'eng-lead-technical-writing', 'principal-brand-designer', 'workflow-localization',
     ],
   },
   {
@@ -148,13 +148,22 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Workspace & scope',
-    blurb: 'The shared contracts every acting agent inherits: where work goes, and what it may change.',
+    blurb: 'The shared contracts every acting agent loads: where work goes, and what it may change.',
     members: [
-      'kai-core-team-operating-rules', 'kai-core-asset-lifecycle', 'kai-core-workspace-conventions', 'kai-core-workspace-onboarding',
-      'kai-core-work-coordination', 'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
+      'kai-core-operating-rules', 'kai-core-workspace-paths', 'kai-core-workspace-initiative', 'kai-core-workspace-onboarding',
+      'kai-core-work-activity', 'kai-core-fleet-observation', 'kai-core-definition-of-done', 'kai-core-scope-discipline',
       'kai-core-no-self-remediation',
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
       'product-exploration', 'product-marketing-intelligence', 'kai-core-contract-v1',
+    ],
+  },
+  {
+    kind: 'skill',
+    title: 'Work coordination & artifacts',
+    blurb: 'How an acting agent claims, leases, and tracks a work item, and how it produces and closes the artifacts that work leaves behind.',
+    members: [
+      'kai-core-work-acting', 'kai-core-work-granting', 'kai-core-work-item',
+      'kai-core-asset-producing', 'kai-core-asset-closing',
     ],
   },
   {
@@ -166,7 +175,7 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Engineering craft',
-    blurb: 'Per-change discipline every `principal-swe-*` agent inherits.',
+    blurb: 'Per-change discipline every `principal-swe-*` agent routes.',
     members: [
       'coding-style', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
       'onboard-to-codebase', 'build-diagrams',
@@ -275,7 +284,7 @@ function build(items) {
   out.push('     scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;');
   out.push('     `npm test` fails if this file drifts from the shipped surface. -->');
   out.push('');
-  out.push(`kai ships **${agents} agents** and **${skills} skills** (${invocable} of the skills are directly user-invocable; the rest are inherited by the agents that need them).`);
+  out.push(`kai ships **${agents} agents** and **${skills} skills** (${invocable} of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).`);
   out.push('');
   out.push('Each description below is the agent or skill\'s own shipped `description:` —');
   out.push('the exact text the host reads when deciding whether to fire it. You do not');
@@ -290,8 +299,8 @@ function build(items) {
     out.push(kind === 'agent' ? '## Agents' : '## Skills');
     out.push('');
     if (kind === 'skill') {
-      out.push('Skills are methods and contracts. Most are inherited by an agent rather than');
-      out.push('invoked directly — the agent names them on its `**Inherits:**` line.');
+      out.push('Skills are methods and contracts. Most are not invoked directly —');
+      out.push('an acting agent loads each one on demand, at the exact instruction that needs it.');
       out.push('');
     }
     for (const cat of CATEGORIES.filter((c) => c.kind === kind)) {

@@ -2,8 +2,9 @@
 //
 // Single source of truth for what kai declares and requires of its own entries,
 // not for how a Copilot host parses them; no file here can hold that authority.
-// Host behaviour is measured by scripts/host-tool-probe.mjs. Both guards import
-// this contract so they cannot drift from each other:
+// How a host parses those declarations is the host's own concern and is not
+// asserted here. Both guards import this contract so they cannot drift from
+// each other:
 //   • validate-plugin.mjs — proves the shipped source obeys the contract;
 //   • host-contract.mjs    — builds the expected discoverable inventory and
 //     proves malformed kai frontmatter is rejected before release.
@@ -12,9 +13,21 @@
 
 // Kai's declared tool vocabulary is a lint heuristic, not a host allowlist.
 // Whether a live host recognises a name is a separate, measured question.
+//
+// MEASURED BASELINE — Copilot CLI 1.0.79 and 1.0.81, Windows 11, probed in both
+// direct and delegated custom-agent launches. Every name below resolved to a
+// working capability in both launch modes. This comment is the durable record
+// of that run: the probe harness that produced it wrote its report to an
+// uncommitted workspace path, so the harness proved nothing CI could read and
+// was removed rather than maintained against a host it no longer measures.
+//
+// Re-measure by writing a throwaway probe against the host you actually target,
+// then update this list and this note together. Do not add a name here because
+// another tool catalog uses it: VS Code Copilot Chat (`codebase`, `editFiles`,
+// `fetch`) and Claude agent definitions use different vocabularies that this
+// host does not accept.
 export const SUPPORTED_TOOLS = new Set([
-  // Documented primary aliases. Live 1.0.79 and 1.0.81 probes exercised these
-  // capabilities in both direct and delegated custom-agent launches.
+  // Documented primary aliases, all confirmed by the baseline probe above.
   'execute', 'read', 'edit', 'search', 'agent', 'web', 'todo',
   'ask_user',                                // operator interaction
   'skill',                                   // inherited skill loading

@@ -171,7 +171,7 @@ call:
 | Scope, priority, or product fit | `principal-product-manager` |
 | No kai role owns it, or the operator reserved it | `@operator` |
 
-Per `kai-core-team-operating-rules`, `@operator` is a reserved endpoint, not a general
+Per `kai-core-operating-rules`, `@operator` is a reserved endpoint, not a general
 fallback. Routing every approach decision to the human is its own failure — it
 bypasses the roles that exist to own these calls.
 

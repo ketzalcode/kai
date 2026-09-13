@@ -170,7 +170,7 @@ One run per week:
 A weekly pulse of internal chat is **sensitive**, like `.kai/personal/identity/`. It
 stays in the **run root** — `.kai/runs/pulse/` — which
 `workflow-workspace-init` gitignores **wholesale** (see
-`kai-core-workspace-conventions`). You do **not** patch `.gitignore` yourself; the
+`kai-core-workspace-paths`). You do **not** patch `.gitignore` yourself; the
 whole working root is ignored, so the digest is private by default.
 
 Unlike other curated outputs, the pulse digest defaults to the **local**

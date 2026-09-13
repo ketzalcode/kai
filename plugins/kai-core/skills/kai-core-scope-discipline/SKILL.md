@@ -51,7 +51,7 @@ it.
 ## Ground yourself first — read the initiative
 
 Before you classify, load the product's committed intent (via the
-`kai-core-workspace-conventions` gating rule — `.kai/state/ACTIVE.md` →
+`kai-core-workspace-initiative` gating rule — `.kai/state/ACTIVE.md` →
 the active `northstar.md`):
 
 - **`mission` / `vision`** — what the product is for.
@@ -111,7 +111,7 @@ Resolution order:
    incidental-cwd destinations; ask the steward/operator for a durable channel
    instead.
 2. Not set → **default: the durable backlog** owned by
-   `kai-core-work-coordination` — `.kai/state/initiatives/<initiative-slug>/backlog.md` when an
+   `kai-core-work-granting` — `.kai/state/initiatives/<initiative-slug>/backlog.md` when an
    initiative is loaded, `.kai/state/backlog.md` when none is.
 3. Workspace never onboarded (`.kai/state/initiatives/` absent) → stop and onboard the
    confirmed target workspace before recording the proposal.
