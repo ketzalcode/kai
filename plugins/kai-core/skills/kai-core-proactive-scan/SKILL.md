@@ -1,18 +1,21 @@
 ---
 name: kai-core-proactive-scan
-description: "Defines runner-invoked proactive notifications. Use when an external cadence scans workspaces for newly actionable decisions, replies, actions, or release-ready items."
+description: "Owns operator-signal interpretation (decisions, replies, actions, release-ready items) for on-demand briefings, and defines runner-invoked proactive notifications. Use when interpreting team records for a requested briefing or scan, or when an external cadence scans workspaces for newly actionable items."
 tools: [execute, read, edit, search]
 ---
 
 # Proactive Scan
 
-The executive assistant is **proactive-surface, never autonomous**: it surfaces
-what needs the operator *when invoked*. It cannot, on its own, notice that a new
-decision appeared at 2am and tell you — because **kai is a declarative prompt
-plugin: nothing in it wakes itself, watches for changes, or pushes a message.**
+kai is **proactive-surface, never autonomous**: it surfaces what needs the
+operator *when invoked* — whether an on-demand briefing asks it to interpret
+existing team records, or a scan checks for newly actionable ones. It cannot,
+on its own, notice that a new decision appeared at 2am and tell you — because
+**kai is a declarative prompt plugin: nothing in it wakes itself, watches for
+changes, or pushes a message.**
 
-This skill closes that gap honestly by splitting the problem across a hard
-**runtime boundary**.
+This skill owns operator-signal interpretation on its own, independent of any
+assistant agent, and closes the notification half of that gap honestly by
+splitting it across a hard **runtime boundary**.
 
 ## The runtime boundary
 
@@ -37,20 +40,59 @@ The runner drives two explicit phases, so a signal is neither lost nor spammed:
    (idempotent). Semantics are **at-least-once**: an undelivered or failed
    notification is simply re-emitted next scan.
 
+## Operator signals
+
+Use this section to interpret existing team records for a requested briefing
+or scan. Reading these signals does not require emitting notifications,
+allocating an outbox payload, or advancing a delivery ledger.
+
+Read `.kai/state/` items and threads as authoritative; never infer a decision
+the records don't show. Map each coordination fact in `.kai/state/` to exactly
+one signal:
+
+- **Decision awaiting the operator** — a thread `QUESTION` addressed to
+  `@operator` with `kind: decision` and no matching answered `ANSWER`; if
+  blocking, its ID also appears in the item's `waiting_on_questions`.
+- **Question addressed to the operator** — an open thread `QUESTION`
+  addressed to `@operator` with `kind: reply` and no matching `ANSWER`.
+- **Action only the operator can perform** — a thread `QUESTION` addressed to
+  `@operator` with `kind: action` and no matching answered `ANSWER`; if
+  blocking, its ID appears in `waiting_on_questions`.
+- **Ready for the operator to ship** — an item in `release-ready` (the human
+  deploy gate).
+- **Blocked on the operator** — a `blocked` item whose `waiting_on_questions`
+  contains an open `@operator` question; classify it by that question's
+  `kind`.
+- **Overdue operator request** — an unanswered `@operator` question whose
+  `answer_by` timestamp has passed.
+
+Preserve these distinctions when interpreting the records above:
+
+1. An open `@operator` question has no matching answered `ANSWER` packet.
+   Because threads are append-only, the original QUESTION line's stale
+   `status: open` is not sufficient once an `ANSWER` has been appended.
+2. Preserve `kind: decision|reply|action` as recorded; never reinterpret a
+   `reply` as an operator decision.
+3. An item in `release-ready` is a deploy gate, not a completed deployment.
+4. Overdue is computed from the question's `answer_by`, never from inferred
+   urgency.
+5. A blocking question must be associated with its item via
+   `waiting_on_questions`; a `proposed` item by itself is **not** an operator
+   signal — it is steward work. The initiative steward owns promotion and
+   priority.
+6. Missing or unreadable input is not evidence that an open signal cleared —
+   a root that failed to read must never be treated as resolved.
+
+If `.kai/state/` is absent (no team workspace), there are no operator signals
+to interpret — say so; never fabricate team signals.
+
 ## What the scan reads
 
 Coordination is **read-only**. Against the **selected workspace** plus every
 enabled, validated root in its `.kai/personal/workspaces.md` (per
-`kai-core-workspace-initiative`), reuse `kai-core-personal-agenda`'s **Source A** detection —
-nothing new is invented:
-
-- an open thread `QUESTION` to `@operator` (`kind: decision|reply|action`) with
-  no matching answered `ANSWER`;
-- an item in `release-ready` (the human deploy gate);
-- an `@operator` question whose `answer_by` has passed (overdue).
-
-A coordination `state: proposed` item is **not** an operator signal (steward
-work), exactly as in `kai-core-personal-agenda`. The scan changes no coordination record.
+`kai-core-workspace-initiative`), apply the **Operator signals** section above
+to each fully-read root — nothing new is invented. The scan changes no
+coordination record.
 
 ## Signal identity and change detection
 
@@ -172,7 +214,7 @@ never part of the committed plugin:
 - The scan and its workflow **never** reply to a thread, approve scope, send a
   peer message, commit, or deploy. The **only** external effect is the configured
   notification, and the **runner** performs the delivery. Everything the operator
-  must actually do stays an on-demand action through the executive assistant.
+  must actually do stays theirs to do, on demand, with the role they choose.
 
 ## Failure surfacing
 

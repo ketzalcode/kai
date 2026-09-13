@@ -15,11 +15,17 @@ The shortest path to one real, finished piece of work. Each step is copyable.
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
+copilot plugin install kai-assistant@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
 ```
+
+`kai-assistant` is new, committed source on this branch's checkout; its
+`kai-assistant@kai-plugins` install works only from a marketplace or checkout
+that carries this refactor — its publication and remote availability were not
+established by this work.
 
 Start a **new** session afterwards — plugins load per session.
 
@@ -42,7 +48,7 @@ Private coordination, drafts, evidence, and personal state remain under
 `.kai/`; only accepted project knowledge publishes. See
 [Workspace model](workspaces.md) for the full contract.
 
-**3. Ask for the work, not for a role.** The front door routes it:
+**3. Ask for the work, not for a role.** Delivery coordination routes it:
 
 ```text
 I need users to be able to export a saved report as CSV.
@@ -50,8 +56,9 @@ I need users to be able to export a saved report as CSV.
 
 `director-chief-of-staff` takes it to the PM for a brief, the architect for a
 decision, and engineering for implementation — creating a work item, a durable
-thread, and initiative artifacts as it goes. For a personal or unclear request,
-start with `director-executive-assistant` instead.
+thread, and initiative artifacts as it goes. For your *own* tasks, priorities,
+briefings, or drafts, ask `personal-assistant` (in `kai-assistant`) directly;
+nothing has to be routed through it.
 
 **4. Check the state is honest** at any point:
 
@@ -72,8 +79,10 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 56-agent, 51-skill surface is published across five packs. You do not need to
-learn them. You need three things: **ask a front door for outcomes**, **let the
+The full 56-agent, 57-skill surface is committed across six packs on this
+branch's checkout. This describes source ownership, not publication;
+`kai-assistant`'s remote availability remains unverified. You do not need to
+learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
 describes.
@@ -97,6 +106,7 @@ support long-term. Nobody has to approve a listing for this to work.
    ```powershell
    copilot plugin marketplace add RubenSaucedo/kai
    copilot plugin install kai-core@kai-plugins
+   copilot plugin install kai-assistant@kai-plugins
    copilot plugin install kai-personal@kai-plugins
    copilot plugin install kai-product@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
@@ -106,10 +116,16 @@ support long-term. Nobody has to approve a listing for this to work.
    ```powershell
    copilot plugin list
    ```
-   `kai-core@kai-plugins`, `kai-personal@kai-plugins`, and
-   `kai-product@kai-plugins`, `kai-engineering@kai-plugins`, and
+   `kai-core@kai-plugins`, `kai-assistant@kai-plugins`,
+   `kai-personal@kai-plugins`, `kai-product@kai-plugins`,
+   `kai-engineering@kai-plugins`, and
    `kai-gtm@kai-plugins` should appear at the same version. The agents and skills
    are available in **new** sessions — start a fresh session to use them.
+
+`kai-assistant` is committed source on this refactor's branch checkout only;
+this work did not push, tag, or publish it, so the `kai-assistant@kai-plugins`
+lines above resolve only against a marketplace or checkout that carries this
+refactor, not necessarily the currently published marketplace index.
 
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.
@@ -222,6 +238,7 @@ plugin itself. Refresh the catalog first, or the update has nothing new to find:
 ```powershell
 copilot plugin marketplace update kai-plugins
 copilot plugin update kai-core@kai-plugins
+copilot plugin update kai-assistant@kai-plugins
 copilot plugin update kai-personal@kai-plugins
 copilot plugin update kai-product@kai-plugins
 copilot plugin update kai-engineering@kai-plugins

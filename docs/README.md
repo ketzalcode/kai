@@ -15,7 +15,8 @@ Four guides and a reference. Start wherever your question is.
 
 | Page | Contents |
 | ---- | -------- |
-| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 56 agents and 54 skills, generated from their shipped frontmatter so it cannot drift. |
+| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 56 agents and 57 skills, generated from their shipped frontmatter so it cannot drift. |
+| [Package: `kai-assistant`](reference/packages/kai-assistant.md) | What the personal-assistance package owns, where its private state lives, its acceptance scenarios, and its current limitations. |
 | [Plugin structure](reference/plugin-structure.md) | The layout of this repository, and what to run before opening a PR. |
 
 **Elsewhere in the repo**

@@ -31,12 +31,11 @@ Set a workspace up and keep its structure honest.
 
 ### Direction
 
-The two front doors. Everything else is reachable through them.
+Delivery coordination, on explicit request. Nothing has to be routed through it.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`director-executive-assistant`](../../plugins/kai-core/agents/director-executive-assistant.agent.md) | Manages the operator's personal agenda, catch-up, task capture, unclear routing, and decisions waiting on them. Use when asking what needs you or who should handle it. Not driving delivery (`director-chief-of-staff`). |
-| [`director-chief-of-staff`](../../plugins/kai-core/agents/director-chief-of-staff.agent.md) | Coordinates Kai roles to drive an outcome, work item, initiative, or incident to truthful completion. Use when asking someone to ship, run, or drive work. Not personal agenda triage (`director-executive-assistant`). |
+| [`director-chief-of-staff`](../../plugins/kai-core/agents/director-chief-of-staff.agent.md) | Coordinates Kai roles to drive an outcome, work item, initiative, or incident to truthful completion. Use when asking someone to ship, run, or drive work. Not personal agenda or task management. |
 
 ### Engineering
 
@@ -169,13 +168,21 @@ Turn product intelligence into platform-native content. Never auto-publishes.
 | [`principal-linkedin-strategist`](../../plugins/kai-gtm/agents/principal-linkedin-strategist.agent.md) | Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes. |
 | [`creative-video-director`](../../plugins/kai-personal/agents/creative-video-director.agent.md) | Directs product and marketing videos from product intelligence and media into briefs, storyboards, edit decisions, voiceover, and AI-video prompts. Use when planning a video, not rendering or editing one. |
 
-### Personal
+### Personal assistance
 
-Your voice, your career, your week. Workspace-local and gitignored.
+Your own tasks, briefings, and drafts. Invoked directly; never a router.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`persona-self`](../../plugins/kai-personal/agents/persona-self.agent.md) | Drafts, rewrites, and replies in the user's voice with senior-engineer professionalism. Use for messages, posts, emails, design docs, PR descriptions, and replies. Never auto-publishes. |
+| [`personal-assistant`](../../plugins/kai-assistant/agents/personal-assistant.agent.md) | Manages personal tasks, priorities, briefings, and message drafts directly. Use for help with your own work. Not team delivery, specialist dispatch, or autonomous sending. |
+| [`persona-self`](../../plugins/kai-assistant/agents/persona-self.agent.md) | Drafts, rewrites, and replies in the user's voice for high-stakes or long-form writing. Use when authorial judgment matters: posts, design docs, PR narratives, sensitive replies. Never auto-publishes. |
+
+### Personal
+
+Your career and your week. Workspace-local and gitignored.
+
+| Name | What it owns |
+| ---- | ------------ |
 | [`principal-engineer-career-mentor`](../../plugins/kai-personal/agents/principal-engineer-career-mentor.agent.md) | Mentors IC-track career progression through intake, check-ins, reviews, spot consults, cert planning, and visibility nudges. Use for career strategy. Not executing a chosen learning path (`instructor-path-mentor`). |
 | [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio. |
 | [`workflow-proactive-scan`](../../plugins/kai-core/agents/workflow-proactive-scan.agent.md) | Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys. |
@@ -286,24 +293,31 @@ Browser-run plumbing and the claim-safety contract creative agents inherit.
 
 ### Lessons & writing
 
-Turn markdown into lessons, audio, or your own voice.
+Turn markdown into lessons or audio.
 
 | Name | What it owns |
 | ---- | ------------ |
 | [`kai-core-generate-audio`](../../plugins/kai-core/skills/kai-core-generate-audio/SKILL.md) | Markdown-to-audio lesson generation. Use when converting notes, READMEs, course content, or drafts into multilingual narrated audio with lectoria. |
 | [`generate-html-lesson`](../../plugins/kai-personal/skills/generate-html-lesson/SKILL.md) | Markdown-to-HTML lesson generation. Use when creating a self-contained visual lesson page, often as the companion to generated audio or an instructor flow. |
-| [`extract-writing-style`](../../plugins/kai-personal/skills/extract-writing-style/SKILL.md) | Portable voice-profile extraction. Use when persona-self needs the user's writing style captured from past messages or refreshed after voice drift. |
 
-### Personal
+### Assistant methods
 
-The private methods behind the executive assistant. Never autonomous.
+The private methods behind the personal assistant and persona-self. Never autonomous.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`kai-core-personal-agenda`](../../plugins/kai-core/skills/kai-core-personal-agenda/SKILL.md) | Operator agenda assembly. Use when producing the current workspace's what-needs-you view from inbox tasks, @operator questions, release gates, and nudges. |
-| [`kai-core-executive-consultation`](../../plugins/kai-core/skills/kai-core-executive-consultation/SKILL.md) | Private role-consultation method for the executive assistant. Use when a decision brief needs facts or independent judgment from real kai roles without impersonation. |
-| [`kai-core-decision-brief`](../../plugins/kai-core/skills/kai-core-decision-brief/SKILL.md) | Decision brief packaging for the executive assistant. Use when an operator decision or deploy gate needs options, tradeoffs, role positions, recommendation, and next actions. |
-| [`kai-core-proactive-scan`](../../plugins/kai-core/skills/kai-core-proactive-scan/SKILL.md) | Defines runner-invoked proactive notifications. Use when an external cadence scans workspaces for newly actionable decisions, replies, actions, or release-ready items. |
+| [`personal-agenda`](../../plugins/kai-assistant/skills/personal-agenda/SKILL.md) | Personal task and agenda method. Use when capturing, updating, or prioritizing the user's own tasks, or rendering their what-needs-you view from the inbox and, on request, team signals. |
+| [`decision-brief`](../../plugins/kai-assistant/skills/decision-brief/SKILL.md) | Decision briefing from supplied or selected evidence. Use when a personal or team decision needs options, tradeoffs, provenance, unresolved facts, and a sourced recommendation in one place. |
+| [`extract-writing-style`](../../plugins/kai-assistant/skills/extract-writing-style/SKILL.md) | Portable voice-profile extraction. Use when the user asks to build or refresh their writing-style profile from past messages or supplied samples. |
+| [`write-in-user-voice`](../../plugins/kai-assistant/skills/write-in-user-voice/SKILL.md) | Applies supplied or approved stored writing preferences to a draft while preserving intent, facts, and uncertainty. Use for user-voice drafting, rewriting, or replies. |
+
+### Operator signals
+
+Core's own reading of what the team records need a human for, plus the runner-invoked notification contract.
+
+| Name | What it owns |
+| ---- | ------------ |
+| [`kai-core-proactive-scan`](../../plugins/kai-core/skills/kai-core-proactive-scan/SKILL.md) | Owns operator-signal interpretation (decisions, replies, actions, release-ready items) for on-demand briefings, and defines runner-invoked proactive notifications. Use when interpreting team records for a requested briefing or scan, or when an external cadence scans workspaces for newly actionable items. |
 
 ---
 
