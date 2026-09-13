@@ -114,6 +114,15 @@ the contract this package is supposed to meet, not as evidence it does.
   executed against a live host. The generation commands that ran are
   `node scripts/host-contract.mjs --update`, `npm run docs:generate`, and
   `npm run pack-preview -- --write`.
+- **`session_store_sql` availability unverified.** `extract-writing-style`
+  names `session_store_sql` as its primary source for a corpus extraction
+  (`SKILL.md:4,176`), but neither `personal-assistant` nor `persona-self`
+  grants that tool in its own `tools:` frontmatter. A skill's own `tools:`
+  field is not proof the host actually grants the capability at either the
+  agent or the skill boundary. This predates this fix and is not resolved by
+  it: do not infer a successful history extraction, and do not add tools or
+  run an extraction to settle it — confirm actual grant behavior on a live
+  host as separate, approved follow-up work.
 - **Deferred suites.** Baseline installs, the full validator, and the rest of
   `npm test` were deliberately not run for this change.
 - **Cross-package referrals in core are descriptions, not dependencies.**

@@ -22,6 +22,11 @@ copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
 ```
 
+`kai-assistant` is new, committed source on this branch's checkout; its
+`kai-assistant@kai-plugins` install works only from a marketplace or checkout
+that carries this refactor — its publication and remote availability were not
+established by this work.
+
 Start a **new** session afterwards — plugins load per session.
 
 **2. Initialize the workspace.** From the repo (or durable folder) you want kai
@@ -74,7 +79,9 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 56-agent, 57-skill surface is published across six packs. You do not need to
+The full 56-agent, 57-skill surface is committed across six packs on this
+branch's checkout; five are published, and `kai-assistant`'s marketplace
+publication was not established by this work. You do not need to
 learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -114,6 +121,11 @@ support long-term. Nobody has to approve a listing for this to work.
    `kai-engineering@kai-plugins`, and
    `kai-gtm@kai-plugins` should appear at the same version. The agents and skills
    are available in **new** sessions — start a fresh session to use them.
+
+`kai-assistant` is committed source on this refactor's branch checkout only;
+this work did not push, tag, or publish it, so the `kai-assistant@kai-plugins`
+lines above resolve only against a marketplace or checkout that carries this
+refactor, not necessarily the currently published marketplace index.
 
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.

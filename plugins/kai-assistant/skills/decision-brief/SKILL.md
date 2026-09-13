@@ -89,8 +89,12 @@ not evidence it is still pending.
 6. **Record privately** under `.kai/personal/decisions/<d-YYYY-NNNN>.md` in the
    ignored personal lane. If no workspace is selected, say that the brief cannot
    be persisted and return it in the response instead.
-7. **Present and stop** at the user's decision boundary. Offer to execute each
-   `your move` action on their explicit go-ahead — never before.
+7. **Present and stop** at the user's decision boundary. On explicit
+   go-ahead, offer only the private recording or drafting help actually in
+   this skill's lane — completing the brief's own status/outcome fields, or
+   drafting the sanitized bridge text for the authorized role to send. Never
+   offer to execute, dispatch, send, or deploy a `your move` action yourself;
+   those stay the user's or the owning role's.
 
 ## Brief schema
 
@@ -143,7 +147,7 @@ kind of choice it is. One line either way.>
 - <item / peer / milestone that cannot move until this is answered, or "—">
 
 ## Your move
-- **Personal decision:** <the single choice> → whatever you decide, you act on it; nothing here records or executes it for you.
+- **Personal decision:** <the single choice> → on your go-ahead this skill privately records your choice in the brief (`Status: decided`); it never executes the choice for you — you act on it yourself.
 - **Thread decision:** <the single choice> → once decided, **@<owning role or Chief of Staff> records the `@operator` ANSWER on the thread** and restores the item per `kai-core-work-acting`.
 - **Deploy gate:** go → **you deploy** (kai never deploys), then hand the run evidence to `workflow-ship CONFIRM-START`; defer → stays `release-ready` with a recorded reason; cancel → lifecycle-authorized drop.
 - <any dependent action you can green-light, and who runs it>
@@ -160,10 +164,14 @@ deploy gate needs the `workflow-ship` state/HANDOFF that follows deployment. A
 private record alone is not completion.>
 ```
 
-Never overwrite an earlier brief. A changed decision gets a new `d-` ID; a new
-position on the same open decision appends a dated note to the same record.
-Earlier records — including consultation records written by retired methods —
-are history: read them, never rewrite or delete them.
+Never overwrite a closed or superseded brief. A changed decision gets a new
+`d-` ID — a successor record, never an edit to the old one. The still-open
+brief for the current decision may still receive its dated append and the
+required completion update below (`Status: decided`, chosen option, and
+outcome link); that finishes the current record, it does not rewrite history.
+Records already closed or superseded — including consultation records written
+by retired methods — are protected history: read them, never rewrite or
+delete them.
 
 ## After the user decides
 
@@ -223,8 +231,15 @@ remains owned by the deciding role — not written here.
 8. **Bridge only sanitized fields.** The team-facing record gets the selected
    option and minimal team-relevant rationale; a `.kai/personal/` path, the private
    brief, or personal reasoning never enters committed coordination.
-9. **History is read-only.** Existing private decision and consultation records
-   stay exactly as written.
+9. **Closed history is protected; the open brief's lifecycle isn't frozen.**
+   A decided/superseded brief, and a consultation record closed under a
+   retired method, stay exactly as written — never rewritten, never deleted;
+   a changed decision gets a new successor record, never an edit to the old
+   one. While a brief is still the *current* record for its decision, this
+   skill may append a dated position and make the one-time completion update
+   required by "After the user decides" (`Status: decided`, the chosen
+   option, and the authoritative thread `ANSWER` or ship HANDOFF link) — that
+   finishes the record, it does not rewrite history.
 
 ## Output contract
 
@@ -253,7 +268,10 @@ Your move: <the single decision + who records it on your go-ahead>
   before helping with a personal choice.
 - ❌ Treating a stale `status: open` line as an open decision when a matching
   `ANSWER` exists.
-- ❌ Writing the outcome into `.kai/state/` yourself instead of routing it to
-  the Chief of Staff or owning role.
+- ❌ Writing the outcome into `.kai/state/` yourself, or dispatching it there,
+  instead of leaving it for the Chief of Staff or owning role to record
+  themselves.
 - ❌ Storing the brief anywhere but the selected workspace's ignored `.kai/personal/`.
-- ❌ Editing or deleting an existing private decision or consultation record.
+- ❌ Rewriting or deleting a closed/superseded decision or consultation
+  record instead of opening a successor — the still-open brief's own required
+  dated append and completion update are not this.

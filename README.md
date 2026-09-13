@@ -18,6 +18,10 @@ copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
 ```
 
+`kai-assistant` is new on this branch; the `kai-assistant@kai-plugins` install
+works only from a marketplace or checkout that carries this refactor — its
+publication and remote availability were not established by this work.
+
 **[Get started →](docs/getting-started.md)** ·
 **[See a finished feature →](examples/e2e-feature-delivery/)**
 
@@ -36,8 +40,11 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v5.0.0` — all **56 agents and 57 skills** are published across six plugins for
-the **Copilot CLI** and the **Copilot coding agent** (cloud).
+`v5.0.0` — all **56 agents and 57 skills** are published across five plugins for
+the **Copilot CLI** and the **Copilot coding agent** (cloud). A sixth,
+`kai-assistant`, is committed source on this branch's checkout; this work
+generated and committed it but did not push, tag, or publish it, so its
+marketplace publication and remote availability are not established.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
@@ -121,7 +128,10 @@ before a pack install, coexistence is refused rather than warned through, and
 evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
-contract-version skew. The marketplace publishes all six plugins; the monolith is no longer listed.
+contract-version skew. The marketplace publishes the five original plugins; the
+monolith is no longer listed. `kai-assistant` exists as committed source on
+this branch's checkout — this work did not push, tag, or publish it, so it is
+not yet part of that published marketplace surface.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -193,7 +203,10 @@ copilot plugin install kai-gtm@kai-plugins
 kai publishes its own marketplace index, because the host has deprecated direct
 `owner/repo` installs. The direct form still works today and prints a
 deprecation warning; see [Getting started](docs/getting-started.md#install)
-for it and for the coding-agent path.
+for it and for the coding-agent path. `kai-assistant` is committed on this
+branch's checkout only — its own publication and remote availability were not
+established by this work, so its install line above works only from a source
+that carries this refactor.
 
 **2. Initialize** the repo or durable folder you want kai to work in:
 
@@ -259,8 +272,12 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's full 56-agent, 57-skill surface is published across
-`kai-core`, assistant, personal, product, engineering, and go-to-market.
+The repository's full 56-agent, 57-skill surface is committed across
+`kai-core`, assistant, personal, product, engineering, and go-to-market on this
+branch's checkout. Five of those packs (`kai-core`, personal, product,
+engineering, go-to-market) are published; `kai-assistant` is new source
+committed here whose marketplace publication and remote availability this
+work did not establish.
 
 You do not need to learn them. Ask for the outcome you want; the catalog is
 there for when you want to know who owns a particular judgment.
@@ -281,6 +298,8 @@ setup. To update, refresh the catalog, then update each installed pack:
 `copilot plugin update kai-gtm@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
+`kai-assistant` only appears in that update list once it was installed from a
+marketplace or checkout carrying this refactor.
 
 ## Workspace
 
