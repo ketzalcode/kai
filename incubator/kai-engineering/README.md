@@ -1,8 +1,10 @@
 # Incubated engineering review components
 
-These components are inactive development drafts. They are tracked here to
-preserve source and history, but they are not registered, packaged, advertised,
-or available to active Kai consumers.
+These components are inactive development drafts. In this checkout, they are
+tracked here to preserve source and history, but they are not part of the active
+source registrations or newly generated packs. Older installations are
+unchanged until updated; this source change does not verify or claim their
+removal from a live host.
 
 Moving a component here is not approval to reintroduce it. Re-entry is tracked
 in [#211](https://github.com/RubenSaucedo/kai/issues/211) and requires an
