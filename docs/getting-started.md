@@ -16,15 +16,16 @@ The shortest path to one real, finished piece of work. Each step is copyable.
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
 ```
 
-`kai-assistant` is new, committed source on this branch's checkout; its
-`kai-assistant@kai-plugins` install works only from a marketplace or checkout
-that carries this refactor — its publication and remote availability were not
+`kai-assistant` and `kai-creative` are new, committed source on this branch's
+checkout; their installs work only from a marketplace or checkout
+that carries this refactor — their publication and remote availability were not
 established by this work.
 
 Start a **new** session afterwards — plugins load per session.
@@ -79,10 +80,10 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 56-agent, 57-skill surface is committed across six packs on this
+The full 56-agent, 57-skill surface is committed across seven packs on this
 branch's checkout. This describes source ownership, not publication;
-`kai-assistant`'s remote availability remains unverified. You do not need to
-learn them. You need three things: **ask for outcomes**, **let the
+Remote availability of `kai-assistant` and `kai-creative` remains unverified.
+You do not need to learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
 describes.
@@ -107,6 +108,7 @@ support long-term. Nobody has to approve a listing for this to work.
    copilot plugin marketplace add RubenSaucedo/kai
    copilot plugin install kai-core@kai-plugins
    copilot plugin install kai-assistant@kai-plugins
+   copilot plugin install kai-creative@kai-plugins
    copilot plugin install kai-personal@kai-plugins
    copilot plugin install kai-product@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
@@ -117,15 +119,20 @@ support long-term. Nobody has to approve a listing for this to work.
    copilot plugin list
    ```
    `kai-core@kai-plugins`, `kai-assistant@kai-plugins`,
+   `kai-creative@kai-plugins`,
    `kai-personal@kai-plugins`, `kai-product@kai-plugins`,
    `kai-engineering@kai-plugins`, and
    `kai-gtm@kai-plugins` should appear at the same version. The agents and skills
    are available in **new** sessions — start a fresh session to use them.
 
-`kai-assistant` is committed source on this refactor's branch checkout only;
-this work did not push, tag, or publish it, so the `kai-assistant@kai-plugins`
-lines above resolve only against a marketplace or checkout that carries this
+`kai-assistant` and `kai-creative` are committed source on this branch checkout
+only; this work did not push, tag, or publish them, so their install lines
+resolve only against a marketplace or checkout that carries this
 refactor, not necessarily the currently published marketplace index.
+
+For design and supported demo work, the baseline is core plus creative, not the
+whole roster. [Creative's package note](reference/packages/kai-creative.md)
+lists direct requests, supplied inputs, outputs, and external-tool prerequisites.
 
 Core carries the shared scripts and fleet hooks, so nothing needs cloning —
 that is what lets `kai-core-fleet-observation` find the watcher.
@@ -208,7 +215,7 @@ install. Tracked in
 ```powershell
 git clone https://github.com/RubenSaucedo/kai.git
 cd kai
-copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-gtm
+copilot --plugin-dir plugins/kai-core --plugin-dir plugins/kai-creative --plugin-dir plugins/kai-personal --plugin-dir plugins/kai-product --plugin-dir plugins/kai-engineering --plugin-dir plugins/kai-gtm
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when
@@ -239,6 +246,7 @@ plugin itself. Refresh the catalog first, or the update has nothing new to find:
 copilot plugin marketplace update kai-plugins
 copilot plugin update kai-core@kai-plugins
 copilot plugin update kai-assistant@kai-plugins
+copilot plugin update kai-creative@kai-plugins
 copilot plugin update kai-personal@kai-plugins
 copilot plugin update kai-product@kai-plugins
 copilot plugin update kai-engineering@kai-plugins
@@ -290,6 +298,13 @@ completed migration is a no-op.
 <!-- /kai:allow-legacy-roots -->
 
 ## Audio setup (optional)
+
+Demo narration belongs to `kai-creative`, whose installed files do not imply
+that Lectoria is installed. Resolve that provider root from the loaded
+`demo-narrate` skill and follow its pinned-dependency, Azure configuration, and
+explicit paid-consent instructions; see [Creative runtime](reference/packages/kai-creative.md#runtime-ownership-and-prerequisites).
+Estimation, placement, and mixing do not need Lectoria. The learning-audio
+workflow below uses core's separate audio utility.
 
 Only for the `kai-core-generate-audio` skill and the `instructor-*` learning agents,
 which narrate markdown into MP3s via

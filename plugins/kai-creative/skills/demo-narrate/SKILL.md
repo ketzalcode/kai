@@ -1,7 +1,7 @@
 ---
 name: demo-narrate
 description: "Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording."
-tools: [execute, read, edit, search]
+tools: [execute, read, edit, search, skill]
 requires_tools: [execute]
 user-invocable: true
 ---
@@ -14,13 +14,22 @@ produce something false.
 
 Use it after a take is compiled and rendered, never before.
 
+Accept a supplied screenplay and matching measured take/render directly.
+Marketing and assistant are not required; a neutral or approved brand-voice
+script is sufficient. Before using shared claim rules, Load
+`kai-core-contract-v1`, then Load `kai-core-content-grounding` for the ledger
+and provenance treatment of supplied factual JSON. If core is unavailable,
+explain the supplied narration's gaps in a bounded answer, but do not create
+coordinated `.kai` state; tell the operator to install or update core before
+coordinated narration resumes. Missing facts stay excluded or unresolved.
+
 ## Two measurements, taken by different tools
 
 Only two numbers matter, and neither of them is yours to write:
 
 | Number | Measured by | Known |
 | --- | --- | --- |
-| how long a line takes to say | the synthesiser | before capture |
+| how long a line takes to say | the synthesiser | after synthesis, before placement |
 | when a state actually appears | the recorder | after capture |
 
 Everything this skill refuses follows from that table. A narration beat carries
@@ -62,18 +71,23 @@ So a beat spans the visual states it describes:
 Beats live **inside `demo_screenplay.json`**, beside the actions. Same story,
 same author, same sitting, one thing to review.
 
-**Resolving the script path.** Resolve `<kai-personal-plugin>` from this loaded
+**Resolving the script path.** Resolve `<kai-creative-plugin>` from this loaded
 skill's base directory: start at
-`<kai-personal-plugin>/skills/demo-narrate/` and go up two directories. Invoke
-the absolute `<kai-personal-plugin>/scripts/demo-narrate.mjs`; do not assume the
+`<kai-creative-plugin>/skills/demo-narrate/` and go up two directories. Invoke
+the absolute `<kai-creative-plugin>/scripts/demo-narrate.mjs`; do not assume the
 user's current directory is a plugin checkout.
+
+Before writing `.kai` output, Load `kai-core-workspace-paths`; keep raw clips
+and recordings in the private content run. Load `kai-core-asset-producing`
+for retained durable plans/reports and Load `kai-core-asset-closing` before
+disposition or acceptance.
 
 ## The workflow
 
 ### 1. Estimate before spending anything
 
 ```bash
-node <kai-personal-plugin>/scripts/demo-narrate.mjs --estimate demo_screenplay.json
+node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --estimate demo_screenplay.json
 ```
 
 Characters and a projected length at 130 wpm. It makes no paid call, and every
@@ -82,8 +96,16 @@ authorising one.
 
 ### 2. Synthesise, once per line
 
+**Obtain explicit operator consent for this paid synthesis run before executing
+it.** Confirm the script, voice/language, projected charge basis, and external
+Azure Speech disclosure. Keep credentials in the configured environment, never
+in the screenplay, take, logs, or published bundle. A planning, capture, or
+general narration request alone is not consent to spend. Never automatically
+retry a paid call, including after correcting configuration; a new paid attempt
+needs a new authorization.
+
 ```bash
-node <kai-personal-plugin>/scripts/demo-narrate.mjs --synthesize demo_screenplay.json --out clips/ --voice en-US-AvaMultilingualNeural
+node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --synthesize demo_screenplay.json --out clips/ --voice en-US-AvaMultilingualNeural
 ```
 
 Writes `clips/demo_narration_take.json` — the measured, paid output. It is a
@@ -118,8 +140,9 @@ demo is narrated by the version this plugin pins. If it is absent the tool says
 which places it looked and narration is unavailable; it does not degrade into
 something silent that looks like it worked.
 
-Copilot installs kai-personal's files but does not run npm. Before synthesis,
-run `npm ci --prefix "<kai-personal-plugin>"`; rerun it after a plugin update
+Copilot installs kai-creative's files but does not run npm. Before synthesis,
+the operator provisions the pinned dependency with
+`npm ci --prefix "<kai-creative-plugin>"`; rerun it after a plugin update
 whenever the local executable is absent. Estimation, placement, and mixing do
 not need Lectoria.
 
@@ -133,7 +156,7 @@ another region.
 ### 3. Place it against the recording
 
 ```bash
-node <kai-personal-plugin>/scripts/demo-narrate.mjs --place demo_screenplay.json demo_take.json demo_narration_take.json --out demo_narration_plan.json
+node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --place demo_screenplay.json demo_take.json demo_narration_take.json --out demo_narration_plan.json
 ```
 
 Each beat starts at the later of its earliest honest position and the moment the
@@ -144,12 +167,17 @@ a rejection.
 ### 4. Mix onto the finished render
 
 ```bash
-node <kai-personal-plugin>/scripts/demo-narrate.mjs --mix demo_narration_plan.json --video demo-focused.mp4 --out narrated.mp4
+node "<kai-creative-plugin>/scripts/demo-narrate.mjs" --mix demo_narration_plan.json --video demo-focused.mp4 --out narrated.mp4
 ```
 
 Prints the ffmpeg command. The video is **copied, not re-encoded**, so
 re-narrating in another language cannot change a single frame of what was
 recorded.
+
+The printed mixing command is a plan, not an executed encode. Return the actual
+files, measured-versus-estimated provenance, failed clips, and pending steps.
+Call the output narrated only after the authorized mix ran and its output file
+exists; do not silently turn missing/failed clips into a success-shaped gap.
 
 ## When speech and action disagree
 

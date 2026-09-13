@@ -1,7 +1,7 @@
 ---
 name: video-direction
 description: "Creates video creative direction from product intelligence and media. Use when planning briefs, storyboards, edit decisions, voiceover, or AI video prompts."
-tools: [read, edit, search, ask_user, execute]
+tools: [read, edit, search, ask_user, execute, skill]
 ---
 
 # Video Direction
@@ -24,7 +24,15 @@ or editing.
 
 ## Grounding and claim-safety
 
-**Inherits `kai-core-content-grounding`.** The voiceover script, on-screen text, and
+Before shared claim-safety work, Load `kai-core-contract-v1` if it has not been
+loaded in this run. If core is unavailable, a bounded concept from supplied
+facts may continue, but coordinated `.kai` artifacts and acceptance may not;
+tell the operator to install or update core before resuming coordination.
+Load `kai-core-content-grounding` for the reference scheme, ledger, treatment
+table, and never-fabricate rules. A factual `product_context.json` supplied by
+the operator satisfies the input boundary without a marketing-agent call;
+marketing references identify the usual producer, not a required install.
+The voiceover script, on-screen text, and
 creative brief make claims about the product, so every factual span is entered in
 the claim ledger against a `product_context.json` reference, treated by its
 provenance, and never fabricated. `needs_confirmation` items stay out of the
@@ -45,6 +53,10 @@ screen the product doesn't have.
 | `media_manifest.json` | the **existing** assets (by id) the video can use |
 | reference video (file/URL), screenshots, recordings | operator-described references; see the boundary below |
 | operator brief | goal (product demo, launch teaser, founder video, feature walkthrough, ad, explainer…), target platform, desired duration, tone/pacing, creative constraints |
+
+Accept these inputs directly from the operator or another approved producer.
+Request missing facts in the factual JSON with their real provenance; never
+promote a chat aside into a product fact. Missing media metadata stays unknown.
 
 ### What this method does not inspect
 
@@ -72,10 +84,15 @@ used. Judge asset fit from the manifest's `shows`; `suggested_use` is a
 recommendation, not a constraint; `source_uri` is for recovery. Never imply an
 asset exists when it doesn't, and never present a generated or reference clip as
 captured footage. A **missing desired shot** becomes a `generated` prompt (or
-`capture-required`); only missing product facts or an **uncatalogued** asset
-routes upstream to `principal-product-marketing`.
+`capture-required`); missing product facts or an **uncatalogued** asset require
+the specific context/catalog input. Marketing is one possible supplier, not a
+prerequisite for completing direction from supplied inputs.
 
 ## Timing and synchronization
+
+This timestamp model applies to existing footage and explicitly estimated
+editorial plans. For live-interface demos, use the screenplay's state-based
+narration below; an editorial estimate is never an executable narration offset.
 
 The package is only useful if audio and video line up, so all five outputs are
 keyed to **one canonical scene id** (`s-1`, `s-2`, …) and one **final-timeline**
@@ -221,15 +238,24 @@ also needs *what the driver does*.
 {
   "schema": "kai.demo-screenplay/v1",
   "title": "<what the demo shows>",
+  "placement": "readme",
   "capture": { "region": "0,0 1256x784", "fps": 30 },
   "steps": [
     { "id": "st-1", "action": "hold", "seconds": 2, "note": "establish the page" },
     { "id": "st-2", "action": "click", "target": "<semantic name>", "settle": 3.5,
+      "intends_to_show": "primary-action",
       "emphasis": { "anchor": "center", "zoom": 2.0, "lead": 1.4, "hold": 1.0,
                     "label": "<what deserves the closer look>" } },
     { "id": "st-3", "action": "type", "target": "<semantic name>", "clear": true,
       "text": "<exactly what is typed>",
-      "emphasis": { "anchor": "leading", "zoom": 2.2 } }
+      "emphasis": { "anchor": "leading", "zoom": 2.2 } },
+    { "id": "st-4", "action": "hold", "seconds": 3,
+      "intends_to_show": "intended-outcome", "note": "<approved result to show>" }
+  ],
+  "narration": [
+    { "id": "n-1", "text": "<claim-safe line about the visible result>",
+      "visual_span": { "from_step": "st-2", "through_step": "st-4" },
+      "start_after": "st-3" }
   ]
 }
 ```
@@ -242,6 +268,16 @@ also needs *what the driver does*.
   a field's left edge, so centring the field crops the typing out of shot.
 - `lead` and `hold` are seconds of camera before and after the action. Generous
   is fine; the compiler splits collisions.
+- Load `create-product-demo` when declaring `placement`, length, bytes, and
+  captions before recording. `intends_to_show` marks editorial intent, not proof
+  the payoff was visible.
+- `narration` names visual states, never authored `start`, `end`, `seconds`,
+  `duration`, or `offset`. `start_after` names a step inside the span and before
+  its last step; the beat may begin only after that step ends.
+- Budget live-demo prose at about 130 wpm (120 for dense developer workflows),
+  explicitly estimated. The synthesiser measures speech duration and the
+  recorder measures state timing; `demo-narrate` places them later. A line that
+  does not fit is a script defect, not permission to slow or freeze the take.
 
 **A screenplay carries no `start`, `end`, `x`, or `y`, and the tooling refuses
 one that does.** Your timings are estimates by contract and a focus plan needs
@@ -255,24 +291,36 @@ focus plan belong to one take and are disposable.
 
 ## Placement
 
-Resolve the workspace via `kai-core-workspace-conventions`.
+Load `kai-core-workspace-paths` before persistent output to resolve the workspace.
+Load `kai-core-asset-producing` before creating or revising durable direction.
+A direct inline concept need not initialize an initiative.
 
 - **Ad-hoc / standalone**: `.kai/runs/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
-- **Coordinated (initiative)**: the bundle writes to
+- **Coordinated (initiative)**: Load `kai-core-workspace-initiative` for bundle
+  placement and Load `kai-core-work-acting` when acting on a granted item. The bundle writes to
   `.kai/state/initiatives/<slug>/artifacts/content/<item-id>/` with `delivery_class:
-  knowledge` and a `kai-core-work-coordination` handoff.
+  knowledge` and a revision-bound handoff.
 - **Reusable direction** publishes through the standard approval flow to
   `<project-root>/<publication-root>/content/<YYYY-MM-DD>/<NN>-video-<target-slug>/`.
   Existing media is referenced from `media_manifest.json`, never copied into
   the published bundle; heavy binaries stay under ignored `.kai/runs/`.
 
+Load `kai-core-asset-closing` before disposition or publication; a working
+plan remains provisional until its grounding authority and publication owner
+accept the exact revision. A plan is not a rendered file, and an incomplete
+bundle is reported with its missing outputs. External publication needs the
+operator's approval.
+
 ## Voicing
 
-By default the script is written in a neutral, well-paced narration register.
-When the operator wants their founder voice, hand the claim-safe script to
+By default the script is written in a neutral, well-paced narration register,
+or the explicitly requested brand voice. Neither requires assistant.
+When the operator requests founder-voice refinement and the role is available,
+hand the claim-safe script to
 `persona-self` with facts locked (per `kai-core-content-grounding`) and re-verify
 claim-safety and timing after voicing — a re-worded line changes its word count
-and therefore its scene timing.
+and therefore its scene timing. If unavailable, return the baseline and name the
+pending personal-voice refinement; do not block direction or invent a profile.
 
 ## Hard rules
 
@@ -285,8 +333,9 @@ and therefore its scene timing.
    the two.
 4. **Assumptions are flagged.** Estimated timing, unknown durations, and platform
    defaults are marked, never presented as measured fact.
-5. **Audio and video stay synced.** A cut is also an audio cue at the same
-   timestamp; the five artifacts share scene ids and timings.
+5. **Audio and video stay synced.** For existing footage, a cut is also an audio
+   cue at the same timestamp; the five artifacts share scene ids and timings.
+   Live-demo narration names visual states and is placed only from measurements.
 6. **Video only.** No LinkedIn posts, no rendering, no editing execution.
 7. **Brand-agnostic.** The subject is the artifacts'; the method is yours.
 
@@ -298,6 +347,7 @@ Return:
 Video direction: <target> — <platform, ~duration>
 Source: <product_context.json path>
 Artifacts: <absolute creative_brief.md, storyboard.md, edit_decision_list.json, voiceover_script.md, ai_video_prompts.json paths>
+Demo screenplay: <absolute demo_screenplay.json path | not a live-interface demo>
 Scenes: <count>  ·  Existing assets: <n>  ·  To-generate: <n>
 Timing: <estimated @ <wps> wps | from asset metadata>
 Claim-safety: <all mapped | N need confirmation (excluded)>

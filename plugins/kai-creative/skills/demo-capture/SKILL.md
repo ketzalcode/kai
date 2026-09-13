@@ -1,7 +1,7 @@
 ---
 name: demo-capture
 description: "Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work."
-tools: [execute, read, edit, search]
+tools: [execute, read, edit, search, skill]
 requires_tools: [execute]
 user-invocable: true
 ---
@@ -14,6 +14,23 @@ recording, and — the part that matters — it writes down what happened while 
 was recording.
 
 Use it before `demo-zoom`, for any demo of a real interface.
+
+An operator-supplied approved screenplay is sufficient; no director or
+marketing run is required. Confirm authorization for the live desktop actions,
+recording region, and exact text to type. Exclude credentials, private messages,
+unapproved people, and unrelated customer data from capture; use approved demo
+data rather than real secrets. Approval of a plan is not recording consent.
+
+**Provider and output paths.** Resolve `<kai-creative-plugin>` by going up two
+directories from this loaded skill's base directory
+`<kai-creative-plugin>/skills/demo-capture/`. Resolve every `scripts/demo-*.mjs`
+command below under that absolute provider root, never the operator's cwd or
+another installed provider. Keep screenplay, targets, driver, recording, and
+take paths explicit and separate from plugin files.
+Before workspace output, Load `kai-core-contract-v1`, then
+Load `kai-core-workspace-paths`. Without core, explain the capture inputs and
+risks in a bounded answer, but do not create coordinated `.kai` state; tell the
+operator to install or update core before coordinated capture resumes.
 
 ## Why the manifest is the point
 
@@ -51,7 +68,7 @@ screenplay is what stays.
 ### 1. Read the screenplay
 
 ```bash
-node scripts/demo-capture.mjs --screenplay demo_screenplay.json --check
+node "<kai-creative-plugin>/scripts/demo-capture.mjs" --screenplay demo_screenplay.json --check
 ```
 
 It lists the steps, the capture region, an estimated duration, and any semantic
@@ -101,7 +118,7 @@ step's anchor — that is what lets `leading` follow typing.
 ### 4. Emit the driver, and read it
 
 ```bash
-node scripts/demo-capture.mjs --screenplay demo_screenplay.json \
+node "<kai-creative-plugin>/scripts/demo-capture.mjs" --screenplay demo_screenplay.json \
   --targets demo_targets.json --emit-driver run-take.ps1 \
   --recording raw.mp4 --take demo_take.json
 ```
@@ -121,12 +138,17 @@ The recorder stops itself at a fixed duration. Never kill it mid-write.
 ### 6. Compile, render, look
 
 ```bash
-node scripts/demo-zoom.mjs --compile demo_screenplay.json demo_take.json --out plan.json
-node scripts/demo-zoom.mjs --plan plan.json
-node scripts/demo-zoom.mjs --plan plan.json --review --out sheet.png
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --compile demo_screenplay.json demo_take.json --out plan.json
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --plan plan.json
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --plan plan.json --review --out sheet.png
 ```
 
-Then open the sheet. See `demo-zoom` for what to look for.
+Then open the sheet. Load `demo-zoom` for what to look for.
+Keep raw media under the resolved `.kai/runs/content/` run. Load
+`kai-core-asset-producing` if a take/report is retained as a durable asset and
+Load `kai-core-asset-closing` for its disposition. Return the exact emitted
+paths, failed/unsettled steps, and whether the driver actually ran. Emitting a
+driver is not recording a take, and a partial take is not a completed demo.
 
 ## The pointer is measured, not imagined
 

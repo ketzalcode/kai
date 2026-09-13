@@ -12,14 +12,15 @@ service. It contains no employer-specific knowledge and ships no MCP servers.
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-gtm@kai-plugins
 ```
 
-`kai-assistant` is new on this branch; the `kai-assistant@kai-plugins` install
-works only from a marketplace or checkout that carries this refactor — its
+`kai-assistant` and `kai-creative` are new on this branch; their installs
+work only from a marketplace or checkout that carries this refactor — their
 publication and remote availability were not established by this work.
 
 **[Get started →](docs/getting-started.md)** ·
@@ -41,17 +42,23 @@ Everything is indexed in **[docs/](docs/README.md)**.
 ## Status
 
 `v6.0.0` is this checkout's prepared metadata version. Its **56 agents and
-57 skills** are organized across six plugin directories targeting the
+57 skills** are organized across seven plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
-`kai-assistant` is new on this refactor branch; its marketplace publication
-and remote availability have not been established.
+`kai-assistant` and `kai-creative` are new on this refactor branch; their
+marketplace publication and remote availability have not been established.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
 and `kai-core` no longer carries a personal front door or depends on one. The
 wider capability-package rollout is **not** finished — the remaining packages
 are still inside `kai-personal`, `kai-product`, and `kai-gtm`.
+
+`kai-creative` now owns the three UI/UX, brand, and video agents, seven design
+and demo methods, and the demo runtime formerly in personal. Core plus creative
+accepts supplied briefs and evidence without marketing or assistant.
+See [the package note](docs/reference/packages/kai-creative.md) for artifacts,
+prerequisites, and runtime scenarios not executed during this source refactor.
 
 Agents load shared contracts on demand. All 26 roles now in `kai-core` and
 `kai-engineering` route each contract at the instruction that needs it, rather
@@ -104,8 +111,8 @@ reconcile, then error.
 
 **The original five-package install layout is `kai-core` + `kai-personal` +
 `kai-product` + `kai-engineering` + `kai-gtm`.** This refactor adds
-`kai-assistant` to the checkout; verify availability in the marketplace source
-you use rather than treating this source layout as a publication claim.
+`kai-assistant` and `kai-creative` to the checkout; verify availability in the
+marketplace source you use rather than treating this source layout as a publication claim.
 Plugin-local agent and skill files are the canonical source. Generation refreshes
 routed scripts, each script's local module closure, the fleet hooks, manifests,
 dependency locks, and legacy marked dependency-guard regions.
@@ -132,13 +139,15 @@ evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew. The committed marketplace index lists the package
-sources rather than the monolith. This branch adds `kai-assistant` to that
-index; the entry alone does not establish remote availability or publication.
+sources rather than the monolith. This branch adds `kai-assistant` and
+`kai-creative` to that index; the entries alone do not establish remote
+availability or publication.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
@@ -146,8 +155,9 @@ copilot plugin install kai-gtm@kai-plugins
 ```
 
 The core pack carries the fleet observer and shared workspace machinery; the
-personal pack carries personal, learning, and demo roles; the product pack
-carries product, design, analytics, and research roles; the engineering pack
+personal pack still carries learning, career, and fitness-product assessment
+roles; creative carries UI/UX, visual identity, and video/demo work; product
+carries product, analytics, and research roles; the engineering pack
 carries engineering, security, reliability, data, and delivery roles; the GTM
 pack carries sales, growth, marketing, pricing, partnerships, and customer
 operations roles. A CI rule keeps every
@@ -196,6 +206,7 @@ Release history and the reasoning behind each change live in
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-assistant@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 copilot plugin install kai-personal@kai-plugins
 copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
@@ -205,10 +216,10 @@ copilot plugin install kai-gtm@kai-plugins
 kai publishes its own marketplace index, because the host has deprecated direct
 `owner/repo` installs. The direct form still works today and prints a
 deprecation warning; see [Getting started](docs/getting-started.md#install)
-for it and for the coding-agent path. `kai-assistant` is committed on this
-branch's checkout only — its own publication and remote availability were not
-established by this work, so its install line above works only from a source
-that carries this refactor.
+for it and for the coding-agent path. `kai-assistant` and `kai-creative` are
+committed on this branch's checkout only — their publication and remote
+availability were not established by this work, so their install lines work
+only from a source that carries this refactor.
 
 **2. Initialize** the repo or durable folder you want kai to work in:
 
@@ -275,10 +286,11 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 ## What it ships
 
 The repository's full 56-agent, 57-skill surface is committed across
-`kai-core`, assistant, personal, product, engineering, and go-to-market on this
-branch's checkout. These are source-ownership counts, not a claim that this
-exact surface is published. `kai-assistant` is new source committed here;
-its marketplace publication and remote availability remain unverified.
+`kai-core`, assistant, creative, personal, product, engineering, and go-to-market
+on this branch's checkout. These are source-ownership counts, not a claim that this
+exact surface is published. `kai-assistant` and `kai-creative` are new source
+committed here; their marketplace publication and remote availability remain
+unverified.
 
 You do not need to learn them. Ask for the outcome you want; the catalog is
 there for when you want to know who owns a particular judgment.
@@ -293,14 +305,15 @@ setup. To update, refresh the catalog, then update each installed pack:
 `copilot plugin marketplace update kai-plugins`,
 `copilot plugin update kai-core@kai-plugins`,
 `copilot plugin update kai-assistant@kai-plugins`, and
+`copilot plugin update kai-creative@kai-plugins`, and
 `copilot plugin update kai-personal@kai-plugins`, and
 `copilot plugin update kai-product@kai-plugins`, and
 `copilot plugin update kai-engineering@kai-plugins`, and
 `copilot plugin update kai-gtm@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
-`kai-assistant` only appears in that update list once it was installed from a
-marketplace or checkout carrying this refactor.
+`kai-assistant` or `kai-creative` only appears in that update list once installed
+from a marketplace or checkout carrying this refactor.
 
 ## Workspace
 

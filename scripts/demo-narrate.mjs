@@ -304,7 +304,7 @@ export function buildMixArgs(plan, { video, out }) {
 // script that only needs a duration back. So it is treated as an external tool
 // and shelled out to, exactly as ffmpeg is.
 //
-// kai-personal pins a prebuilt Lectoria release, so `npm ci --prefix <root>`
+// kai-creative pins a prebuilt Lectoria release, so `npm ci --prefix <root>`
 // puts it at `node_modules/.bin/lectoria`. Looking only on PATH would report
 // it absent on precisely the machines where it is correctly installed.
 export function findLectoria(env = process.env, probe = defaultProbe, exists = existsSync) {
@@ -323,7 +323,7 @@ export function findLectoria(env = process.env, probe = defaultProbe, exists = e
 // what was checked -- a bare "not found" sends people looking in the wrong place.
 export const LECTORIA_MISSING = [
   'lectoria was not found, so narration cannot be synthesised. Checked LECTORIA_BIN,',
-  "this kai-personal plugin's node_modules/.bin, and PATH.",
+  "this kai-creative plugin's node_modules/.bin, and PATH.",
   `Run \`npm ci --prefix "${PLUGIN_ROOT}"\` to install the dependency pinned by this pack,`,
   'or set LECTORIA_BIN to its executable. Plugin updates may replace node_modules, so rerun',
   'npm ci when the local executable is absent. Lectoria needs Node ^22.22.2 || ^24.15.0 || >=26.0.0,',

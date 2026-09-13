@@ -6,6 +6,11 @@ tools: [read, edit, search]
 
 # HTML Block Diagrams
 
+Use supplied structure, labels, and approved visual tokens directly. No product,
+marketing, or assistant agent must run first. The stylesheet below is a
+standalone example palette, not evidence of a product's actual design system;
+for branded output, use the supplied system and flag any proposed values.
+
 Most of what a technical document draws **is not a graph**. A layer
 stack, an ownership map, a lifecycle, a containment boundary, an
 owns-versus-does-not-own split — none of these have edges that need

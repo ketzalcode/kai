@@ -1,7 +1,7 @@
 ---
 name: ui-mockup
 description: "Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision."
-tools: [read, edit, search, ask_user, playwright]
+tools: [read, edit, search, ask_user, playwright, skill]
 ---
 
 > **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.
@@ -16,9 +16,17 @@ the card. The human never saw the options **as mockups** before implementation.
 
 This skill makes consequential options **visual**, marks a recommended pick, and
 **pauses for a human choice** before the design is locked. It is **not** a
-standalone trigger — `principal-product-designer` inherits it by reference, and
+standalone trigger — `principal-product-designer` loads it at the options decision, and
 every mock is grounded by `kai-core-design-grounding` (it uses the app's real
 design-system tokens, never an invented look).
+
+Before using shared design contracts, Load `kai-core-contract-v1` if this run
+has not already done so. If core is unavailable, describe bounded options from
+supplied evidence without writing coordinated `.kai` state; tell the operator
+to install or update core before coordinated design resumes.
+Load `kai-core-design-grounding` when choosing the mock's tokens and components.
+Supplied current design-system evidence is sufficient; a product/engineering
+agent need not run first.
 
 ## When it applies — and when to skip
 
@@ -95,6 +103,9 @@ screens. A container-challenge option that **expands scope** is recorded as a
 is never the silent default and cannot be the Recommended pick until the PM/steward
 promotes it into scope.
 
+Load `kai-core-scope-discipline` before classifying those options against the
+approved need.
+
 For each option, record:
 
 - the **mock** (an ASCII block inline, or a labeled section in `options.html`);
@@ -133,6 +144,11 @@ packet carrying `decision_delegated: true` — take the **Recommended** option a
   design against only the implementation revision.
 
 ## Where mockups live
+
+Load `kai-core-workspace-paths` before persistent mockups to resolve the root.
+Load `kai-core-asset-producing` before creating or revising durable design
+artifacts; Load `kai-core-asset-closing` before acceptance or disposition.
+Inline ASCII options need no workspace initialization.
 
 **ASCII (Tier 0)** options live inline in the design artifact's
 `## Options considered` section and produce no files. The paths below apply to

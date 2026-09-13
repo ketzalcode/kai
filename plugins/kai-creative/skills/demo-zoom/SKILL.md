@@ -1,7 +1,7 @@
 ---
 name: demo-zoom
 description: "Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass."
-tools: [execute, read, edit, search]
+tools: [execute, read, edit, search, skill]
 requires_tools: [execute]
 user-invocable: true
 ---
@@ -29,18 +29,26 @@ including a mistake.
 
 ## The tool
 
-`scripts/demo-zoom.mjs`. Look in this order and use the first hit:
-
-1. `./scripts/demo-zoom.mjs` — the user is working inside the kai repo.
-2. `$COPILOT_HOME/installed-plugins/**/scripts/demo-zoom.mjs`, falling back to
-   `~/.copilot/installed-plugins/**/` when `COPILOT_HOME` is unset.
-
-Search for the file rather than hardcoding the directory name; it changes with
-the install source.
+Resolve `<kai-creative-plugin>` by going up two directories from this loaded
+skill's base directory, `<kai-creative-plugin>/skills/demo-zoom/`. Invoke the
+absolute `<kai-creative-plugin>/scripts/demo-zoom.mjs`. Never prefer a script
+in the operator's cwd or search other installed providers for a first hit.
+The commands below all use this resolved provider root; recording and output
+paths remain explicit user inputs.
 
 It needs **ffmpeg on PATH**, and nothing else. No npm install, no Go toolchain,
 no browser. If ffmpeg is missing, say so and offer `--print`, which emits the
 command for the user to run wherever ffmpeg does exist.
+
+Accept an approved focus plan or screenplay plus measured take and real
+recording directly; no director/marketing/assistant run is required. Before
+workspace output, Load `kai-core-contract-v1`, then Load
+`kai-core-workspace-paths`. If core is unavailable, explain supplied focus
+intent in a bounded answer, but do not create coordinated `.kai` state; tell
+the operator to install or update core before coordinated rendering resumes.
+Raw frames and renders stay private run evidence. Load `kai-core-asset-producing`
+for retained durable plans/reports and Load `kai-core-asset-closing` before
+disposition or acceptance; encoding is not publication approval.
 
 ## The workflow
 
@@ -52,7 +60,7 @@ and what rectangle it really acted on, so the plan below can be **compiled**
 rather than remembered:
 
 ```bash
-node scripts/demo-zoom.mjs --compile demo_screenplay.json demo_take.json --out plan.json
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --compile demo_screenplay.json demo_take.json --out plan.json
 ```
 
 That skips steps 2 and 3 entirely, and it is the better path whenever it is
@@ -70,7 +78,7 @@ Focus points are fractions of the frame, and nobody can eyeball those from a
 video player. Lift out a frame at a moment you care about:
 
 ```bash
-node scripts/demo-zoom.mjs --grid recording.mp4 --at 3.5 --plan demo-plan.json --out grid.png
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --grid recording.mp4 --at 3.5 --plan demo-plan.json --out grid.png
 ```
 
 Cyan cells are `0.1` wide and tall; yellow lines mark `0.5`. Count from the top
@@ -88,7 +96,7 @@ render honours.
 ### 3. Write the plan
 
 ```bash
-node scripts/demo-zoom.mjs --example > demo-plan.json
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --example > demo-plan.json
 ```
 
 ```json
@@ -130,7 +138,7 @@ the viewer keeps their bearings.
 ### 4. Read it back before rendering
 
 ```bash
-node scripts/demo-zoom.mjs --plan demo-plan.json --explain
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --plan demo-plan.json --explain
 ```
 
 This prints every segment, where each shot actually lands once clamping is
@@ -141,7 +149,7 @@ of the material. An encode takes minutes; this takes none.
 ### 5. Render
 
 ```bash
-node scripts/demo-zoom.mjs --plan demo-plan.json
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --plan demo-plan.json
 ```
 
 One continuous pass. Audio is re-encoded to AAC when the source has any, rather
@@ -153,7 +161,7 @@ quiet about a stream that was never there.
 ### 6. Look at it
 
 ```bash
-node scripts/demo-zoom.mjs --plan demo-plan.json --review --out sheet.png
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --plan demo-plan.json --review --out sheet.png
 ```
 
 This builds a contact sheet: four frames per segment — the source just before the
@@ -207,8 +215,8 @@ says which segment and why. The refusals worth knowing:
 ## Checking the tool itself
 
 ```bash
-node scripts/demo-zoom.mjs --self-test   # the arithmetic; needs no ffmpeg
-node scripts/demo-zoom.mjs --verify      # renders a marker and reads the pixel back
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --self-test   # the arithmetic; needs no ffmpeg
+node "<kai-creative-plugin>/scripts/demo-zoom.mjs" --verify      # renders a marker and reads the pixel back
 ```
 
 `--verify` is the one that matters: it renders a frame with a marker at a known

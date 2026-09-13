@@ -75,11 +75,17 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Product',
-    blurb: 'Need, scope, interaction design, documentation, and brand.',
+    blurb: 'Need, scope, product strategy, and supporting documentation.',
     members: [
-      'principal-product-manager', 'principal-product-strategist', 'principal-product-designer',
-      'eng-lead-technical-writing', 'principal-brand-designer', 'workflow-localization',
+      'principal-product-manager', 'principal-product-strategist',
+      'eng-lead-technical-writing', 'workflow-localization',
     ],
+  },
+  {
+    kind: 'agent',
+    title: 'Creative',
+    blurb: 'UI/UX, visual identity, and video direction from supplied needs and evidence. Production uses the creative demo methods.',
+    members: ['principal-product-designer', 'principal-brand-designer', 'creative-video-director'],
   },
   {
     kind: 'agent',
@@ -134,7 +140,7 @@ const CATEGORIES = [
     kind: 'agent',
     title: 'Content & distribution',
     blurb: 'Turn product intelligence into platform-native content. Never auto-publishes.',
-    members: ['principal-linkedin-strategist', 'creative-video-director'],
+    members: ['principal-linkedin-strategist'],
   },
   {
     kind: 'agent',
@@ -199,17 +205,26 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Product design',
-    blurb: 'Design-system grounding and human-confirmable mockups, with the frontend seam.',
-    members: ['kai-core-design-grounding', 'ui-mockup', 'html-block-diagrams'],
+    title: 'Design grounding',
+    blurb: 'The shared design-system grounding contract, with the frontend seam.',
+    members: ['kai-core-design-grounding'],
+  },
+  {
+    kind: 'skill',
+    title: 'Creative methods',
+    blurb: 'Offline mockups and diagrams, video direction, and directly invocable demo planning, capture, zoom, and measured narration.',
+    members: [
+      'ui-mockup', 'html-block-diagrams', 'video-direction',
+      'create-product-demo', 'demo-capture', 'demo-zoom', 'demo-narrate',
+    ],
   },
   {
     kind: 'skill',
     title: 'Web & content',
-    blurb: 'Browser-run plumbing and the claim-safety contract creative agents inherit.',
+    blurb: 'Browser-run plumbing, content methods, and shared claim safety.',
     members: [
       'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'kai-core-content-grounding', 'linkedin-content',
-      'video-direction', 'demo-capture', 'demo-zoom', 'demo-narrate', 'create-product-demo', 'kai-core-pulse-digest',
+      'kai-core-pulse-digest',
     ],
   },
   {

@@ -1,7 +1,7 @@
 ---
 name: create-product-demo
 description: "Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks."
-tools: [execute, read, edit, search]
+tools: [execute, read, edit, search, skill]
 requires_tools: [execute]
 user-invocable: true
 ---
@@ -12,6 +12,27 @@ A demo is not a recording. A recording is what the screen did; a demo is a claim
 about a product, aimed at somebody in a particular place with a particular amount
 of patience. This skill is about the second thing — deciding the shape before you
 record, and checking the result against that decision afterwards.
+
+Accept an approved brief or screenplay and factual product context directly;
+the director and marketing are optional input producers, not prerequisite
+calls. Before applying shared claim rules, Load `kai-core-contract-v1`.
+If core is unavailable, you may discuss supplied demo intent in a bounded
+answer, but may not write coordinated `.kai` state; tell the operator to
+install or update core before coordinated work resumes.
+Load `kai-core-content-grounding` when drafting claimful copy: supplied factual
+JSON satisfies the producer boundary, with the same ledger and provenance rules.
+Missing facts remain unresolved, never invented for a demo.
+
+**Provider and output paths.** Resolve `<kai-creative-plugin>` by going up two
+directories from this loaded skill's base directory
+`<kai-creative-plugin>/skills/create-product-demo/`. Invoke the absolute
+`<kai-creative-plugin>/scripts/demo-format.mjs`, never a helper found in the
+operator's cwd or another installed pack. The commands below use that resolved
+provider root; screenplay, take, and video paths are explicit user inputs.
+Before `.kai` output, Load `kai-core-workspace-paths` for the workspace root.
+Load `kai-core-asset-producing` for durable plans/reports and
+Load `kai-core-asset-closing` when recording their disposition or acceptance.
+Raw recordings remain private run evidence, not automatically published files.
 
 The mechanism lives elsewhere and is unchanged:
 
@@ -37,7 +58,7 @@ deciding afterwards means discovering the constraint after it is expensive.
 | `walkthrough` | 90s | 180s | 100 MB (GitHub paid) | no |
 | `deep-walkthrough` | 300s | 1800s | 100 MB | no |
 
-`node scripts/demo-format.mjs --placements` prints the same table from the code,
+`node "<kai-creative-plugin>/scripts/demo-format.mjs" --placements` prints the same table from the code,
 so it cannot drift from this page.
 
 ### Where these numbers come from, and where they do not
@@ -69,20 +90,24 @@ placement to give you one.
 
 ## The workflow
 
-1. **Decide the placement**, then write the screenplay with the director. Mark
+1. **Decide the placement**, then write or review the supplied approved screenplay.
+   The director can supply direction when requested. Mark
    the payoff with `intends_to_show` on the steps that matter:
    - `primary-action` — the thing the user does.
    - `intended-outcome` — the result they came to see.
-2. **Check the plan before recording.** `demo-format.mjs plan.json` runs the
+2. **Check the plan before recording.**
+   `node "<kai-creative-plugin>/scripts/demo-format.mjs" plan.json` runs the
    checks that need no footage; the rest report as skipped. The word budget is
    worth having here because it is the cheapest possible moment to discover the
    script does not fit.
-3. **Record** (`demo-capture`), **focus** (`demo-zoom`), **narrate**
-   (`demo-narrate`) as usual.
+3. On an authorized production request, Load `demo-capture` to **record** and
+   Load `demo-zoom` to **focus**. Load `demo-narrate` only when narration is
+   requested; its paid-synthesis consent is separate from approving the plan.
+   Planning alone executes none of these production steps.
 4. **Check the finished file**, which is the only run that establishes anything:
 
    ```
-   node scripts/demo-format.mjs plan.json --take take.json --video final.mp4
+   node "<kai-creative-plugin>/scripts/demo-format.mjs" plan.json --take take.json --video final.mp4
    ```
 
 ## What the checks establish, and what they do not

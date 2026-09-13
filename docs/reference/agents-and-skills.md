@@ -81,16 +81,24 @@ One orchestrator that fans a document out to the review lenses and aggregates th
 
 ### Product
 
-Need, scope, interaction design, documentation, and brand.
+Need, scope, product strategy, and supporting documentation.
 
 | Name | What it owns |
 | ---- | ------------ |
 | [`principal-product-manager`](../../plugins/kai-product/agents/principal-product-manager.agent.md) | Owns product scope and initiative stewardship: product briefs, smallest-correct scope decisions, north stars, proposal grooming, prioritization, and truthful closure. Use before design or engineering. |
 | [`principal-product-strategist`](../../plugins/kai-product/agents/principal-product-strategist.agent.md) | Investigates future product opportunities, analogous products, fit scores, candidate actions, and smallest validating experiments. Use before scope decisions. Not current initiative stewardship (`principal-product-manager`). |
-| [`principal-product-designer`](../../plugins/kai-product/agents/principal-product-designer.agent.md) | Designs interaction models for approved product needs and reviews implementation against the approved design. Use after PM scope exists. Not product scope (`principal-product-manager`) or visual brand (`principal-brand-designer`). |
 | [`eng-lead-technical-writing`](../../plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md) | Technical writing specialist for READMEs, developer guides, tutorials, API reference, and release notes. Use to draft, restructure, or audit documentation. Not product scope, public claims, translation, lessons (`instructor-tutor`), or publishing. |
-| [`principal-brand-designer`](../../plugins/kai-product/agents/principal-brand-designer.agent.md) | Creates SaaS visual-identity systems, brand guidelines, visual-asset direction, and brand critique from positioning and brand evidence. Use for logo, color, typography, iconography, or illustration. Not product UI (`principal-product-designer`). |
 | [`workflow-localization`](../../plugins/kai-engineering/agents/workflow-localization.agent.md) | Runs SaaS i18n-readiness and locale-QA workflow for strings, formatting, pluralization, RTL, encoding, translation routing, and build checks. Use when a surface needs localization readiness. Not translating or code edits. |
+
+### Creative
+
+UI/UX, visual identity, and video direction from supplied needs and evidence. Production uses the creative demo methods.
+
+| Name | What it owns |
+| ---- | ------------ |
+| [`principal-product-designer`](../../plugins/kai-creative/agents/principal-product-designer.agent.md) | Designs interaction models from approved product needs or a supplied brief, and reviews implementation against an approved design. Use for UI/UX, states, accessibility intent, and design acceptance. Not product priority, brand identity, or implementation. |
+| [`principal-brand-designer`](../../plugins/kai-creative/agents/principal-brand-designer.agent.md) | Creates SaaS visual-identity systems, brand guidelines, visual-asset direction, and brand critique from positioning and brand evidence. Use for logo, color, typography, iconography, or illustration. Not product UI (`principal-product-designer`). |
+| [`creative-video-director`](../../plugins/kai-creative/agents/creative-video-director.agent.md) | Directs videos from supplied factual product context, media evidence, and an approved brief into storyboards, edit decisions, voiceover, and AI-video prompts. Use for video plans or demo screenplays; rendering and synthesis are separate creative methods. |
 
 ### Customer operations
 
@@ -166,7 +174,6 @@ Turn product intelligence into platform-native content. Never auto-publishes.
 | Name | What it owns |
 | ---- | ------------ |
 | [`principal-linkedin-strategist`](../../plugins/kai-gtm/agents/principal-linkedin-strategist.agent.md) | Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes. |
-| [`creative-video-director`](../../plugins/kai-personal/agents/creative-video-director.agent.md) | Directs product and marketing videos from product intelligence and media into briefs, storyboards, edit decisions, voiceover, and AI-video prompts. Use when planning a video, not rendering or editing one. |
 
 ### Personal assistance
 
@@ -264,19 +271,31 @@ The method plus the lenses behind `workflow-doc-review`.
 | [`review-rollout-operability`](../../plugins/kai-engineering/skills/review-rollout-operability/SKILL.md) | Rollout and operability review lens. Use when production changes need staged rollout, rollback, kill switch, monitoring, alerts, on-call, or runbooks. |
 | [`review-ux-accessibility`](../../plugins/kai-engineering/skills/review-ux-accessibility/SKILL.md) | UX and accessibility review lens. Use when a user-facing UI doc needs flows, states, edge cases, keyboard, focus, screen-reader, contrast, or motion review. |
 
-### Product design
+### Design grounding
 
-Design-system grounding and human-confirmable mockups, with the frontend seam.
+The shared design-system grounding contract, with the frontend seam.
 
 | Name | What it owns |
 | ---- | ------------ |
 | [`kai-core-design-grounding`](../../plugins/kai-core/skills/kai-core-design-grounding/SKILL.md) | Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language. |
-| [`ui-mockup`](../../plugins/kai-product/skills/ui-mockup/SKILL.md) | Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision. |
-| [`html-block-diagrams`](../../plugins/kai-product/skills/html-block-diagrams/SKILL.md) | Block-diagram vocabulary for HTML artifacts: five CSS arrangements and a self-contained palette. Use when an HTML artifact or an exported image needs a rich diagram. |
+
+### Creative methods
+
+Offline mockups and diagrams, video direction, and directly invocable demo planning, capture, zoom, and measured narration.
+
+| Name | What it owns |
+| ---- | ------------ |
+| [`ui-mockup`](../../plugins/kai-creative/skills/ui-mockup/SKILL.md) | Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision. |
+| [`html-block-diagrams`](../../plugins/kai-creative/skills/html-block-diagrams/SKILL.md) | Block-diagram vocabulary for HTML artifacts: five CSS arrangements and a self-contained palette. Use when an HTML artifact or an exported image needs a rich diagram. |
+| [`video-direction`](../../plugins/kai-creative/skills/video-direction/SKILL.md) | Creates video creative direction from product intelligence and media. Use when planning briefs, storyboards, edit decisions, voiceover, or AI video prompts. |
+| [`create-product-demo`](../../plugins/kai-creative/skills/create-product-demo/SKILL.md) | Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks. |
+| [`demo-capture`](../../plugins/kai-creative/skills/demo-capture/SKILL.md) | Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work. |
+| [`demo-zoom`](../../plugins/kai-creative/skills/demo-zoom/SKILL.md) | Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass. |
+| [`demo-narrate`](../../plugins/kai-creative/skills/demo-narrate/SKILL.md) | Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording. |
 
 ### Web & content
 
-Browser-run plumbing and the claim-safety contract creative agents inherit.
+Browser-run plumbing, content methods, and shared claim safety.
 
 | Name | What it owns |
 | ---- | ------------ |
@@ -284,11 +303,6 @@ Browser-run plumbing and the claim-safety contract creative agents inherit.
 | [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
 | [`kai-core-content-grounding`](../../plugins/kai-core/skills/kai-core-content-grounding/SKILL.md) | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
 | [`linkedin-content`](../../plugins/kai-gtm/skills/linkedin-content/SKILL.md) | LinkedIn content method for grounded product intelligence. Use when drafting posts, angle matrices, calendars, or carousel outlines from product_context.json. |
-| [`video-direction`](../../plugins/kai-personal/skills/video-direction/SKILL.md) | Creates video creative direction from product intelligence and media. Use when planning briefs, storyboards, edit decisions, voiceover, or AI video prompts. |
-| [`demo-capture`](../../plugins/kai-personal/skills/demo-capture/SKILL.md) | Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work. |
-| [`demo-zoom`](../../plugins/kai-personal/skills/demo-zoom/SKILL.md) | Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass. |
-| [`demo-narrate`](../../plugins/kai-personal/skills/demo-narrate/SKILL.md) | Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording. |
-| [`create-product-demo`](../../plugins/kai-personal/skills/create-product-demo/SKILL.md) | Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks. |
 | [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
 
 ### Lessons & writing

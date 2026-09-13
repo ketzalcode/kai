@@ -62,6 +62,7 @@ const MIGRATION_BASELINE_PACKS = {
     'workflow-initiative-init',
   ],
   assistant: ['persona-self'],
+  creative: ['principal-product-designer', 'principal-brand-designer', 'creative-video-director'],
   engineering: [
     'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
     'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
@@ -72,8 +73,8 @@ const MIGRATION_BASELINE_PACKS = {
     'workflow-doc-review', 'workflow-localization',
   ],
   product: [
-    'principal-product-manager', 'principal-product-designer', 'principal-product-strategist',
-    'principal-brand-designer', 'principal-data-analytics', 'persona-ux-first-time-user',
+    'principal-product-manager', 'principal-product-strategist',
+    'principal-data-analytics', 'persona-ux-first-time-user',
     'workflow-product-explore', 'workflow-experiment-review', 'workflow-customer-feedback',
   ],
   gtm: [
@@ -85,13 +86,14 @@ const MIGRATION_BASELINE_PACKS = {
   personal: [
     'persona-professional-nutritionist', 'persona-professional-trainer',
     'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
-    'creative-video-director', 'principal-engineer-career-mentor', 'workflow-course-to-audio',
+    'principal-engineer-career-mentor', 'workflow-course-to-audio',
   ],
 };
 
 export const NEW_AGENT_IDS = {
   core: [],
   assistant: ['personal-assistant'],
+  creative: [],
   engineering: ['eng-lead-technical-writing'],
   product: [],
   gtm: [],
@@ -112,10 +114,9 @@ export const PACK_ORDER = Object.keys(PACKS);
 // dispositions were ratified in the partition lock; keeping them here makes the
 // generator use the reviewed decision instead of silently defaulting to core.
 export const SKILL_OWNER_OVERRIDES = {
-  'create-product-demo': 'personal',
-  'demo-capture': 'personal',
-  'demo-narrate': 'personal',
-  'demo-zoom': 'personal',
+  'demo-capture': 'creative',
+  'demo-narrate': 'creative',
+  'demo-zoom': 'creative',
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
@@ -135,10 +136,11 @@ export const COMMITTED_PACKS = [...PACK_ORDER];
 export const PACK_RUNTIME_DEPENDENCIES = {
   core: ['lectoria'],
   assistant: [],
+  creative: ['lectoria'],
   engineering: [],
   product: [],
   gtm: [],
-  personal: ['lectoria'],
+  personal: [],
 };
 
 export const RUNTIME_ARTIFACTS = {
@@ -187,6 +189,7 @@ export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
 const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
   assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
+  creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
 };
 
 function packDescription(pack) {
