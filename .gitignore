@@ -33,3 +33,6 @@ __pycache__/
 
 # Playwright MCP scratch directory (snapshots, console logs)
 .playwright-mcp/
+
+# Isolated development worktrees
+.worktrees/
