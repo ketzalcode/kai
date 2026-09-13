@@ -80,8 +80,8 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 ### What you can ignore at first
 
 The full 56-agent, 57-skill surface is committed across six packs on this
-branch's checkout; five are published, and `kai-assistant`'s marketplace
-publication was not established by this work. You do not need to
+branch's checkout. This describes source ownership, not publication;
+`kai-assistant`'s remote availability remains unverified. You do not need to
 learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it

@@ -40,11 +40,12 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v5.0.0` — all **56 agents and 57 skills** are published across five plugins for
-the **Copilot CLI** and the **Copilot coding agent** (cloud). A sixth,
-`kai-assistant`, is committed source on this branch's checkout; this work
-generated and committed it but did not push, tag, or publish it, so its
-marketplace publication and remote availability are not established.
+`v5.0.0` is this checkout's prepared metadata version. Its **56 agents and
+57 skills** are organized across six plugin directories targeting the
+**Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
+committed source, not release publication or live-host compatibility.
+`kai-assistant` is new on this refactor branch; its marketplace publication
+and remote availability have not been established.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
@@ -101,8 +102,10 @@ reconcile, then error.
 > it. The guide verifies replacement availability, requires the monolith to be
 > gone, installs core first, and checks every step.
 
-**All five plugins are published: `kai-core` + `kai-personal` + `kai-product` +
-`kai-engineering` + `kai-gtm`.**
+**The original five-package install layout is `kai-core` + `kai-personal` +
+`kai-product` + `kai-engineering` + `kai-gtm`.** This refactor adds
+`kai-assistant` to the checkout; verify availability in the marketplace source
+you use rather than treating this source layout as a publication claim.
 Plugin-local agent and skill files are the canonical source. Generation refreshes
 routed scripts, each script's local module closure, the fleet hooks, manifests,
 dependency locks, and legacy marked dependency-guard regions.
@@ -128,10 +131,9 @@ before a pack install, coexistence is refused rather than warned through, and
 evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
-contract-version skew. The marketplace publishes the five original plugins; the
-monolith is no longer listed. `kai-assistant` exists as committed source on
-this branch's checkout — this work did not push, tag, or publish it, so it is
-not yet part of that published marketplace surface.
+contract-version skew. The committed marketplace index lists the package
+sources rather than the monolith. This branch adds `kai-assistant` to that
+index; the entry alone does not establish remote availability or publication.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -274,10 +276,9 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 The repository's full 56-agent, 57-skill surface is committed across
 `kai-core`, assistant, personal, product, engineering, and go-to-market on this
-branch's checkout. Five of those packs (`kai-core`, personal, product,
-engineering, go-to-market) are published; `kai-assistant` is new source
-committed here whose marketplace publication and remote availability this
-work did not establish.
+branch's checkout. These are source-ownership counts, not a claim that this
+exact surface is published. `kai-assistant` is new source committed here;
+its marketplace publication and remote availability remain unverified.
 
 You do not need to learn them. Ask for the outcome you want; the catalog is
 there for when you want to know who owns a particular judgment.
