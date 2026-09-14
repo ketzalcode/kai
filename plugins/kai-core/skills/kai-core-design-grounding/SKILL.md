@@ -1,6 +1,6 @@
 ---
 name: kai-core-design-grounding
-description: "Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language."
+description: "Use when design, frontend, or visual-identity work needs evidence of an app's settled visual language, or when a design-system reference is explicitly requested."
 tools: [read, edit, search]
 ---
 
@@ -29,11 +29,13 @@ It is **not** a standalone trigger. It is inherited by reference by:
 - **`workflow-product-explore`** — the neutral extraction contract **only**
   (observed visual facts, never design proposals).
 
-## The design-system reference — the single source of visual truth
+## The design-system reference — durable visual authority
 
-The reference is a **human-readable markdown file**, deliberately reviewable by a
-person, never generated JSON. It answers "what is this app's settled visual
-language?" so a design proposal can cite it.
+For requested or owed design-system derivation, the reference is a
+**human-readable markdown file**, deliberately reviewable by a person, never
+generated JSON. It answers "what is this app's settled visual language?" so a
+design proposal can cite it. A bounded direct mock or advisory answer does not
+owe this artifact merely because it uses visual evidence.
 
 Canonical location (the initiative's applied snapshot):
 
@@ -97,7 +99,14 @@ a fact.
 
 ## Consume vs derive — the decision rule
 
-Resolve in order, before designing:
+For a **bounded direct request**, use adequate **scoped supplied evidence**
+without creating or deriving `design-system.md`. Identify the target surface,
+source/revision, covered states and viewports, and which values are observed,
+implementation-truth, or proposed. A current reference can be consumed
+directly; its absence is not a request to author one. If evidence is missing,
+name the specific gap and limit the answer to what is supported.
+
+For **requested or owed durable design-system work**, resolve in order:
 
 1. **A fresh `design-system.md` exists for the surface** → **consume it.**
 2. **No fresh reference, but a current source-token inventory or neutral extract
@@ -183,9 +192,11 @@ needs one that doesn't exist, that is a gap → a proposal.
 ## Missing-scale bubble-up — wired to `kai-core-scope-discipline`
 
 The app will be missing things. When a needed scale, token, or component does not
-exist, **do not silently invent it.** Record it under `## Gaps and proposals` in
-`design-system.md` and emit the `kai-core-scope-discipline` `PROPOSAL` payload, then keep
-grounding the rest with what exists. Example:
+exist, **do not silently invent it.** In a bounded direct answer, identify the
+gap and any proposed value inline without adopting it. When maintaining a
+durable design-system reference, record it under `## Gaps and proposals` in
+`design-system.md` and use the `kai-core-scope-discipline` proposal contract.
+Keep grounding the rest with what exists. Example:
 
 ```text
 PROPOSAL
@@ -215,10 +226,11 @@ owns the scope of a system addition.
 
 The seam, concretely:
 
-1. **Before designing** — the designer loads `design-system.md`; if missing/stale,
-   first derives or refreshes it from adequate current supplied evidence (case 2).
-   Only missing evidence requires an extraction and/or source-token inventory
-   request (cases 3–5); explorer and FE are possible producers, not required
+1. **Before designing** — consume a current reference or the adequate scoped
+   evidence for a bounded direct request. Derive or refresh `design-system.md`
+   when that durable reference is requested or owed, using the resolution rule
+   above. Only missing evidence requires an extraction and/or source-token
+   inventory request; explorer and FE are possible producers, not required
    installations or dispatches to consume adequate supplied evidence.
 2. **Before a design is accepted** — the design artifact names the applied
    `design-system.md` version/path, links mockups for load-bearing options, and
