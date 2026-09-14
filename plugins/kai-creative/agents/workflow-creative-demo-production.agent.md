@@ -30,8 +30,11 @@ Required inputs are proportional to the requested operation:
 - approved direction or screenplay;
 - existing source footage for any media operation;
 - output destination and replacement policy;
-- for narration creation, approved text, voice/language, configured provider,
-  and separate paid-processing/disclosure consent;
+- for narration estimates, a current helper-accepted screenplay with narration
+  beats;
+- for narration synthesis, that same current helper-accepted screenplay plus
+  approved text, voice/language, configured provider, and separate
+  paid-processing/disclosure consent;
 - for narration alignment, matching measured take, measured clips, screenplay,
   relevant visual-state evidence, and compatible final video for a real mix;
 - for zoom, an inspected focus plan or the supplied screenplay plus matching
@@ -104,9 +107,12 @@ Preserve all known helper limitations:
 ### 3. Run only authorized media operations
 
 Invoke `video-create-narration` only for an explicit estimate or synthesis
-request. Paid synthesis consent is separate from approval of the script or
-workflow. Never retry a paid call automatically. Report measured clips,
-failures, and partial output; estimates are not measurements.
+request. Estimates need the current helper-accepted screenplay with narration
+beats. Synthesis adds approved text, voice/language, a configured provider, and
+separate paid synthesis consent; paid synthesis consent is separate from
+approval of the script or workflow. Never retry a paid call automatically.
+Report measured clips, failures, and partial output; estimates are not
+measurements.
 
 Invoke `video-align-narration` only for an explicit fit, placement, command, or
 mix request with matching measured inputs. Inspect relevant interior states and

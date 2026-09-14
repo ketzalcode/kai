@@ -63,11 +63,24 @@ function parseAgent(id) {
   };
 }
 
+function collectedActiveCreativeRoutes(body) {
+  const routes = new Set(routedSkills(body));
+  return finalCreativeSkills.filter(skill => routes.has(skill)).sort();
+}
+
+function withExtraRoute(agent, sentence) {
+  return {
+    ...agent,
+    body: `${agent.body.trimEnd()}\n\n${sentence}\n`,
+  };
+}
+
 function assertContract(agent, {
   model,
   profile,
   tools,
   requiredRoutes,
+  allowedActiveCreativeRoutes,
   bodyPatterns,
 }) {
   assert.equal(agent.fm.name, agent.id);
@@ -101,6 +114,11 @@ function assertContract(agent, {
   for (const route of inactiveCreativeSkills) {
     assert.ok(!routes.has(route), `${agent.id}: must not route inactive ${route}`);
   }
+  assert.deepEqual(
+    collectedActiveCreativeRoutes(agent.body),
+    [...allowedActiveCreativeRoutes].sort(),
+    `${agent.id}: active creative routes must stay within ${allowedActiveCreativeRoutes.join(', ') || '(none)'}`,
+  );
   const normalizedBody = agent.body.replace(/\s+/g, ' ');
   for (const pattern of bodyPatterns) {
     assert.match(normalizedBody, pattern, `${agent.id}: missing ${pattern}`);
@@ -114,7 +132,7 @@ function assertContract(agent, {
 }
 
 const design = parseAgent('creative-lead-design');
-assertContract(design, {
+const designContract = {
   model: 'claude-opus-5',
   profile: 'judgment',
   tools: ['playwright', 'read', 'edit', 'search', 'ask_user', 'skill'],
@@ -130,6 +148,11 @@ assertContract(design, {
     'mockups-html',
     'html-block-diagrams',
   ],
+  allowedActiveCreativeRoutes: [
+    'html-block-diagrams',
+    'mockups-ascii',
+    'mockups-html',
+  ],
   bodyPatterns: [
     /interaction design[\s\S]*visual identity/i,
     /PM\/steward[\s\S]{0,100}exact revision/i,
@@ -142,10 +165,11 @@ assertContract(design, {
     /never own product priority or positioning/i,
     /never emit production frontend code/i,
   ],
-});
+};
+assertContract(design, designContract);
 
 const video = parseAgent('creative-lead-video');
-assertContract(video, {
+const videoContract = {
   model: 'claude-opus-5',
   profile: 'judgment',
   tools: ['read', 'edit', 'search', 'ask_user', 'skill'],
@@ -157,6 +181,7 @@ assertContract(video, {
     'kai-core-work-activity',
     'kai-core-content-grounding',
   ],
+  allowedActiveCreativeRoutes: [],
   bodyPatterns: [
     /story, scene, script, and screenplay craft/i,
     /only the requested outputs/i,
@@ -168,10 +193,11 @@ assertContract(video, {
     /no five-file quota/i,
     /no storyboarding skill/i,
   ],
-});
+};
+assertContract(video, videoContract);
 
 const production = parseAgent('workflow-creative-demo-production');
-assertContract(production, {
+const productionContract = {
   model: 'claude-sonnet-5',
   profile: 'procedure',
   tools: ['execute', 'read', 'edit', 'ask_user', 'skill'],
@@ -183,6 +209,11 @@ assertContract(production, {
     'kai-core-work-activity',
     'video-create-narration',
     'video-align-narration',
+    'video-render-zoom',
+  ],
+  allowedActiveCreativeRoutes: [
+    'video-align-narration',
+    'video-create-narration',
     'video-render-zoom',
   ],
   bodyPatterns: [
@@ -200,9 +231,30 @@ assertContract(production, {
     /exit zero[\s\S]{0,100}INCOMPLETE/i,
     /does not establish[\s\S]{0,120}(visible|readable)/i,
     /paid synthesis consent is separate/i,
+    /current helper-accepted screenplay with narration beats/i,
+    /for narration synthesis[\s\S]{0,160}approved text, voice\/language[\s\S]{0,160}paid-processing\/disclosure consent/i,
     /no external publication/i,
   ],
-});
+};
+assertContract(production, productionContract);
+
+assert.throws(
+  () => assertContract(
+    withExtraRoute(design, 'Invoke `video-render-zoom` when a production focus effect would help.'),
+    designContract,
+  ),
+  /creative-lead-design: active creative routes must stay within/,
+  'design contract should reject a forbidden active production route',
+);
+
+assert.throws(
+  () => assertContract(
+    withExtraRoute(video, 'Invoke `video-create-narration` when spoken copy needs production output.'),
+    videoContract,
+  ),
+  /creative-lead-video: active creative routes must stay within/,
+  'video contract should reject a forbidden active production route',
+);
 
 const routedFinalSkills = new Set(
   [design, video, production].flatMap(agent => routedSkills(agent.body)),
