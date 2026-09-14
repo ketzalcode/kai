@@ -61,8 +61,8 @@ Ten document-review skills and their dependent workflow remain source-retained
 under `incubator/`, outside active discovery, routes and generated packs.
 Final whole-branch review occurred and prompted narrow corrections to the
 loaded core PR diagram trigger, style evidence labels, source-test prose
-matching, and an optional HTML cross-reference. Those corrections await
-controller re-review. Prepared `8.0.0` metadata does not publish the packages
+matching, and an optional HTML cross-reference. Scoped re-review accepted all
+four corrections at `35a8d05`. Prepared `8.0.0` metadata does not publish the packages
 or verify an updated host. Publication remains blocked by the unchanged 53
 source-validator errors and the existing pack-preview self-test `TypeError`.
 
@@ -403,8 +403,9 @@ its kind of judgment is needed, and several are skippable on small work.
 
 Issues and PRs are welcome. The normal contribution path runs `npm test` and CI.
 The engineering foundation has targeted source-contract and local authoring
-evidence, not native acceptance. Final whole-branch review, a green publication
-gate, release, and updated-host runtime verification remain pending. The current
+evidence, not native acceptance. Whole-branch review and scoped correction
+review are complete; a green publication gate, release, and updated-host
+runtime verification remain pending. The current
 publication gate is blocked by the unchanged 53 source-validator errors and
 existing pack-preview self-test `TypeError`.
 

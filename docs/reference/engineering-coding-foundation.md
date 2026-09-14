@@ -22,11 +22,18 @@ security, privacy, reliability, or release requirements.
 The five task evidence sets contain 93 outputs: 16 style, 25 research,
 18 onboarding, 17 sizing, and 17 diagram outputs. Final whole-branch review
 occurred and prompted the named style-export, loaded-contract, bounded-test,
-and optional cross-reference corrections. Controller re-review of this fix
-wave remains pending. Publication is blocked by the unchanged 53
+and optional cross-reference corrections. Scoped re-review accepted all four
+at `35a8d05`, with correct-label parity for all fifteen style handoffs and the
+separate code boundary. Publication is blocked by the unchanged 53
 source-validator errors and existing pack-preview self-test `TypeError`.
 Prepared `8.0.0` metadata is not publication or updated-host runtime
 verification.
+
+The local implementation status is recorded in
+[#211](https://github.com/RubenSaucedo/kai/issues/211#issuecomment-5658621840);
+all individual re-entry checklists remain open. The
+[execution plan](../superpowers/plans/2026-09-13-engineering-coding-foundation.md#implementation-decisions)
+retains the controller's decisions and their costs if wrong.
 
 ## Coding-style contract
 

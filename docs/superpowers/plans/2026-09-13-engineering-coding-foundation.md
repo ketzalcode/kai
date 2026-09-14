@@ -14,7 +14,9 @@
 review prompted corrections to the loaded core PR diagram contract, style
 evidence IDs/arms, source-test prose matching, and the optional HTML
 cross-reference. The corrections are committed as `f5d4f0c`; scoped re-review
-and the controller-owned #211 update remain pending. The earlier pilot remains
+accepted all four at `35a8d05`. The
+[#211 status update](https://github.com/RubenSaucedo/kai/issues/211#issuecomment-5658621840)
+records the local revision and leaves all re-entry checklists open. The earlier pilot remains
 paused. Publication is blocked by the unchanged 53 source-validator errors and
 existing pack-preview self-test `TypeError`. Updated-host runtime, native
 acceptance, renderer/accessibility execution, and efficacy/cost are unverified.

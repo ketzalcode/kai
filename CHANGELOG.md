@@ -64,7 +64,7 @@ The authoring record contains 93 local text outputs: 16 style, 25 research,
 checks with stated confounds, not native host acceptance, measured cost or
 context-poisoning improvement, renderer verification, or proof of historical
 raw-file immutability. Final whole-branch review occurred and prompted the
-corrections above; controller re-review of this fix wave remains pending.
+corrections above; scoped re-review accepted all four at `35a8d05`.
 Publication is blocked by the unchanged 53 source-validator errors and the
 existing pack-preview self-test `TypeError`; updated-host runtime verification
 remains a separate gate.

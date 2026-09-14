@@ -9,8 +9,8 @@ Across the five task-reviewed skill changes, the retained evidence contains
 93 outputs: 16 style, 25 research, 18 onboarding, 17 sizing, and 17 diagram
 outputs. Final whole-branch review occurred and prompted corrections to the
 style ID/arm export, a directly loaded core PR diagram seam, bounded source
-assertions, and an optional HTML cross-reference. Controller re-review of this
-fix wave remains pending. These local text application/reference checks are
+assertions, and an optional HTML cross-reference. Scoped re-review accepted all
+four corrections at `35a8d05`. These local text application/reference checks are
 not native host acceptance, measured cost or context-poisoning improvement,
 renderer verification, or proof that historical untracked raw artifacts were
 immutable.
