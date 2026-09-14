@@ -48,15 +48,26 @@ publication, updated-host installation, or runtime-acceptance claim.
   human-approval requirements.
 - Source collection and validation permit explicit historical/evaluation
   references without treating incubated components as runtime providers.
+- The loaded core PR-delivery contract now uses the same explicit-request or
+  material-information-value diagram predicate as engineering callers, so a
+  structural change already explained adequately in prose does not force a
+  visual.
+- The style evidence export now maps all 15 primary outputs to their retained
+  numeric IDs and correct control/current/candidate arms. The optional HTML
+  diagram skill no longer attributes retired ASCII-only or caption rules to
+  `build-diagrams`. The focused source guard uses bounded labeled contract
+  assertions for the loaded source seams; correct-label style parity is checked
+  separately against the retained numbered originals.
 
 The authoring record contains 93 local text outputs: 16 style, 25 research,
 18 onboarding, 17 sizing, and 17 diagram outputs. These are source/application
 checks with stated confounds, not native host acceptance, measured cost or
 context-poisoning improvement, renderer verification, or proof of historical
-raw-file immutability. Final whole-branch review remains pending. Publication
-is blocked by the unchanged 53 source-validator errors and the existing
-pack-preview self-test `TypeError`; updated-host runtime verification remains a
-separate gate.
+raw-file immutability. Final whole-branch review occurred and prompted the
+corrections above; controller re-review of this fix wave remains pending.
+Publication is blocked by the unchanged 53 source-validator errors and the
+existing pack-preview self-test `TypeError`; updated-host runtime verification
+remains a separate gate.
 
 ## [7.0.0] - 2026-09-12
 

@@ -9,21 +9,24 @@ and each skill stays within its own responsibility.
 
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
-| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts task-reviewed; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
+| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts task-reviewed; candidate handoffs showed non-regression, the combined code boundary preserved the specified contract, and final review prompted a corrected numeric-ID/arm evidence export. |
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries, v2 evidence, and corrected public evidence mapping task-reviewed with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract and evidence task-reviewed; narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
 | `pr-sizing` | Supports proportional delivery decomposition. | Source, four caller routes, and corrected evidence narrative task-reviewed with case-specific limits. |
-| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, six caller/template boundaries, and explicit-format evidence task-reviewed with stated limits. |
+| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, six engineering caller/template boundaries, and explicit-format evidence task-reviewed with stated limits; final review prompted alignment of the directly loaded core PR contract and an optional HTML cross-reference. |
 
 The ten document-review skills and their dependent workflow remain incubated,
 outside the active plugin surface. Their incubation does not waive formal
 security, privacy, reliability, or release requirements.
 
 The five task evidence sets contain 93 outputs: 16 style, 25 research,
-18 onboarding, 17 sizing, and 17 diagram outputs. Final whole-branch review is
-pending. Publication is blocked by the unchanged 53 source-validator errors
-and existing pack-preview self-test `TypeError`. Prepared `8.0.0` metadata is
-not publication or updated-host runtime verification.
+18 onboarding, 17 sizing, and 17 diagram outputs. Final whole-branch review
+occurred and prompted the named style-export, loaded-contract, bounded-test,
+and optional cross-reference corrections. Controller re-review of this fix
+wave remains pending. Publication is blocked by the unchanged 53
+source-validator errors and existing pack-preview self-test `TypeError`.
+Prepared `8.0.0` metadata is not publication or updated-host runtime
+verification.
 
 ## Coding-style contract
 
@@ -44,6 +47,15 @@ clauses. In the authoring screen, all five candidate handoffs met the same case
 that all five controls and all five former-guide samples had already met. This
 is non-regression, not a measured behavior improvement. One combined code
 boundary preserved the supplied repository contract and caller authorization.
+
+Final review found that the public style blocks contained all retained texts
+but only `3/15` under the correct numeric label; twelve IDs were misassigned,
+including a control/current-arm swap. The blocks were rebuilt in filename
+order from retained `style-01.md` through `style-15.md`: 01–05 controls, 06–10
+current guide, and 11–15 candidate. Correct-label comparison now passes
+`15/15`, and the separate code boundary remains unchanged. The retained files
+were not altered during this export; because they were originally untracked,
+this is not a claim about historical raw-file immutability.
 
 See
 [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
@@ -263,6 +275,13 @@ quota:
   [diagram catalog](../../plugins/kai-engineering/skills/build-diagrams/references/catalog.md).
   The architect, backend, frontend, infra, issue-analysis, and pull-request
   callers no longer require an empty diagram slot in every artifact.
+- The directly loaded `kai-core-pr-delivery` body shape now fires “The change
+  at a glance” only for an explicit visual request or a materially clearer
+  evidenced relationship. A structural change already explained adequately
+  in prose continues without a diagram.
+- The optional `html-block-diagrams` sibling keeps its independent HTML
+  caption and craft rules without treating creative as a compulsory dependency
+  or attributing retired Markdown/ASCII rules to engineering.
 
 The committed baseline uses one fixed UTF-8 decision with no changed
 relationship and no requested visual. All five no-guide controls produced no
@@ -279,6 +298,10 @@ original-byte hashes.
 The focused source guard failed against the former universal quota, missing
 optional-result boundaries, absent companion, and named caller/template
 obligations, then passed under Node `v24.15.0` after the correction.
+Final review exposed the omitted loaded core seam. The expanded guard failed
+against its structure-only trigger and the stale optional HTML attribution,
+then passed after the narrow integration correction. This is source-contract
+regression coverage, not behavioral or renderer certification.
 
 The candidate was frozen at
 `e812f516211cabad728b78772eea03e7acea7ab9`; its copied

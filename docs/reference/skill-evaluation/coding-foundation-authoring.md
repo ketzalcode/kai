@@ -7,10 +7,13 @@ structural, baseline, candidate, and boundary evidence for `build-diagrams`.
 
 Across the five task-reviewed skill changes, the retained evidence contains
 93 outputs: 16 style, 25 research, 18 onboarding, 17 sizing, and 17 diagram
-outputs. Final whole-branch review is pending. These local text
-application/reference checks are not native host acceptance, measured cost or
-context-poisoning improvement, renderer verification, or proof that historical
-untracked raw artifacts were immutable.
+outputs. Final whole-branch review occurred and prompted corrections to the
+style ID/arm export, a directly loaded core PR diagram seam, bounded source
+assertions, and an optional HTML cross-reference. Controller re-review of this
+fix wave remains pending. These local text application/reference checks are
+not native host acceptance, measured cost or context-poisoning improvement,
+renderer verification, or proof that historical untracked raw artifacts were
+immutable.
 
 ## Authoring case
 
@@ -35,7 +38,7 @@ measure implementation correctness.
 
 Manual reading found that all ten samples returned usable contextual
 constraints. None required the nonexistent skill, additional research, a new
-approval, or another artifact. Two current-guide samples added general
+approval, or another artifact. Current-guide samples 08 and 10 added general
 style/self-review/reuse advice, but did not impose a mandatory process.
 
 **This was not behavioral RED.** The samples did not demonstrate context
@@ -113,6 +116,23 @@ Use the existing `node --test worker-status.test.mjs` command and the regression
 ### Control 02
 
 ```text
+Implement `formatWorkerStatus` as an in-place extension in `worker-status.mjs` without changing the public return shape or adding new status values, dependencies, or output fields.
+
+- Handle all four cases: queued, running, succeeded, and failed.
+- Treat running progress as an integer from 0 through 100.
+- Preserve the repository's existing invalid-progress error type.
+- Make any error text a full, actionable sentence that includes the worker name.
+- Keep names lowerCamelCase and use small named helpers only when they remove real repetition.
+- Prefer early returns.
+- Keep comments only for non-obvious constraints.
+- Preserve existing public contract documentation where needed.
+- Cover the change with regression cases in `worker-status.test.mjs`.
+- Verify with `node --test worker-status.test.mjs`.
+```
+
+### Control 03
+
+```text
 # Implementation constraints for `formatWorkerStatus`
 
 - Extend `formatWorkerStatus` in `worker-status.mjs` only; keep the existing return shape unchanged.
@@ -129,43 +149,24 @@ Use the existing `node --test worker-status.test.mjs` command and the regression
 The change is already approved, and the team owns both `worker-status.mjs` and `worker-status.test.mjs`.
 ```
 
-### Control 03
-
-```text
-Implement `formatWorkerStatus` as an in-place extension in `worker-status.mjs` without changing the public return shape or adding new status values, dependencies, or output fields.
-
-- Handle all four cases: queued, running, succeeded, and failed.
-- Treat running progress as an integer from 0 through 100.
-- Preserve the repository's existing invalid-progress error type.
-- Make any error text a full, actionable sentence that includes the worker name.
-- Keep names lowerCamelCase and use small named helpers only when they remove real repetition.
-- Prefer early returns.
-- Keep comments only for non-obvious constraints.
-- Preserve existing public contract documentation where needed.
-- Cover the change with regression cases in `worker-status.test.mjs`.
-- Verify with `node --test worker-status.test.mjs`.
-```
-
 ### Control 04
 
 ```text
-`formatWorkerStatus` may be extended in `worker-status.mjs`, but keep the change narrow:
+# Implementation handoff: `formatWorkerStatus`
 
-- Preserve the existing return shape.
+- Extend `formatWorkerStatus` in `worker-status.mjs` only.
+- Keep the existing return shape unchanged.
 - Handle queued, running, succeeded, and failed workers.
-- Treat running progress as an integer from 0 through 100.
-- Throw the repository’s existing invalid-progress error type for out-of-range progress.
-- Include the worker name in every error message, using a full actionable sentence.
+- Preserve the repository’s existing invalid-progress error type.
+- Running progress must stay an integer from 0 through 100.
+- Error text must be a full, actionable sentence and include the worker name.
 - Do not add new status values, external dependencies, or output fields.
-
-Style constraints that still apply:
-
-- Prefer the simplest readable version with early returns.
-- Use lowerCamelCase and clear names that describe intent.
-- Add helpers only if they remove a real repeated responsibility.
-- Keep comments to non-obvious constraints only; do not restate code.
-- Preserve any public contract documentation that the change touches.
-- Stay aligned with the existing local conventions in `worker-status.mjs` and `worker-status.test.mjs`.
+- Use lowerCamelCase.
+- Prefer small named helpers only if they remove repeated responsibility.
+- Use early returns.
+- Keep comments only for non-obvious constraints.
+- Preserve public contract documentation where needed.
+- Validate with the existing regression cases and `node --test worker-status.test.mjs`.
 ```
 
 ### Control 05
@@ -190,21 +191,23 @@ Style constraints that still apply:
 ### Current guide 06
 
 ```text
-# Implementation handoff: `formatWorkerStatus`
+`formatWorkerStatus` may be extended in `worker-status.mjs`, but keep the change narrow:
 
-- Extend `formatWorkerStatus` in `worker-status.mjs` only.
-- Keep the existing return shape unchanged.
+- Preserve the existing return shape.
 - Handle queued, running, succeeded, and failed workers.
-- Preserve the repository’s existing invalid-progress error type.
-- Running progress must stay an integer from 0 through 100.
-- Error text must be a full, actionable sentence and include the worker name.
+- Treat running progress as an integer from 0 through 100.
+- Throw the repository’s existing invalid-progress error type for out-of-range progress.
+- Include the worker name in every error message, using a full actionable sentence.
 - Do not add new status values, external dependencies, or output fields.
-- Use lowerCamelCase.
-- Prefer small named helpers only if they remove repeated responsibility.
-- Use early returns.
-- Keep comments only for non-obvious constraints.
-- Preserve public contract documentation where needed.
-- Validate with the existing regression cases and `node --test worker-status.test.mjs`.
+
+Style constraints that still apply:
+
+- Prefer the simplest readable version with early returns.
+- Use lowerCamelCase and clear names that describe intent.
+- Add helpers only if they remove a real repeated responsibility.
+- Keep comments to non-obvious constraints only; do not restate code.
+- Preserve any public contract documentation that the change touches.
+- Stay aligned with the existing local conventions in `worker-status.mjs` and `worker-status.test.mjs`.
 ```
 
 ### Current guide 07
@@ -226,6 +229,22 @@ Apply the coding-style guide as required:
 ### Current guide 08
 
 ```text
+# Implementation constraints: `formatWorkerStatus`
+
+- Extend `worker-status.mjs` only; the change is already approved and no broader scope decisions remain.
+- Keep the existing return shape intact. Do not add status values, output fields, or new dependencies.
+- Handle queued, running, succeeded, and failed workers.
+- Treat running progress as an integer from 0 through 100. Invalid progress must throw the repository’s existing error type, and the message must name the worker.
+- Use lowerCamelCase, early returns, and only small named helpers when they clarify a repeated responsibility.
+- Keep error messages full and actionable sentences.
+- Add comments only for non-obvious constraints; do not restate code.
+- Preserve any public contract documentation that applies.
+- Verify with the existing regression cases and `node --test worker-status.test.mjs`.
+```
+
+### Current guide 09
+
+```text
 Extend `formatWorkerStatus` with the smallest readable change that keeps the existing return shape intact and still throws the repository’s existing error type for invalid progress. Preserve the current handling for queued, running, succeeded, and failed workers; do not add a new status value, output field, or external dependency.
 
 Follow the repo’s conventions: lowerCamelCase names, early returns, and only small named helpers when a responsibility is actually repeated. Keep error text as a full actionable sentence that names the worker. Add comments only for a non-obvious constraint.
@@ -233,7 +252,7 @@ Follow the repo’s conventions: lowerCamelCase names, early returns, and only s
 Before editing, mirror the nearby worker-status convention and reuse existing utilities where they already fit. Validate against the available regression cases and run `node --test worker-status.test.mjs` to confirm the behavior stays stable.
 ```
 
-### Current guide 09
+### Current guide 10
 
 ```text
 # Handoff: `formatWorkerStatus` extension
@@ -256,41 +275,9 @@ Extend `formatWorkerStatus` in `worker-status.mjs` for queued, running, succeede
 - Run `node --test worker-status.test.mjs`.
 ```
 
-### Current guide 10
-
-```text
-# Implementation constraints: `formatWorkerStatus`
-
-- Extend `worker-status.mjs` only; the change is already approved and no broader scope decisions remain.
-- Keep the existing return shape intact. Do not add status values, output fields, or new dependencies.
-- Handle queued, running, succeeded, and failed workers.
-- Treat running progress as an integer from 0 through 100. Invalid progress must throw the repository’s existing error type, and the message must name the worker.
-- Use lowerCamelCase, early returns, and only small named helpers when they clarify a repeated responsibility.
-- Keep error messages full and actionable sentences.
-- Add comments only for non-obvious constraints; do not restate code.
-- Preserve any public contract documentation that applies.
-- Verify with the existing regression cases and `node --test worker-status.test.mjs`.
-```
-
 ## Sanitized candidate outputs
 
 ### Candidate 11
-
-```text
-# Handoff: `formatWorkerStatus` implementation constraints
-
-- Extend `formatWorkerStatus` in `worker-status.mjs` only; keep the existing return shape and the existing invalid-progress error type.
-- Cover queued, running, succeeded, and failed workers. Do not add a new status value, external dependency, or output field.
-- Preserve the repository’s lowerCamelCase naming, small named helpers only when they clarify a repeated responsibility, and early returns.
-- Keep the implementation as simple as possible while meeting the approved behavior.
-- Use intent-revealing names and helpful intermediate values where they improve clarity.
-- Error messages must be full, actionable sentences and include the worker name.
-- Comments should explain a non-obvious constraint or public contract, not restate the code.
-- `running` progress is an integer from 0 through 100.
-- Use the existing regression coverage in `worker-status.test.mjs` and the existing `node --test worker-status.test.mjs` command.
-```
-
-### Candidate 12
 
 ```text
 Use the repository’s existing `worker-status.mjs` / `worker-status.test.mjs` conventions and keep the change tightly scoped to `formatWorkerStatus`.
@@ -310,7 +297,7 @@ Use the repository’s existing `worker-status.mjs` / `worker-status.test.mjs` c
 Apply the coding-style defaults only where repository facts are silent; repository rules and explicit requirements take precedence.
 ```
 
-### Candidate 13
+### Candidate 12
 
 ```text
 ## Handoff: extend `formatWorkerStatus`
@@ -329,7 +316,7 @@ Apply the coding-style defaults only where repository facts are silent; reposito
 - Verify with the existing `node --test worker-status.test.mjs` command and add regression coverage for the invalid-progress path if needed.
 ```
 
-### Candidate 14
+### Candidate 13
 
 ```text
 ## Implementation constraints for `formatWorkerStatus`
@@ -346,7 +333,7 @@ Apply the coding-style defaults only where repository facts are silent; reposito
 - Verify the change with the existing `node --test worker-status.test.mjs` coverage, including regression cases.
 ```
 
-### Candidate 15
+### Candidate 14
 
 ```text
 `formatWorkerStatus` should stay a small, readable lowerCamelCase helper that preserves the existing return shape and existing invalid-progress error type.
@@ -359,6 +346,38 @@ Apply the coding-style defaults only where repository facts are silent; reposito
 - Preserve any public contract documentation that applies to this behavior.
 - Verify the change with the existing `node --test worker-status.test.mjs` command.
 ```
+
+### Candidate 15
+
+```text
+# Handoff: `formatWorkerStatus` implementation constraints
+
+- Extend `formatWorkerStatus` in `worker-status.mjs` only; keep the existing return shape and the existing invalid-progress error type.
+- Cover queued, running, succeeded, and failed workers. Do not add a new status value, external dependency, or output field.
+- Preserve the repository’s lowerCamelCase naming, small named helpers only when they clarify a repeated responsibility, and early returns.
+- Keep the implementation as simple as possible while meeting the approved behavior.
+- Use intent-revealing names and helpful intermediate values where they improve clarity.
+- Error messages must be full, actionable sentences and include the worker name.
+- Comments should explain a non-obvious constraint or public contract, not restate the code.
+- `running` progress is an integer from 0 through 100.
+- Use the existing regression coverage in `worker-status.test.mjs` and the existing `node --test worker-status.test.mjs` command.
+```
+
+## Style export correction
+
+Final review compared each public label with its retained numbered original,
+normalizing only CRLF and trailing EOF whitespace and excluding the Markdown
+fence. Although all primary texts occurred somewhere in the record, only
+`3/15` matched the correct label. Twelve IDs were misassigned, including one
+control/current-arm swap.
+
+The public blocks above were rebuilt deterministically in numeric filename
+order from retained `style-01.md` through `style-15.md`, preserving the
+declared arms: 01–05 control, 06–10 current guide, and 11–15 candidate.
+Correct-label parity now passes `15/15`; the separate code-boundary output
+below remains a verbatim match. The retained actor files were not altered
+during the export. They were untracked when created, so this correction does
+not claim historical raw-file immutability.
 
 ## Sanitized combined code boundary
 
@@ -843,6 +862,16 @@ The skill, companion, and caller/template sources were then corrected. The
 same guard passed under Node `v24.15.0`. It also asserts that
 `materializePacks` emits
 `kai-engineering/skills/build-diagrams/references/catalog.md`.
+
+Final whole-branch review found that the directly loaded
+`kai-core-pr-delivery` contract still fired its diagram section for structure
+or flow changes even when prose was sufficient. The expanded guard failed on
+that loaded seam and on the stale optional `html-block-diagrams` attribution.
+After the narrow correction, it covers an explicit visual request, a
+materially clearer evidenced relationship, prose-sufficient structural
+continuation, and the independent HTML caption/craft boundary. The same guard
+passes. This remains source-contract regression coverage, not behavioral or
+renderer certification.
 
 This is structural evidence. It establishes the source contract and emitted
 companion boundary, not live skill discovery, renderer behavior, or model

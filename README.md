@@ -59,10 +59,12 @@ The five engineering skill/caller source tasks are complete and individually
 task-reviewed. `kai-engineering` exports 19 agents and five task-local skills.
 Ten document-review skills and their dependent workflow remain source-retained
 under `incubator/`, outside active discovery, routes and generated packs.
-Prepared `8.0.0` metadata does not close the pending final whole-branch review,
-publish the packages, or verify an updated host. Publication remains blocked by
-the unchanged 53 source-validator errors and the existing pack-preview
-self-test `TypeError`.
+Final whole-branch review occurred and prompted narrow corrections to the
+loaded core PR diagram trigger, style evidence labels, source-test prose
+matching, and an optional HTML cross-reference. Those corrections await
+controller re-review. Prepared `8.0.0` metadata does not publish the packages
+or verify an updated host. Publication remains blocked by the unchanged 53
+source-validator errors and the existing pack-preview self-test `TypeError`.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,

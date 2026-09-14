@@ -12,6 +12,7 @@ import {
 } from '../scripts/lib/incubation-contract.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const normalizeContract = body => body.replace(/\s+/g, ' ').trim().toLowerCase();
 const keep = [
   'build-diagrams', 'coding-style', 'onboard-to-codebase',
   'pr-sizing', 'research-before-coding',
@@ -41,9 +42,12 @@ assert.deepEqual(
   'coding-style must remain context-only and avoid cross-skill or fixed-quota directives',
 );
 const codingStyleContractViolations = [];
-const expectedCodingStyleDescription =
-  'description: "Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified."';
-if (!codingStyleBody.includes(expectedCodingStyleDescription)) {
+const codingStyleDescription =
+  codingStyleBody.match(/^description:\s*"([^"]+)"\r?$/m)?.[1] ?? '';
+if (!/^Use when\b/.test(codingStyleDescription)
+  || !/shared implementation defaults/i.test(codingStyleDescription)
+  || !/repository conventions and task instructions/i.test(codingStyleDescription)
+  || !/details unspecified/i.test(codingStyleDescription)) {
   codingStyleContractViolations.push('coding-style description is not the shared-defaults trigger');
 }
 const codingStyleReferences = collectReferences(root);
@@ -54,7 +58,7 @@ for (const rel of [
   'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
 ]) {
   const body = readFileSync(join(root, rel), 'utf8');
-  const normalizedBody = body.replace(/\s+/g, ' ');
+  const normalizedBody = normalizeContract(body);
   for (const clause of [
     'Apply `coding-style` as you write',
     'Apply `coding-style` when your applied design carries real',
@@ -62,12 +66,12 @@ for (const rel of [
   ]) {
     if (body.includes(clause)) codingStyleContractViolations.push(`${rel}: ${clause}`);
   }
-  for (const marker of [
-    'repository or task instructions',
-    'apply `coding-style` as shared implementation defaults',
-    'proportionate comments or documentation',
+  for (const [label, pattern] of [
+    ['instruction precedence', /repository or task instructions/],
+    ['shared-defaults route', /apply `coding-style` as shared implementation defaults/],
+    ['proportionate documentation', /proportionate comments or documentation/],
   ]) {
-    if (!normalizedBody.includes(marker)) codingStyleContractViolations.push(`${rel}: missing ${marker}`);
+    if (!pattern.test(normalizedBody)) codingStyleContractViolations.push(`${rel}: missing ${label}`);
   }
   if (!codingStyleReferences.some(ref =>
     ref.from === rel &&
@@ -85,7 +89,7 @@ const researchBody = readFileSync(
   join(root, 'plugins', 'kai-engineering', 'skills', 'research-before-coding', 'SKILL.md'),
   'utf8',
 );
-const normalizedResearchBody = researchBody.replace(/\s+/g, ' ').toLowerCase();
+const normalizedResearchBody = normalizeContract(researchBody);
 const researchContractViolations = [];
 for (const directive of [
   'then propose, then\ncode',
@@ -101,18 +105,18 @@ for (const directive of [
 ]) {
   if (researchBody.includes(directive)) researchContractViolations.push(`skill: ${directive}`);
 }
-for (const marker of [
-  'use when a code or design decision depends on unresolved evidence',
-  'concise, scoped answer',
-  'domain evidence to each material finding',
-  'consequential implications or unresolved gaps',
-  'guidance about conducting research is not domain evidence',
-  'requested report format',
-  'explicit user invocation',
-  'the caller may continue its independently authorized work',
+for (const [label, pattern] of [
+  ['unresolved-evidence trigger', /use when a code or design decision depends on unresolved evidence/],
+  ['concise scoped answer', /concise, scoped answer/],
+  ['finding evidence', /domain evidence to each material finding/],
+  ['consequential follow-up', /consequential implications or unresolved gaps/],
+  ['procedural evidence boundary', /guidance about conducting research is not domain evidence/],
+  ['requested format', /requested report format/],
+  ['direct invocation', /explicit user invocation/],
+  ['caller continuation', /caller may continue.{0,30}independently authorized work/],
 ]) {
-  if (!normalizedResearchBody.includes(marker)) {
-    researchContractViolations.push(`skill: missing ${marker}`);
+  if (!pattern.test(normalizedResearchBody)) {
+    researchContractViolations.push(`skill: missing ${label}`);
   }
 }
 const researchCallers = [
@@ -123,7 +127,7 @@ const researchCallers = [
 ];
 for (const rel of researchCallers) {
   const body = readFileSync(join(root, rel), 'utf8');
-  const normalizedBody = body.replace(/\s+/g, ' ');
+  const normalizedBody = normalizeContract(body);
   for (const directive of [
     'Read 3–5',
     'scan 3–5',
@@ -131,12 +135,13 @@ for (const rel of researchCallers) {
   ]) {
     if (body.includes(directive)) researchContractViolations.push(`${rel}: ${directive}`);
   }
-  for (const marker of [
-    'unresolved decision-relevant evidence',
-    'apply `research-before-coding` for that question',
-    'continue the authorized work with the targeted reading and tests it requires',
+  for (const [label, pattern] of [
+    ['decision-relevant trigger', /unresolved decision-relevant evidence/],
+    ['question-scoped route', /apply `research-before-coding` for that question/],
+    ['authorized direct continuation',
+      /continue the authorized work.{0,40}targeted reading and tests it requires/],
   ]) {
-    if (!normalizedBody.includes(marker)) researchContractViolations.push(`${rel}: missing ${marker}`);
+    if (!pattern.test(normalizedBody)) researchContractViolations.push(`${rel}: missing ${label}`);
   }
   if (!codingStyleReferences.some(ref =>
     ref.from === rel &&
@@ -163,7 +168,7 @@ const onboardingBody = readFileSync(
   join(root, 'plugins', 'kai-engineering', 'skills', 'onboard-to-codebase', 'SKILL.md'),
   'utf8',
 );
-const normalizedOnboardingBody = onboardingBody.replace(/\s+/g, ' ').toLowerCase();
+const normalizedOnboardingBody = normalizeContract(onboardingBody);
 const onboardingContractViolations = [];
 for (const [label, pattern] of [
   ['name', /^name: onboard-to-codebase\r?$/m],
@@ -223,7 +228,7 @@ const sizingBody = readFileSync(
   join(root, 'plugins', 'kai-engineering', 'skills', 'pr-sizing', 'SKILL.md'),
   'utf8',
 );
-const normalizedSizingBody = sizingBody.replace(/\s+/g, ' ').toLowerCase();
+const normalizedSizingBody = normalizeContract(sizingBody);
 const sizingContractViolations = [];
 if (/^tools:\s*\[[^\]]*\bedit\b[^\]]*\]\r?$/m.test(sizingBody)) {
   sizingContractViolations.push('skill: edit authority');
@@ -248,10 +253,17 @@ for (const directive of [
   'Confirm before starting',
   'Execute one at a time',
   'requires another PR to land first to be useful',
-  'feature flag',
 ]) {
   if (sizingBody.includes(directive)) {
     sizingContractViolations.push(`skill: ${directive}`);
+  }
+}
+for (const pattern of [
+  /doesn't require another pr to land first to be useful.{0,50}feature flag/,
+  /never ship a pr that requires another pr to land first.{0,80}feature flag/,
+]) {
+  if (pattern.test(normalizedSizingBody)) {
+    sizingContractViolations.push(`skill: unwanted feature-flag independence obligation: ${pattern}`);
   }
 }
 for (const [label, pattern] of [
@@ -322,7 +334,7 @@ const diagramCatalogPath = join(
   root, 'plugins', 'kai-engineering', 'skills', 'build-diagrams', 'references', 'catalog.md',
 );
 const diagramBody = readFileSync(diagramSkillPath, 'utf8');
-const normalizedDiagramBody = diagramBody.replace(/\s+/g, ' ').toLowerCase();
+const normalizedDiagramBody = normalizeContract(diagramBody);
 const diagramContractViolations = [];
 for (const directive of [
   'at least one diagram',
@@ -384,7 +396,7 @@ const diagramCallers = [
 ];
 for (const rel of diagramCallers) {
   const body = readFileSync(join(root, rel), 'utf8');
-  const normalizedBody = body.replace(/\s+/g, ' ').toLowerCase();
+  const normalizedBody = normalizeContract(body);
   if (/at least\s+one diagram/i.test(body)) {
     diagramContractViolations.push(`${rel}: mandatory diagram quota`);
   }
@@ -402,6 +414,45 @@ for (const rel of diagramCallers) {
     ref.target === 'build-diagrams' &&
     ref.firing.includes('loaded'))) {
     diagramContractViolations.push(`${rel}: build-diagrams route is not discoverable`);
+  }
+}
+const prDeliveryBody = readFileSync(
+  join(root, 'plugins', 'kai-core', 'skills', 'kai-core-pr-delivery', 'SKILL.md'),
+  'utf8',
+);
+const normalizedPrDeliveryBody = normalizeContract(prDeliveryBody);
+for (const [label, pattern] of [
+  ['explicit-request trigger', /explicit (diagram|visual) request/],
+  ['information-value trigger', /(visual adds information|materially clearer visually)/],
+  ['prose-sufficient structural continuation',
+    /structur(e|al) or flow change.{0,120}prose.{0,80}(does not trigger|without a diagram)/],
+  ['conditional body-template trigger',
+    /the change at a glance.{0,120}explicit (diagram|visual) request.{0,120}(materially clearer|adds information)/],
+]) {
+  if (!pattern.test(normalizedPrDeliveryBody)) {
+    diagramContractViolations.push(`kai-core-pr-delivery: missing ${label}`);
+  }
+}
+for (const staleObligation of [
+  /trigger: it alters a structure or flow/,
+  /20-line routing change does/,
+  /diagram it when the change alters a.{0,20}structure.{0,30}flow/,
+]) {
+  if (staleObligation.test(normalizedPrDeliveryBody)) {
+    diagramContractViolations.push(`kai-core-pr-delivery: unconditional structural trigger: ${staleObligation}`);
+  }
+}
+const htmlBlockDiagramBody = readFileSync(
+  join(root, 'plugins', 'kai-creative', 'skills', 'html-block-diagrams', 'SKILL.md'),
+  'utf8',
+);
+const normalizedHtmlBlockDiagramBody = normalizeContract(htmlBlockDiagramBody);
+for (const staleAttribution of [
+  /build-diagrams` owns diagrams.{0,20}in.{0,20}markdown.{0,80}ascii by default/,
+  /same one-line caption rule `build-diagrams` applies to ascii/,
+]) {
+  if (staleAttribution.test(normalizedHtmlBlockDiagramBody)) {
+    diagramContractViolations.push(`html-block-diagrams: stale build-diagrams attribution: ${staleAttribution}`);
   }
 }
 assert.deepEqual(
