@@ -446,10 +446,12 @@ The baseline source still explicitly required or encoded:
   code-writing callers.
 
 The engineering foundation guard gained focused assertions for those concrete
-contradictions and the stale claim that no agent inherited the skill. Before
-the source edit, it failed with the expected skill, caller, and issue-analysis
-violations. After the bounded evidence rewrite and caller alignment, the same
-guard passed under Node `v24.15.0`.
+contradictions and the stale claim that no agent inherited the skill. The
+implementer reported that it failed with the expected skill, caller, and
+issue-analysis violations before the source edit, then passed after the bounded
+evidence rewrite and caller alignment under Node `v24.15.0`. The historical
+RED is not independently reconstructable from the final diff, and this record
+does not claim an independently retained pre-edit log.
 
 This structural RED/GREEN proves only that the checked source contract changed.
 It does not convert the ten successful baseline handoffs into actor failures or
@@ -544,11 +546,26 @@ demonstrated comparative behavior change.
 | Caller source interpretation, before and after | 2 |
 | **Total preserved outputs** | **25** |
 
-The exact sanitized outputs and fixed inputs are retained in:
+The raw outputs and fixed inputs, with only the documented newline, trailing
+whitespace, and evidence-fence normalization, are retained in:
 
 - [baseline samples](research-before-coding-baseline-samples.md);
 - [candidate v1 samples and external boundary](research-before-coding-candidate-v1-samples.md);
 - [candidate v2 samples, external/direct boundaries, and caller interpretations](research-before-coding-candidate-v2-samples.md).
+
+The initial public baseline export was not faithful. Only raw output 01
+occurred unchanged anywhere in that document, outputs 02–10 did not, and a
+correct-label comparison found `0/10` baseline matches. The cause was manual
+transcription plus mapping content from unlabeled parallel tool returns rather
+than copying each numbered file deterministically.
+
+The baseline record was regenerated in numeric filename order directly from
+`research-01.md` through `research-10.md`. A correct-label comparison across
+all retained outputs then passed `25/25`: samples 01–20, both external
+boundaries, the direct-question boundary, and the before/after caller
+interpretations. Comparison normalized CRLF to LF, removed trailing whitespace
+with `trimEnd`, and removed only the enclosing four-backtick evidence fence.
+The original actor files were not changed.
 
 The source-contract RED/GREEN remains separate from these actor observations.
 No host certification, native invocation result, cross-model result, cost

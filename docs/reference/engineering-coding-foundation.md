@@ -69,8 +69,11 @@ assertions, and evidence limits.
 - The caller retains its original task authority and may continue separately
   authorized implementation after consuming the handoff.
 
-The focused source guard failed against the former coding, approval, taxonomy,
-quota, and unconditional-caller directives, then passed after this rewrite.
+The implementer reported that the focused source guard failed against the
+former coding, approval, taxonomy, quota, and unconditional-caller directives,
+then passed after the rewrite. The historical RED is not independently
+reconstructable from the final diff.
+
 The ten baseline handoffs returned the supplied-input findings without source
 edits or ownership blocking, so they are non-regression observations, not
 behavioral RED. Five v1 candidate handoffs also preserved those facts and
@@ -89,8 +92,16 @@ is broader than the evidence supports. Caller before/after readers both
 returned the expected no/yes interpretation, so no live or comparative
 invocation change was observed.
 
+The first public baseline export had a transcription and ID-mapping defect:
+only raw output 01 occurred unchanged anywhere in that record, outputs 02–10
+did not, and no baseline output matched its correct labeled block. The record
+was rebuilt deterministically from `research-01.md` through `research-10.md`.
+All 25 retained research outputs now match their correct labeled public blocks
+after only CRLF-to-LF normalization, `trimEnd`, and four-backtick wrapper
+removal.
+
 See [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
-and the sanitized raw
+and the normalized raw
 [baseline](skill-evaluation/research-before-coding-baseline-samples.md),
 [v1 candidate](skill-evaluation/research-before-coding-candidate-v1-samples.md),
 and
