@@ -485,7 +485,7 @@ same no/yes interpretation through proportionality, so this is
 source-interpretation evidence rather than proof of a live before/after routing
 effect.
 
-### Candidate v2 refinement and pending checks
+### Candidate v2 refinement and completed screen
 
 The v2 response recipe:
 
@@ -502,7 +502,55 @@ The v2 response recipe:
 Candidate v2 guide SHA-256:
 `73B9667B722067E8D8129FAFA9844507C7C10F1FDEBD905EC7A751C39CBD490E`.
 
-Five fresh v2 samples and the same genuine missing-external-contract boundary
-remain pending. No v2 behavior pass, host certification, cross-model result,
-quality improvement, fabricated-fact finding, or measured poisoning fix is
-claimed.
+The controller ran five fresh v2 primary samples with the unchanged case and
+the same model/effort. All five preserved the supplied cause, worker/default
+caller distinction, and research-only scope. They attached local code evidence
+to findings and did not claim repository edits or tests.
+
+The outputs no longer all reproduced the exact five-label source scaffold, but
+they still used several headings and sometimes repeated facts. These samples do
+not establish consistent output-length reduction or elimination of redundancy.
+
+The additional direct-question boundary returned two short paragraphs
+explaining the falsy `0` behavior. It introduced no report scaffold, ownership
+request, implementation proposal, or extra artifact. This is one positive
+output-scope case, not a comparative benchmark.
+
+The repeated external boundary identified the missing vendor/client
+termination contract and preserved the ordered-list and propagated-error
+requirements. It did not invent a vendor, URL, cursor rule, or implementation,
+and it no longer cited procedural guidance as domain evidence. Its closing
+phrase that the requested evidence would be sufficient to “finish the adapter
+safely” is broader than the evidence establishes. It is retained as a wording
+limitation, not accepted as a safety or implementation-readiness result.
+
+Before and after caller readers both answered no for fully established evidence
+and yes for unresolved helper/consumer behavior. The after reader cited the
+new explicit predicate; the before reader inferred proportionality from the
+older text. This is source interpretation, not an invocation trace or a
+demonstrated comparative behavior change.
+
+### Sample inventory and limits
+
+| Arm or boundary | Outputs |
+| --- | ---: |
+| No-guide primary controls | 5 |
+| Unchanged-guide primary samples | 5 |
+| Candidate v1 primary samples | 5 |
+| Candidate v1 external boundary | 1 |
+| Candidate v2 primary samples | 5 |
+| Candidate v2 external boundary | 1 |
+| Candidate v2 direct-question boundary | 1 |
+| Caller source interpretation, before and after | 2 |
+| **Total preserved outputs** | **25** |
+
+The exact sanitized outputs and fixed inputs are retained in:
+
+- [baseline samples](research-before-coding-baseline-samples.md);
+- [candidate v1 samples and external boundary](research-before-coding-candidate-v1-samples.md);
+- [candidate v2 samples, external/direct boundaries, and caller interpretations](research-before-coding-candidate-v2-samples.md).
+
+The source-contract RED/GREEN remains separate from these actor observations.
+No host certification, native invocation result, cross-model result, cost
+measurement, consistent length reduction, safety/readiness result, fabricated
+vendor-fact finding, or measured poisoning fix is claimed.

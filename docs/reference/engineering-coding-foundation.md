@@ -10,7 +10,7 @@ within its own responsibility.
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
-| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source and caller boundaries corrected; v1 exposed output-shaping issues, and v2 checks remain pending. |
+| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository orientation. | Existing body retained; refinement is later work. |
 | `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
@@ -71,16 +71,28 @@ assertions, and evidence limits.
 
 The focused source guard failed against the former coding, approval, taxonomy,
 quota, and unconditional-caller directives, then passed after this rewrite.
-The ten baseline handoffs all returned the supplied-input findings without
-source edits or ownership blocking, so they are non-regression observations,
-not behavioral RED. Five v1 candidate handoffs also preserved those facts and
-boundaries, but all mechanically reproduced five headings and repeated evidence
-across sections. The v1 external boundary correctly reported missing evidence
-without inventing vendor facts, but listed procedural guidance beside domain
-sources. Those are shaping and source-role findings, not a measured poisoning
-fix or fabrication finding. Five fresh v2 samples and the repeated external
-boundary remain pending.
+The ten baseline handoffs returned the supplied-input findings without source
+edits or ownership blocking, so they are non-regression observations, not
+behavioral RED. Five v1 candidate handoffs also preserved those facts and
+boundaries, but all mechanically reproduced five headings and repeated
+evidence. Its external boundary correctly reported missing evidence without
+inventing vendor facts, but listed procedural guidance beside domain sources.
+
+Five v2 primary handoffs again preserved the facts and research-only scope.
+They did not all reproduce the same five labels, but remained structured and
+sometimes repetitive; these samples do not establish consistent length
+reduction. One additional direct-question boundary answered in two short
+paragraphs without extra procedure. The v2 external boundary identified the
+real evidence gap and no longer cited procedure as domain evidence, but its
+closing claim that the evidence would be enough to “finish the adapter safely”
+is broader than the evidence supports. Caller before/after readers both
+returned the expected no/yes interpretation, so no live or comparative
+invocation change was observed.
 
 See [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
-and the
-[ten sanitized research baseline handoffs](skill-evaluation/research-before-coding-baseline-samples.md).
+and the sanitized raw
+[baseline](skill-evaluation/research-before-coding-baseline-samples.md),
+[v1 candidate](skill-evaluation/research-before-coding-candidate-v1-samples.md),
+and
+[v2 candidate and boundary](skill-evaluation/research-before-coding-candidate-v2-samples.md)
+records.
