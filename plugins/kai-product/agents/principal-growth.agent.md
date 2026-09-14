@@ -200,7 +200,7 @@ For PORTFOLIO mode classify:
 Load `kai-core-scope-discipline` when the hypothesis would change product or
 instrumentation scope; propose it instead of promoting it into delivery.
 Define the user-visible hypothesis and constraints. Name interaction design for
-`principal-product-designer`, measurement to `principal-data-analytics`, scope
+`creative-lead-design`, measurement to `principal-data-analytics`, scope
 to `principal-product-manager`, and implementation to the relevant SWE role.
 You do not design the UI, instrument events, launch the test, or spend money.
 

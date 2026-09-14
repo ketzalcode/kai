@@ -129,6 +129,6 @@ The surrounding conventions are grounded in:
   lowercase hyphenated identities and structural separation of agents, skills,
   and workflows.
 
-Legacy `principal-*`, `director-*`, and the exact `creative-video-director`
-identity remain valid only for the current migration baseline. New durable
-roles use this taxonomy.
+Legacy `principal-*` and `director-*` identities remain parseable only for
+staged-migration and historical validation. Retired identities are not runtime
+registration. New durable roles use this taxonomy.

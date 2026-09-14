@@ -27,7 +27,7 @@ roles — never on the *assess* role.
   each finding is judged against `mission`, `scope.current`, and
   `principles.non_negotiable[]` and dispositioned into build vs a
   deferred `PROPOSAL`.
-- **Acting designers/builders** (`principal-product-designer`,
+- **Acting designers/builders** (`creative-lead-design`,
   `principal-swe-*`, `principal-swe-architect`) — carry the gate as
   **restraint on the proposed design or diff, not on judgment.** They assess
   honestly, but never unilaterally add a scope-expanding surface, flow,

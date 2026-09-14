@@ -53,8 +53,12 @@ export const HOOKS_OWNER = 'core';
 // The migration baseline freezes every id that existed before the
 // provider-posture-scope taxonomy. New agents go in NEW_AGENT_IDS, including
 // new workflows/personas/instructors; adding a retired-family id there fails.
-// Keeping the baseline separate makes "no new principal/director/creative
-// agents" enforceable without blocking one-at-a-time migration.
+// Keeping the baseline separate makes "no new principal/director agents"
+// enforceable without blocking one-at-a-time migration.
+const RETIRED_CREATIVE_AGENT_IDS = [
+  'principal-product-designer', 'principal-brand-designer', 'creative-video-director',
+];
+
 const MIGRATION_BASELINE_PACKS = {
   core: [
     'director-chief-of-staff', 'workflow-workspace-init',
@@ -62,7 +66,7 @@ const MIGRATION_BASELINE_PACKS = {
     'workflow-initiative-init',
   ],
   assistant: ['persona-self'],
-  creative: ['principal-product-designer', 'principal-brand-designer', 'creative-video-director'],
+  creative: [],
   engineering: [
     'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
     'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
@@ -96,7 +100,10 @@ const MIGRATION_BASELINE_PACKS = {
 export const NEW_AGENT_IDS = {
   core: [],
   assistant: ['personal-assistant'],
-  creative: [],
+  creative: [
+    'creative-lead-design', 'creative-lead-video',
+    'workflow-creative-demo-production',
+  ],
   engineering: ['eng-lead-technical-writing'],
   product: [],
   marketing: [],
@@ -118,9 +125,6 @@ export const PACK_ORDER = Object.keys(PACKS);
 // dispositions were ratified in the partition lock; keeping them here makes the
 // generator use the reviewed decision instead of silently defaulting to core.
 export const SKILL_OWNER_OVERRIDES = {
-  'demo-capture': 'creative',
-  'demo-narrate': 'creative',
-  'demo-zoom': 'creative',
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
@@ -912,15 +916,15 @@ export function marketplaceSurfacePolicy({
 // The one static shape the roster already uses to declare a situational
 // dispatch: `- **`id`** — when it applies`. Deliberately narrower than "any
 // backticked mention": prose cross-references ("the technical counterpart to
-// `ui-mockup`") are editorial, and reading those as firing paths would make
+// a named method") are editorial, and reading those as firing paths would make
 // most of the corpus a cross-pack dependency it is not.
 const DISPATCH_ENTRY = /^\s*[-*]\s+\*\*`([^`]+)`\*\*/;
 
 // An agent body names its skills inside the instruction that needs them,
 // so the bullet shape above cannot be the only firing path. An imperative to
 // load a skill is still narrower than "any backticked mention": it is a
-// directive, not the editorial cross-reference ("the technical counterpart to
-// `ui-mockup`") the rule above deliberately ignores.
+// directive, not an editorial cross-reference ("the technical counterpart to
+// a named method") the rule above deliberately ignores.
 const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0-9-]*)`/g;
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
@@ -981,7 +985,10 @@ export const AGENT_FAMILIES = [
   ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
 ];
 
-const LEGACY_AGENT_IDS = new Set(Object.values(MIGRATION_BASELINE_PACKS).flat());
+const LEGACY_AGENT_IDS = new Set([
+  ...Object.values(MIGRATION_BASELINE_PACKS).flat(),
+  ...RETIRED_CREATIVE_AGENT_IDS,
+]);
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
 const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
 const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
@@ -1000,7 +1007,7 @@ export const agentRefPattern = () => new RegExp(`\`(${AGENT_ID_SOURCE})\``, 'g')
 const AGENT_SHAPED = agentShapedPattern();
 const AGENT_CANDIDATE = agentCandidatePattern();
 const RETIRED_AGENT_IDS = new Set(
-  Object.values(MIGRATION_BASELINE_PACKS).flat()
+  [...Object.values(MIGRATION_BASELINE_PACKS).flat(), ...RETIRED_CREATIVE_AGENT_IDS]
     .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
 );
 

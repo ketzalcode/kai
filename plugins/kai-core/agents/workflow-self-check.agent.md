@@ -85,10 +85,8 @@ For each enabled category, produce raw findings inline with full evidence. Tier 
 
 **3.2 Naming convention.** Existing legacy agents may still use `principal-*`
 or `director-*` during the staged migration. Current creative durable roles use
-the provider-family/posture/scope contract in `kai-core-create-agent`. Only the
-exact legacy baseline id `creative-video-director` remains grandfathered until
-its replacement task; workflows, personas, and instructors retain their
-kind-specific prefixes. Skills are
+the provider-family/posture/scope contract in `kai-core-create-agent`.
+Workflows, personas, and instructors retain their kind-specific prefixes. Skills are
 `skills/<kebab-case>/SKILL.md`, and core-provided skills use `kai-core-*`.
 Anything outside those current or migration-safe patterns is a finding
 (severity depends on whether other files reference the off-pattern name).

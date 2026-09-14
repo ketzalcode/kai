@@ -1102,7 +1102,7 @@ function selfTest() {
   const fitState = reduceState(readAndParse([
     { src: 'declared', text: [
       decl({ t: 10, e: 'start', role: 'principal-swe-architect', run: 'r1', next_report_by: 20 }),
-      decl({ t: 10, e: 'start', role: 'creative-video-director', run: 'r2', next_report_by: 20 }),
+      decl({ t: 10, e: 'start', role: 'creative-lead-video', run: 'r2', next_report_by: 20 }),
     ].join('\n') },
     { src: 'observed', text: JSON.stringify({ t: 12, event: 'start', role: 'explore', session: 's1' }) },
   ]), 100);
@@ -1315,8 +1315,8 @@ function selfTest() {
     'a run with no usable role renders as unknown rather than crashing');
 
   const crowded = reduceState(parseRecords([
-    JSON.stringify({ t: 10, event: 'stop', role: 'creative-video-director', session: 's' }),
-    JSON.stringify({ t: 20, event: 'stop', role: 'creative-video-director', session: 's' }),
+    JSON.stringify({ t: 10, event: 'stop', role: 'creative-lead-video', session: 's' }),
+    JSON.stringify({ t: 20, event: 'stop', role: 'creative-lead-video', session: 's' }),
     JSON.stringify({ t: 30, event: 'start', role: 'principal-swe-architect', session: 's' }),
   ].join('\n'), 'observed'), 40);
   // Three-digit run counts must not push the index column into the name.

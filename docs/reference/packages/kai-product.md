@@ -40,10 +40,11 @@ helper scripts. `product: []` runtime dependencies and `NEW_AGENT_IDS.product: [
 remain unchanged. No skill-owner override is needed: the explorer explicitly
 loads its owned method. Product adds no runtime dependency or helper closure.
 
-The product and brand designers, `ui-mockup` and `html-block-diagrams` remain
-exclusively under creative. Core's corrected content/design grounding interface
-is unchanged: adequate supplied evidence retains provenance and coverage; it is
-not independent approval and does not require fresh upstream production.
+The combined `creative-lead-design`, `mockups-ascii`, `mockups-html`, and
+`html-block-diagrams` surface remains exclusively under creative. Core's
+corrected content/design grounding interface is unchanged: adequate supplied
+evidence retains provenance and coverage; it is not independent approval and
+does not require fresh upstream production.
 
 ## State, closure and independence
 

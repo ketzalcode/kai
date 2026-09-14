@@ -16,12 +16,12 @@ proposals conform to it and minimize visual weight instead of inventing a look.
 
 It is **not** a standalone trigger. It is inherited by reference by:
 
-- **`principal-product-designer`** — the primary author and consumer. Grounds
+- **`creative-lead-design`** — the primary author and consumer. Grounds
   every load-bearing visual choice; authors and maintains the reference.
 - **`principal-swe-frontend`** — owns *implementation truth* (the real tokens,
   component primitives, styling architecture) and the feasibility of any
   proposed token/component.
-- **`principal-brand-designer`** — owns the *brand-identity layer* (logo/wordmark,
+- **`creative-lead-design`** — owns the *brand-identity layer* (logo/wordmark,
   color palette, typographic and iconography style, brand voice-visual) that the
   design system expresses. It grounds identity work in the current brand and
   design system before evolving it; the applied design-system content stays with
@@ -57,7 +57,7 @@ Shape (fill what the app actually has; mark the rest as gaps):
 - target:
 - source:          consumed | derived | mixed
 - last reviewed:
-- owners:          principal-product-designer (semantics) + principal-swe-frontend (implementation)
+- owners:          creative-lead-design (semantics) + principal-swe-frontend (implementation)
 - evidence basis:  <repo token paths and/or design-system-extract.md + run evidence>
 - freshness basis: <what would make this stale — e.g. a UI redesign of surface X>
 
@@ -219,8 +219,8 @@ owns the scope of a system addition.
 
 | Concern | Owner |
 |---|---|
-| Brand-identity layer — logo/wordmark, color palette, typographic and iconography **style**, brand guidelines | `principal-brand-designer` |
-| Visual language, hierarchy, component **shape/semantics**, states, usage rules, `design-system.md` content | `principal-product-designer` |
+| Brand-identity layer — logo/wordmark, color palette, typographic and iconography **style**, brand guidelines | `creative-lead-design` |
+| Visual language, hierarchy, component **shape/semantics**, states, usage rules, `design-system.md` content | `creative-lead-design` |
 | **Implementation truth** — CSS variables / Tailwind config / component primitives, token naming feasibility, mapping decisions to the repo's styling architecture, co-signing new/changed tokens | `principal-swe-frontend` |
 | Scope of a system-level addition | `principal-product-manager` / steward |
 
@@ -241,8 +241,9 @@ The seam, concretely:
    to the designer** before improvising — it does not silently substitute a
    different look.
 4. **REVIEW-mode fork** — if a review uncovers a layout/interaction choice with
-   materially different options, it escalates as an options decision (mockups via
-   `ui-mockup`) to the PM/steward + FE, not a silent pick.
+   materially different options, it escalates as an options decision
+   (`mockups-ascii` for structure or `mockups-html` for appearance/responsive
+   layout) to the PM/steward + FE, not a silent pick.
 
 ## Hard rules
 

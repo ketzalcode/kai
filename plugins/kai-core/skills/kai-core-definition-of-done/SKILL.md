@@ -47,7 +47,7 @@ doesn't apply to this change is waived, not faked-Clear).
 |---|-----------|--------------|-------------|
 | 1 | **scope-true** | Did we build the thing we agreed to, and only that? | The diff satisfies the item's `needs`/acceptance from its thread and stays inside the initiative's `scope.current`. Anything scope-expanding was rerouted as a `PROPOSAL` (per `kai-core-scope-discipline`), not smuggled into this diff. |
 | 2 | **verified** | Do we *know* it works, or do we assume it? | Implementing principals' automated tests + build are green; relevant independent QA/system checks ran when applicable; for a user-facing surface, UI/UX validation is linked rather than assumed, and a **net-new or materially-changed** surface additionally carries **design sign-off** (see the sub-gate below). |
-| 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. For a net-new/materially-changed user-facing surface, that set **must include** a `principal-product-designer` design-conformance verdict on the current `change_ref`, **unless** a recorded product-design waiver applies (see the sub-gate below). |
+| 3 | **reviewed** | Were required independent reviews completed for this exact change and findings resolved? | Every `review_requirements` entry has an evidenced `completed_reviews` verdict whose `change_ref` matches the current item; findings are addressed or explicitly deferred as PROPOSALs. For a net-new/materially-changed user-facing surface, that set **must include** a `creative-lead-design` design-conformance verdict on the current `change_ref`, **unless** a recorded product-design waiver applies (see the sub-gate below). |
 | 4 | **shippable-safely** | Can this go out safely and come back? | There is a rollout + reversibility story **proportional to blast radius** — staged/flagged where risky, a rollback or kill switch, named monitoring signals, and an owner. |
 | 5 | **documented** | Will the next person understand what shipped? | Accepted reusable decisions and designs publish under `<project-root>/<publication-root>/`; user-facing and operational docs are updated; the serving initiative's `log.md` gets the ship entry. |
 | 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, parked ideas are in the committed backlog, and every generated asset passed the `kai-core-asset-producing` close transaction. |
@@ -79,7 +79,7 @@ it.
 When it triggers, readiness requires **one** of:
 
 - an **approved design artifact** for this surface **plus** a
-  `principal-product-designer` REVIEW-mode design-conformance verdict whose
+  `creative-lead-design` REVIEW-mode design-conformance verdict whose
   `change_ref` matches the current item; **or**
 - a **recorded product-design waiver** — the steward or operator records a
   `WAIVER` (grantor, reason, `applies_at` item version, scope, expiry — the
@@ -94,14 +94,14 @@ waiver is only for a genuinely triggered surface the operator consciously accept
 without design.
 
 Absent both, it is a **Gap → bounce**: set the item back, name
-**`principal-product-designer`** as the owning role, and emit the bounce message
+**`creative-lead-design`** as the owning role, and emit the bounce message
 *"consult the designer before this is passed."* The engineer having built it, QA
 having walked it, and the build being green do **not** substitute for design
 sign-off on a net-new surface.
 
 Detection is **independent**: DoD and `workflow-ship` decide the trigger from the
 surface itself, so a net-new surface is caught **even when no
-`principal-product-designer` entry was ever added to `review_requirements`** —
+`creative-lead-design` entry was ever added to `review_requirements`** —
 that missing entry is the failure, not an exemption.
 
 ## The readiness gate rule
@@ -162,10 +162,10 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
 6. **kai never performs the deployment.** Produce the record and steps; the
    human executes. Kai may record safe read-only verification afterward.
 7. **Design sign-off on net-new user-facing UI.** A net-new or materially-changed
-   user-facing surface needs an approved design + a `principal-product-designer`
+   user-facing surface needs an approved design + a `creative-lead-design`
    conformance verdict on the current `change_ref`, or a steward/operator-recorded
    product-design waiver bound to that `change_ref`. Missing both is a Gap owned by
-   `principal-product-designer`; a green build and a QA/UX-walk do not satisfy it,
+   `creative-lead-design`; a green build and a QA/UX-walk do not satisfy it,
    and a self-declared "it's minor" is not a waiver.
 8. **Asset completion is separate from production completion.** Generated
    reports, decisions, plans, designs, and release records carry disposition,
@@ -185,7 +185,7 @@ doesn't implicate it, and the waiver names why. "We didn't have time" is a
 - ❌ Dropping a review finding to clear dim-3. Defer it as a proposal.
 - ❌ Shipping a net-new user-facing surface (new component, changed
   layout/placement/prominence) that QA walked but **no designer signed off** —
-  the design sub-gate is a Gap owned by `principal-product-designer`, not a
+  the design sub-gate is a Gap owned by `creative-lead-design`, not a
   Clear.
 - ❌ Manufacturing design review for a one-line token-compliant copy fix — that
   change doesn't trigger the sub-gate at all; don't invent a review (and don't

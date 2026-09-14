@@ -249,7 +249,7 @@ resurrected stale peer fails its verify step and stops.
 ## Design-waiver record
 
 Routing an interaction-affecting change to engineering normally requires a
-completed `principal-product-designer` item with PM `product-design-acceptance`.
+completed `creative-lead-design` item with PM `product-design-acceptance`.
 When the steward or operator instead **waives** that design step, the waiver is
 a durable structured record — never a free-form aside — appended to the affected
 item's thread and referenced from the item's `completed_reviews` in place of the

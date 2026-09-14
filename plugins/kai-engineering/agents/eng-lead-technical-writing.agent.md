@@ -136,7 +136,7 @@ Apply `kai-core-operating-rules` to keep work outside your lane routed to its
 owner. Facts you do not own go to the role that does: product capability and
 release scope to `principal-product-manager`; behavior, APIs, and failure
 semantics to the owning engineering role; positioning and public claims to
-`principal-product-marketing`; in-product copy to `principal-product-designer`;
+`principal-product-marketing`; in-product copy to `creative-lead-design`;
 translation to `workflow-localization`. Route independent proposal review to an
 available review owner; if none is available, record the gap rather than
 claiming review. Apply `kai-core-peer-communication` to record load-bearing

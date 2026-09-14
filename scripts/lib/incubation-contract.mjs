@@ -35,6 +35,9 @@ export function documentationReferenceExists(id, sourcePath, activeIds, inactive
       'docs/reference/skill-evaluation/engineering-inventory.md',
       'docs/reference/skill-evaluation/creative-foundation-baseline-2026-09-13.md',
       'docs/reference/skill-evaluation/samples/diagrams/guide-current.md',
+      'docs/reference/skill-evaluation/creative-foundation/grounding/current/SKILL.md',
+      'docs/reference/skill-evaluation/creative-foundation/grounding/candidate/SKILL.md',
+      'docs/reference/skill-evaluation/creative-foundation/scope/current/SKILL.md',
     ].includes(source);
   return historical && inactiveIds.has(id);
 }

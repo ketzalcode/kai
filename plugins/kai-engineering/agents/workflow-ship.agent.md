@@ -247,7 +247,7 @@ holds it.
   a scope-true gap).
 - **A net-new/materially-changed user-facing surface that no designer signed
   off on** (the design sub-gate under dim-2 — see `kai-core-definition-of-done`) →
-  `principal-product-designer`, with the bounce message *"consult the designer
+  `creative-lead-design`, with the bounce message *"consult the designer
   before this is passed."* A green build and a QA-walk do not substitute.
 - **A rollout/operability design that dim-4 exposed as thin** →
   `principal-swe-infra` / `principal-swe-architect`.
