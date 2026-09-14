@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "skill": "pr-sizing",
+  "sourceRevision": "758a637d1af1632451385c48693d2bcdbc108bfd",
+  "model": "gpt-5.4-mini",
+  "effort": "medium",
+  "hashAlgorithm": "SHA-256 of UTF-8 text with CRLF normalized to LF and terminal blank lines collapsed to one LF; original byte hashes also recorded",
+  "inputs": [
+    {
+      "file": "case.md",
+      "sha256": "70c327b298141c89d27616c2bcbb4fc51ed144725c0696466bdca3dd086ad984",
+      "originalBytesSha256": "e78c843a95f3c1f76a922deafdf34bfe088668d04176f428279202dbf3a3abc8"
+    },
+    {
+      "file": "guide-current.md",
+      "sha256": "026c8c82b06e1d1e5d1da11e5fa097b7609cd503fb66acef1fa0a4ae9f0348cd",
+      "originalBytesSha256": "026c8c82b06e1d1e5d1da11e5fa097b7609cd503fb66acef1fa0a4ae9f0348cd"
+    }
+  ],
+  "samples": [
+    {
+      "id": "sizing-01",
+      "arm": "control",
+      "case": "case.md",
+      "file": "sizing-01.md",
+      "sha256": "adb4f0faeaa7414ae95d249c4434b06382db3d63605b384f5614c46bd9454f36",
+      "originalBytesSha256": "5ee0cc7f941104ca832978d0db76c0a9b48773902205ce9f8888e243b1799eb0"
+    },
+    {
+      "id": "sizing-02",
+      "arm": "control",
+      "case": "case.md",
+      "file": "sizing-02.md",
+      "sha256": "e5a2cb808f59e0f6bbfccbae681eaae751ad70944f284b06f40cfb8a8d52a432",
+      "originalBytesSha256": "d32a871fbd4f0dd3a2065c9680a6c7a40d92bb17a01ec40825f99477ec142381"
+    },
+    {
+      "id": "sizing-03",
+      "arm": "control",
+      "case": "case.md",
+      "file": "sizing-03.md",
+      "sha256": "4165df9b9bbf8b07330e3d4d87a0c9c14a9cc92a17e296711f2502ec580a3d77",
+      "originalBytesSha256": "fcb4a55df2af8c691d5f09c0db431eddabb58029545544d9798f71e23f14b9b8"
+    },
+    {
+      "id": "sizing-04",
+      "arm": "control",
+      "case": "case.md",
+      "file": "sizing-04.md",
+      "sha256": "0517f31c23e6253f659ed91ea6785d0d788106d90465c74086a6413efd6fdcda",
+      "originalBytesSha256": "b54ff21a1dd387de92c9c68fb5d32817b1e02e9333a7e463b5a56986b3942ccf"
+    },
+    {
+      "id": "sizing-05",
+      "arm": "control",
+      "case": "case.md",
+      "file": "sizing-05.md",
+      "sha256": "3687d43c5efcd37945b034718f6e3d1623e16f9110771e4bc3b8bd8bfbf2f5fa",
+      "originalBytesSha256": "1942764ecf3c589ca394f78ef21931f0de6489cd08e438a19b0aa32b45a3382e"
+    },
+    {
+      "id": "sizing-06",
+      "arm": "current",
+      "case": "case.md",
+      "file": "sizing-06.md",
+      "sha256": "d9f1c9eb7b1926fed1681e5d24d9a84279be10a16b00eb3bc873b93ab997cddc",
+      "originalBytesSha256": "fc3b545a053c2ef7ca9c7bd6f89244f40ec67eaf783a3a0b66b6506da6f669c3"
+    },
+    {
+      "id": "sizing-07",
+      "arm": "current",
+      "case": "case.md",
+      "file": "sizing-07.md",
+      "sha256": "ceabf7706d1959726c05128b5eb339ad0040cc4ab029e390669d5c82d15edb1e",
+      "originalBytesSha256": "03fbcd27bc24ad6b7cf714919d6136f1ffb980c77d5f0afe47767c91a45bf165"
+    },
+    {
+      "id": "sizing-08",
+      "arm": "current",
+      "case": "case.md",
+      "file": "sizing-08.md",
+      "sha256": "9932f1d467ad1bc84da00e62c05e9f3de9db2d331f04654a2f7f11fec1eefd3f",
+      "originalBytesSha256": "ac454080197b2f48ad919ca3af150f70584cde01f3020cd026e3307592ebac11"
+    },
+    {
+      "id": "sizing-09",
+      "arm": "current",
+      "case": "case.md",
+      "file": "sizing-09.md",
+      "sha256": "9c502e3195cfe517ebc214d1a8ae4795ddbe6ee2ffcabc8f444294bf8a99e5a0",
+      "originalBytesSha256": "c05df4898b6d2300d62ff6524bc9825078919d53db465c138ca31e76afea01c0"
+    },
+    {
+      "id": "sizing-10",
+      "arm": "current",
+      "case": "case.md",
+      "file": "sizing-10.md",
+      "sha256": "41cfcd724b928c5696907d8f69e12927cda9935f3c0d84a08e1819a9dd53670d",
+      "originalBytesSha256": "c3ac807790b10b143bcce338f300c7befd3ad5beba416c1d9507cb8e45be5ec2"
+    }
+  ],
+  "limitations": [
+    "Two current outputs require a split based on the blanket refactor rule; this is a case-specific observation.",
+    "Multiple PRs and standalone refactors are not inherently wrong.",
+    "No implementation, live discovery, safety or cost claim."
+  ],
+  "normalizationNote": "The original sizing-07 output has a terminal blank line rejected by Git whitespace policy. Only exported end-of-file blank lines and line endings are normalized; original actor files are unchanged."
+}
