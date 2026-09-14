@@ -246,7 +246,7 @@ Per-change discipline every `principal-swe-*` agent routes.
 | Name | What it owns |
 | ---- | ------------ |
 | [`coding-style`](../../plugins/kai-engineering/skills/coding-style/SKILL.md) | Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified. |
-| [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | Enforces research before non-trivial code changes. Use when investigating ownership, reusable code, and tradeoffs before editing. |
+| [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | PR sizing method. Use when planning a feature, large refactor, or multi-file change into independently shippable, reviewable increments. |
 | [`kai-core-pr-delivery`](../../plugins/kai-core/skills/kai-core-pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | Fast codebase onboarding report. Use when mapping an unfamiliar repo's stack, commands, architecture, conventions, patterns, and gotchas for future sessions. |

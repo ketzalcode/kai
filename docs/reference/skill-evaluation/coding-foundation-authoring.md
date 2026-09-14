@@ -392,3 +392,86 @@ approval request, or project edit, and did not claim tests it had not run. This
 single combined case covers actual code output, repository precedence, exact
 documentation preservation, and caller authorization. It is not broad
 implementation coverage or a native plugin-discovery test.
+
+## Research-before-coding: Task 3 evidence
+
+### Authoring case
+
+The supplied-input case asked for a research handoff explaining why an explicit
+zero delay did not reach a worker queue. The evidence included the truthy
+fallback, the worker caller, the health/default caller, and the documented
+zero-versus-absent contract. No implementation was requested and no ownership
+document was supplied.
+
+The rubric required grounded findings, affected callers, and unresolved facts
+without source edits, invented ownership, or a read-only research block. The
+case did not exercise natural skill discovery, a full live caller, or tool
+availability.
+
+### Baseline wording screen
+
+- Model: `gpt-5.4-mini`
+- Reasoning effort: `medium`
+- Samples: five no-guide controls and five unchanged-guide samples
+- Context: fresh for every sample
+- Baseline guide SHA-256:
+  `7586FA9013BDA86E3BE10505CE49278EC1B129E758C8FFD43F2C7A665EDB5CC4`
+
+Manual inspection found that all ten handoffs identified the falsy `0`
+fallback and the worker caller. They distinguished the health/default path or
+acknowledged the helper's shared use. None performed or claimed source edits,
+and none blocked the read-only investigation solely because ownership was
+unknown.
+
+**This was not behavioral RED.** The supplied-input case did not demonstrate
+that the former guide caused implementation overreach, ownership blocking, or
+automatic activation. Suggestions about nullish semantics and other callers
+remain caveats, not established repository facts.
+
+The
+[ten sanitized baseline handoffs](research-before-coding-baseline-samples.md)
+are retained as durable evidence rather than runtime skill content.
+
+### Source-contract RED and GREEN
+
+The baseline source still explicitly required or encoded:
+
+- research before nearly every non-trivial code change;
+- one-line and file-count thresholds;
+- a per-file ownership taxonomy;
+- a proposal followed by implicit or explicit approval;
+- a `Then code` implementation step;
+- automatic `pr-sizing` for larger changes;
+- unconditional research routes and neighboring-file quotas in the four named
+  code-writing callers.
+
+The engineering foundation guard gained focused assertions for those concrete
+contradictions and the stale claim that no agent inherited the skill. Before
+the source edit, it failed with the expected skill, caller, and issue-analysis
+violations. After the bounded evidence rewrite and caller alignment, the same
+guard passed under Node `v24.15.0`.
+
+This structural RED/GREEN proves only that the checked source contract changed.
+It does not convert the ten successful baseline handoffs into actor failures or
+establish candidate behavior.
+
+### Frozen candidate contract and pending checks
+
+The candidate:
+
+- returns question/scope, relevant local facts, grounded sources, reuse and
+  consumer implications, and unresolved evidence with consequences;
+- adds a recommendation only when a decision is requested;
+- makes external research, experiments, diagrams, and durable reports
+  conditional on the actual question and authorization;
+- treats missing authoritative access as an evidence gap;
+- does not require callers consuming supplied sources to acquire web tools;
+- leaves implementation and original task authority with the caller.
+
+The candidate guide SHA-256 is
+`AAD86825BDB3FDDC9E2F3200BD9E4418823DAC23C37EC4E2B0B3FB7EAB18D895`.
+
+The controller still needs to run five fresh candidate samples, the genuine
+missing-external-contract boundary, and the caller source-interpretation case.
+No candidate behavior pass, host certification, cross-model result, or quality
+improvement is claimed in this revision.

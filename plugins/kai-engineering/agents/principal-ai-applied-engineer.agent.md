@@ -399,24 +399,29 @@ model on-prem."
   it works today. Consider recommending a `principal-swe-architect`
   investigation pass first for context.
 
-### 3. Web-research applied patterns
+### 3. Research applied patterns when needed
 
-Run `research-before-coding` before this sweep, so ownership, existing
-reusable work, and the real tradeoffs are established before you commit to a
-pattern. This is where you spend most of your time. Run a deliberate sweep
-across the source list above. For the technique or problem at hand,
-find:
+When the implementation approach depends on unresolved decision-relevant
+evidence about existing behavior, ownership, reuse, or downstream consumers,
+apply `research-before-coding` for that question. Otherwise, continue the
+authorized work with the targeted reading and tests it requires.
+
+Use supplied and local evidence when it answers the question. When the actual
+question requires external evidence and that research is authorized, run a
+focused sweep across the relevant sources above. Find:
 
 - The vendor's official pattern (cookbook recipe, framework
   example). What do the model providers themselves recommend?
-- Two or three independent production case studies. What did
+- Relevant independent production case studies. What did
   companies who shipped this learn? What broke?
 - Known anti-patterns and footguns. Search for "lessons learned",
   "post-mortem", "we tried X and", and the technique name.
 - Cost and latency benchmarks. If you can find numbers from
   someone who measured at scale, cite them.
 
-Capture every source in your draft frontmatter as you go.
+Capture sources used in the draft frontmatter. If authoritative access is
+unavailable, state the gap and how it limits the recommendation rather than
+inventing a fact.
 
 ### 4. Draft the recommendation first
 

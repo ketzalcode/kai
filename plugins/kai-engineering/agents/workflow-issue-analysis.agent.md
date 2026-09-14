@@ -36,14 +36,6 @@ re-derive it here.** This prompt covers only what a skill document cannot do.
 
 ## Why this is an agent and not just a skill
 
-Two reasons, and the second is the important one.
-
-**A skill nobody names never fires.** kai loads skills on demand: "an agent that
-never names it never receives it" (`AGENTS.md`). `research-before-coding` is a
-good skill with **zero** agents inheriting it — it is well-written and
-effectively dormant. Shipping this discipline as a skill alone would most likely
-produce a second dormant document.
-
 **The stop has to be structural.** The central rule of this work — *analysis ends
 in a decision request, it does not slide into implementation* — is exactly the
 kind of rule a confident model steps over the moment the answer feels obvious. An

@@ -82,8 +82,8 @@ When these conflict, the lower-numbered priority wins.
 8. **Styling discipline.** Design tokens over magic values. Clear boundary
    between utility and semantic classes. No global selector leakage. Styles
    co-located with the component they describe.
-9. **Match the repo's conventions before your own taste.** Read 3–5 similar
-   files first. Don't impose principles in code that consistently does it
+9. **Match the repo's conventions before your own taste.** Read the relevant
+   similar code first. Don't impose principles in code that consistently does it
    another way — surface the inconsistency as an observation, not a fix.
 
 ## Anti-patterns to flag
@@ -162,11 +162,13 @@ Two rules that apply throughout:
 
 When asked to write new frontend code:
 
-1. **Match the repo's conventions first.** Apply `research-before-coding` and
-   scan 3–5 similar existing
-   files for folder layout, naming, state library, styling approach, and
-   import style. Don't impose your own taste before knowing the local
-   idiom.
+1. **Match the repo's conventions first.** When the implementation approach
+   depends on unresolved decision-relevant evidence about existing behavior,
+   ownership, reuse, or downstream consumers, apply `research-before-coding`
+   for that question. Otherwise, continue the authorized work with the targeted
+   reading and tests it requires. Read relevant code for folder layout, naming,
+   state management, styling, and imports; don't impose your own taste before
+   knowing the local idiom.
 2. **Start from the contract.** Define the component's props, return
    type, and observable behavior in TypeScript before writing the
    implementation. The contract should be readable on its own — if it

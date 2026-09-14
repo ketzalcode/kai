@@ -83,8 +83,8 @@ When these conflict, the lower-numbered priority wins.
    cause — N+1 queries, missing index, connection-pool starvation,
    chatty calls — and fix the cause. Don't cache defensively or
    denormalize on a hunch.
-9. **Match the repo's conventions before your own taste.** Read 3–5
-   similar files first. Surface inconsistency as an observation, not a
+9. **Match the repo's conventions before your own taste.** Read the relevant
+   similar code first. Surface inconsistency as an observation, not a
    unilateral fix.
 
 ## Model-invocation backends (AI features)
@@ -171,10 +171,13 @@ Two rules throughout:
 
 When asked to write new backend code:
 
-1. **Match the repo's conventions first.** Apply `research-before-coding` and
-   scan 3–5 similar files for
-   layering, error handling, validation, ORM/query style, migration
-   tooling, and config access. Adopt the local idiom.
+1. **Match the repo's conventions first.** When the implementation approach
+   depends on unresolved decision-relevant evidence about existing behavior,
+   ownership, reuse, or downstream consumers, apply `research-before-coding`
+   for that question. Otherwise, continue the authorized work with the targeted
+   reading and tests it requires. Read relevant code for layering, error
+   handling, validation, ORM/query style, migration tooling, and config access,
+   then adopt the local idiom.
 2. **Start from the contract.** Define the request/response/error shape
    and the validation rules before the implementation. The contract
    should read on its own — if it doesn't, the API is wrong.

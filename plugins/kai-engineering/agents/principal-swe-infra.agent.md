@@ -84,7 +84,7 @@ When these conflict, the lower-numbered priority wins.
    orphaned or always-on resources that nobody owns. Cost is a design
    constraint, surfaced — not an invoice surprise.
 8. **Match the repo's and org's conventions before your own taste.**
-   Read 3–5 similar pipelines/modules first. Surface inconsistency as
+   Read the relevant pipelines and modules first. Surface inconsistency as
    an observation, not a unilateral migration.
 
 ## Anti-patterns to flag
@@ -156,10 +156,13 @@ Two rules throughout:
 
 When asked to write new infra:
 
-1. **Match the existing tooling and layout first.** Apply `research-before-coding`
-   and read the same IaC tool,
-   module structure, naming, environment strategy, and pipeline style
-   the repo already uses. Don't introduce a new stack alongside the old.
+1. **Match the existing tooling and layout first.** When the implementation
+   approach depends on unresolved decision-relevant evidence about existing
+   behavior, ownership, reuse, or downstream consumers, apply
+   `research-before-coding` for that question. Otherwise, continue the
+   authorized work with the targeted reading and tests it requires. Read the
+   relevant IaC tooling, module structure, naming, environment strategy, and
+   pipeline style; don't introduce a new stack alongside the old.
 2. **Plan-first and reversible.** Apply `pr-sizing` so the change stays small
    enough to plan and review before apply. Write the change so it can be planned
    and reviewed before apply, and so it can be rolled back. Show the

@@ -10,7 +10,7 @@ within its own responsibility.
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
-| `research-before-coding` | Supplies bounded change research when its trigger applies. | Existing body retained; refinement is later work. |
+| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source and caller contracts corrected; candidate behavior checks remain pending. |
 | `onboard-to-codebase` | Supports explicit repository orientation. | Existing body retained; refinement is later work. |
 | `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
@@ -43,3 +43,35 @@ See
 [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
 for the source-contract regression, exact sanitized outputs, boundary
 assertions, and evidence limits.
+
+## Research-before-coding contract
+
+`research-before-coding` is an evidence method, not a production-code step:
+
+- Explicit user invocation returns useful findings for the stated question.
+- Code-writing callers route to it only when unresolved, decision-relevant
+  evidence could change the approach. Ordinary targeted reading and tests
+  continue without it when current evidence is adequate.
+- The handoff states the question and scope, relevant local facts, grounded
+  sources, reuse and consumer implications, and unresolved evidence with its
+  consequences.
+- Ownership evidence constrains authorization when relevant, but folder names
+  do not grant authority and missing ownership metadata does not block
+  read-only research.
+- External research and experiments are conditional on the actual question and
+  authorization. Missing authoritative access is reported as a gap.
+- No repository-wide map, per-file taxonomy, reading quota, automatic sizing
+  chain, implementation step, approval ceremony, diagram, or report file is
+  required.
+- The caller retains its original task authority and may continue separately
+  authorized implementation after consuming the handoff.
+
+The focused source guard failed against the former coding, approval, taxonomy,
+quota, and unconditional-caller directives, then passed after this rewrite.
+The ten baseline handoffs all returned the supplied-input findings without
+source edits or ownership blocking, so they are non-regression observations,
+not behavioral RED. Candidate and boundary samples remain pending.
+
+See [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
+and the
+[ten sanitized research baseline handoffs](skill-evaluation/research-before-coding-baseline-samples.md).

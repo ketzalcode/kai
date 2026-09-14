@@ -81,6 +81,84 @@ assert.deepEqual(
   [],
   'coding-style description and caller clauses must match the conditional shared-defaults contract',
 );
+const researchBody = readFileSync(
+  join(root, 'plugins', 'kai-engineering', 'skills', 'research-before-coding', 'SKILL.md'),
+  'utf8',
+);
+const normalizedResearchBody = researchBody.replace(/\s+/g, ' ');
+const researchContractViolations = [];
+for (const directive of [
+  'then propose, then\ncode',
+  'Any code change beyond a one-line fix',
+  'Trivial one-line changes',
+  '## Module taxonomy',
+  'Read 2–5 nearby files',
+  'For small changes (≤1 file, ≤30 lines)',
+  'pair with the `pr-sizing` skill',
+  '### Step 6 — Then code',
+  'implicit-or-explicit-approved',
+  '**Always** state the module category',
+]) {
+  if (researchBody.includes(directive)) researchContractViolations.push(`skill: ${directive}`);
+}
+for (const marker of [
+  'Use when a code or design decision depends on unresolved evidence',
+  'Question and scope',
+  'Relevant local facts',
+  'Reuse and consumer implications',
+  'Unresolved evidence and consequences',
+  'Explicit user invocation',
+  'The caller may continue its independently authorized work',
+  'A durable report requires an explicit request or an existing handoff contract',
+]) {
+  if (!normalizedResearchBody.includes(marker)) {
+    researchContractViolations.push(`skill: missing ${marker}`);
+  }
+}
+const researchCallers = [
+  'plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+];
+for (const rel of researchCallers) {
+  const body = readFileSync(join(root, rel), 'utf8');
+  const normalizedBody = body.replace(/\s+/g, ' ');
+  for (const directive of [
+    'Read 3–5',
+    'scan 3–5',
+    'Run `research-before-coding` before this sweep',
+  ]) {
+    if (body.includes(directive)) researchContractViolations.push(`${rel}: ${directive}`);
+  }
+  for (const marker of [
+    'unresolved decision-relevant evidence',
+    'apply `research-before-coding` for that question',
+    'continue the authorized work with the targeted reading and tests it requires',
+  ]) {
+    if (!normalizedBody.includes(marker)) researchContractViolations.push(`${rel}: missing ${marker}`);
+  }
+  if (!codingStyleReferences.some(ref =>
+    ref.from === rel &&
+    ref.target === 'research-before-coding' &&
+    ref.firing.includes('loaded'))) {
+    researchContractViolations.push(`${rel}: research route is not discoverable`);
+  }
+}
+const issueAnalysisBody = readFileSync(
+  join(root, 'plugins', 'kai-engineering', 'agents', 'workflow-issue-analysis.agent.md'),
+  'utf8',
+);
+for (const staleClaim of ['zero** agents inheriting it', 'effectively dormant']) {
+  if (issueAnalysisBody.includes(staleClaim)) {
+    researchContractViolations.push(`workflow-issue-analysis: ${staleClaim}`);
+  }
+}
+assert.deepEqual(
+  researchContractViolations,
+  [],
+  'research must remain a bounded evidence handoff with conditional caller routes',
+);
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [
