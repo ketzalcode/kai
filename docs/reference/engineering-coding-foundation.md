@@ -12,7 +12,7 @@ within its own responsibility.
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; candidate narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
-| `pr-sizing` | Supports proportional delivery decomposition. | Source and four caller routes corrected; the baseline found case-specific rule-driven extra splitting, while candidate and boundary checks remain pending for the controller. |
+| `pr-sizing` | Supports proportional delivery decomposition. | Source and four caller routes corrected; candidate primary and boundary evidence recorded with case-specific limits. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
 
 The ten document-review skills and their dependent workflow remain incubated,
@@ -208,5 +208,29 @@ refactors are generally wrong. Some one-PR outputs used overbroad
 
 See the sizing sample [manifest](skill-evaluation/samples/sizing/manifest.json)
 for the fixed case, exact IDs, normalized text hashes, original byte hashes,
-and evidence limits. Candidate model checks and the staged-migration and
-standalone-refactor boundaries remain pending for the controller.
+and evidence limits.
+
+All five candidate samples
+[11](skill-evaluation/samples/sizing/sizing-11.md),
+[12](skill-evaluation/samples/sizing/sizing-12.md),
+[13](skill-evaluation/samples/sizing/sizing-13.md),
+[14](skill-evaluation/samples/sizing/sizing-14.md), and
+[15](skill-evaluation/samples/sizing/sizing-15.md) proposed one coherent PR,
+as did all five controls. They did not introduce an obligatory refactor-only
+split or start implementation. This is a small policy-conformance observation
+for the supplied case, not evidence of general superiority, safety, cost
+savings, or live activation.
+
+The standalone-refactor [case](skill-evaluation/samples/sizing/refactor-case.md)
+and [output](skill-evaluation/samples/sizing/sizing-refactor-output.md)
+preserved one independently useful code-health PR. The migration
+[case](skill-evaluation/samples/sizing/migration-case.md) and
+[output](skill-evaluation/samples/sizing/sizing-migration-output.md)
+recognized compatible old/new handling, resumable backfill, and retirement
+gating. It did not fully specify client rollout or data-transformation rules,
+so it is a sizing outline rather than an executable or approved migration plan.
+
+The evidence set deterministically copies five inputs and 17 outputs; the
+manifest maps and hashes each file. Its declared normalization converts CRLF to
+LF and collapses terminal blank lines to one LF while retaining original byte
+hashes; the raw actor files were not rewritten.

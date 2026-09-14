@@ -746,7 +746,7 @@ directives, missing proportional proposal boundaries, and all four caller
 routes. After the rewrite, the same guard passed. This is source-contract
 evidence, separate from the actor observation.
 
-### Candidate contract and pending controller checks
+### Candidate contract and completed controller checks
 
 The candidate consumes authorized scope and returns either a no-split
 conclusion or an ordered proposal. It permits a necessary small refactor to
@@ -756,8 +756,37 @@ allows later increments to depend on earlier compatible and safe landing
 points. It stops before implementation, pull-request creation, or a new
 approval ceremony.
 
-No candidate model samples were run by this implementer. The candidate
-wording screen, genuine staged compatibility-migration boundary, and useful
-standalone-refactor boundary remain **PENDING for the controller**. No live
-plugin invocation, implementation outcome, safety result, comparative quality,
-or cost claim is made.
+The source was frozen at
+`222fd8c2262fa4a21d3e46309419f4f48520fcaf`, with normalized guide SHA-256
+`9fc29f0e9930941873fa2def0c1e1fff68acd2d077ba45f1dda7923a1aaf1b61`.
+The controller then ran five fresh `gpt-5.4-mini`/medium candidate samples.
+[Samples 11–15](samples/sizing/) all proposed one coherent PR with the
+necessary extraction, validation, and tests together. They did not require a
+refactor-only intermediate or start implementation.
+
+For this fixed case, controls were `5/5` one PR, unchanged-guide samples were
+`3/5` one PR and `2/5` rule-driven two-PR proposals, and candidate samples were
+`5/5` one PR. This is a small case-specific policy-conformance observation,
+not evidence of general superiority, safety, cost savings, or live activation.
+
+The standalone-refactor [case](samples/sizing/refactor-case.md) and
+[output](samples/sizing/sizing-refactor-output.md) preserved the explicitly
+requested code-health goal as one meaningful refactor PR without inventing a
+feature. The migration [case](samples/sizing/migration-case.md) and
+[output](samples/sizing/sizing-migration-output.md) recognized staged
+compatibility: old/new handling, resumable backfill, and removal gated on
+old-client retirement. It did not fully specify a client-rollout work item or
+the data-transformation rules, so it is not an executable or approved migration
+plan.
+
+The candidate-evidence commit is
+`1d5ad48ee05bb951b4459ade51deb108d9ba9147`. The evidence set
+deterministically copies five inputs and 17 outputs; the
+[manifest](samples/sizing/manifest.json) maps and hashes each file. It
+explicitly normalizes CRLF to LF and terminal blank lines to one LF while
+retaining original byte hashes. The raw actor files were not rewritten.
+
+No actor created code, branches, or pull requests. Caller continuation after a
+sizing proposal remains a source authority contract; no native host invocation
+was measured. No implementation outcome, general safety result, comparative
+quality, or cost claim is made.
