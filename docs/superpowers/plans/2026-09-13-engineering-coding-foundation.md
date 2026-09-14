@@ -10,12 +10,68 @@
 
 **Spec:** [Engineering coding foundation and review incubation](../specs/2026-09-13-engineering-coding-foundation-design.md), approved on 2026-09-13.
 
-**Status:** Tasks 1–6 are implemented and individually task-reviewed. Task 7
-has prepared the integration metadata and current status documentation; final
-whole-branch review, the controller-owned #211 update, publication, and
-updated-host runtime verification remain pending. The earlier pilot remains
+**Status:** Tasks 1–7 are implemented and task-reviewed. Final whole-branch
+review prompted corrections to the loaded core PR diagram contract, style
+evidence IDs/arms, source-test prose matching, and the optional HTML
+cross-reference. The corrections are committed as `f5d4f0c`; scoped re-review
+and the controller-owned #211 update remain pending. The earlier pilot remains
 paused. Publication is blocked by the unchanged 53 source-validator errors and
-existing pack-preview self-test `TypeError`.
+existing pack-preview self-test `TypeError`. Updated-host runtime, native
+acceptance, renderer/accessibility execution, and efficacy/cost are unverified.
+
+## Implementation decisions
+
+The controller made these rulings during execution, in this order. They narrow
+what the evidence supports; they do not waive a release gate.
+
+1. Create a separate worktree from main and import only this approved spec and
+   plan, keeping the paused pilot and large experimental corpus separate.
+   **Cost if wrong:** explicitly import any genuinely needed prior artifact.
+2. Provision supported Node 24.15.0 in this plan's ignored cache after installed
+   24.14.0 failed the required version check, without changing project
+   dependencies or another workspace. **Cost if wrong:** discard that owned
+   cache and rerun with another supported runtime.
+3. Retain pre-existing failures without repairing the earlier package refactor:
+   53 validator errors and a pack self-test crash before the changed collector
+   section. **Cost if wrong:** publication stays blocked until baseline repair.
+4. Put synthetic dispatch-collector coverage in the runnable foundation guard
+   and retire live-nine-lens assumptions from the crashing pack self-test,
+   preserving generic coverage. **Cost if wrong:** adjust test placement while
+   retaining coverage and baseline failure evidence.
+5. Distinguish coding-style source-contract RED from behavioral evidence.
+   Baseline actors already respected this case, but the missing skill reference
+   and cross-skill dependency violate the approved context-only contract.
+   Add failing source checks and report samples as non-regression, not a
+   poisoning fix. **Cost if wrong:** narrow the assertion or retain necessary
+   wording rather than invent a runtime effect.
+6. Include four coding-style caller paragraphs and a trigger-only description,
+   because those callers reimposed the removed comment limits.
+   **Cost if wrong:** adjust only the route predicate after boundary checks,
+   without broader agent redesign.
+7. Accept the style code boundary as correct authorized application and
+   non-regression, not causal improvement. The plan's word "improves" exceeds
+   what an unpaired example establishes. **Cost if wrong:** obtain additional
+   comparisons before claiming efficacy.
+8. Apply the same source-contract/evidence distinction to research: explicit
+   coding, approval and quotas contradict its approved ownership even though
+   the supplied-input baseline did not elicit them. **Cost if wrong:** revise
+   the source assertion or gather further behavioral evidence before claiming
+   an observed execution improvement.
+9. Refine research to a compact answer recipe with inline domain sources, not
+   five mandatory sections, after observing scaffolding and repetition.
+   Permit one additional five-sample screen and external boundary, without
+   changing facts or adding the tested example to the skill.
+   **Cost if wrong:** restore needed content cues if material findings are lost.
+10. Use source-contract RED for onboarding's trigger, calendar and forced-report
+    obligations while retaining the non-discriminating application results.
+    The correction is the explicit-orientation contract, not a claimed actor
+    malfunction. **Cost if wrong:** revise the narrow assertion or gather more
+    behavioral evidence before claiming a runtime effect.
+11. Include the directly loaded core PR diagram seam and stale creative
+    cross-reference in the final fix wave. Both contradict the changed
+    engineering contract, so this is necessary integration, not broader agent
+    redesign. **Cost if wrong:** revert those narrow paragraphs without
+    undoing the foundation.
 
 ## Global Constraints
 
