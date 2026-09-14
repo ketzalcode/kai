@@ -934,6 +934,7 @@ export const ROLE_FAMILY_PACK = Object.freeze({
   prod: 'product',
   eng: 'engineering',
   gtm: 'gtm',
+  creative: 'creative',
 });
 
 export const ROLE_POSTURES = Object.freeze([
@@ -969,7 +970,7 @@ export const ROLE_PROFILE_MODELS = Object.freeze({
 });
 
 const RETIRED_AGENT_FAMILIES = [
-  'principal', 'director', 'creative',
+  'principal', 'director',
 ];
 
 const KIND_AGENT_FAMILIES = [
@@ -980,11 +981,13 @@ export const AGENT_FAMILIES = [
   ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
 ];
 
+const LEGACY_AGENT_IDS = new Set(Object.values(MIGRATION_BASELINE_PACKS).flat());
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
 const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
 const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
 const ROLE_POSTURE_ALT = ROLE_POSTURES.join('|');
-const AGENT_ID_SOURCE = `(?:(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
+const LEGACY_AGENT_ID_ALT = [...LEGACY_AGENT_IDS].sort().join('|');
+const AGENT_ID_SOURCE = `(?:${LEGACY_AGENT_ID_ALT}|(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
   + `|(?:${ROLE_FAMILY_ALT})-(?:${ROLE_POSTURE_ALT})-[a-z0-9-]+)`;
 const AGENT_CANDIDATE_SOURCE = `(?:(?:${AGENT_FAMILY_ALT})-[a-z0-9-]+)`;
 
@@ -1000,11 +1003,10 @@ const RETIRED_AGENT_IDS = new Set(
   Object.values(MIGRATION_BASELINE_PACKS).flat()
     .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
 );
-const LEGACY_AGENT_IDS = new Set(Object.values(MIGRATION_BASELINE_PACKS).flat());
 
-// The new grammar can coexist with legacy ids while roles are migrated one or
-// two at a time. Once an id enters a provider-family namespace, however, its
-// posture and placement are enforced immediately.
+// The new grammar coexists with exact baseline ids while roles are migrated one
+// or two at a time. New ids in a provider-family namespace have their posture
+// and placement enforced immediately.
 export function agentTaxonomyErrors({ id, pack }) {
   const [family, posture, ...scope] = (id ?? '').split('-');
   if (RETIRED_AGENT_FAMILIES.includes(family)) {
@@ -1012,6 +1014,7 @@ export function agentTaxonomyErrors({ id, pack }) {
       ? []
       : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
   }
+  if (LEGACY_AGENT_IDS.has(id)) return [];
   if (KIND_AGENT_FAMILIES.includes(family)) return [];
   if (!(family in ROLE_FAMILY_PACK)) {
     return [`agent family \`${family || '(missing)'}-*\` is not supported`];
@@ -1167,7 +1170,7 @@ function paragraphContaining(body, skillId) {
 // keyed on the agent's family/posture rather than on any opt-in marker.
 export function agentProfileModelErrors({ id, body, fm = {} }) {
   const [family, posture] = (id ?? '').split('-');
-  const isDurableRole = family in ROLE_FAMILY_PACK;
+  const isDurableRole = family in ROLE_FAMILY_PACK && !LEGACY_AGENT_IDS.has(id);
   const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !LEGACY_AGENT_IDS.has(id);
   if (!isDurableRole && !isNewKind) return [];
   const errors = [];

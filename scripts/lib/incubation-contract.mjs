@@ -3,14 +3,25 @@ import { join, posix } from 'node:path';
 
 export function incubatedIds(root, kind) {
   if (kind !== 'agent' && kind !== 'skill') throw new TypeError('unknown component kind');
-  const base = join(root, 'incubator', 'kai-engineering',
-    kind === 'agent' ? 'agents' : 'skills');
-  if (!existsSync(base)) return new Set();
-  const entries = readdirSync(base, { withFileTypes: true });
-  return new Set(entries.filter(entry => kind === 'agent'
-    ? entry.isFile() && entry.name.endsWith('.agent.md')
-    : entry.isDirectory() && existsSync(join(base, entry.name, 'SKILL.md')))
-    .map(entry => kind === 'agent' ? entry.name.slice(0, -'.agent.md'.length) : entry.name));
+  const incubator = join(root, 'incubator');
+  if (!existsSync(incubator)) return new Set();
+  const ids = new Set();
+  for (const owner of readdirSync(incubator, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && entry.name.startsWith('kai-'))
+    .sort((a, b) => a.name.localeCompare(b.name))) {
+    const base = join(incubator, owner.name, kind === 'agent' ? 'agents' : 'skills');
+    if (!existsSync(base)) continue;
+    for (const entry of readdirSync(base, { withFileTypes: true })
+      .sort((a, b) => a.name.localeCompare(b.name))) {
+      if (kind === 'agent' && entry.isFile() && entry.name.endsWith('.agent.md')) {
+        ids.add(entry.name.slice(0, -'.agent.md'.length));
+      } else if (kind === 'skill' && entry.isDirectory()
+        && existsSync(join(base, entry.name, 'SKILL.md'))) {
+        ids.add(entry.name);
+      }
+    }
+  }
+  return ids;
 }
 
 export function documentationReferenceExists(id, sourcePath, activeIds, inactiveIds) {
@@ -20,6 +31,10 @@ export function documentationReferenceExists(id, sourcePath, activeIds, inactive
     'docs/proposals/', 'docs/superpowers/', 'docs/kai/reports/',
     'docs/reference/skill-evaluation/research-before-coding/',
   ].some(prefix => source.startsWith(prefix)) ||
-    source === 'docs/reference/skill-evaluation/engineering-inventory.md';
+    [
+      'docs/reference/skill-evaluation/engineering-inventory.md',
+      'docs/reference/skill-evaluation/creative-foundation-baseline-2026-09-13.md',
+      'docs/reference/skill-evaluation/samples/diagrams/guide-current.md',
+    ].includes(source);
   return historical && inactiveIds.has(id);
 }
