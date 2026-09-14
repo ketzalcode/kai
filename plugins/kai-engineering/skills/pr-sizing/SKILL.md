@@ -74,3 +74,7 @@ For several deliveries, return an ordered proposal:
 Stop after the proposal. Do not edit code, create branches or pull requests,
 start an increment, or add a new approval step solely because this skill was
 loaded.
+
+After consuming the proposal, the caller may continue any independently
+authorized implementation. Sizing neither grants nor withdraws that authority;
+a plan-only request remains plan-only.

@@ -266,6 +266,10 @@ for (const [label, pattern] of [
   ['dependent landed increments', /may depend on earlier landed increments/],
   ['compatibility and safety', /compatibility and safety/],
   ['preparatory increment boundary', /preparatory increment.{0,100}final user feature/],
+  ['authorized caller continuation',
+    /caller may continue.{0,60}independently authorized implementation/],
+  ['authority neutrality', /sizing neither grants nor withdraws.{0,30}authority/],
+  ['plan-only preservation', /plan-only request remains plan-only/],
 ]) {
   if (!pattern.test(normalizedSizingBody)) {
     sizingContractViolations.push(`skill: missing ${label}`);
