@@ -247,7 +247,7 @@ Per-change discipline every `principal-swe-*` agent routes.
 | ---- | ------------ |
 | [`coding-style`](../../plugins/kai-engineering/skills/coding-style/SKILL.md) | Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified. |
 | [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
-| [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | PR sizing method. Use when planning a feature, large refactor, or multi-file change into independently shippable, reviewable increments. |
+| [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | Use when an authorized change may need delivery decomposition into more than one ordered, reviewable increment. |
 | [`kai-core-pr-delivery`](../../plugins/kai-core/skills/kai-core-pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | Use when the user explicitly requests orientation to a repository or subsystem. |
 | [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | Shared diagram vocabulary and ASCII-first rules. Use when writing a design, decision, or engineering doc, or a README, needing system, data, flow, state, or topology diagrams. |

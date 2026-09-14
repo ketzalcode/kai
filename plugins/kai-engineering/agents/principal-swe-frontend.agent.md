@@ -173,11 +173,11 @@ When asked to write new frontend code:
    type, and observable behavior in TypeScript before writing the
    implementation. The contract should be readable on its own — if it
    isn't, the API is wrong.
-3. **Smallest viable component.** Apply `pr-sizing` so the change stays one
-   reviewable slice. If it has more than one obvious reason
-   to change, split before writing. If it needs configuration crossing
-   five or more props, that's a smell — propose a different shape
-   (children, compound components, slots).
+3. **Smallest viable component.** If the authorized work needs decomposition,
+   apply `pr-sizing` before implementation to propose the ordered increments.
+   One coherent delivery does not require sizing. If the component needs
+   configuration crossing five or more props, that's a smell — propose a
+   different shape (children, compound components, slots).
 4. **Wire accessibility from the start.** Roles, labels, keyboard
    handlers, and focus management are not a follow-up PR. The first
    version must be reachable and operable.

@@ -12,7 +12,7 @@ within its own responsibility.
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; candidate narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
-| `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
+| `pr-sizing` | Supports proportional delivery decomposition. | Source and four caller routes corrected; the baseline found case-specific rule-driven extra splitting, while candidate and boundary checks remain pending for the controller. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
 
 The ten document-review skills and their dependent workflow remain incubated,
@@ -177,3 +177,36 @@ samples [06](skill-evaluation/samples/onboarding/onboarding-06.md),
 and
 [selective-refresh](skill-evaluation/samples/onboarding/onboarding-refresh-output.md)
 boundaries with their linked inputs.
+
+## PR-sizing contract
+
+`pr-sizing` returns a delivery proposal; it does not execute the work:
+
+- Callers load it only when authorized work actually needs decomposition,
+  before implementation begins. A coherent one-delivery change does not require
+  sizing.
+- It returns either a no-split conclusion or ordered increments with explicit
+  dependencies, landing safety, and validation.
+- Tests stay with affected behavior.
+- A necessary small refactor may accompany its feature. A genuinely
+  independently useful or risk-reducing refactor may also stand alone.
+- Earlier landed increments may support later increments while each landing
+  point preserves compatibility and safety. Preparatory work need not expose
+  the final user feature immediately.
+- File counts, line counts, elapsed time, blanket refactor/feature separation,
+  and invented rollout machinery do not decide the split.
+- The skill stops at the proposal without editing code, opening pull requests,
+  starting delivery, or creating a new approval ceremony.
+
+In the committed baseline, all five no-guide controls proposed one PR for the
+coherent supplied change. Unchanged-guide samples 06 and 09 required two PRs
+specifically because the former guide prohibited mixing refactor and feature;
+the other three unchanged-guide samples proposed one PR. This is a
+case-specific observed policy effect, not evidence that two PRs or standalone
+refactors are generally wrong. Some one-PR outputs used overbroad
+“unshippable refactor” rhetoric; the revised policy does not adopt it.
+
+See the sizing sample [manifest](skill-evaluation/samples/sizing/manifest.json)
+for the fixed case, exact IDs, normalized text hashes, original byte hashes,
+and evidence limits. Candidate model checks and the staged-migration and
+standalone-refactor boundaries remain pending for the controller.

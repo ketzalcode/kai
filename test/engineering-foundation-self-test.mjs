@@ -219,6 +219,98 @@ assert.deepEqual(
   [],
   'onboarding must require an explicit orientation request and return a scoped evidence-aware map',
 );
+const sizingBody = readFileSync(
+  join(root, 'plugins', 'kai-engineering', 'skills', 'pr-sizing', 'SKILL.md'),
+  'utf8',
+);
+const normalizedSizingBody = sizingBody.replace(/\s+/g, ' ').toLowerCase();
+const sizingContractViolations = [];
+if (/^tools:\s*\[[^\]]*\bedit\b[^\]]*\]\r?$/m.test(sizingBody)) {
+  sizingContractViolations.push('skill: edit authority');
+}
+const sizingDescription =
+  sizingBody.match(/^description:\s*"([^"]+)"\r?$/m)?.[1] ?? '';
+if (!/^Use when\b/.test(sizingDescription)
+  || !/authorized (change|work)/i.test(sizingDescription)
+  || !/(decomposition|more than one)/i.test(sizingDescription)
+  || /\b(hours?|files?|lines?|words?)\b/i.test(sizingDescription)) {
+  sizingContractViolations.push('skill: description is not a proportional trigger');
+}
+for (const directive of [
+  'larger than a few hours',
+  'spans multiple files',
+  'Single-file changes',
+  'Bug fixes constrained to one function',
+  '15–30 minutes',
+  'three or more distinct concerns',
+  'Files: ...',
+  'never mix a refactor with a feature',
+  'Confirm before starting',
+  'Execute one at a time',
+  'requires another PR to land first to be useful',
+  'feature flag',
+]) {
+  if (sizingBody.includes(directive)) {
+    sizingContractViolations.push(`skill: ${directive}`);
+  }
+}
+for (const [label, pattern] of [
+  ['authorized-scope input', /authorized scope/],
+  ['proportional decomposition', /proportional delivery decomposition/],
+  ['one-slice result', /one coherent.{0,50}no split/],
+  ['ordered proposal output', /ordered proposal/],
+  ['proposal-only boundary', /stop after.{0,30}proposal/],
+  ['affected-behavior tests', /tests stay with the affected behavior/],
+  ['small feature refactor', /necessary small refactor.{0,80}feature/],
+  ['standalone useful refactor', /independently useful or risk-reducing refactor/],
+  ['dependent landed increments', /may depend on earlier landed increments/],
+  ['compatibility and safety', /compatibility and safety/],
+  ['preparatory increment boundary', /preparatory increment.{0,100}final user feature/],
+]) {
+  if (!pattern.test(normalizedSizingBody)) {
+    sizingContractViolations.push(`skill: missing ${label}`);
+  }
+}
+const sizingCallers = [
+  'plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+];
+for (const rel of sizingCallers) {
+  const body = readFileSync(join(root, rel), 'utf8');
+  const normalizedBody = body.replace(/\s+/g, ' ').toLowerCase();
+  for (const [label, pattern] of [
+    ['conditional predicate', /if the authorized work needs decomposition/],
+    ['pre-implementation timing', /apply `pr-sizing` before implementation/],
+    ['one-delivery exclusion', /one coherent delivery.{0,30}does not require sizing/],
+  ]) {
+    if (!pattern.test(normalizedBody)) {
+      sizingContractViolations.push(`${rel}: missing ${label}`);
+    }
+  }
+  for (const directive of [
+    'Apply `pr-sizing` before you break the work down',
+    'Apply `pr-sizing` to keep the change one reviewable slice',
+    'Apply `pr-sizing` so the change stays one reviewable slice',
+    'Apply `pr-sizing` so the change stays small',
+  ]) {
+    if (body.includes(directive)) {
+      sizingContractViolations.push(`${rel}: ${directive}`);
+    }
+  }
+  if (!codingStyleReferences.some(ref =>
+    ref.from === rel &&
+    ref.target === 'pr-sizing' &&
+    ref.firing.includes('loaded'))) {
+    sizingContractViolations.push(`${rel}: pr-sizing route is not discoverable`);
+  }
+}
+assert.deepEqual(
+  sizingContractViolations,
+  [],
+  'pr-sizing must return proportional delivery proposals from conditional caller routes',
+);
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [

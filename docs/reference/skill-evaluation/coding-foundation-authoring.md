@@ -696,3 +696,68 @@ committed at `23162d85ed8f84ee3b2910ef448c15341db90e46`.
 
 These checks do not establish live plugin discovery, automatic broad-scan
 prevention, isolated acceptance, comparative quality, or cost savings.
+
+## PR-sizing: Task 5 evidence
+
+### Baseline case and observations
+
+The fixed case described one coherent change: rename an internal helper, add
+one option through existing callers, preserve the public contract, and update
+the affected tests. It explicitly requested a delivery proposal only.
+
+- Model: `gpt-5.4-mini`
+- Reasoning effort: `medium`
+- Samples: five no-guide controls and five unchanged-guide samples
+- Context: fresh for every sample
+- Source revision recorded by the manifest:
+  `758a637d1af1632451385c48693d2bcdbc108bfd`
+
+All five controls proposed one PR. Unchanged-guide samples 06 and 09 required
+two PRs and explicitly attributed the split to the rule prohibiting mixed
+refactor and feature work. Unchanged-guide samples 07, 08, and 10 proposed one
+PR.
+
+This is observed rule-driven excess decomposition for this supplied case:
+`2/5` unchanged-guide outputs versus `0/5` controls. It is not a general claim
+that two PRs are unsafe or that refactor-only PRs are wrong. Some one-PR
+outputs described a separated refactor as universally “unshippable” or without
+value; that rhetoric is also overbroad and is not part of the candidate
+contract.
+
+The exported inputs and outputs are committed under
+[`samples/sizing/`](samples/sizing/), with exact IDs and hashes in the
+[manifest](samples/sizing/manifest.json). The export normalizes CRLF to LF and
+collapses terminal blank lines to one LF while retaining the original byte
+hashes. The original actor files were not rewritten.
+
+### Source-contract RED and GREEN
+
+The baseline skill gave itself edit authority, used time and file counts as
+triggers, used fixed review-time and concern-count proxies, universally
+separated refactors from features, made usefulness independent of earlier
+increments, suggested rollout machinery as an escape hatch, required approval,
+and continued into execution. The four named code-writing callers also routed
+to sizing unconditionally, with the backend route arriving after coding and
+verification.
+
+The focused foundation guard was added before the source edit. Under Node
+`v24.15.0`, RED exited `1` with 30 expected violations covering those former
+directives, missing proportional proposal boundaries, and all four caller
+routes. After the rewrite, the same guard passed. This is source-contract
+evidence, separate from the actor observation.
+
+### Candidate contract and pending controller checks
+
+The candidate consumes authorized scope and returns either a no-split
+conclusion or an ordered proposal. It permits a necessary small refactor to
+travel with its feature, permits a genuinely independently useful or
+risk-reducing standalone refactor, keeps tests with affected behavior, and
+allows later increments to depend on earlier compatible and safe landing
+points. It stops before implementation, pull-request creation, or a new
+approval ceremony.
+
+No candidate model samples were run by this implementer. The candidate
+wording screen, genuine staged compatibility-migration boundary, and useful
+standalone-refactor boundary remain **PENDING for the controller**. No live
+plugin invocation, implementation outcome, safety result, comparative quality,
+or cost claim is made.

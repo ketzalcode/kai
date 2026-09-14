@@ -449,11 +449,11 @@ smaller model or a cache").
 
 ### 6. Break down FE and BE work
 
-Apply `pr-sizing` before you break the work down, so each FE-N and BE-N lands
-as an independently shippable, reviewable increment instead of one
-undifferentiated block. Each work item is ticket-grade. A frontend or backend engineer
-should be able to pick up a single FE-N or BE-N entry and execute
-it without coming back with scope questions. The integration
+If the authorized work needs decomposition, apply `pr-sizing` before
+implementation to propose the ordered increments. One coherent delivery does
+not require sizing. Then make each FE-N and BE-N work item ticket-grade. A
+frontend or backend engineer should be able to pick up a single FE-N or BE-N
+entry and execute it without coming back with scope questions. The integration
 contract section is the seam that lets parallel work converge.
 
 ### 7. Eval, rollout, risks

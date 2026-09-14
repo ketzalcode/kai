@@ -178,6 +178,9 @@ When asked to write new backend code:
    reading and tests it requires. Read relevant code for layering, error
    handling, validation, ORM/query style, migration tooling, and config access,
    then adopt the local idiom.
+   If the authorized work needs decomposition, apply `pr-sizing` before
+   implementation to propose the ordered increments. One coherent delivery
+   does not require sizing.
 2. **Start from the contract.** Define the request/response/error shape
    and the validation rules before the implementation. The contract
    should read on its own — if it doesn't, the API is wrong.
@@ -193,9 +196,8 @@ When asked to write new backend code:
 6. **Instrument as you build.** Structured logs with a correlation ID,
    the one or two metrics that matter, a trace span across each hop.
 7. **Run lint, typecheck, and the existing tests before reporting
-   done.** If any fail, fix the cause — never suppress. Apply `pr-sizing`
-   to keep the change one reviewable slice, and apply `kai-core-work-activity`
-   when you log that the slice is done.
+   done.** If any fail, fix the cause — never suppress. Apply
+   `kai-core-work-activity` when you log that the slice is done.
 
 ## When you defer
 

@@ -163,9 +163,10 @@ When asked to write new infra:
    authorized work with the targeted reading and tests it requires. Read the
    relevant IaC tooling, module structure, naming, environment strategy, and
    pipeline style; don't introduce a new stack alongside the old.
-2. **Plan-first and reversible.** Apply `pr-sizing` so the change stays small
-   enough to plan and review before apply. Write the change so it can be planned
-   and reviewed before apply, and so it can be rolled back. Show the
+2. **Plan-first and reversible.** If the authorized work needs decomposition,
+   apply `pr-sizing` before implementation to propose the ordered increments.
+   One coherent delivery does not require sizing. Write the change so it can be
+   planned and reviewed before apply, and so it can be rolled back. Show the
    expected diff.
 3. **Secrets and identity from the start.** Wire secret references and
    scoped identities in the first version — never a plaintext

@@ -1,104 +1,76 @@
 ---
 name: pr-sizing
-description: "PR sizing method. Use when planning a feature, large refactor, or multi-file change into independently shippable, reviewable increments."
-tools: [read, search, edit]
+description: "Use when an authorized change may need delivery decomposition into more than one ordered, reviewable increment."
+tools: [read, search]
 user-invocable: true
 argument-hint: "optional feature description"
 ---
 
 # PR Sizing
 
-Big changes ship as a sequence of small, reviewable PRs. Each PR is a
-single reviewable concept that can be merged on its own without
-breaking anything. Not micro-PRs, not massive PRs — the goldilocks
-zone in between.
+Turn an authorized scope into proportional delivery decomposition. Return an
+ordered proposal when splitting improves delivery, or conclude that one
+coherent delivery needs no split.
 
 ## When to use
 
-- The user describes a feature larger than a few hours of work
-- A refactor or migration spans multiple files / modules
-- A change has UI + API + data layers
-- The user asks "how should we ship this?"
+- The user asks how to sequence an authorized change.
+- The work has real compatibility, rollout, review, or risk boundaries that
+  may justify ordered increments.
+- The caller cannot yet tell whether one coherent delivery or several
+  increments is the safer proportionate answer.
 
-**Skip for:**
+Do not load this skill merely because implementation is about to begin. If the
+authorized work is already one coherent delivery, continue it without a sizing
+ceremony unless the user explicitly asks for a sizing decision.
 
-- Single-file changes
-- Bug fixes constrained to one function
-- Doc-only changes
+## Method
 
-## What makes a good PR
+### 1. Read the delivery constraints
 
-A PR is rightsized when **all** of these are true:
+Identify the intended outcome, compatibility obligations, rollout or reversal
+needs, dependencies, and relevant validation. File counts, estimated diff size,
+and elapsed time may provide context, but they do not decide the split.
 
-1. **Reviewable in one sitting** — a teammate can understand the whole
-   diff in 15–30 minutes.
-2. **Single reviewable concept** — the description fits in one
-   sentence ("Add the empty-state UI for the dashboard"; "Wire the
-   `/metrics` endpoint without callers yet").
-3. **Independently shippable** — merging it doesn't break main and
-   doesn't require another PR to land first to be useful (or it's
-   safely behind a feature flag).
-4. **Tested** — its own tests live in the same PR.
+### 2. Decide whether decomposition helps
 
-PR is **too big** when:
+Prefer one delivery when the change is a coherent concept that can be reviewed,
+validated, and landed safely together. State **no split** and explain why.
 
-- The diff spans three or more distinct concerns.
-- The description requires the word "and" more than once.
-- The reviewer has to context-switch between unrelated areas.
+Split only where an ordered boundary materially improves compatibility, risk,
+review, rollout, or reversibility without creating coordination-only
+micro-PRs.
 
-PR is **too small** when:
+A necessary small refactor may accompany its feature when separating them adds
+no independent value. An independently useful or risk-reducing refactor may
+also be its own increment.
 
-- It's a trivial slice that requires the next PR to do anything.
-- The reviewer can't tell from the diff alone whether it's correct.
-- It generates more coordination overhead than it saves review time.
+Ordered increments may depend on earlier landed increments. Preserve
+compatibility and safety at each landing point, and state the dependency. A
+preparatory increment does not have to deliver the final user feature
+immediately when it is a safe, meaningful step in a genuine migration.
 
-## Workflow
+Tests stay with the affected behavior. Do not separate tests into a later
+increment.
 
-### Step 1 — Decompose
+### 3. Return the proposal
 
-For the requested change, list the work in increments. Useful seams:
+For one delivery:
 
-- **UI shells first** — empty / loading / error states with no real data
-- **Independent API calls** — one endpoint per PR if they don't depend
-  on each other
-- **Read paths before write paths**
-- **Data model + migration** separately from consumers of that data
-- **Feature-flagged scaffolding** before the user-visible behavior
-- **Refactors as their own PRs** — never mix a refactor with a feature
-- **Tests with the code they test**, never as a follow-up PR
-
-### Step 2 — Sequence
-
-Propose an ordered list:
-
-```
-PR 1: <one-sentence purpose>
-  - Files: ...
-  - Why it's shippable on its own: ...
-  - Tests: ...
-PR 2: ...
+```text
+No split: <why this is one coherent, safe delivery>
+Validation: <tests and checks that travel with the behavior>
 ```
 
-Each PR's "why it's shippable on its own" must be answerable. If it's
-not, merge it into the next PR or split it differently.
+For several deliveries, return an ordered proposal:
 
-### Step 3 — Confirm before starting
+```text
+1. <purpose>
+   - Depends on: <earlier landed increment or none>
+   - Landing safety: <compatibility, reversal, or risk boundary>
+   - Validation: <tests and checks for affected behavior>
+```
 
-Show the user the sequence and ask whether to proceed with PR 1,
-adjust the split, or change scope.
-
-### Step 4 — Execute one at a time
-
-When working on PR N, do not start work on PR N+1. Avoids accidental
-scope creep mid-PR.
-
-## Rules
-
-- **Never** mix a refactor and a feature in the same PR.
-- **Never** ship a PR that requires another PR to land first to be
-  useful (unless behind a feature flag).
-- **Always** include tests in the same PR as the code under test.
-- **Don't** create micro-PRs that exist purely to game review-time
-  metrics. A PR must stand on its own as a meaningful change.
-- **Surface the sequence** before writing code — the user decides
-  whether the split makes sense.
+Stop after the proposal. Do not edit code, create branches or pull requests,
+start an increment, or add a new approval step solely because this skill was
+loaded.
