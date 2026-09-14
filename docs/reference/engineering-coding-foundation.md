@@ -10,7 +10,7 @@ within its own responsibility.
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
-| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source and caller contracts corrected; candidate behavior checks remain pending. |
+| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source and caller boundaries corrected; v1 exposed output-shaping issues, and v2 checks remain pending. |
 | `onboard-to-codebase` | Supports explicit repository orientation. | Existing body retained; refinement is later work. |
 | `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
@@ -52,17 +52,20 @@ assertions, and evidence limits.
 - Code-writing callers route to it only when unresolved, decision-relevant
   evidence could change the approach. Ordinary targeted reading and tests
   continue without it when current evidence is adequate.
-- The handoff states the question and scope, relevant local facts, grounded
-  sources, reuse and consumer implications, and unresolved evidence with its
-  consequences.
+- The default output is a concise, scoped answer. Domain evidence is attached
+  to each material finding, followed only by consequential implications or
+  unresolved gaps. Those concerns do not require separate headings.
+- Guidance about conducting research is procedural context, not domain
+  evidence supporting claims about the system or external subject.
 - Ownership evidence constrains authorization when relevant, but folder names
   do not grant authority and missing ownership metadata does not block
   read-only research.
 - External research and experiments are conditional on the actual question and
   authorization. Missing authoritative access is reported as a gap.
 - No repository-wide map, per-file taxonomy, reading quota, automatic sizing
-  chain, implementation step, approval ceremony, diagram, or report file is
-  required.
+  chain, implementation step, approval ceremony, diagram, or report format is
+  required. A requested report format is used only when the user or an existing
+  handoff contract requires it.
 - The caller retains its original task authority and may continue separately
   authorized implementation after consuming the handoff.
 
@@ -70,7 +73,13 @@ The focused source guard failed against the former coding, approval, taxonomy,
 quota, and unconditional-caller directives, then passed after this rewrite.
 The ten baseline handoffs all returned the supplied-input findings without
 source edits or ownership blocking, so they are non-regression observations,
-not behavioral RED. Candidate and boundary samples remain pending.
+not behavioral RED. Five v1 candidate handoffs also preserved those facts and
+boundaries, but all mechanically reproduced five headings and repeated evidence
+across sections. The v1 external boundary correctly reported missing evidence
+without inventing vendor facts, but listed procedural guidance beside domain
+sources. Those are shaping and source-role findings, not a measured poisoning
+fix or fabrication finding. Five fresh v2 samples and the repeated external
+boundary remain pending.
 
 See [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
 and the

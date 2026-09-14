@@ -85,7 +85,7 @@ const researchBody = readFileSync(
   join(root, 'plugins', 'kai-engineering', 'skills', 'research-before-coding', 'SKILL.md'),
   'utf8',
 );
-const normalizedResearchBody = researchBody.replace(/\s+/g, ' ');
+const normalizedResearchBody = researchBody.replace(/\s+/g, ' ').toLowerCase();
 const researchContractViolations = [];
 for (const directive of [
   'then propose, then\ncode',
@@ -102,14 +102,14 @@ for (const directive of [
   if (researchBody.includes(directive)) researchContractViolations.push(`skill: ${directive}`);
 }
 for (const marker of [
-  'Use when a code or design decision depends on unresolved evidence',
-  'Question and scope',
-  'Relevant local facts',
-  'Reuse and consumer implications',
-  'Unresolved evidence and consequences',
-  'Explicit user invocation',
-  'The caller may continue its independently authorized work',
-  'A durable report requires an explicit request or an existing handoff contract',
+  'use when a code or design decision depends on unresolved evidence',
+  'concise, scoped answer',
+  'domain evidence to each material finding',
+  'consequential implications or unresolved gaps',
+  'guidance about conducting research is not domain evidence',
+  'requested report format',
+  'explicit user invocation',
+  'the caller may continue its independently authorized work',
 ]) {
   if (!normalizedResearchBody.includes(marker)) {
     researchContractViolations.push(`skill: missing ${marker}`);

@@ -455,23 +455,54 @@ This structural RED/GREEN proves only that the checked source contract changed.
 It does not convert the ten successful baseline handoffs into actor failures or
 establish candidate behavior.
 
-### Frozen candidate contract and pending checks
+### Candidate v1 observations
 
-The candidate:
-
-- returns question/scope, relevant local facts, grounded sources, reuse and
-  consumer implications, and unresolved evidence with consequences;
-- adds a recommendation only when a decision is requested;
-- makes external research, experiments, diagrams, and durable reports
-  conditional on the actual question and authorization;
-- treats missing authoritative access as an evidence gap;
-- does not require callers consuming supplied sources to acquire web tools;
-- leaves implementation and original task authority with the caller.
-
-The candidate guide SHA-256 is
+Candidate v1 was frozen at
+`a219367a9da765a92db6e6a25192eddca366e326`, with guide SHA-256
 `AAD86825BDB3FDDC9E2F3200BD9E4418823DAC23C37EC4E2B0B3FB7EAB18D895`.
 
-The controller still needs to run five fresh candidate samples, the genuine
-missing-external-contract boundary, and the caller source-interpretation case.
-No candidate behavior pass, host certification, cross-model result, or quality
-improvement is claimed in this revision.
+Five fresh v1 samples identified the supplied cause and consumers and returned
+research rather than editing source. They did not establish a behavioral
+implementation-overreach or poisoning fix because the control and former-guide
+samples already met those boundaries.
+
+All five v1 outputs mechanically reproduced the guide's five headings and
+repeated the same facts and sources across sections. For the bounded case, that
+conflicted with the smallest-useful-context goal. The external-contract
+boundary correctly reported missing authoritative evidence and did not invent
+a vendor or API rule, but it listed the candidate procedure document beside
+the case facts under grounded sources. Procedural guidance is not domain
+evidence for a system claim.
+
+One v1 output tentatively named a nullish implementation shape. It did not edit
+source and qualified the suggestion. The refinement keeps recommendations and
+implementation choices conditional on a decision request.
+
+The caller interpretation check reported no named research requirement when
+the relevant facts were established and a research route when shared-helper
+and consumer behavior remained unresolved. The pre-change reader reached the
+same no/yes interpretation through proportionality, so this is
+source-interpretation evidence rather than proof of a live before/after routing
+effect.
+
+### Candidate v2 refinement and pending checks
+
+The v2 response recipe:
+
+- defaults to a concise, scoped answer;
+- attaches domain evidence to each material finding;
+- includes only consequential implications or unresolved gaps;
+- does not turn those concerns into mandatory separate headings;
+- distinguishes research procedure from evidence supporting system claims;
+- uses a requested report format only when explicitly requested or required by
+  an existing handoff contract;
+- preserves conditional recommendations, no-code output, and the caller's
+  independently granted authority.
+
+Candidate v2 guide SHA-256:
+`73B9667B722067E8D8129FAFA9844507C7C10F1FDEBD905EC7A751C39CBD490E`.
+
+Five fresh v2 samples and the same genuine missing-external-contract boundary
+remain pending. No v2 behavior pass, host certification, cross-model result,
+quality improvement, fabricated-fact finding, or measured poisoning fix is
+claimed.

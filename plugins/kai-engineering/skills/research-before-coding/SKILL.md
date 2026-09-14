@@ -56,19 +56,22 @@ Run an experiment only when it is necessary to resolve the question and is
 authorized. Use a diagram only when relationships are materially clearer
 visually.
 
-### 4. Return the evidence handoff
+### 4. Return a concise evidence handoff
 
-Return:
+Default to a concise, scoped answer. Lead with the findings and attach domain
+evidence to each material finding. Include only consequential implications or
+unresolved gaps, and say how each affects the question or a later decision.
+These concerns need not be separate headings.
 
-- **Question and scope**
-- **Relevant local facts**
-- **Reuse and consumer implications**
-- **Grounded sources**
-- **Unresolved evidence and consequences**
+Domain evidence supports claims about the system or external subject. Guidance
+about conducting research is not domain evidence; identify it as procedure or a
+constraint when relevant rather than presenting it as support for a system
+claim.
 
-Add a recommendation only when the user or caller requested a decision. A
-durable report requires an explicit request or an existing handoff contract;
-otherwise return the findings directly.
+Add a recommendation or implementation choice only when the user or caller
+requested a decision. Use a requested report format only when the user
+explicitly asks for it or an existing handoff contract requires it; otherwise
+return the compact answer directly.
 
 ## Boundaries
 
