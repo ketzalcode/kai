@@ -701,9 +701,10 @@ prevention, isolated acceptance, comparative quality, or cost savings.
 
 ### Baseline case and observations
 
-The fixed case described one coherent change: rename an internal helper, add
-one option through existing callers, preserve the public contract, and update
-the affected tests. It explicitly requested a delivery proposal only.
+The fixed case described one coherent parser change: extract duplicated local
+parsing into an internal helper used by two branches, then add one validation
+behavior and its affected tests. It explicitly requested a delivery proposal
+only.
 
 - Model: `gpt-5.4-mini`
 - Reasoning effort: `medium`
