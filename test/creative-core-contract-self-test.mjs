@@ -20,6 +20,9 @@ if (selected !== 'scope') {
     ['provenance distinction', /observed.{0,80}implementation-truth.{0,80}proposed/],
     ['feasibility owner', /fe.{0,80}reviews feasibility/],
     ['unknown values are proposals', /value with no evidence is a proposal/],
+    ['direct gaps remain unadopted', /bounded direct answer.{0,100}gap.{0,100}proposed value inline without adopting/],
+    ['durable coverage', /coverage spans the.{0,15}whole in-scope app/],
+    ['supplied evidence is not acceptance', /supplied evidence is not engineering approval or independent acceptance/],
   ]) {
     if (!pattern.test(body)) failures.push(`grounding: ${label}`);
   }
@@ -34,6 +37,7 @@ if (selected !== 'grounding') {
     ['scope authority remains', /scope-owner.{0,120}owns/],
     ['assessment is not adoption', /never unilaterally add a scope-expanding/],
     ['durable channel retained', /proposal_channel/],
+    ['inline advice is not adoption', /answer is advice, not adoption or a coordinated completion record/],
   ]) {
     if (!pattern.test(body)) failures.push(`scope: ${label}`);
   }
