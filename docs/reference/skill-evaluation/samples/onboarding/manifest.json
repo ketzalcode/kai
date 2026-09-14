@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "skill": "onboard-to-codebase",
+  "sourceRevision": "e5c64c556124c61fd003806127795db01f274323",
+  "model": "gpt-5.4-mini",
+  "effort": "medium",
+  "hashAlgorithm": "SHA-256 of UTF-8 text with CRLF normalized to LF; no trimming",
+  "inputs": [
+    {
+      "file": "case.md",
+      "sha256": "3adb08f354c6b1a1bf5bec8a2325b33c97e95c14908764b1c2eb55e33f773196"
+    },
+    {
+      "file": "guide-current.md",
+      "sha256": "daa3cef7efc38be22f354e53ed13c980fb7f2e3425deafeb4885ae85b178a1f6"
+    }
+  ],
+  "samples": [
+    {
+      "id": "onboarding-01",
+      "arm": "control",
+      "file": "onboarding-01.md",
+      "sha256": "fc27a57ac14ce73db88f220970448a32b29dca680c88b7b91b0f046b03067e1a"
+    },
+    {
+      "id": "onboarding-02",
+      "arm": "control",
+      "file": "onboarding-02.md",
+      "sha256": "abc38e1ed9d3f5cee148d81fea3793c08a64ed0742fd994bc4dbefabfffa6fa7"
+    },
+    {
+      "id": "onboarding-03",
+      "arm": "control",
+      "file": "onboarding-03.md",
+      "sha256": "af15a979e57b24ff53f8d7d871bb5256d22f4ba2cc72611ff0aa409921994266"
+    },
+    {
+      "id": "onboarding-04",
+      "arm": "control",
+      "file": "onboarding-04.md",
+      "sha256": "8e7e1a1edd0a166b59bbd1f92ec24a719f5a1386f8b0cbf9b6d6aa32a84a923f"
+    },
+    {
+      "id": "onboarding-05",
+      "arm": "control",
+      "file": "onboarding-05.md",
+      "sha256": "32421395adea3deb0e1a7eb734d662e95541842dead88c35980e4628363cf12f"
+    },
+    {
+      "id": "onboarding-06",
+      "arm": "current",
+      "file": "onboarding-06.md",
+      "sha256": "6590dda754e02c6815b1e2978ccdd6d75ac96001669382d1fff082fe33fd5cfa"
+    },
+    {
+      "id": "onboarding-07",
+      "arm": "current",
+      "file": "onboarding-07.md",
+      "sha256": "044aee03ce1281fc6890e74ca1a19a67d4052651a183437084bc4d70b22c9395"
+    },
+    {
+      "id": "onboarding-08",
+      "arm": "current",
+      "file": "onboarding-08.md",
+      "sha256": "0f19bd4177ca0ac11af20a2b01263a4686f0a2834f0f5c7e2000eeeca462af39"
+    },
+    {
+      "id": "onboarding-09",
+      "arm": "current",
+      "file": "onboarding-09.md",
+      "sha256": "1398ad405fd3a83dbe7ac102695324790528758753b1c866bc3e55dd24ea5c24"
+    },
+    {
+      "id": "onboarding-10",
+      "arm": "current",
+      "file": "onboarding-10.md",
+      "sha256": "5201c2e7345d5529a97dfbb9cd8e948559b76f1c8e557ee81dd2b0d62eceea88"
+    }
+  ],
+  "limitations": [
+    "Text application, not live plugin discovery.",
+    "All ten outputs met the narrow case; no behavioral RED observed.",
+    "No efficacy, poisoning reduction or cost claim."
+  ]
+}
