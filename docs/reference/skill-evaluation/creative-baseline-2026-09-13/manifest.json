@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "kind": "repository-validation-baseline",
+  "captured_at": "2026-09-13T21:38:20.5105798-07:00",
+  "revision": "ca685d871682fa77f35cac8ce6b213c5e8d90bc5",
+  "initial_worktree": "clean",
+  "platform": "Windows",
+  "ambient_node": "v24.14.0",
+  "baseline_node": "v24.15.0",
+  "npm": "11.9.0",
+  "node_source": "Existing ignored engineering-foundation worktree cache; process-local PATH only",
+  "npm_test": [
+    {
+      "node": "v24.14.0",
+      "exit_code": 1,
+      "log": "creative-baseline-npm-test-node24.14.log"
+    },
+    {
+      "node": "v24.15.0",
+      "exit_code": 1,
+      "log": "creative-baseline-npm-test-node24.15.log"
+    }
+  ],
+  "independent_stages": "creative-baseline-stages.json",
+  "raw_log_normalization": "none; byte-identical copy",
+  "files": [
+    {
+      "path": "creative-baseline-npm-test-node24.14.log",
+      "sha256": "0911b2748aa53197633a9a805e416fd7083e52299b3682ab2928f7029f5492ca",
+      "bytes": 8351
+    },
+    {
+      "path": "creative-baseline-npm-test-node24.15.log",
+      "sha256": "0911b2748aa53197633a9a805e416fd7083e52299b3682ab2928f7029f5492ca",
+      "bytes": 8351
+    },
+    {
+      "path": "creative-baseline-stages.json",
+      "sha256": "337024e6ccaff6600d9ed48540dbfa904aed5dffc636d43150148f839e39d380",
+      "bytes": 4185
+    },
+    {
+      "path": "creative-baseline-stage-01.log",
+      "sha256": "c68cc22d862461b265e5be267b27b52b44a63e9ff78e1542bd2653bb25e0b953",
+      "bytes": 79
+    },
+    {
+      "path": "creative-baseline-stage-02.log",
+      "sha256": "dda1b6f3a815a21e044c92cf4db6ee1d320dd951ed7ed75f08c143cb4ee30b6d",
+      "bytes": 4065
+    },
+    {
+      "path": "creative-baseline-stage-03.log",
+      "sha256": "23e68caac96fffb31bbfd7b08c134d19162bcdaecfdf3cb014cd7b50543e750e",
+      "bytes": 123
+    },
+    {
+      "path": "creative-baseline-stage-04.log",
+      "sha256": "d7bda9cac52759bbed3016f9d735bec6aac7f9baffe6a02f4d0a2073ac27df6c",
+      "bytes": 843
+    },
+    {
+      "path": "creative-baseline-stage-05.log",
+      "sha256": "cb829537d6b5c8f30305f164bb19bb1dc15421a1bd5b8172fdd110bb5572e634",
+      "bytes": 2060
+    },
+    {
+      "path": "creative-baseline-stage-06.log",
+      "sha256": "ba6ee2ae795fbe9d05d50e8fcef8023c871f3f7e7220bc5300978f0e85797707",
+      "bytes": 3330
+    },
+    {
+      "path": "creative-baseline-stage-07.log",
+      "sha256": "6c661d2a216737dfa62f0b07e4867819d9283803bdfd4e07c7e28388d90490e1",
+      "bytes": 1984
+    },
+    {
+      "path": "creative-baseline-stage-08.log",
+      "sha256": "ccf670b21e8420cdfb32c8d1c079c7a46d1be95f2dd8145c6aa4e56cd639a206",
+      "bytes": 3878
+    },
+    {
+      "path": "creative-baseline-stage-09.log",
+      "sha256": "fb414645b13ccdd9b5db6bc9e5f449572f46ffb3801a1eaea1cf5f2fcb7ee432",
+      "bytes": 11693
+    },
+    {
+      "path": "creative-baseline-stage-10.log",
+      "sha256": "4a0d84cd1f051baaf3fc112903a795df3c1dc5ec838b6626e3b1f2fdb71f10b3",
+      "bytes": 7067
+    },
+    {
+      "path": "creative-baseline-stage-11.log",
+      "sha256": "90667b712eda7164649cff997e2a4e3807b3e1f22bd9bc58561540719f6569ce",
+      "bytes": 2970
+    },
+    {
+      "path": "creative-baseline-stage-12.log",
+      "sha256": "124d3e8b661daba12afaa9138a9b3456dd78d0fac1613cfdc2e2f7409ce5839b",
+      "bytes": 5209
+    },
+    {
+      "path": "creative-baseline-stage-13.log",
+      "sha256": "044fbc520716a859c1c139f5c09d28f094b8c32374d31f31d4ea3ba26fa5593e",
+      "bytes": 4627
+    },
+    {
+      "path": "creative-baseline-stage-14.log",
+      "sha256": "987dee46bc42aa53f5637db4c95a44c329d62289c8d042f5714433e6868f435d",
+      "bytes": 602
+    },
+    {
+      "path": "creative-baseline-stage-15.log",
+      "sha256": "dd82e974995118d29687a60814245f7066435c3bfd967aaf619f3ebb269c484e",
+      "bytes": 911
+    },
+    {
+      "path": "creative-baseline-stage-16.log",
+      "sha256": "99d5ed14b1ccc6ed25b3d2858d50a8e7c72b4d6f925e3fbfc6a365ffa93da36e",
+      "bytes": 58
+    },
+    {
+      "path": "creative-baseline-stage-17.log",
+      "sha256": "524948a383d3f3c9fb2411dbc7f158ea895d1462c670c704c66954beaa151ede",
+      "bytes": 68
+    }
+  ],
+  "helper_parity": [
+    {
+      "source": "scripts\\demo-capture.mjs",
+      "emitted": "plugins\\kai-creative\\scripts\\demo-capture.mjs",
+      "equal_after_crlf_to_lf": true,
+      "source_byte_sha256": "017c961f73108d803396ca266727b452c1e7f1b5b6dd834939fc3f9eb753890d",
+      "emitted_byte_sha256": "017c961f73108d803396ca266727b452c1e7f1b5b6dd834939fc3f9eb753890d"
+    },
+    {
+      "source": "scripts\\demo-format.mjs",
+      "emitted": "plugins\\kai-creative\\scripts\\demo-format.mjs",
+      "equal_after_crlf_to_lf": true,
+      "source_byte_sha256": "d520b9dd692ef1d0a1010bcf909c81ecf8fe93dce59a37452171719ab011cee5",
+      "emitted_byte_sha256": "d520b9dd692ef1d0a1010bcf909c81ecf8fe93dce59a37452171719ab011cee5"
+    },
+    {
+      "source": "scripts\\demo-narrate.mjs",
+      "emitted": "plugins\\kai-creative\\scripts\\demo-narrate.mjs",
+      "equal_after_crlf_to_lf": true,
+      "source_byte_sha256": "38550ddfdddf93544eb0ce58744d8b3d8eee71f4467502496edf497571c800d3",
+      "emitted_byte_sha256": "38550ddfdddf93544eb0ce58744d8b3d8eee71f4467502496edf497571c800d3"
+    },
+    {
+      "source": "scripts\\demo-zoom.mjs",
+      "emitted": "plugins\\kai-creative\\scripts\\demo-zoom.mjs",
+      "equal_after_crlf_to_lf": true,
+      "source_byte_sha256": "a5c0fb01b3a8b4c261b43c70039b56311d6b2c07d41939168717fb33e7f5a9f7",
+      "emitted_byte_sha256": "a5c0fb01b3a8b4c261b43c70039b56311d6b2c07d41939168717fb33e7f5a9f7"
+    },
+    {
+      "source": "scripts\\lib\\cursor-png.mjs",
+      "emitted": "plugins\\kai-creative\\scripts\\lib\\cursor-png.mjs",
+      "equal_after_crlf_to_lf": true,
+      "source_byte_sha256": "6dc50b017eb4d1d59818a6d123371112db9833a635efb59bd6bfa8ad3127ea78",
+      "emitted_byte_sha256": "6dc50b017eb4d1d59818a6d123371112db9833a635efb59bd6bfa8ad3127ea78"
+    }
+  ],
+  "limitations": [
+    "No model behavior samples",
+    "No live host discovery",
+    "No actual media capture/render/synthesis/mix",
+    "No CI dependency-install matrix or actual PR release guard"
+  ]
+}

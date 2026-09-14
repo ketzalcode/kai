@@ -1,0 +1,91 @@
+demo-zoom self-test
+  ok a valid plan parses
+  ok size and rate have defaults
+  ok a malformed plan names the parse error (said: plan is not valid JSON: Expected property name or '}' in JSON at position 2 (line 1 column 3))
+  ok rendering over the source is refused (said: source and output must differ; rendering over the input would destroy it)
+  ok a path that would smuggle an option is refused (said: source may not start with "-" (it would be read as an ffmpeg option))
+  ok a missing focus list is refused rather than assumed (said: plan needs a "focus" array (it may be empty))
+  ok a segment that ends before it starts is refused (said: focus[0].end must be greater than start)
+  ok a focus point outside the frame is refused (said: focus[0].x and .y are fractions of the frame and must be within 0..1)
+  ok a zoom that shrinks the frame is refused (said: focus[0].zoom may not be below 1; 1 means no zoom)
+  ok an ease too long for its segment is refused, with the reason (said: focus[0].ease of 0.9s does not fit twice inside a 1.00s segment; the zoom would never reach 2x)
+  ok overlapping segments are refused (said: focus segments overlap (0-5 and 3-8); the camera cannot be in two places at once)
+  ok an odd output size is refused before the encoder rejects it (said: size 1281x721 must have even dimensions; most encoders reject odd ones)
+  ok a zero frame rate is refused (said: fps must be between 1 and 240)
+  ok the camera is untouched before a segment begins
+  ok the camera is released after a segment ends
+  ok weight is zero exactly at both edges, so there is no jump
+  ok weight reaches a full 1 in the middle
+  ok zoom reaches the requested factor
+  ok zoom rests at 1 outside every segment
+  ok the ramp is monotonic, so the zoom never stutters
+  ok the frame centres on the focus point at full zoom
+  ok the frame is centred when nothing is in focus
+  ok the zoom curve is continuous everywhere (largest step 0.0450)
+  ok the rate is forced before the zoom, so the filter clock matches real time
+  ok the frame is fitted to the declared size, so a coordinate means the same thing on any source
+  ok pixels are square before the crop, so a non-square source cannot skew the zoom
+  ok the zoom reads from a frame twice the output size, halving the smallest crop step
+  ok the output size is still the declared one
+  ok the zoom is a single pass, so there are no seams to resynchronise
+  ok the crop origin is not coarsened to even pixels, which would enlarge each step rather than smooth it
+  ok one output frame per input frame
+  ok the output size is pinned in the filter
+  ok the crop origin is clamped, so a focus point near an edge cannot show padding
+  ok the expression is a sum of weights rather than nested conditionals
+  ok time is derived from the frame index, the portable clock
+  ok where two hard-cut segments meet, only the second is active (a 2x and a 3x do not add to 4x)
+  ok a hard cut holds its own factor for its own span
+  ok the last segment releases at its end rather than one frame late
+  ok the interval is half-open in the emitted expression too, not only in the model
+  ok a plan whose filter would exceed what a command line can carry is refused with the reason, not left to fail inside spawn
+  ok a point near an edge lands where the crop can actually reach
+  ok a point with room to spare lands exactly where it was asked to
+  ok the explanation shows where an edge shot really lands, instead of echoing the request back
+  ok the explanation says plainly that a shot was clamped
+  ok an unknown source duration is declared rather than assumed fine
+  ok a segment running past the end of the source is called out
+  ok a segment inside the source is not flagged
+  ok without a duration nothing is claimed about overrun either way
+  ok a plan with no focus segments does not pretend to zoom
+  ok a plan with no focus segments still normalises rate and size
+  ok the grid seeks to the requested time
+  ok the grid rules the frame into tenths, matching the plan coordinates
+  ok the grid is drawn on the same fitted frame the render produces, so measured coordinates transfer
+  ok the grid follows the declared output size rather than assuming one
+  ok a negative grid time is refused
+  ok ffmpeg is given an argv array, never a shell string
+  ok the output path is the final argument
+  ok audio is carried through when present and not demanded when absent
+  ok audio is re-encoded rather than copied, which would fail on a container the codec cannot enter
+  ok a source with no audio stream is given no audio encoder options, which would otherwise print an unused-AVOption warning
+  ok a silent source still tolerates audio appearing, rather than refusing it
+  ok a screenplay and a take compile into one segment per emphasised step
+  ok the compiled plan renders the recording the take actually produced
+  ok a compiled plan is stamped with the take it came from, so it cannot silently render against another recording
+  ok the output frame and rate come from the take, not from a guess
+  ok a segment starts a declared lead before the measured action and holds after it
+  ok the leading anchor keeps the left edge of the field in frame (visible from 0.042, field starts 0.062)
+  ok the leading anchor sits left of the field centre, which is where the text actually is
+  ok a click is centred on the rectangle it clicked
+  ok compiled segments never overlap, so the camera is never asked to be in two places
+  ok a compiled plan passes the same validation as a hand-written one
+  ok overlapping lead-in and hold are split rather than refused, and the split is reported
+  ok the split result is still renderable
+  ok a step the take recorded as failed is not zoomed into, because magnifying a mistake is worse than not zooming
+  ok an emphasised step the take never recorded is named, not silently dropped
+  ok a review row samples four frames
+  ok the first cell shows the source just before the camera moves
+  ok the source and the render are sampled at the same instant, so the pair shows what the zoom did to it
+  ok a segment at the very start does not sample a negative time
+  ok the legend refuses to let a contact sheet stand in for grounding
+  ok a path with a space survives --print as one argument
+  ok the filter is quoted in --print, so a shell cannot eat its parentheses
+  ok an ordinary path is not needlessly quoted
+  ok a zero-sized output is refused rather than failing inside the encoder (said: size 00x00 is too small to encode; use at least 16x16)
+  ok a frame rate that would round to zero is refused (said: fps must be between 1 and 240)
+  ok a quality setting libx264 would reject is refused here, where the message is readable (said: crf must be within 0..51, the range libx264 accepts)
+  ok the camera fully releases between two segments
+  ok the second segment reaches its own factor independently
+  ok the explanation counts what will actually be rendered
+demo-zoom self-test: 89 checks passed
