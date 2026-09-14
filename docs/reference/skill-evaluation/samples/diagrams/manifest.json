@@ -15,6 +15,26 @@
       "file": "guide-current.md",
       "sha256": "921e67e57be14461ced45401b50a25d934667ce185374f25220a531807c5b8ab",
       "originalBytesSha256": "921e67e57be14461ced45401b50a25d934667ce185374f25220a531807c5b8ab"
+    },
+    {
+      "file": "candidate/SKILL.md",
+      "sha256": "8c265006d9d26619598e21de26612091dbc7934dcc0bc713b2ca260bf800f9cc",
+      "originalBytesSha256": "8c265006d9d26619598e21de26612091dbc7934dcc0bc713b2ca260bf800f9cc"
+    },
+    {
+      "file": "candidate/references/catalog.md",
+      "sha256": "7558839b13c5f6c923321b5f95370bbbb0474ac7d6c545340e0b9234cc6b2358",
+      "originalBytesSha256": "7558839b13c5f6c923321b5f95370bbbb0474ac7d6c545340e0b9234cc6b2358"
+    },
+    {
+      "file": "terminal-case.md",
+      "sha256": "a49d62f7f2214ef0ce3548d71b4dda398db01e61b7009aa23d331b00dc80a72f",
+      "originalBytesSha256": "de67a8613aba0406570bcbc794566676fe29fa2322c57efc778a58f4e7b93a5c"
+    },
+    {
+      "file": "mermaid-case.md",
+      "sha256": "7d21e2b8ef4a0394d9164bc0ca8a0091adb2ff4f2fca94c7b4bf30017824058c",
+      "originalBytesSha256": "0649f18f977a71a490d0c74db05b7587148c4ac110308bce3565b1fd0bd92976"
     }
   ],
   "samples": [
@@ -97,11 +117,69 @@
       "file": "diagram-10.md",
       "sha256": "32db706007d3a631ade43a0af11e1e1f0729032a2bb382d9439bbb924acae47d",
       "originalBytesSha256": "3388d4d7be0a65228577689579202153143f71b80bdad306365c65b445a94fd9"
+    },
+    {
+      "id": "diagram-11",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "diagram-11.md",
+      "sha256": "f230c7753b13c350014e7b947f6e3ea0f557638cc5ab347a28ee311be300840a",
+      "originalBytesSha256": "fb8d020f5d035447c66ac555cf8dbd51fbc4c3eae8ce0966906c866096c6db17"
+    },
+    {
+      "id": "diagram-12",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "diagram-12.md",
+      "sha256": "f3409e287f1ef0e82b28dc5f258d335a1dad2f870d05094fbee1833bed54f3ea",
+      "originalBytesSha256": "4d7ca89742c19692509cb6ddbf05f0dddfe8ee88a579e24eefceda1fb3ba1fa8"
+    },
+    {
+      "id": "diagram-13",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "diagram-13.md",
+      "sha256": "8b4ba2c85167825a0a2b26bfa1feb06bd17ee01800a1a8160b6ddda2c593772b",
+      "originalBytesSha256": "1a4346659cfff0aaa31fab15f4a298925dd1665379ae107eba409312b09d28bb"
+    },
+    {
+      "id": "diagram-14",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "diagram-14.md",
+      "sha256": "0dfaf73582b33b71ad4b43ec9ee1c7f4b6fb0b765e38a496c7b4e762c0822a3c",
+      "originalBytesSha256": "6a853078eb09c773fab7cb658e769a4a5b9d7a1c727a0ff9127ea00169fc50c1"
+    },
+    {
+      "id": "diagram-15",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "diagram-15.md",
+      "sha256": "3efe2268a7ceb74e06b1fca1d36e564d714ca573d9b89739458c4234e2b30abf",
+      "originalBytesSha256": "9c69fae9178457866ff75e7d7567676f9d078d8d70034c42379e08eff8341c41"
+    },
+    {
+      "id": "diagram-terminal",
+      "arm": "candidate-boundary",
+      "case": "terminal-case.md",
+      "file": "diagram-terminal-output.md",
+      "sha256": "949558f72a15992d5c433a570d933769459b44f0a9c6d592c77a5c2c311086af",
+      "originalBytesSha256": "bf1e22f39e59c5b355fcd23f9646c2f0a798ee97a3bd212f64154e4b9ae2eec9"
+    },
+    {
+      "id": "diagram-mermaid",
+      "arm": "candidate-boundary",
+      "case": "mermaid-case.md",
+      "file": "diagram-mermaid-output.md",
+      "sha256": "02eb03544cd16cc2bc8b23590d89c95581b5ddf37dbe46208eb17564814fccc6",
+      "originalBytesSha256": "7792577407567cefed1ec98f6e6b85f620fcb94650086bef3e8b676900f7c877"
     }
   ],
   "limitations": [
-    "Current guide adds an unrequested diagram in5/5 outputs versus0/5 controls for this case.",
-    "Diagrams largely restate supplied relationships; no claim that all optional diagrams are harmful.",
-    "No live discovery, renderer, general-quality or cost result."
-  ]
+    "For this decision case, current5/5 include a diagram; controls and candidates0/5.",
+    "Two candidate-only explicit diagram cases preserve useful source output and requested format.",
+    "No renderer, accessibility, live-reference-loading, general-quality or cost result is claimed."
+  ],
+  "candidateRevision": "e812f516211cabad728b78772eea03e7acea7ab9",
+  "primaryCase": "case.md"
 }
