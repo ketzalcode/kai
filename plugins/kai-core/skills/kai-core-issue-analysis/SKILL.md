@@ -30,7 +30,6 @@ chosen approach     code for THAT            increments     pull request
 | What approach should we take, and what does it cost? | **this skill** |
 | How does the existing code constrain that approach? | `research-before-coding` |
 | How is the work split? | `pr-sizing` |
-| Were alternatives fairly considered *in a document*? | `review-alternatives` |
 | Packaging a decision already recorded in coordination state | its owner — see §5, *Stop at the authorized decision owner* |
 | How does it reach `main`? | `kai-core-pr-delivery` |
 

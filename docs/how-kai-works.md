@@ -26,7 +26,7 @@ be direct inputs; their usual producer is not a mandatory installed sibling.
 Missing evidence narrows the answer. It never licenses invented facts or a
 simulated specialist verdict. Scope, design acceptance, independent assessment,
 commercial commitments and learning completion remain with their real owners.
-The 56 agents / 57 skills and prepared `7.0.0` metadata describe source, not
+The 55 agents / 47 skills and prepared `8.0.0` metadata describe source, not
 publication or verified task execution. Retired gtm/personal plugins have no
 aliases; private `.kai/personal/` data remains unchanged.
 
@@ -277,21 +277,15 @@ and career facts without installing one another.
                             (optional selected private career records; never auto-posts)
 ```
 
-**6 · Document review** — an orchestrator fans out to the dimension lenses, then aggregates one review.
-
-```
- a doc ──► workflow-doc-review ──┬─► review-rationale ────────┐
- (design · PRD ·   (detect type, │  ├─► review-alternatives    │
-  RFC · strategy)   pick lenses)  │  ├─► review-risks-scope     │  each lens inherits
-                                  │  ├─► review-success-metrics  ├─ doc-review-rigor
-                                  │  ├─► review-security-privacy │  (claims → ground →
-                                  │  ├─► review-performance-scale│   classify → filter)
-                                  │  ├─► review-dependencies     │
-                                  │  ├─► review-rollout-operability
-                                  │  └─► review-ux-accessibility ┘
-                                  ▼
-                  one consolidated review + draft comments ──► you decide what to post (never auto)
-```
+**6 · Specialized document review (incubated)** — the former multi-lens
+document-review surface is not available in shipped packs while its contracts
+are reviewed. Route required formal decisions to the active owner named by the
+work item; if no suitable reviewer is available, report the gap rather than
+claiming a review. The development sources remain in the
+[incubator inventory](../incubator/kai-engineering/README.md).
+The five retained engineering skills and their caller changes are
+task-reviewed source work. Final whole-branch review, publication, and
+updated-host runtime verification remain pending.
 
 **7 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read or hear.
 
@@ -375,7 +369,6 @@ no one.
 | Draft a message/post/email in your voice | `personal-assistant`, or `persona-self` for long-form and high-stakes writing |
 | Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |
-| Pressure-test the substance of a doc | `workflow-doc-review` (fans out to `review-*`) |
 
 `director-chief-of-staff` owns orchestration only. Scope, technical judgment,
 implementation, review, and release approval remain with their named roles.

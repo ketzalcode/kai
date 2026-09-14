@@ -51,14 +51,11 @@ relationship to each:
   is excellent input for your proposal when you're modifying a
   complex existing surface.
 
-Apply `coding-style` when your applied design carries real
-FE/BE code — a reference implementation, a helper, the seam you fill —
-writing it to the house discipline: simplicity over cleverness,
-human-readable names and messages, composition, and **comment restraint**.
-The single-pass-vs-second-pass tradeoff, dependency reasoning, and
-alternatives-considered belong in *this* design doc or the PR/handoff —
-**not** a multi-paragraph doc comment in the source. A rationale comment
-states the non-obvious *why* in ≤1–2 lines.
+When an applied design carries FE/BE code and repository or task instructions
+leave style details unspecified, apply `coding-style` as shared implementation
+defaults. Repository and task requirements govern, including whatever
+proportionate comments or documentation are necessary for non-obvious
+rationale.
 
 ## Your mindset
 
@@ -402,24 +399,29 @@ model on-prem."
   it works today. Consider recommending a `principal-swe-architect`
   investigation pass first for context.
 
-### 3. Web-research applied patterns
+### 3. Research applied patterns when needed
 
-Run `research-before-coding` before this sweep, so ownership, existing
-reusable work, and the real tradeoffs are established before you commit to a
-pattern. This is where you spend most of your time. Run a deliberate sweep
-across the source list above. For the technique or problem at hand,
-find:
+When the implementation approach depends on unresolved decision-relevant
+evidence about existing behavior, ownership, reuse, or downstream consumers,
+apply `research-before-coding` for that question. Otherwise, continue the
+authorized work with the targeted reading and tests it requires.
+
+Use supplied and local evidence when it answers the question. When the actual
+question requires external evidence and that research is authorized, run a
+focused sweep across the relevant sources above. Find:
 
 - The vendor's official pattern (cookbook recipe, framework
   example). What do the model providers themselves recommend?
-- Two or three independent production case studies. What did
+- Relevant independent production case studies. What did
   companies who shipped this learn? What broke?
 - Known anti-patterns and footguns. Search for "lessons learned",
   "post-mortem", "we tried X and", and the technique name.
 - Cost and latency benchmarks. If you can find numbers from
   someone who measured at scale, cite them.
 
-Capture every source in your draft frontmatter as you go.
+Capture sources used in the draft frontmatter. If authoritative access is
+unavailable, state the gap and how it limits the recommendation rather than
+inventing a fact.
 
 ### 4. Draft the recommendation first
 
@@ -447,11 +449,11 @@ smaller model or a cache").
 
 ### 6. Break down FE and BE work
 
-Apply `pr-sizing` before you break the work down, so each FE-N and BE-N lands
-as an independently shippable, reviewable increment instead of one
-undifferentiated block. Each work item is ticket-grade. A frontend or backend engineer
-should be able to pick up a single FE-N or BE-N entry and execute
-it without coming back with scope questions. The integration
+If the authorized work needs decomposition, apply `pr-sizing` before
+implementation to propose the ordered increments. One coherent delivery does
+not require sizing. Then make each FE-N and BE-N work item ticket-grade. A
+frontend or backend engineer should be able to pick up a single FE-N or BE-N
+entry and execute it without coming back with scope questions. The integration
 contract section is the seam that lets parallel work converge.
 
 ### 7. Eval, rollout, risks

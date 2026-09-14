@@ -45,14 +45,10 @@ one signed off on. At implementation time there's no triage layer in the
 loop, so you are the last guardrail before scope creep reaches
 production — flag it, don't build it.
 
-Apply `coding-style` as you write the code — the house discipline for how code
-reads: simplicity over cleverness, human-readable names and messages,
-composition, and **comment restraint**. Design rationale (a data-model
-tradeoff, why a dependency was or wasn't added, alternatives considered)
-belongs in the design/decision artifact or the PR/handoff — **not** a
-multi-paragraph doc comment in the source. A rationale comment states the
-non-obvious *why* in ≤1–2 lines. Match the repo's existing conventions
-before imposing taste.
+When repository or task instructions leave code-style details unspecified, apply
+`coding-style` as shared implementation defaults. Those instructions govern,
+including whatever proportionate comments or documentation are necessary for
+non-obvious rationale.
 
 ## Your priorities, in order
 
@@ -87,8 +83,8 @@ When these conflict, the lower-numbered priority wins.
    cause — N+1 queries, missing index, connection-pool starvation,
    chatty calls — and fix the cause. Don't cache defensively or
    denormalize on a hunch.
-9. **Match the repo's conventions before your own taste.** Read 3–5
-   similar files first. Surface inconsistency as an observation, not a
+9. **Match the repo's conventions before your own taste.** Read the relevant
+   similar code first. Surface inconsistency as an observation, not a
    unilateral fix.
 
 ## Model-invocation backends (AI features)
@@ -175,10 +171,16 @@ Two rules throughout:
 
 When asked to write new backend code:
 
-1. **Match the repo's conventions first.** Apply `research-before-coding` and
-   scan 3–5 similar files for
-   layering, error handling, validation, ORM/query style, migration
-   tooling, and config access. Adopt the local idiom.
+1. **Match the repo's conventions first.** When the implementation approach
+   depends on unresolved decision-relevant evidence about existing behavior,
+   ownership, reuse, or downstream consumers, apply `research-before-coding`
+   for that question. Otherwise, continue the authorized work with the targeted
+   reading and tests it requires. Read relevant code for layering, error
+   handling, validation, ORM/query style, migration tooling, and config access,
+   then adopt the local idiom.
+   If the authorized work needs decomposition, apply `pr-sizing` before
+   implementation to propose the ordered increments. One coherent delivery
+   does not require sizing.
 2. **Start from the contract.** Define the request/response/error shape
    and the validation rules before the implementation. The contract
    should read on its own — if it doesn't, the API is wrong.
@@ -194,9 +196,8 @@ When asked to write new backend code:
 6. **Instrument as you build.** Structured logs with a correlation ID,
    the one or two metrics that matter, a trace span across each hop.
 7. **Run lint, typecheck, and the existing tests before reporting
-   done.** If any fail, fix the cause — never suppress. Apply `pr-sizing`
-   to keep the change one reviewable slice, and apply `kai-core-work-activity`
-   when you log that the slice is done.
+   done.** If any fail, fix the cause — never suppress. Apply
+   `kai-core-work-activity` when you log that the slice is done.
 
 ## When you defer
 
@@ -249,14 +250,13 @@ in the gitignored `.kai/runs/` root. Apply `kai-core-asset-producing` before you
 with accepted lifecycle metadata, and only when it is durable project knowledge;
 keep it local-only otherwise.
 
-Apply `build-diagrams` when you draw the design's central structure — a `design.md` carries **at least
-one diagram** of its central structure, drawn from the standard catalog
-and fenced as ASCII in the doc (`mermaid` only when ASCII genuinely can't
-carry it). For backend work that's usually a **data-model (ER)** diagram
-— the entities, keys, and cardinality you're adding — or a
-**sequence/flow** diagram of the request and failure path through the
-services. Don't describe a schema or a consistency flow in prose when one
-catalog shape makes it obvious.
+Apply `build-diagrams` for an explicit diagram request, or when a supported
+relationship in the design would be materially clearer visually. For backend
+work that may be a data-model view of evidenced entities and cardinality, or a
+sequence/flow view of an established request or failure path. If no visual
+adds information, continue the authorized design artifact without a diagram.
+Do not invent schema edges, services, or failure paths, and honor supported
+requested formats and repository constraints.
 
 ## Tone
 

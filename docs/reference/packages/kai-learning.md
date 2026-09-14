@@ -10,7 +10,7 @@ installs. Missing facts narrow the answer; they do not become invented history,
 exam requirements, specialist verdicts or rendered artifacts.
 
 This note records source ownership and generated packaging, not publication or
-proven live-host behavior. The integration batch prepares `7.0.0`; final
+proven live-host behavior. The current checkout prepares `8.0.0`; final
 independent review and runtime/release verification remain separate. New-package
 commands require a source containing this refactor.
 

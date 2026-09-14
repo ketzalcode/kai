@@ -9,7 +9,7 @@ over `kai-core` — **not** organization routing.
 
 The supported baseline is core plus this package. Use these commands only with
 a marketplace source containing the eight-package refactor; browse and verify
-availability first. Current `7.0.0` metadata is prepared source, not publication
+availability first. Current `8.0.0` metadata is prepared source, not publication
 or live-host verification:
 
 ```text

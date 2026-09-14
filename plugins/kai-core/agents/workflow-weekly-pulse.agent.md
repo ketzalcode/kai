@@ -237,7 +237,6 @@ each stays in its lane.
 - **Drafting any post/message in the user's voice** → `persona-self`.
 - **Whether this week moves the promotion** → `principal-engineer-career-mentor`
   (Page 3 surfaces; the mentor judges).
-- **Reviewing a design doc the week surfaced** → `workflow-doc-review`.
 - **Deep-reading one long doc/page for full content** → `workflow-course-to-audio`
   / `kai-core-web-content-extraction`. The pulse gives the gist, not the full text.
 - **Scoping/sequencing work the week implies** → `principal-swe-manager`.
@@ -273,4 +272,3 @@ big happened, say so in two lines and stop; don't manufacture a busy week.
 - `persona-self.agent.md` — drafts the posts Page 3 surfaces.
 - `principal-engineer-career-mentor.agent.md` — judges the promotion signal
   Page 3 surfaces.
-- `workflow-doc-review.agent.md` — for a real review of a doc the week turned up.

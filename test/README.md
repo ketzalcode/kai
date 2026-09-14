@@ -1,8 +1,13 @@
 # kai plugin tests
 
-Six dependency-free, CI-enforced guards protect the plugin. All run on every
+Seven dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
+- **Engineering foundation source contract**
+  (`test/engineering-foundation-self-test.mjs`) — keeps incubated review
+  components out of active discovery, packs, routes, and current documentation
+  while preserving narrowly scoped historical references and generic dispatch
+  collection coverage.
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
@@ -19,11 +24,14 @@ PR and push to `main` and must stay fast:
   a version bump plus changelog/README updates; docs/test-only changes are exempt.
   On pull requests CI also runs `release-guard --base <sha> --head <sha>`, which
   diffs the PR against its base and enforces the same rule for real.
+- **`npm run pack-preview:self-test`** (`scripts/pack-preview.mjs --self-test`)
+  — the pack partition, generated surface, cross-pack references, and named
+  installation gates, with `--check` enforcing committed-output parity.
 - **`npm run check-syntax`** (`scripts/check-syntax.mjs`) — `node --check` on
   every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
   (skipped cleanly where `pwsh` is unavailable).
 
-`npm test` runs all six.
+`npm test` runs all seven.
 
 ## Deterministic checks (in CI)
 

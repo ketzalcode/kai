@@ -163,9 +163,11 @@ changes stay exempt.
 | Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
 | Docs- or test-only | no bump (or patch) | no bump (or patch) |
 
-The current eight-package integration prepares `7.0.0`: removing the gtm and
-personal install names is a breaking surface change. Metadata does not mean
-the source is published or that runtime/release gates have passed.
+The current engineering coding foundation prepares `8.0.0`: ten document-review
+skills and their dependent workflow leave the active runtime surface while
+their source remains in the incubator. The earlier eight-package integration
+prepared `7.0.0`. Metadata does not mean the source is published or that
+runtime/release gates have passed.
 
 ### Historical `1.0.0` milestone
 

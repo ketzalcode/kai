@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 56,
-    "skills": 57
+    "agents": 55,
+    "skills": 47
   },
   "agents": [
     "creative-video-director",
@@ -46,7 +46,6 @@
     "principal-swe-manager",
     "workflow-course-to-audio",
     "workflow-customer-feedback",
-    "workflow-doc-review",
     "workflow-experiment-review",
     "workflow-incident-response",
     "workflow-initiative-init",
@@ -69,7 +68,6 @@
     "demo-capture",
     "demo-narrate",
     "demo-zoom",
-    "doc-review-rigor",
     "extract-writing-style",
     "generate-html-lesson",
     "html-block-diagrams",
@@ -107,15 +105,6 @@
     "product-exploration",
     "product-marketing-intelligence",
     "research-before-coding",
-    "review-alternatives",
-    "review-dependencies",
-    "review-performance-scale",
-    "review-rationale",
-    "review-risks-scope",
-    "review-rollout-operability",
-    "review-security-privacy",
-    "review-success-metrics",
-    "review-ux-accessibility",
     "ui-mockup",
     "video-direction",
     "write-in-user-voice"

@@ -10,8 +10,8 @@ an explicit pending question; they never become invented data or simulated
 specialist approval. A bounded direct response needs no workspace or team item.
 
 This note describes inspected source and generated artifacts, not a published
-release or proven live-host compatibility. The integration batch prepares
-`7.0.0`; install/update commands require a source containing this refactor.
+release or proven live-host compatibility. The current checkout prepares
+`8.0.0`; install/update commands require a source containing this refactor.
 
 ## Ownership and retirement
 

@@ -12,9 +12,8 @@ number kills credibility. This skill is the single contract that keeps all of it
 honest, so each content method (`linkedin-content`, `video-direction`, future
 platform methods) grounds claims the same way instead of re-inventing it.
 
-It is **not** a standalone trigger. Content methods inherit it by reference — the
-same way the `review-*` lenses inherit `doc-review-rigor` — and add their own
-platform-specific output on top.
+It is **not** a standalone trigger. Content methods inherit it by reference and
+add their own platform-specific output on top.
 
 ## The single fact source
 

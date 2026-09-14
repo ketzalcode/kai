@@ -151,10 +151,6 @@ From supplied schemas and flows, build the processing/data map: what is
 collected, why, on what basis, where it flows, who accesses it, and how long it
 is kept. State unknown flows rather than assuming them.
 
-Apply `review-security-privacy` as a document-review lens when the evidence is a
-written policy, notice, or DPIA draft. It never substitutes for your formal
-privacy/compliance judgment.
-
 ### 3. Determine obligations
 
 For each activity, name the applicable obligation, the cited framework clause,

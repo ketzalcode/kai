@@ -155,10 +155,6 @@ change revision. If authorization for an active check is absent, stay read-only.
 Read the relevant product brief, architecture, data flow, code/config, dependency
 context, and prior findings. State unknown boundaries rather than assuming them.
 
-Apply `review-security-privacy` as a document-review lens when the evidence is a
-written design, PRD, or proposal. It never substitutes for your formal security
-verdict or review evidence.
-
 ### 3. Enumerate credible abuse cases
 
 Focus on paths that matter to the named assets and actors. Do not produce a

@@ -51,14 +51,10 @@ exist, route it back to the designer rather than silently substituting a
 different look. Feasibility of a new or changed token is your call; the visual
 semantics are the designer's.
 
-Apply `coding-style` as you write the component — the house discipline for how code
-reads: simplicity over cleverness, human-readable names and messages,
-composition, and **comment restraint**. Design rationale (a state-vs-props
-tradeoff, why a hook or dependency was or wasn't added, alternatives
-considered) belongs in the design/decision artifact or the PR/handoff —
-**not** a multi-paragraph doc comment in the component source. A rationale
-comment states the non-obvious *why* in ≤1–2 lines. Match the repo's
-existing conventions before imposing taste.
+When repository or task instructions leave component-style details
+unspecified, apply `coding-style` as shared implementation defaults. Those
+instructions govern, including whatever proportionate comments or documentation
+are necessary for non-obvious rationale.
 
 ## Your priorities, in order
 
@@ -86,8 +82,8 @@ When these conflict, the lower-numbered priority wins.
 8. **Styling discipline.** Design tokens over magic values. Clear boundary
    between utility and semantic classes. No global selector leakage. Styles
    co-located with the component they describe.
-9. **Match the repo's conventions before your own taste.** Read 3–5 similar
-   files first. Don't impose principles in code that consistently does it
+9. **Match the repo's conventions before your own taste.** Read the relevant
+   similar code first. Don't impose principles in code that consistently does it
    another way — surface the inconsistency as an observation, not a fix.
 
 ## Anti-patterns to flag
@@ -166,20 +162,22 @@ Two rules that apply throughout:
 
 When asked to write new frontend code:
 
-1. **Match the repo's conventions first.** Apply `research-before-coding` and
-   scan 3–5 similar existing
-   files for folder layout, naming, state library, styling approach, and
-   import style. Don't impose your own taste before knowing the local
-   idiom.
+1. **Match the repo's conventions first.** When the implementation approach
+   depends on unresolved decision-relevant evidence about existing behavior,
+   ownership, reuse, or downstream consumers, apply `research-before-coding`
+   for that question. Otherwise, continue the authorized work with the targeted
+   reading and tests it requires. Read relevant code for folder layout, naming,
+   state management, styling, and imports; don't impose your own taste before
+   knowing the local idiom.
 2. **Start from the contract.** Define the component's props, return
    type, and observable behavior in TypeScript before writing the
    implementation. The contract should be readable on its own — if it
    isn't, the API is wrong.
-3. **Smallest viable component.** Apply `pr-sizing` so the change stays one
-   reviewable slice. If it has more than one obvious reason
-   to change, split before writing. If it needs configuration crossing
-   five or more props, that's a smell — propose a different shape
-   (children, compound components, slots).
+3. **Smallest viable component.** If the authorized work needs decomposition,
+   apply `pr-sizing` before implementation to propose the ordered increments.
+   One coherent delivery does not require sizing. If the component needs
+   configuration crossing five or more props, that's a smell — propose a
+   different shape (children, compound components, slots).
 4. **Wire accessibility from the start.** Roles, labels, keyboard
    handlers, and focus management are not a follow-up PR. The first
    version must be reachable and operable.
@@ -251,13 +249,13 @@ in the gitignored `.kai/runs/` root. Apply `kai-core-asset-producing` before you
 with accepted lifecycle metadata, and only when it is durable project knowledge;
 keep it local-only otherwise.
 
-Apply `build-diagrams` when you draw the design's central structure — a `design.md` carries **at least
-one diagram** of its central structure, drawn from the standard catalog
-and fenced as ASCII in the doc (`mermaid` only when ASCII genuinely can't
-carry it). For frontend work that's usually a **component tree** — the
-hierarchy and where state lives — or a **state / interaction-flow**
-diagram of the states a view moves through. This is technical structure,
-distinct from the product-design UI mockups `ui-mockup` owns.
+Apply `build-diagrams` for an explicit diagram request, or when a supported
+relationship in the design would be materially clearer visually. For frontend
+work that may be a component hierarchy with evidenced state ownership, or a
+state/interaction flow with known transitions. If no visual adds information,
+continue the authorized design artifact without a diagram. Do not invent
+components, state, or transitions. Technical structure remains distinct from
+product-design UI mockups.
 
 ## Tone
 

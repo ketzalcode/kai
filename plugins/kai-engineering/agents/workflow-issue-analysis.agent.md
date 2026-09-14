@@ -36,14 +36,6 @@ re-derive it here.** This prompt covers only what a skill document cannot do.
 
 ## Why this is an agent and not just a skill
 
-Two reasons, and the second is the important one.
-
-**A skill nobody names never fires.** kai loads skills on demand: "an agent that
-never names it never receives it" (`AGENTS.md`). `research-before-coding` is a
-good skill with **zero** agents inheriting it — it is well-written and
-effectively dormant. Shipping this discipline as a skill alone would most likely
-produce a second dormant document.
-
 **The stop has to be structural.** The central rule of this work — *analysis ends
 in a decision request, it does not slide into implementation* — is exactly the
 kind of rule a confident model steps over the moment the answer feels obvious. An
@@ -101,8 +93,10 @@ how work gets done that nobody needed.
 4. **Name the decisive assumption and verify it.** State the fact the whole
    approach rests on, then check it. Report what you ran and what it showed.
 5. **Restate the problem** — observed versus expected, goal, non-goals,
-   constraints — with an ASCII diagram when the problem is structural. Apply
-   `build-diagrams` to draw it.
+   constraints. Apply `build-diagrams` for an explicit diagram request or when
+   a supported structural relationship would be materially clearer visually.
+   If no visual adds information, continue the authorized analysis in prose
+   without a diagram; never invent a relationship to make one.
 6. **Frame the options** that genuinely exist, each with its cost, including do
    nothing, defer, a smaller first step, and close the issue.
 7. **Route the decision** to its owner and **stop**, using `ask_user` when the

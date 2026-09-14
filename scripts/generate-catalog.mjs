@@ -68,12 +68,6 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Document review',
-    blurb: 'One orchestrator that fans a document out to the review lenses and aggregates the verdict.',
-    members: ['workflow-doc-review'],
-  },
-  {
-    kind: 'agent',
     title: 'Product',
     blurb: 'Discovery, scope, evidence, analytics, product-led growth, and independent product assessment. UI and brand design belong to creative.',
     members: [
@@ -195,16 +189,6 @@ const CATEGORIES = [
     members: [
       'coding-style', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
       'onboard-to-codebase', 'build-diagrams',
-    ],
-  },
-  {
-    kind: 'skill',
-    title: 'Document review',
-    blurb: 'The method plus the lenses behind `workflow-doc-review`.',
-    members: [
-      'doc-review-rigor', 'review-rationale', 'review-alternatives', 'review-risks-scope',
-      'review-success-metrics', 'review-security-privacy', 'review-performance-scale',
-      'review-dependencies', 'review-rollout-operability', 'review-ux-accessibility',
     ],
   },
   {

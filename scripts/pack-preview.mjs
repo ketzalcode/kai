@@ -383,7 +383,6 @@ function selfTest() {
   // is no second roster and no second planner to fall out of step with it.
   const plan = planPacks();
   const rosterAgents = rosterAgentIds();
-  const rosterSkills = rosterSkillIds();
   const core = plan.core;
   const local = plan.local.personal;
   ok(core.includes(CONTRACT_SKILL),
@@ -504,7 +503,7 @@ function selfTest() {
     'every mechanical orphan has an explicit reviewed provider');
   ok(plan.core.includes('kai-core-fleet-observation')
     && plan.local.personal.includes('create-product-demo')
-    && plan.local.engineering.includes('review-dependencies'),
+    && plan.local.engineering.includes('onboard-to-codebase'),
   'the generator applies the ratified core, personal, and engineering orphan dispositions');
 
   // The degraded-mode refusal is no longer a shared block validated by
@@ -848,28 +847,8 @@ function selfTest() {
   const agentRel = (id) => sourceAgentFiles(ROOT).find((entry) => entry.id === id)?.rel;
   const skillRel = (id) => sourceSkillFiles(ROOT).find((entry) => entry.id === id)?.rel;
 
-  ok(carries('loaded', 'skill', agentRel('workflow-doc-review'), 'kai-core-operating-rules'),
+  ok(carries('loaded', 'skill', agentRel('principal-swe-backend'), 'kai-core-operating-rules'),
     'the loaded path is really collected: an agent routing a core contract inline is seen');
-  ok(carries('orchestrated', 'skill', agentRel('workflow-doc-review'), 'review-rationale'),
-    'the orchestrated path is really collected: a dispatched lens is seen as a reference');
-
-  // The whole lens set, not one sample. A dispatch entry naming a skill that no
-  // longer exists is dropped silently by the collector (a dispatch line is prose,
-  // and prose that names nothing resolvable is not a reference), so the only
-  // defence is asserting the set the agent actually orchestrates — one arm per
-  // lens would pass while eight of nine went missing.
-  const DOC_REVIEW_LENSES = [
-    'review-alternatives', 'review-dependencies', 'review-performance-scale',
-    'review-rationale', 'review-risks-scope', 'review-rollout-operability',
-    'review-security-privacy', 'review-success-metrics', 'review-ux-accessibility',
-  ];
-  const missingLenses = DOC_REVIEW_LENSES
-    .filter((lens) => !carries('orchestrated', 'skill', agentRel('workflow-doc-review'), lens));
-  ok(missingLenses.length === 0,
-    `all ${DOC_REVIEW_LENSES.length} doc-review lenses are collected as dispatched references `
-    + `(missing: ${missingLenses.join(', ') || 'none'})`);
-  ok(DOC_REVIEW_LENSES.every((lens) => rosterSkills.includes(lens)),
-    'and every dispatched lens is a skill on disk, so a renamed lens cannot be silently dropped');
   ok(carries('orchestrated', 'agent', agentRel('principal-swe-manager'), 'principal-product-manager'),
     'agent-to-agent dispatch is really collected, across the department boundary');
   ok(carries('user-invoked', 'asset', skillRel('demo-zoom'), 'scripts/demo-zoom.mjs'),

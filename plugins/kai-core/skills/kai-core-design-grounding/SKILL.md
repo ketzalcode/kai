@@ -14,8 +14,7 @@ still being wrong against the app's settled design. This skill is the single
 contract that grounds design work in the app's real visual language, so
 proposals conform to it and minimize visual weight instead of inventing a look.
 
-It is **not** a standalone trigger. It is inherited by reference — the same way
-the `review-*` lenses inherit `doc-review-rigor` — by:
+It is **not** a standalone trigger. It is inherited by reference by:
 
 - **`principal-product-designer`** — the primary author and consumer. Grounds
   every load-bearing visual choice; authors and maintains the reference.

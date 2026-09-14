@@ -34,8 +34,7 @@ roles — never on the *assess* role.
   capability, or implementation; they escalate it as a `PROPOSAL`.
 
 It is **not** a standalone trigger skill. You don't invoke it directly —
-the scope-owner and acting designers/builders pull it in, the same way each
-`review-*` lens pulls in `doc-review-rigor`.
+the scope-owner and acting designers/builders pull it in.
 
 ## Why the contract, not just the context
 

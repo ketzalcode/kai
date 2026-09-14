@@ -70,7 +70,7 @@ const MIGRATION_BASELINE_PACKS = {
     'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
     'principal-ai-researcher', 'workflow-pull-request',
     'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
-    'workflow-doc-review', 'workflow-localization',
+    'workflow-localization',
   ],
   product: [
     'principal-product-manager', 'principal-product-strategist',
@@ -124,9 +124,6 @@ export const SKILL_OWNER_OVERRIDES = {
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
   'onboard-to-codebase': 'engineering',
-  'review-dependencies': 'engineering',
-  'review-performance-scale': 'engineering',
-  'review-success-metrics': 'engineering',
 };
 
 // The committed source surface equals the full locked partition. Retain this alias

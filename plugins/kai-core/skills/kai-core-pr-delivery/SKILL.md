@@ -133,7 +133,7 @@ Why now, with evidence.
 ## Change
 What you did.
 
-## The change at a glance          <- trigger: it alters a structure or flow
+## The change at a glance          <- trigger: explicit visual request, or an evidenced relationship is materially clearer visually
 ## The constraint that shaped this <- trigger: a non-obvious constraint forced the design
 ## Deliberately not done           <- trigger: scope trimmed, or a PROPOSAL routed to the backlog
 ## Review fixes                    <- trigger: a review returned findings
@@ -166,11 +166,14 @@ gets neither.
 suite should have caught is itself a finding, and it is invisible unless the PR
 says where it came from.
 
-### The change at a glance — diagram it
+### The change at a glance — when a visual adds information
 
-Trigger on **kind, not size**. A 500-line generated file needs no diagram; a
-20-line routing change does. Diagram it when the change alters a **structure or
-flow**: paths, states, order, ownership, or layering.
+Trigger on **information value, not size or structural change alone**. An
+explicit diagram or visual request triggers this section. Otherwise, use it
+only when an evidenced structure or flow relationship — paths, states, order,
+ownership, or layering — would be materially clearer visually. A structure or
+flow change that prose already explains adequately does not trigger this
+section by itself; continue the PR narrative without a diagram.
 
 Use **`build-diagrams`** — do not invent a local style. The point is that every
 diagram in the repo reads the same. Keep it small: a reviewer should catch the

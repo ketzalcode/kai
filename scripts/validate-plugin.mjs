@@ -47,6 +47,9 @@ import {
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
 } from './lib/pack-plan.mjs';
+import {
+  incubatedIds, documentationReferenceExists,
+} from './lib/incubation-contract.mjs';
 import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -92,6 +95,10 @@ for (const pack of PACK_ORDER) {
 const allFiles = [...agentFiles, ...skillFiles];
 const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
+const inactiveAgentIds = incubatedIds(ROOT, 'agent');
+const inactiveSkillIds = incubatedIds(ROOT, 'skill');
+const componentIds = new Set([...agentIds, ...skillIds]);
+const inactiveComponentIds = new Set([...inactiveAgentIds, ...inactiveSkillIds]);
 
 for (const f of agentFiles) {
   for (const msg of agentTaxonomyErrors(f)) err(f.rel, msg);
@@ -177,7 +184,9 @@ for (const p of refScanFiles) {
   const r = rel(p);
 
   for (const m of raw.matchAll(AGENT_REF)) {
-    if (!agentIds.has(m[1])) err(r, `references unknown agent \`${m[1]}\``);
+    if (!documentationReferenceExists(m[1], r, agentIds, inactiveAgentIds)) {
+      err(r, `references unknown agent \`${m[1]}\``);
+    }
   }
 
   // A backticked kai-identifier that follows the verb "inherit(s)" on a line
@@ -193,7 +202,7 @@ for (const p of refScanFiles) {
       if (m.index < after) continue;
       const tok = m[1];
       if (!KEBAB.test(tok)) continue;
-      if (!skillIds.has(tok) && !agentIds.has(tok)) {
+      if (!documentationReferenceExists(tok, r, componentIds, inactiveComponentIds)) {
         err(r, `"inherit" line references unknown skill/agent \`${tok}\``);
       }
     }
@@ -307,8 +316,7 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
 //                     operator can run it directly;
 //   3. orchestrated — declared as a dispatch entry in an agent's prose, in the
 //                     list shape `- **`skill-id`** — when it applies`, which
-//                     dispatches it situationally (the `workflow-doc-review`
-//                     lenses).
+//                     dispatches it situationally.
 //
 // All three are legitimate designs, so this asserts only that at least one
 // exists. The orchestrated form is matched by that specific declaration shape
@@ -435,7 +443,6 @@ const ASSESSOR_ROLES = [
   'persona-ux-first-time-user',
   'persona-professional-nutritionist',
   'persona-professional-trainer',
-  'workflow-doc-review',
   'workflow-experiment-review',
   'workflow-issue-analysis',
   'workflow-self-check',

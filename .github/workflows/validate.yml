@@ -39,6 +39,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Engineering foundation source contract
+        run: node test/engineering-foundation-self-test.mjs
       - name: Validate plugin contract
         run: node scripts/validate-plugin.mjs
       - name: Workspace-doctor self-test

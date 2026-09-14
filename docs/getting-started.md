@@ -86,7 +86,7 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 56-agent, 57-skill surface is committed across eight packs on this
+The full 55-agent, 47-skill surface is committed across eight packs on this
 branch's checkout. This describes source ownership, not publication;
 remote availability of `kai-assistant`, `kai-creative`, `kai-marketing`,
 `kai-revenue` and `kai-learning` remains unverified.
@@ -112,7 +112,7 @@ support long-term. Nobody has to approve a listing for this to work.
 
 The eight source owners are `kai-core`, `kai-engineering`, `kai-product`,
 `kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning`. Metadata is prepared at `7.0.0`, not a publication claim.
+`kai-learning`. Metadata is prepared at `8.0.0`, not a publication claim.
 Use a marketplace source containing this branch and confirm every selected
 name/version before installation or removal. A checkout of this refactor can
 instead be loaded locally as described below.

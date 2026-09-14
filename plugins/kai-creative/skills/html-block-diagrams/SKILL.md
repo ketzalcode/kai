@@ -20,11 +20,13 @@ cramped, crossed, unreadable diagram everyone recognises.
 This skill owns the vocabulary for drawing those shapes **in an HTML
 artifact**, as blocks laid out by CSS. It is deliberately narrow:
 
-- `build-diagrams` owns diagrams **in Markdown** — ASCII by default,
-  `mermaid` when ASCII can't carry it. Nothing here changes that, and
-  none of this belongs in a `.md` file. GitHub strips `style`, `class`
-  and `id` from rendered Markdown, so it would silently degrade to
-  unstyled markup.
+- `build-diagrams` decides whether an established technical relationship adds
+  value visually and chooses a representation supported by its destination,
+  including terminal-readable text, Mermaid, inline SVG, or HTML. This skill
+  is optional specialized craft for HTML block layouts, not a dependency of
+  `build-diagrams`. Its CSS markup does not belong in a `.md` file: GitHub
+  strips `style`, `class`, and `id` from rendered Markdown, so it would
+  silently degrade to unstyled markup.
 - `ui-mockup` draws **UI screens** for a design decision. This draws
   **structure**.
 - Use it when the artifact is already HTML (an HTML lesson, a local
@@ -294,9 +296,9 @@ domain.
 
 ## The markup
 
-Every diagram is a `<figure class="kai-diagram">` with a `<figcaption>`
-naming what it shows — the same one-line caption rule `build-diagrams`
-applies to ASCII. Connector glyphs are decorative, so they carry
+Every diagram is a `<figure class="kai-diagram">` with a concise
+`<figcaption>` naming what it shows. This is this skill's HTML accessibility
+and craft rule. Connector glyphs are decorative, so they carry
 `aria-hidden="true"`.
 
 **The card**, used by layers, lanes and boundaries:
