@@ -43,11 +43,20 @@ const modelSelection = readFileSync(join(
   root, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references',
   'model-selection.md',
 ), 'utf8');
+const selfCheck = readFileSync(join(
+  root, 'plugins', 'kai-core', 'agents', 'workflow-self-check.agent.md',
+), 'utf8');
+const normalizedSelfCheck = selfCheck.replace(/\s+/g, ' ');
 const authoringErrors = agentAuthoringReferenceErrors({ taxonomy, modelSelection });
 assert.ok(!authoringErrors.some(error => error.startsWith('provider family rows')),
   `taxonomy provider rows must match the supported family set: ${authoringErrors.join('; ')}`);
 assert.ok(!authoringErrors.some(error => error.includes('provider family `creative`')),
   `creative must map to kai-creative in the taxonomy reference: ${authoringErrors.join('; ')}`);
+assert.match(
+  normalizedSelfCheck,
+  /\*\*3\.2 Naming convention\.\*\* Existing legacy agents may still use `principal-\*` or `director-\*` during the staged migration\. Current creative durable roles use the provider-family\/posture\/scope contract in `kai-core-create-agent`\. Only the exact legacy baseline id `creative-video-director` remains grandfathered until its replacement task[.;]/,
+  'workflow-self-check must keep principal/director migration-only, treat creative as current, and grandfather only the exact creative-video-director baseline id',
+);
 
 const preservedAgents = [
   'creative-video-director',
