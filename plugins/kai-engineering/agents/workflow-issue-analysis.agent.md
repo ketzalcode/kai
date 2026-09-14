@@ -93,8 +93,10 @@ how work gets done that nobody needed.
 4. **Name the decisive assumption and verify it.** State the fact the whole
    approach rests on, then check it. Report what you ran and what it showed.
 5. **Restate the problem** — observed versus expected, goal, non-goals,
-   constraints — with an ASCII diagram when the problem is structural. Apply
-   `build-diagrams` to draw it.
+   constraints. Apply `build-diagrams` for an explicit diagram request or when
+   a supported structural relationship would be materially clearer visually.
+   If no visual adds information, continue the authorized analysis in prose
+   without a diagram; never invent a relationship to make one.
 6. **Frame the options** that genuinely exist, each with its cost, including do
    nothing, defer, a smaller first step, and close the issue.
 7. **Route the decision** to its owner and **stop**, using `ask_user` when the

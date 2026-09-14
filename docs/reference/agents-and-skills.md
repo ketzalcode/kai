@@ -250,7 +250,7 @@ Per-change discipline every `principal-swe-*` agent routes.
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | Use when an authorized change may need delivery decomposition into more than one ordered, reviewable increment. |
 | [`kai-core-pr-delivery`](../../plugins/kai-core/skills/kai-core-pr-delivery/SKILL.md) | PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff. |
 | [`onboard-to-codebase`](../../plugins/kai-engineering/skills/onboard-to-codebase/SKILL.md) | Use when the user explicitly requests orientation to a repository or subsystem. |
-| [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | Shared diagram vocabulary and ASCII-first rules. Use when writing a design, decision, or engineering doc, or a README, needing system, data, flow, state, or topology diagrams. |
+| [`build-diagrams`](../../plugins/kai-engineering/skills/build-diagrams/SKILL.md) | Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually. |
 
 ### Design grounding
 

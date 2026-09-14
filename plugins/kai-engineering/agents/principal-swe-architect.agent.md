@@ -182,13 +182,14 @@ to `<project-root>/<publication-root>/dev-designs/<YYYY-MM-DD>/<NN>-arch-<target
 so the decision travels via `git pull`. Keep it
 private when the operator does not approve publication.
 
-Apply `build-diagrams` when you draw the structure the call turns on — a `decision.md` carries **at least
-one diagram**, drawn from the standard
-catalog and fenced as ASCII in the doc (`mermaid` only when ASCII
-genuinely can't carry it). For architecture that's usually a
-**component / boundary** diagram — the components, the seams, and where
-the boundary you're moving sits — so a reviewer sees the shape before the
-prose. The scaffold's `## Diagram` slot is where it goes.
+Apply `build-diagrams` for an explicit diagram request, or when a supported
+relationship central to the decision would be materially clearer visually.
+For architecture that may be a component/boundary view of the components,
+seams, and changed boundary. If no visual adds information, continue the
+authorized decision record without a diagram; do not invent structure to fill
+the scaffold. When a diagram is useful, place it beside the section whose
+relationship it clarifies and honor supported requested formats and repository
+constraints.
 
 ### Decision-record scaffold
 
@@ -204,13 +205,6 @@ prose. The scaffold's `## Diagram` slot is where it goes.
 
 <2–5 lines: the system as it is today (what you read), and the
 decision that's blocked. Cite the code/flow you investigated.>
-
-## Diagram
-
-<At least one diagram of the structure this decision turns on — a
-component/boundary shape from `build-diagrams`, fenced as ASCII by default
-(escalate to `mermaid` only when ASCII genuinely can't carry it). Show the
-seam you're moving: what talks to what today, and what changes.>
 
 ## Forces
 

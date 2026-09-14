@@ -315,6 +315,100 @@ assert.deepEqual(
   [],
   'pr-sizing must return proportional delivery proposals from conditional caller routes',
 );
+const diagramSkillPath = join(
+  root, 'plugins', 'kai-engineering', 'skills', 'build-diagrams', 'SKILL.md',
+);
+const diagramCatalogPath = join(
+  root, 'plugins', 'kai-engineering', 'skills', 'build-diagrams', 'references', 'catalog.md',
+);
+const diagramBody = readFileSync(diagramSkillPath, 'utf8');
+const normalizedDiagramBody = diagramBody.replace(/\s+/g, ' ').toLowerCase();
+const diagramContractViolations = [];
+for (const directive of [
+  'at least one diagram',
+  'ASCII stays the default everywhere',
+  'Prose-only structure',
+]) {
+  if (diagramBody.includes(directive)) {
+    diagramContractViolations.push(`skill: ${directive}`);
+  }
+}
+for (const [label, pattern] of [
+  ['explicit request trigger', /explicitly requests? a diagram/],
+  ['supported relationship trigger', /supported relationship/],
+  ['no-diagram result', /return no diagram/],
+  ['caller continuation', /caller continues.{0,80}authorized/],
+  ['format precedence', /requested format.{0,80}takes precedence/],
+  ['repository precedence', /repository constraints.{0,80}take precedence/],
+  ['evidence boundary', /do not invent.{0,40}(relationship|architecture)/],
+  ['renderer boundary', /do not claim.{0,40}render/],
+  ['progressive catalog link', /references\/catalog\.md/],
+]) {
+  if (!pattern.test(normalizedDiagramBody)) {
+    diagramContractViolations.push(`skill: missing ${label}`);
+  }
+}
+if (!existsSync(diagramCatalogPath)) {
+  diagramContractViolations.push('skill: missing references/catalog.md');
+} else {
+  const catalogBody = readFileSync(diagramCatalogPath, 'utf8');
+  const normalizedCatalogBody = catalogBody.replace(/\s+/g, ' ').toLowerCase();
+  for (const directive of ['at least one diagram', 'ASCII stays the default everywhere']) {
+    if (catalogBody.includes(directive)) {
+      diagramContractViolations.push(`catalog: ${directive}`);
+    }
+  }
+  for (const marker of [
+    'component / boundary',
+    'sequence / flow',
+    'data model',
+    'state machine',
+    'deployment / topology',
+    'tree / hierarchy',
+    'terminal-readable text',
+    'mermaid',
+    'inline svg',
+  ]) {
+    if (!normalizedCatalogBody.includes(marker)) {
+      diagramContractViolations.push(`catalog: missing ${marker}`);
+    }
+  }
+}
+const diagramCallers = [
+  'plugins/kai-engineering/agents/principal-swe-architect.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
+  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+  'plugins/kai-engineering/agents/workflow-issue-analysis.agent.md',
+  'plugins/kai-engineering/agents/workflow-pull-request.agent.md',
+];
+for (const rel of diagramCallers) {
+  const body = readFileSync(join(root, rel), 'utf8');
+  const normalizedBody = body.replace(/\s+/g, ' ').toLowerCase();
+  if (/at least\s+one diagram/i.test(body)) {
+    diagramContractViolations.push(`${rel}: mandatory diagram quota`);
+  }
+  if (!/explicit (diagram|visual) request/.test(normalizedBody)) {
+    diagramContractViolations.push(`${rel}: missing explicit-request trigger`);
+  }
+  if (!/(supported relationship|visual adds information|materially clearer)/.test(normalizedBody)) {
+    diagramContractViolations.push(`${rel}: missing information-value trigger`);
+  }
+  if (!/(continues?|produce|write).{0,100}(without a diagram|without one|prose|artifact|narrative)/.test(normalizedBody)) {
+    diagramContractViolations.push(`${rel}: missing no-diagram continuation`);
+  }
+  if (!codingStyleReferences.some(ref =>
+    ref.from === rel &&
+    ref.target === 'build-diagrams' &&
+    ref.firing.includes('loaded'))) {
+    diagramContractViolations.push(`${rel}: build-diagrams route is not discoverable`);
+  }
+}
+assert.deepEqual(
+  diagramContractViolations,
+  [],
+  'build-diagrams and named callers must make visuals optional, grounded, and progressive',
+);
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [
@@ -335,6 +429,8 @@ assert.ok(existsSync(join(root, 'incubator', 'kai-engineering', 'agents',
   'workflow-doc-review.agent.md')));
 const files = materializePacks({ root, version: '9.9.9-foundation-test' });
 for (const id of keep) assert.ok(files.has(`kai-engineering/skills/${id}/SKILL.md`));
+assert.ok(files.has('kai-engineering/skills/build-diagrams/references/catalog.md'),
+  'materializePacks must emit the build-diagrams catalog companion');
 for (const id of retainedAgents) assert.ok(files.has(`kai-engineering/agents/${id}.agent.md`));
 for (const id of parked) {
   assert.ok([...files.keys()].every(key => !key.endsWith(`/skills/${id}/SKILL.md`)));

@@ -1,231 +1,81 @@
 ---
 name: build-diagrams
-description: "Shared diagram vocabulary and ASCII-first rules. Use when writing a design, decision, or engineering doc, or a README, needing system, data, flow, state, or topology diagrams."
+description: "Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually."
 tools: [read, search, edit]
 ---
 
 # Build Diagrams
 
-A dev design that describes structure — a boundary change, a data model,
-a request flow, a state machine, a deployment — is far clearer as a
-**picture** than as paragraphs of prose. This skill exists so those
-pictures are **standardized and familiar**: the same handful of shapes,
-drawn the same way, across every engineering artifact. You bring the
-domain judgment about *which* diagram the design needs; this skill owns
-*how* it's drawn and embedded.
+Represent established technical relationships in a form suited to the
+destination. The result may be a diagram or no diagram; this skill does not
+decide whether the caller's independently requested document or prose should
+exist.
 
-This is the technical counterpart to `ui-mockup`. That skill draws
-**UI screens** for product design; this one draws **system and
-technical structure** (components, data, flow, state, topology). Don't
-use one where the other fits.
+## Decide whether to draw
 
-## The rule: at least one diagram, ASCII-first
+Draw when either condition is true:
 
-Every dev-design artifact (`design.md`, `decision.md`, and equivalents)
-carries **at least one diagram** of its central structure. Draw it with
-this format priority:
+- the user explicitly requests a diagram; or
+- a supported relationship is relevant to the artifact and a visual adds
+  information that prose alone does not communicate as clearly.
 
-1. **Default — ASCII, fenced inside the Markdown.** Put the diagram in a
-   ` ```text ` block right in the doc. ASCII travels everywhere: it
-   renders in every viewer, diffs cleanly line-by-line in review, and
-   ships via `git pull` with the artifact. This is the right choice for
-   the overwhelming majority of dev-design diagrams.
+A supported relationship is grounded in the request, repository evidence, or
+an accepted design decision: components and calls, ordering, cardinality,
+state transitions, deployment boundaries, or hierarchy. Do not invent a
+relationship or architecture to make a picture.
 
-2. **Richer — `mermaid`, only when ASCII genuinely can't carry it.** If
-   the relationships are too dense for ASCII to stay readable (a large
-   entity model, a branchy sequence), use a ` ```mermaid ` block —
-   Markdown renderers embed it, and it still lives as diffable text in
-   the doc. Reach for this as the exception, not the reflex.
+If no visual adds value and none was requested, return no diagram. The caller
+continues its independently authorized prose, analysis, decision, design, or
+other artifact without one. A no-diagram result is not a reason to cancel or
+shorten that work.
 
-3. **Embedded HTML/SVG — only when the artifact is itself HTML.** If the
-   design deliverable is an HTML document (not a `.md`), embed the
-   diagram as inline SVG or HTML, using `html-block-diagrams` for the
-   shapes and the stylesheet. Never emit a separate binary image file as
-   the diagram of record for a Markdown design — it doesn't diff and it
-   drifts from the text.
+Captured screenshots, recordings, and terminal frames are evidence of a run
+or interface. They are not structural diagrams and do not activate this skill
+by themselves.
 
-Each diagram gets a **one-line caption above it** naming what it shows,
-and stays within ~80 columns. One concept per diagram — split rather
-than cram.
+## Choose the destination and format
 
-## Where the diagram lives: surface changes the ceiling, not the default
+The requested format takes precedence where the destination supports it.
+Repository constraints take precedence where the destination supports them.
+If a requested format is unsupported, state the limitation and use or offer a
+supported alternative instead of silently changing formats.
 
-The priority above was written for **dev-design artifacts**, where the
-diagram *is* the record and diffing it is the point. A reader-facing
-document is a different job — a `README` is a front door, read once by
-someone deciding whether the thing is worth their time. That difference
-raises the ceiling on what you may escalate to. It does not lower the
-bar for escalating.
+- Use terminal-readable text for a terminal, plain-text file, or Markdown that
+  must remain understandable without a diagram renderer.
+- Use Mermaid in Markdown when explicitly requested, or when its supported
+  renderer and syntax make a dense relationship clearer than text.
+- Use inline SVG or HTML when the artifact itself is HTML and its destination
+  supports that representation.
+- Follow a repository's established diagram convention when it is compatible
+  with the requested destination and format.
 
-| Surface | Default | May escalate to | Never |
-| --- | --- | --- | --- |
-| `design.md`, `decision.md`, and equivalents | ASCII | `mermaid`, when ASCII genuinely can't stay readable | a binary image as the diagram of record |
-| Reader-facing `README.md` and `docs/*.md` | ASCII | `mermaid`, same bar | same |
-| An artifact that is itself HTML | inline SVG/HTML | — | — |
+No format is universal. Preserve the practical distinction between readable
+source and rendered output. Do not claim that Mermaid, SVG, or HTML rendered
+successfully unless that renderer was actually exercised.
 
-**ASCII stays the default everywhere**, including the front door. It is
-the only format that renders for someone reading the repository in a
-terminal, in a plain editor, or through a screen reader, and it is the
-one a diff can review. Reach past it for the same reason in a `README`
-as in a design: the relationships stopped fitting, not that a rendered
-picture would look nicer.
+## Draw only what is known
 
-Three findings this ruling rests on, recorded so they don't get
-re-litigated from memory:
+1. Name the relationship the diagram communicates.
+2. Select a fitting shape from [the diagram catalog](references/catalog.md).
+3. Include only evidenced nodes, boundaries, states, and edges.
+4. Label calls, transitions, direction, or cardinality where the meaning would
+   otherwise be ambiguous.
+5. Keep one coherent relationship per diagram; split only when separate views
+   each add useful information.
+6. Place the result where the requested artifact or repository convention
+   expects it.
 
-- **HTML + CSS does not render on GitHub.** Rendered Markdown is
-  sanitized: `style`, `class`, and `id` attributes are stripped, as are
-  `<style>`, `<script>`, and `<iframe>`. A `<div style="...">` arrives
-  as a bare `<div>`, so the approach `ui-mockup` uses for local HTML
-  artifacts degrades to unstyled markup if transplanted into a
-  repository document. This is the one option that fails silently — it
-  looks correct in the source file.
-- **`mermaid` renders natively on GitHub** and stays diffable text in
-  the file, which is why it is the escalation and a screenshot is not.
-  It does *not* render in a terminal or a plain editor, which is why it
-  is not the default.
-- **A binary diagram costs more than it appears to.** It can't be
-  reviewed in a diff, goes stale the moment the thing it depicts changes
-  with nothing to detect that, needs a second copy behind `<picture>`
-  for dark mode, and its alt text is usually a summary standing in for
-  content a reader can't reach.
+Load `references/catalog.md` when choosing a shape or format. The catalog is
+reference material, not an obligation to add a visual or to use every shape.
 
-### The one carve-out: evidence is not a diagram
+## Output
 
-A **product screenshot, demo recording, or captured terminal frame** is
-allowed in reader-facing documents. It is not covered by the ban above,
-because it isn't a diagram of record — it depicts a real run that
-happened, rather than claiming to be the authoritative description of a
-structure. It carries the opposite risk (staleness against a shipped
-product), which belongs to whoever owns that surface. Keep the two
-straight: if it is showing *what the software did*, it is evidence; if
-it is showing *how the system is shaped*, it is a diagram, and the table
-above applies.
+Return one of:
 
-## The catalog: pick the shape that fits the design
+- diagram source embedded in, or ready for, the requested destination; or
+- a brief no-diagram result when the relationship is absent, unsupported, or
+  already clearer in prose.
 
-Choose from this standard set. These are the familiar shapes; reusing
-them (rather than inventing a layout per doc) is the whole point.
-
-### Component / boundary — *system shape and seams*
-
-Boxes are components; labeled arrows are calls or dependencies. Use it to
-show what talks to what and where the boundary you're changing sits.
-
-```text
-        ┌─────────────┐   POST /orders   ┌──────────────┐
-  Web ─►│  API gateway │ ───────────────► │ Order service│
-        └─────────────┘                   └──────┬───────┘
-                                                 │ writes
-                                                 ▼
-                                          ┌──────────────┐
-                                          │  orders  DB  │
-                                          └──────────────┘
-```
-
-### Sequence / flow — *interaction over time*
-
-Actors are columns; time runs downward; arrows are messages. Use it for
-request/response ordering, event propagation, retries, and failure paths.
-
-```text
-  Client        API          Worker        Queue
-    │  request    │             │            │
-    │────────────►│  enqueue    │            │
-    │             │─────────────────────────►│
-    │  202        │             │  dequeue   │
-    │◄────────────│             │◄───────────│
-    │             │             │  process   │
-```
-
-### Data model (ER) — *entities and relationships*
-
-Entities are boxes; connectors carry **cardinality** (`1──*`, `*──*`).
-Use it for schema and migration designs.
-
-```text
-  ┌──────────┐            ┌───────────┐           ┌──────────┐
-  │  User    │ 1        * │  Order    │ 1       * │ LineItem │
-  │──────────│───────────│───────────│───────────│──────────│
-  │ id (PK)  │  places    │ id (PK)   │  contains │ id (PK)  │
-  │ email    │            │ user_id FK│           │ order_id │
-  └──────────┘            └───────────┘           └──────────┘
-```
-
-### State machine — *lifecycle and transitions*
-
-States are nodes; labeled arrows are transitions. Use it for anything
-with a status field or a workflow lifecycle.
-
-```text
-  [draft] ──submit──► [in-review] ──approve──► [released]
-     ▲                     │
-     └──────reject─────────┘
-```
-
-### Deployment / topology — *where things run*
-
-Nodes, zones, and networks. Use it for infra designs — instances,
-subnets, availability zones, managed services, trust boundaries.
-
-```text
-  ┌── VPC ──────────────────────────────────────────┐
-  │  ┌── public subnet ──┐   ┌── private subnet ──┐  │
-  │  │      ALB          │──►│  app  x2 (ASG)      │  │
-  │  └───────────────────┘   └─────────┬──────────┘  │
-  │                                     ▼             │
-  │                            ┌──────────────┐       │
-  │                            │  RDS (multi- │       │
-  │                            │  AZ, private)│       │
-  │                            └──────────────┘       │
-  └──────────────────────────────────────────────────┘
-```
-
-### Tree / hierarchy — *containment and structure*
-
-Indented tree. Use it for component trees, module layouts, and
-call/ownership hierarchies.
-
-```text
-  <App>
-  ├─ <Header>
-  ├─ <OrderList>
-  │  ├─ <OrderRow>        state: selected
-  │  └─ <EmptyState>
-  └─ <Footer>
-```
-
-## ASCII conventions (so every diagram reads the same)
-
-- **Boxes:** box-drawing `┌ ─ ┐ │ └ ┘ ├ ┤ ┬ ┴ ┼`; plain `+-- | ` is an
-  acceptable fallback where box-drawing is awkward. Don't mix both in one
-  diagram.
-- **Arrows:** directed `──►` / `─►` / `▼ ▲ ◄`; a plain `───` line for an
-  undirected association. Label the arrow with the call, event, or verb
-  when it isn't obvious. Use the *pointer* glyphs `U+25BA` / `U+25C4`,
-  not the triangles `U+25B6` / `U+25C0` — the triangles are emoji bases,
-  so some fonts and terminals render them double-width and every column
-  to their right shifts.
-- **Cardinality (ER):** put `1` and `*` at the ends of the connector
-  (`1──*` one-to-many, `*──*` many-to-many).
-- **Emphasis:** a state or note rides beside a node as `state: selected`,
-  not as a second box.
-- **Width:** keep it ≤ ~80 columns so it never wraps in a diff or a
-  narrow viewer.
-
-## Anti-patterns
-
-- ❌ **Prose-only structure.** Describing a boundary or data model in
-  paragraphs when one diagram from the catalog would make it obvious.
-- ❌ **A binary image as the diagram of record** for any Markdown
-  document, front-door `README` included — it doesn't diff and drifts
-  from the text. ASCII or `mermaid` instead.
-- ❌ **HTML + CSS in a Markdown document.** GitHub strips the styling
-  and renders it as unstyled markup — the failure is silent, because the
-  source file still looks right.
-- ❌ **Inventing a bespoke layout** when a catalog shape fits. The value
-  is that reviewers recognize the shape instantly.
-- ❌ **One mega-diagram** that fuses components, data, and sequence.
-  Split into one-concept diagrams.
-- ❌ **Reaching for `mermaid`/SVG by reflex.** ASCII first; escalate only
-  when ASCII genuinely can't stay readable.
+Keep unknowns explicit. Never add components, dependencies, transitions,
+cardinality, topology, or renderer validation that the available evidence
+does not establish.

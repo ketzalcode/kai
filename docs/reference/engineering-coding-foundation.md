@@ -13,7 +13,7 @@ within its own responsibility.
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; candidate narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
 | `pr-sizing` | Supports proportional delivery decomposition. | Source and four caller routes corrected; candidate primary and boundary evidence recorded with case-specific limits. |
-| `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
+| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, and six caller/template boundaries corrected; candidate authoring samples remain pending. |
 
 The ten document-review skills and their dependent workflow remain incubated,
 outside the active plugin surface. Their incubation does not waive formal
@@ -234,3 +234,46 @@ The evidence set deterministically copies five inputs and 17 outputs; the
 manifest maps and hashes each file. Its declared normalization converts CRLF to
 LF and collapses terminal blank lines to one LF while retaining original byte
 hashes; the raw actor files were not rewritten.
+
+## Build-diagrams contract
+
+`build-diagrams` represents an established relationship; it is not a document
+quota:
+
+- It activates for an explicit diagram request, or when a supported component,
+  call, data, state, topology, or hierarchy relationship would be clearer
+  visually.
+- When no visual adds information, it returns no diagram. The caller still
+  completes its independently authorized prose, analysis, decision, design, or
+  pull-request narrative.
+- Requested formats and repository constraints take precedence where the
+  destination supports them. Terminal-readable text, Mermaid in a supporting
+  Markdown destination, and inline SVG/HTML in an HTML artifact remain
+  distinct choices rather than one universal default.
+- Nodes and edges come from the request, repository evidence, or an accepted
+  decision. The skill does not invent architecture or claim renderer
+  validation that was not performed.
+- Detailed shapes and format rationale live in the progressively loaded
+  [diagram catalog](../../plugins/kai-engineering/skills/build-diagrams/references/catalog.md).
+  The architect, backend, frontend, infra, issue-analysis, and pull-request
+  callers no longer require an empty diagram slot in every artifact.
+
+The committed baseline uses one fixed UTF-8 decision with no changed
+relationship and no requested visual. All five no-guide controls produced no
+diagram; all five unchanged-guide samples added an unrequested diagram that
+largely restated the supplied reports/readers relationship. Every flagged
+output was manually read. This is a case-specific artifact tendency, not a
+claim that every optional diagram is harmful or that those samples fabricated
+a system.
+
+See the diagram [case](skill-evaluation/samples/diagrams/case.md) and
+[manifest](skill-evaluation/samples/diagrams/manifest.json), which links the
+ten immutable outputs and records their normalized and original-byte hashes.
+The focused source guard failed against the former universal quota, missing
+optional-result boundaries, absent companion, and named caller/template
+obligations, then passed under Node `v24.15.0` after the correction.
+
+Candidate outputs are not part of this revision. Five primary candidate
+samples, a terminal-readable relationship case, and an explicit Mermaid case
+remain pending controller work. No live discovery, renderer success,
+cross-model result, general quality improvement, or cost result is claimed.

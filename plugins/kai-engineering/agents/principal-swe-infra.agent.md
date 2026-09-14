@@ -236,13 +236,12 @@ in the gitignored `.kai/runs/` root. Apply `kai-core-asset-producing` before you
 with accepted lifecycle metadata, and only when it is durable project knowledge;
 keep it local-only otherwise.
 
-Apply `build-diagrams` when you draw the design's central structure — a `design.md` carries **at least
-one diagram** of its central structure, drawn from the standard catalog
-and fenced as ASCII in the doc (`mermaid` only when ASCII genuinely can't
-carry it). For infra work that's usually a **deployment / topology**
-diagram — nodes, subnets, availability zones, managed services, and the
-trust boundaries you're changing. Don't describe a topology in prose when
-one catalog shape makes it obvious.
+Apply `build-diagrams` for an explicit diagram request, or when a supported
+relationship in the design would be materially clearer visually. For infra
+work that may be a deployment/topology view of evidenced nodes, zones,
+services, and trust boundaries. If no visual adds information, continue the
+authorized design artifact without a diagram. Do not invent infrastructure or
+connectivity, and honor supported requested formats and repository constraints.
 
 ## Tone
 

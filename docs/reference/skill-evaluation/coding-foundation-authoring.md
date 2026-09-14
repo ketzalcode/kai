@@ -1,9 +1,10 @@
 # Coding foundation authoring evidence
 
 This record separates source-contract evidence from model-output observations.
-It records the completed authoring evidence for `coding-style` and
-`research-before-coding`, plus the Task 4 structural, baseline, candidate, and
-boundary evidence for `onboard-to-codebase`.
+It records the completed evidence for `coding-style`,
+`research-before-coding`, `onboard-to-codebase`, and `pr-sizing`, plus the
+Task 6 structural and baseline evidence for `build-diagrams`. Task 6 candidate
+and boundary outputs remain pending.
 
 ## Authoring case
 
@@ -791,3 +792,76 @@ No actor created code, branches, or pull requests. Caller continuation after a
 sizing proposal remains a source authority contract; no native host invocation
 was measured. No implementation outcome, general safety result, comparative
 quality, or cost claim is made.
+
+## Build-diagrams: Task 6 evidence
+
+### Baseline case and observations
+
+The fixed case requested a short decision document for an already-agreed UTF-8
+choice. It explicitly stated that no module boundary, API, data flow, topology,
+state transition, or deployment relationship changed, and it did not request
+a visual.
+
+- Model: `gpt-5.4-mini`
+- Reasoning effort: `medium`
+- Samples: five no-guide controls and five unchanged-guide samples
+- Context: fresh for every sample
+- Baseline source revision recorded by the manifest:
+  `55c554d5e90e07252c29d59f6b4e0630c7a8017c`
+- Baseline data commit: `4d12b99d83093253ae366f26475d32116850a793`
+
+All five controls produced no diagram. All five unchanged-guide samples added
+an unrequested visual of the supplied reports/readers or unchanged encoding
+relationship. Every flagged output was manually read and contained an actual
+visual code block rather than a quoted example.
+
+This is a bounded `5/5` versus `0/5` artifact-tendency observation for this
+case. It does not establish that every optional diagram is harmful, that the
+samples invented a system, or that a no-diagram answer is always better.
+
+The immutable evidence is linked rather than reproduced here. The
+[case](samples/diagrams/case.md) carries the supplied facts, and the
+[manifest](samples/diagrams/manifest.json) maps all ten output files to exact
+sample IDs with canonical text and original-byte SHA-256 hashes.
+
+### Source-contract RED and GREEN
+
+Before source correction, the focused engineering foundation guard reported
+the universal diagram quota, universal ASCII wording, missing explicit-request
+and supported-relationship triggers, no no-diagram result, no caller
+continuation, no format/repository precedence, no evidence/renderer boundary,
+the absent catalog companion, and mandatory or incomplete routes in the six
+named callers.
+
+The skill, companion, and caller/template sources were then corrected. The
+same guard passed under Node `v24.15.0`. It also asserts that
+`materializePacks` emits
+`kai-engineering/skills/build-diagrams/references/catalog.md`.
+
+This is structural evidence. It establishes the source contract and emitted
+companion boundary, not live skill discovery, renderer behavior, or model
+output quality.
+
+### Candidate contract and pending checks
+
+The candidate:
+
+- treats an explicit diagram request or a useful supported relationship as the
+  trigger;
+- permits a no-diagram result without cancelling the caller's authorized
+  document or narrative;
+- honors supported requested formats and repository constraints;
+- keeps terminal-readable text, Mermaid, and HTML/SVG choices distinct;
+- moves detailed shapes and rendering rationale into the active catalog
+  companion; and
+- rejects invented relationships and unperformed renderer-validation claims.
+
+The architect scaffold's mandatory `## Diagram` slot was removed. The
+architect, backend, frontend, infra, issue-analysis, and pull-request routes
+now preserve their existing work when no visual adds information.
+
+The controller will freeze the candidate as a directory containing both
+`SKILL.md` and `references/catalog.md`, then run five primary candidate
+outputs, one terminal-readable relationship case, and one explicit Mermaid
+case. Those checks are **PENDING**. They have not been launched and no result
+is claimed.

@@ -101,8 +101,11 @@ Two you must actively check for rather than wait to be told:
   the run folder, so they cannot be linked by path — upload them
   (`github-pr-media`). If no before/after exists, request it rather than opening
   a UI PR without it.
-- **The change alters a structure or flow** → apply `build-diagrams` to include
-  a small ASCII diagram.
+- **An explicit diagram request applies, or an evidenced relationship changed
+  and would be materially clearer visually** → apply `build-diagrams` in a
+  format supported by the PR destination and repository. Otherwise continue
+  the authorized PR narrative without a diagram; do not invent architecture or
+  claim renderer validation.
 
 ### 5 — Investigate merge readiness
 

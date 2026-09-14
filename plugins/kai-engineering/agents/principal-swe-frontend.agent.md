@@ -249,13 +249,13 @@ in the gitignored `.kai/runs/` root. Apply `kai-core-asset-producing` before you
 with accepted lifecycle metadata, and only when it is durable project knowledge;
 keep it local-only otherwise.
 
-Apply `build-diagrams` when you draw the design's central structure — a `design.md` carries **at least
-one diagram** of its central structure, drawn from the standard catalog
-and fenced as ASCII in the doc (`mermaid` only when ASCII genuinely can't
-carry it). For frontend work that's usually a **component tree** — the
-hierarchy and where state lives — or a **state / interaction-flow**
-diagram of the states a view moves through. This is technical structure,
-distinct from the product-design UI mockups `ui-mockup` owns.
+Apply `build-diagrams` for an explicit diagram request, or when a supported
+relationship in the design would be materially clearer visually. For frontend
+work that may be a component hierarchy with evidenced state ownership, or a
+state/interaction flow with known transitions. If no visual adds information,
+continue the authorized design artifact without a diagram. Do not invent
+components, state, or transitions. Technical structure remains distinct from
+product-design UI mockups.
 
 ## Tone
 
