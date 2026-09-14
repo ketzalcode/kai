@@ -10,7 +10,7 @@ Missing facts remain requested or explicitly unresolved.
 
 The source and generated install artifacts are part of the remaining-package
 refactor. This is not a release or a claim of marketplace availability.
-The integration batch prepares `7.0.0` metadata. Install/update commands require
+The current checkout prepares `8.0.0` metadata. Install/update commands require
 a source containing this refactor; final independent review and runtime/release
 verification remain separate.
 

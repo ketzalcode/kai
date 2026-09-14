@@ -1,23 +1,29 @@
 # Engineering coding foundation
 
-The engineering coding foundation keeps five active skills available while
-their contracts are refined one at a time. It is not a single mandatory
-workflow: callers load the skill that fits the task, and each skill stays
-within its own responsibility.
+The engineering coding foundation keeps five active skills available after
+their contracts and callers were refined and individually task-reviewed. It is
+not a single mandatory workflow: callers load the skill that fits the task,
+and each skill stays within its own responsibility.
 
 ## Current task-local status
 
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
-| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
-| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
-| `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; candidate narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
-| `pr-sizing` | Supports proportional delivery decomposition. | Source and four caller routes corrected; candidate primary and boundary evidence recorded with case-specific limits. |
-| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, and six caller/template boundaries corrected; candidate and explicit-format evidence recorded with stated limits. |
+| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts task-reviewed; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
+| `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries, v2 evidence, and corrected public evidence mapping task-reviewed with stated shaping limits. |
+| `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract and evidence task-reviewed; narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
+| `pr-sizing` | Supports proportional delivery decomposition. | Source, four caller routes, and corrected evidence narrative task-reviewed with case-specific limits. |
+| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, six caller/template boundaries, and explicit-format evidence task-reviewed with stated limits. |
 
 The ten document-review skills and their dependent workflow remain incubated,
 outside the active plugin surface. Their incubation does not waive formal
 security, privacy, reliability, or release requirements.
+
+The five task evidence sets contain 93 outputs: 16 style, 25 research,
+18 onboarding, 17 sizing, and 17 diagram outputs. Final whole-branch review is
+pending. Publication is blocked by the unchanged 53 source-validator errors
+and existing pack-preview self-test `TypeError`. Prepared `8.0.0` metadata is
+not publication or updated-host runtime verification.
 
 ## Coding-style contract
 

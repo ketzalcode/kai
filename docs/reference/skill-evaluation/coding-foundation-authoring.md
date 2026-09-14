@@ -5,6 +5,13 @@ It records the completed evidence for `coding-style`,
 `research-before-coding`, `onboard-to-codebase`, `pr-sizing`, and the Task 6
 structural, baseline, candidate, and boundary evidence for `build-diagrams`.
 
+Across the five task-reviewed skill changes, the retained evidence contains
+93 outputs: 16 style, 25 research, 18 onboarding, 17 sizing, and 17 diagram
+outputs. Final whole-branch review is pending. These local text
+application/reference checks are not native host acceptance, measured cost or
+context-poisoning improvement, renderer verification, or proof that historical
+untracked raw artifacts were immutable.
+
 ## Authoring case
 
 The fixed case asked for a concise implementation-constraints handoff for an

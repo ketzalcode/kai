@@ -10,7 +10,12 @@
 
 **Spec:** [Engineering coding foundation and review incubation](../specs/2026-09-13-engineering-coding-foundation-design.md), approved on 2026-09-13.
 
-**Status:** not started. [#211](https://github.com/RubenSaucedo/kai/issues/211) tracks re-entry. The earlier pilot remains paused.
+**Status:** Tasks 1–6 are implemented and individually task-reviewed. Task 7
+has prepared the integration metadata and current status documentation; final
+whole-branch review, the controller-owned #211 update, publication, and
+updated-host runtime verification remain pending. The earlier pilot remains
+paused. Publication is blocked by the unchanged 53 source-validator errors and
+existing pack-preview self-test `TypeError`.
 
 ## Global Constraints
 

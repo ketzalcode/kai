@@ -26,7 +26,7 @@ be direct inputs; their usual producer is not a mandatory installed sibling.
 Missing evidence narrows the answer. It never licenses invented facts or a
 simulated specialist verdict. Scope, design acceptance, independent assessment,
 commercial commitments and learning completion remain with their real owners.
-The 55 agents / 47 skills and prepared `7.0.0` metadata describe source, not
+The 55 agents / 47 skills and prepared `8.0.0` metadata describe source, not
 publication or verified task execution. Retired gtm/personal plugins have no
 aliases; private `.kai/personal/` data remains unchanged.
 
@@ -283,6 +283,9 @@ are reviewed. Route required formal decisions to the active owner named by the
 work item; if no suitable reviewer is available, report the gap rather than
 claiming a review. The development sources remain in the
 [incubator inventory](../incubator/kai-engineering/README.md).
+The five retained engineering skills and their caller changes are
+task-reviewed source work. Final whole-branch review, publication, and
+updated-host runtime verification remain pending.
 
 **7 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read or hear.
 

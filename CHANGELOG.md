@@ -4,6 +4,59 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [8.0.0] - 2026-09-13
+
+Prepared source metadata for the engineering coding foundation, not a tag,
+publication, updated-host installation, or runtime-acceptance claim.
+
+### Added
+
+- An inactive engineering inventory under `incubator/kai-engineering/` with the
+  original ten document-review skills and dependent `workflow-doc-review`
+  source retained for issue #211 re-entry work.
+- A deterministic engineering-foundation guard covering active identities,
+  incubator exclusion, emitted pack contents, caller boundaries, and narrowly
+  scoped historical references.
+- Current contract and authoring-evidence references for the five active
+  engineering skills, including the progressively loaded diagram catalog.
+
+### Changed
+
+- `kai-engineering` now exposes 19 agents and five task-local skills:
+  `coding-style`, `research-before-coding`, `onboard-to-codebase`, `pr-sizing`,
+  and `build-diagrams`.
+- The five active contracts and their callers now return only relevant context,
+  bounded findings, requested orientation, proportional delivery proposals, or
+  useful optional visuals. Ordinary coding is not forced through research,
+  sizing, onboarding, diagram, report, or approval ceremonies.
+- Root, marketplace, and all eight generated package manifests and locks are
+  prepared at `8.0.0`.
+
+### Removed
+
+- Ten unreviewed document-review skills and `workflow-doc-review` from active
+  discovery, routes, registrations, generated packs, and the current catalog.
+  Their source remains in the incubator; there are no compatibility aliases.
+- Dormant review rubrics from active callers and unconditional research,
+  sizing, onboarding, and diagram obligations from the five retained methods.
+
+### Fixed
+
+- Current guidance distinguishes active owners from incubated development
+  drafts while preserving formal security, privacy, reliability, release, and
+  human-approval requirements.
+- Source collection and validation permit explicit historical/evaluation
+  references without treating incubated components as runtime providers.
+
+The authoring record contains 93 local text outputs: 16 style, 25 research,
+18 onboarding, 17 sizing, and 17 diagram outputs. These are source/application
+checks with stated confounds, not native host acceptance, measured cost or
+context-poisoning improvement, renderer verification, or proof of historical
+raw-file immutability. Final whole-branch review remains pending. Publication
+is blocked by the unchanged 53 source-validator errors and the existing
+pack-preview self-test `TypeError`; updated-host runtime verification remains a
+separate gate.
+
 ## [7.0.0] - 2026-09-12
 
 Prepared source metadata for the eight-package integration, not a tag, release
@@ -3465,6 +3518,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[8.0.0]: https://github.com/RubenSaucedo/kai/compare/v7.0.0...v8.0.0
 [7.0.0]: https://github.com/RubenSaucedo/kai/compare/v6.0.0...v7.0.0
 [6.0.0]: https://github.com/RubenSaucedo/kai/compare/v5.0.0...v6.0.0
 [5.0.0]: https://github.com/RubenSaucedo/kai/compare/v4.0.0...v5.0.0

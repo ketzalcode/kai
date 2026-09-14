@@ -48,12 +48,21 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v7.0.0` is this checkout's prepared metadata version. Its **55 agents and
+`v8.0.0` is this checkout's prepared metadata version. Its **55 agents and
 47 skills** are organized across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
 `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this refactor branch; their
 marketplace publication and remote availability have not been established.
+
+The five engineering skill/caller source tasks are complete and individually
+task-reviewed. `kai-engineering` exports 19 agents and five task-local skills.
+Ten document-review skills and their dependent workflow remain source-retained
+under `incubator/`, outside active discovery, routes and generated packs.
+Prepared `8.0.0` metadata does not close the pending final whole-branch review,
+publish the packages, or verify an updated host. Publication remains blocked by
+the unchanged 53 source-validator errors and the existing pack-preview
+self-test `TypeError`.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
@@ -391,9 +400,11 @@ its kind of judgment is needed, and several are skippable on small work.
 ## Contributing
 
 Issues and PRs are welcome. The normal contribution path runs `npm test` and CI.
-For this approved source-refactor phase, only generation and raw source/diff
-inspection were performed; safety, behavior, test/CI consolidation and runtime
-scenarios remain deferred. No green-build or release-readiness claim is made.
+The engineering foundation has targeted source-contract and local authoring
+evidence, not native acceptance. Final whole-branch review, a green publication
+gate, release, and updated-host runtime verification remain pending. The current
+publication gate is blocked by the unchanged 53 source-validator errors and
+existing pack-preview self-test `TypeError`.
 
 **[Repository layout, test suite, and release policy →](docs/reference/plugin-structure.md)**
 

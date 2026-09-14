@@ -112,7 +112,7 @@ support long-term. Nobody has to approve a listing for this to work.
 
 The eight source owners are `kai-core`, `kai-engineering`, `kai-product`,
 `kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning`. Metadata is prepared at `7.0.0`, not a publication claim.
+`kai-learning`. Metadata is prepared at `8.0.0`, not a publication claim.
 Use a marketplace source containing this branch and confirm every selected
 name/version before installation or removal. A checkout of this refactor can
 instead be loaded locally as described below.

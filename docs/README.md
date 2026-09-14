@@ -3,7 +3,7 @@
 # kai documentation
 
 Four guides and package references. Start wherever your question is. The current
-source has eight packages and prepared `7.0.0` metadata, not a verified remote
+source has eight packages and prepared `8.0.0` metadata, not a verified remote
 release. Install core plus the capabilities needed from a source containing
 this refactor; see the availability and replacement guidance in Getting started.
 
