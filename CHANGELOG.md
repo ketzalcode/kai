@@ -25,10 +25,11 @@ publication, updated-host installation, or runtime-acceptance claim.
 - `kai-engineering` now exposes 19 agents and five task-local skills:
   `coding-style`, `research-before-coding`, `onboard-to-codebase`, `pr-sizing`,
   and `build-diagrams`.
-- The five active contracts and their callers now return only relevant context,
+- The five active source contracts define scoped outputs: relevant context,
   bounded findings, requested orientation, proportional delivery proposals, or
-  useful optional visuals. Ordinary coding is not forced through research,
-  sizing, onboarding, diagram, report, or approval ceremonies.
+  useful optional visuals. Caller routes invoke them conditionally; the source
+  no longer requires ordinary coding to enter research, sizing, onboarding,
+  diagram, report, or approval ceremonies.
 - Root, marketplace, and all eight generated package manifests and locks are
   prepared at `8.0.0`.
 
