@@ -1,8 +1,10 @@
 # Coding foundation authoring evidence
 
 This record separates source-contract evidence from model-output observations.
-It covers only the Task 2 `coding-style` candidate. The other four foundation
-contracts remain later work.
+It records the completed authoring evidence for `coding-style` and
+`research-before-coding`, plus the Task 4 structural and baseline evidence for
+`onboard-to-codebase`. Candidate onboarding samples and boundaries remain
+controller work.
 
 ## Authoring case
 
@@ -571,3 +573,84 @@ The source-contract RED/GREEN remains separate from these actor observations.
 No host certification, native invocation result, cross-model result, cost
 measurement, consistent length reduction, safety/readiness result, fabricated
 vendor-fact finding, or measured poisoning fix is claimed.
+
+## Onboard-to-codebase: Task 4 evidence
+
+### Baseline case and observations
+
+The fixed negative case was a first interaction with a repository, but not an
+orientation request. It asked only which supplied command ran a regression
+test and whether the supplied metadata established another setup prerequisite.
+The evidence named the package test script, Node engine requirement, test
+imports, and the teammate's installed Node version.
+
+- Model: `gpt-5.4-mini`
+- Reasoning effort: `medium`
+- Samples: five no-guide controls and five unchanged-guide samples
+- Context: fresh for every sample
+- Source revision recorded by the manifest:
+  `e5c64c556124c61fd003806127795db01f274323`
+
+Manual inspection found that all ten outputs answered the narrow question with
+the existing test command and satisfied Node requirement. None produced a
+broad map, invented setup work, or requested additional repository context.
+
+**This was not behavioral RED.** It does not show observed automatic
+onboarding, poisoning, or a behavior improvement available for the candidate
+to fix. The raw outputs and inputs are committed directly:
+
+- [manifest](samples/onboarding/manifest.json) and
+  [case](samples/onboarding/case.md);
+- no-guide controls [01](samples/onboarding/onboarding-01.md),
+  [02](samples/onboarding/onboarding-02.md),
+  [03](samples/onboarding/onboarding-03.md),
+  [04](samples/onboarding/onboarding-04.md), and
+  [05](samples/onboarding/onboarding-05.md);
+- unchanged-guide samples [06](samples/onboarding/onboarding-06.md),
+  [07](samples/onboarding/onboarding-07.md),
+  [08](samples/onboarding/onboarding-08.md),
+  [09](samples/onboarding/onboarding-09.md), and
+  [10](samples/onboarding/onboarding-10.md).
+
+The manifest records deterministic sample IDs and SHA-256 hashes. These files
+are linked as raw evidence and were not paraphrased or rewrapped here.
+
+### Source-contract RED and GREEN
+
+The baseline skill explicitly made first entry and months away activation
+conditions. It also encoded 30-day report handling, default refresh after
+confirmation, an eight-dimension map, a fixed `.copilot/onboarding.md`
+destination, and one report per repository.
+
+The engineering foundation guard gained focused checks for those concrete
+directives and for the required replacement boundaries: explicit requested
+orientation, no time-based authorization, requested scope, evidence reuse,
+selective refresh, operator-note preservation, honest unknowns, a cited map,
+conditional durable output, and no onboarding requirement for ordinary narrow
+coding questions.
+
+Before the skill edit, the focused guard failed under Node `v24.15.0` with
+eight prohibited directives and nine missing contract markers. After the
+rewrite, the same guard passed. This establishes a structural/source-contract
+correction only; it does not convert the ten successful baseline samples into
+failures or demonstrate a runtime activation change.
+
+### Candidate contract and pending checks
+
+The candidate:
+
+- keeps the existing skill name, direct user invocation, and argument hint;
+- uses a trigger-only description for explicit repository or subsystem
+  orientation;
+- limits discovery to the requested scope and relevant evidence;
+- reuses current facts and selectively refreshes facts affected by real
+  changes while preserving operator notes and requested paths;
+- leaves unestablished commands, conventions, ownership, and relationships
+  unknown;
+- returns a cited map without a universal report outline; and
+- writes a durable file only when requested or required by an existing
+  handoff.
+
+Candidate samples and the explicit full-repository, frontend-subsystem, and
+existing-report selective-refresh boundaries remain pending for the
+controller. No result is claimed for those checks.

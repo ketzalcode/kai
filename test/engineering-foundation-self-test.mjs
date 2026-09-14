@@ -159,6 +159,66 @@ assert.deepEqual(
   [],
   'research must remain a bounded evidence handoff with conditional caller routes',
 );
+const onboardingBody = readFileSync(
+  join(root, 'plugins', 'kai-engineering', 'skills', 'onboard-to-codebase', 'SKILL.md'),
+  'utf8',
+);
+const normalizedOnboardingBody = onboardingBody.replace(/\s+/g, ' ').toLowerCase();
+const onboardingContractViolations = [];
+for (const [label, pattern] of [
+  ['name', /^name: onboard-to-codebase\r?$/m],
+  ['direct user invocation', /^user-invocable: true\r?$/m],
+]) {
+  if (!pattern.test(onboardingBody)) {
+    onboardingContractViolations.push(`skill: invalid ${label}`);
+  }
+}
+const onboardingDescription =
+  onboardingBody.match(/^description:\s*"([^"]+)"\r?$/m)?.[1] ?? '';
+if (!/^Use when\b/.test(onboardingDescription)
+  || !/explicitly requests? orientation/i.test(onboardingDescription)
+  || !/repository or subsystem/i.test(onboardingDescription)
+  || /\b(report|scan|refresh|return|write)\b/i.test(onboardingDescription)) {
+  onboardingContractViolations.push('skill: description is not trigger-only');
+}
+for (const directive of [
+  'First time entering a repo',
+  'Returning to a repo after months away',
+  'Exists and < 30 days old',
+  'stale (>30 days)',
+  'default to refresh after confirming',
+  'map this repo across 8 dimensions',
+  'Write to `.copilot/onboarding.md`',
+  'One report per repo.',
+]) {
+  if (onboardingBody.includes(directive)) {
+    onboardingContractViolations.push(`skill: ${directive}`);
+  }
+}
+for (const [label, pattern] of [
+  ['no first-entry or elapsed-time authorization',
+    /first entry.{0,40}elapsed time.{0,60}does not authorize/],
+  ['requested repository or subsystem scope',
+    /requested repository or subsystem scope/],
+  ['current grounded evidence reuse', /reuse current.{0,20}grounded evidence/],
+  ['selective refresh after real changes',
+    /refresh only facts affected.{0,20}real changes/],
+  ['operator-note and requested-path preservation',
+    /preserve operator notes.{0,100}requested paths/],
+  ['unknown facts remain unknown', /not established.{0,30}keep it unknown/],
+  ['cited map output', /return a cited map/],
+  ['conditional durable output', /write a durable file only when/],
+  ['narrow coding question exclusion', /ordinary narrow coding questions/],
+]) {
+  if (!pattern.test(normalizedOnboardingBody)) {
+    onboardingContractViolations.push(`skill: missing ${label}`);
+  }
+}
+assert.deepEqual(
+  onboardingContractViolations,
+  [],
+  'onboarding must require an explicit orientation request and return a scoped evidence-aware map',
+);
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [

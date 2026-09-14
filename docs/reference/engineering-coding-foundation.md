@@ -11,7 +11,7 @@ within its own responsibility.
 | --- | --- | --- |
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
-| `onboard-to-codebase` | Supports explicit repository orientation. | Existing body retained; refinement is later work. |
+| `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; baseline samples showed no behavioral RED, while candidate and explicit map/refresh boundaries remain pending controller checks. |
 | `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
 
@@ -107,3 +107,54 @@ and the normalized raw
 and
 [v2 candidate and boundary](skill-evaluation/research-before-coding-candidate-v2-samples.md)
 records.
+
+## Onboard-to-codebase contract
+
+`onboard-to-codebase` is requested orientation, not an automatic first-session
+workflow:
+
+- It activates only for an explicit request to orient to a repository or
+  subsystem. First entry, elapsed time, or an old report alone does not
+  authorize a broad scan.
+- It maps only the requested scope and uses existing instructions, reports,
+  requested paths, and supplied evidence before gathering more.
+- Current grounded facts are reused. When real changes affect the evidence,
+  only those facts are refreshed; operator notes, requested paths, and
+  unrelated still-current content are preserved.
+- Commands, conventions, ownership, and relationships remain unknown when the
+  repository evidence does not establish them.
+- The result is a useful cited map sized to the request, without a mandatory
+  section quota, diagram, fixed scan depth, or generic
+  refresh/augment/use-as-is approval loop.
+- A durable file is written only when requested or required by an existing
+  handoff contract, at the requested destination and without unexpected
+  overwrite.
+- Ordinary narrow coding questions continue directly without onboarding.
+
+The focused source guard failed against the former first-entry, elapsed-time,
+automatic-refresh, fixed-report-path, eight-dimension, and one-report
+directives, as well as missing explicit-request, scoped-evidence, selective
+refresh, preservation, output, and narrow-question boundaries. The same guard
+passed after the rewrite under Node `v24.15.0`. This is structural evidence
+only.
+
+All five no-guide controls and all five unchanged-guide samples answered the
+supplied narrow command and prerequisite question correctly. None initiated
+onboarding, invented setup work, or requested broader repository context.
+Those outputs are non-regression observations, not behavioral RED or evidence
+of poisoning. Candidate samples and the explicit repository, subsystem, and
+selective-refresh boundaries remain pending for the controller.
+
+See [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
+and the committed onboarding [manifest](skill-evaluation/samples/onboarding/manifest.json),
+[case](skill-evaluation/samples/onboarding/case.md), no-guide controls
+[01](skill-evaluation/samples/onboarding/onboarding-01.md),
+[02](skill-evaluation/samples/onboarding/onboarding-02.md),
+[03](skill-evaluation/samples/onboarding/onboarding-03.md),
+[04](skill-evaluation/samples/onboarding/onboarding-04.md),
+[05](skill-evaluation/samples/onboarding/onboarding-05.md), and unchanged-guide
+samples [06](skill-evaluation/samples/onboarding/onboarding-06.md),
+[07](skill-evaluation/samples/onboarding/onboarding-07.md),
+[08](skill-evaluation/samples/onboarding/onboarding-08.md),
+[09](skill-evaluation/samples/onboarding/onboarding-09.md), and
+[10](skill-evaluation/samples/onboarding/onboarding-10.md).
