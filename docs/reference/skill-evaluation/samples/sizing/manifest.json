@@ -15,6 +15,21 @@
       "file": "guide-current.md",
       "sha256": "026c8c82b06e1d1e5d1da11e5fa097b7609cd503fb66acef1fa0a4ae9f0348cd",
       "originalBytesSha256": "026c8c82b06e1d1e5d1da11e5fa097b7609cd503fb66acef1fa0a4ae9f0348cd"
+    },
+    {
+      "file": "guide-candidate.md",
+      "sha256": "9fc29f0e9930941873fa2def0c1e1fff68acd2d077ba45f1dda7923a1aaf1b61",
+      "originalBytesSha256": "9fc29f0e9930941873fa2def0c1e1fff68acd2d077ba45f1dda7923a1aaf1b61"
+    },
+    {
+      "file": "migration-case.md",
+      "sha256": "1a2eb6404e7dc4286b17689df6a5d5aeff08bf294a71ea40379e48186bcf48fa",
+      "originalBytesSha256": "de362fdd82a28be46ca0052a08f78fed68e681b7f6e51a28acd6da7a5a3e97ad"
+    },
+    {
+      "file": "refactor-case.md",
+      "sha256": "7165d883046cd8d29d3e6c0b9a750e9129d3ef427325ba3581a2d95b726935c4",
+      "originalBytesSha256": "9085644f9d163ab27bb7789fd44adc75cb9eccf1e3b84f1cc318d94be898bcec"
     }
   ],
   "samples": [
@@ -97,12 +112,71 @@
       "file": "sizing-10.md",
       "sha256": "41cfcd724b928c5696907d8f69e12927cda9935f3c0d84a08e1819a9dd53670d",
       "originalBytesSha256": "c3ac807790b10b143bcce338f300c7befd3ad5beba416c1d9507cb8e45be5ec2"
+    },
+    {
+      "id": "sizing-11",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "sizing-11.md",
+      "sha256": "26c911051250bb1149520860b6f24cd88b0f721c221ff9d3013501661529451d",
+      "originalBytesSha256": "fbf51d1cb4a96d6b02b01b3cf14b3e80d2b595268ed802ccfb13af60688a13d8"
+    },
+    {
+      "id": "sizing-12",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "sizing-12.md",
+      "sha256": "beb60042f4cc025638c91bca62dcd8c61248a26b02761a0f12adcf82ebfcade0",
+      "originalBytesSha256": "21770fbab2faf29a7c62f93a430227084716899e860a0e9c2113930a0420a61f"
+    },
+    {
+      "id": "sizing-13",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "sizing-13.md",
+      "sha256": "d58155b51c514e010b24f54c8c45339a0cb9df873945f4a92814a615695a1d34",
+      "originalBytesSha256": "221804e6009cfd338cfe4c8f796108efb71c0496dcdaa8f50198b8611fac3475"
+    },
+    {
+      "id": "sizing-14",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "sizing-14.md",
+      "sha256": "ab744d44a6dd046deff8c142c4e864cd3332301ad00a3164171a58dc4991e666",
+      "originalBytesSha256": "e5d11cfc1204e30b56c1c23c42dc2c87b55ef162c25af81aba17efe181e4514d"
+    },
+    {
+      "id": "sizing-15",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "sizing-15.md",
+      "sha256": "9d95a43b0b857626ee07ef066c2771f20a45915a5caa4b76cdc8cf807e26a52d",
+      "originalBytesSha256": "daca0f97bbe4e432882709aecf00302228ddcb4a03f5fa5be4a61afe174c8a72"
+    },
+    {
+      "id": "sizing-migration",
+      "arm": "candidate-boundary",
+      "case": "migration-case.md",
+      "file": "sizing-migration-output.md",
+      "sha256": "6a2459f331878cb5546872fd3a10229c3670b94a552baa614f731f894e244350",
+      "originalBytesSha256": "5790db38199e9fa4755c166306b1be88c845a61f1369561e6cbbeb118d431eea"
+    },
+    {
+      "id": "sizing-refactor",
+      "arm": "candidate-boundary",
+      "case": "refactor-case.md",
+      "file": "sizing-refactor-output.md",
+      "sha256": "be94bda9f0a4d022f1469825e41740ac610131160df8e4f3dade7011765c74de",
+      "originalBytesSha256": "90f76909758b922734ecf59e8da67f245766b6c7929c61ff4894c2305bfdaa8d"
     }
   ],
   "limitations": [
-    "Two current outputs require a split based on the blanket refactor rule; this is a case-specific observation.",
+    "Case-specific results: controls5/5 and candidate5/5 one PR; current2/5 use rule-driven two-PR split.",
     "Multiple PRs and standalone refactors are not inherently wrong.",
-    "No implementation, live discovery, safety or cost claim."
+    "Migration output is a sizing outline, not a complete or approved migration plan.",
+    "No live invocation, general superiority or cost claim."
   ],
-  "normalizationNote": "The original sizing-07 output has a terminal blank line rejected by Git whitespace policy. Only exported end-of-file blank lines and line endings are normalized; original actor files are unchanged."
+  "normalizationNote": "The original sizing-07 output has a terminal blank line rejected by Git whitespace policy. Only exported end-of-file blank lines and line endings are normalized; original actor files are unchanged.",
+  "candidateRevision": "222fd8c2262fa4a21d3e46309419f4f48520fcaf",
+  "primaryCase": "case.md"
 }

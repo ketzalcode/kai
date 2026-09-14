@@ -1,0 +1,3 @@
+No split: this is a small, standalone refactor with one clear boundary — remove duplicated internal parsing logic and route two existing callers through one existing-behavior helper. There is no product behavior change, no migration, no rollout dependency, and no reason to stage compatibility work separately. Keeping it together preserves the refactor's simplicity and makes the shared-helper regression risk visible in one review.
+
+Validation: keep the existing regression coverage green, and add or update a focused regression test that exercises both callers through the shared helper so the duplicated-logic fix does not reappear silently.

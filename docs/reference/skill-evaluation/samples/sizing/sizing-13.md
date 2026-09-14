@@ -1,0 +1,2 @@
+No split: This is one coherent behavior change. The internal helper extraction is a necessary refactor within the approved scope, and it does not create an independent compatibility or rollout boundary. The change is small, has one acceptance criterion, introduces no public API rename, migration, deployment ordering, dependency, or feature flag, and is explicitly reviewable as a single unit.
+Validation: keep the helper extraction, new validation, and parser tests together in one PR so both parsing branches and the new rule are exercised in the same review.

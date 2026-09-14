@@ -1,0 +1,2 @@
+No split: This is one coherent, reviewable behavior change. The internal helper extraction is a necessary small refactor inside the same change, not an independently useful increment. There is no public API rename, migration, deployment order, feature flag, or other compatibility boundary, and the repository explicitly allows this helper extraction within the approved scope.
+Validation: keep the parser tests with the change, covering the new validation behavior and the two branches that now share the extracted helper.
