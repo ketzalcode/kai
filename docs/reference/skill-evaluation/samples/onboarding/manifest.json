@@ -13,6 +13,22 @@
     {
       "file": "guide-current.md",
       "sha256": "daa3cef7efc38be22f354e53ed13c980fb7f2e3425deafeb4885ae85b178a1f6"
+    },
+    {
+      "file": "guide-candidate.md",
+      "sha256": "0a29b6bfd0c7eea2e436f1ddb2d2045157167fde33f4570e28308c840e28a557"
+    },
+    {
+      "file": "repo-case.md",
+      "sha256": "11bbd0a7e92009f6add3abeba5d35c0591569614085eb95860f205c22f9dbc84"
+    },
+    {
+      "file": "frontend-case.md",
+      "sha256": "f1d30e176da4331fd44ed9117ec6f3cab2eadd62e60874a74a90dcb5ca777314"
+    },
+    {
+      "file": "refresh-case.md",
+      "sha256": "0f2b39e35d022ca0cfe6ea8f51ce1768e2f427def45ed6f51503d624e07b8011"
     }
   ],
   "samples": [
@@ -75,11 +91,69 @@
       "arm": "current",
       "file": "onboarding-10.md",
       "sha256": "5201c2e7345d5529a97dfbb9cd8e948559b76f1c8e557ee81dd2b0d62eceea88"
+    },
+    {
+      "id": "onboarding-11",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "onboarding-11.md",
+      "sha256": "56cf2c5609e919eed0cb808418ba9125d2a4e06b1c844ebdd5c76369b71938c4"
+    },
+    {
+      "id": "onboarding-12",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "onboarding-12.md",
+      "sha256": "222bc2eb3f0a4b8d5cb04b3e6af1c37205213b6b9f2ebf3539f3b7e28e2cb481"
+    },
+    {
+      "id": "onboarding-13",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "onboarding-13.md",
+      "sha256": "df4d432e404840ae804becbfb4d8ec516631330f9dce85e7cdc9da0c30aacfe7"
+    },
+    {
+      "id": "onboarding-14",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "onboarding-14.md",
+      "sha256": "1b44f038ca43321529d9b36939ca29c26d52ecd0ce78bc9e7f7a26206c5ed855"
+    },
+    {
+      "id": "onboarding-15",
+      "arm": "candidate",
+      "case": "case.md",
+      "file": "onboarding-15.md",
+      "sha256": "21c0cc1a595cb439ba411763a1432e6f5f4a81f34983ededcaa9f7711ec6c1f8"
+    },
+    {
+      "id": "onboarding-repo",
+      "arm": "candidate-boundary",
+      "case": "repo-case.md",
+      "file": "onboarding-repo-output.md",
+      "sha256": "d9f06d38dbdfd4b5d3655f310ff6c2f1adba9046330719e07e2bf4df073a25ed"
+    },
+    {
+      "id": "onboarding-frontend",
+      "arm": "candidate-boundary",
+      "case": "frontend-case.md",
+      "file": "onboarding-frontend-output.md",
+      "sha256": "e969359855fb2c81e248056f5d96caa001a478875ea1288df6f0b82c5a6d5292"
+    },
+    {
+      "id": "onboarding-refresh",
+      "arm": "candidate-boundary",
+      "case": "refresh-case.md",
+      "file": "onboarding-refresh-output.md",
+      "sha256": "f9d01fdd31f0a5318d7ce5f9da615a257d42c55ff2ac7069b0a68515c8b0e9b7"
     }
   ],
   "limitations": [
-    "Text application, not live plugin discovery.",
-    "All ten outputs met the narrow case; no behavioral RED observed.",
-    "No efficacy, poisoning reduction or cost claim."
-  ]
+    "All three five-sample arms met the narrow question; this is non-regression, not behavioral RED or proof of a poisoning fix.",
+    "Three candidate-only orientation/refresh boundaries do not establish a comparative effect.",
+    "No live plugin discovery, isolated acceptance or cost result is claimed."
+  ],
+  "candidateRevision": "8f549728dae44725c642c9fda8e7cd66fc9e4c1e",
+  "primaryCase": "case.md"
 }
