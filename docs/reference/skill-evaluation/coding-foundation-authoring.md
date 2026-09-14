@@ -2,9 +2,8 @@
 
 This record separates source-contract evidence from model-output observations.
 It records the completed authoring evidence for `coding-style` and
-`research-before-coding`, plus the Task 4 structural and baseline evidence for
-`onboard-to-codebase`. Candidate onboarding samples and boundaries remain
-controller work.
+`research-before-coding`, plus the Task 4 structural, baseline, candidate, and
+boundary evidence for `onboard-to-codebase`.
 
 ## Authoring case
 
@@ -635,7 +634,7 @@ rewrite, the same guard passed. This establishes a structural/source-contract
 correction only; it does not convert the ten successful baseline samples into
 failures or demonstrate a runtime activation change.
 
-### Candidate contract and pending checks
+### Candidate contract and completed checks
 
 The candidate:
 
@@ -651,6 +650,49 @@ The candidate:
 - writes a durable file only when requested or required by an existing
   handoff.
 
-Candidate samples and the explicit full-repository, frontend-subsystem, and
-existing-report selective-refresh boundaries remain pending for the
-controller. No result is claimed for those checks.
+Five fresh `gpt-5.4-mini`/medium candidate samples used the same narrow
+first-session case. All five returned the declared test command and satisfied
+Node requirement without creating or demanding a map or extra setup. Because
+all five controls and all five unchanged-guide samples also met the case, this
+is non-regression only, not behavioral RED or proof of an activation or
+poisoning fix.
+
+Three candidate-only boundaries exercised explicit orientation:
+
+- The [whole-repository case](samples/onboarding/repo-case.md) and
+  [output](samples/onboarding/onboarding-repo-output.md) produced a useful map
+  of the entry point, route/store relationship, volatile process-local data,
+  declared commands, and test path without inventing deployment or persistent
+  storage.
+- The [frontend-only case](samples/onboarding/frontend-case.md) and
+  [output](samples/onboarding/onboarding-frontend-output.md) stayed within the
+  supplied React, TypeScript, and Vite scope; mapped the App, JobList, client,
+  API boundary, and declared commands; and did not invent versions, backend
+  storage, or a response schema.
+- The [refresh case](samples/onboarding/refresh-case.md) and
+  [output](samples/onboarding/onboarding-refresh-output.md) changed the
+  synthetic revision to r2 and the test command to
+  `node --test test/auth.test.mjs`, preserved the module facts and exact
+  operator note, and did not request a refresh/augment choice.
+
+The refresh explanation groups the preserved note with unchanged module
+hashes. The supplied evidence establishes the module hashes, while note
+preservation comes from the explicit user instruction. No separately verified
+note hash or broader provenance is claimed.
+
+The candidate guide and five narrow outputs are linked directly as
+[candidate guide](samples/onboarding/guide-candidate.md),
+[11](samples/onboarding/onboarding-11.md),
+[12](samples/onboarding/onboarding-12.md),
+[13](samples/onboarding/onboarding-13.md),
+[14](samples/onboarding/onboarding-14.md), and
+[15](samples/onboarding/onboarding-15.md). The
+[manifest](samples/onboarding/manifest.json) records all six inputs and all 18
+outputs with deterministic IDs and canonical LF hashes. Baseline data was
+committed at `82e8d516fed57a1940e811adfedbc88cec2508cd` before the source
+change; the candidate source was frozen at
+`8f549728dae44725c642c9fda8e7cd66fc9e4c1e`; candidate and boundary data was
+committed at `23162d85ed8f84ee3b2910ef448c15341db90e46`.
+
+These checks do not establish live plugin discovery, automatic broad-scan
+prevention, isolated acceptance, comparative quality, or cost savings.

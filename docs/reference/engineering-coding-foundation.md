@@ -11,7 +11,7 @@ within its own responsibility.
 | --- | --- | --- |
 | `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts corrected; candidate handoffs showed non-regression, and the combined code boundary preserved the specified contract. |
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
-| `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; baseline samples showed no behavioral RED, while candidate and explicit map/refresh boundaries remain pending controller checks. |
+| `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; candidate narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
 | `pr-sizing` | Supports delivery decomposition. | Existing body retained; refinement is later work. |
 | `build-diagrams` | Supports an optional technical representation. | Existing body retained; refinement is later work. |
 
@@ -142,8 +142,17 @@ All five no-guide controls and all five unchanged-guide samples answered the
 supplied narrow command and prerequisite question correctly. None initiated
 onboarding, invented setup work, or requested broader repository context.
 Those outputs are non-regression observations, not behavioral RED or evidence
-of poisoning. Candidate samples and the explicit repository, subsystem, and
-selective-refresh boundaries remain pending for the controller.
+of poisoning. All five candidate samples also answered that same narrow
+question correctly, so they establish non-regression only.
+
+The candidate-only boundaries returned a useful cited whole-repository map and
+a frontend-only map without inventing unsupported deployment, persistence,
+version, storage, or response-schema facts. The selective-refresh boundary
+updated the supplied revision and test command, preserved the existing module
+facts and exact operator note, and did not add a refresh/augment decision. Its
+explanation groups the note with unchanged module hashes; the supplied evidence
+supports the module hashes, while note preservation follows the user's
+instruction. No note hash was verified.
 
 See [Coding foundation authoring evidence](skill-evaluation/coding-foundation-authoring.md)
 and the committed onboarding [manifest](skill-evaluation/samples/onboarding/manifest.json),
@@ -157,4 +166,14 @@ samples [06](skill-evaluation/samples/onboarding/onboarding-06.md),
 [07](skill-evaluation/samples/onboarding/onboarding-07.md),
 [08](skill-evaluation/samples/onboarding/onboarding-08.md),
 [09](skill-evaluation/samples/onboarding/onboarding-09.md), and
-[10](skill-evaluation/samples/onboarding/onboarding-10.md).
+[10](skill-evaluation/samples/onboarding/onboarding-10.md); candidate samples
+[11](skill-evaluation/samples/onboarding/onboarding-11.md),
+[12](skill-evaluation/samples/onboarding/onboarding-12.md),
+[13](skill-evaluation/samples/onboarding/onboarding-13.md),
+[14](skill-evaluation/samples/onboarding/onboarding-14.md), and
+[15](skill-evaluation/samples/onboarding/onboarding-15.md); and the
+[whole-repository](skill-evaluation/samples/onboarding/onboarding-repo-output.md),
+[frontend-only](skill-evaluation/samples/onboarding/onboarding-frontend-output.md),
+and
+[selective-refresh](skill-evaluation/samples/onboarding/onboarding-refresh-output.md)
+boundaries with their linked inputs.
