@@ -2,9 +2,8 @@
 
 This record separates source-contract evidence from model-output observations.
 It records the completed evidence for `coding-style`,
-`research-before-coding`, `onboard-to-codebase`, and `pr-sizing`, plus the
-Task 6 structural and baseline evidence for `build-diagrams`. Task 6 candidate
-and boundary outputs remain pending.
+`research-before-coding`, `onboard-to-codebase`, `pr-sizing`, and the Task 6
+structural, baseline, candidate, and boundary evidence for `build-diagrams`.
 
 ## Authoring case
 
@@ -842,7 +841,7 @@ This is structural evidence. It establishes the source contract and emitted
 companion boundary, not live skill discovery, renderer behavior, or model
 output quality.
 
-### Candidate contract and pending checks
+### Candidate contract and completed checks
 
 The candidate:
 
@@ -860,8 +859,48 @@ The architect scaffold's mandatory `## Diagram` slot was removed. The
 architect, backend, frontend, infra, issue-analysis, and pull-request routes
 now preserve their existing work when no visual adds information.
 
-The controller will freeze the candidate as a directory containing both
-`SKILL.md` and `references/catalog.md`, then run five primary candidate
-outputs, one terminal-readable relationship case, and one explicit Mermaid
-case. Those checks are **PENDING**. They have not been launched and no result
-is claimed.
+The candidate was frozen at
+`e812f516211cabad728b78772eea03e7acea7ab9`. The preserved
+[candidate skill](samples/diagrams/candidate/SKILL.md) and
+[catalog companion](samples/diagrams/candidate/references/catalog.md) retain
+the source SHA-256 values
+`8c265006d9d26619598e21de26612091dbc7934dcc0bc713b2ca260bf800f9cc`
+and
+`7558839b13c5f6c923321b5f95370bbbb0474ac7d6c545340e0b9234cc6b2358`.
+Their directory layout remains intact.
+
+Five fresh `gpt-5.4-mini`/medium candidate outputs used the unchanged decision
+case. Samples [11](samples/diagrams/diagram-11.md),
+[12](samples/diagrams/diagram-12.md),
+[13](samples/diagrams/diagram-13.md),
+[14](samples/diagrams/diagram-14.md), and
+[15](samples/diagrams/diagram-15.md) all delivered the requested UTF-8
+decision and rationale without a visual; none replaced the document with a
+bare no-diagram notice. Controls also omitted a visual in `5/5`, while the
+unchanged guide added one in `5/5`. This is a case-specific change in artifact
+tendency, not proof of general harm, quality improvement, token savings, cost
+savings, or a live-host effect.
+
+The [terminal-readable case](samples/diagrams/terminal-case.md) and
+[output](samples/diagrams/diagram-terminal-output.md) contain the four
+supplied nodes — API, queue, worker, and database — and the three stated
+positive relationships: publish, consume, and configuration read. Its
+crossed-out API-to-database annotation is labeled as no direct access and
+represents the stated absence rather than a positive connection.
+
+The [explicit Mermaid case](samples/diagrams/mermaid-case.md) and
+[output](samples/diagrams/diagram-mermaid-output.md) use the requested Mermaid
+format with the same four nodes and three positive relationships, and no
+API-to-database edge. Both boundary outputs include captions and add no
+service, deployment zone, store, retry, or trust boundary.
+
+The evidence commit is
+`4a1ecb8`. The [manifest](samples/diagrams/manifest.json) deterministically
+maps and hashes six inputs and 17 outputs: five controls, five unchanged-guide
+samples, five candidates, and two candidate-only boundaries. It records
+canonical LF and original-byte SHA-256 values; the exports are linked rather
+than reproduced here.
+
+The diagram source was inspected as text only. No renderer, font-layout check,
+accessibility audit, runtime reference-load trace, live discovery, cross-model
+result, general quality result, or cost result was exercised or established.

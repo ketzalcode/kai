@@ -13,7 +13,7 @@ within its own responsibility.
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries and v2 evidence recorded; ready for independent review with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract corrected; candidate narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
 | `pr-sizing` | Supports proportional delivery decomposition. | Source and four caller routes corrected; candidate primary and boundary evidence recorded with case-specific limits. |
-| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, and six caller/template boundaries corrected; candidate authoring samples remain pending. |
+| `build-diagrams` | Supports an optional technical representation. | Source, catalog companion, and six caller/template boundaries corrected; candidate and explicit-format evidence recorded with stated limits. |
 
 The ten document-review skills and their dependent workflow remain incubated,
 outside the active plugin surface. Their incubation does not waive formal
@@ -267,13 +267,38 @@ claim that every optional diagram is harmful or that those samples fabricated
 a system.
 
 See the diagram [case](skill-evaluation/samples/diagrams/case.md) and
-[manifest](skill-evaluation/samples/diagrams/manifest.json), which links the
-ten immutable outputs and records their normalized and original-byte hashes.
+[manifest](skill-evaluation/samples/diagrams/manifest.json), which maps all
+six inputs and 17 immutable outputs and records their normalized and
+original-byte hashes.
 The focused source guard failed against the former universal quota, missing
 optional-result boundaries, absent companion, and named caller/template
 obligations, then passed under Node `v24.15.0` after the correction.
 
-Candidate outputs are not part of this revision. Five primary candidate
-samples, a terminal-readable relationship case, and an explicit Mermaid case
-remain pending controller work. No live discovery, renderer success,
-cross-model result, general quality improvement, or cost result is claimed.
+The candidate was frozen at
+`e812f516211cabad728b78772eea03e7acea7ab9`; its copied
+[SKILL.md](skill-evaluation/samples/diagrams/candidate/SKILL.md) and
+[catalog](skill-evaluation/samples/diagrams/candidate/references/catalog.md)
+retain SHA-256 values
+`8c265006d9d26619598e21de26612091dbc7934dcc0bc713b2ca260bf800f9cc`
+and
+`7558839b13c5f6c923321b5f95370bbbb0474ac7d6c545340e0b9234cc6b2358`.
+All five candidate outputs
+[11](skill-evaluation/samples/diagrams/diagram-11.md),
+[12](skill-evaluation/samples/diagrams/diagram-12.md),
+[13](skill-evaluation/samples/diagrams/diagram-13.md),
+[14](skill-evaluation/samples/diagrams/diagram-14.md), and
+[15](skill-evaluation/samples/diagrams/diagram-15.md) delivered the requested
+UTF-8 decision and rationale without a visual. Controls also omitted a visual
+in `5/5`, while the unchanged guide added one in `5/5`. This remains a
+case-specific artifact tendency, not general harm, quality, token, or cost
+evidence.
+
+The [terminal-readable case](skill-evaluation/samples/diagrams/terminal-case.md)
+and [output](skill-evaluation/samples/diagrams/diagram-terminal-output.md), and
+the [explicit Mermaid case](skill-evaluation/samples/diagrams/mermaid-case.md)
+and [output](skill-evaluation/samples/diagrams/diagram-mermaid-output.md),
+preserved the four supplied nodes and three positive relationships. The
+terminal output's crossed-out API-to-database annotation represents the stated
+absence of direct access, not a positive edge. The diagram source was inspected
+as text only. No live discovery, actual catalog-load trace, renderer,
+accessibility, cross-model, general quality, or cost result is claimed.
