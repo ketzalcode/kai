@@ -9,6 +9,7 @@ import {
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../scripts/lib/pack-plan.mjs';
+import { parseScreenplay } from '../scripts/demo-capture.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const finalCreativeSkills = [
@@ -73,6 +74,12 @@ function withExtraRoute(agent, sentence) {
     ...agent,
     body: `${agent.body.trimEnd()}\n\n${sentence}\n`,
   };
+}
+
+function screenplayExamples(agent) {
+  return [...agent.body.matchAll(/```json\s*([\s\S]*?)```/g)]
+    .map(match => match[1].trim())
+    .filter(source => JSON.parse(source).schema === 'kai.demo-screenplay/v1');
 }
 
 function assertContract(agent, {
@@ -170,6 +177,15 @@ const designContract = {
 assertContract(design, designContract);
 
 const video = parseAgent('creative-lead-video');
+const videoScreenplays = screenplayExamples(video);
+assert.ok(videoScreenplays.length > 0,
+  'creative-lead-video: expected at least one fenced screenplay example');
+for (const [index, source] of videoScreenplays.entries()) {
+  assert.doesNotThrow(
+    () => parseScreenplay(source),
+    `creative-lead-video: fenced screenplay example ${index + 1} must satisfy the real parser`,
+  );
+}
 const videoContract = {
   model: 'claude-opus-5',
   profile: 'judgment',

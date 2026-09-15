@@ -100,7 +100,9 @@ A compact screenplay keeps stable IDs and intent:
 ```json
 {
   "schema": "kai.demo-screenplay/v1",
+  "title": "Illustrative new-item flow",
   "placement": "readme",
+  "capture": { "region": "0,0 1280x800", "fps": 30 },
   "steps": [
     { "id": "create", "action": "click", "target": "New item",
       "intends_to_show": "primary-action" },
@@ -108,12 +110,18 @@ A compact screenplay keeps stable IDs and intent:
       "intends_to_show": "intended-outcome" }
   ],
   "narration": [
-    { "id": "n-1", "text": "The result is ready.",
-      "visual_span": { "from_step": "result", "through_step": "result" },
+    { "id": "n-1", "text": "The intended result is ready.",
+      "visual_span": { "from_step": "create", "through_step": "result" },
       "start_after": "create" }
   ]
 }
 ```
+
+The example title and capture settings are illustrative. An actual handoff uses
+operator-supplied or approved metadata and claim-safe copy; never invent actual
+capture geometry merely to satisfy the parser. The planned `capture.region` is
+not measured step geometry, and `start_after` expresses sequencing intent, not
+proof that the result appeared.
 
 Use `visual_span` and `start_after` for demo narration; never add a timestamp,
 duration, source second, frame coordinate, or offset to a narration beat.
