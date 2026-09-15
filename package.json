@@ -31,6 +31,7 @@
     "demo-zoom": "node scripts/demo-zoom.mjs",
     "demo-zoom:self-test": "node scripts/demo-zoom.mjs --self-test",
     "demo-zoom:verify": "node scripts/demo-zoom.mjs --verify",
+    "diagram-layout:self-test": "node test/creative-diagram-layout-self-test.mjs",
     "demo-capture": "node scripts/demo-capture.mjs",
     "demo-capture:self-test": "node scripts/demo-capture.mjs --self-test",
     "demo-format:self-test": "node scripts/demo-format.mjs --self-test",

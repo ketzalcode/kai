@@ -43,6 +43,14 @@ PR and push to `main` and must stay fast:
 helper self-tests. A failed early stage prevents later stages from running;
 run the later commands separately when recording a complete failed baseline.
 
+`npm run diagram-layout:self-test` is an optional browser-backed check of the
+creative diagram reference. It uses an already provisioned Playwright Chromium
+or system Edge, without installing a browser. Synthetic long-label layouts are
+checked at 320px and 900px in light and dark modes. Missing browser capability
+fails explicitly. `-- --original` exercises the preserved pre-refinement CSS
+and is expected to expose its overflow. This is not a real artifact's visual
+review or accessibility certification, and is separate from dependency-free CI.
+
 ## Deterministic checks (in CI)
 
 ### Plugin source — `validate-plugin.mjs`

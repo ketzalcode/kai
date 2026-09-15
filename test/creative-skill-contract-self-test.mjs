@@ -355,6 +355,8 @@ function assertHtmlBlockDiagrams(skill) {
   const combined = existsSync(catalogPath)
     ? `${skill.body}\n${readFileSync(catalogPath, 'utf8')}`
     : skill.body;
+  expect(id, combined.includes('class="kai-connector" aria-hidden="true"'),
+    'pipeline connectors need their own decorative aria-hidden element');
   for (const [label, pattern] of [
     ['guaranteed no-overlap claim',
       /(?:overlap\s+is\s+impossible|makes\s+overlap\s+impossible|cannot\s+overlap|no\s+overlap\s+(?:is|will be)\s+possible)/i],
