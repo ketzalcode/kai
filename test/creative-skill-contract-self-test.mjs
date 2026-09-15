@@ -244,6 +244,8 @@ function assertVideoCreateNarration(skill) {
     ['paid processing and disclosure consent', /(?:paid|charge).{0,120}(?:consent|authori[sz]).{0,120}(?:disclosure|external)|(?:disclosure|external).{0,120}(?:consent|authori[sz])/],
     ['no automatic paid retry', /(?:no|never|do not).{0,50}(?:automatic(?:ally)? )?retry.{0,100}(?:new|fresh).{0,50}authori[sz]/],
     ['estimate is not measurement', /estimate.{0,80}(?:not|isn.t|does not).{0,40}measure/],
+    ['estimate does not require product grounding', /estimation.{0,120}does not require factual grounding/],
+    ['claim grounding is synthesis-specific', /before synthesizing product.claim narration.{0,80}load `kai-core-content-grounding`/],
     ['measured clip output', /demo_narration_take\.json.{0,100}measured|measured.{0,100}demo_narration_take\.json/],
     ['visible partial failures', /(?:failed clips?|partial).{0,100}(?:report|visible|explicit)/],
     ['actual paths reporting', /(?:actual|exact).{0,40}paths?/],

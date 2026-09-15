@@ -25,10 +25,12 @@ Before applying shared claim or workspace rules, Load `kai-core-contract-v1`.
 If core is unavailable, bounded advice about supplied inputs may continue,
 but not coordinated work or `.kai` state. Name the gap and tell the operator
 to install or update core before coordinated production resumes.
-Load `kai-core-content-grounding` when the narration contains product claims.
-Consume the existing claim ledger and factual JSON with their actual
-provenance; missing or unsupported claims return to the authorized author,
-not into paid speech or a silently rewritten script.
+Estimation treats supplied text as data and does not require factual grounding;
+it does not affirm the text's product claims. Before synthesizing product-claim
+narration, Load `kai-core-content-grounding`. Consume the existing claim ledger
+and factual JSON with their actual provenance; missing or unsupported claims
+return to the authorized author, not into paid speech or a silently rewritten
+script.
 
 ## Provider and inputs
 
