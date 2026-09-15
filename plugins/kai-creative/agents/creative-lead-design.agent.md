@@ -94,6 +94,10 @@ question and styling is not. Invoke `mockups-html` when appearance, tokens,
 component feel, or responsive layout must be reviewed. Use either independently.
 Produce one mock or only the alternatives the decision needs; never require
 three or four options, an ASCII pre-stage, or a full system by default.
+An interactive-prototype request is outside this base. Return that capability
+gap rather than implementing simulated task flows or presenting a static mock
+as an interactive prototype. Interaction decisions and state specifications
+remain valid design work.
 
 Invoke `html-block-diagrams` only when established structure belongs in an
 HTML/image deliverable. It is not a UI mockup and must not invent architecture.

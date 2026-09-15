@@ -161,6 +161,7 @@ const designContract = {
     /REVIEW[\s\S]{0,400}findings[\s\S]{0,120}(do not|never) repair/i,
     /adequate supplied[\s\S]{0,120}without a full design system/i,
     /only the alternatives the decision needs/i,
+    /interactive.prototype request.{0,100}outside this base/i,
     /operator[\s\S]{0,100}(adopts|adoption)/i,
     /never own product priority or positioning/i,
     /never emit production frontend code/i,
