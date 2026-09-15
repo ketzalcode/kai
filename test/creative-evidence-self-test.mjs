@@ -206,9 +206,20 @@ function fencedJson(relative, label) {
   return { document, raw: JSON.parse(match[1]), source: match[1] };
 }
 
+function assertEnumOnlyCorrection(original, corrected) {
+  const normalize = text => text.replace(/\r\n/g, '\n');
+  assert.equal(normalize(corrected),
+    normalize(original).replace('"saved search confirmation"', '"intended-outcome"'),
+    'alignment v2 complete case must change only the one intent enum');
+}
+
 function validateAlignmentCases(manifest, inputs) {
+  assert.equal(hash(readBytes(alignment.invalidFixture.casePath)),
+    'cc5d5512a54daa3f297272ab5603765e9a106ff33ff0c4c733e49851d420418a',
+    'alignment v1 case must preserve the original captured bytes');
   const v1 = fencedJson(alignment.invalidFixture.casePath, 'alignment v1 case');
   const v2 = fencedJson(alignment.primaryCasePath, 'alignment v2 case');
+  assertEnumOnlyCorrection(v1.document, v2.document);
   assert.match(v1.document, /Do not access media files/, 'alignment v1 case must remain a synthetic no-media case');
   assert.match(v2.document, /Do not access media files/, 'alignment v2 case must remain a synthetic no-media case');
   let parserError;
@@ -245,6 +256,9 @@ const recordFields = sample => ({
 });
 
 function validateExcludedHistory(excludedSamples) {
+  assert.equal(hash(readBytes(alignment.invalidFixture.manifest)),
+    '6d4d80c5951b71fb9de4c80b464101b6cc13443afe2a2c1019612cb19146fa03',
+    'alignment v1 manifest must preserve the original frozen records');
   const frozen = readIndexedJson(alignment.invalidFixture.manifest, `${alignmentMethod} frozen v1 manifest`);
   assert.equal(frozen.method, alignmentMethod, 'alignment frozen v1 manifest must retain its method');
   assert.ok(Array.isArray(frozen.samples), 'alignment frozen v1 manifest must retain its samples array');
@@ -314,6 +328,10 @@ function validateSchedule(counts, method, comparedArms = arms) {
     assert.equal(counts.primary[arm], expected, `${method}: the closed schedule requires exactly ${expected ? 'five' : 'zero'} valid primary ${arm} outputs`);
   }
   assert.ok(counts.boundary <= 2, `${method}: the closed schedule permits at most two boundary samples`);
+  if (method === alignmentMethod) {
+    assert.equal(counts.protocol, 0, 'alignment correction permits no protocol-deviation calls');
+    assert.equal(counts.comparison, 20, 'alignment correction must retain exactly twenty comparison calls');
+  }
   const newPrimary = Object.values(counts.newPrimary).reduce((sum, value) => sum + value, 0);
   assert.equal(counts.comparison, newPrimary + counts.protocol + counts.excluded,
     `${method}: comparison invocations must separate primary, protocol deviations, and excluded fixture history`);
@@ -465,6 +483,17 @@ function runMutationChecks() {
   reject('an alignment current primary', () => validateSchedule({
     ...structuredClone(schedule), comparison: 21, excluded: 10,
   }, alignmentMethod, alignment.comparedArms), /exactly zero valid primary current outputs/);
+  reject('an alignment protocol substitution', () => validateSchedule({
+    ...emptyCounts(), comparison: 21, excluded: 10, protocol: 1,
+    primary: { control: 5, current: 0, candidate: 5 },
+    newPrimary: { control: 5, current: 0, candidate: 5 },
+  }, alignmentMethod, alignment.comparedArms), /no protocol-deviation calls/);
+  const caseText = '{"intends_to_show":"saved search confirmation"}\nTake unchanged\nRequest unchanged\n';
+  const correctedCase = caseText.replace('"saved search confirmation"', '"intended-outcome"');
+  assertEnumOnlyCorrection(caseText, correctedCase);
+  reject('a changed measured take outside the screenplay',
+    () => assertEnumOnlyCorrection(caseText, correctedCase.replace('Take unchanged', 'Take changed')),
+    /complete case must change only/);
 }
 
 function runAuthoringChecks() {
@@ -538,6 +567,15 @@ function runAuthoringChecks() {
       addCount(counts, kind, excluded);
     }
     assert.ok(ids.size > 0, `${method}: samples are required`);
+    if (method === 'scope') {
+      const deviations = manifest.samples.filter(sample => sampleKind(sample, method).protocol);
+      assert.equal(deviations.length, 1, 'scope must retain its sole actual protocol-deviation invocation');
+      assert.equal(deviations[0].id, 'current-02-initial-misrouted');
+      assert.equal(evidencePath(deviations[0].output.path, 'scope protocol output'),
+        `${authoringRoot}/scope/current/current-02.md`);
+      assert.equal(deviations[0].output.originalBytesSha256,
+        'ed88a39f29148167a14bfc0730522eea9c97a9d9b86059fc4fa5dae600479127');
+    }
     if (correction) {
       validateExcludedHistory(excludedSamples);
       assert.equal(counts.excluded, correction.invalidFixture.comparisonInvocations, `${method}: excluded count must match invalidFixture`);
