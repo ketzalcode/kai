@@ -1,0 +1,59 @@
+  ok a beat declaring "start" is refused, because neither speech length nor UI readiness is knowable while writing
+  ok a beat declaring "end" is refused, because neither speech length nor UI readiness is knowable while writing
+  ok a beat declaring "seconds" is refused, because neither speech length nor UI readiness is knowable while writing
+  ok a beat declaring "duration" is refused, because neither speech length nor UI readiness is knowable while writing
+  ok a beat declaring "offset" is refused, because neither speech length nor UI readiness is knowable while writing
+  ok a beat with no visual span is refused: nothing could decide whether it fits
+  ok a beat spanning a step that does not exist is refused
+  ok a span that runs backwards is refused
+  ok a beat cannot wait for a step it does not cover
+  ok waiting for the last step of your own span is refused: no clip is short enough to fit, so it is an authoring error rather than an overrun
+  ok a one-step beat that also waits for that step to finish is refused while writing, not as a mystifying overrun later
+  ok beats authored out of order are refused rather than silently resequenced
+  ok a duplicated beat id is refused: a narration take is keyed by it
+  ok a screenplay with no narration is still valid, and one with beats carries them
+  ok narration is optional: a silent demo is a legitimate demo
+  ok through_step defaults to from_step, so a beat covering one state need not say it twice
+  ok two beats that fit their measured spans are placed
+  ok a beat with no start_after begins when its first state begins
+  ok a beat gated on a step begins when that step is *over*, so it never claims a result before it is visible
+  ok a second beat waits for the first to finish speaking rather than talking over it
+  ok how far a line drifted from its earliest honest position is reported, not hidden
+  ok a line longer than the states it describes is rejected, not fitted by slowing the video
+  ok the rejection says how many words to cut, because "too long" is not something an author can act on
+  ok when a later state does stay on screen long enough, the rejection names the smallest span that would work instead of only telling the author to cut
+  ok the rejection states the thing it refuses to do, so nobody goes looking for the option
+  ok narrating over a step the driver recorded as failed is refused
+  ok a screen that never settled cannot be said to have reached the described state
+  ok a partial synthesis is rejected rather than rendered with a silent gap
+  ok a failed clip is not treated as silence
+  ok a clip synthesised from words the screenplay no longer carries is rejected, because it would play the old line
+  ok a screenplay placed against a take from a different demo is rejected
+  ok a hash matching the current words places normally
+  ok a foreign narration take schema is refused
+  ok two clips for one beat are refused
+  ok the video is copied, so re-narrating in another language cannot change a frame of what was recorded
+  ok a clip is delayed to its measured position, in milliseconds, on every channel
+  ok amix does not normalise, which would divide every clip level by the number of beats
+  ok the output is not truncated to the shorter stream: placement already guarantees the narration fits inside measured steps, so -shortest could only ever cut the end off the demo
+  ok a rejected plan cannot be mixed
+  ok a filename that would be read as an option is refused
+  ok an explicit LECTORIA_BIN wins over everything, so an uninstalled checkout can still be used
+  ok the pinned dependency is found where npm actually puts it, which is not on PATH
+  ok a global install still answers when the pinned dependency is not installed
+  ok a genuinely missing lectoria is reported as absent rather than assumed present
+  ok a measured duration is read from lectoria's JSON
+  ok an estimate is refused rather than placed as a measurement: lectoria reports a projection under a different key precisely so this cannot pass silently
+  ok a zero duration is refused: it would place a beat that nobody can hear
+  ok output that is not the expected JSON is refused rather than half-read
+  ok an unconfigured machine is fatal: every remaining beat would fail identically, and nothing has been billed to preserve
+  ok the whole structured message survives, rather than the last line of stderr
+  ok a failed call is not fatal: it may be transient, and the other beats are still worth attempting
+  ok an older lectoria with no structured error still yields something, so the seam degrades rather than breaking
+  ok synthesis stops at the first fatal failure instead of producing one identical failure per beat
+  ok the pinned version wins over whatever is on PATH, so a demo is narrated by the version this plugin pins rather than a stray global
+  ok the absence message names every place that was checked, because a bare "not found" sends people looking in the wrong one
+  ok a pre-synthesis estimate is labelled an estimate everywhere it surfaces
+  ok the estimate counts the characters that would actually be billed
+
+demo-narrate self-test: 57 checks passed

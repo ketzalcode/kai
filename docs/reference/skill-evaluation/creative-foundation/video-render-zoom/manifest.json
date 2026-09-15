@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 2,
+  "method": "video-render-zoom",
+  "legacyGuideSkill": "demo-zoom",
+  "phase": "candidate-complete",
+  "worktreeHeadAtManifestUpdate": "eb3f5b5b70b67a3f37a31a7ff35fc28ebbce201d",
+  "baselineCurrentGuideFreezeBaseRevision": "b045ad2a9f652130bd11aededee47ebe6ec11d0d",
+  "baselineCurrentGuideSourceGitBlob": "fa85c37abd1d13655fdbd75e5caa426589b7634f",
+  "requestedModel": "gpt-5.4-mini",
+  "fallbackModel": null,
+  "fallbackUsed": false,
+  "agentType": "general-purpose",
+  "reasoningEffort": "medium",
+  "freshContextPerSample": true,
+  "comparisonSamples": 15,
+  "boundarySamples": 1,
+  "arms": {
+    "control": 5,
+    "current": 5,
+    "candidate": 5
+  },
+  "hashAlgorithm": "SHA-256 of UTF-8 text with CRLF normalized to LF; raw byte SHA-256 also recorded.",
+  "confounds": [
+    "Ambient harness and core instructions still applied; the control arm omitted only the target guide.",
+    "Actors were instructed to read only assigned inputs and write only their assigned output artifact; no stronger sandbox was available."
+  ],
+  "inputs": [
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "sha256": "3c72a8f9e74687a522a40c6de55542720075eff3ebee4d1e8ba937dff7211972",
+      "originalBytesSha256": "78e7e29ae124ee87e13c67a2dd9d68a01acb0b1b2bf45acbc3c83a312d8407f0",
+      "bytes": 1580,
+      "frozenRole": "primary-case",
+      "parserValidation": {
+        "parserPath": "scripts\\demo-zoom.mjs",
+        "parserExport": "parsePlan",
+        "result": "parsed",
+        "focusSegments": 2,
+        "size": "1280x720",
+        "fps": 30,
+        "mediaOperations": false
+      }
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current\\SKILL.md",
+      "sha256": "6c05d7bd85fb7f285db2311a798cb901d274e30c1c7e00e7b9670637247068eb",
+      "originalBytesSha256": "6c05d7bd85fb7f285db2311a798cb901d274e30c1c7e00e7b9670637247068eb",
+      "bytes": 10604,
+      "sourcePath": "incubator\\kai-creative\\skills\\demo-zoom\\SKILL.md",
+      "frozenRole": "baseline-current-guide",
+      "sourceRevision": "b045ad2a9f652130bd11aededee47ebe6ec11d0d",
+      "sourceWorktreeHeadAtFreeze": "43d81c016e891a08cb615872792ade5562a2ea0f",
+      "sourceGitBlob": "fa85c37abd1d13655fdbd75e5caa426589b7634f",
+      "sourceMatchesFrozenBytes": true
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "sha256": "386db33c1c12bc6afcd796a6b0763905b8f5b22d8bf6dde3d3444a70ad4bf1bb",
+      "originalBytesSha256": "386db33c1c12bc6afcd796a6b0763905b8f5b22d8bf6dde3d3444a70ad4bf1bb",
+      "bytes": 5272,
+      "sourcePath": "plugins\\kai-creative\\skills\\video-render-zoom\\SKILL.md",
+      "frozenRole": "candidate-guide",
+      "sourceRevision": "f0760ab74e1e187d6d7f91fdf4e0704c5f8754b6",
+      "sourceWorktreeHeadAtFreeze": "eb3f5b5b70b67a3f37a31a7ff35fc28ebbce201d",
+      "sourceGitBlob": "49845d18604fdd157abea57a97c8f4fb1a5722f8",
+      "sourceMatchesFrozenBytes": true
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\boundary-empty-focus-case.md",
+      "sha256": "821babbce871f09abb49e99a0cf230d645e519bf5343193d0c30a398e6528b23",
+      "originalBytesSha256": "a7148cc45f569bcba97f5bfe5c51da4b9a763f1d256b585f4f879ff8b7403ccd",
+      "bytes": 914,
+      "fixtureRole": "candidate-boundary",
+      "parserValidation": {
+        "parserPath": "scripts\\demo-zoom.mjs",
+        "parserExport": "parsePlan",
+        "result": "parsed",
+        "focusSegments": 0,
+        "cursor": null,
+        "mediaOperations": false
+      }
+    }
+  ],
+  "samples": [
+    {
+      "id": "control-01",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\control-01.md",
+        "sha256": "dc1675ec77c3822eb2e52796342a48c5b3b6030e973c5043a730e442a425e136",
+        "originalBytesSha256": "2ccefe50d728ca7bf8c5cf10603ae8deeb056f0adc8fdf9c9e87d299de6094a7",
+        "bytes": 659
+      }
+    },
+    {
+      "id": "control-02",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\control-02.md",
+        "sha256": "4fc3c8b23b5b427e977d77e48f69ebc0b1de71580bf9edaa329f6c3b5f8e426a",
+        "originalBytesSha256": "29849b8f4dcb90ec1266482b4f53cc9f92b5c6bf10503685e69b259ab5596b4e",
+        "bytes": 621
+      }
+    },
+    {
+      "id": "control-03",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\control-03.md",
+        "sha256": "57e7cfa031b274966599800643371af975a7943f5a1a99119068f81426b41e2f",
+        "originalBytesSha256": "7c1c6f992888e62cc64f21a315ffd5b2a0807e0270bc38c1cc176381a89a9a24",
+        "bytes": 701
+      }
+    },
+    {
+      "id": "control-04",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\control-04.md",
+        "sha256": "d15ffba303a91be9052dbcee004de03ba11a984b5f9e90eca3bb57aaf6a42620",
+        "originalBytesSha256": "d3504e95c7459ddab1e22cab6a68ef583dad9311cf5b163304c0d325ca02bdd3",
+        "bytes": 508
+      }
+    },
+    {
+      "id": "control-05",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\control-05.md",
+        "sha256": "93aaf648c3dfd0d6f086e62604d69a959899e9cdff99179ba313f5705e0141b1",
+        "originalBytesSha256": "4fc95e3f78fd80697c43c5f6149cf6164e16fe02491c23cbbdbc171d004ff9e4",
+        "bytes": 544
+      }
+    },
+    {
+      "id": "current-01",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current-01.md",
+        "sha256": "018b547b7fec7be0d9b18baf634ba6754ad765edf7e19b26d7ee7ab82f8bbc1d",
+        "originalBytesSha256": "bdd56a4a7412ee4958ac0dce3b07ed153c600dc38a994ea41d127ac27e8d3ed3",
+        "bytes": 620
+      }
+    },
+    {
+      "id": "current-02",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current-02.md",
+        "sha256": "f855fddae23edb1e2813d5f0d9902e92551aeb80380bcc809f56e6d8a205c749",
+        "originalBytesSha256": "122d93cbdaf75254b7c8c7115e476bdf6f3756f33f74ff34cbc0acbd4ca1e342",
+        "bytes": 656
+      }
+    },
+    {
+      "id": "current-03",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current-03.md",
+        "sha256": "8a0af064fa96145a2dd25d70aabda17420dbcb331a710c71db76022fbd41b5c7",
+        "originalBytesSha256": "16e5597ddf4883d9d1cd8de65186fbae955603e8fcfaa017af934a375367eae6",
+        "bytes": 690
+      }
+    },
+    {
+      "id": "current-04",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current-04.md",
+        "sha256": "32e3a196173727c5b56116fb0a2544d6acab3e033bd1e00e3e268297aceb22a1",
+        "originalBytesSha256": "68484497723eddb8adabb13bff8bece7e06d06da9a48e5a8ce9c8c349f5aec64",
+        "bytes": 664
+      }
+    },
+    {
+      "id": "current-05",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\current-05.md",
+        "sha256": "cebbaee3827667a1b575100c9865f92d10eebd6eb4062cc7110a81c8354f100e",
+        "originalBytesSha256": "034c93fc6413b0ed1a275c7f8553d2d4683fbec7c09cf6af8b322eee3ae680db",
+        "bytes": 721
+      }
+    },
+    {
+      "id": "candidate-01",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate-01.md",
+        "sha256": "890cc0b839de9e2d2dd4f867a2030ad7e2951ee7327d19e897886d86e1af8b91",
+        "originalBytesSha256": "3958b61a4ee41aca7838ed59d99172c426601b0743b0c803c237c60bde2552df",
+        "bytes": 854
+      }
+    },
+    {
+      "id": "candidate-02",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate-02.md",
+        "sha256": "2cd057fcaa28c40c11482a6949733140cf896ee42f94d0ab63233d116afca411",
+        "originalBytesSha256": "91105ba69d3d44792d10085af83861ebb807f03cee74e39831ad1db389c0df08",
+        "bytes": 825
+      }
+    },
+    {
+      "id": "candidate-03",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate-03.md",
+        "sha256": "5fac37868c21a86dfeef57a5c4530f7bdec90b0082ca0e1889ae32026dcd1cc8",
+        "originalBytesSha256": "d6bc4ea881493629a18b5fb1576626822f8e3245e4a69e12e279d90759d4227c",
+        "bytes": 718
+      }
+    },
+    {
+      "id": "candidate-04",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate-04.md",
+        "sha256": "3543a40c2c4c3670929c99f591124bfb4ea47aea07564d9801f3f323a2e8c123",
+        "originalBytesSha256": "97589289789be0947140f3ddf1672134c7ba493042137a4f732cef12df9c7309",
+        "bytes": 1020
+      }
+    },
+    {
+      "id": "candidate-05",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate-05.md",
+        "sha256": "ea28555d1ed3e41ccd48c01cfcbf77a3efb6eacc0f6fb8de3c5744558675ee84",
+        "originalBytesSha256": "80363ae9e241f8b7ce17be1dc747625a9d59d6a2b503709e9bb7822b1e60708c",
+        "bytes": 793
+      }
+    },
+    {
+      "id": "candidate-boundary-empty-focus",
+      "arm": "candidate-boundary",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\boundary-empty-focus-case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\candidate-boundary-empty-focus.md",
+        "sha256": "a0e3ec0b13410f940403b2fbbbb9d385e6a658c70413a26f1cd8da07b2acb861",
+        "originalBytesSha256": "07d863cdaa588d86ae81f9f904ea81a8560b39421c757ae4d8c51ff307a64a8f",
+        "bytes": 481
+      }
+    }
+  ],
+  "protocolDeviations": [],
+  "analyses": [
+    "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\baseline-analysis.md",
+    "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom\\final-analysis.md"
+  ],
+  "outputDirectory": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom",
+  "candidateCommittedRevision": "f0760ab74e1e187d6d7f91fdf4e0704c5f8754b6",
+  "candidateSourceWorktreeHeadAtFreeze": "eb3f5b5b70b67a3f37a31a7ff35fc28ebbce201d",
+  "candidateSourceGitBlob": "49845d18604fdd157abea57a97c8f4fb1a5722f8"
+}

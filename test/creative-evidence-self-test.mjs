@@ -286,6 +286,7 @@ function validateMethodDeclaration(manifest, method) {
 }
 
 function isExcludedFixture(sample, method, correction) {
+  if (sample.excludedFromPrimary === false && sample.exclusionReason === undefined) return false;
   const declared = sample.excludedFromPrimary !== undefined
     || sample.exclusionReason !== undefined;
   if (!declared) return false;
@@ -467,7 +468,8 @@ function validateAlignmentSchedule(manifest, inputs, counts) {
   const primaryCandidates = manifest.samples
     .filter(sample => sampleKind(sample, alignmentMethod).primary && sample.arm === 'candidate');
   for (const guidePath of Object.values(alignment.candidateGuides)) {
-    assert.equal(primaryCandidates.filter(sample => sample.guidePath === guidePath).length, 5,
+    assert.equal(primaryCandidates.filter(sample =>
+      evidencePath(sample.guidePath, `${sample.id}.guidePath`) === guidePath).length, 5,
       `${alignmentMethod}: each candidate guide must have exactly five primary comparisons`);
   }
 
@@ -482,19 +484,23 @@ function validateAlignmentSchedule(manifest, inputs, counts) {
     `${alignmentMethod}: boundary IDs must retain v2 and add the ruled v3 repeats`);
   const caseGuidePairs = new Set();
   for (const sample of boundaries) {
-    assert.equal(evidencePath(sample.casePath, `${sample.id}.casePath`), expectedBoundaryCases[sample.id],
+    const casePath = evidencePath(sample.casePath, `${sample.id}.casePath`);
+    const guidePath = evidencePath(sample.guidePath, `${sample.id}.guidePath`);
+    assert.equal(casePath, expectedBoundaryCases[sample.id],
       `${sample.id}: boundary casePath must retain the issued case`);
-    assert.ok(inputs.has(sample.casePath), `${sample.id}: reused boundary casePath must remain hashed`);
+    assert.ok(inputs.has(casePath), `${sample.id}: reused boundary casePath must remain hashed`);
     assert.equal(evidencePath(sample.output.path, `${sample.id}.output.path`), `${alignmentRoot}/${sample.id}.md`,
       `${sample.id}: boundary output path must follow its retained ID`);
-    const pair = `${sample.casePath}\0${sample.guidePath}`;
+    const pair = `${casePath}\0${guidePath}`;
     assert.ok(!caseGuidePairs.has(pair), `${sample.id}: boundary (casePath, guidePath) pair must be unique`);
     caseGuidePairs.add(pair);
   }
-  assert.equal(new Set(boundaries.map(sample => sample.casePath)).size, 2,
+  assert.equal(new Set(boundaries.map(sample =>
+    evidencePath(sample.casePath, `${sample.id}.casePath`))).size, 2,
     `${alignmentMethod}: the two hashed boundary cases must be intentionally reused across guides`);
   for (const guidePath of Object.values(alignment.candidateGuides)) {
-    assert.equal(boundaries.filter(sample => sample.guidePath === guidePath).length, 2,
+    assert.equal(boundaries.filter(sample =>
+      evidencePath(sample.guidePath, `${sample.id}.guidePath`) === guidePath).length, 2,
       `${alignmentMethod}: each candidate guide must have exactly two boundary calls`);
   }
   assert.equal(caseGuidePairs.size, counts.boundary,
@@ -570,6 +576,12 @@ function reject(label, action, expected) {
 }
 
 function runMutationChecks() {
+  assert.equal(isExcludedFixture({ excludedFromPrimary: false }, 'scope', null), false,
+    'an explicit false marker is not an exclusion');
+  assert.throws(() => isExcludedFixture({
+    excludedFromPrimary: false, exclusionReason: 'invalid-fixture-v1',
+  }, alignmentMethod, alignment), /must set excludedFromPrimary true/,
+  'a false marker cannot carry an exclusion reason');
   const methodRoot = `${authoringRoot}/grounding`;
   const paths = {
     case: `${methodRoot}/case.md`,

@@ -1,0 +1,1 @@
+No mockup or options exercise is needed here. This is a routine copy change, so the bounded action is to update the secondary button label from `Create alert` to `Save search` and proceed with implementation planning. The only caveat is that the supplied evidence already says the label fits at `1280px`, so there is no layout risk to resolve first.

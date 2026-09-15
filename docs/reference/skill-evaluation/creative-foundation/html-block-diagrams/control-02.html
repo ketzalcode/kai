@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search service ownership and containment</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --ink: #1f2937;
+      --muted: #5b6574;
+      --line: #c7ced9;
+      --panel: #ffffff;
+      --lane: #eef3f8;
+      --accent: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.35;
+    }
+
+    figure {
+      margin: 0 auto;
+      max-width: 980px;
+    }
+
+    figcaption {
+      margin: 0 0 14px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .boundary {
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      padding: 18px;
+      box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+    }
+
+    .boundary-title {
+      display: inline-block;
+      margin: 0 0 16px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #e8edf4;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .lane {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--lane);
+      padding: 14px;
+    }
+
+    .lane h2 {
+      margin: 0 0 12px;
+      font-size: 1.02rem;
+      color: var(--accent);
+    }
+
+    .component {
+      border: 1px solid #d8deea;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px;
+      margin: 0 0 12px;
+    }
+
+    .component:last-child {
+      margin-bottom: 0;
+    }
+
+    .component-name {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .component-role {
+      color: var(--muted);
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 14px;
+      }
+
+      .lanes {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <figure>
+    <figcaption>Search service ownership and containment</figcaption>
+    <div class="boundary" role="group" aria-label="Search service">
+      <div class="boundary-title">Search service</div>
+      <div class="lanes">
+        <section class="lane" aria-label="Request lane">
+          <h2>Request lane</h2>
+          <div class="component">
+            <span class="component-name">Web client</span>
+            <div class="component-role">submits a search query</div>
+          </div>
+          <div class="component">
+            <span class="component-name">Query service</span>
+            <div class="component-role">validates and routes the query</div>
+          </div>
+        </section>
+
+        <section class="lane" aria-label="Index lane">
+          <h2>Index lane</h2>
+          <div class="component">
+            <span class="component-name">Ingestion worker</span>
+            <div class="component-role">updates searchable content</div>
+          </div>
+          <div class="component">
+            <span class="component-name">Search index</span>
+            <div class="component-role">stores searchable documents</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </figure>
+</body>
+</html>

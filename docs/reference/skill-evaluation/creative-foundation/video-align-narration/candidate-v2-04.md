@@ -1,0 +1,1 @@
+Do not place this clip yet. The exact next action is to send the narration back for a new measured take or a revised screenplay with a settled `edit-name` gate, because the current `start_after` gate is unsettled and blocks honest alignment.

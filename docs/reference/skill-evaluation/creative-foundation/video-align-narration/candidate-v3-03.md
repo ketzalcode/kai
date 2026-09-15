@@ -1,0 +1,1 @@
+Request a replacement measured recording take from the operator or evidence provider, tied to footage with valid relevant states. The narration cannot be aligned yet because the `edit-name` gate is unsettled, so the `start_after` condition is not valid. Reuse the existing measured clip for the next fit check.

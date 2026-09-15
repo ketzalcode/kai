@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search service ownership and containment</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #f6f7f9;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --line: #c8ced8;
+      --lane-bg: #ffffff;
+      --card-bg: #f9fafb;
+      --accent: #6b7280;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+      --radius: 16px;
+      --gap: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: var(--ink);
+      font: 16px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 24px;
+    }
+
+    figure {
+      margin: 0 auto;
+      max-width: 980px;
+    }
+
+    figcaption {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 14px;
+      color: var(--ink);
+    }
+
+    .boundary {
+      border: 2px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .boundary-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 16px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #eef1f5;
+      border: 1px solid var(--line);
+    }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--gap);
+    }
+
+    .lane {
+      min-width: 0;
+      background: var(--lane-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .lane h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      line-height: 1.2;
+      color: var(--ink);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .cards {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 14px;
+      padding: 12px 14px;
+      min-width: 0;
+    }
+
+    .card-name {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: var(--ink);
+      word-break: break-word;
+    }
+
+    .card-desc {
+      display: block;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 16px;
+      }
+
+      .lanes {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <figure aria-labelledby="diagram-caption">
+    <figcaption id="diagram-caption">Search service ownership and containment</figcaption>
+    <div class="boundary" role="group" aria-label="Search service">
+      <div class="boundary-label">Search service</div>
+
+      <div class="lanes" role="list" aria-label="Ownership lanes">
+        <section class="lane" role="listitem" aria-labelledby="request-lane-title">
+          <h2 id="request-lane-title">Request lane</h2>
+          <div class="cards">
+            <article class="card" aria-label="Web client">
+              <span class="card-name">Web client</span>
+              <span class="card-desc">submits a search query</span>
+            </article>
+            <article class="card" aria-label="Query service">
+              <span class="card-name">Query service</span>
+              <span class="card-desc">validates and routes the query</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="lane" role="listitem" aria-labelledby="index-lane-title">
+          <h2 id="index-lane-title">Index lane</h2>
+          <div class="cards">
+            <article class="card" aria-label="Ingestion worker">
+              <span class="card-name">Ingestion worker</span>
+              <span class="card-desc">updates searchable content</span>
+            </article>
+            <article class="card" aria-label="Search index">
+              <span class="card-name">Search index</span>
+              <span class="card-desc">stores searchable documents</span>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </figure>
+</body>
+</html>

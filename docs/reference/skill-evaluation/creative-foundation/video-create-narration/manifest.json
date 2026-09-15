@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 2,
+  "method": "video-create-narration",
+  "legacyGuideSkill": "demo-narrate",
+  "phase": "candidate-complete",
+  "inputCoverage": "Primary case is conceptual estimate advice from narration beats, not a complete helper-ready screenplay or an executed estimate.",
+  "worktreeHeadAtManifestUpdate": "6787169282c32e611121e2a950e9bd12626ca02e",
+  "requestedModel": "gpt-5.4-mini",
+  "fallbackModel": null,
+  "fallbackUsed": false,
+  "agentType": "general-purpose",
+  "reasoningEffort": "medium",
+  "freshContextPerSample": true,
+  "comparisonSamples": 15,
+  "boundarySamples": 2,
+  "hashAlgorithm": "SHA-256 of UTF-8 text with CRLF normalized to LF; raw byte SHA-256 also recorded.",
+  "confounds": [
+    "Ambient harness and core instructions still applied; the control arm omitted only the target guide.",
+    "Actors were instructed to read only assigned inputs and write only their assigned output artifact; no stronger sandbox was available."
+  ],
+  "inputs": [
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "sha256": "2124cdedebfcaeeb8ec7909ce7e684c13d5298d9fb4b3b4544756cd0ed4a42ce",
+      "originalBytesSha256": "2cb706ef8a35be176e9fec11b0affa97126f7b70846c87327c8d3937aa7cf06b",
+      "bytes": 1673
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current\\SKILL.md",
+      "sha256": "6e2c320b319b2d42475caeaf1b00e4193ebab184f7c31201dff85c6afdc4295f",
+      "originalBytesSha256": "6e2c320b319b2d42475caeaf1b00e4193ebab184f7c31201dff85c6afdc4295f",
+      "bytes": 10754,
+      "sourcePath": "incubator\\kai-creative\\skills\\demo-narrate\\SKILL.md",
+      "sourceMatchesFrozenBytes": true,
+      "frozenRole": "baseline-current-guide"
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "sha256": "6356dc87f5ca4900be1b47c9e535c8cc9e06c8a08332fc1917a73d606ee7d2d2",
+      "originalBytesSha256": "6356dc87f5ca4900be1b47c9e535c8cc9e06c8a08332fc1917a73d606ee7d2d2",
+      "bytes": 4244,
+      "sourcePath": "plugins\\kai-creative\\skills\\video-create-narration\\SKILL.md",
+      "frozenRole": "candidate-guide",
+      "sourceRevision": "679627f45c67bd341d00d9b9c25173831ce607ed",
+      "sourceWorktreeHeadAtFreeze": "6787169282c32e611121e2a950e9bd12626ca02e",
+      "sourceGitBlob": "99b37aacd232601a29ede37c25f9346c59ad92cb",
+      "sourceMatchesFrozenBytes": true
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\boundary-urgent-synthesis-case.md",
+      "sha256": "19c94746139a6bedcc5b463396a24e96fa31e7964dc293055c70fde06d667907",
+      "originalBytesSha256": "86e1730a161694f0f3793fdde6109f4ef1f80c38f8bf7c48f90bd6a381908032",
+      "bytes": 915
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\boundary-partial-result-case.md",
+      "sha256": "29fcd2ebb419d17e04b42b23347e0218156e0325bf90042e6fd72a0552b87f74",
+      "originalBytesSha256": "3176ff74c9a80931a16d6e55ca1c122bf4e71af76a2c011c466a3721b68b3fad",
+      "bytes": 1134
+    }
+  ],
+  "samples": [
+    {
+      "id": "control-01",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\control-01.md",
+        "sha256": "6cce00f027b557bbcd79c587808800879519f58a90db376fa8c45eae6d8a112a",
+        "originalBytesSha256": "f1e2c50425efaad09d54c61c3bbdaabd4cdec628b9c1932a52d489e4ff70265e",
+        "bytes": 525
+      }
+    },
+    {
+      "id": "control-02",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\control-02.md",
+        "sha256": "39e29d1288d4abb019ec2cd2f63056cfc55ee3c7146655834a87cbd19e93ede7",
+        "originalBytesSha256": "01fae9e443ac79c228d78b77cb4abe748b83005608b5b5ac09b1a5ba10374f8a",
+        "bytes": 453
+      }
+    },
+    {
+      "id": "control-03",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\control-03.md",
+        "sha256": "fa7914a2f01dd17b0cf7109239391b2aa9a6834eee67d9cdc7c85b9b892e8160",
+        "originalBytesSha256": "d7dcb80efa491508518300f4622aedae8af9a09cd8700814bc50f5400ffd7261",
+        "bytes": 476
+      }
+    },
+    {
+      "id": "control-04",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\control-04.md",
+        "sha256": "5cd688c22a2df38b52c4dbce21e74b3bf46e0389d7dd1e03ecbe4933e3c6f740",
+        "originalBytesSha256": "99a1346a9a14c6dde5c83a39144e43a17867cb742161249088d13792ce6fbf5e",
+        "bytes": 478
+      }
+    },
+    {
+      "id": "control-05",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\control-05.md",
+        "sha256": "9482bf35bb69f400861fe8f5f5dee1618a47394b1d1a8a3886ed910b3850fd47",
+        "originalBytesSha256": "b3b1e5e9c05cc186eba1af820418c49df7336bad29f6c0dddc0bd1553f760b93",
+        "bytes": 409
+      }
+    },
+    {
+      "id": "current-01",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current-01.md",
+        "sha256": "4b245d7d96e99358a82f336810dd5ef30b246df59652d97758d35d5eab2edf89",
+        "originalBytesSha256": "f1aff6b764a423f363758adbb4bb18eaf77f499fc7c9c4147ad8e83a1a13ef0a",
+        "bytes": 487
+      }
+    },
+    {
+      "id": "current-02",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current-02.md",
+        "sha256": "14456ec6a540a217f15490fc70dfcd6f48727ac4184916c17e435d287e3e2d5f",
+        "originalBytesSha256": "b8beb442d21004dfdf77e4cf92e2fbc06ed7ea65bc69ae59f8effe30a91694f9",
+        "bytes": 495
+      }
+    },
+    {
+      "id": "current-03",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current-03.md",
+        "sha256": "441a3afa32c489684eae32bd46ab3c4d178ebd1bc04d979a4ec3fce7bd93fdb0",
+        "originalBytesSha256": "d32427b69641fa05407f3cf737354139e392f56f2994244115ce9aaac4288575",
+        "bytes": 587
+      }
+    },
+    {
+      "id": "current-04",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current-04.md",
+        "sha256": "521b1403ac57f6e0226ad19ffefbbd22b1e80cd9a5c6ee13d3d376e118d9051e",
+        "originalBytesSha256": "03fbb0f888ee6b8c627426f0490d701fa7a7d31e3d053ca2f16a61bf7304f979",
+        "bytes": 469
+      }
+    },
+    {
+      "id": "current-05",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\current-05.md",
+        "sha256": "01797b2641a3eb93189fb90fc70b70b9967a094e0c40bd592fe85d1bab937e3d",
+        "originalBytesSha256": "31ba3d24ac635cd35ec1c839cfc1f4f6f624157af4a287076f68b70813bff8e1",
+        "bytes": 428
+      }
+    },
+    {
+      "id": "candidate-01",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-01.md",
+        "sha256": "b59c1b2ce70810e9a33b173d655d504e3eea4be1c14b89af65f52614ecaf2cde",
+        "originalBytesSha256": "0bc9adaa9f99ae2394aa18c2f497b5130aff192abfa9ae78ce810fa51fa698dd",
+        "bytes": 435
+      }
+    },
+    {
+      "id": "candidate-02",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-02.md",
+        "sha256": "6f18121057c52d91f5cb184ab23ce7d5a4303880c63e2feba33be16938ec0f3c",
+        "originalBytesSha256": "0936827a615b9cf6d81231463bf34e8345c7a1a64dd324f31ba14b90019cb6b3",
+        "bytes": 448
+      }
+    },
+    {
+      "id": "candidate-03",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-03.md",
+        "sha256": "32580971a09d937134b1016d5816cd4fb250a43cc6b671a421baae6754eab561",
+        "originalBytesSha256": "895acf76c6a84e04b6b4bb0e5a2c64fadb2d599047de6a48d1fa1a0cea4ff7cb",
+        "bytes": 443
+      }
+    },
+    {
+      "id": "candidate-04",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-04.md",
+        "sha256": "e92bf585f022ced7d1323f01003ea62060c32e6cdcebf46821ed4adf49667a6b",
+        "originalBytesSha256": "822a62dc2f725784f3f10a327cc6761d2ea6038ec82cff16c5d7f3abf674805c",
+        "bytes": 409
+      }
+    },
+    {
+      "id": "candidate-05",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-05.md",
+        "sha256": "caf170f85b2788ee25c70c4e79fb78ea7c33b32202b7ffc5536e1c06c22d9c68",
+        "originalBytesSha256": "50a245b365930dd5fe1fa1072ea28a25d509151c2cc4ed393351872e26cc9a11",
+        "bytes": 472
+      }
+    },
+    {
+      "id": "candidate-boundary-urgent-synthesis",
+      "arm": "candidate-boundary",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\boundary-urgent-synthesis-case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-boundary-urgent-synthesis.md",
+        "sha256": "4fccf0bcc1047e8b6f52bc4c8492a8c908809f3e2b67148d2e5f7fe0b9dc6d2f",
+        "originalBytesSha256": "677f33aad1dd3a153caf2a9fc6703899552200b6d892a127584d184705a013ea",
+        "bytes": 253
+      }
+    },
+    {
+      "id": "candidate-boundary-partial-result",
+      "arm": "candidate-boundary",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\boundary-partial-result-case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\candidate-boundary-partial-result.md",
+        "sha256": "298252f00fd639a812f763bd321c91b18336500225a7fc32c80b72cf13e0d418",
+        "originalBytesSha256": "cca8fac021fad1f8bd709f15cdff257c4d1f3e60268e80896a8301cae5b70d21",
+        "bytes": 329
+      }
+    }
+  ],
+  "analyses": [
+    "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\baseline-analysis.md",
+    "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration\\final-analysis.md"
+  ],
+  "outputDirectory": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration",
+  "candidateSourceWorktreeHeadAtFreeze": "6787169282c32e611121e2a950e9bd12626ca02e",
+  "candidateCommittedRevision": "679627f45c67bd341d00d9b9c25173831ce607ed",
+  "candidateSourceGitBlobAtRevision": "99b37aacd232601a29ede37c25f9346c59ad92cb",
+  "candidateSourceGitBlobAtWorktreeHead": "99b37aacd232601a29ede37c25f9346c59ad92cb",
+  "requestedComparisonSamples": 15,
+  "arms": {
+    "control": 5,
+    "current": 5,
+    "candidate": 5
+  },
+  "protocolDeviations": []
+}

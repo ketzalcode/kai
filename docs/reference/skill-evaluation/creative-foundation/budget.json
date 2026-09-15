@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 1,
+  "methodBudgetCap": 8,
+  "absoluteCaps": {
+    "comparisonSamples": 120,
+    "boundarySamples": 16
+  },
+  "used": {
+    "comparisonSamples": 116,
+    "boundarySamples": 16
+  },
+  "remaining": {
+    "comparisonSamples": 4,
+    "boundarySamples": 0
+  },
+  "reconciliation": {
+    "reconciledAt": "2026-09-15T04:44:08.620Z",
+    "note": "Final counts reflect recorded actor invocations only: grounding 15 comparison + 2 boundary; scope 16 comparison + 2 boundary; mockups-ascii 15 comparison + 2 boundary; mockups-html 5 new comparison + 2 boundary with shared baseline reuse; video-create-narration 15 comparison + 2 boundary; video-align-narration 25 comparison + 4 boundary; video-render-zoom 15 comparison + 1 boundary; html-block-diagrams 10 comparison + 1 boundary. Boundary calls are not included in comparison totals. Independent source-guard and Playwright layout evidence is not actor-counted."
+  },
+  "methods": {
+    "grounding": {
+      "comparisonSamples": 15,
+      "boundarySamples": 2,
+      "arms": {
+        "control": 5,
+        "current": 5,
+        "candidate": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\grounding",
+      "status": "complete"
+    },
+    "scope": {
+      "requestedComparisonSamples": 15,
+      "comparisonSamples": 16,
+      "primaryComparisonOutputs": 15,
+      "boundarySamples": 2,
+      "arms": {
+        "control": 5,
+        "current": 6,
+        "candidate": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\scope",
+      "status": "complete",
+      "notes": [
+        "One unchanged-guide sample wrote to scope\\current\\current-02.md instead of current-02.md; both that artifact and the earlier replacement sample are preserved and counted."
+      ]
+    },
+    "mockups-ascii": {
+      "comparisonSamples": 15,
+      "boundarySamples": 2,
+      "arms": {
+        "control": 5,
+        "current": 5,
+        "candidate": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii",
+      "status": "complete",
+      "sharedDatasetFor": [
+        "mockups-ascii",
+        "mockups-html"
+      ],
+      "notes": [
+        "Shared no-decision copy-correction baseline remains reusable for mockups-html.",
+        "Initial analysis inverted two output descriptions. Explicit filename/content/hash inspection confirms five non-failing primary outputs and two conforming boundaries; no raw output or invocation count changed."
+      ]
+    },
+    "mockups-html": {
+      "totalComparisonEvidence": 15,
+      "sharedBaselineComparisonSamples": 10,
+      "newComparisonSamples": 5,
+      "boundarySamples": 2,
+      "arms": {
+        "control": 5,
+        "current": 5,
+        "candidate": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-html",
+      "status": "complete",
+      "sharedDatasetFrom": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\manifest.json",
+      "notes": [
+        "Reused the shared mockups-ascii control/current baseline without additional calls.",
+        "One candidate sample wrote to mockups-html\\candidate\\candidate-04.md instead of candidate-04.md; preserved and scored without replacement."
+      ]
+    },
+    "video-create-narration": {
+      "comparisonSamples": 15,
+      "boundarySamples": 2,
+      "arms": {
+        "control": 5,
+        "current": 5,
+        "candidate": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-create-narration",
+      "status": "complete",
+      "notes": [
+        "Added five candidate comparison invocations on the unchanged case and two candidate-only boundary invocations.",
+        "All assigned outputs were found at their predetermined paths; no replacement calls were made."
+      ]
+    },
+    "video-align-narration": {
+      "comparisonSamples": 25,
+      "primaryComparisonSamples": 15,
+      "acceptedComparisonSamples": 10,
+      "excludedComparisonSamples": 10,
+      "boundarySamples": 4,
+      "arms": {
+        "control": 10,
+        "current": 5,
+        "candidate": 10
+      },
+      "primaryArms": {
+        "control": 5,
+        "candidate": 10
+      },
+      "acceptedPrimaryArms": {
+        "control": 5,
+        "candidate": 5
+      },
+      "candidateVersions": [
+        "v2",
+        "v3"
+      ],
+      "perVariantPrimarySamples": {
+        "control-v2": 5,
+        "candidate-v2": 5,
+        "candidate-v3": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-align-narration",
+      "status": "complete",
+      "acceptanceStatus": "candidate-v3-accepted",
+      "notes": [
+        "The original 10 v1 calls remain preserved, counted, and excluded only for the invalid fixture.",
+        "Candidate v2 remains valid failed evidence with its original five outputs and two boundaries.",
+        "Candidate v3 produced five correct recording-take repairs and passed both intentionally repeated boundary cases.",
+        "The accepted matched comparison is the existing five v2 controls versus five v3 candidates on case-v2.md."
+      ]
+    },
+    "video-render-zoom": {
+      "comparisonSamples": 15,
+      "boundarySamples": 1,
+      "arms": {
+        "control": 5,
+        "current": 5,
+        "candidate": 5
+      },
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\video-render-zoom",
+      "status": "complete",
+      "notes": [
+        "The focus plan parsed with parsePlan before all actor calls.",
+        "All five candidate samples preserved explain-only stopping and avoided the original pre-render contact-sheet error.",
+        "The zero-focus boundary parsed successfully and invented neither focus nor cursor data.",
+        "No media operation ran."
+      ]
+    },
+    "html-block-diagrams": {
+      "comparisonSamples": 10,
+      "boundarySamples": 1,
+      "arms": {
+        "control": 5,
+        "current": 0,
+        "candidate": 5
+      },
+      "comparedArms": [
+        "control",
+        "candidate"
+      ],
+      "currentGuideActorSamples": 0,
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\html-block-diagrams",
+      "status": "complete",
+      "notes": [
+        "The original guide remains a frozen audit input and was not loaded by actors.",
+        "Both candidate SKILL.md and its optional references\\catalog.md were frozen and hashed; catalog read traces are unverified.",
+        "Five controls and five candidates met the source-level primary rubric; the actor comparison was nondiscriminating.",
+        "The no-diagram-needed boundary returned no contribution and added no artifact.",
+        "Controller-reported source guards and synthetic Playwright layout evidence are recorded separately and are not actor-counted."
+      ]
+    }
+  },
+  "phase": "all-methods-complete",
+  "completedMethods": 8
+}

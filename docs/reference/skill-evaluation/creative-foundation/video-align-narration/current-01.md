@@ -1,0 +1,1 @@
+Fit: yes. Place the measured clip against the recording only, with no new synthesis or finished render. Start the beat after `edit-name` ends, and align the 4.2s narration across `save-search` into `saved-result` to produce the narration plan.

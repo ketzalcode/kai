@@ -1,0 +1,1 @@
+Reject it: `edit-name` is unsettled, so the narration cannot honestly start after that step. Next action: re-record until `edit-name` settles, or rewrite/split the line so it starts after a settled step.

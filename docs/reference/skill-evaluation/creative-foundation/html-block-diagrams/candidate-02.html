@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search service ownership and containment</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #f6f7f9;
+      --ink: #1f2937;
+      --muted: #5b6472;
+      --border: #c7ced8;
+      --panel: #ffffff;
+      --lane-bg: #f9fafb;
+      --lane-border: #d7dde5;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page-bg);
+      color: var(--ink);
+      font: 16px/1.45 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    figure.diagram {
+      margin: 0 auto;
+      max-width: 980px;
+    }
+
+    figcaption {
+      margin: 0 0 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .boundary {
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 18px;
+    }
+
+    .boundary-label {
+      display: inline-block;
+      margin: -2px 0 16px;
+      padding: 0 10px;
+      background: var(--page-bg);
+      color: var(--ink);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .lane {
+      border: 1px solid var(--lane-border);
+      border-radius: 14px;
+      background: var(--lane-bg);
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .lane-label {
+      margin: 0 0 12px;
+      font-size: 0.96rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .cards {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .name {
+      margin: 0 0 4px;
+      font-weight: 700;
+    }
+
+    .desc {
+      margin: 0;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 16px; }
+      .lanes { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <figure class="diagram" aria-labelledby="caption">
+    <figcaption id="caption">Search service ownership and containment</figcaption>
+    <div class="boundary" role="group" aria-label="Search service">
+      <div class="boundary-label">Search service</div>
+      <div class="lanes">
+        <section class="lane" aria-labelledby="request-lane">
+          <h2 class="lane-label" id="request-lane">Request lane</h2>
+          <div class="cards">
+            <article class="card">
+              <p class="name">Web client</p>
+              <p class="desc">submits a search query</p>
+            </article>
+            <article class="card">
+              <p class="name">Query service</p>
+              <p class="desc">validates and routes the query</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="lane" aria-labelledby="index-lane">
+          <h2 class="lane-label" id="index-lane">Index lane</h2>
+          <div class="cards">
+            <article class="card">
+              <p class="name">Ingestion worker</p>
+              <p class="desc">updates searchable content</p>
+            </article>
+            <article class="card">
+              <p class="name">Search index</p>
+              <p class="desc">stores searchable documents</p>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </figure>
+</body>
+</html>

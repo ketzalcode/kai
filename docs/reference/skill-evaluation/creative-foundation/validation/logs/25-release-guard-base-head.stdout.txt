@@ -1,0 +1,1 @@
+✓ release-guard: behavior change is bumped and release-noted

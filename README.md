@@ -81,9 +81,11 @@ the `kai-personal` plugin is retired, not the private `.kai/personal/` data lane
 is `mockups-ascii`, `mockups-html`, `html-block-diagrams`,
 `video-create-narration`, `video-align-narration`, and `video-render-zoom`.
 Core plus creative accepts supplied briefs and evidence without marketing or
-assistant. Final integration of all six method sources, generated packs,
-runtime verification, and release metadata remains pending; this registry and
-caller migration is not global acceptance.
+assistant. All six method sources and generated packs are integrated at the
+prepared version, with scoped source guards passing. The
+[execution and authoring record](docs/reference/skill-evaluation/creative-foundation-authoring.md)
+keeps final review, evidence limits, and repository blockers explicit; this
+source integration is not live-host or release acceptance.
 See [the package note](docs/reference/packages/kai-creative.md) for artifacts,
 prerequisites, and runtime scenarios not executed during this source refactor.
 

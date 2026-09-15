@@ -1,0 +1,1 @@
+creative baseline captured/indexed byte assertions passed

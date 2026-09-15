@@ -1,0 +1,1 @@
+Reject the alignment: `n-1` cannot start after `edit-name` because that step is unsettled, so the clip does not fit honestly. Exact next action: re-record until `edit-name` settles, then re-place the clip.

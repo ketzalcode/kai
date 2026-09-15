@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search service ownership and containment</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #f6f7f9;
+      --ink: #1f2937;
+      --muted: #4b5563;
+      --border: #9ca3af;
+      --panel: #ffffff;
+      --lane: #eef2f7;
+      --component: #ffffff;
+      --shadow: rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--page-bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.4;
+    }
+
+    figure {
+      margin: 0 auto;
+      max-width: 960px;
+    }
+
+    figcaption {
+      margin-bottom: 12px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .boundary {
+      position: relative;
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 44px 16px 16px;
+      box-shadow: 0 10px 30px var(--shadow);
+      overflow: hidden;
+    }
+
+    .boundary-label {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--panel);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .lanes {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .lane {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--lane);
+      padding: 14px;
+    }
+
+    .lane-label {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .components {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .component {
+      min-height: 108px;
+      padding: 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      background: var(--component);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .component-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .component-desc {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .boundary {
+        padding-top: 48px;
+      }
+
+      .components {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <figure aria-label="Search service ownership and containment structural diagram">
+    <figcaption>Search service ownership and containment</figcaption>
+    <div class="boundary" role="group" aria-label="Search service">
+      <div class="boundary-label">Search service</div>
+      <div class="lanes">
+        <section class="lane" aria-label="Request lane">
+          <h2 class="lane-label">Request lane</h2>
+          <div class="components">
+            <article class="component" aria-label="Web client">
+              <div class="component-name">Web client</div>
+              <div class="component-desc">submits a search query</div>
+            </article>
+            <article class="component" aria-label="Query service">
+              <div class="component-name">Query service</div>
+              <div class="component-desc">validates and routes the query</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="lane" aria-label="Index lane">
+          <h2 class="lane-label">Index lane</h2>
+          <div class="components">
+            <article class="component" aria-label="Ingestion worker">
+              <div class="component-name">Ingestion worker</div>
+              <div class="component-desc">updates searchable content</div>
+            </article>
+            <article class="component" aria-label="Search index">
+              <div class="component-name">Search index</div>
+              <div class="component-desc">stores searchable documents</div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </figure>
+</body>
+</html>

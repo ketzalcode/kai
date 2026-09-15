@@ -1,0 +1,3 @@
+✓ gate partition: clean
+✓ gate collision: clean
+✓ gate partial-install: clean

@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 2,
+  "method": "mockups-ascii",
+  "legacyGuideSkill": "ui-mockup",
+  "phase": "candidate-complete-non-regression",
+  "worktreeHeadAtManifestUpdate": "46cef0d8b61ccc177dbfd6fb44707affd2f4ca9d",
+  "sharedDatasetFor": [
+    "mockups-ascii",
+    "mockups-html"
+  ],
+  "baselineCurrentGuideSourcePath": "incubator\\kai-creative\\skills\\ui-mockup\\SKILL.md",
+  "candidateGuideSourcePath": "plugins\\kai-creative\\skills\\mockups-ascii\\SKILL.md",
+  "candidateGuideFreezeBaseRevision": "46cef0d8b61ccc177dbfd6fb44707affd2f4ca9d",
+  "candidateCommittedRevision": "46cef0d8b61ccc177dbfd6fb44707affd2f4ca9d",
+  "priorReferencedRevision": "604e06c53781cf9cdee3fad861ffa5239a104645",
+  "priorReferencedRevisionContainedCandidatePath": false,
+  "requestedModel": "gpt-5.4-mini",
+  "fallbackModel": null,
+  "fallbackUsed": false,
+  "agentType": "general-purpose",
+  "reasoningEffort": "medium",
+  "freshContextPerSample": true,
+  "requestedComparisonSamples": 15,
+  "comparisonSamples": 15,
+  "boundarySamples": 2,
+  "hashAlgorithm": "SHA-256 of UTF-8 text with CRLF normalized to LF; raw byte SHA-256 also recorded.",
+  "confounds": [
+    "Ambient harness and core instructions still applied; the control arm omitted only the target guide.",
+    "Actors were instructed to read only assigned inputs and write only their assigned output artifact; no stronger sandbox was available."
+  ],
+  "inputs": [
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "sha256": "c1ee50ed6fcb1e7201b40a873b09fe1f250a34125fafba0792a4601b265cadc4",
+      "originalBytesSha256": "20c652f3c167c97f6efe7f35051d00b636921dde4da6ec660bb93695473c4252",
+      "bytes": 1141
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current\\SKILL.md",
+      "sha256": "a7e38df6f0ba2d8c84301cb86750a633a371f6b2e185aafb8b0e16dce3f57bdd",
+      "originalBytesSha256": "a7e38df6f0ba2d8c84301cb86750a633a371f6b2e185aafb8b0e16dce3f57bdd",
+      "bytes": 11715,
+      "sourcePath": "incubator\\kai-creative\\skills\\ui-mockup\\SKILL.md",
+      "frozenRole": "baseline-current-guide",
+      "sourceMatchesFrozenBytes": true
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "sha256": "f2629a689b4420cd93ecbfb808bced8258246146accaff406b4d52c3b1beb459",
+      "originalBytesSha256": "f2629a689b4420cd93ecbfb808bced8258246146accaff406b4d52c3b1beb459",
+      "bytes": 3581,
+      "sourcePath": "plugins\\kai-creative\\skills\\mockups-ascii\\SKILL.md",
+      "frozenRole": "candidate-guide",
+      "sourceMatchesFrozenBytes": true
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\boundary-single-mock-case.md",
+      "sha256": "1c3b4d52793671160f23e3a350f4ace20ac197585e8e36d651e1e6cb06e30bea",
+      "originalBytesSha256": "65da199f2797aa479a4cf10f4d2bc5d0d99bef441bc3805c9c8eb68e0dabc096",
+      "bytes": 1212
+    },
+    {
+      "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\boundary-ascii-limit-case.md",
+      "sha256": "c82d5305733481c19e61c371e13a39cc3e78784ee204c98070590a838919886c",
+      "originalBytesSha256": "b1400c9d0968dfaf6a484afd13056acf102d8552e0c7470e2d86cd2732c291af",
+      "bytes": 1077
+    }
+  ],
+  "samples": [
+    {
+      "id": "control-01",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\control-01.md",
+        "sha256": "899cebd47a9c0ae2e132b03cc207b9d57104be53fb7e216fa53f0a0caf510c11",
+        "originalBytesSha256": "5d043003addadd174e5e05ca71595c2edc4fa683e9e6fa4d8e6c4908033f8368",
+        "bytes": 351
+      }
+    },
+    {
+      "id": "control-02",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\control-02.md",
+        "sha256": "e6fad43afdf46f5a51b76c83bc9a2a93ab85be68fb8b4d1286e8e427d0ff8c4a",
+        "originalBytesSha256": "8190c15bff46dd52f3aad46835e80228e8f974cc74649273397c346b68ca41e9",
+        "bytes": 421
+      }
+    },
+    {
+      "id": "control-03",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\control-03.md",
+        "sha256": "3cd7568b9e4eae8598b88df33775c2ab9b41c9346f6ed967afdc9c4e1db019ef",
+        "originalBytesSha256": "f7306af9afb26e3d47f94424af9ec6267385016279ccaf712befdafa0ac9e734",
+        "bytes": 322
+      }
+    },
+    {
+      "id": "control-04",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\control-04.md",
+        "sha256": "e5b415f03f138df57c622a58d48935e8d6bbd4a24f1cf1ad05685187eb482b04",
+        "originalBytesSha256": "72986ce8957482b11f83d0f8ded5b8f2bdd2e82ffe685a09847e1db724c011d0",
+        "bytes": 331
+      }
+    },
+    {
+      "id": "control-05",
+      "arm": "control",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": null,
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\control-05.md",
+        "sha256": "0a82dcc4f83e6e9de37e8b54ea8a5b8633e30ba1bd363fbb83c26bd4ff9ff0a1",
+        "originalBytesSha256": "d1424ea024be112717bcd16f7087a951a53b408a4dfb5b61975bf1bc27759c12",
+        "bytes": 312
+      }
+    },
+    {
+      "id": "current-01",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current-01.md",
+        "sha256": "46d679a0af398c059781e8f1d5c163ec48e86bddf7c3c9a02c62f65ebac4fad7",
+        "originalBytesSha256": "ae11906f1e266df05328d58f285df721547bbb7672837ab8ff0b5e87b78417d6",
+        "bytes": 427
+      }
+    },
+    {
+      "id": "current-02",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current-02.md",
+        "sha256": "bbc75b3fe07969ebc91857e27c94e4cc821f7c3a3ecc9493a8f1de4760dbd79a",
+        "originalBytesSha256": "fe2bc9f632304c9bcf8c61ac62aeb3126e64fd6943d152fcc3264cf98706a8a7",
+        "bytes": 381
+      }
+    },
+    {
+      "id": "current-03",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current-03.md",
+        "sha256": "dbfe0b1db979f957c437ff45c5f1f6e5f1b909bb9e2bb2581807ef44953f231d",
+        "originalBytesSha256": "dea312f2f3c2bdfe863014d9e4296195ac32507b20078787faae43b3b4717a6b",
+        "bytes": 396
+      }
+    },
+    {
+      "id": "current-04",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current-04.md",
+        "sha256": "2c7aba9cac4f6491123f7ff1bd47032bd99a269456ad113c8589f04a8bcc0ad5",
+        "originalBytesSha256": "652aec1add8480d7d5d05665c2bafe653005898931374fb3cf0eeacc51515146",
+        "bytes": 388
+      }
+    },
+    {
+      "id": "current-05",
+      "arm": "current",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\current-05.md",
+        "sha256": "fd2be7e28eb57e204223a82284002126c2b4423b36ec21a2d66efe92aa41e51c",
+        "originalBytesSha256": "e607d67329ff7e5405f9842347359c3b2333b3687a429539f35fb9b63fd037a9",
+        "bytes": 414
+      }
+    },
+    {
+      "id": "candidate-01",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-01.md",
+        "sha256": "f1cc213ab3ce5a740111edbb94f9e3af3ed32548a9a9a06d9b71e16127e4e2d9",
+        "originalBytesSha256": "27330f7ad2d235fec89d7c30eca00c7096d0f8cab468eb08bf7f9cc36fe1188a",
+        "bytes": 333
+      }
+    },
+    {
+      "id": "candidate-02",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-02.md",
+        "sha256": "6bc08aefc2b4993e15e15d2697b0c30c8244e123640c4cced50a0f5f49e0b47c",
+        "originalBytesSha256": "57775cb7c6e5001d24a1117daeb9aa8ec06b23e1c97a1b2594ee8152975ebd53",
+        "bytes": 483
+      }
+    },
+    {
+      "id": "candidate-03",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-03.md",
+        "sha256": "a97843eb6890b9ba636cfbef369ee343ab155481eafe4b081389f20e9eecdf49",
+        "originalBytesSha256": "a97843eb6890b9ba636cfbef369ee343ab155481eafe4b081389f20e9eecdf49",
+        "bytes": 303
+      }
+    },
+    {
+      "id": "candidate-04",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-04.md",
+        "sha256": "77c4559348e08efb54ae7de673bfd35e92ebf4f73f64ecc528961f7f61a2692f",
+        "originalBytesSha256": "1e4cd9d3e51bcc4dd42fb6e6ce09cdfef8644857c595900d2f22e81bd942d1fe",
+        "bytes": 314
+      }
+    },
+    {
+      "id": "candidate-05",
+      "arm": "candidate",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-05.md",
+        "sha256": "396bc1cc05e7c8edb852d7217ee20da298f1360eebae813adc24e231fd2de79c",
+        "originalBytesSha256": "9e0aed4cb5bedf6ddb8bf22ce02b4df76abb3634b25f832b503ca180137fec7b",
+        "bytes": 238
+      }
+    },
+    {
+      "id": "candidate-boundary-single",
+      "arm": "candidate-boundary",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\boundary-single-mock-case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-boundary-single.md",
+        "sha256": "59af21ccb47f05a424c07711601c8e2ac008ea19f905b76af2b1144b708b4cde",
+        "originalBytesSha256": "42f12e6b3c875c09d96e23519144b98daf695e94cc775d82d2d3f90042bb8cd3",
+        "bytes": 670
+      }
+    },
+    {
+      "id": "candidate-boundary-limit",
+      "arm": "candidate-boundary",
+      "casePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\boundary-ascii-limit-case.md",
+      "guidePath": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate\\SKILL.md",
+      "output": {
+        "path": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\candidate-boundary-limit.md",
+        "sha256": "191ff5bf89fcabaf053c868f07ad739fbe651433a432c408b31ec699876146e3",
+        "originalBytesSha256": "191ff5bf89fcabaf053c868f07ad739fbe651433a432c408b31ec699876146e3",
+        "bytes": 560
+      }
+    }
+  ],
+  "analyses": [
+    "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\baseline-analysis.md",
+    "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii\\final-analysis.md"
+  ],
+  "outputDirectory": "docs\\reference\\skill-evaluation\\creative-foundation\\mockups-ascii"
+}

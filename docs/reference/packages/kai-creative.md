@@ -27,12 +27,12 @@ The locked method surface is:
 - `video-align-narration`
 - `video-render-zoom`
 
-Final integration of all six authored method sources is still pending. Generated
-catalog/inventory files, emitted plugin trees, host/runtime checks, release
-metadata, and publication are deferred to the final integration task. This
-document describes the approved surface; it is not a claim that the package has
-global acceptance or that every method source is present in this intermediate
-checkout.
+All six authored method sources, generated catalog/inventory, and package
+outputs are integrated at prepared `9.0.0` metadata. The
+[execution and authoring record](../skill-evaluation/creative-foundation-authoring.md)
+records source checks, frozen sample versions, final-review status, and
+remaining repository failures. Source integration is not global acceptance,
+live-host verification, or publication.
 
 ## Ownership and authority
 
@@ -97,16 +97,20 @@ silent demos do not require a paid synthesis run.
 
 External prerequisites are not asserted installed: a supported Node version,
 ffmpeg/ffprobe for applicable media operations, Lectoria plus configured Azure
-Speech for separately authorized synthesis, and a registered Playwright MCP
-server for browser-backed design inspection. Offline ASCII/HTML authoring does
-not itself prove rendered fidelity.
+Speech for separately authorized synthesis, and an available browser renderer
+for actual design inspection. A registered Playwright MCP server is one browser
+route, not an authoring prerequisite. Offline ASCII/HTML source does not itself
+prove rendered fidelity.
 
 ## Verification boundary
 
-This migration preserves the helper/parser source and updates active IDs,
-callers, registry/category source, and current package guidance. It does not
-generate derived packs or catalog inventory, run paid media, record a desktop,
-render or inspect real footage, synthesize speech, mix a final file, verify host
-discovery, publish a release, or certify the final six-skill package. Those
-claims remain pending until the authored method sources land and the final
-integration task runs the complete source, emission, runtime, and release gates.
+This migration preserves the media helper/parser algorithms and updates active
+IDs, callers, source contracts, generated packs, and catalog inventory.
+Source/caller/helper-closure guards and existing helper self-tests have run.
+A separate synthetic browser check exercises the diagram reference at narrow
+and wide sizes; it is not a real artifact's visual or accessibility acceptance.
+
+No desktop recording, real-video encoding/mixing, paid speech synthesis,
+live-host discovery, or release publication was performed. Existing validator
+and pack-check failures remain blockers, not waived gates. The linked execution
+record distinguishes these limits from the completed source work.
