@@ -25,11 +25,67 @@ const alignmentRoot = `${authoringRoot}/${alignmentMethod}`;
 const alignment = {
   primaryCasePath: `${alignmentRoot}/case-v2.md`,
   comparedArms: ['control', 'candidate'],
+  candidateVersions: ['v2', 'v3'],
+  candidateGuides: {
+    v2: `${alignmentRoot}/candidate/SKILL.md`,
+    v3: `${alignmentRoot}/candidate-v3/SKILL.md`,
+  },
+  acceptedCandidateGuidePath: `${alignmentRoot}/candidate-v3/SKILL.md`,
   invalidFixture: {
     casePath: `${alignmentRoot}/case.md`,
     manifest: `${alignmentRoot}/invalid-fixture-v1-manifest.json`,
     reason: 'invalid-fixture-v1',
     comparisonInvocations: 10,
+  },
+};
+const methodSchedules = {
+  grounding: {
+    comparison: 15, boundary: 2, protocol: 0, excluded: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 5, current: 5, candidate: 5 },
+    comparedArms: arms,
+  },
+  scope: {
+    comparison: 16, boundary: 2, protocol: 1, excluded: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 5, current: 5, candidate: 5 },
+    comparedArms: arms,
+  },
+  'mockups-ascii': {
+    comparison: 15, boundary: 2, protocol: 0, excluded: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 5, current: 5, candidate: 5 },
+    comparedArms: arms,
+  },
+  'mockups-html': {
+    comparison: 5, boundary: 2, protocol: 0, excluded: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 0, current: 0, candidate: 5 },
+    comparedArms: arms,
+  },
+  'video-create-narration': {
+    comparison: 15, boundary: 2, protocol: 0, excluded: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 5, current: 5, candidate: 5 },
+    comparedArms: arms,
+  },
+  [alignmentMethod]: {
+    comparison: 25, boundary: 4, protocol: 0, excluded: 10,
+    primary: { control: 5, current: 0, candidate: 10 },
+    newPrimary: { control: 5, current: 0, candidate: 10 },
+    comparedArms: alignment.comparedArms,
+  },
+  'video-render-zoom': {
+    comparison: 15, boundary: 1, protocol: 0, excluded: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 5, current: 5, candidate: 5 },
+    comparedArms: arms,
+  },
+  'html-block-diagrams': {
+    comparison: 10, boundary: 1, protocol: 0, excluded: 0,
+    primary: { control: 5, current: 0, candidate: 5 },
+    newPrimary: { control: 5, current: 0, candidate: 5 },
+    comparedArms: ['control', 'candidate'],
   },
 };
 const selector = process.argv[2] ?? 'all';
@@ -124,6 +180,7 @@ function sampleKind(sample, label) {
 function bindingsFor(method, primaryCasePath, currentGuidePath) {
   const methodRoot = `${authoringRoot}/${method}`;
   return {
+    method,
     methodRoot,
     primaryCasePath: primaryCasePath ?? `${methodRoot}/case.md`,
     guides: {
@@ -134,22 +191,38 @@ function bindingsFor(method, primaryCasePath, currentGuidePath) {
   };
 }
 
+function expectedGuidePath(sample, kind, bindings) {
+  if (kind.family !== 'candidate') return bindings.guides[kind.family];
+  if (bindings.method === alignmentMethod) {
+    return sample.id.startsWith('candidate-v3-')
+      ? alignment.candidateGuides.v3
+      : alignment.candidateGuides.v2;
+  }
+  return bindings.guides.candidate;
+}
+
 function validateIdentity(sample, label, inputs, bindings) {
   const kind = sampleKind(sample, label);
   assert.match(sample.id, new RegExp(`^${kind.family}-`), `${label}: sample id must agree with base arm ${kind.family}`);
   const casePath = evidencePath(sample.casePath, `${label}.casePath`);
   assert.ok(inputs.has(casePath), `${label}: casePath must reference a hashed input`);
   const guidePath = sample.guidePath === null ? null : evidencePath(sample.guidePath, `${label}.guidePath`);
+  const expectedGuide = expectedGuidePath(sample, kind, bindings);
   if (kind.boundary) {
     assert.equal(kind.family, 'candidate', `${label}: boundary samples must use the candidate arm`);
     assert.ok(casePath.startsWith(`${bindings.methodRoot}/`), `${label}: boundary casePath must stay inside its method directory`);
-    assert.ok(![bindings.primaryCasePath, bindings.guides.current, bindings.guides.candidate].includes(casePath),
+    assert.ok(![
+      bindings.primaryCasePath,
+      bindings.guides.current,
+      bindings.guides.candidate,
+      alignment.acceptedCandidateGuidePath,
+    ].includes(casePath),
       `${label}: boundary casePath must be a dedicated boundary case`);
     assert.match(posix.basename(casePath), /^boundary.*case\.md$/, `${label}: boundary casePath must name a boundary case file`);
-    assert.equal(guidePath, bindings.guides.candidate, `${label}: boundary guidePath must be the candidate guide`);
+    assert.equal(guidePath, expectedGuide, `${label}: boundary guidePath must match its candidate version`);
   } else {
     assert.equal(casePath, bindings.primaryCasePath, `${label}: primary and protocol-deviation casePath must be the fixed case`);
-    assert.equal(guidePath, bindings.guides[kind.family], `${label}: ${kind.family} guidePath must match its arm`);
+    assert.equal(guidePath, expectedGuide, `${label}: ${kind.family} guidePath must match its arm and version`);
   }
   if (guidePath !== null) assert.ok(inputs.has(guidePath), `${label}: guidePath must reference a hashed input`);
   const outputPath = evidencePath(sample.output?.path, `${label}.output.path`);
@@ -167,15 +240,38 @@ function validateSample(sample, label, inputs, bindings, ids, outputPaths) {
   return kind;
 }
 
-function validateAlignmentDeclaration(manifest, method) {
-  const declared = ['primaryCasePath', 'comparedArms', 'invalidFixture'].some(field => manifest[field] !== undefined);
+function validateMethodDeclaration(manifest, method) {
+  const specialFields = [
+    'primaryCasePath',
+    'primaryCaseOverride',
+    'comparedArms',
+    'candidateVersions',
+    'acceptedCandidateGuidePath',
+    'invalidFixture',
+  ];
+  if (method === 'html-block-diagrams') {
+    assert.deepEqual(manifest.comparedArms, methodSchedules[method].comparedArms,
+      `${method}: comparedArms must explicitly reserve only control/candidate`);
+    for (const field of ['primaryCasePath', 'primaryCaseOverride', 'invalidFixture']) {
+      assert.equal(manifest[field], undefined, `${method}: ${field} must not override the fixed case.md comparison`);
+    }
+    assert.equal(manifest.candidateVersions, undefined, `${method}: candidateVersions is alignment-only`);
+    assert.equal(manifest.acceptedCandidateGuidePath, undefined, `${method}: acceptedCandidateGuidePath is alignment-only`);
+    return { comparedArms: methodSchedules[method].comparedArms };
+  }
   if (method !== alignmentMethod) {
-    assert.equal(declared, false, `${method}: only video-align-narration may declare the alignment-v2 correction`);
-    return null;
+    const declared = specialFields.some(field => manifest[field] !== undefined);
+    assert.equal(declared, false, `${method}: special comparison declarations are reserved for their ruled methods`);
+    return { comparedArms: methodSchedules[method].comparedArms };
   }
   assert.equal(evidencePath(manifest.primaryCasePath, `${method}.primaryCasePath`), alignment.primaryCasePath,
     `${method}: primaryCasePath must select the corrected v2 case`);
   assert.deepEqual(manifest.comparedArms, alignment.comparedArms, `${method}: comparedArms must be the ruled control/candidate comparison`);
+  assert.deepEqual(manifest.candidateVersions, alignment.candidateVersions,
+    `${method}: candidateVersions must retain failed v2 and accepted v3 comparison data`);
+  assert.equal(evidencePath(manifest.acceptedCandidateGuidePath, `${method}.acceptedCandidateGuidePath`),
+    alignment.acceptedCandidateGuidePath, `${method}: acceptedCandidateGuidePath must select candidate-v3/SKILL.md`);
+  assert.equal(manifest.primaryCaseOverride, undefined, `${method}: primaryCaseOverride is not a supported alias`);
   assert.ok(manifest.invalidFixture && typeof manifest.invalidFixture === 'object', `${method}: invalidFixture is required`);
   for (const field of ['casePath', 'manifest']) {
     assert.equal(evidencePath(manifest.invalidFixture[field], `${method}.invalidFixture.${field}`),
@@ -214,7 +310,7 @@ function assertEnumOnlyCorrection(original, corrected) {
 }
 
 function validateAlignmentCases(manifest, inputs) {
-  assert.equal(hash(readBytes(alignment.invalidFixture.casePath)),
+  assert.equal(sha256(readBytes(alignment.invalidFixture.casePath)),
     'cc5d5512a54daa3f297272ab5603765e9a106ff33ff0c4c733e49851d420418a',
     'alignment v1 case must preserve the original captured bytes');
   const v1 = fencedJson(alignment.invalidFixture.casePath, 'alignment v1 case');
@@ -241,7 +337,8 @@ function validateAlignmentCases(manifest, inputs) {
     alignment.invalidFixture.casePath,
     alignment.primaryCasePath,
     `${alignmentRoot}/current/SKILL.md`,
-    `${alignmentRoot}/candidate/SKILL.md`,
+    alignment.candidateGuides.v2,
+    alignment.candidateGuides.v3,
   ]) {
     assert.ok(inputs.has(relative), `${alignmentMethod}: inputs must hash ${relative}`);
   }
@@ -256,7 +353,7 @@ const recordFields = sample => ({
 });
 
 function validateExcludedHistory(excludedSamples) {
-  assert.equal(hash(readBytes(alignment.invalidFixture.manifest)),
+  assert.equal(sha256(readBytes(alignment.invalidFixture.manifest)),
     '6d4d80c5951b71fb9de4c80b464101b6cc13443afe2a2c1019612cb19146fa03',
     'alignment v1 manifest must preserve the original frozen records');
   const frozen = readIndexedJson(alignment.invalidFixture.manifest, `${alignmentMethod} frozen v1 manifest`);
@@ -322,20 +419,92 @@ function addCount(counts, kind, excluded) {
   }
 }
 
-function validateSchedule(counts, method, comparedArms = arms) {
+function validateSchedule(counts, method) {
+  const schedule = methodSchedules[method];
+  assert.ok(schedule, `${method}: a closed method schedule is required`);
   for (const arm of arms) {
-    const expected = comparedArms.includes(arm) ? 5 : 0;
-    assert.equal(counts.primary[arm], expected, `${method}: the closed schedule requires exactly ${expected ? 'five' : 'zero'} valid primary ${arm} outputs`);
+    assert.equal(counts.primary[arm], schedule.primary[arm],
+      `${method}: the closed schedule requires exactly ${schedule.primary[arm]} primary ${arm} outputs`);
+    assert.equal(counts.newPrimary[arm], schedule.newPrimary[arm],
+      `${method}: the closed schedule requires exactly ${schedule.newPrimary[arm]} newly invoked primary ${arm} outputs`);
   }
-  assert.ok(counts.boundary <= 2, `${method}: the closed schedule permits at most two boundary samples`);
-  if (method === alignmentMethod) {
-    assert.equal(counts.protocol, 0, 'alignment correction permits no protocol-deviation calls');
-    assert.equal(counts.comparison, 20, 'alignment correction must retain exactly twenty comparison calls');
-  }
+  assert.equal(counts.comparison, schedule.comparison, `${method}: comparison calls must match the issued schedule`);
+  assert.equal(counts.boundary, schedule.boundary, `${method}: boundary calls must match the issued schedule`);
+  assert.equal(counts.protocol, schedule.protocol, `${method}: protocol-deviation calls must match the issued schedule`);
+  assert.equal(counts.excluded, schedule.excluded, `${method}: excluded fixture calls must match the issued schedule`);
   const newPrimary = Object.values(counts.newPrimary).reduce((sum, value) => sum + value, 0);
   assert.equal(counts.comparison, newPrimary + counts.protocol + counts.excluded,
     `${method}: comparison invocations must separate primary, protocol deviations, and excluded fixture history`);
   return newPrimary;
+}
+
+function scheduledCounts(method) {
+  const schedule = methodSchedules[method];
+  return {
+    ...emptyCounts(),
+    comparison: schedule.comparison,
+    boundary: schedule.boundary,
+    protocol: schedule.protocol,
+    excluded: schedule.excluded,
+    primary: { ...schedule.primary },
+    newPrimary: { ...schedule.newPrimary },
+  };
+}
+
+function validateAlignmentSchedule(manifest, inputs, counts) {
+  const primaryIds = manifest.samples
+    .filter(sample => !sample.excludedFromPrimary && sampleKind(sample, alignmentMethod).primary)
+    .map(sample => sample.id)
+    .sort();
+  const expectedPrimaryIds = [
+    ...Array.from({ length: 5 }, (_, index) => `control-v2-${String(index + 1).padStart(2, '0')}`),
+    ...Array.from({ length: 5 }, (_, index) => `candidate-v2-${String(index + 1).padStart(2, '0')}`),
+    ...Array.from({ length: 5 }, (_, index) => `candidate-v3-${String(index + 1).padStart(2, '0')}`),
+  ].sort();
+  assert.deepEqual(primaryIds, expectedPrimaryIds,
+    `${alignmentMethod}: primary IDs must retain v2 control/failed-candidate data and add five v3 candidates`);
+
+  const primaryCandidates = manifest.samples
+    .filter(sample => sampleKind(sample, alignmentMethod).primary && sample.arm === 'candidate');
+  for (const guidePath of Object.values(alignment.candidateGuides)) {
+    assert.equal(primaryCandidates.filter(sample => sample.guidePath === guidePath).length, 5,
+      `${alignmentMethod}: each candidate guide must have exactly five primary comparisons`);
+  }
+
+  const expectedBoundaryCases = {
+    'candidate-boundary-placement-only': `${alignmentRoot}/candidate/boundary-placement-only-case.md`,
+    'candidate-boundary-printed-mix-partial': `${alignmentRoot}/candidate/boundary-printed-mix-partial-case.md`,
+    'candidate-v3-boundary-placement-only': `${alignmentRoot}/candidate/boundary-placement-only-case.md`,
+    'candidate-v3-boundary-printed-mix-partial': `${alignmentRoot}/candidate/boundary-printed-mix-partial-case.md`,
+  };
+  const boundaries = manifest.samples.filter(sample => sampleKind(sample, alignmentMethod).boundary);
+  assert.deepEqual(boundaries.map(sample => sample.id).sort(), Object.keys(expectedBoundaryCases).sort(),
+    `${alignmentMethod}: boundary IDs must retain v2 and add the ruled v3 repeats`);
+  const caseGuidePairs = new Set();
+  for (const sample of boundaries) {
+    assert.equal(evidencePath(sample.casePath, `${sample.id}.casePath`), expectedBoundaryCases[sample.id],
+      `${sample.id}: boundary casePath must retain the issued case`);
+    assert.ok(inputs.has(sample.casePath), `${sample.id}: reused boundary casePath must remain hashed`);
+    assert.equal(evidencePath(sample.output.path, `${sample.id}.output.path`), `${alignmentRoot}/${sample.id}.md`,
+      `${sample.id}: boundary output path must follow its retained ID`);
+    const pair = `${sample.casePath}\0${sample.guidePath}`;
+    assert.ok(!caseGuidePairs.has(pair), `${sample.id}: boundary (casePath, guidePath) pair must be unique`);
+    caseGuidePairs.add(pair);
+  }
+  assert.equal(new Set(boundaries.map(sample => sample.casePath)).size, 2,
+    `${alignmentMethod}: the two hashed boundary cases must be intentionally reused across guides`);
+  for (const guidePath of Object.values(alignment.candidateGuides)) {
+    assert.equal(boundaries.filter(sample => sample.guidePath === guidePath).length, 2,
+      `${alignmentMethod}: each candidate guide must have exactly two boundary calls`);
+  }
+  assert.equal(caseGuidePairs.size, counts.boundary,
+    `${alignmentMethod}: boundary uniqueness is the (casePath, guidePath) pair`);
+
+  for (const sample of manifest.samples.filter(sample =>
+    !sample.excludedFromPrimary && sampleKind(sample, alignmentMethod).primary)) {
+    assert.equal(evidencePath(sample.output.path, `${sample.id}.output.path`), `${alignmentRoot}/${sample.id}.md`,
+      `${sample.id}: primary output path must retain its ID`);
+  }
 }
 
 function assertArms(actual, declared, label) {
@@ -438,56 +607,85 @@ function runMutationChecks() {
   const declaration = {
     primaryCasePath: alignment.primaryCasePath,
     comparedArms: [...alignment.comparedArms],
+    candidateVersions: [...alignment.candidateVersions],
+    acceptedCandidateGuidePath: alignment.acceptedCandidateGuidePath,
     invalidFixture: { ...alignment.invalidFixture, parserError: 'real parser rejection' },
   };
-  assert.doesNotThrow(() => validateAlignmentDeclaration(declaration, alignmentMethod));
-  reject('the fixture exception on another method', () => validateAlignmentDeclaration(declaration, 'grounding'),
-    /only video-align-narration may declare/);
+  assert.doesNotThrow(() => validateMethodDeclaration(declaration, alignmentMethod));
+  reject('the fixture exception on another method', () => validateMethodDeclaration(declaration, 'grounding'),
+    /special comparison declarations are reserved/);
   reject('an arbitrary excluded failure', () => isExcludedFixture({
     excludedFromPrimary: true, exclusionReason: alignment.invalidFixture.reason,
   }, 'grounding', null),
     /only the declared alignment-v2 correction may exclude/);
-  reject('the rejected v1 case as alignment primary', () => validateAlignmentDeclaration({
+  reject('the rejected v1 case as alignment primary', () => validateMethodDeclaration({
     ...structuredClone(declaration), primaryCasePath: alignment.invalidFixture.casePath,
   }, alignmentMethod), /primaryCasePath must select the corrected v2 case/);
-  reject('the old current arm in alignment v2', () => validateAlignmentDeclaration({
+  reject('the old current arm in alignment', () => validateMethodDeclaration({
     ...structuredClone(declaration), comparedArms: ['current', 'candidate'],
   }, alignmentMethod), /comparedArms must be the ruled control\/candidate comparison/);
-  const schedule = {
-    comparison: 15,
-    boundary: 2,
-    protocol: 0,
-    excluded: 0,
-    arms: { control: 5, current: 5, candidate: 5 },
-    primary: { control: 5, current: 5, candidate: 5 },
-    newPrimary: { control: 5, current: 5, candidate: 5 },
-  };
-  assert.equal(validateSchedule(schedule, 'mutation.validSchedule'), 15);
-  assert.equal(validateSchedule({
-    ...structuredClone(schedule), comparison: 16, protocol: 1,
-    arms: { ...schedule.arms, current: 6 },
-  }, 'mutation.protocolDeviation'), 15);
-  assert.equal(validateSchedule({
-    ...structuredClone(schedule), comparison: 20, excluded: 10,
-    arms: { control: 10, current: 5, candidate: 5 },
-    primary: { control: 5, current: 0, candidate: 5 },
-    newPrimary: { control: 5, current: 0, candidate: 5 },
-  }, alignmentMethod, alignment.comparedArms), 10);
-  reject('a sixth primary output', () => validateSchedule({
-    ...structuredClone(schedule), comparison: 16,
-    primary: { ...schedule.primary, candidate: 6 },
-    newPrimary: { ...schedule.newPrimary, candidate: 6 },
-  }, 'mutation.extraPrimary'), /exactly five valid primary candidate outputs/);
-  reject('a third boundary sample', () => validateSchedule({ ...structuredClone(schedule), boundary: 3 },
-    'mutation.extraBoundary'), /at most two boundary samples/);
-  reject('an alignment current primary', () => validateSchedule({
-    ...structuredClone(schedule), comparison: 21, excluded: 10,
-  }, alignmentMethod, alignment.comparedArms), /exactly zero valid primary current outputs/);
-  reject('an alignment protocol substitution', () => validateSchedule({
-    ...emptyCounts(), comparison: 21, excluded: 10, protocol: 1,
-    primary: { control: 5, current: 0, candidate: 5 },
-    newPrimary: { control: 5, current: 0, candidate: 5 },
-  }, alignmentMethod, alignment.comparedArms), /no protocol-deviation calls/);
+  assert.doesNotThrow(() => validateMethodDeclaration({
+    comparedArms: ['control', 'candidate'],
+  }, 'html-block-diagrams'));
+  reject('a diagram primary case override', () => validateMethodDeclaration({
+    comparedArms: ['control', 'candidate'],
+    primaryCaseOverride: `${authoringRoot}/html-block-diagrams/alternate-case.md`,
+  }, 'html-block-diagrams'), /primaryCaseOverride must not override/);
+
+  const alignmentInputs = new Map([
+    [alignment.primaryCasePath, {}],
+    [alignment.candidateGuides.v2, {}],
+    [alignment.candidateGuides.v3, {}],
+  ]);
+  reject('a v3 alignment sample assigned the v2 guide', () => validateIdentity({
+    id: 'candidate-v3-01',
+    arm: 'candidate',
+    casePath: alignment.primaryCasePath,
+    guidePath: alignment.candidateGuides.v2,
+    output: { path: `${alignmentRoot}/candidate-v3-01.md` },
+  }, 'mutation.v3Guide', alignmentInputs, bindingsFor(alignmentMethod, alignment.primaryCasePath)),
+  /candidate guidePath must match its arm and version/);
+
+  assert.equal(validateSchedule(scheduledCounts('grounding'), 'grounding'), 15);
+  assert.equal(validateSchedule(scheduledCounts('scope'), 'scope'), 15);
+  assert.equal(validateSchedule(scheduledCounts(alignmentMethod), alignmentMethod), 15);
+  assert.equal(validateSchedule(scheduledCounts('html-block-diagrams'), 'html-block-diagrams'), 10);
+  reject('more alignment primary cases than issued', () => {
+    const counts = scheduledCounts(alignmentMethod);
+    counts.comparison += 1;
+    counts.primary.candidate += 1;
+    counts.newPrimary.candidate += 1;
+    validateSchedule(counts, alignmentMethod);
+  }, /exactly 10 primary candidate outputs/);
+  reject('more alignment boundaries than issued', () => {
+    const counts = scheduledCounts(alignmentMethod);
+    counts.boundary += 1;
+    validateSchedule(counts, alignmentMethod);
+  }, /boundary calls must match the issued schedule/);
+  reject('an alignment current primary', () => {
+    const counts = scheduledCounts(alignmentMethod);
+    counts.comparison += 1;
+    counts.primary.current += 1;
+    counts.newPrimary.current += 1;
+    validateSchedule(counts, alignmentMethod);
+  }, /exactly 0 primary current outputs/);
+  reject('an alignment protocol call', () => {
+    const counts = scheduledCounts(alignmentMethod);
+    counts.protocol += 1;
+    validateSchedule(counts, alignmentMethod);
+  }, /protocol-deviation calls must match the issued schedule/);
+  reject('a diagram current primary', () => {
+    const counts = scheduledCounts('html-block-diagrams');
+    counts.comparison += 1;
+    counts.primary.current += 1;
+    counts.newPrimary.current += 1;
+    validateSchedule(counts, 'html-block-diagrams');
+  }, /exactly 0 primary current outputs/);
+  reject('an extra zoom boundary', () => {
+    const counts = scheduledCounts('video-render-zoom');
+    counts.boundary += 1;
+    validateSchedule(counts, 'video-render-zoom');
+  }, /boundary calls must match the issued schedule/);
   const caseText = '{"intends_to_show":"saved search confirmation"}\nTake unchanged\nRequest unchanged\n';
   const correctedCase = caseText.replace('"saved search confirmation"', '"intended-outcome"');
   assertEnumOnlyCorrection(caseText, correctedCase);
@@ -516,7 +714,8 @@ function runAuthoringChecks() {
   for (const method of methods) {
     const manifest = manifests.get(method);
     const budgetMethod = budget.methods[method];
-    const correction = validateAlignmentDeclaration(manifest, method);
+    const declaration = validateMethodDeclaration(manifest, method);
+    const correction = method === alignmentMethod ? declaration : null;
     assert.equal(budgetMethod.status, 'complete', `${method}: budget status must be complete`);
     assert.equal(evidencePath(budgetMethod.path, `${method} budget path`), `${authoringRoot}/${method}`,
       `${method}: budget path must match its evidence directory`);
@@ -533,7 +732,7 @@ function runAuthoringChecks() {
       inputs.set(relative, input);
     }
     assert.ok(inputs.size > 0, `${method}: hashed inputs are required`);
-    let bindings = bindingsFor(method, correction?.primaryCasePath);
+    let bindings = bindingsFor(method, declaration.primaryCasePath);
     let roles;
     if (method === 'mockups-html') {
       roles = sharedRoles(manifest.inputs, 'mockups-html shared inputs');
@@ -561,8 +760,9 @@ function runAuthoringChecks() {
         sample, `${method}.samples[${index}]`, inputs,
         excluded ? bindingsFor(alignmentMethod) : bindings, ids, outputPaths,
       );
-      if (correction && !excluded && !kind.boundary) {
-        assert.ok(correction.comparedArms.includes(kind.family), `${method}: valid v2 samples must belong to declared comparedArms`);
+      if (!excluded && kind.primary) {
+        assert.ok(declaration.comparedArms.includes(kind.family),
+          `${method}: primary samples must belong to the declared schedule arms`);
       }
       addCount(counts, kind, excluded);
     }
@@ -579,18 +779,7 @@ function runAuthoringChecks() {
     if (correction) {
       validateExcludedHistory(excludedSamples);
       assert.equal(counts.excluded, correction.invalidFixture.comparisonInvocations, `${method}: excluded count must match invalidFixture`);
-      const primaryIds = manifest.samples
-        .filter(sample => !sample.excludedFromPrimary && sampleKind(sample, method).primary)
-        .map(sample => sample.id)
-        .sort();
-      assert.deepEqual(primaryIds, [
-        ...Array.from({ length: 5 }, (_, index) => `control-v2-${String(index + 1).padStart(2, '0')}`),
-        ...Array.from({ length: 5 }, (_, index) => `candidate-${String(index + 1).padStart(2, '0')}`),
-      ].sort(), `${method}: valid v2 primary IDs must be five control-v2 and five candidate records`);
-      const boundaryCases = new Set(manifest.samples
-        .filter(sample => sampleKind(sample, method).boundary)
-        .map(sample => evidencePath(sample.casePath, `${method} boundary case`)));
-      assert.equal(boundaryCases.size, counts.boundary, `${method}: each boundary invocation must use its own hashed boundary case`);
+      validateAlignmentSchedule(manifest, inputs, counts);
     } else {
       assert.equal(excludedSamples.length, 0, `${method}: fixture exclusions are not permitted`);
     }
@@ -611,7 +800,7 @@ function runAuthoringChecks() {
     if (manifest.primaryComparisonOutputs !== undefined) {
       assert.equal(manifest.primaryComparisonOutputs, primaryTotal, `${method}: primaryComparisonOutputs must exclude deviations`);
     }
-    const newPrimary = validateSchedule(counts, method, correction?.comparedArms);
+    const newPrimary = validateSchedule(counts, method);
     actual.comparisonSamples += counts.comparison;
     actual.boundarySamples += counts.boundary;
     invocations.primary += newPrimary;
