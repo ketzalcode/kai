@@ -41,6 +41,13 @@ jobs:
           node-version: '20'
       - name: Engineering foundation source contract
         run: node test/engineering-foundation-self-test.mjs
+      - name: Creative foundation source and evidence contracts
+        run: |
+          node test/creative-evidence-self-test.mjs
+          node test/creative-foundation-self-test.mjs
+          node test/creative-core-contract-self-test.mjs
+          node test/creative-agent-contract-self-test.mjs
+          node test/creative-skill-contract-self-test.mjs
       - name: Validate plugin contract
         run: node scripts/validate-plugin.mjs
       - name: Workspace-doctor self-test

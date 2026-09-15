@@ -1,6 +1,6 @@
 {
   "name": "kai-assistant",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "description": "Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.",
   "agents": "agents",
   "skills": "skills"

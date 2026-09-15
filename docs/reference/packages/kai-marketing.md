@@ -10,7 +10,7 @@ input request, not invented intelligence. A direct analysis creates no team item
 
 This note describes inspected source and generated install artifacts, not a
 published release or live-host compatibility. The current checkout prepares
-`8.0.0`; install/update commands require a source containing this refactor.
+`9.0.0`; install/update commands require a source containing this refactor.
 
 ## Ownership and obligations
 

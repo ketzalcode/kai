@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **55 agents** and **47 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
+kai ships **55 agents** and **46 skills** (13 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -99,13 +99,13 @@ Engineering-owned documentation and bounded localization.
 
 ### Creative
 
-UI/UX, visual identity, and video direction from supplied needs and evidence. Production uses the creative demo methods.
+Design and video judgment from supplied needs and evidence, plus bounded demo production from approved direction and existing media.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-product-designer`](../../plugins/kai-creative/agents/principal-product-designer.agent.md) | Designs interaction models from approved product needs or a supplied brief, and reviews implementation against an approved design. Use for UI/UX, states, accessibility intent, and design acceptance. Not product priority, brand identity, or implementation. |
-| [`principal-brand-designer`](../../plugins/kai-creative/agents/principal-brand-designer.agent.md) | Creates SaaS visual-identity systems, brand guidelines, visual-asset direction, and brand critique from positioning and brand evidence. Use for logo, color, typography, iconography, or illustration. Not product UI (`principal-product-designer`). |
-| [`creative-video-director`](../../plugins/kai-creative/agents/creative-video-director.agent.md) | Directs videos from supplied factual product context, media evidence, and an approved brief into storyboards, edit decisions, voiceover, and AI-video prompts. Use for video plans or demo screenplays; rendering and synthesis are separate creative methods. |
+| [`creative-lead-design`](../../plugins/kai-creative/agents/creative-lead-design.agent.md) | Designs or critiques product interactions, visual hierarchy, applied design systems, and visual identity from approved needs and positioning. Use for UI, UX, brand-system, or revision-bound design review. Not product priority, positioning, frontend implementation, or unilateral brand adoption. |
+| [`creative-lead-video`](../../plugins/kai-creative/agents/creative-lead-video.agent.md) | Directs a video's audience, message, narrative, scenes, shots, script, or demo screenplay from supplied facts and media evidence. Use for proportional video direction or critique. Not recording, rendering, synthesis, mixing, or publication. |
+| [`workflow-creative-demo-production`](../../plugins/kai-creative/agents/workflow-creative-demo-production.agent.md) | Produces an authorized demo from supplied media and approved direction, using only requested narration, alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication. |
 
 ### Revenue
 
@@ -204,7 +204,7 @@ The shared contracts every acting agent loads: where work goes, and what it may 
 | [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl. |
 | [`kai-core-fleet-observation`](../../plugins/kai-core/skills/kai-core-fleet-observation/SKILL.md) | Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate. |
 | [`kai-core-definition-of-done`](../../plugins/kai-core/skills/kai-core-definition-of-done/SKILL.md) | Release-readiness and production-completion gate. Use when deciding whether work can move to in-review, release-ready, or shipped. |
-| [`kai-core-scope-discipline`](../../plugins/kai-core/skills/kai-core-scope-discipline/SKILL.md) | Governs assessment-versus-action scope boundaries. Use when assessors, PM, design, or SWE roles must avoid silently expanding approved scope. |
+| [`kai-core-scope-discipline`](../../plugins/kai-core/skills/kai-core-scope-discipline/SKILL.md) | Use when a finding or proposed change may expand approved scope, or when a direct advisory request needs an unadopted proposal rather than implementation. |
 | [`kai-core-no-self-remediation`](../../plugins/kai-core/skills/kai-core-no-self-remediation/SKILL.md) | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-initiative-stewardship`](../../plugins/kai-core/skills/kai-core-initiative-stewardship/SKILL.md) | Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative. |
@@ -258,21 +258,20 @@ The shared design-system grounding contract, with the frontend seam.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`kai-core-design-grounding`](../../plugins/kai-core/skills/kai-core-design-grounding/SKILL.md) | Design-system grounding contract. Use when design, frontend, or brand work must consume, derive, or propose changes to an app's settled visual language. |
+| [`kai-core-design-grounding`](../../plugins/kai-core/skills/kai-core-design-grounding/SKILL.md) | Use when design, frontend, or visual-identity work needs evidence of an app's settled visual language, or when a design-system reference is explicitly requested. |
 
 ### Creative methods
 
-Offline mockups and diagrams, video direction, and directly invocable demo planning, capture, zoom, and measured narration.
+Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`ui-mockup`](../../plugins/kai-creative/skills/ui-mockup/SKILL.md) | Provides human-confirmable UI mockup discipline. Use when pre-implementation design choices need ASCII or offline HTML options before a decision. |
+| [`mockups-ascii`](../../plugins/kai-creative/skills/mockups-ascii/SKILL.md) | Use when an ASCII wireframe is requested, or an unresolved layout, placement, grouping, or information-hierarchy decision needs a structural sketch. |
+| [`mockups-html`](../../plugins/kai-creative/skills/mockups-html/SKILL.md) | Use when an HTML mock is requested, or a UI choice depends on visual hierarchy, component appearance, or responsive layout. |
 | [`html-block-diagrams`](../../plugins/kai-creative/skills/html-block-diagrams/SKILL.md) | Block-diagram vocabulary for HTML artifacts: five CSS arrangements and a self-contained palette. Use when an HTML artifact or an exported image needs a rich diagram. |
-| [`video-direction`](../../plugins/kai-creative/skills/video-direction/SKILL.md) | Creates video creative direction from product intelligence and media. Use when planning briefs, storyboards, edit decisions, voiceover, or AI video prompts. |
-| [`create-product-demo`](../../plugins/kai-creative/skills/create-product-demo/SKILL.md) | Product demo direction and planning. Use before capture, narration, or zoom when choosing the demo destination, audience, length, shape, story, and checks. |
-| [`demo-capture`](../../plugins/kai-creative/skills/demo-capture/SKILL.md) | Screen-demo capture method. Use when recording the real run for an approved demo screenplay and producing the take manifest for later narration or zoom work. |
-| [`demo-zoom`](../../plugins/kai-creative/skills/demo-zoom/SKILL.md) | Focus-plan rendering method for demos. Use after capture when turning a real recording plus declared focus coordinates into one continuous ffmpeg zoom pass. |
-| [`demo-narrate`](../../plugins/kai-creative/skills/demo-narrate/SKILL.md) | Measured narration method for demos. Use after capture when writing, synthesizing, timing, and fitting spoken lines to visible states in the recording. |
+| [`video-create-narration`](../../plugins/kai-creative/skills/video-create-narration/SKILL.md) | Use when a narration estimate or approved speech synthesis is requested for a supplied demo screenplay. |
+| [`video-align-narration`](../../plugins/kai-creative/skills/video-align-narration/SKILL.md) | Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo. |
+| [`video-render-zoom`](../../plugins/kai-creative/skills/video-render-zoom/SKILL.md) | Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment. |
 
 ### Marketing methods
 

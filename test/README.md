@@ -1,6 +1,6 @@
 # kai plugin tests
 
-Seven dependency-free, CI-enforced guards protect the plugin. All run on every
+Dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
 - **Engineering foundation source contract**
@@ -8,6 +8,14 @@ PR and push to `main` and must stay fast:
   components out of active discovery, packs, routes, and current documentation
   while preserving narrowly scoped historical references and generic dispatch
   collection coverage.
+- **Creative foundation contracts** — `creative-foundation-self-test.mjs`
+  checks the three-agent/six-skill surface, inactive history, callers, and
+  emitted helper closure. `creative-core-contract-self-test.mjs`,
+  `creative-agent-contract-self-test.mjs`, and
+  `creative-skill-contract-self-test.mjs` check the scoped source contracts.
+  `creative-evidence-self-test.mjs` checks all 20 captured baseline hashes
+  against working files and Git's index, plus byte-preserving attributes.
+  These are structural/evidence checks, not model or live media certification.
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
@@ -31,7 +39,9 @@ PR and push to `main` and must stay fast:
   every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
   (skipped cleanly where `pwsh` is unavailable).
 
-`npm test` runs all seven.
+`npm test` runs these guards and the existing activity, observer, and media
+helper self-tests. A failed early stage prevents later stages from running;
+run the later commands separately when recording a complete failed baseline.
 
 ## Deterministic checks (in CI)
 

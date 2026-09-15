@@ -48,7 +48,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v8.0.0` is this checkout's prepared metadata version. The locked final surface
+`v9.0.0` is this checkout's prepared metadata version. The locked final surface
 has **55 agents and 46 skills** across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
@@ -62,9 +62,11 @@ under `incubator/`, outside active discovery, routes and generated packs.
 Final whole-branch review occurred and prompted narrow corrections to the
 loaded core PR diagram trigger, style evidence labels, source-test prose
 matching, and an optional HTML cross-reference. Scoped re-review accepted all
-four corrections at `35a8d05`. Prepared `8.0.0` metadata does not publish the packages
-or verify an updated host. Publication remains blocked by the unchanged 53
-source-validator errors and the existing pack-preview self-test `TypeError`.
+four corrections at `35a8d05`. Prepared `9.0.0` metadata does not publish the packages
+or verify an updated host. Existing source-validator, pack self-test, and
+version-skew failures remain release blockers. The
+[recorded baseline](docs/reference/skill-evaluation/creative-foundation-baseline-2026-09-13.md)
+keeps the original diagnostics separate from the current implementation.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,

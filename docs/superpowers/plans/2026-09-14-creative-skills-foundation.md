@@ -240,6 +240,39 @@ packs, package reference, test guide, implementation evidence and PR body.
 
 ## Coverage and execution decisions
 
+The alignment v1 response fixture incorrectly called its screenplay valid
+while setting `intends_to_show` to `saved search confirmation`. The real parser
+rejects that value; replacing it with `intended-outcome` makes the fixture
+parse. Preserve the original input and ten actor outputs as excluded fixture
+history, not as an executable-case comparison. Use a corrected `case-v2.md`
+with five matched no-guide controls and five candidate samples; do not mix
+the old current-guide arm into the v2 comparison. This adds five calls to the
+planned total, keeping the expected total at 116 comparison and 16 boundary
+invocations after the shared mockup baseline savings. No efficacy claim
+against the unchanged guide is supported by this replacement.
+
+The evidence guard protects the issued five-sample primary schedules, with
+the explicitly declared two-arm alignment-v2 exception and excluded v1 calls
+still charged to the global cap. Per-method starting budgets are not authority
+to exceed the operator's absolute 120/16 cap.
+
+The first alignment candidate caught the unsettled gate in all five valid-v2
+responses, but four gave ambiguous or incorrect recording-versus-speech
+remediation. Its failed results remain evidence, not invalid-fixture exclusions.
+Refine the source with an explicit failed-input repair recipe and stale-plan
+invalidation, then run five new candidate-v3 comparisons on the same v2 case
+and repeat the two existing boundaries against that new guide. Preserve the
+v2 guide and outputs alongside v3.
+
+Reallocate the remaining cap rather than exceed it: zoom keeps its three
+five-sample comparison arms but one boundary; the HTML structural-diagram
+method uses five no-guide controls and five candidates, no sampled old-guide
+arm, and one boundary. Alignment therefore has 25 comparison invocations
+(including ten excluded v1 calls) and four boundaries across two candidate
+versions. The expected aggregate remains 116 comparisons and 16 boundaries.
+This supports no model comparison against the old structural-diagram guide
+and narrows separate boundary coverage for zoom/diagrams.
+
 Spec sections 1-3 and 5 map to Tasks 1 and 5; each skill in section 4 maps to
 Tasks 3-4; core seams map to Task 2; unchanged helper limitations map to Tasks
 4-6; authoring/acceptance and release constraints map to every task and Task 6.
