@@ -344,7 +344,7 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's full 55-agent, 47-skill surface has eight owners:
+The repository's final 55-agent, 46-skill surface has eight owners:
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
