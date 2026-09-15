@@ -38,6 +38,8 @@ export function documentationReferenceExists(id, sourcePath, activeIds, inactive
       'docs/reference/skill-evaluation/creative-foundation/grounding/current/SKILL.md',
       'docs/reference/skill-evaluation/creative-foundation/grounding/candidate/SKILL.md',
       'docs/reference/skill-evaluation/creative-foundation/scope/current/SKILL.md',
+      'docs/reference/skill-evaluation/creative-foundation/scope/candidate/SKILL.md',
+      'docs/reference/skill-evaluation/creative-foundation/mockups-ascii/current/SKILL.md',
     ].includes(source);
   return historical && inactiveIds.has(id);
 }

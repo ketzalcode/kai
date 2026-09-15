@@ -181,6 +181,8 @@ for (const source of [
   'docs/reference/skill-evaluation/creative-foundation/grounding/current/SKILL.md',
   'docs/reference/skill-evaluation/creative-foundation/grounding/candidate/SKILL.md',
   'docs/reference/skill-evaluation/creative-foundation/scope/current/SKILL.md',
+  'docs/reference/skill-evaluation/creative-foundation/scope/candidate/SKILL.md',
+  'docs/reference/skill-evaluation/creative-foundation/mockups-ascii/current/SKILL.md',
 ]) {
   assert.equal(documentationReferenceExists(
     'principal-product-designer', source, activeIds, inactiveIds,
