@@ -111,28 +111,213 @@ function sampleKind(sample, label) {
     boundary: arm[2] === 'boundary',
     family: arm[1],
     primary: arm[2] === undefined,
+    protocolDeviation: arm[2] === 'protocol-deviation',
   };
 }
 
-function validateSample(sample, label, inputs, ids, outputPaths) {
+function sampleBindings(method, primaryCasePath, currentGuidePath) {
+  const methodRoot = `${authoringRoot}/${method}`;
+  return {
+    methodRoot,
+    primaryCasePath: primaryCasePath ?? `${methodRoot}/case.md`,
+    guides: {
+      control: null,
+      current: currentGuidePath ?? `${methodRoot}/current/SKILL.md`,
+      candidate: `${methodRoot}/candidate/SKILL.md`,
+    },
+  };
+}
+
+function validateSampleIdentity(sample, label, inputs, bindings) {
   const kind = sampleKind(sample, label);
-  assert.ok(!ids.has(sample.id), `${label}: duplicate sample id ${sample.id}`);
-  ids.add(sample.id);
+  assert.match(sample.id, new RegExp(`^${kind.family}-`),
+    `${label}: sample id must agree with base arm ${kind.family}`);
 
   const casePath = evidencePath(sample.casePath, `${label}.casePath`);
   assert.ok(inputs.has(casePath), `${label}: casePath must reference a hashed input`);
-  if (kind.family === 'control') {
-    assert.equal(sample.guidePath, null, `${label}: control samples must omit the guide`);
+  const expectedGuide = bindings.guides[kind.family];
+  const guidePath = sample.guidePath === null
+    ? null
+    : evidencePath(sample.guidePath, `${label}.guidePath`);
+
+  if (kind.boundary) {
+    assert.equal(kind.family, 'candidate',
+      `${label}: boundary samples must use the candidate arm`);
+    assert.ok(casePath.startsWith(`${bindings.methodRoot}/`),
+      `${label}: boundary casePath must stay inside its method directory`);
+    assert.ok(![
+      bindings.primaryCasePath,
+      bindings.guides.current,
+      bindings.guides.candidate,
+    ].includes(casePath), `${label}: boundary casePath must be a dedicated boundary case`);
+    assert.match(casePath.slice(casePath.lastIndexOf('/') + 1), /^boundary.*case\.md$/,
+      `${label}: boundary casePath must name a boundary case file`);
+    assert.equal(guidePath, bindings.guides.candidate,
+      `${label}: boundary guidePath must be the candidate guide`);
   } else {
-    assert.notEqual(sample.guidePath, null, `${label}: ${kind.family} samples require a guide`);
-    const guidePath = evidencePath(sample.guidePath, `${label}.guidePath`);
+    assert.equal(casePath, bindings.primaryCasePath,
+      `${label}: primary and protocol-deviation casePath must be the fixed case`);
+    assert.equal(guidePath, expectedGuide,
+      `${label}: ${kind.family} guidePath must match its arm`);
+  }
+  if (guidePath !== null) {
     assert.ok(inputs.has(guidePath), `${label}: guidePath must reference a hashed input`);
   }
 
+  const outputPath = evidencePath(sample.output?.path, `${label}.output.path`);
+  assert.ok(outputPath.startsWith(`${bindings.methodRoot}/`),
+    `${label}: output must stay inside its method directory`);
+  return { kind, outputPath };
+}
+
+function validateSample(sample, label, inputs, bindings, ids, outputPaths) {
+  const { kind, outputPath: identityOutputPath } =
+    validateSampleIdentity(sample, label, inputs, bindings);
+  assert.ok(!ids.has(sample.id), `${label}: duplicate sample id ${sample.id}`);
+  ids.add(sample.id);
+
   const outputPath = validateHashedRecord(sample.output, `${label}.output`);
+  assert.equal(outputPath, identityOutputPath,
+    `${label}: validated output path must remain stable`);
   assert.ok(!outputPaths.has(outputPath), `${label}: duplicate output path ${outputPath}`);
   outputPaths.add(outputPath);
   return kind;
+}
+
+function validateSharedBaselineInputRoles(inputRecords, label) {
+  const roles = {};
+  for (const role of ['shared-baseline-case', 'shared-baseline-current-guide']) {
+    const matches = inputRecords.filter(input => input.role === role);
+    assert.equal(matches.length, 1, `${label}: exactly one ${role} input is required`);
+    roles[role] = {
+      input: matches[0],
+      path: evidencePath(matches[0].path, `${label}.${role}`),
+    };
+  }
+  return roles;
+}
+
+function runIdentityMutationChecks() {
+  const rootPath = `${authoringRoot}/grounding`;
+  const paths = {
+    case: `${rootPath}/case.md`,
+    current: `${rootPath}/current/SKILL.md`,
+    candidate: `${rootPath}/candidate/SKILL.md`,
+    boundary: `${rootPath}/candidate/boundary-case.md`,
+  };
+  const inputs = new Map(Object.values(paths).map(path => [path, {}]));
+  const bindings = sampleBindings('grounding');
+  const candidate = {
+    id: 'candidate-01',
+    arm: 'candidate',
+    casePath: paths.case,
+    guidePath: paths.candidate,
+    output: { path: `${rootPath}/candidate-01.md` },
+  };
+  const mutations = [
+    ['candidateCurrentGuide', { guidePath: paths.current }, /candidate guidePath must match/],
+    ['primaryBoundaryCase', { casePath: paths.boundary }, /casePath must be the fixed case/],
+    ['mismatchedIdArm', { id: 'current-01' }, /sample id must agree with base arm candidate/],
+    ['crossMethodOutput', {
+      output: { path: `${authoringRoot}/scope/candidate-01.md` },
+    }, /output must stay inside its method directory/],
+  ];
+  for (const [name, changes, expected] of mutations) {
+    assert.throws(
+      () => validateSampleIdentity(
+        { ...structuredClone(candidate), ...changes },
+        `mutation.${name}`,
+        inputs,
+        bindings,
+      ),
+      expected,
+      `identity guard must reject ${name}`,
+    );
+  }
+
+  const htmlRoot = `${authoringRoot}/mockups-html`;
+  const sharedInputs = [
+    { role: 'shared-baseline-case', path: `${authoringRoot}/mockups-ascii/case.md` },
+    {
+      role: 'shared-baseline-current-guide',
+      path: `${authoringRoot}/mockups-ascii/current/SKILL.md`,
+    },
+    { role: 'candidate-guide', path: `${htmlRoot}/candidate/SKILL.md` },
+  ];
+  const htmlInputs = new Map(sharedInputs.map(input => [input.path, input]));
+  assert.throws(
+    () => validateSharedBaselineInputRoles(
+      [...sharedInputs, structuredClone(sharedInputs[0])],
+      'mutation.htmlSharedRoles',
+    ),
+    /exactly one shared-baseline-case input is required/,
+    'identity guard must reject a duplicate HTML shared input role',
+  );
+  validateSampleIdentity({
+    ...candidate,
+    id: 'candidate-04',
+    casePath: sharedInputs[0].path,
+    guidePath: sharedInputs[2].path,
+    output: { path: `${htmlRoot}/candidate/candidate-04.md` },
+  }, 'mutation.validHtmlDeviation', htmlInputs,
+    sampleBindings('mockups-html', sharedInputs[0].path, sharedInputs[1].path));
+  validateSampleIdentity({
+    ...candidate,
+    id: 'current-02-replacement',
+    arm: 'current',
+    guidePath: paths.current,
+    output: { path: `${rootPath}/current-02.md` },
+  }, 'mutation.validReplacement', inputs, bindings);
+  validateSampleIdentity({
+    ...candidate,
+    id: 'current-02-initial-misrouted',
+    arm: 'current-protocol-deviation',
+    guidePath: paths.current,
+    output: { path: `${rootPath}/current/current-02.md` },
+  }, 'mutation.validProtocolDeviation', inputs, bindings);
+
+  const schedule = {
+    comparison: 15,
+    boundary: 2,
+    protocolDeviation: 0,
+    primary: { control: 5, current: 5, candidate: 5 },
+    newPrimary: { control: 5, current: 5, candidate: 5 },
+  };
+  assert.doesNotThrow(
+    () => validateClosedSchedule(schedule, 'mutation.validSchedule'),
+    'schedule guard must accept the closed five-per-arm schedule',
+  );
+  const extraPrimary = {
+    ...structuredClone(schedule),
+    comparison: 16,
+    primary: { ...schedule.primary, candidate: 6 },
+    newPrimary: { ...schedule.newPrimary, candidate: 6 },
+  };
+  assert.throws(
+    () => validateClosedSchedule(extraPrimary, 'mutation.extraPrimary'),
+    /exactly five valid primary candidate outputs/,
+    'schedule guard must reject an unruled sixth primary output',
+  );
+  const extraBoundary = structuredClone(schedule);
+  extraBoundary.boundary += 1;
+  assert.throws(
+    () => validateClosedSchedule(extraBoundary, 'mutation.extraBoundary'),
+    /at most two boundary samples/,
+    'schedule guard must reject a third boundary sample',
+  );
+  assert.throws(
+    () => validateGlobalInvocationCounts(
+      { comparisonSamples: 16, boundarySamples: 2 },
+      {
+        primaryComparisonSamples: 15,
+        protocolDeviationSamples: 0,
+        boundarySamples: 2,
+      },
+      { absoluteCaps: { comparisonSamples: 120, boundarySamples: 16 } },
+    ),
+    /must include primary and protocol-deviation invocations/,
+    'schedule guard must account for protocol-deviation comparison invocations separately',
+  );
 }
 
 function addCounts(counts, kind) {
@@ -142,7 +327,39 @@ function addCounts(counts, kind) {
   }
   counts.comparison += 1;
   counts.arms[kind.family] += 1;
-  if (kind.primary) counts.primary[kind.family] += 1;
+  if (kind.primary) {
+    counts.primary[kind.family] += 1;
+    counts.newPrimary[kind.family] += 1;
+  }
+  if (kind.protocolDeviation) counts.protocolDeviation += 1;
+}
+
+function validateClosedSchedule(counts, method) {
+  for (const arm of ['control', 'current', 'candidate']) {
+    assert.equal(counts.primary[arm], 5,
+      `${method}: the closed schedule requires exactly five valid primary ${arm} outputs`);
+  }
+  assert.ok(counts.boundary <= 2,
+    `${method}: the closed schedule permits at most two boundary samples`);
+  const newPrimaryTotal = Object.values(counts.newPrimary)
+    .reduce((sum, value) => sum + value, 0);
+  assert.equal(counts.comparison, newPrimaryTotal + counts.protocolDeviation,
+    `${method}: comparison invocations must separate primary and protocol deviations`);
+  return newPrimaryTotal;
+}
+
+function validateGlobalInvocationCounts(actualUsed, invocationKinds, budget) {
+  assert.equal(
+    actualUsed.comparisonSamples,
+    invocationKinds.primaryComparisonSamples + invocationKinds.protocolDeviationSamples,
+    'global comparison usage must include primary and protocol-deviation invocations',
+  );
+  assert.equal(actualUsed.boundarySamples, invocationKinds.boundarySamples,
+    'global boundary usage must count boundary invocations separately');
+  assert.ok(actualUsed.comparisonSamples <= budget.absoluteCaps.comparisonSamples,
+    'comparison samples must not exceed the cap');
+  assert.ok(actualUsed.boundarySamples <= budget.absoluteCaps.boundarySamples,
+    'boundary samples must not exceed the cap');
 }
 
 function assertArms(actual, declared, label) {
@@ -184,6 +401,11 @@ function runAuthoringChecks() {
   }
 
   const actualUsed = { comparisonSamples: 0, boundarySamples: 0 };
+  const invocationKinds = {
+    primaryComparisonSamples: 0,
+    protocolDeviationSamples: 0,
+    boundarySamples: 0,
+  };
   for (const method of finalMethods) {
     const manifest = manifests.get(method);
     const budgetMethod = budget.methods[method];
@@ -205,22 +427,8 @@ function runAuthoringChecks() {
     }
     assert.ok(inputs.size > 0, `${method}: hashed inputs are required`);
 
-    const ids = new Set();
-    const outputPaths = new Set();
-    const counts = {
-      comparison: 0,
-      boundary: 0,
-      arms: { control: 0, current: 0, candidate: 0 },
-      primary: { control: 0, current: 0, candidate: 0 },
-    };
-    assert.ok(Array.isArray(manifest.samples), `${method}: samples must be an array`);
-    for (const [index, sample] of manifest.samples.entries()) {
-      addCounts(counts, validateSample(
-        sample, `${method}.samples[${index}]`, inputs, ids, outputPaths,
-      ));
-    }
-    assert.ok(ids.size > 0, `${method}: samples are required`);
-
+    let bindings = sampleBindings(method);
+    let sharedInputRoles;
     if (method === 'mockups-html') {
       const shared = manifest.sharedBaselineDataset;
       assert.ok(shared && typeof shared === 'object',
@@ -230,6 +438,57 @@ function runAuthoringChecks() {
       assert.equal(evidencePath(shared.manifest, 'mockups-html shared manifest'),
         manifestPaths.get('mockups-ascii'),
         'mockups-html: shared baseline manifest must reference mockups-ascii');
+
+      sharedInputRoles = validateSharedBaselineInputRoles(
+        manifest.inputs, 'mockups-html shared inputs',
+      );
+      const sharedCase = evidencePath(shared.casePath, 'mockups-html shared casePath');
+      assert.equal(sharedInputRoles['shared-baseline-case'].path, sharedCase,
+        'mockups-html: shared case role must match sharedBaselineDataset.casePath');
+      assert.equal(sharedCase, `${authoringRoot}/mockups-ascii/case.md`,
+        'mockups-html: shared case must be the mockups-ascii fixed case');
+      assert.equal(
+        sharedInputRoles['shared-baseline-current-guide'].path,
+        `${authoringRoot}/mockups-ascii/current/SKILL.md`,
+        'mockups-html: shared current guide must be the mockups-ascii current guide',
+      );
+      bindings = sampleBindings(
+        method,
+        sharedCase,
+        sharedInputRoles['shared-baseline-current-guide'].path,
+      );
+    }
+
+    for (const [relative, input] of inputs) {
+      if (relative.startsWith(`${bindings.methodRoot}/`)) continue;
+      assert.equal(method, 'mockups-html',
+        `${method}: hashed inputs must stay inside their method directory`);
+      const sharedRole = Object.values(sharedInputRoles)
+        .find(record => record.path === relative);
+      assert.ok(sharedRole && sharedRole.input === input,
+        `mockups-html: cross-method input ${relative} must be an explicit shared baseline role`);
+    }
+
+    const ids = new Set();
+    const outputPaths = new Set();
+    const counts = {
+      comparison: 0,
+      boundary: 0,
+      protocolDeviation: 0,
+      arms: { control: 0, current: 0, candidate: 0 },
+      primary: { control: 0, current: 0, candidate: 0 },
+      newPrimary: { control: 0, current: 0, candidate: 0 },
+    };
+    assert.ok(Array.isArray(manifest.samples), `${method}: samples must be an array`);
+    for (const [index, sample] of manifest.samples.entries()) {
+      addCounts(counts, validateSample(
+        sample, `${method}.samples[${index}]`, inputs, bindings, ids, outputPaths,
+      ));
+    }
+    assert.ok(ids.size > 0, `${method}: samples are required`);
+
+    if (method === 'mockups-html') {
+      const shared = manifest.sharedBaselineDataset;
       const sharedCase = evidencePath(shared.casePath, 'mockups-html shared casePath');
       assert.ok(inputs.has(sharedCase),
         'mockups-html: shared casePath must reference a hashed input');
@@ -239,14 +498,9 @@ function runAuthoringChecks() {
         evidencePath(input.path, 'mockups-ascii shared input'),
         input,
       ]));
-      const sharedInputs = manifest.inputs.filter(input =>
-        ['shared-baseline-case', 'shared-baseline-current-guide'].includes(input.role));
-      assert.equal(sharedInputs.length, 2,
-        'mockups-html: shared case and current guide hashed inputs are required');
-      for (const input of sharedInputs) {
-        const relative = evidencePath(input.path, `mockups-html ${input.role}`);
+      for (const { input, path: relative } of Object.values(sharedInputRoles)) {
         const source = asciiInputs.get(relative);
-        assert.ok(source, `mockups-html: ${input.role} must reference a mockups-ascii input`);
+        assert.ok(source, `mockups-html: ${input.role} must reference its mockups-ascii input`);
         assert.deepEqual(
           {
             path: input.path,
@@ -323,13 +577,13 @@ function runAuthoringChecks() {
       assert.equal(manifest.primaryComparisonOutputs, primaryTotal,
         `${method}: primaryComparisonOutputs must exclude protocol deviations`);
     }
-    for (const arm of ['control', 'current', 'candidate']) {
-      assert.ok(counts.primary[arm] >= 5,
-        `${method}: at least five valid primary ${arm} outputs are required`);
-    }
+    const newPrimaryTotal = validateClosedSchedule(counts, method);
 
     actualUsed.comparisonSamples += counts.comparison;
     actualUsed.boundarySamples += counts.boundary;
+    invocationKinds.primaryComparisonSamples += newPrimaryTotal;
+    invocationKinds.protocolDeviationSamples += counts.protocolDeviation;
+    invocationKinds.boundarySamples += counts.boundary;
   }
 
   assert.deepEqual(budget.used, actualUsed,
@@ -338,14 +592,12 @@ function runAuthoringChecks() {
     comparisonSamples: budget.absoluteCaps.comparisonSamples - actualUsed.comparisonSamples,
     boundarySamples: budget.absoluteCaps.boundarySamples - actualUsed.boundarySamples,
   }, 'authoring budget remaining counts must reconcile with exact caps');
-  assert.ok(actualUsed.comparisonSamples <= budget.absoluteCaps.comparisonSamples,
-    'comparison samples must not exceed the cap');
-  assert.ok(actualUsed.boundarySamples <= budget.absoluteCaps.boundarySamples,
-    'boundary samples must not exceed the cap');
+  validateGlobalInvocationCounts(actualUsed, invocationKinds, budget);
 }
 
 assert.ok(['baseline', 'all'].includes(selector),
   `unknown creative evidence selector "${selector}"; expected baseline or all`);
+runIdentityMutationChecks();
 runBaselineChecks();
 if (selector === 'all') runAuthoringChecks();
 console.log(selector === 'baseline'
