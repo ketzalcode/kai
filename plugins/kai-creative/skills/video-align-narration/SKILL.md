@@ -19,6 +19,10 @@ narration take, and relevant footage or visual-state evidence. Establish the
 text, recording, and timeline correspondence; matching step IDs alone do not
 prove the files share a revision.
 
+`demo_take.json` is the recording take: action times and states.
+`demo_narration_take.json` is the speech take: clips and measured durations.
+A defect in one is not a reason to replace the other.
+
 Mixing additionally needs a compatible video on the same timebase and a
 distinct output path. A finished render is not a prerequisite for a
 placement-only assessment. No zoom or new synthesis is required merely
@@ -53,6 +57,25 @@ state and fits inside its measured visual span. Stale text, missing/failed
 clips, or overlong speech return to the authorized author or input provider.
 Do not stretch or freeze footage to conceal latency or force the prose to fit.
 A new recording is an input request, not permission to run capture here.
+
+## Repair the input that failed
+
+| Finding | Exact next action |
+| --- | --- |
+| Failed, unsettled, or unrecorded relevant visual state | Request a replacement measured recording take from the operator or evidence provider, tied to footage with valid relevant states. Retain the approved screenplay and reuse the existing clips for the next fit check. |
+| Missing or failed speech clip | Obtain a valid measured replacement clip, or request separate creation authorization. This does not authorize an automatic paid retry. |
+| Actual text, intent, or span defect | Return that specific creative decision to the author. Do not revise a screenplay merely to hide a bad recorded state. |
+| Unknown correspondence or visibility | Request the missing evidence; do not turn unknowns into measured facts. |
+
+Waiting does not repair a completed recording. Do not edit its status flags,
+move a narration gate to bypass an invalid state, or request a new speech take
+for a recording defect. If the footage cannot establish valid states, its
+provider supplies another recording with a matching measured take.
+
+Changed inputs invalidate the old placement plan and any command derived from
+it. Validate the replacement inputs, rebuild the placement plan, then prepare
+a fresh mix command when mixing is requested. A previously printed command
+does not become safe merely because a missing clip now exists.
 
 ## Provider and operations
 
