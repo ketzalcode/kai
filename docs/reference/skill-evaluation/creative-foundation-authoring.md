@@ -106,6 +106,14 @@ workspace/activity/observer helpers, syntax, the real base/head release guard,
 and all four unchanged media helper self-tests (238 checks). This does not
 make the repository suite green.
 
+After evidence integration at `097d2206e4bff06f4769cec70930b3d4f8884506`,
+the [full npm entry point](creative-foundation/validation/final-npm-test.log)
+passed the engineering guard and all five creative source/evidence guards,
+then exited 1 at the same 50-error source validator. Later fail-fast stages
+are covered by the independent command record above. The actual base/head
+release guard passed again. No missing authoring manifest or hash mismatch
+remains in the full evidence check.
+
 ### Synthetic diagram layout
 
 Using an existing Playwright Chromium installation, the optional
@@ -162,3 +170,20 @@ raw output, or invocation count was changed by those corrections.
 Captured evidence keeps its original whitespace, including Markdown hard
 breaks; it is byte-checked rather than reformatted to satisfy a source-style
 check. Whole-branch review remains pending.
+
+## Execution rulings
+
+These are the controller's decisions, in execution order.
+
+| Decision | Basis | Cost or limit if wrong |
+| --- | --- | --- |
+| Reuse the existing supported Node cache through process-local PATH. | Ambient Node 24.14.0 is below the supported floor. | Rerun on another supported runtime; no global installation was changed. |
+| Count the 120/16 cap as actor comparisons/boundaries, not normal development/review agents. | Execution and the bounded actor screen were authorized separately. | Stop additional authoring if the intended billing scope differs. |
+| Prepare the three role definitions while the evidence worker runs. | Their approved interfaces were fixed; global registration waited for integration. | Revise before accepting the final registry; preparatory tests were not package acceptance. |
+| Remove the accidentally tracked local task report. | SDD scratch is not a release artifact. | Original task commit and local report retain its details; durable evidence is summarized here. |
+| Share the identical ASCII/HTML no-guide and old-guide baseline. | Same case, same old guide, separate candidate outputs. | No claim of independent HTML baseline runs or per-format causal improvement. |
+| Preserve evidence with narrow `-text` attributes and index-hash checks. | Git normalized the first committed baseline bytes. | Original captured hashes remain the authority; no raw content was reconstructed. |
+| Put the prototype exclusion in the designer as well as its methods. | A narrow mock method cannot constrain a contradictory caller. | Revisit that explicit capability boundary before prototype re-entry. |
+| Replace the invalid alignment fixture with matched v2 controls/candidates. | Actual parser rejection invalidated the executable-fixture premise. | No old-guide comparison on v2; ten invalid-v1 invocations remain counted. |
+| Change evidence coordinator while retaining actor model/configuration. | Long runs and the earlier output-description inversion. | Coordinator/harness differences remain confounds, not causal evidence. |
+| Reallocate the remaining budget to alignment-v3 remediation. | A real action-routing failure needed a corrected guide and retest. | No old-guide diagram actor arm; only one separate boundary each for zoom/diagrams. Absolute 120/16 cap unchanged. |
