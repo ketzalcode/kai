@@ -303,6 +303,8 @@ function assertVideoRenderZoom(skill) {
   for (const [label, pattern] of [
     ['focus operation responsibility', /(?:explain|compile|render|review).{0,140}(?:focus|zoom)/],
     ['explicit or legibility trigger', /explicit.{0,60}focus|evidenced.{0,80}legibility/],
+    ['explanation is its own stopping point', /explain.only request ends at explanation/],
+    ['contact sheet needs an existing render', /contact sheet depends on an existing render/],
     ['clear-footage negative trigger', /already.readable|clear footage.{0,80}(?:skip|no)/],
     ['supplied footage accepted', /(?:supplied|external|existing).{0,80}(?:footage|recording|video).{0,120}(?:accept|direct|without)/],
     ['manual focus measurements', /manual(?:ly)? (?:inspected|measured|focus).{0,100}(?:frame|coordinate|plan)/],
