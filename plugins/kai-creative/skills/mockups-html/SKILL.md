@@ -38,9 +38,10 @@ needed for the decision. Label the visual question, fixed constraints, and
 consequential trade-off. Use existing surfaces when a placement is open; do
 not invent destinations to fill an option set.
 
-The file works offline: inline CSS, semantic HTML, system/local resources,
-and no CDN, external assets, npm setup, or build step. Represent different
-states as labeled static views. Do not implement simulated task flows.
+The file works offline: inline CSS, semantic HTML, and system fonts. Images
+use inline SVG or embedded data. The deliverable has no local file dependencies,
+CDN requests, external assets, npm setup, or build step. Represent different states as
+labeled static views. Do not implement simulated task flows.
 
 This neutral example illustrates the file shape, not an app's real tokens:
 

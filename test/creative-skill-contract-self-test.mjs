@@ -212,6 +212,7 @@ function assertMockupsHtml(skill) {
     ['single scoped outcome', /one scoped.{0,80}(?:self.contained|offline).{0,40}html/],
     ['offline output',
       /(?:self.contained|inline css).{0,100}(?:offline|no (?:cdn|network|build|dependency))|offline.{0,100}(?:self.contained|inline css|no (?:cdn|network|build|dependency))/],
+    ['single-file assets', /no local file dependencies/],
     ['actual inspection status', /actual inspection status|rendered fidelity.{0,80}(?:browser|render)/],
     ['independent from ASCII', /(?:independent|no automatic).{0,80}(?:ascii|mockups-ascii)/],
     ['authority stop', /(?:do not|not).{0,80}(?:lock|adopt).{0,80}(?:authority|owner)|scope\/adoption authority/],
