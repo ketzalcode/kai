@@ -6,8 +6,8 @@
 **PR:** #213, draft.
 **Status:** Source implementation and generated packaging are complete.
 All eight authoring evidence sets are complete and the full indexed-evidence
-guard passes. Whole-branch review is pending; this is not merge or release
-acceptance.
+guard passes. Whole-branch review and its scoped fix review are complete.
+Existing repository gates remain failed; this is not merge or release acceptance.
 
 ## Implemented surface
 
@@ -114,6 +114,11 @@ are covered by the independent command record above. The actual base/head
 release guard passed again. No missing authoring manifest or hash mismatch
 remains in the full evidence check.
 
+After the final review fix at `09bf732d3023638e0eef7e313e482df4c6283d97`,
+the [post-review npm run](creative-foundation/validation/post-review-npm-test.log)
+again passed the engineering and all creative guards, then stopped at the
+unchanged 50-error source validator. The real base/head release guard passed.
+
 ### Synthetic diagram layout
 
 Using an existing Playwright Chromium installation, the optional
@@ -169,7 +174,14 @@ raw output, or invocation count was changed by those corrections.
 
 Captured evidence keeps its original whitespace, including Markdown hard
 breaks; it is byte-checked rather than reformatted to satisfy a source-style
-check. Whole-branch review remains pending.
+check.
+
+Whole-branch review found one remaining executable-contract defect: the video
+lead's screenplay example omitted required metadata and put its narration
+gate outside the visual span. `09bf732` makes the example parser-valid, labels
+its settings illustrative, and adds a test that extracts the actual fenced
+JSON and passes it to the real screenplay parser. Scoped re-review accepted
+the fix with no further substantive findings. No helper algorithm changed.
 
 ## Execution rulings
 

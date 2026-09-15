@@ -10,6 +10,13 @@
 
 **Spec:** [Signed-off creative foundation](../specs/2026-09-13-creative-skills-foundation-design.md).
 
+**Status:** Tasks 1-6 are implemented and reviewed. Whole-branch review found
+one parser-invalid video screenplay example; `09bf732` fixes it and scoped
+re-review accepted the correction. The [execution/evidence record](../../reference/skill-evaluation/creative-foundation-authoring.md)
+retains all outcomes and limits. Draft PR #213 remains blocked by 50 existing
+source-validator errors and the pre-existing pack self-test/version-skew crashes.
+No merge, tag, release, or live-host/media acceptance is claimed.
+
 ## Global Constraints
 
 - The supported install baseline stays **kai-core plus kai-creative**.
@@ -71,7 +78,7 @@ Never reconstruct historical outputs manually or silently switch labels.
 `materializePacks`, and `collectReferences`. Add creative to the existing
 family mapping; do not remap personal/prod/gtm baseline policy.
 
-- [ ] Add failing assertions before changing the taxonomy/history functions:
+- [x] Add failing assertions before changing the taxonomy/history functions:
 
 ```js
 assert.deepEqual(agentTaxonomyErrors({
@@ -85,19 +92,19 @@ assert.ok(agentTaxonomyErrors({
 }).length > 0);
 ```
 
-- [ ] Run `node test\creative-foundation-self-test.mjs`; preserve the actual RED.
-- [ ] Preserve exact original three agent and six replaced skill definitions
+- [x] Run `node test\creative-foundation-self-test.mjs`; preserve the actual RED.
+- [x] Preserve exact original three agent and six replaced skill definitions
   in `incubator\kai-creative\` without rewriting their bodies. Keep the active
   originals until their replacement task is ready.
-- [ ] Generalize inactive discovery across owning-package directories, keeping
+- [x] Generalize inactive discovery across owning-package directories, keeping
   active collectors unchanged. Historical documents may reference preserved
   inactive IDs; active instructions and current documentation may not.
-- [ ] Preserve the current historical-prefix policy. Add only exact evidence
+- [x] Preserve the current historical-prefix policy. Add only exact evidence
   paths needed for the creative baseline and immutable diagram guide sample;
   do not exempt every reference/evidence directory.
-- [ ] Add creative as a current role family, retain only principal/director as
+- [x] Add creative as a current role family, retain only principal/director as
   migration-only families, and preserve the existing profile/model mapping.
-- [ ] Exercise temporary fixtures for multiple incubator owners, unknown IDs,
+- [x] Exercise temporary fixtures for multiple incubator owners, unknown IDs,
   active-source rejection, and helper dependency preservation. Re-run the
   focused guard and engineering foundation guard, then commit this task.
 
@@ -108,17 +115,17 @@ assert.ok(agentTaxonomyErrors({
 **Produces:** No-new-reference-file scoped grounding and no-onboarding direct
 proposal behavior, retaining full coordinated derivation/acceptance.
 
-- [ ] Run baseline authoring cases separately for each core skill before editing.
-- [ ] Add source-contract assertions for the observable direct versus durable
+- [x] Run baseline authoring cases separately for each core skill before editing.
+- [x] Add source-contract assertions for the observable direct versus durable
   predicate, not a blanket exemption or exact paragraph snapshot.
-- [ ] Grounding case: a supplied current token inventory covers a bounded
+- [x] Grounding case: a supplied current token inventory covers a bounded
   component question; answer without deriving an app-wide design system.
   Boundary: an explicitly requested durable system extract still needs
   requested coverage and provenance; changed tokens retain FE/owner review.
-- [ ] Scope case: a direct unonboarded advisory request can return an unadopted
+- [x] Scope case: a direct unonboarded advisory request can return an unadopted
   proposal inline. Boundary: coordinated adoption and durable backlog writing
   still require the existing authority and workspace contracts.
-- [ ] Apply only the two signed-off seams, then run candidate and boundary
+- [x] Apply only the two signed-off seams, then run candidate and boundary
   samples for each skill, finish evidence and focused assertions, and commit.
 
 ## Task 3: Split UI mock methods and preserve structural diagrams
@@ -128,19 +135,19 @@ original `ui-mockup`, source assertions and evidence.
 **Consumes:** Refined core seams.
 **Produces:** `mockups-ascii`, `mockups-html`, retained `html-block-diagrams`.
 
-- [ ] Evaluate each method independently using its fixed current-source case.
+- [x] Evaluate each method independently using its fixed current-source case.
   ASCII: explicit structural mock with a fixed container and no browser.
   HTML: one offline mock from supplied scoped tokens, no option quota.
   Diagram: prose-sufficient critique versus explicit structural HTML output.
-- [ ] Add focused RED assertions for exact IDs, trigger-only descriptions,
+- [x] Add focused RED assertions for exact IDs, trigger-only descriptions,
   no mandatory option count, independent format selection, and no production
   code/prototype expansion.
-- [ ] Author ASCII and HTML outcomes separately; share core rules through
+- [x] Author ASCII and HTML outcomes separately; share core rules through
   conditional routes. Browser absence limits rendered claims, not authorship.
-- [ ] Move substantial diagram CSS/examples to
+- [x] Move substantial diagram CSS/examples to
   `html-block-diagrams\references\catalog.md`; preserve useful craft without
   mandatory four-field cards, guaranteed-overlap claims, or forced Mermaid.
-- [ ] Remove active `ui-mockup` only once both replacements exist. Preserve
+- [x] Remove active `ui-mockup` only once both replacements exist. Preserve
   its original in incubation, then verify the per-method candidate/boundary
   outputs and catalog emission. Commit the task.
 
@@ -151,19 +158,19 @@ original `ui-mockup`, source assertions and evidence.
 **Produces:** `video-create-narration`, `video-align-narration`,
 `video-render-zoom`, with independent operation predicates.
 
-- [ ] Baseline each method before its edit: estimate before capture; placement
+- [x] Baseline each method before its edit: estimate before capture; placement
   using existing measured clips with a bad interior state; focus-only from
   supplied external footage and an inspected manual plan.
-- [ ] Add source-contract RED for the six dimensions of every method plus
+- [x] Add source-contract RED for the six dimensions of every method plus
   provider-root resolution, consent, and actual-output reporting.
-- [ ] Creation wraps only estimate/synthesis; alignment wraps placement/mix,
+- [x] Creation wraps only estimate/synthesis; alignment wraps placement/mix,
   never automatically synthesis; focus accepts footage without recapture.
-- [ ] Carry exact helper limitations from spec section 6. Reject known bad
+- [x] Carry exact helper limitations from spec section 6. Reject known bad
   relevant states before relying on composition; missing visual evidence stays
   a gap. Do not change helper algorithms or falsely attribute stronger checks.
-- [ ] Preserve paid consent/no retry, measured-versus-estimated durations, and
+- [x] Preserve paid consent/no retry, measured-versus-estimated durations, and
   command-versus-executed-output distinctions.
-- [ ] Run candidate/boundary samples per method and source/helper assertions.
+- [x] Run candidate/boundary samples per method and source/helper assertions.
   Remove active old narration/zoom definitions once replacements exist and
   commit. Capture remains preserved until final active routing is replaced.
 
@@ -174,7 +181,7 @@ current docs, source assertions; retire remaining old creative sources.
 **Consumes:** Final six skill IDs and unchanged helper operations.
 **Produces:** Exactly three creative agents and six creative skills.
 
-- [ ] Add the active inventory and emission RED:
+- [x] Add the active inventory and emission RED:
 
 ```js
 assert.deepEqual(sourceAgentFiles(root).filter(x => x.pack === 'creative')
@@ -189,27 +196,27 @@ assert.deepEqual(sourceSkillFiles(root).filter(x => x.pack === 'creative')
 ]);
 ```
 
-- [ ] Create concise agents with the existing judgment model for leads and
+- [x] Create concise agents with the existing judgment model for leads and
   procedure model for workflow. No agent gains lease-granting or publication
   authority. All first-core routes and same-paragraph fallbacks are explicit.
-- [ ] Consolidate interaction and identity craft in the design lead, retaining
+- [x] Consolidate interaction and identity craft in the design lead, retaining
   independent revision-bound design review, operator adoption, PM acceptance,
   frontend feasibility, and QA independence.
-- [ ] Keep scene/story/screenplay direction in the video lead, proportional
+- [x] Keep scene/story/screenplay direction in the video lead, proportional
   to the request. No five-file bundle or separate storyboarding skill.
-- [ ] Production consumes supplied approved direction/media; no capture fallback,
+- [x] Production consumes supplied approved direction/media; no capture fallback,
   mandatory zoom/speech, or worker-per-stage dispatch. Missing direction returns
   to the author; operator/core coordinator is the caller.
-- [ ] Replace exact active old-agent references in all plugin bodies and current
+- [x] Replace exact active old-agent references in all plugin bodies and current
   docs. Replace old-skill routes intentionally, not by blind name substitution.
   Preserve historical originals and old review records as historical.
-- [ ] Update `NEW_AGENT_IDS`, creative skill ownership overrides, category entries,
+- [x] Update `NEW_AGENT_IDS`, creative skill ownership overrides, category entries,
   any affected reviewer/role maps and source collector assertions. Keep
   `DISPATCHING_ROLES` unchanged.
-- [ ] Retire active `video-direction`, `create-product-demo`, `demo-capture`
+- [x] Retire active `video-direction`, `create-product-demo`, `demo-capture`
   and the old three agents. Keep `scripts\demo-capture.mjs` and its emitted
   parser closure. No inactive ID appears in active route or emitted skill paths.
-- [ ] Regenerate catalog/inventory and packs to check closure, inspect every
+- [x] Regenerate catalog/inventory and packs to check closure, inspect every
   new diagnostic relative to the baseline, then commit.
 
 ## Task 6: Release metadata, review and pull request
@@ -219,22 +226,22 @@ packs, package reference, test guide, implementation evidence and PR body.
 **Consumes:** Three-agent/six-skill inventory, actor evidence and exact baseline.
 **Produces:** Truthful `9.0.0` preparation and the requested PR, not a release.
 
-- [ ] Run `npm version 9.0.0 --no-git-tag-version`; match root `plugin.json`,
+- [x] Run `npm version 9.0.0 --no-git-tag-version`; match root `plugin.json`,
   marketplace metadata and all entries. No dependency changes/install.
-- [ ] Add dated 2026-09-14 `CHANGELOG.md` section and compare link. Update README
+- [x] Add dated 2026-09-14 `CHANGELOG.md` section and compare link. Update README
   Status version/counts and explain that prepared metadata is not publication.
-- [ ] Run `node scripts\host-contract.mjs --update`, `npm run docs:generate`,
+- [x] Run `node scripts\host-contract.mjs --update`, `npm run docs:generate`,
   and `npm run pack-preview -- --write` from the isolated worktree.
-- [ ] Wire the creative guard into existing npm/CI entry points. Run both
+- [x] Wire the creative guard into existing npm/CI entry points. Run both
   foundation guards, the four unchanged demo self-tests, catalog, inventory,
   generated parity, syntax and the release guard against the actual base/head.
-- [ ] Run `npm test`, then independently run later stages hidden by fail-fast.
+- [x] Run `npm test`, then independently run later stages hidden by fail-fast.
   Preserve raw current failures and compare them with the recorded baseline;
   do not count the collection shell's zero exit as a suite pass.
-- [ ] Independently review the whole branch for spec compliance, missing callers,
+- [x] Independently review the whole branch for spec compliance, missing callers,
   broken imports/registries, evidence mapping, and new defects. Fix in-scope
   findings and recheck the affected paths without repairing unrelated failures.
-- [ ] Commit release/evidence updates, push only this task branch, and create
+- [x] Commit release/evidence updates, push only this task branch, and create
   the PR with the exact verified outcome and remaining blockers. If repository
   gates still fail, open it as draft and explain why.
 
