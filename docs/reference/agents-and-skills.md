@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **55 agents** and **46 skills** (13 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
+kai ships **55 agents** and **46 skills** (14 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -268,7 +268,7 @@ Structural and visual mockups, block diagrams, measured narration operations, an
 | ---- | ------------ |
 | [`mockups-ascii`](../../plugins/kai-creative/skills/mockups-ascii/SKILL.md) | Use when an ASCII wireframe is requested, or an unresolved layout, placement, grouping, or information-hierarchy decision needs a structural sketch. |
 | [`mockups-html`](../../plugins/kai-creative/skills/mockups-html/SKILL.md) | Use when an HTML mock is requested, or a UI choice depends on visual hierarchy, component appearance, or responsive layout. |
-| [`html-block-diagrams`](../../plugins/kai-creative/skills/html-block-diagrams/SKILL.md) | Block-diagram vocabulary for HTML artifacts: five CSS arrangements and a self-contained palette. Use when an HTML artifact or an exported image needs a rich diagram. |
+| [`html-block-diagrams`](../../plugins/kai-creative/skills/html-block-diagrams/SKILL.md) | Use when a structural block diagram is requested for an HTML or image destination, or an established relationship would be materially clearer in that form. |
 | [`video-create-narration`](../../plugins/kai-creative/skills/video-create-narration/SKILL.md) | Use when a narration estimate or approved speech synthesis is requested for a supplied demo screenplay. |
 | [`video-align-narration`](../../plugins/kai-creative/skills/video-align-narration/SKILL.md) | Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo. |
 | [`video-render-zoom`](../../plugins/kai-creative/skills/video-render-zoom/SKILL.md) | Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment. |

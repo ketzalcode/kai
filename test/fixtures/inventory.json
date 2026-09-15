@@ -118,6 +118,10 @@
       "argument_hint": "<path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]"
     },
     {
+      "name": "html-block-diagrams",
+      "argument_hint": ""
+    },
+    {
       "name": "kai-core-create-agent",
       "argument_hint": ""
     },
