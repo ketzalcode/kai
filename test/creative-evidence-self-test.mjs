@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseScreenplay } from '../scripts/demo-capture.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const baseline = 'docs/reference/skill-evaluation/creative-baseline-2026-09-13';
@@ -18,10 +19,29 @@ const finalMethods = [
   'video-render-zoom',
   'html-block-diagrams',
 ];
+const alignmentMethod = 'video-align-narration';
+const alignmentRoot = `${authoringRoot}/${alignmentMethod}`;
+const alignmentCorrection = {
+  primaryCasePath: `${alignmentRoot}/case-v2.md`,
+  comparedArms: ['control', 'candidate'],
+  invalidFixture: {
+    casePath: `${alignmentRoot}/case.md`,
+    manifest: `${alignmentRoot}/invalid-fixture-v1-manifest.json`,
+    reason: 'invalid-fixture-v1',
+    comparisonInvocations: 10,
+  },
+};
 const selector = process.argv[2] ?? 'all';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const readJson = relative => JSON.parse(readFileSync(join(root, ...relative.split('/')), 'utf8')
   .replace(/^\uFEFF/, ''));
+
+function firstFencedJson(relative, label) {
+  const text = readFileSync(join(root, ...relative.split('/')), 'utf8');
+  const match = /```json\s*([\s\S]*?)```/.exec(text);
+  assert.ok(match, `${label}: first fenced JSON block is required`);
+  return { source: match[1], document: text };
+}
 
 function indexedBytes(relative, label = relative) {
   try {
@@ -32,6 +52,13 @@ function indexedBytes(relative, label = relative) {
   } catch {
     assert.fail(`${label}: must be present in the Git index`);
   }
+}
+
+function readIndexedJson(relative, label) {
+  const working = readFileSync(join(root, ...relative.split('/')));
+  assert.equal(hash(indexedBytes(relative, label)), hash(working),
+    `${label}: working and indexed bytes must match`);
+  return JSON.parse(working.toString('utf8').replace(/^\uFEFF/, ''));
 }
 
 function runBaselineChecks() {
@@ -128,6 +155,104 @@ function sampleBindings(method, primaryCasePath, currentGuidePath) {
   };
 }
 
+function validateAlignmentDeclaration(manifest, method) {
+  const declared = manifest.primaryCasePath !== undefined
+    || manifest.comparedArms !== undefined
+    || manifest.invalidFixture !== undefined;
+  if (method !== alignmentMethod) {
+    assert.equal(declared, false,
+      `${method}: only video-align-narration may declare the alignment-v2 correction`);
+    return null;
+  }
+
+  assert.equal(evidencePath(manifest.primaryCasePath, `${method}.primaryCasePath`),
+    alignmentCorrection.primaryCasePath,
+    `${method}: primaryCasePath must select the corrected v2 case`);
+  assert.deepEqual(manifest.comparedArms, alignmentCorrection.comparedArms,
+    `${method}: comparedArms must be the ruled control/candidate comparison`);
+  assert.ok(manifest.invalidFixture && typeof manifest.invalidFixture === 'object',
+    `${method}: invalidFixture is required`);
+  for (const field of ['casePath', 'manifest']) {
+    assert.equal(
+      evidencePath(manifest.invalidFixture[field], `${method}.invalidFixture.${field}`),
+      alignmentCorrection.invalidFixture[field],
+      `${method}: invalidFixture.${field} must match the ruled v1 fixture history`,
+    );
+  }
+  assert.equal(manifest.invalidFixture.reason, alignmentCorrection.invalidFixture.reason,
+    `${method}: invalidFixture.reason must identify invalid-fixture-v1`);
+  assert.equal(
+    manifest.invalidFixture.comparisonInvocations,
+    alignmentCorrection.invalidFixture.comparisonInvocations,
+    `${method}: invalidFixture must charge all ten v1 comparison invocations`,
+  );
+  assert.equal(typeof manifest.invalidFixture.parserError, 'string',
+    `${method}: invalidFixture.parserError is required`);
+  assert.ok(manifest.invalidFixture.parserError.length > 0,
+    `${method}: invalidFixture.parserError must not be empty`);
+  return alignmentCorrection;
+}
+
+function excludedFixtureSample(sample, method, correction) {
+  const declaresExclusion = sample.excludedFromPrimary !== undefined
+    || sample.exclusionReason !== undefined;
+  if (!declaresExclusion) return false;
+  assert.ok(correction && method === alignmentMethod,
+    `${method}: only the declared alignment-v2 correction may exclude fixture history`);
+  assert.equal(sample.excludedFromPrimary, true,
+    `${method}: excluded fixture records must set excludedFromPrimary true`);
+  assert.equal(sample.exclusionReason, alignmentCorrection.invalidFixture.reason,
+    `${method}: excluded fixture records must use invalid-fixture-v1`);
+  return true;
+}
+
+function validateAlignmentCases(manifest, inputs) {
+  const v1 = firstFencedJson(alignmentCorrection.invalidFixture.casePath, 'alignment v1 case');
+  const v2 = firstFencedJson(alignmentCorrection.primaryCasePath, 'alignment v2 case');
+  assert.match(v1.document, /Do not access media files/,
+    'alignment v1 case must remain a synthetic no-media case');
+  assert.match(v2.document, /Do not access media files/,
+    'alignment v2 case must remain a synthetic no-media case');
+
+  let parserError;
+  try {
+    parseScreenplay(v1.source);
+  } catch (error) {
+    parserError = error;
+  }
+  assert.ok(parserError, 'alignment v1 screenplay must be rejected by the real parser');
+  assert.match(parserError.message,
+    /steps\[3\]\.intends_to_show must be one of .*got "saved search confirmation"/,
+    'alignment v1 screenplay must fail only on the invalid intends_to_show enum');
+  assert.equal(manifest.invalidFixture.parserError, parserError.message,
+    'alignment invalidFixture.parserError must preserve the real parser rejection');
+
+  const parsedV2 = parseScreenplay(v2.source);
+  assert.equal(parsedV2.steps.length, 4, 'alignment v2 screenplay must parse four steps');
+  assert.equal(parsedV2.narration.length, 1, 'alignment v2 screenplay must parse one beat');
+
+  const rawV1 = JSON.parse(v1.source);
+  const rawV2 = JSON.parse(v2.source);
+  assert.equal(rawV1.steps[3]?.intends_to_show, 'saved search confirmation',
+    'alignment v1 must preserve the rejected enum');
+  assert.equal(rawV2.steps[3]?.intends_to_show, 'intended-outcome',
+    'alignment v2 must use the accepted intended-outcome enum');
+  const correctedV1 = structuredClone(rawV1);
+  correctedV1.steps[3].intends_to_show = 'intended-outcome';
+  assert.deepEqual(rawV2, correctedV1,
+    'alignment v2 must differ from v1 only at the corrected intends_to_show enum');
+
+  const requiredInputs = [
+    alignmentCorrection.invalidFixture.casePath,
+    alignmentCorrection.primaryCasePath,
+    `${alignmentRoot}/current/SKILL.md`,
+    `${alignmentRoot}/candidate/SKILL.md`,
+  ];
+  for (const relative of requiredInputs) {
+    assert.ok(inputs.has(relative), `video-align-narration: inputs must hash ${relative}`);
+  }
+}
+
 function validateSampleIdentity(sample, label, inputs, bindings) {
   const kind = sampleKind(sample, label);
   assert.match(sample.id, new RegExp(`^${kind.family}-`),
@@ -182,6 +307,66 @@ function validateSample(sample, label, inputs, bindings, ids, outputPaths) {
   assert.ok(!outputPaths.has(outputPath), `${label}: duplicate output path ${outputPath}`);
   outputPaths.add(outputPath);
   return kind;
+}
+
+function excludedRecordFields(sample) {
+  return {
+    id: sample.id,
+    arm: sample.arm,
+    casePath: sample.casePath,
+    guidePath: sample.guidePath,
+    output: sample.output,
+  };
+}
+
+function validateAlignmentExcludedHistory(manifest, excludedSamples, inputs) {
+  const frozen = readIndexedJson(
+    alignmentCorrection.invalidFixture.manifest,
+    'video-align-narration frozen v1 manifest',
+  );
+  assert.equal(frozen.method, alignmentMethod,
+    'alignment frozen v1 manifest must retain the video-align-narration method');
+  assert.ok(Array.isArray(frozen.samples),
+    'alignment frozen v1 manifest must retain its samples array');
+  assert.equal(frozen.samples.length, 10,
+    'alignment frozen v1 manifest must retain exactly ten samples');
+  assert.equal(excludedSamples.length, 10,
+    'alignment final manifest must retain exactly ten excluded v1 samples');
+
+  const expectedIds = [
+    ...Array.from({ length: 5 }, (_, index) => `control-${String(index + 1).padStart(2, '0')}`),
+    ...Array.from({ length: 5 }, (_, index) => `current-${String(index + 1).padStart(2, '0')}`),
+  ];
+  assert.deepEqual(frozen.samples.map(sample => sample.id).sort(), expectedIds.sort(),
+    'alignment frozen v1 manifest must contain the original five control and current IDs');
+
+  const frozenById = new Map();
+  const frozenIds = new Set();
+  const frozenOutputs = new Set();
+  const v1Bindings = sampleBindings(alignmentMethod);
+  for (const [index, sample] of frozen.samples.entries()) {
+    const label = `video-align-narration frozen samples[${index}]`;
+    assert.equal(sample.excludedFromPrimary, undefined,
+      `${label}: frozen records must not be rewritten as excluded records`);
+    assert.equal(sample.exclusionReason, undefined,
+      `${label}: frozen records must not gain an exclusion reason`);
+    const kind = validateSample(sample, label, inputs, v1Bindings, frozenIds, frozenOutputs);
+    assert.ok(kind.primary && ['control', 'current'].includes(kind.family),
+      `${label}: frozen v1 samples must be primary control/current records`);
+    frozenById.set(sample.id, sample);
+  }
+
+  for (const [index, sample] of excludedSamples.entries()) {
+    const label = `video-align-narration excluded samples[${index}]`;
+    assert.equal(sample.excludedFromPrimary, true,
+      `${label}: excludedFromPrimary must be true`);
+    assert.equal(sample.exclusionReason, alignmentCorrection.invalidFixture.reason,
+      `${label}: exclusionReason must identify invalid-fixture-v1`);
+    const source = frozenById.get(sample.id);
+    assert.ok(source, `${label}: must match an original frozen v1 record`);
+    assert.deepEqual(excludedRecordFields(sample), excludedRecordFields(source),
+      `${label}: id, arm, case, guide, and hashed output must remain unchanged`);
+  }
 }
 
 function validateSharedBaselineInputRoles(inputRecords, label) {
@@ -276,10 +461,94 @@ function runIdentityMutationChecks() {
     output: { path: `${rootPath}/current/current-02.md` },
   }, 'mutation.validProtocolDeviation', inputs, bindings);
 
+  const declaredAlignment = {
+    primaryCasePath: alignmentCorrection.primaryCasePath,
+    comparedArms: [...alignmentCorrection.comparedArms],
+    invalidFixture: {
+      ...alignmentCorrection.invalidFixture,
+      parserError: 'real parser rejection',
+    },
+  };
+  assert.doesNotThrow(
+    () => validateAlignmentDeclaration(declaredAlignment, alignmentMethod),
+    'alignment guard must accept only the ruled v2 correction',
+  );
+  assert.throws(
+    () => validateAlignmentDeclaration(declaredAlignment, 'grounding'),
+    /only video-align-narration may declare/,
+    'other methods cannot claim the alignment-v2 correction',
+  );
+  assert.throws(
+    () => validateAlignmentDeclaration({
+      ...structuredClone(declaredAlignment),
+      primaryCasePath: alignmentCorrection.invalidFixture.casePath,
+    }, alignmentMethod),
+    /primaryCasePath must select the corrected v2 case/,
+    'alignment v2 cannot select the rejected v1 case as its primary input',
+  );
+  assert.throws(
+    () => validateAlignmentDeclaration({
+      ...structuredClone(declaredAlignment),
+      comparedArms: ['current', 'candidate'],
+    }, alignmentMethod),
+    /comparedArms must be the ruled control\/candidate comparison/,
+    'alignment v2 cannot substitute the old current arm',
+  );
+  const excluded = {
+    excludedFromPrimary: true,
+    exclusionReason: alignmentCorrection.invalidFixture.reason,
+  };
+  assert.throws(
+    () => excludedFixtureSample(excluded, 'grounding', null),
+    /only the declared alignment-v2 correction may exclude fixture history/,
+    'other methods cannot exclude failed fixture history',
+  );
+
+  const alignmentInputs = new Map([
+    [alignmentCorrection.primaryCasePath, {}],
+    [alignmentCorrection.invalidFixture.casePath, {}],
+    [`${alignmentRoot}/current/SKILL.md`, {}],
+    [`${alignmentRoot}/candidate/SKILL.md`, {}],
+  ]);
+  const alignmentBindings = sampleBindings(
+    alignmentMethod,
+    alignmentCorrection.primaryCasePath,
+  );
+  validateSampleIdentity({
+    id: 'control-v2-01',
+    arm: 'control',
+    casePath: alignmentCorrection.primaryCasePath,
+    guidePath: null,
+    output: { path: `${alignmentRoot}/control-v2-01.md` },
+  }, 'mutation.validAlignmentControl', alignmentInputs, alignmentBindings);
+  assert.throws(
+    () => validateSampleIdentity({
+      id: 'candidate-01',
+      arm: 'candidate',
+      casePath: alignmentCorrection.invalidFixture.casePath,
+      guidePath: `${alignmentRoot}/candidate/SKILL.md`,
+      output: { path: `${alignmentRoot}/candidate-01.md` },
+    }, 'mutation.alignmentOldCase', alignmentInputs, alignmentBindings),
+    /casePath must be the fixed case/,
+    'alignment v2 candidate cannot use the rejected v1 case',
+  );
+  assert.throws(
+    () => validateSampleIdentity({
+      id: 'control-v2-01',
+      arm: 'control',
+      casePath: alignmentCorrection.primaryCasePath,
+      guidePath: `${alignmentRoot}/candidate/SKILL.md`,
+      output: { path: `${alignmentRoot}/control-v2-01.md` },
+    }, 'mutation.alignmentControlCandidateGuide', alignmentInputs, alignmentBindings),
+    /control guidePath must match its arm/,
+    'alignment v2 control cannot use the candidate guide',
+  );
+
   const schedule = {
     comparison: 15,
     boundary: 2,
     protocolDeviation: 0,
+    excludedFixture: 0,
     primary: { control: 5, current: 5, candidate: 5 },
     newPrimary: { control: 5, current: 5, candidate: 5 },
   };
@@ -305,28 +574,61 @@ function runIdentityMutationChecks() {
     /at most two boundary samples/,
     'schedule guard must reject a third boundary sample',
   );
+  const alignmentSchedule = {
+    comparison: 20,
+    boundary: 2,
+    protocolDeviation: 0,
+    excludedFixture: 10,
+    primary: { control: 5, current: 0, candidate: 5 },
+    newPrimary: { control: 5, current: 0, candidate: 5 },
+  };
+  assert.doesNotThrow(
+    () => validateClosedSchedule(
+      alignmentSchedule,
+      alignmentMethod,
+      alignmentCorrection.comparedArms,
+    ),
+    'schedule guard must accept ten excluded v1 calls plus the ruled two-arm v2 comparison',
+  );
+  assert.throws(
+    () => validateClosedSchedule({
+      ...structuredClone(alignmentSchedule),
+      comparison: 21,
+      primary: { control: 5, current: 1, candidate: 5 },
+      newPrimary: { control: 5, current: 1, candidate: 5 },
+    }, alignmentMethod, alignmentCorrection.comparedArms),
+    /exactly zero valid primary current outputs/,
+    'alignment v2 cannot retain a current arm in its valid primary comparison',
+  );
   assert.throws(
     () => validateGlobalInvocationCounts(
       { comparisonSamples: 16, boundarySamples: 2 },
       {
         primaryComparisonSamples: 15,
         protocolDeviationSamples: 0,
+        excludedFixtureSamples: 0,
         boundarySamples: 2,
       },
       { absoluteCaps: { comparisonSamples: 120, boundarySamples: 16 } },
     ),
-    /must include primary and protocol-deviation invocations/,
-    'schedule guard must account for protocol-deviation comparison invocations separately',
+    /must include primary, protocol-deviation, and excluded fixture invocations/,
+    'schedule guard must account for each comparison invocation class separately',
   );
 }
 
-function addCounts(counts, kind) {
+function addCounts(counts, kind, excludedFromPrimary = false) {
   if (kind.boundary) {
+    assert.equal(excludedFromPrimary, false,
+      'boundary samples cannot be excluded fixture history');
     counts.boundary += 1;
     return;
   }
   counts.comparison += 1;
   counts.arms[kind.family] += 1;
+  if (excludedFromPrimary) {
+    counts.excludedFixture += 1;
+    return;
+  }
   if (kind.primary) {
     counts.primary[kind.family] += 1;
     counts.newPrimary[kind.family] += 1;
@@ -334,25 +636,32 @@ function addCounts(counts, kind) {
   if (kind.protocolDeviation) counts.protocolDeviation += 1;
 }
 
-function validateClosedSchedule(counts, method) {
+function validateClosedSchedule(counts, method, comparedArms = ['control', 'current', 'candidate']) {
   for (const arm of ['control', 'current', 'candidate']) {
-    assert.equal(counts.primary[arm], 5,
-      `${method}: the closed schedule requires exactly five valid primary ${arm} outputs`);
+    const expected = comparedArms.includes(arm) ? 5 : 0;
+    const expectedLabel = expected === 5 ? 'five' : 'zero';
+    assert.equal(counts.primary[arm], expected,
+      `${method}: the closed schedule requires exactly ${expectedLabel} valid primary ${arm} outputs`);
   }
   assert.ok(counts.boundary <= 2,
     `${method}: the closed schedule permits at most two boundary samples`);
   const newPrimaryTotal = Object.values(counts.newPrimary)
     .reduce((sum, value) => sum + value, 0);
-  assert.equal(counts.comparison, newPrimaryTotal + counts.protocolDeviation,
-    `${method}: comparison invocations must separate primary and protocol deviations`);
+  assert.equal(
+    counts.comparison,
+    newPrimaryTotal + counts.protocolDeviation + counts.excludedFixture,
+    `${method}: comparison invocations must separate primary, protocol deviations, and excluded fixture history`,
+  );
   return newPrimaryTotal;
 }
 
 function validateGlobalInvocationCounts(actualUsed, invocationKinds, budget) {
   assert.equal(
     actualUsed.comparisonSamples,
-    invocationKinds.primaryComparisonSamples + invocationKinds.protocolDeviationSamples,
-    'global comparison usage must include primary and protocol-deviation invocations',
+    invocationKinds.primaryComparisonSamples
+      + invocationKinds.protocolDeviationSamples
+      + invocationKinds.excludedFixtureSamples,
+    'global comparison usage must include primary, protocol-deviation, and excluded fixture invocations',
   );
   assert.equal(actualUsed.boundarySamples, invocationKinds.boundarySamples,
     'global boundary usage must count boundary invocations separately');
@@ -404,11 +713,13 @@ function runAuthoringChecks() {
   const invocationKinds = {
     primaryComparisonSamples: 0,
     protocolDeviationSamples: 0,
+    excludedFixtureSamples: 0,
     boundarySamples: 0,
   };
   for (const method of finalMethods) {
     const manifest = manifests.get(method);
     const budgetMethod = budget.methods[method];
+    const correction = validateAlignmentDeclaration(manifest, method);
     assert.equal(budgetMethod.status, 'complete', `${method}: budget status must be complete`);
     assert.equal(evidencePath(budgetMethod.path, `${method} budget path`),
       `${authoringRoot}/${method}`, `${method}: budget path must match its evidence directory`);
@@ -427,7 +738,7 @@ function runAuthoringChecks() {
     }
     assert.ok(inputs.size > 0, `${method}: hashed inputs are required`);
 
-    let bindings = sampleBindings(method);
+    let bindings = sampleBindings(method, correction?.primaryCasePath);
     let sharedInputRoles;
     if (method === 'mockups-html') {
       const shared = manifest.sharedBaselineDataset;
@@ -458,6 +769,7 @@ function runAuthoringChecks() {
         sharedInputRoles['shared-baseline-current-guide'].path,
       );
     }
+    if (correction) validateAlignmentCases(manifest, inputs);
 
     for (const [relative, input] of inputs) {
       if (relative.startsWith(`${bindings.methodRoot}/`)) continue;
@@ -475,17 +787,64 @@ function runAuthoringChecks() {
       comparison: 0,
       boundary: 0,
       protocolDeviation: 0,
+      excludedFixture: 0,
       arms: { control: 0, current: 0, candidate: 0 },
       primary: { control: 0, current: 0, candidate: 0 },
       newPrimary: { control: 0, current: 0, candidate: 0 },
     };
+    const excludedSamples = [];
     assert.ok(Array.isArray(manifest.samples), `${method}: samples must be an array`);
     for (const [index, sample] of manifest.samples.entries()) {
-      addCounts(counts, validateSample(
-        sample, `${method}.samples[${index}]`, inputs, bindings, ids, outputPaths,
-      ));
+      const excluded = excludedFixtureSample(sample, method, correction);
+      if (excluded) excludedSamples.push(sample);
+      const sampleBindingsForRecord = excluded
+        ? sampleBindings(alignmentMethod)
+        : bindings;
+      const kind = validateSample(
+        sample,
+        `${method}.samples[${index}]`,
+        inputs,
+        sampleBindingsForRecord,
+        ids,
+        outputPaths,
+      );
+      if (correction && !excluded && !kind.boundary) {
+        assert.ok(correction.comparedArms.includes(kind.family),
+          `${method}: valid v2 samples must belong to the declared comparedArms`);
+      }
+      addCounts(counts, kind, excluded);
     }
     assert.ok(ids.size > 0, `${method}: samples are required`);
+    if (correction) {
+      validateAlignmentExcludedHistory(manifest, excludedSamples, inputs);
+      assert.equal(counts.excludedFixture, correction.invalidFixture.comparisonInvocations,
+        `${method}: excluded fixture count must match invalidFixture.comparisonInvocations`);
+      const primaryIds = manifest.samples
+        .filter(sample => !sample.excludedFromPrimary && sampleKind(sample, method).primary)
+        .map(sample => sample.id)
+        .sort();
+      assert.deepEqual(primaryIds, [
+        ...Array.from(
+          { length: 5 },
+          (_, index) => `candidate-${String(index + 1).padStart(2, '0')}`,
+        ),
+        ...Array.from(
+          { length: 5 },
+          (_, index) => `control-v2-${String(index + 1).padStart(2, '0')}`,
+        ),
+      ].sort(), `${method}: valid v2 primary IDs must be five control-v2 and five candidate records`);
+      const boundaryCases = new Set(manifest.samples
+        .filter(sample => sampleKind(sample, method).boundary)
+        .map(sample => evidencePath(sample.casePath, `${method} boundary case`)));
+      assert.equal(boundaryCases.size, counts.boundary,
+        `${method}: each boundary invocation must use its own hashed boundary case`);
+      for (const relative of boundaryCases) {
+        assert.ok(inputs.has(relative), `${method}: inputs must hash boundary case ${relative}`);
+      }
+    } else {
+      assert.equal(excludedSamples.length, 0,
+        `${method}: fixture exclusions are not permitted`);
+    }
 
     if (method === 'mockups-html') {
       const shared = manifest.sharedBaselineDataset;
@@ -577,12 +936,17 @@ function runAuthoringChecks() {
       assert.equal(manifest.primaryComparisonOutputs, primaryTotal,
         `${method}: primaryComparisonOutputs must exclude protocol deviations`);
     }
-    const newPrimaryTotal = validateClosedSchedule(counts, method);
+    const newPrimaryTotal = validateClosedSchedule(
+      counts,
+      method,
+      correction?.comparedArms,
+    );
 
     actualUsed.comparisonSamples += counts.comparison;
     actualUsed.boundarySamples += counts.boundary;
     invocationKinds.primaryComparisonSamples += newPrimaryTotal;
     invocationKinds.protocolDeviationSamples += counts.protocolDeviation;
+    invocationKinds.excludedFixtureSamples += counts.excludedFixture;
     invocationKinds.boundarySamples += counts.boundary;
   }
 
@@ -593,6 +957,8 @@ function runAuthoringChecks() {
     boundarySamples: budget.absoluteCaps.boundarySamples - actualUsed.boundarySamples,
   }, 'authoring budget remaining counts must reconcile with exact caps');
   validateGlobalInvocationCounts(actualUsed, invocationKinds, budget);
+  assert.deepEqual(actualUsed, { comparisonSamples: 116, boundarySamples: 16 },
+    'final authoring evidence must retain the planned 116 comparison and 16 boundary invocations');
 }
 
 assert.ok(['baseline', 'all'].includes(selector),
