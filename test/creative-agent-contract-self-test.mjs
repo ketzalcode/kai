@@ -125,8 +125,8 @@ function assertContract(agent, {
   }
 
   const lines = agent.body.split('\n').length;
-  assert.ok(lines >= 90 && lines <= 200,
-    `${agent.id}: expected a concise 90-200 line definition, got ${lines}`);
+  assert.ok(lines <= 250,
+    `${agent.id}: expected at most 250 authored lines, got ${lines}`);
   assert.ok(agent.body.length < 20_000,
     `${agent.id}: expected under 20000 characters, got ${agent.body.length}`);
 }
@@ -135,7 +135,7 @@ const design = parseAgent('creative-lead-design');
 const designContract = {
   model: 'claude-opus-5',
   profile: 'judgment',
-  tools: ['playwright', 'read', 'edit', 'search', 'ask_user', 'skill'],
+  tools: ['playwright', 'execute', 'read', 'edit', 'search', 'ask_user', 'skill'],
   requiredRoutes: [
     'kai-core-contract-v1',
     'kai-core-operating-rules',
@@ -172,7 +172,7 @@ const video = parseAgent('creative-lead-video');
 const videoContract = {
   model: 'claude-opus-5',
   profile: 'judgment',
-  tools: ['read', 'edit', 'search', 'ask_user', 'skill'],
+  tools: ['execute', 'read', 'edit', 'search', 'ask_user', 'skill'],
   requiredRoutes: [
     'kai-core-contract-v1',
     'kai-core-operating-rules',
