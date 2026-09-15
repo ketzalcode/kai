@@ -7,3 +7,8 @@ scripts/**/*.js text eol=lf
 test/fixtures/** text eol=lf
 plugins/** text eol=lf
 docs/reference/agents-and-skills.md text eol=lf
+
+# Preserve captured evidence bytes and the original LF creative definitions.
+docs/reference/skill-evaluation/creative-baseline-2026-09-13/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+docs/reference/skill-evaluation/creative-foundation/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+incubator/kai-creative/** text eol=lf

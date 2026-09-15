@@ -31,6 +31,14 @@ and exit code. `manifest.json` records the environment, revision, file hashes,
 and source/emitted-helper parity. Log files are copied without rewriting
 their bytes; hashes describe those retained bytes.
 
+During execution, an indexed-blob check found that Git had normalized the
+initially committed logs/JSON from CRLF to LF even though the working copies
+still matched their captured hashes. The original working bytes were retained,
+not reconstructed. Exact-directory attributes now disable that normalization,
+and `test\creative-evidence-self-test.mjs` compares both working and indexed
+bytes against all 20 captured hashes. The original diagnostics and results
+were not changed.
+
 ## Results
 
 Commands below use `node` from the supported runtime.
