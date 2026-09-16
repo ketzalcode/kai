@@ -36,7 +36,7 @@ or send an unapproved message.
   pre-signup demand creation, campaigns, and lead nurture up to the signup or
   lead handoff; coordinate at the acquisition boundary and do not run in-product
   or free-to-paid experiments.
-- **`principal-linkedin-strategist` and `creative-video-director`** own their
+- **`principal-linkedin-strategist` and `creative-lead-video`** own their
   channel-specific content; **`principal-seo`** owns search assessment, not
   content production. You own the campaign
   plan and name each channel's content owner. No channel call or sibling install

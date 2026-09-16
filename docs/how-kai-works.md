@@ -26,7 +26,7 @@ be direct inputs; their usual producer is not a mandatory installed sibling.
 Missing evidence narrows the answer. It never licenses invented facts or a
 simulated specialist verdict. Scope, design acceptance, independent assessment,
 commercial commitments and learning completion remain with their real owners.
-The 55 agents / 47 skills and prepared `8.0.0` metadata describe source, not
+The final 55 agents / 46 skills and prepared `9.0.0` metadata describe source, not
 publication or verified task execution. Retired gtm/personal plugins have no
 aliases; private `.kai/personal/` data remains unchanged.
 
@@ -110,7 +110,7 @@ coordinates the triggered graph without taking over specialist decisions.
                   │                 │
                   ├─► principal-product-manager BRIEF / steward
                   │                 │ approved need + scope
-                  └─► principal-product-designer
+                  └─► creative-lead-design
                                     │ PM acceptance, or explicit design waiver
                                     ▼
                         principal-swe-architect  ── only when a decision spans
@@ -337,7 +337,7 @@ no one.
 | Assess a partner, design an integration/channel program, or frame a co-sell/co-marketing motion | `principal-partnerships` |
 | Structure or audit a README, write technical docs, or assess documentation readiness | `eng-lead-technical-writing` |
 | Design a data pipeline, warehouse model, data contract, or event-instrumentation spec | `principal-data-engineer` |
-| Define a visual brand identity, brand guidelines, or critique a visual asset | `principal-brand-designer` |
+| Design or critique an interaction, visual hierarchy, applied design system, or visual identity | `creative-lead-design` |
 | Audit i18n readiness, assess a locale, route translation, or QA a localized build | `workflow-localization` |
 | Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
 | DPIA, data inventory, data-subject rights, retention/consent policy, or compliance-framework review | `principal-privacy-compliance` |
@@ -345,7 +345,8 @@ no one.
 | Active outage, degradation, security/data event, status update, recovery, or post-incident close | `workflow-incident-response` |
 | Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
 | Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
-| Turn product intelligence + media into a video plan (script, cuts, AI prompts) | `creative-video-director` |
+| Turn approved facts and media evidence into proportional video direction, a script, storyboard, or demo screenplay | `creative-lead-video` |
+| Produce an authorized demo from approved direction and supplied media | `workflow-creative-demo-production` |
 | Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
 | "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `kai-core-initiative-stewardship`) |
 | "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |

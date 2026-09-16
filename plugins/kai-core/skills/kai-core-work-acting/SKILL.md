@@ -187,7 +187,7 @@ changes, update `change_ref`; earlier reviews remain historical but become
 superseded and must not satisfy the gate. The director follows the unmet list.
 `workflow-ship` treats any unmatched required review as a DoD Gap.
 
-A DESIGN item owned by `principal-product-designer` must include
+A DESIGN item owned by `creative-lead-design` must include
 `principal-product-manager` with kind `product-design-acceptance` in
 `review_requirements` before promotion to `ready`. The designer writes the
 artifact and `change_ref`; the PM/steward records acceptance against that

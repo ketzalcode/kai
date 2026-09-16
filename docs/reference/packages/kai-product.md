@@ -9,7 +9,7 @@ call. Missing facts remain explicit limits. Creative owns UI/brand design;
 engineering owns implementation. Naming a later owner does not perform its work.
 
 This is inspected source and emitted install metadata, not a published release
-or a live-host compatibility claim. The current checkout prepares `8.0.0`;
+or a live-host compatibility claim. The current checkout prepares `9.0.0`;
 install/update commands require a source containing this refactor.
 
 ## Ownership and obligations
@@ -40,10 +40,11 @@ helper scripts. `product: []` runtime dependencies and `NEW_AGENT_IDS.product: [
 remain unchanged. No skill-owner override is needed: the explorer explicitly
 loads its owned method. Product adds no runtime dependency or helper closure.
 
-The product and brand designers, `ui-mockup` and `html-block-diagrams` remain
-exclusively under creative. Core's corrected content/design grounding interface
-is unchanged: adequate supplied evidence retains provenance and coverage; it is
-not independent approval and does not require fresh upstream production.
+The combined `creative-lead-design`, `mockups-ascii`, `mockups-html`, and
+`html-block-diagrams` surface remains exclusively under creative. Core's
+corrected content/design grounding interface is unchanged: adequate supplied
+evidence retains provenance and coverage; it is not independent approval and
+does not require fresh upstream production.
 
 ## State, closure and independence
 

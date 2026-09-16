@@ -4,6 +4,61 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [9.0.0] - 2026-09-14
+
+Prepared source metadata for the creative foundation, not a tag, publication,
+updated-host installation, or runtime-acceptance claim.
+
+### Added
+
+- Creative judgment owners `creative-lead-design` and `creative-lead-video`,
+  plus `workflow-creative-demo-production` for authorized production from
+  supplied approved direction and existing media.
+- Independent `mockups-ascii` and `mockups-html` methods, and separately
+  selectable `video-create-narration`, `video-align-narration`, and
+  `video-render-zoom` methods.
+- Focused source-contract, parser-compatibility, and migration guards for the
+  creative roles and methods.
+
+### Changed
+
+- Creative exposes three agents and six skills, including the retained
+  `html-block-diagrams` method and its progressively loaded craft reference.
+  Identity and interaction judgment share one designer; storyboarding remains
+  craft of the video lead rather than a separate workflow or skill.
+- Creative is a current provider family. Active callers and review-owner
+  references use the new identities while preserving independent acceptance,
+  operator brand adoption, frontend feasibility, and QA authority.
+- Bounded creative advice can use scoped supplied evidence without creating a
+  design-system file, and direct unadopted proposals need no workspace setup.
+  Durable/coordinated work retains its existing evidence and custody rules.
+- Narration creation, alignment and declared-focus rendering stop at the
+  requested operation. Paid synthesis, publication, and a subsequent method
+  are never implied by another operation's approval.
+
+### Removed
+
+- The old three creative agent identities and active `ui-mockup`,
+  `video-direction`, `create-product-demo`, `demo-capture`, `demo-narrate`, and
+  `demo-zoom` skill entry points. There are no runtime compatibility aliases.
+- Live recording from the active creative base. Its helper/parser module
+  remains because the other media helpers depend on it.
+- Fixed mockup/bundle quotas and mandatory capture, zoom, or narration chains.
+  Interactive UI prototypes and a dedicated visual-identity skill are not
+  introduced.
+
+### Fixed
+
+- Creative leads declare execution capability for the workspace-activity
+  contract while retaining their non-production authority boundaries.
+- Guidance distinguishes measured timings from visual-state evidence,
+  captions declared from captions inspected, and printed commands from actual
+  outputs. Existing helper algorithms and their limitations are unchanged.
+
+Existing repository validation failures remain deferred refactor work, not
+passing checks. These source changes do not establish live-host acceptance
+or successful media production.
+
 ## [8.0.0] - 2026-09-13
 
 Prepared source metadata for the engineering coding foundation, not a tag,
@@ -3530,6 +3585,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[9.0.0]: https://github.com/RubenSaucedo/kai/compare/v8.0.0...v9.0.0
 [8.0.0]: https://github.com/RubenSaucedo/kai/compare/v7.0.0...v8.0.0
 [7.0.0]: https://github.com/RubenSaucedo/kai/compare/v6.0.0...v7.0.0
 [6.0.0]: https://github.com/RubenSaucedo/kai/compare/v5.0.0...v6.0.0

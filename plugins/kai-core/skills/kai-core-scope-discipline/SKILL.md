@@ -1,6 +1,6 @@
 ---
 name: kai-core-scope-discipline
-description: "Governs assessment-versus-action scope boundaries. Use when assessors, PM, design, or SWE roles must avoid silently expanding approved scope."
+description: "Use when a finding or proposed change may expand approved scope, or when a direct advisory request needs an unadopted proposal rather than implementation."
 tools: [execute, read, search]
 ---
 
@@ -27,7 +27,7 @@ roles — never on the *assess* role.
   each finding is judged against `mission`, `scope.current`, and
   `principles.non_negotiable[]` and dispositioned into build vs a
   deferred `PROPOSAL`.
-- **Acting designers/builders** (`principal-product-designer`,
+- **Acting designers/builders** (`creative-lead-design`,
   `principal-swe-*`, `principal-swe-architect`) — carry the gate as
   **restraint on the proposed design or diff, not on judgment.** They assess
   honestly, but never unilaterally add a scope-expanding surface, flow,
@@ -49,7 +49,7 @@ it.
 
 ## Ground yourself first — read the initiative
 
-Before you classify, load the product's committed intent (via the
+For coordinated work, before you classify, load the product's committed intent (via the
 `kai-core-workspace-initiative` gating rule — `.kai/state/ACTIVE.md` →
 the active `northstar.md`):
 
@@ -61,10 +61,9 @@ the active `northstar.md`):
   to program creation. Any new step, gate, or screen is out-of-scope by
   default."*).
 
-No initiative loaded (side investigation, unrelated repo, operator
-flagged it quick)? Then there's no committed scope to expand — operate
-normally, but still treat a genuinely new capability as a proposal when
-in doubt.
+For a direct advisory request, use the supplied brief and constraints. A
+missing initiative does not expand the caller's authority or authorize
+implementation. A genuinely new capability remains a proposal.
 
 ## The classify-before-act gate
 
@@ -101,8 +100,13 @@ incident — fill them.
 
 ## Where proposals land
 
-Route the `PROPOSAL` to the active initiative's **`proposal_channel`**.
-Resolution order:
+For a **direct inline answer**, return the unadopted proposal and its scope
+implications to the requester. This does not require onboarding or
+initializing a workspace, creating an item, or writing a backlog. The answer
+is advice, not adoption or a coordinated completion record.
+
+For **durable or coordinated proposal recording**, route the `PROPOSAL` to
+the active initiative's **`proposal_channel`**. Resolution order:
 
 1. `proposal_channel` set in the active `northstar.md` → use it (a repo
    issue, a board, or a path). Resolve relative filesystem paths against the

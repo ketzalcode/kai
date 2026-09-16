@@ -48,8 +48,8 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v8.0.0` is this checkout's prepared metadata version. Its **55 agents and
-47 skills** are organized across eight plugin directories targeting the
+`v9.0.0` is this checkout's prepared metadata version. The locked final surface
+has **55 agents and 46 skills** across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
 `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this refactor branch; their
@@ -62,9 +62,9 @@ under `incubator/`, outside active discovery, routes and generated packs.
 Final whole-branch review occurred and prompted narrow corrections to the
 loaded core PR diagram trigger, style evidence labels, source-test prose
 matching, and an optional HTML cross-reference. Scoped re-review accepted all
-four corrections at `35a8d05`. Prepared `8.0.0` metadata does not publish the packages
-or verify an updated host. Publication remains blocked by the unchanged 53
-source-validator errors and the existing pack-preview self-test `TypeError`.
+four corrections at `35a8d05`. Prepared `9.0.0` metadata does not publish the packages
+or verify an updated host. Existing source-validator, pack self-test, and
+version-skew failures are deferred refactor work, not passing checks.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
@@ -74,9 +74,13 @@ independent review, behavioral validation and release remain separate work.
 Learning and career roles moved to `kai-learning`;
 the `kai-personal` plugin is retired, not the private `.kai/personal/` data lane.
 
-`kai-creative` now owns the three UI/UX, brand, and video agents, seven design
-and demo methods, and the demo runtime formerly in personal. Core plus creative
-accepts supplied briefs and evidence without marketing or assistant.
+`kai-creative` now registers `creative-lead-design`, `creative-lead-video`, and
+`workflow-creative-demo-production` as its only agents. Its final method surface
+is `mockups-ascii`, `mockups-html`, `html-block-diagrams`,
+`video-create-narration`, `video-align-narration`, and `video-render-zoom`.
+Core plus creative accepts supplied briefs and evidence without marketing or
+assistant. All six method sources and generated packs are integrated at the
+prepared version. Source integration is not live-host or release acceptance.
 See [the package note](docs/reference/packages/kai-creative.md) for artifacts,
 prerequisites, and runtime scenarios not executed during this source refactor.
 
@@ -339,14 +343,14 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's full 55-agent, 47-skill surface has eight owners:
+The repository's final 55-agent, 46-skill surface has eight owners:
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
 | `kai-core` | 6 / 27 | Shared contracts, workspace machinery, requested coordination |
 | `kai-engineering` | 19 / 5 | Implementation, architecture, reliability, trust, technical writing |
 | `kai-product` | 10 / 1 | Discovery, scope, evidence, analytics, product-led growth and product audits |
-| `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets and supported media production |
+| `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets and supported media production |
 | `kai-marketing` | 4 / 2 | Positioning, campaigns, social content and search visibility |
 | `kai-revenue` | 6 / 0 | Sales, pricing, partnerships, revenue operations, success and support intake |
 | `kai-assistant` | 2 / 4 | Personal tasks, priorities, briefings and user-voice drafting |

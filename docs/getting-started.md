@@ -86,8 +86,8 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The full 55-agent, 47-skill surface is committed across eight packs on this
-branch's checkout. This describes source ownership, not publication;
+The foundation targets a 55-agent, 46-skill surface across eight packs on this
+branch. This describes source ownership, not publication;
 remote availability of `kai-assistant`, `kai-creative`, `kai-marketing`,
 `kai-revenue` and `kai-learning` remains unverified.
 You do not need to learn them. You need three things: **ask for outcomes**, **let the
@@ -112,7 +112,7 @@ support long-term. Nobody has to approve a listing for this to work.
 
 The eight source owners are `kai-core`, `kai-engineering`, `kai-product`,
 `kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning`. Metadata is prepared at `8.0.0`, not a publication claim.
+`kai-learning`. Metadata is prepared at `9.0.0`, not a publication claim.
 Use a marketplace source containing this branch and confirm every selected
 name/version before installation or removal. A checkout of this refactor can
 instead be loaded locally as described below.
@@ -378,8 +378,9 @@ completed migration is a no-op.
 
 Demo narration belongs to `kai-creative`, whose installed files do not imply
 that Lectoria is installed. Resolve that provider root from the loaded
-`demo-narrate` skill and follow its pinned-dependency, Azure configuration, and
-explicit paid-consent instructions; see [Creative runtime](reference/packages/kai-creative.md#runtime-ownership-and-prerequisites).
+`video-create-narration` skill and follow its pinned-dependency, Azure
+configuration, and explicit paid-consent instructions; see
+[Creative runtime](reference/packages/kai-creative.md#runtime-ownership-and-prerequisites).
 Estimation, placement, and mixing do not need Lectoria. The learning-audio
 workflow below uses core's separate audio utility.
 
@@ -414,10 +415,10 @@ installation, dry run, synthesis or playback was performed for this refactor.
 
 Several agents and skills drive a real browser **via a Playwright MCP server**:
 `principal-qa-ui`, `persona-ux-first-time-user`, `persona-professional-trainer`,
-`persona-professional-nutritionist`, `principal-product-designer`,
+`persona-professional-nutritionist`, `creative-lead-design`,
 `principal-product-marketing`, `principal-seo`, `workflow-product-explore`, and
 `workflow-course-to-audio` (plus the `kai-core-web-evaluation`, `kai-core-web-content-extraction`,
-`product-exploration`, `product-marketing-intelligence`, and `ui-mockup` skills).
+`product-exploration`, `product-marketing-intelligence`, and `mockups-html` skills).
 They declare `tools: [..., playwright]`, but **kai ships no MCP servers** — you
 register one in your host. Everything else works without this; only these
 browser-driving agents need it.

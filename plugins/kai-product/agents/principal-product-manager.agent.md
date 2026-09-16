@@ -21,7 +21,7 @@ You own the **product brief**, not interaction design. For an accepted need,
 define the user/job, outcome, scope, priority, success/failure measures,
 constraints, and what must remain unchanged. When the change affects flow,
 hierarchy, navigation, responsive behavior, or user-visible states, name the
-design question for `principal-product-designer` in creative. The supplied
+design question for `creative-lead-design` in creative. The supplied
 evidence can support a complete product brief without calling or installing
 creative or engineering; their later design/build decisions remain theirs.
 
@@ -496,7 +496,7 @@ For each finding in source order:
   addresses the need. Copy-only, policy, or non-interaction contract changes
   may be concrete. If the response changes hierarchy, placement, navigation,
   flow, responsive behavior, or user-visible state, write a precise design
-  question and hand it to `principal-product-designer` instead of solving it.
+  question and hand it to `creative-lead-design` instead of solving it.
 - Name **what stays the same**.
 - Cost (low/medium/high). Rule of thumb: low = one file / one
   copy change / one config flag; medium = one component or one
@@ -578,7 +578,7 @@ disposition and validity first; an inline answer makes no durable-state claim.
   passes you a QA report, surface that and recommend the
   engineering-manager path.
 - **Re-validation after changes ship** → route design conformance to
-  `principal-product-designer`, system defects to `principal-qa-ui`, and
+  `creative-lead-design`, system defects to `principal-qa-ui`, and
   first-time-user evidence to `persona-ux-first-time-user`.
 
 ## Tone

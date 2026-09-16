@@ -502,9 +502,9 @@ function selfTest() {
   ok(plan.unplaced.length === 0,
     'every mechanical orphan has an explicit reviewed provider');
   ok(plan.core.includes('kai-core-fleet-observation')
-    && plan.local.personal.includes('create-product-demo')
+    && !Object.values(SKILL_OWNER_OVERRIDES).includes('creative')
     && plan.local.engineering.includes('onboard-to-codebase'),
-  'the generator applies the ratified core, personal, and engineering orphan dispositions');
+  'the generator applies the ratified core and engineering orphan dispositions without a creative override');
 
   // The degraded-mode refusal is no longer a shared block validated by
   // degradedBlockErrors — every agent writes its own, and agentRoutingErrors
@@ -650,7 +650,7 @@ function selfTest() {
     ok(checkSelected().length > 0,
       'a hand-edit to a committed tree is caught as drift');
     writeFileSync(victim, generated.get('kai-core/plugin.json'));
-    const companion = join(scratch, 'kai-personal', 'skills', 'demo-zoom', 'reference.md');
+    const companion = join(scratch, 'kai-creative', 'skills', 'video-render-zoom', 'reference.md');
     mkdirSync(dirname(companion), { recursive: true });
     writeFileSync(companion, 'authoritative companion\n');
     const stray = join(scratch, 'kai-gtm', 'notes.md');
@@ -851,7 +851,7 @@ function selfTest() {
     'the loaded path is really collected: an agent routing a core contract inline is seen');
   ok(carries('orchestrated', 'agent', agentRel('principal-swe-manager'), 'principal-product-manager'),
     'agent-to-agent dispatch is really collected, across the department boundary');
-  ok(carries('user-invoked', 'asset', skillRel('demo-zoom'), 'scripts/demo-zoom.mjs'),
+  ok(carries('user-invoked', 'asset', skillRel('video-render-zoom'), 'scripts/demo-zoom.mjs'),
     'the user-invoked path is really collected, down to the script the skill tells you to run');
   ok(firing('loaded', 'skill').length > 100 && firing('orchestrated', 'agent').length > 5
     && firing('user-invoked', 'skill').length > 5 && liveRefs.some((r) => r.kind === 'asset'),
@@ -859,7 +859,7 @@ function selfTest() {
   ok(referenceErrors({ refs: liveRefs, providers: liveProviders }).length === 0,
     'every reference in the live corpus resolves to core or its own pack');
   const liveAssets = planAssets(liveRefs);
-  ok(liveAssets.get('scripts/demo-zoom.mjs')?.owner === 'personal'
+  ok(liveAssets.get('scripts/demo-zoom.mjs')?.owner === 'creative'
     && liveAssets.get('scripts/generate-audio.ps1')?.owner === 'core',
   'an asset invoked from one pack travels with it; one invoked from two promotes to core');
   ok(assetOwnershipErrors({
@@ -889,8 +889,8 @@ function selfTest() {
     && !liveFiles.has('kai-personal/hooks.json')
     && liveFiles.has('kai-core/scripts/observe-subagent.mjs')
     && liveFiles.has('kai-core/scripts/lib/activity.mjs')
-    && liveFiles.has('kai-personal/scripts/demo-zoom.mjs')
-    && liveFiles.has('kai-personal/scripts/lib/cursor-png.mjs'),
+    && liveFiles.has('kai-creative/scripts/demo-zoom.mjs')
+    && liveFiles.has('kai-creative/scripts/lib/cursor-png.mjs'),
   'materialization emits hooks once and closes each routed script over its relative modules');
   ok(generatedKeyErrors(liveFiles).length === 0,
     'every live generated key belongs to a declared pack');
@@ -1021,21 +1021,21 @@ function selfTest() {
 
   // --- cross-pack references: the mutation arms -------------------------
   const providersOf = (entries) => new Map(Object.entries(entries));
-  const ref = (over) => ({ from: 'agents/x.agent.md', fromPack: 'engineering', firing: ['loaded'], kind: 'skill', target: 'video-direction', ...over });
+  const ref = (over) => ({ from: 'agents/x.agent.md', fromPack: 'engineering', firing: ['loaded'], kind: 'skill', target: 'video-render-zoom', ...over });
   const messages = (refs, providers) => referenceErrors({ refs, providers: providersOf(providers) }).map((e) => e.msg);
 
-  ok(messages([ref({})], { 'skill:video-direction': ['personal'] })
-    .some((m) => /loaded reference to skill `video-direction` resolves to kai-personal/.test(m)),
+  ok(messages([ref({})], { 'skill:video-render-zoom': ['creative'] })
+    .some((m) => /loaded reference to skill `video-render-zoom` resolves to kai-creative/.test(m)),
   'a loaded skill provided by another department fails by name');
   ok(messages([ref({ target: 'gone-skill' })], {})
     .some((m) => /resolves to no pack/.test(m)),
   'a loaded skill no pack provides fails as a dangling reference');
-  ok(messages([ref({ from: 'skills/create-product-demo/SKILL.md', fromPack: 'personal', firing: ['user-invoked'], target: 'create-product-demo' })],
-    { 'skill:create-product-demo': ['personal', 'gtm'] })
-    .some((m) => /user-invoked reference to skill `create-product-demo` is provided by kai-personal and kai-gtm/.test(m)),
+  ok(messages([ref({ from: 'skills/mockups-html/SKILL.md', fromPack: 'creative', firing: ['user-invoked'], target: 'mockups-html' })],
+    { 'skill:mockups-html': ['creative', 'product'] })
+    .some((m) => /user-invoked reference to skill `mockups-html` is provided by kai-creative and kai-product/.test(m)),
   'a user-invoked entry point two packs both provide fails as an unspecified resolution');
-  ok(messages([ref({ firing: ['orchestrated'], target: 'ui-mockup' })], { 'skill:ui-mockup': ['product'] })
-    .some((m) => /orchestrated reference to skill `ui-mockup` resolves to kai-product/.test(m)),
+  ok(messages([ref({ firing: ['orchestrated'], target: 'mockups-ascii' })], { 'skill:mockups-ascii': ['product'] })
+    .some((m) => /orchestrated reference to skill `mockups-ascii` resolves to kai-product/.test(m)),
   'an orchestrated dispatch of another department\'s skill fails by name');
   ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'principal-gone' })], {})
     .some((m) => /orchestrated reference to agent `principal-gone` resolves to no pack/.test(m)),
@@ -1046,14 +1046,14 @@ function selfTest() {
   ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'persona-self' })], { 'agent:persona-self': ['personal'] })
     .length === 0,
   'but dispatching a real agent in another pack is allowed: a referral degrades, it does not fail to load');
-  ok(messages([ref({ fromPack: null })], { 'skill:video-direction': ['personal'] })
+  ok(messages([ref({ fromPack: null })], { 'skill:video-render-zoom': ['creative'] })
     .some((m) => /comes from a file no pack owns/.test(m)),
   'a reference from a body the partition never placed fails instead of resolving by luck');
 
   const assetRef = (from, pack, target) => ({ from, fromPack: pack, firing: ['user-invoked'], kind: 'asset', target });
   const assetMsgs = (refs, exists = () => true) => assetOwnershipErrors({ assets: planAssets(refs), exists }).map((e) => e.msg);
 
-  ok(assetMsgs([assetRef('skills/demo-zoom/SKILL.md', 'personal', 'scripts/gone.mjs')], () => false)
+  ok(assetMsgs([assetRef('skills/video-render-zoom/SKILL.md', 'creative', 'scripts/gone.mjs')], () => false)
     .some((m) => /invokes `scripts\/gone\.mjs`, which does not exist in this plugin/.test(m)),
   'an invoked script that is not in the plugin fails by name');
   ok(assetMsgs([
@@ -1073,11 +1073,11 @@ function selfTest() {
   const departmentAsset = new Map([['scripts/demo-zoom.mjs', {
     asset: 'scripts/demo-zoom.mjs',
     consumers: [{ from: 'skills/onboard-to-codebase/SKILL.md', pack: 'engineering' }],
-    packs: new Set(['personal']),
-    owner: 'personal',
+    packs: new Set(['creative']),
+    owner: 'creative',
   }]]);
   ok(assetOwnershipErrors({ assets: departmentAsset, exists: () => true })
-    .some((e) => /ships in kai-personal — kai-engineering can only run its own assets/.test(e.msg)),
+    .some((e) => /ships in kai-creative — kai-engineering can only run its own assets/.test(e.msg)),
   'a script invoked across the boundary from another department fails by name');
 
   // --- hooks.json belongs to exactly one pack ---------------------------

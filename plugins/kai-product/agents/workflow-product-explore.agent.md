@@ -114,7 +114,7 @@ truth. Sufficient supplied coverage requires no new upstream producer call.
    naming the exact extract/evidence paths, coverage, viewports, and unknowns.
 
 Record what you see. Do not name tokens the app doesn't expose, propose scales,
-or choose a design direction — that synthesis is `principal-product-designer` via
+or choose a design direction — that synthesis is `creative-lead-design` via
 `kai-core-design-grounding`.
 
 When access or product state needs a real owner's answer, Load
@@ -126,9 +126,9 @@ Do not impersonate the designer or require creative to be installed.
 
 - Do not judge usability: `persona-ux-first-time-user`.
 - Do not file defects: `principal-qa-ui`.
-- Do not propose or select interactions: `principal-product-designer`.
+- Do not propose or select interactions: `creative-lead-design`.
 - Do not propose or select a design system; record observed visual facts only.
-  Synthesis into a `design-system.md` is `principal-product-designer` via
+  Synthesis into a `design-system.md` is `creative-lead-design` via
   `kai-core-design-grounding`.
 - Do not decide product fit, scope, or priority: `principal-product-manager`.
 - Inspect implementation only when the request or item explicitly authorizes

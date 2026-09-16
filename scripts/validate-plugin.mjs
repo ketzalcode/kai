@@ -46,6 +46,7 @@ import {
   PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
+  RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
 } from './lib/pack-plan.mjs';
 import {
   incubatedIds, documentationReferenceExists,
@@ -95,8 +96,8 @@ for (const pack of PACK_ORDER) {
 const allFiles = [...agentFiles, ...skillFiles];
 const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
-const inactiveAgentIds = incubatedIds(ROOT, 'agent');
-const inactiveSkillIds = incubatedIds(ROOT, 'skill');
+const inactiveAgentIds = new Set([...incubatedIds(ROOT, 'agent'), ...RETIRED_CREATIVE_AGENT_IDS]);
+const inactiveSkillIds = new Set([...incubatedIds(ROOT, 'skill'), ...RETIRED_CREATIVE_SKILL_IDS]);
 const componentIds = new Set([...agentIds, ...skillIds]);
 const inactiveComponentIds = new Set([...inactiveAgentIds, ...inactiveSkillIds]);
 

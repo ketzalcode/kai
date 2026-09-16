@@ -155,7 +155,7 @@ required state. Do not invent detailed delivery items when
 Exception for directly requested bounded knowledge work: intake may seed a
 `proposed` `workflow-product-explore` item when an existing live journey lacks
 a current map, a PM `BRIEF` knowledge item depending on that map, and a
-`proposed` `principal-product-designer` item when the approved outcome clearly
+`proposed` `creative-lead-design` item when the approved outcome clearly
 requires interaction design. The designer item depends on the completed map and
 completed PM brief and requires PM `product-design-acceptance` review. None
 becomes `ready` or milestone-required until the steward approves it.

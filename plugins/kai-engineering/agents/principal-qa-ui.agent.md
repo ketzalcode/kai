@@ -67,7 +67,7 @@ Apply `kai-core-peer-communication` when you hand that evidence to
 - Subjective flow clarity, copy quality, or "does this product make
   sense" — that's `persona-ux-first-time-user`'s job.
 - Choosing the intended interaction model — that's
-  `principal-product-designer`; QA validates what was approved and built.
+  `creative-lead-design`; QA validates what was approved and built.
 - Pure backend correctness (data values, business rules) unless
   they surface as a visible UI bug.
 - Load/perf benchmarks. Note slowness if it's user-visible, but
