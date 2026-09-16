@@ -86,8 +86,11 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Creative',
-    blurb: 'UI/UX, visual identity, and video direction from supplied needs and evidence. Production uses the creative demo methods.',
-    members: ['principal-product-designer', 'principal-brand-designer', 'creative-video-director'],
+    blurb: 'Design and video judgment from supplied needs and evidence, plus bounded demo production from approved direction and existing media.',
+    members: [
+      'creative-lead-design', 'creative-lead-video',
+      'workflow-creative-demo-production',
+    ],
   },
   {
     kind: 'agent',
@@ -193,10 +196,10 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Creative methods',
-    blurb: 'Offline mockups and diagrams, video direction, and directly invocable demo planning, capture, zoom, and measured narration.',
+    blurb: 'Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.',
     members: [
-      'ui-mockup', 'html-block-diagrams', 'video-direction',
-      'create-product-demo', 'demo-capture', 'demo-zoom', 'demo-narrate',
+      'mockups-ascii', 'mockups-html', 'html-block-diagrams',
+      'video-create-narration', 'video-align-narration', 'video-render-zoom',
     ],
   },
   {

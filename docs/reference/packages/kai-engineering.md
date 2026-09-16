@@ -112,12 +112,14 @@ frontmatter/model/tool shape, local/core skill routes and unchanged five-skill
 contracts. They do not establish host invocation, semantic instruction
 following, browser availability, lower latency/cost or model quality.
 
-On this source revision, both engineering self-tests pass, along with catalog
-parity, generated-pack parity, host-frontmatter inventory, release-guard
-self-tests and syntax checks. `npm test` stops at 293 global validator errors:
-the 53 pre-existing errors plus 240 references to retired engineering identities.
-None is reported against an engineering agent source file. The full chain is
-not green and later commands in that chain do not run after the failure.
+After integrating the creative foundation from main, both engineering self-tests
+and all four creative source-contract tests pass, along with catalog parity,
+generated-pack parity, host-frontmatter inventory and syntax checks. The combined
+inventory has 50 agents and 46 skills. `npm test` stops at 284 global validator
+errors: 234 references to retired engineering identities and 50 other existing
+policy/reference errors. None is reported against an engineering or creative
+agent source file. The full chain is not green and later commands in that chain
+do not run after the failure.
 
 Independent review found an invalid grantor-written assessment-record shortcut.
 Investigation and code review now have narrowly scoped evidence/coordination

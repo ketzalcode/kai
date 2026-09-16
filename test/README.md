@@ -13,6 +13,12 @@ PR and push to `main` and must stay fast:
   components out of active discovery, packs, routes, and current documentation
   while preserving narrowly scoped historical references and generic dispatch
   collection coverage.
+- **Creative foundation contracts** — `creative-foundation-self-test.mjs`
+  checks the three-agent/six-skill surface, retired-ID references, callers, and
+  emitted helper closure. `creative-core-contract-self-test.mjs`,
+  `creative-agent-contract-self-test.mjs`, and
+  `creative-skill-contract-self-test.mjs` check the scoped source contracts.
+  These are focused source and parser checks, not live-host certification.
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
@@ -39,6 +45,14 @@ PR and push to `main` and must stay fast:
 `npm test` runs these guards and the declared runtime self-tests. A failing
 earlier command stops the chain; passing the targeted engineering guards does
 not imply the whole repository is release-ready.
+
+`npm run diagram-layout:self-test` is an optional browser-backed check of the
+creative diagram reference. It uses an already provisioned Playwright Chromium
+or system Edge, without installing a browser. Synthetic long-label layouts are
+checked at 320px and 900px in light and dark modes. Missing browser capability
+fails explicitly. The check reads the current skill's catalog directly;
+it needs no archived guide or evaluation corpus. This is not a real artifact's
+visual review or accessibility certification, and is separate from dependency-free CI.
 
 ## Deterministic checks (in CI)
 

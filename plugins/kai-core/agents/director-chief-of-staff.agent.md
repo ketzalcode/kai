@@ -266,7 +266,7 @@ For work involving an existing live user journey:
    outcome, scope, success, constraints, and what remains unchanged.
 5. If the accepted change alters interaction, hierarchy, flow, navigation,
    responsive behavior, or a user-visible state model, create/route a
-   `principal-product-designer` item depending on the completed PM brief and
+   `creative-lead-design` item depending on the completed PM brief and
    current map. Before promotion, require PM `product-design-acceptance` in its
    `review_requirements`.
 6. Do not route that change to engineering readiness until the design item
@@ -276,7 +276,7 @@ For work involving an existing live user journey:
    Design-waiver record in `kai-core-work-granting`) in the item thread; the waiver is
    confirmed against the implementation `change_ref` at design-conformance review.
 7. When implementation is based on an approved design, include
-   `principal-product-designer` as an independent design-conformance reviewer
+   `creative-lead-design` as an independent design-conformance reviewer
    for the exact `change_ref`; QA remains separately required where applicable.
 
 **Design sign-off is unconditional for any user-facing surface — existing journey
@@ -284,10 +284,10 @@ or brand-new.** Even when engineering built the surface directly with no design
 routed up front (and even when it starts a wholly new journey outside the block
 above), a net-new or materially-changed user-facing surface must not be sequenced
 toward `release-ready` without design sign-off: an approved design plus a
-`principal-product-designer` conformance verdict on the current `change_ref`, or a
+`creative-lead-design` conformance verdict on the current `change_ref`, or a
 steward/operator-recorded product-design `WAIVER` bound to that `change_ref`. If it
 arrives at readiness with neither, **bounce it** — route it to
-`principal-product-designer` and state *"consult the designer before this is
+`creative-lead-design` and state *"consult the designer before this is
 passed."* This mirrors `kai-core-definition-of-done`'s design sign-off sub-gate; a QA/UX-walk
 and a green build do not substitute.
 
@@ -325,7 +325,7 @@ After each peer returns:
 - invoke the steward for scope/priority decisions;
 - route missing/stale product-surface facts to `workflow-product-explore`;
 - route approved user-facing interaction needs to
-  `principal-product-designer`;
+  `creative-lead-design`;
 - for a reviewed `knowledge` item, apply `kai-core-asset-closing` before
   recording completion: invoke its owning role to verify acceptance and move it
   to `completed`;

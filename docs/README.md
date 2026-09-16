@@ -18,7 +18,7 @@ this refactor; see the availability and replacement guidance in Getting started.
 
 | Page | Contents |
 | ---- | -------- |
-| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 50 agents and 47 skills, generated from their source frontmatter. |
+| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 50 agents and 46 skills, generated from their source frontmatter. |
 | [Package: `kai-engineering`](reference/packages/kai-engineering.md) | Thirteen direct-use engineering roles, five task-local skills, model/authority boundaries, and deferred fleet wiring. |
 | [Package: `kai-assistant`](reference/packages/kai-assistant.md) | What the personal-assistance package owns, where its private state lives, its acceptance scenarios, and its current limitations. |
 | [Package: `kai-creative`](reference/packages/kai-creative.md) | UI/UX, visual identity and media; supplied-input boundaries and demo-runtime prerequisites. |
@@ -30,7 +30,7 @@ this refactor; see the availability and replacement guidance in Getting started.
 
 `kai-core` owns shared contracts, workspace machinery and requested coordination;
 `kai-engineering` owns implementation, architecture, reliability, trust and
-technical writing. All eight owners and their 50 agent / 47 skill IDs are
+technical writing. All eight owners and their 50 agent / 46 skill IDs are
 listed in the generated catalog. Cross-agent routing to retired engineering
 identities is deferred; use the engineering package reference for direct work.
 

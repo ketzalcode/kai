@@ -20,6 +20,9 @@ export function documentationReferenceExists(id, sourcePath, activeIds, inactive
     'docs/proposals/', 'docs/superpowers/', 'docs/kai/reports/',
     'docs/reference/skill-evaluation/research-before-coding/',
   ].some(prefix => source.startsWith(prefix)) ||
-    source === 'docs/reference/skill-evaluation/engineering-inventory.md';
+    [
+      'docs/reference/skill-evaluation/engineering-inventory.md',
+      'docs/reference/skill-evaluation/samples/diagrams/guide-current.md',
+    ].includes(source);
   return historical && inactiveIds.has(id);
 }

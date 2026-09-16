@@ -10,7 +10,7 @@ installs. Missing facts narrow the answer; they do not become invented history,
 exam requirements, specialist verdicts or rendered artifacts.
 
 This note records source ownership and generated packaging, not publication or
-proven live-host behavior. The current checkout prepares `8.0.0`; final
+proven live-host behavior. The current checkout prepares `9.0.0`; final
 independent review and runtime/release verification remain separate. New-package
 commands require a source containing this refactor.
 
@@ -60,7 +60,7 @@ The original personal inventory at `dc67899` is fully accounted for:
 | Original personal assets | Current owner |
 | --- | --- |
 | `persona-self`, `extract-writing-style` | assistant (earlier unit) |
-| `creative-video-director`; `video-direction`, `create-product-demo`, `demo-capture`, `demo-narrate`, `demo-zoom` | creative (earlier unit) |
+| `creative-lead-video`, `workflow-creative-demo-production`; `video-create-narration`, `video-align-narration`, `video-render-zoom` | creative foundation |
 | Demo capture/format/narrate/zoom scripts and `lib/cursor-png.mjs` closure; demo Lectoria dependency | creative (earlier unit) |
 | `persona-professional-nutritionist`, `persona-professional-trainer` | product (earlier unit) |
 | Five learning/career roles and `generate-html-lesson` | learning (this unit) |

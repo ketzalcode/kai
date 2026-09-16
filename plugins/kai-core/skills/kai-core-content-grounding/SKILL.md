@@ -9,8 +9,9 @@ tools: [read, edit, search]
 Every external-facing thing Kai generates from a product — a LinkedIn post, a
 video script, a landing hero — makes **claims** about that product. One invented
 number kills credibility. This skill is the single contract that keeps all of it
-honest, so each content method (`linkedin-content`, `video-direction`, future
-platform methods) grounds claims the same way instead of re-inventing it.
+honest, so each claimful content owner (`linkedin-content`,
+`creative-lead-video`, future platform methods) grounds claims the same way
+instead of re-inventing it.
 
 It is **not** a standalone trigger. Content methods inherit it by reference and
 add their own platform-specific output on top.

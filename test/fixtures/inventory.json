@@ -1,10 +1,11 @@
 {
   "counts": {
     "agents": 50,
-    "skills": 47
+    "skills": 46
   },
   "agents": [
-    "creative-video-director",
+    "creative-lead-design",
+    "creative-lead-video",
     "director-chief-of-staff",
     "eng-advisor-investigation",
     "eng-builder-platform",
@@ -24,7 +25,6 @@
     "persona-self",
     "persona-ux-first-time-user",
     "personal-assistant",
-    "principal-brand-designer",
     "principal-customer-success",
     "principal-data-analytics",
     "principal-demand-generation",
@@ -33,7 +33,6 @@
     "principal-linkedin-strategist",
     "principal-partnerships",
     "principal-pricing-monetization",
-    "principal-product-designer",
     "principal-product-manager",
     "principal-product-marketing",
     "principal-product-strategist",
@@ -42,6 +41,7 @@
     "principal-seo",
     "principal-solutions-architect",
     "workflow-course-to-audio",
+    "workflow-creative-demo-production",
     "workflow-customer-feedback",
     "workflow-experiment-review",
     "workflow-incident-response",
@@ -58,11 +58,7 @@
   "skills": [
     "build-diagrams",
     "coding-style",
-    "create-product-demo",
     "decision-brief",
-    "demo-capture",
-    "demo-narrate",
-    "demo-zoom",
     "extract-writing-style",
     "generate-html-lesson",
     "html-block-diagrams",
@@ -94,14 +90,17 @@
     "kai-core-workspace-onboarding",
     "kai-core-workspace-paths",
     "linkedin-content",
+    "mockups-ascii",
+    "mockups-html",
     "onboard-to-codebase",
     "personal-agenda",
     "pr-sizing",
     "product-exploration",
     "product-marketing-intelligence",
     "research-before-coding",
-    "ui-mockup",
-    "video-direction",
+    "video-align-narration",
+    "video-create-narration",
+    "video-render-zoom",
     "write-in-user-voice"
   ],
   "user_invocable_skills": [
@@ -110,24 +109,12 @@
       "argument_hint": "optional file or area to apply to"
     },
     {
-      "name": "create-product-demo",
-      "argument_hint": ""
-    },
-    {
-      "name": "demo-capture",
-      "argument_hint": ""
-    },
-    {
-      "name": "demo-narrate",
-      "argument_hint": ""
-    },
-    {
-      "name": "demo-zoom",
-      "argument_hint": ""
-    },
-    {
       "name": "generate-html-lesson",
       "argument_hint": "<path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]"
+    },
+    {
+      "name": "html-block-diagrams",
+      "argument_hint": ""
     },
     {
       "name": "kai-core-create-agent",
@@ -142,6 +129,14 @@
       "argument_hint": "optional source path or single .md file"
     },
     {
+      "name": "mockups-ascii",
+      "argument_hint": ""
+    },
+    {
+      "name": "mockups-html",
+      "argument_hint": ""
+    },
+    {
       "name": "onboard-to-codebase",
       "argument_hint": "optional focus, e.g. frontend only or auth subsystem"
     },
@@ -152,6 +147,18 @@
     {
       "name": "research-before-coding",
       "argument_hint": "optional task or area description"
+    },
+    {
+      "name": "video-align-narration",
+      "argument_hint": ""
+    },
+    {
+      "name": "video-create-narration",
+      "argument_hint": ""
+    },
+    {
+      "name": "video-render-zoom",
+      "argument_hint": ""
     }
   ]
 }

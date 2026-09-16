@@ -33,6 +33,7 @@ add taxonomy values or rename existing agents.
 | `prod` | `kai-product`, `kai-creative` | Product scope/evidence or interaction/visual design, with separate acceptance owners. |
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation. |
 | `gtm` | `kai-marketing`, `kai-revenue`, `kai-product` | Marketing; commercial/customer operations; product-led growth, respectively. |
+| `creative` | `kai-creative` | Interaction design, visual identity, video direction, and bounded creative production. |
 
 Choose the provider whose absence should make the role unavailable and whose
 discipline owns its acceptance boundary. The short `prod`, `eng`, and `gtm`
@@ -128,5 +129,6 @@ The surrounding conventions are grounded in:
   lowercase hyphenated identities and structural separation of agents, skills,
   and workflows.
 
-Legacy `principal-*`, `director-*`, and `creative-*` identities remain valid
-only for the current migration baseline. New durable roles use this taxonomy.
+Legacy `principal-*` and `director-*` identities remain parseable only for
+staged-migration and historical validation. Retired identities are not runtime
+registration. New durable roles use this taxonomy.
