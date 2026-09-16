@@ -1,5 +1,10 @@
 # Engineering coding foundation
 
+The five method contracts below remain active. Their historical caller and
+evaluation evidence describes the `8.0.0` foundation, not the rewritten
+`10.0.0` agents. See [the engineering package](packages/kai-engineering.md)
+for current direct-use identities and the deliberately deferred fleet wiring.
+
 The engineering coding foundation keeps five active skills available after
 their contracts and callers were refined and individually task-reviewed. It is
 not a single mandatory workflow: callers load the skill that fits the task,

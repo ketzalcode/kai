@@ -3,6 +3,11 @@
 Dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
+- **Standalone engineering surface**
+  (`test/engineering-agents-self-test.mjs`) — exercises source discovery, host
+  frontmatter/model/tool validation, core-plus-engineering skill resolution,
+  emitted inventory and the single revenue owner of pre-sales solution fit.
+  This is structural coverage, not a live agent-behavior or performance test.
 - **Engineering foundation source contract**
   (`test/engineering-foundation-self-test.mjs`) — keeps incubated review
   components out of active discovery, packs, routes, and current documentation
@@ -37,9 +42,9 @@ PR and push to `main` and must stay fast:
   every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
   (skipped cleanly where `pwsh` is unavailable).
 
-`npm test` runs these guards and the existing activity, observer, and media
-helper self-tests. A failed early stage prevents later stages from running;
-run the later commands separately when recording a complete failed baseline.
+`npm test` runs these guards and the declared runtime self-tests. A failing
+earlier command stops the chain; passing the targeted engineering guards does
+not imply the whole repository is release-ready.
 
 `npm run diagram-layout:self-test` is an optional browser-backed check of the
 creative diagram reference. It uses an already provisioned Playwright Chromium

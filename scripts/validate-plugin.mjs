@@ -437,15 +437,18 @@ const packAssets = planAssets(packRefs);
 // ---------------------------------------------------------------------------
 const ASSESSOR_CONTRACT = 'kai-core-no-self-remediation';
 const ASSESSOR_ROLES = [
-  'principal-security',
-  'principal-privacy-compliance',
-  'principal-qa-ui',
+  'eng-reviewer-code',
+  'eng-reviewer-security',
+  'eng-reviewer-privacy-compliance',
+  'eng-reviewer-reliability',
+  'eng-reviewer-quality',
+  'eng-advisor-investigation',
+  'eng-lead-technical-writing',
   'principal-seo',
   'persona-ux-first-time-user',
   'persona-professional-nutritionist',
   'persona-professional-trainer',
   'workflow-experiment-review',
-  'workflow-issue-analysis',
   'workflow-self-check',
 ];
 {
@@ -476,8 +479,8 @@ const ASSESSOR_ROLES = [
 //
 // This is deliberately opt-in via `requires_tools:` rather than derived from a
 // skill's own `tools:` line. A skill's `tools` is what that skill may use when
-// loaded; treating it as a requirement would force `edit` back onto
-// `workflow-issue-analysis`, whose whole design is that it cannot write.
+// loaded; treating it as a requirement would widen a caller's tools even when
+// it only consumes the method's read-only portion.
 //
 // Parsing goes through the canonical frontmatter parser rather than a regex over
 // the raw file: a second parser drifts from the first, and here it would drift

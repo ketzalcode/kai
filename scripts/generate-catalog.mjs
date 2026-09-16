@@ -45,24 +45,23 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Engineering',
-    blurb: 'Technical design and implementation. The architect and manager are situational.',
+    blurb: 'Direct technical decisions and complete implementations. Architecture is situational; domain methods do not require separate agents.',
     members: [
-      'principal-swe-architect', 'principal-swe-manager', 'principal-swe-frontend',
-      'principal-swe-backend', 'principal-swe-infra', 'principal-data-engineer',
+      'eng-lead-architecture', 'eng-builder-software', 'eng-builder-platform',
     ],
   },
   {
     kind: 'agent',
     title: 'Intake & delivery',
-    blurb: 'The full life of one change: from an issue to a chosen approach, then to a merged PR, then to production. kai never merges or deploys itself.',
-    members: ['workflow-issue-analysis', 'workflow-pull-request', 'workflow-ship'],
+    blurb: 'Bounded investigation, PR preparation, and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.',
+    members: ['eng-advisor-investigation', 'workflow-pull-request', 'workflow-ship'],
   },
   {
     kind: 'agent',
     title: 'Trust & reliability',
     blurb: 'Independent judgment on security, privacy, reliability, and live incidents.',
     members: [
-      'principal-security', 'principal-privacy-compliance', 'principal-sre',
+      'eng-reviewer-security', 'eng-reviewer-privacy-compliance', 'eng-reviewer-reliability',
       'workflow-incident-response',
     ],
   },
@@ -80,9 +79,9 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Technical writing & localization',
-    blurb: 'Engineering-owned documentation and bounded localization.',
-    members: ['eng-lead-technical-writing', 'workflow-localization'],
+    title: 'Technical writing',
+    blurb: 'Engineering-owned documentation, editorial assessment, and source-language localization preparation.',
+    members: ['eng-lead-technical-writing'],
   },
   {
     kind: 'agent',
@@ -105,14 +104,8 @@ const CATEGORIES = [
   {
     kind: 'agent',
     title: 'Solution architecture',
-    blurb: 'Engineering-owned technical fit and solution design, not commercial deal authority.',
+    blurb: 'Revenue-owned pre-sales technical fit and solution design, not implementation or commercial commitments.',
     members: ['principal-solutions-architect'],
-  },
-  {
-    kind: 'agent',
-    title: 'AI research to product',
-    blurb: 'Track the live AI landscape, then turn a finding into something buildable.',
-    members: ['principal-ai-researcher', 'principal-ai-applied-engineer'],
   },
   {
     kind: 'agent',
@@ -134,9 +127,9 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Web quality',
-    blurb: 'Engineering-owned UI QA, independent of marketing and search assessment.',
-    members: ['principal-qa-ui'],
+    title: 'Implementation & system review',
+    blurb: 'Independent code review and browser/API/CLI/system acceptance. Implementers retain ownership of their regression tests.',
+    members: ['eng-reviewer-code', 'eng-reviewer-quality'],
   },
   {
     kind: 'agent',
@@ -188,7 +181,7 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Engineering craft',
-    blurb: 'Per-change discipline every `principal-swe-*` agent routes.',
+    blurb: 'Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.',
     members: [
       'coding-style', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
       'onboard-to-codebase', 'build-diagrams',

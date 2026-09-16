@@ -26,7 +26,7 @@ be direct inputs; their usual producer is not a mandatory installed sibling.
 Missing evidence narrows the answer. It never licenses invented facts or a
 simulated specialist verdict. Scope, design acceptance, independent assessment,
 commercial commitments and learning completion remain with their real owners.
-The final 55 agents / 46 skills and prepared `9.0.0` metadata describe source, not
+The final 50 agents / 46 skills and prepared `10.0.0` metadata describe source, not
 publication or verified task execution. Retired gtm/personal plugins have no
 aliases; private `.kai/personal/` data remains unchanged.
 

@@ -1,6 +1,6 @@
 {
   "name": "kai-marketing",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "description": "Positioning, campaigns, social content, and search visibility over kai-core.",
   "agents": "agents",
   "skills": "skills"

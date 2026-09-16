@@ -1,6 +1,7 @@
 # kai-revenue
 
-Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.
+Sales, pricing, partnerships, revenue operations, customer success, support intake,
+and pre-sales solution fit over kai-core.
 
 The supported baseline is **kai-core plus kai-revenue**. Supply account, deal,
 cost, WTP, partner, billing, usage, customer or ticket evidence directly.
@@ -11,11 +12,11 @@ specialist approval. A bounded direct response needs no workspace or team item.
 
 This note describes inspected source and generated artifacts, not a published
 release or proven live-host compatibility. The current checkout prepares
-`9.0.0`; install/update commands require a source containing this refactor.
+`10.0.0`; install/update commands require a source containing this refactor.
 
 ## Ownership and retirement
 
-These six unchanged IDs move from `plugins/kai-gtm/agents/` to
+These six unchanged IDs previously moved from `plugins/kai-gtm/agents/` to
 `plugins/kai-revenue/agents/`:
 
 | Role | Supplied input → bounded output | Preserved and redesigned obligations |
@@ -27,8 +28,14 @@ These six unchanged IDs move from `plugins/kai-gtm/agents/` to
 | `principal-customer-success` | Goals, usage, support history, stakeholder notes and explicit commercial context → success/adoption/recovery plan, health/QBR/renewal brief or portfolio review | Six modes, five health verdicts and six independently assessed health dimensions. Evidence IDs, source/date/alias, inference confidence and aggregation safety remain inline. Outcomes, not activity, drive plans; unknown is valid and scores require a supplied explicit model. Preserve product-signal and communication-brief scaffolds, privacy overrides and no customer commitments/contact. Personal voice is optional, never a required assistant handoff. |
 | `workflow-support-triage` | Bounded ticket/transcript/queue snapshot → classification, urgency, duplicate clusters, evidence gaps, owner routes and optional sanitized pattern | Four modes, nine classes, four impact-based urgency levels, fingerprint/confidence deduplication and two report scaffolds. Safety screening precedes normalization, file setup and batch completion. Preserve reporter-claimed versus reproduced evidence. An urgent candidate is not a confirmed incident, SEV, root cause or resolution; no replies, closures, refunds, production commands or monitoring service. |
 
+The seventh role, `principal-solutions-architect`, moved from engineering in
+`10.0.0`. It retains pre-sales discovery, solution fit, integration feasibility,
+POC scope, technical objections and grounded questionnaire drafting. Its source
+is preserved rather than duplicated; cross-agent references inside that role
+remain part of the deferred engineering-wiring migration.
+
 Revenue owns **zero standalone local skills**, zero skill companions and zero
-runtime dependencies. The actual domain procedures remain in the six bodies.
+runtime dependencies. The actual domain procedures remain in the agent bodies.
 There is no filler skill, empty-directory marker, compatibility alias or redirect
 package. `revenue: []` is registered in `NEW_AGENT_IDS` and
 `PACK_RUNTIME_DEPENDENCIES`; the six IDs are registered in the current migration
@@ -44,8 +51,8 @@ user file was removed.
 
 Prior creative, product, marketing, assistant and engineering ownership remains
 intact. Marketing owns the two former gtm methods; growth is product-owned.
-Catalog grouping places the six revenue roles together and identifies solutions
-architecture as engineering-owned. Live install examples and onboarding's pack
+Catalog grouping places the six original revenue roles together and identifies
+solutions architecture as revenue-owned. Live install examples and onboarding's pack
 table name revenue rather than the retired package; this is not a host migration.
 
 ## Empty local component semantics

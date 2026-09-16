@@ -48,23 +48,31 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v9.0.0` is this checkout's prepared metadata version. The locked final surface
-has **55 agents and 46 skills** across eight plugin directories targeting the
+`v10.0.0` is this checkout's prepared metadata version. Its **50 agents and
+46 skills** are organized across eight plugin directories targeting the
 **Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
 committed source, not release publication or live-host compatibility.
 `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this refactor branch; their
 marketplace publication and remote availability have not been established.
 
-The five engineering skill/caller source tasks are complete and individually
-task-reviewed. `kai-engineering` exports 19 agents and five task-local skills.
+`kai-engineering` now exports 13 focused agents and the same five task-local
+skills. Direct implementation, investigation and assessment accept supplied
+inputs with core plus engineering, without compulsory sibling-agent calls.
+Builders own their tests; code, system, security, reliability and privacy
+reviews retain independent acceptance boundaries. Explicit approved model
+profiles replace the undifferentiated judgment declarations.
+See [the engineering package note](docs/reference/packages/kai-engineering.md)
+for the roster, retirement mapping and direct-use boundaries.
+
 Ten document-review skills and their dependent workflow remain source-retained
 under `incubator/`, outside active discovery, routes and generated packs.
-Final whole-branch review occurred and prompted narrow corrections to the
-loaded core PR diagram trigger, style evidence labels, source-test prose
-matching, and an optional HTML cross-reference. Scoped re-review accepted all
-four corrections at `35a8d05`. Prepared `9.0.0` metadata does not publish the packages
-or verify an updated host. Existing source-validator, pack self-test, and
-version-skew failures are deferred refactor work, not passing checks.
+The earlier five-skill foundation evidence remains historical evidence for
+those methods, not acceptance of the rewritten agents. The pre-change baseline
+had 53 source-validator errors and a pack-preview self-test `TypeError`.
+Cross-agent wiring, stored owner references and coordinated delivery against
+the renamed engineering identities are explicitly deferred. Their unresolved
+references remain visible to CI; no validation gate is disabled. Prepared
+`10.0.0` metadata is not publication or updated-host runtime verification.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
@@ -97,8 +105,9 @@ personal-voice enhancement is optional.
 See [the marketing package note](docs/reference/packages/kai-marketing.md) for
 the grounding contract, ownership boundaries and runtime-unverified scenarios.
 
-`kai-revenue` owns six sales, pricing, partnerships, revenue operations,
-customer-success and support-intake roles. It has no standalone local skills;
+`kai-revenue` owns seven sales, pricing, partnerships, revenue operations,
+customer-success, support-intake and pre-sales solution-architecture roles.
+It has no standalone local skills;
 core plus revenue supplies the shared contracts and accepts supplied commercial
 evidence directly. `kai-gtm` is retired with no compatibility alias. See
 [the revenue package note](docs/reference/packages/kai-revenue.md) for authority,
@@ -343,16 +352,16 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's final 55-agent, 46-skill surface has eight owners:
+The repository's final 50-agent, 46-skill surface has eight owners:
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
 | `kai-core` | 6 / 27 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 19 / 5 | Implementation, architecture, reliability, trust, technical writing |
+| `kai-engineering` | 13 / 5 | Standalone implementation, architecture, independent review and delivery |
 | `kai-product` | 10 / 1 | Discovery, scope, evidence, analytics, product-led growth and product audits |
 | `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets and supported media production |
 | `kai-marketing` | 4 / 2 | Positioning, campaigns, social content and search visibility |
-| `kai-revenue` | 6 / 0 | Sales, pricing, partnerships, revenue operations, success and support intake |
+| `kai-revenue` | 7 / 0 | Sales, pricing, partnerships, revenue operations, success, support and solution fit |
 | `kai-assistant` | 2 / 4 | Personal tasks, priorities, briefings and user-voice drafting |
 | `kai-learning` | 5 / 1 | Teaching, tutoring, paths, lesson materials and career development |
 

@@ -136,9 +136,11 @@ Write the problem back in your own words, including:
 If the restatement is wrong, everything after it is wasted. Making it explicit is
 what lets someone correct you cheaply.
 
-Add a diagram — per `build-diagrams`, ASCII by default — when the problem is
-**structural**: it changes a shape, a flow, an order, a state machine, or an
-ownership boundary. Not by reflex, and not for a problem a sentence covers.
+Apply `build-diagrams` for an explicit diagram request or when a supported
+relationship would be materially clearer visually. A structural or flow change
+already explained adequately in prose does not trigger a diagram. Otherwise
+continue the analysis without a diagram; honor requested formats and repository
+constraints, and never invent a relationship to illustrate.
 
 ## 4 — Frame the decision
 
