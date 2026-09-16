@@ -43,7 +43,7 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
-  PACK_ORDER, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
+  PACK_ORDER, PUBLISHED_PACKS, PRERELEASE_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
   RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
@@ -700,12 +700,20 @@ const dirTokens = (s) => toSet([...s.matchAll(/([a-z][a-z0-9-]*)\//g)].map((m) =
 // The split installer is prose executed by an agent, so pin the load-bearing
 // order and failure semantics here instead of treating documentation presence
 // as behavioral coverage.
-const guidedInstallCommands = PACK_ORDER.map(
+const guidedInstallCommands = PUBLISHED_PACKS.map(
   (pack) => `copilot plugin install ${packPluginName(pack)}@${MARKETPLACE}`,
 );
 const guidedCorePlugin = packPluginName('core');
 if (onboarding) {
   const onboardingProse = onboarding.replace(/\s+/g, ' ');
+  for (const pack of PRERELEASE_PACKS) {
+    for (const action of ['install', 'update']) {
+      const command = `copilot plugin ${action} ${packPluginName(pack)}@${MARKETPLACE}`;
+      if (onboarding.includes(command)) {
+        err(onboardingRel, `guided installer must not advertise pre-release command \`${command}\``);
+      }
+    }
+  }
   let previousCommandIndex = -1;
   for (const command of guidedInstallCommands) {
     const commandIndex = onboarding.indexOf(command);

@@ -23,16 +23,19 @@ The catalog is closed:
 |---|---|---|
 | 1 | `kai-core` | Required operating contract, workspace tools, and fleet hooks. |
 | 2 | `kai-engineering` | Engineering, architecture, reliability, security, data, AI, QA, docs, PR, and ship roles. |
-| 3 | `kai-product` | Discovery, scope, research, analytics, product-led growth, and product-evaluation roles. |
-| 4 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
-| 5 | `kai-marketing` | Positioning, campaigns, social content, and search visibility. |
-| 6 | `kai-revenue` | Sales, pricing, partnerships, RevOps, customer success, and support intake. No local skills; shared contracts come from core. |
-| 7 | `kai-assistant` | Personal tasks, agendas, briefings, and user-voice drafting roles. |
-| 8 | `kai-learning` | Teaching, tutoring, learning paths, lesson production, and career development over kai-core. |
+| 3 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
+
+`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning` are source-retained pre-release packages, not selected install
+options in this mode. If the operator asks for one of them, say it is unavailable
+on the default marketplace surface and stop; do not convert the request into a
+sibling install, a fallback, or a direct repository path. Existing hosts that
+already have them keep those files; their absence from the default surface is
+not an uninstall signal, rename, disable, or workspace deletion.
 
 Core is always included. Never silently add a capability package. The supported
-baseline is core plus that package; adequate supplied evidence does not require
-installing its usual producer.
+baseline is core plus the selected active packages; adequate supplied evidence
+does not require installing its usual producer.
 `kai-gtm` and `kai-personal` are retired without aliases:
 
 - Former gtm capabilities belong to marketing, revenue and product (growth).
@@ -41,9 +44,9 @@ installing its usual producer.
 
 Select replacements by capability, not by prefix or a one-to-one rename.
 Preserve `.kai/personal/` and existing workspace/private records; plugin
-replacement is not data migration. The eight-package source and prepared
-metadata do not prove publication. New-package commands require a marketplace
-source containing this refactor.
+replacement is not data migration. The source inventory and prepared metadata
+do not prove publication. New-package commands require a marketplace source
+containing this refactor.
 
 ### Inspect
 
@@ -64,6 +67,7 @@ Before showing an install plan:
    state, disabled plugins, or version skew remains unresolved.
 5. Prove `kai-core` and every selected department exist at one marketplace
    version before recommending removal of the monolith or either retired pack.
+   The selected departments are the active default-surface packages only.
 6. Inspect the host's plugin list explicitly for retired gtm/personal installs;
    a current-catalog migration check alone is not proof they are absent.
    Their IDs overlap the replacements. Show their removal in the confirmed
@@ -85,12 +89,7 @@ copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
 copilot plugin update kai-core@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-product@kai-plugins
 copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-marketing@kai-plugins
-copilot plugin install kai-revenue@kai-plugins
-copilot plugin install kai-assistant@kai-plugins
-copilot plugin install kai-learning@kai-plugins
 ```
 
 These are marketplace command forms, not evidence that the default remote
@@ -105,8 +104,9 @@ marketplace state, plugins, or workspace provenance.
 When the only safe path is to uninstall legacy `kai` or retired packages,
 prove `kai-core` and every
 requested department are listed at one common version, then show the re-entry
-sequence. End the current run; a session still carrying removed plugin sources
-must not continue the migration.
+sequence. End the current run; a session still carrying the removed monolith
+must not continue the migration. The same boundary applies to any removed
+retired package.
 
 ### Execute
 
@@ -120,12 +120,13 @@ must not continue the migration.
    Copilot session, enable `kai-core@kai-plugins`, start a fresh session, and
    re-run the installer. Do not name the unavailable
    `copilot plugins enable` command.
-3. Install each selected department in catalog order. Verify the same version,
+3. Install each selected active department in catalog order. Verify the same version,
    enabled state, and provenance immediately after each command. If one is
    disabled, tell the operator to open `/plugin`, enable
    `<name>@kai-plugins`, start a fresh session, and re-run the installer.
 4. Re-run the migration check. Completion requires `clear`, no legacy
-   monolith or retired packs in the host list, and the exact requested pack set.
+   monolith or retired packs in the host list, and the exact requested active
+   pack set.
 
 Stop on the first non-zero command or unverified result. Do not uninstall
 earlier successful steps to manufacture rollback.

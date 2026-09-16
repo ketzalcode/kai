@@ -1,7 +1,7 @@
 {
   "name": "kai",
-  "description": "Lockstep source metadata for Kai core, engineering, product, creative, marketing, revenue, assistant, and learning capability packages.",
-  "version": "10.0.0",
+  "description": "Lockstep source metadata for default core, engineering, and creative packages plus retained pre-release capabilities.",
+  "version": "11.0.0",
   "author": {
     "name": "RubenSaucedo",
     "url": "https://github.com/RubenSaucedo"

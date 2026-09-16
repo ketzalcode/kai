@@ -8,27 +8,30 @@ for coordination only when needed — see [Getting started](getting-started.md).
 
 ## Package boundaries
 
-The supported baseline is **core plus the selected capability package**:
+The default marketplace surface is **core, engineering, and creative**.
+Product, marketing, revenue, assistant, and learning remain source-retained
+pre-release packages. See [package availability](reference/package-availability.md).
 
-| Package | Direct responsibility |
-| --- | --- |
-| `kai-core` | Shared contracts, workspace infrastructure and explicitly requested coordination |
-| `kai-engineering` | Implementation, architecture, reliability, trust and technical writing |
-| `kai-product` | Discovery, scope, evidence, analytics, growth and product-audit perspectives |
-| `kai-creative` | UI/UX, visual identity, assets and supported media production |
-| `kai-marketing` | Positioning, campaigns, social content and search |
-| `kai-revenue` | Sales, pricing, partnerships, revenue operations, success and support intake |
-| `kai-assistant` | Personal tasks, priorities, briefings and user-voice drafts |
-| `kai-learning` | Teaching, tutoring, paths, materials and career development |
+| Package | Direct responsibility | Surface |
+| --- | --- | --- |
+| `kai-core` | Shared contracts, workspace infrastructure and explicitly requested coordination | Default marketplace |
+| `kai-engineering` | Implementation, architecture, reliability, trust and technical writing | Default marketplace |
+| `kai-creative` | UI/UX, visual identity, assets and supported media production | Default marketplace |
+| `kai-product` | Discovery, scope, evidence, analytics, growth and product-audit perspectives | Pre-release source |
+| `kai-marketing` | Positioning, campaigns, social content and search | Pre-release source |
+| `kai-revenue` | Sales, pricing, partnerships, revenue operations, success and support intake | Pre-release source |
+| `kai-assistant` | Personal tasks, priorities, briefings and user-voice drafts | Pre-release source |
+| `kai-learning` | Teaching, tutoring, paths, materials and career development | Pre-release source |
 
 Supplied briefs, factual maps, media, account evidence and learning outlines can
 be direct inputs; their usual producer is not a mandatory installed sibling.
 Missing evidence narrows the answer. It never licenses invented facts or a
 simulated specialist verdict. Scope, design acceptance, independent assessment,
 commercial commitments and learning completion remain with their real owners.
-The final 50 agents / 46 skills and prepared `10.0.0` metadata describe source, not
-publication or verified task execution. Retired gtm/personal plugins have no
-aliases; private `.kai/personal/` data remains unchanged.
+The source inventory is 50 agents / 46 skills and prepared `11.0.0` metadata.
+Only core, engineering, and creative are the default marketplace surface;
+retired gtm/personal plugins have no aliases; private `.kai/personal/` data
+remains unchanged.
 
 ## Interaction scenarios
 
@@ -48,7 +51,8 @@ agent behave differently:
 The agents fall into a handful of independent flows. The biggest is
 **product → engineering**; the rest are smaller graphs that either feed
 into it or stand on their own. Each diagram is a *scenario*, not a
-mandatory pipeline.
+mandatory pipeline. Flows 2-8 reference source-retained pre-release packages,
+not the default marketplace surface.
 
 **Durable, per-item coordination state.** These agents are single-shot and
 stateless, but the coordination they share is not: it must survive sessions and
@@ -70,8 +74,8 @@ For personal work, `personal-assistant` (flow 8) handles your own tasks,
 priorities, briefings, and drafts directly, in the selected Kai workspace, when
 you ask it to. It is not a router and not a required first step: a delivery
 coordination request goes to the Chief of Staff, and review/design/exploration goes to that
-specialist. It ships in the optional `kai-assistant` pack; core works without
-it.
+specialist. It ships in the source-retained `kai-assistant` pack; core works
+without it.
 
 **0 · Onboarding (when durable workspace state is needed)** — `workflow-workspace-init`
 validates the full workspace contract for either a repository or a durable

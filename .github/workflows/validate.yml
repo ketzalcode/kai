@@ -39,6 +39,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Default marketplace and pre-release retention
+        run: node test/package-availability-self-test.mjs
       - name: Engineering source contracts
         run: |
           node test/engineering-agents-self-test.mjs

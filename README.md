@@ -8,27 +8,23 @@ a chat log.
 kai is **declarative**: agents and skills are markdown, not a framework or a
 service. It contains no employer-specific knowledge and ships no MCP servers.
 
-Install **core plus the capabilities you need**, not necessarily the full list.
-The eight-package commands below require a marketplace source containing this
-refactor branch. Browse that source first; registering the default repository
-does not prove these new packages are remotely available.
+Install the default marketplace surface first: **core, engineering, and
+creative**. Browse the source first, then choose the selected subset. The
+other five package IDs stay in canonical source here as pre-release/in-progress
+packages; see [package availability](docs/reference/package-availability.md).
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
-copilot plugin install kai-assistant@kai-plugins
-copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-learning@kai-plugins
-copilot plugin install kai-product@kai-plugins
-copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-revenue@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 ```
 
-`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this branch; their installs
-work only from a marketplace or checkout that carries this refactor — their
-publication and remote availability were not established by this work.
+`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning` remain source-retained pre-release packages. Their source and
+IDs are preserved, but they are not part of the default marketplace install
+path and they are not automatically uninstalled from existing hosts.
 
 **[Get started →](docs/getting-started.md)** ·
 **[See a finished feature →](examples/e2e-feature-delivery/)**
@@ -40,7 +36,8 @@ publication and remote availability were not established by this work.
 | **Install it and finish one real thing** | [Getting started](docs/getting-started.md) — install, initialize, first request |
 | **Understand the model before I commit** | [How kai works](docs/how-kai-works.md) — which role fires when, and why |
 | **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
-| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog |
+| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full 50-agent / 46-skill catalog, split across default and pre-release packages |
+| **Check which packages are default vs pre-release** | [Package availability](docs/reference/package-availability.md) — the active marketplace surface and source-retained packages |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/host-capabilities.md) — what differs, and how it degrades |
 | **Change kai itself** | [Plugin structure](docs/reference/plugin-structure.md) — layout, tests, release policy |
 
@@ -48,12 +45,14 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v10.0.0` is this checkout's prepared metadata version. Its **50 agents and
-46 skills** are organized across eight plugin directories targeting the
-**Copilot CLI** and the **Copilot coding agent** (cloud). This work establishes
-committed source, not release publication or live-host compatibility.
-`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new on this refactor branch; their
-marketplace publication and remote availability have not been established.
+`v11.0.0` is this checkout's prepared metadata version. Its **50 agents and
+46 skills** are organized across eight plugin directories. The default
+marketplace surface is **22 agents and 38 skills** from `kai-core`,
+`kai-engineering`, and `kai-creative`; `kai-product`, `kai-marketing`,
+`kai-revenue`, `kai-assistant`, and `kai-learning` remain source-retained
+pre-release/in-progress packages. See [package availability](docs/reference/package-availability.md).
+This work establishes committed source, not release publication or live-host
+compatibility.
 
 `kai-engineering` now exports 13 focused agents and the same five task-local
 skills. Direct implementation, investigation and assessment accept supplied
@@ -72,12 +71,12 @@ had 53 source-validator errors and a pack-preview self-test `TypeError`.
 Cross-agent wiring, stored owner references and coordinated delivery against
 the renamed engineering identities are explicitly deferred. Their unresolved
 references remain visible to CI; no validation gate is disabled. Prepared
-`10.0.0` metadata is not publication or updated-host runtime verification.
+`11.0.0` metadata is not publication or updated-host runtime verification.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
 and `kai-core` no longer carries a personal front door or depends on one. The
-eight-package source layout and integration metadata are now present; final
+source inventory and integration metadata are now present; final
 independent review, behavioral validation and release remain separate work.
 Learning and career roles moved to `kai-learning`;
 the `kai-personal` plugin is retired, not the private `.kai/personal/` data lane.
@@ -184,8 +183,9 @@ ordinary pack behavior needs no dependency installation.
 it shows the closed pack set and exact commands, confirms the plan, installs
 core first, verifies every step, stops with precise partial state, and requires
 a fresh session after an actual pack install or update. If a requested
-department is not yet published, its browse gate stops before removal or
-installation; it never falls back to unpublished direct paths.
+department is not yet published in the default marketplace surface, its browse
+gate stops before removal or installation; it never falls back to unpublished
+direct paths.
 
 The existing migration doctor is a separate runtime tool:
 `npm run doctor:migration` is a read-only report on whether a host may install
@@ -198,33 +198,25 @@ evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew. The committed marketplace index lists the package
-sources rather than the monolith. This branch adds `kai-assistant`,
-`kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` to that index
-and removes `kai-gtm` and `kai-personal`;
-the entries alone do not establish remote
-availability or publication.
+sources rather than the monolith. This branch keeps `kai-product`,
+`kai-marketing`, `kai-revenue`, `kai-assistant` and `kai-learning` in source as
+pre-release packages; the entries alone do not establish remote availability or
+publication.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin install kai-core@kai-plugins
-copilot plugin install kai-assistant@kai-plugins
-copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-learning@kai-plugins
-copilot plugin install kai-product@kai-plugins
-copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-revenue@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 ```
 
 The core pack carries the fleet observer and shared workspace machinery;
-assistant carries personal tasks and voice; learning carries teaching and career;
-creative carries UI/UX, visual identity, and video/demo work; product carries
-discovery, analytics, growth and fitness-product assessment; engineering carries
-implementation, security, reliability, data and delivery; marketing carries
-positioning, campaigns, LinkedIn and search; revenue carries sales, pricing,
-partnerships, revenue operations, customer success and support. A CI rule keeps every
-marketplace source, name, description, and version aligned with its pack
-manifest. If legacy `kai` is installed, do not install packs beside it; see
+engineering carries implementation, security, reliability, data and delivery;
+creative carries UI/UX, visual identity, and video/demo work. The five
+pre-release packages stay visible in source and in the package-availability
+reference. A CI rule keeps every marketplace source, name, description, and
+version aligned with its pack manifest. If legacy `kai` is installed, do not
+install packs beside it; see
 [Getting started](docs/getting-started.md#upgrading-from-the-kai-monolith).
 
 Before that, a rendering fix reported from a real macOS run.
@@ -262,31 +254,28 @@ Release history and the reasoning behind each change live in
 
 ## First five minutes
 
-**1. Install**, then start a *new* session — plugins load per session. Use these
-commands only with a marketplace source containing this eight-package refactor;
-choose core plus the packages needed for your task:
+**1. Install**, then start a *new* session — plugins load per session. Use
+these commands only with a marketplace source containing this refactor.
+Choose core plus engineering and/or creative from the actual browse result;
+source presence alone is not proof that another package is available to install:
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
-copilot plugin install kai-assistant@kai-plugins
-copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-learning@kai-plugins
-copilot plugin install kai-product@kai-plugins
-copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-revenue@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 ```
 
-kai carries its own marketplace index, because the host has deprecated direct
-`owner/repo` installs. The direct form still works today and prints a
-deprecation warning; see [Getting started](docs/getting-started.md#install)
-for it and for the coding-agent path. The complete source surface is
-`kai-core`, `kai-engineering`, `kai-product`, `kai-creative`, `kai-marketing`,
-`kai-revenue`, `kai-assistant`, and `kai-learning`. Publication and remote
-availability of this exact surface were not established by this work.
+`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning` remain source-retained pre-release packages. Their source and
+IDs are preserved, but they are not part of the default marketplace install
+path and they are not automatically uninstalled from existing hosts. See
+[package availability](docs/reference/package-availability.md).
 
-**2. Initialize** the repo or durable folder you want kai to work in:
+**2. Initialize** the repo or durable folder you want kai to work in only if
+you need durable or coordinated workspace state. Ordinary direct engineering or
+creative work does not need `.kai/`:
 
 ```text
 Initialize this repository as a kai workspace.
@@ -296,19 +285,18 @@ Choose `external` for no Kai files in the repository, `repo-local` for an
 ignored `.kai/`, or `shared` for team-visible state. Public project knowledge is
 published separately under the configured documentation root.
 
-**3. Ask directly for the capability.** For example, core plus product can
-work from supplied evidence without installing engineering or creative:
+**3. Ask directly for the capability.** For example, a direct engineering
+request can work from supplied evidence without initializing a workspace:
 
 ```text
-Ask principal-product-manager to turn these user requests into a scoped
-CSV-export brief with success measures.
+Ask eng-builder-software to implement these supplied requirements as one
+coherent change, including the tests for its changed behavior.
 ```
 
 If you explicitly want coordinated delivery across installed specialties, ask
 `director-chief-of-staff`. It coordinates work items and handoffs without
-taking specialist acceptance authority. For your *own* tasks, priorities,
-briefings, or drafts, ask `personal-assistant` directly. Neither it nor a
-director is a prerequisite for an ordinary domain task.
+taking specialist acceptance authority. It is not a prerequisite for ordinary
+direct engineering or creative work.
 
 **[Full walkthrough, plus optional audio and browser setup →](docs/getting-started.md)**
 
@@ -352,25 +340,27 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's final 50-agent, 46-skill surface has eight owners:
+The repository's source inventory is still 50 agents and 46 skills. The
+default marketplace surface is three packages; the rest remain pre-release
+source here:
 
-| Package | Agents / skills | Owns |
-| --- | --- | --- |
-| `kai-core` | 6 / 27 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 13 / 5 | Standalone implementation, architecture, independent review and delivery |
-| `kai-product` | 10 / 1 | Discovery, scope, evidence, analytics, product-led growth and product audits |
-| `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets and supported media production |
-| `kai-marketing` | 4 / 2 | Positioning, campaigns, social content and search visibility |
-| `kai-revenue` | 7 / 0 | Sales, pricing, partnerships, revenue operations, success, support and solution fit |
-| `kai-assistant` | 2 / 4 | Personal tasks, priorities, briefings and user-voice drafting |
-| `kai-learning` | 5 / 1 | Teaching, tutoring, paths, lesson materials and career development |
+| Package | Agents / skills | Surface | Owns |
+| --- | --- | --- | --- |
+| `kai-core` | 6 / 27 | Default marketplace | Shared contracts, workspace machinery, requested coordination |
+| `kai-engineering` | 13 / 5 | Default marketplace | Standalone implementation, architecture, independent review and delivery |
+| `kai-creative` | 3 / 6 | Default marketplace | UI/UX, visual identity, design assets and supported media production |
+| `kai-product` | 10 / 1 | Pre-release / in progress source | Discovery, scope, evidence, analytics, product-led growth and product audits |
+| `kai-marketing` | 4 / 2 | Pre-release / in progress source | Positioning, campaigns, social content and search visibility |
+| `kai-revenue` | 7 / 0 | Pre-release / in progress source | Sales, pricing, partnerships, revenue operations, success, support and solution fit |
+| `kai-assistant` | 2 / 4 | Pre-release / in progress source | Personal tasks, priorities, briefings and user-voice drafting |
+| `kai-learning` | 5 / 1 | Pre-release / in progress source | Teaching, tutoring, paths, lesson materials and career development |
 
 These are source-ownership counts, not publication or runtime-quality evidence.
-Every capability package supports core plus itself with adequate supplied
-inputs. A usual upstream producer is optional; factual provenance, scope and
-real acceptance boundaries still apply. Revenue intentionally declares no
-local skill component. `kai-gtm` and `kai-personal` are retired without aliases;
-see [replacement guidance](docs/getting-started.md#replacing-retired-packages).
+Only `kai-core`, `kai-engineering`, and `kai-creative` are the supported
+default install/update surface. The other five packages keep their IDs and
+canonical paths, remain available as source in this checkout, and are not
+automatically uninstalled from existing hosts. See
+[package availability](docs/reference/package-availability.md).
 
 You do not need to learn them. Ask for the outcome you want; the catalog is
 there for when you want to know who owns a particular judgment.
@@ -382,20 +372,16 @@ there for when you want to know who owns a particular judgment.
 See **[Getting started → Install](docs/getting-started.md#install)** for the
 Copilot CLI, the cloud coding agent, and the optional audio and browser-automation
 setup. With a source containing this refactor, refresh the catalog and update
-only the packs you actually installed:
+only the default marketplace packs you actually installed:
 `copilot plugin marketplace update kai-plugins`,
 `copilot plugin update kai-core@kai-plugins`,
-`copilot plugin update kai-assistant@kai-plugins`,
-`copilot plugin update kai-creative@kai-plugins`,
-`copilot plugin update kai-learning@kai-plugins`,
-`copilot plugin update kai-product@kai-plugins`,
-`copilot plugin update kai-marketing@kai-plugins`,
 `copilot plugin update kai-engineering@kai-plugins`, and
-`copilot plugin update kai-revenue@kai-plugins`. Start a new session; to
+`copilot plugin update kai-creative@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
-This applies to all eight names above, including assistant, creative, marketing,
-revenue and learning. Retired packages do not update into successors automatically.
+This applies to the three default names above. The five pre-release packages
+remain source-retained and are tracked on the package availability page.
+Retired packages do not update into successors automatically.
 
 ## Workspace
 

@@ -2,41 +2,35 @@
 
 # Getting started
 
-Install kai, initialize a workspace, and finish one real piece of work. The
-optional sections at the end only matter for the handful of agents that need
-them.
+Install kai, initialize a workspace only when you need durable or coordinated
+state, and finish one real piece of work. The optional sections at the end only
+matter for the handful of agents that need them.
 
 ## First five minutes
 
 The shortest path to one real, finished piece of work. Each step is copyable.
 
-**1. Install core plus the capabilities you need** (details in [Install](#install)).
-The full list below requires a marketplace source containing this refactor
-branch. Browse first; registering the default repository alone does not prove
-availability of the eight-package surface:
+**1. Install the default marketplace surface** (details in [Install](#install)).
+Browse first; registering the default repository alone does not prove
+availability of the default three-package surface:
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
 copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
-copilot plugin install kai-assistant@kai-plugins
-copilot plugin install kai-creative@kai-plugins
-copilot plugin install kai-learning@kai-plugins
-copilot plugin install kai-product@kai-plugins
-copilot plugin install kai-marketing@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
-copilot plugin install kai-revenue@kai-plugins
+copilot plugin install kai-creative@kai-plugins
 ```
 
-`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are new, committed source on this branch's
-checkout; their installs work only from a marketplace or checkout
-that carries this refactor — their publication and remote availability were not
-established by this work.
+`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning` are committed source on this checkout, but they remain
+pre-release/in-progress packages outside the default marketplace surface. See
+[Package availability](reference/package-availability.md).
 
 Start a **new** session afterwards — plugins load per session.
 
-**2. Initialize the workspace.** From the repo (or durable folder) you want kai
-to work in:
+**2. Initialize the workspace** only when you need durable or coordinated work.
+From the repo (or durable folder) you want kai to work in:
 
 ```text
 Initialize this repository as a kai workspace.
@@ -54,20 +48,20 @@ Private coordination, drafts, evidence, and personal state remain under
 `.kai/`; only accepted project knowledge publishes. See
 [Workspace model](workspaces.md) for the full contract.
 
-**3. Ask directly for the capability.** Core plus product can use supplied
-evidence without installing engineering or creative:
+**3. Ask directly for the capability.** A direct engineering request can use
+supplied evidence without installing anything else:
 
 ```text
-Ask principal-product-manager to turn these user requests into a scoped
-CSV-export brief with success measures.
+Ask eng-builder-software to implement these supplied requirements as one
+coherent change, including the tests for its changed behavior.
 ```
 
 For explicitly requested coordination across installed specialties,
 `director-chief-of-staff` manages work items and handoffs; specialist authority
-stays with each owner. For personal tasks, priorities, briefings or drafts,
-invoke `personal-assistant` directly. Neither role is a compulsory front door.
+stays with each owner. Neither it nor workspace init is required for ordinary
+direct engineering or creative work.
 
-**4. Check the state is honest** at any point:
+**4. Check the state is honest** if you initialized a workspace:
 
 ```bash
 node <path-to-kai>/scripts/workspace-doctor.mjs
@@ -86,10 +80,10 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The foundation targets a 55-agent, 46-skill surface across eight packs on this
-branch. This describes source ownership, not publication;
-remote availability of `kai-assistant`, `kai-creative`, `kai-marketing`,
-`kai-revenue` and `kai-learning` remains unverified.
+The source inventory still has 50 agents and 46 skills across eight packages.
+Only core, engineering, and creative are in the default marketplace surface.
+The other five packages stay as pre-release/in-progress source and are tracked
+on [Package availability](reference/package-availability.md).
 You do not need to learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -110,78 +104,67 @@ kai carries a marketplace index in its own repository
 (`.github/plugin/marketplace.json`), so it installs the way the host intends to
 support long-term. Nobody has to approve a listing for this to work.
 
-The eight source owners are `kai-core`, `kai-engineering`, `kai-product`,
+The source inventory is `kai-core`, `kai-engineering`, `kai-product`,
 `kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning`. Metadata is prepared at `9.0.0`, not a publication claim.
+`kai-learning`. Metadata is prepared at `11.0.0`, not a publication claim.
+Only core, engineering, and creative are in the default marketplace surface.
 Use a marketplace source containing this branch and confirm every selected
 name/version before installation or removal. A checkout of this refactor can
 instead be loaded locally as described below.
 
-1. Register and browse the marketplace, then install core plus selected packs:
+1. Register and browse the marketplace, then install the default surface:
    ```powershell
    copilot plugin marketplace add RubenSaucedo/kai
    copilot plugin marketplace browse kai-plugins
    copilot plugin install kai-core@kai-plugins
-   copilot plugin install kai-assistant@kai-plugins
-   copilot plugin install kai-creative@kai-plugins
-   copilot plugin install kai-learning@kai-plugins
-   copilot plugin install kai-product@kai-plugins
-   copilot plugin install kai-marketing@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
-   copilot plugin install kai-revenue@kai-plugins
+   copilot plugin install kai-creative@kai-plugins
    ```
 2. Confirm it loaded:
    ```powershell
    copilot plugin list
    ```
-   `kai-core@kai-plugins`, `kai-assistant@kai-plugins`,
-   `kai-creative@kai-plugins`,
-   `kai-learning@kai-plugins`, `kai-product@kai-plugins`, `kai-marketing@kai-plugins`,
-   `kai-engineering@kai-plugins`, and
-   `kai-revenue@kai-plugins` should appear at the same version if all eight
-   were selected. Otherwise expect core plus your selected subset. The agents and skills
-   are available in **new** sessions — start a fresh session to use them.
+   `kai-core@kai-plugins`, `kai-engineering@kai-plugins`, and
+   `kai-creative@kai-plugins` should appear at the same version if the default
+   surface is available. The agents and skills are available in **new**
+   sessions — start a fresh session to use them.
 
-`kai-assistant`, `kai-creative`, `kai-marketing`, `kai-revenue` and `kai-learning` are committed source on this branch checkout
-only; this work did not push, tag, or publish them, so their install lines
-resolve only against a marketplace or checkout that carries this
-refactor, not necessarily the currently published marketplace index.
+`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning` retain their source but are not listed in this default index.
+There is no separate pre-release marketplace in this change. Hosts that already
+have them keep those files; absence from the default surface does not uninstall
+them or guarantee future updates.
 
 For design and supported demo work, the baseline is core plus creative, not the
 whole roster. [Creative's package note](reference/packages/kai-creative.md)
 lists direct requests, supplied inputs, outputs, and external-tool prerequisites.
 
-For positioning, campaigns, LinkedIn drafts and search assessments, use core
-plus marketing. [Marketing's package note](reference/packages/kai-marketing.md)
-describes supplied factual JSON/maps/media, claim safety and optional personal
-voice. Product, creative and assistant are not baseline install dependencies.
+For the pre-release packages, see [Package availability](reference/package-availability.md)
+and their package notes. Product, marketing, revenue, assistant and learning
+remain pre-release source and are not baseline install dependencies.
 
-For commercial recommendations and support intake, use core plus revenue.
-[Revenue's package note](reference/packages/kai-revenue.md) covers its six roles,
-supplied-evidence baseline and urgent human escalation. It owns no local skill;
-shared skills come from core. `kai-gtm` is retired without an alias. For an old
-gtm install, verify the replacement packs are available, then explicitly select
-marketing and/or revenue (growth is product-owned), remove the old plugin through
-the host and start a fresh session. Do not delete workspace or private account data.
+Pre-release package notes describe retained development contracts, not a
+recommendation to install them. A source directory is not proof of marketplace
+availability or readiness. Keep an old installation when its needed replacement
+is unavailable; do not delete workspace or private account data.
 
 Core carries the shared scripts and fleet hooks. Its provider-root paths are
 independent of any companion package's location.
 
-For teaching, lesson packaging, learning paths and IC engineering career
-development, use core plus learning. [Learning's package note](reference/packages/kai-learning.md)
-separates extracted Markdown, HTML and paid audio outputs. HTML needs no
-Lectoria or creative install; audio uses core's existing runtime.
-`kai-personal` is retired without an alias. Verify replacement availability,
-choose learning, assistant and/or creative for the capabilities you use (the
-fitness-product personas moved to product), then remove the old plugin through
-the host and start a fresh session. Preserve `.kai/personal/` and all private
+[Learning's pre-release package note](reference/packages/kai-learning.md)
+describes teaching, lesson packaging and career-development source. Those
+capabilities are not default installs. Preserve `.kai/personal/` and all private
 learning, career, voice and agenda records; plugin removal is not data migration.
 
 ### Replacing retired packages
 
 Neither retired name is an alias or an automatic update path:
 
-| Retired install | Select replacements for the capabilities you use |
+Only creative is currently offered by the default marketplace among the
+replacement owners below. The other owners are pre-release source. Do not
+uninstall a working package merely because its replacement's source exists.
+
+| Retired install | Retained capability owners (not all available to install) |
 | --- | --- |
 | `kai-gtm` | `kai-marketing` for positioning/campaigns/social/search; `kai-revenue` for commercial/customer work; `kai-product` for product-led growth |
 | `kai-personal` | `kai-assistant` for personal tasks/voice; `kai-learning` for teaching/career; `kai-creative` for video/demo; `kai-product` for fitness-product audits |
@@ -205,23 +188,25 @@ existing workspace storage mode. Do not delete data to retire an install name.
 Do not install packs beside legacy `kai`: both provide the operating contract,
 and which copy loads first is host-dependent.
 
-Select core plus the capability packs needed from the current marketplace.
-This checkout replaces the former go-to-market and personal install buckets;
-remote availability must be established before removing an existing install.
-Use guidance from a source containing the current catalog; an old installed
-guide may still list retired names.
+Select the default marketplace packs you actually need from the current
+marketplace. This checkout replaces the former go-to-market and personal
+install buckets; remote availability must be established before removing an
+existing install. Use guidance from a source containing the current catalog;
+an old installed guide may still list retired names.
 
 1. Update the marketplace catalog.
 2. In a session still loaded from legacy `kai`, ask:
 
    ```text
-   Migrate this kai installation to kai-core, kai-engineering, kai-product,
-   kai-creative, kai-marketing, kai-revenue, kai-assistant, and kai-learning.
+   Migrate this kai installation to kai-core, kai-engineering, and
+   kai-creative.
    ```
 
-3. Follow the displayed plan exactly. The guide proves all selected packs exist at one
-   marketplace version before it tells you to uninstall legacy `kai`, then
-   installs core first and stops for a fresh session before continuing.
+3. Follow the displayed plan exactly. The guide proves the default surface
+   exists at one marketplace version before it tells you to uninstall legacy
+   `kai`, then installs core first and stops for a fresh session before
+   continuing. The source-retained pre-release packages are handled only if the
+   package-availability page says they are present.
 
 This changes only host plugin state. Workspace migration is a separate,
 explicit operation because schema 3 may move private state outside the project.
@@ -262,13 +247,8 @@ this branch or establish availability; never use them to bypass a failed browse.
 
 ```text
 copilot plugin install RubenSaucedo/kai:plugins/kai-core
-copilot plugin install RubenSaucedo/kai:plugins/kai-assistant
-copilot plugin install RubenSaucedo/kai:plugins/kai-creative
-copilot plugin install RubenSaucedo/kai:plugins/kai-learning
-copilot plugin install RubenSaucedo/kai:plugins/kai-product
-copilot plugin install RubenSaucedo/kai:plugins/kai-marketing
 copilot plugin install RubenSaucedo/kai:plugins/kai-engineering
-copilot plugin install RubenSaucedo/kai:plugins/kai-revenue
+copilot plugin install RubenSaucedo/kai:plugins/kai-creative
 ```
 
 This still works and is a single command, but the CLI prints:
@@ -287,7 +267,7 @@ From the root of a checkout that already contains this refactor (a default
 clone is not evidence of that), load core plus the selected capabilities:
 
 ```powershell
-copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-product --plugin-dir plugins\kai-creative --plugin-dir plugins\kai-marketing --plugin-dir plugins\kai-revenue --plugin-dir plugins\kai-assistant --plugin-dir plugins\kai-learning
+copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-creative
 ```
 
 This **loads** the plugin without installing it, so it is the fastest loop when
@@ -303,8 +283,9 @@ CLI. Confirm the actual provider-qualified agent names in that session.
 Configure the repository's coding agent to load core and the selected package
 sources from a revision containing this refactor. The root `plugin.json` is
 release metadata, not an agent/skill install surface; adding the repository
-root alone is not evidence that all eight packages loaded. This refactor did
-not verify the cloud configuration syntax, discovery or effective tools.
+root alone is not evidence that the default marketplace surface loaded. This
+refactor did not verify the cloud configuration syntax, discovery or
+effective tools.
 
 The two hosts are not feature-identical — see
 [Host capabilities](host-capabilities.md) for what differs and how workflows
@@ -321,14 +302,12 @@ retired gtm/personal installs need the explicit replacement procedure above:
 copilot plugin marketplace update kai-plugins
 copilot plugin marketplace browse kai-plugins
 copilot plugin update kai-core@kai-plugins
-copilot plugin update kai-assistant@kai-plugins
-copilot plugin update kai-creative@kai-plugins
-copilot plugin update kai-learning@kai-plugins
-copilot plugin update kai-product@kai-plugins
-copilot plugin update kai-marketing@kai-plugins
 copilot plugin update kai-engineering@kai-plugins
-copilot plugin update kai-revenue@kai-plugins
+copilot plugin update kai-creative@kai-plugins
 ```
+
+The five pre-release packages stay source-retained and are tracked on the
+package-availability page instead of the default update path.
 
 Plugins are cached per session — changes only appear in **new** sessions.
 

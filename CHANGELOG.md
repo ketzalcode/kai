@@ -4,6 +4,40 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [11.0.0] - 2026-09-16
+
+Prepared source metadata for the reduced default marketplace. Default listing
+is not production readiness, publication, or a claim that core validation is
+fixed.
+
+### Changed
+
+- The default marketplace lists only kai-core, kai-engineering, and kai-creative,
+  in that core-first order. Together they provide 22 agents and 38 skills.
+- Assistant, product, marketing, revenue, and learning are labeled
+  **Pre-release (in progress)** and excluded from the default install list.
+  Their package IDs, source paths, agent/skill bodies, and ownership remain
+  intact; the full repository still retains 50 agents and 46 skills.
+- Source generation, validation, host-inventory checks and runtime-dependency
+  coverage still include all eight packages. Pre-release status never suppresses
+  their failures or waives unresolved core and coordination contracts.
+- Package descriptions, catalog availability labels and installation/onboarding
+  guidance distinguish default packages from retained pre-release source.
+- All eight source manifests and locks remain in lockstep at `11.0.0`.
+  Pre-release is a readiness label here, not a separate semver channel.
+
+### Added
+
+- Regression coverage for the three-package default index, rejection of
+  accidental pre-release publication, retained source emission/validation,
+  and the complete rollback and runtime-validation surfaces.
+
+### Removed
+
+- Five in-progress packages from the default marketplace only. No source,
+  existing host installation, private data, or workspace state is removed.
+  Existing installations are not automatically renamed, disabled or uninstalled.
+
 ## [10.0.0] - 2026-09-16
 
 Prepared source metadata for standalone engineering agents. This is not a
@@ -3639,6 +3673,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[11.0.0]: https://github.com/RubenSaucedo/kai/compare/v10.0.0...v11.0.0
 [10.0.0]: https://github.com/RubenSaucedo/kai/compare/v9.0.0...v10.0.0
 [9.0.0]: https://github.com/RubenSaucedo/kai/compare/v8.0.0...v9.0.0
 [8.0.0]: https://github.com/RubenSaucedo/kai/compare/v7.0.0...v8.0.0

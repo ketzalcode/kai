@@ -3,6 +3,11 @@
 Dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
+- **Package availability**
+  (`test/package-availability-self-test.mjs`) — keeps the default marketplace
+  limited to core, engineering and creative, while retaining all eight packages
+  in source, emission and runtime validation. It rejects accidental pre-release
+  publication; it does not waive existing core or reference errors.
 - **Standalone engineering surface**
   (`test/engineering-agents-self-test.mjs`) — exercises source discovery, host
   frontmatter/model/tool validation, core-plus-engineering skill resolution,

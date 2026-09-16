@@ -1,7 +1,7 @@
 {
   "name": "kai-product",
-  "version": "10.0.0",
-  "description": "Product discovery, scope, evidence, analytics, and product-led growth over kai-core.",
+  "version": "11.0.0",
+  "description": "Pre-release (in progress): Product discovery, scope, evidence, analytics, and product-led growth over kai-core.",
   "agents": "agents",
   "skills": "skills"
 }
