@@ -2,6 +2,8 @@
 
 # Package: `kai-assistant`
 
+Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../package-availability.md).
+
 Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance
 over `kai-core` — **not** organization routing.
 

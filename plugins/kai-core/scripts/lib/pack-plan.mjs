@@ -152,9 +152,13 @@ export const SKILL_OWNER_OVERRIDES = {
   'kai-core-fleet-observation': 'core',
 };
 
-// The committed source surface equals the full locked partition. Retain this alias
-// so generation, marketplace policy, rollback policy, and CI share one name.
+// Retained source and validation cover all packages, including unfinished ones.
+// Publication is a separate decision; a readiness label never hides source errors.
 export const COMMITTED_PACKS = [...PACK_ORDER];
+export const PUBLISHED_PACKS = Object.freeze(['core', 'engineering', 'creative']);
+export const PRERELEASE_PACKS = Object.freeze(
+  PACK_ORDER.filter(pack => !PUBLISHED_PACKS.includes(pack)),
+);
 
 // Runtime dependencies belong to the pack that directly executes them. The
 // host copies plugin trees but does not run npm, so these declarations provide
@@ -188,10 +192,9 @@ export const RUNTIME_ARTIFACTS = {
 // departments are `kai-<department>`.
 export const packPluginName = (pack) => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
 
-// The runtime-dependency legs CI runs, derived from the committed pack set and
-// the declared dependency plan. A pack declaring none yields a leg with nothing
-// to assert, so publishing a department never means editing the workflow to make
-// its own pack legal.
+// CI covers every retained source package, not only the default marketplace.
+// A package with no runtime dependencies still gets a leg; publication status
+// never removes an unfinished package from this validation surface.
 export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
   return packs.map((pack) => {
     const dependencies = PACK_RUNTIME_DEPENDENCIES[pack];
@@ -226,7 +229,10 @@ const PACK_DESCRIPTIONS = {
 };
 
 function packDescription(pack) {
-  return PACK_DESCRIPTIONS[pack] ?? `kai ${pack} department pack — the ${pack} roles, over a required kai-core.`;
+  const description = PACK_DESCRIPTIONS[pack] ?? `kai ${pack} department pack — the ${pack} roles, over a required kai-core.`;
+  return PRERELEASE_PACKS.includes(pack)
+    ? `Pre-release (in progress): ${description}`
+    : description;
 }
 
 // The repo checks out CRLF on Windows; normalising every emitted file to LF keeps
@@ -881,14 +887,14 @@ export function marketplaceConsistencyErrors({
 }
 
 // Which plugin names the published index must and must not carry. Both sets are
-// DERIVED from the partition, never listed: `packs` serves exactly the committed
-// pack set, and `legacy-rollback` restores the monolith alone — so it forbids
+// DERIVED from publication policy: `packs` serves only the selected default
+// packages, and `legacy-rollback` restores the monolith alone — so it forbids
 // every name `packPluginName` can emit, including packs published after this
 // code was written. A literal here would silently bless a rollback index that
 // restored the monolith beside a department pack.
 export function marketplaceSurfacePolicy({
   mkt, canonicalVersion, monolithName,
-  publishedPackNames = COMMITTED_PACKS.map(packPluginName),
+  publishedPackNames = PUBLISHED_PACKS.map(packPluginName),
   publishablePackNames = PACK_ORDER.map(packPluginName),
 }) {
   const errors = [];

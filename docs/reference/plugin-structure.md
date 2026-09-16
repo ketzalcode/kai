@@ -146,6 +146,17 @@ skills themselves.
 
 ## Versioning & releases
 
+Default marketplace availability is separate from source ownership. Core,
+engineering and creative are the three default packages; assistant, product,
+marketing, revenue and learning remain pre-release/in-progress source at their
+existing paths and IDs. All eight stay in source validation and generation.
+See [Package availability](package-availability.md) for the promotion boundary
+and existing-host precautions.
+
+Pre-release is a readiness label, not a separate semver stream. The eight source
+manifests and locks still use the canonical prepared version together. A default
+listing never means core's outstanding validation or wiring issues are fixed.
+
 kai follows [semantic versioning](https://semver.org). Updates reach users via
 `copilot plugin update <pack>@kai-plugins` and a new session. Copilot loads the
 plugin from the repo, so the version is descriptive metadata, **not** an update

@@ -1,5 +1,7 @@
 # kai-marketing
 
+Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../package-availability.md).
+
 Positioning, campaigns, social content, and search visibility over kai-core.
 
 The supported baseline is **kai-core plus kai-marketing**. Supply factual JSON,

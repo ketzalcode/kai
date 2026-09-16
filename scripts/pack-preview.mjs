@@ -35,7 +35,7 @@ import {
   APPROVED_AGENT_MODELS, parseFrontmatter, parseToolList,
 } from './lib/loader-contract.mjs';
 import {
-  PACKS, PACKS_DIR, COMMITTED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  PACKS, PACKS_DIR, COMMITTED_PACKS, PUBLISHED_PACKS, PRERELEASE_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, CORE_SKILL_PREFIX,
   RUNTIME_ARTIFACTS, PACK_RUNTIME_DEPENDENCIES, packPluginName, runtimeDependencyMatrix,
   planPacks, planManifests, materializePacks,
@@ -768,15 +768,15 @@ function selfTest() {
     canonicalVersion: '1.2.3',
     monolithName: 'kai',
   });
-  const publishedNames = COMMITTED_PACKS.map(packPluginName);
+  const publishedNames = PUBLISHED_PACKS.map(packPluginName);
   const publishableNames = PACK_ORDER.map(packPluginName);
   const unpublishedNames = publishableNames.filter((n) => !publishedNames.includes(n));
   ok(packSurface.errors.length === 0
     && packSurface.requiredPluginNames.join(',') === publishedNames.join(',')
     && packSurface.forbiddenPluginNames.includes('kai'),
-  `the 1.x pack mode requires exactly the committed pack set (${publishedNames.join(', ')}) and forbids the monolith`);
-  ok(unpublishedNames.length === 0,
-  'the finished packs index publishes every pack in the locked partition');
+  `the 1.x pack mode requires the default package set (${publishedNames.join(', ')}) and forbids the monolith`);
+  ok(unpublishedNames.join(',') === PRERELEASE_PACKS.map(packPluginName).join(','),
+  'the default index excludes retained pre-release packages');
   const rollbackSurface = marketplaceSurfacePolicy({
     mkt: mkt([kaiEntry], 'legacy-rollback'),
     canonicalVersion: '1.0.1',
@@ -821,8 +821,8 @@ function selfTest() {
   // declared dependency plan, proved over the WHOLE partition — not just the
   // packs that happen to be committed today.
   const committedLegs = runtimeDependencyMatrix();
-  ok(committedLegs.map((leg) => leg.name).join(',') === publishedNames.join(','),
-    `the CI runtime-dependency matrix is exactly the committed pack set (${publishedNames.join(', ')})`);
+  ok(committedLegs.map((leg) => leg.name).join(',') === COMMITTED_PACKS.map(packPluginName).join(','),
+    'the CI runtime-dependency matrix still covers every committed package, including pre-release source');
   ok(committedLegs.every((leg) => leg.binaries.length === PACK_RUNTIME_DEPENDENCIES[leg.pack].length)
     && committedLegs.some((leg) => leg.binaries.includes(RUNTIME_ARTIFACTS.lectoria.binary)),
   'a committed leg asserts one sanctioned executable per declared runtime dependency');

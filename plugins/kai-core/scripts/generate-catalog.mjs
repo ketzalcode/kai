@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, stripQuotes, isUserInvocable } from './lib/loader-contract.mjs';
-import { sourceAgentFiles, sourceSkillFiles } from './lib/pack-plan.mjs';
+import { sourceAgentFiles, sourceSkillFiles, PUBLISHED_PACKS } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'docs', 'reference', 'agents-and-skills.md');
@@ -245,12 +245,12 @@ function readAll() {
   for (const entry of sourceAgentFiles(ROOT)) {
     const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
     if (!pf.ok) throw new Error(`${entry.rel}: ${pf.reason}`);
-    items.set(entry.id, { id: entry.id, kind: 'agent', fm: pf.fm, path: entry.rel });
+    items.set(entry.id, { id: entry.id, kind: 'agent', pack: entry.pack, fm: pf.fm, path: entry.rel });
   }
   for (const entry of sourceSkillFiles(ROOT)) {
     const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
     if (!pf.ok) throw new Error(`${entry.rel}: ${pf.reason}`);
-    items.set(entry.id, { id: entry.id, kind: 'skill', fm: pf.fm, path: entry.rel });
+    items.set(entry.id, { id: entry.id, kind: 'skill', pack: entry.pack, fm: pf.fm, path: entry.rel });
   }
   return items;
 }
@@ -290,6 +290,9 @@ function build(items) {
   const agents = [...items.values()].filter((i) => i.kind === 'agent').length;
   const skills = [...items.values()].filter((i) => i.kind === 'skill').length;
   const invocable = [...items.values()].filter((i) => i.kind === 'skill' && isUserInvocable(i.fm)).length;
+  const defaultItems = [...items.values()].filter(item => PUBLISHED_PACKS.includes(item.pack));
+  const defaultAgents = defaultItems.filter(item => item.kind === 'agent').length;
+  const defaultSkills = defaultItems.filter(item => item.kind === 'skill').length;
 
   const out = [];
   out.push('[kai](../../README.md) / [Docs](../README.md) / Agents & skills');
@@ -301,12 +304,13 @@ function build(items) {
   out.push('     scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;');
   out.push('     `npm test` fails if this file drifts from the shipped surface. -->');
   out.push('');
-  out.push(`kai ships **${agents} agents** and **${skills} skills** (${invocable} of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).`);
+  out.push(`The repository retains **${agents} agents** and **${skills} skills** (${invocable} skills are directly user-invocable when their owning package is installed).`);
   out.push('');
-  out.push('Each description below is the agent or skill\'s own shipped `description:` —');
-  out.push('the exact text the host reads when deciding whether to fire it. You do not');
-  out.push('need to learn this page. Ask a front door for an outcome and it routes; come');
-  out.push('here when you want to know who owns a particular judgment.');
+  out.push(`The default marketplace supplies **${defaultAgents} agents** and **${defaultSkills} skills** through core, engineering, and creative. Other rows are **pre-release / in progress**, retained as source but absent from the default marketplace. A default listing is not a release or runtime-readiness certification.`);
+  out.push('');
+  out.push('Each description is the source agent or skill\'s own `description:`.');
+  out.push('Availability depends on its installed provider; retaining a pre-release');
+  out.push('row does not make that capability available through the default install.');
   out.push('');
   out.push('- **Not sure who to ask?** [How kai works](../how-kai-works.md) has the trigger table.');
   out.push('- **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).');
@@ -325,12 +329,13 @@ function build(items) {
       out.push('');
       out.push(cat.blurb);
       out.push('');
-      out.push('| Name | What it owns |');
-      out.push('| ---- | ------------ |');
+      out.push('| Name | Availability | What it owns |');
+      out.push('| ---- | ------------ | ------------ |');
       for (const m of cat.members) {
         const item = items.get(m);
         const link = `../../${item.path}`;
-        out.push(`| [\`${m}\`](${link}) | ${cell(stripQuotes(item.fm.description || ''))} |`);
+        const availability = PUBLISHED_PACKS.includes(item.pack) ? 'Default marketplace' : 'Pre-release / in progress';
+        out.push(`| [\`${m}\`](${link}) | ${availability} | ${cell(stripQuotes(item.fm.description || ''))} |`);
       }
       out.push('');
     }
