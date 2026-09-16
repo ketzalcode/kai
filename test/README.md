@@ -9,13 +9,11 @@ PR and push to `main` and must stay fast:
   while preserving narrowly scoped historical references and generic dispatch
   collection coverage.
 - **Creative foundation contracts** — `creative-foundation-self-test.mjs`
-  checks the three-agent/six-skill surface, inactive history, callers, and
+  checks the three-agent/six-skill surface, retired-ID references, callers, and
   emitted helper closure. `creative-core-contract-self-test.mjs`,
   `creative-agent-contract-self-test.mjs`, and
   `creative-skill-contract-self-test.mjs` check the scoped source contracts.
-  `creative-evidence-self-test.mjs` checks all 20 captured baseline hashes
-  against working files and Git's index, plus byte-preserving attributes.
-  These are structural/evidence checks, not model or live media certification.
+  These are focused source and parser checks, not live-host certification.
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
@@ -47,9 +45,9 @@ run the later commands separately when recording a complete failed baseline.
 creative diagram reference. It uses an already provisioned Playwright Chromium
 or system Edge, without installing a browser. Synthetic long-label layouts are
 checked at 320px and 900px in light and dark modes. Missing browser capability
-fails explicitly. `-- --original` exercises the preserved pre-refinement CSS
-and is expected to expose its overflow. This is not a real artifact's visual
-review or accessibility certification, and is separate from dependency-free CI.
+fails explicitly. The check reads the current skill's catalog directly;
+it needs no archived guide or evaluation corpus. This is not a real artifact's
+visual review or accessibility certification, and is separate from dependency-free CI.
 
 ## Deterministic checks (in CI)
 

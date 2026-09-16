@@ -1,1 +1,0 @@
-Reject the placement. `edit-name` is unsettled, so the narration cannot start after that gate yet. Exact next action: wait for `edit-name` to settle, then re-run the placement assessment on the same measured clip.

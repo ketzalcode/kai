@@ -1,1 +1,0 @@
-Reject the clip as `step-unsettled`: the narration is gated on `edit-name`, which never settled, so the exact next action is to re-record or otherwise get a settled `edit-name` state before placing the line.

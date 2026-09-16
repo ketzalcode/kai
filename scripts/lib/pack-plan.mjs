@@ -55,8 +55,12 @@ export const HOOKS_OWNER = 'core';
 // new workflows/personas/instructors; adding a retired-family id there fails.
 // Keeping the baseline separate makes "no new principal/director agents"
 // enforceable without blocking one-at-a-time migration.
-const RETIRED_CREATIVE_AGENT_IDS = [
+export const RETIRED_CREATIVE_AGENT_IDS = [
   'principal-product-designer', 'principal-brand-designer', 'creative-video-director',
+];
+export const RETIRED_CREATIVE_SKILL_IDS = [
+  'create-product-demo', 'demo-capture', 'demo-narrate',
+  'demo-zoom', 'ui-mockup', 'video-direction',
 ];
 
 const MIGRATION_BASELINE_PACKS = {

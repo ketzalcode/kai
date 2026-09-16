@@ -1,1 +1,0 @@
-Hold the narration. The measured clip can be aligned to the measured take only after `edit-name` settles, because `start_after` is on that interior gate and its status is still unresolved. No synthesis or render is needed.

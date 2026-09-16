@@ -1,1 +1,0 @@
-Do not synthesize yet. The exact next action is to get explicit authorization for this paid synthesis run, after confirming the approved narration text, the voice/language, the projected charge basis, and acknowledgment of the Azure Speech disclosure.

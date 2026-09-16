@@ -1,1 +1,0 @@
-Reject: the clip does not fit yet. The narration wants to start after `edit-name`, but that step is unsettled, so there is no stable visual state to anchor the beat. Exact next action: re-record until `edit-name` is settled/ok, then place the narration again.

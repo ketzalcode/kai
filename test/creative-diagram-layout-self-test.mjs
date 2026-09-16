@@ -5,11 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const original = process.argv.includes('--original');
-assert.ok(process.argv.slice(2).every(arg => arg === '--original'), 'unknown layout-test argument');
-const source = original
-  ? 'docs/reference/skill-evaluation/creative-foundation/html-block-diagrams/current/SKILL.md'
-  : 'plugins/kai-creative/skills/html-block-diagrams/references/catalog.md';
+assert.equal(process.argv.length, 2, 'the layout check takes no arguments');
+const source = 'plugins/kai-creative/skills/html-block-diagrams/references/catalog.md';
 const document = readFileSync(join(root, source), 'utf8');
 const css = document.match(/```css\s*([\s\S]*?)```/)?.[1];
 assert.ok(css, 'the diagram reference must contain its CSS example');

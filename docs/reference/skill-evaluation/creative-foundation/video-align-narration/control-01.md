@@ -1,1 +1,0 @@
-Align the measured `n-1` clip to begin at 7.4s, right after `edit-name`. It fits in the remaining 7.6s before `saved-result` ends at 15.0s, so keep the clip as-is and do not synthesize or render anything.

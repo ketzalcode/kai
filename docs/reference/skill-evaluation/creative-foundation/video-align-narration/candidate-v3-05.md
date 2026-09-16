@@ -1,1 +1,0 @@
-Request a replacement measured recording take from the operator or evidence provider, tied to footage with valid relevant states. Retain the approved screenplay and reuse the existing narration clip for the next fit check.

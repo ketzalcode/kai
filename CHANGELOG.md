@@ -17,8 +17,8 @@ updated-host installation, or runtime-acceptance claim.
 - Independent `mockups-ascii` and `mockups-html` methods, and separately
   selectable `video-create-narration`, `video-align-narration`, and
   `video-render-zoom` methods.
-- Preserved original creative definitions under `incubator/kai-creative/`,
-  source-contract and migration guards, and scoped authoring evidence.
+- Focused source-contract, parser-compatibility, and migration guards for the
+  creative roles and methods.
 
 ### Changed
 
@@ -55,9 +55,9 @@ updated-host installation, or runtime-acceptance claim.
   captions declared from captions inspected, and printed commands from actual
   outputs. Existing helper algorithms and their limitations are unchanged.
 
-Existing repository validation failures remain separate blockers. Source
-checks and local authoring samples do not establish live host discovery,
-renderer/accessibility results, successful media production, or efficacy.
+Existing repository validation failures remain deferred refactor work, not
+passing checks. These source changes do not establish live-host acceptance
+or successful media production.
 
 ## [8.0.0] - 2026-09-13
 

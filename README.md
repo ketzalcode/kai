@@ -64,9 +64,7 @@ loaded core PR diagram trigger, style evidence labels, source-test prose
 matching, and an optional HTML cross-reference. Scoped re-review accepted all
 four corrections at `35a8d05`. Prepared `9.0.0` metadata does not publish the packages
 or verify an updated host. Existing source-validator, pack self-test, and
-version-skew failures remain release blockers. The
-[recorded baseline](docs/reference/skill-evaluation/creative-foundation-baseline-2026-09-13.md)
-keeps the original diagnostics separate from the current implementation.
+version-skew failures are deferred refactor work, not passing checks.
 
 `kai-assistant` is the first capability package split out of the original five:
 it owns `personal-assistant`, `persona-self`, and their four private methods,
@@ -82,10 +80,7 @@ is `mockups-ascii`, `mockups-html`, `html-block-diagrams`,
 `video-create-narration`, `video-align-narration`, and `video-render-zoom`.
 Core plus creative accepts supplied briefs and evidence without marketing or
 assistant. All six method sources and generated packs are integrated at the
-prepared version, with scoped source guards passing. The
-[execution and authoring record](docs/reference/skill-evaluation/creative-foundation-authoring.md)
-keeps final review, evidence limits, and repository blockers explicit; this
-source integration is not live-host or release acceptance.
+prepared version. Source integration is not live-host or release acceptance.
 See [the package note](docs/reference/packages/kai-creative.md) for artifacts,
 prerequisites, and runtime scenarios not executed during this source refactor.
 

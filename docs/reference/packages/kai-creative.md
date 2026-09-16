@@ -28,11 +28,9 @@ The locked method surface is:
 - `video-render-zoom`
 
 All six authored method sources, generated catalog/inventory, and package
-outputs are integrated at prepared `9.0.0` metadata. The
-[execution and authoring record](../skill-evaluation/creative-foundation-authoring.md)
-records source checks, frozen sample versions, final-review status, and
-remaining repository failures. Source integration is not global acceptance,
-live-host verification, or publication.
+outputs are integrated at prepared `9.0.0` metadata. Retired names have no
+runtime compatibility aliases; their original definitions remain in Git
+history. Source integration is not live-host verification or publication.
 
 ## Ownership and authority
 
@@ -112,5 +110,4 @@ and wide sizes; it is not a real artifact's visual or accessibility acceptance.
 
 No desktop recording, real-video encoding/mixing, paid speech synthesis,
 live-host discovery, or release publication was performed. Existing validator
-and pack-check failures remain blockers, not waived gates. The linked execution
-record distinguishes these limits from the completed source work.
+and pack-check failures remain deferred refactor work, not passing checks.

@@ -1,1 +1,0 @@
-✓ docs:check: the generated agent/skill catalog matches the shipped surface

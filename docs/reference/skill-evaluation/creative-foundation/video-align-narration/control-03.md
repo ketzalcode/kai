@@ -1,1 +1,0 @@
-The clip does not fit as-is. Align it after `edit-name` ends at 7.4s, but the 4.2s take will end before the `saved-result` hold completes. Exact next action: request a longer narration take or shorten the visual span before any render.

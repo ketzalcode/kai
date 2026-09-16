@@ -1,1 +1,0 @@
-No — the comparison tray would expand scope, and a direct proposal does not authorize implementation. The right answer is to treat it as a separate proposal: it is a good idea, but it adds a new comparison surface and workflow, so it should be reviewed and scheduled apart from the current screen work.

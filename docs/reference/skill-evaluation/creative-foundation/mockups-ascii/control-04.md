@@ -1,1 +1,0 @@
-No mockup or options exercise is needed here. The request is a routine copy-only change, so the right bounded action is to update the button label from `Create alert` to `Save search` and implement it directly. The supplied evidence says the existing 1280px width already fits the new label, so there is no layout caveat to flag.

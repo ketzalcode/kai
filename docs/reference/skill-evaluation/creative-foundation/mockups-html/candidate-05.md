@@ -1,1 +1,0 @@
-No mockup or options exercise is needed here. This is a copy-only change with no layout, hierarchy, interaction, or responsive design decision open. Proceed directly to implementation planning and rename the secondary button to “Save search.” No caveat is needed; the supplied evidence already says the label fits at 1280px.
