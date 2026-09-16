@@ -65,7 +65,7 @@ const MIGRATION_BASELINE_PACKS = {
   creative: ['principal-product-designer', 'principal-brand-designer', 'creative-video-director'],
   engineering: [
     'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
-    'principal-swe-infra', 'principal-swe-manager', 'principal-solutions-architect',
+    'principal-swe-infra', 'principal-swe-manager',
     'principal-sre', 'principal-security', 'principal-privacy-compliance',
     'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
     'principal-ai-researcher', 'workflow-pull-request',
@@ -86,6 +86,7 @@ const MIGRATION_BASELINE_PACKS = {
   revenue: [
     'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
     'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
+    'principal-solutions-architect',
   ],
   learning: [
     'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
@@ -93,11 +94,26 @@ const MIGRATION_BASELINE_PACKS = {
   ],
 };
 
+// Retired identities stay in the taxonomy baseline, not in active discovery or
+// emitted packs. This is an inventory change, not a runtime compatibility alias.
+export const RETIRED_ENGINEERING_AGENT_IDS = new Set([
+  'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
+  'principal-swe-infra', 'principal-swe-manager', 'principal-sre',
+  'principal-security', 'principal-privacy-compliance', 'principal-qa-ui',
+  'principal-data-engineer', 'principal-ai-applied-engineer', 'principal-ai-researcher',
+  'workflow-issue-analysis', 'workflow-localization',
+]);
+
 export const NEW_AGENT_IDS = {
   core: [],
   assistant: ['personal-assistant'],
   creative: [],
-  engineering: ['eng-lead-technical-writing'],
+  engineering: [
+    'eng-lead-technical-writing', 'eng-advisor-investigation', 'eng-lead-architecture',
+    'eng-builder-software', 'eng-builder-platform', 'eng-reviewer-code',
+    'eng-reviewer-quality', 'eng-reviewer-security', 'eng-reviewer-reliability',
+    'eng-reviewer-privacy-compliance',
+  ],
   product: [],
   marketing: [],
   revenue: [],
@@ -106,7 +122,10 @@ export const NEW_AGENT_IDS = {
 
 export const PACKS = Object.fromEntries(
   Object.keys(MIGRATION_BASELINE_PACKS)
-    .map((pack) => [pack, [...MIGRATION_BASELINE_PACKS[pack], ...NEW_AGENT_IDS[pack]]]),
+    .map((pack) => [pack, [
+      ...MIGRATION_BASELINE_PACKS[pack].filter(id => !RETIRED_ENGINEERING_AGENT_IDS.has(id)),
+      ...NEW_AGENT_IDS[pack],
+    ]]),
 );
 
 // Deterministic pack emission order: core first, then the departments in the
@@ -123,7 +142,6 @@ export const SKILL_OWNER_OVERRIDES = {
   'demo-zoom': 'creative',
   'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
-  'onboard-to-codebase': 'engineering',
 };
 
 // The committed source surface equals the full locked partition. Retain this alias
@@ -192,9 +210,10 @@ const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
   assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
+  engineering: 'Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.',
   product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
   marketing: 'Positioning, campaigns, social content, and search visibility over kai-core.',
-  revenue: 'Sales, pricing, partnerships, revenue operations, customer success, and support intake over kai-core.',
+  revenue: 'Sales, pricing, partnerships, revenue operations, customer success, support intake, and pre-sales solution fit over kai-core.',
   learning: 'Teaching, tutoring, learning paths, lesson production, and career development over kai-core.',
 };
 

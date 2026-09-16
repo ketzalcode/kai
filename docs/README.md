@@ -3,7 +3,7 @@
 # kai documentation
 
 Four guides and package references. Start wherever your question is. The current
-source has eight packages and prepared `8.0.0` metadata, not a verified remote
+source has eight packages and prepared `10.0.0` metadata, not a verified remote
 release. Install core plus the capabilities needed from a source containing
 this refactor; see the availability and replacement guidance in Getting started.
 
@@ -18,19 +18,21 @@ this refactor; see the availability and replacement guidance in Getting started.
 
 | Page | Contents |
 | ---- | -------- |
-| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 55 agents and 47 skills, generated from their shipped frontmatter so it cannot drift. |
+| [Agents & skills](reference/agents-and-skills.md) | The full catalog of all 50 agents and 47 skills, generated from their source frontmatter. |
+| [Package: `kai-engineering`](reference/packages/kai-engineering.md) | Thirteen direct-use engineering roles, five task-local skills, model/authority boundaries, and deferred fleet wiring. |
 | [Package: `kai-assistant`](reference/packages/kai-assistant.md) | What the personal-assistance package owns, where its private state lives, its acceptance scenarios, and its current limitations. |
 | [Package: `kai-creative`](reference/packages/kai-creative.md) | UI/UX, visual identity and media; supplied-input boundaries and demo-runtime prerequisites. |
 | [Package: `kai-product`](reference/packages/kai-product.md) | Discovery, scope, analytics, growth and product assessment; independent acceptance boundaries. |
 | [Package: `kai-marketing`](reference/packages/kai-marketing.md) | Positioning, campaigns, social and search; factual grounding without compulsory sibling producers. |
-| [Package: `kai-revenue`](reference/packages/kai-revenue.md) | Six commercial/customer roles, no local skills; human authority and escalation limits. |
+| [Package: `kai-revenue`](reference/packages/kai-revenue.md) | Seven commercial/customer and solution-fit roles, no local skills; human authority and escalation limits. |
 | [Package: `kai-learning`](reference/packages/kai-learning.md) | Teaching, paths, materials and career development; separate Markdown, HTML and audio outcomes. |
 | [Plugin structure](reference/plugin-structure.md) | The layout of this repository, and what to run before opening a PR. |
 
 `kai-core` owns shared contracts, workspace machinery and requested coordination;
 `kai-engineering` owns implementation, architecture, reliability, trust and
-technical writing. Their source boundaries remain intact. All eight owners and
-their 56 agent / 57 skill IDs are listed in the generated catalog.
+technical writing. All eight owners and their 50 agent / 47 skill IDs are
+listed in the generated catalog. Cross-agent routing to retired engineering
+identities is deferred; use the engineering package reference for direct work.
 
 **Elsewhere in the repo**
 

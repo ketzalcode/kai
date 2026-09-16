@@ -7,7 +7,7 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-kai ships **55 agents** and **47 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
+kai ships **50 agents** and **47 skills** (12 of the skills are directly user-invocable; the rest load on demand, routed by the agents that need them at the step that needs each one).
 
 Each description below is the agent or skill's own shipped `description:` —
 the exact text the host reads when deciding whether to fire it. You do not
@@ -39,26 +39,23 @@ Delivery coordination, on explicit request. Nothing has to be routed through it.
 
 ### Engineering
 
-Technical design and implementation. The architect and manager are situational.
+Direct technical decisions and complete implementations. Architecture is situational; domain methods do not require separate agents.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-swe-architect`](../../plugins/kai-engineering/agents/principal-swe-architect.agent.md) | Decides software architecture across domains: system shape, boundaries, contracts, and cross-cutting NFRs. Use when an engineering change needs seams, trade-offs, or a durable decision. Not delivery planning (`principal-swe-manager`). |
-| [`principal-swe-manager`](../../plugins/kai-engineering/agents/principal-swe-manager.agent.md) | Turns a committed product action into a scoped, sequenced engineering delivery plan with workstreams, owners, estimates, dependencies, and spikes. Use before implementation. Not architecture decisions (`principal-swe-architect`) or coding. |
-| [`principal-swe-frontend`](../../plugins/kai-engineering/agents/principal-swe-frontend.agent.md) | Builds and reviews frontend TypeScript, React, CSS, components, hooks, accessibility, and styling architecture. Use for UI implementation or design judgment. Not backend (`principal-swe-backend`) or infra (`principal-swe-infra`). |
-| [`principal-swe-backend`](../../plugins/kai-engineering/agents/principal-swe-backend.agent.md) | Builds and reviews backend APIs, server logic, data models, migrations, consistency, and model-serving backends. Use for server-side design or implementation. Not architecture (`principal-swe-architect`) or frontend (`principal-swe-frontend`). |
-| [`principal-swe-infra`](../../plugins/kai-engineering/agents/principal-swe-infra.agent.md) | Builds and reviews infrastructure, platform, CI/CD, deployment, IaC, containers, build tooling, secrets, and observability. Use for rollout, rollback, cloud, networking, or pipeline judgment. Not backend code (`principal-swe-backend`). |
-| [`principal-data-engineer`](../../plugins/kai-engineering/agents/principal-data-engineer.agent.md) | Designs SaaS data pipelines, ingestion, warehouse/lakehouse models, data contracts, event instrumentation, data quality, and lineage. Use for data movement and shape. Not metric validity (`principal-data-analytics`). |
+| [`eng-lead-architecture`](../../plugins/kai-engineering/agents/eng-lead-architecture.agent.md) | Resolves expensive software decisions across components or services: boundaries, contracts, data ownership, and system trade-offs. Use when local implementation judgment is insufficient. Not delivery coordination, production code, or independent security/readiness approval. |
+| [`eng-builder-software`](../../plugins/kai-engineering/agents/eng-builder-software.agent.md) | Implements a scoped software change end-to-end: frontend, APIs, persistence, data pipelines, or applied AI, with its tests. Use for features, fixes, and refactors. Not independent review, platform provisioning, or production deployment. |
+| [`eng-builder-platform`](../../plugins/kai-engineering/agents/eng-builder-platform.agent.md) | Implements CI/CD, IaC, containers, build tooling, runtime configuration, and observability with plan or dry-run evidence. Use for platform changes. Not application implementation, independent readiness approval, or production operations. |
 
 ### Intake & delivery
 
-The full life of one change: from an issue to a chosen approach, then to a merged PR, then to production. kai never merges or deploys itself.
+Bounded investigation, PR preparation, and release evidence. Direct calls work without a team pipeline; coordinated wiring is separate. Kai never merges or deploys itself.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`workflow-issue-analysis`](../../plugins/kai-engineering/agents/workflow-issue-analysis.agent.md) | Turns one issue into a grounded problem statement, verified assumption, viable options, and chosen approach handoff. Use at issue intake before implementation. Not coding or creating work items. |
-| [`workflow-pull-request`](../../plugins/kai-engineering/agents/workflow-pull-request.agent.md) | Turns one finished workspace change into a mergeable pull request with branch, commits, PR narrative, version bump, and readiness report. Use when a change is ready for PR. Not merge, tag, release, or branch-protection bypass. |
-| [`workflow-ship`](../../plugins/kai-engineering/agents/workflow-ship.agent.md) | Orchestrates release prepare, human deployment start, and completion confirmation with deploy, rollback, verification, and smoke-check records. Use when a release moves from in-review to shipped. Not deployment execution. |
+| [`eng-advisor-investigation`](../../plugins/kai-engineering/agents/eng-advisor-investigation.agent.md) | Investigates a bounded issue, codebase question, technical option, or AI research topic and returns cited findings and unknowns. Use when evidence is missing. Not implementation, independent acceptance, or automatic delivery planning. |
+| [`workflow-pull-request`](../../plugins/kai-engineering/agents/workflow-pull-request.agent.md) | Packages one finished diff into an authorized branch, commits, push, and pull request, then reports live merge readiness. Works directly from a supplied change. Never merges, tags, releases, force-pushes, or bypasses protection. |
+| [`workflow-ship`](../../plugins/kai-engineering/agents/workflow-ship.agent.md) | Assesses release readiness directly or, for authorized coordinated work, records PREPARE, deployment start, completion, production verification, rollback, and shipped transitions. Never deploys, merges, pushes, tags, migrates, triggers CI, or monitors continuously. |
 
 ### Trust & reliability
 
@@ -66,10 +63,10 @@ Independent judgment on security, privacy, reliability, and live incidents.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-security`](../../plugins/kai-engineering/agents/principal-security.agent.md) | Produces SaaS threat models, security designs, change reviews, vulnerability triage, privacy-engineering assessments, and incident-security guidance. Use when authorized evidence needs security judgment. Not compliance sign-off. |
-| [`principal-privacy-compliance`](../../plugins/kai-engineering/agents/principal-privacy-compliance.agent.md) | Designs SaaS privacy and compliance artifacts: DPIAs, data inventories, lawful-basis maps, DSR processes, consent, retention, notices, framework reviews, and breach-notification analysis. Not security controls. |
-| [`principal-sre`](../../plugins/kai-engineering/agents/principal-sre.agent.md) | Defines SaaS reliability contracts, readiness, recovery behavior, capacity, observability, alerting, runbooks, and reliability review. Use for production-readiness judgment. Not architecture, infra implementation, or incident command. |
-| [`workflow-incident-response`](../../plugins/kai-engineering/agents/workflow-incident-response.agent.md) | Runs incident command for SaaS operational, security, data, or availability events: SEV, leads, timeline, action packets, status drafts, recovery evidence, and record. Use when an incident starts. Not production actions or breach/legal declarations. |
+| [`eng-reviewer-security`](../../plugins/kai-engineering/agents/eng-reviewer-security.agent.md) | Independently reviews an exact change, design, or supplied security evidence for credible threats, control adequacy, and residual risk. Use for defensive security assessment. Never exploits, remediates the product, certifies compliance, or accepts risk. |
+| [`eng-reviewer-privacy-compliance`](../../plugins/kai-engineering/agents/eng-reviewer-privacy-compliance.agent.md) | Independently reviews an exact change, processing activity, policy, or vendor evidence against named privacy and compliance obligations. Produces source-cited gaps; never gives legal certification, handles real personal data, remediates the product, or makes counsel decisions. |
+| [`eng-reviewer-reliability`](../../plugins/kai-engineering/agents/eng-reviewer-reliability.agent.md) | Independently reviews an exact service, change, or supplied operational evidence for customer reliability, recovery, capacity, observability, and readiness. Never performs production actions, commands incidents, or invents measured targets. |
+| [`workflow-incident-response`](../../plugins/kai-engineering/agents/workflow-incident-response.agent.md) | Maintains one incident command picture from supplied operational, security, data, or availability facts: impact-based SEV, status, timeline, hypotheses, human action packets, recovery evidence, and closure. Never performs production actions, sends messages, declares breaches, or monitors continuously. |
 
 ### Product
 
@@ -88,14 +85,13 @@ Discovery, scope, evidence, analytics, product-led growth, and independent produ
 | [`persona-professional-nutritionist`](../../plugins/kai-product/agents/persona-professional-nutritionist.agent.md) | Audits fitness-product meal plans, macros, pantry suggestions, and projection math for nutrition accuracy, macro safety, micronutrient gaps, and allergen risk. Not exercise programming (`persona-professional-trainer`). |
 | [`persona-professional-trainer`](../../plugins/kai-product/agents/persona-professional-trainer.agent.md) | Audits fitness-product workouts and programs for safety, completeness, progression, screening, volume, and injury-aware substitutions. Not meal plans or macros (`persona-professional-nutritionist`). |
 
-### Technical writing & localization
+### Technical writing
 
-Engineering-owned documentation and bounded localization.
+Engineering-owned documentation, editorial assessment, and source-language localization preparation.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`eng-lead-technical-writing`](../../plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md) | Technical writing specialist for READMEs, developer guides, tutorials, API reference, and release notes. Use to draft, restructure, or audit documentation. Not product scope, public claims, translation, lessons (`instructor-tutor`), or publishing. |
-| [`workflow-localization`](../../plugins/kai-engineering/agents/workflow-localization.agent.md) | Runs SaaS i18n-readiness and locale-QA workflow for strings, formatting, pluralization, RTL, encoding, translation routing, and build checks. Use when a surface needs localization readiness. Not translating or code edits. |
+| [`eng-lead-technical-writing`](../../plugins/kai-engineering/agents/eng-lead-technical-writing.agent.md) | Authors or reviews substantial developer documentation: READMEs, guides, tutorials, API reference, decisions, and release notes. Use for documentation structure, accuracy, or editorial acceptance. Not product scope, translation certification, independent code review, or publishing. |
 
 ### Creative
 
@@ -122,20 +118,11 @@ Sales, pricing, partnerships, revenue operations, customer success, and support 
 
 ### Solution architecture
 
-Engineering-owned technical fit and solution design, not commercial deal authority.
+Revenue-owned pre-sales technical fit and solution design, not implementation or commercial commitments.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-solutions-architect`](../../plugins/kai-engineering/agents/principal-solutions-architect.agent.md) | Turns buyer requirements, environment, and integration evidence into SaaS technical discovery, solution fit, feasibility, POC scope, objections, and questionnaire guidance. Use pre-sale. Not roadmap, pricing, implementation, or attestations. |
-
-### AI research to product
-
-Track the live AI landscape, then turn a finding into something buildable.
-
-| Name | What it owns |
-| ---- | ------------ |
-| [`principal-ai-researcher`](../../plugins/kai-engineering/agents/principal-ai-researcher.agent.md) | Researches live AI landscape changes and writes Lectoria-ready briefings on model releases, papers, training, inference, evals, safety, agents, and multimodal progress. Use for AI updates or a named paper/topic. |
-| [`principal-ai-applied-engineer`](../../plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md) | Turns AI research or product ideas into ticket-grade applied designs with architecture, FE/BE work, eval, rollout, risk, cost, latency, and build/no-build guidance. Use when deciding how to ship AI. |
+| [`principal-solutions-architect`](../../plugins/kai-revenue/agents/principal-solutions-architect.agent.md) | Turns buyer requirements, environment, and integration evidence into SaaS technical discovery, solution fit, feasibility, POC scope, objections, and questionnaire guidance. Use pre-sale. Not roadmap, pricing, implementation, or attestations. |
 
 ### Learning & career development
 
@@ -160,13 +147,14 @@ Positioning, campaigns, LinkedIn content, and search assessments from supplied f
 | [`principal-linkedin-strategist`](../../plugins/kai-marketing/agents/principal-linkedin-strategist.agent.md) | Turns product intelligence and media into grounded, platform-native LinkedIn post variants, angle matrices, calendars, and carousel outlines. Use for LinkedIn content strategy. Never auto-publishes. |
 | [`principal-seo`](../../plugins/kai-marketing/agents/principal-seo.agent.md) | Assesses technical SEO, content alignment, and agentic-search readiness from supplied HTML, headers, screenshots or authorized live evidence. Use for search visibility, not general UI defects or implementation. |
 
-### Web quality
+### Implementation & system review
 
-Engineering-owned UI QA, independent of marketing and search assessment.
+Independent code review and browser/API/CLI/system acceptance. Implementers retain ownership of their regression tests.
 
 | Name | What it owns |
 | ---- | ------------ |
-| [`principal-qa-ui`](../../plugins/kai-engineering/agents/principal-qa-ui.agent.md) | Manually tests a website UI for objective defects: overlap, overflow, broken controls, console or network errors with visible impact, focus order, and viewport layout breaks. Use for QA passes. Not fresh-eyes UX (`persona-ux-first-time-user`). |
+| [`eng-reviewer-code`](../../plugins/kai-engineering/agents/eng-reviewer-code.agent.md) | Independently reviews an exact code change for requirements, correctness, contracts, regressions, and test adequacy. Use for a diff, PR, or implementation review. Returns evidence-based findings; never repairs the code or substitutes for specialized risk acceptance. |
+| [`eng-reviewer-quality`](../../plugins/kai-engineering/agents/eng-reviewer-quality.agent.md) | Independently reviews assembled acceptance across browser, API, CLI, and system surfaces for objective defects and requirement coverage. Preserves UI, accessibility, localization, and RTL checks when relevant. Never patches the product or owns regression tests. |
 
 ### Personal assistance
 
@@ -241,7 +229,7 @@ Classify, name, scope, and validate a new or redesigned Kai role before it joins
 
 ### Engineering craft
 
-Per-change discipline every `principal-swe-*` agent routes.
+Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.
 
 | Name | What it owns |
 | ---- | ------------ |

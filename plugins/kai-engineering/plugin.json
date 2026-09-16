@@ -1,7 +1,7 @@
 {
   "name": "kai-engineering",
-  "version": "8.0.0",
-  "description": "kai engineering department pack — the engineering roles, over a required kai-core.",
+  "version": "10.0.0",
+  "description": "Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.",
   "agents": "agents",
   "skills": "skills"
 }

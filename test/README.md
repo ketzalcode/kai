@@ -1,8 +1,13 @@
 # kai plugin tests
 
-Seven dependency-free, CI-enforced guards protect the plugin. All run on every
+Dependency-free, CI-enforced guards protect the plugin. All run on every
 PR and push to `main` and must stay fast:
 
+- **Standalone engineering surface**
+  (`test/engineering-agents-self-test.mjs`) — exercises source discovery, host
+  frontmatter/model/tool validation, core-plus-engineering skill resolution,
+  emitted inventory and the single revenue owner of pre-sales solution fit.
+  This is structural coverage, not a live agent-behavior or performance test.
 - **Engineering foundation source contract**
   (`test/engineering-foundation-self-test.mjs`) — keeps incubated review
   components out of active discovery, packs, routes, and current documentation
@@ -31,7 +36,9 @@ PR and push to `main` and must stay fast:
   every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
   (skipped cleanly where `pwsh` is unavailable).
 
-`npm test` runs all seven.
+`npm test` runs these guards and the declared runtime self-tests. A failing
+earlier command stops the chain; passing the targeted engineering guards does
+not imply the whole repository is release-ready.
 
 ## Deterministic checks (in CI)
 

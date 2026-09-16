@@ -52,10 +52,8 @@ if (!/^Use when\b/.test(codingStyleDescription)
 }
 const codingStyleReferences = collectReferences(root);
 for (const rel of [
-  'plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-software.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-platform.agent.md',
 ]) {
   const body = readFileSync(join(root, rel), 'utf8');
   const normalizedBody = normalizeContract(body);
@@ -120,10 +118,8 @@ for (const [label, pattern] of [
   }
 }
 const researchCallers = [
-  'plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-software.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-platform.agent.md',
 ];
 for (const rel of researchCallers) {
   const body = readFileSync(join(root, rel), 'utf8');
@@ -151,12 +147,12 @@ for (const rel of researchCallers) {
   }
 }
 const issueAnalysisBody = readFileSync(
-  join(root, 'plugins', 'kai-engineering', 'agents', 'workflow-issue-analysis.agent.md'),
+  join(root, 'plugins', 'kai-engineering', 'agents', 'eng-advisor-investigation.agent.md'),
   'utf8',
 );
 for (const staleClaim of ['zero** agents inheriting it', 'effectively dormant']) {
   if (issueAnalysisBody.includes(staleClaim)) {
-    researchContractViolations.push(`workflow-issue-analysis: ${staleClaim}`);
+    researchContractViolations.push(`eng-advisor-investigation: ${staleClaim}`);
   }
 }
 assert.deepEqual(
@@ -288,10 +284,8 @@ for (const [label, pattern] of [
   }
 }
 const sizingCallers = [
-  'plugins/kai-engineering/agents/principal-ai-applied-engineer.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-software.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-platform.agent.md',
 ];
 for (const rel of sizingCallers) {
   const body = readFileSync(join(root, rel), 'utf8');
@@ -387,11 +381,10 @@ if (!existsSync(diagramCatalogPath)) {
   }
 }
 const diagramCallers = [
-  'plugins/kai-engineering/agents/principal-swe-architect.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-backend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-frontend.agent.md',
-  'plugins/kai-engineering/agents/principal-swe-infra.agent.md',
-  'plugins/kai-engineering/agents/workflow-issue-analysis.agent.md',
+  'plugins/kai-engineering/agents/eng-lead-architecture.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-software.agent.md',
+  'plugins/kai-engineering/agents/eng-builder-platform.agent.md',
+  'plugins/kai-engineering/agents/eng-advisor-investigation.agent.md',
   'plugins/kai-engineering/agents/workflow-pull-request.agent.md',
 ];
 for (const rel of diagramCallers) {
@@ -463,13 +456,11 @@ assert.deepEqual(
 const agents = sourceAgentFiles(root);
 assert.ok(!agents.some(entry => entry.id === 'workflow-doc-review'));
 const retainedAgents = [
-  'eng-lead-technical-writing', 'principal-ai-applied-engineer',
-  'principal-ai-researcher', 'principal-data-engineer',
-  'principal-privacy-compliance', 'principal-qa-ui', 'principal-security',
-  'principal-solutions-architect', 'principal-sre', 'principal-swe-architect',
-  'principal-swe-backend', 'principal-swe-frontend', 'principal-swe-infra',
-  'principal-swe-manager', 'workflow-incident-response', 'workflow-issue-analysis',
-  'workflow-localization', 'workflow-pull-request', 'workflow-ship',
+  'eng-advisor-investigation', 'eng-builder-software', 'eng-builder-platform',
+  'eng-lead-architecture', 'eng-lead-technical-writing', 'eng-reviewer-code',
+  'eng-reviewer-quality', 'eng-reviewer-security', 'eng-reviewer-reliability',
+  'eng-reviewer-privacy-compliance', 'workflow-incident-response',
+  'workflow-pull-request', 'workflow-ship',
 ].sort();
 assert.deepEqual(agents.filter(entry => entry.pack === 'engineering')
   .map(entry => entry.id).sort(), retainedAgents);
@@ -550,9 +541,9 @@ try {
     writeFileSync(join(skillsDir, id, 'SKILL.md'),
       `---\nname: ${id}\ndescription: fixture\n---\n`);
   }
-  const backendPath = join(agentDir, 'principal-swe-backend.agent.md');
+  const backendPath = join(agentDir, 'eng-builder-software.agent.md');
   writeFileSync(backendPath, `---
-name: principal-swe-backend
+name: eng-builder-software
 description: fixture
 tools: [read, skill]
 ---
@@ -563,7 +554,7 @@ Apply \`pr-sizing\` when work needs decomposition.
 - **\`build-diagrams\`** — only when a visual relationship matters
 - **\`pr-sizing\`** — only when work needs decomposition
 `);
-  const backendRel = 'plugins/kai-engineering/agents/principal-swe-backend.agent.md';
+  const backendRel = 'plugins/kai-engineering/agents/eng-builder-software.agent.md';
   const dispatched = collectReferences(dispatchScratch);
   for (const id of ['build-diagrams', 'pr-sizing']) {
     assert.ok(dispatched.some(ref =>

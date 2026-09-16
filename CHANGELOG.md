@@ -4,6 +4,57 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [10.0.0] - 2026-09-16
+
+Prepared source metadata for standalone engineering agents. This is not a
+release, publication, live-host acceptance or completed fleet-wiring claim.
+
+### Changed
+
+- Engineering exposes 13 focused agents instead of 19. Investigation,
+  architecture, software/platform builders and independent reviewers use
+  responsibility-based identities with explicit approved model profiles.
+- Direct work accepts supplied scope and evidence with core plus engineering;
+  it does not require a product/design/management producer, another agent call,
+  or automatic `.kai` initialization. Existing five engineering skills remain
+  task-local, not a compulsory research-to-sizing-to-build pipeline.
+- Software implementation owns frontend, backend, applied-AI and data-pipeline
+  changes and their tests/evaluations. Quality review covers browser, API, CLI
+  and assembled-system acceptance, including requested localization checks.
+- PR, release and incident workflows retain their identities and human-only
+  production boundaries while supporting direct assessment from supplied inputs.
+- Pre-sales solution architecture moves, with its identity retained, from
+  engineering to revenue as a single owning source.
+- Root, marketplace and all eight generated package manifests/locks prepare
+  `10.0.0`. Cross-agent references, stored item owners and fleet routing remain
+  deferred; retired engineering names have no compatibility aliases.
+
+### Added
+
+- A dedicated independent code reviewer and structural coverage for the
+  standalone discovery, emitted roster, model/tool metadata and local/core
+  skill routes.
+- An engineering package reference covering direct invocation, capabilities,
+  retirement mapping, remaining coordination work and evidence limits.
+
+### Removed
+
+- Separate frontend/backend, applied-AI proposal, data-design and AI-news
+  identities from the active engineering surface. Their relevant craft is
+  retained in focused implementation, investigation and architecture roles.
+- The engineering-manager and localization agent identities. Proportional
+  decomposition uses the existing sizing method; source preparation, translation
+  routing and locale acceptance stay with documentation, implementation and QA.
+
+### Fixed
+
+- Implementers, not QA, own changed-behavior regression tests and AI/pipeline
+  evaluations. Independent review remains separate from remediation.
+- Source prompts no longer treat architecture as exclusively inward-looking
+  or require a heavyweight proposal/report for an ordinary direct request.
+- The issue-analysis skill's diagram instruction now preserves the same
+  explicit-request or information-value condition as its investigation caller.
+
 ## [8.0.0] - 2026-09-13
 
 Prepared source metadata for the engineering coding foundation, not a tag,
@@ -3530,6 +3581,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[10.0.0]: https://github.com/RubenSaucedo/kai/compare/v9.0.0...v10.0.0
 [8.0.0]: https://github.com/RubenSaucedo/kai/compare/v7.0.0...v8.0.0
 [7.0.0]: https://github.com/RubenSaucedo/kai/compare/v6.0.0...v7.0.0
 [6.0.0]: https://github.com/RubenSaucedo/kai/compare/v5.0.0...v6.0.0
