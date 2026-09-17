@@ -13,6 +13,8 @@ import { parseScreenplay } from '../scripts/demo-capture.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const finalCreativeSkills = [
+  'ascii-motion-render',
+  'ascii-motion-source',
   'html-block-diagrams',
   'mockups-ascii',
   'mockups-html',
@@ -227,11 +229,15 @@ const productionContract = {
     'video-create-narration',
     'video-align-narration',
     'video-render-zoom',
+    'ascii-motion-source',
+    'ascii-motion-render',
   ],
   allowedActiveCreativeRoutes: [
     'video-align-narration',
     'video-create-narration',
     'video-render-zoom',
+    'ascii-motion-source',
+    'ascii-motion-render',
   ],
   bodyPatterns: [
     /starts only from supplied media and approved direction/i,

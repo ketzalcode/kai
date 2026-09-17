@@ -216,8 +216,10 @@ function missingFfmpeg() {
 
 async function renderFrameImages(doc, indices, outDir, io) {
   const notes = [];
-  for (const index of indices) {
-    const stem = `${outDir}/f${String(index).padStart(4, '0')}`;
+  // ffmpeg reads a "%04d" sequence contiguously from zero and stops at the
+  // first gap, so outputs are numbered by position, not by source index.
+  for (const [position, index] of indices.entries()) {
+    const stem = `${outDir}/f${String(position).padStart(4, '0')}`;
     io.writeText(`${stem}.txt`, `${doc.frames[index].join('\n')}\n`);
     const args = frameImageArgs({
       textPath: `${stem}.txt`,

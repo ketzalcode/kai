@@ -12,6 +12,8 @@ const ids = [
   'video-align-narration',
   'video-render-zoom',
   'html-block-diagrams',
+  'ascii-motion-source',
+  'ascii-motion-render',
 ];
 const retiredCreativeSkills = [
   'create-product-demo',
@@ -367,6 +369,67 @@ function assertHtmlBlockDiagrams(skill) {
   ]) expectNoMatch(id, combined, label, pattern);
 }
 
+function assertAsciiMotionSource(skill) {
+  const id = 'ascii-motion-source';
+  if (!skill) return;
+  assertDescription(id, skill, [
+    ['names ascii motion', /ascii motion/i],
+    ['names a source or licence trigger', /\b(?:source|licence|license|origin)\b/i],
+  ]);
+  for (const [label, pattern] of [
+    ['a prompt is not a source', /prompt.{0,80}(?:is a request|not a source)/],
+    ['only supplied media and templates are licensed',
+      /(?:supplie[sd]|operator).{0,120}(?:template|procedural).{0,160}nothing else is licensed/],
+    ['a template is not footage of the subject',
+      /template.{0,80}(?:generated arithmetic|not footage).{0,120}(?:not footage|named subject)/],
+    ['giphy excluded outright', /giphy is excluded outright/],
+    ['no fetching from a url or stock service', /never fetch media from a url|stock service/],
+    ['licence recorded for supplied media too', /every clip carries licence and origin/],
+    ['an unrecorded licence blocks rather than guesses',
+      /unrecorded licence blocks.{0,80}(?:does not become a guess|not.{0,30}guess)/],
+    ['missing tools reported, never installed',
+      /(?:do not|never) install tools/],
+    ['producing is not review or publication', /not review and not publication/],
+  ]) expectMatch(id, skill.normalized, label, pattern);
+  assertConditionalCoreRoutes(id, skill);
+  assertProviderCommands(id, skill, 'ascii-motion.mjs', ['--probe', '--explain', '--template']);
+}
+
+function assertAsciiMotionRender(skill) {
+  const id = 'ascii-motion-render';
+  if (!skill) return;
+  assertDescription(id, skill, [
+    ['names ascii motion', /ascii motion|ascii animation/i],
+    ['names a bundle or looping image destination', /\b(?:bundle|looping image)\b/i],
+  ]);
+  for (const [label, pattern] of [
+    ['both artifacts are co-primary', /two artifacts are co-primary/],
+    ['looping image covers what mp4 cannot', /mp4 cannot do/],
+    ['neither artifact substitutes for the other', /neither one substitutes for the other/],
+    ['still gate is spatial', /still gate catches spatial/],
+    ['sample gate is temporal', /sample gate catches temporal/],
+    ['a still is not evidence the motion reads',
+      /still that looks right is not evidence that the motion does/],
+    ['bundle grid disagreement is rejected, not resized',
+      /disagreement is rejected, not resized/],
+    ['export-only backend reports unsupported rather than an empty bundle',
+      /unsupported.{0,120}rather than emitting an empty bundle/],
+    ['printed command is not a render', /printed command is not a render/],
+    ['missing tools reported, never installed', /(?:do not|never) install tools/],
+    ['rendering is not review and review is not publication',
+      /rendering is not review, and review is not publication/],
+  ]) expectMatch(id, skill.normalized, label, pattern);
+  assertConditionalCoreRoutes(id, skill);
+  assertProviderCommands(id, skill, 'ascii-motion.mjs', [
+    '--explain',
+    '--preview',
+    '--sample',
+    '--bundle',
+    '--convert',
+    '--review',
+  ]);
+}
+
 const contracts = {
   'mockups-ascii': assertMockupsAscii,
   'mockups-html': assertMockupsHtml,
@@ -374,6 +437,8 @@ const contracts = {
   'video-align-narration': assertVideoAlignNarration,
   'video-render-zoom': assertVideoRenderZoom,
   'html-block-diagrams': assertHtmlBlockDiagrams,
+  'ascii-motion-source': assertAsciiMotionSource,
+  'ascii-motion-render': assertAsciiMotionRender,
 };
 
 for (const id of selectedIds) {

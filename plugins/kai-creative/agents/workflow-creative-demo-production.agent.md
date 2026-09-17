@@ -125,7 +125,19 @@ frames establish coordinates and times. Surface compiler skips, clamping,
 unsettled states, and missing duration evidence. A plan or contact sheet is not
 a visually accepted render.
 
-No operation automatically triggers either of the others.
+Invoke `ascii-motion-source` only for an explicit request to establish where an
+ASCII animation's motion comes from. A named subject is a request, not a
+source; supplied footage and the built-in templates are the only sources this
+version licenses. A template clip is generated arithmetic, not footage of the
+named subject. Recorded licence and origin are required for supplied media too.
+
+Invoke `ascii-motion-render` only for an explicit preview, bundle, convert or
+review request against an existing clip. The still gate and the sample gate
+answer different questions; a still that looks right is not evidence the motion
+does. A printed command is not a render, and an emitted bundle is not a played
+one.
+
+No operation automatically triggers any of the others.
 
 ### 4. Inspect and report
 

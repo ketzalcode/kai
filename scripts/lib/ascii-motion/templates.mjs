@@ -28,12 +28,16 @@ function mulberry32(seed) {
 }
 
 function walkCycle({ cols, rows, frameCount, glyphs }) {
-  const bodyWidth = Math.max(4, Math.min(10, Math.round(cols * 0.22)));
-  const baseline = rows - 2;
-  const legRow = baseline;
-  const bodyBottom = legRow - 1;
-  const bodyTop = Math.max(0, bodyBottom - 1);
-  const headRow = Math.max(0, bodyTop - 1);
+  // The subject scales with the grid; a fixed-size silhouette is lost on a
+  // tall profile and clipped on a short one.
+  const scale = Math.max(1, Math.floor(rows / 8));
+  const legLength = scale;
+  const bodyHeight = Math.max(2, scale * 2);
+  const bodyWidth = Math.max(6, Math.min(28, Math.round(cols * 0.22)));
+  const baseline = rows - 1;
+  const bodyBottom = baseline - legLength;
+  const bodyTop = Math.max(0, bodyBottom - bodyHeight + 1);
+  const headHeight = Math.max(1, scale);
   // Two-phase gait: contact and passing. Fore and hind legs swap each phase so
   // the silhouette reads as a walk rather than a sliding block.
   const gait = [
@@ -42,27 +46,33 @@ function walkCycle({ cols, rows, frameCount, glyphs }) {
   ];
   return Array.from({ length: frameCount }, (_unused, frame) => {
     const grid = blankGrid(cols, rows);
-    const travel = cols + bodyWidth + 2;
-    const x = Math.floor((frame / frameCount) * travel) - bodyWidth - 1;
+    const x = Math.floor((frame / frameCount) * cols);
     const put = (col, row, glyph) => {
-      if (col >= 0 && col < cols && row >= 0 && row < rows) grid[row][col] = glyph;
+      // The subject wraps rather than entering and exiting, so every frame
+      // carries content and the loop has no blank seam.
+      const wrapped = ((col % cols) + cols) % cols;
+      if (row >= 0 && row < rows) grid[row][wrapped] = glyph;
     };
-    for (let dx = 0; dx < bodyWidth; dx += 1) {
-      put(x + dx, bodyTop, glyphs[0]);
-      put(x + dx, bodyBottom, glyphs[0]);
+    const bob = frame % 2 === 0 ? 0 : 1;
+    for (let dy = bodyTop; dy <= bodyBottom; dy += 1) {
+      for (let dx = 0; dx < bodyWidth; dx += 1) put(x + dx, dy - bob, glyphs[0]);
     }
     const headX = x + bodyWidth;
-    put(headX, headRow, glyphs[0]);
-    put(headX + 1, headRow, glyphs[0]);
-    put(headX, bodyTop, glyphs[0]);
-    const bob = frame % 2 === 0 ? 0 : 1;
-    put(x - 1, Math.max(0, bodyTop - bob), glyphs[1]);
+    const headTop = Math.max(0, bodyTop - headHeight - bob);
+    for (let dy = headTop; dy < headTop + headHeight + 1; dy += 1) {
+      for (let dx = 0; dx < Math.max(2, scale + 1); dx += 1) put(headX + dx, dy, glyphs[0]);
+    }
+    for (let dy = 0; dy < headHeight; dy += 1) {
+      put(x - 1 - dy, bodyTop - bob - dy, glyphs[1]);
+    }
     const phase = gait[frame % gait.length];
     const legXs = [x, x + 1, x + bodyWidth - 2, x + bodyWidth - 1];
     legXs.forEach((legX, index) => {
       const lift = phase[index];
-      put(legX + lift, legRow - lift, lift === 0 ? glyphs[0] : glyphs[1]);
-      if (lift === 0) put(legX, legRow + 1, glyphs[2]);
+      const length = Math.max(1, legLength - lift);
+      for (let dy = 0; dy < length; dy += 1) {
+        put(legX + lift, bodyBottom - bob + 1 + dy, lift === 0 ? glyphs[0] : glyphs[1]);
+      }
     });
     return toRows(grid);
   });
