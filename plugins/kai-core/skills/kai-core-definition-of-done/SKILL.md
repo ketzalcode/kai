@@ -53,8 +53,8 @@ doesn't apply to this change is waived, not faked-Clear).
 | 6 | **coordination-closed** | Is the release handoff complete for the team? | The authoritative item record is current, the deploy HANDOFF is on the thread, no blocking questions are open, dependencies are truthful, parked ideas are in the committed backlog, and every generated asset passed the `kai-core-asset-producing` close transaction. |
 
 Document lenses are not formal approvals. When `review_requirements` names
-`principal-security` (`independent-security`), `principal-sre`
-(`reliability-operability`), `principal-privacy-compliance`
+`eng-reviewer-security` (`independent-security`), `eng-reviewer-reliability`
+(`reliability-operability`), `eng-reviewer-privacy-compliance`
 (`privacy-compliance`), or `workflow-experiment-review`
 (`experiment-integrity`), only that owner's evidence against the exact current
 `change_ref` clears the relevant dimension. A waived BLOCK/NOT-READY/GAP/
@@ -112,12 +112,22 @@ any dimension is a Gap                           ─►  BOUNCE
 ```
 
 - **RELEASE-READY** — every dimension is Clear or explicitly Waived. Produce
-  the ship record, move the item to `release-ready`, and hand the operator the
-  exact deploy plus production-verification steps.
+  the ship record, move the item to `release-ready` with an `item.transition`
+  command, and hand the operator the exact deploy plus production-verification
+  steps.
 - **BOUNCE** — at least one Gap. Set the item back to `in-progress`
-  (or `blocked` if it has an unresolved dependency/question), append a `HANDOFF`
-  naming **the specific gap and the role that owns the fix**, and stop.
-  A bounce is a normal, healthy outcome — it's the gate doing its job.
+  (or `blocked` if it has an unresolved dependency/question), submit an
+  `item.handoff` naming **the specific gap and the role that owns the fix**, and
+  stop. A bounce is a normal, healthy outcome — it's the gate doing its job.
+
+For a coordinated item each of those is a runtime command through
+`scripts/coordinate.mjs apply`, and every entry in `completed_reviews` arrived
+as a `review.record` command bound to the exact `change_ref`. A verdict that was
+never recorded that way has not cleared dim 3, whatever a chat reply said.
+
+A direct, uncoordinated readiness question is still answerable inline: it needs
+no coordination database, no initiative and no report tree. What it cannot do is
+produce a lifecycle transition — there is no item to transition.
 
 **Production completion is separate.** After the human deploys, `workflow-ship`
 records deployment evidence, moves through `production-verification`, and

@@ -1,5 +1,6 @@
 ---
 name: workflow-workspace-init
+model: "claude-sonnet-5"
 description: "Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent."
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
@@ -38,8 +39,11 @@ run actually installed or updated a pack.
 5. Never migrate legacy content or publish project knowledge without explicit
    approval.
 6. Stop on the first failed or unverified plugin-install step.
-7. A healthy workspace uses `schema_version: 3`, `storage_mode`, at least one
-   project binding with `publication_root`, and `.kai/state`.
+7. A healthy coordinated workspace uses `schema_version: 4`, `storage_mode`, at
+   least one project binding with `publication_root`, `.kai/state`, and an
+   explicitly created coordination store. A `schema_version: 3` workspace stays
+   valid but inspect-only: coordinated writes refuse with `SCHEMA_MISMATCH`
+   until an explicit, separately authorized migration runs.
 
 ## Workflow
 
@@ -92,7 +96,7 @@ applying any non-empty plan, conflict resolution, migration, or publication.
 ### 4. Apply
 
 Invoke `kai-core-work-acting` before writing durable state, then execute
-onboarding's schema-3 scaffold:
+onboarding's scaffold:
 
 ```text
 <workspace-root>/.kai/
@@ -104,6 +108,13 @@ onboarding's schema-3 scaffold:
   archive/
   personal/
 ```
+
+The scaffold creates no coordination store. After the schema-4 manifest
+validates, create it explicitly through onboarding's authorized route —
+`request` → `authorize` → `coordinate.mjs init --confirm --capability <uuid>` —
+and confirm with `inspect`. `BOARD.md`, `state/items/` and `state/threads/` are
+retained pre-schema-4 history, never authored by hand and never read as
+authority; `status`, `detail` and `messages` read the store.
 
 For `external`, create no project `.kai/` tree and pair the project through:
 
@@ -137,22 +148,27 @@ Load `kai-core-work-item` before moving coordination state, and load
   operational history to `.kai/archive/`;
 - rewrite references;
 - install Git rules and external registry pairing;
-- write `schema_version: 3` last.
+- write `schema_version: 3` last, then run the separately authorized schema-3 →
+  schema-4 migration as its own step. Never chain the two automatically.
 
 Never bulk publish or leave both layouts.
 <!-- /kai:allow-legacy-roots -->
 
 ### 6. Validate
 
-Run:
+Run both:
 
 ```text
 node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
+node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 ```
 
 Confirm:
 
-- schema-3 manifest and fixed roots;
+- manifest schema and fixed roots — `4` for a coordinated workspace, `3` for a
+  readable inspect-only one;
+- the coordination store exists when the manifest says `4`; never create it
+  implicitly, and never chain the schema-3 migration automatically;
 - valid storage mode and project publication binding;
 - external registry pairing when applicable;
 - selected Git behavior;

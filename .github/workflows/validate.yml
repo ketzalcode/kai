@@ -12,12 +12,15 @@ name: validate
 # four named partition gates (partition, collision, partial-install, version-skew),
 # and a syntax/parse check of shipped helper scripts. On pull requests it
 # additionally runs the release-guard gate: a behavior-sensitive change must carry
-# a version bump plus changelog/README updates. A separate supported-Node job
-# installs each dependency-bearing generated pack from an empty cache with Git
-# disabled, then probes the pack-local Lectoria CLI and core provider root. That
-# job's matrix and its per-leg binary assertion are both derived from the pack
-# partition (COMMITTED_PACKS and PACK_RUNTIME_DEPENDENCIES), so publishing a pack
-# never means editing this workflow to make that pack legal.
+# a version bump plus changelog/README updates. A separate `coordination-runtime`
+# job executes the coordination inputs, store, engine, context, evidence, report,
+# host, migration and CLI suites on every supported Node version, because that
+# runtime is executable code over `node:sqlite` rather than declarative source. A
+# separate supported-Node job installs each dependency-bearing generated pack from
+# an empty cache with Git disabled, then probes the pack-local Lectoria CLI and
+# core provider root. That job's matrix and its per-leg binary assertion are both
+# derived from the pack partition (COMMITTED_PACKS and PACK_RUNTIME_DEPENDENCIES),
+# so publishing a pack never means editing this workflow to make that pack legal.
 
 on:
   pull_request:
@@ -38,7 +41,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # The coordination runtime uses `node:sqlite`, which Node 20 does not
+          # ship. This must stay inside the `engines` range in package.json.
+          node-version: '24.15.0'
       - name: Default marketplace and pre-release retention
         run: node test/package-availability-self-test.mjs
       - name: Engineering source contracts
@@ -51,6 +56,12 @@ jobs:
           node test/creative-core-contract-self-test.mjs
           node test/creative-agent-contract-self-test.mjs
           node test/creative-skill-contract-self-test.mjs
+      - name: Coordination source and emission contracts
+        run: |
+          node test/coordination-authority-self-test.mjs
+          node test/coordination-thread-self-test.mjs
+          node test/coordination-source-routing-self-test.mjs
+          node test/coordination-foundation-self-test.mjs
       - name: Validate plugin contract
         run: node scripts/validate-plugin.mjs
       - name: Workspace-doctor self-test
@@ -89,6 +100,47 @@ jobs:
           set -euo pipefail
           packs="$(node scripts/pack-preview.mjs --ci-matrix)"
           echo "packs=$packs" >> "$GITHUB_OUTPUT"
+
+  # The coordination runtime is executable, not declarative: it opens a real
+  # `node:sqlite` database, so it is exercised on every runtime this repository
+  # claims to support rather than on one. The legs are pinned to the three
+  # boundaries of `engines` ("^22.22.2 || ^24.15.0 || >=26.0.0"). Node 22 prints
+  # its documented ExperimentalWarning for `node:sqlite`; that warning is left
+  # visible on purpose — suppressing it would hide the fact that the oldest
+  # supported leg runs the store on an experimental built-in.
+  #
+  # This job deliberately does not `needs: contract`. The repository currently
+  # carries known-red pre-release validator errors in the contract job, and a
+  # dependency would turn this evidence into a skipped check that reports
+  # nothing. It installs no dependencies: every suite here imports only
+  # `node:` built-ins and repository files.
+  coordination-runtime:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22.22.2', '24.15.0', '26.0.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Store, engine and inputs
+        run: |
+          node test/coordination-inputs-self-test.mjs
+          node test/coordination-store-self-test.mjs
+          node test/coordination-engine-self-test.mjs
+      - name: Context, evidence and report
+        run: |
+          node test/coordination-context-self-test.mjs
+          node test/coordination-evidence-self-test.mjs
+          node test/coordination-report-self-test.mjs
+      - name: Host composition and legacy migration
+        run: |
+          node test/coordination-host-self-test.mjs
+          node test/coordination-migration-self-test.mjs
+      - name: CLI surface
+        run: node test/coordination-cli-self-test.mjs
 
   runtime-dependencies:
     needs: contract

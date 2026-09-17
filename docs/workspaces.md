@@ -2,8 +2,9 @@
 
 # Workspace model
 
-Kai schema 3 separates private operational state from intentionally published
-project knowledge.
+Kai separates private operational state from intentionally published project
+knowledge. Schema 4 adds a coordination runtime store beside that layout;
+schema 3 remains readable as an inspect-only workspace.
 
 ```text
 project repository                         Kai workspace
@@ -28,6 +29,7 @@ root.
 ├─ manifest.json
 ├─ CONVENTIONS.md
 ├─ state/
+│  ├─ coordination.sqlite
 │  ├─ ACTIVE.md
 │  ├─ BOARD.md
 │  ├─ backlog.md
@@ -48,7 +50,14 @@ root.
 └─ personal/
 ```
 
-- `.kai/state/` is authoritative coordination and initiative state.
+- `.kai/state/coordination.sqlite` is the authoritative coordination record
+  under schema 4, read with `status`, `detail`, `messages` and `export`.
+- `BOARD.md`, `items/<item-id>.md` and `threads/<item-id>.md` are **retained
+  historical import sources**: they are what a pre-schema-4 workspace was
+  migrated from, nothing writes them under schema 4, so they are no longer
+  updated and are never read as authority. Authored material — north stars,
+  briefs, designs, decision rationale — stays authored content and is
+  registered, never derived.
 - `.kai/runs/` contains raw evidence and scratch output.
 - `.kai/review/` contains review-ready drafts such as
   `designs/<item-id>/options.html`.
@@ -63,6 +72,46 @@ Activity and observer files also stay private:
 .kai/observed.jsonl
 .kai/observer-consent
 ```
+
+## Coordination runtime
+
+Coordinated reads and writes go through one entry point:
+
+```bash
+node scripts/coordinate.mjs inspect --root <workspace-dir>
+node scripts/coordinate.mjs status  --root <workspace-dir>
+node scripts/coordinate.mjs apply   --root <workspace-dir>   # one JSON command on stdin
+node scripts/coordinate.mjs direct                            # single-shot work, no workspace
+```
+
+`inspect` is the preflight. Successfully loading `kai-core-contract-v1` only
+proves the plugin is installed; it is not permission to operate a schema-4
+workspace.
+
+| Manifest | Reads | Coordinated writes |
+|---|---|---|
+| `schema_version: 4` with a store | yes | yes |
+| `schema_version: 4`, no store | `inspect` only — it reports the absent store as the expected pre-`init` condition | refused; `init --confirm --capability <uuid>` creates it |
+| `schema_version: 3` | `inspect`, `status`, `legacy` only — **inspect-only** | refused with `SCHEMA_MISMATCH` |
+
+There is no automatic upgrade. A schema-3 workspace migrates only through the
+explicit offline ladder (`request` → `authorize` → `migrate --confirm
+--capability <uuid>`), with `recover` and `rollback` as its explicit recovery
+routes. No command creates the coordination database implicitly.
+
+Writes are commands, not file edits. `BOARD.md`, `state/items/*.md` and
+`state/threads/*.md` are retained historical import sources that are no longer
+updated: editing one changes a stale file, not the record, and nothing reads it
+back. The cross-item board is `status`; `export --item <id>` writes the offline
+HTML report for one item.
+
+`plan --item <id>` returns an ordered queue with `automatic: false` — kai does
+not dispatch roles by itself. Peer model/effect observation is not implemented
+and returns `UNSUPPORTED_HOST`.
+
+What the runtime has actually been shown to do, case by case — including the
+installed-host scenario that failed and the cases nothing verifies — is recorded
+in [the coordination acceptance record](reference/coordination-acceptance.md).
 
 ## Storage modes
 
@@ -226,7 +275,11 @@ sensitive prose. Participation-only observation is the default.
 
 ## Limits
 
-- Operational state does not run itself; roles must update it.
+- Operational state does not run itself; roles must update it, and nothing in
+  the runtime dispatches a role automatically.
+- Coordinated multi-role execution is designed and source-routed, not measured:
+  the one native probe that has been run used a synthetic human-approval
+  fixture.
 - External registry discovery is machine-local, not synchronized.
 - `repo-local` state does not survive a clone.
 - `shared` mode exposes operational state to repository collaborators.

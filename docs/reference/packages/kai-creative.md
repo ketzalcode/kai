@@ -68,6 +68,17 @@ new design-system artifact. Structural and visual mockups are independently
 selectable. PM acceptance, frontend feasibility, QA review, and operator
 adoption are never inferred from supplied inputs or a clean creative review.
 
+A direct creative request needs no coordination database, no initiative and no
+report tree. When a creative role actually holds a coordinated item, every read
+and write is a runtime command — `node "<kai-plugin>/scripts/coordinate.mjs"
+<verb> --root "<workspace-root>"`, with `apply` taking one JSON command on
+stdin. Markdown under `.kai/state/` is retained pre-schema-4 history, not the
+write surface; `status`, `detail` and `messages` read the store. An authored
+design or brief stays authored content
+and is registered with `artifact.register`. A schema-3 workspace stays readable
+through `inspect`, `status` and `legacy` only and refuses coordinated writes
+with `SCHEMA_MISMATCH`.
+
 ## Runtime ownership and prerequisites
 
 The final media methods resolve the kai-creative provider from their loaded

@@ -75,12 +75,22 @@ goal.
 
 For initiative work:
 
-1. claim `.kai/state/items/<item-id>.md`;
-2. append durable questions and handoffs to
-   `.kai/state/threads/<item-id>.md`;
-3. write working artifacts below the initiative;
+1. reserve the item through the runtime (`kai-core-work-granting`); any file at
+   `.kai/state/items/<item-id>.md` is retained history, never the claim;
+2. submit durable questions and handoffs as `question.open`, `question.answer`
+   and `item.handoff` commands, and read them back with
+   `messages --item <item-id>`;
+3. write authored working artifacts below the initiative and register each one
+   as a **registered artifact** with `artifact.register`;
 4. update `deliverables.md`;
 5. apply `kai-core-asset-producing` before completion.
+
+An initiative's **operational** fields — an item's lifecycle state, owner,
+lease, version, review bindings and the cross-item summary of them — live in the
+runtime record under schema 4 and are read with `status`, `detail` and
+`messages`. Its **authored** content — the north star, briefs, designs, decision
+rationale, the deliverables narrative — is real authored material that stays at
+its own path and is registered, never derived.
 
 `.kai/state/ACTIVE.md` is only the current focus pointer.
 `.kai/state/initiatives/INDEX.md` is the permanent all-status catalog. A
@@ -126,7 +136,8 @@ Personal content is never published automatically.
 
 ## Manifest
 
-Schema 3 uses this fixed shape:
+A coordinated workspace carries `schema_version: 4`; schema 3 remains readable.
+Both use the same fixed key shape, shown here at schema 3:
 
 ```json
 {
@@ -158,6 +169,27 @@ Schema 3 uses this fixed shape:
 
 Root values are contract constants. `version` records the plugin build;
 `schema_version` independently controls workspace migration.
+
+### Schema 3 beside schema 4
+
+Schema 3 stays **readable**, but only through `inspect`, `status` and `legacy`.
+Every other read — `detail`, `context`, `messages`, `export`, `hash` — refuses
+with `SCHEMA_MISMATCH` (*schema 3 supports inspect/status/legacy only;
+explicitly migrate for runtime detail*), and so does every coordinated write
+(*schema 3 is inspect-only; use explicit offline migration*). Its records keep
+their meaning; the runtime simply will not project them.
+
+There is no automatic upgrade, and no command silently migrates a workspace. A
+schema-4 manifest carries `"schema_version": 4` plus the runtime's
+`coordination_migration` binding, and it is written only by the explicit,
+offline, human-authorized migration ladder in `kai-core-workspace-onboarding`.
+Report the refusal and the ladder; never work around it by editing a manifest
+or a state file by hand.
+
+Markdown left under `.kai/state/items/`, `.kai/state/threads/` and
+`.kai/state/BOARD.md` after a migration is a **retained historical import
+source**. Nothing writes it under schema 4, so it is no longer updated and is
+never read as authority.
 
 <!-- kai:allow-legacy-roots -->
 Schema 3 retires schema-2 `workspace_mode`, `corpus_visibility`, `kai`,

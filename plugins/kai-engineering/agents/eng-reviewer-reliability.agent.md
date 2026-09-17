@@ -92,7 +92,12 @@ apply `kai-core-asset-producing` before recording the accepted artifact.
 
 For an actual coordinated review, apply `kai-core-work-item` to read the item
 and exact `change_ref`, then apply `kai-core-work-acting` before every state
-write. Record only this review's revision-bound verdict and evidence. If an
+write. Record only this review's revision-bound verdict and evidence, as a
+`review.record` command. Every coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
+If an
 owner, grant, or route is unavailable, report the unresolved coordination gap
 instead of simulating it. Apply `kai-core-peer-communication` only for an actual
 coordinated handoff. Apply `kai-core-work-activity` only when logging requested

@@ -1,6 +1,6 @@
 {
   "name": "kai-learning",
-  "version": "11.0.0",
+  "version": "12.0.0",
   "description": "Pre-release (in progress): Teaching, tutoring, learning paths, lesson production, and career development over kai-core.",
   "agents": "agents",
   "skills": "skills"

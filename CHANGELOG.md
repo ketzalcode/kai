@@ -4,6 +4,73 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [12.0.0] - 2026-09-17
+
+Prepared source metadata for the kai-core coordination runtime and the
+breaking workspace **schema 4** contract. Prepared version metadata is not a
+tag, a release, a publication, or a host-verification claim: nothing here was
+installed into a host, and the repository's `npm test` chain still stops at the
+pre-existing pre-release validator failures described under *Known state*.
+
+### Added
+
+- `kai-core` ships the coordination runtime as an installable executable:
+  `scripts/coordinate.mjs` plus its 35-module `scripts/lib/coordination-runtime/`
+  closure, collected by normal transitive script routing from the shipped core
+  instructions. Core installed alone carries the whole closure.
+- `test/coordination-foundation-self-test.mjs` — a source-and-emission contract
+  over the authoritative generator: core owns the entry point and every runtime
+  module, core-alone emission stays loadable, no department pack emits a second
+  copy, and a shipped core skill actually routes to the entry point.
+- `npm test` now runs the coordination source contracts (authority, thread,
+  source-routing, foundation) and the runtime suites (inputs, store, engine,
+  context, evidence, report, host, migration, CLI). They run **before** the
+  known-red validator so they are enforced today rather than shadowed by it.
+- A `coordination-runtime` CI job executes the runtime suites on Node
+  `22.22.2`, `24.15.0` and `26.0.0` — the three boundaries of `engines`. Node 22
+  prints its documented `node:sqlite` ExperimentalWarning; the warning is left
+  visible rather than suppressed.
+- Explicit scripts for the checks CI cannot provision:
+  `coordination:report-browser-self-test` (needs a browser) and
+  `coordination:native-discovery-self-test` /
+  `coordination:native-handshake-self-test` (need a real installed host and
+  their opt-in environment variables).
+
+### Changed
+
+- **Breaking — workspace schema 4.** Coordinated work now lives in a SQLite
+  store at `.kai/state/coordination.sqlite`, reached only through
+  `scripts/coordinate.mjs`. A schema-3 workspace is **inspect-only**: `inspect`,
+  `status` and `legacy` still read it, and coordinated writes are refused with
+  `SCHEMA_MISMATCH` until an explicit, separately authorized offline migration
+  to schema 4 runs. `workflow-workspace-init` does not chain that migration, and
+  Markdown under `.kai/state/` becomes imported history rather than a write
+  surface. See [workspaces](docs/workspaces.md).
+- `workspace-doctor` now names **4** as the migration destination for a
+  pre-versioned or behind-contract workspace, and adds the explicit schema-3 →
+  schema-4 step to the ladder it prints. Previously it told those workspaces to
+  migrate to 3, which is inspect-only and cannot take coordinated writes. No
+  gate changed: schema 3 still passes `inspect` and is still refused for
+  `coordinate`.
+- The CI contract job moved from Node 20 to `24.15.0`. Node 20 has no
+  `node:sqlite` and is outside this repository's `engines` range, so it could
+  not run the runtime at all.
+- All eight source manifests and locks move to `12.0.0` in lockstep.
+
+### Known state
+
+- `npm test` fails at `node scripts/validate-plugin.mjs` with **260 pre-release
+  contract errors** (retired `personal-*`/`principal-*` identities, unresolved
+  cross-pack references, and `kai-revenue/plugin.json` missing its `"skills"`
+  path). These are pre-existing and out of scope for this change — the same
+  checkout's merge base reports 280. No gate was disabled, no ignore list was
+  added, and no pre-release source was edited to make the chain pass.
+- Live-host acceptance of the coordination runtime is **not** claimed here.
+- Every acceptance case carries one verdict — covered by test, measured against
+  the installed host, or not verified — in
+  [the coordination acceptance record](docs/reference/coordination-acceptance.md),
+  which also records the one installed-host scenario that **failed**.
+
 ## [11.0.0] - 2026-09-16
 
 Prepared source metadata for the reduced default marketplace. Default listing
@@ -3673,6 +3740,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0
 [11.0.0]: https://github.com/RubenSaucedo/kai/compare/v10.0.0...v11.0.0
 [10.0.0]: https://github.com/RubenSaucedo/kai/compare/v9.0.0...v10.0.0
 [9.0.0]: https://github.com/RubenSaucedo/kai/compare/v8.0.0...v9.0.0

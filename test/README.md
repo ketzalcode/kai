@@ -24,6 +24,22 @@ PR and push to `main` and must stay fast:
   `creative-agent-contract-self-test.mjs`, and
   `creative-skill-contract-self-test.mjs` check the scoped source contracts.
   These are focused source and parser checks, not live-host certification.
+- **Coordination source and emission contracts** —
+  `coordination-authority-self-test.mjs`, `coordination-thread-self-test.mjs`
+  and `coordination-source-routing-self-test.mjs` read shipped source text and
+  check that the documents a host loads route coordinated work to the runtime
+  instead of hand-edited Markdown. `coordination-foundation-self-test.mjs` calls
+  the authoritative pack generator and checks that `kai-core` alone emits
+  `scripts/coordinate.mjs` and its full runtime closure, and that no department
+  pack emits a second copy. These are source and packaging contracts, not a
+  live coordinated workflow.
+- **Coordination runtime suites** — `coordination-inputs`, `-store`, `-engine`,
+  `-context`, `-evidence`, `-report`, `-host`, `-migration` and `-cli`
+  self-tests execute the runtime against a real `node:sqlite` database in a
+  temporary directory. They run in `npm test` and in a dedicated CI job on every
+  supported Node version (`22.22.2`, `24.15.0`, `26.0.0`); Node 22's documented
+  `node:sqlite` experimental warning is left visible. They are slow by the
+  standards of the guards above — the migration and CLI suites take minutes.
 - **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
@@ -49,7 +65,22 @@ PR and push to `main` and must stay fast:
 
 `npm test` runs these guards and the declared runtime self-tests. A failing
 earlier command stops the chain; passing the targeted engineering guards does
-not imply the whole repository is release-ready.
+not imply the whole repository is release-ready. The coordination suites are
+placed **before** `validate-plugin.mjs` in the chain deliberately: that gate is
+known-red on pre-existing pre-release contract errors, and a suite ordered after
+it would never run.
+
+Three coordination checks stay out of the chain because CI cannot provision what
+they need, and a check that silently skips is worse than one you have to ask for:
+
+- `npm run coordination:report-browser-self-test` — renders the offline HTML
+  evidence report in a real browser. Needs an already provisioned Playwright
+  Chromium; it installs nothing.
+- `npm run coordination:native-discovery-self-test` and
+  `npm run coordination:native-handshake-self-test` — probe a real installed
+  Copilot CLI. Both are opt-in through their own environment variables
+  (`KAI_TEST_NATIVE_DISCOVERY`, `KAI_TEST_NATIVE_HANDSHAKE`) and assert nothing
+  about coordinated multi-role behavior on an unmeasured host.
 
 `npm run diagram-layout:self-test` is an optional browser-backed check of the
 creative diagram reference. It uses an already provisioned Playwright Chromium

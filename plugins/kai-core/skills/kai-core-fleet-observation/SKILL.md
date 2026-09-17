@@ -24,6 +24,14 @@ reporting that it ran something. A `said` row is an agent's own account,
 written before it knew the outcome. Neither is a transcript, and neither
 proves the work was any good.
 
+Both tiers are **non-authoritative**. A row here never advances lifecycle state,
+never satisfies a review, and never certifies a model invocation. Coordinated
+state changes only through a runtime command (`scripts/coordinate.mjs apply`),
+and a real command is evidenced by a real host receipt (`capture`), never by a
+row here. Peer model/effect observation is not implemented at all: that
+capability returns `UNSUPPORTED_HOST`. Read these logs for participation, then
+go and check the record.
+
 ## What the observed log cannot tell you
 
 Read this before you report that a role never took part.

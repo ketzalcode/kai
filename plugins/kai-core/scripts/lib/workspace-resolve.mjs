@@ -125,10 +125,10 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   const manifestResult = readWorkspaceManifest(entry.workspace_root);
   if (!manifestResult.ok) return manifestResult;
   const manifest = manifestResult.manifest;
-  if (manifest.schema_version !== 3) {
+  if (![3, 4].includes(manifest.schema_version)) {
     return {
       ok: false,
-      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3`,
+      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3 or 4`,
     };
   }
   if (manifest.storage_mode !== 'external') {

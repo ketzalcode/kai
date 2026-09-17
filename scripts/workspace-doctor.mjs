@@ -25,7 +25,7 @@
 
 import {
   readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
-  lstatSync, readlinkSync, renameSync, symlinkSync, realpathSync, openSync, closeSync, unlinkSync,
+  lstatSync, readlinkSync, renameSync, symlinkSync, openSync, closeSync, unlinkSync,
 } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
@@ -43,11 +43,24 @@ import {
 import {
   defaultKaiHome, loadWorkspaceRegistry, readWorkspaceManifest, registryPath, resolveWorkspaceRoot,
 } from './lib/workspace-resolve.mjs';
+import {
+  badPath, normalized, canonicalPath, resolvedProjectPath, escapesRoot, inspectPrivateLanes,
+} from './lib/workspace-path-safety.mjs';
+import { inspectRuntime } from './lib/coordination-runtime/inspection.mjs';
+import { inspectGitPrivacy } from './lib/workspace-git-privacy.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // --- Contract constants the current plugin generates -----------------------
+// Two numbers, deliberately: `CURRENT_SCHEMA_VERSION` is the structural shape
+// (fixed roots, areas, required paths) that schema 3 introduced and schema 4
+// keeps, and the checks below are written against it. `CURRENT_CONTRACT_VERSION`
+// is what the plugin now generates and what coordinated work requires — a
+// schema-4 manifest is handled by the runtime inspector above, so every
+// migration message must name 4 as the destination. Schema 3 is inspect-only:
+// arriving at 3 is a step on the ladder, not the end of it.
 const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_CONTRACT_VERSION = 4;
 const REQUIRED_MANIFEST_KEYS = [
   'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_id',
   'storage_mode', 'workspace_root', 'state', 'runs', 'review', 'archive',
@@ -84,45 +97,6 @@ const REQUIRED_SCHEMA_3_PATHS = new Map([
   ['.kai/state/initiatives/INDEX.md', 'file'],
 ]);
 
-// A durable path is workspace-relative or project-qualified: no
-// machine-absolute root, UNC share, session-state, parent escape, or `.../`.
-function badPath(p) {
-  const t = unquote(p);
-  if (isNull(t) || t === '[]') return null;
-  const projectTarget = /^project:([a-z][a-z0-9-]*):(.*)$/i.exec(t);
-  const candidate = projectTarget ? projectTarget[2] : t;
-  if (projectTarget && !candidate.trim()) return 'project target with no relative path';
-  const norm = candidate.replace(/\\/g, '/');
-  if (t.startsWith('\\\\') || norm.startsWith('//')) return 'UNC / share path';
-  if (/^[A-Za-z]:\//.test(norm) || norm.startsWith('/')) return 'machine-absolute path';
-  if (t.includes('.../')) return 'abbreviated `.../` path';
-  if (norm.split('/').some((seg) => seg === '..')) return 'path escaping the workspace root';
-  if (/session-state/i.test(t)) return 'session-state-relative path';
-  return null;
-}
-
-function normalized(path) {
-  const value = canonicalPath(path);
-  return process.platform === 'win32' ? value.toLowerCase() : value;
-}
-
-function canonicalPath(path) {
-  let existing = resolve(path);
-  const tail = [];
-  while (!existsSync(existing)) {
-    const parent = dirname(existing);
-    if (parent === existing) break;
-    tail.unshift(basename(existing));
-    existing = parent;
-  }
-  const canonical = existsSync(existing) ? realpathSync(existing) : existing;
-  return resolve(canonical, ...tail);
-}
-
-function resolvedProjectPath(root, projectPath) {
-  return isAbsolute(projectPath) ? resolve(projectPath) : resolve(root, projectPath);
-}
-
 function nestedScalar(fmLines, section, key) {
   let inSection = false;
   for (const line of fmLines) {
@@ -151,121 +125,14 @@ function provenLegacyRoots(root) {
     });
 }
 
-function escapesRoot(root, candidate) {
-  const rel = relative(canonicalPath(root), canonicalPath(candidate));
-  return rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel);
-}
-
-function inspectPrivateLanes(root) {
-  const gitRoots = [];
-  const symbolicLinks = [];
-  const unreadable = [];
-  for (const lane of ['.kai/runs', '.kai/review', '.kai/archive', '.kai/personal']) {
-    const laneRoot = join(root, ...lane.split('/'));
-    let laneStat;
-    try {
-      laneStat = lstatSync(laneRoot);
-    } catch (error) {
-      if (error.code === 'ENOENT') continue;
-      unreadable.push(`${lane}: ${error.message}`);
-      continue;
-    }
-    if (laneStat.isSymbolicLink()) {
-      symbolicLinks.push(lane);
-      continue;
-    }
-    const pending = [laneRoot];
-    while (pending.length) {
-      const current = pending.pop();
-      let entries;
-      try {
-        entries = readdirSync(current, { withFileTypes: true });
-      } catch (error) {
-        unreadable.push(`${relative(root, current).replace(/\\/g, '/')}: ${error.message}`);
-        continue;
-      }
-      for (const entry of entries) {
-        const path = join(current, entry.name);
-        if (entry.name === '.git') {
-          gitRoots.push(relative(root, current).replace(/\\/g, '/') || '.');
-          continue;
-        }
-        if (entry.isSymbolicLink()) {
-          symbolicLinks.push(relative(root, path).replace(/\\/g, '/'));
-          continue;
-        }
-        if (entry.isDirectory()) pending.push(path);
-      }
-    }
-  }
-  return { gitRoots, symbolicLinks, unreadable };
-}
-
 function checkGitMode(root, mode, err, warn) {
-  const git = (args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true });
-  const tree = git(['rev-parse', '--is-inside-work-tree']);
-  if (tree.error || tree.status !== 0 || tree.stdout.trim() !== 'true') {
-    if (mode !== 'external') warn(`storage_mode "${mode}" is not inside a readable git work tree`);
-    return;
-  }
-  const top = git(['rev-parse', '--show-toplevel']);
-  if (top.status !== 0 || !top.stdout.trim()) {
-    warn(`storage_mode "${mode}" could not resolve the containing git work tree`);
-    return;
-  }
-  const gitRoot = resolve(top.stdout.trim());
-  const workspaceRel = relative(gitRoot, root).replace(/\\/g, '/');
-  if (workspaceRel === '..' || workspaceRel.startsWith('../') || isAbsolute(workspaceRel)) {
-    err(`storage_mode "${mode}" workspace is outside the containing git work tree`);
-    return;
-  }
-  const inWorkspace = (path) => workspaceRel ? `${workspaceRel}/${path}` : path;
-  const tracked = spawnSync(
-    'git',
-    ['-C', gitRoot, 'ls-files', '--', inWorkspace('.kai')],
-    { encoding: 'utf8', windowsHide: true },
-  );
-  const trackedPaths = tracked.status === 0 && tracked.stdout.trim()
-    ? tracked.stdout.trim().split(/\r?\n/)
-    : [];
-  const workspaceTrackedPath = (path) => {
-    const normalizedPath = path.replace(/\\/g, '/');
-    return workspaceRel && normalizedPath.startsWith(`${workspaceRel}/`)
-      ? normalizedPath.slice(workspaceRel.length + 1)
-      : normalizedPath;
-  };
-  const ignored = (path) => spawnSync(
-    'git',
-    ['-C', gitRoot, 'check-ignore', '--no-index', '-q', '--', inWorkspace(path)],
-    { encoding: 'utf8', windowsHide: true },
-  ).status === 0;
-  const privatePrefixes = ['.kai/runs/', '.kai/review/', '.kai/personal/', '.kai/archive/'];
-  const privateFiles = new Set([
-    '.kai/activity.jsonl', '.kai/activity.jsonl.1', '.kai/observed.jsonl',
-    '.kai/observed.jsonl.1', '.kai/observer-consent', '.kai/local.json',
-  ]);
-  const trackedPrivate = trackedPaths
-    .map(workspaceTrackedPath)
-    .filter((path) => privateFiles.has(path) || privatePrefixes.some((prefix) => path.startsWith(prefix)));
-
-  if (mode === 'repo-local') {
-    if (trackedPaths.length) {
-      err(`storage_mode "repo-local" has ${trackedPaths.length} tracked .kai path(s); the private workspace must be untracked`);
-    }
-    if (!ignored('.kai/')) {
-      err('storage_mode "repo-local" requires the entire .kai/ directory to be ignored');
-    }
-  }
-  if (mode === 'shared' || mode === 'external') {
-    if (ignored('.kai/manifest.json') || ignored('.kai/state/BOARD.md')) {
-      err(`storage_mode "${mode}" requires .kai/manifest.json and .kai/state/ to remain trackable in a version-controlled workspace`);
-    }
-    if (trackedPrivate.length) {
-      err(`storage_mode "${mode}" has ${trackedPrivate.length} tracked private .kai path(s): ${trackedPrivate.join(', ')}`);
-    }
-    for (const path of [...privatePrefixes, ...privateFiles]) {
-      if (!ignored(path)) err(`storage_mode "${mode}" requires "${path}" to be ignored`);
-    }
+  const privacy = inspectGitPrivacy(root, mode);
+  privacy.errors.forEach(err);
+  privacy.warnings.forEach(warn);
+  for (const path of privacy.missing) {
+    err(mode === 'repo-local' && path === '.kai/'
+      ? 'storage_mode "repo-local" requires the entire .kai/ directory to be ignored'
+      : `storage_mode "${mode}" requires "${path}" to be ignored`);
   }
 }
 
@@ -277,6 +144,10 @@ export function checkWorkspace(root, options = {}) {
   const migrations = [];
   const err = (m) => errors.push(m);
   const warn = (m) => warnings.push(m);
+  const intent = options.intent ?? 'inspect';
+  if (!['inspect', 'coordinate'].includes(intent)) {
+    return {errors: ['workspace intent must be inspect or coordinate'], warnings, migrations};
+  }
 
   // 1. Manifest -------------------------------------------------------------
   const manifestPath = join(root, '.kai', 'manifest.json');
@@ -293,6 +164,17 @@ export function checkWorkspace(root, options = {}) {
   if (!m || typeof m !== 'object' || Array.isArray(m)) {
     err('.kai/manifest.json must contain a JSON object');
     return { errors, warnings, migrations };
+  }
+  if (m.schema_version === 4) {
+    const inspection = inspectRuntime(root, {env: options.env ?? process.env, intent});
+    if (intent === 'coordinate' && inspection.migrations.length) {
+      inspection.errors.push('pending migration recovery prevents coordinated writes');
+    }
+    return {errors: inspection.errors, warnings: inspection.warnings, migrations: inspection.migrations};
+  }
+  if (m.schema_version === 3) {
+    migrations.push('schema 3 is inspect-only; explicit offline migration to schema 4 is required for coordination');
+    if (intent === 'coordinate') err('schema 3 coordinated writes are refused; explicitly migrate to schema 4 first');
   }
 
   for (const k of REQUIRED_MANIFEST_KEYS) {
@@ -333,14 +215,16 @@ export function checkWorkspace(root, options = {}) {
   const sv = m.schema_version;
   if (sv === undefined || sv === 0) {
     migrations.push(`schema_version absent → migrate to ${CURRENT_SCHEMA_VERSION} (add schema_version, reconcile fixed roots/areas, drop retired fields).`);
-    err(`workspace schema is pre-versioned; migration to schema_version ${CURRENT_SCHEMA_VERSION} required before claiming work.`);
+    migrations.push(`apply migration step → ${CURRENT_CONTRACT_VERSION} (explicit offline migration into the coordination store; schema ${CURRENT_SCHEMA_VERSION} alone is inspect-only).`);
+    err(`workspace schema is pre-versioned; migration to schema_version ${CURRENT_CONTRACT_VERSION} required before claiming work.`);
   } else if (!Number.isInteger(sv)) {
     err(`.kai/manifest.json "schema_version" must be an integer (found ${JSON.stringify(sv)}).`);
   } else if (sv < CURRENT_SCHEMA_VERSION) {
     for (let v = sv + 1; v <= CURRENT_SCHEMA_VERSION; v++) migrations.push(`apply migration step → ${v} (see kai-core-workspace-onboarding ladder).`);
-    err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_SCHEMA_VERSION}; migration required before claiming work.`);
+    migrations.push(`apply migration step → ${CURRENT_CONTRACT_VERSION} (explicit offline migration into the coordination store; schema ${CURRENT_SCHEMA_VERSION} alone is inspect-only).`);
+    err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_CONTRACT_VERSION}; migration required before claiming work.`);
   } else if (sv > CURRENT_SCHEMA_VERSION) {
-    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update kai-core before claiming work.`);
+    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_CONTRACT_VERSION}; update kai-core before claiming work.`);
   }
 
   if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
@@ -1191,6 +1075,31 @@ function selfTest() {
     ok(/unqualified project path/i.test(unqualifiedPublication.errors.join('\n')),
       'public artifact targets cannot bypass project qualification',
       unqualifiedPublication.errors);
+
+    // A schema-4 manifest with no coordination store yet is the expected state
+    // between `workflow-workspace-init` scaffolding and the authorized `init`.
+    // Inspect intent reports it as a condition; coordinate intent still refuses,
+    // because a coordinated write has nowhere to land.
+    const preInitWorkspace = join(tmpRoot, 'pre-init-schema4-workspace');
+    cpSync(join(fx, 'repo-workspace'), preInitWorkspace, { recursive: true });
+    const preInitManifestPath = join(preInitWorkspace, '.kai', 'manifest.json');
+    writeFileSync(preInitManifestPath, `${JSON.stringify({
+      ...JSON.parse(readFileSync(preInitManifestPath, 'utf8')), schema_version: 4,
+    }, null, 2)}\n`);
+    const preInitInspect = checkWorkspace(preInitWorkspace, { intent: 'inspect' });
+    ok(
+      preInitInspect.errors.length === 0
+        && /coordination database does not exist yet/i.test(preInitInspect.warnings.join('\n')),
+      'a scaffolded schema-4 workspace with no store is an inspect condition, not an error',
+      [...preInitInspect.errors.map((e) => `error: ${e}`),
+        ...preInitInspect.warnings.map((w) => `warning: ${w}`)],
+    );
+    const preInitCoordinate = checkWorkspace(preInitWorkspace, { intent: 'coordinate' });
+    ok(
+      preInitCoordinate.errors.some((e) => /coordination database is missing/i.test(e)),
+      'coordinated writes still refuse a schema-4 workspace with no store',
+      preInitCoordinate.errors,
+    );
 
     const incompleteWorkspace = join(tmpRoot, 'incomplete-workspace');
     cpSync(join(fx, 'repo-workspace'), incompleteWorkspace, { recursive: true });

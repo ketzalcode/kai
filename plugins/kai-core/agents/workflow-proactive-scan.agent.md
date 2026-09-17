@@ -1,5 +1,6 @@
 ---
 name: workflow-proactive-scan
+model: "claude-sonnet-5"
 description: "Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys."
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
@@ -57,8 +58,16 @@ dedup, notification-payload, and failure rules this procedure follows.
 2. **Scan (read-only).** Apply `kai-core-proactive-scan`'s **Operator signals**
    section to each fully-read root: open `@operator` `decision|reply|action`
    questions with no answered `ANSWER`, `release-ready` items, and overdue
-   `@operator` questions. Compute each signal's deterministic `key` and `hash`
-   per `kai-core-proactive-scan`. Change no record.
+   `@operator` questions. Read a schema-4 workspace through the runtime's
+   read-only verbs — `node "<kai-plugin>/scripts/coordinate.mjs" status --root
+   "<workspace-root>"` for the item set, then `node
+   "<kai-plugin>/scripts/coordinate.mjs" messages --item <item-id> --root
+   "<workspace-root>"` per item (`messages` requires `--item`) — rather than
+   parsing a Markdown file, and fall back to reading retained state files only
+   when the workspace is schema 3 or has no store.
+   Compute each signal's deterministic `key` and `hash`
+   per `kai-core-proactive-scan`. Change no record; this workflow submits no
+   command and holds no lease.
 3. **Diff.** Load `.kai/personal/proactive/snapshot.json`; classify each signal
    `new` / `changed` / `overdue` / `unchanged`, and `cleared` only from
    fully-read roots. Suppress unchanged already-delivered signals.

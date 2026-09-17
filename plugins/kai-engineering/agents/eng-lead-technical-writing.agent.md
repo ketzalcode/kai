@@ -97,7 +97,12 @@ another document hierarchy merely to report the work.
 For requested Kai artifacts, apply `kai-core-workspace-paths` before choosing
 their location and apply `kai-core-asset-producing` before publishing an accepted
 artifact. For actual coordinated work, apply `kai-core-work-item` to read the
-item and apply `kai-core-work-acting` before state writes. Missing legacy routing
+item and apply `kai-core-work-acting` before state writes. Every coordinated
+read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
+Missing legacy routing
 remains an explicit gap, not an invented handoff. Apply
 `kai-core-peer-communication` for an actual coordinated confirmation and
 apply `kai-core-work-activity` when recording that run.

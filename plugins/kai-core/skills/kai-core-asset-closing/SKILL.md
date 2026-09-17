@@ -55,7 +55,7 @@ named independent authority.
 | Asset class | Default completion authority |
 |---|---|
 | Investigation, research, report, or briefing | The commissioning role |
-| Product or interaction design | `principal-product-manager` |
+| Product or interaction design | The item's declared `completion_authority` |
 | Architecture decision | Named decision owner |
 | Specification or implementation plan | The role accountable for executing it |
 | Documentation | Behavior or subject-matter owner |
@@ -68,7 +68,11 @@ named independent authority.
 
 If acceptance is pending, the asset remains `draft` or `working` with
 `validity.status: provisional`. A checklist count or producer assertion is not
-acceptance.
+acceptance. For a coordinated item, the acceptance verdict is an
+`approval.record` command and the disposition change is an `asset.transition`
+command, both through `scripts/coordinate.mjs apply` — never an edit to a
+Markdown file. The runtime refuses an unauthorized verdict with
+`AUTHORITY_REQUIRED`.
 
 ## Freshness and revalidation
 

@@ -1,5 +1,6 @@
 ---
 name: workflow-initiative-init
+model: "claude-sonnet-5"
 description: "Creates a scope-gated kai initiative workspace with north star, milestones, artifact paths, work records, and threads. Use when a new mission or initiative starts. Not execution before PM scope approval."
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
@@ -40,7 +41,7 @@ manufacture metrics or commitments the operator has not accepted.
 
 Workspace selection is a required intake decision. Invoke
 `kai-core-workspace-paths` before resolving the workspace, then apply its
-schema-3 precedence and select one project binding from its manifest. `external`
+precedence and select one project binding from its manifest. `external`
 uses the machine-local registry; `repo-local` and `shared` use an in-project
 `.kai/`. Never silently use Copilot session-state, a temp directory, or the
 invoking agent's cwd for coordinated work.
@@ -49,6 +50,20 @@ Tell the operator the resolved root before writing files.
 If the workspace manifest or required roots are missing, invoke
 `workflow-workspace-init` for that exact root and consume the paths it returns.
 Do not create initiative files until onboarding completes.
+
+Before creating any coordinated record, run the runtime preflight:
+
+```text
+node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
+```
+
+A successful `kai-core-contract-v1` probe is not this preflight and is not
+permission to operate a schema-4 workspace. A schema-3 workspace answers
+`inspect`, `status` and `legacy` only; a schema-4 workspace with no store
+answers only `inspect`. Both refuse coordinated writes with `SCHEMA_MISMATCH`:
+return that refusal and the explicit route from `kai-core-workspace-onboarding`
+— the migration ladder for schema 3, the authorized `init` for a missing store
+— and do not seed records by hand.
 
 ## Output
 
@@ -123,7 +138,7 @@ principles:
   non_negotiable: []
 proposal_channel: .kai/state/initiatives/<slug>/backlog.md
 created: <YYYY-MM-DD>
-owner: principal-product-manager
+owner: <concrete role name | operator>
 related: []
 success_measures:
   - measure: <observable product outcome>
@@ -149,16 +164,31 @@ milestone, names an initial `next_role`, and includes outcome + acceptance.
 Set `required_for_milestone: false`; planning artifacts do not prove product
 delivery. Leave the milestone's `required_items` empty until the steward
 accepts an engineering decomposition. Dependencies name the upstream item and
-required state. Do not invent detailed delivery items when
-`principal-swe-manager` or an architectural decision is needed.
+required state. Do not invent detailed delivery items when a supplied
+decomposition/engineering `pr-sizing` pass or an `eng-lead-architecture`
+decision is needed.
 
-Exception for directly requested bounded knowledge work: intake may seed a
-`proposed` `workflow-product-explore` item when an existing live journey lacks
-a current map, a PM `BRIEF` knowledge item depending on that map, and a
-`proposed` `creative-lead-design` item when the approved outcome clearly
-requires interaction design. The designer item depends on the completed map and
-completed PM brief and requires PM `product-design-acceptance` review. None
-becomes `ready` or milestone-required until the steward approves it.
+Exception for directly requested bounded knowledge work: first consume
+sufficient supplied scoped evidence and a brief or inline outcome accepted by
+the item's declared `scope_authority` — the operator or an explicitly
+authorized role. Neither a current product map nor a full PM-produced document
+is required. Seed a `proposed` `creative-lead-design` item when that accepted
+outcome clearly requires interaction design; the designer item depends on the
+accepted scoped input directly, not on completed map or PM artifacts.
+
+If a missing decision-relevant fact prevents the decision, record only that
+specific unanswered fact as a bounded evidence gap and route its question to
+the addressed real role. Only when that gap requires new product discovery may
+intake optionally seed a `proposed` `workflow-product-explore` item, and only
+when the role is actually available and the item's authorized scope permits
+the dispatch. Do not seed a PM `BRIEF` knowledge item as a prerequisite.
+Optional producer dispatch never substitutes for missing scope or completion
+approval. The designer item always requires its declared
+`completion_authority` (a concrete role or `operator`, distinct from the
+producing designer — the designer never accepts its own design) with kind
+`product-design-acceptance` review. None becomes `ready` or
+milestone-required until the steward approves it, and a missing approval is
+never an implicit waiver.
 
 Set canonical artifact targets automatically:
 
@@ -232,25 +262,34 @@ normal product map, brief, research, design, or decision is not.
    then reject duplicate/conflicting slugs.
 2. Draft the thin core and milestones.
 3. Present the scope boundary and success measures for operator confirmation.
-4. Invoke `kai-core-work-acting` before writing durable state, then write the
-   initiative files with `status: proposed`, seed
+4. Invoke `kai-core-work-acting` before writing durable state, then create the
+   initiative through the runtime with an `initiative.create` command, write the
+   authored initiative files with `status: proposed`, seed
    `deliverables.md`, and add the initiative to `.kai/state/initiatives/INDEX.md`.
 5. Load `kai-core-work-item` before seeding item records, then seed proposed
-   planning items in `.kai/state/items/` and empty threads in
-   `.kai/state/threads/`. Do not count them as
+   planning items with `item.create` commands. They live in the runtime store —
+   read them with `status` and `detail`, and author no Markdown under
+   `.kai/state/items/` or `.kai/state/threads/`. Do not count them as
    milestone-completion items.
 6. Append the creation entry to `log.md`.
 7. Load `kai-core-operating-rules` before handing work to another role, then
-   hand off to `principal-product-manager` as steward:
+   hand off to the initiative's declared `owner` as steward — a concrete role
+   or `operator` confirmed during intake, never a compulsory hard-coded
+   default:
    - confirm mission/scope/non-negotiables;
    - accept or revise milestones;
    - set `status: active` and update `.kai/state/ACTIVE.md`;
    - approve an explicit non-empty typed `required_items` mapping after
      decomposition (`completed` for research/decision outputs, `shipped` for
      production changes);
-   - prioritize and promote executable items to `ready`;
-   - preserve the role boundary: PM brief -> product designer for interaction
-     design -> engineering only after accepted design or explicit waiver.
+   - prioritize and promote executable items to `ready` with `item.promote`;
+   - preserve the role boundary: the design item's declared
+     `completion_authority` accepts the exact revision, never the producing
+     designer itself, before engineering proceeds on interaction-design work;
+     a PM brief or product map may be supporting supplied evidence but neither
+     is required, no compulsory producer chain re-derives them, and a genuinely
+     missing decision-relevant fact remains a bounded gap, not a waived
+     approval.
 8. Apply `kai-core-work-activity` before the handoff, then after steward
    approval hand off to `director-chief-of-staff`.
    Resolve project-relative metadata to runtime absolute paths and include the
