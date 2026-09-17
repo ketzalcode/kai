@@ -34,10 +34,12 @@ function walkCycle({ cols, rows, frameCount, glyphs }) {
   const legLength = scale;
   const bodyHeight = Math.max(2, scale * 2);
   const bodyWidth = Math.max(6, Math.min(28, Math.round(cols * 0.22)));
-  const baseline = rows - 1;
+  // Leave ground margin so the feet are not clipped by the frame edge.
+  const baseline = rows - 1 - Math.max(1, scale - 1);
   const bodyBottom = baseline - legLength;
   const bodyTop = Math.max(0, bodyBottom - bodyHeight + 1);
   const headHeight = Math.max(1, scale);
+  const headWidth = Math.max(2, scale + 1);
   // Two-phase gait: contact and passing. Fore and hind legs swap each phase so
   // the silhouette reads as a walk rather than a sliding block.
   const gait = [
@@ -54,14 +56,25 @@ function walkCycle({ cols, rows, frameCount, glyphs }) {
       if (row >= 0 && row < rows) grid[row][wrapped] = glyph;
     };
     const bob = frame % 2 === 0 ? 0 : 1;
+    // A solid rectangle reads as a brick, so the body is an outline with a
+    // lighter interior.
     for (let dy = bodyTop; dy <= bodyBottom; dy += 1) {
-      for (let dx = 0; dx < bodyWidth; dx += 1) put(x + dx, dy - bob, glyphs[0]);
+      for (let dx = 0; dx < bodyWidth; dx += 1) {
+        const edge = dy === bodyTop || dy === bodyBottom || dx === 0 || dx === bodyWidth - 1;
+        put(x + dx, dy - bob, edge ? glyphs[0] : glyphs[2]);
+      }
     }
     const headX = x + bodyWidth;
     const headTop = Math.max(0, bodyTop - headHeight - bob);
-    for (let dy = headTop; dy < headTop + headHeight + 1; dy += 1) {
-      for (let dx = 0; dx < Math.max(2, scale + 1); dx += 1) put(headX + dx, dy, glyphs[0]);
+    for (let dy = headTop; dy <= headTop + headHeight; dy += 1) {
+      for (let dx = 0; dx < headWidth; dx += 1) {
+        const edge = dy === headTop || dy === headTop + headHeight || dx === 0 || dx === headWidth - 1;
+        put(headX + dx, dy, edge ? glyphs[0] : glyphs[2]);
+      }
     }
+    // A snout forward and an ear up stop the head reading as another box.
+    put(headX + headWidth, headTop + headHeight, glyphs[1]);
+    put(headX, headTop - 1, glyphs[1]);
     for (let dy = 0; dy < headHeight; dy += 1) {
       put(x - 1 - dy, bodyTop - bob - dy, glyphs[1]);
     }
