@@ -20,15 +20,21 @@ avoids.
 
 | | Item record | Activity log |
 |---|---|---|
-| Path | `.kai/state/items/<id>.md` | `.kai/activity.jsonl` (gitignored) |
+| Path | the runtime store, read with `detail`/`status` | `.kai/activity.jsonl` (gitignored) |
 | Shape | compare-and-swap, versioned | append-only, one line per record |
 | Carries | state, ownership, reviews, verdicts | who, which item, when they report next |
 | Changes | ~10x per item, across days | ~2x per agent run |
-| Committed | yes, authoritative | no, ephemeral |
+| Authority | authoritative | **non-authoritative**, optional |
 
 **If you are about to record a state, a verdict, a review, or a decision, you
 are in the wrong file.** The writer rejects those fields rather than trusting
 this paragraph.
+
+This log is an **optional participation signal**. It is non-authoritative by
+construction: an append never advances lifecycle state, never satisfies a
+review, and never certifies that a model or a role was actually invoked. Only a
+runtime command changes coordinated state, and only a real host receipt
+evidences a real command. Skipping the log costs visibility, never correctness.
 
 ## What it buys
 
@@ -120,6 +126,10 @@ Attributing silence to a crash requires the host, not this file.
   `--note`. It is one short line about *what phase you are in*, nothing else.
 - **Never** hand-edit `.kai/activity.jsonl`, and never rewrite it. Append only.
 - **Never** substitute an activity append for a coordination update. A HANDOFF
-  is still a HANDOFF; `stop` does not hand anything off.
+  is still a HANDOFF, submitted as a runtime command; `stop` does not hand
+  anything off and cannot advance lifecycle state.
 - **Never** read this log to decide whether work is complete. It reports
   activity; the item reports truth.
+- **Never** treat a `start` as proof that a role or model ran. This log cannot
+  certify a model invocation — only a real host receipt can, and kai captures
+  those through `scripts/coordinate.mjs capture`, not here.

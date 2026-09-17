@@ -144,7 +144,11 @@ authorized asset contract says otherwise.
 
 For a granted item, apply `kai-core-work-acting` before writes and verify lease,
 version, touches, inputs, and latest handoff. Apply `kai-core-work-item` for its
-record. Apply `kai-core-work-activity` after claim for start and before handoff
+record. Every coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
+Apply `kai-core-work-activity` after claim for start and before handoff
 for stop. Never grant work or dispatch roles.
 
 Apply `kai-core-asset-closing` before disposition or closure. Preserve exact

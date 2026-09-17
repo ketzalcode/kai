@@ -137,7 +137,11 @@ output, invoke `kai-core-workspace-paths` before choosing the root and apply
 
 For actual coordinated incident state, apply `kai-core-work-item` to read or
 create the authorized command item, then apply `kai-core-work-acting` before
-every write. If the grant, owner, or route is unresolved during deferred
+every write. Every coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
+If the grant, owner, or route is unresolved during deferred
 wiring, preserve the standalone incident analysis and report the coordination
 gap rather than fabricating lifecycle state. Apply
 `kai-core-peer-communication` only when an actual coordinated handoff is

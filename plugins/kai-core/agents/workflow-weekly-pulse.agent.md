@@ -1,5 +1,6 @@
 ---
 name: workflow-weekly-pulse
+model: "claude-sonnet-5"
 description: "Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio."
 tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---

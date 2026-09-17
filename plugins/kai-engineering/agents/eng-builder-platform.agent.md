@@ -101,6 +101,11 @@ choosing its path and apply `kai-core-asset-producing` before publishing it. Ord
 local work requires neither `.kai` nor another agent.
 
 For actual coordinated work, apply `kai-core-work-item` to read the item and
-apply `kai-core-work-acting` before state writes. An unresolved owner or old route
-remains a coordination gap. Apply `kai-core-peer-communication` only to an
-actual coordinated handoff and apply `kai-core-work-activity` when recording the run.
+apply `kai-core-work-acting` before state writes. Every coordinated read and
+write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
+An unresolved owner or old route remains a coordination gap. Apply
+`kai-core-peer-communication` only to an actual coordinated handoff and apply
+`kai-core-work-activity` when recording the run.

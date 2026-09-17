@@ -24,7 +24,7 @@ Every peer exchange, on any transport, is the same shape. Durable or blocking
 questions also carry the stable ID allocated in the work item's thread:
 
 ```
-QUESTION [Q-<item-id>-<NN>] — <from-role> → @<to-role>
+QUESTION Q-<item-id>-<NN> <ts> — <from-role> -> @<to-role>
 - status:   <open | answered | escalated>
 - kind:     <fact | decision | reply | action>
 - blocking: <yes | no>
@@ -32,14 +32,23 @@ QUESTION [Q-<item-id>-<NN>] — <from-role> → @<to-role>
 - ask:      <the one specific question>
 - answer_by:<timestamp or "next-dispatch">
 
-ANSWER [Q-<item-id>-<NN>] — <from-role> → @<asker>
-- re:     <the question, quoted or referenced>
-- answer: <the answer, in the answering role's voice>
-- lane:   <in-lane | out-of-lane: who should really take it>
+ANSWER Q-<item-id>-<NN> <ts> — <from-role> -> @<asker>
+- status:   answered
+- answer:   <the answer, in the answering role's voice>
+- lane:     <in-lane | out-of-lane: who should really take it>
 - provenance: <live-peer | durable-thread | operator>
 ```
 
-Address a **role**, not a person (`@principal-swe-backend`). The one reserved
+This is the same packet `kai-core-work-acting` submits to the durable
+record — one shape, whichever transport carried it. A new ANSWER always
+declares `status: answered` with a non-empty `answer` and `lane`; a blank
+answer, an open/escalated status, or a missing status on a **new** record
+never resolves the question. Pre-existing thread records written before this
+unification may carry no `status` field on their ANSWER at all — that legacy
+shape remains readable and still resolves the question when its `answer`/
+`lane` otherwise do, but it is not the template for new records.
+
+Address a **role**, not a person (`@eng-builder-software`). The one reserved
 human endpoint is `@operator`, used only when a business/scope choice, requested
 reply, credential, or irreversible action truly requires the human. Answer only
 in **your lane** — if the ask is outside it, say so and name who owns it; don't
@@ -62,10 +71,15 @@ timestamp or `next-dispatch`.
 |-----------|-----------|:--------------------------:|:---------:|------|-------|
 | **Inline consult** | You load the peer's `*.agent.md`, adopt its mental model, and answer the packet *in that voice* yourself. | **No — you're simulating the peer.** | No (unless transcribed) | Cheapest | Same run, same context |
 | **Live peer** | The host exposes background agents (the Copilot CLI's `task` / `write_agent` / `read_agent`): spawn or message the *real* peer agent, loaded with its agent file, and read its reply. | **Yes — the peer's own reasoning.** | No (unless transcribed) | Medium (a real agent turn) | Same session, separate context |
-| **Durable thread** | Append the QUESTION and its ANSWER to `.kai/state/threads/<item-id>.md`. | Whoever answers (a real role, later) | **Yes — committed** | Async latency | Across sessions, machines, cloud |
+| **Durable record** | Submit `question.open` / `question.answer` through the runtime, and read them back with `messages --item <item-id>`. | Whoever answers (a real role, later) | **Yes — committed** | Async latency | Across sessions, machines, cloud |
 
 The packet is identical across all three. What differs is **who really
 answers** and **whether it survives**.
+
+kai's runtime does not observe a live peer's model or its effects: peer
+model/effect observation returns `UNSUPPORTED_HOST`. A live answer is the peer's
+words, not a certified invocation — which is exactly why a load-bearing one is
+recorded rather than trusted in place.
 
 ## Choosing a transport
 
@@ -88,9 +102,10 @@ durable are not either/or — see the bridging rule.
 answer lives is a correctness choice.** So:
 
 1. **Any exchange that blocks a work item, crosses a session, or changes
-   a decision MUST land on the thread** — whichever live transport carried
-   it. Transcribe the packet (a one-line "answered live via <transport>" is
-   enough provenance) into `.kai/state/threads/<item-id>.md`.
+   a decision MUST land on the durable record** — whichever live transport
+   carried it. Submit the packet as `question.open` / `question.answer` through
+   `scripts/coordinate.mjs apply` (a one-line "answered live via <transport>"
+   is enough provenance). Writing it into a Markdown file does not record it.
 2. **A blocking QUESTION flips the item to `blocked`** (per
    `kai-core-work-acting`), copying the current state to `resume_state` only when
    first entering blocked, and adds the ID to `waiting_on_questions`.
@@ -130,12 +145,14 @@ agents** — the Copilot CLI's background `task` agents you message with
 agent, a restricted runner) expose none. So:
 
 - **Never assume a live peer is available.** Probe the host's capability;
-  if there are no peer agents, degrade gracefully.
+  if there are no peer agents, degrade gracefully. Never claim a peer's model
+  or its effects were observed — that capability returns `UNSUPPORTED_HOST`.
 - **No live transport?** Use **inline consult** for lane facts and the
-  **durable thread** for anything blocking or cross-session. The thread
-  always works — it's just markdown — so the protocol never depends on a
-  runtime being present. This mirrors how kai stays declarative: the record
-  is files, the live transport is a host bonus.
+  **durable record** for anything blocking or cross-session. Recording a
+  question needs only the core runtime and a schema-4 workspace, so the
+  protocol never depends on peer agents being present. Where the workspace is
+  schema 3 or absent, the coordinated write refuses with `SCHEMA_MISMATCH`:
+  name that gap rather than inventing a fallback.
 
 ## Hard rules
 

@@ -1,5 +1,6 @@
 ---
 name: workflow-self-check
+model: "claude-sonnet-5"
 description: "Writes a tiered structural-health report for kai plugin files covering inventory, naming, descriptions, references, overlap, responsibility, and discoverability. Use for kai self-audit. Not auto-restructuring."
 tools: ["execute", "edit", "read", "search", "ask_user", "skill"]
 ---
@@ -141,7 +142,7 @@ Apply `kai-core-work-activity` before you surface the run. Surface the TL;DR + p
 
 ### 5. Brainstorm mode
 
-After delivering, stay anchored to the report. Use `ask_user` for forks. For findings needing a builder, name the handoff explicitly — you don't execute it. Apply `kai-core-work-item` to shape that handoff so a builder can open a well-formed item, though you never open it yourself.
+After delivering, stay anchored to the report. Use `ask_user` for forks. For findings needing a builder, name the handoff explicitly — you don't execute it. Apply `kai-core-work-item` to shape that handoff so a builder can open a well-formed item, though you never create a coordinated item yourself: you submit no runtime command and hold no lease.
 
 ## Tone
 

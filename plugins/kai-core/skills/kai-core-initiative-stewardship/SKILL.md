@@ -16,10 +16,14 @@ honest, and eventually **call the whole initiative shipped**. That is the
 **steward**.
 
 This is **not** a standalone trigger skill and **not** a new agent. The
-initiative's `owner` (default `principal-product-manager`, which already
-owns the scope gate) inherits this contract the way it inherits
-`kai-core-scope-discipline` — the two are the same role's two hats: *keep scope
-honest* and *keep the initiative moving*.
+initiative's `owner` — an explicitly named concrete role, or `operator`,
+recorded on the north star — inherits this contract the way it inherits
+`kai-core-scope-discipline` when that same role also holds the item-level
+`scope_authority`: keep scope honest and keep the initiative moving are the
+same accountable owner's two hats when one role holds both. There is no
+compulsory default owner and no standing product-agent proxy stands in for a
+human owner — a human owner is recorded as `owner: operator` and stewards the
+initiative directly.
 
 ## What the steward is — and isn't
 
@@ -38,16 +42,13 @@ steward owns the *what/when-next*, the acting agents own the *how*.
 
 ## Who stewards
 
-The steward is the `owner` named in the initiative's `northstar.md`.
-
-- **Default:** `principal-product-manager`. It already owns
-  `kai-core-scope-discipline`, so promotion (out of the backlog) and deferral (into
-  it) are the same judgment in one place.
-- **Named override:** a northstar may set `owner` to another role when the
-  effort's center of gravity isn't product — e.g. an infra migration
-  stewarded with `principal-swe-manager` for sequencing. If `owner` names a
-  human operator, `principal-product-manager` acts as the standing steward
-  on their behalf.
+The steward is the `owner` named in the initiative's `northstar.md` — a
+concrete current role, or `operator`, chosen for the effort's actual center of
+gravity (for example a product-scope role when one is installed, an
+engineering role such as `eng-lead-architecture` for an infrastructure
+migration, or `operator` itself). Every initiative names one explicitly; there
+is no implicit default and no role acts as a standing proxy on a human owner's
+behalf.
 
 Only **one** steward per initiative — accountability doesn't split.
 
@@ -83,7 +84,10 @@ unaffiliated `.kai/state/backlog.md`) against the **thin core** (`mission`,
 
 The steward turns the backlog and `proposed` items into an **ordered** set of
 `ready` work. `director-chief-of-staff` dispatches that queue; it does not
-invent or override the priority:
+invent or override the priority. Each promotion and each priority change is one
+runtime command — `item.promote` and `item.update` through
+`scripts/coordinate.mjs apply`, per `kai-core-work-granting` — never an edit to
+a Markdown file:
 
 - Promote a `proposed`/backlog item to `ready` only when it **fits
   `scope.current`** and has acceptance criteria. Its `depends_on` links must be
@@ -96,15 +100,16 @@ invent or override the priority:
 - Order `ready` by **value-to-mission**, not by who filed it or what's
   easiest.
 - When the next work is **large, parallel, multi-owner, or
-  deadline-driven**, pull in `principal-swe-manager` to size and sequence
-  it before it starts — stewardship decides *what's next*, the manager
-  decides *how it's sliced*.
+  deadline-driven**, pull in a supplied decomposition or engineering's
+  `pr-sizing` skill to size and sequence it before it starts — never a
+  compulsory extra coordinator role. Stewardship still decides *what's
+  next*; the decomposition only informs *how it's sliced*.
 
 ### 4. Keep coordination state honest
 
-Sweep authoritative `.kai/state/items/*.md` records, using
-`.kai/state/BOARD.md` as the
-human index, for the failure modes self-routing can't catch alone:
+Sweep the authoritative item records through `status`, reading any one of them
+with `detail --kind item --id <item-id>`, for the failure modes self-routing
+can't catch alone:
 
 - **Stalled `in-progress`** — an item sitting with no recent `updated` and
   no `HANDOFF`. Ping the owner role (a thread `QUESTION`) or reclaim it.
@@ -184,8 +189,9 @@ invoke this pass, but the steward remains the decision owner.
 
 ## Hard rules
 
-1. **One steward per initiative** — the northstar `owner` (default
-   `principal-product-manager`). Accountability doesn't split.
+1. **One steward per initiative** — the northstar's explicitly named `owner`
+   (a concrete role or `operator`; no compulsory default and no standing proxy
+   for a human owner). Accountability doesn't split.
 2. **Promotion is deliberate and owned.** Only the steward moves an item
    `proposed`/backlog → `ready`, only when it fits `scope.current`, has
    acceptance, and its `depends_on` links are **declared** (not necessarily
@@ -206,8 +212,9 @@ invoke this pass, but the steward remains the decision owner.
 
 - ❌ Auto-promoting the backlog because it's growing. Parked is the default;
   promotion is a scope judgment.
-- ❌ Sequencing and slicing the work yourself when it's large — that's
-  `principal-swe-manager`'s call; hand it over.
+- ❌ Sequencing and slicing the work yourself when it's large — that's the
+  supplied decomposition or engineering `pr-sizing`'s job; hand it over
+  rather than inventing a compulsory coordinator role.
 - ❌ Prioritizing the easy or the loudest item over the one that moves the
   mission.
 - ❌ Leaving an initiative `active` after all milestone requirements are met, or

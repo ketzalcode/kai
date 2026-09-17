@@ -19,3 +19,9 @@ version it speaks. Anything beyond those two lines is a failed probe.
 
 The version lives in the name. An incompatible core ships a differently named
 `kai-core-contract-v2`; this skill never reports a value other than `1`.
+
+A successful probe means one thing only: core is installed and speaks contract
+1. It is **not** permission to operate a schema-4 workspace, and it says nothing
+about whether one exists. Runtime and schema readiness is a separate preflight —
+`coordinate.mjs inspect` — defined in `kai-core-work-granting`. Run it before any
+coordinated read or write, and never treat discovery as its result.

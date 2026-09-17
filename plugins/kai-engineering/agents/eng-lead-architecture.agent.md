@@ -95,7 +95,12 @@ their destination and apply `kai-core-asset-producing` before publishing the acc
 record. Do not create `.kai` for a normal inline answer.
 
 Only for an actual coordinated item, apply `kai-core-work-item` to its authority
-and apply `kai-core-work-acting` before writing state. Legacy routing gaps remain
+and apply `kai-core-work-acting` before writing state. Every coordinated read and
+write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
+Legacy routing gaps remain
 explicit; never dispatch a fictional owner. Apply `kai-core-peer-communication`
 for an actual coordinated handoff and apply `kai-core-work-activity` when recording
 that run.

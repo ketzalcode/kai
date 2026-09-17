@@ -16,19 +16,21 @@ The fix is a **division of labor across three roles**, not a filter
 smeared over everyone. The scope gate lands on the *decide* and *act*
 roles — never on the *assess* role.
 
-- **Assessors** (`persona-*` evaluators, `principal-qa-ui`,
+- **Assessors** (`persona-*` evaluators, `eng-reviewer-quality`,
   `principal-seo`) — surface findings **honestly and unfiltered.** They
   are **not** gated by this contract. Biasing an assessor into
   pre-judging its own findings against scope muzzles the very signal it
   exists to produce. An assessor may *note* a scope implication, but
   never suppresses a finding to stay in scope.
-- **The scope-owner** (`principal-product-manager`) — **owns** the
+- **The scope-owner** (the item's declared `scope_authority`, a concrete
+  role or `operator`, never a compulsory default) — **owns** the
   classify-before-adopt gate. It is the single, consistent place where
   each finding is judged against `mission`, `scope.current`, and
   `principles.non_negotiable[]` and dispositioned into build vs a
   deferred `PROPOSAL`.
 - **Acting designers/builders** (`creative-lead-design`,
-  `principal-swe-*`, `principal-swe-architect`) — carry the gate as
+  `eng-builder-software`, `eng-builder-platform`, `eng-lead-architecture`) —
+  carry the gate as
   **restraint on the proposed design or diff, not on judgment.** They assess
   honestly, but never unilaterally add a scope-expanding surface, flow,
   capability, or implementation; they escalate it as a `PROPOSAL`.
@@ -63,7 +65,9 @@ the active `northstar.md`):
 
 For a direct advisory request, use the supplied brief and constraints. A
 missing initiative does not expand the caller's authority or authorize
-implementation. A genuinely new capability remains a proposal.
+implementation. A genuinely new capability remains a proposal. A direct
+single-shot request needs no coordination database, no initiative and no report
+tree — do not resolve one just to answer it.
 
 ## The classify-before-act gate
 
@@ -122,8 +126,9 @@ the active initiative's **`proposal_channel`**. Resolution order:
 The backlog is durable on purpose (committed in repository mode, persistent
 local in external mode): a parked idea dropped in the
 gitignored working root dies at the next cleanup, so good-but-out-of-scope
-findings go somewhere persistent and can be promoted into an
-authoritative work-item record (and therefore the derived `BOARD.md`). Then
+findings go somewhere persistent and can be promoted by the steward into an
+authoritative work-item record through `item.create` and `item.promote` (after
+which `status` lists it). Then
 tell the operator, in one line, that you emitted a
 proposal instead of building — name the finding and where it landed. The
 idea is **preserved and reviewable**, never silently dropped and never

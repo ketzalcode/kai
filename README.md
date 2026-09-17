@@ -39,13 +39,14 @@ path and they are not automatically uninstalled from existing hosts.
 | **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full 50-agent / 46-skill catalog, split across default and pre-release packages |
 | **Check which packages are default vs pre-release** | [Package availability](docs/reference/package-availability.md) — the active marketplace surface and source-retained packages |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/host-capabilities.md) — what differs, and how it degrades |
+| **See what the coordination runtime actually proves** | [Coordination acceptance record](docs/reference/coordination-acceptance.md) — one verdict per case, including what failed and what is unverified |
 | **Change kai itself** | [Plugin structure](docs/reference/plugin-structure.md) — layout, tests, release policy |
 
 Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v11.0.0` is this checkout's prepared metadata version. Its **50 agents and
+`v12.0.0` is this checkout's prepared metadata version. Its **50 agents and
 46 skills** are organized across eight plugin directories. The default
 marketplace surface is **22 agents and 38 skills** from `kai-core`,
 `kai-engineering`, and `kai-creative`; `kai-product`, `kai-marketing`,
@@ -53,6 +54,17 @@ marketplace surface is **22 agents and 38 skills** from `kai-core`,
 pre-release/in-progress packages. See [package availability](docs/reference/package-availability.md).
 This work establishes committed source, not release publication or live-host
 compatibility.
+
+`kai-core` now ships the coordination runtime — `scripts/coordinate.mjs` and its
+`scripts/lib/coordination-runtime/` closure — and introduces the breaking
+workspace **schema 4**: coordinated work lives in a SQLite store reached only
+through that command, and a schema-3 workspace stays inspect-only until an
+explicit, separately authorized migration runs. The coordination suites are
+wired into `npm test` and into a CI job that runs them on Node `22.22.2`,
+`24.15.0` and `26.0.0`. `npm test` still stops at the pre-existing pre-release
+validator failures (260 errors at `scripts/validate-plugin.mjs`); no gate was
+disabled to hide them. Prepared `12.0.0` metadata is not a tag, a release, a
+publication, or a host-verification claim.
 
 `kai-engineering` now exports 13 focused agents and the same five task-local
 skills. Direct implementation, investigation and assessment accept supplied

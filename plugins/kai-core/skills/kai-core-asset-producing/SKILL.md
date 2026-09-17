@@ -235,18 +235,30 @@ Before an asset-producing agent stops:
 3. Add complete metadata before durable placement.
 4. Resolve revision or supersession.
 5. Record each exact path in the work item's `artifact_targets` and Evidence.
+   For a coordinated item, register the asset as a **registered artifact** with
+   an `artifact.register` command through `scripts/coordinate.mjs apply`; the
+   subject hash comes from `hash --path <workspace-or-project-ref>`. An authored
+   brief, design, decision rationale or report stays a **registered artifact**
+   at its own path — nothing derives it from the store and nothing replaces it.
 6. Resolve the four completion dimensions defined in `kai-core-asset-closing`.
-7. Append a HANDOFF naming:
+7. Submit an `item.handoff` naming:
    - execution state;
    - asset disposition;
    - asset validity;
    - completion authority and verdict;
    - validity owner and next revalidation trigger.
-8. Report any incomplete write as a Gap. Do not shape it as success.
+8. Report any incomplete write as a Gap. Do not shape it as success. An
+   `EVIDENCE_GAP` refusal — for example an applicable input with no captured
+   lineage — is a real gap: register a fresh explicit input basis rather than
+   downgrading what is known.
 
 The workspace doctor provides detectability, not filesystem transactions. It
 must detect orphan assets, missing targets, incomplete supersession, invalid
 state combinations, overdue revalidation, and initiative closure blockers.
+
+An uncoordinated, directly requested artifact needs none of this machinery: no
+coordination database, no initiative and no report tree. Classify it, place it,
+and say where it is.
 
 ## Migration rule
 

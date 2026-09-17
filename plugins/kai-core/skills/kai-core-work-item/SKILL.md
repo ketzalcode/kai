@@ -12,6 +12,18 @@ its field rules, and the Outcome / Acceptance / Evidence templates every item
 carries. Acting on an item is defined in `kai-core-work-acting`; granting and
 reconciling it are defined in `kai-core-work-granting`.
 
+Under workspace schema 4 the authoritative record lives in the runtime store at
+`.kai/state/coordination.sqlite`, read with `detail --kind item --id <item-id>`,
+`status` and `export`. Any `.kai/state/items/<item-id>.md` beside it is a
+**retained historical import source** from a pre-schema-4 workspace: read it as
+history, never hand-edit it to change coordinated state. The fields below are
+the record's schema whichever surface
+you are looking at, and every change to them is one `apply` command through
+`scripts/coordinate.mjs` (see `kai-core-work-granting` for the route table).
+
+An ordinary directly authorized request is not a coordinated item and needs no
+record, no database, no initiative and no report tree.
+
 ## Work-item record
 
 Every unit of executable work has one record:
@@ -28,13 +40,14 @@ state: ready
 resume_state: null
 priority: 20
 owner: null
-next_role: principal-swe-frontend
+next_role: eng-builder-software
 target: checkout-flow
+scope_authority: operator
+completion_authority: operator
 artifact_expectation: none
 artifact_expectation_reason: The durable result is the product change and its release record.
 artifact_class: null
 durability: null
-completion_authority: null
 validity_owner: null
 artifact_targets: []
 context_artifacts: []
@@ -46,9 +59,9 @@ depends_on:
 waiting_on_questions: []
 required_for_milestone: true
 review_requirements:
-  - role: principal-swe-frontend
+  - role: eng-reviewer-code
     kind: independent-code
-  - role: principal-qa-ui
+  - role: eng-reviewer-quality
     kind: ui-system
 completed_reviews: []
 change_ref: null
@@ -84,13 +97,23 @@ Rules:
   ordered by dependencies, then `updated`.
 - **`next_role`** is the role the director should dispatch when the item is
   ready. It is not necessarily the current owner.
+- **`scope_authority`** and **`completion_authority`** each name a concrete
+  current role or `operator`, declared before `ready`. `scope_authority` owns
+  this item's problem, priority, and scope-boundary calls; `completion_authority`
+  owns its completion/acceptance verdict. Neither defaults to a role from an
+  uninstalled pack, and neither is a standing proxy for a human owner — when
+  the accountable owner is the operator, set the field to `operator` itself.
+  `kai-core-scope-discipline` and `kai-core-asset-closing` resolve their
+  scope-owner and completion-authority language against these declared fields,
+  not a hard-coded role name. When an asset is owed, this same
+  `completion_authority` is the authority `kai-core-asset-producing` records
+  against the produced asset's own metadata.
 - **`artifact_expectation`** is `owed` or `none`, declared before `ready`.
   `none` requires `artifact_expectation_reason`; it is valid for spikes,
   conversational or routing work, and implementation items whose durable result
   is the product change rather than a separate generated artifact.
-- **`artifact_class`**, **`durability`**, **`completion_authority`**, and
-  **`validity_owner`** are required when an asset is owed. Their semantics come
-  from `kai-core-asset-producing`.
+- **`artifact_class`**, **`durability`**, and **`validity_owner`** are required
+  when an asset is owed. Their semantics come from `kai-core-asset-producing`.
 - **`artifact_targets`** lists every exact private workspace path, or
   project-qualified public path, for an asset-producing item. The convention is
   `.kai/state/initiatives/<slug>/artifacts/<domain>/<item-id>.md`, where
@@ -128,14 +151,18 @@ Rules:
   SHA of a commit (a throwaway/amendable commit is fine) or `git stash create`
   object, so the reference is reproducible rather than an ad hoc digest. It is
   required before `in-review`.
-- **`version`** increments on every state-changing edit.
+- **`version`** increments on every state-changing edit. The runtime owns that
+  increment: a command supplies `expectedVersion` and the store performs the
+  compare-and-swap, refusing with `VERSION_CONFLICT` when the record moved.
 - **`lease`** protects active ownership. A lease is coordination, not a
   substitute for git conflict detection. `holder` is the owning role; `token`
-  is the unique grant identifier; `version_at_grant` is the item `version` the
-  grant was bound to; `acquired`/`expires` bound its lifetime. A held lease
-  (non-null `holder`) must carry a non-null `token` and `version_at_grant`.
-  Grants are issued serially by a single grantor,
-  never raced for by parallel peers. The grantor's side of this protocol lives in `kai-core-work-granting`.
+  is the unique grant identifier issued by the runtime; `version_at_grant` is
+  the item `version` the grant was bound to; `acquired`/`expires` bound its
+  lifetime. A held lease (non-null `holder`) must carry a non-null `token` and
+  `version_at_grant`. Grants are issued serially by a single grantor through
+  `item.grant`, never raced for by parallel peers and never hand-written into a
+  Markdown file. The grantor's side of this protocol lives in
+  `kai-core-work-granting`.
 - **Artifact/evidence paths** are private workspace-relative paths or
   project-qualified public paths in durable records. Repository metadata stores
   `workspace.root: .`; external mode may store an absolute root. Dispatch

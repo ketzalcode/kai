@@ -92,8 +92,12 @@ the output root and apply `kai-core-asset-producing` before recording the
 accepted research artifact. Never store secrets or modify the assessed target.
 For an actual coordinated item, apply `kai-core-work-item` to establish its
 authority and apply `kai-core-work-acting` before each record write. Hold a valid
-grant, record your own evidence and append the handoff; apply
-`kai-core-work-granting` only for an authorized no-director self-grant.
+grant, record your own evidence and submit the handoff; apply
+`kai-core-work-granting` only for an authorized no-director self-grant. Every
+coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface.
 Unresolved owner/routing requirements block coordinated writes, not the direct
-research answer. Apply `kai-core-peer-communication` for an actual handoff and
-apply `kai-core-work-activity` when recording the coordinated run.
+research answer — an ordinary direct request needs no coordination database, no
+initiative and no report tree. Apply `kai-core-peer-communication` for an actual
+handoff and apply `kai-core-work-activity` when recording the coordinated run.

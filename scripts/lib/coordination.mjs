@@ -158,30 +158,127 @@ export function parseStamp(s) {
   return Number.isNaN(d) ? null : d;
 }
 
-// A QUESTION packet in an item thread (see kai-core-peer-communication):
+// A packet header in an item thread (see kai-core-peer-communication). Two
+// shapes are both live: the bracketed, timestamp-less header existing threads
+// already use, and a timestamped unbracketed header:
 //   QUESTION [Q-<item-id>-<NN>] — <from-role> → @<to-role>
+//   QUESTION Q-<item-id>-<NN> <YYYY-MM-DD-HHMM> - <from-role> -> @<to-role>
 //   - status:   <open | answered | escalated>
 //   - kind:     <fact | decision | reply | action>
 //   - blocking: <yes | no>
-// Only the header and the fields that follow it are read; prose is ignored.
-export function parseQuestions(raw) {
-  const out = [];
+// A leading heading/quote/emphasis prefix (`##`, `>`, `*`, backticks) before
+// the keyword is tolerated; code-fenced examples are never read as packets.
+const HEADER_KEYWORD_RE = /^\s*(?:[#>*_`]+\s*)*\s*(QUESTION|ANSWER|HANDOFF)\b(.*)$/;
+const HEADER_BODY_RE = /^\s*(?:\[([^\]]+)\]|([^\s[][\S]*))\s*(?:(\d{4}-\d{2}-\d{2}(?:-\d{4})?)\s*)?[—-]\s*@?([\w.-]+)\s*(?:→|->)\s*@?([\w.-]+)\s*$/;
+const FIELD_RE = /^\s*-\s*([A-Za-z_][\w-]*)\s*:\s*(.+?)\s*$/;
+
+// Parse a thread's raw text into every QUESTION/ANSWER packet it carries, then
+// reconcile each question against the answers addressed to it. Messages are
+// collected first and reconciled by question ID afterward — an ANSWER is never
+// treated as ending the parse, which was the historical bug (an appended
+// ANSWER left `parseQuestions` reporting the QUESTION's original status).
+export function parseThread(raw) {
   const lines = raw.split(/\r?\n/);
+  const messages = [];
   let cur = null;
   let fenced = false;
-  for (const l of lines) {
-    if (/^\s*(```|~~~)/.test(l)) { fenced = !fenced; cur = null; continue; }
+  for (const line of lines) {
+    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; cur = null; continue; }
     if (fenced) continue;
-    const h = l.match(/^\s*(?:[#*_`>\s]*)QUESTION\s*\[([^\]]+)\]\s*[—-]\s*(.+?)\s*(?:→|->)\s*@?([\w@-]+)/);
-    if (h) {
-      cur = { id: h[1].trim(), from: h[2].trim(), to: h[3].trim(), status: undefined, kind: undefined, blocking: undefined };
-      out.push(cur);
+    const km = line.match(HEADER_KEYWORD_RE);
+    if (km) {
+      const kind = km[1];
+      if (kind === 'HANDOFF') { cur = null; continue; }
+      const hb = km[2].match(HEADER_BODY_RE);
+      if (!hb) { cur = null; continue; } // keyword present but header malformed: not a packet
+      cur = {
+        kind,
+        id: (hb[1] ?? hb[2] ?? '').trim(),
+        from: hb[4],
+        to: hb[5],
+        timestamp: hb[3] || null,
+        fields: {},
+      };
+      messages.push(cur);
       continue;
     }
     if (!cur) continue;
-    if (/^\s*(?:[#*_`>\s]*)(QUESTION|ANSWER|HANDOFF)\b/.test(l)) { cur = null; continue; }
-    const f = l.match(/^\s*-\s*(status|kind|blocking|ask|answer_by)\s*:\s*(.+?)\s*$/i);
-    if (f) cur[f[1].toLowerCase()] = cleanScalar(f[2]).replace(/^[`*_]+|[`*_]+$/g, '').trim();
+    const fm = line.match(FIELD_RE);
+    if (fm) {
+      const value = cleanScalar(fm[2]).replace(/^[`*_]+|[`*_]+$/g, '').trim();
+      cur.fields[fm[1].toLowerCase()] = value;
+    }
   }
-  return out;
+
+  const questionMsgs = messages.filter((m) => m.kind === 'QUESTION');
+  const answerMsgs = messages.filter((m) => m.kind === 'ANSWER');
+  const knownIds = new Set(questionMsgs.map((m) => m.id));
+  const diagnostics = [];
+
+  const questions = questionMsgs.map((q) => {
+    const out = {
+      id: q.id, from: q.from, to: q.to,
+      status: q.fields.status, kind: q.fields.kind, blocking: q.fields.blocking,
+      ask: q.fields.ask, answer_by: q.fields.answer_by, context: q.fields.context,
+    };
+    const related = answerMsgs.filter((a) => a.id === q.id);
+    // The canonical packet (kai-core-peer-communication) carries no `status:`
+    // field on ANSWER at all — only `re`/`answer`/`lane`/`provenance`. A
+    // status-less ANSWER is therefore a valid legacy packet, not a rejected
+    // one; only an *explicit* status other than `answered` (e.g. a draft or
+    // escalated packet) is disqualifying. A blank `answer:` never completes a
+    // question, whatever its status.
+    const hasContent = (a) => typeof a.fields.answer === 'string' && a.fields.answer.trim().length > 0;
+    const statusAcceptable = (a) => a.fields.status === undefined || a.fields.status === 'answered';
+    const inLane = (a) => a.fields.lane === 'in-lane';
+    const partyMatch = (a) => a.from === q.to && a.to === q.from;
+    const resolving = related.filter((a) => (
+      statusAcceptable(a) && inLane(a) && partyMatch(a) && hasContent(a)
+    ));
+    for (const a of related) {
+      if (resolving.includes(a)) continue;
+      let type;
+      if (!inLane(a)) type = 'out-of-lane';
+      else if (!partyMatch(a)) type = 'party-mismatch';
+      else if (!statusAcceptable(a)) type = 'unresolved-status';
+      else if (!hasContent(a)) type = 'blank-answer';
+      else type = 'unresolved-answer';
+      diagnostics.push({ type, id: q.id,
+        message: `${a.kind} ${a.id} from ${a.from} does not reconcile (${type.replace(/-/g, ' ')})` });
+    }
+    if (resolving.length) {
+      const distinct = new Set(resolving.map((a) => a.fields.answer ?? ''));
+      if (distinct.size > 1) {
+        // Contradictory valid answers are never resolved to either side, and
+        // they never leave the question sitting on whatever status it
+        // happened to declare (including a stale `status: answered` on the
+        // QUESTION itself) — a live conflict always forces the question open.
+        diagnostics.push({ type: 'conflicting-answer', id: q.id,
+          message: `${resolving.length} contradictory in-lane answers for ${q.id}; forcing it open` });
+        out.status = 'open';
+      } else {
+        out.status = 'answered';
+        out.answer = resolving[0].fields.answer;
+        out.lane = resolving[0].fields.lane;
+        out.provenance = resolving[0].fields.provenance;
+      }
+    }
+    return out;
+  });
+
+  for (const a of answerMsgs) {
+    if (!knownIds.has(a.id)) {
+      diagnostics.push({ type: 'orphan-answer', id: a.id,
+        message: `ANSWER ${a.id} has no matching QUESTION in this thread` });
+    }
+  }
+
+  return { questions, answers: answerMsgs, diagnostics, messages };
+}
+
+// Backward-compatible view: the array of questions, with status reconciled
+// against any answers in the thread. Existing status callers (work-status)
+// keep using this; they only ever read the fields already on each question.
+export function parseQuestions(raw) {
+  return parseThread(raw).questions;
 }

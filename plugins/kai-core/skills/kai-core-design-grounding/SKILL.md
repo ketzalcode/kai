@@ -18,7 +18,7 @@ It is **not** a standalone trigger. It is inherited by reference by:
 
 - **`creative-lead-design`** — the primary author and consumer. Grounds
   every load-bearing visual choice; authors and maintains the reference.
-- **`principal-swe-frontend`** — owns *implementation truth* (the real tokens,
+- **`eng-builder-software`** — owns *implementation truth* (the real tokens,
   component primitives, styling architecture) and the feasibility of any
   proposed token/component.
 - **`creative-lead-design`** — owns the *brand-identity layer* (logo/wordmark,
@@ -57,7 +57,7 @@ Shape (fill what the app actually has; mark the rest as gaps):
 - target:
 - source:          consumed | derived | mixed
 - last reviewed:
-- owners:          creative-lead-design (semantics) + principal-swe-frontend (implementation)
+- owners:          creative-lead-design (semantics) + eng-builder-software (implementation)
 - evidence basis:  <repo token paths and/or design-system-extract.md + run evidence>
 - freshness basis: <what would make this stale — e.g. a UI redesign of surface X>
 
@@ -119,7 +119,7 @@ For **requested or owed durable design-system work**, resolve in order:
    installation, or director dispatch.
 3. **No adequate supplied evidence, but the repo carries obvious source tokens**
    (CSS variables, Tailwind config, a component library, existing patterns) →
-   request the missing source-token inventory; `principal-swe-frontend` can
+   request the missing source-token inventory; `eng-builder-software` can
    inventory the *implementation truth*. The designer drafts or refreshes
    `design-system.md` from that evidence.
 4. **No adequate supplied evidence and no accessible repo tokens** (e.g. an
@@ -212,8 +212,8 @@ PROPOSAL
 ```
 
 The designer **recommends**; it never establishes durable system rules by fiat.
-`principal-swe-frontend` owns the feasibility of any new token; the PM / steward
-owns the scope of a system addition.
+`eng-builder-software` owns the feasibility of any new token; the item's
+declared `scope_authority` / steward owns the scope of a system addition.
 
 ## Designer ↔ frontend ownership split and the collaboration seam
 
@@ -221,8 +221,8 @@ owns the scope of a system addition.
 |---|---|
 | Brand-identity layer — logo/wordmark, color palette, typographic and iconography **style**, brand guidelines | `creative-lead-design` |
 | Visual language, hierarchy, component **shape/semantics**, states, usage rules, `design-system.md` content | `creative-lead-design` |
-| **Implementation truth** — CSS variables / Tailwind config / component primitives, token naming feasibility, mapping decisions to the repo's styling architecture, co-signing new/changed tokens | `principal-swe-frontend` |
-| Scope of a system-level addition | `principal-product-manager` / steward |
+| **Implementation truth** — CSS variables / Tailwind config / component primitives, token naming feasibility, mapping decisions to the repo's styling architecture, co-signing new/changed tokens | `eng-builder-software` |
+| Scope of a system-level addition | the item's declared `scope_authority` / steward |
 
 The seam, concretely:
 

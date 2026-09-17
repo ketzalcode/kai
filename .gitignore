@@ -36,3 +36,7 @@ __pycache__/
 
 # Isolated development worktrees
 .worktrees/
+
+# Private session artifacts: plans, briefs, task reports, review packages,
+# capture evidence and the ledger. Never tracked.
+.superpowers/

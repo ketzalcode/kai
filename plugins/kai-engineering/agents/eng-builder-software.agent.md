@@ -117,6 +117,10 @@ For explicitly requested durable Kai artifacts, apply `kai-core-workspace-paths`
 before resolving their location and apply `kai-core-asset-producing` before publishing
 an accepted artifact. For an actual coordinated item, apply `kai-core-work-item`
 to read its authority, then apply `kai-core-work-acting` before a lease or state write.
+Every coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
 Unresolved legacy routing is a coordination gap, not permission to claim work.
 Apply `kai-core-peer-communication` only for a real coordinated handoff and
 apply `kai-core-work-activity` when recording that run.

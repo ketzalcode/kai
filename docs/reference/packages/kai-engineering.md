@@ -8,13 +8,26 @@ release, installed-host acceptance or completed cross-agent migration.
 
 Supply the task, scope and available evidence directly. No product brief
 producer, designer, engineering manager or director must be installed.
-Ordinary code changes and inline assessments do not require `.kai`
-initialization, an initiative, a work item or a standalone report.
+An ordinary code change or inline assessment needs no coordination database, no
+initiative and no report tree, and does not require `.kai` initialization.
 
 Required evidence is still required: an absent independent review, approved
 design explicitly required by the task, production deployment confirmation or
 legal/risk decision remains a gap. Supplied evidence is not a substitute for
 independence, and missing agent installation never creates a waiver.
+
+## Coordinated use
+
+When an agent actually holds a coordinated item, every read and write is a
+runtime command — `node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root
+"<workspace-root>"`, with `apply` taking one JSON command on stdin. Markdown
+under `.kai/state/` is retained pre-schema-4 history, not the write surface
+and not the read surface — `status`, `detail` and `messages` read the store,
+and a review verdict counts only when it arrived as a `review.record` command
+bound to the exact `change_ref`. A schema-3 workspace stays readable through
+`inspect`, `status` and `legacy` only and refuses coordinated writes with
+`SCHEMA_MISMATCH`; migration is explicit and offline. Nothing dispatches a
+role automatically: `plan` returns an ordered queue with `automatic: false`.
 
 Choose a role by its output, not a mandatory sequence:
 

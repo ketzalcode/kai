@@ -98,6 +98,10 @@ accepted artifact.
 
 For an actual coordinated item, apply `kai-core-work-item` to read its delivery
 authority, then apply `kai-core-work-acting` before every coordination write.
+Every coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
+`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
+direct request needs no coordination database, no initiative and no report tree.
 If the owner, grant, or next route is unavailable during the deferred wiring
 phase, report it rather than inventing state. Apply
 `kai-core-peer-communication` only for an actual coordinated handoff. Apply

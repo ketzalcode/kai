@@ -174,7 +174,12 @@ changes stay exempt.
 | Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
 | Docs- or test-only | no bump (or patch) | no bump (or patch) |
 
-The current engineering coding foundation prepares `8.0.0`: ten document-review
+The current coordination foundation prepares `12.0.0`: `kai-core` ships an
+executable coordination runtime and workspace **schema 4** replaces schema 3 as
+the coordinated-write contract, so a schema-3 workspace becomes inspect-only
+until an explicit, separately authorized migration runs. That is a changed
+consumed contract, which takes the major under the post-1.0 column. The earlier
+engineering coding foundation prepared `8.0.0`: ten document-review
 skills and their dependent workflow leave the active runtime surface while
 their source remains in the incubator. The earlier eight-package integration
 prepared `7.0.0`. Metadata does not mean the source is published or that

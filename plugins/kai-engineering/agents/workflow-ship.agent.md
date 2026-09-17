@@ -108,7 +108,12 @@ artifact.
 
 For formal lifecycle state, apply `kai-core-work-item` to read eligibility,
 revision, reviews, and current state, then apply `kai-core-work-acting` before
-every write. If the required owner, grant, or route is unresolved during the
+every write. Every coordinated read and write is a runtime command
+(`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`),
+and each transition is an `item.transition` command; `.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary direct request needs no
+coordination database, no initiative and no report tree — but it also produces
+no lifecycle transition.
+If the required owner, grant, or route is unresolved during the
 deferred wiring phase, stop and report it rather than faking the transition.
 Apply `kai-core-peer-communication` only for an actual coordinated handoff.
 Apply `kai-core-work-activity` only when logging requested Kai activity.

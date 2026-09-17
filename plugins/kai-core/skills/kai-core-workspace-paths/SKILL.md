@@ -51,6 +51,7 @@ The bootstrap sentinel is always:
    ├─ manifest.json
    ├─ CONVENTIONS.md
    ├─ state/
+   │  ├─ coordination.sqlite
    │  ├─ ACTIVE.md
    │  ├─ BOARD.md
    │  ├─ backlog.md
@@ -71,12 +72,21 @@ The bootstrap sentinel is always:
    └─ personal/
 ```
 
+Under schema 4, `state/coordination.sqlite` is the authoritative coordination
+record, read with `status`, `detail`, `messages` and `export`. `BOARD.md`,
+`items/<id>.md` and `threads/<id>.md` are **retained historical import sources**:
+nothing writes them under schema 4, so they are no longer updated and are never
+read as authority. Change coordinated state only by submitting a runtime command
+through `scripts/coordinate.mjs` (see `kai-core-work-granting`). Authored
+material — briefs, designs, decision rationale, reports — stays real authored
+content at its own path and becomes a registered artifact, never a derived file.
+
 The lanes have one purpose each:
 
 | Lane | Purpose |
 |---|---|
-| `.kai/state/` | Authoritative work items, threads, backlog, initiatives, and derived board views. |
-| `.kai/runs/` | Raw evidence, browser output, scratch, and regenerable run artifacts. |
+| `.kai/state/` | Authoritative coordination store plus initiative state, backlog, and retained pre-migration item/thread/board history. |
+| `.kai/runs/` | Raw evidence, browser output, scratch, and reproducible run artifacts. |
 | `.kai/review/` | Review-ready drafts and choices that are not accepted project authority. |
 | `.kai/archive/` | Closed operational history removed from active state. |
 | `.kai/personal/` | Operator-private agenda, identity, consultation, proactive, and learning state. |
@@ -210,6 +220,10 @@ Add an area to the manifest contract before using a new one.
 9. Archive terminal operational history without moving published knowledge.
 10. Never create an unregistered root or arbitrary backlog, report, design, or
     TODO path.
+
+A direct single-shot request resolves none of this: it needs no coordination
+database, no initiative and no report tree. Resolve a workspace when the work
+actually writes durable Kai state.
 
 ## Artifact path convention
 
