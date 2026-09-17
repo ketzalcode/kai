@@ -1,0 +1,141 @@
+import { buildFrames } from './frames.mjs';
+import { buildProvenance } from './provenance.mjs';
+
+export const TEMPLATE_IDS = Object.freeze(['walk-cycle', 'orbit', 'rain']);
+
+const GLYPHS = {
+  blocks: ['█', '▓', '▒', '░'],
+  ascii: ['@', '#', '+', '.'],
+  minimal: ['#', '.', '.', '.'],
+};
+
+function blankGrid(cols, rows) {
+  return Array.from({ length: rows }, () => Array.from({ length: cols }, () => ' '));
+}
+
+function toRows(grid) {
+  return grid.map(row => row.join(''));
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function walkCycle({ cols, rows, frameCount, glyphs }) {
+  const bodyWidth = Math.max(4, Math.min(10, Math.round(cols * 0.22)));
+  const baseline = rows - 2;
+  const legRow = baseline;
+  const bodyBottom = legRow - 1;
+  const bodyTop = Math.max(0, bodyBottom - 1);
+  const headRow = Math.max(0, bodyTop - 1);
+  // Two-phase gait: contact and passing. Fore and hind legs swap each phase so
+  // the silhouette reads as a walk rather than a sliding block.
+  const gait = [
+    [0, 1, 1, 0],
+    [1, 0, 0, 1],
+  ];
+  return Array.from({ length: frameCount }, (_unused, frame) => {
+    const grid = blankGrid(cols, rows);
+    const travel = cols + bodyWidth + 2;
+    const x = Math.floor((frame / frameCount) * travel) - bodyWidth - 1;
+    const put = (col, row, glyph) => {
+      if (col >= 0 && col < cols && row >= 0 && row < rows) grid[row][col] = glyph;
+    };
+    for (let dx = 0; dx < bodyWidth; dx += 1) {
+      put(x + dx, bodyTop, glyphs[0]);
+      put(x + dx, bodyBottom, glyphs[0]);
+    }
+    const headX = x + bodyWidth;
+    put(headX, headRow, glyphs[0]);
+    put(headX + 1, headRow, glyphs[0]);
+    put(headX, bodyTop, glyphs[0]);
+    const bob = frame % 2 === 0 ? 0 : 1;
+    put(x - 1, Math.max(0, bodyTop - bob), glyphs[1]);
+    const phase = gait[frame % gait.length];
+    const legXs = [x, x + 1, x + bodyWidth - 2, x + bodyWidth - 1];
+    legXs.forEach((legX, index) => {
+      const lift = phase[index];
+      put(legX + lift, legRow - lift, lift === 0 ? glyphs[0] : glyphs[1]);
+      if (lift === 0) put(legX, legRow + 1, glyphs[2]);
+    });
+    return toRows(grid);
+  });
+}
+
+function orbit({ cols, rows, frameCount, glyphs }) {
+  const cx = (cols - 1) / 2;
+  const cy = (rows - 1) / 2;
+  const radiusX = Math.max(1, cx - 1);
+  const radiusY = Math.max(1, cy - 1);
+  const at = angle => ({
+    x: Math.min(cols - 1, Math.max(0, Math.round(cx + Math.cos(angle) * radiusX))),
+    y: Math.min(rows - 1, Math.max(0, Math.round(cy + Math.sin(angle) * radiusY))),
+  });
+  // A lone dot on a ring does not read as motion, so the satellite drags a
+  // fading trail. Trail length scales with the ring so small grids stay legible.
+  const trail = Math.max(2, Math.min(6, Math.round(frameCount / 2)));
+  return Array.from({ length: frameCount }, (_unused, frame) => {
+    const grid = blankGrid(cols, rows);
+    const core = at(0);
+    grid[Math.round(cy)][Math.round(cx)] = glyphs[0];
+    grid[core.y][core.x] = grid[core.y][core.x];
+    for (let back = trail; back >= 1; back -= 1) {
+      const angle = ((frame - back * 0.5) / frameCount) * Math.PI * 2;
+      const point = at(angle);
+      const glyph = glyphs[Math.min(glyphs.length - 1, 1 + Math.floor((back / trail) * 2))];
+      if (grid[point.y][point.x] === ' ') grid[point.y][point.x] = glyph;
+    }
+    const head = at((frame / frameCount) * Math.PI * 2);
+    grid[head.y][head.x] = glyphs[0];
+    return toRows(grid);
+  });
+}
+
+function rain({ cols, rows, frameCount, glyphs, seed }) {
+  const random = mulberry32(seed);
+  const drops = Array.from({ length: cols }, () => Math.floor(random() * rows));
+  return Array.from({ length: frameCount }, (_unused, frame) => {
+    const grid = blankGrid(cols, rows);
+    for (let col = 0; col < cols; col += 1) {
+      const head = (drops[col] + frame) % rows;
+      grid[head][col] = glyphs[0];
+      if (head - 1 >= 0) grid[head - 1][col] = glyphs[2];
+    }
+    return toRows(grid);
+  });
+}
+
+const RENDERERS = { 'walk-cycle': walkCycle, orbit, rain };
+
+export function renderTemplate({ id, profile, frameCount, operator, seed = 1, createdAt }) {
+  if (!TEMPLATE_IDS.includes(id)) {
+    return {
+      ok: false,
+      doc: null,
+      errors: [`unknown template "${id}"; v1 ships ${TEMPLATE_IDS.join(', ')}`],
+    };
+  }
+  const glyphs = GLYPHS[profile.palette] ?? GLYPHS.blocks;
+  const frames = RENDERERS[id]({
+    cols: profile.cols,
+    rows: profile.rows,
+    frameCount,
+    glyphs,
+    seed,
+  });
+  const provenance = buildProvenance({
+    tier: 2,
+    source: `template:${id}`,
+    license: 'kai-creative-builtin',
+    operator,
+    createdAt,
+    notes: [`seed=${seed}`],
+  });
+  return { ok: true, doc: buildFrames({ profile, frames, provenance }), errors: [] };
+}
