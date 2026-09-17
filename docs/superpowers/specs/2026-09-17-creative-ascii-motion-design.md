@@ -6,10 +6,11 @@
 **Decision this spec exists to settle:** does ASCII motion need a new agent, one
 skill, or several skills — and what must exist for them to work?
 
-**Revision note:** this is the second draft. An independent review corrected a
-factual error about which agent routes creative methods, argued the skill count
-down from three to two, and cut two source tiers out of v1. Those corrections
-are incorporated; §13 records what was cut and why.
+**Revision note:** third draft. An independent review corrected a factual error
+about which agent routes creative methods, argued the skill count down from
+three to two, and cut two source tiers out of v1 (§13). The operator then
+established the web clip bundle as a co-primary artifact alongside the README
+GIF (§7, §7a).
 
 ---
 
@@ -120,6 +121,7 @@ brings their own footage should never load the sourcing procedure at all.
 | Preview a still | A clip, a source moment, a profile; return one converted frame at target dimensions. |
 | Preview a sample | A clip and a profile; return a 1–2 second converted sample for temporal judgment. |
 | Convert and export | A clip, a renderable profile, a format, the engine present, and execution authority; report the real output and inspection status. |
+| Build a web bundle | One or more named clips and a profile; emit a state-addressable clip bundle plus the player asset (§7a). |
 | Review an export | An existing artifact; produce the requested contact sheet or frame sampling, not a new encode. |
 
 An explain-only request ends at explanation. A printed command is not a render.
@@ -233,7 +235,9 @@ The skill never invokes `movie-ascii` directly. It invokes
   `{ glyph, fg, bg }`, with grid dimensions, source timestamps and the profile
   that produced them. This is the backend-neutral unit. A backend that can only
   emit its own images is used in direct-export mode and *declares* that it did
-  not produce an IR, rather than pretending to.
+  not produce an IR, rather than pretending to. **A web bundle (§7a) requires a
+  real IR**, so direct-export-only backends cannot serve that format and must
+  report `unsupported` rather than substituting a baked artifact.
 - **Error and output normalisation.** A single result shape:
   `{ status: ok | unsupported | missing-dependency | failed, outputs[], notes[] }`.
   Backend stderr is carried in `notes`, never interpreted as success.
@@ -322,14 +326,87 @@ second, not on forty frames.
 
 ---
 
-## 7. Artifact and export
+## 7. Artifacts and export
 
-| Destination | Format | Rationale |
-| --- | --- | --- |
-| GitHub README | **looping GIF**, 600–900 px, 12–20 fps | The only format that reliably embeds in Markdown. **MP4 cannot be embedded directly in Markdown** — this constraint decides the default. |
-| Slide deck / social | MP4 (H.264) | Preserves colour far better than GIF's 256-colour palette; dramatically smaller for longer clips. |
-| Web page | self-contained animated HTML | Smallest and crispest for text, selectable, responsive. `movie-ascii` emits this directly from the clip. |
-| Vector | animated SVG | Compatibility inconsistent; some README renderers sanitise or refuse it. **Not in v1.** |
+There are **two co-primary artifacts**, serving two different jobs:
+
+| Destination | Format | Status | Rationale |
+| --- | --- | --- | --- |
+| Product surface / website | **web clip bundle + player** (§7a) | **co-primary** | State-addressable. The only artifact that can emulate an AI persona reacting to app state — idle, talking, thinking. Crisp, selectable text; a few KB gzipped. |
+| GitHub README | **looping GIF**, 600–900 px, 12–20 fps | **co-primary** | The only format that reliably embeds in Markdown. **MP4 cannot be embedded directly in Markdown** — that constraint decides this default. |
+| Slide deck / social | MP4 (H.264) | secondary | Preserves colour far better than GIF's 256-colour palette; dramatically smaller for longer clips. |
+| Single baked web animation | self-contained animated HTML | secondary | `movie-ascii` emits it directly. One clip, no entry points — use the bundle when state matters. |
+| Vector | animated SVG | **not in v1** | Compatibility inconsistent; some README renderers sanitise or refuse it. |
+
+---
+
+## 7a. The web clip bundle
+
+### Why a baked format cannot do this
+
+GIF, MP4 and self-contained HTML are all **baked**: one clip, start to finish,
+no entry points. Emulating an AI that idles, then talks, then settles needs a
+**runtime component with states**, where the host application decides what
+plays and when. Swapping `<img src>` between GIFs approximates it badly —
+palette flicker on swap, no loop-phase synchronisation, no transitions, and no
+way to overlay streaming text.
+
+### The asset already exists
+
+`kai.ascii-motion-frames/v1` (§5) was specified as a backend-neutral IR purely
+to make the engine swappable. That IR **is** the web asset. Character grids
+compress extremely well; a 2 s 80×24 clip is a few KB gzipped, far smaller than
+the equivalent GIF. Exposing it costs little beyond what the adapter already
+builds.
+
+### Bundle
+
+```json
+{
+  "schema": "kai.ascii-motion-bundle/v1",
+  "profile": { "grid": { "cols": 80, "rows": 24 }, "colour": "ansi256", "fps": 12 },
+  "clips": {
+    "idle":  { "frames_ref": "idle.frames.json",  "loop": true, "loop_from": 0 },
+    "talk":  { "frames_ref": "talk.frames.json",  "loop": true, "loop_from": 2 },
+    "think": { "frames_ref": "think.frames.json", "loop": true, "loop_from": 0 }
+  },
+  "default_clip": "idle"
+}
+```
+
+Every clip in a bundle shares one grid, palette and fps. A clip whose profile
+disagrees is rejected at validation — mixed grids cause a visible resize snap
+on switch.
+
+### Player
+
+A small dependency-free ES module shipped as a helper asset, rendering to a
+`<pre>` or canvas:
+
+```js
+const p = await AsciiMotion.mount('#ai', './bundle.json');
+p.play('talk');          // switches on the next loop boundary
+p.play('idle', { now: true });
+p.queue('think', 'idle');
+p.stop();
+```
+
+**Clip-boundary switching is the load-bearing behaviour.** Switching mid-loop
+snaps; switching at `loop_from` reads as intentional. `{ now: true }` is the
+explicit override for interrupts.
+
+### The "AI talking" pattern
+
+For a talking persona, the cheap and proven technique is **limited animation**:
+three or four mouth/pose states cycled on a cadence while text streams — not
+lip-sync to real audio. It reads well in ASCII, needs no audio analysis, and
+the `walk-cycle` template machinery (§4) already produces this shape of asset.
+
+### Boundaries
+
+The host application owns orchestration. The player exposes `play`, `queue`,
+`stop` and a `clip-ended` event; it does not subscribe to token streams,
+inspect audio, or decide what the persona should be doing.
 
 Prefer `movie-ascii` direct export. Where deterministic typography matters more
 — house font, exact dimensions, window chrome — `charmbracelet/vhs` (20,922★,
@@ -366,6 +443,7 @@ node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --explain --profile "<prof
 node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --preview "<clip>" --at <seconds> --profile "<profile>" --out "<png>"
 node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --sample "<clip>" --seconds 2 --profile "<profile>" --format gif --out "<sample>"
 node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --convert "<clip>" --profile "<profile>" --format gif|mp4|html --out "<artifact>"
+node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --bundle "<clips.json>" --profile "<profile>" --out "<bundle-dir>"
 node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --review "<artifact>" --out "<sheet>"
 node "<kai-creative-plugin>/scripts/ascii-motion.mjs" --print --convert "<clip>" --profile "<profile>"
 ```
@@ -464,6 +542,13 @@ Two added skills, no removed install name. Post-1.0 semver: **minor** bump.
    stretched template.
 9. A cancelled or failed conversion leaves no partial artifact reported as
    complete.
+10. A multi-clip web bundle mounts in a plain HTML page, and `play('talk')`
+    switches on the next loop boundary without a visible resize or palette
+    snap; `{ now: true }` switches immediately.
+11. A bundle whose clips disagree on grid, palette or fps is rejected at
+    validation with a named reason, not shipped.
+12. A backend running in direct-export mode reports `unsupported` for the web
+    bundle format rather than emitting a baked artifact in its place.
 
 ---
 
@@ -500,6 +585,9 @@ stabilisation makes structure-aware ASCII safe for video.
   rigging, warping, interpolation. Note for that spec: frame interpolation
   smooths supplied poses, it does not invent a correct walk cycle.
 - Structure-aware edge detection with temporal stabilisation.
+- **Web bundle scope limits:** no audio lip-sync, no interaction-authoring UI,
+  no React/Vue/Svelte wrappers, and no subscription to AI token streams. The
+  host application calls `play()`; the player does not orchestrate a persona.
 - Animated SVG output; real-time terminal playback; audio and soundtrack sync.
 - Cloud rendering, batch asset management, a GUI.
 - Chafa as a required dependency.
