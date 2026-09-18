@@ -15,22 +15,40 @@ for version **12.0.0**. It walks the acceptance-case table in
 There is no fourth verdict. A case that is only partly established is split into
 the part that is covered and the part that is not.
 
-## Release stop conditions the 12.0.0 preparation does not fix
+## Release stop conditions — resolved in the 13.0.0 preparation
 
-- `npm test` is **RED**. It fails at `validate-plugin` with **260 errors**
-  (observed on 2026-09-17 with Node 24.15.0). None come from the
-  coordination runtime: 250 are in pre-release packages and repository docs, and
-  the 10 in `plugins/kai-core/**` are pre-release package-family naming and
-  references to retired `principal-*` agents. Those same references exist on
-  `origin/main`, so they pre-date the coordination runtime.
+Both conditions recorded against the 12.0.0 preparation have since been
+resolved by the package-incubation change. The original findings are kept
+below for provenance.
+
+- `npm test` now passes end to end, and `validate-plugin` reports
+  **0 errors** (observed 2026-09-17, Node 24.14.0). The 261-error baseline was
+  cleared by incubating the five unfinished packages, correcting references to
+  retired `principal-*` identities in active documents, and allowing them in
+  historical ones only.
+- `node scripts/pack-preview.mjs --self-test` now completes with **222 checks
+  passed**, and `--gate all` and `--check` are clean. The `TypeError` was a
+  stale `plan.local.personal` lookup against a pack retired several versions
+  earlier; the self-test now runs against the real three-pack partition.
+- A passing `npm test` is not a release. The `13.0.0` metadata is prepared
+  metadata only: not a tag, not a release, not a publication, and not a
+  host-verification claim. Nothing in this document was verified on an
+  installed host.
+
+### As originally recorded for 12.0.0
+
+- `npm test` was **RED**. It failed at `validate-plugin` with **260 errors**
+  (observed on 2026-09-17 with Node 24.15.0). None came from the
+  coordination runtime: 250 were in pre-release packages and repository docs, and
+  the 10 in `plugins/kai-core/**` were pre-release package-family naming and
+  references to retired `principal-*` agents. Those same references existed on
+  `origin/main`, so they pre-dated the coordination runtime.
 - `node scripts/pack-preview.mjs --self-test` and
-  `node scripts/pack-preview.mjs --gate all` both abort with a pre-existing
+  `node scripts/pack-preview.mjs --gate all` both aborted with a pre-existing
   `TypeError: Cannot read properties of undefined (reading 'includes')` at
-  `scripts/pack-preview.mjs:390`. `--check` passes.
-- Both are release stop conditions. The 12.0.0 preparation fixes neither, so the
-  runtime is **not released**.
-- The `12.0.0` metadata is prepared metadata only. It is
-  not a tag, not a release, not a publication, and not a host-verification claim.
+  `scripts/pack-preview.mjs:390`. `--check` passed.
+- Both were release stop conditions. The 12.0.0 preparation fixed neither, so the
+  runtime was **not released**.
 
 ## What is not claimed anywhere in this document
 

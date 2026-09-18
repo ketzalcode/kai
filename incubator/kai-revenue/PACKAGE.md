@@ -1,6 +1,6 @@
 # kai-revenue
 
-Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../package-availability.md).
+Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../../docs/reference/package-availability.md).
 
 Sales, pricing, partnerships, revenue operations, customer success, support intake,
 and pre-sales solution fit over kai-core.

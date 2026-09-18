@@ -1,81 +1,90 @@
-# Default and pre-release packages
+[kai](../../README.md) / [Docs](../README.md) / Package availability
 
-The default marketplace contains **kai-core, kai-engineering and kai-creative**.
-The other five capability packages remain **pre-release / in progress** while
-development returns to core.
+# Package availability
+
+kai ships **three packages**: `kai-core`, `kai-engineering`, and
+`kai-creative`. The active source partition, the generated packs, and the
+marketplace index are the same three — there is no fourth tier of
+"retained but unshipped" packages.
 
 | Package | Availability | Source |
 | --- | --- | --- |
-| kai-core | Default marketplace; required foundation | `plugins/kai-core/` |
-| kai-engineering | Default marketplace | `plugins/kai-engineering/` |
-| kai-creative | Default marketplace | `plugins/kai-creative/` |
-| kai-assistant | Pre-release / in progress; not in default marketplace | `plugins/kai-assistant/` |
-| kai-product | Pre-release / in progress; not in default marketplace | `plugins/kai-product/` |
-| kai-marketing | Pre-release / in progress; not in default marketplace | `plugins/kai-marketing/` |
-| kai-revenue | Pre-release / in progress; not in default marketplace | `plugins/kai-revenue/` |
-| kai-learning | Pre-release / in progress; not in default marketplace | `plugins/kai-learning/` |
+| `kai-core` | Marketplace; required foundation | `plugins/kai-core/` |
+| `kai-engineering` | Marketplace | `plugins/kai-engineering/` |
+| `kai-creative` | Marketplace | `plugins/kai-creative/` |
 
-The default selection contains **22 agents and 38 skills**. The repository
-retains **50 agents and 46 skills**, including pre-release source. Core remains
-under development; a default listing is not a stability, passing-validation,
-publication, or live-host compatibility claim.
+Core remains under development. A marketplace listing is not a stability,
+passing-validation, publication, or live-host compatibility claim.
 
-## Identity, version and source preservation
+## What is incubated
 
-Package IDs and paths do not change. There are no replacement names, runtime
-aliases, moved agent bodies or deleted capabilities. The five unfinished
-packages receive a `Pre-release (in progress):` prefix in their generated plugin
-descriptions and an availability label in the source catalog.
+Five capability packages were moved to `incubator/` while development returns
+to core: `kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
+`kai-learning`. Individual components of an active package can be incubated
+too — ten document-review skills and their workflow sit under
+`incubator/kai-engineering/`.
 
-All eight source manifests and locks use prepared `11.0.0` metadata under the
-existing lockstep version policy. Pre-release is a source-readiness label, not
-a separate `-alpha` version stream or a claim that a prerelease was published.
-Only the three default packages appear in `.github/plugin/marketplace.json`.
+Incubated means genuinely inactive, not merely unlisted:
 
-`PUBLISHED_PACKS` in `scripts/lib/pack-plan.mjs` owns that selection.
-`PRERELEASE_PACKS` is its complement in the full source partition.
-`COMMITTED_PACKS`, source collectors, generated source artifacts and runtime
-validation still cover every retained package. Do not use publication status
-to bypass source, reference, model/tool or core-contract failures.
+- not discovered by the source collectors;
+- not validated as a pack, and contributing no references to the active corpus;
+- absent from the generated pack trees, the catalog, and the CI runtime matrix;
+- carrying no `plugin.json`, `package.json`, or `package-lock.json`, because a
+  manifest inside `incubator/` is an installable plugin.
+
+`npm test` enforces every one of those, plus the rule that an incubated package
+has exactly one source tree. See [`incubator/README.md`](../../incubator/README.md)
+for the inventory and the re-entry steps.
+
+Source and ids are preserved with history, so returning a package is a move
+rather than a rewrite. Being incubated is not a queue position.
+
+## Where the partition is defined
+
+`scripts/lib/pack-plan.mjs` owns it:
+
+- `INCUBATED_PACKS` — the packages held out of the partition.
+- `ACTIVE_PACKS` / `PACK_ORDER` / `COMMITTED_PACKS` — what is discovered,
+  validated, and emitted.
+- `PUBLISHED_PACKS` — what the marketplace index must carry. It now equals the
+  active partition; a package that is not ready is incubated, not half-shipped.
+- `INCUBATED_AGENT_IDS` — incubated ids kept in the reference grammar, so a
+  stale mention is still *reported* rather than silently becoming prose.
+
+Publication status never suppresses a source, reference, model/tool, or
+core-contract failure. Nothing is excluded from validation for being
+unfinished — unfinished work is moved out of the active tree instead.
 
 ## Installation and existing hosts
 
-Browse the actual marketplace source before installation. Only select core,
-engineering and creative from this default index; an unavailable pre-release
-package is not a reason to invent another package name or silently fall back
-to a different source.
+Install only the three packages listed above, core first. An unavailable
+capability is never a reason to invent another package name, install from the
+incubator, or fall back to a different source.
 
-Removing a marketplace entry does not uninstall or disable a previously
-installed package. This source change does not edit host settings, caches,
-credentials, `.kai` state or private data. It does not guarantee that an
-existing installation can continue updating through an index that no longer
-lists it. Any future replacement/removal needs explicit user authorization.
+None of the incubated packages was ever in the marketplace index, so incubating
+them withdrew nothing from any host. More generally, removing a marketplace
+entry does not uninstall or disable a previously installed package, and it does
+not guarantee that such an installation can keep updating through an index that
+no longer lists it. This is a source change: it edits no host settings, caches,
+credentials, `.kai` state, or private data. Any future replacement or removal
+needs explicit user authorization.
 
-The retained pre-release sources remain inspectable for development, but this
-change does not introduce a preview marketplace or certify a direct-install
-workflow for them.
+The incubated sources stay readable for development. That is not a preview
+marketplace and not a certified direct-install path.
 
-## Returning a package to the default index
+## Returning a package to the index
 
-Promote its existing ID rather than creating an alias. Update the publication
-selection, remove the generated pre-release description label, restore its
-marketplace entry and selected-install guidance, and regenerate the catalog
-and package artifacts. Establish the package's actual core-only dependencies
-and required acceptance before making readiness claims.
+Promote its existing id; do not create an alias. The full procedure is in
+[`incubator/README.md`](../../incubator/README.md): move the source back,
+restore its pack entry, file its components in the catalog, re-establish its
+core-only dependencies (an incubated agent may name a role that no longer
+exists), regenerate the manifests and catalog, add its marketplace entry, and
+run `npm test`.
 
-The availability regression test deliberately rejects a default index that
-leaks any of the five pre-release packages. Core and fleet wiring failures
-remain separate work; this classification does not make them pass.
+Establish the package's actual acceptance evidence before making any readiness
+claim. A restored listing is not a readiness certification.
 
-## Source validation status
+---
 
-The availability test, both engineering guards and all four creative guards
-pass. Generated-package parity, catalog parity, host source-inventory checks
-and helper syntax checks also pass. Review caught retired-agent first-use
-examples; both guides now point to the default software builder and are covered
-by the availability regression.
-
-The full `npm test` still stops at 281 source-validator errors across retained
-source and references. Later stages in that chain do not run after the failure.
-Nothing is excluded from source validation merely because it is pre-release,
-and no runtime or publication acceptance is claimed.
+**Next:** [Agents & skills](agents-and-skills.md) ·
+[Plugin structure](plugin-structure.md) · [Incubator](../../incubator/README.md)

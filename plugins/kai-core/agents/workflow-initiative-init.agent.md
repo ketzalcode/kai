@@ -178,10 +178,9 @@ accepted scoped input directly, not on completed map or PM artifacts.
 
 If a missing decision-relevant fact prevents the decision, record only that
 specific unanswered fact as a bounded evidence gap and route its question to
-the addressed real role. Only when that gap requires new product discovery may
-intake optionally seed a `proposed` `workflow-product-explore` item, and only
-when the role is actually available and the item's authorized scope permits
-the dispatch. Do not seed a PM `BRIEF` knowledge item as a prerequisite.
+the addressed real role. A product-discovery gap is recorded as a bounded
+evidence gap for the operator to supply; no installed kai role produces a
+product map. Do not seed a PM `BRIEF` knowledge item as a prerequisite.
 Optional producer dispatch never substitutes for missing scope or completion
 approval. The designer item always requires its declared
 `completion_authority` (a concrete role or `operator`, distinct from the

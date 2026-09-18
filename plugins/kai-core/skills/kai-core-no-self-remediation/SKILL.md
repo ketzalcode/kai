@@ -20,8 +20,8 @@ The obvious fix — "take `edit` away from assessors" — is wrong, and it is
 worth knowing why before anyone tries it again. These roles **must** write.
 Their output *is* a file:
 
-- `principal-security` writes local evidence;
-- `principal-qa-ui` stubs and then fills `report.md`.
+- `eng-reviewer-security` writes local evidence;
+- `eng-reviewer-quality` stubs and then fills `report.md`.
 
 So the needed constraint is not *whether* you may write. It is **where**:
 
@@ -78,8 +78,8 @@ assessor sits in exactly one honest tier:
 | **unrestricted-capability** | Holds `bash` and/or `edit`. Can write anywhere the process can. | This contract alone. |
 
 Most kai assessors are **unrestricted-capability**, and that is a deliberate,
-documented residual risk rather than an oversight: `principal-qa-ui` needs a
-browser and a harness, `principal-security` needs `git` to be revision-bound
+documented residual risk rather than an oversight: `eng-reviewer-quality` needs a
+browser and a harness, `eng-reviewer-security` needs `git` to be revision-bound
 at all, and every coordinating role needs a shell to append to the activity
 log. Removing those grants would not harden the review — it would break it,
 and would quietly convert a revision-bound security review into a

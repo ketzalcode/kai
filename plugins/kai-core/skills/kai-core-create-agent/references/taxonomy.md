@@ -22,24 +22,22 @@ rules listed under [Design basis](#design-basis).
 ## Provider families
 
 Family tokens describe the existing naming policy, not an install-package map.
-Capability ownership is the eight-package partition in `pack-plan.mjs`; a
-prefix alone does not choose an owner. This reference correction does not
-add taxonomy values or rename existing agents.
+Capability ownership is the three-package partition in `pack-plan.mjs`; a
+prefix alone does not choose an owner.
 
 | Family | Current capability owners | Responsibility |
 |---|---|---|
 | `core` | `kai-core` | Shared contracts, workspace, fleet machinery, and explicitly requested coordination. |
-| `personal` | `kai-assistant`, `kai-learning` | Personal assistance or teaching/career work, according to the capability. |
-| `prod` | `kai-product`, `kai-creative` | Product scope/evidence or interaction/visual design, with separate acceptance owners. |
 | `eng` | `kai-engineering` | Software delivery, architecture, trust, reliability, and technical documentation. |
-| `gtm` | `kai-marketing`, `kai-revenue`, `kai-product` | Marketing; commercial/customer operations; product-led growth, respectively. |
 | `creative` | `kai-creative` | Interaction design, visual identity, video direction, and bounded creative production. |
 
 Choose the provider whose absence should make the role unavailable and whose
-discipline owns its acceptance boundary. The short `prod`, `eng`, and `gtm`
-tokens are reserved namespace abbreviations. Scope uses full words.
-`kai-gtm` and `kai-personal` are retired install names, not aliases. Naming-policy
-consolidation is separate from these ownership moves.
+discipline owns its acceptance boundary. The short `eng` token is a reserved
+namespace abbreviation. Scope uses full words.
+`kai-gtm` and `kai-personal` are retired install names, not aliases, and the
+`personal`, `prod` and `gtm` family tokens are retired with the packages that
+owned them — a new role may not claim one. Naming-policy consolidation is
+separate from these ownership moves.
 
 ## Durable-role postures
 

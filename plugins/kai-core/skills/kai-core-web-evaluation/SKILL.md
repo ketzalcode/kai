@@ -8,9 +8,8 @@ tools: [playwright, execute, edit, read, ask_user]
 
 # Web Evaluation
 
-This skill is the **plumbing** that auditing agents and the neutral product
-explorer reuse (`principal-qa-ui`, `persona-ux-first-time-user`,
-`principal-seo`, `workflow-product-explore`, and future web agents). It owns
+This skill is the **plumbing** that auditing agents reuse
+(`eng-reviewer-quality` and future web agents). It owns
 everything that should
 look identical across them: where output goes, how screenshots
 are named, how login pauses work, how the report is shaped.
@@ -20,9 +19,9 @@ agent. This skill does not decide what to explore or judge.
 
 ## When to apply
 
-- A calling agent is asked to walk a website/app and produce either a
-  structured evaluation report or, for `workflow-product-explore`, neutral
-  browser evidence supporting a product map.
+- A calling agent is asked to walk a website/app and produce a
+  structured evaluation report, or to capture neutral browser evidence
+  supporting a map the calling agent owns.
 - The user has provided a **URL** and, optionally, a sentence or two
   of focus (e.g. "concentrate on the checkout flow").
 
@@ -59,8 +58,8 @@ agent. This skill does not decide what to explore or judge.
 6. **Cite locations.** Every finding or mapped product fact cites a screenshot,
    URL/route, selector path, or combination appropriate to the claim.
 
-For `workflow-product-explore`, use the folder/login/safety/evidence sections
-only. Its schema and completion rules come from `product-exploration`; do not
+In evidence-only mode, use the folder/login/safety/evidence sections
+only. The schema and completion rules come from the calling agent; do not
 force it into the QA/UX findings scaffold below.
 
 ## Folder layout
@@ -77,9 +76,9 @@ All output for a single run lives in:
   trace.zip        (optional, if Playwright trace recording was on)
 ```
 
-For `workflow-product-explore`, the run folder contains only raw local evidence
+In evidence-only mode, the run folder contains only raw local evidence
 such as `screenshots/`, trace, and non-secret capture metadata. It must not
-create `report.md` or the product map there; the map goes only to the
+create `report.md` or the derived map there; the map goes only to the
 canonical initiative `artifact_targets` entry.
 
 - Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
@@ -93,9 +92,8 @@ canonical initiative `artifact_targets` entry.
   empty); runs then sort in the order they ran. Never fill a lower gap and never
   reuse or overwrite an index.
 - `<flavor>` identifies the calling agent's lens — typical values: `qa`
-  (principal-qa-ui), `ux` (persona-ux-first-time-user), `seo` (principal-seo),
-  `pm`, `explore`, `extract`, `stress`. New auditing agents pick a short kebab
-  slug.
+  (`eng-reviewer-quality`), `explore`, `extract`, `stress`. New auditing agents
+  pick a short kebab slug.
 - `<descriptor>` is descriptive only, **not** the grouping key. Use the
   work-item/epic key when the run has one (e.g. `kai-59`) so same-epic runs stay
   greppable; otherwise a kebab slug for the surface (derived from the target URL
@@ -196,7 +194,7 @@ mode** if `ask_user` is available; otherwise default to headless.
 
 Every report row carries a priority. The base definitions below are
 the default; **calling agents may specialize the semantics** to fit
-their lens (e.g. `principal-seo` uses P0 for "page won't index", not
+their lens (e.g. a search-visibility lens uses P0 for "page won't index", not
 "page won't load"). When an agent specializes, it documents the
 specialization in its own contract — this skill provides the floor.
 
@@ -219,7 +217,7 @@ Filename: `report.md`. Skeleton (calling agent fills in):
 
 **Target:** <URL or surface name>
 **Date:** <YYYY-MM-DD HH:MM local>
-**Run:** principal-qa-ui
+**Run:** eng-reviewer-quality
 **Viewports:** desktop 1440×900, mobile 390×844 (or whatever was used)
 
 ## Summary
@@ -249,110 +247,6 @@ Filename: `report.md`. Skeleton (calling agent fills in):
 
 <If the user wants to port findings into a tracker — Notion / ADO /
 GitHub Issues — list the P0/P1 titles in order. Otherwise omit.>
-````
-
-## Report scaffold — UX flavor
-
-Filename: `report.md`. Skeleton (calling agent fills in):
-
-````markdown
-# UX First-Use Review — <target name>
-
-**Target:** <URL or surface name>
-**Date:** <YYYY-MM-DD HH:MM local>
-**Run:** persona-ux-first-time-user
-**Persona:** <who I pretended to be>
-
-## Summary
-
-<5–6 lines, narrative: who I pretended to be, what I tried to do,
-top-line impression as a first-time user.>
-
-## Friction points
-
-| # | Priority | Title | Observation | Evidence |
-|---|----------|-------|-------------|----------|
-| 1 | P0 | <short title> | <one paragraph in first-person: what I tried, what confused me, what I expected, what I did next> | `screenshots/01-...png` |
-
-## Proposals
-
-| # | Priority | Title | Suggested improvement | Why it would help |
-|---|----------|-------|------------------------|--------------------|
-| 1 | P1 | <short title> | <concrete proposal — UI/copy/flow change> | <one line tying it to a friction point above, or to a missing thing> |
-
-## Coverage
-
-**Tested:**
-- <flow> — <how I walked it>
-
-**Not tested / not reached:**
-- <flow> — <why>
-
-## Next steps (optional)
-
-<As above.>
-````
-
-## Report scaffold — SEO flavor
-
-Filename: `report.md`. The SEO flavor uses the **QA flavor as its
-base** (same Findings table shape, same Coverage section) and adds
-two SEO-specific extensions:
-
-1. A **`## Standards delta`** block near the top, immediately under
-   the run header. This records the result of the calling agent's
-   start-of-run standards refresh check (a `web_search` pass that
-   verifies the agent's baseline knowledge is still current). It's
-   what lets SEO findings stay defensible as the spec moves.
-2. A **`Citation`** column added to the Findings table. SEO defects
-   without a citation to a current standard (Google Search Central,
-   schema.org, IETF, etc.) are unfileable — engineers can't fix
-   what they can't trace to a spec.
-
-Skeleton (calling agent fills in):
-
-````markdown
-# SEO + agentic-search Audit — <target name>
-
-**Target:** <URL or surface name>
-**Date:** <YYYY-MM-DD HH:MM local>
-**Run:** principal-seo
-**Routes audited:** <list of routes>
-
-## Standards delta (vs <baseline date> baseline)
-
-**Refresh check run at:** <YYYY-MM-DD HH:MM>
-**Result:** <✅ no deltas / 🟡 minor delta / ❌ major delta>
-
-<If deltas: bulleted list of what changed since the agent's baseline,
-source link, and how it affected verdicts in this report. If no
-deltas: one line stating that the refresh check passed clean.>
-
-## Summary
-
-<5–6 lines: routes audited, top-line verdict, count by priority,
-top 3 highest-leverage fixes.>
-
-## Findings
-
-| # | Priority | Title | Route | Observation & Suggested Fix | Citation | Evidence |
-|---|----------|-------|-------|------------------------------|----------|----------|
-| 1 | P0 | <short title> | `/route` | <one paragraph: what I observed, what I expected per spec, smallest fix> | <link to the standard the defect references> | `screenshots/01-...png` or curl command |
-
-## Coverage
-
-**Audited:**
-- <route> — <which checks applied>
-
-**Discovery files probed:**
-- `/robots.txt`, `/sitemap.xml`, `/llms.txt`, ... — <result per file>
-
-**Not audited:**
-- <route or check> — <why (out of scope / not reachable / time budget)>
-
-## Next steps (optional)
-
-<As above.>
 ````
 
 Other auditing agents (current or future) follow the same pattern:

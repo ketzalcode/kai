@@ -23,8 +23,8 @@ this one is for harvesting the words on a UI.
 
 ## When to apply
 
-- A calling agent (e.g. `workflow-course-to-audio`) is asked to extract the
-  readable content of one or more web pages.
+- A calling agent (for example, one preparing readable source material) is asked
+  to extract the readable content of one or more web pages.
 - The user has provided a **URL** and, optionally, scope hints
   (single page, full module, full learning path).
 

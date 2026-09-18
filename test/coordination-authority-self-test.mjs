@@ -146,16 +146,19 @@ assert.match(directorProductRouting[1],
 assert.match(directorProductRouting[1],
   /create\/route a\s+`creative-lead-design` item from[\s\S]{0,220}(?:accepted scope input|scope-authority-accepted input)[\s\S]{0,260}neither artifact is a mandatory dependency/i,
   'director design routing: design consumes accepted scoped inputs, not mandatory producer artifacts');
+// The product-exploration producer was incubated, so there is no role to
+// dispatch. What must stay true is that the gap is recorded and addressed to a
+// real endpoint rather than routed to a name that no longer resolves, and that
+// a missing producer never becomes a reason to install an incubated package.
 assert.match(source.director,
-  /steward optionally dispatch a `proposed` `knowledge` item to\s+`workflow-product-explore`, and only when that role is actually available and\s+the item's authorized scope permits the dispatch\. Never require installing a\s+pre-release product package\. Optional producer dispatch never substitutes for\s+missing scope or completion approval/i,
-  'director discovery: optional exploration requires availability and authorized scope');
+  /requires new product discovery is recorded as a bounded\s+evidence gap addressed to the operator[\s\S]{0,200}never a reason to install an\s+incubated package or to invent a role name[\s\S]{0,140}never\s+substitutes for missing scope or completion approval/i,
+  'director discovery: a discovery gap is recorded for the operator, not dispatched to a role that does not exist');
 
 assert.match(source.director,
-  /for missing\/stale product-surface facts, first request only the specific\s+decision-relevant evidence from the addressed real role; optionally route to\s+`workflow-product-explore` only when that role is actually available and the\s+item's authorized scope permits it; never require installing a pre-release\s+product package, and optional producer dispatch never substitutes for missing\s+scope or completion approval/i,
-  'director reconciliation: missing facts use specific questions before an authorized optional producer');
-assert.doesNotMatch(source.director,
-  /- route missing\/stale product-surface facts to `workflow-product-explore`;/,
-  'director reconciliation: missing facts must not unconditionally route to product exploration');
+  /for missing\/stale product-surface facts, request only the specific\s+decision-relevant evidence from the addressed real role, and record an\s+unfilled product-discovery gap for the operator; never require installing an\s+incubated package, and recording a gap never substitutes for missing\s+scope or completion approval/i,
+  'director reconciliation: missing facts use specific questions, then a recorded gap');
+assert.doesNotMatch(source.director, /`workflow-product-explore`/,
+  'director must not name the incubated product explorer at all');
 
 const initiativeKnowledgeRouting = source.initiativeInit.match(
   /Exception for directly requested bounded knowledge work:([\s\S]*?)Set canonical artifact targets automatically:/);
@@ -171,8 +174,10 @@ assert.match(initiativeKnowledgeRouting[1],
   /missing decision-relevant fact[\s\S]{0,160}bounded (?:evidence )?gap/i,
   'initiative-init: a missing decision-relevant fact becomes a bounded gap');
 assert.match(initiativeKnowledgeRouting[1],
-  /optionally seed[\s\S]{0,100}`workflow-product-explore`[\s\S]{0,180}role is (?:actually )?available[\s\S]{0,160}authorized scope permits/i,
-  'initiative-init: optional exploration requires availability and authorized scope');
+  /product-discovery gap is recorded as a bounded\s+evidence gap for the operator to supply; no installed kai role produces a\s+product map/i,
+  'initiative-init: a discovery gap is recorded for the operator, not seeded against a role that does not exist');
+assert.doesNotMatch(source.initiativeInit, /`workflow-product-explore`/,
+  'initiative-init must not name the incubated product explorer at all');
 assert.match(initiativeKnowledgeRouting[1],
   /Do not seed a PM `BRIEF` knowledge item as a prerequisite/i,
   'initiative-init: must not seed a PM-produced brief prerequisite');

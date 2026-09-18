@@ -23,8 +23,8 @@ copilot plugin install kai-creative@kai-plugins
 ```
 
 `kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning` are committed source on this checkout, but they remain
-pre-release/in-progress packages outside the default marketplace surface. See
+`kai-learning` do **not** ship: their source is parked in `incubator/` and is
+not part of the marketplace surface. See
 [Package availability](reference/package-availability.md).
 
 Start a **new** session afterwards — plugins load per session.
@@ -80,10 +80,10 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-The source inventory still has 50 agents and 46 skills across eight packages.
-Only core, engineering, and creative are in the default marketplace surface.
-The other five packages stay as pre-release/in-progress source and are tracked
-on [Package availability](reference/package-availability.md).
+kai ships **22 agents and 38 skills** across three packages — core,
+engineering, and creative. Five earlier packages (product, marketing, revenue,
+assistant, and learning) are incubated: parked in `incubator/`, not installable,
+and tracked on [Package availability](reference/package-availability.md).
 You do not need to learn them. You need three things: **ask for outcomes**, **let the
 work item be the source of truth**, and **remember that only you ship**.
 Everything else is reference material — read it when you hit the thing it
@@ -104,13 +104,11 @@ kai carries a marketplace index in its own repository
 (`.github/plugin/marketplace.json`), so it installs the way the host intends to
 support long-term. Nobody has to approve a listing for this to work.
 
-The source inventory is `kai-core`, `kai-engineering`, `kai-product`,
-`kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning`. Metadata is prepared at `11.0.0`, not a publication claim.
-Only core, engineering, and creative are in the default marketplace surface.
-Use a marketplace source containing this branch and confirm every selected
-name/version before installation or removal. A checkout of this refactor can
-instead be loaded locally as described below.
+kai ships three packages: `kai-core`, `kai-engineering`, and `kai-creative`.
+The active source partition, the generated packs, and the marketplace index are
+these same three. Use a marketplace source containing this branch and confirm
+every selected name/version before installation or removal. A checkout of this
+refactor can instead be loaded locally as described below.
 
 1. Register and browse the marketplace, then install the default surface:
    ```powershell
@@ -130,58 +128,52 @@ instead be loaded locally as described below.
    sessions — start a fresh session to use them.
 
 `kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning` retain their source but are not listed in this default index.
-There is no separate pre-release marketplace in this change. Hosts that already
-have them keep those files; absence from the default surface does not uninstall
-them or guarantee future updates.
+`kai-learning` do not ship. Their source is parked in `incubator/`: not listed
+in the marketplace index, not installable, and not loaded by any host. A host
+that installed them from an earlier release keeps those files — incubating a
+package removes nothing already installed — but it is not an update path either.
+See [Package availability](reference/package-availability.md) for the full list
+of what is parked and why.
 
 For design and supported demo work, the baseline is core plus creative, not the
 whole roster. [Creative's package note](reference/packages/kai-creative.md)
 lists direct requests, supplied inputs, outputs, and external-tool prerequisites.
 
-For the pre-release packages, see [Package availability](reference/package-availability.md)
-and their package notes. Product, marketing, revenue, assistant and learning
-remain pre-release source and are not baseline install dependencies.
-
-Pre-release package notes describe retained development contracts, not a
-recommendation to install them. A source directory is not proof of marketplace
-availability or readiness. Keep an old installation when its needed replacement
-is unavailable; do not delete workspace or private account data.
-
 Core carries the shared scripts and fleet hooks. Its provider-root paths are
-independent of any companion package's location.
-
-[Learning's pre-release package note](reference/packages/kai-learning.md)
-describes teaching, lesson packaging and career-development source. Those
-capabilities are not default installs. Preserve `.kai/personal/` and all private
-learning, career, voice and agenda records; plugin removal is not data migration.
+independent of any companion package's location. Whatever your storage mode,
+preserve `.kai/personal/` and all private records; plugin removal is never data
+migration.
 
 ### Replacing retired packages
 
 Neither retired name is an alias or an automatic update path:
 
-Only creative is currently offered by the default marketplace among the
-replacement owners below. The other owners are pre-release source. Do not
-uninstall a working package merely because its replacement's source exists.
+The go-to-market and personal capabilities those buckets carried are now
+**incubated** — parked in `incubator/`, not installable — so there is no
+shipping replacement to migrate them to. Only core, engineering, and creative
+ship. Do not uninstall a working package expecting an equivalent to reinstall;
+keep the existing install if you still rely on those capabilities.
 
-| Retired install | Retained capability owners (not all available to install) |
+| Retired install | Where its capabilities went |
 | --- | --- |
-| `kai-gtm` | `kai-marketing` for positioning/campaigns/social/search; `kai-revenue` for commercial/customer work; `kai-product` for product-led growth |
-| `kai-personal` | `kai-assistant` for personal tasks/voice; `kai-learning` for teaching/career; `kai-creative` for video/demo; `kai-product` for fitness-product audits |
+| `kai-gtm` | positioning/campaigns/social/search, commercial/customer, and product-led-growth roles are incubated (`incubator/kai-marketing`, `kai-revenue`, `kai-product`) — none ship |
+| `kai-personal` | personal-task/voice, teaching/career, and product-audit roles are incubated (`incubator/kai-assistant`, `kai-learning`, `kai-product`); only video/demo ships, in `kai-creative` |
 
 1. Inspect the host's installed list and provenance. Select core and the
-   replacement capabilities explicitly; do not silently add all packages.
-2. Verify all selected replacements exist at one compatible version in a
-   source containing this refactor **before** advising or performing uninstall.
-   If they are unavailable or unverified, keep the existing install and stop.
-3. Confirm the host-plugin removal/install plan. Remove the retired plugins
-   before loading their replacements together: their agent/skill IDs overlap.
-   End the old session, install/update core first and selected replacements
-   from the verified source, then start a fresh session and inspect the result.
+   shipping capabilities (engineering, creative) explicitly; do not silently add
+   all packages.
+2. Verify each selected package exists at one compatible version in a source
+   containing this refactor **before** advising or performing uninstall. If it
+   is unavailable or unverified, keep the existing install and stop.
+3. Confirm the host-plugin removal/install plan. Remove a retired plugin only
+   when its shipping replacement loads cleanly: overlapping agent/skill IDs must
+   not load twice. End the old session, install/update core first and the
+   selected shipping packages from the verified source, then start a fresh
+   session and inspect the result.
 
 This is explicit plugin replacement, not an automatic installer or workspace
-migration. Preserve `.kai/personal/`, learning runs, private history and every
-existing workspace storage mode. Do not delete data to retire an install name.
+migration. Preserve `.kai/personal/`, private history and every existing
+workspace storage mode. Do not delete data to retire an install name.
 
 ### Upgrading from the `kai` monolith
 
@@ -202,11 +194,11 @@ an old installed guide may still list retired names.
    kai-creative.
    ```
 
-3. Follow the displayed plan exactly. The guide proves the default surface
+3. Follow the displayed plan exactly. The guide proves the shipping surface
    exists at one marketplace version before it tells you to uninstall legacy
    `kai`, then installs core first and stops for a fresh session before
-   continuing. The source-retained pre-release packages are handled only if the
-   package-availability page says they are present.
+   continuing. There is nothing else to install: product, marketing, revenue,
+   assistant, and learning are incubated and do not ship.
 
 This changes only host plugin state. Workspace migration is a separate,
 explicit operation because schema 3 may move private state outside the project.
@@ -306,8 +298,8 @@ copilot plugin update kai-engineering@kai-plugins
 copilot plugin update kai-creative@kai-plugins
 ```
 
-The five pre-release packages stay source-retained and are tracked on the
-package-availability page instead of the default update path.
+The five incubated packages are parked in `incubator/` and are not on any
+update path; they are tracked on the package-availability page.
 
 Plugins are cached per session — changes only appear in **new** sessions.
 
@@ -367,13 +359,13 @@ that Lectoria is installed. Resolve that provider root from the loaded
 `video-create-narration` skill and follow its pinned-dependency, Azure
 configuration, and explicit paid-consent instructions; see
 [Creative runtime](reference/packages/kai-creative.md#runtime-ownership-and-prerequisites).
-Estimation, placement, and mixing do not need Lectoria. The learning-audio
-workflow below uses core's separate audio utility.
+Estimation, placement, and mixing do not need Lectoria. Core ships a separate
+audio utility, covered below.
 
-For `kai-core-generate-audio` and requested learning narration, resolve
+For `kai-core-generate-audio` and requested narration, resolve
 `<kai-core-plugin>` by going up two directories from that loaded skill's base.
-Learning owns no audio helper or npm dependency. Core's wrapper resolves
-`LECTORIA_BIN`, the core pack's `node_modules/.bin/lectoria`, then PATH.
+Core's wrapper resolves `LECTORIA_BIN`, the core pack's
+`node_modules/.bin/lectoria`, then PATH.
 
 1. For the pack-pinned runtime, run `npm ci --prefix "<kai-core-plugin>"`.
    This downloads the locked public Lectoria release artifact; it does not
@@ -400,11 +392,9 @@ installation, dry run, synthesis or playback was performed for this refactor.
 ## Browser automation setup (optional)
 
 Several agents and skills drive a real browser **via a Playwright MCP server**:
-`principal-qa-ui`, `persona-ux-first-time-user`, `persona-professional-trainer`,
-`persona-professional-nutritionist`, `creative-lead-design`,
-`principal-product-marketing`, `principal-seo`, `workflow-product-explore`, and
-`workflow-course-to-audio` (plus the `kai-core-web-evaluation`, `kai-core-web-content-extraction`,
-`product-exploration`, `product-marketing-intelligence`, and `mockups-html` skills).
+`creative-lead-design` and `eng-reviewer-quality` (plus the
+`kai-core-web-evaluation`, `kai-core-web-content-extraction`,
+`kai-core-design-grounding`, and `kai-core-pr-delivery` skills).
 They declare `tools: [..., playwright]`, but **kai ships no MCP servers** — you
 register one in your host. Everything else works without this; only these
 browser-driving agents need it.

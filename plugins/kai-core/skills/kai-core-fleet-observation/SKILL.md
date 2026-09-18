@@ -40,7 +40,7 @@ Read this before you report that a role never took part.
 persona is delegated as `kai:<name>`, and delegations of that kind produce
 nothing in `observed.jsonl` — not a start, not a stop. This is measured, not
 suspected: an identical A/B in one session produced 4 events for a built-in
-`explore` and 0 for `kai:principal-swe-backend`.
+`explore` and 0 for `kai:eng-builder-software`.
 
 So for kai's own roles, absence from the observed log is the **guaranteed**
 outcome and carries no information whatsoever. Never write "did not run",
@@ -237,7 +237,7 @@ team and it does not:
 | --- | --- |
 | "No reviewing role was recorded." | "It was never reviewed." |
 | "No design role appears for this UI work." | "Design was skipped." |
-| "`principal-security` has no record here." | "Security never showed up." |
+| "`eng-reviewer-security` has no record here." | "Security never showed up." |
 
 The gap is real and common: an agent that ran but never called
 `activity.mjs` — or that crashed before its stop — leaves the same trace as one

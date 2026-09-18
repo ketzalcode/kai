@@ -44,7 +44,7 @@ jobs:
           # The coordination runtime uses `node:sqlite`, which Node 20 does not
           # ship. This must stay inside the `engines` range in package.json.
           node-version: '24.15.0'
-      - name: Default marketplace and pre-release retention
+      - name: Package availability and incubation isolation
         run: node test/package-availability-self-test.mjs
       - name: Engineering source contracts
         run: |
@@ -109,10 +109,10 @@ jobs:
   # visible on purpose — suppressing it would hide the fact that the oldest
   # supported leg runs the store on an experimental built-in.
   #
-  # This job deliberately does not `needs: contract`. The repository currently
-  # carries known-red pre-release validator errors in the contract job, and a
-  # dependency would turn this evidence into a skipped check that reports
-  # nothing. It installs no dependencies: every suite here imports only
+  # This job deliberately does not `needs: contract`. Keeping it independent
+  # means a contract-job failure elsewhere in the repository reports this
+  # runtime's real state instead of turning it into a skipped check that
+  # reports nothing. It installs no dependencies: every suite here imports only
   # `node:` built-ins and repository files.
   coordination-runtime:
     runs-on: ubuntu-latest

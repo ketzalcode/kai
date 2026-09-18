@@ -1,7 +1,7 @@
 {
   "counts": {
-    "agents": 50,
-    "skills": 46
+    "agents": 22,
+    "skills": 38
   },
   "agents": [
     "creative-lead-design",
@@ -17,50 +17,19 @@
     "eng-reviewer-quality",
     "eng-reviewer-reliability",
     "eng-reviewer-security",
-    "instructor-path-mentor",
-    "instructor-teacher",
-    "instructor-tutor",
-    "persona-professional-nutritionist",
-    "persona-professional-trainer",
-    "persona-self",
-    "persona-ux-first-time-user",
-    "personal-assistant",
-    "principal-customer-success",
-    "principal-data-analytics",
-    "principal-demand-generation",
-    "principal-engineer-career-mentor",
-    "principal-growth",
-    "principal-linkedin-strategist",
-    "principal-partnerships",
-    "principal-pricing-monetization",
-    "principal-product-manager",
-    "principal-product-marketing",
-    "principal-product-strategist",
-    "principal-revenue-operations",
-    "principal-sales",
-    "principal-seo",
-    "principal-solutions-architect",
-    "workflow-course-to-audio",
     "workflow-creative-demo-production",
-    "workflow-customer-feedback",
-    "workflow-experiment-review",
     "workflow-incident-response",
     "workflow-initiative-init",
     "workflow-proactive-scan",
-    "workflow-product-explore",
     "workflow-pull-request",
     "workflow-self-check",
     "workflow-ship",
-    "workflow-support-triage",
     "workflow-weekly-pulse",
     "workflow-workspace-init"
   ],
   "skills": [
     "build-diagrams",
     "coding-style",
-    "decision-brief",
-    "extract-writing-style",
-    "generate-html-lesson",
     "html-block-diagrams",
     "kai-core-asset-closing",
     "kai-core-asset-producing",
@@ -89,28 +58,19 @@
     "kai-core-workspace-initiative",
     "kai-core-workspace-onboarding",
     "kai-core-workspace-paths",
-    "linkedin-content",
     "mockups-ascii",
     "mockups-html",
     "onboard-to-codebase",
-    "personal-agenda",
     "pr-sizing",
-    "product-exploration",
-    "product-marketing-intelligence",
     "research-before-coding",
     "video-align-narration",
     "video-create-narration",
-    "video-render-zoom",
-    "write-in-user-voice"
+    "video-render-zoom"
   ],
   "user_invocable_skills": [
     {
       "name": "coding-style",
       "argument_hint": "optional file or area to apply to"
-    },
-    {
-      "name": "generate-html-lesson",
-      "argument_hint": "<path to source markdown> [--audio <path to mp3>] [--lang en|es] [--out <dir>]"
     },
     {
       "name": "html-block-diagrams",

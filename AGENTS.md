@@ -37,16 +37,23 @@ operator to install or update `kai-core` before resuming coordinated work.
 
 `npm test` enforces those on-demand routes and the absence of any guard block.
 
-All eight capability packages now use task-local routes. The retired
+Every shipped package uses task-local routes. The retired
 go-to-market and personal plugins are not compatibility aliases; do not
 reintroduce their eager declarations or dependency guards. `.kai/personal/`
 remains the private data lane and is unrelated to plugin retirement.
 
-The install owners are `kai-core`, `kai-engineering`, `kai-product`,
-`kai-creative`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning`. Keep each source in one owning package. A capability package's
+The install owners are `kai-core`, `kai-engineering`, and `kai-creative`.
+Keep each source in one owning package. A capability package's
 baseline is core plus itself, with adequate supplied inputs rather than
 compulsory sibling producers. Naming-family tokens do not define install owners.
+
+Five further capability packages — product, marketing, revenue, assistant, and
+learning — are incubated under `incubator/`. They are inactive by construction:
+nothing there is discovered, validated as a pack, emitted, catalogued, or
+installable, and no `incubator/` tree may carry a plugin or package manifest.
+`npm test` enforces that. Do not route to an incubated role, add one to a
+roster, or name one as a required producer. The inventory and the re-entry
+procedure are in `incubator/README.md`.
 
 ## Communicating with the operator
 
@@ -114,8 +121,8 @@ Any PR that changes shipped plugin behavior must, in the **same PR**:
    then set the other two to match. CI rejects a stale marketplace index,
    because it installs fine while reporting the wrong version. Run
    `npm install` if you touched dependencies so `package-lock.json` stays in
-   sync; version-only changes do not require an install. Regenerate all eight
-   package manifests/locks/scripts with `npm run pack-preview -- --write`.
+   sync; version-only changes do not require an install. Regenerate every
+   package manifest/lock/script with `npm run pack-preview -- --write`.
 2. Add a dated **`CHANGELOG.md`** entry under the new version
    (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
    refresh the README `## Status` stamp.
@@ -142,7 +149,7 @@ are a **patch**; after 1.0, breaking changes are **major**, features **minor**,
 fixes **patch**. Docs- or test-only changes need no bump.
 
 The historical `1.0.0` milestone made packs the install surface (#29).
-Current changes follow the post-1.0 column. The eight-package refactor prepares
-`7.0.0` because it removes two install names; prepared metadata is not a tag,
-release, publication, or host-verification claim. Its approved source-only
-phase defers tests/policy/runtime consolidation rather than disabling CI.
+Current changes follow the post-1.0 column. Incubating the five unfinished
+capability packages prepares `13.0.0` because it removes five package names
+from the shipped surface; prepared metadata is not a tag, release,
+publication, or host-verification claim.

@@ -128,8 +128,8 @@ Every new coordinated item declares:
 artifact_expectation: owed       # owed | none
 artifact_class: investigation    # required when owed
 durability: durable              # ephemeral | working | durable | published
-completion_authority: principal-product-manager
-validity_owner: principal-data-analytics
+completion_authority: operator
+validity_owner: eng-advisor-investigation
 artifact_targets:
   - .kai/state/initiatives/retention/artifacts/research/churn.md
 ```
@@ -164,7 +164,7 @@ type: investigations
 title: Churn investigation
 item: retention-churn-investigation
 initiative: retention-2026
-produced_by: principal-data-analytics
+produced_by: eng-advisor-investigation
 created: 2026-08-28
 revision: 1
 source_artifact: .kai/state/initiatives/retention-2026/artifacts/research/churn.md
@@ -175,14 +175,14 @@ disposition:
   reason: accepted investigation report
 
 completion:
-  authority: principal-product-manager
+  authority: operator
   verdict: accepted
   at: 2026-08-28-1700
   revision_at_verdict: 1
 
 validity:
   status: current
-  owner: principal-data-analytics
+  owner: eng-advisor-investigation
   as_of: 2026-08-28
   revalidate_by: 2027-02-28
   basis:

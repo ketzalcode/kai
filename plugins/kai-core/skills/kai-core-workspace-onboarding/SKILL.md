@@ -26,11 +26,10 @@ The catalog is closed:
 | 3 | `kai-creative` | UI/UX, visual identity, design assets, and supported media production. |
 
 `kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning` are source-retained pre-release packages, not selected install
-options in this mode. If the operator asks for one of them, say it is unavailable
-on the default marketplace surface and stop; do not convert the request into a
-sibling install, a fallback, or a direct repository path. Existing hosts that
-already have them keep those files; their absence from the default surface is
+`kai-learning` are incubated packages, not install options. If the operator asks
+for one of them, say it is unavailable and stop; do not convert the request into
+a sibling install, a fallback, or a direct repository path. Existing hosts that
+already have them keep those files; their absence is
 not an uninstall signal, rename, disable, or workspace deletion.
 
 Core is always included. Never silently add a capability package. The supported
