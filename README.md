@@ -8,10 +8,8 @@ a chat log.
 kai is **declarative**: agents and skills are markdown, not a framework or a
 service. It contains no employer-specific knowledge and ships no MCP servers.
 
-Install the default marketplace surface first: **core, engineering, and
-creative**. Browse the source first, then choose the selected subset. The
-other five package IDs stay in canonical source here as pre-release/in-progress
-packages; see [package availability](docs/reference/package-availability.md).
+Install the marketplace surface: **core, engineering, and creative**. Those
+three packages are everything kai ships.
 
 ```text
 copilot plugin marketplace add RubenSaucedo/kai
@@ -21,10 +19,10 @@ copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 ```
 
-`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning` remain source-retained pre-release packages. Their source and
-IDs are preserved, but they are not part of the default marketplace install
-path and they are not automatically uninstalled from existing hosts.
+Five further capability packages — product, marketing, revenue, assistant, and
+learning — are parked under [`incubator/`](incubator/README.md) while
+development returns to core. They do not ship, are not installable, and were
+never in the marketplace index.
 
 **[Get started →](docs/getting-started.md)** ·
 **[See a finished feature →](examples/e2e-feature-delivery/)**
@@ -36,8 +34,8 @@ path and they are not automatically uninstalled from existing hosts.
 | **Install it and finish one real thing** | [Getting started](docs/getting-started.md) — install, initialize, first request |
 | **Understand the model before I commit** | [How kai works](docs/how-kai-works.md) — which role fires when, and why |
 | **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
-| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full 50-agent / 46-skill catalog, split across default and pre-release packages |
-| **Check which packages are default vs pre-release** | [Package availability](docs/reference/package-availability.md) — the active marketplace surface and source-retained packages |
+| **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the three packages supply |
+| **See what is parked and not shipping** | [Incubator](incubator/README.md) — the five capability packages and the components held out of the active tree |
 | **Pick between the CLI and the cloud agent** | [Host capabilities](docs/host-capabilities.md) — what differs, and how it degrades |
 | **See what the coordination runtime actually proves** | [Coordination acceptance record](docs/reference/coordination-acceptance.md) — one verdict per case, including what failed and what is unverified |
 | **Change kai itself** | [Plugin structure](docs/reference/plugin-structure.md) — layout, tests, release policy |
@@ -46,54 +44,51 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v12.0.0` is this checkout's prepared metadata version. Its **50 agents and
-46 skills** are organized across eight plugin directories. The default
-marketplace surface is **22 agents and 38 skills** from `kai-core`,
-`kai-engineering`, and `kai-creative`; `kai-product`, `kai-marketing`,
-`kai-revenue`, `kai-assistant`, and `kai-learning` remain source-retained
-pre-release/in-progress packages. See [package availability](docs/reference/package-availability.md).
-This work establishes committed source, not release publication or live-host
-compatibility.
+`v13.0.0` is this checkout's prepared metadata version. kai ships **three
+packages** — `kai-core`, `kai-engineering`, and `kai-creative` — supplying
+**22 agents and 38 skills**. The
+[agents & skills catalog](docs/reference/agents-and-skills.md) is exactly what
+they provide. Prepared metadata is not a tag, a release, a publication, or a
+host-verification claim.
 
-`kai-core` now ships the coordination runtime — `scripts/coordinate.mjs` and its
-`scripts/lib/coordination-runtime/` closure — and introduces the breaking
-workspace **schema 4**: coordinated work lives in a SQLite store reached only
-through that command, and a schema-3 workspace stays inspect-only until an
-explicit, separately authorized migration runs. The coordination suites are
-wired into `npm test` and into a CI job that runs them on Node `22.22.2`,
-`24.15.0` and `26.0.0`. `npm test` still stops at the pre-existing pre-release
-validator failures (260 errors at `scripts/validate-plugin.mjs`); no gate was
-disabled to hide them. Prepared `12.0.0` metadata is not a tag, a release, a
-publication, or a host-verification claim.
+This release reorganizes the repository around what it ships. The five
+capability packages previously retained as pre-release source — product,
+marketing, revenue, assistant, and learning — moved to
+[`incubator/`](incubator/README.md) and were fully deactivated: not discovered,
+not validated as packs, not emitted, not installable. None of them was ever in
+the marketplace index, so nothing was withdrawn from a host that installed
+core, engineering, or creative. Removing an index entry never uninstalls an
+already-installed package, and this change touches no host settings, caches,
+credentials, `.kai` state, or private data.
 
-`kai-engineering` now exports 13 focused agents and the same five task-local
-skills. Direct implementation, investigation and assessment accept supplied
-inputs with core plus engineering, without compulsory sibling-agent calls.
-Builders own their tests; code, system, security, reliability and privacy
-reviews retain independent acceptance boundaries. Explicit approved model
-profiles replace the undifferentiated judgment declarations.
+Two consequences worth knowing. Where an incubated package owned the only
+provider of a judgment — product discovery, in-voice drafting, promotion
+judgment, support triage — core prose now routes that work to `@operator`
+rather than to a substitute role that does not exist. And no shipped agent
+currently declares an agent-to-agent dispatch entry; the roles that did were
+incubated, so that firing path is recorded as empty rather than asserted
+vacuously.
+
+`kai-core` ships the coordination runtime — `scripts/coordinate.mjs` and its
+`scripts/lib/coordination-runtime/` closure — and the breaking workspace
+**schema 4**: coordinated work lives in a SQLite store reached only through
+that command, and a schema-3 workspace stays inspect-only until an explicit,
+separately authorized migration runs. The coordination suites run in `npm test`
+and in a CI job covering Node `22.22.2`, `24.15.0` and `26.0.0`.
+
+`kai-engineering` exports 13 focused agents and five task-local skills. Direct
+implementation, investigation and assessment accept supplied inputs with core
+plus engineering, without compulsory sibling-agent calls. Builders own their
+tests; code, system, security, reliability and privacy reviews retain
+independent acceptance boundaries.
 See [the engineering package note](docs/reference/packages/kai-engineering.md)
 for the roster, retirement mapping and direct-use boundaries.
 
-Ten document-review skills and their dependent workflow remain source-retained
-under `incubator/`, outside active discovery, routes and generated packs.
-The earlier five-skill foundation evidence remains historical evidence for
-those methods, not acceptance of the rewritten agents. The pre-change baseline
-had 53 source-validator errors and a pack-preview self-test `TypeError`.
-Cross-agent wiring, stored owner references and coordinated delivery against
-the renamed engineering identities are explicitly deferred. Their unresolved
-references remain visible to CI; no validation gate is disabled. Prepared
-`11.0.0` metadata is not publication or updated-host runtime verification.
+Ten document-review skills and their dependent workflow remain held out of
+`kai-engineering` under [`incubator/`](incubator/README.md), outside active
+discovery, routes and generated packs.
 
-`kai-assistant` is the first capability package split out of the original five:
-it owns `personal-assistant`, `persona-self`, and their four private methods,
-and `kai-core` no longer carries a personal front door or depends on one. The
-source inventory and integration metadata are now present; final
-independent review, behavioral validation and release remain separate work.
-Learning and career roles moved to `kai-learning`;
-the `kai-personal` plugin is retired, not the private `.kai/personal/` data lane.
-
-`kai-creative` now registers `creative-lead-design`, `creative-lead-video`, and
+`kai-creative` registers `creative-lead-design`, `creative-lead-video`, and
 `workflow-creative-demo-production` as its only agents. Its final method surface
 is `mockups-ascii`, `mockups-html`, `html-block-diagrams`,
 `video-create-narration`, `video-align-narration`, and `video-render-zoom`.
@@ -103,36 +98,8 @@ prepared version. Source integration is not live-host or release acceptance.
 See [the package note](docs/reference/packages/kai-creative.md) for artifacts,
 prerequisites, and runtime scenarios not executed during this source refactor.
 
-`kai-product` now owns ten discovery, scope, analytics, growth and product-audit
-roles plus `product-exploration`. Core plus product accepts supplied evidence
-without creative, engineering or commercial-package installation. See
-[the product package note](docs/reference/packages/kai-product.md) for preserved
-authority, independent assessment and runtime-unverified scenarios.
-
-`kai-marketing` now owns four positioning, campaign, LinkedIn and search roles
-plus `product-marketing-intelligence` and `linkedin-content`. Core plus marketing
-accepts supplied facts/maps/media and neutral or requested company-brand voice;
-personal-voice enhancement is optional.
-See [the marketing package note](docs/reference/packages/kai-marketing.md) for
-the grounding contract, ownership boundaries and runtime-unverified scenarios.
-
-`kai-revenue` owns seven sales, pricing, partnerships, revenue operations,
-customer-success, support-intake and pre-sales solution-architecture roles.
-It has no standalone local skills;
-core plus revenue supplies the shared contracts and accepts supplied commercial
-evidence directly. `kai-gtm` is retired with no compatibility alias. See
-[the revenue package note](docs/reference/packages/kai-revenue.md) for authority,
-privacy, urgent escalation and runtime-unverified boundaries.
-
-`kai-learning` owns the five tutoring, lesson-packaging, path, IC-career and
-course-extraction roles plus the complete `generate-html-lesson` method.
-Core plus learning handles supplied topics/material/goals directly. Audio uses
-core's existing utility and requires explicit paid-processing consent and its
-runtime prerequisites; extracted Markdown, HTML and MP3s are distinct outputs.
-See [the learning package note](docs/reference/packages/kai-learning.md).
-
-Agents load shared contracts on demand. All 26 roles now in `kai-core` and
-`kai-engineering` route each contract at the instruction that needs it, rather
+Agents load shared contracts on demand. Every shipped role routes each contract
+at the instruction that needs it, rather
 than declaring every contract they might use before reading the task. Measured
 worst case, that moved the mean prompt from 30,194 to 17,529 tokens and the
 largest role from 41,607 to 25,526 — and the old number was a floor paid every
@@ -210,9 +177,9 @@ evidence it could not read is reported as `unknown`, never as clear. The pack
 partition stays CI-enforced by four named gates: the partition itself, id
 collisions across packs, a department installed without `kai-core`, and
 contract-version skew. The committed marketplace index lists the package
-sources rather than the monolith. This branch keeps `kai-product`,
-`kai-marketing`, `kai-revenue`, `kai-assistant` and `kai-learning` in source as
-pre-release packages; the entries alone do not establish remote availability or
+sources rather than the monolith. This change moves `kai-product`,
+`kai-marketing`, `kai-revenue`, `kai-assistant` and `kai-learning` out of the
+partition entirely; the entries alone do not establish remote availability or
 publication.
 
 ```text
@@ -225,8 +192,9 @@ copilot plugin install kai-creative@kai-plugins
 The core pack carries the fleet observer and shared workspace machinery;
 engineering carries implementation, security, reliability, data and delivery;
 creative carries UI/UX, visual identity, and video/demo work. The five
-pre-release packages stay visible in source and in the package-availability
-reference. A CI rule keeps every marketplace source, name, description, and
+incubated packages are visible in `incubator/` and in the package-availability
+reference, and are not installable. A CI rule keeps every marketplace source,
+name, description, and
 version aligned with its pack manifest. If legacy `kai` is installed, do not
 install packs beside it; see
 [Getting started](docs/getting-started.md#upgrading-from-the-kai-monolith).
@@ -279,10 +247,9 @@ copilot plugin install kai-engineering@kai-plugins
 copilot plugin install kai-creative@kai-plugins
 ```
 
-`kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant`, and
-`kai-learning` remain source-retained pre-release packages. Their source and
-IDs are preserved, but they are not part of the default marketplace install
-path and they are not automatically uninstalled from existing hosts. See
+Product, marketing, revenue, assistant, and learning are parked in
+[`incubator/`](incubator/README.md). They are not installable and were never in
+the marketplace index, so nothing was withdrawn from an existing host. See
 [package availability](docs/reference/package-availability.md).
 
 **2. Initialize** the repo or durable folder you want kai to work in only if
@@ -352,26 +319,19 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository's source inventory is still 50 agents and 46 skills. The
-default marketplace surface is three packages; the rest remain pre-release
-source here:
+The repository ships 22 agents and 38 skills across three packages:
 
-| Package | Agents / skills | Surface | Owns |
-| --- | --- | --- | --- |
-| `kai-core` | 6 / 27 | Default marketplace | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 13 / 5 | Default marketplace | Standalone implementation, architecture, independent review and delivery |
-| `kai-creative` | 3 / 6 | Default marketplace | UI/UX, visual identity, design assets and supported media production |
-| `kai-product` | 10 / 1 | Pre-release / in progress source | Discovery, scope, evidence, analytics, product-led growth and product audits |
-| `kai-marketing` | 4 / 2 | Pre-release / in progress source | Positioning, campaigns, social content and search visibility |
-| `kai-revenue` | 7 / 0 | Pre-release / in progress source | Sales, pricing, partnerships, revenue operations, success, support and solution fit |
-| `kai-assistant` | 2 / 4 | Pre-release / in progress source | Personal tasks, priorities, briefings and user-voice drafting |
-| `kai-learning` | 5 / 1 | Pre-release / in progress source | Teaching, tutoring, paths, lesson materials and career development |
+| Package | Agents / skills | Owns |
+| --- | --- | --- |
+| `kai-core` | 6 / 27 | Shared contracts, workspace machinery, requested coordination |
+| `kai-engineering` | 13 / 5 | Standalone implementation, architecture, independent review and delivery |
+| `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets and supported media production |
 
 These are source-ownership counts, not publication or runtime-quality evidence.
-Only `kai-core`, `kai-engineering`, and `kai-creative` are the supported
-default install/update surface. The other five packages keep their IDs and
-canonical paths, remain available as source in this checkout, and are not
-automatically uninstalled from existing hosts. See
+Five further capability packages — product, marketing, revenue, assistant, and
+learning — are parked in [`incubator/`](incubator/README.md): not discovered,
+not emitted, not installable. None was ever in the marketplace index, so
+incubating them withdrew nothing from an existing host. See
 [package availability](docs/reference/package-availability.md).
 
 You do not need to learn them. Ask for the outcome you want; the catalog is
@@ -383,17 +343,16 @@ there for when you want to know who owns a particular judgment.
 
 See **[Getting started → Install](docs/getting-started.md#install)** for the
 Copilot CLI, the cloud coding agent, and the optional audio and browser-automation
-setup. With a source containing this refactor, refresh the catalog and update
-only the default marketplace packs you actually installed:
+setup. With a source containing this change, refresh the catalog and update
+the packs you actually installed:
 `copilot plugin marketplace update kai-plugins`,
 `copilot plugin update kai-core@kai-plugins`,
 `copilot plugin update kai-engineering@kai-plugins`, and
 `copilot plugin update kai-creative@kai-plugins`. Start a new session; to
 migrate an existing workspace after an update, see
 **[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update)**.
-This applies to the three default names above. The five pre-release packages
-remain source-retained and are tracked on the package availability page.
-Retired packages do not update into successors automatically.
+This applies to the three names above. Incubated and retired packages do not
+update into successors automatically.
 
 ## Workspace
 

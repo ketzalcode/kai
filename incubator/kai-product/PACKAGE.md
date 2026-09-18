@@ -1,6 +1,6 @@
 # kai-product
 
-Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../package-availability.md).
+Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../../docs/reference/package-availability.md).
 
 Product discovery, scope, evidence, analytics, and product-led growth over kai-core.
 

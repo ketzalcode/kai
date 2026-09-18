@@ -287,14 +287,11 @@ For work involving an existing live user journey:
 2. If a decision-relevant product fact is absent, contradicted, or stale, record
    only the specific unanswered evidence question and route it to the addressed
    real role. Do not turn a narrow evidence gap into a broad producer chain.
-3. Only when that specific question requires new product discovery may the
-   steward optionally dispatch a `proposed` `knowledge` item to
-   `workflow-product-explore`, and only when that role is actually available and
-   the item's authorized scope permits the dispatch. Never require installing a
-   pre-release product package. Optional producer dispatch never substitutes for
-   missing scope or completion approval. If dispatched, target
-   `.kai/state/initiatives/<slug>/artifacts/product-map.md` unless the item records
-   an operator-approved override.
+3. A question that requires new product discovery is recorded as a bounded
+   evidence gap addressed to the operator. No installed kai role produces a
+   product map, and a missing producer is never a reason to install an
+   incubated package or to invent a role name. Recording the gap never
+   substitutes for missing scope or completion approval.
 4. Do not create or route a PM `BRIEF` knowledge item as a prerequisite. Use the
    accepted scope input with the sufficient scoped evidence already supplied; a
    full PM artifact is optional supplied evidence.
@@ -364,11 +361,10 @@ After each peer returns:
 - dispatch the named `next_role` when the item is executable;
 - route blocking questions to the addressed real role;
 - invoke the steward for scope/priority decisions;
-- for missing/stale product-surface facts, first request only the specific
-  decision-relevant evidence from the addressed real role; optionally route to
-  `workflow-product-explore` only when that role is actually available and the
-  item's authorized scope permits it; never require installing a pre-release
-  product package, and optional producer dispatch never substitutes for missing
+- for missing/stale product-surface facts, request only the specific
+  decision-relevant evidence from the addressed real role, and record an
+  unfilled product-discovery gap for the operator; never require installing an
+  incubated package, and recording a gap never substitutes for missing
   scope or completion approval;
 - route approved user-facing interaction needs to
   `creative-lead-design`;

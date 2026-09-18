@@ -90,7 +90,11 @@ for (const skill of [
   assert.ok(refs.some(ref => ref.target === skill && ref.firing.includes('loaded')),
     `${skill}: an explicit engineering caller must exist`);
 }
-assert.ok(files.has('kai-revenue/agents/principal-solutions-architect.agent.md'),
-  'pre-sales solution judgment must retain one provider in revenue');
-assert.ok(!files.has('kai-engineering/agents/principal-solutions-architect.agent.md'));
+// Pre-sales solution judgment moved to `kai-revenue`, which is now incubated —
+// so no pack emits it. What must stay true is that engineering did not quietly
+// reabsorb it while the owning package was parked.
+assert.ok(!files.has('kai-engineering/agents/principal-solutions-architect.agent.md'),
+  'engineering must not reabsorb pre-sales solution judgment from the incubated revenue package');
+assert.ok(![...files.keys()].some(key => key.endsWith('principal-solutions-architect.agent.md')),
+  'and no pack emits it at all while kai-revenue is incubated');
 console.log('engineering standalone discovery, loader, model, route and emission assertions passed');

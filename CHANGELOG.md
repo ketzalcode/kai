@@ -4,6 +4,105 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [13.0.0] - 2026-09-17
+
+Reorganizes the repository around what it actually ships. The five capability
+packages that had been retained as "pre-release" source moved into
+`incubator/`, and the active partition, the default marketplace, and the
+generated packs are now the same three packages. Prepared version metadata is
+not a tag, a release, a publication, or a host-verification claim.
+
+This is a **source and repository-organization change**. It edits no host
+settings, caches, credentials, `.kai` state, or private data. None of the five
+packages was ever in the marketplace index, so nothing was withdrawn from a
+host that installed core, engineering, or creative — and removing an index
+entry never uninstalls an already-installed package.
+
+### Removed
+
+- `kai-product`, `kai-marketing`, `kai-revenue`, `kai-assistant` and
+  `kai-learning` are no longer packages. Their agents, skills, and package
+  notes moved to `incubator/kai-<name>/` with history preserved; their
+  generated `plugin.json`, `package.json` and `package-lock.json` were deleted,
+  because a manifest inside the incubator is an installable plugin. They are
+  not discovered, not validated as packs, not emitted, and not installable.
+  This is an inventory change, not a compatibility alias: there are no
+  replacement names and no runtime fallbacks.
+- The `PRERELEASE_PACKS` concept and the `Pre-release (in progress):`
+  description prefix. An unfinished package is now incubated rather than
+  half-shipped, so the readiness label has nothing left to label.
+- The `personal`, `prod` and `gtm` provider-family tokens, whose owning
+  packages were incubated. They are retired namespace tokens, not aliases; a
+  new role may not claim one.
+- Ten catalog categories and the catalog's `Availability` column, which had
+  only one value left. The column is now `Package`.
+
+### Added
+
+- `incubator/README.md` — the single index of everything parked: the five
+  packages, the component-level incubation under `kai-engineering`, what
+  "incubated" excludes, and the steps to bring something back.
+- A validator gate over the incubator contract: a declared incubated package
+  must have exactly one source tree, and no `incubator/` tree may carry a
+  plugin or package manifest at any depth.
+- A validator gate over shipped bodies: an agent or skill may not name an
+  incubated or retired role, **backticked or not**. The existing reference scan
+  only saw backticked tokens, so retired roles survived in YAML template values
+  (`completion_authority: principal-product-manager`), report-scaffold fields
+  (`**Run:** principal-seo`) and parenthetical asides. This gate found six such
+  cases that the incubation cleanup had missed.
+- A catalog gate: `generate-catalog.mjs` now fails if it is asked to list a
+  component from a package the default marketplace does not carry.
+- `incubatedPackageDirs()` in `scripts/lib/incubation-contract.mjs`, so the
+  contract reads every `incubator/kai-*` tree from disk instead of naming one.
+
+### Changed
+
+- `test/package-availability-self-test.mjs` now asserts incubation isolation —
+  an incubated package is absent from source collection, the reference corpus,
+  the generated tree, the marketplace, and the runtime matrix — instead of
+  pre-release retention.
+- Skill placement follows the `kai-core-*` namespace: a core-named contract
+  stays in core even when its last remaining caller is a single department.
+  Incubating the other callers of `kai-core-content-grounding` and
+  `kai-core-web-evaluation` would otherwise have transferred them out of core,
+  which `namespaceErrors` forbids.
+- Incubated agent ids stay in the reference grammar. Dropping them would not
+  fix a stale reference, it would stop the scanner from seeing it.
+- Shipped core prose no longer names an incubated or retired role. Where a
+  capability has no installed successor (product discovery, in-voice drafting,
+  promotion judgment, support triage), the work routes to `@operator` rather
+  than to an invented substitute.
+- `docs/how-kai-works.md` and `docs/getting-started.md` describe the
+  three-package repository.
+
+### Fixed
+
+- The `pack-preview` self-test crashed with a `TypeError` before reaching most
+  of its assertions, because it still indexed a `personal` pack retired several
+  versions ago; it also named `kai-gtm` and `kai-product` fixtures. It now runs
+  over the real partition — **222 checks pass**, where previously the run
+  aborted early.
+- Retired engineering identities (`principal-swe-*`, `principal-sre`,
+  `principal-security`, `principal-qa-ui`, and the rest) and
+  `director-executive-assistant` are now resolvable as historical references in
+  historical documents, and are corrected in active ones. This clears the
+  long-standing bulk of `references unknown agent` errors.
+- The assessor roster and the `kai-core-create-agent` provider-family reference
+  named roles and packages that no longer exist.
+
+### Verified
+
+`npm test` passes end to end, and `scripts/validate-plugin.mjs` reports **0
+errors** against a pre-existing baseline of **261**. `pack-preview --self-test`
+completes with **222 checks passed**, where it previously aborted early on a
+`TypeError`. No gate was disabled, skipped, or weakened to reach that; two new
+gates were added (incubator isolation, and inactive roles named in shipped
+bodies), and both were proven by mutation.
+
+Not verified: nothing here was installed into a host. `13.0.0` is prepared
+metadata, not a tag, release, publication, or host-compatibility claim.
+
 ## [12.0.0] - 2026-09-17
 
 Prepared source metadata for the kai-core coordination runtime and the
@@ -3740,6 +3839,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0
 [12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0
 [11.0.0]: https://github.com/RubenSaucedo/kai/compare/v10.0.0...v11.0.0
 [10.0.0]: https://github.com/RubenSaucedo/kai/compare/v9.0.0...v10.0.0

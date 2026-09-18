@@ -112,6 +112,20 @@ export const RETIRED_ENGINEERING_AGENT_IDS = new Set([
   'workflow-issue-analysis', 'workflow-localization',
 ]);
 
+// Dropped before the taxonomy baseline was frozen, so it appears in no pack
+// roster. Its drop record and the ship records that predate it still name it;
+// listing it here keeps those historical pages resolvable without reviving it.
+export const RETIRED_DIRECTOR_AGENT_IDS = new Set([
+  'director-executive-assistant',
+]);
+
+// Core skills that were renamed or split. Historical plans and ship records
+// legitimately name them; no active body may. `kai-core-workspace-conventions`
+// became `kai-core-workspace-paths` plus `kai-core-workspace-initiative`.
+export const RETIRED_CORE_SKILL_IDS = new Set([
+  'kai-core-workspace-conventions',
+]);
+
 export const NEW_AGENT_IDS = {
   core: [],
   assistant: ['personal-assistant'],
@@ -131,12 +145,36 @@ export const NEW_AGENT_IDS = {
   learning: [],
 };
 
+// Whole packages moved into `incubator/` while development returns to core.
+// They are not discovered, not validated as packs and not emitted; their source
+// and ids are preserved on disk so re-entry is a move, not a rewrite. The
+// taxonomy baseline above deliberately still lists their agent ids, so a
+// reference to one is still *recognised* as an agent reference and classified
+// as inactive rather than silently becoming unmatched prose.
+export const INCUBATED_PACKS = Object.freeze([
+  'assistant', 'product', 'marketing', 'revenue', 'learning',
+]);
+
+export const ACTIVE_PACKS = Object.freeze(
+  Object.keys(MIGRATION_BASELINE_PACKS).filter((pack) => !INCUBATED_PACKS.includes(pack)),
+);
+
 export const PACKS = Object.fromEntries(
-  Object.keys(MIGRATION_BASELINE_PACKS)
+  ACTIVE_PACKS
     .map((pack) => [pack, [
       ...MIGRATION_BASELINE_PACKS[pack].filter(id => !RETIRED_ENGINEERING_AGENT_IDS.has(id)),
       ...NEW_AGENT_IDS[pack],
     ]]),
+);
+
+// Agent ids carried out of the active partition by incubation. Derived from the
+// frozen baseline plus the new ids declared for those packages, so it cannot
+// drift from what was actually moved.
+export const INCUBATED_AGENT_IDS = Object.freeze(
+  INCUBATED_PACKS.flatMap((pack) => [
+    ...MIGRATION_BASELINE_PACKS[pack],
+    ...NEW_AGENT_IDS[pack],
+  ]).sort(),
 );
 
 // Deterministic pack emission order: core first, then the departments in the
@@ -152,13 +190,11 @@ export const SKILL_OWNER_OVERRIDES = {
   'kai-core-fleet-observation': 'core',
 };
 
-// Retained source and validation cover all packages, including unfinished ones.
-// Publication is a separate decision; a readiness label never hides source errors.
+// Retained source and validation cover every active package. Publication is a
+// separate decision, but the active partition and the default index are now the
+// same three packages: an unfinished package is incubated, not half-shipped.
 export const COMMITTED_PACKS = [...PACK_ORDER];
 export const PUBLISHED_PACKS = Object.freeze(['core', 'engineering', 'creative']);
-export const PRERELEASE_PACKS = Object.freeze(
-  PACK_ORDER.filter(pack => !PUBLISHED_PACKS.includes(pack)),
-);
 
 // Runtime dependencies belong to the pack that directly executes them. The
 // host copies plugin trees but does not run npm, so these declarations provide
@@ -166,13 +202,8 @@ export const PRERELEASE_PACKS = Object.freeze(
 // dependencies are installed automatically.
 export const PACK_RUNTIME_DEPENDENCIES = {
   core: ['lectoria'],
-  assistant: [],
   creative: ['lectoria'],
   engineering: [],
-  product: [],
-  marketing: [],
-  revenue: [],
-  learning: [],
 };
 
 export const RUNTIME_ARTIFACTS = {
@@ -192,9 +223,9 @@ export const RUNTIME_ARTIFACTS = {
 // departments are `kai-<department>`.
 export const packPluginName = (pack) => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
 
-// CI covers every retained source package, not only the default marketplace.
-// A package with no runtime dependencies still gets a leg; publication status
-// never removes an unfinished package from this validation surface.
+// CI covers every retained source package. A package with no runtime
+// dependencies still gets a leg; an incubated package gets none, because it is
+// not discovered, emitted or installable.
 export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
   return packs.map((pack) => {
     const dependencies = PACK_RUNTIME_DEPENDENCIES[pack];
@@ -219,20 +250,12 @@ export function runtimeDependencyMatrix(packs = COMMITTED_PACKS) {
 // cannot hold.
 const PACK_DESCRIPTIONS = {
   core: 'kai-core: the shared operating contract and workspace machinery every kai department pack depends on.',
-  assistant: 'Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance over kai-core, not organization routing.',
   creative: 'UI/UX, visual identity, design assets, and supported media production over kai-core.',
   engineering: 'Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.',
-  product: 'Product discovery, scope, evidence, analytics, and product-led growth over kai-core.',
-  marketing: 'Positioning, campaigns, social content, and search visibility over kai-core.',
-  revenue: 'Sales, pricing, partnerships, revenue operations, customer success, support intake, and pre-sales solution fit over kai-core.',
-  learning: 'Teaching, tutoring, learning paths, lesson production, and career development over kai-core.',
 };
 
 function packDescription(pack) {
-  const description = PACK_DESCRIPTIONS[pack] ?? `kai ${pack} department pack — the ${pack} roles, over a required kai-core.`;
-  return PRERELEASE_PACKS.includes(pack)
-    ? `Pre-release (in progress): ${description}`
-    : description;
+  return PACK_DESCRIPTIONS[pack] ?? `kai ${pack} department pack — the ${pack} roles, over a required kai-core.`;
 }
 
 // The repo checks out CRLF on Windows; normalising every emitted file to LF keeps
@@ -595,7 +618,11 @@ export function planPacks(root = REPO_ROOT) {
   for (const s of onDisk) {
     const packs = usedBy.get(s);
     if (!packs) { orphans.push(s); continue; }
-    if (packs.size > 1 || packs.has('core')) inheritedCore.push(s);
+    // A `kai-core-*` name is core's own declaration of ownership, and
+    // namespaceErrors rejects any other provider for it. Usage can narrow to a
+    // single department — as it does whenever the other callers are retired or
+    // incubated — without transferring the contract out of core.
+    if (s.startsWith(CORE_SKILL_PREFIX) || packs.size > 1 || packs.has('core')) inheritedCore.push(s);
     else inheritedLocal[[...packs][0]].push(s);
   }
 
@@ -961,12 +988,12 @@ const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 // like one (`post-only`) is an output mode, not a reference. Baseline families
 // remain recognized during the staged migration. New durable roles use their
 // provider family plus a controlled posture and scope.
+// Naming-policy families that map to an active install package. `personal`,
+// `prod` and `gtm` are retired namespace tokens whose owners were incubated;
+// they are not aliases and no active role may claim them.
 export const ROLE_FAMILY_PACK = Object.freeze({
   core: 'core',
-  personal: 'personal',
-  prod: 'product',
   eng: 'engineering',
-  gtm: 'gtm',
   creative: 'creative',
 });
 
@@ -1014,9 +1041,15 @@ export const AGENT_FAMILIES = [
   ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
 ];
 
+// Ids that must stay *recognisable* as agent references even though no active
+// pack provides them: the frozen migration baseline, the retired creative
+// roles, and everything carried out of the partition by incubation. Dropping an
+// id from here would not fix a stale reference — it would stop the scanner from
+// seeing it at all, turning a caught dangling reference into silent prose.
 const LEGACY_AGENT_IDS = new Set([
   ...Object.values(MIGRATION_BASELINE_PACKS).flat(),
   ...RETIRED_CREATIVE_AGENT_IDS,
+  ...INCUBATED_AGENT_IDS,
 ]);
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
 const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');

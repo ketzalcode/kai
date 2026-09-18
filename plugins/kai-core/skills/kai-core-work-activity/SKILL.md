@@ -74,15 +74,15 @@ resolved per `kai-core-workspace-paths`.
 RUN=$(node <kai-plugin>/scripts/activity.mjs new-run)
 
 node <kai-plugin>/scripts/activity.mjs start \
-  --root <root> --role principal-swe-backend --item export-audit \
+  --root <root> --role eng-builder-software --item export-audit \
   --run "$RUN" --for 45m
 
 node <kai-plugin>/scripts/activity.mjs progress \
-  --root <root> --role principal-swe-backend --run "$RUN" \
+  --root <root> --role eng-builder-software --run "$RUN" \
   --for 30m --note "implementation underway"
 
 node <kai-plugin>/scripts/activity.mjs stop \
-  --root <root> --role principal-swe-backend --run "$RUN" --outcome handoff
+  --root <root> --role eng-builder-software --run "$RUN" --outcome handoff
 
 # who else is live
 node <kai-plugin>/scripts/activity.mjs show --root <root>

@@ -67,18 +67,6 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Product',
-    blurb: 'Discovery, scope, evidence, analytics, product-led growth, and independent product assessment. UI and brand design belong to creative.',
-    members: [
-      'principal-product-manager', 'principal-product-strategist',
-      'principal-data-analytics', 'workflow-customer-feedback',
-      'workflow-experiment-review', 'workflow-product-explore',
-      'persona-ux-first-time-user', 'principal-growth',
-      'persona-professional-nutritionist', 'persona-professional-trainer',
-    ],
-  },
-  {
-    kind: 'agent',
     title: 'Technical writing',
     blurb: 'Engineering-owned documentation, editorial assessment, and source-language localization preparation.',
     members: ['eng-lead-technical-writing'],
@@ -94,48 +82,9 @@ const CATEGORIES = [
   },
   {
     kind: 'agent',
-    title: 'Revenue',
-    blurb: 'Sales, pricing, partnerships, revenue operations, customer success, and support intake from supplied evidence. Only you accept terms or contact customers.',
-    members: [
-      'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
-      'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
-    ],
-  },
-  {
-    kind: 'agent',
-    title: 'Solution architecture',
-    blurb: 'Revenue-owned pre-sales technical fit and solution design, not implementation or commercial commitments.',
-    members: ['principal-solutions-architect'],
-  },
-  {
-    kind: 'agent',
-    title: 'Learning & career development',
-    blurb: 'Teach supplied topics, package source-faithful lessons, steward learning paths, and mentor IC engineering careers. Markdown, HTML, and audio are separate outcomes.',
-    members: [
-      'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
-      'principal-engineer-career-mentor', 'workflow-course-to-audio',
-    ],
-  },
-  {
-    kind: 'agent',
-    title: 'Marketing',
-    blurb: 'Positioning, campaigns, LinkedIn content, and search assessments from supplied facts and evidence. Never auto-publishes.',
-    members: [
-      'principal-product-marketing', 'principal-demand-generation',
-      'principal-linkedin-strategist', 'principal-seo',
-    ],
-  },
-  {
-    kind: 'agent',
     title: 'Implementation & system review',
     blurb: 'Independent code review and browser/API/CLI/system acceptance. Implementers retain ownership of their regression tests.',
     members: ['eng-reviewer-code', 'eng-reviewer-quality'],
-  },
-  {
-    kind: 'agent',
-    title: 'Personal assistance',
-    blurb: 'Your own tasks, briefings, and drafts. Invoked directly; never a router.',
-    members: ['personal-assistant', 'persona-self'],
   },
   {
     kind: 'agent',
@@ -156,12 +105,6 @@ const CATEGORIES = [
       'kai-core-issue-analysis', 'kai-core-initiative-stewardship', 'kai-core-peer-communication',
       'kai-core-contract-v1',
     ],
-  },
-  {
-    kind: 'skill',
-    title: 'Product exploration',
-    blurb: 'Neutral maps from supplied evidence or an authorized live surface, without design or scope judgment.',
-    members: ['product-exploration'],
   },
   {
     kind: 'skill',
@@ -204,12 +147,6 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Marketing methods',
-    blurb: 'Grounded intelligence and LinkedIn drafts with provenance, claim ledgers, and optional personal voicing.',
-    members: ['product-marketing-intelligence', 'linkedin-content'],
-  },
-  {
-    kind: 'skill',
     title: 'Web & content',
     blurb: 'Browser-run plumbing, content methods, and shared claim safety.',
     members: [
@@ -219,15 +156,9 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Learning method & shared audio',
-    blurb: 'Learning owns the offline HTML lesson method; core owns the separately confirmed audio utility. Neither output proves the other exists.',
-    members: ['kai-core-generate-audio', 'generate-html-lesson'],
-  },
-  {
-    kind: 'skill',
-    title: 'Assistant methods',
-    blurb: 'The private methods behind the personal assistant and persona-self. Never autonomous.',
-    members: ['personal-agenda', 'decision-brief', 'extract-writing-style', 'write-in-user-voice'],
+    title: 'Shared audio',
+    blurb: 'Core\'s separately confirmed audio utility. Producing audio proves nothing about the source document it was read from.',
+    members: ['kai-core-generate-audio'],
   },
   {
     kind: 'skill',
@@ -290,9 +221,12 @@ function build(items) {
   const agents = [...items.values()].filter((i) => i.kind === 'agent').length;
   const skills = [...items.values()].filter((i) => i.kind === 'skill').length;
   const invocable = [...items.values()].filter((i) => i.kind === 'skill' && isUserInvocable(i.fm)).length;
-  const defaultItems = [...items.values()].filter(item => PUBLISHED_PACKS.includes(item.pack));
-  const defaultAgents = defaultItems.filter(item => item.kind === 'agent').length;
-  const defaultSkills = defaultItems.filter(item => item.kind === 'skill').length;
+  const unpublished = [...items.values()].filter(item => !PUBLISHED_PACKS.includes(item.pack));
+  if (unpublished.length) {
+    const e = new Error('the catalog lists a component from a package the default marketplace does not carry');
+    e.problems = unpublished.map(item => `${item.path} belongs to kai-${item.pack}, which is not in PUBLISHED_PACKS`);
+    throw e;
+  }
 
   const out = [];
   out.push('[kai](../../README.md) / [Docs](../README.md) / Agents & skills');
@@ -304,13 +238,14 @@ function build(items) {
   out.push('     scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;');
   out.push('     `npm test` fails if this file drifts from the shipped surface. -->');
   out.push('');
-  out.push(`The repository retains **${agents} agents** and **${skills} skills** (${invocable} skills are directly user-invocable when their owning package is installed).`);
+  out.push(`The repository ships **${agents} agents** and **${skills} skills**.`);
   out.push('');
-  out.push(`The default marketplace supplies **${defaultAgents} agents** and **${defaultSkills} skills** through core, engineering, and creative. Other rows are **pre-release / in progress**, retained as source but absent from the default marketplace. A default listing is not a release or runtime-readiness certification.`);
+  out.push(`The default marketplace supplies **${agents} agents** and **${skills} skills** through core, engineering, and creative (${invocable} skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.`);
   out.push('');
   out.push('Each description is the source agent or skill\'s own `description:`.');
-  out.push('Availability depends on its installed provider; retaining a pre-release');
-  out.push('row does not make that capability available through the default install.');
+  out.push('Capabilities parked under [`incubator/`](../../incubator/README.md) are');
+  out.push('deliberately absent from this catalog: they are not installed, not loaded,');
+  out.push('and not available through any install path.');
   out.push('');
   out.push('- **Not sure who to ask?** [How kai works](../how-kai-works.md) has the trigger table.');
   out.push('- **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).');
@@ -329,13 +264,12 @@ function build(items) {
       out.push('');
       out.push(cat.blurb);
       out.push('');
-      out.push('| Name | Availability | What it owns |');
-      out.push('| ---- | ------------ | ------------ |');
+      out.push('| Name | Package | What it owns |');
+      out.push('| ---- | ------- | ------------ |');
       for (const m of cat.members) {
         const item = items.get(m);
         const link = `../../${item.path}`;
-        const availability = PUBLISHED_PACKS.includes(item.pack) ? 'Default marketplace' : 'Pre-release / in progress';
-        out.push(`| [\`${m}\`](${link}) | ${availability} | ${cell(stripQuotes(item.fm.description || ''))} |`);
+        out.push(`| [\`${m}\`](${link}) | \`kai-${item.pack}\` | ${cell(stripQuotes(item.fm.description || ''))} |`);
       }
       out.push('');
     }

@@ -26,8 +26,9 @@ It is **not** a standalone trigger. It is inherited by reference by:
   design system expresses. It grounds identity work in the current brand and
   design system before evolving it; the applied design-system content stays with
   the product designer.
-- **`workflow-product-explore`** — the neutral extraction contract **only**
-  (observed visual facts, never design proposals).
+- **Neutral visual extraction** — observed visual facts only, never design
+  proposals. It is an evidence contract, not a role: the operator supplies it
+  unless a producing agent is installed.
 
 ## The design-system reference — durable visual authority
 
@@ -124,9 +125,9 @@ For **requested or owed durable design-system work**, resolve in order:
    `design-system.md` from that evidence.
 4. **No adequate supplied evidence and no accessible repo tokens** (e.g. an
    external product, or a repo whose styling can't be read) → request the missing
-   neutral **design-system extraction** evidence. The operator may supply it;
-   `workflow-product-explore` is a possible producer. If a coordinated explorer
-   extraction is requested, route it via the director / `kai-core-work-granting`,
+   neutral **design-system extraction** evidence. The operator supplies it; no
+   kai role currently produces it. If a coordinated extraction is requested,
+   route it via the director / `kai-core-work-granting`,
    not by spawning it. The designer **does not** free-roam Playwright itself:
    neutral extraction must cover the whole in-scope app, not over-index on one page.
 5. **Supplied or newly extracted coverage is insufficient** → request the missing

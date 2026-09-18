@@ -173,7 +173,7 @@ call:
 |---|---|
 | Directly invoked by the operator | the **operator** |
 | Coordinated work with an owning role | that **principal / steward** |
-| Scope, priority, or product fit | `principal-product-manager` |
+| Scope, priority, or product fit | `@operator` |
 | No kai role owns it, or the operator reserved it | `@operator` |
 
 Per `kai-core-operating-rules`, `@operator` is a reserved endpoint, not a general
@@ -192,7 +192,7 @@ Some issues should not be built. Reporting that is a **successful outcome**:
 - **several issues wearing one hat** — propose the split;
 - **not issue-shaped at all** — it is really an initiative, and belongs to
   `workflow-initiative-init`; or it cannot be framed until someone has explored
-  the live product (`product-exploration`); or it carries a security or privacy
+  the live product; or it carries a security or privacy
   dimension that its owner should see before an approach is chosen.
 
 Recommending "close this" or "reframe this" is a legitimate result. Building

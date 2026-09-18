@@ -54,9 +54,8 @@ doesn't apply to this change is waived, not faked-Clear).
 
 Document lenses are not formal approvals. When `review_requirements` names
 `eng-reviewer-security` (`independent-security`), `eng-reviewer-reliability`
-(`reliability-operability`), `eng-reviewer-privacy-compliance`
-(`privacy-compliance`), or `workflow-experiment-review`
-(`experiment-integrity`), only that owner's evidence against the exact current
+(`reliability-operability`), or `eng-reviewer-privacy-compliance`
+(`privacy-compliance`), only that owner's evidence against the exact current
 `change_ref` clears the relevant dimension. A waived BLOCK/NOT-READY/GAP/
 COMPROMISED remains visible as waived residual risk; it is never relabeled
 Clear/Ready/Compliant/Sound.

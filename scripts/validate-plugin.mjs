@@ -43,13 +43,14 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
-  PACK_ORDER, PUBLISHED_PACKS, PRERELEASE_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
+  PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
   RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
+  RETIRED_ENGINEERING_AGENT_IDS, RETIRED_DIRECTOR_AGENT_IDS, RETIRED_CORE_SKILL_IDS,
 } from './lib/pack-plan.mjs';
 import {
-  incubatedIds, documentationReferenceExists,
+  incubatedIds, incubatedPackageDirs, incubatedManifestPaths, documentationReferenceExists,
 } from './lib/incubation-contract.mjs';
 import { MARKETPLACE } from './lib/migration-doctor.mjs';
 
@@ -94,10 +95,43 @@ for (const pack of PACK_ORDER) {
 }
 
 const allFiles = [...agentFiles, ...skillFiles];
+
+// The incubator is inactive by construction: nothing there may be discovered,
+// emitted, or installable. Two failures make that claim false rather than
+// merely untidy — an incubated package that still has an active source tree
+// (two sources for one id), and a plugin manifest inside the incubator, which a
+// host would happily treat as an installable plugin.
+{
+  const incubatedDirs = incubatedPackageDirs(ROOT);
+  for (const pack of INCUBATED_PACKS) {
+    const name = packPluginName(pack);
+    if (!incubatedDirs.includes(name)) {
+      err(`incubator/${name}/`, 'declared incubated package has no source tree in incubator/');
+    }
+    if (existsSync(join(ROOT, 'plugins', name))) {
+      err(`plugins/${name}/`, `incubated package "${name}" still has an active source tree — exactly one location is allowed`);
+    }
+  }
+  // Anywhere in the tree, not just its top level: a nested manifest is just as
+  // installable, and a marketplace entry could point straight at it.
+  for (const manifest of incubatedManifestPaths(ROOT)) {
+    err(manifest, 'incubated source must carry no plugin or package manifest — a manifest here is installable');
+  }
+}
+
 const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
-const inactiveAgentIds = new Set([...incubatedIds(ROOT, 'agent'), ...RETIRED_CREATIVE_AGENT_IDS]);
-const inactiveSkillIds = new Set([...incubatedIds(ROOT, 'skill'), ...RETIRED_CREATIVE_SKILL_IDS]);
+const inactiveAgentIds = new Set([
+  ...incubatedIds(ROOT, 'agent'),
+  ...RETIRED_CREATIVE_AGENT_IDS,
+  ...RETIRED_ENGINEERING_AGENT_IDS,
+  ...RETIRED_DIRECTOR_AGENT_IDS,
+]);
+const inactiveSkillIds = new Set([
+  ...incubatedIds(ROOT, 'skill'),
+  ...RETIRED_CREATIVE_SKILL_IDS,
+  ...RETIRED_CORE_SKILL_IDS,
+]);
 const componentIds = new Set([...agentIds, ...skillIds]);
 const inactiveComponentIds = new Set([...inactiveAgentIds, ...inactiveSkillIds]);
 
@@ -209,6 +243,32 @@ for (const p of refScanFiles) {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// A shipped body may not name an inactive role at all — backticked or not.
+//
+// The reference scan above only sees backticked, agent-shaped tokens, so a
+// retired role survives in exactly the places that matter most: YAML template
+// values (`completion_authority: principal-product-manager`), scaffold fields
+// (`**Run:** principal-seo`), and parenthetical asides. Those are instructions
+// an agent follows, naming a role no installed package provides. This check
+// reads the same inactive sets, without requiring backticks.
+// ---------------------------------------------------------------------------
+{
+  const inactiveInBodies = [...inactiveAgentIds, ...incubatedIds(ROOT, 'skill')];
+  const companions = skillFiles.flatMap((skill) =>
+    skillCompanionFiles(ROOT, skill.id).map((entry) => entry.path));
+  for (const path of [...allFiles.map((f) => f.path), ...companions]) {
+    const raw = readFileSync(path, 'utf8');
+    for (const id of inactiveInBodies) {
+      // `.persona-self/` and `scripts/demo-zoom.mjs` are paths, not roles.
+      if (new RegExp(`(?<![\\w./-])${id}(?![\\w-])`).test(raw)) {
+        err(rel(path), `names inactive component \`${id}\` — a shipped body must not instruct against a role or method no installed package provides`);
+      }
+    }
+  }
+}
+
 
 // ---------------------------------------------------------------------------
 // Agent skill routing — one shape
@@ -444,11 +504,6 @@ const ASSESSOR_ROLES = [
   'eng-reviewer-quality',
   'eng-advisor-investigation',
   'eng-lead-technical-writing',
-  'principal-seo',
-  'persona-ux-first-time-user',
-  'persona-professional-nutritionist',
-  'persona-professional-trainer',
-  'workflow-experiment-review',
   'workflow-self-check',
 ];
 {
@@ -706,11 +761,11 @@ const guidedInstallCommands = PUBLISHED_PACKS.map(
 const guidedCorePlugin = packPluginName('core');
 if (onboarding) {
   const onboardingProse = onboarding.replace(/\s+/g, ' ');
-  for (const pack of PRERELEASE_PACKS) {
+  for (const pack of INCUBATED_PACKS) {
     for (const action of ['install', 'update']) {
       const command = `copilot plugin ${action} ${packPluginName(pack)}@${MARKETPLACE}`;
       if (onboarding.includes(command)) {
-        err(onboardingRel, `guided installer must not advertise pre-release command \`${command}\``);
+        err(onboardingRel, `guided installer must not advertise incubated package command \`${command}\``);
       }
     }
   }

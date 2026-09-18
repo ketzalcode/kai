@@ -8,30 +8,25 @@ for coordination only when needed — see [Getting started](getting-started.md).
 
 ## Package boundaries
 
-The default marketplace surface is **core, engineering, and creative**.
-Product, marketing, revenue, assistant, and learning remain source-retained
-pre-release packages. See [package availability](reference/package-availability.md).
+The marketplace surface is **core, engineering, and creative** — the three
+packages kai ships. Five earlier capability packages (product, marketing,
+revenue, assistant, and learning) are parked in
+[`incubator/`](../incubator/README.md); they do not ship, are not
+installable, and are not loaded by any host.
 
 | Package | Direct responsibility | Surface |
 | --- | --- | --- |
-| `kai-core` | Shared contracts, workspace infrastructure and explicitly requested coordination | Default marketplace |
-| `kai-engineering` | Implementation, architecture, reliability, trust and technical writing | Default marketplace |
-| `kai-creative` | UI/UX, visual identity, assets and supported media production | Default marketplace |
-| `kai-product` | Discovery, scope, evidence, analytics, growth and product-audit perspectives | Pre-release source |
-| `kai-marketing` | Positioning, campaigns, social content and search | Pre-release source |
-| `kai-revenue` | Sales, pricing, partnerships, revenue operations, success and support intake | Pre-release source |
-| `kai-assistant` | Personal tasks, priorities, briefings and user-voice drafts | Pre-release source |
-| `kai-learning` | Teaching, tutoring, paths, materials and career development | Pre-release source |
+| `kai-core` | Shared contracts, workspace infrastructure and explicitly requested coordination | Marketplace |
+| `kai-engineering` | Implementation, architecture, reliability, trust and technical writing | Marketplace |
+| `kai-creative` | UI/UX, visual identity, assets and supported media production | Marketplace |
 
-Supplied briefs, factual maps, media, account evidence and learning outlines can
-be direct inputs; their usual producer is not a mandatory installed sibling.
-Missing evidence narrows the answer. It never licenses invented facts or a
-simulated specialist verdict. Scope, design acceptance, independent assessment,
-commercial commitments and learning completion remain with their real owners.
-The source inventory is 50 agents / 46 skills and prepared `11.0.0` metadata.
-Only core, engineering, and creative are the default marketplace surface;
-retired gtm/personal plugins have no aliases; private `.kai/personal/` data
-remains unchanged.
+Supplied briefs, factual maps, media and evidence can be direct inputs; their
+usual producer is not a mandatory installed sibling. Missing evidence narrows
+the answer. It never licenses invented facts or a simulated specialist verdict.
+Scope, design acceptance, independent assessment and release approval remain
+with their real owners. The shipped surface is 22 agents / 38 skills across
+core, engineering, and creative; retired gtm/personal plugins have no aliases;
+private `.kai/personal/` data remains unchanged.
 
 ## Interaction scenarios
 
@@ -40,19 +35,18 @@ Each fires only when its kind of judgment is needed, and several are
 skippable depending on the size and shape of the work. Two kinds of
 agent behave differently:
 
-- **Judgment / quality agents** (`principal-swe-architect`,
-  `principal-swe-frontend` / `-backend` / `-infra`) scale *down*
+- **Judgment / quality agents** (`eng-lead-architecture`,
+  `eng-builder-software` / `eng-builder-platform`) scale *down*
   gracefully — they add signal even on a tiny project. Trigger them on
   need.
-- **Coordination agents** (`principal-swe-manager`) scale *up* —
+- **Coordination agents** (`director-chief-of-staff`) scale *up* —
   their value grows with owners × dependencies × deadline pressure ×
   parallelism. **Skip them on small or already-sequenced work.**
 
 The agents fall into a handful of independent flows. The biggest is
-**product → engineering**; the rest are smaller graphs that either feed
+**directed delivery**; the rest are smaller graphs that either feed
 into it or stand on their own. Each diagram is a *scenario*, not a
-mandatory pipeline. Flows 2-8 reference source-retained pre-release packages,
-not the default marketplace surface.
+mandatory pipeline.
 
 **Durable, per-item coordination state.** These agents are single-shot and
 stateless, but the coordination they share is not: it must survive sessions and
@@ -69,13 +63,6 @@ append-only communication log, and `BOARD.md` is a **derived human index**,
 refreshed by the director after reconciliation — agents never treat an
 out-of-date board row as authority. Parallel agents normally touch different
 item and thread files.
-
-For personal work, `personal-assistant` (flow 8) handles your own tasks,
-priorities, briefings, and drafts directly, in the selected Kai workspace, when
-you ask it to. It is not a router and not a required first step: a delivery
-coordination request goes to the Chief of Staff, and review/design/exploration goes to that
-specialist. It ships in the source-retained `kai-assistant` pack; core works
-without it.
 
 **0 · Onboarding (when durable workspace state is needed)** — `workflow-workspace-init`
 validates the full workspace contract for either a repository or a durable
@@ -104,33 +91,26 @@ and activates it; later agents load it only when work matches its scope.
                                                             └──no──► work context-free (no pollution)
 ```
 
-**1 · Directed product → engineering** — talk to the Chief of Staff; it
+**1 · Directed delivery** — talk to the Chief of Staff; it
 coordinates the triggered graph without taking over specialist decisions.
 
 ```
  operator ─► director-chief-of-staff
                   │
-                  ├─► workflow-product-explore (when current map absent/stale)
-                  │                 │
-                  ├─► principal-product-manager BRIEF / steward
-                  │                 │ approved need + scope
+                  ├─► eng-advisor-investigation (when evidence is missing)
+                  │                 │ cited findings + unknowns
+                  ├─► eng-lead-architecture ── only when a decision spans
+                  │   (approach / seams / system NFRs)   components or services
+                  │                 │ approved approach
                   └─► creative-lead-design
-                                    │ PM acceptance, or explicit design waiver
+                                    │ design acceptance, or explicit design waiver
                                     ▼
-                        principal-swe-architect  ── only when a decision spans
-                        (approach / seams / system NFRs)  FE+BE+infra or services
+              eng-builder-software / eng-builder-platform   (build the slice)
                                                         │
                                                         ▼
-                        principal-swe-manager ── only when work is large /
-                        (scope · size · sequence)         parallel / multi-owner /
-                                                        │ deadline-driven
-                                                        ▼
-              principal-swe-frontend / -backend / -infra   (build the slice)
-                                                        │
-                                                        ▼
-              principal-qa-ui · persona-ux-first-time-user       (verify, observe)
+              eng-reviewer-code · eng-reviewer-quality       (review, accept)
                                                        │
-                                    findings back to the PM ◄────┤
+                                    findings back to the owner ◄────┤
                                                        ▼
               workflow-pull-request ─► branch, PR narrative, version, merge readiness
                                                        │ human merges
@@ -147,175 +127,71 @@ The ship workflow never performs deployment. It prepares the release, then a
 later confirmation pass records your deployment evidence and verifies
 production before using the `shipped` state.
 
-**2 · AI research → applied product** — turn a live-landscape finding into a ticket-grade design, then hand slices to the engineers.
+**2 · Investigation → implementation** — turn a bounded question or live-landscape finding into a buildable change, then hand slices to the engineers.
 
 ```
- weekly ──► principal-ai-researcher ──► one-page briefing
- pulse        (what changed in AI)          │  (pick a finding worth acting on)
-                                            ▼
-            principal-ai-applied-engineer ──► applied design doc
-            (research + product context)      (architecture · eval · rollout · cost)
-                                            │  delegates slices to
-                                            ▼
-            principal-swe-architect? ──► principal-swe-frontend / -backend / -infra
-            (only if it spans seams)         (build it)
+ a question ──► eng-advisor-investigation ──► cited findings + unknowns
+ or finding      (evidence · options · risk)       │  (pick something worth acting on)
+                                                    ▼
+            eng-lead-architecture? ──► eng-builder-software / eng-builder-platform
+            (only if it spans seams)      (build it, with its tests)
 ```
 
-**3 · Web evaluation → product** — many lenses on one live surface, all routed through the `kai-core-web-evaluation` skill, all feeding the PM.
+**3 · Independent review** — separate judgment on an exact change, design, or supplied evidence; reviewers report findings and never repair the target.
 
 ```
-              ┌─ principal-qa-ui ──────────────────── defects (broken UI)
-              ├─ principal-seo ────────────────────── SEO + agentic-search gaps
- a live ──────┼─ persona-ux-first-time-user ───────── first-run friction       ─┐
- surface      ├─ persona-professional-trainer ─────── domain-expert audit       ├─► reports
-              └─ persona-professional-nutritionist ── domain-expert audit      ─┘   │
-                        (each runs via the kai-core-web-evaluation skill)                    ▼
-                                                         principal-product-manager ──► decisions
-```
-
-**3b · Customer success → product** — protect customer outcomes without turning
-every account request into roadmap scope.
-
-```
- customer goals + usage + support + sentiment
-                         │
-                         ▼
-          principal-customer-success
-          (success · adoption · health · risk)
-                    │                 │
-                    │                 └─► local success / recovery / QBR brief
-                    ▼
-        de-identified customer signal
+ a change / design / evidence
                     │
-                    ▼
-        principal-product-manager ──► scope decision
+        ┌───────────┬───────────┬────────────────────┬────────────────┐
+        ▼           ▼           ▼                    ▼                ▼
+ eng-reviewer-  eng-reviewer- eng-reviewer-      eng-reviewer-    eng-reviewer-
+     code         quality      security         privacy-compliance  reliability
+        │           │           │                    │                │
+        └───────────┴──────────► evidence-based findings ──► owner decides + fixes
 ```
 
-**3c · Support triage → real owner** — screen safety first, then route without
-replying, fixing, or converting the support queue directly into product scope.
+Reviewers hold no write access to the target and never accept the risk they
+assess — the owner remediates and the human decides.
 
-```
- supplied tickets / chats / escalations
-                    │
-                    ▼
-       workflow-support-triage
-       (screen · classify · dedupe · urgency)
-        │       │       │       │       │
-        │       │       │       │       └─► principal-product-manager
-        │       │       │       └─────────► principal-customer-success
-        │       │       └─────────────────► QA / relevant SWE
-        │       └─────────────────────────► principal-security / principal-sre
-        └─────────────────────────────────► workflow-incident-response
-```
-
-**3d · Growth ↔ analytics → scoped experiment** — separate the behavior
-hypothesis from metric/causal validity and from the PM's scope decision.
-
-```
- product + customer + support signals
-                    │
-                    ▼
-          principal-growth DIAGNOSE
-                    │ analytics request
-                    ▼
-       principal-data-analytics ──► metric contract / evidence status
-                    │
-                    ▼
-       principal-product-manager ──► accepted scope/design/engineering
-                    │
-                    ▼
-       principal-data-analytics READOUT
-                    │ preserves causal status
-                    ▼
-          principal-growth ──► Scale / Iterate / Hold / Stop / Investigate
-```
-
-**3e · Incident command → recovery** — one commander coordinates real domain
+**4 · Incident command → recovery** — one commander coordinates real domain
 leads; the operator performs every production action.
 
 ```
- support / telemetry / security report
+ telemetry / security report / degradation
                     │
                     ▼
       workflow-incident-response
       (declare · SEV · timeline · decisions)
         │               │                │
-        ├─► principal-sre                ├─► principal-security
-        └─► relevant SWE / QA            └─► operator action + unsent update
-                    │
+        ├─► eng-reviewer-reliability     ├─► eng-reviewer-security
+        └─► eng-builder-software / eng-reviewer-quality
+                    │                    └─► operator action + unsent update
                     ▼
        recovery evidence ──► resolved/closed + sanitized record
                     │
-                    └─► proposed persistent fixes through normal PM/ship flow
+                    └─► proposed persistent fixes through the normal delivery/ship flow
 ```
 
-**4 · Learning & content** — author, package, or steward a whole path.
+**5 · Creative direction & demo** — design and video judgment from supplied
+needs, plus bounded demo production from approved direction and existing media.
 
 ```
- course / cert / ──► workflow-course-to-audio ──► clean markdown ──► kai-core-generate-audio ──► narrated audio
- long web page        (wraps kai-core-web-content-extraction)               (explicit handoff — never auto)
+ approved need + positioning ──► creative-lead-design ──► UI/UX or brand-system critique
+                                     (revision-bound; no frontend implementation)
 
- chaptered ──► instructor-teacher ──┬─► generate-html-lesson ──► index.html  (English visual)
- markdown      (packages existing source)  └─► kai-core-generate-audio ──► MP3         (Spanish narration)
-
- a topic ──► instructor-tutor ──► original lesson written from scratch  (.kai/runs/lessons/)
-            (Explain-in-chat / Lesson / Series modes — any subject)
-
- a whole cert ──► instructor-path-mentor ──► .kai/personal/learning/<slug>.md  (plan · progress · review)
-                 (direct step teaching; requested local HTML/core extraction or audio)
+ supplied facts + media ──► creative-lead-video ──► direction · script · storyboard
+                                     │  approved direction + existing media
+                                     ▼
+                    workflow-creative-demo-production ──► assembled demo
+                                     (no capture, no invented direction, no publish)
 ```
 
-Learning owns these five teaching/career/extraction roles and its HTML method.
-HTML-only needs no audio runtime. Audio requires a separate request, consent
-and core runtime; planning a step does not prove learning completion.
-
-**5 · Writing & career (`.kai/personal/identity/`)** — assistant owns voice
-methods; learning owns IC-career judgment. They can use supplied preferences
-and career facts without installing one another.
-
-```
- chat history / ──► extract-writing-style ──► .kai/personal/identity/voice.md ──► persona-self ──► draft in your voice
- PR comments / samples                          (workspace profile)             (Draft / Rewrite / Reply)
-
- supplied career facts ──► principal-engineer-career-mentor ──► guidance / talking points
-                            (optional selected private career records; never auto-posts)
-```
-
-**6 · Specialized document review (incubated)** — the former multi-lens
-document-review surface is not available in shipped packs while its contracts
-are reviewed. Route required formal decisions to the active owner named by the
-work item; if no suitable reviewer is available, report the gap rather than
-claiming a review. The development sources remain in the
-[incubator inventory](../incubator/kai-engineering/README.md).
-The five retained engineering skills and their caller changes are
-task-reviewed source work. Final whole-branch review, publication, and
-updated-host runtime verification remain pending.
-
-**7 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read or hear.
+**6 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read or hear.
 
 ```
  a week of ──► workflow-weekly-pulse ──► pulse.md  ┬─ Page 1 Brief (narratable) ──► kai-core-generate-audio
  messages +    (binds message/doc/code     + brief.md │  Page 2 Board (tables + thread map)   (offer, never auto)
- docs + code    adapters via local config)            └─ Page 3 Career ──┬─► persona-self (draft the post)
-                (writes via kai-core-pulse-digest; read-only)                      └─► career-mentor (weigh promotion)
-```
-
-**8 · Personal assistance** (optional `kai-assistant` pack) — invoked directly
-when the work is *yours*: your tasks, your priorities, a briefing you asked for,
-a draft in your voice. It keeps your forward agenda (what needs you), the
-complement to the weekly pulse (what happened). It routes nothing and dispatches
-no one.
-
-```
- you ──► personal-assistant ──┬─► personal-agenda ──► .kai/personal/agenda.md
-         (selected workspace)  │   (your inbox; team signals only when you ask)
-                               ├─► decision-brief ──► private brief: options + evidence + gaps
-                               └─► write-in-user-voice ──► a draft, never sent
-                                        │  ranked "what needs you"
-                                        ▼
-                                   you decide the next move   (never auto)
-
- you ──► persona-self ──► write-in-user-voice   (long-form or high-stakes writing)
+ docs + code    adapters via local config)            └─ (writes via kai-core-pulse-digest; read-only)
 ```
 
 **Trigger rules of thumb:**
@@ -323,57 +199,30 @@ no one.
 | Situation | Who fires |
 |-----------|-----------|
 | Install the plugin into a fresh repo / re-assert structure | `workflow-workspace-init` (once) |
-| Start a new mission/vision initiative | `workflow-initiative-init`, then PM/steward approval |
+| Start a new mission/vision initiative | `workflow-initiative-init`, then steward approval |
 | Drive an item or initiative end to end / resume the team | `director-chief-of-staff` |
-| Net-new opportunity, "what should we build?" | `principal-product-strategist` |
-| Feedback/report to turn into decisions | `principal-product-manager` |
-| Customer onboarding, adoption, health, churn/renewal risk, success plan, or QBR | `principal-customer-success` |
-| Triage a support ticket/queue, deduplicate, assess urgency, or route an escalation | `workflow-support-triage` |
-| Diagnose acquisition/activation/retention or plan/read a bounded growth experiment | `principal-growth` |
-| Define metrics, analyze supplied data, design/read an experiment, or specify instrumentation | `principal-data-analytics` |
-| Independently check an experiment's integrity before its result drives a decision | `workflow-experiment-review` |
-| Set a pricing model, package/tier, plan a price change, discount policy, or monetization test | `principal-pricing-monetization` |
-| Synthesize surveys, NPS/CSAT, reviews, interviews, or feature requests into de-identified signals | `workflow-customer-feedback` |
-| Qualify a deal, plan discovery/deal strategy, handle an objection, review a forecast, or run win/loss | `principal-sales` |
-| Assess technical fit, integration feasibility, scope a POC, or draft a security/compliance questionnaire response | `principal-solutions-architect` |
-| Model SaaS metrics (MRR/ARR, churn, NRR, CAC/LTV), run a forecast, clean pipeline, or plan billing ops | `principal-revenue-operations` |
-| Plan a campaign, lifecycle/nurture emails, channel mix, or define MQL/SQL lead handoff | `principal-demand-generation` |
-| Assess a partner, design an integration/channel program, or frame a co-sell/co-marketing motion | `principal-partnerships` |
-| Structure or audit a README, write technical docs, or assess documentation readiness | `eng-lead-technical-writing` |
-| Design a data pipeline, warehouse model, data contract, or event-instrumentation spec | `principal-data-engineer` |
-| Design or critique an interaction, visual hierarchy, applied design system, or visual identity | `creative-lead-design` |
-| Audit i18n readiness, assess a locale, route translation, or QA a localized build | `workflow-localization` |
-| Threat model, security design/review, vulnerability triage, or technical privacy assessment | `principal-security` |
-| DPIA, data inventory, data-subject rights, retention/consent policy, or compliance-framework review | `principal-privacy-compliance` |
-| SLOs, reliability design, service readiness, capacity, observability, or operability review | `principal-sre` |
+| Large / parallel / multi-owner / deadline work | `director-chief-of-staff` |
+| Small or already-sequenced work | straight to the domain engineer(s) |
+| Investigate a bounded issue or option, or "what changed in AI, and does it matter to us?" | `eng-advisor-investigation` |
+| A decision spans components or services (boundaries, contracts, system NFRs) | `eng-lead-architecture` |
+| Turn a finding into a buildable change; build a feature, fix, refactor, or applied-AI slice with its tests | `eng-builder-software` |
+| Build CI/CD, IaC, containers, runtime config, or observability | `eng-builder-platform` |
+| Review an exact code change / diff / PR | `eng-reviewer-code` |
+| Verify a surface objectively across browser, API, CLI, or system | `eng-reviewer-quality` |
+| Threat model, security design/review, or vulnerability triage | `eng-reviewer-security` |
+| DPIA, data inventory, data-subject rights, retention/consent policy, or compliance-framework review | `eng-reviewer-privacy-compliance` |
+| SLOs, reliability design, service readiness, capacity, or observability review | `eng-reviewer-reliability` |
 | Active outage, degradation, security/data event, status update, recovery, or post-incident close | `workflow-incident-response` |
-| Understand a product + package positioning, personas, and assets for content | `principal-product-marketing` |
-| Turn product intelligence into credible LinkedIn posts | `principal-linkedin-strategist` |
+| Structure or audit a README, write technical docs, prep localization, or assess documentation readiness | `eng-lead-technical-writing` |
+| Design or critique an interaction, visual hierarchy, applied design system, or visual identity | `creative-lead-design` |
 | Turn approved facts and media evidence into proportional video direction, a script, storyboard, or demo screenplay | `creative-lead-video` |
 | Produce an authorized demo from approved direction and supplied media | `workflow-creative-demo-production` |
-| Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
-| "What's next on this initiative?" / groom + prioritize the board | `principal-product-manager` (as steward, via `kai-core-initiative-stewardship`) |
-| "What changed in AI, and does it matter to us?" | `principal-ai-researcher` |
-| Turn an AI finding into a buildable design | `principal-ai-applied-engineer` |
-| A decision spans FE+BE+infra, or services/repos | `principal-swe-architect` |
-| Large / parallel / multi-owner / deadline work | `principal-swe-manager` |
-| Small or already-sequenced work | straight to the domain engineer(s) |
-| Build a slice in one domain | `principal-swe-frontend` / `-backend` / `-infra` |
-| Verify a surface objectively / walk it as a customer | `principal-qa-ui` / `persona-ux-first-time-user` |
 | Open a PR for a finished change (branch, narrative, version, merge readiness) | `workflow-pull-request` |
 | Prepare a built slice / record deployment start / confirm production shipment | `workflow-ship` PREPARE / CONFIRM-START / CONFIRM-COMPLETE |
-| Audit SEO + agentic-search readiness | `principal-seo` |
-| Domain-expert audit of a fitness / nutrition product | `persona-professional-trainer` / `-nutritionist` |
-| Package existing markdown into HTML + audio lessons | `instructor-teacher` |
-| Author a brand-new lesson from a topic (any subject) | `instructor-tutor` |
-| Plan + track a whole certification/learning path | `instructor-path-mentor` |
-| Course / cert / long page → narrated audio | `workflow-course-to-audio` |
-| Start your day or ask "what needs me" | `personal-assistant` |
-| Package a decision you have to make into options + evidence + gaps | `personal-assistant` (via `decision-brief`) |
-| Capture a task or reminder | `personal-assistant` (→ `.kai/personal/inbox.md`) |
-| Draft a message/post/email in your voice | `personal-assistant`, or `persona-self` for long-form and high-stakes writing |
-| Career check-in, promotion path, or cert plan | `principal-engineer-career-mentor` |
+| Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
+| "What's next on this initiative?" / groom + prioritize the board | `director-chief-of-staff` (as steward, via `kai-core-initiative-stewardship`) |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |
+| Audit kai's own plugin surface (inventory, naming, references) | `workflow-self-check` |
 
 `director-chief-of-staff` owns orchestration only. Scope, technical judgment,
 implementation, review, and release approval remain with their named roles.

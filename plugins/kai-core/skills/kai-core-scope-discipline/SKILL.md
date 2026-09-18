@@ -16,8 +16,8 @@ The fix is a **division of labor across three roles**, not a filter
 smeared over everyone. The scope gate lands on the *decide* and *act*
 roles — never on the *assess* role.
 
-- **Assessors** (`persona-*` evaluators, `eng-reviewer-quality`,
-  `principal-seo`) — surface findings **honestly and unfiltered.** They
+- **Assessors** (`eng-reviewer-*` roles and any other evaluator) — surface
+  findings **honestly and unfiltered.** They
   are **not** gated by this contract. Biasing an assessor into
   pre-judging its own findings against scope muzzles the very signal it
   exists to produce. An assessor may *note* a scope implication, but

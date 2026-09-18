@@ -1,8 +1,8 @@
-[kai](../../../README.md) / [Docs](../../README.md) / [Reference](../agents-and-skills.md) / `kai-assistant`
+[kai](../../README.md) / [Docs](../../README.md) / [Reference](../../docs/reference/agents-and-skills.md) / `kai-assistant`
 
 # Package: `kai-assistant`
 
-Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../package-availability.md).
+Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../../docs/reference/package-availability.md).
 
 Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance
 over `kai-core` — **not** organization routing.
@@ -140,5 +140,5 @@ the contract this package is supposed to meet, not as evidence it does.
 
 ---
 
-**Next:** [Agents & skills](../agents-and-skills.md) ·
-[Plugin structure](../plugin-structure.md) · [How kai works](../../how-kai-works.md)
+**Next:** [Agents & skills](../../docs/reference/agents-and-skills.md) ·
+[Plugin structure](../../docs/reference/plugin-structure.md) · [How kai works](../../docs/how-kai-works.md)

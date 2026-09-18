@@ -32,21 +32,26 @@ root `AGENTS.md` never loads in a consumer workspace — see
 [Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
 for why the shared rules ship as a skill instead.
 
-Agent and skill files are edited only in their owning plugin. The eight owners
-are core, engineering, product, creative, marketing, revenue, assistant and
-learning, each prefixed `kai-`. Every current agent uses task-local contracts,
+Agent and skill files are edited only in their owning plugin. The three owners
+are `kai-core`, `kai-engineering` and `kai-creative`. Every current agent uses
+task-local contracts,
 not eager inheritance or a core-dependency guard. `npm run pack-preview -- --write`
 removes stale marked guards and refreshes derived files without replacing
 source bodies. Skill companions live beside `SKILL.md`; derived-file cleanup
 is restricted to manifests, locks, hooks and `scripts/`. Core also emits the
 canonical communication-style data file used by onboarding.
 
-Revenue has agents but no local skills, so its manifest omits `skills`.
-The other seven manifests declare both `agents` and `skills`. Core alone
+`incubator/` holds source that is deliberately inactive — five parked
+capability packages and the document-review components held out of
+`kai-engineering`. Nothing there is discovered, validated as a pack, emitted,
+catalogued, or installable, and no `incubator/` tree may carry a plugin or
+package manifest. See [`incubator/README.md`](../../incubator/README.md).
+
+All three manifests declare both `agents` and `skills`. Core alone
 owns `hooks.json` (host-discovered beside its manifest) and shared runtime
 utilities. Creative owns demo scripts and their module closure. Core and
 creative each declare pinned Lectoria for their own optional audio paths;
-the other six packages have no runtime npm dependencies.
+engineering has no runtime npm dependencies.
 
 ## Creating or refining an agent
 
@@ -103,9 +108,7 @@ New skills should:
   without inventing rules.
 
 The normal contribution path runs `npm test` — the dependency-free checks below,
-which also run in CI on every pull request. The approved eight-package source
-refactor defers policy/test/CI consolidation and runtime scenarios; its evidence
-is generation and raw source inspection, not a passing run of this table.
+which also run in CI on every pull request.
 
 | Command | Checks |
 | ------- | ------ |
@@ -146,16 +149,16 @@ skills themselves.
 
 ## Versioning & releases
 
-Default marketplace availability is separate from source ownership. Core,
-engineering and creative are the three default packages; assistant, product,
-marketing, revenue and learning remain pre-release/in-progress source at their
-existing paths and IDs. All eight stay in source validation and generation.
-See [Package availability](package-availability.md) for the promotion boundary
+Source ownership and marketplace availability are now the same thing. Core,
+engineering and creative are the three shipping packages; product, marketing,
+revenue, assistant and learning are incubated under `incubator/` and are
+excluded from discovery, validation, generation and the index.
+See [Package availability](package-availability.md) for the re-entry boundary
 and existing-host precautions.
 
-Pre-release is a readiness label, not a separate semver stream. The eight source
-manifests and locks still use the canonical prepared version together. A default
-listing never means core's outstanding validation or wiring issues are fixed.
+All three source manifests and locks use the canonical prepared version
+together. A marketplace listing never means core's outstanding validation or
+wiring issues are fixed.
 
 kai follows [semantic versioning](https://semver.org). Updates reach users via
 `copilot plugin update <pack>@kai-plugins` and a new session. Copilot loads the
@@ -174,14 +177,16 @@ changes stay exempt.
 | Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
 | Docs- or test-only | no bump (or patch) | no bump (or patch) |
 
-The current coordination foundation prepares `12.0.0`: `kai-core` ships an
-executable coordination runtime and workspace **schema 4** replaces schema 3 as
-the coordinated-write contract, so a schema-3 workspace becomes inspect-only
-until an explicit, separately authorized migration runs. That is a changed
-consumed contract, which takes the major under the post-1.0 column. The earlier
-engineering coding foundation prepared `8.0.0`: ten document-review
-skills and their dependent workflow leave the active runtime surface while
-their source remains in the incubator. The earlier eight-package integration
+The current change prepares `13.0.0`: incubating the five unfinished capability
+packages removes five package names from the shipped surface, which is a
+breaking inventory change under the post-1.0 column. The earlier coordination
+foundation prepared `12.0.0`, when `kai-core` gained an executable coordination
+runtime and workspace **schema 4** replaced schema 3 as the coordinated-write
+contract, so a schema-3 workspace becomes inspect-only until an explicit,
+separately authorized migration runs. The earlier engineering coding foundation
+prepared `8.0.0`: ten document-review
+skills and their dependent workflow left the active runtime surface while
+their source remained in the incubator. The earlier eight-package integration
 prepared `7.0.0`. Metadata does not mean the source is published or that
 runtime/release gates have passed.
 

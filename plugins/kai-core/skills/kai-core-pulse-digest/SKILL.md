@@ -306,8 +306,8 @@ Keep it small — a map, not a mural.>
 
 ## Page 3 — Career & Visibility   (only if career config is on)
 
-> Surfaces signal; does not draft. Drafting → `persona-self`. Rubric →
-> `principal-engineer-career-mentor`.
+> Surfaces signal; does not draft and does not judge. Drafting and promotion
+> judgment are the operator's.
 
 ### Post candidates
 

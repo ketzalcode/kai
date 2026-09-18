@@ -496,8 +496,8 @@ An acting agent invoked directly may claim and work its own item, but it still
 uses the same runtime routes, lease, handoff, and evidence rules.
 
 **Active-incident command exception.** Explicit operator invocation or an
-evidence-backed active-impact handoff from `workflow-support-triage`,
-`workflow-ship`, `eng-reviewer-security`, or `eng-reviewer-reliability` may
+evidence-backed active-impact handoff from `workflow-ship`,
+`eng-reviewer-security`, or `eng-reviewer-reliability` may
 create an incident-command `knowledge` item directly as `ready`, with
 `priority: 0`, `required_for_milestone: false`, `next_role:
 workflow-incident-response`, and a unique
