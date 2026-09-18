@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 22,
-    "skills": 38
+    "skills": 36
   },
   "agents": [
     "creative-lead-design",
@@ -39,7 +39,6 @@
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
     "kai-core-fleet-observation",
-    "kai-core-generate-audio",
     "kai-core-initiative-stewardship",
     "kai-core-issue-analysis",
     "kai-core-no-self-remediation",
@@ -64,7 +63,6 @@
     "pr-sizing",
     "research-before-coding",
     "video-align-narration",
-    "video-create-narration",
     "video-render-zoom"
   ],
   "user_invocable_skills": [
@@ -83,10 +81,6 @@
     {
       "name": "kai-core-fleet-observation",
       "argument_hint": ""
-    },
-    {
-      "name": "kai-core-generate-audio",
-      "argument_hint": "optional source path or single .md file"
     },
     {
       "name": "mockups-ascii",
@@ -110,10 +104,6 @@
     },
     {
       "name": "video-align-narration",
-      "argument_hint": ""
-    },
-    {
-      "name": "video-create-narration",
       "argument_hint": ""
     },
     {

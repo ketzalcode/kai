@@ -42,7 +42,7 @@ import {
   agentAuthoringReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   availabilityErrors, DISPATCHING_ROLES,
-  generatedKeyErrors, generatedPackageErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
+  generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
@@ -346,7 +346,6 @@ for (const agent of agentFiles) {
 const generatedPacks = materializePacks({ root: ROOT, version: '0.0.0-validate' });
 
 for (const e of generatedKeyErrors(generatedPacks)) err(e.file, e.msg);
-for (const e of generatedPackageErrors(generatedPacks, { root: ROOT })) err(e.file, e.msg);
 for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);
 
 // The contract version, pinned where it is stated: the probe skill's name and
@@ -965,11 +964,12 @@ if (existsSync(fixtureManifest)) {
 // are static, git-free checks so `npm test` runs them everywhere; the
 // "behavior change requires a bump" gate lives in scripts/release-guard.mjs.
 // ---------------------------------------------------------------------------
-const SANCTIONED_GIT_DEPS = new Map([
-  // name -> the repository identity its lockfile `resolved` URL must contain, so
-  // a dep merely *named* lectoria pointing at another repo is still rejected.
-  ['lectoria', 'github.com/RubenSaucedo/lectoria'],
-]);
+// The repository declares no git dependencies, and none is sanctioned. A git
+// dependency is unreproducible without a pinned SHA and unresolvable for a
+// consumer regardless, since the host never installs anything. An entry here
+// would name the exact repository a given dependency must resolve from; the map
+// is deliberately empty, so any git dependency is rejected outright.
+const SANCTIONED_GIT_DEPS = new Map();
 
 (() => {
   const readJSON = (p, label) => {

@@ -142,7 +142,7 @@ const CATEGORIES = [
     blurb: 'Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.',
     members: [
       'mockups-ascii', 'mockups-html', 'html-block-diagrams',
-      'video-create-narration', 'video-align-narration', 'video-render-zoom',
+      'video-align-narration', 'video-render-zoom',
     ],
   },
   {
@@ -153,12 +153,6 @@ const CATEGORIES = [
       'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'kai-core-content-grounding',
       'kai-core-pulse-digest',
     ],
-  },
-  {
-    kind: 'skill',
-    title: 'Shared audio',
-    blurb: 'Core\'s separately confirmed audio utility. Producing audio proves nothing about the source document it was read from.',
-    members: ['kai-core-generate-audio'],
   },
   {
     kind: 'skill',

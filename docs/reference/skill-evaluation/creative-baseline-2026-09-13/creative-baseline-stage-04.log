@@ -1,0 +1,11 @@
+✓ release-guard self-test: docs/test-only change is exempt
+✓ release-guard self-test: behavior change without a bump fails
+✓ release-guard self-test: behavior change bumped + changelog + readme passes
+✓ release-guard self-test: behavior change bumped but missing CHANGELOG fails
+✓ release-guard self-test: behavior change bumped but missing README stamp fails
+✓ release-guard self-test: a lockfile-only (dependency) change is behavior-sensitive
+✓ release-guard self-test: a committed pack-tree change is behavior-sensitive
+✓ release-guard self-test: a marketplace publication change is behavior-sensitive
+✓ release-guard self-test: a bumped + release-noted pack-tree change passes
+✓ release-guard self-test: a version downgrade on a behavior change fails
+✓ release-guard self-test: path classification correct

@@ -31,11 +31,9 @@
 // a lie about how fast the product is. Those are script defects, and the fix is a
 // shorter line or a wider span -- both of which this tool computes for you.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
-import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parseScreenplay, parseTake } from './demo-capture.mjs';
 
@@ -49,8 +47,7 @@ const MIN_GAP = 0.25;
 
 // 130 words per minute is the middle of the range measured for explainer
 // narration. It is used only to turn "this line is 1.8 seconds too long" into
-// "cut about four words", which is the form an author can act on, and for a
-// pre-synthesis estimate that is clearly labelled as one.
+// "cut about four words", which is the form an author can act on.
 const WORDS_PER_SECOND = 130 / 60;
 
 function fail(message) {
@@ -77,7 +74,7 @@ export function textHash(text) {
   return createHash('sha256').update(text.trim(), 'utf8').digest('hex').slice(0, 16);
 }
 
-export function wordCount(text) {
+function wordCount(text) {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
@@ -296,156 +293,6 @@ export function buildMixArgs(plan, { video, out }) {
   ];
 }
 
-// -------------------------------------------------------------- lectoria seam
-
-// kai's scripts import nothing outside Node's standard library, which is why CI
-// needs no install step. `lectoria` carries sixteen runtime dependencies,
-// including a PDF parser and a DOM implementation, and none of them belong in a
-// script that only needs a duration back. So it is treated as an external tool
-// and shelled out to, exactly as ffmpeg is.
-//
-// kai-creative pins a prebuilt Lectoria release, so `npm ci --prefix <root>`
-// puts it at `node_modules/.bin/lectoria`. Looking only on PATH would report
-// it absent on precisely the machines where it is correctly installed.
-export function findLectoria(env = process.env, probe = defaultProbe, exists = existsSync) {
-  const explicit = env.LECTORIA_BIN;
-  if (explicit) return { path: explicit, source: 'LECTORIA_BIN' };
-
-  for (const name of process.platform === 'win32' ? ['lectoria.cmd', 'lectoria.ps1', 'lectoria'] : ['lectoria']) {
-    const local = join(PLUGIN_ROOT, 'node_modules', '.bin', name);
-    if (exists(local)) return { path: local, source: 'node_modules/.bin' };
-  }
-
-  return probe('lectoria') ? { path: 'lectoria', source: 'PATH' } : null;
-}
-
-// Every place that has to say lectoria is missing says the same thing, and says
-// what was checked -- a bare "not found" sends people looking in the wrong place.
-export const LECTORIA_MISSING = [
-  'lectoria was not found, so narration cannot be synthesised. Checked LECTORIA_BIN,',
-  "this kai-creative plugin's node_modules/.bin, and PATH.",
-  `Run \`npm ci --prefix "${PLUGIN_ROOT}"\` to install the dependency pinned by this pack,`,
-  'or set LECTORIA_BIN to its executable. Plugin updates may replace node_modules, so rerun',
-  'npm ci when the local executable is absent. Lectoria needs Node ^22.22.2 || ^24.15.0 || >=26.0.0,',
-  'so a version error can look like an install problem.',
-  'Nothing was recorded as narrated.',
-].join(' ');
-
-function defaultProbe(name) {
-  const finder = process.platform === 'win32' ? 'where' : 'which';
-  const r = spawnSync(finder, [name], { encoding: 'utf8' });
-  return r.status === 0;
-}
-
-// A projection, not a measurement, and labelled as one everywhere it surfaces.
-// Its only job is to let a person see the size and cost of a synthesis run
-// before authorising a paid call.
-export function estimate(screenplay) {
-  const beats = screenplay.narration ?? [];
-  const rows = beats.map((beat) => ({
-    beat: beat.id,
-    words: wordCount(beat.text),
-    characters: beat.text.trim().length,
-    projectedSec: round(wordCount(beat.text) / WORDS_PER_SECOND),
-  }));
-  return {
-    estimated: true,
-    beats: rows,
-    totalCharacters: rows.reduce((a, r) => a + r.characters, 0),
-    totalProjectedSec: round(rows.reduce((a, r) => a + r.projectedSec, 0)),
-  };
-}
-
-// One paid call per beat, each one measured. Failure is recorded as a failed
-// clip rather than retried: a retry of a paid request nobody asked for is a
-// charge nobody agreed to, and a partial take must be visibly partial.
-export function synthesize(screenplay, { outDir, voice, run = runLectoria }) {
-  const beats = screenplay.narration ?? [];
-  if (beats.length === 0) fail('this screenplay has no narration beats to synthesise');
-  mkdirSync(outDir, { recursive: true });
-
-  const clips = [];
-  for (const beat of beats) {
-    const path = join(outDir, `${beat.id}.mp3`);
-    const textFile = join(outDir, `${beat.id}.txt`);
-    writeFileSync(textFile, beat.text, 'utf8');
-    const result = run({ textFile, out: path, voice: beat.voice || voice });
-
-    // A machine with no Azure configuration will fail identically on every
-    // beat, so continuing produces a wall of the same message and buries the
-    // one fact that matters. Nothing has been billed either, so there is
-    // nothing to preserve by finishing.
-    if (!result.ok && result.fatal) {
-      fail(`${result.reason}\nStopped before beat "${beat.id}". No further calls were attempted, and nothing was billed.`);
-    }
-    if (!result.ok) {
-      clips.push({ beat: beat.id, status: 'failed', reason: result.reason, text_sha256: textHash(beat.text) });
-      continue;
-    }
-    clips.push({
-      beat: beat.id,
-      status: 'ok',
-      path,
-      durationSec: result.durationSec,
-      characters: result.characters ?? beat.text.trim().length,
-      text_sha256: textHash(beat.text),
-    });
-  }
-
-  return { schema: TAKE_SCHEMA, provider: 'lectoria', voice: voice ?? null, region: null, clips };
-}
-
-function runLectoria({ textFile, out, voice }) {
-  const found = findLectoria();
-  if (!found) {
-    fail(LECTORIA_MISSING);
-  }
-  const args = ['speak', '--text-file', textFile, '--out', out, '--json'];
-  if (voice) args.push('--voice', voice);
-  const r = spawnSync(found.path, args, { encoding: 'utf8', shell: process.platform === 'win32' });
-  return readLectoriaResult(r);
-}
-
-// Reads what `lectoria speak --json` said. Kept separate from spawning so the
-// contract between the two tools can be tested without an Azure account.
-export function readLectoriaResult(r) {
-  let parsed = null;
-  try {
-    parsed = JSON.parse(r.stdout);
-  } catch {
-    parsed = null;
-  }
-
-  if (r.status !== 0) {
-    // lectoria prints a structured reason on stdout under --json. Prefer it:
-    // scraping the last line of stderr turns a multi-line explanation into a
-    // fragment, and cannot distinguish a machine that was never set up from a
-    // call that was attempted and failed.
-    if (parsed?.error?.reason) {
-      return {
-        ok: false,
-        reason: parsed.error.message,
-        // `not-configured` means nothing was attempted and nothing billed, so
-        // every remaining beat would fail the same way.
-        fatal: parsed.error.reason === 'not-configured',
-      };
-    }
-    return { ok: false, reason: (r.stderr || r.error?.message || `exit ${r.status}`).trim().split('\n').pop() };
-  }
-
-  if (!parsed) {
-    return { ok: false, reason: 'lectoria did not print the JSON measurement this expects; it may predate the `speak` subcommand (RubenSaucedo/lectoria#27)' };
-  }
-  // The whole point of this seam is that the duration is *measured*. lectoria
-  // reports a projection under a different key for exactly this reason, so a
-  // payload that is an estimate, or that carries no usable duration at all, is
-  // refused rather than placed as though somebody had heard it.
-  if (parsed.estimated === true || !Number.isFinite(Number(parsed.durationSec)) || Number(parsed.durationSec) <= 0) {
-    return { ok: false, reason: `lectoria returned no measured duration for this line${parsed.estimated === true ? ' (it returned an estimate, which must never be placed as a measurement)' : ''}` };
-  }
-  return { ok: true, durationSec: Number(parsed.durationSec), characters: parsed.characters };
-}
-
 // -------------------------------------------------------------------- reporting
 
 export function formatReport(plan) {
@@ -503,7 +350,7 @@ function selfTest() {
     ].map((s) => ({ ...s, ...(over.status?.[s.id] ? { status: over.status[s.id] } : {}) })),
   });
 
-  const narrTake = (clips) => JSON.stringify({ schema: TAKE_SCHEMA, provider: 'lectoria', clips });
+  const narrTake = (clips) => JSON.stringify({ schema: TAKE_SCHEMA, provider: 'external', clips });
 
   // --- the authoring rule: a beat may not carry numbers nobody can know yet
   for (const forbidden of ['start', 'end', 'seconds', 'duration', 'offset']) {
@@ -596,44 +443,6 @@ function selfTest() {
   ok(!args.includes('-shortest'), 'the output is not truncated to the shorter stream: placement already guarantees the narration fits inside measured steps, so -shortest could only ever cut the end off the demo');
   rejects(() => buildMixArgs({ ...good, ok: false }, { video: 'a', out: 'b' }), 'was rejected', 'a rejected plan cannot be mixed');
   rejects(() => buildMixArgs(good, { video: '-evil', out: 'b' }), 'read as an option', 'a filename that would be read as an option is refused');
-
-  // --- the optional-tool seam
-  ok(findLectoria({ LECTORIA_BIN: 'C:\\x\\lectoria.cmd' }, () => false, () => true).source === 'LECTORIA_BIN', 'an explicit LECTORIA_BIN wins over everything, so an uninstalled checkout can still be used');
-  ok(findLectoria({}, () => false, () => true).source === 'node_modules/.bin', 'the pinned dependency is found where npm actually puts it, which is not on PATH');
-  ok(findLectoria({}, () => true, () => false).source === 'PATH', 'a global install still answers when the pinned dependency is not installed');
-  ok(findLectoria({}, () => false, () => false) === null, 'a genuinely missing lectoria is reported as absent rather than assumed present');
-
-  // --- the contract with `lectoria speak --json`, pinned against real payloads
-  const measured = readLectoriaResult({ status: 0, stdout: JSON.stringify({ path: 'a.mp3', durationSec: 4.812, characters: 143, estimated: false }) });
-  ok(measured.ok && measured.durationSec === 4.812 && measured.characters === 143, 'a measured duration is read from lectoria\'s JSON');
-  ok(readLectoriaResult({ status: 0, stdout: JSON.stringify({ estimatedDurationSec: 3.3, estimated: true }) }).ok === false,
-    'an estimate is refused rather than placed as a measurement: lectoria reports a projection under a different key precisely so this cannot pass silently');
-  ok(readLectoriaResult({ status: 0, stdout: JSON.stringify({ path: 'a.mp3', durationSec: 0 }) }).ok === false,
-    'a zero duration is refused: it would place a beat that nobody can hear');
-  ok(readLectoriaResult({ status: 0, stdout: 'not json' }).ok === false, 'output that is not the expected JSON is refused rather than half-read');
-
-  const unconfigured = readLectoriaResult({ status: 2, stdout: JSON.stringify({ error: { reason: 'not-configured', message: 'AZURE_SPEECH_REGION is not set. Nothing was attempted and nothing was billed.' } }) });
-  ok(unconfigured.fatal === true, 'an unconfigured machine is fatal: every remaining beat would fail identically, and nothing has been billed to preserve');
-  ok(unconfigured.reason.includes('nothing was billed'), 'the whole structured message survives, rather than the last line of stderr');
-  ok(readLectoriaResult({ status: 3, stdout: JSON.stringify({ error: { reason: 'synthesis-failed', message: 'closed without an answer' } }) }).fatal === false,
-    'a failed call is not fatal: it may be transient, and the other beats are still worth attempting');
-  ok(readLectoriaResult({ status: 1, stdout: '', stderr: 'lectoria speak: something\nlast line' }).reason === 'last line',
-    'an older lectoria with no structured error still yields something, so the seam degrades rather than breaking');
-
-  const stopped = (() => {
-    try {
-      synthesize(sp, { outDir: mkdtempSync(join(tmpdir(), 'kai-narr-')), run: () => ({ ok: false, fatal: true, reason: 'not configured' }) });
-      return null;
-    } catch (e) { return e.message; }
-  })();
-  ok(stopped?.includes('No further calls were attempted'), 'synthesis stops at the first fatal failure instead of producing one identical failure per beat');
-  ok(findLectoria({}, () => true, () => true).source === 'node_modules/.bin', 'the pinned version wins over whatever is on PATH, so a demo is narrated by the version this plugin pins rather than a stray global');
-  ok(['LECTORIA_BIN', 'node_modules', 'PATH'].every((p) => LECTORIA_MISSING.includes(p)), 'the absence message names every place that was checked, because a bare "not found" sends people looking in the wrong one');
-
-  const est = estimate(sp);
-  ok(est.estimated === true, 'a pre-synthesis estimate is labelled an estimate everywhere it surfaces');
-  ok(est.totalCharacters === sp.narration.reduce((a, b) => a + b.text.trim().length, 0), 'the estimate counts the characters that would actually be billed');
-
   console.log(`\ndemo-narrate self-test: ${pass} checks passed${failed ? `, ${failed} FAILED` : ''}`);
   return failed === 0;
 }
@@ -642,14 +451,6 @@ function selfTest() {
 
 function usage() {
   console.log(`demo-narrate — place measured speech against a measured recording
-
-  --estimate   <screenplay.json>
-      What a synthesis run would cost and roughly how long it would speak.
-      Makes no paid call.
-
-  --synthesize <screenplay.json> --out <dir> [--voice <name>]
-      One paid call per beat, each measured, written to <dir>/demo_narration_take.json.
-      Requires lectoria on PATH or LECTORIA_BIN.
 
   --place      <screenplay.json> <take.json> <narration_take.json> [--out plan.json]
       Lay the beats against the measured recording, or refuse and say why.
@@ -667,28 +468,7 @@ function flag(argv, name, fallback = null) {
 
 function main(argv) {
   if (argv.includes('--self-test')) return selfTest() ? 0 : 1;
-  const positional = argv.filter((a, i) => !a.startsWith('-') && !argv[i - 1]?.startsWith('--out') && !argv[i - 1]?.startsWith('--voice') && !argv[i - 1]?.startsWith('--video'));
-
-  if (argv.includes('--estimate')) {
-    const sp = parseScreenplay(readFileSync(positional[0], 'utf8'));
-    const est = estimate(sp);
-    for (const row of est.beats) console.log(`  ${row.beat}  ${row.characters} chars, ~${row.projectedSec}s (estimated)`);
-    console.log(`\n${est.totalCharacters} characters across ${est.beats.length} beat(s), roughly ${est.totalProjectedSec}s of speech.`);
-    console.log('These are projections at 130 wpm, not measurements. Real durations come back from synthesis.');
-    return 0;
-  }
-
-  if (argv.includes('--synthesize')) {
-    const sp = parseScreenplay(readFileSync(positional[0], 'utf8'));
-    const outDir = flag(argv, '--out') ?? fail('--synthesize needs --out <dir>');
-    const take = synthesize(sp, { outDir, voice: flag(argv, '--voice') });
-    const path = join(outDir, 'demo_narration_take.json');
-    writeFileSync(path, JSON.stringify(take, null, 2));
-    const bad = take.clips.filter((c) => c.status !== 'ok');
-    console.log(`wrote ${path} (${take.clips.length - bad.length}/${take.clips.length} clips measured)`);
-    if (bad.length) console.log(`  ${bad.length} clip(s) failed and were recorded as failed, not retried: ${bad.map((c) => `${c.beat} (${c.reason})`).join(', ')}`);
-    return bad.length ? 1 : 0;
-  }
+  const positional = argv.filter((a, i) => !a.startsWith('-') && !argv[i - 1]?.startsWith('--out') && !argv[i - 1]?.startsWith('--video'));
 
   if (argv.includes('--place')) {
     const [screenplayPath, takePath, narrPath] = positional;

@@ -17,7 +17,6 @@ const finalCreativeSkills = [
   'mockups-ascii',
   'mockups-html',
   'video-align-narration',
-  'video-create-narration',
   'video-render-zoom',
 ];
 const inactiveCreativeSkills = [
@@ -224,13 +223,11 @@ const productionContract = {
     'kai-core-workspace-paths',
     'kai-core-work-acting',
     'kai-core-work-activity',
-    'video-create-narration',
     'video-align-narration',
     'video-render-zoom',
   ],
   allowedActiveCreativeRoutes: [
     'video-align-narration',
-    'video-create-narration',
     'video-render-zoom',
   ],
   bodyPatterns: [
@@ -247,9 +244,6 @@ const productionContract = {
     /word budget[\s\S]{0,120}forecast/i,
     /exit zero[\s\S]{0,100}INCOMPLETE/i,
     /does not establish[\s\S]{0,120}(visible|readable)/i,
-    /paid synthesis consent is separate/i,
-    /current helper-accepted screenplay with narration beats/i,
-    /for narration synthesis[\s\S]{0,160}approved text, voice\/language[\s\S]{0,160}paid-processing\/disclosure consent/i,
     /no external publication/i,
   ],
 };
@@ -266,7 +260,7 @@ assert.throws(
 
 assert.throws(
   () => assertContract(
-    withExtraRoute(video, 'Invoke `video-create-narration` when spoken copy needs production output.'),
+    withExtraRoute(video, 'Invoke `video-render-zoom` when spoken copy needs production output.'),
     videoContract,
   ),
   /creative-lead-video: active creative routes must stay within/,

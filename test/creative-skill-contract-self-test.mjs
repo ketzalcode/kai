@@ -8,7 +8,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ids = [
   'mockups-ascii',
   'mockups-html',
-  'video-create-narration',
   'video-align-narration',
   'video-render-zoom',
   'html-block-diagrams',
@@ -229,34 +228,6 @@ function assertMockupsHtml(skill) {
   assertConditionalCoreRoutes(id, skill);
 }
 
-function assertVideoCreateNarration(skill) {
-  const id = 'video-create-narration';
-  if (!skill) return;
-  assertDescription(id, skill, [
-    ['names narration', /\bnarration\b/i],
-    ['names estimate or synthesis', /\b(?:estimate|synthesi[sz])\w*\b/i],
-  ]);
-  for (const [label, pattern] of [
-    ['estimate and synthesis responsibility', /estimate.{0,100}synthesi[sz]/],
-    ['explicit operation trigger', /explicit.{0,80}(?:estimate|synthesi[sz])/],
-    ['silent or supplied-clip negative trigger', /silent.{0,100}(?:no|skip)|supplied.{0,80}clips?.{0,80}(?:no|skip|need)/],
-    ['helper-accepted screenplay input', /screenplay.{0,100}(?:accepted|validated).{0,80}(?:helper|demo-(?:narrate|format))/],
-    ['paid processing and disclosure consent', /(?:paid|charge).{0,120}(?:consent|authori[sz]).{0,120}(?:disclosure|external)|(?:disclosure|external).{0,120}(?:consent|authori[sz])/],
-    ['no automatic paid retry', /(?:no|never|do not).{0,50}(?:automatic(?:ally)? )?retry.{0,100}(?:new|fresh).{0,50}authori[sz]/],
-    ['estimate is not measurement', /estimate.{0,80}(?:not|isn.t|does not).{0,40}measure/],
-    ['estimate does not require product grounding', /estimation.{0,120}does not require factual grounding/],
-    ['claim grounding is synthesis-specific', /before synthesizing product.claim narration.{0,80}load `kai-core-content-grounding`/],
-    ['measured clip output', /demo_narration_take\.json.{0,100}measured|measured.{0,100}demo_narration_take\.json/],
-    ['visible partial failures', /(?:failed clips?|partial).{0,100}(?:report|visible|explicit)/],
-    ['actual paths reporting', /(?:actual|exact).{0,40}paths?/],
-    ['no automatic alignment', /(?:no|never|do not).{0,80}(?:automatic(?:ally)? )?(?:alignment|placement|mix)/],
-    ['script or story non-responsibility',
-      /(?:does not|not).{0,100}(?:own|write|rewrite).{0,80}(?:script|story)|(?:script|story).{0,80}(?:not|does not).{0,50}(?:own|write|rewrite)/],
-    ['placement and mixing non-responsibility',
-      /(?:does not|not).{0,100}(?:place|align|mix)|(?:placement|alignment|mixing).{0,80}(?:not|does not)/],
-  ]) expectMatch(id, skill.normalized, label, pattern);
-  assertProviderCommands(id, skill, 'demo-narrate.mjs', ['--estimate', '--synthesize']);
-}
 
 function assertVideoAlignNarration(skill) {
   const id = 'video-align-narration';
@@ -370,7 +341,6 @@ function assertHtmlBlockDiagrams(skill) {
 const contracts = {
   'mockups-ascii': assertMockupsAscii,
   'mockups-html': assertMockupsHtml,
-  'video-create-narration': assertVideoCreateNarration,
   'video-align-narration': assertVideoAlignNarration,
   'video-render-zoom': assertVideoRenderZoom,
   'html-block-diagrams': assertHtmlBlockDiagrams,
