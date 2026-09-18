@@ -387,12 +387,26 @@ function assertAsciiMotionSource(skill) {
     ['licence recorded for supplied media too', /every clip carries licence and origin/],
     ['an unrecorded licence blocks rather than guesses',
       /unrecorded licence blocks.{0,80}(?:does not become a guess|not.{0,30}guess)/],
+    ['a still bounds the motion to small amplitude',
+      /small-amplitude motion is therefore the whole envelope/],
+    ['articulated locomotion is refused by name',
+      /articulated locomotion is refused by name/],
+    ['derived frames are not captured frames',
+      /derived from one supplied still by declared\s+transforms, not captured/],
+    ['envelope mouth motion is not lip sync',
+      /speech-shaped, not\s+speech-derived/],
     ['missing tools reported, never installed',
       /(?:do not|never) install tools/],
     ['producing is not review or publication', /not review and not publication/],
   ]) expectMatch(id, skill.normalized, label, pattern);
   assertConditionalCoreRoutes(id, skill);
-  assertProviderCommands(id, skill, 'ascii-motion.mjs', ['--probe', '--explain', '--template']);
+  assertProviderCommands(id, skill, 'ascii-motion.mjs', [
+    '--probe',
+    '--explain',
+    '--template',
+    '--sprite',
+    '--animate',
+  ]);
 }
 
 function assertAsciiMotionRender(skill) {
@@ -412,6 +426,10 @@ function assertAsciiMotionRender(skill) {
       /still that looks right is not evidence that the motion does/],
     ['bundle grid disagreement is rejected, not resized',
       /disagreement is rejected, not resized/],
+    ['colour mode is part of the bundle agreement',
+      /colour clip and a mono clip in one bundle are\s+rejected/],
+    ['a colour clip trades selectable text for a canvas',
+      /paints a canvas instead of\s+selectable text/],
     ['export-only backend reports unsupported rather than an empty bundle',
       /unsupported.{0,120}rather than emitting an empty bundle/],
     ['printed command is not a render', /printed command is not a render/],

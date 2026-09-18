@@ -31,7 +31,15 @@ frames, flicker on loop, and quantisation crawl. A still that looks right is
 not evidence that the motion does.
 
 Clips in one bundle share one grid, palette and fps. A disagreement is
-rejected, not resized, because a mixed grid snaps visibly on switch.
+rejected, not resized, because a mixed grid snaps visibly on switch. Colour
+mode is part of that agreement: a colour clip and a mono clip in one bundle are
+rejected for the same reason.
+
+A colour clip renders as rectangle fills and no font is involved, so the
+looping image and the browser agree by construction rather than by luck. The
+cost is honest and worth reporting: a colour clip paints a canvas instead of
+selectable text, so the copy-the-frame and screen-reader affordances a mono
+clip has are gone. Say which one the artifact is.
 
 A backend that can only export a finished file cannot supply the frames the web
 bundle needs. Report that format as unsupported for that backend rather than
