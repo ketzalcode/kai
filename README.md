@@ -44,9 +44,9 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v13.0.0` is this checkout's prepared metadata version. kai ships **three
+`v14.0.0` is this checkout's prepared metadata version. kai ships **three
 packages** — `kai-core`, `kai-engineering`, and `kai-creative` — supplying
-**22 agents and 38 skills**. The
+**22 agents and 36 skills**. The
 [agents & skills catalog](docs/reference/agents-and-skills.md) is exactly what
 they provide. Prepared metadata is not a tag, a release, a publication, or a
 host-verification claim.
@@ -319,13 +319,13 @@ with an adjacent idea deliberately routed to a proposal instead of being built.
 
 ## What it ships
 
-The repository ships 22 agents and 38 skills across three packages:
+The repository ships 22 agents and 36 skills across three packages:
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 6 / 27 | Shared contracts, workspace machinery, requested coordination |
+| `kai-core` | 6 / 26 | Shared contracts, workspace machinery, requested coordination |
 | `kai-engineering` | 13 / 5 | Standalone implementation, architecture, independent review and delivery |
-| `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets and supported media production |
+| `kai-creative` | 3 / 5 | UI/UX, visual identity, design assets and supported media production |
 
 These are source-ownership counts, not publication or runtime-quality evidence.
 Five further capability packages — product, marketing, revenue, assistant, and

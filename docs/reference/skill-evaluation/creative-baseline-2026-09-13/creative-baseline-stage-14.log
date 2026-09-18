@@ -1,0 +1,13 @@
+  ok the universal contract is planned into core, never into the pack
+file:///C:/src/kai/scripts/pack-preview.mjs:390
+  ok(!local.includes(CONTRACT_SKILL),
+            ^
+
+TypeError: Cannot read properties of undefined (reading 'includes')
+    at selfTest (file:///C:/src/kai/scripts/pack-preview.mjs:390:13)
+    at file:///C:/src/kai/scripts/pack-preview.mjs:1735:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0

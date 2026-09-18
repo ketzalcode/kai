@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "13.0.0",
+  "version": "14.0.0",
   "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; derived runtime files are refreshed by pack-preview.",
   "private": true,
   "scripts": {
@@ -48,8 +48,5 @@
   },
   "devDependencies": {
     "playwright": "^1.49.0"
-  },
-  "dependencies": {
-    "lectoria": "https://github.com/RubenSaucedo/lectoria/releases/download/v0.1.0/lectoria-0.1.0.tgz"
   }
 }

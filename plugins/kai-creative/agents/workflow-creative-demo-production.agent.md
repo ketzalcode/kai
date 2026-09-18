@@ -1,6 +1,6 @@
 ---
 name: workflow-creative-demo-production
-description: "Produces an authorized demo from supplied media and approved direction, using only requested narration, alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication."
+description: "Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication."
 model: "claude-sonnet-5"
 tools: ["execute", "read", "edit", "ask_user", "skill"]
 ---
@@ -30,11 +30,6 @@ Required inputs are proportional to the requested operation:
 - approved direction or screenplay;
 - existing source footage for any media operation;
 - output destination and replacement policy;
-- for narration estimates, a current helper-accepted screenplay with narration
-  beats;
-- for narration synthesis, that same current helper-accepted screenplay plus
-  approved text, voice/language, configured provider, and separate
-  paid-processing/disclosure consent;
 - for narration alignment, matching measured take, measured clips, screenplay,
   relevant visual-state evidence, and compatible final video for a real mix;
 - for zoom, an inspected focus plan or the supplied screenplay plus matching
@@ -74,7 +69,7 @@ outside plugin files.
 Restate supplied inputs, approved direction revision, requested deliverables,
 allowed paid operations, output paths, and operations that are intentionally
 omitted. Zoom and narration are optional. A silent demo skips narration; clear
-footage skips zoom; supplied usable clips skip synthesis.
+footage skips zoom.
 
 Do not turn production into a fixed capture → zoom → speech chain. There is no
 worker-per-stage dispatch, mandatory zoom, mandatory speech, or automatic
@@ -97,7 +92,7 @@ Preserve all known helper limitations:
   screenplay edits or rendered file bytes to the same exact revision;
 - captions are declared, not inspected for presence, accuracy, or readability;
 - the word budget is a forecast, not measured speech fit, and can fail policy
-  before synthesis;
+  before narration is supplied;
 - exit zero can accompany `INCOMPLETE` because `ok` means no known failures,
   not that all checks ran;
 - duration, size, framing, and arrival need their named evidence;
@@ -106,18 +101,13 @@ Preserve all known helper limitations:
 
 ### 3. Run only authorized media operations
 
-Invoke `video-create-narration` only for an explicit estimate or synthesis
-request. Estimates need the current helper-accepted screenplay with narration
-beats. Synthesis adds approved text, voice/language, a configured provider, and
-separate paid synthesis consent; paid synthesis consent is separate from
-approval of the script or workflow. Never retry a paid call automatically.
 Report measured clips, failures, and partial output; estimates are not
 measurements.
 
 Invoke `video-align-narration` only for an explicit fit, placement, command, or
 mix request with matching measured inputs. Inspect relevant interior states and
 visibility evidence; action times alone do not prove state visibility. Missing
-clips do not authorize synthesis. A printed command is not an executed mix.
+clips are a named gap, not something to generate. A printed command is not an executed mix.
 
 Invoke `video-render-zoom` only for an explicit focus operation or evidenced
 legibility need on existing footage. Supplied intent chooses emphasis; measured
@@ -162,11 +152,10 @@ distribution authority.
 Demo production: <scope>
 Direction: <approved revision>
 Inputs: <supplied media/take/clips and gaps>
-Operations: <format | narration create | align/mix | zoom; run/skipped>
+Operations: <format | align/mix | zoom; run/skipped>
 Deliverables: <exact paths and existence>
 Format: <exact helper status, checks run/skipped, warnings/failures>
 Inspection: <performed and not performed>
-Consent: <paid synthesis authorized/not used/not authorized>
 Review: <independent status or pending>
 Publication: not performed
 ```

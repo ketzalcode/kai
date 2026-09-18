@@ -1,0 +1,53 @@
+  ok an unknown placement is refused rather than defaulted, because a default would silently apply somebody else's caps
+  ok a declared placement survives parsing, and max_seconds stays absent unless declared
+  ok an unrecognised intends_to_show is refused rather than ignored
+  ok the profiles here cover exactly the placement names the schema accepts, so policy and schema cannot drift apart
+  ok a screenplay with no placement is refused rather than checked against a guess
+  ok runtime is never taken from the take: the take ends at the last thing that happened, not at the last frame
+  ok runtime comes from the rendered file
+  ok a render that keeps playing long after the last recorded step is caught — our own shipped demo has 12.8s of it and nothing could see it
+  ok a render shorter than the recorded action fails: the end of the demo is missing
+  ok tail needs both the take and the render, and says so rather than guessing
+  ok with no take and no render the verdict is INCOMPLETE, not a pass with warnings
+  ok the absence of failures is not the same as passing, and the two are reported separately
+  ok an incomplete run says plainly that it did not establish anything
+  ok a demo that never declares its payoff stays INCOMPLETE even with every file present: the most important editorial property is unanswerable until somebody marks it
+  ok a run with every input reports how many checks ran and passes on its own terms
+  ok a pass states its own scope, so it cannot be read as an endorsement
+  ok a demo inside its target passes
+  ok over target is a warning
+  ok even past the editorial cap it is only a warning: the cap is a product default, not a platform fact
+  ok a limit somebody actually declared does fail — that is the difference between a promise and a default
+  ok the cap warning carries its own provenance, so nobody mistakes a default for a finding
+  ok a README demo over 10 MB fails: GitHub Free refuses the upload outright
+  ok the size failure says it is a hard limit, not a preference
+  ok close to the limit warns, because the next take would not fit
+  ok our real 50s render at 3.32 MB passes
+  ok a placement with no published limit is not applicable rather than skipped: nothing is missing, there is simply no limit
+  ok the byte limit carries the date it was observed, because platform limits change
+  ok a screenplay and a take from different revisions are caught before any number derived from them is reported
+  ok a take containing a failed or unsettled step fails: that is not a demo of the product working
+  ok a matching, clean take passes provenance
+  ok arrival is skipped when no step claims to be the payoff: guessing which one it is would be inventing intent
+  ok a payoff on screen a fifth of the way in passes
+  ok even passing, arrival refuses to claim the result was readable or unobscured — it only knows when the step began
+  ok a payoff held to the end is a warning, not a failure: the threshold is editorial and a director may have a reason
+  ok arrival needs the render, because the percentage is of the finished runtime and not of the take
+  ok a script far beyond its slot is caught before a single paid call
+  ok the pre-synthesis failure defers to the measured check rather than claiming to be it
+  ok just over budget is a warning, because a pace estimate is not accurate enough to fail on
+  ok a passing budget says what it cannot see: an aggregate hides a single line that will not fit its own span
+  ok a denser pace can be declared and is named in the result
+  ok a silent demo has nothing to budget: that is not applicable, not missing evidence, or every silent demo would be permanently INCOMPLETE
+  ok the budget is measured against the declared runtime when there is one, not against the placement default
+  ok a README demo is not judged on muted autoplay, because it does not autoplay muted
+  ok a narrated teaser with no captions fails: it autoplays muted, so most viewers get a silent film of the parts chosen for explanation
+  ok declaring captions clears it
+  ok an unnarrated teaser is warned rather than failed: it may genuinely carry itself visually
+  ok our real render size passes framing
+  ok framing says only that the frame is big, never that the text in it is readable once embedded
+  ok a portrait render warns: a vertical demo must be composed, not cropped from a desktop capture
+  ok an odd dimension fails, because h264 cannot encode it in yuv420p
+  ok framing is skipped without a render rather than assumed from the capture region
+
+demo-format self-test: 51 checks passed

@@ -1,0 +1,19 @@
+✓ gate partition: clean
+✓ gate collision: clean
+✓ gate partial-install: clean
+file:///C:/src/kai/scripts/pack-preview.mjs:142
+  if (agentIds.length) manifest.agents = 'agents';
+               ^
+
+TypeError: Cannot read properties of undefined (reading 'length')
+    at writePlugin (file:///C:/src/kai/scripts/pack-preview.mjs:142:16)
+    at buildAll (file:///C:/src/kai/scripts/pack-preview.mjs:177:5)
+    at arm (file:///C:/src/kai/scripts/pack-preview.mjs:1683:7)
+    at gateSkew (file:///C:/src/kai/scripts/pack-preview.mjs:1686:19)
+    at runGates (file:///C:/src/kai/scripts/pack-preview.mjs:1719:33)
+    at file:///C:/src/kai/scripts/pack-preview.mjs:1737:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0

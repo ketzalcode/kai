@@ -71,7 +71,6 @@ Entry points today:
 | core | `workspace-doctor.mjs` | skill instruction |
 | core | `observe-subagent.mjs` | **host hook** (`hooks.json`) |
 | core | `observe-watch.mjs` | user/service |
-| core | `generate-audio.ps1` | skill instruction |
 | creative | `demo-format.mjs` | skill instruction |
 | creative | `demo-narrate.mjs` | skill instruction |
 | creative | `demo-zoom.mjs` | skill instruction |
@@ -170,7 +169,7 @@ Shipping becomes declared. Each pack names its entry points in one place:
 ```js
 export const PACK_ENTRY_POINTS = {
   core: ['coordinate', 'activity', 'workspace-doctor',
-         'observe-subagent', 'observe-watch', 'generate-audio'],
+         'observe-subagent', 'observe-watch'],
   creative: ['demo-format', 'demo-narrate', 'demo-zoom'],
   engineering: [],
 };
@@ -219,8 +218,9 @@ Build configuration:
 - Self-test blocks are eliminated by a build-time define plus dead-code
   elimination. Tests continue to run against `src/`, not against the bundle.
 
-Expected result: **56 shipped files → 9** (8 bundles plus `generate-audio.ps1`,
-which is PowerShell and is copied, not bundled).
+Expected result: **55 shipped files → 8**, one bundle per entry point. Every
+entry point is now Node ESM; the one PowerShell script was removed with audio
+in 14.0.0.
 
 #### The test that would have caught the lectoria bug
 
@@ -237,30 +237,40 @@ This adds `esbuild` as a devDependency and gives CI an install step. The
 repository's current "dependency-free, no install in CI" property is spent here.
 That was weighed and accepted: the property is worth less than a shipped
 artifact a consumer can actually run. Shipped **product** code remains
-dependency-free after Phase 3.
+dependency-free: 14.0.0 removed the last runtime dependency, and a gate now rejects any bare import in shipped code.
 
-### 3. Audio
+### 3. Audio — **done, by deletion (14.0.0)**
 
-1. In `RubenSaucedo/lectoria`, move `DEFAULT_PRICING` and `pricingLastVerified`
-   out of `estimate.js` into a leaf module. `speak.js` imports only those two
-   constants, and that single import drags in the PDF parser and the entire DOM
-   implementation — it is the difference between a 16.5 MB and a sub-1 MB
-   `speak` bundle.
-2. Bundle the `speak` slice into `kai-creative` (~861 KB measured, under 1 MB
-   after step 1). `demo-narrate.mjs` invokes it instead of spawning a binary.
-   `readLectoriaResult()` and the JSON-on-stdout contract stay unchanged.
-3. `lectoria run` — the full document-to-podcast pipeline behind
-   `generate-audio.ps1` — becomes user-installed via `LECTORIA_BIN` or PATH. The
-   existing resolver already supports both. An 18 MB pipeline requiring an Azure
-   OpenAI deployment does not belong on every consumer's disk.
-4. Delete `PACK_RUNTIME_DEPENDENCIES`, `RUNTIME_ARTIFACTS`,
-   `runtimeDependencyMatrix()`, both per-pack `package.json` and
-   `package-lock.json`, the `runtime-dependencies` CI job, and every
-   `npm ci --prefix` instruction in shipped prose and docs.
-5. Document the Azure requirement as a prerequisite rather than a failure mode.
+This phase was superseded before implementation. Rather than bundle the `speak`
+slice, the audio and narration-synthesis capability was removed outright in
+`14.0.0`, and with it the npm dependency machinery this phase existed to fix.
 
-Side benefit: dropping jsdom from the shipped path removes the transitive
-constraint that forces kai's narrow `engines` range.
+The reasoning: the dependency's heaviest consumer was `kai-learning`, incubated
+in `13.0.0`. What remained was a feature that could not run on any consumer
+machine — because the host never installs it — serving a package that no longer
+ships. Bundling would have spent ~1 MB and a build dependency to make a
+credential-gated Azure feature reachable for a capability nobody had.
+
+What was removed: `kai-core-generate-audio`, `generate-audio.ps1`,
+`video-create-narration`, the synthesis and estimate paths in
+`demo-narrate.mjs`, `PACK_RUNTIME_DEPENDENCIES`, `RUNTIME_ARTIFACTS`,
+`runtimeDependencyMatrix()`, `packPackageMetadata()`,
+`generatedPackageErrors()`, every per-pack `package.json`/`package-lock.json`,
+the `runtime-dependencies` CI job, and the root dependency.
+
+What survives: `video-align-narration` and `demo-narrate.mjs --place`/`--mix`.
+Narration you supply is still placed and mixed with ffmpeg; kai no longer
+generates speech.
+
+The `lectoria` bundling research in this document is retained as evidence —
+it established that the host accepts built artifacts, which Phase 2 still
+depends on, and it is what made the cost of *keeping* audio legible enough to
+decide against.
+
+**Consequence for Phase 2:** shipped code now declares no runtime dependency at
+all, and `generatedRuntimeErrors()` rejects any bare import outright. The build
+step therefore has no dependency-resolution problem to solve — only bundling
+kai's own modules.
 
 ### 4. Platform
 
@@ -322,27 +332,24 @@ prose-referenced undeclared script fails validation; `npm test` green.
 - Add the consumer-install simulation test.
 - CI verifies the committed bundle matches a fresh build.
 
-**Accepted when:** shipped executable count drops from 56 to 9; every entry
+**Accepted when:** shipped executable count drops from 55 to 8; every entry
 point runs from a copied directory with no `node_modules`; `hooks.json` is
 unchanged; a mutation test proves committed-bundle drift fails CI.
 
-### Phase 3 — Audio
+### Phase 3 — Audio ✅ **superseded and closed in 14.0.0**
 
-- Leaf-module refactor in `lectoria`; bundle the `speak` slice.
-- `run` becomes user-installed.
-- Delete the npm dependency machinery end to end.
+Removed rather than bundled. See §3 above.
 
-**Accepted when:** no pack ships `package.json` or `package-lock.json`; no
-shipped prose or doc instructs `npm ci --prefix`; `demo-narrate.mjs` narrates
-from the bundle with credentials present, and emits an honest, actionable
-credential error without them.
+**Accepted when:** ~~bundle~~ — no pack ships `package.json` or
+`package-lock.json`; no shipped prose instructs `npm ci --prefix`; no shipped
+code imports a bare module. **Met in 14.0.0.**
 
 ## Risks
 
 | Risk | Mitigation |
 | --- | --- |
 | Bundling obscures stack traces from consumer machines | Ship sourcemaps; skip minification if it proves a problem in practice |
-| esbuild in CI weakens the no-install property | Accepted deliberately; product code stays dependency-free after Phase 3 |
+| esbuild in CI weakens the no-install property | Accepted deliberately; 14.0.0 removed the last runtime dependency, and a gate now rejects any bare import in shipped code |
 | Bundled `lectoria run` unverified against real PDFs | Out of scope — `run` stays user-installed precisely so this is never on the shipped path |
 | A large restructure lands on a just-green repository | Phase 0 and 1 carry no bundler; each phase is separately revertible |
 | `path.win32` rules reject a manifest that works today | Only affects drive- and root-relative forms, which are already rejected on Windows; no valid POSIX path becomes invalid |

@@ -85,8 +85,6 @@ for (const name of incubated) {
     `${name}: nothing from an incubated package is emitted into a generated pack`);
   assert.ok(!mkt.plugins.some(entry => entry.name === name),
     `${name}: an incubated package has no marketplace entry`);
-  assert.ok(!packPlan.PACK_RUNTIME_DEPENDENCIES[pack],
-    `${name}: an incubated package declares no runtime-dependency plan`);
 }
 
 // The ids still have to be *recognisable*, or a stale reference to an incubated
@@ -102,11 +100,17 @@ assert.ok(incubatedPackageDirs(root).includes('kai-engineering'),
   'component-level incubation under an active package still resolves');
 
 // --- validation surfaces follow the active partition ------------------------
-assert.deepEqual(
-  packPlan.runtimeDependencyMatrix().map(entry => entry.name).sort(),
-  [...published].sort(),
-  'the CI runtime matrix covers the shipping packages and nothing incubated',
-);
+// No pack ships an npm manifest: the host never installs, so a declared
+// dependency could only resolve where someone manually ran `npm ci` into the
+// install directory, which the next update overwrites.
+for (const name of published) {
+  for (const manifest of ['package.json', 'package-lock.json']) {
+    assert.ok(!emitted.has(`${name}/${manifest}`),
+      `${name}: a shipping pack emits no ${manifest}`);
+    assert.ok(!existsSync(join(root, 'plugins', name, manifest)),
+      `${name}: a shipping pack carries no committed ${manifest}`);
+  }
+}
 const rollback = packPlan.marketplaceSurfacePolicy({
   mkt: { ...mkt, metadata: { ...mkt.metadata, installSurface: 'legacy-rollback' } },
   canonicalVersion, monolithName: 'kai',

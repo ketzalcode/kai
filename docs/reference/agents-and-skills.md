@@ -7,9 +7,9 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-The repository ships **22 agents** and **38 skills**.
+The repository ships **22 agents** and **36 skills**.
 
-The default marketplace supplies **22 agents** and **38 skills** through core, engineering, and creative (13 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **22 agents** and **36 skills** through core, engineering, and creative (11 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -86,7 +86,7 @@ Design and video judgment from supplied needs and evidence, plus bounded demo pr
 | ---- | ------- | ------------ |
 | [`creative-lead-design`](../../plugins/kai-creative/agents/creative-lead-design.agent.md) | `kai-creative` | Designs or critiques product interactions, visual hierarchy, applied design systems, and visual identity from approved needs and positioning. Use for UI, UX, brand-system, or revision-bound design review. Not product priority, positioning, frontend implementation, or unilateral brand adoption. |
 | [`creative-lead-video`](../../plugins/kai-creative/agents/creative-lead-video.agent.md) | `kai-creative` | Directs a video's audience, message, narrative, scenes, shots, script, or demo screenplay from supplied facts and media evidence. Use for proportional video direction or critique. Not recording, rendering, synthesis, mixing, or publication. |
-| [`workflow-creative-demo-production`](../../plugins/kai-creative/agents/workflow-creative-demo-production.agent.md) | `kai-creative` | Produces an authorized demo from supplied media and approved direction, using only requested narration, alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication. |
+| [`workflow-creative-demo-production`](../../plugins/kai-creative/agents/workflow-creative-demo-production.agent.md) | `kai-creative` | Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication. |
 
 ### Implementation & system review
 
@@ -103,7 +103,7 @@ Core-owned weekly synthesis and explicitly requested signal scans.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | `kai-core` | Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, mutating sources, or auto-running audio. |
+| [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | `kai-core` | Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, or mutating sources. |
 | [`workflow-proactive-scan`](../../plugins/kai-core/agents/workflow-proactive-scan.agent.md) | `kai-core` | Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys. |
 
 ## Skills
@@ -181,7 +181,6 @@ Structural and visual mockups, block diagrams, measured narration operations, an
 | [`mockups-ascii`](../../plugins/kai-creative/skills/mockups-ascii/SKILL.md) | `kai-creative` | Use when an ASCII wireframe is requested, or an unresolved layout, placement, grouping, or information-hierarchy decision needs a structural sketch. |
 | [`mockups-html`](../../plugins/kai-creative/skills/mockups-html/SKILL.md) | `kai-creative` | Use when an HTML mock is requested, or a UI choice depends on visual hierarchy, component appearance, or responsive layout. |
 | [`html-block-diagrams`](../../plugins/kai-creative/skills/html-block-diagrams/SKILL.md) | `kai-creative` | Use when a structural block diagram is requested for an HTML or image destination, or an established relationship would be materially clearer in that form. |
-| [`video-create-narration`](../../plugins/kai-creative/skills/video-create-narration/SKILL.md) | `kai-creative` | Use when a narration estimate or approved speech synthesis is requested for a supplied demo screenplay. |
 | [`video-align-narration`](../../plugins/kai-creative/skills/video-align-narration/SKILL.md) | `kai-creative` | Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo. |
 | [`video-render-zoom`](../../plugins/kai-creative/skills/video-render-zoom/SKILL.md) | `kai-creative` | Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment. |
 
@@ -195,14 +194,6 @@ Browser-run plumbing, content methods, and shared claim safety.
 | [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | `kai-core` | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
 | [`kai-core-content-grounding`](../../plugins/kai-core/skills/kai-core-content-grounding/SKILL.md) | `kai-core` | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
 | [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | `kai-core` | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
-
-### Shared audio
-
-Core's separately confirmed audio utility. Producing audio proves nothing about the source document it was read from.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`kai-core-generate-audio`](../../plugins/kai-core/skills/kai-core-generate-audio/SKILL.md) | `kai-core` | Markdown-to-audio lesson generation. Use when converting notes, READMEs, course content, or drafts into multilingual narrated audio with lectoria. |
 
 ### Operator signals
 

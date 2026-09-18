@@ -15,12 +15,12 @@ name: validate
 # a version bump plus changelog/README updates. A separate `coordination-runtime`
 # job executes the coordination inputs, store, engine, context, evidence, report,
 # host, migration and CLI suites on every supported Node version, because that
-# runtime is executable code over `node:sqlite` rather than declarative source. A
-# separate supported-Node job installs each dependency-bearing generated pack from
-# an empty cache with Git disabled, then probes the pack-local Lectoria CLI and
-# core provider root. That job's matrix and its per-leg binary assertion are both
-# derived from the pack partition (COMMITTED_PACKS and PACK_RUNTIME_DEPENDENCIES),
-# so publishing a pack never means editing this workflow to make that pack legal.
+# runtime is executable code over `node:sqlite` rather than declarative source.
+#
+# No pack declares a runtime npm dependency, so there is no per-pack install leg
+# to run. The host copies plugin trees and never runs npm, which means a bare
+# import in shipped code could never resolve on a consumer machine; the contract
+# job rejects one outright rather than validating a lockfile nobody installs.
 
 on:
   pull_request:
@@ -33,8 +33,6 @@ permissions:
 jobs:
   contract:
     runs-on: ubuntu-latest
-    outputs:
-      packs: ${{ steps.runtime-matrix.outputs.packs }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,17 +87,6 @@ jobs:
       - name: Release-guard (behavior change requires a bump + release notes)
         if: github.event_name == 'pull_request'
         run: node scripts/release-guard.mjs --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }}
-      # The legs come from COMMITTED_PACKS, so publishing a pack adds its leg
-      # without anyone editing this workflow to make that pack legal. The
-      # existing required `contract` job owns the output, so derivation failure
-      # cannot turn required runtime legs into accepted skipped checks.
-      - id: runtime-matrix
-        name: Derive the runtime-dependency legs from the committed pack set
-        shell: bash
-        run: |
-          set -euo pipefail
-          packs="$(node scripts/pack-preview.mjs --ci-matrix)"
-          echo "packs=$packs" >> "$GITHUB_OUTPUT"
 
   # The coordination runtime is executable, not declarative: it opens a real
   # `node:sqlite` database, so it is exercised on every runtime this repository
@@ -141,53 +128,3 @@ jobs:
           node test/coordination-migration-self-test.mjs
       - name: CLI surface
         run: node test/coordination-cli-self-test.mjs
-
-  runtime-dependencies:
-    needs: contract
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        pack: ${{ fromJSON(needs.contract.outputs.packs) }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.15.0'
-      - name: Install pack without Git or credentials
-        shell: bash
-        env:
-          GIT_CONFIG_NOSYSTEM: '1'
-          GIT_TERMINAL_PROMPT: '0'
-          GIT_SSH_COMMAND: /bin/false
-          npm_config_git: /bin/false
-          npm_config_registry: https://registry.npmjs.org/
-          npm_config_update_notifier: 'false'
-        run: |
-          set -euo pipefail
-          export HOME="$RUNNER_TEMP/home-${{ matrix.pack }}"
-          export npm_config_cache="$RUNNER_TEMP/cache-${{ matrix.pack }}"
-          export npm_config_userconfig="$HOME/.npmrc"
-          mkdir -p "$HOME" "$npm_config_cache"
-          npm ci --prefix "plugins/${{ matrix.pack }}" \
-            --no-audit --no-fund --foreground-scripts
-          # Derived from PACK_RUNTIME_DEPENDENCIES: a pack that declares none
-          # installs its lockfile and asserts no binary. Captured first so a
-          # failed derivation fails the leg instead of asserting nothing.
-          binaries="$(node scripts/pack-preview.mjs --ci-runtime-binaries "${{ matrix.pack }}")"
-          for binary in $binaries; do
-            "plugins/${{ matrix.pack }}/node_modules/.bin/$binary" --help >/dev/null
-          done
-      - name: Probe core provider-root resolution
-        if: matrix.pack == 'kai-core'
-        shell: pwsh
-        run: |
-          $skillDir = Resolve-Path 'plugins/kai-core/skills/kai-core-generate-audio'
-          $providerRoot = Split-Path -Parent (Split-Path -Parent $skillDir)
-          $wrapper = Join-Path $providerRoot 'scripts/generate-audio.ps1'
-          $source = Join-Path $skillDir 'SKILL.md'
-          $output = & $wrapper -Source $source -Out "$env:RUNNER_TEMP/audio" -DryRun 6>&1 |
-            Out-String
-          if ($output -notmatch '\[dry-run\] lectoria: node_modules/.bin') {
-            throw "Core wrapper did not select its pack-local Lectoria executable."
-          }

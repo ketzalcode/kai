@@ -1,0 +1,121 @@
+[
+  {
+    "command": "node scripts\\generate-catalog.mjs --check",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:20.4576391-07:00",
+    "finished": "2026-09-13T21:29:20.6062979-07:00",
+    "log": "creative-baseline-stage-01.log"
+  },
+  {
+    "command": "node scripts\\workspace-doctor.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:20.6355586-07:00",
+    "finished": "2026-09-13T21:29:33.0468420-07:00",
+    "log": "creative-baseline-stage-02.log"
+  },
+  {
+    "command": "node scripts\\host-contract.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:33.0644231-07:00",
+    "finished": "2026-09-13T21:29:33.2072857-07:00",
+    "log": "creative-baseline-stage-03.log"
+  },
+  {
+    "command": "node scripts\\release-guard.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:33.2240237-07:00",
+    "finished": "2026-09-13T21:29:33.3160058-07:00",
+    "log": "creative-baseline-stage-04.log"
+  },
+  {
+    "command": "node examples\\proactive-runner\\runner.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:33.3303726-07:00",
+    "finished": "2026-09-13T21:29:33.4683592-07:00",
+    "log": "creative-baseline-stage-05.log"
+  },
+  {
+    "command": "node scripts\\activity.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:33.4862928-07:00",
+    "finished": "2026-09-13T21:29:35.3105898-07:00",
+    "log": "creative-baseline-stage-06.log"
+  },
+  {
+    "command": "node scripts\\work-status.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:35.3258244-07:00",
+    "finished": "2026-09-13T21:29:37.7977677-07:00",
+    "log": "creative-baseline-stage-07.log"
+  },
+  {
+    "command": "node scripts\\observe-subagent.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:37.8154425-07:00",
+    "finished": "2026-09-13T21:29:38.3466869-07:00",
+    "log": "creative-baseline-stage-08.log"
+  },
+  {
+    "command": "node scripts\\observe-watch.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:38.3640119-07:00",
+    "finished": "2026-09-13T21:29:38.5809088-07:00",
+    "log": "creative-baseline-stage-09.log"
+  },
+  {
+    "command": "node scripts\\demo-zoom.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:38.5994597-07:00",
+    "finished": "2026-09-13T21:29:38.7332538-07:00",
+    "log": "creative-baseline-stage-10.log"
+  },
+  {
+    "command": "node scripts\\demo-capture.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:38.7472047-07:00",
+    "finished": "2026-09-13T21:29:38.8596214-07:00",
+    "log": "creative-baseline-stage-11.log"
+  },
+  {
+    "command": "node scripts\\demo-narrate.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:38.8733204-07:00",
+    "finished": "2026-09-13T21:29:39.0108838-07:00",
+    "log": "creative-baseline-stage-12.log"
+  },
+  {
+    "command": "node scripts\\demo-format.mjs --self-test",
+    "exit_code": 0,
+    "started": "2026-09-13T21:29:39.0286107-07:00",
+    "finished": "2026-09-13T21:29:39.1371986-07:00",
+    "log": "creative-baseline-stage-13.log"
+  },
+  {
+    "command": "node scripts\\pack-preview.mjs --self-test",
+    "exit_code": 1,
+    "started": "2026-09-13T21:29:39.1526688-07:00",
+    "finished": "2026-09-13T21:29:43.2827595-07:00",
+    "log": "creative-baseline-stage-14.log"
+  },
+  {
+    "command": "node scripts\\pack-preview.mjs --gate all",
+    "exit_code": 1,
+    "started": "2026-09-13T21:29:43.2993632-07:00",
+    "finished": "2026-09-13T21:31:07.5705195-07:00",
+    "log": "creative-baseline-stage-15.log"
+  },
+  {
+    "command": "node scripts\\pack-preview.mjs --check",
+    "exit_code": 0,
+    "started": "2026-09-13T21:31:09.0513955-07:00",
+    "finished": "2026-09-13T21:31:17.2625229-07:00",
+    "log": "creative-baseline-stage-16.log"
+  },
+  {
+    "command": "node scripts\\check-syntax.mjs",
+    "exit_code": 0,
+    "started": "2026-09-13T21:31:17.4413047-07:00",
+    "finished": "2026-09-13T21:31:20.8988943-07:00",
+    "log": "creative-baseline-stage-17.log"
+  }
+]

@@ -4,6 +4,67 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [14.0.0] - 2026-09-18
+
+Removes the audio and narration-synthesis capability, and with it the only npm
+runtime dependency kai ever shipped. Prepared version metadata is not a tag, a
+release, a publication, or a host-verification claim.
+
+### Why
+
+The dependency never worked for anyone except a maintainer running from a repo
+checkout. The Copilot CLI host copies plugin trees and never runs npm, so
+`node_modules/.bin/lectoria` did not exist on a single consumer machine. The
+documented recovery — `npm ci --prefix` into `~/.copilot/installed-plugins/…` —
+targets a cache directory users do not know exists, and every plugin update
+overwrites it, including the automatic session-start auto-update.
+
+The capability's heaviest consumer was `kai-learning` (59 references across six
+files), which was incubated in 13.0.0. What remained was a feature that could
+not run, serving a package that no longer ships.
+
+Removing it costs no working consumer capability, because there was none.
+
+### Removed
+
+- `kai-core-generate-audio` skill and `scripts/generate-audio.ps1`.
+- `video-create-narration` skill, and the synthesis and estimate paths in
+  `demo-narrate.mjs` (`--synthesize`, `--estimate`, `--voice`, `--text-file`).
+- `PACK_RUNTIME_DEPENDENCIES`, `RUNTIME_ARTIFACTS`, `runtimeDependencyMatrix()`,
+  `packPackageMetadata()`, `generatedPackageErrors()`, and the lockfile
+  projection machinery that supported them.
+- Every per-pack `package.json` and `package-lock.json`. No pack ships an npm
+  manifest, because nothing installs one.
+- The `runtime-dependencies` CI job, the `--ci-matrix` and
+  `--ci-runtime-binaries` commands that fed it, and the root `lectoria`
+  dependency.
+- Every `npm ci --prefix` instruction in shipped prose.
+
+### Changed
+
+- `generatedRuntimeErrors()` and `planAssetClosure()` now reject **any** bare
+  import in shipped code rather than checking it against a declared dependency.
+  A bare import could only resolve where someone manually ran npm into the
+  install directory, so it is a shipped break, not a missing declaration.
+- `video-align-narration` survives unchanged. Narration you supply can still be
+  placed and mixed; kai no longer generates speech.
+- `workflow-weekly-pulse` writes a narratable `brief.md` and no longer offers an
+  audio command.
+
+### Kept
+
+`demo-narrate.mjs --place` and `--mix` — the ffmpeg-based alignment path that
+`video-align-narration` depends on. Only the Azure-backed synthesis seam was
+removed.
+
+### Verified
+
+`npm test` passes end to end. `validate-plugin` reports 0 errors at 22 agents
+and 36 skills. `pack-preview --self-test` passes 204 checks. No pack emits an
+npm manifest, and a new assertion fails the build if one reappears.
+
+
+
 ## [13.0.0] - 2026-09-17
 
 Reorganizes the repository around what it actually ships. The five capability
@@ -3839,6 +3900,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[14.0.0]: https://github.com/ketzalcode/kai/compare/v13.0.0...v14.0.0
 [13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0
 [12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0
 [11.0.0]: https://github.com/RubenSaucedo/kai/compare/v10.0.0...v11.0.0

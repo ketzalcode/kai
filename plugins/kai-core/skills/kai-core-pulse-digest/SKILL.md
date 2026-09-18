@@ -152,7 +152,7 @@ One run per week:
 ```
 <workspace-root>/.kai/runs/pulse/<YYYY-Www>/        ← ISO week, e.g. 2026-W26
   pulse.md            ← the full digest: Brief + Board + (Career) + overflow
-  brief.md            ← Page 1 ONLY, narration-clean — the kai-core-generate-audio input
+  brief.md            \u2190 Page 1 ONLY, narration-clean
   sources-pulled.md   ← provenance: what was pulled, windows, counts, gaps
   raw/                ← raw pulls (messages, commit lists), gitignored
     messages.json
@@ -330,8 +330,8 @@ page rather than bloating the Brief.>
 
 ### `brief.md`
 
-The exact prose of **Page 1**, alone, with a tiny header — nothing else. This is
-what `kai-core-generate-audio` narrates, so it must contain zero tables, links, or IDs.
+The exact prose of **Page 1**, alone, with a tiny header — nothing else. It is
+written to be read aloud, so it must contain zero tables, links, or IDs.
 
 ````markdown
 # Weekly Pulse Brief — <YYYY-Www>
@@ -369,21 +369,8 @@ Soft caps — if you hit one, finish the current page cleanly, mark
 
 - ~20 minutes of agent work per weekly run.
 - ~12 channels/chats + ~6 watched modules per run.
-- Page 1 ≤ ~700 words (≈ 4–5 min audio). If the week truly needs more, add an
+- Page 1 ≤ ~700 words (≈ 4–5 min read aloud). If the week truly needs more, add an
   **overflow page** — do not bloat the Brief.
-
-## Audio handoff (the skill prepares; the agent offers)
-
-The skill leaves `brief.md` narration-ready. It never runs audio. The calling
-agent resolves the kai-core provider root from this loaded skill's base
-directory and offers the exact absolute command:
-
-```
-pwsh <resolved kai-core provider root>/scripts/generate-audio.ps1 -Source <abs path>\brief.md -Style verbatim -Lang en
-```
-
-`.kai/runs/pulse/` is gitignored, so any audio generated under it is
-private by default too.
 
 ## Anti-patterns
 
@@ -396,7 +383,6 @@ private by default too.
 - ❌ Committing the digest automatically, or force-adding it. Private by default.
 - ❌ Any write action against a source (send, react, mark-read, edit item, push).
 - ❌ Fabricating a section for a source that failed or isn't bound — record the gap.
-- ❌ Running `kai-core-generate-audio` (Azure cost) — leave that to the agent's explicit offer.
 
 ## Output contract
 

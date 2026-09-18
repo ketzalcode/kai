@@ -1,0 +1,44 @@
+demo-capture self-test
+  ok a valid screenplay parses
+  ok a region string resolves to whole pixels
+  ok typing gets a default pace rather than instant text
+  ok emphasis leads the action, so the zoom has arrived before the thing happens
+  ok malformed JSON is refused
+  ok a foreign schema is refused
+  ok an odd capture dimension is refused before the take, not after
+  ok an unparseable region is refused
+  ok a screenplay that declares a source second is refused
+  ok a screenplay that declares a frame coordinate is refused
+  ok a duplicate step id is refused, since a take is keyed by it
+  ok emphasis on a targetless hold is refused rather than silently centred
+  ok a targets file resolves rectangles
+  ok a screenplay whose targets all resolve is ready to record
+  ok an unresolved target is named before the take, not after
+  ok an inside-out rectangle is refused
+  ok a take duration is estimated from the screenplay, quiet wait included (15.8s)
+  ok the driver writes a take manifest
+  ok the driver measures the recording clock rather than assuming ffmpeg started instantly
+  ok the driver refuses a black capture before recording
+  ok the brightness statistic is written to a file, because metadata=print logs at info level and would be swallowed by -v error
+  ok the statistics filename is relative, because ffmpeg's filter parser treats ':' and '\' as syntax
+  ok an unreadable brightness statistic is distinguished from a black frame
+  ok the driver clears a restored draft before typing
+  ok the driver waits for the app to stop repainting rather than trusting an authored settle
+  ok the quiet wait happens before the click, so the click cannot land on a page that is still rendering
+  ok a screen that never settles is recorded in the manifest rather than passed off as clean
+  ok the OS cursor is not captured, because the drawn one replaces it
+  ok the real pointer is glided so the app produces the hover states a viewer will see
+  ok pointer samples are read from the OS, not assumed from the target rect
+  ok the pointer is marked hidden while typing, so the arrow does not cover the text
+  ok Click-At is called with space-separated arguments; PowerShell would pass Click-At(a, b) as a single array
+  ok step timing is measured, not hard-coded into the driver
+  ok the estimated duration budgets the measured quiet wait, so the recorder cannot stop before the last step
+  ok an unsettled status survives the manifest round trip
+  ok pointer samples are normalised against the capture region, so a plan survives a change of render size
+  ok a hidden pointer sample stays hidden through the manifest
+  ok a take without pointer telemetry yields no track, rather than one inferred from the rects
+  ok a take manifest carries measured seconds
+  ok a take manifest carries the rectangle actually acted on
+  ok a take step that ends before it starts is refused
+
+demo-capture self-test: 41/41 checks passed

@@ -32,7 +32,6 @@ const finalSkillIds = [
   'mockups-ascii',
   'mockups-html',
   'video-align-narration',
-  'video-create-narration',
   'video-render-zoom',
 ];
 const retiredAgentIds = [
@@ -199,7 +198,6 @@ for (const asset of [
     .replace(/\r\n/g, '\n'));
 }
 for (const [skill, asset] of [
-  ['video-create-narration', 'scripts/demo-narrate.mjs'],
   ['video-align-narration', 'scripts/demo-narrate.mjs'],
   ['video-render-zoom', 'scripts/demo-zoom.mjs'],
 ]) {
