@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Kai core, engineering, and creative. Other capability packages are incubated and do not ship.",
-    "version": "13.1.0",
+    "version": "13.2.0",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./plugins/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "13.1.0",
+      "version": "13.2.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -31,7 +31,7 @@
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
       "description": "Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.",
-      "version": "13.1.0",
+      "version": "13.2.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -48,7 +48,7 @@
       "name": "kai-creative",
       "source": "./plugins/kai-creative",
       "description": "UI/UX, visual identity, design assets, and supported media production over kai-core.",
-      "version": "13.1.0",
+      "version": "13.2.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"

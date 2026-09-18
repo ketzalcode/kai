@@ -4,6 +4,59 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [13.2.0] - 2026-09-17
+
+Derives ASCII motion from a supplied still, so a clip can look like its
+subject instead of like a sketch of it. v1 converted a source into a mono
+glyph ramp; this adds a second path that converts an image with sub-cell
+colour and animates it with a small-amplitude rig.
+
+The fidelity comes from two properties, neither of which needs a font, a glyph
+atlas, or an external tool. A half block carries two independent colours and
+so doubles vertical resolution; quadrants double both axes. And motion happens
+in raster space on the source image, with every frame converted afresh, so
+frame 40 is as sharp as frame 0.
+
+The limit is occlusion, not resolution. Move a region and you expose what was
+behind it, and a photograph has nothing behind. Small-amplitude motion — a
+mouth, a blink, a breath, a sway — works; articulated locomotion does not, and
+the rig refuses it by name rather than shipping a broken frame.
+
+Prepared version metadata is not a tag, a release, a publication, or a
+host-verification claim.
+
+### Added
+
+- `--sprite` converts a supplied still to a single-frame clip at the still's
+  own aspect, and `--animate` drives it from a rig of named regions, six
+  motion primitives, four drivers, and an explicit no-op.
+- A frames intermediate representation v2 carrying palette indices against a
+  clip-wide palette of at most 256 entries, with each frame storing only its
+  dirty rectangle relative to frame 0.
+- An occlusion budget — 6% of frame width, 12 degrees — enforced at rig
+  validation. The refusal names the region and points at the deferred
+  multi-pose sprite sheet.
+- `test/creative-ascii-motion-self-test.mjs`: renderer goldens, IR v2
+  round-trip, dirty-rect stability, determinism, budget refusal, v1
+  compatibility, mixed-colour bundle rejection, and a browser/helper decoder
+  cross-check.
+
+### Changed
+
+- The browser player paints a canvas for colour clips. The cost is stated in
+  the skill: a colour clip trades selectable text and its screen-reader
+  affordance for fidelity.
+- Converting the static background exactly once makes quantisation shimmer
+  structurally impossible rather than merely unlikely.
+
+### Fixed
+
+- v1 advertised an `ansi16` colour mode while the GIF path hardcoded white and
+  the player used `textContent`. Colour was accepted and silently discarded at
+  three layers. Profile resolution now rejects any palette/colour mismatch.
+- A rig channel with a non-numeric amount compared against NaN and passed the
+  occlusion budget silently. It is now an error that says what was wrong.
+
 ## [13.1.0] - 2026-09-17
 
 Adds ASCII motion to `kai-creative`. A prompt naming a subject is a request,
@@ -3868,6 +3921,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[13.2.0]: https://github.com/RubenSaucedo/kai/compare/v13.1.0...v13.2.0
 [13.1.0]: https://github.com/RubenSaucedo/kai/compare/v13.0.0...v13.1.0
 [13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0
 [12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0
