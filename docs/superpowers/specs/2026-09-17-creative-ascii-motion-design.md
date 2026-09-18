@@ -74,8 +74,8 @@ that with an empty allowlist. Rendering skills are routed by
 **Decision: add no agent. `workflow-creative-demo-production` gains the new
 routes; its allowlist and `requiredRoutes` in the self-test are extended.**
 
-The case for a dedicated `creative-lead-ascii` agent is real and was argued
-before being rejected: source interpretation, silhouette design, typography,
+The case for a dedicated ASCII lead agent (creative-lead-ascii) is real and was
+argued before being rejected: source interpretation, silhouette design, typography,
 palette, glyph selection and motion legibility do collectively resemble an art
 direction. But that lane currently overlaps video direction, visual design and
 production, and is not yet distinct enough to justify another persona. An agent

@@ -44,9 +44,9 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v13.0.0` is this checkout's prepared metadata version. kai ships **three
+`v13.1.0` is this checkout's prepared metadata version. kai ships **three
 packages** — `kai-core`, `kai-engineering`, and `kai-creative` — supplying
-**22 agents and 38 skills**. The
+**22 agents and 40 skills**. The
 [agents & skills catalog](docs/reference/agents-and-skills.md) is exactly what
 they provide. Prepared metadata is not a tag, a release, a publication, or a
 host-verification claim.

@@ -139,10 +139,11 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Creative methods',
-    blurb: 'Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.',
+    blurb: 'Structural and visual mockups, block diagrams, measured narration operations, ASCII motion sourcing and rendering, and declared-focus rendering.',
     members: [
       'mockups-ascii', 'mockups-html', 'html-block-diagrams',
       'video-create-narration', 'video-align-narration', 'video-render-zoom',
+      'ascii-motion-source', 'ascii-motion-render',
     ],
   },
   {

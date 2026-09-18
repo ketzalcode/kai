@@ -1,6 +1,6 @@
 {
   "name": "kai-engineering",
-  "version": "13.0.0",
+  "version": "13.1.0",
   "description": "Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.",
   "agents": "agents",
   "skills": "skills"

@@ -7,9 +7,9 @@
      scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-The repository ships **22 agents** and **38 skills**.
+The repository ships **22 agents** and **40 skills**.
 
-The default marketplace supplies **22 agents** and **38 skills** through core, engineering, and creative (13 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **22 agents** and **40 skills** through core, engineering, and creative (15 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -174,7 +174,7 @@ The shared design-system grounding contract, with the frontend seam.
 
 ### Creative methods
 
-Structural and visual mockups, block diagrams, measured narration operations, and declared-focus rendering.
+Structural and visual mockups, block diagrams, measured narration operations, ASCII motion sourcing and rendering, and declared-focus rendering.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
@@ -184,6 +184,8 @@ Structural and visual mockups, block diagrams, measured narration operations, an
 | [`video-create-narration`](../../plugins/kai-creative/skills/video-create-narration/SKILL.md) | `kai-creative` | Use when a narration estimate or approved speech synthesis is requested for a supplied demo screenplay. |
 | [`video-align-narration`](../../plugins/kai-creative/skills/video-align-narration/SKILL.md) | `kai-creative` | Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo. |
 | [`video-render-zoom`](../../plugins/kai-creative/skills/video-render-zoom/SKILL.md) | `kai-creative` | Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment. |
+| [`ascii-motion-source`](../../plugins/kai-creative/skills/ascii-motion-source/SKILL.md) | `kai-creative` | Use when an ASCII motion clip is requested and its motion has no approved source yet, or supplied footage needs a recorded licence and origin before conversion. |
+| [`ascii-motion-render`](../../plugins/kai-creative/skills/ascii-motion-render/SKILL.md) | `kai-creative` | Use when an existing ASCII motion clip is requested as a web bundle or a looping image, or a rendered ASCII animation needs preview evidence before it is published. |
 
 ### Web & content
 

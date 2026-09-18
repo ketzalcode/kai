@@ -28,6 +28,8 @@ const finalAgentIds = [
   'workflow-creative-demo-production',
 ];
 const finalSkillIds = [
+  'ascii-motion-render',
+  'ascii-motion-source',
   'html-block-diagrams',
   'mockups-ascii',
   'mockups-html',

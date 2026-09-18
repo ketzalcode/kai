@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 22,
-    "skills": 38
+    "skills": 40
   },
   "agents": [
     "creative-lead-design",
@@ -28,6 +28,8 @@
     "workflow-workspace-init"
   ],
   "skills": [
+    "ascii-motion-render",
+    "ascii-motion-source",
     "build-diagrams",
     "coding-style",
     "html-block-diagrams",
@@ -68,6 +70,14 @@
     "video-render-zoom"
   ],
   "user_invocable_skills": [
+    {
+      "name": "ascii-motion-render",
+      "argument_hint": ""
+    },
+    {
+      "name": "ascii-motion-source",
+      "argument_hint": ""
+    },
     {
       "name": "coding-style",
       "argument_hint": "optional file or area to apply to"

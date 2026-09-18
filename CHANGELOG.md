@@ -4,6 +4,35 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [13.1.0] - 2026-09-17
+
+Adds ASCII motion to `kai-creative`. A prompt naming a subject is a request,
+not a source, so the capability ships as two skills rather than one: sourcing
+establishes and records where the motion comes from, and rendering turns an
+existing clip into artifacts. No new agent — `workflow-creative-demo-production`
+gains the routes.
+
+Two artifacts are co-primary. A web bundle carries character grids a host page
+plays and switches between, which is the emulate-an-AI-talking case a looping
+image cannot serve. A looping image embeds in a README, which MP4 cannot do.
+
+Prepared version metadata is not a tag, a release, a publication, or a
+host-verification claim.
+
+### Added
+
+- `ascii-motion-source` and `ascii-motion-render` skills in `kai-creative`,
+  routed by `workflow-creative-demo-production`.
+- `scripts/ascii-motion.mjs` and its library: a frames intermediate
+  representation, render profiles, procedural templates, a movie-ascii backend,
+  a GIF path, a web bundle, and a dependency-free browser player.
+- Every clip carries licence and origin. An unrecorded licence blocks the clip
+  rather than becoming a guess, and GIPHY is excluded outright.
+
+### Changed
+
+- The generated agent/skill catalog files the two new skills under creative
+  methods.
 ## [13.0.0] - 2026-09-17
 
 Reorganizes the repository around what it actually ships. The five capability
@@ -3839,6 +3868,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[13.1.0]: https://github.com/RubenSaucedo/kai/compare/v13.0.0...v13.1.0
 [13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0
 [12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0
 [11.0.0]: https://github.com/RubenSaucedo/kai/compare/v10.0.0...v11.0.0

@@ -15,7 +15,7 @@
 - No new agent. `workflow-creative-demo-production` routes both new skills; `creative-lead-video` keeps `allowedActiveCreativeRoutes: []`.
 - A creative skill must not route another approved creative method — `chainedMethods` must stay empty for both new skills.
 - Skill `description` must start with `Use when` and must not contain `first|then|after that|returns?|outputs?|steps?`.
-- Skills must not declare `tools`. No `**Inherits:**` line. `user-invocable`, if present, must be `true`.
+- Skills must not declare `tools`, and must carry no inheritance line at all. When `user-invocable` is present it must be `true`.
 - Core routes must be condition-bound: `(when|if|before|only for|as needed)` within ~180 chars of ``Load `kai-core-…` ``.
 - `PACK_RUNTIME_DEPENDENCIES.creative` stays `['lectoria']`. No new npm runtime dependency.
 - Dependencies are detected via `--probe`, never auto-installed. When ffmpeg is absent, `--print` prepares the command instead of failing.
