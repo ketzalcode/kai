@@ -3,7 +3,7 @@ import {
   closeSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync,
 } from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {dirname, isAbsolute, join, resolve} from 'node:path';
+import {dirname, isAbsolute, join, resolve, win32} from 'node:path';
 import {
   RuntimeError, canonicalJson, validateSubjectRef,
 } from './contract.mjs';
@@ -59,8 +59,18 @@ export function projectBinding(root, projectId) {
   }
   const project = matches[0];
   if (/^(\\\\|\/\/)/.test(project.path)) fail('UNSUPPORTED_HOST', 'network projects are unsupported');
+  // Drive- and root-relative forms resolve against the process's current drive
+  // or working directory, so they name a different place on every run.
+  //
+  // Unlike `root`, which a caller supplies at runtime, `projects[].path` is read
+  // out of `.kai/manifest.json` — a committed artifact in `shared` mode. The same
+  // file is read on a Windows workstation and on a Linux runner, so it is judged
+  // by Windows semantics everywhere: a form unsafe on ANY supported platform is
+  // rejected on EVERY platform. `win32.isAbsolute` sees a leading `\` or `/` as
+  // root-relative, which the platform-default check silently accepted on POSIX
+  // and then resolved to a directory literally named `\project`.
   if (/^[a-z]:(?![\\/])/i.test(project.path)
-    || (process.platform === 'win32' && isAbsolute(project.path) && !/^[a-z]:[\\/]/i.test(project.path))) {
+    || (win32.isAbsolute(project.path) && !/^[a-z]:[\\/]/i.test(project.path))) {
     fail('INVALID_INPUT', 'project binding cannot depend on the current drive or working directory');
   }
   const projectRoot = resolvedProjectPath(root, project.path);

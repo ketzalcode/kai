@@ -4,6 +4,53 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [14.0.1] - 2026-09-21
+
+Fixes a shipped path check that behaved differently depending on the operating
+system it ran on, and closes the CI gap that let it survive.
+
+### Fixed
+
+- `projectBinding()` judged drive- and root-relative project bindings with the
+  platform-default `node:path`, so `\project` was refused on Windows and
+  silently accepted on Linux — where it resolved to a directory literally named
+  `\project`. `.kai/manifest.json` is a committed artifact in `shared` mode, so
+  the same file is read on a workstation and on a runner; it is now judged with
+  `path.win32` semantics on every platform. A form unsafe on **any** supported
+  platform is refused on **every** platform. The check no longer reads
+  `process.platform` at all.
+- `test/coordination-evidence-self-test.mjs` asserted this with `\project`,
+  which is only root-relative on Windows, so the suite failed on Linux CI. It
+  now covers `C:project`, `\project`, `/project` and `c:rel/sub`, and asserts
+  that a workspace-relative binding stays accepted.
+
+### Added
+
+- A `windows-latest` leg in the `coordination-runtime` matrix, at the pinned
+  Node version. Windows is the platform this repository is developed on and was
+  the only platform CI never covered — which is precisely how an OS-dependent
+  path check survived. Path semantics do not vary by Node version, so one OS leg
+  is proportionate rather than doubling the matrix.
+
+### Behavior change
+
+A `projects[].path` of `/project` is now refused on Linux, where it was
+previously accepted. It is root-relative under Windows semantics, so a manifest
+using it names a different location per platform. Use a workspace-relative path
+(the normal case — `.` in every fixture and example) or a drive-qualified path.
+`workspaceManifest()`'s check on `root` is unchanged: `root` is supplied by the
+caller at runtime rather than read from a committed file, so it stays
+platform-appropriate.
+
+### Verified
+
+All nine coordination suites pass on Windows locally and the rule was proved
+platform-independent by evaluating every form against both `path.win32` and
+`path.posix`. The Linux verdict is unchanged for every binding in the
+repository's fixtures and examples.
+
+
+
 ## [14.0.0] - 2026-09-18
 
 Removes the audio and narration-synthesis capability, and with it the only npm
@@ -3900,6 +3947,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[14.0.1]: https://github.com/ketzalcode/kai/compare/v14.0.0...v14.0.1
 [14.0.0]: https://github.com/ketzalcode/kai/compare/v13.0.0...v14.0.0
 [13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0
 [12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0
