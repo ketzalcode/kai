@@ -52,13 +52,13 @@ package's directory.
 ## Returning something to the active tree
 
 1. `git mv` the source back under `plugins/`.
-2. Restore its pack entry in `scripts/lib/pack-plan.mjs`: remove it from
+2. Restore its pack entry in `tools/lib/pack-plan.mjs`: remove it from
    `INCUBATED_PACKS`, and give it a runtime-dependency and description entry.
    Add it to `PUBLISHED_PACKS` and to `.github/plugin/marketplace.json` in the
    same step — the active partition and the marketplace index must stay equal,
    and the catalog gate rejects a component whose package is not published.
 3. File every agent and skill under a heading in `CATEGORIES` in
-   `scripts/generate-catalog.mjs`.
+   `tools/generate-catalog.mjs`.
 4. Re-establish the package's core-only dependencies: an incubated agent may
    name a role that no longer exists.
 5. Regenerate manifests and the catalog

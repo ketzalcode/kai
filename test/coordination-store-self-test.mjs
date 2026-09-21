@@ -15,14 +15,14 @@ import {
   commandDigest,
   validateCommand,
   validateRecord,
-} from '../scripts/lib/coordination-runtime/contract.mjs';
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
   applyOperation,
   closeStore,
   listRecords,
   openStore,
   readRecord,
-} from '../scripts/lib/coordination-runtime/store.mjs';
+} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
   allocateTemporaryRoot,
   command,
@@ -139,7 +139,8 @@ function waitForExit(child) {
 async function withChildLock(databasePath, begin, fn) {
   const storeModule = pathToFileURL(join(
     repoRoot,
-    'scripts',
+    'src',
+    'core',
     'lib',
     'coordination-runtime',
     'store.mjs',

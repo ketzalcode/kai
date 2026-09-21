@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { materializePacks } from '../scripts/lib/pack-plan.mjs';
+import { materializePacks } from '../tools/lib/pack-plan.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const files = materializePacks({ root: repoRoot, version: '99.0.0-test' });
@@ -40,7 +40,7 @@ assert.ok(files.has('kai-core/scripts/lib/coordination-runtime/store.mjs'),
 //    than a hand-maintained list — a module added tomorrow is covered.
 // ---------------------------------------------------------------------------
 const runtimeModules = readdirSync(
-  join(repoRoot, 'scripts', 'lib', 'coordination-runtime'),
+  join(repoRoot, 'src', 'core', 'lib', 'coordination-runtime'),
 ).filter((name) => name.endsWith('.mjs')).sort();
 assert.ok(runtimeModules.length >= 30,
   `expected the coordination runtime to have modules, found ${runtimeModules.length}`);

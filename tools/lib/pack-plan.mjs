@@ -13,6 +13,12 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { join, dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packPluginName, PACK_ORDER as SHIPPED_PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
+import {
+  ROLE_FAMILY_PACK, ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
+  KIND_AGENT_FAMILIES, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
+  agentProfileModelErrors as profileModelErrors,
+} from '../../src/core/lib/agent-model-policy.mjs';
 
 // scripts/lib/ -> repo root is two levels up. Callers may pass an explicit root
 // (tests, or a generator run against a checkout) but default to this repo.
@@ -34,6 +40,82 @@ export const CORE_SKILL_PREFIX = 'kai-core-';
 // behavior-sensitive, the validator discovers manifests under it, and the
 // generator writes the reviewed committed slice there.
 export const PACKS_DIR = 'plugins';
+
+// Where product source lives. A shipped body invokes `scripts/foo.mjs` — the
+// path a consumer actually runs — while the file is authored at
+// `src/<pack>/foo.mjs`. The shipped path is deliberately unchanged, so
+// `hooks.json` and every markdown command string keep working; only the
+// authoring location moved.
+export const SRC_DIR = 'src';
+
+// The prefix a shipped instruction uses for an executable. It is a shipped
+// path, not a source path, which is why it stays `scripts/`.
+export const SHIPPED_ASSET_DIR = 'scripts';
+
+// Shipped asset key -> { pack, path }. Built by walking `src/<pack>/`, so the
+// pack that owns an asset is declared by where the file lives rather than
+// inferred from whoever happens to mention it. That inference is what let a
+// developer script reach consumers: one agent's prose named it, and the closure
+// shipped it plus everything it imported.
+export function sourceAssetIndex(root = REPO_ROOT) {
+  const index = new Map();
+  const collisions = [];
+  for (const pack of PACK_ORDER) {
+    const base = join(root, SRC_DIR, pack);
+    if (!existsSync(base)) continue;
+    const walk = (dir, rel) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name))) {
+        const next = rel ? `${rel}/${entry.name}` : entry.name;
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) { walk(path, next); continue; }
+        const key = `${SHIPPED_ASSET_DIR}/${next}`;
+        if (index.has(key)) {
+          collisions.push(`${key} is authored in both ${packPluginName(index.get(key).pack)} `
+            + `and ${packPluginName(pack)} — one shipped path cannot have two sources`);
+          continue;
+        }
+        index.set(key, { pack, path });
+      }
+    };
+    walk(base, '');
+  }
+  if (collisions.length) throw new Error(collisions.join('\n'));
+  return index;
+}
+
+// Where an asset is authored must agree with the pack that ends up shipping it.
+//
+// `planAssets` derives an owner from whoever invokes a path, which is the
+// inference that let a developer script reach consumers. The source location is
+// the declaration. When the two disagree, a file authored under
+// `src/creative/` would be copied into `plugins/kai-core/scripts/` with nothing
+// reporting it — so the disagreement is the error.
+//
+// An asset invoked from more than one pack is a real case: it promotes to core,
+// and must therefore be authored in `src/core/`.
+export function sourceAssetPath(root, asset, index = sourceAssetIndex(root)) {
+  return index.get(asset)?.path ?? null;
+}
+
+export function assetLocationErrors({ assets, index }) {
+  const errors = [];
+  for (const [asset, entry] of assets) {
+    const declared = index.get(asset);
+    if (!declared) continue; // absence is reported by assetOwnershipErrors
+    if (declared.pack === entry.owner) continue;
+    const invokers = [...entry.packs].sort().map(packPluginName).join(' and ');
+    errors.push({
+      file: asset,
+      msg: `is authored in ${packPluginName(declared.pack)} but routes to `
+        + `${packPluginName(entry.owner)} (invoked from ${invokers}) — move the source to `
+        + `src/${entry.owner}/, or stop invoking it from outside ${packPluginName(declared.pack)}`,
+    });
+  }
+  return errors;
+}
+
+
 
 export const GUARANTEE_REGION_OPEN =
   '<!-- >>> kai core dependency guard (managed by pack-preview) >>> -->';
@@ -66,7 +148,7 @@ export const RETIRED_CREATIVE_SKILL_IDS = [
 const MIGRATION_BASELINE_PACKS = {
   core: [
     'director-chief-of-staff', 'workflow-workspace-init',
-    'workflow-self-check', 'workflow-proactive-scan', 'workflow-weekly-pulse',
+    'workflow-proactive-scan', 'workflow-weekly-pulse',
     'workflow-initiative-init',
   ],
   assistant: ['persona-self'],
@@ -117,6 +199,14 @@ export const RETIRED_ENGINEERING_AGENT_IDS = new Set([
 // listing it here keeps those historical pages resolvable without reviving it.
 export const RETIRED_DIRECTOR_AGENT_IDS = new Set([
   'director-executive-assistant',
+]);
+
+// Core agents withdrawn from the shipped surface. `workflow-self-check` audited
+// kai's own plugin inventory and only meant anything inside this repository,
+// yet every consumer received it — and its prose reference to a developer
+// script dragged 113 KB of release tooling into `kai-core` with it.
+export const RETIRED_CORE_AGENT_IDS = new Set([
+  'workflow-self-check',
 ]);
 
 // Core skills that were renamed or split. Historical plans and ship records
@@ -180,7 +270,21 @@ export const INCUBATED_AGENT_IDS = Object.freeze(
 // Deterministic pack emission order: core first, then the departments in the
 // partition's declared order. Fixed so a generated tree and a validator walk
 // list the same packs in the same sequence every run.
+//
+// Derived from PACKS, then checked against the shipped list in
+// `src/core/lib/pack-names.mjs`. Shipped code cannot import this module — that
+// is the whole point of the boundary — so the list exists in two places, and
+// without this check a pack added here would silently never reach the migration
+// doctor's install inspection.
 export const PACK_ORDER = Object.keys(PACKS);
+
+if (PACK_ORDER.join(',') !== SHIPPED_PACK_ORDER.join(',')) {
+  throw new Error(
+    `pack partition drift: tools/lib/pack-plan.mjs derives [${PACK_ORDER.join(', ')}] `
+    + `but src/core/lib/pack-names.mjs ships [${SHIPPED_PACK_ORDER.join(', ')}] — `
+    + 'update the shipped list, which is what consumer code reads',
+  );
+}
 
 // Skills with no loaded firing path still need one explicit provider. These
 // dispositions were ratified in the partition lock; keeping them here makes the
@@ -204,9 +308,10 @@ export const PUBLISHED_PACKS = Object.freeze(['core', 'engineering', 'creative']
 // instructions name and the operator installs deliberately. `generatedRuntimeErrors`
 // and `planAssetClosure` enforce this, so there is no dependency plan to declare.
 
-// The plugin name a pack publishes under. Core is the required shared plugin;
-// departments are `kai-<department>`.
-export const packPluginName = (pack) => (pack === 'core' ? 'kai-core' : `kai-${pack}`);
+// Re-exported from the shipped module so there is exactly one definition. That
+// module is what consumer code imports; duplicating the name here would let the
+// two drift without anything failing.
+export { packPluginName };
 
 // A functional, non-marketing manifest description. Published copy is refined at
 // the marketplace flip; scaffolding only needs to say what the plugin is. A pack
@@ -508,19 +613,22 @@ export function materializePacks({
     }
   }
   const assets = planAssets(collectReferences(root));
+  const assetIndex = sourceAssetIndex(root);
   const closure = planAssetClosure({
     assets,
-    exists: (asset) => existsSync(join(root, ...asset.split('/'))),
-    read: (asset) => readFileSync(join(root, ...asset.split('/')), 'utf8'),
+    exists: (asset) => assetIndex.has(asset),
+    read: (asset) => readFileSync(assetIndex.get(asset).path, 'utf8'),
   });
-  if (closure.errors.length) {
-    throw new Error(closure.errors.map((e) => `${e.file}: ${e.msg}`).join('\n'));
+  const located = assetLocationErrors({ assets, index: assetIndex });
+  if (closure.errors.length || located.length) {
+    throw new Error([...closure.errors, ...located]
+      .map((e) => `${e.file}: ${e.msg}`).join('\n'));
   }
   for (const [owner, ownedAssets] of closure.files) {
     if (!selected.has(owner)) continue;
     for (const asset of ownedAssets) {
       files.set(`${packPluginName(owner)}/${asset}`,
-        normalizeLF(readFileSync(join(root, ...asset.split('/')), 'utf8')));
+        normalizeLF(readFileSync(assetIndex.get(asset).path, 'utf8')));
     }
   }
   if (selected.has(HOOKS_OWNER)) {
@@ -531,7 +639,7 @@ export function materializePacks({
     // Onboarding reads this data file; executable/module routing cannot discover it.
     const block = 'scripts/lib/communication-style-block.md';
     files.set(`${packPluginName('core')}/${block}`,
-      normalizeLF(readFileSync(join(root, ...block.split('/')), 'utf8')));
+      normalizeLF(readFileSync(assetIndex.get(block).path, 'utf8')));
   }
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
 }
@@ -780,50 +888,15 @@ const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 // Naming-policy families that map to an active install package. `personal`,
 // `prod` and `gtm` are retired namespace tokens whose owners were incubated;
 // they are not aliases and no active role may claim them.
-export const ROLE_FAMILY_PACK = Object.freeze({
-  core: 'core',
-  eng: 'engineering',
-  creative: 'creative',
-});
-
-export const ROLE_POSTURES = Object.freeze([
-  'lead', 'builder', 'reviewer', 'operator', 'coordinator', 'advisor',
-]);
-export const MODEL_POLICY_VERSION = 'kai-agent-models-v2';
-export const AGENT_PROMPT_HARD_LIMIT = 30_000;
-export const ROLE_POSTURE_PROFILES = Object.freeze({
-  lead: Object.freeze(['judgment', 'technical-judgment']),
-  builder: Object.freeze(['execution']),
-  reviewer: Object.freeze(['review', 'technical-review']),
-  operator: Object.freeze(['operations']),
-  coordinator: Object.freeze(['coordination']),
-  advisor: Object.freeze(['judgment', 'technical-judgment', 'advisory']),
-});
-export const KIND_AGENT_PROFILES = Object.freeze({
-  workflow: Object.freeze(['procedure']),
-  persona: Object.freeze(['simulation']),
-  instructor: Object.freeze(['teaching']),
-});
-export const ROLE_PROFILE_MODELS = Object.freeze({
-  judgment: 'claude-opus-5',
-  'technical-judgment': 'gpt-5.6-sol',
-  review: 'claude-opus-5',
-  'technical-review': 'gpt-5.6-terra',
-  execution: 'claude-sonnet-5',
-  operations: 'claude-sonnet-5',
-  coordination: 'claude-sonnet-5',
-  advisory: 'claude-sonnet-5',
-  procedure: 'claude-sonnet-5',
-  teaching: 'claude-sonnet-5',
-  simulation: 'claude-sonnet-5',
-});
-
+// The model policy is shipped source: the coordination host validates the same
+// rule at runtime. Tooling imports it rather than owning it, so shipped code
+// never has to reach into release machinery for a model name.
+export {
+  ROLE_FAMILY_PACK, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
+  ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
+} from '../../src/core/lib/agent-model-policy.mjs';
 const RETIRED_AGENT_FAMILIES = [
   'principal', 'director',
-];
-
-const KIND_AGENT_FAMILIES = [
-  'workflow', 'persona', 'instructor',
 ];
 
 export const AGENT_FAMILIES = [
@@ -1026,38 +1099,10 @@ function paragraphContaining(body, skillId) {
 // agentIdentityContractErrors — the identity-marker half went with the marker,
 // but the profile/model binding has no other home, so it is preserved here,
 // keyed on the agent's family/posture rather than on any opt-in marker.
+// Delegates to the shipped policy, supplying this repository's frozen
+// pre-taxonomy baseline as the exempt set.
 export function agentProfileModelErrors({ id, body, fm = {} }) {
-  const [family, posture] = (id ?? '').split('-');
-  const isDurableRole = family in ROLE_FAMILY_PACK && !LEGACY_AGENT_IDS.has(id);
-  const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !LEGACY_AGENT_IDS.has(id);
-  if (!isDurableRole && !isNewKind) return [];
-  const errors = [];
-
-  const profiles = [...(body ?? '').matchAll(
-    /^\*\*Primary profile:\*\*\s+`?([a-z][a-z-]*)`?\s*$/gm
-  )].map((match) => match[1]);
-  if (profiles.length !== 1) {
-    errors.push(`new agent must declare exactly one \`**Primary profile:** <profile>\` line (found ${profiles.length})`);
-    return errors;
-  }
-  const [profile] = profiles;
-  const expected = ROLE_PROFILE_MODELS[profile];
-  if (!expected) {
-    errors.push(`primary profile \`${profile}\` has no approved model mapping`);
-    return errors;
-  }
-  const allowed = isDurableRole ? ROLE_POSTURE_PROFILES[posture] : KIND_AGENT_PROFILES[family];
-  if (!allowed?.includes(profile)) {
-    errors.push(`${isDurableRole ? `posture \`${posture}\`` : `kind \`${family}\``} requires primary profile `
-      + `${(allowed ?? []).map((value) => `\`${value}\``).join(' or ') || '(none)'}, not \`${profile}\``);
-  }
-  const model = (fm.model ?? '').trim().replace(/^(['"])(.*)\1$/, '$2');
-  if (!model) {
-    errors.push(`new agent with profile \`${profile}\` must declare frontmatter model "${expected}"`);
-  } else if (model !== expected) {
-    errors.push(`primary profile \`${profile}\` requires frontmatter model "${expected}", not "${model}"`);
-  }
-  return errors;
+  return profileModelErrors({ id, body, fm }, LEGACY_AGENT_IDS);
 }
 
 export function agentPromptLimitErrors(body) {

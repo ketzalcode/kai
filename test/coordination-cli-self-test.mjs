@@ -5,15 +5,15 @@ import {mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync, appendFileSyn
 import {dirname, join, delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID, createHash} from 'node:crypto';
-import {criteriaRef, COMMAND_KINDS} from '../scripts/lib/coordination-runtime/contract.mjs';
-import {routingActions, delegatedActions} from '../scripts/lib/coordination-runtime/native-routing.mjs';
-import {openStore, closeStore} from '../scripts/lib/coordination-runtime/store.mjs';
+import {criteriaRef, COMMAND_KINDS} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {routingActions, delegatedActions} from '../src/core/lib/coordination-runtime/native-routing.mjs';
+import {openStore, closeStore} from '../src/core/lib/coordination-runtime/store.mjs';
 import {seedItem, seedInitiative, withWorkspace} from './helpers/coordination-runtime-fixture.mjs';
-import {writeIssued, readIssued} from '../scripts/lib/coordination-runtime/native-capabilities.mjs';
-import {nativeEvents} from '../scripts/lib/coordination-runtime/native-receipts.mjs';
+import {writeIssued, readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
+import {nativeEvents} from '../src/core/lib/coordination-runtime/native-receipts.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');
-const cli = join(checkout, 'scripts', 'coordinate.mjs');
+const cli = join(checkout, 'src', 'core', 'coordinate.mjs');
 const scratch = join(checkout, '.superpowers', 'cli-tests');
 mkdirSync(scratch, {recursive: true});
 export function workspace(fn, schema = 4) {

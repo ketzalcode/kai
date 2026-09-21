@@ -21,11 +21,13 @@ Use it when creating or refining an agent in the Kai plugin repository.
 3. Do not add a core dependency-guard region. Core availability is checked
    just in time before the first core skill.
 4. Add a new identity to the provider array in `NEW_AGENT_IDS` in root
-   `scripts/lib/pack-plan.mjs`.
+   `tools/lib/pack-plan.mjs`.
 5. Add a new agent to exactly one `CATEGORIES` entry in root
-   `scripts/generate-catalog.mjs`.
+   `tools/generate-catalog.mjs`.
 
-Generated copies under `plugins/kai-core/scripts/` are outputs, not sources.
+Product source lives under `src/<pack>/`; developer tooling lives under
+`tools/` and never ships. Generated copies under `plugins/` are outputs, not
+sources.
 
 ## Required situational contracts
 

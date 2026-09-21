@@ -33,11 +33,11 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
   APPROVED_AGENT_MODELS, parseFrontmatter, parseToolList,
-} from './lib/loader-contract.mjs';
+} from '../src/core/lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, CORE_SKILL_PREFIX,
-  packPluginName,
+  packPluginName, sourceAssetIndex,
   planPacks, planManifests, materializePacks,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
   marketplaceSurfacePolicy,
@@ -816,7 +816,9 @@ function selfTest() {
   'an asset invoked from one pack travels with it, and each lands in the pack that invokes it');
   ok(assetOwnershipErrors({
     assets: liveAssets,
-    exists: (a) => existsSync(join(ROOT, ...a.split('/'))),
+    // A shipped body names the path a consumer runs; its source is under
+    // src/<pack>/, so existence resolves through the source index.
+    exists: (a) => sourceAssetIndex(ROOT).has(a),
   }).length === 0,
   'every invoked script exists and is reachable from the pack that invokes it');
   const bareAsset = new Map([['scripts/start.mjs', {
@@ -1475,7 +1477,9 @@ function gatePartialInstall() {
     ...referenceErrors({ refs, providers: packProviders(files) }),
     ...assetOwnershipErrors({
       assets,
-      exists: (asset) => existsSync(join(ROOT, ...asset.split('/'))),
+      // Shipped key -> source under src/<pack>/; the gate must resolve the
+      // same way the generator does or it reports every asset as missing.
+      exists: (asset) => sourceAssetIndex(ROOT).has(asset),
     }),
     ...hooksAssignmentErrors({
       owners: [...new Set([HOOKS_OWNER, ...claimants])],

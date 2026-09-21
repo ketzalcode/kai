@@ -11,7 +11,7 @@ see what the state you'll produce actually looks like, then run
 It is validated in CI:
 
 ```bash
-node scripts/workspace-doctor.mjs --root examples/e2e-feature-delivery
+node src/core/workspace-doctor.mjs --root examples/e2e-feature-delivery
 # ✓ workspace healthy — claimable
 ```
 

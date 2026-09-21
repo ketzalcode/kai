@@ -132,7 +132,7 @@ changelog/README updates.
 
 **When you add, remove, or rename an agent or skill:**
 
-1. File it under a category in `CATEGORIES` in `scripts/generate-catalog.mjs` —
+1. File it under a category in `CATEGORIES` in `tools/generate-catalog.mjs` —
    `npm test` fails until you do, so the catalog cannot silently omit it.
 2. Run `npm run docs:generate` and commit
    `docs/reference/agents-and-skills.md`.
@@ -271,7 +271,7 @@ push.
 3. Run `npm test` and the exact release guard, then merge through normal branch
    protection. The validator accepts `legacy-rollback` only at `1.0.0` or later
    and requires the monolith while forbidding **every pack name the partition can
-   publish** — the set is derived from `PACKS` in `scripts/lib/pack-plan.mjs`, not
+   publish** — the set is derived from `PACKS` in `tools/lib/pack-plan.mjs`, not
    listed here or there, so a pack published after this runbook was written is
    forbidden by name without anyone remembering to add it. A rollback index that
    restored the monolith beside a still-served department pack would be the exact
@@ -290,7 +290,7 @@ push.
    `kai@kai-plugins`, then start a fresh session. Never install the restored
    monolith beside packs; the doctor correctly refuses that coexistence.
 5. Reverse the workspace provenance on every workspace already migrated. Run
-   `node <kai-plugin>/scripts/workspace-doctor.mjs --migration-check --rollback
+   `node <kai-plugin>/src/core/workspace-doctor.mjs --migration-check --rollback
    --root <workspace-root>`: the explicit rollback intent first requires the
    monolith to be one installed, enabled, identity-consistent copy whose
    recorded config provenance agrees with its tree, every pack to be absent,

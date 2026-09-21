@@ -5,18 +5,18 @@ import {
   RuntimeError,
   criteriaRef,
   validateRecord,
-} from '../scripts/lib/coordination-runtime/contract.mjs';
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
   projectContext,
   readDetail,
   readMessages,
-} from '../scripts/lib/coordination-runtime/context.mjs';
-import {applyCommand} from '../scripts/lib/coordination-runtime/engine.mjs';
+} from '../src/core/lib/coordination-runtime/context.mjs';
+import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
 import {
   applyOperation,
   closeStore,
   openStore,
-} from '../scripts/lib/coordination-runtime/store.mjs';
+} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
   command,
   seedItem,

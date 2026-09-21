@@ -41,7 +41,7 @@ rather than a rewrite. Being incubated is not a queue position.
 
 ## Where the partition is defined
 
-`scripts/lib/pack-plan.mjs` owns it:
+`tools/lib/pack-plan.mjs` owns it:
 
 - `INCUBATED_PACKS` — the packages held out of the partition.
 - `ACTIVE_PACKS` / `PACK_ORDER` / `COMMITTED_PACKS` — what is discovered,
