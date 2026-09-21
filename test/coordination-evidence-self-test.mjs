@@ -1263,11 +1263,23 @@ test('a current successor can replace a stale predecessor without pretending the
 test('declared project bindings reject drive-relative roots rather than consulting process cwd', async () => {
   await withWorkspace(({root}) => {
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
-    for (const path of ['C:project', '\\project']) {
+    // `.kai/manifest.json` is committed in `shared` mode, so the same file is
+    // read on Windows and on Linux. Each of these depends on the process's
+    // current drive or working directory on at least one supported platform, so
+    // every one must be refused on ALL of them — otherwise a manifest that
+    // validates on a Linux runner resolves somewhere else on a workstation.
+    for (const path of ['C:project', '\\project', '/project', 'c:rel/sub']) {
       manifest.projects = [{id: 'app', path, publication_root: 'docs/kai'}];
       file(root, '.kai/manifest.json', JSON.stringify(manifest));
-      assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'));
+      assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+        `${path} must be refused regardless of process.platform (currently ${process.platform})`);
     }
+    // A workspace-relative binding stays valid: it is the normal case, and it
+    // means the same thing everywhere.
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    assert.doesNotThrow(() => assertWorkspacePath(root, 'project:app:docs/kai/x'),
+      'a workspace-relative binding is unambiguous on every platform and stays accepted');
   });
 });
 
