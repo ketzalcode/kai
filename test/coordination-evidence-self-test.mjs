@@ -9,14 +9,14 @@ import {execFileSync} from 'node:child_process';
 import {
   bindEvidenceRuntime, assertWorkspacePath, hashArtifact, hashBundle,
   registerArtifact, transitionAsset, registerEvidence, recordReview, recordApproval,
-} from '../scripts/lib/coordination-runtime/evidence.mjs';
-import {canonicalJson, commandDigest, criteriaRef, validateCommand} from '../scripts/lib/coordination-runtime/contract.mjs';
+} from '../src/core/lib/coordination-runtime/evidence.mjs';
+import {canonicalJson, commandDigest, criteriaRef, validateCommand} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
   completionApproval, requireReviews, requireReleaseEvidence,
-} from '../scripts/lib/coordination-runtime/acceptance.mjs';
-import {applyCommand} from '../scripts/lib/coordination-runtime/engine.mjs';
-import {bindEvidenceTransaction} from '../scripts/lib/coordination-runtime/evidence-context.mjs';
-import {readRecord, listRecords} from '../scripts/lib/coordination-runtime/store.mjs';
+} from '../src/core/lib/coordination-runtime/acceptance.mjs';
+import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {bindEvidenceTransaction} from '../src/core/lib/coordination-runtime/evidence-context.mjs';
+import {readRecord, listRecords} from '../src/core/lib/coordination-runtime/store.mjs';
 import {withWorkspace, seedItem, command, authority} from './helpers/coordination-runtime-fixture.mjs';
 
 const builder = {role: 'eng-builder-software', runId: 'producer-run'};

@@ -1402,7 +1402,7 @@ if (isEntry) {
       // operator with a full activity log that there is "no observation log
       // yet" sends them to configure a hook they do not need.
       console.log('No observation log yet.\n');
-      console.log('  1. enable:  node scripts/observe-subagent.mjs --enable');
+      console.log('  1. enable:  node src/core/observe-subagent.mjs --enable');
       console.log('  2. restart your session (hook config is read at session start)');
       console.log('  3. run any subagent\n');
       console.log('Waiting for the first record...\n');

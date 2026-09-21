@@ -39,7 +39,9 @@ import { resolveWorkspaceRoot, readWorkspaceManifest } from './lib/workspace-res
 import { inspectRuntime } from './lib/coordination-runtime/inspection.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(__dirname, '..');
+// `src/core/` -> repository root is two levels up; self-test fixtures are
+// developer-only and never resolved from a shipped copy.
+const REPO_ROOT = resolve(__dirname, '..', '..');
 
 // Severity order drives both the print order and the exit code.
 const SECTIONS = [

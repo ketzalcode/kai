@@ -222,7 +222,6 @@ needs, plus bounded demo production from approved direction and existing media.
 | Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
 | "What's next on this initiative?" / groom + prioritize the board | `director-chief-of-staff` (as steward, via `kai-core-initiative-stewardship`) |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |
-| Audit kai's own plugin surface (inventory, naming, references) | `workflow-self-check` |
 
 `director-chief-of-staff` owns orchestration only. Scope, technical judgment,
 implementation, review, and release approval remain with their named roles.

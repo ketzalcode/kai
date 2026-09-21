@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as packPlan from '../scripts/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 const {
   agentAuthoringReferenceErrors,
   agentProfileModelErrors,
@@ -18,7 +18,7 @@ const {
   sourceAgentFiles,
   sourceSkillFiles,
 } = packPlan;
-import { documentationReferenceExists } from '../scripts/lib/incubation-contract.mjs';
+import { documentationReferenceExists } from '../tools/lib/incubation-contract.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -85,20 +85,11 @@ const modelSelection = readFileSync(join(
   root, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references',
   'model-selection.md',
 ), 'utf8');
-const selfCheck = readFileSync(join(
-  root, 'plugins', 'kai-core', 'agents', 'workflow-self-check.agent.md',
-), 'utf8');
-const normalizedSelfCheck = selfCheck.replace(/\s+/g, ' ');
 const authoringErrors = agentAuthoringReferenceErrors({ taxonomy, modelSelection });
 assert.ok(!authoringErrors.some(error => error.startsWith('provider family rows')),
   `taxonomy provider rows must match the supported family set: ${authoringErrors.join('; ')}`);
 assert.ok(!authoringErrors.some(error => error.includes('provider family `creative`')),
   `creative must map to kai-creative in the taxonomy reference: ${authoringErrors.join('; ')}`);
-assert.match(
-  normalizedSelfCheck,
-  /\*\*3\.2 Naming convention\.\*\* Existing legacy agents may still use `principal-\*` or `director-\*` during the staged migration\. Current creative durable roles use the provider-family\/posture\/scope contract in `kai-core-create-agent`\.(?![^.]*creative-video-director)/,
-  'workflow-self-check must keep principal/director migration-only and treat creative as current without registering the retired video-director id',
-);
 
 for (const id of retiredAgentIds) {
   const active = join(root, 'plugins', 'kai-creative', 'agents', `${id}.agent.md`);
@@ -194,7 +185,7 @@ for (const asset of [
 ]) {
   const emitted = files.get(`kai-creative/${asset}`);
   assert.ok(emitted, `creative pack must preserve helper dependency ${asset}`);
-  assert.equal(emitted, readFileSync(join(root, ...asset.split('/')), 'utf8')
+  assert.equal(emitted, readFileSync(packPlan.sourceAssetPath(root, asset), 'utf8')
     .replace(/\r\n/g, '\n'));
 }
 for (const [skill, asset] of [

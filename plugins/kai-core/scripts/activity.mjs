@@ -26,7 +26,10 @@ import { spawnSync } from 'node:child_process';
 import { append, read, runs, buildRecord, safeNote, digest, LOG_REL, FORBIDDEN_FIELDS } from './lib/activity.mjs';
 import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// Source lives at `src/core/`, so the repository is two levels up. The shipped
+// copy sits at `plugins/<pack>/scripts/` and never runs these paths:
+// `--self-test` is developer-only.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const DUR = /^(\d+)(s|m|h)$/;
 
@@ -267,7 +270,7 @@ function selfTest() {
   try {
     const W = 6, N = 120;
     const worker = join(tmp, 'w.mjs');
-    const libUrl = pathToFileURL(join(REPO_ROOT, 'scripts', 'lib', 'activity.mjs')).href;
+    const libUrl = pathToFileURL(join(REPO_ROOT, 'src', 'core', 'lib', 'activity.mjs')).href;
     writeFileSync(worker, [
       `const { append } = await import(${JSON.stringify(libUrl)});`,
       'const [root, id] = process.argv.slice(2);',
@@ -287,7 +290,7 @@ function selfTest() {
     ok(perWorker.size === W, 'no writer was starved out by the others');
 
     // End-to-end through the CLI an agent actually invokes.
-    const cli = join(REPO_ROOT, 'scripts', 'activity.mjs');
+    const cli = join(REPO_ROOT, 'src', 'core', 'activity.mjs');
     const e2eRoot = mkdtempSync(join(tmpdir(), 'kai-activity-e2e-'));
     mkdirSync(join(e2eRoot, '.kai'), { recursive: true });
     writeFileSync(join(e2eRoot, '.kai', 'manifest.json'), '{}');

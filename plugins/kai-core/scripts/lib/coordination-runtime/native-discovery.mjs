@@ -8,7 +8,22 @@ import {fileURLToPath} from 'node:url';
 const fail = message => new RuntimeError('UNSUPPORTED_HOST', message);
 const owners = new Set(['kai-core', 'kai-engineering', 'kai-creative']);
 const options = list => (list ?? []).flatMap(entry => entry.options ?? [entry]);
-const sourceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+
+// Two different roots, because this file runs from two different places and
+// they are not the same distance from what each one needs.
+//
+// Shipped, it sits at `plugins/<pack>/scripts/lib/coordination-runtime/`, where
+// three levels up is the plugin root and agents are at `<plugin>/agents/`.
+//
+// In this repository it is authored at `src/core/lib/coordination-runtime/`,
+// where the generated packs are at `<repo>/plugins/<pack>/agents/` — four levels
+// up, not three. Deriving both from one expression is what silently broke when
+// the source moved a level deeper: the shipped half kept working, the repo half
+// resolved to `<repo>/src` and matched nothing. Nothing failed loudly, because a
+// missed candidate just leaves the profile unset.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const pluginRoot = resolve(HERE, '..', '..', '..');
+const repoRoot = resolve(HERE, '..', '..', '..', '..');
 
 export function copilotLaunch(env = process.env) {
   const executable = env.KAI_COPILOT_EXECUTABLE || 'copilot';
@@ -97,7 +112,8 @@ export async function discoverCopilot({root, env = process.env, role}) {
     for (const entry of roster) {
       const [owner, role] = entry.id.split(':');
       const candidates = [...pluginDirs.map(dir => join(dir, 'agents', `${role}.agent.md`)),
-        join(sourceRoot, 'agents', `${role}.agent.md`), join(sourceRoot, 'plugins', owner, 'agents', `${role}.agent.md`)];
+        join(pluginRoot, 'agents', `${role}.agent.md`),
+        join(repoRoot, 'plugins', owner, 'agents', `${role}.agent.md`)];
       const path = candidates.find(p => existsSync(p));
       if (!path) continue;
       const text = readFileSync(path, 'utf8');

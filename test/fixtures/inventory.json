@@ -1,6 +1,6 @@
 {
   "counts": {
-    "agents": 22,
+    "agents": 21,
     "skills": 36
   },
   "agents": [
@@ -22,7 +22,6 @@
     "workflow-initiative-init",
     "workflow-proactive-scan",
     "workflow-pull-request",
-    "workflow-self-check",
     "workflow-ship",
     "workflow-weekly-pulse",
     "workflow-workspace-init"

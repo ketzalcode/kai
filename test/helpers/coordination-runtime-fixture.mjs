@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {
   closeStore,
   openStore,
-} from '../../scripts/lib/coordination-runtime/store.mjs';
+} from '../../src/core/lib/coordination-runtime/store.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const fixedNow = '2026-09-16T12:00:00.000Z';

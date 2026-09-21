@@ -9,11 +9,11 @@ import {
   validateCommand,
   validateRecord,
   validateSubjectRef,
-} from '../scripts/lib/coordination-runtime/contract.mjs';
-import {applyCommand} from '../scripts/lib/coordination-runtime/engine.mjs';
-import {bindEvidenceRuntime} from '../scripts/lib/coordination-runtime/evidence.mjs';
-import {retainSubject} from '../scripts/lib/coordination-runtime/evidence-content.mjs';
-import {readRecord} from '../scripts/lib/coordination-runtime/store.mjs';
+} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {bindEvidenceRuntime} from '../src/core/lib/coordination-runtime/evidence.mjs';
+import {retainSubject} from '../src/core/lib/coordination-runtime/evidence-content.mjs';
+import {readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
   authority,
   command,

@@ -8,8 +8,8 @@ import {
   routedSkills,
   sourceAgentFiles,
   sourceSkillFiles,
-} from '../scripts/lib/pack-plan.mjs';
-import { parseScreenplay } from '../scripts/demo-capture.mjs';
+} from '../tools/lib/pack-plan.mjs';
+import { parseScreenplay } from '../src/creative/demo-capture.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const finalCreativeSkills = [

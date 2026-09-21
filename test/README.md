@@ -40,26 +40,26 @@ PR and push to `main` and must stay fast:
   supported Node version (`22.22.2`, `24.15.0`, `26.0.0`); Node 22's documented
   `node:sqlite` experimental warning is left visible. They are slow by the
   standards of the guards above — the migration and CLI suites take minutes.
-- **`npm run validate`** (`scripts/validate-plugin.mjs`) — the plugin **source**
+- **`npm run validate`** (`tools/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
   consistency, git-dependency allowlist).
-- **`npm run doctor:self-test`** (`scripts/workspace-doctor.mjs --self-test`) —
+- **`npm run doctor:self-test`** (`src/core/workspace-doctor.mjs --self-test`) —
   the generated **consumer-workspace** contract, exercised against committed
   golden fixtures.
-- **`npm run host-contract`** (`scripts/host-contract.mjs --self-test`) — the
+- **`npm run host-contract`** (`tools/host-contract.mjs --self-test`) — the
   **Kai frontmatter acceptance** heuristic: the expected discoverable inventory
   matches a committed golden snapshot, and malformed frontmatter fixtures are
   rejected.
-- **`npm run release-guard:self-test`** (`scripts/release-guard.mjs --self-test`)
+- **`npm run release-guard:self-test`** (`tools/release-guard.mjs --self-test`)
   — the decision core of the release gate: a behavior-sensitive change must carry
   a version bump plus changelog/README updates; docs/test-only changes are exempt.
   On pull requests CI also runs `release-guard --base <sha> --head <sha>`, which
   diffs the PR against its base and enforces the same rule for real.
-- **`npm run pack-preview:self-test`** (`scripts/pack-preview.mjs --self-test`)
+- **`npm run pack-preview:self-test`** (`tools/pack-preview.mjs --self-test`)
   — the pack partition, generated surface, cross-pack references, and named
   installation gates, with `--check` enforcing committed-output parity.
-- **`npm run check-syntax`** (`scripts/check-syntax.mjs`) — `node --check` on
+- **`npm run check-syntax`** (`tools/check-syntax.mjs`) — `node --check` on
   every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
   (skipped cleanly where `pwsh` is unavailable).
 
@@ -165,7 +165,7 @@ including that a held lease carries a unique `token` bound to a
 `version_at_grant` that is strictly less than the item `version` — expiry,
 durable-path containment, and `BOARD.md` drift.
 Run it against a real workspace with `npm run doctor` (or `node
-scripts/workspace-doctor.mjs --root <dir>`).
+src/core/workspace-doctor.mjs --root <dir>`).
 
 Fixtures are self-contained and committed with **no** machine-specific paths or
 secrets (repository-mode roots are relative). The broken fixture's one
