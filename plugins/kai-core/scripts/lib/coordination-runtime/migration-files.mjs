@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import {dirname, isAbsolute, join, relative, resolve} from 'node:path';
 import {RuntimeError, canonicalJson} from './contract.mjs';
 import {durablePath} from './evidence-content.mjs';
-import {pathHasLink, escapesRoot, normalized, inspectPrivateLanes} from '../workspace-path-safety.mjs';
+import {pathHasLink, escapesRoot, normalized, inspectPrivateLanes, canonicalPath} from '../workspace-path-safety.mjs';
 import {readWorkspaceManifest, loadWorkspaceRegistry} from '../workspace-resolve.mjs';
 import {inspectGitPrivacy, workspaceGit} from '../workspace-git-privacy.mjs';
 
@@ -126,7 +126,11 @@ export function privateAdmission(root, {admit = false} = {}) {
   const privacy = inspectGitPrivacy(root, manifest.manifest.storage_mode, {extraPrivate: privateNames, privateDatabases: true});
   if (privacy.errors.length) return {errors: privacy.errors, admitted: []};
   if (!privacy.gitRoot) return {errors: [], admitted: []};
-  const prefix = relative(privacy.gitRoot, root).replaceAll('\\', '/');
+  // Both sides are canonicalised: git reports the real on-disk name while `root`
+  // may still carry a Windows 8.3 short component, and `relative()` between the
+  // two forms yields a bogus `../..` prefix — which writes exclude entries that
+  // can never match, then reports the admission it just performed as failed.
+  const prefix = relative(privacy.gitRoot, canonicalPath(root)).replaceAll('\\', '/');
   const name = path => prefix ? `${prefix}/${path}` : path;
   const ignored = path => git(['check-ignore', '--no-index', '-q', '--', path]).status === 0;
   const missing = privacy.missing;

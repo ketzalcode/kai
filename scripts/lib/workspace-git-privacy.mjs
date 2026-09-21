@@ -1,4 +1,5 @@
 import {spawnSync} from 'node:child_process';
+import {canonicalPath} from './workspace-path-safety.mjs';
 
 export const PRIVATE_PREFIXES = ['.kai/runs/', '.kai/review/', '.kai/personal/', '.kai/archive/'];
 export const PRIVATE_FILES = [
@@ -27,7 +28,7 @@ export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabas
   const tracked = git(['ls-files', '-z', '--', '.kai']);
   if (tracked.status !== 0) {
     errors.push('cannot inspect tracked private workspace state');
-    return {errors, warnings, missing, gitRoot: top.stdout.trim()};
+    return {errors, warnings, missing, gitRoot: canonicalPath(top.stdout.trim())};
   }
   const paths = tracked.stdout.split('\0').filter(Boolean);
   const privatePaths = [...PRIVATE_PREFIXES, ...PRIVATE_FILES, ...extraPrivate];
@@ -48,5 +49,5 @@ export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabas
     }
     for (const path of privatePaths) if (!ignored(path)) missing.push(path);
   }
-  return {errors, warnings, missing, gitRoot: top.stdout.trim()};
+  return {errors, warnings, missing, gitRoot: canonicalPath(top.stdout.trim())};
 }

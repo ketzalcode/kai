@@ -27,7 +27,15 @@ export function canonicalPath(path) {
     tail.unshift(basename(existing));
     existing = parent;
   }
-  const canonical = existsSync(existing) ? realpathSync(existing) : existing;
+  // `realpathSync.native`, not `realpathSync`: on Windows the JS implementation
+  // leaves an 8.3 short component as it found it (`C:\Users\RUNNER~1\...`),
+  // while every external tool reports the long form. Comparing a path kept short
+  // against `git rev-parse --show-toplevel` made a project look like it was not
+  // its own Git root, on any machine whose TEMP resolves through a short alias —
+  // which is every Windows account with a name longer than eight characters.
+  // The native call resolves to the real on-disk name, and `normalized()`
+  // lowercases afterwards, so casing differences remain irrelevant.
+  const canonical = existsSync(existing) ? realpathSync.native(existing) : existing;
   return resolve(canonical, ...tail);
 }
 

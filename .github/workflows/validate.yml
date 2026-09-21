@@ -14,8 +14,9 @@ name: validate
 # additionally runs the release-guard gate: a behavior-sensitive change must carry
 # a version bump plus changelog/README updates. A separate `coordination-runtime`
 # job executes the coordination inputs, store, engine, context, evidence, report,
-# host, migration and CLI suites on every supported Node version, because that
-# runtime is executable code over `node:sqlite` rather than declarative source.
+# host, migration and CLI suites on every supported Node version and on Windows,
+# because that runtime is executable code over `node:sqlite` rather than
+# declarative source.
 #
 # No pack declares a runtime npm dependency, so there is no per-pack install leg
 # to run. The host copies plugin trees and never runs npm, which means a bare
@@ -101,12 +102,22 @@ jobs:
   # runtime's real state instead of turning it into a skipped check that
   # reports nothing. It installs no dependencies: every suite here imports only
   # `node:` built-ins and repository files.
+  # A Windows leg runs at the pinned Node version. Windows is the platform this
+  # repository is developed on and was the only platform CI never covered, which
+  # is how a path check that behaved differently per OS survived: it passed
+  # locally and the assertion that would have caught it only ever ran on Linux.
+  # Path semantics do not vary by Node version, so one OS leg is proportionate
+  # rather than doubling the whole matrix.
   coordination-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         node-version: ['22.22.2', '24.15.0', '26.0.0']
+        include:
+          - os: windows-latest
+            node-version: '24.15.0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
