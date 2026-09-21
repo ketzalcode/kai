@@ -11,6 +11,14 @@ system it ran on, and closes the CI gap that let it survive.
 
 ### Fixed
 
+- `canonicalPath()` and the workspace registry used `fs.realpathSync`, which on
+  Windows leaves an 8.3 short component exactly as it found it
+  (`C:\Users\RUNNER~1\…`) while every external tool reports the long form.
+  Comparing a path kept short against `git rev-parse --show-toplevel` made a
+  project look like it was not its own Git root, breaking Git evidence on any
+  Windows machine whose `TEMP` resolves through a short alias — which is every
+  account with a name longer than eight characters. All four call sites now use
+  `fs.realpathSync.native`, which resolves to the real on-disk name.
 - `projectBinding()` refused a `\project` binding on Windows and silently
   accepted it on Linux, where it resolved to a directory literally named
   `\project`. A backslash-rooted path is root-of-current-drive on Windows and a
@@ -49,7 +57,13 @@ read from a committed file.
 
 All nine coordination suites pass on Windows locally, and the previously
 failing Linux assertion now passes for the right reason rather than by being
-skipped.
+skipped. The 8.3 failure was reproduced locally by pointing `TEMP` at a short
+alias — **fail 1** before the change, **fail 0** after, same path — rather than
+being inferred from the CI log.
+
+The new Windows leg found the 8.3 bug on its first run. That bug had been
+shipped for as long as the code existed and was invisible because Windows was
+never tested.
 
 
 
