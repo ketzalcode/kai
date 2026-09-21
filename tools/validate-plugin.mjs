@@ -28,7 +28,7 @@ import { join, dirname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   parseFrontmatter, stripQuotes, loaderErrors, parseToolList, SUPPORTED_TOOLS,
-} from './lib/loader-contract.mjs';
+} from '../src/core/lib/loader-contract.mjs';
 import {
   discoverManifests, manifestParityErrors, marketplaceConsistencyErrors,
   marketplaceSurfacePolicy,
@@ -48,11 +48,12 @@ import {
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
   RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
   RETIRED_ENGINEERING_AGENT_IDS, RETIRED_DIRECTOR_AGENT_IDS, RETIRED_CORE_SKILL_IDS,
+  RETIRED_CORE_AGENT_IDS, sourceAssetIndex, sourceAssetPath,
 } from './lib/pack-plan.mjs';
 import {
   incubatedIds, incubatedPackageDirs, incubatedManifestPaths, documentationReferenceExists,
 } from './lib/incubation-contract.mjs';
-import { MARKETPLACE } from './lib/migration-doctor.mjs';
+import { MARKETPLACE } from '../src/core/lib/migration-doctor.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];
@@ -126,6 +127,7 @@ const inactiveAgentIds = new Set([
   ...RETIRED_CREATIVE_AGENT_IDS,
   ...RETIRED_ENGINEERING_AGENT_IDS,
   ...RETIRED_DIRECTOR_AGENT_IDS,
+  ...RETIRED_CORE_AGENT_IDS,
 ]);
 const inactiveSkillIds = new Set([
   ...incubatedIds(ROOT, 'skill'),
@@ -290,7 +292,7 @@ for (const p of refScanFiles) {
 // recommendation nobody tested. One canonical file, pinned byte for byte, is
 // what stops the shipped copy and the dogfooded copy from drifting.
 // ---------------------------------------------------------------------------
-const stylePath = join(ROOT, 'scripts/lib/communication-style-block.md');
+const stylePath = sourceAssetPath(ROOT, 'scripts/lib/communication-style-block.md');
 const styleBlock = existsSync(stylePath)
   ? readFileSync(stylePath, 'utf8').replace(/\r\n/g, '\n').trim()
   : null;
@@ -476,7 +478,10 @@ const packAssets = planAssets(packRefs);
       err(e.file, e.msg);
     }
   }
-  const exists = (asset) => existsSync(join(ROOT, ...asset.split('/')));
+  // Assets resolve through the source index: a shipped body names the path a
+// consumer runs (`scripts/x.mjs`), which is authored at `src/<pack>/x.mjs`.
+const assetIndex = sourceAssetIndex(ROOT);
+const exists = (asset) => assetIndex.has(asset);
   for (const e of assetOwnershipErrors({ assets: packAssets, exists })) err(e.file, e.msg);
 }
 
@@ -503,7 +508,6 @@ const ASSESSOR_ROLES = [
   'eng-reviewer-quality',
   'eng-advisor-investigation',
   'eng-lead-technical-writing',
-  'workflow-self-check',
 ];
 {
   if (!skillIds.has(ASSESSOR_CONTRACT)) {
@@ -1106,7 +1110,9 @@ const SANCTIONED_GIT_DEPS = new Map();
       const m = cmd.match(HOOK_ASSET_RE);
       if (m) {
         hookAssets.add(m[1]);
-        if (!existsSync(join(ROOT, m[1]))) {
+        // The hook names the shipped path the host executes; its source lives
+        // under src/<pack>/, so it resolves through the same index.
+        if (!sourceAssetIndex(ROOT).has(m[1])) {
           err(rel, `${ev} command points at "${m[1]}", which does not exist in this plugin`);
         }
       }

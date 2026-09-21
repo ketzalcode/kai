@@ -6,10 +6,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   sourceAgentFiles, sourceSkillFiles, materializePacks, collectReferences,
-} from '../scripts/lib/pack-plan.mjs';
+} from '../tools/lib/pack-plan.mjs';
 import {
   incubatedIds, documentationReferenceExists,
-} from '../scripts/lib/incubation-contract.mjs';
+} from '../tools/lib/incubation-contract.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const normalizeContract = body => body.replace(/\s+/g, ' ').trim().toLowerCase();

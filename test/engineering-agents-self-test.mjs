@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url';
 import {
   sourceAgentFiles, sourceSkillFiles, materializePacks, collectReferences,
   agentRoutingErrors, agentProfileModelErrors, agentTaxonomyErrors, normalizeLF,
-} from '../scripts/lib/pack-plan.mjs';
+} from '../tools/lib/pack-plan.mjs';
 import {
   parseFrontmatter, parseToolList, stripQuotes, loaderErrors,
-} from '../scripts/lib/loader-contract.mjs';
+} from '../src/core/lib/loader-contract.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const expected = {

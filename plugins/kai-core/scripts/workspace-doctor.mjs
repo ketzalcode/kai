@@ -50,6 +50,10 @@ import { inspectRuntime } from './lib/coordination-runtime/inspection.mjs';
 import { inspectGitPrivacy } from './lib/workspace-git-privacy.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// Self-test fixtures live in the repository, two levels above this source file
+// (`src/core/`). The shipped copy sits at `plugins/<pack>/scripts/` and never
+// runs these paths: `--self-test` is developer-only.
+const REPO_ROOT = join(__dirname, '..', '..');
 
 // --- Contract constants the current plugin generates -----------------------
 // Two numbers, deliberately: `CURRENT_SCHEMA_VERSION` is the structural shape
@@ -889,7 +893,7 @@ export function forgetWorkspace({ projectRoot, env = process.env }) {
 }
 
 function selfTest() {
-  const fx = join(__dirname, '..', 'test', 'fixtures');
+  const fx = join(REPO_ROOT, 'test', 'fixtures');
   let failed = 0;
   const ok = (condition, message, details = []) => {
     if (condition) console.log(`✓ self-test: ${message}`);
@@ -924,12 +928,12 @@ function selfTest() {
     [...concurrency.errors, ...concurrency.warnings],
   );
 
-  const example = checkWorkspace(join(__dirname, '..', 'examples', 'e2e-feature-delivery'));
+  const example = checkWorkspace(join(REPO_ROOT, 'examples', 'e2e-feature-delivery'));
   ok(example.errors.length === 0, 'end-to-end schema-3 example is claimable', example.errors);
 
   const publicationTemplates = ['decision.md', 'spec.md', 'report.md'].map((name) => ({
     name,
-    fm: frontmatter(readFileSync(join(__dirname, '..', 'plugins', 'kai-core', 'templates', 'publication', name), 'utf8')),
+    fm: frontmatter(readFileSync(join(REPO_ROOT, 'plugins', 'kai-core', 'templates', 'publication', name), 'utf8')),
   }));
   ok(
     publicationTemplates.every(({ fm }) => fm && scalar(fm, 'item') === '<work-item-id>'),
@@ -1648,7 +1652,7 @@ const MIGRATION_CASES = [
 // The fixtures are data rather than committed directories: a host cache tree and
 // an empty directory are both things a checkout cannot reproduce faithfully.
 function materializeHostFixtures(dest) {
-  const fx = JSON.parse(readFileSync(join(__dirname, '..', 'test', 'fixtures', 'host-installs.json'), 'utf8'));
+  const fx = JSON.parse(readFileSync(join(REPO_ROOT, 'test', 'fixtures', 'host-installs.json'), 'utf8'));
   const write = (base, files) => {
     for (const [rel, content] of Object.entries(files)) {
       const target = resolve(base, ...rel.split('/').filter(Boolean));

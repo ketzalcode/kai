@@ -14,13 +14,13 @@
 // judgment, and coverage is enforced — a new agent or skill fails the build
 // until it is filed under exactly one heading.
 //
-// Run: `node scripts/generate-catalog.mjs`          (write)
-//      `node scripts/generate-catalog.mjs --check`  (fail on drift; used by npm test)
+// Run: `node tools/generate-catalog.mjs`          (write)
+//      `node tools/generate-catalog.mjs --check`  (fail on drift; used by npm test)
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseFrontmatter, stripQuotes, isUserInvocable } from './lib/loader-contract.mjs';
+import { parseFrontmatter, stripQuotes, isUserInvocable } from '../src/core/lib/loader-contract.mjs';
 import { sourceAgentFiles, sourceSkillFiles, PUBLISHED_PACKS } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,7 +34,7 @@ const CATEGORIES = [
     kind: 'agent',
     title: 'Workspace foundation',
     blurb: 'Set a workspace up and keep its structure honest.',
-    members: ['workflow-workspace-init', 'workflow-initiative-init', 'workflow-self-check'],
+    members: ['workflow-workspace-init', 'workflow-initiative-init'],
   },
   {
     kind: 'agent',
@@ -204,7 +204,7 @@ function build(items) {
     }
   }
   for (const [id, item] of items) {
-    if (!filed.has(id)) problems.push(`${item.path} is not filed under any catalog category (add it to CATEGORIES in scripts/generate-catalog.mjs)`);
+    if (!filed.has(id)) problems.push(`${item.path} is not filed under any catalog category (add it to CATEGORIES in tools/generate-catalog.mjs)`);
   }
   if (problems.length) {
     const e = new Error('catalog coverage is incomplete');
@@ -229,7 +229,7 @@ function build(items) {
   out.push('');
   out.push('<!-- GENERATED FILE — do not edit by hand.');
   out.push('     Source: agent/skill frontmatter + the CATEGORIES table in');
-  out.push('     scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;');
+  out.push('     tools/generate-catalog.mjs. Regenerate with `npm run docs:generate`;');
   out.push('     `npm test` fails if this file drifts from the shipped surface. -->');
   out.push('');
   out.push(`The repository ships **${agents} agents** and **${skills} skills**.`);

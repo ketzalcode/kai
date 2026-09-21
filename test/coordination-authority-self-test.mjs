@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { analyze } from '../scripts/work-status.mjs';
+import { analyze } from '../src/core/work-status.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const corePath = (...parts) => join(root, 'plugins', 'kai-core', ...parts);

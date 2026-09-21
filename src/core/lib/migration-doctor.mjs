@@ -41,7 +41,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'n
 import { dirname, isAbsolute, join, relative } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { PACK_ORDER, packPluginName } from './pack-plan.mjs';
+import { PACK_ORDER, packPluginName } from './pack-names.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -67,7 +67,7 @@ const DIRECT_BUCKET = '_direct';
 const PLUGIN_MANIFEST = 'plugin.json';
 
 export const defaultHome = () => process.env.COPILOT_HOME || join(homedir(), '.copilot');
-export const defaultMarketplaceIndex = () => join(HERE, '..', '..', '.github', 'plugin', 'marketplace.json');
+export const defaultMarketplaceIndex = () => join(HERE, '..', '..', '..', '.github', 'plugin', 'marketplace.json');
 
 // --- parsing ---------------------------------------------------------------
 

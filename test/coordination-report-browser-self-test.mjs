@@ -3,7 +3,7 @@ import {cpSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:f
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {chromium} from 'playwright';
-import {buildReport, writeReport} from '../scripts/lib/coordination-runtime/report.mjs';
+import {buildReport, writeReport} from '../src/core/lib/coordination-runtime/report.mjs';
 import {withWorkspace} from './helpers/coordination-runtime-fixture.mjs';
 import {
   NOW, acceptReport, addReportArtifact, appendMessage, hash, mutateBody, payload, seedHostAttempt, setupReport,

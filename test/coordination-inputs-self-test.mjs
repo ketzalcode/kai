@@ -4,12 +4,12 @@ import {randomUUID} from 'node:crypto';
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {join, dirname} from 'node:path';
 import {withWorkspace, seedItem, seedInitiative, authority, command} from './helpers/coordination-runtime-fixture.mjs';
-import {criteriaRef} from '../scripts/lib/coordination-runtime/contract.mjs';
-import {bindEvidenceRuntime, hashArtifact, registerArtifact, recordApproval, transitionAsset} from '../scripts/lib/coordination-runtime/evidence.mjs';
-import {readRecord} from '../scripts/lib/coordination-runtime/store.mjs';
-import {applyCommand} from '../scripts/lib/coordination-runtime/engine.mjs';
-import {projectContext} from '../scripts/lib/coordination-runtime/context.mjs';
-import {buildReport} from '../scripts/lib/coordination-runtime/report.mjs';
+import {criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {bindEvidenceRuntime, hashArtifact, registerArtifact, recordApproval, transitionAsset} from '../src/core/lib/coordination-runtime/evidence.mjs';
+import {readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
+import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
+import {buildReport} from '../src/core/lib/coordination-runtime/report.mjs';
 
 const builder = {role: 'eng-builder-software', runId: 'build-context'};
 const reviewer = {role: 'eng-reviewer-code', runId: 'review-context'};

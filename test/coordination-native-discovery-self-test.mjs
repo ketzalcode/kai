@@ -4,7 +4,7 @@ import {dirname, join, delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {mkdirSync, mkdtempSync, writeFileSync, rmSync, existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {discoverCopilot} from '../scripts/lib/coordination-runtime/native-discovery.mjs';
+import {discoverCopilot} from '../src/core/lib/coordination-runtime/native-discovery.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 test('missing native executable is a precise setup gap, not a model fallback', async () => {
@@ -25,7 +25,7 @@ test('real short-lived native ACP discovers exact installed agents/models withou
   }));
   let result;
   try {
-    const probe = spawnSync(process.execPath, [join(root, 'scripts', 'coordinate.mjs'), 'prepare', '--root', workspace], {
+    const probe = spawnSync(process.execPath, [join(root, 'src', 'core', 'coordinate.mjs'), 'prepare', '--root', workspace], {
       encoding: 'utf8', input: JSON.stringify({role: 'eng-builder-software'}), timeout: 90_000, env: {...process.env,
     KAI_COPILOT_PLUGIN_DIRS: ['kai-core', 'kai-engineering', 'kai-creative'].map(pack => join(root, 'plugins', pack)).join(delimiter),
       },

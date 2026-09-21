@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Syntax/parse gate for shipped helper scripts (#35): every shipped .mjs/.js
-// under scripts/ must pass `node --check`, and every .ps1 must parse under
+// Syntax/parse gate (#35): every .mjs/.js under src/, tools/ and examples/
+// must pass `node --check`, and every .ps1 must parse under
 // PowerShell. PowerShell parsing is skipped with a notice when pwsh is
 // unavailable, so the check stays runnable on machines without PowerShell (CI
 // runners have it).
 //
-// Usage: node scripts/check-syntax.mjs   (exit 0 = all parse, 1 = a failure)
+// Usage: node tools/check-syntax.mjs   (exit 0 = all parse, 1 = a failure)
 
 import { execFileSync } from 'node:child_process';
 import { readdirSync, statSync } from 'node:fs';
@@ -26,14 +26,23 @@ function collect(dir, re) {
   return out;
 }
 
-const scriptsDir = join(ROOT, 'scripts');
-// Shipped examples are copied verbatim into consumer repos, so their executable
-// helpers get the same parse gate as scripts/.
-const examplesDir = join(ROOT, 'examples');
+// Product source and the developer tooling that decides what ships. Both are
+// parsed: a tooling file that will not parse breaks the build that produces the
+// packs, which is no less severe than a shipped file that will not parse.
+const sourceRoots = ['src', 'tools', 'examples'];
 
-const sourceDirs = [scriptsDir, examplesDir].filter((d) => {
-  try { return statSync(d).isDirectory(); } catch { return false; }
-});
+const sourceDirs = sourceRoots.map((name) => {
+  const dir = join(ROOT, name);
+  try {
+    if (statSync(dir).isDirectory()) return dir;
+  } catch { /* fall through to the error below */ }
+  // A missing directory is a failure, never a silent skip. This check used to
+  // filter absent roots out quietly; when `scripts/` was split into `src/` and
+  // `tools/`, that turned a 63-file gate into a 1-file gate and still reported
+  // success. An expected root that has moved must fail loudly.
+  errors.push(`${name}/: expected source root is missing — check-syntax would otherwise pass by scanning nothing`);
+  return null;
+}).filter(Boolean);
 
 // 1. JavaScript / ESM — node --check parses without executing.
 const jsFiles = sourceDirs.flatMap((d) => collect(d, /\.(mjs|js)$/));

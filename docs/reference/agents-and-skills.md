@@ -4,12 +4,12 @@
 
 <!-- GENERATED FILE — do not edit by hand.
      Source: agent/skill frontmatter + the CATEGORIES table in
-     scripts/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
+     tools/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-The repository ships **22 agents** and **36 skills**.
+The repository ships **21 agents** and **36 skills**.
 
-The default marketplace supplies **22 agents** and **36 skills** through core, engineering, and creative (11 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **21 agents** and **36 skills** through core, engineering, and creative (11 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -29,7 +29,6 @@ Set a workspace up and keep its structure honest.
 | ---- | ------- | ------------ |
 | [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent. |
 | [`workflow-initiative-init`](../../plugins/kai-core/agents/workflow-initiative-init.agent.md) | `kai-core` | Creates a scope-gated kai initiative workspace with north star, milestones, artifact paths, work records, and threads. Use when a new mission or initiative starts. Not execution before PM scope approval. |
-| [`workflow-self-check`](../../plugins/kai-core/agents/workflow-self-check.agent.md) | `kai-core` | Writes a tiered structural-health report for kai plugin files covering inventory, naming, descriptions, references, overlap, responsibility, and discoverability. Use for kai self-audit. Not auto-restructuring. |
 
 ### Direction
 

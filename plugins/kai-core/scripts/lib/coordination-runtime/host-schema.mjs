@@ -2,7 +2,7 @@ import {
   RuntimeError, assertExactKeys, assertNonEmptyString, assertTimestamp,
   canonicalJson, validateActor,
 } from './contract.mjs';
-import {ROLE_PROFILE_MODELS, agentProfileModelErrors} from '../pack-plan.mjs';
+import {ROLE_PROFILE_MODELS, agentProfileModelErrors} from '../agent-model-policy.mjs';
 
 export const MAX_OBSERVATIONS = 32;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

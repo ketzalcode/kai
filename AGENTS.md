@@ -65,7 +65,7 @@ actually replies to a human. A consumer opts into this block at onboarding;
 kai carries it here because a style we ship and do not use ourselves is a
 recommendation nobody tested.
 
-The block's canonical text lives in `scripts/lib/communication-style-block.md`,
+The block's canonical text lives in `src/core/lib/communication-style-block.md`,
 `kai-core-workspace-onboarding` installs it into a consumer's `AGENTS.md` on
 explicit opt-in, and `npm test` fails if this file's copy drifts from the
 canonical one, if the markers are missing, or if onboarding stops referencing
@@ -107,7 +107,7 @@ document. The terminal gets the result and the link.
 ## Releasing this plugin
 
 These steps apply **only when your change modifies the kai plugin repo itself**
-(`agents/`, `skills/`, `scripts/`, a committed `plugins/` tree, or `plugin.json`) —
+(`agents/`, `skills/`, `src/`, `tools/`, a committed `plugins/` tree, or `plugin.json`) —
 never to work done in a consumer workspace. Users pull updates with
 `copilot plugin update <pack>@kai-plugins`, so the version is descriptive
 metadata, not an update gate;
@@ -127,13 +127,13 @@ Any PR that changes shipped plugin behavior must, in the **same PR**:
    (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
    refresh the README `## Status` stamp.
 3. If you added, removed, or renamed an agent or skill, file it in `CATEGORIES`
-   in `scripts/generate-catalog.mjs`, then run `npm run docs:generate` and
+   in `tools/generate-catalog.mjs`, then run `npm run docs:generate` and
    commit `docs/reference/agents-and-skills.md`. `npm test` fails until both are
    done.
 4. Run `npm test`, then open the PR.
 
 CI **enforces** all of this: a behavior-sensitive change (`agents/`, `skills/`,
-`scripts/`, a committed `plugins/` tree, or the dependency manifests) that lacks a
+`src/`, `tools/`, a committed `plugins/` tree, or the dependency manifests) that lacks a
 version bump plus changelog/README updates fails the `release-guard` gate, and the
 static checks reject a missing changelog section/link, a stale README stamp, a
 stale generated catalog, or a `package.json` ↔ `package-lock.json` mismatch. Docs-

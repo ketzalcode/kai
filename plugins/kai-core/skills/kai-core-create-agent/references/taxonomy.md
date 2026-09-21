@@ -1,7 +1,7 @@
 # Kai agent taxonomy
 
 These tables are the supported data set for agent classification. The matching
-validator constants live in `scripts/lib/pack-plan.mjs`. Adding a value requires
+validator constants live in `tools/lib/pack-plan.mjs`. Adding a value requires
 updating this reference, the validator data, and its mutation tests.
 
 The provider/posture/scope taxonomy is a Kai design decision synthesized for

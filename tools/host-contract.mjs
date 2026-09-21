@@ -22,7 +22,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseFrontmatter, loaderErrors, stripQuotes, isUserInvocable } from './lib/loader-contract.mjs';
+import { parseFrontmatter, loaderErrors, stripQuotes, isUserInvocable } from '../src/core/lib/loader-contract.mjs';
 import { sourceAgentFiles, sourceSkillFiles } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');

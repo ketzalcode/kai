@@ -10,18 +10,18 @@ import {DatabaseSync} from 'node:sqlite';
 import {
   migrateWorkspace, canRollback, rollbackMigration, recoverMigration,
   readLegacyRecords, bindMigrationRepair, repairLegacyRecord,
-} from '../scripts/lib/coordination-runtime/migration.mjs';
-import {inspectRuntime} from '../scripts/lib/coordination-runtime/inspection.mjs';
-import {openStore, closeStore, readRecord} from '../scripts/lib/coordination-runtime/store.mjs';
-import {applyCommand} from '../scripts/lib/coordination-runtime/engine.mjs';
-import {checkWorkspace} from '../scripts/workspace-doctor.mjs';
-import {collect} from '../scripts/work-status.mjs';
-import {resolveWorkspaceRoot} from '../scripts/lib/workspace-resolve.mjs';
+} from '../src/core/lib/coordination-runtime/migration.mjs';
+import {inspectRuntime} from '../src/core/lib/coordination-runtime/inspection.mjs';
+import {openStore, closeStore, readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
+import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {checkWorkspace} from '../src/core/workspace-doctor.mjs';
+import {collect} from '../src/core/work-status.mjs';
+import {resolveWorkspaceRoot} from '../src/core/lib/workspace-resolve.mjs';
 import {
   allocateTemporaryRoot, command, authority, seedItem, seedInitiative,
 } from './helpers/coordination-runtime-fixture.mjs';
-import {buildReport, writeReport} from '../scripts/lib/coordination-runtime/report.mjs';
-import {bindEvidenceRuntime, hashArtifact, registerArtifact} from '../scripts/lib/coordination-runtime/evidence.mjs';
+import {buildReport, writeReport} from '../src/core/lib/coordination-runtime/report.mjs';
+import {bindEvidenceRuntime, hashArtifact, registerArtifact} from '../src/core/lib/coordination-runtime/evidence.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const roles = ['eng-lead-architecture', 'eng-builder-software', 'eng-reviewer-code'];
@@ -645,7 +645,7 @@ test('a competing real process cannot migrate while the offline owner holds its 
   let competed = false;
   boundary('renameSync', (original, from, to) => {
     if (resolve(to) === dbPath(root)) {
-      const moduleUrl = new URL('../scripts/lib/coordination-runtime/migration.mjs', import.meta.url).href;
+      const moduleUrl = new URL('../src/core/lib/coordination-runtime/migration.mjs', import.meta.url).href;
       const code = `import {migrateWorkspace} from ${JSON.stringify(moduleUrl)};
         try { migrateWorkspace({root:process.argv[1],confirm:true}); process.exit(7); }
         catch(e) { if(e.code!=='RECOVERY_REQUIRED') throw e; console.log(e.code); }`;
@@ -999,8 +999,8 @@ test('round1 real process repair is refused during rollback and accepted work pr
   migrated(root);
   let request;
   withStore(root, store => { request = repairRequest(store); });
-  const migrationUrl = new URL('../scripts/lib/coordination-runtime/migration.mjs', import.meta.url).href;
-  const storeUrl = new URL('../scripts/lib/coordination-runtime/store.mjs', import.meta.url).href;
+  const migrationUrl = new URL('../src/core/lib/coordination-runtime/migration.mjs', import.meta.url).href;
+  const storeUrl = new URL('../src/core/lib/coordination-runtime/store.mjs', import.meta.url).href;
   const code = `import {bindMigrationRepair,repairLegacyRecord} from ${JSON.stringify(migrationUrl)};
     import {openStore,closeStore} from ${JSON.stringify(storeUrl)};
     const store=openStore({path:process.argv[2],mode:'write'});
