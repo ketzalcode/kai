@@ -4,6 +4,78 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [14.0.1] - 2026-09-21
+
+Fixes a shipped path check that behaved differently depending on the operating
+system it ran on, and closes the CI gap that let it survive.
+
+### Fixed
+
+- `canonicalPath()` and the workspace registry used `fs.realpathSync`, which on
+  Windows leaves an 8.3 short component exactly as it found it
+  (`C:\Users\RUNNER~1\…`) while every external tool reports the long form.
+  Comparing a path kept short against `git rev-parse --show-toplevel` made a
+  project look like it was not its own Git root, breaking Git evidence on any
+  Windows machine whose `TEMP` resolves through a short alias — which is every
+  account with a name longer than eight characters. All four call sites now use
+  `fs.realpathSync.native`, which resolves to the real on-disk name.
+- `inspectGitPrivacy()` returned the raw `git rev-parse --show-toplevel` output
+  as `gitRoot`, and `migration-files.mjs` computed `relative(gitRoot, root)`
+  against a possibly-short `root`. The resulting bogus `../..` prefix wrote
+  private exclude entries that could never match, and the migration then
+  reported the admission it had just performed as failed. Both sides are now
+  canonicalised.
+- `resolveWorkspaceRoot()` returns a registered root as its real on-disk name.
+  Its migration test compared the raw constructed path, which only matched on
+  machines where the short and long forms are identical.
+- `projectBinding()` refused a `\project` binding on Windows and silently
+  accepted it on Linux, where it resolved to a directory literally named
+  `\project`. A backslash-rooted path is root-of-current-drive on Windows and a
+  nonsense filename on POSIX — never a legitimate binding on either — so it is
+  now refused on every platform.
+- `test/coordination-evidence-self-test.mjs` asserted this with `\project`,
+  which is only root-relative on Windows, so the suite failed on Linux CI. It
+  now covers `C:project`, `\project` and `c:rel/sub` on all platforms, `/project`
+  where it is process-dependent, and asserts that both a workspace-relative and
+  a host-absolute binding stay accepted.
+
+### Added
+
+- A `windows-latest` leg in the `coordination-runtime` matrix, at the pinned
+  Node version. Windows is the platform this repository is developed on and was
+  the only platform CI never covered — which is precisely how an OS-dependent
+  path check survived. Path semantics do not vary by Node version, so one OS leg
+  is proportionate rather than doubling the matrix.
+
+### Scope of the rule
+
+The check still consults `process.platform` for exactly one form, and that is
+deliberate. `/project` is fully qualified on POSIX, carrying no process state,
+and an `external` workspace legitimately binds to an absolute project path on
+the machine that registered it. It is root-relative, and therefore
+process-dependent, only on Windows. Judging it by Windows semantics everywhere
+was tried first and rejected: it broke every host-absolute binding on Linux,
+including the ones the repository's own suites create. The asymmetry is in the
+path semantics, not in the check.
+
+No binding that was valid before is refused now. `workspaceManifest()`'s check
+on `root` is unchanged: `root` is supplied by the caller at runtime rather than
+read from a committed file.
+
+### Verified
+
+All nine coordination suites pass on Windows locally, and the previously
+failing Linux assertion now passes for the right reason rather than by being
+skipped. Every 8.3 failure was reproduced locally by pointing `TEMP` at a short
+alias and re-running all nine suites — rather than being inferred from a CI log
+— and all nine pass under that alias.
+
+The new Windows leg found three distinct pre-existing defects on its first two
+runs, each hidden behind the previous one. All three had shipped for as long as
+the code existed and were invisible because Windows was never tested.
+
+
+
 ## [14.0.0] - 2026-09-18
 
 Removes the audio and narration-synthesis capability, and with it the only npm
@@ -3900,6 +3972,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[14.0.1]: https://github.com/ketzalcode/kai/compare/v14.0.0...v14.0.1
 [14.0.0]: https://github.com/ketzalcode/kai/compare/v13.0.0...v14.0.0
 [13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0
 [12.0.0]: https://github.com/RubenSaucedo/kai/compare/v11.0.0...v12.0.0

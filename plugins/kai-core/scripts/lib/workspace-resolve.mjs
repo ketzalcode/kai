@@ -28,7 +28,10 @@ function normalizePath(path) {
     tail.unshift(existing.slice(parent.length).replace(/^[\\/]+/, ''));
     existing = parent;
   }
-  const canonical = existsSync(existing) ? realpathSync(existing) : existing;
+  // .native resolves a Windows 8.3 short component to its real on-disk name;
+  // the JS implementation leaves it short, which made the same directory compare
+  // unequal to itself when one side came from an external tool.
+  const canonical = existsSync(existing) ? realpathSync.native(existing) : existing;
   const resolved = resolvePath(canonical, ...tail);
   return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
 }
@@ -159,7 +162,7 @@ function validateRegisteredWorkspace(entry, projectRoot) {
       reason: `workspace manifest "${manifestResult.path}" does not bind registered project "${projectRoot}"`,
     };
   }
-  return { ok: true, root: realpathSync(entry.workspace_root) };
+  return { ok: true, root: realpathSync.native(entry.workspace_root) };
 }
 
 export function findRegisteredWorkspace(cwd, env = process.env) {
@@ -171,7 +174,7 @@ export function findRegisteredWorkspace(cwd, env = process.env) {
     .sort((left, right) => normalizePath(right.project_root).length - normalizePath(left.project_root).length);
   if (!matches.length) return { ok: true, root: null, registryPath: registry.path };
 
-  const projectRoot = realpathSync(matches[0].project_root);
+  const projectRoot = realpathSync.native(matches[0].project_root);
   const duplicate = matches.filter(
     (entry) => normalizePath(entry.project_root) === normalizePath(projectRoot),
   );

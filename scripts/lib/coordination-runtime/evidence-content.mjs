@@ -59,7 +59,23 @@ export function projectBinding(root, projectId) {
   }
   const project = matches[0];
   if (/^(\\\\|\/\/)/.test(project.path)) fail('UNSUPPORTED_HOST', 'network projects are unsupported');
+  // Refuse bindings that resolve against the process's current drive or working
+  // directory, because those name a different place on every run.
+  //
+  // `C:foo` is drive-relative on any platform, and `\foo` is root-of-current-drive
+  // on Windows and a nonsense filename on POSIX — neither is ever a legitimate
+  // binding, so both are refused everywhere. The missing `\foo` case is the bug
+  // this rule exists to close: it let a manifest validate on a Linux runner and
+  // resolve somewhere else entirely on a Windows workstation.
+  //
+  // `/foo` is deliberately NOT refused outright. It is fully qualified on POSIX,
+  // carrying no process state, and an `external` workspace legitimately binds to
+  // an absolute project path on the machine that registered it. It is only
+  // root-relative — and therefore process-dependent — on Windows, so that one
+  // form stays platform-judged. The asymmetry is in the path semantics, not in
+  // this check.
   if (/^[a-z]:(?![\\/])/i.test(project.path)
+    || /^\\(?!\\)/.test(project.path)
     || (process.platform === 'win32' && isAbsolute(project.path) && !/^[a-z]:[\\/]/i.test(project.path))) {
     fail('INVALID_INPUT', 'project binding cannot depend on the current drive or working directory');
   }
