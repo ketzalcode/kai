@@ -11,18 +11,16 @@ system it ran on, and closes the CI gap that let it survive.
 
 ### Fixed
 
-- `projectBinding()` judged drive- and root-relative project bindings with the
-  platform-default `node:path`, so `\project` was refused on Windows and
-  silently accepted on Linux — where it resolved to a directory literally named
-  `\project`. `.kai/manifest.json` is a committed artifact in `shared` mode, so
-  the same file is read on a workstation and on a runner; it is now judged with
-  `path.win32` semantics on every platform. A form unsafe on **any** supported
-  platform is refused on **every** platform. The check no longer reads
-  `process.platform` at all.
+- `projectBinding()` refused a `\project` binding on Windows and silently
+  accepted it on Linux, where it resolved to a directory literally named
+  `\project`. A backslash-rooted path is root-of-current-drive on Windows and a
+  nonsense filename on POSIX — never a legitimate binding on either — so it is
+  now refused on every platform.
 - `test/coordination-evidence-self-test.mjs` asserted this with `\project`,
   which is only root-relative on Windows, so the suite failed on Linux CI. It
-  now covers `C:project`, `\project`, `/project` and `c:rel/sub`, and asserts
-  that a workspace-relative binding stays accepted.
+  now covers `C:project`, `\project` and `c:rel/sub` on all platforms, `/project`
+  where it is process-dependent, and asserts that both a workspace-relative and
+  a host-absolute binding stay accepted.
 
 ### Added
 
@@ -32,22 +30,26 @@ system it ran on, and closes the CI gap that let it survive.
   path check survived. Path semantics do not vary by Node version, so one OS leg
   is proportionate rather than doubling the matrix.
 
-### Behavior change
+### Scope of the rule
 
-A `projects[].path` of `/project` is now refused on Linux, where it was
-previously accepted. It is root-relative under Windows semantics, so a manifest
-using it names a different location per platform. Use a workspace-relative path
-(the normal case — `.` in every fixture and example) or a drive-qualified path.
-`workspaceManifest()`'s check on `root` is unchanged: `root` is supplied by the
-caller at runtime rather than read from a committed file, so it stays
-platform-appropriate.
+The check still consults `process.platform` for exactly one form, and that is
+deliberate. `/project` is fully qualified on POSIX, carrying no process state,
+and an `external` workspace legitimately binds to an absolute project path on
+the machine that registered it. It is root-relative, and therefore
+process-dependent, only on Windows. Judging it by Windows semantics everywhere
+was tried first and rejected: it broke every host-absolute binding on Linux,
+including the ones the repository's own suites create. The asymmetry is in the
+path semantics, not in the check.
+
+No binding that was valid before is refused now. `workspaceManifest()`'s check
+on `root` is unchanged: `root` is supplied by the caller at runtime rather than
+read from a committed file.
 
 ### Verified
 
-All nine coordination suites pass on Windows locally and the rule was proved
-platform-independent by evaluating every form against both `path.win32` and
-`path.posix`. The Linux verdict is unchanged for every binding in the
-repository's fixtures and examples.
+All nine coordination suites pass on Windows locally, and the previously
+failing Linux assertion now passes for the right reason rather than by being
+skipped.
 
 
 
