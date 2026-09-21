@@ -7,13 +7,13 @@ import {syncBuiltinESMExports} from 'node:module';
 import {dirname, join} from 'node:path';
 import {
   buildReport, renderHtml, renderMarkdown, writeReport, reportPaths,
-} from '../scripts/lib/coordination-runtime/report.mjs';
-import {RuntimeError, criteriaRef} from '../scripts/lib/coordination-runtime/contract.mjs';
-import {redactReport} from '../scripts/lib/coordination-runtime/report-safety.mjs';
-import {renderLanding} from '../scripts/lib/coordination-runtime/report-render.mjs';
-import {hashBundle} from '../scripts/lib/coordination-runtime/evidence-content.mjs';
-import {closeStore, openStore, readRecord} from '../scripts/lib/coordination-runtime/store.mjs';
-import {projectContext, readDetail, readMessages} from '../scripts/lib/coordination-runtime/context.mjs';
+} from '../src/core/lib/coordination-runtime/report.mjs';
+import {RuntimeError, criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {redactReport} from '../src/core/lib/coordination-runtime/report-safety.mjs';
+import {renderLanding} from '../src/core/lib/coordination-runtime/report-render.mjs';
+import {hashBundle} from '../src/core/lib/coordination-runtime/evidence-content.mjs';
+import {closeStore, openStore, readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
+import {projectContext, readDetail, readMessages} from '../src/core/lib/coordination-runtime/context.mjs';
 import {withWorkspace, seedItem, seedRecord} from './helpers/coordination-runtime-fixture.mjs';
 import {
   NOW, acceptReport, addReportArtifact, appendMessage, appendVerdict, file, hash, mutateBody,

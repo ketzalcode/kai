@@ -48,7 +48,6 @@ const agentPaths = {
   initiativeInit: coreAgent('workflow-initiative-init'),
   workspaceInit: coreAgent('workflow-workspace-init'),
   proactiveScan: coreAgent('workflow-proactive-scan'),
-  selfCheck: coreAgent('workflow-self-check'),
   weeklyPulse: coreAgent('workflow-weekly-pulse'),
 };
 
@@ -601,9 +600,6 @@ assert.doesNotMatch(source.proactiveScan, /status\|messages\s*\n?\s*--root/,
   'proactive-scan: must not show `messages` without its required --item');
 assert.match(source.proactiveScan, /messages --item/,
   'proactive-scan: `messages` carries the required --item argument');
-assert.match(source.selfCheck,
-  /(?:never|not)[\s\S]{0,120}(?:open|create)[\s\S]{0,60}item/i,
-  'self-check: still never opens a coordinated item itself');
 assert.match(source.weeklyPulse, /(?:read-only|does not (?:write|change))/i,
   'weekly-pulse: remains a reader of coordinated state');
 

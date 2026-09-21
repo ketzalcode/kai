@@ -4,6 +4,58 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [15.0.0] - 2026-09-21
+
+Separates product source from developer tooling. `scripts/` was both, which is
+why a developer script reached every consumer install.
+
+### Changed
+
+- Product source moved to `src/<pack>/`; developer tooling moved to `tools/`.
+  **Shipped paths are unchanged**: an instruction still invokes
+  `scripts/coordinate.mjs`, and `hooks.json` still points where it did. Only the
+  authoring location moved, which is what makes the migration cheap.
+- Asset ownership is declared by location rather than inferred from whoever
+  mentions a path. `sourceAssetIndex()` maps a shipped key to its owning pack by
+  walking `src/<pack>/`, and rejects one shipped path having two sources.
+
+### Removed
+
+- `workflow-self-check`. It audited kai's own plugin inventory and only meant
+  anything inside this repository, yet every consumer received it — and its
+  prose reference to a developer script is what dragged the release tooling in.
+
+### Fixed — the leak, structurally
+
+`generate-catalog.mjs` (13 KB) and `lib/pack-plan.mjs` (93 KB) shipped to every
+`kai-core` consumer because two shipped bodies named them in prose and the
+closure followed. Both now live in `tools/`, where the asset pattern — which
+matches only `scripts/` — cannot reach them. The leak is no longer something to
+remember not to cause.
+
+Two extractions were needed to break the dependency the wrong way round:
+
+- `src/core/lib/pack-names.mjs` — `migration-doctor.mjs` needed exactly two
+  values, a pack list and a one-line function, and imported 93 KB of migration
+  baselines and marketplace policy to get them.
+- `src/core/lib/agent-model-policy.mjs` — the coordination host validates an
+  actor's profile at runtime and the repository validators check the same rule
+  when an agent is authored. That rule now lives once, under `src/`, and tooling
+  imports it instead of the reverse.
+
+### Result
+
+Shipped executables drop from **1,041 KB to 946 KB**, and no developer tooling
+ships at all.
+
+### Verified
+
+`npm test` passes end to end. `validate-plugin` reports 0 errors at 21 agents
+and 36 skills. Generated packs, the catalog, and the host-loader golden were all
+regenerated on the new layout.
+
+
+
 ## [14.0.1] - 2026-09-21
 
 Fixes a shipped path check that behaved differently depending on the operating
@@ -3972,6 +4024,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[15.0.0]: https://github.com/ketzalcode/kai/compare/v14.0.1...v15.0.0
 [14.0.1]: https://github.com/ketzalcode/kai/compare/v14.0.0...v14.0.1
 [14.0.0]: https://github.com/ketzalcode/kai/compare/v13.0.0...v14.0.0
 [13.0.0]: https://github.com/RubenSaucedo/kai/compare/v12.0.0...v13.0.0

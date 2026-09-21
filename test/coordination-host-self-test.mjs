@@ -6,17 +6,17 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {
   bindHostRuntime, planDispatch, recordAttempt, recordHostResult, recordEffect,
-} from '../scripts/lib/coordination-runtime/host.mjs';
+} from '../src/core/lib/coordination-runtime/host.mjs';
 import {
   commandDigest, validateCommand, validateRecord,
-} from '../scripts/lib/coordination-runtime/contract.mjs';
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
   readRecord, listRecords, openStore, closeStore, applyOperation,
-} from '../scripts/lib/coordination-runtime/store.mjs';
-import {readDetail, projectContext} from '../scripts/lib/coordination-runtime/context.mjs';
-import {applyCommand} from '../scripts/lib/coordination-runtime/engine.mjs';
-import {ROLE_PROFILE_MODELS, agentProfileModelErrors} from '../scripts/lib/pack-plan.mjs';
-import {parseFrontmatter, stripQuotes, loaderErrors} from '../scripts/lib/loader-contract.mjs';
+} from '../src/core/lib/coordination-runtime/store.mjs';
+import {readDetail, projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
+import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {ROLE_PROFILE_MODELS, agentProfileModelErrors} from '../tools/lib/pack-plan.mjs';
+import {parseFrontmatter, stripQuotes, loaderErrors} from '../src/core/lib/loader-contract.mjs';
 import {authority, command, seedItem, withWorkspace} from './helpers/coordination-runtime-fixture.mjs';
 
 const role = 'eng-builder-software';
@@ -234,12 +234,11 @@ check('only approved available models and supported overrides are planned, never
   assert.deepEqual(packet.queue[0].settings, {model, effort: 'high'});
 });
 
-check('six real core sources retain their profiles and acquire the shared approved model pins', () => {
+check('five real core sources retain their profiles and acquire the shared approved model pins', () => {
   const expected = {
     'director-chief-of-staff': 'judgment',
     'workflow-initiative-init': 'procedure',
     'workflow-proactive-scan': 'procedure',
-    'workflow-self-check': 'procedure',
     'workflow-weekly-pulse': 'procedure',
     'workflow-workspace-init': 'procedure',
   };
@@ -907,7 +906,7 @@ check('malformed host mutation fails with the shared input error', () =>
 
 check('private host schema imports independently without a contract initialization cycle', () => {
   assert.doesNotThrow(() => execFileSync(process.execPath, [
-    '--input-type=module', '-e', "await import('./scripts/lib/coordination-runtime/host-schema.mjs')",
+    '--input-type=module', '-e', "await import('./src/core/lib/coordination-runtime/host-schema.mjs')",
   ], {cwd: fileURLToPath(new URL('..', import.meta.url)), stdio: 'pipe'}));
 });
 

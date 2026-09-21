@@ -19,13 +19,13 @@ import {dirname, join, delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID, createHash} from 'node:crypto';
 import {withWorkspace, seedItem, seedInitiative, allocateTemporaryRoot} from './helpers/coordination-runtime-fixture.mjs';
-import {criteriaRef} from '../scripts/lib/coordination-runtime/contract.mjs';
-import {readRecord, listRecords} from '../scripts/lib/coordination-runtime/store.mjs';
-import {privateAdmission} from '../scripts/lib/coordination-runtime/migration-files.mjs';
-import {readIssued} from '../scripts/lib/coordination-runtime/native-capabilities.mjs';
+import {criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {readRecord, listRecords} from '../src/core/lib/coordination-runtime/store.mjs';
+import {privateAdmission} from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');
-const cli = join(checkout, 'scripts', 'coordinate.mjs');
+const cli = join(checkout, 'src', 'core', 'coordinate.mjs');
 const mode = process.env.KAI_TEST_NATIVE_SCENARIOS ?? '';
 const live = mode === '1';
 // "rehearsal" exercises the same runtime plumbing with locally executed commands

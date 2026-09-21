@@ -1,8 +1,8 @@
 // SYNTHETIC operator/catalog fixture. It is not actual human acceptance.
 // Only the metadata discovery seam is replaced; native receipt matching,
 // capabilities, parser, SQLite, files, Git and all domain operations are real.
-import {runCLI} from '../../scripts/coordinate.mjs';
-import {createNativeHost} from '../../scripts/lib/coordination-runtime/native-host.mjs';
+import {runCLI} from '../../src/core/coordinate.mjs';
+import {createNativeHost} from '../../src/core/lib/coordination-runtime/native-host.mjs';
 import {randomUUID} from 'node:crypto';
 
 const roles = ['workflow-manager', 'workflow-ship', 'eng-lead-architecture',

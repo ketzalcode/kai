@@ -2,8 +2,11 @@
 # at LF line endings so the workspace-doctor and host-contract snapshots compare
 # deterministically across platforms (and `--update` output matches what's
 # committed regardless of the contributor's OS).
-scripts/**/*.mjs text eol=lf
-scripts/**/*.js text eol=lf
+src/**/*.mjs text eol=lf
+src/**/*.js text eol=lf
+tools/**/*.mjs text eol=lf
+tools/**/*.js text eol=lf
+test/**/*.mjs text eol=lf
 test/fixtures/** text eol=lf
 plugins/** text eol=lf
 docs/reference/agents-and-skills.md text eol=lf

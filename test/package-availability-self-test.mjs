@@ -11,8 +11,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as packPlan from '../scripts/lib/pack-plan.mjs';
-import { incubatedIds, incubatedPackageDirs } from '../scripts/lib/incubation-contract.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
+import { incubatedIds, incubatedPackageDirs } from '../tools/lib/incubation-contract.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const published = ['kai-core', 'kai-engineering', 'kai-creative'];

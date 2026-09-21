@@ -6,13 +6,13 @@ import {dirname, join, delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {withWorkspace, seedItem, seedInitiative} from './helpers/coordination-runtime-fixture.mjs';
-import {readRecord, readStoreSummary} from '../scripts/lib/coordination-runtime/store.mjs';
-import {privateAdmission} from '../scripts/lib/coordination-runtime/migration-files.mjs';
-import {readIssued} from '../scripts/lib/coordination-runtime/native-capabilities.mjs';
-import {nativeEvents} from '../scripts/lib/coordination-runtime/native-receipts.mjs';
+import {readRecord, readStoreSummary} from '../src/core/lib/coordination-runtime/store.mjs';
+import {privateAdmission} from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
+import {nativeEvents} from '../src/core/lib/coordination-runtime/native-receipts.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');
-const cli = join(checkout, 'scripts', 'coordinate.mjs');
+const cli = join(checkout, 'src', 'core', 'coordinate.mjs');
 
 test('actual native preparation -> reservation -> standalone context -> safe command receipt correspondence', {
   skip: process.env.KAI_TEST_NATIVE_HANDSHAKE !== '1' && 'one explicitly authorized read-only model probe; never automatic',
@@ -71,7 +71,7 @@ test('actual native preparation -> reservation -> standalone context -> safe com
   const identityCapture = invoke('request', {type: 'capture', actor, itemId: 'demo', classification: 'internal',
     command: 'Write-Output $env:COPILOT_AGENT_SESSION_ID',
     checks: ['Actual tool environment identity only; not a coordination CLI receipt']}, [], workerEnv).request;
-  const trustedDirectories = [join(checkout, 'scripts'), join(checkout, 'plugins', 'kai-core'),
+  const trustedDirectories = [join(checkout, 'src', 'core'), join(checkout, 'plugins', 'kai-core'),
     join(checkout, 'plugins', 'kai-engineering')];
   const prompt = 'This is an explicitly authorized read-only integration test, not domain work. '
     + 'The test prepared your actual native session and reserved a synthetic test lease before launching you. '

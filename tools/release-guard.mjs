@@ -6,8 +6,8 @@
 // exercised by --self-test, so the logic is unit-tested, not brittle YAML.
 //
 // Usage:
-//   node scripts/release-guard.mjs --base <ref> --head <ref>   (real gate, CI)
-//   node scripts/release-guard.mjs --self-test                 (fixtureless unit test)
+//   node tools/release-guard.mjs --base <ref> --head <ref>   (real gate, CI)
+//   node tools/release-guard.mjs --self-test                 (fixtureless unit test)
 
 import { execFileSync } from 'node:child_process';
 
@@ -17,7 +17,11 @@ import { execFileSync } from 'node:child_process';
 // agents and skills do, so a change to it must never land outside version/release
 // enforcement. Everything else (README, CHANGELOG, docs, tests, workflows,
 // .env.example, LICENSE) is exempt.
-const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'scripts/', 'plugins/'];
+// src/ is product source and 	ools/ is the tooling that decides what ships;
+// a change to either can alter the installed surface, so both are behaviour-
+// sensitive. scripts/ is retained because it is still the SHIPPED path inside
+// a generated pack.
+const BEHAVIOR_PREFIXES = ['agents/', 'skills/', 'src/', 'tools/', 'scripts/', 'plugins/'];
 const BEHAVIOR_FILES = new Set([
   '.github/plugin/marketplace.json',
   'plugin.json',
@@ -108,12 +112,12 @@ function selfTest() {
     },
     {
       name: 'behavior change bumped but missing CHANGELOG fails',
-      input: { changedFiles: ['scripts/validate-plugin.mjs', 'README.md'], baseVersion: '0.14.0', headVersion: '0.15.0' },
+      input: { changedFiles: ['tools/validate-plugin.mjs', 'README.md'], baseVersion: '0.14.0', headVersion: '0.15.0' },
       expect: (r) => !r.ok && r.errors.some((e) => /CHANGELOG\.md was not updated/.test(e)),
     },
     {
       name: 'behavior change bumped but missing README stamp fails',
-      input: { changedFiles: ['scripts/validate-plugin.mjs', 'CHANGELOG.md'], baseVersion: '0.14.0', headVersion: '0.15.0' },
+      input: { changedFiles: ['tools/validate-plugin.mjs', 'CHANGELOG.md'], baseVersion: '0.14.0', headVersion: '0.15.0' },
       expect: (r) => !r.ok && r.errors.some((e) => /README\.md was not updated/.test(e)),
     },
     {
@@ -154,7 +158,7 @@ function selfTest() {
   }
   // Path classification spot-checks.
   const cls = [
-    ['agents/x.agent.md', true], ['skills/x/SKILL.md', true], ['scripts/x.mjs', true],
+    ['agents/x.agent.md', true], ['skills/x/SKILL.md', true], ['src/core/x.mjs', true], ['tools/x.mjs', true], ['scripts/x.mjs', true],
     ['plugins/kai-core/plugin.json', true], ['plugins/kai-personal/agents/x.agent.md', true],
     ['.github/plugin/marketplace.json', true],
     ['plugin.json', true], ['package.json', true], ['package-lock.json', true],

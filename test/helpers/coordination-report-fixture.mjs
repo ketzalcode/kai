@@ -4,10 +4,10 @@ import {mkdirSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {
   bindEvidenceRuntime, registerArtifact, recordApproval, recordReview,
-} from '../../scripts/lib/coordination-runtime/evidence.mjs';
-import {criteriaRef, validateRecord} from '../../scripts/lib/coordination-runtime/contract.mjs';
-import {attemptSummary, sanitizeFacts} from '../../scripts/lib/coordination-runtime/host-schema.mjs';
-import {readRecord} from '../../scripts/lib/coordination-runtime/store.mjs';
+} from '../../src/core/lib/coordination-runtime/evidence.mjs';
+import {criteriaRef, validateRecord} from '../../src/core/lib/coordination-runtime/contract.mjs';
+import {attemptSummary, sanitizeFacts} from '../../src/core/lib/coordination-runtime/host-schema.mjs';
+import {readRecord} from '../../src/core/lib/coordination-runtime/store.mjs';
 import {authority, command, seedItem, seedRecord} from './coordination-runtime-fixture.mjs';
 
 export const NOW = '2026-09-16T12:00:00.000Z';
