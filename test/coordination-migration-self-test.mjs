@@ -291,7 +291,12 @@ test('external schema 4 registry resolves and duplicate bindings still fail', ()
   put(root, 'home/workspaces.json', JSON.stringify({schema_version: 1, workspaces: [entry]}));
   assert.equal(resolveWorkspaceRoot({cwd: project, env}).root, root); // In-tree wins.
   fs.unlinkSync(manifest(root));
-  assert.equal(resolveWorkspaceRoot({cwd: project, env}).root, external);
+  // The registry branch canonicalises what it returns, so a registered root
+  // comes back as its real on-disk name. That matters on Windows, where a
+  // caller may hold an 8.3 short path and every external tool reports the long
+  // one; comparing the raw constructed path would only pass on machines where
+  // the two happen to be identical.
+  assert.equal(resolveWorkspaceRoot({cwd: project, env}).root, fs.realpathSync.native(external));
   put(root, 'home/workspaces.json', JSON.stringify({schema_version: 1, workspaces: [entry, entry]}));
   assert.match(resolveWorkspaceRoot({cwd: project, env}).reason, /2 entries/);
 }));

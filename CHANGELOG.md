@@ -19,6 +19,15 @@ system it ran on, and closes the CI gap that let it survive.
   Windows machine whose `TEMP` resolves through a short alias — which is every
   account with a name longer than eight characters. All four call sites now use
   `fs.realpathSync.native`, which resolves to the real on-disk name.
+- `inspectGitPrivacy()` returned the raw `git rev-parse --show-toplevel` output
+  as `gitRoot`, and `migration-files.mjs` computed `relative(gitRoot, root)`
+  against a possibly-short `root`. The resulting bogus `../..` prefix wrote
+  private exclude entries that could never match, and the migration then
+  reported the admission it had just performed as failed. Both sides are now
+  canonicalised.
+- `resolveWorkspaceRoot()` returns a registered root as its real on-disk name.
+  Its migration test compared the raw constructed path, which only matched on
+  machines where the short and long forms are identical.
 - `projectBinding()` refused a `\project` binding on Windows and silently
   accepted it on Linux, where it resolved to a directory literally named
   `\project`. A backslash-rooted path is root-of-current-drive on Windows and a
@@ -57,13 +66,13 @@ read from a committed file.
 
 All nine coordination suites pass on Windows locally, and the previously
 failing Linux assertion now passes for the right reason rather than by being
-skipped. The 8.3 failure was reproduced locally by pointing `TEMP` at a short
-alias — **fail 1** before the change, **fail 0** after, same path — rather than
-being inferred from the CI log.
+skipped. Every 8.3 failure was reproduced locally by pointing `TEMP` at a short
+alias and re-running all nine suites — rather than being inferred from a CI log
+— and all nine pass under that alias.
 
-The new Windows leg found the 8.3 bug on its first run. That bug had been
-shipped for as long as the code existed and was invisible because Windows was
-never tested.
+The new Windows leg found three distinct pre-existing defects on its first two
+runs, each hidden behind the previous one. All three had shipped for as long as
+the code existed and were invisible because Windows was never tested.
 
 
 
