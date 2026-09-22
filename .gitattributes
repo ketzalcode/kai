@@ -9,4 +9,10 @@ tools/**/*.js text eol=lf
 test/**/*.mjs text eol=lf
 test/fixtures/** text eol=lf
 plugins/** text eol=lf
+# Written by npm and by the generator, both of which emit LF. Without these the
+# platform default would fight them on every release bump.
+.github/plugin/marketplace.json text eol=lf
+package.json text eol=lf
+package-lock.json text eol=lf
+plugin.json text eol=lf
 docs/reference/agents-and-skills.md text eol=lf

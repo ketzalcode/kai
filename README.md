@@ -44,17 +44,25 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v15.0.0` is this checkout's prepared metadata version. kai ships **three
+`v16.0.0` is this checkout's prepared metadata version. kai ships **three
 packages** — `kai-core`, `kai-engineering`, and `kai-creative` — supplying
 **21 agents and 36 skills**. The
 [agents & skills catalog](docs/reference/agents-and-skills.md) is exactly what
 they provide. Prepared metadata is not a tag, a release, a publication, or a
 host-verification claim.
 
-This release reorganizes the repository around what it ships. The five
-capability packages previously retained as pre-release source — product,
-marketing, revenue, assistant, and learning — moved to
-[`incubator/`](incubator/README.md) and were fully deactivated: not discovered,
+This release builds what it ships. Shipped executables are no longer a copied
+module graph — the generator compiles each entry point with esbuild and code
+splitting, so a pack carries **22 files instead of 54**. Shipped paths are
+unchanged, and a consumer-install acceptance test now copies a pack somewhere
+with no `node_modules` and runs every entry point from there, which is the check
+whose absence once let an unresolvable dependency ship. This release also
+renames the engineering `coding-style` skill to `coding-standards`; installs
+referring to the old id must update, because no alias was kept.
+
+Since 13.0.0, the five capability packages previously retained as pre-release
+source — product, marketing, revenue, assistant, and learning — live in
+[`incubator/`](incubator/README.md), fully deactivated: not discovered,
 not validated as packs, not emitted, not installable. None of them was ever in
 the marketplace index, so nothing was withdrawn from a host that installed
 core, engineering, or creative. Removing an index entry never uninstalls an
@@ -69,8 +77,13 @@ currently declares an agent-to-agent dispatch entry; the roles that did were
 incubated, so that firing path is recorded as empty rather than asserted
 vacuously.
 
-`kai-core` ships the coordination runtime — `scripts/coordinate.mjs` and its
-`scripts/lib/coordination-runtime/` closure — and the breaking workspace
+`kai-core` ships the coordination runtime — `scripts/coordinate.mjs`, which now
+carries that runtime compiled in rather than as a directory of loose modules —
+and the breaking workspace
+**schema 4**: coordinated work lives in a SQLite store reached only through
+that command, and a schema-3 workspace stays inspect-only until an explicit,
+separately authorized migration runs. The coordination suites run in `npm test`
+and in a CI job covering Node `22.22.2`, `24.15.0` and `26.0.0`.
 **schema 4**: coordinated work lives in a SQLite store reached only through
 that command, and a schema-3 workspace stays inspect-only until an explicit,
 separately authorized migration runs. The coordination suites run in `npm test`

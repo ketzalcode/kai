@@ -14,6 +14,7 @@ import { builtinModules } from 'node:module';
 import { join, dirname, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packPluginName, PACK_ORDER as SHIPPED_PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
+import { bundlePack } from './bundle.mjs';
 import {
   ROLE_FAMILY_PACK, ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
   KIND_AGENT_FAMILIES, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
@@ -614,6 +615,10 @@ export function materializePacks({
   }
   const assets = planAssets(collectReferences(root));
   const assetIndex = sourceAssetIndex(root);
+  // The closure still runs, but for VALIDATION rather than copying: it is what
+  // proves a referenced asset exists, resolves, and does not cross a pack
+  // boundary. The bundler owns the module graph now, so nothing under `lib/`
+  // is emitted as a separate file.
   const closure = planAssetClosure({
     assets,
     exists: (asset) => assetIndex.has(asset),
@@ -624,11 +629,13 @@ export function materializePacks({
     throw new Error([...closure.errors, ...located]
       .map((e) => `${e.file}: ${e.msg}`).join('\n'));
   }
-  for (const [owner, ownedAssets] of closure.files) {
-    if (!selected.has(owner)) continue;
-    for (const asset of ownedAssets) {
-      files.set(`${packPluginName(owner)}/${asset}`,
-        normalizeLF(readFileSync(assetIndex.get(asset).path, 'utf8')));
+  for (const pack of PACK_ORDER) {
+    if (!selected.has(pack)) continue;
+    const bundled = bundlePack({
+      root, srcDir: SRC_DIR, shippedDir: SHIPPED_ASSET_DIR, pack,
+    });
+    for (const [shipped, text] of bundled.files) {
+      files.set(`${packPluginName(pack)}/${shipped}`, normalizeLF(text));
     }
   }
   if (selected.has(HOOKS_OWNER)) {

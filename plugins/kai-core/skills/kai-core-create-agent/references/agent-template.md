@@ -113,7 +113,8 @@ Its aliases and fallback behavior are host-specific, and other catalogs use
 vocabularies this host does not accept — VS Code Copilot Chat's `codebase` and
 `editFiles` are not portable here. The names Kai accepts are recorded, with the
 CLI versions they were measured against, beside `SUPPORTED_TOOLS` in
-`scripts/lib/loader-contract.mjs`. Agent Skills separately defines an
+the repository source at `src/core/lib/loader-contract.mjs`. Agent Skills
+separately defines an
 experimental `allowed-tools` field for skills; new Kai skills follow the Agent
 Skills schema and do not declare `tools` at all.
 

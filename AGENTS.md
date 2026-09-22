@@ -123,6 +123,12 @@ Any PR that changes shipped plugin behavior must, in the **same PR**:
    `npm install` if you touched dependencies so `package-lock.json` stays in
    sync; version-only changes do not require an install. Regenerate every
    package manifest/lock/script with `npm run pack-preview -- --write`.
+   Generating now **builds** the shipped executables with esbuild, so a clean
+   checkout needs `npm ci` before the generator will run at all. The build is
+   developer tooling only: nothing a consumer installs depends on it, and the
+   consumer-install acceptance test (`npm run consumer-install:self-test`) is
+   what keeps that true by running every shipped entry point from a copied
+   pack with no `node_modules`.
 2. Add a dated **`CHANGELOG.md`** entry under the new version
    (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
    refresh the README `## Status` stamp.

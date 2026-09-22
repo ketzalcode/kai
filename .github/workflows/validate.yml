@@ -22,6 +22,13 @@ name: validate
 # to run. The host copies plugin trees and never runs npm, which means a bare
 # import in shipped code could never resolve on a consumer machine; the contract
 # job rejects one outright rather than validating a lockfile nobody installs.
+#
+# The contract job does install devDependencies, because the generator now builds
+# shipped executables with esbuild. That is a build-time tool: it runs here, and
+# the built result is committed. It changes nothing about what a consumer needs.
+# The consumer-install acceptance step is what proves that — it copies a
+# materialised pack somewhere with no `node_modules` and runs every shipped entry
+# point from there.
 
 on:
   pull_request:
@@ -43,6 +50,13 @@ jobs:
           # The coordination runtime uses `node:sqlite`, which Node 20 does not
           # ship. This must stay inside the `engines` range in package.json.
           node-version: '24.15.0'
+          cache: npm
+      # The generator now builds shipped executables with esbuild, so every step
+      # below that materialises a pack needs the devDependencies present. Nothing
+      # a consumer runs needs them: the build happens here and the result is
+      # committed.
+      - name: Install build tooling
+        run: npm ci
       - name: Package availability and incubation isolation
         run: node test/package-availability-self-test.mjs
       - name: Engineering source contracts
@@ -83,6 +97,8 @@ jobs:
         run: node tools/pack-preview.mjs --gate version-skew
       - name: Committed pack trees match the generator
         run: node tools/pack-preview.mjs --check
+      - name: Consumer install acceptance (copied pack, no node_modules)
+        run: node test/consumer-install-self-test.mjs
       - name: Check helper script syntax
         run: node tools/check-syntax.mjs
       - name: Release-guard (behavior change requires a bump + release notes)

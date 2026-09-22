@@ -4,6 +4,149 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [16.0.0] - 2026-09-21
+
+Two changes ship together: shipped executables become built artifacts rather
+than a copied module graph, and the engineering coding skill is renamed and
+re-grounded. Either alone would be breaking; the skill rename is what makes the
+major bump unavoidable.
+
+### The coding skill
+
+Renames `coding-style` to `coding-standards` and re-grounds it in evidence
+mined from the maintainer's own human-authored pull requests and review
+threads. The old name described formatting; the skill is about what a change
+may claim.
+
+- **`coding-style` is now `coding-standards` (breaking).** Every route, catalog
+  entry, and caller clause moves with it. Installs referring to the old skill
+  id must update; there is no alias, because a reachable remnant is still a
+  supported surface.
+- **The skill's body is rebuilt from observed failures, not from taste.** Each
+  section addresses a failure a subagent actually committed with no guidance
+  present, using positive recipes rather than prohibitions. New sections:
+  *One owner per fact*, *Three outcomes, not two*, *Confirm the premise in the
+  source*, *Claims carry their evidence*, *Say what the data supports*, and
+  *Removal removes*. `Precedence` and the existing `Defaults` are unchanged
+  apart from one added bullet on speculative generality.
+
+### The build step
+
+Shipped executables are now bundled artifacts rather than a copied module graph.
+
+#### Why
+
+The Copilot CLI host is a file-copying installer: it copies a plugin tree and
+never runs npm, a build, or a lifecycle script. Shipping raw source satisfied
+that only by accident — the generator followed every relative import and copied
+the whole graph, so a consumer received **54 files to run 10 commands**.
+
+#### Added
+
+- `tools/lib/bundle.mjs` — an esbuild build, called synchronously from the
+  generator so the whole pipeline stays sync. Entry points are the top-level
+  `.mjs` files in `src/<pack>/`; everything under `lib/` is inlined or hoisted
+  into a shared chunk.
+- `test/consumer-install-self-test.mjs` — the acceptance test this repository
+  did not have. It materialises the packs, writes them somewhere else, asserts
+  no npm manifest or `node_modules` travelled, and executes **every** shipped
+  entry point from that copy. This is the class of check whose absence let a
+  runtime npm dependency ship for several releases without ever being
+  resolvable on a consumer machine.
+
+#### Result
+
+Shipped executables drop from **54 files / 947 KB** to **22 files / 846 KB**.
+Shipped paths are unchanged: `hooks.json` and every markdown command string
+still name `scripts/<entry>.mjs`.
+
+#### Measured, not assumed
+
+One self-contained bundle per entry point is a **regression**: 1,601 KB against
+947 KB, because `coordinate`, `work-status` and `workspace-doctor` each inline
+overlapping copies of the coordination runtime. Code splitting is what makes
+bundling a win here at all.
+
+Minification would reach 537 KB, and was rejected: a minified stack trace from
+a consumer machine nobody can inspect is close to useless, and shipping
+sourcemaps to recover it costs 2,090 KB — more than twice what raw source costs
+today. Readable output was chosen over the smaller number.
+
+#### Changed
+
+- `materializePacks` emits bundles instead of copying assets. The asset closure
+  still runs, but for validation — it is what proves a referenced asset exists,
+  resolves, and does not cross a pack boundary.
+- `bundlePack()` reports its own inputs. Once modules are inlined, "did this
+  module ship?" cannot be answered by looking for a file, and searching output
+  text for an identifier is unreliable because the bundler renames on collision.
+- Two assertions were rewritten rather than removed. `creative-foundation`
+  required emitted files to be byte-identical copies of source, and
+  `coordination-foundation` required each runtime module to ship as its own
+  file. Both were true while the generator copied and false once it builds; they
+  now assert that the module was compiled in.
+
+#### Not done
+
+Self-test code still ships. It is gated on `argv.includes('--self-test')`, a
+runtime value no build-time constant can fold, so the planned `define` approach
+eliminated nothing — 537 KB with and without it. Removing it means moving
+self-tests into `test/`, which is separate work. It is recorded here rather than
+quietly dropped.
+
+#### A gap found in the new test
+
+Deleting a chunk to verify the consumer-install test catches it revealed that
+execution alone does not: it catches **eagerly** imported chunks — removing one
+was caught by all five of its importers — but not **lazily** imported ones,
+because a probe run never reaches that path, and `coordinate.mjs` defers its CLI
+implementation exactly that way.
+
+The test now also checks the import graph structurally: every local specifier
+must resolve inside the copy, and no chunk may ship unreferenced. Both
+previously-missed chunks are caught. Execution and static analysis cover
+different halves; neither alone was sufficient.
+
+#### What review caught before this shipped
+
+Four defects, three of which would have reached a consumer or CI:
+
+- **Agent discovery resolved the wrong plugin root.** The runtime found agent
+  profiles by counting directory levels up from `import.meta.url`, pinned to the
+  old shipped layout `scripts/lib/coordination-runtime/`. Compiled into a chunk
+  at `scripts/`, the same arithmetic pointed two directories above the
+  marketplace. It fails silently by construction — a missed candidate just
+  leaves the model unset — and the file's own comment records this breaking once
+  before. It now finds the nearest ancestor holding `agents/`, which is correct
+  from all three locations it runs in, and the consumer-install test pins the
+  resolved root against the real copied tree.
+- **The `coordination-runtime` CI job would have failed on every leg**,
+  including the new Windows one. It documents installing nothing, but one of its
+  suites reached a constant through the generator, which now imports esbuild.
+  The suite takes the constant from the policy module that owns it, and esbuild
+  loads on first build rather than on import, so that property holds again.
+  Verified by running all nine suites from a copy with no `node_modules`.
+- **The acceptance test's failure detection was an allowlist of error strings**
+  — and it listed the failures raw copying produces, not the ones bundling
+  introduces. An ESM chunk cycle, esbuild's CJS interop shim, and an interop
+  `TypeError` all crash on load for every consumer and none of them matched. It
+  now denies by default on any stack trace, which was checked in both
+  directions: all five crash classes caught, a command's own argument error
+  still allowed.
+- **Three assertions had gone vacuous or tautological** — a core-only closure
+  check that tested one file twice, a department guard filtering on a path no
+  pack can emit any more, and a manifest check that would report a pass over
+  zero packs. All three now assert what their comments claim.
+
+#### Verified
+
+`npm test` passes end to end. `validate-plugin`: 0 errors, 21 agents / 36
+skills. `pack-preview --self-test`: 205 checks; all four gates clean;
+`--check` confirms the committed tree matches a fresh build. Every shipped entry
+point loads from a copied pack with no `node_modules`.
+
+
+
 ## [15.0.0] - 2026-09-21
 
 Separates product source from developer tooling. `scripts/` was both, which is
@@ -4024,6 +4167,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[16.0.0]: https://github.com/ketzalcode/kai/compare/v15.0.0...v16.0.0
 [15.0.0]: https://github.com/ketzalcode/kai/compare/v14.0.1...v15.0.0
 [14.0.1]: https://github.com/ketzalcode/kai/compare/v14.0.0...v14.0.1
 [14.0.0]: https://github.com/ketzalcode/kai/compare/v13.0.0...v14.0.0

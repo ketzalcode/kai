@@ -1,90 +1,38 @@
 #!/usr/bin/env node
-// demo-narrate — placing measured speech against a measured recording.
-//
-// Why this exists
-// ---------------
-// The demo pipeline works because whoever cannot know a number is not allowed to
-// write it down. A director cannot watch footage that does not exist yet, so a
-// screenplay is refused a `start`, an `end`, an `x` or a `y`. Narration has to
-// inherit that rule or it reintroduces exactly the guessing the recorder removed.
-//
-// The obvious design is one line per step, with the line's length driving how
-// long the step dwells. It is wrong. A 0.3-second click is not a nine-second
-// visual scene, and keying one to the other manufactures long inert holds. Worse,
-// knowing a clip's duration up front still does not say when the line should
-// start: that depends on when the interface actually reached the state being
-// described, which is only knowable after the take.
-//
-// So there are two independent measurements, taken by two different tools:
-//
-//   how long a line takes to say  <- measured by the synthesiser, before capture
-//   when a state appears on screen <- measured by the recorder, during capture
-//
-// This tool owns neither. It reads both and answers one question: can they be
-// laid against each other without materially falsifying either? When they cannot,
-// it refuses and says which line, by how much, and what would fix it.
-//
-// What it will not do
-// -------------------
-// Stretch time, freeze a frame to cover latency, slow typing to fit prose, or let
-// a line claim an outcome before it is visible. A freeze that conceals latency is
-// a lie about how fast the product is. Those are script defects, and the fix is a
-// shorter line or a wider span -- both of which this tool computes for you.
+import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
+import {
+  parseScreenplay,
+  parseTake
+} from "./chunk-KCEE25ST.mjs";
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { createHash } from 'node:crypto';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { parseScreenplay, parseTake } from './demo-capture.mjs';
-
-const TAKE_SCHEMA = 'kai.demo-narration-take/v1';
-const PLAN_SCHEMA = 'kai.demo-narration-plan/v1';
-const PLUGIN_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-
-// Silence between beats. Speech that butts straight onto the previous line reads
-// as one run-on sentence; this is the smallest pause that still sounds authored.
-const MIN_GAP = 0.25;
-
-// 130 words per minute is the middle of the range measured for explainer
-// narration. It is used only to turn "this line is 1.8 seconds too long" into
-// "cut about four words", which is the form an author can act on.
-const WORDS_PER_SECOND = 130 / 60;
-
+// src/creative/demo-narrate.mjs
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+var TAKE_SCHEMA = "kai.demo-narration-take/v1";
+var PLAN_SCHEMA = "kai.demo-narration-plan/v1";
+var PLUGIN_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+var MIN_GAP = 0.25;
+var WORDS_PER_SECOND = 130 / 60;
 function fail(message) {
   throw new Error(message);
 }
-
 function num(value, label, { min = -Infinity, max = Infinity } = {}) {
   const n = Number(value);
   if (!Number.isFinite(n)) fail(`${label} must be a number, got ${JSON.stringify(value)}`);
   if (n < min || n > max) fail(`${label} must be within ${min}..${max}, got ${n}`);
   return n;
 }
-
 function str(value, label) {
-  if (typeof value !== 'string' || value.trim() === '') fail(`${label} must be a non-empty string`);
+  if (typeof value !== "string" || value.trim() === "") fail(`${label} must be a non-empty string`);
   return value;
 }
-
-const round = (n) => Math.round(n * 1000) / 1000;
-
-// The text a clip was paid for, pinned. Editing a line after synthesis leaves a
-// clip that still plays the old words, and nothing about the file would show it.
-export function textHash(text) {
-  return createHash('sha256').update(text.trim(), 'utf8').digest('hex').slice(0, 16);
+var round = (n) => Math.round(n * 1e3) / 1e3;
+function textHash(text) {
+  return createHash("sha256").update(text.trim(), "utf8").digest("hex").slice(0, 16);
 }
-
-function wordCount(text) {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-// --------------------------------------------------------------- narration take
-
-// The measured, paid output of the synthesiser. It is a separate file from the
-// screenplay on purpose: narration is regenerated per language and per voice
-// while the automation stays fixed, and authored intent must not be overwritten
-// by a provider's answer.
-export function parseNarrationTake(text) {
+function parseNarrationTake(text) {
   let raw;
   try {
     raw = JSON.parse(text);
@@ -94,138 +42,106 @@ export function parseNarrationTake(text) {
   if (raw.schema !== TAKE_SCHEMA) {
     fail(`the narration take must declare "schema": "${TAKE_SCHEMA}", got ${JSON.stringify(raw.schema ?? null)}`);
   }
-  if (!Array.isArray(raw.clips) || raw.clips.length === 0) fail('a narration take must record at least one clip');
-
-  const clips = new Map();
+  if (!Array.isArray(raw.clips) || raw.clips.length === 0) fail("a narration take must record at least one clip");
+  const clips = /* @__PURE__ */ new Map();
   for (const [i, clip] of raw.clips.entries()) {
     const where = `clips[${i}]`;
     const beat = str(clip.beat, `${where}.beat`);
     if (clips.has(beat)) fail(`${where} is a second clip for beat "${beat}"; a beat is spoken once`);
-    const status = clip.status === 'failed' ? 'failed' : 'ok';
+    const status = clip.status === "failed" ? "failed" : "ok";
     clips.set(beat, {
       beat,
       status,
       // A failed clip carries no duration to trust, and must not be silently
       // treated as zero seconds of speech.
-      path: status === 'ok' ? str(clip.path, `${where}.path`) : (typeof clip.path === 'string' ? clip.path : ''),
-      durationSec: status === 'ok' ? num(clip.durationSec, `${where}.durationSec`, { min: 0.01, max: 600 }) : 0,
+      path: status === "ok" ? str(clip.path, `${where}.path`) : typeof clip.path === "string" ? clip.path : "",
+      durationSec: status === "ok" ? num(clip.durationSec, `${where}.durationSec`, { min: 0.01, max: 600 }) : 0,
       characters: Number.isFinite(Number(clip.characters)) ? Number(clip.characters) : null,
-      text_sha256: typeof clip.text_sha256 === 'string' ? clip.text_sha256 : null,
-      reason: typeof clip.reason === 'string' ? clip.reason : '',
+      text_sha256: typeof clip.text_sha256 === "string" ? clip.text_sha256 : null,
+      reason: typeof clip.reason === "string" ? clip.reason : ""
     });
   }
-
   return {
     schema: TAKE_SCHEMA,
-    provider: typeof raw.provider === 'string' ? raw.provider : null,
-    voice: typeof raw.voice === 'string' ? raw.voice : null,
-    region: typeof raw.region === 'string' ? raw.region : null,
-    clips,
+    provider: typeof raw.provider === "string" ? raw.provider : null,
+    voice: typeof raw.voice === "string" ? raw.voice : null,
+    region: typeof raw.region === "string" ? raw.region : null,
+    clips
   };
 }
-
-// ------------------------------------------------------------------- placement
-
-// Lay every beat against the measured recording, or refuse. All problems are
-// collected rather than thrown one at a time, because a script with four long
-// lines should be fixed in one sitting, not four.
-export function place(screenplay, take, narrationTake) {
+function place(screenplay, take, narrationTake) {
   const beats = screenplay.narration;
-  if (!beats || beats.length === 0) fail('this screenplay has no narration beats, so there is nothing to place');
-
+  if (!beats || beats.length === 0) fail("this screenplay has no narration beats, so there is nothing to place");
   const measured = new Map(take.steps.map((step) => [step.id, step]));
   const rejections = [];
   const placed = [];
   let cursor = 0;
-
   for (const beat of beats) {
     const from = measured.get(beat.visual_span.from_step);
     const through = measured.get(beat.visual_span.through_step);
-
-    // A beat can only be placed against states the take actually recorded.
     if (!from || !through) {
       rejections.push({
         beat: beat.id,
-        reason: 'unrecorded-step',
-        detail: `beat "${beat.id}" spans ${!from ? `"${beat.visual_span.from_step}"` : `"${beat.visual_span.through_step}"`}, which this take does not contain; the screenplay and the take are not from the same demo`,
+        reason: "unrecorded-step",
+        detail: `beat "${beat.id}" spans ${!from ? `"${beat.visual_span.from_step}"` : `"${beat.visual_span.through_step}"`}, which this take does not contain; the screenplay and the take are not from the same demo`
       });
       continue;
     }
-
-    // Narrating over a step the driver knows went wrong sells a defect as a
-    // feature. `unsettled` is just as disqualifying: the tool recorded that it
-    // never saw the interface stop changing, so it cannot say the described
-    // state was ever reached.
-    const broken = [from, through].filter((s) => s.status !== 'ok');
+    const broken = [from, through].filter((s) => s.status !== "ok");
     if (broken.length > 0) {
       rejections.push({
         beat: beat.id,
         reason: `step-${broken[0].status}`,
-        detail: `beat "${beat.id}" describes step "${broken[0].id}", which the take recorded as ${broken[0].status}; narrating over it would describe something that did not happen. Re-record before narrating.`,
+        detail: `beat "${beat.id}" describes step "${broken[0].id}", which the take recorded as ${broken[0].status}; narrating over it would describe something that did not happen. Re-record before narrating.`
       });
       continue;
     }
-
     const clip = narrationTake.clips.get(beat.id);
     if (!clip) {
-      rejections.push({ beat: beat.id, reason: 'no-clip', detail: `beat "${beat.id}" has no clip in the narration take; synthesis was partial` });
+      rejections.push({ beat: beat.id, reason: "no-clip", detail: `beat "${beat.id}" has no clip in the narration take; synthesis was partial` });
       continue;
     }
-    if (clip.status !== 'ok') {
-      rejections.push({ beat: beat.id, reason: 'clip-failed', detail: `the clip for beat "${beat.id}" failed to synthesise${clip.reason ? ` (${clip.reason})` : ''}; a failed clip is not silence` });
+    if (clip.status !== "ok") {
+      rejections.push({ beat: beat.id, reason: "clip-failed", detail: `the clip for beat "${beat.id}" failed to synthesise${clip.reason ? ` (${clip.reason})` : ""}; a failed clip is not silence` });
       continue;
     }
     if (clip.text_sha256 && clip.text_sha256 !== textHash(beat.text)) {
       rejections.push({
         beat: beat.id,
-        reason: 'stale-text',
-        detail: `the clip for beat "${beat.id}" was synthesised from different words than the screenplay now carries; it would play the old line. Re-synthesise.`,
+        reason: "stale-text",
+        detail: `the clip for beat "${beat.id}" was synthesised from different words than the screenplay now carries; it would play the old line. Re-synthesise.`
       });
       continue;
     }
-
     const spanStart = from.start;
     const spanEnd = through.end;
-
-    // The earliest honest start. Defaulting to the start of the span claims
-    // nothing; naming a `start_after` step waits for that step's *result*.
     const gate = beat.start_after ? measured.get(beat.start_after) : null;
     if (beat.start_after && !gate) {
-      rejections.push({ beat: beat.id, reason: 'unrecorded-step', detail: `beat "${beat.id}" waits for "${beat.start_after}", which this take does not contain` });
+      rejections.push({ beat: beat.id, reason: "unrecorded-step", detail: `beat "${beat.id}" waits for "${beat.start_after}", which this take does not contain` });
       continue;
     }
     const earliest = gate ? gate.end : spanStart;
-
     const start = Math.max(earliest, cursor);
     const end = start + clip.durationSec;
-
     if (end > spanEnd + 1e-6) {
       const over = end - spanEnd;
-      // "Too long" is not something an author can act on. Two fixes exist, and
-      // which one applies is computable rather than a matter of taste: either a
-      // later state stays on screen long enough to carry the line, or none does
-      // and the line has to be shorter. Naming the *smallest* span that would
-      // work stops the author widening it further than the line deserves.
       const throughAt = take.steps.findIndex((s) => s.id === through.id);
       const later = take.steps.slice(throughAt + 1);
-      const widen = later.find((s) => s.status === 'ok' && s.end >= end - 1e-6);
+      const widen = later.find((s) => s.status === "ok" && s.end >= end - 1e-6);
       const furthest = later.length > 0 ? later[later.length - 1].end : spanEnd;
       const mustCut = widen ? over : end - furthest;
       rejections.push({
         beat: beat.id,
-        reason: 'overruns-span',
+        reason: "overruns-span",
         detail: [
           `beat "${beat.id}" is ${round(over)}s longer than the visual states it describes`,
           `(speaks ${round(clip.durationSec)}s from ${round(start)}s, but "${through.id}" is over at ${round(spanEnd)}s).`,
-          widen
-            ? `Either extend through_step to "${widen.id}", which is still on screen at ${round(end)}s, or cut about ${Math.max(1, Math.ceil(mustCut * WORDS_PER_SECOND))} words.`
-            : `No later state stays on screen long enough to carry it -- even spanning to the end of the recording it is ${round(mustCut)}s too long -- so cut about ${Math.max(1, Math.ceil(mustCut * WORDS_PER_SECOND))} words, or record a real hold on the result.`,
-          'This tool will not slow the recording to fit prose.',
-        ].join(' '),
+          widen ? `Either extend through_step to "${widen.id}", which is still on screen at ${round(end)}s, or cut about ${Math.max(1, Math.ceil(mustCut * WORDS_PER_SECOND))} words.` : `No later state stays on screen long enough to carry it -- even spanning to the end of the recording it is ${round(mustCut)}s too long -- so cut about ${Math.max(1, Math.ceil(mustCut * WORDS_PER_SECOND))} words, or record a real hold on the result.`,
+          "This tool will not slow the recording to fit prose."
+        ].join(" ")
       });
       continue;
     }
-
     placed.push({
       beat: beat.id,
       path: clip.path,
@@ -237,12 +153,10 @@ export function place(screenplay, take, narrationTake) {
       // because the previous one was still speaking. Visible so an author can
       // see narration drifting away from the action before it becomes a reject.
       deferred: round(Math.max(0, start - earliest)),
-      text: beat.text,
+      text: beat.text
     });
-
     cursor = end + MIN_GAP;
   }
-
   return {
     schema: PLAN_SCHEMA,
     recording: take.recording,
@@ -251,206 +165,214 @@ export function place(screenplay, take, narrationTake) {
     voice: narrationTake.voice,
     beats: placed,
     rejections,
-    ok: rejections.length === 0,
+    ok: rejections.length === 0
   };
 }
-
-// ------------------------------------------------------------------------ mix
-
-// Narration is laid onto the finished render rather than mixed during it, so a
-// re-narration in another language never re-encodes the video and can never
-// change a single frame of what was recorded.
-export function buildMixArgs(plan, { video, out }) {
-  if (!plan.ok) fail('this narration plan was rejected, so there is nothing to mix; fix the rejections first');
-  if (plan.beats.length === 0) fail('this narration plan places no beats');
+function buildMixArgs(plan, { video, out }) {
+  if (!plan.ok) fail("this narration plan was rejected, so there is nothing to mix; fix the rejections first");
+  if (plan.beats.length === 0) fail("this narration plan places no beats");
   for (const label of [video, out]) {
-    if (label.startsWith('-')) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
+    if (label.startsWith("-")) fail(`"${label}" starts with a dash and would be read as an option, not a file`);
   }
-
   const inputs = [];
   const chain = [];
   const labels = [];
   plan.beats.forEach((beat, i) => {
-    inputs.push('-i', beat.path);
-    // adelay takes milliseconds, and `all=1` applies the same delay to every
-    // channel; without it only the first channel moves and a stereo clip tears.
-    chain.push(`[${i + 1}:a]adelay=${Math.round(beat.start * 1000)}:all=1[n${i}]`);
+    inputs.push("-i", beat.path);
+    chain.push(`[${i + 1}:a]adelay=${Math.round(beat.start * 1e3)}:all=1[n${i}]`);
     labels.push(`[n${i}]`);
   });
-  // normalize=0 because beats never overlap: amix's default would divide every
-  // clip's level by the number of inputs and make a ten-beat demo inaudible.
-  chain.push(`${labels.join('')}amix=inputs=${plan.beats.length}:normalize=0:dropout_transition=0[mix]`);
-
+  chain.push(`${labels.join("")}amix=inputs=${plan.beats.length}:normalize=0:dropout_transition=0[mix]`);
   return [
-    '-y', '-hide_banner', '-v', 'error',
-    '-i', video,
+    "-y",
+    "-hide_banner",
+    "-v",
+    "error",
+    "-i",
+    video,
     ...inputs,
-    '-filter_complex', chain.join(';'),
-    '-map', '0:v', '-map', '[mix]',
+    "-filter_complex",
+    chain.join(";"),
+    "-map",
+    "0:v",
+    "-map",
+    "[mix]",
     // The video is copied, not re-encoded. Only the audio is created here.
-    '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k',
-    out,
+    "-c:v",
+    "copy",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    out
   ];
 }
-
-// -------------------------------------------------------------------- reporting
-
-export function formatReport(plan) {
+function formatReport(plan) {
   const lines = [];
   for (const beat of plan.beats) {
-    const drift = beat.deferred > 0.05 ? `  (+${beat.deferred}s after its earliest honest start)` : '';
+    const drift = beat.deferred > 0.05 ? `  (+${beat.deferred}s after its earliest honest start)` : "";
     lines.push(`  ok    ${beat.beat}  ${beat.start}s -> ${beat.end}s   within ${beat.span.start}..${beat.span.end}${drift}`);
   }
   for (const r of plan.rejections) lines.push(`  REJECT ${r.beat}  [${r.reason}] ${r.detail}`);
-  lines.push('');
-  lines.push(plan.ok
-    ? `${plan.beats.length} beat(s) placed against measured states.`
-    : `${plan.rejections.length} beat(s) rejected. Measured speech could not be aligned with measured visual states without falsifying one of them.`);
-  return lines.join('\n');
+  lines.push("");
+  lines.push(plan.ok ? `${plan.beats.length} beat(s) placed against measured states.` : `${plan.rejections.length} beat(s) rejected. Measured speech could not be aligned with measured visual states without falsifying one of them.`);
+  return lines.join("\n");
 }
-
-// ------------------------------------------------------------------- self-test
-
 function selfTest() {
   let pass = 0;
   let failed = 0;
   const ok = (cond, label) => {
-    if (cond) { pass += 1; console.log(`  ok ${label}`); } else { failed += 1; console.log(`  FAIL ${label}`); }
-  };
-  const rejects = (fn, needle, label) => {
-    try { fn(); failed += 1; console.log(`  FAIL ${label} (nothing was refused)`); } catch (e) {
-      if (String(e.message).includes(needle)) { pass += 1; console.log(`  ok ${label}`); } else { failed += 1; console.log(`  FAIL ${label}: ${e.message}`); }
+    if (cond) {
+      pass += 1;
+      console.log(`  ok ${label}`);
+    } else {
+      failed += 1;
+      console.log(`  FAIL ${label}`);
     }
   };
-
+  const rejects = (fn, needle, label) => {
+    try {
+      fn();
+      failed += 1;
+      console.log(`  FAIL ${label} (nothing was refused)`);
+    } catch (e) {
+      if (String(e.message).includes(needle)) {
+        pass += 1;
+        console.log(`  ok ${label}`);
+      } else {
+        failed += 1;
+        console.log(`  FAIL ${label}: ${e.message}`);
+      }
+    }
+  };
   const play = (narration) => JSON.stringify({
-    schema: 'kai.demo-screenplay/v1',
-    title: 't',
-    capture: { region: '0,0 100x100' },
+    schema: "kai.demo-screenplay/v1",
+    title: "t",
+    capture: { region: "0,0 100x100" },
     steps: [
-      { id: 'open', action: 'click', target: 'a' },
-      { id: 'fill', action: 'type', text: 'hello', target: 'a' },
-      { id: 'save', action: 'click', target: 'a' },
-      { id: 'result', action: 'hold', seconds: 4 },
+      { id: "open", action: "click", target: "a" },
+      { id: "fill", action: "type", text: "hello", target: "a" },
+      { id: "save", action: "click", target: "a" },
+      { id: "result", action: "hold", seconds: 4 }
     ],
-    narration,
+    narration
   });
-
   const takeJson = (over = {}) => JSON.stringify({
-    schema: 'kai.demo-take/v1',
-    take_id: 'k',
-    recording: 'r.mp4',
-    capture: { region: '0,0 100x100' },
+    schema: "kai.demo-take/v1",
+    take_id: "k",
+    recording: "r.mp4",
+    capture: { region: "0,0 100x100" },
     steps: [
-      { id: 'open', start: 0, end: 2 },
-      { id: 'fill', start: 2, end: 10 },
-      { id: 'save', start: 10, end: 14 },
-      { id: 'result', start: 14, end: 22 },
-      ...(over.extra ?? []),
-    ].map((s) => ({ ...s, ...(over.status?.[s.id] ? { status: over.status[s.id] } : {}) })),
+      { id: "open", start: 0, end: 2 },
+      { id: "fill", start: 2, end: 10 },
+      { id: "save", start: 10, end: 14 },
+      { id: "result", start: 14, end: 22 },
+      ...over.extra ?? []
+    ].map((s) => ({ ...s, ...over.status?.[s.id] ? { status: over.status[s.id] } : {} }))
   });
-
-  const narrTake = (clips) => JSON.stringify({ schema: TAKE_SCHEMA, provider: 'external', clips });
-
-  // --- the authoring rule: a beat may not carry numbers nobody can know yet
-  for (const forbidden of ['start', 'end', 'seconds', 'duration', 'offset']) {
-    rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'open' }, [forbidden]: 1 }])),
-      'carries intent, not measurements',
-      `a beat declaring "${forbidden}" is refused, because neither speech length nor UI readiness is knowable while writing`);
+  const narrTake = (clips) => JSON.stringify({ schema: TAKE_SCHEMA, provider: "external", clips });
+  for (const forbidden of ["start", "end", "seconds", "duration", "offset"]) {
+    rejects(
+      () => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "open" }, [forbidden]: 1 }])),
+      "carries intent, not measurements",
+      `a beat declaring "${forbidden}" is refused, because neither speech length nor UI readiness is knowable while writing`
+    );
   }
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x' }])), 'visual_span is required', 'a beat with no visual span is refused: nothing could decide whether it fits');
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'nope' } }])), 'not a step in this screenplay', 'a beat spanning a step that does not exist is refused');
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'save', through_step: 'open' } }])), 'runs backwards', 'a span that runs backwards is refused');
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'open' }, start_after: 'save' } ])), 'outside the beat', 'a beat cannot wait for a step it does not cover');
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'open', through_step: 'save' }, start_after: 'save' }])), 'the instant it must be finished', 'waiting for the last step of your own span is refused: no clip is short enough to fit, so it is an authoring error rather than an overrun');
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'open' }, start_after: 'open' }])), 'no time in which to speak', 'a one-step beat that also waits for that step to finish is refused while writing, not as a mystifying overrun later');
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x" }])), "visual_span is required", "a beat with no visual span is refused: nothing could decide whether it fits");
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "nope" } }])), "not a step in this screenplay", "a beat spanning a step that does not exist is refused");
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "save", through_step: "open" } }])), "runs backwards", "a span that runs backwards is refused");
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "open" }, start_after: "save" }])), "outside the beat", "a beat cannot wait for a step it does not cover");
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "open", through_step: "save" }, start_after: "save" }])), "the instant it must be finished", "waiting for the last step of your own span is refused: no clip is short enough to fit, so it is an authoring error rather than an overrun");
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "open" }, start_after: "open" }])), "no time in which to speak", "a one-step beat that also waits for that step to finish is refused while writing, not as a mystifying overrun later");
   rejects(() => parseScreenplay(play([
-    { id: 'n1', text: 'x', visual_span: { from_step: 'fill' } },
-    { id: 'n2', text: 'y', visual_span: { from_step: 'open' } },
-  ])), 'in the order it is heard', 'beats authored out of order are refused rather than silently resequenced');
-  rejects(() => parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'open' } }, { id: 'n1', text: 'y', visual_span: { from_step: 'fill' } }])), 'used twice', 'a duplicated beat id is refused: a narration take is keyed by it');
-
+    { id: "n1", text: "x", visual_span: { from_step: "fill" } },
+    { id: "n2", text: "y", visual_span: { from_step: "open" } }
+  ])), "in the order it is heard", "beats authored out of order are refused rather than silently resequenced");
+  rejects(() => parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "open" } }, { id: "n1", text: "y", visual_span: { from_step: "fill" } }])), "used twice", "a duplicated beat id is refused: a narration take is keyed by it");
   const sp = parseScreenplay(play([
-    { id: 'n1', text: 'First we open the form.', visual_span: { from_step: 'open', through_step: 'fill' } },
-    { id: 'n2', text: 'Then we save it.', visual_span: { from_step: 'save', through_step: 'result' }, start_after: 'save' },
+    { id: "n1", text: "First we open the form.", visual_span: { from_step: "open", through_step: "fill" } },
+    { id: "n2", text: "Then we save it.", visual_span: { from_step: "save", through_step: "result" }, start_after: "save" }
   ]));
-  ok(sp.narration.length === 2, 'a screenplay with no narration is still valid, and one with beats carries them');
-  ok(parseScreenplay(play(undefined)).narration.length === 0, 'narration is optional: a silent demo is a legitimate demo');
-  ok(parseScreenplay(play([{ id: 'n1', text: 'x', visual_span: { from_step: 'fill' } }])).narration[0].visual_span.through_step === 'fill',
-    'through_step defaults to from_step, so a beat covering one state need not say it twice');
-
-  // --- placement against measured states
+  ok(sp.narration.length === 2, "a screenplay with no narration is still valid, and one with beats carries them");
+  ok(parseScreenplay(play(void 0)).narration.length === 0, "narration is optional: a silent demo is a legitimate demo");
+  ok(
+    parseScreenplay(play([{ id: "n1", text: "x", visual_span: { from_step: "fill" } }])).narration[0].visual_span.through_step === "fill",
+    "through_step defaults to from_step, so a beat covering one state need not say it twice"
+  );
   const take = parseTake(takeJson());
   const good = place(sp, take, parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'n1.mp3', durationSec: 4 },
-    { beat: 'n2', path: 'n2.mp3', durationSec: 2 },
+    { beat: "n1", path: "n1.mp3", durationSec: 4 },
+    { beat: "n2", path: "n2.mp3", durationSec: 2 }
   ])));
-  ok(good.ok && good.beats.length === 2, 'two beats that fit their measured spans are placed');
-  ok(good.beats[0].start === 0, 'a beat with no start_after begins when its first state begins');
-  ok(good.beats[1].start === 14, 'a beat gated on a step begins when that step is *over*, so it never claims a result before it is visible');
-
+  ok(good.ok && good.beats.length === 2, "two beats that fit their measured spans are placed");
+  ok(good.beats[0].start === 0, "a beat with no start_after begins when its first state begins");
+  ok(good.beats[1].start === 14, "a beat gated on a step begins when that step is *over*, so it never claims a result before it is visible");
   const shifted = place(parseScreenplay(play([
-    { id: 'n1', text: 'a', visual_span: { from_step: 'open', through_step: 'result' } },
-    { id: 'n2', text: 'b', visual_span: { from_step: 'open', through_step: 'result' } },
+    { id: "n1", text: "a", visual_span: { from_step: "open", through_step: "result" } },
+    { id: "n2", text: "b", visual_span: { from_step: "open", through_step: "result" } }
   ])), take, parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'a.mp3', durationSec: 3 },
-    { beat: 'n2', path: 'b.mp3', durationSec: 3 },
+    { beat: "n1", path: "a.mp3", durationSec: 3 },
+    { beat: "n2", path: "b.mp3", durationSec: 3 }
   ])));
-  ok(shifted.ok && shifted.beats[1].start === round(3 + MIN_GAP), 'a second beat waits for the first to finish speaking rather than talking over it');
-  ok(shifted.beats[1].deferred > 0, 'how far a line drifted from its earliest honest position is reported, not hidden');
-
-  // --- the refusals
+  ok(shifted.ok && shifted.beats[1].start === round(3 + MIN_GAP), "a second beat waits for the first to finish speaking rather than talking over it");
+  ok(shifted.beats[1].deferred > 0, "how far a line drifted from its earliest honest position is reported, not hidden");
   const long = place(sp, take, parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'n1.mp3', durationSec: 30 },
-    { beat: 'n2', path: 'n2.mp3', durationSec: 2 },
+    { beat: "n1", path: "n1.mp3", durationSec: 30 },
+    { beat: "n2", path: "n2.mp3", durationSec: 2 }
   ])));
-  ok(!long.ok && long.rejections[0].reason === 'overruns-span', 'a line longer than the states it describes is rejected, not fitted by slowing the video');
+  ok(!long.ok && long.rejections[0].reason === "overruns-span", "a line longer than the states it describes is rejected, not fitted by slowing the video");
   ok(/cut about \d+ words/.test(long.rejections[0].detail), 'the rejection says how many words to cut, because "too long" is not something an author can act on');
-  ok(place(parseScreenplay(play([{ id: 'n1', text: 'a', visual_span: { from_step: 'open', through_step: 'fill' } }])), take, parseNarrationTake(narrTake([{ beat: 'n1', path: 'a', durationSec: 15 }]))).rejections[0].detail.includes('extend through_step to "result"'), 'when a later state does stay on screen long enough, the rejection names the smallest span that would work instead of only telling the author to cut');
-  ok(long.rejections[0].detail.includes('will not slow the recording'), 'the rejection states the thing it refuses to do, so nobody goes looking for the option');
-
-  ok(place(sp, parseTake(takeJson({ status: { open: 'failed' } })), parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'a', durationSec: 1 }, { beat: 'n2', path: 'b', durationSec: 1 },
-  ]))).rejections.some((r) => r.reason === 'step-failed'), 'narrating over a step the driver recorded as failed is refused');
-  ok(place(sp, parseTake(takeJson({ status: { open: 'unsettled' } })), parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'a', durationSec: 1 }, { beat: 'n2', path: 'b', durationSec: 1 },
-  ]))).rejections.some((r) => r.reason === 'step-unsettled'), 'a screen that never settled cannot be said to have reached the described state');
-  ok(place(sp, take, parseNarrationTake(narrTake([{ beat: 'n1', path: 'a', durationSec: 1 }]))).rejections.some((r) => r.reason === 'no-clip'),
-    'a partial synthesis is rejected rather than rendered with a silent gap');
+  ok(place(parseScreenplay(play([{ id: "n1", text: "a", visual_span: { from_step: "open", through_step: "fill" } }])), take, parseNarrationTake(narrTake([{ beat: "n1", path: "a", durationSec: 15 }]))).rejections[0].detail.includes('extend through_step to "result"'), "when a later state does stay on screen long enough, the rejection names the smallest span that would work instead of only telling the author to cut");
+  ok(long.rejections[0].detail.includes("will not slow the recording"), "the rejection states the thing it refuses to do, so nobody goes looking for the option");
+  ok(place(sp, parseTake(takeJson({ status: { open: "failed" } })), parseNarrationTake(narrTake([
+    { beat: "n1", path: "a", durationSec: 1 },
+    { beat: "n2", path: "b", durationSec: 1 }
+  ]))).rejections.some((r) => r.reason === "step-failed"), "narrating over a step the driver recorded as failed is refused");
+  ok(place(sp, parseTake(takeJson({ status: { open: "unsettled" } })), parseNarrationTake(narrTake([
+    { beat: "n1", path: "a", durationSec: 1 },
+    { beat: "n2", path: "b", durationSec: 1 }
+  ]))).rejections.some((r) => r.reason === "step-unsettled"), "a screen that never settled cannot be said to have reached the described state");
+  ok(
+    place(sp, take, parseNarrationTake(narrTake([{ beat: "n1", path: "a", durationSec: 1 }]))).rejections.some((r) => r.reason === "no-clip"),
+    "a partial synthesis is rejected rather than rendered with a silent gap"
+  );
   ok(place(sp, take, parseNarrationTake(narrTake([
-    { beat: 'n1', status: 'failed', reason: 'auth' }, { beat: 'n2', path: 'b', durationSec: 1 },
-  ]))).rejections.some((r) => r.reason === 'clip-failed'), 'a failed clip is not treated as silence');
+    { beat: "n1", status: "failed", reason: "auth" },
+    { beat: "n2", path: "b", durationSec: 1 }
+  ]))).rejections.some((r) => r.reason === "clip-failed"), "a failed clip is not treated as silence");
   ok(place(sp, take, parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'a', durationSec: 1, text_sha256: 'deadbeefdeadbeef' }, { beat: 'n2', path: 'b', durationSec: 1 },
-  ]))).rejections.some((r) => r.reason === 'stale-text'), 'a clip synthesised from words the screenplay no longer carries is rejected, because it would play the old line');
-  ok(place(sp, parseTake(JSON.stringify({
-    schema: 'kai.demo-take/v1', take_id: 'k', recording: 'r.mp4', capture: { region: '0,0 100x100' },
-    steps: [{ id: 'other', start: 0, end: 5 }],
-  })), parseNarrationTake(narrTake([{ beat: 'n1', path: 'a', durationSec: 1 }]))).rejections.some((r) => r.reason === 'unrecorded-step'),
-    'a screenplay placed against a take from a different demo is rejected');
+    { beat: "n1", path: "a", durationSec: 1, text_sha256: "deadbeefdeadbeef" },
+    { beat: "n2", path: "b", durationSec: 1 }
+  ]))).rejections.some((r) => r.reason === "stale-text"), "a clip synthesised from words the screenplay no longer carries is rejected, because it would play the old line");
+  ok(
+    place(sp, parseTake(JSON.stringify({
+      schema: "kai.demo-take/v1",
+      take_id: "k",
+      recording: "r.mp4",
+      capture: { region: "0,0 100x100" },
+      steps: [{ id: "other", start: 0, end: 5 }]
+    })), parseNarrationTake(narrTake([{ beat: "n1", path: "a", durationSec: 1 }]))).rejections.some((r) => r.reason === "unrecorded-step"),
+    "a screenplay placed against a take from a different demo is rejected"
+  );
   ok(place(sp, take, parseNarrationTake(narrTake([
-    { beat: 'n1', path: 'a', durationSec: 1, text_sha256: textHash('First we open the form.') }, { beat: 'n2', path: 'b', durationSec: 1 },
-  ]))).ok, 'a hash matching the current words places normally');
-
-  rejects(() => parseNarrationTake(JSON.stringify({ schema: 'other', clips: [] })), 'must declare', 'a foreign narration take schema is refused');
-  rejects(() => parseNarrationTake(narrTake([{ beat: 'n1', path: 'a', durationSec: 1 }, { beat: 'n1', path: 'b', durationSec: 1 }])), 'spoken once', 'two clips for one beat are refused');
-
-  // --- mixing
-  const args = buildMixArgs(good, { video: 'in.mp4', out: 'out.mp4' });
-  ok(args.includes('-c:v') && args[args.indexOf('-c:v') + 1] === 'copy', 'the video is copied, so re-narrating in another language cannot change a frame of what was recorded');
-  ok(args.join(' ').includes('adelay=14000:all=1'), 'a clip is delayed to its measured position, in milliseconds, on every channel');
-  ok(args.join(' ').includes('normalize=0'), 'amix does not normalise, which would divide every clip level by the number of beats');
-  ok(!args.includes('-shortest'), 'the output is not truncated to the shorter stream: placement already guarantees the narration fits inside measured steps, so -shortest could only ever cut the end off the demo');
-  rejects(() => buildMixArgs({ ...good, ok: false }, { video: 'a', out: 'b' }), 'was rejected', 'a rejected plan cannot be mixed');
-  rejects(() => buildMixArgs(good, { video: '-evil', out: 'b' }), 'read as an option', 'a filename that would be read as an option is refused');
-  console.log(`\ndemo-narrate self-test: ${pass} checks passed${failed ? `, ${failed} FAILED` : ''}`);
+    { beat: "n1", path: "a", durationSec: 1, text_sha256: textHash("First we open the form.") },
+    { beat: "n2", path: "b", durationSec: 1 }
+  ]))).ok, "a hash matching the current words places normally");
+  rejects(() => parseNarrationTake(JSON.stringify({ schema: "other", clips: [] })), "must declare", "a foreign narration take schema is refused");
+  rejects(() => parseNarrationTake(narrTake([{ beat: "n1", path: "a", durationSec: 1 }, { beat: "n1", path: "b", durationSec: 1 }])), "spoken once", "two clips for one beat are refused");
+  const args = buildMixArgs(good, { video: "in.mp4", out: "out.mp4" });
+  ok(args.includes("-c:v") && args[args.indexOf("-c:v") + 1] === "copy", "the video is copied, so re-narrating in another language cannot change a frame of what was recorded");
+  ok(args.join(" ").includes("adelay=14000:all=1"), "a clip is delayed to its measured position, in milliseconds, on every channel");
+  ok(args.join(" ").includes("normalize=0"), "amix does not normalise, which would divide every clip level by the number of beats");
+  ok(!args.includes("-shortest"), "the output is not truncated to the shorter stream: placement already guarantees the narration fits inside measured steps, so -shortest could only ever cut the end off the demo");
+  rejects(() => buildMixArgs({ ...good, ok: false }, { video: "a", out: "b" }), "was rejected", "a rejected plan cannot be mixed");
+  rejects(() => buildMixArgs(good, { video: "-evil", out: "b" }), "read as an option", "a filename that would be read as an option is refused");
+  console.log(`
+demo-narrate self-test: ${pass} checks passed${failed ? `, ${failed} FAILED` : ""}`);
   return failed === 0;
 }
-
-// -------------------------------------------------------------------- cli
-
 function usage() {
-  console.log(`demo-narrate — place measured speech against a measured recording
+  console.log(`demo-narrate \u2014 place measured speech against a measured recording
 
   --place      <screenplay.json> <take.json> <narration_take.json> [--out plan.json]
       Lay the beats against the measured recording, or refuse and say why.
@@ -460,44 +382,46 @@ function usage() {
 
   --self-test`);
 }
-
 function flag(argv, name, fallback = null) {
   const i = argv.indexOf(name);
   return i >= 0 && argv[i + 1] ? argv[i + 1] : fallback;
 }
-
 function main(argv) {
-  if (argv.includes('--self-test')) return selfTest() ? 0 : 1;
-  const positional = argv.filter((a, i) => !a.startsWith('-') && !argv[i - 1]?.startsWith('--out') && !argv[i - 1]?.startsWith('--video'));
-
-  if (argv.includes('--place')) {
+  if (argv.includes("--self-test")) return selfTest() ? 0 : 1;
+  const positional = argv.filter((a, i) => !a.startsWith("-") && !argv[i - 1]?.startsWith("--out") && !argv[i - 1]?.startsWith("--video"));
+  if (argv.includes("--place")) {
     const [screenplayPath, takePath, narrPath] = positional;
-    if (!screenplayPath || !takePath || !narrPath) { usage(); return 2; }
+    if (!screenplayPath || !takePath || !narrPath) {
+      usage();
+      return 2;
+    }
     const plan = place(
-      parseScreenplay(readFileSync(screenplayPath, 'utf8')),
-      parseTake(readFileSync(takePath, 'utf8')),
-      parseNarrationTake(readFileSync(narrPath, 'utf8')),
+      parseScreenplay(readFileSync(screenplayPath, "utf8")),
+      parseTake(readFileSync(takePath, "utf8")),
+      parseNarrationTake(readFileSync(narrPath, "utf8"))
     );
     console.log(formatReport(plan));
-    const out = flag(argv, '--out');
-    if (out && plan.ok) { mkdirSync(dirname(out) || '.', { recursive: true }); writeFileSync(out, JSON.stringify(plan, null, 2)); console.log(`\nwrote ${out}`); }
+    const out = flag(argv, "--out");
+    if (out && plan.ok) {
+      mkdirSync(dirname(out) || ".", { recursive: true });
+      writeFileSync(out, JSON.stringify(plan, null, 2));
+      console.log(`
+wrote ${out}`);
+    }
     return plan.ok ? 0 : 1;
   }
-
-  if (argv.includes('--mix')) {
-    const plan = JSON.parse(readFileSync(positional[0], 'utf8'));
-    const video = flag(argv, '--video') ?? fail('--mix needs --video <render.mp4>');
-    const out = flag(argv, '--out') ?? fail('--mix needs --out <narrated.mp4>');
+  if (argv.includes("--mix")) {
+    const plan = JSON.parse(readFileSync(positional[0], "utf8"));
+    const video = flag(argv, "--video") ?? fail("--mix needs --video <render.mp4>");
+    const out = flag(argv, "--out") ?? fail("--mix needs --out <narrated.mp4>");
     if (!existsSync(video)) fail(`${video} does not exist; mix the narration onto a render that was already made`);
-    console.log(['ffmpeg', ...buildMixArgs(plan, { video, out })].map((a) => (/[\s;'"\[\]]/.test(a) ? `"${a}"` : a)).join(' '));
+    console.log(["ffmpeg", ...buildMixArgs(plan, { video, out })].map((a) => /[\s;'"\[\]]/.test(a) ? `"${a}"` : a).join(" "));
     return 0;
   }
-
   usage();
   return 2;
 }
-
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('demo-narrate.mjs')) {
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("demo-narrate.mjs")) {
   try {
     process.exit(main(process.argv.slice(2)));
   } catch (error) {
@@ -505,3 +429,10 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
     process.exit(1);
   }
 }
+export {
+  buildMixArgs,
+  formatReport,
+  parseNarrationTake,
+  place,
+  textHash
+};
