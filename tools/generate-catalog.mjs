@@ -126,7 +126,7 @@ const CATEGORIES = [
     title: 'Engineering craft',
     blurb: 'Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.',
     members: [
-      'coding-style', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
+      'coding-standards', 'research-before-coding', 'pr-sizing', 'kai-core-pr-delivery',
       'onboard-to-codebase', 'build-diagrams',
     ],
   },

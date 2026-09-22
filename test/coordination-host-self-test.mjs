@@ -15,7 +15,11 @@ import {
 } from '../src/core/lib/coordination-runtime/store.mjs';
 import {readDetail, projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
-import {ROLE_PROFILE_MODELS, agentProfileModelErrors} from '../tools/lib/pack-plan.mjs';
+import {agentProfileModelErrors} from '../tools/lib/pack-plan.mjs';
+// Straight from the policy that owns it. Reaching it through the generator
+// re-export dragged the whole build pipeline — esbuild included — into a job
+// that deliberately installs nothing.
+import {ROLE_PROFILE_MODELS} from '../src/core/lib/agent-model-policy.mjs';
 import {parseFrontmatter, stripQuotes, loaderErrors} from '../src/core/lib/loader-contract.mjs';
 import {authority, command, seedItem, withWorkspace} from './helpers/coordination-runtime-fixture.mjs';
 

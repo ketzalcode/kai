@@ -1,12 +1,12 @@
 ---
-name: coding-style
+name: coding-standards
 description: "Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified."
 tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"
 ---
 
-# Coding Style
+# Coding Standards
 
 Apply these defaults while carrying out authorized code work. They are
 implementation constraints, not a separate research, planning, approval, or

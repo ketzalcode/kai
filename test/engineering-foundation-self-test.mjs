@@ -14,7 +14,7 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const normalizeContract = body => body.replace(/\s+/g, ' ').trim().toLowerCase();
 const keep = [
-  'build-diagrams', 'coding-style', 'onboard-to-codebase',
+  'build-diagrams', 'coding-standards', 'onboard-to-codebase',
   'pr-sizing', 'research-before-coding',
 ].sort();
 const parked = [
@@ -25,11 +25,11 @@ const parked = [
 ];
 const skills = sourceSkillFiles(root).filter(entry => entry.pack === 'engineering');
 assert.deepEqual(skills.map(entry => entry.id).sort(), keep);
-const codingStyleBody = readFileSync(
-  join(root, 'plugins', 'kai-engineering', 'skills', 'coding-style', 'SKILL.md'),
+const CodingStandardsBody = readFileSync(
+  join(root, 'plugins', 'kai-engineering', 'skills', 'coding-standards', 'SKILL.md'),
   'utf8',
 );
-const prohibitedCodingStyleDirectives = [
+const prohibitedCodingStandardsDirectives = [
   'single-responsibility',
   'research-before-coding',
   'Scan 2–3 nearby files',
@@ -37,20 +37,20 @@ const prohibitedCodingStyleDirectives = [
   'docs: ≤2–3 lines',
 ];
 assert.deepEqual(
-  prohibitedCodingStyleDirectives.filter(directive => codingStyleBody.includes(directive)),
+  prohibitedCodingStandardsDirectives.filter(directive => CodingStandardsBody.includes(directive)),
   [],
-  'coding-style must remain context-only and avoid cross-skill or fixed-quota directives',
+  'coding-standards must remain context-only and avoid cross-skill or fixed-quota directives',
 );
-const codingStyleContractViolations = [];
-const codingStyleDescription =
-  codingStyleBody.match(/^description:\s*"([^"]+)"\r?$/m)?.[1] ?? '';
-if (!/^Use when\b/.test(codingStyleDescription)
-  || !/shared implementation defaults/i.test(codingStyleDescription)
-  || !/repository conventions and task instructions/i.test(codingStyleDescription)
-  || !/details unspecified/i.test(codingStyleDescription)) {
-  codingStyleContractViolations.push('coding-style description is not the shared-defaults trigger');
+const CodingStandardsContractViolations = [];
+const CodingStandardsDescription =
+  CodingStandardsBody.match(/^description:\s*"([^"]+)"\r?$/m)?.[1] ?? '';
+if (!/^Use when\b/.test(CodingStandardsDescription)
+  || !/shared implementation defaults/i.test(CodingStandardsDescription)
+  || !/repository conventions and task instructions/i.test(CodingStandardsDescription)
+  || !/details unspecified/i.test(CodingStandardsDescription)) {
+  CodingStandardsContractViolations.push('coding-standards description is not the shared-defaults trigger');
 }
-const codingStyleReferences = collectReferences(root);
+const CodingStandardsReferences = collectReferences(root);
 for (const rel of [
   'plugins/kai-engineering/agents/eng-builder-software.agent.md',
   'plugins/kai-engineering/agents/eng-builder-platform.agent.md',
@@ -58,30 +58,30 @@ for (const rel of [
   const body = readFileSync(join(root, rel), 'utf8');
   const normalizedBody = normalizeContract(body);
   for (const clause of [
-    'Apply `coding-style` as you write',
-    'Apply `coding-style` when your applied design carries real',
+    'Apply `coding-standards` as you write',
+    'Apply `coding-standards` when your applied design carries real',
     '≤1–2 lines',
   ]) {
-    if (body.includes(clause)) codingStyleContractViolations.push(`${rel}: ${clause}`);
+    if (body.includes(clause)) CodingStandardsContractViolations.push(`${rel}: ${clause}`);
   }
   for (const [label, pattern] of [
     ['instruction precedence', /repository or task instructions/],
-    ['shared-defaults route', /apply `coding-style` as shared implementation defaults/],
+    ['shared-defaults route', /apply `coding-standards` as shared implementation defaults/],
     ['proportionate documentation', /proportionate comments or documentation/],
   ]) {
-    if (!pattern.test(normalizedBody)) codingStyleContractViolations.push(`${rel}: missing ${label}`);
+    if (!pattern.test(normalizedBody)) CodingStandardsContractViolations.push(`${rel}: missing ${label}`);
   }
-  if (!codingStyleReferences.some(ref =>
+  if (!CodingStandardsReferences.some(ref =>
     ref.from === rel &&
-    ref.target === 'coding-style' &&
+    ref.target === 'coding-standards' &&
     ref.firing.includes('loaded'))) {
-    codingStyleContractViolations.push(`${rel}: coding-style route is not discoverable`);
+    CodingStandardsContractViolations.push(`${rel}: coding-standards route is not discoverable`);
   }
 }
 assert.deepEqual(
-  codingStyleContractViolations,
+  CodingStandardsContractViolations,
   [],
-  'coding-style description and caller clauses must match the conditional shared-defaults contract',
+  'coding-standards description and caller clauses must match the conditional shared-defaults contract',
 );
 const researchBody = readFileSync(
   join(root, 'plugins', 'kai-engineering', 'skills', 'research-before-coding', 'SKILL.md'),
@@ -139,7 +139,7 @@ for (const rel of researchCallers) {
   ]) {
     if (!pattern.test(normalizedBody)) researchContractViolations.push(`${rel}: missing ${label}`);
   }
-  if (!codingStyleReferences.some(ref =>
+  if (!CodingStandardsReferences.some(ref =>
     ref.from === rel &&
     ref.target === 'research-before-coding' &&
     ref.firing.includes('loaded'))) {
@@ -309,7 +309,7 @@ for (const rel of sizingCallers) {
       sizingContractViolations.push(`${rel}: ${directive}`);
     }
   }
-  if (!codingStyleReferences.some(ref =>
+  if (!CodingStandardsReferences.some(ref =>
     ref.from === rel &&
     ref.target === 'pr-sizing' &&
     ref.firing.includes('loaded'))) {
@@ -402,7 +402,7 @@ for (const rel of diagramCallers) {
   if (!/(continues?|produce|write).{0,100}(without a diagram|without one|prose|artifact|narrative)/.test(normalizedBody)) {
     diagramContractViolations.push(`${rel}: missing no-diagram continuation`);
   }
-  if (!codingStyleReferences.some(ref =>
+  if (!CodingStandardsReferences.some(ref =>
     ref.from === rel &&
     ref.target === 'build-diagrams' &&
     ref.firing.includes('loaded'))) {

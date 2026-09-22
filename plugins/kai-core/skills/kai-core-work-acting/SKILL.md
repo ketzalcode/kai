@@ -208,7 +208,8 @@ A new ANSWER always carries an explicit `status: answered` and a non-empty
 resolves the question. A pre-existing thread record written before this
 contract may carry no `status` field at all; that legacy shape still parses as
 answered when its `answer`/`lane` otherwise resolve the question (see
-`parseThread` in `scripts/lib/coordination.mjs`), but it is not the template
+`parseThread` in the repository source at `src/core/lib/coordination.mjs`,
+compiled into the shipped command), but it is not the template
 for new records.
 
 For a blocking question, `question.open` records the blocking effects as one

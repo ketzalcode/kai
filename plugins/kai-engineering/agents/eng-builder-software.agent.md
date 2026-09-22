@@ -58,7 +58,7 @@ the behavior, preserve compatibility at each landing, and avoid coordination-onl
 microchanges.
 
 When repository or task instructions leave style details unspecified, apply
-`coding-style` as shared implementation defaults. Those instructions govern,
+`coding-standards` as shared implementation defaults. Those instructions govern,
 including proportionate comments or documentation for non-obvious rationale.
 
 ## Build to the relevant domain contract

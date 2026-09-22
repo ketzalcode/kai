@@ -838,10 +838,11 @@ function selfTest() {
   ok(liveFiles.has('kai-core/hooks.json')
     && !liveFiles.has('kai-creative/hooks.json')
     && liveFiles.has('kai-core/scripts/observe-subagent.mjs')
-    && liveFiles.has('kai-core/scripts/lib/activity.mjs')
-    && liveFiles.has('kai-creative/scripts/demo-zoom.mjs')
-    && liveFiles.has('kai-creative/scripts/lib/cursor-png.mjs'),
-  'materialization emits hooks once and closes each routed script over its relative modules');
+    && liveFiles.has('kai-creative/scripts/demo-zoom.mjs'),
+  'materialization emits hooks once and emits each pack\'s entry points');
+  ok(!liveFiles.has('kai-core/scripts/lib/activity.mjs')
+    && !liveFiles.has('kai-creative/scripts/lib/cursor-png.mjs'),
+  'internal modules are inlined by the bundler, never shipped beside their entry point');
   ok(generatedKeyErrors(liveFiles).length === 0,
     'every live generated key belongs to a declared pack');
   ok(generatedRuntimeErrors(liveFiles).length === 0,
@@ -1044,8 +1045,8 @@ function selfTest() {
   ok(providerCollisionErrors({ providers: providerIndex({ 'agent:persona-self': ['personal', 'gtm'] }) })
     .some((m) => /agent `persona-self` is emitted by kai-personal and kai-gtm/.test(m)),
   'the same agent emitted by two packs fails by name');
-  ok(providerCollisionErrors({ providers: providerIndex({ 'skill:coding-style': ['core', 'engineering'] }) })
-    .some((m) => /skill `coding-style` is emitted by kai-core and kai-engineering/.test(m)),
+  ok(providerCollisionErrors({ providers: providerIndex({ 'skill:coding-standards': ['core', 'engineering'] }) })
+    .some((m) => /skill `coding-standards` is emitted by kai-core and kai-engineering/.test(m)),
   'the same skill emitted by two packs fails by name — provider ownership would be ambiguous');
 
   // --- generated-key parsing: a future pack key cannot escape the gates --

@@ -14,7 +14,7 @@ and each skill stays within its own responsibility.
 
 | Skill | Responsibility | Status in this revision |
 | --- | --- | --- |
-| `coding-style` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts task-reviewed; candidate handoffs showed non-regression, the combined code boundary preserved the specified contract, and final review prompted a corrected numeric-ID/arm evidence export. |
+| `coding-standards` | Supplies implementation conventions within already-authorized code work. | Source and caller contracts task-reviewed; candidate handoffs showed non-regression, the combined code boundary preserved the specified contract, and final review prompted a corrected numeric-ID/arm evidence export. |
 | `research-before-coding` | Supplies a bounded evidence handoff for an explicit research request or unresolved decision-relevant question. | Source/caller boundaries, v2 evidence, and corrected public evidence mapping task-reviewed with stated shaping limits. |
 | `onboard-to-codebase` | Supports explicit repository or subsystem orientation. | Source contract and evidence task-reviewed; narrow-question samples showed non-regression, and whole-repo, subsystem, and selective-refresh boundaries met their supplied cases with stated limits. |
 | `pr-sizing` | Supports proportional delivery decomposition. | Source, four caller routes, and corrected evidence narrative task-reviewed with case-specific limits. |
@@ -40,9 +40,9 @@ all individual re-entry checklists remain open. The
 [execution plan](../superpowers/plans/2026-09-13-engineering-coding-foundation.md#implementation-decisions)
 retains the controller's decisions and their costs if wrong.
 
-## Coding-style contract
+## coding-standards contract
 
-`coding-style` is a small context provider:
+`coding-standards` is a small context provider:
 
 - Explicit user requirements and repository conventions take precedence.
 - Its defaults cover readable implementations, useful names and errors,

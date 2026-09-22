@@ -176,18 +176,27 @@ for (const id of retiredSkillIds) {
   assert.equal(files.has(`kai-creative/skills/${id}/SKILL.md`), false,
     `creative pack must not emit retired skill ${id}`);
 }
+// Entry points are emitted as bundles, not as byte-identical copies: the
+// generator no longer copies a module graph, it builds one. What must hold is
+// that every entry point a shipped instruction names is present, and that the
+// internal modules it depends on travelled INTO it rather than beside it.
 for (const asset of [
   'scripts/demo-capture.mjs',
   'scripts/demo-format.mjs',
   'scripts/demo-narrate.mjs',
   'scripts/demo-zoom.mjs',
-  'scripts/lib/cursor-png.mjs',
 ]) {
-  const emitted = files.get(`kai-creative/${asset}`);
-  assert.ok(emitted, `creative pack must preserve helper dependency ${asset}`);
-  assert.equal(emitted, readFileSync(packPlan.sourceAssetPath(root, asset), 'utf8')
-    .replace(/\r\n/g, '\n'));
+  assert.ok(files.get(`kai-creative/${asset}`), `creative pack must emit entry point ${asset}`);
 }
+assert.equal(files.has('kai-creative/scripts/lib/cursor-png.mjs'), false,
+  'an internal module is inlined by the bundler, never shipped as its own file');
+// Proving inlining rather than assuming it: the cursor helper's own source
+// carries this marker, and it has to appear inside the bundle that needs it.
+const cursorSource = readFileSync(join(root, 'src', 'creative', 'lib', 'cursor-png.mjs'), 'utf8');
+const cursorMarker = cursorSource.match(/^export function (\w+)/m)?.[1];
+assert.ok(cursorMarker, 'cursor-png.mjs must export a named function to anchor this check');
+assert.match(files.get('kai-creative/scripts/demo-zoom.mjs'), new RegExp(cursorMarker),
+  'demo-zoom must carry the inlined cursor helper, or the closure did not travel with it');
 for (const [skill, asset] of [
   ['video-align-narration', 'scripts/demo-narrate.mjs'],
   ['video-render-zoom', 'scripts/demo-zoom.mjs'],

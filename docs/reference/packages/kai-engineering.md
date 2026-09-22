@@ -59,7 +59,7 @@ than four old prompts concatenated into a builder.
 
 | Skill | Activation | Not an activation |
 | --- | --- | --- |
-| `coding-style` | Repository/task instructions leave implementation conventions unspecified | Permission to override the repository |
+| `coding-standards` | Repository/task instructions leave implementation conventions unspecified | Permission to override the repository |
 | `research-before-coding` | An explicit research request or unresolved decision-relevant question | Every code edit |
 | `onboard-to-codebase` | Explicit repository/subsystem orientation | First entry or an ordinary narrow question |
 | `pr-sizing` | Accepted work needs meaningful delivery decomposition | One coherent change or a plan-only request becoming implementation |
