@@ -78,14 +78,14 @@ for (const entry of agents) {
   if (entry.id.startsWith('eng-builder-')) {
     assert.ok(tools.includes('edit') && tools.includes('execute'),
       `${entry.id}: implementation and its tests need edit and execution`);
-    for (const skill of ['coding-style', 'research-before-coding', 'pr-sizing']) {
+    for (const skill of ['coding-standards', 'research-before-coding', 'pr-sizing']) {
       assert.ok(refs.some(ref => ref.from === entry.rel && ref.target === skill &&
         ref.firing.includes('loaded')), `${entry.id}: missing ${skill} route`);
     }
   }
 }
 for (const skill of [
-  'coding-style', 'research-before-coding', 'onboard-to-codebase', 'pr-sizing', 'build-diagrams',
+  'coding-standards', 'research-before-coding', 'onboard-to-codebase', 'pr-sizing', 'build-diagrams',
 ]) {
   assert.ok(refs.some(ref => ref.target === skill && ref.firing.includes('loaded')),
     `${skill}: an explicit engineering caller must exist`);

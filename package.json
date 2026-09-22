@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "15.0.0",
+  "version": "16.0.0",
   "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; derived runtime files are refreshed by pack-preview.",
   "private": true,
   "scripts": {
@@ -16,7 +16,8 @@
     "release-guard": "node tools/release-guard.mjs",
     "release-guard:self-test": "node tools/release-guard.mjs --self-test",
     "check-syntax": "node tools/check-syntax.mjs",
-    "test": "node test/package-availability-self-test.mjs && node test/engineering-agents-self-test.mjs && node test/engineering-foundation-self-test.mjs && node test/creative-foundation-self-test.mjs && node test/creative-core-contract-self-test.mjs && node test/creative-agent-contract-self-test.mjs && node test/creative-skill-contract-self-test.mjs && node test/coordination-authority-self-test.mjs && node test/coordination-thread-self-test.mjs && node test/coordination-source-routing-self-test.mjs && node test/coordination-foundation-self-test.mjs && node test/coordination-inputs-self-test.mjs && node test/coordination-store-self-test.mjs && node test/coordination-engine-self-test.mjs && node test/coordination-context-self-test.mjs && node test/coordination-evidence-self-test.mjs && node test/coordination-report-self-test.mjs && node test/coordination-host-self-test.mjs && node test/coordination-migration-self-test.mjs && node test/coordination-cli-self-test.mjs && node tools/validate-plugin.mjs && node tools/generate-catalog.mjs --check && node src/core/workspace-doctor.mjs --self-test && node tools/host-contract.mjs --self-test && node tools/release-guard.mjs --self-test && node examples/proactive-runner/runner.mjs --self-test && node src/core/activity.mjs --self-test && node src/core/work-status.mjs --self-test && node src/core/observe-subagent.mjs --self-test && node src/core/observe-watch.mjs --self-test && node src/creative/demo-zoom.mjs --self-test && node src/creative/demo-capture.mjs --self-test && node src/creative/demo-narrate.mjs --self-test && node src/creative/demo-format.mjs --self-test && node tools/pack-preview.mjs --self-test && node tools/pack-preview.mjs --gate all && node tools/pack-preview.mjs --check && node tools/check-syntax.mjs",
+    "consumer-install:self-test": "node test/consumer-install-self-test.mjs",
+    "test": "node test/package-availability-self-test.mjs && node test/consumer-install-self-test.mjs && node test/engineering-agents-self-test.mjs && node test/engineering-foundation-self-test.mjs && node test/creative-foundation-self-test.mjs && node test/creative-core-contract-self-test.mjs && node test/creative-agent-contract-self-test.mjs && node test/creative-skill-contract-self-test.mjs && node test/coordination-authority-self-test.mjs && node test/coordination-thread-self-test.mjs && node test/coordination-source-routing-self-test.mjs && node test/coordination-foundation-self-test.mjs && node test/coordination-inputs-self-test.mjs && node test/coordination-store-self-test.mjs && node test/coordination-engine-self-test.mjs && node test/coordination-context-self-test.mjs && node test/coordination-evidence-self-test.mjs && node test/coordination-report-self-test.mjs && node test/coordination-host-self-test.mjs && node test/coordination-migration-self-test.mjs && node test/coordination-cli-self-test.mjs && node tools/validate-plugin.mjs && node tools/generate-catalog.mjs --check && node src/core/workspace-doctor.mjs --self-test && node tools/host-contract.mjs --self-test && node tools/release-guard.mjs --self-test && node examples/proactive-runner/runner.mjs --self-test && node src/core/activity.mjs --self-test && node src/core/work-status.mjs --self-test && node src/core/observe-subagent.mjs --self-test && node src/core/observe-watch.mjs --self-test && node src/creative/demo-zoom.mjs --self-test && node src/creative/demo-capture.mjs --self-test && node src/creative/demo-narrate.mjs --self-test && node src/creative/demo-format.mjs --self-test && node tools/pack-preview.mjs --self-test && node tools/pack-preview.mjs --gate all && node tools/pack-preview.mjs --check && node tools/check-syntax.mjs",
     "extract:path": "node tools/extract-learn-path.js",
     "extract:module": "node tools/extract-learn-path.js --module",
     "status": "node src/core/work-status.mjs",
@@ -47,6 +48,7 @@
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "playwright": "^1.49.0"
   }
 }

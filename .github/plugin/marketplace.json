@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Kai core, engineering, and creative. Other capability packages are incubated and do not ship.",
-    "version": "15.0.0",
+    "version": "16.0.0",
     "installSurface": "packs"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "kai-core",
       "source": "./plugins/kai-core",
       "description": "kai-core: the shared operating contract and workspace machinery every kai department pack depends on.",
-      "version": "15.0.0",
+      "version": "16.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -23,15 +23,21 @@
       "repository": "https://github.com/RubenSaucedo/kai",
       "license": "MIT",
       "keywords": [
-        "copilot", "copilot-cli", "copilot-plugin", "agents", "skills",
-        "saas", "engineering", "workflow-automation"
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "saas",
+        "engineering",
+        "workflow-automation"
       ]
     },
     {
       "name": "kai-engineering",
       "source": "./plugins/kai-engineering",
       "description": "Standalone software and platform implementation, technical investigation, independent review, and delivery procedures over kai-core.",
-      "version": "15.0.0",
+      "version": "16.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -40,15 +46,21 @@
       "repository": "https://github.com/RubenSaucedo/kai",
       "license": "MIT",
       "keywords": [
-        "copilot", "copilot-cli", "copilot-plugin", "agents", "skills",
-        "engineering", "security", "reliability"
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "engineering",
+        "security",
+        "reliability"
       ]
     },
     {
       "name": "kai-creative",
       "source": "./plugins/kai-creative",
       "description": "UI/UX, visual identity, design assets, and supported media production over kai-core.",
-      "version": "15.0.0",
+      "version": "16.0.0",
       "author": {
         "name": "RubenSaucedo",
         "url": "https://github.com/RubenSaucedo"
@@ -57,8 +69,14 @@
       "repository": "https://github.com/RubenSaucedo/kai",
       "license": "MIT",
       "keywords": [
-        "copilot", "copilot-cli", "copilot-plugin", "agents", "skills",
-        "design", "creative", "media"
+        "copilot",
+        "copilot-cli",
+        "copilot-plugin",
+        "agents",
+        "skills",
+        "design",
+        "creative",
+        "media"
       ]
     }
   ]

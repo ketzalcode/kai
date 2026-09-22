@@ -88,11 +88,16 @@ Neither path searches cwd or another installed package.
 
 | Creative runtime asset | Purpose and closure |
 | --- | --- |
-| `scripts/demo-format.mjs` | Existing format checks; imports `./demo-capture.mjs` for parser contracts |
-| `scripts/demo-narrate.mjs` | Narration estimate, synthesis, placement, and mix operations; imports `./demo-capture.mjs` |
-| `scripts/demo-zoom.mjs` | Focus compilation/render/review operations; imports `./demo-capture.mjs` and `./lib/cursor-png.mjs` |
+| `scripts/demo-format.mjs` | Existing format checks; the parser contracts it shares with capture are compiled in |
+| `scripts/demo-narrate.mjs` | Narration estimate, placement, and mix operations over a supplied take; shares the compiled parser contracts |
+| `scripts/demo-zoom.mjs` | Focus compilation/render/review operations; the cursor-image closure is compiled in |
 | `scripts/demo-capture.mjs` | Retained parser/helper dependency only; live capture is not an active creative skill |
-| `scripts/lib/cursor-png.mjs` | Cursor image closure used by zoom rendering |
+| `scripts/chunk-*.mjs` | Build output: modules shared by more than one entry point, emitted once instead of copied into each |
+
+Since 16.0.0 these entry points are built artifacts rather than copied source.
+`lib/` no longer appears in an installed creative pack: a module used by one
+entry point is inlined into it, and a module used by several becomes a shared
+chunk. The authoritative source is `src/creative/` in the repository.
 
 Keeping `demo-capture.mjs` in the emitted closure does not restore recording as
 an active method. Requests needing an unavailable recording or measured take

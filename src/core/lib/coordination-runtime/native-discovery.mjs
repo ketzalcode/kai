@@ -9,21 +9,39 @@ const fail = message => new RuntimeError('UNSUPPORTED_HOST', message);
 const owners = new Set(['kai-core', 'kai-engineering', 'kai-creative']);
 const options = list => (list ?? []).flatMap(entry => entry.options ?? [entry]);
 
-// Two different roots, because this file runs from two different places and
+// Two different roots, because this file runs from three different places and
 // they are not the same distance from what each one needs.
 //
-// Shipped, it sits at `plugins/<pack>/scripts/lib/coordination-runtime/`, where
-// three levels up is the plugin root and agents are at `<plugin>/agents/`.
+// Shipped, it is compiled into `plugins/<pack>/scripts/`, where one level up is
+// the plugin root and agents are at `<plugin>/agents/`. Before 16.0.0 it shipped
+// as a loose module at `<plugin>/scripts/lib/coordination-runtime/`, three levels
+// down. In this repository it is authored at `src/core/lib/coordination-runtime/`,
+// where the generated packs are at `<repo>/plugins/<pack>/agents/`.
 //
-// In this repository it is authored at `src/core/lib/coordination-runtime/`,
-// where the generated packs are at `<repo>/plugins/<pack>/agents/` — four levels
-// up, not three. Deriving both from one expression is what silently broke when
-// the source moved a level deeper: the shipped half kept working, the repo half
-// resolved to `<repo>/src` and matched nothing. Nothing failed loudly, because a
-// missed candidate just leaves the profile unset.
+// Three layouts, three distances. Counting levels is what breaks every time the
+// file moves, and it breaks silently: a missed candidate just leaves the profile
+// unset. It broke once when the source moved a level deeper, and bundling would
+// have broken it again — a chunk in `scripts/` resolved a "plugin root" two
+// directories above the marketplace.
+//
+// So look for the landmark instead of counting. The plugin root is the nearest
+// ancestor holding `agents/`; the repository root is the nearest holding
+// `plugins/`. Both are correct from any of the three locations and stay correct
+// if the file moves again.
+export function discoveryRoots(here) {
+  const ancestors = [];
+  for (let dir = here, up = dirname(dir); ; up = dirname(dir = up)) {
+    ancestors.push(dir);
+    if (up === dir) break;
+  }
+  return {
+    pluginRoot: ancestors.find(dir => existsSync(join(dir, 'agents'))) ?? resolve(here, '..'),
+    repoRoot: ancestors.find(dir => existsSync(join(dir, 'plugins'))) ?? resolve(here, '..', '..'),
+  };
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
-const pluginRoot = resolve(HERE, '..', '..', '..');
-const repoRoot = resolve(HERE, '..', '..', '..', '..');
+const {pluginRoot, repoRoot} = discoveryRoots(HERE);
 
 export function copilotLaunch(env = process.env) {
   const executable = env.KAI_COPILOT_EXECUTABLE || 'copilot';

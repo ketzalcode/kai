@@ -222,6 +222,25 @@ Expected result: **55 shipped files → 8**, one bundle per entry point. Every
 entry point is now Node ESM; the one PowerShell script was removed with audio
 in 14.0.0.
 
+> **Superseded by what 16.0.0 measured.** Three claims above did not survive
+> contact with real numbers, and are corrected here rather than quietly edited
+> away:
+>
+> - **One bundle per entry point is a regression.** Measured at 1,601 KB against
+>   947 KB of raw source, because `coordinate`, `work-status` and
+>   `workspace-doctor` each inline overlapping copies of the coordination
+>   runtime. Shipping used `splitting: true` instead: **22 files / 846 KB**, not
+>   8 files. The file-count target was the wrong objective.
+> - **Sourcemaps were not shipped.** Combined with minification they cost
+>   2,090 KB — more than twice raw source. Unminified, readable output achieves
+>   the same debuggability goal for less, so minification was skipped and
+>   sourcemaps became unnecessary rather than valuable.
+> - **A build-time `define` cannot strip the self-tests.** They are gated on
+>   `argv.includes('--self-test')`, a runtime value no constant can fold;
+>   measured output was byte-identical with and without the define. Removing
+>   shipped self-test code requires moving those blocks into `test/`, which is
+>   filed as follow-up work and not done in 16.0.0.
+
 #### The test that would have caught the lectoria bug
 
 A consumer-install simulation: copy a built pack to a temporary directory with
@@ -325,16 +344,19 @@ No bundler. Delivers the leak fix on its own.
 `pack-plan.mjs`, or `loader-contract.mjs`; a mutation test proves a
 prose-referenced undeclared script fails validation; `npm test` green.
 
-### Phase 2 — Build
+### Phase 2 — Build ✅ **shipped in 16.0.0**
 
 - Add esbuild; emit one bundle per declared entry point to existing paths.
-- Strip self-test code from bundles.
+- ~~Strip self-test code from bundles.~~ Not achievable by a build-time define;
+  deferred as follow-up work. See the correction note in §4.
 - Add the consumer-install simulation test.
 - CI verifies the committed bundle matches a fresh build.
 
-**Accepted when:** shipped executable count drops from 55 to 8; every entry
-point runs from a copied directory with no `node_modules`; `hooks.json` is
-unchanged; a mutation test proves committed-bundle drift fails CI.
+**Accepted when:** ~~shipped executable count drops from 55 to 8~~ — **54 → 22**
+via code splitting, because one bundle per entry point measured *larger* than
+raw source; every entry point runs from a copied directory with no
+`node_modules`; `hooks.json` is unchanged; a mutation test proves
+committed-bundle drift fails CI.
 
 ### Phase 3 — Audio ✅ **superseded and closed in 14.0.0**
 

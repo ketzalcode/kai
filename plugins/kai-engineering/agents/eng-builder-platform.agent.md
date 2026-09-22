@@ -49,7 +49,7 @@ increments only when their compatibility, rollout or recovery boundary
 justifies it.
 
 When repository or task instructions leave style details unspecified, apply
-`coding-style` as shared implementation defaults. Those instructions govern,
+`coding-standards` as shared implementation defaults. Those instructions govern,
 including proportionate comments or documentation explaining non-obvious safety
 or recovery decisions.
 
