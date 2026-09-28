@@ -44,7 +44,7 @@ Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Status
 
-`v16.0.0` is this checkout's prepared metadata version. kai ships **three
+`v16.0.1` is this checkout's prepared metadata version. kai ships **three
 packages** — `kai-core`, `kai-engineering`, and `kai-creative` — supplying
 **21 agents and 36 skills**. The
 [agents & skills catalog](docs/reference/agents-and-skills.md) is exactly what

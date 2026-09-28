@@ -4,6 +4,71 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [16.0.1] - 2026-09-28
+
+Fixes a hole in the reference graph, and the two defects hiding in it.
+
+### Fixed
+
+- **A skill routing another skill was invisible to every gate.**
+  `collectReferences` read agent bodies for routes but, for a skill, recorded
+  only how that skill fires and which assets it names — never the skills it
+  routes. So `referenceErrors`, `partition`, `collision` and `partial-install`
+  could not see a whole class of edge, and one had shipped: a core skill
+  instructed `Apply` on a skill `kai-engineering` provides, which a
+  `kai-core`-only install does not have.
+
+  Turning the gate on found a **second** defect nobody had reported: a skill
+  routed `init`, which nothing provides. That one is a false route rather than a
+  false dependency — `init` is a `coordinate` verb, and ``Run `init` `` is
+  written in the exact shape the route parser treats as loading a skill. It now
+  reads ``Run `coordinate init` ``, which is what the command actually is.
+
+- **The diagram guidance in `kai-core-issue-analysis` no longer routes across
+  packs.** It names `build-diagrams` as engineering's method and says what to do
+  when that pack is absent, instead of instructing a load that can fail. The
+  skill itself stays in core, because a core agent and an engineering agent both
+  route it.
+
+### Why a patch and not a minor
+
+No skill, agent, command or id was added, removed or renamed. A consumer's
+installed surface is unchanged apart from two corrected paragraphs.
+
+### What review caught
+
+Four defects, all fixed before this shipped:
+
+- **The 16.0.0 changelog heading had been deleted**, nesting that release's
+  breaking skill rename inside this patch entry — directly contradicting the
+  paragraph above. No gate sees it: the validator checks that a dated section
+  and a compare link exist *for the current version*, and the `[16.0.0]:` link
+  was still there. Release notes turn out to have the same silent-pass failure
+  mode as a gate.
+- **``Run `coordinate init` `` named an invocation form that does not exist.**
+  There is no `coordinate` executable; the verb goes to `coordinate.mjs`, as the
+  code block two paragraphs above it and every other prose reference in the
+  repository already say. Corrected to ``Run `coordinate.mjs init` ``, which is
+  equally immune to the route parser.
+- **An agent-shaped route target in a skill body was dropped with nothing to
+  recover it.** The new loop copied the agent loop's skip, but not the second
+  `dispatchedRefs` pass that makes that skip safe, so a mistyped role id in a
+  skill body would have been referenced by nothing and failed no gate — the
+  exact silence this change exists to remove. It is now recorded as an agent
+  referral and fails as a dangling reference.
+- **`loadedSkills` was the wrong parser for a skill body.** It unions
+  `declaredInherits`, which reads an agent's `**Inherits:**` line and carries
+  neither code-fence stripping nor an id charset. Uses `routedSkills` now:
+  identical result on today's corpus, without the asymmetry.
+
+### Verified
+
+Proven by mutation in both directions rather than asserted. Injecting a
+cross-pack skill route into an unrelated core skill fails the validator with the
+right message, as does a mistyped role id; disabling the collector fails the new
+self-test arms (`pack-preview --self-test`, 205 → 209 checks). `npm test` passes
+end to end.
+
 ## [16.0.0] - 2026-09-21
 
 Two changes ship together: shipped executables become built artifacts rather
@@ -4167,6 +4232,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[16.0.1]: https://github.com/ketzalcode/kai/compare/v16.0.0...v16.0.1
 [16.0.0]: https://github.com/ketzalcode/kai/compare/v15.0.0...v16.0.0
 [15.0.0]: https://github.com/ketzalcode/kai/compare/v14.0.1...v15.0.0
 [14.0.1]: https://github.com/ketzalcode/kai/compare/v14.0.0...v14.0.1
