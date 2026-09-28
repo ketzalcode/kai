@@ -136,11 +136,13 @@ Write the problem back in your own words, including:
 If the restatement is wrong, everything after it is wasted. Making it explicit is
 what lets someone correct you cheaply.
 
-Apply `build-diagrams` for an explicit diagram request or when a supported
+A diagram earns its place on an explicit request, or when a supported
 relationship would be materially clearer visually. A structural or flow change
-already explained adequately in prose does not trigger a diagram. Otherwise
-continue the analysis without a diagram; honor requested formats and repository
-constraints, and never invent a relationship to illustrate.
+already explained adequately in prose does not trigger one. The method for
+producing it, `build-diagrams`, is provided by `kai-engineering`; where that
+pack is not installed, continue the analysis in prose rather than looking for a
+substitute. Either way, honor requested formats and repository constraints, and
+never invent a relationship to illustrate.
 
 ## 4 — Frame the decision
 
