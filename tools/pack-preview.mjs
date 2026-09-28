@@ -810,6 +810,48 @@ function selfTest() {
   'the loaded, user-invoked and asset paths are populated, so those arms are not vacuous');
   ok(referenceErrors({ refs: liveRefs, providers: liveProviders }).length === 0,
     'every reference in the live corpus resolves to core or its own pack');
+  // --- skill -> skill routes ---------------------------------------------
+  // Until 16.0.1 this edge did not exist in the graph at all: the skill loop
+  // recorded how each skill fires and which assets it names, and never read the
+  // body for routes. A core skill instructing `Apply <department-skill>` was
+  // therefore invisible to referenceErrors and to all four gates, and one had
+  // shipped that way. Both arms are needed: the live one proves the edge is
+  // really collected, the synthetic one proves the rule rejects a violation
+  // rather than the corpus merely happening not to contain one.
+  ok(carries('loaded', 'skill', skillRel('kai-core-web-content-extraction'), 'kai-core-workspace-paths')
+    && carries('loaded', 'skill', skillRel('mockups-ascii'), 'kai-core-contract-v1'),
+  'a skill routing another skill is collected, within core and from a department into core');
+  const skillToSkill = liveRefs.filter((r) => r.kind === 'skill'
+    && r.firing.includes('loaded') && skillRel(r.target) && /\/skills\//.test(r.from));
+  ok(skillToSkill.length > 10,
+    `the skill-to-skill arm is populated (${skillToSkill.length}), so it cannot pass by finding nothing`);
+  ok(referenceErrors({
+    refs: [{
+      from: 'plugins/kai-core/skills/kai-core-x/SKILL.md',
+      fromPack: 'core',
+      firing: ['loaded'],
+      kind: 'skill',
+      target: 'build-diagrams',
+    }],
+    providers: liveProviders,
+  }).some((e) => /may only reach its own pack/.test(e.msg)),
+  'a core skill routing a department skill is rejected, the way a core agent doing it already was');
+  // An agent-shaped route target in a skill body is recovered as an agent
+  // referral rather than dropped. The agent loop gets that from its second
+  // `dispatchedRefs` pass; the skill loop has no second pass, so without the
+  // recovery a mistyped role id in a skill body would be referenced by nothing
+  // and fail no gate — the same silence this whole change exists to remove.
+  ok(referenceErrors({
+    refs: [{
+      from: 'plugins/kai-core/skills/kai-core-x/SKILL.md',
+      fromPack: 'core',
+      firing: ['orchestrated'],
+      kind: 'agent',
+      target: 'eng-buidler-frontend',
+    }],
+    providers: liveProviders,
+  }).some((e) => /resolves to no pack/.test(e.msg)),
+  'a mistyped role id routed from a skill body fails as a dangling agent reference');
   const liveAssets = planAssets(liveRefs);
   ok(liveAssets.get('scripts/demo-zoom.mjs')?.owner === 'creative'
     && liveAssets.get('scripts/observe-subagent.mjs')?.owner === 'core',
