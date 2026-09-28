@@ -1422,6 +1422,40 @@ export function collectReferences(root = REPO_ROOT) {
     // The direct entry point: `/skills run <id>` resolves across every installed
     // plugin, so the pack that ships it must be the one that provides it.
     if (firings.includes('user-invoked')) add(from, pack, 'user-invoked', 'skill', id);
+    // A skill body routes other skills the same way an agent body does, and
+    // until 16.0.1 nothing collected those edges: the loop below recorded only
+    // how *this* skill fires and which assets it names. A core skill could
+    // therefore instruct `Apply <department-skill>` and every gate stayed green,
+    // because `referenceErrors` can only judge references it was given. One had
+    // shipped that way.
+    //
+    // The route is recorded as `loaded` because that is what it does — the
+    // routed skill is loaded into the same session. It is deliberately not
+    // treated as a firing path for the target: reachability through a skill is
+    // only as real as the routing skill's own reachability, and the firing-path
+    // check in validate-plugin.mjs answers that separate question from agents.
+    for (const text of [raw, ...companionBodies]) {
+      // `routedSkills`, not `loadedSkills`: the latter also unions
+      // `declaredInherits`, which reads an agent's `**Inherits:**` line. That
+      // construct has no meaning in a skill, and it carries neither fence
+      // stripping nor an id charset — so a fenced authoring example, in the one
+      // skill whose job is teaching agent authoring, would become a live
+      // reference.
+      for (const target of routedSkills(text)) {
+        if (target === id) continue;
+        // Same agent-versus-skill disambiguation the agent loop applies, and
+        // the same recovery: a route verb naming a role is a referral, not a
+        // loaded contract, so it is recorded as one rather than dropped. The
+        // agent loop gets that recovery from its second `dispatchedRefs` pass;
+        // without it here, a mistyped agent-shaped id in a skill body would be
+        // referenced by nothing and fail no gate.
+        if (!skillOf.has(target) && (agentOf.has(target) || AGENT_CANDIDATE.test(target))) {
+          add(from, pack, 'orchestrated', 'agent', target);
+          continue;
+        }
+        add(from, pack, 'loaded', 'skill', target);
+      }
+    }
     for (const firing of firings) {
       for (const text of [raw, ...companionBodies]) {
         for (const asset of assetRefs(text)) add(from, pack, firing, 'asset', asset);

@@ -323,7 +323,7 @@ ready workspace. It is not a broken one either. The window between a validated
 schema-4 manifest and the authorized `init` is the **expected** intermediate
 state, not a broken workspace: `inspect` answers and reports the absent database
 as a condition, while every other verb refuses with `SCHEMA_MISMATCH`. Run
-`init`; do not re-scaffold or repair.
+`coordinate.mjs init`; do not re-scaffold or repair.
 
 ### Schema-3 to schema-4 migration
 
