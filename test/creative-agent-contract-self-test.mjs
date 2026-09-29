@@ -13,6 +13,9 @@ import { parseScreenplay } from '../src/creative/demo-capture.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const finalCreativeSkills = [
+  // Arrived in 17.0.0 from kai-core. Core never routed it; both callers were
+  // already creative, and a department may not hold a `kai-core-` name.
+  'content-grounding',
   'html-block-diagrams',
   'mockups-ascii',
   'mockups-html',
@@ -195,9 +198,9 @@ const videoContract = {
     'kai-core-workspace-paths',
     'kai-core-work-acting',
     'kai-core-work-activity',
-    'kai-core-content-grounding',
+    'content-grounding',
   ],
-  allowedActiveCreativeRoutes: [],
+  allowedActiveCreativeRoutes: ['content-grounding'],
   bodyPatterns: [
     /story, scene, script, and screenplay craft/i,
     /only the requested outputs/i,

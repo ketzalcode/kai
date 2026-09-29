@@ -185,13 +185,13 @@ Structural and visual mockups, block diagrams, measured narration operations, an
 
 ### Web & content
 
-Browser-run plumbing, content methods, and shared claim safety.
+Browser-run plumbing, content methods, and the claim safety creative content rests on.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`kai-core-web-evaluation`](../../plugins/kai-core/skills/kai-core-web-evaluation/SKILL.md) | `kai-core` | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
 | [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | `kai-core` | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
-| [`kai-core-content-grounding`](../../plugins/kai-core/skills/kai-core-content-grounding/SKILL.md) | `kai-core` | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
+| [`content-grounding`](../../plugins/kai-creative/skills/content-grounding/SKILL.md) | `kai-creative` | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
 | [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | `kai-core` | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
 
 ### Operator signals
