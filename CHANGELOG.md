@@ -4,6 +4,82 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [17.0.0] - 2026-09-29
+
+Moves `content-grounding` out of core. Breaking: an id leaves `kai-core`, and
+its name changes.
+
+### Why it was never a core skill
+
+Core is the pack every other pack depends on, so anything it holds is a cost
+every consumer pays. Among **shipped** bodies, `kai-core-content-grounding` was
+routed by exactly two — `creative-lead-video` and `video-align-narration` — and
+both are kai-creative. No core agent or skill routed it. It was in core because
+core was where things went, not because anything shared it.
+
+That count is about the shipped set, and the qualifier matters: three more
+routing bodies live in the incubated `kai-marketing`, which is where the idea
+of a *shared* content contract came from. See "Incubated packages" below for
+what that costs on revival.
+
+The repository's own catalog had already noticed the drift: the skill sat under
+"Web & content" with a blurb calling it *shared* claim safety, which — across
+the packs anyone can actually install — it was not.
+
+### What changed
+
+- `plugins/kai-core/skills/kai-core-content-grounding/` →
+  `plugins/kai-creative/skills/content-grounding/`. The pack that routes it now
+  provides it.
+- **The prefix is dropped, and that is not cosmetic.** `namespaceErrors` forbids
+  a department pack from holding a `kai-core-` name, because that prefix is how
+  a core-owned id stays unambiguous when several packs are installed at once.
+  A department keeping the prefix would claim a name it does not own, so the
+  move and the rename are one change, not two.
+- `kai-core-content-grounding` is registered in `RETIRED_CORE_SKILL_IDS`. That
+  set is documentation bookkeeping, not a gate: it only relaxes the
+  inherit-line reference check for dated records. What actually catches a
+  shipped body reintroducing the old id is `referenceErrors` — the id resolves
+  to no pack, and the `partial-install` gate fails.
+
+### Who this breaks
+
+Anyone who named `kai-core-content-grounding` in their own agent, skill or
+`AGENTS.md`. There is no alias — this repository does not ship redirects. The
+new id is `content-grounding`, provided by `kai-creative`.
+
+A `kai-core`-only install loses nothing it was using: core never routed the
+skill, so nothing in core can now dangle.
+
+### Incubated packages
+
+`kai-marketing` routed the old id from three bodies. Those were updated in
+place. They are not shipped, not validated as packs and not installable, so
+this changes nothing a consumer receives.
+
+**Reviving `kai-marketing` now requires a decision first.** Those three bodies
+previously routed a *core* id, which any pack may reach. They now route a
+*kai-creative* id, and no department pack may depend on another — so on the day
+marketing re-enters the active partition, each one is a hard validation
+failure. Leaving the retired id would have been no better: it would dangle
+instead. Recorded here rather than left for whoever hits the red build, because
+the incubator is a tree no gate reads. The fix at that point is to promote
+`content-grounding` back to core, or to give marketing its own.
+
+### Also corrected
+
+Two live reference docs claimed **22 agents and 38 skills**; the shipped surface
+has been 21 and 36 since 13.0.0. Nothing checks those numbers — the README
+stamp is enforced, `docs/getting-started.md` and `docs/how-kai-works.md` are
+not — so they drifted silently through four releases.
+
+### Verified
+
+`npm test` passes end to end. `materializePacks` emits the skill under
+`kai-creative/` and nowhere else. All four gates clean, including
+`partial-install`, which is the one that would fail if a core body still
+reached for it.
+
 ## [16.0.1] - 2026-09-28
 
 Fixes a hole in the reference graph, and the two defects hiding in it.
@@ -4232,6 +4308,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[17.0.0]: https://github.com/ketzalcode/kai/compare/v16.0.1...v17.0.0
 [16.0.1]: https://github.com/ketzalcode/kai/compare/v16.0.0...v16.0.1
 [16.0.0]: https://github.com/ketzalcode/kai/compare/v15.0.0...v16.0.0
 [15.0.0]: https://github.com/ketzalcode/kai/compare/v14.0.1...v15.0.0

@@ -28,6 +28,10 @@ const finalAgentIds = [
   'workflow-creative-demo-production',
 ];
 const finalSkillIds = [
+  // Arrived in 17.0.0 from kai-core, where nothing in core routed it and both
+  // callers were already creative. The prefix went with the move: a department
+  // may not hold a `kai-core-` name.
+  'content-grounding',
   'html-block-diagrams',
   'mockups-ascii',
   'mockups-html',

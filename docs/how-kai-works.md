@@ -24,7 +24,7 @@ Supplied briefs, factual maps, media and evidence can be direct inputs; their
 usual producer is not a mandatory installed sibling. Missing evidence narrows
 the answer. It never licenses invented facts or a simulated specialist verdict.
 Scope, design acceptance, independent assessment and release approval remain
-with their real owners. The shipped surface is 22 agents / 38 skills across
+with their real owners. The shipped surface is 21 agents / 36 skills across
 core, engineering, and creative; retired gtm/personal plugins have no aliases;
 private `.kai/personal/` data remains unchanged.
 
