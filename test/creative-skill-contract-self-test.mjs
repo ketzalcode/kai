@@ -5,13 +5,27 @@ import { fileURLToPath } from 'node:url';
 import { routedSkills, sourceSkillFiles } from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const ids = [
-  'mockups-ascii',
-  'mockups-html',
-  'video-align-narration',
-  'video-render-zoom',
-  'html-block-diagrams',
-];
+// This contract is written for creative *methods*: user-invocable, no declared
+// tools, a trigger-only "Use when" description. `content-grounding` arrived
+// from kai-core in 17.0.0 and is a contract skill, not a method — it carries
+// core's shape (declared tools, a descriptive first sentence), which the rules
+// below would reject for being that shape rather than for a defect.
+//
+// The exemption is named and checked rather than left implicit. Deriving the
+// roster from disk is the point: before 17.0.0 this list was hardcoded, so a
+// creative skill the list forgot would have been exempt from the whole contract
+// and nothing would have said so.
+const CONTRACT_STYLE_SKILLS = new Set(['content-grounding']);
+const creativeSkillIds = sourceSkillFiles(root)
+  .filter(entry => entry.pack === 'creative')
+  .map(entry => entry.id);
+for (const id of CONTRACT_STYLE_SKILLS) {
+  assert.ok(creativeSkillIds.includes(id),
+    `${id} is exempted from the creative skill contract but kai-creative does not provide it`);
+}
+const ids = creativeSkillIds.filter(id => !CONTRACT_STYLE_SKILLS.has(id)).sort();
+assert.ok(ids.length >= 5,
+  `expected the creative method roster to be populated, found ${ids.length}`);
 const retiredCreativeSkills = [
   'create-product-demo',
   'demo-capture',

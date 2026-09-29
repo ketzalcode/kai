@@ -215,6 +215,17 @@ export const RETIRED_CORE_AGENT_IDS = new Set([
 // became `kai-core-workspace-paths` plus `kai-core-workspace-initiative`.
 export const RETIRED_CORE_SKILL_IDS = new Set([
   'kai-core-workspace-conventions',
+  // Moved to kai-creative as `content-grounding` in 17.0.0. Core never routed
+  // it — both shipped callers were creative — and a department may not hold a
+  // `kai-core-` name, so the move and the rename are one change.
+  //
+  // This set is documentation bookkeeping, not a gate: it relaxes the
+  // inherit-line reference check for dated records. A shipped body
+  // reintroducing the id is caught by `referenceErrors` instead.
+  //
+  // Reviving `kai-marketing` needs a decision: its three bodies now route a
+  // kai-creative id, and no department may depend on another.
+  'kai-core-content-grounding',
 ]);
 
 export const NEW_AGENT_IDS = {

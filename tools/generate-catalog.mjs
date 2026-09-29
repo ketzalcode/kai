@@ -148,9 +148,9 @@ const CATEGORIES = [
   {
     kind: 'skill',
     title: 'Web & content',
-    blurb: 'Browser-run plumbing, content methods, and shared claim safety.',
+    blurb: 'Browser-run plumbing, content methods, and the claim safety creative content rests on.',
     members: [
-      'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'kai-core-content-grounding',
+      'kai-core-web-evaluation', 'kai-core-web-content-extraction', 'content-grounding',
       'kai-core-pulse-digest',
     ],
   },

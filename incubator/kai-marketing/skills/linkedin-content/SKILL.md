@@ -24,7 +24,7 @@ produces **LinkedIn** content only — other platforms are separate agents.
 
 | Input | Role |
 |---|---|
-| `product_context.json` | **sole factual authority** — every claim maps here (see `kai-core-content-grounding`) |
+| `product_context.json` | **sole factual authority** — every claim maps here (see `content-grounding`) |
 | `product_exploration_report.md` | **phrasing nuance only** — never a source of facts the JSON lacks |
 | `media_manifest.json` (optional) | assets a carousel or post can reference |
 | operator brief | goal (awareness, launch, waitlist, recruitment, feedback, fundraising, community, technical credibility…), audience, tone/style, language, output mode, confirmed speaker identity |
@@ -32,7 +32,7 @@ produces **LinkedIn** content only — other platforms are separate agents.
 ## Grounding and claim-safety
 
 Before selecting assertions, Load `kai-core-contract-v1`, then Load
-`kai-core-content-grounding` for the product_context reference scheme, the
+`content-grounding` for the product_context reference scheme, the
 per-item claim ledger, the provenance treatment table, the never-fabricate rules,
 `needs_confirmation` handling, the JSON-is-sole-authority rule, bilingual
 grounding, and locked-facts voicing. If compatible core is unavailable, return

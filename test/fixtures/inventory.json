@@ -29,10 +29,10 @@
   "skills": [
     "build-diagrams",
     "coding-standards",
+    "content-grounding",
     "html-block-diagrams",
     "kai-core-asset-closing",
     "kai-core-asset-producing",
-    "kai-core-content-grounding",
     "kai-core-contract-v1",
     "kai-core-create-agent",
     "kai-core-definition-of-done",

@@ -73,7 +73,7 @@ put the rest in next actions.
 
 ## Evidence and claim discipline
 
-Load `kai-core-content-grounding` when selecting product assertions or drafting
+Load `content-grounding` when selecting product assertions or drafting
 campaign/email copy. Supplied `product_context.json` is valid with its original
 kind/source/proof/confidence; the operator supplying it is not independent
 verification. Request missing assertions in that JSON from the operator or an
