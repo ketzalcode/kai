@@ -44,7 +44,7 @@ product surfaces, a screenplay draft, and media metadata directly. A producer
 role may supply them but is not a mandatory call or package dependency.
 
 Treat `product_context.json` as the sole factual authority for product claims.
-Apply `kai-core-content-grounding` before writing or revising claimful spoken or
+Apply `content-grounding` before writing or revising claimful spoken or
 on-screen copy. Preserve assertion provenance and exclude unsupported claims
 instead of smoothing them into plausible language.
 

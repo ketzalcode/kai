@@ -251,7 +251,7 @@ Copilot host (CLI or coding agent) against a scratch workspace:
 - setup/migration idempotence (`.persona-self/`, retired `.kai/local.json`,
   manifest `workspace_kind`) without exposing private local paths;
 - workspace-scoped identity extraction and `status: stub` handling;
-- kai-core-content-grounding claim-safety end to end on a real `product_context.json`.
+- content-grounding claim-safety end to end on a real `product_context.json`.
 - support triage redaction, grounded deduplication, and incident-first routing;
 - growth/data metric-contract, causal-status, small-cell, and scope-boundary
   behavior;

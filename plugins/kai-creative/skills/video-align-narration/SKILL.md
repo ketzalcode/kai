@@ -32,7 +32,7 @@ Before shared workspace or claim checks, Load `kai-core-contract-v1`.
 Without compatible core, bounded advice on supplied evidence may continue,
 but not coordination or `.kai` state. Tell the operator to install or update
 core before coordinated work resumes.
-Load `kai-core-content-grounding` when the request includes checking product
+Load `content-grounding` when the request includes checking product
 claims. Placement does not author or certify those claims; questions about
 the approved spoken copy go back to its author.
 

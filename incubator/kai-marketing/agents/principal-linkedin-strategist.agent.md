@@ -99,7 +99,7 @@ needs none of that team state. For a referenced initiative, Load
 
 ### 2. Load and verify the intelligence
 
-Load `kai-core-content-grounding` before selecting claims. Read supplied
+Load `content-grounding` before selecting claims. Read supplied
 `product_context.json` as the **sole factual authority** (the report informs
 phrasing only; the media manifest supplies assets). Index the grounding
 references you can use and their `kind`/`source`/`proof`/`confidence`. If the
