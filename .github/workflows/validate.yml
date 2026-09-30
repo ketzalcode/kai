@@ -78,7 +78,7 @@ jobs:
       - name: Validate plugin contract
         run: node tools/validate-plugin.mjs
       - name: Workspace-doctor self-test
-        run: node src/core/workspace-doctor.mjs --self-test
+        run: node test/workspace-doctor-self-test.mjs
       - name: Host-loader acceptance
         run: node tools/host-contract.mjs --self-test
       - name: Release-guard self-test
