@@ -183,13 +183,11 @@ function runs(records, now = Date.now()) {
 export {
   LOG_REL,
   FORBIDDEN_FIELDS,
-  MAX_NOTE,
   MAX_LINE,
   MAX_BYTES,
   digest,
   looksAbsolute,
   safeNote,
-  buildRecord,
   append,
   read,
   runs
