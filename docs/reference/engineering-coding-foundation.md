@@ -35,7 +35,7 @@ Prepared `8.0.0` metadata is not publication or updated-host runtime
 verification.
 
 The local implementation status is recorded in
-[#211](https://github.com/RubenSaucedo/kai/issues/211#issuecomment-5658621840);
+[#211](https://github.com/ketzalcode/kai/issues/211#issuecomment-5658621840);
 all individual re-entry checklists remain open. The
 [execution plan](../superpowers/plans/2026-09-13-engineering-coding-foundation.md#implementation-decisions)
 retains the controller's decisions and their costs if wrong.
