@@ -83,11 +83,10 @@ assert.deepEqual(DISPATCHING_ROLES, ['director-chief-of-staff'],
   'the creative migration must not add dispatching authority');
 
 const taxonomy = readFileSync(join(
-  root, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references', 'taxonomy.md',
+  root, 'docs', 'reference', 'agent-authoring', 'taxonomy.md',
 ), 'utf8');
 const modelSelection = readFileSync(join(
-  root, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references',
-  'model-selection.md',
+  root, 'docs', 'reference', 'agent-authoring', 'model-selection.md',
 ), 'utf8');
 const authoringErrors = agentAuthoringReferenceErrors({ taxonomy, modelSelection });
 assert.ok(!authoringErrors.some(error => error.startsWith('provider family rows')),
