@@ -53,7 +53,9 @@ Neither a model name nor shorter prompts establishes a measured speedup.
 
 ## Skills and proportionality
 
-The same five local skills remain available; no new skill dependency is added.
+The same local skills remain available, plus `pr-delivery`, which moved out of
+core because its content, its catalog placement and all of its callers were
+already engineering. No new skill dependency is added.
 Domain-specific obligations remain concise craft in the relevant agent, rather
 than four old prompts concatenated into a builder.
 
@@ -63,9 +65,10 @@ than four old prompts concatenated into a builder.
 | `research-before-coding` | An explicit research request or unresolved decision-relevant question | Every code edit |
 | `onboard-to-codebase` | Explicit repository/subsystem orientation | First entry or an ordinary narrow question |
 | `pr-sizing` | Accepted work needs meaningful delivery decomposition | One coherent change or a plan-only request becoming implementation |
+| `pr-delivery` | A finished change is explicitly to be packaged as a pull request | Permission to commit, push, merge or release |
 | `build-diagrams` | Explicit diagram request or supported relationships materially clearer visually | Every structure/flow change or a diagram quota |
 
-Core authority, assessment, PR, workspace and artifact contracts are loaded at
+Core authority, assessment, workspace and artifact contracts are loaded at
 the action that needs them. There is no eager skill manifest. Core workspace,
 lease and activity methods apply to requested durable/coordinated work, not an
 automatic ceremony for an inline answer.
