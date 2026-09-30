@@ -39,7 +39,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync, readFileSync as read } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseScreenplay, parseTake } from './demo-capture.mjs';
+import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
 import { cursorPng } from './lib/cursor-png.mjs';
 
 const MAX_ZOOM = 10;
