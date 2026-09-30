@@ -63,6 +63,9 @@ jobs:
         run: |
           node test/engineering-agents-self-test.mjs
           node test/engineering-foundation-self-test.mjs
+      # `test/creative-screenplay-self-test.mjs` is new here and CI does not run
+      # `npm test` — it runs the curated list in this file — so without this line
+      # the parser contract would be gated locally and nowhere else.
       - name: Creative foundation source contracts
         run: |
           node test/creative-foundation-self-test.mjs
@@ -70,18 +73,21 @@ jobs:
           node test/creative-agent-contract-self-test.mjs
           node test/creative-skill-contract-self-test.mjs
           node test/creative-screenplay-self-test.mjs
-      # The screenplay/take parsers are shipped source inlined into every
-      # creative entry point, and `incubator/kai-creative/scripts/demo-capture.mjs`
-      # — the parked live-recording command — imports them from there. Parked
-      # means not shipped, not untested: it is the one thing under `incubator/`
-      # that has a live dependency on active source, so a parser contract change
-      # that broke it would otherwise go unnoticed until somebody re-entered it.
-      # Executing it validates nothing about the capability; the isolation rules
-      # are about manifests, marketplace entries, generated packs, rosters,
-      # catalog rows and skill routes, and `package-availability-self-test`
-      # still enforces every one of them.
-      - name: Parked capture driver still parses what creative ships
-        run: node incubator/kai-creative/scripts/demo-capture.mjs --self-test
+      # ORDERING DEPENDENCY: `test/demo-capture-self-test.mjs` is created by
+      # #225 (PR #237), which moves every `--self-test` block out of shipped
+      # source. This step is written for the state after both land and will fail
+      # if #226 merges first — delete it in that case and restore it with #225.
+      #
+      # Why an incubated file is executed at all: the parked live-recording
+      # command imports its parsers from `src/creative/lib/screenplay.mjs`, so it
+      # is the one thing under `incubator/` with a live dependency on active
+      # source, and `tools/check-syntax.mjs` does not scan that directory —
+      # running this suite is the only thing that parses the file. Parked means
+      # not shipped, not untested. The isolation rules are about manifests,
+      # marketplace entries, generated packs, rosters, catalog rows and skill
+      # routes; `package-availability-self-test` still enforces every one.
+      - name: Parked capture driver (parsers + emitted driver)
+        run: node test/demo-capture-self-test.mjs
       - name: Coordination source and emission contracts
         run: |
           node test/coordination-authority-self-test.mjs
