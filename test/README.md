@@ -40,11 +40,21 @@ PR and push to `main` and must stay fast:
   supported Node version (`22.22.2`, `24.15.0`, `26.0.0`); Node 22's documented
   `node:sqlite` experimental warning is left visible. They are slow by the
   standards of the guards above — the migration and CLI suites take minutes.
+- **Shipped-command suites** — `activity-self-test.mjs`,
+  `work-status-self-test.mjs`, `observe-subagent-self-test.mjs`,
+  `observe-watch-self-test.mjs`, `demo-capture-self-test.mjs`,
+  `demo-format-self-test.mjs`, `demo-narrate-self-test.mjs` and
+  `demo-zoom-self-test.mjs` cover the executable commands in
+  `src/core/` and `src/creative/`. They lived inside those commands behind a
+  `--self-test` flag until #225; the flag was a runtime argv string no build
+  could fold away, so the assertions shipped to every consumer. They run in
+  `npm test`, not in the `validate` workflow — the same reach they had before
+  the move.
 - **`npm run validate`** (`tools/validate-plugin.mjs`) — the plugin **source**
   contract, including **release hygiene** (semver, current-version changelog
   section + link, README status stamp, `package.json` ↔ `package-lock.json`
   consistency, git-dependency allowlist).
-- **`npm run doctor:self-test`** (`src/core/workspace-doctor.mjs --self-test`) —
+- **`npm run doctor:self-test`** (`test/workspace-doctor-self-test.mjs`) —
   the generated **consumer-workspace** contract, exercised against committed
   golden fixtures.
 - **`npm run host-contract`** (`tools/host-contract.mjs --self-test`) — the
@@ -131,10 +141,10 @@ Behavioral-contract and host compatibility:
   `schema_version`) and canonical areas, contain no machine-specific absolute
   paths, and use `workspace_root: "."` in repository mode.
 
-### Generated workspace — `workspace-doctor.mjs`
+### Generated workspace — `workspace-doctor-self-test.mjs`
 
-Validates a scaffolded consumer workspace (not the plugin source). The
-`--self-test` mode asserts the committed golden fixtures behave:
+Validates a scaffolded consumer workspace (not the plugin source). This suite
+asserts the committed golden fixtures behave:
 
 - `test/fixtures/repo-workspace/` — a **healthy** workspace the doctor passes:
   a schema-compatible manifest plus a clean `coordination/` set (items, BOARD).
@@ -176,7 +186,8 @@ reject, not in a shipped manifest.
 
 The same script carries the read-only pack-migration check (#29): what this
 **host** has installed, where each install came from, and whether a pack install
-may proceed. `--self-test` runs it over a 33-scenario matrix and asserts each
+may proceed. `test/workspace-doctor-self-test.mjs` runs it over a 33-scenario
+matrix and asserts each
 verdict exactly — `clear` (may proceed), `blocked` (refused), `unknown` (the
 evidence did not settle it). A case that must be `unknown` failing as `clear` is
 a test failure, because "unverified" reported as success is the bug this check

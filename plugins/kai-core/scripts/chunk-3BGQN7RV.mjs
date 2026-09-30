@@ -30,7 +30,7 @@ import {
   verifyReferences,
   verifyTarget,
   verifyVerdict
-} from "./chunk-SQAAX6CQ.mjs";
+} from "./chunk-N2OMFFGC.mjs";
 import {
   RuntimeError,
   canonicalJson,
