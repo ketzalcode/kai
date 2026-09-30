@@ -367,10 +367,9 @@ is present and stops with the missing-input gap when one is absent. See
 
 ## Browser automation setup (optional)
 
-Several agents and skills drive a real browser **via a Playwright MCP server**:
-`creative-lead-design` and `eng-reviewer-quality` (plus the
-`kai-core-web-evaluation`, `kai-core-web-content-extraction`,
-`kai-core-design-grounding`, and `kai-core-pr-delivery` skills).
+Two agents and two skills drive a real browser **via a Playwright MCP server**:
+`creative-lead-design` and `eng-reviewer-quality`, plus the
+`kai-core-web-evaluation` and `kai-core-web-content-extraction` skills.
 They declare `tools: [..., playwright]`, but **kai ships no MCP servers** — you
 register one in your host. Everything else works without this; only these
 browser-driving agents need it.
