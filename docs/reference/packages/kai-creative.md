@@ -23,7 +23,7 @@ The locked method surface is:
 - `mockups-ascii`
 - `mockups-html`
 - `html-block-diagrams`
-- `video-create-narration`
+- `content-grounding`
 - `video-align-narration`
 - `video-render-zoom`
 
@@ -58,7 +58,7 @@ design, approve spend, grant work, or publish an artifact.
 | Define or critique visual identity | `creative-lead-design` | Direction grounded in approved positioning; operator adoption remains pending |
 | Represent established structure in HTML or an image | `html-block-diagrams` | Diagram contribution only; no invented architecture or UI mockup substitution |
 | Prepare proportional video direction | `creative-lead-video` | Only the requested concept, scene plan, storyboard, script, screenplay, or critique; no fixed bundle |
-| Estimate or synthesize approved narration | `video-create-narration` | Estimate without spend, or measured clips after separate paid consent; no automatic placement or retry |
+| Estimate or synthesize approved narration | — | Not supported: speech synthesis was removed in 14.0.0. Supply the narration audio yourself |
 | Fit, place, print, or execute an authorized narration mix | `video-align-narration` | Requires matching measured inputs and visual-state evidence; no automatic synthesis or invented offsets |
 | Explain, compile, render, or review declared focus | `video-render-zoom` | Existing footage and evidenced focus only; no capture or automatic subject tracking |
 | Produce an approved demo from supplied direction/media | `workflow-creative-demo-production` | Only necessary requested operations; missing recording returns as an input gap |
@@ -103,18 +103,17 @@ Keeping `demo-capture.mjs` in the emitted closure does not restore recording as
 an active method. Requests needing an unavailable recording or measured take
 stop with that input gap.
 
-`creative: ['lectoria']` remains the runtime dependency declaration for paid
-narration synthesis. Installation does not provision it automatically. The
-existing lock and artifact pin remain authoritative; credentials stay outside
-inputs and artifacts. Estimation, alignment planning, printed mix commands, and
-silent demos do not require a paid synthesis run.
+kai generates no speech. The paid narration-synthesis seam and its `lectoria`
+runtime dependency were removed in 14.0.0; no pack declares an npm dependency
+or emits an npm manifest. Estimation, alignment planning, printed mix commands,
+and silent demos are unaffected, and narration you supply can still be placed
+and mixed.
 
 External prerequisites are not asserted installed: a supported Node version,
-ffmpeg/ffprobe for applicable media operations, Lectoria plus configured Azure
-Speech for separately authorized synthesis, and an available browser renderer
-for actual design inspection. A registered Playwright MCP server is one browser
-route, not an authoring prerequisite. Offline ASCII/HTML source does not itself
-prove rendered fidelity.
+ffmpeg/ffprobe for applicable media operations, and an available
+browser renderer for actual design inspection. A registered Playwright MCP
+server is one browser route, not an authoring prerequisite. Offline ASCII/HTML
+source does not itself prove rendered fidelity.
 
 ## Verification boundary
 
