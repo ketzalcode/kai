@@ -223,11 +223,11 @@ committed, CI-validated workspace.
 
 Read this before installing, not after.
 
-- **No MCP servers are shipped.** Six components drive a real browser through a
-  Playwright MCP server you register yourself — `creative-lead-design`,
-  `eng-reviewer-quality`, and the `kai-core-web-evaluation`,
-  `kai-core-web-content-extraction`, `kai-core-design-grounding` and
-  `kai-core-pr-delivery` skills. Everything else works without it. Setup is in
+- **No MCP servers are shipped.** Four components declare `playwright` and drive
+  a real browser through an MCP server you register yourself —
+  `creative-lead-design`, `eng-reviewer-quality`, and the
+  `kai-core-web-evaluation` and `kai-core-web-content-extraction` skills.
+  Everything else works without it. Setup is in
   [Getting started](docs/getting-started.md#browser-automation-setup-optional).
 - **No audio or speech synthesis.** Removed entirely in 14.0.0, together with
   the last npm runtime dependency. Supplied narration can still be placed and
