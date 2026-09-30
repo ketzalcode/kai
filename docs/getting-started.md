@@ -352,42 +352,18 @@ with `SCHEMA_MISMATCH`. See [workspaces](workspaces.md).
 > old library and never keeps both layouts.
 <!-- /kai:allow-legacy-roots -->
 
-## Audio setup (optional)
+## Media tooling (optional)
 
-Demo narration belongs to `kai-creative`, whose installed files do not imply
-that Lectoria is installed. Resolve that provider root from the loaded
-`video-create-narration` skill and follow its pinned-dependency, Azure
-configuration, and explicit paid-consent instructions; see
+kai generates no speech. Audio and narration synthesis were removed entirely in
+14.0.0, along with the last npm runtime dependency and every `npm ci`
+instruction in shipped prose. No package carries a `package.json`, because the
+host copies plugin files and never runs npm.
+
+Narration you supply can still be placed against a video and mixed by
+`video-align-narration`, and `video-render-zoom` renders zoom/pan takes. Both
+call **ffmpeg** and **ffprobe**, which you install yourself; kai asserts neither
+is present and stops with the missing-input gap when one is absent. See
 [Creative runtime](reference/packages/kai-creative.md#runtime-ownership-and-prerequisites).
-Estimation, placement, and mixing do not need Lectoria. Core ships a separate
-audio utility, covered below.
-
-For `kai-core-generate-audio` and requested narration, resolve
-`<kai-core-plugin>` by going up two directories from that loaded skill's base.
-Core's wrapper resolves `LECTORIA_BIN`, the core pack's
-`node_modules/.bin/lectoria`, then PATH.
-
-1. For the pack-pinned runtime, run `npm ci --prefix "<kai-core-plugin>"`.
-   This downloads the locked public Lectoria release artifact; it does not
-   compile a Git checkout. Copilot does not run npm when installing plugins.
-   Node must satisfy `^22.22.2 || ^24.15.0 || >=26.0.0`.
-2. Configure Azure according to Lectoria's documentation. The wrapper loads
-   `<kai-core-plugin>/.env`, not the calling project's `.env`, and preserves
-   process environment variables not overwritten there. Do not commit secrets.
-   A plugin update may replace local runtime/config files; verify them again.
-3. Provide PowerShell 7+ (`pwsh`). Before paid processing, confirm the source,
-   languages, cloud transfer and spend with the operator.
-
-A separately authorized no-cost dry run prints the command, not generated
-audio or a price quote:
-
-```powershell
-pwsh "<kai-core-plugin>\scripts\generate-audio.ps1" -Source "<absolute-source.md>" -Out "<absolute-output-directory>" -DryRun
-```
-
-For Kai artifacts, resolve the workspace first and pass absolute source/output
-paths. The wrapper's caller-cwd defaults are not workspace resolution. No
-installation, dry run, synthesis or playback was performed for this refactor.
 
 ## Browser automation setup (optional)
 

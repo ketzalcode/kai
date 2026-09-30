@@ -186,12 +186,12 @@ needs, plus bounded demo production from approved direction and existing media.
                                      (no capture, no invented direction, no publish)
 ```
 
-**6 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read or hear.
+**6 · Weekly catch-up** — aggregate the week's signal into a two-page digest you read.
 
 ```
- a week of ──► workflow-weekly-pulse ──► pulse.md  ┬─ Page 1 Brief (narratable) ──► kai-core-generate-audio
- messages +    (binds message/doc/code     + brief.md │  Page 2 Board (tables + thread map)   (offer, never auto)
- docs + code    adapters via local config)            └─ (writes via kai-core-pulse-digest; read-only)
+ a week of ──► workflow-weekly-pulse ──► pulse.md  ┬─ Page 1 Brief (narratable prose)
+ messages +    (binds message/doc/code  + brief.md │  Page 2 Board (tables + thread map)
+ docs + code    adapters via local config)         └─ (writes via kai-core-pulse-digest; read-only)
 ```
 
 **Trigger rules of thumb:**
