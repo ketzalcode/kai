@@ -88,10 +88,9 @@ Neither path searches cwd or another installed package.
 
 | Creative runtime asset | Purpose and closure |
 | --- | --- |
-| `scripts/demo-format.mjs` | Existing format checks; the parser contracts it shares with capture are compiled in |
+| `scripts/demo-format.mjs` | Existing format checks; the screenplay/take parser contracts are compiled in |
 | `scripts/demo-narrate.mjs` | Narration estimate, placement, and mix operations over a supplied take; shares the compiled parser contracts |
 | `scripts/demo-zoom.mjs` | Focus compilation/render/review operations; the cursor-image closure is compiled in |
-| `scripts/demo-capture.mjs` | Retained parser/helper dependency only; live capture is not an active creative skill |
 | `scripts/chunk-*.mjs` | Build output: modules shared by more than one entry point, emitted once instead of copied into each |
 
 Since 16.0.0 these entry points are built artifacts rather than copied source.
@@ -99,9 +98,16 @@ Since 16.0.0 these entry points are built artifacts rather than copied source.
 entry point is inlined into it, and a module used by several becomes a shared
 chunk. The authoritative source is `src/creative/` in the repository.
 
-Keeping `demo-capture.mjs` in the emitted closure does not restore recording as
-an active method. Requests needing an unavailable recording or measured take
-stop with that input gap.
+`scripts/demo-capture.mjs` is no longer emitted. Live recording left the active
+creative base in 9.0.0, but the command stayed in the pack because the three
+helpers above imported their screenplay and take parsers from it, which hoisted
+the entire capture CLI into the shared chunk. Those parsers are now
+`src/creative/lib/screenplay.mjs`, and the command itself is parked under
+[`incubator/kai-creative/`](../../../incubator/kai-creative/README.md), where
+nothing is discovered, validated, emitted or installable. Requests needing an
+unavailable recording or measured take still stop with that input gap; removing
+the command from the pack does not change what creative can produce, because
+nothing shipped invoked it.
 
 `creative: ['lectoria']` remains the runtime dependency declaration for paid
 narration synthesis. Installation does not provision it automatically. The

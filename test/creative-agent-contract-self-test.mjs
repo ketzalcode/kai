@@ -9,7 +9,7 @@ import {
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
-import { parseScreenplay } from '../src/creative/demo-capture.mjs';
+import { parseScreenplay } from '../src/creative/lib/screenplay.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const finalCreativeSkills = [
