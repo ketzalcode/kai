@@ -55,17 +55,19 @@ engineering has no runtime npm dependencies.
 
 ## Creating or refining an agent
 
-Run the user-invocable `kai-core-create-agent` skill before adding a role. It
-classifies the need as a durable role, workflow, persona, instructor, or reusable
-skill; requires a permanent role to earn its slot; and defines authority,
-execution profile, host-specific tools, on-demand skills, handoffs, and acceptance cases
-before prose is written.
+Work through [Agent authoring](agent-authoring/README.md) before adding a role.
+It classifies the need as a durable role, workflow, persona, instructor, or
+reusable skill; requires a permanent role to earn its slot; and defines
+authority, execution profile, host-specific tools, on-demand skills, handoffs,
+and acceptance cases before prose is written. It is contributor documentation,
+not a shipped skill — it only applies to this repository, so no package carries
+it.
 
 New durable roles use `<provider-family>-<posture>-<scope>`. Provider families
-are `core`, `personal`, `prod`, `eng`, and `gtm`; postures are `lead`, `builder`,
+are `core`, `eng`, and `creative`; postures are `lead`, `builder`,
 `reviewer`, `operator`, `coordinator`, and `advisor`. Existing seniority-based
 identities remain valid during the staged migration, but they are not templates
-for new roles. This skill handles one agent at a time; a fleet-wide identity
+for new roles. The procedure handles one agent at a time; a fleet-wide identity
 migration belongs to a separate procedure.
 
 ## How a skill reaches a session
