@@ -15,7 +15,7 @@ Browse first; registering the default repository alone does not prove
 availability of the default three-package surface:
 
 ```text
-copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin marketplace add ketzalcode/kai
 copilot plugin marketplace browse kai-plugins
 copilot plugin install kai-core@kai-plugins
 copilot plugin install kai-engineering@kai-plugins
@@ -112,7 +112,7 @@ refactor can instead be loaded locally as described below.
 
 1. Register and browse the marketplace, then install the default surface:
    ```powershell
-   copilot plugin marketplace add RubenSaucedo/kai
+   copilot plugin marketplace add ketzalcode/kai
    copilot plugin marketplace browse kai-plugins
    copilot plugin install kai-core@kai-plugins
    copilot plugin install kai-engineering@kai-plugins
@@ -238,9 +238,9 @@ require the selected remote source to contain this refactor. They do not pin
 this branch or establish availability; never use them to bypass a failed browse.
 
 ```text
-copilot plugin install RubenSaucedo/kai:plugins/kai-core
-copilot plugin install RubenSaucedo/kai:plugins/kai-engineering
-copilot plugin install RubenSaucedo/kai:plugins/kai-creative
+copilot plugin install ketzalcode/kai:plugins/kai-core
+copilot plugin install ketzalcode/kai:plugins/kai-engineering
+copilot plugin install ketzalcode/kai:plugins/kai-creative
 ```
 
 This still works and is a single command, but the CLI prints:
@@ -251,7 +251,7 @@ This still works and is a single command, but the CLI prints:
 No removal date has been announced. Prefer the marketplace form so the switch
 never becomes an incident; the warning is expected, not a sign of a broken
 install. Tracked in
-[#102](https://github.com/RubenSaucedo/kai/issues/102).
+[#102](https://github.com/ketzalcode/kai/issues/102).
 
 **Load from a local checkout** (developing kai itself):
 
