@@ -117,12 +117,6 @@ const CATEGORIES = [
   },
   {
     kind: 'skill',
-    title: 'Agent authoring',
-    blurb: 'Classify, name, scope, and validate a new or redesigned Kai role before it joins the fleet.',
-    members: ['kai-core-create-agent'],
-  },
-  {
-    kind: 'skill',
     title: 'Engineering craft',
     blurb: 'Task-local methods for authorized implementation, bounded evidence, requested orientation, delivery decomposition, and useful visuals.',
     members: [
