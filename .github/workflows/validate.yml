@@ -69,6 +69,19 @@ jobs:
           node test/creative-core-contract-self-test.mjs
           node test/creative-agent-contract-self-test.mjs
           node test/creative-skill-contract-self-test.mjs
+          node test/creative-screenplay-self-test.mjs
+      # The screenplay/take parsers are shipped source inlined into every
+      # creative entry point, and `incubator/kai-creative/scripts/demo-capture.mjs`
+      # — the parked live-recording command — imports them from there. Parked
+      # means not shipped, not untested: it is the one thing under `incubator/`
+      # that has a live dependency on active source, so a parser contract change
+      # that broke it would otherwise go unnoticed until somebody re-entered it.
+      # Executing it validates nothing about the capability; the isolation rules
+      # are about manifests, marketplace entries, generated packs, rosters,
+      # catalog rows and skill routes, and `package-availability-self-test`
+      # still enforces every one of them.
+      - name: Parked capture driver still parses what creative ships
+        run: node incubator/kai-creative/scripts/demo-capture.mjs --self-test
       - name: Coordination source and emission contracts
         run: |
           node test/coordination-authority-self-test.mjs
