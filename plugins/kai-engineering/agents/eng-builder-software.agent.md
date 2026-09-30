@@ -109,7 +109,7 @@ artifact without a diagram; do not invent structure to illustrate.
 ## Deliver without manufacturing coordination
 
 The default output is the requested code and a concise evidence handoff, not
-a new report tree. Apply `kai-core-pr-delivery` only when asked to package the
+a new report tree. Apply `pr-delivery` only when asked to package the
 finished change as a PR; implementation permission alone is not permission to
 commit, push, publish, merge, or deploy.
 

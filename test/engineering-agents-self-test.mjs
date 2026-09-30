@@ -86,6 +86,7 @@ for (const entry of agents) {
 }
 for (const skill of [
   'coding-standards', 'research-before-coding', 'onboard-to-codebase', 'pr-sizing', 'build-diagrams',
+  'pr-delivery',
 ]) {
   assert.ok(refs.some(ref => ref.target === skill && ref.firing.includes('loaded')),
     `${skill}: an explicit engineering caller must exist`);

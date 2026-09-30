@@ -17,7 +17,7 @@ method for doing the work itself.
 ## Where it sits
 
 ```text
-ISSUE-ANALYSIS      research-before-coding   pr-sizing      kai-core-pr-delivery
+ISSUE-ANALYSIS      research-before-coding   pr-sizing      pr-delivery
 ──────────────      ──────────────────────   ─────────      ───────────
 issue  ──►  a   ──► investigate the      ──► split into ──► land one
 chosen approach     code for THAT            increments     pull request
@@ -31,7 +31,7 @@ chosen approach     code for THAT            increments     pull request
 | How does the existing code constrain that approach? | `research-before-coding` |
 | How is the work split? | `pr-sizing` |
 | Packaging a decision already recorded in coordination state | its owner — see §5, *Stop at the authorized decision owner* |
-| How does it reach `main`? | `kai-core-pr-delivery` |
+| How does it reach `main`? | `pr-delivery` |
 
 The boundary that matters: a decision **already pending** in authoritative state
 belongs to whoever owns that call — the invoking operator, the owning

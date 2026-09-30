@@ -158,7 +158,7 @@ for (const f of agentFiles.filter((entry) => entry.fm)) {
 }
 
 {
-  const referenceRoot = join(ROOT, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references');
+  const referenceRoot = join(ROOT, 'docs', 'reference', 'agent-authoring');
   const taxonomyPath = join(referenceRoot, 'taxonomy.md');
   const modelSelectionPath = join(referenceRoot, 'model-selection.md');
   if (!existsSync(taxonomyPath)) {
