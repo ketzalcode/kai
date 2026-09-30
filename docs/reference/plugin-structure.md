@@ -49,9 +49,11 @@ package manifest. See [`incubator/README.md`](../../incubator/README.md).
 
 All three manifests declare both `agents` and `skills`. Core alone
 owns `hooks.json` (host-discovered beside its manifest) and shared runtime
-utilities. Creative owns demo scripts and their module closure. Core and
-creative each declare pinned Lectoria for their own optional audio paths;
-engineering has no runtime npm dependencies.
+utilities. Creative owns demo scripts and their module closure. No pack
+declares an npm dependency and no pack emits an npm manifest: the host copies
+plugin files and never runs npm, so a declared dependency could only resolve
+where someone ran npm into the install directory by hand — which the next
+update overwrites. Every shipped entry point runs on a bare Node install.
 
 ## Creating or refining an agent
 
@@ -242,7 +244,7 @@ Also in `AGENTS.md` → **Releasing this plugin**:
      job. Never merge on an attested equivalence, and never on a run a later
      commit superseded.
    Then merge on green.
-4. On the exact merge commit, register `RubenSaucedo/kai` in an isolated
+4. On the exact merge commit, register `ketzalcode/kai` in an isolated
    `COPILOT_HOME`, browse `kai-plugins`, install every newly published pack,
    run idempotent updates, and run the installed core migration doctor with
    `--json`. Do not tag while names, versions, enabled state, provenance, or

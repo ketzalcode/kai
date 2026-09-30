@@ -20,9 +20,10 @@ capability is absent, and a few features simply require the richer host.
 | Native session `resume` | ❌ not advertised | ❌ not advertised |
 | Web search / fetch | ✅ built-in | ⚠️ only if the repo configures a web MCP tool |
 | Browser automation (Playwright: `kai-core-web-evaluation`, `kai-core-web-content-extraction`) | ✅ local + localhost targets | ⚠️ public URLs only; no localhost |
-| Local shell scripts (`kai-core-generate-audio`, extractors) | ✅ | ⚠️ depends on the runner's toolchain |
+| Local shell scripts (extractors, coordination and observation entry points) | ✅ | ⚠️ depends on the runner's toolchain |
 
-**Rule of thumb:** multi-agent brainstorming, local-app QA, and audio generation
+**Rule of thumb:** multi-agent brainstorming, local-app QA, and local media
+tooling
 are richest in the **CLI**; single-agent review, design, and planning run well in
 **both**. Where a workflow needs a capability the host lacks, the agent announces
 the degraded mode and either takes the recorded fallback or fails fast naming
