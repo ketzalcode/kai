@@ -80,7 +80,7 @@ design sign-off on the net-new UI surface, an item correctly stuck at
 
 ### What you can ignore at first
 
-kai ships **21 agents and 36 skills** across three packages — core,
+kai ships **21 agents and 35 skills** across three packages — core,
 engineering, and creative. Five earlier packages (product, marketing, revenue,
 assistant, and learning) are incubated: parked in `incubator/`, not installable,
 and tracked on [Package availability](reference/package-availability.md).

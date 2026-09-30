@@ -238,6 +238,19 @@ export const RETIRED_CORE_SKILL_IDS = new Set([
   // Same caveat as above: this set is documentation bookkeeping, not a gate.
   // No incubated body routes the old id, so no parked package is affected.
   'kai-core-pr-delivery',
+  // Withdrawn from the shipped surface in 18.0.0 for the reason recorded above
+  // `RETIRED_CORE_AGENT_IDS`: it was a procedure for authoring kai's own
+  // agents, and its repository checklist only meant anything inside this
+  // checkout, yet every consumer of core received it. No agent routed,
+  // inherited or dispatched it — `SKILL_OWNER_OVERRIDES` carried it and
+  // `user-invocable: true` was its only firing path — so the sole way it ever
+  // reached a session was an operator running contributor tooling by hand.
+  //
+  // The content is not deleted. It is contributor documentation now, at
+  // `docs/reference/agent-authoring/`, and the taxonomy and model tables there
+  // are still pinned to the validator constants by
+  // `agentAuthoringReferenceErrors`.
+  'kai-core-create-agent',
 ]);
 
 export const NEW_AGENT_IDS = {
@@ -314,7 +327,6 @@ if (PACK_ORDER.join(',') !== SHIPPED_PACK_ORDER.join(',')) {
 // dispositions were ratified in the partition lock; keeping them here makes the
 // generator use the reviewed decision instead of silently defaulting to core.
 export const SKILL_OWNER_OVERRIDES = {
-  'kai-core-create-agent': 'core',
   'kai-core-fleet-observation': 'core',
 };
 
@@ -1461,9 +1473,8 @@ export function collectReferences(root = REPO_ROOT) {
       // `routedSkills`, not `loadedSkills`: the latter also unions
       // `declaredInherits`, which reads an agent's `**Inherits:**` line. That
       // construct has no meaning in a skill, and it carries neither fence
-      // stripping nor an id charset — so a fenced authoring example, in the one
-      // skill whose job is teaching agent authoring, would become a live
-      // reference.
+      // stripping nor an id charset — so a fenced authoring example in a skill
+      // body would become a live reference.
       for (const target of routedSkills(text)) {
         if (target === id) continue;
         // Same agent-versus-skill disambiguation the agent loop applies, and
