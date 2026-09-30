@@ -7,7 +7,7 @@
 // of the behaviour under test. `MIN_GAP` and `TAKE_SCHEMA` are exported,
 // because both are contract facts a caller can legitimately read.
 
-import { parseScreenplay, parseTake } from '../src/creative/demo-capture.mjs';
+import { parseScreenplay, parseTake } from '../src/creative/lib/screenplay.mjs';
 import {
   MIN_GAP, TAKE_SCHEMA,
   textHash, parseNarrationTake, place, buildMixArgs,

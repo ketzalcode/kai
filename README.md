@@ -28,12 +28,12 @@ Three packages. That is the entire shipped surface.
    kai-engineering                      kai-creative
   +--------------------------------+   +--------------------------------+
   | 13 agents                      |   |  3 agents                      |
-  |  5 skills                      |   |  6 skills                      |
-  |  0 executable entry points     |   |  4 executable entry points     |
+  |  6 skills                      |   |  6 skills                      |
+  |  0 executable entry points     |   |  3 executable entry points     |
   |                                |   |    + 1 shared chunk            |
   | implementation, architecture,  |   | UI/UX, visual identity,        |
   | independent review, delivery   |   | video and demo production      |
-  | ~110 KB installed              |   | ~204 KB installed              |
+  | ~123 KB installed              |   | ~140 KB installed              |
   +--------------------------------+   +--------------------------------+
                   |                                    |
                   |             depends on             |
@@ -41,10 +41,10 @@ Three packages. That is the entire shipped surface.
                                     |
                                     v
   +----------------------------------------------------------------------+
-  | kai-core                                          ~1.05 MB installed |
+  | kai-core                                           ~939 KB installed |
   |                                                                      |
   |  5 agents                                                            |
-  | 25 skills                                                            |
+  | 23 skills                                                            |
   |  6 executable entry points + 11 shared chunks                        |
   | hooks.json (subagent observation)                                    |
   | templates/ (decision, spec, report, publication)                     |
@@ -62,8 +62,8 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 5 / 25 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 13 / 5 | Implementation, architecture, independent review, delivery |
+| `kai-core` | 5 / 23 | Shared contracts, workspace machinery, requested coordination |
+| `kai-engineering` | 13 / 6 | Implementation, architecture, independent review, delivery |
 | `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets, supported media production |
 
 Counts come from `plugins/` and are checked against the generated
@@ -254,13 +254,13 @@ Read this before installing, not after.
 
 ## Status
 
-`v17.0.0` is this checkout's prepared metadata version — not a tag, a release,
+`v18.0.0` is this checkout's prepared metadata version — not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **21 agents and 36 skills** |
+| Surface | **21 agents and 35 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

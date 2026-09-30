@@ -7,7 +7,7 @@
 // declared screenplay to a measured take. What the renderer actually produces
 // is still only knowable from a render, and this suite never claims otherwise.
 
-import { parseScreenplay, parseTake } from '../src/creative/demo-capture.mjs';
+import { parseScreenplay, parseTake } from '../src/creative/lib/screenplay.mjs';
 import {
   parsePlan, weightAt, zoomAt, centerAt, buildFilter, buildArgs, quoteArg, printable,
   effectiveCenter, explain, overrunning, compile, gridArgs, reviewSampleTimes, reviewLegend,
