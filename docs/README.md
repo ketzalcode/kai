@@ -3,14 +3,16 @@
 # kai documentation
 
 Four guides and package references. Start wherever your question is. kai ships
-three packages — `kai-core`, `kai-engineering`, and `kai-creative` — at
-prepared `13.0.0` metadata, which is not a verified remote release. Five
+three packages — `kai-core`, `kai-engineering`, and `kai-creative`. The current
+prepared metadata version is stamped in the
+[README's `## Status` section](../README.md#status); prepared metadata is not a
+verified remote release. Five
 further capability packages are parked under
 [`incubator/`](../incubator/README.md) and do not ship.
 
 | Guide | Read it when |
 | ----- | ------------ |
-| [Getting started](getting-started.md) | You want kai installed and one real piece of work finished. Covers install, optional audio and browser setup, the first request, updating, and migrating an existing workspace. |
+| [Getting started](getting-started.md) | You want kai installed and one real piece of work finished. Covers install, optional media and browser tooling, the first request, updating, and migrating an existing workspace. |
 | [How kai works](how-kai-works.md) | You want to know which role fires when, and how work travels from a need to production. Includes every flow diagram and the trigger table. |
 | [Workspace model](workspaces.md) | You want to choose external, repo-local, or shared state and understand explicit project publication under `docs/kai/`. |
 | [Host capabilities](host-capabilities.md) | You are choosing between the Copilot CLI and the cloud coding agent, or wondering why a capability behaves differently. Also explains how kai's shared rules reach your session. |
