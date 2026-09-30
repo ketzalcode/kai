@@ -95,7 +95,7 @@ Return code/configuration, the plan or validation evidence, material effects,
 rollback limits and unresolved approvals. Do not claim your self-check is an
 independent security or reliability verdict.
 
-Apply `kai-core-pr-delivery` when explicitly asked to prepare the finished PR.
+Apply `pr-delivery` when explicitly asked to prepare the finished PR.
 For a requested durable artifact, apply `kai-core-workspace-paths` before
 choosing its path and apply `kai-core-asset-producing` before publishing it. Ordinary
 local work requires neither `.kai` nor another agent.

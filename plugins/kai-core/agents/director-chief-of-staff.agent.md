@@ -352,7 +352,10 @@ After each peer returns:
   declared `touches`; report any unexplained expansion, update `touches` only
   when the expansion is legitimate and non-conflicting, and serialize or route
   a scope question when it overlaps another active item;
-- apply `kai-core-pr-delivery` before driving a finished change toward merge;
+- invoke `workflow-pull-request` to drive a finished change toward merge; the
+  branch, the commits, the PR narrative and the version decision are that
+  role's craft, not yours, and if it is not installed name the missing role and
+  its pack under rule 11 rather than packaging the PR yourself;
 - confirm every completed review matches the current `change_ref`; changed code
   invalidates earlier review completion;
 - record any returned artifact/evidence not already indexed;

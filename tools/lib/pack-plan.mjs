@@ -226,6 +226,18 @@ export const RETIRED_CORE_SKILL_IDS = new Set([
   // Reviving `kai-marketing` needs a decision: its three bodies now route a
   // kai-creative id, and no department may depend on another.
   'kai-core-content-grounding',
+  // Moved to kai-engineering as `pr-delivery` in the pr-delivery refactor. The
+  // catalog already filed it under Engineering craft, its own "Where it sits"
+  // table names only engineering skills, and three of its four routes were
+  // engineering agents. The fourth was `director-chief-of-staff`, which now
+  // invokes `workflow-pull-request` instead: packaging a branch, commits and a
+  // PR narrative is a principal's craft, and the director directs. A
+  // department may not hold a `kai-core-` name, so the move and the rename are
+  // one change.
+  //
+  // Same caveat as above: this set is documentation bookkeeping, not a gate.
+  // No incubated body routes the old id, so no parked package is affected.
+  'kai-core-pr-delivery',
 ]);
 
 export const NEW_AGENT_IDS = {
