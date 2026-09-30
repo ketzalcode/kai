@@ -86,7 +86,7 @@ in 14.0.0.
 ### 1. Add the marketplace and see what is really there
 
 ```text
-copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin marketplace add ketzalcode/kai
 copilot plugin marketplace browse kai-plugins
 ```
 

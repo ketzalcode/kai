@@ -244,7 +244,7 @@ Also in `AGENTS.md` → **Releasing this plugin**:
      job. Never merge on an attested equivalence, and never on a run a later
      commit superseded.
    Then merge on green.
-4. On the exact merge commit, register `RubenSaucedo/kai` in an isolated
+4. On the exact merge commit, register `ketzalcode/kai` in an isolated
    `COPILOT_HOME`, browse `kai-plugins`, install every newly published pack,
    run idempotent updates, and run the installed core migration doctor with
    `--json`. Do not tag while names, versions, enabled state, provenance, or
