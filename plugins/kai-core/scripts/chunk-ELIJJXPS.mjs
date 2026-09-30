@@ -16,8 +16,8 @@ import {
   renderMarkdown,
   reportPaths,
   snapshotWarning
-} from "./chunk-KZHPWPXN.mjs";
-import "./chunk-5QXOH5X2.mjs";
+} from "./chunk-MQFOEJS3.mjs";
+import "./chunk-3BGQN7RV.mjs";
 import {
   DATABASE,
   artifactBasisCurrent,
@@ -59,8 +59,8 @@ import {
   verifySubject,
   verifyVerdict,
   workspaceManifest
-} from "./chunk-SQAAX6CQ.mjs";
-import "./chunk-MIK5J3AD.mjs";
+} from "./chunk-N2OMFFGC.mjs";
+import "./chunk-7QZFFPOT.mjs";
 import {
   resolveWorkspaceRoot
 } from "./chunk-VTZRFV57.mjs";
@@ -775,7 +775,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
   }
   if (verb === "apply") validateCommand(body);
   if (!host) {
-    const { createNativeHost } = await import("./chunk-JUWHGISQ.mjs");
+    const { createNativeHost } = await import("./chunk-6JRMJGMQ.mjs");
     host = createNativeHost({ env });
   }
   if (["request", "authorize", "receipt", "capture", "capabilities", "prepare"].includes(verb)) {

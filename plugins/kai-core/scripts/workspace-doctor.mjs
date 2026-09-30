@@ -3,15 +3,21 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import {
   adoptWorkspace,
   checkWorkspace,
-  forgetWorkspace
-} from "./chunk-UONLACDC.mjs";
-import "./chunk-KZHPWPXN.mjs";
-import "./chunk-SQAAX6CQ.mjs";
-import "./chunk-MIK5J3AD.mjs";
+  forgetWorkspace,
+  migrationExitCode,
+  migrationInventory,
+  writeRegistry
+} from "./chunk-P7FT5J4P.mjs";
+import "./chunk-MQFOEJS3.mjs";
+import "./chunk-N2OMFFGC.mjs";
+import "./chunk-7QZFFPOT.mjs";
 import "./chunk-VTZRFV57.mjs";
 import "./chunk-VP4QXWCX.mjs";
 export {
   adoptWorkspace,
   checkWorkspace,
-  forgetWorkspace
+  forgetWorkspace,
+  migrationExitCode,
+  migrationInventory,
+  writeRegistry
 };
