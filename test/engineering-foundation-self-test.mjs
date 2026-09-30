@@ -15,7 +15,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const normalizeContract = body => body.replace(/\s+/g, ' ').trim().toLowerCase();
 const keep = [
   'build-diagrams', 'coding-standards', 'onboard-to-codebase',
-  'pr-sizing', 'research-before-coding',
+  'pr-delivery', 'pr-sizing', 'research-before-coding',
 ].sort();
 const parked = [
   'doc-review-rigor', 'review-security-privacy', 'review-rollout-operability',
@@ -410,7 +410,7 @@ for (const rel of diagramCallers) {
   }
 }
 const prDeliveryBody = readFileSync(
-  join(root, 'plugins', 'kai-core', 'skills', 'kai-core-pr-delivery', 'SKILL.md'),
+  join(root, 'plugins', 'kai-engineering', 'skills', 'pr-delivery', 'SKILL.md'),
   'utf8',
 );
 const normalizedPrDeliveryBody = normalizeContract(prDeliveryBody);
@@ -423,7 +423,7 @@ for (const [label, pattern] of [
     /the change at a glance.{0,120}explicit (diagram|visual) request.{0,120}(materially clearer|adds information)/],
 ]) {
   if (!pattern.test(normalizedPrDeliveryBody)) {
-    diagramContractViolations.push(`kai-core-pr-delivery: missing ${label}`);
+    diagramContractViolations.push(`pr-delivery: missing ${label}`);
   }
 }
 for (const staleObligation of [
@@ -432,7 +432,7 @@ for (const staleObligation of [
   /diagram it when the change alters a.{0,20}structure.{0,30}flow/,
 ]) {
   if (staleObligation.test(normalizedPrDeliveryBody)) {
-    diagramContractViolations.push(`kai-core-pr-delivery: unconditional structural trigger: ${staleObligation}`);
+    diagramContractViolations.push(`pr-delivery: unconditional structural trigger: ${staleObligation}`);
   }
 }
 const htmlBlockDiagramBody = readFileSync(

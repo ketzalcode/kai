@@ -394,7 +394,7 @@ installation, dry run, synthesis or playback was performed for this refactor.
 Several agents and skills drive a real browser **via a Playwright MCP server**:
 `creative-lead-design` and `eng-reviewer-quality` (plus the
 `kai-core-web-evaluation`, `kai-core-web-content-extraction`,
-`kai-core-design-grounding`, and `kai-core-pr-delivery` skills).
+`kai-core-design-grounding`, and `pr-delivery` skills).
 They declare `tools: [..., playwright]`, but **kai ships no MCP servers** — you
 register one in your host. Everything else works without this; only these
 browser-driving agents need it.
