@@ -33,7 +33,7 @@
 
 import { readFileSync, statSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { parseScreenplay, parseTake } from './demo-capture.mjs';
+import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
 
 // Placement profiles.
 //

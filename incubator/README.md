@@ -47,6 +47,7 @@ package's directory.
 
 | Package | Contents |
 | --- | --- |
+| `kai-creative` | [The `demo-capture` live-recording command](kai-creative/README.md), parked by [#226](https://github.com/RubenSaucedo/kai/issues/226) |
 | `kai-engineering` | [Ten document-review skills and their workflow](kai-engineering/README.md), tracked in [#211](https://github.com/RubenSaucedo/kai/issues/211) |
 
 ## Returning something to the active tree

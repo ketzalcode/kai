@@ -185,13 +185,23 @@ for (const id of retiredSkillIds) {
 // that every entry point a shipped instruction names is present, and that the
 // internal modules it depends on travelled INTO it rather than beside it.
 for (const asset of [
-  'scripts/demo-capture.mjs',
   'scripts/demo-format.mjs',
   'scripts/demo-narrate.mjs',
   'scripts/demo-zoom.mjs',
 ]) {
   assert.ok(files.get(`kai-creative/${asset}`), `creative pack must emit entry point ${asset}`);
 }
+// Live recording left the active base in 9.0.0 and #226 parked the command
+// under `incubator/`. It only ever shipped because the three commands above
+// imported their parsers from it, which hoisted the whole 962-line CLI — usage
+// text, argument parsing and an invocation guard that can never fire from a
+// chunk — into the chunk all creative entry points load.
+assert.equal(files.has('kai-creative/scripts/demo-capture.mjs'), false,
+  'the parked capture command is not a shipped entry point');
+assert.ok(existsSync(join(root, 'incubator', 'kai-creative', 'scripts', 'demo-capture.mjs')),
+  'the capture command is preserved under incubator/, not deleted');
+assert.equal(existsSync(join(root, 'src', 'creative', 'demo-capture.mjs')), false,
+  'exactly one location — the parked command must not also have an active source tree');
 assert.equal(files.has('kai-creative/scripts/lib/cursor-png.mjs'), false,
   'an internal module is inlined by the bundler, never shipped as its own file');
 // Proving inlining rather than assuming it: the cursor helper's own source

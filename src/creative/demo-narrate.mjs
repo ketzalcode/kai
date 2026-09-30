@@ -35,7 +35,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseScreenplay, parseTake } from './demo-capture.mjs';
+import { parseScreenplay, parseTake } from './lib/screenplay.mjs';
 
 const TAKE_SCHEMA = 'kai.demo-narration-take/v1';
 const PLAN_SCHEMA = 'kai.demo-narration-plan/v1';
