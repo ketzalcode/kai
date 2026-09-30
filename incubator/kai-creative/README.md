@@ -36,16 +36,36 @@ installable. Concretely, for this file:
   entry point and `plugins/kai-creative/scripts/` no longer contains it;
 - `tools/check-syntax.mjs` scans `src/`, `tools/` and `examples/` only, so it is
   not syntax-gated;
-- its `--self-test` no longer runs in `npm test`. The **parser** assertions it
-  used to carry were moved to `test/creative-screenplay-self-test.mjs`, because
-  those cover shipped code. The ~16 **driver** assertions — ffmpeg preflight,
-  the measured recording clock, pointer gliding, quiet-wait ordering — went
-  dormant with the driver they cover. Run them with
-  `npm run demo-capture:self-test`.
+- the **parser** assertions its `--self-test` used to carry moved to
+  `test/creative-screenplay-self-test.mjs`, because those cover shipped code.
 
-It still imports the shipped parsers from `../../../src/creative/lib/`, so a
-change to that contract can rot this file silently. That is the cost of being
-parked, and re-entry has to re-run its self-test.
+What it is **not** exempt from is execution. This file imports the shipped
+parsers from `../../../src/creative/lib/screenplay.mjs`, which makes it the one
+thing under `incubator/` with a live dependency on active source — everything
+else parked here is markdown. Its `--self-test` therefore still runs in
+`npm test` and in CI (`.github/workflows/validate.yml`), carrying its 16 driver
+assertions — ffmpeg preflight, the measured recording clock, pointer gliding,
+quiet-wait ordering — with it.
+
+Two mutations measure what that buys, both run against this tree:
+
+| Mutation | Caught by |
+| --- | --- |
+| Rename `parseTargets` in `src/creative/lib/screenplay.mjs` | this self-test fails to load the module at all |
+| Emit `-draw_mouse 1` instead of `0` in the driver template | **only** this self-test (40/41, exit 1). `check-syntax`, `creative-screenplay-self-test`, `validate-plugin` and `pack-preview --check` all still pass |
+
+The second is the load-bearing one: `tools/check-syntax.mjs` does not scan
+`incubator/`, so running this file is the only thing in the repository that
+parses it. Without the gate, a parser contract change or a defect introduced
+here would wait to be discovered by whoever re-enters it.
+
+Parked means not shipped, not untested. Running a self-test is not one of the
+things `incubator/README.md` forbids — those are manifests, marketplace
+entries, generated packs, agent rosters, catalog rows and skill routes, and
+`test/package-availability-self-test.mjs` still enforces every one of them
+against this directory.
+
+Run it directly with `npm run demo-capture:self-test` (41 checks).
 
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
@@ -61,8 +81,8 @@ Being here is not a queue position. Re-entry needs the review described in
 2. Give it a real invocation: a shipped instruction, skill or `hooks.json` entry
    must name `scripts/demo-capture.mjs`, or it is an unreferenced entry point
    again.
-3. Restore its entries in `npm test` and in
-   `test/creative-foundation-self-test.mjs`, which currently asserts that the
+3. Restore its entries in `npm test`, in `.github/workflows/validate.yml`, and
+   in `test/creative-foundation-self-test.mjs`, which currently asserts that the
    pack does **not** emit it.
 4. Decide what to do with `demo-capture` in `RETIRED_CREATIVE_SKILL_IDS`.
 5. Regenerate (`npm run pack-preview -- --write`) and run `npm test`.

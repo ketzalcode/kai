@@ -16,6 +16,14 @@ Re-entry needs an independent review of the component's responsibility,
 triggers, inputs, output contract, consumer, stopping point, grounding rules,
 and focused evidence, plus operator sign-off.
 
+Inactive does not mean unexecuted. Almost everything parked here is markdown,
+which nothing could run, but a parked **executable** that imports active source
+keeps its self-test wired into `npm test` and CI — see
+[`kai-creative/README.md`](kai-creative/README.md). That is not a crack in the
+isolation: the rules above are about the surfaces that make a capability real,
+and running a self-test is none of them. It is the only thing that parses such
+a file at all, since `tools/check-syntax.mjs` does not scan this directory.
+
 ## Incubated packages
 
 Five capability packages were parked while development returns to core. Their
