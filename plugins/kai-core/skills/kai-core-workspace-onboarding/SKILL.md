@@ -81,7 +81,7 @@ Never substitute a direct repository or subdirectory install as a fallback.
 Show the exact ordered commands that will run:
 
 ```text
-copilot plugin marketplace add RubenSaucedo/kai
+copilot plugin marketplace add ketzalcode/kai
 copilot plugin marketplace update kai-plugins
 copilot plugin marketplace browse kai-plugins
 

@@ -26,6 +26,7 @@ further capability packages are parked under
 | [Package: `kai-engineering`](reference/packages/kai-engineering.md) | Thirteen direct-use engineering roles, five task-local skills, model/authority boundaries, and deferred fleet wiring. |
 | [Package: `kai-creative`](reference/packages/kai-creative.md) | UI/UX, visual identity and media; supplied-input boundaries and demo-runtime prerequisites. |
 | [Plugin structure](reference/plugin-structure.md) | The layout of this repository, and what to run before opening a PR. |
+| [Agent authoring](reference/agent-authoring/README.md) | Contributor-only: how to classify, scope, name, and validate a kai agent, with the taxonomy and approved-model tables the validators pin. |
 
 `kai-core` owns shared contracts, workspace machinery and requested
 coordination; `kai-engineering` owns implementation, architecture, reliability,

@@ -24,10 +24,12 @@
 // recover it costs 2,090 KB — more than twice what raw source costs today. The
 // readable-output trade was taken deliberately.
 //
-// Self-test code still ships. It is gated on `argv.includes('--self-test')`, a
-// runtime value no build-time constant can fold, so `define` cannot eliminate
-// it. Removing it means moving self-tests into `test/`, which is separate work.
-// Claiming it was stripped would be false.
+// Self-test code no longer ships. It was gated on `argv.includes('--self-test')`,
+// a runtime value no build-time constant can fold, so `define` eliminated
+// nothing — output was byte-identical with and without it. The only fix was to
+// move the blocks out of `src/` entirely, which #225 did: every shipped entry
+// point's assertions now live in `test/<command>-self-test.mjs` and the
+// bundler never sees them.
 
 import { readdirSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';

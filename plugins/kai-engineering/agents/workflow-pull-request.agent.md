@@ -25,7 +25,7 @@ or opening/updating a pull request each requires authorization supplied by the
 operator or invocation. If GitHub writes are not authorized, return a draft
 title/body and readiness assessment instead.
 
-Apply `kai-core-pr-delivery` when packaging the PR. Read repository conventions,
+Apply `pr-delivery` when packaging the PR. Read repository conventions,
 the default and protected branches, remote version, version-carrying files,
 release rules, declared checks, and title/body conventions from current
 evidence. Do not substitute memory.
@@ -41,7 +41,7 @@ coherent PR.
    Do not change the index or worktree merely to inspect it.
 2. Fetch when authorized and identify the remote default branch, protected
    branches, current remote version, repository checks, and release guard.
-3. Choose the branch anchor and conventional title per `kai-core-pr-delivery`.
+3. Choose the branch anchor and conventional title per `pr-delivery`.
    Never create or push directly to a protected branch.
 4. Run the smallest repository-declared preflight that covers the change. Name
    every command and exact result; absence of a declared check is evidence, not

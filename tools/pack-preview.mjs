@@ -471,13 +471,20 @@ function selfTest() {
       'removing skill access from a generated agent is detected rather than false-passing from workspace files');
     ok(builtAgents.every((a) => frontmatter(a.body) === frontmatter(readAgent(a.id))),
       'generated agent frontmatter is a byte-identical projection of canonical source');
-    const createAgentRefs = [
-      'taxonomy.md', 'agent-template.md', 'model-selection.md', 'kai-repository.md',
-    ];
-    ok(createAgentRefs.every((file) => existsSync(join(
-      full, 'kai-core-preview', 'skills', 'kai-core-create-agent', 'references', file
-    ))),
-    'a preview carries every progressive reference required by kai-core-create-agent');
+    // Progressive references are the second half of a skill: SKILL.md names a
+    // companion and loads it at the step that needs it, so a build that copies
+    // only SKILL.md ships a skill whose own instructions dangle. Derived from
+    // disk rather than pinned to one skill's file list — the previous form
+    // named `kai-core-create-agent`, and when that skill left the shipped
+    // surface the check had no subject. The non-empty assertion is what stops
+    // it passing vacuously if every companion were deleted.
+    const previewCompanions = [['core', plan.core], ...Object.entries(plan.local)]
+      .flatMap(([pack, ids]) => ids.flatMap((id) => skillCompanionFiles(ROOT, id)
+        .map((entry) => join(
+          full, `kai-${pack}-preview`, 'skills', id, ...entry.rel.split('/'),
+        ))));
+    ok(previewCompanions.length > 0 && previewCompanions.every((p) => existsSync(p)),
+      `a preview carries every progressive reference a skill loads (${previewCompanions.length} companion files)`);
   } catch (e) {
     ok(false, `preflight arms threw: ${e.message}`);
   } finally {
@@ -536,11 +543,11 @@ function selfTest() {
   'no core agent carries a dependency-guard region, which ships inside the pack whose absence it would cover');
   ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
     'core provides the probe every pack agent routes as its first action');
-  ok(m1.has('kai-core/skills/kai-core-create-agent/references/taxonomy.md')
-    && m1.has('kai-core/skills/kai-core-create-agent/references/agent-template.md')
-    && m1.has('kai-core/skills/kai-core-create-agent/references/model-selection.md')
-    && m1.has('kai-core/skills/kai-core-create-agent/references/kai-repository.md'),
-  'the materialised skill surface includes progressive references, not only SKILL.md');
+  const materialisedCompanions = [['core', plan.core], ...Object.entries(plan.local)]
+    .flatMap(([pack, ids]) => ids.flatMap((id) => skillCompanionFiles(ROOT, id)
+      .map((entry) => `${packPluginName(pack)}/skills/${id}/${entry.rel}`)));
+  ok(materialisedCompanions.length > 0 && materialisedCompanions.every((key) => m1.has(key)),
+    'the materialised skill surface includes progressive references, not only SKILL.md');
   ok(PACK_ORDER.every((pack) => [...m1.keys()].some((key) => key.startsWith(`${packPluginName(pack)}/`))),
   'the committed surface materialises every pack in the locked partition');
 
@@ -1388,22 +1395,22 @@ function selfTest() {
     && agentPromptLimitErrors('x'.repeat(30_001)).some((m) => /host limit/.test(m)),
   'the host prompt limit accepts 30,000 characters and rejects the first character over it');
 
-  const authoringRefs = join(ROOT, 'plugins', 'kai-core', 'skills', 'kai-core-create-agent', 'references');
+  const authoringRefs = join(ROOT, 'docs', 'reference', 'agent-authoring');
   const taxonomyPath = join(authoringRefs, 'taxonomy.md');
   const modelSelectionPath = join(authoringRefs, 'model-selection.md');
   if (existsSync(taxonomyPath) && existsSync(modelSelectionPath)) {
     const taxonomy = readFileSync(taxonomyPath, 'utf8');
     const modelSelection = readFileSync(modelSelectionPath, 'utf8');
     ok(agentAuthoringReferenceErrors({ taxonomy, modelSelection }).length === 0,
-      'the shipped taxonomy and model tables match their validator constants');
+      'the contributor taxonomy and model tables match their validator constants');
     ok(agentAuthoringReferenceErrors({
       taxonomy,
       modelSelection: modelSelection.replace('`claude-opus-5`', '`unreviewed-model`'),
     }).some((m) => /approved model rows/.test(m)),
     'a model-selection table drifting from the approved mapping fails by name');
   } else {
-    ok(false, 'the shipped taxonomy and model references exist for drift checks');
-    ok(false, 'a model-selection drift mutation can run against the shipped reference');
+    ok(false, 'the contributor taxonomy and model references exist for drift checks');
+    ok(false, 'a model-selection drift mutation can run against the contributor reference');
   }
 
   // --- routedSkills: an imperative verb is what makes a mention a route
