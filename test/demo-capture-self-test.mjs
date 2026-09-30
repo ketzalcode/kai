@@ -10,8 +10,12 @@
 import {
   SCREENPLAY_SCHEMA, TAKE_SCHEMA,
   parseScreenplay, parseTake, parseRegion, parseRect, parseTargets, missingTargets,
-  estimateDuration, emitDriver, QUIET_CAP,
-} from '../src/creative/demo-capture.mjs';
+  estimateDuration, QUIET_CAP,
+} from '../src/creative/lib/screenplay.mjs';
+// The driver stayed with the parked command; the parsers it used became a
+// shipped module. That split is exactly why this suite lives here: it keeps
+// running against both halves regardless of which tree each half sits in.
+import { emitDriver } from '../incubator/kai-creative/scripts/demo-capture.mjs';
 
 
 let checks = 0;
