@@ -1,5 +1,5 @@
 // Driving a declared screenplay and writing down what really happened —
-// `src/creative/demo-capture.mjs`.
+// `src/creative/lib/screenplay.mjs` and the parked driver in `incubator/`.
 //
 // Moved out of the command itself (#225). The checks are unchanged.
 //

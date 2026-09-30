@@ -4,6 +4,111 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [18.0.0] - 2026-09-29
+
+One release for four changes that share a purpose: reduce what a consumer
+downloads, and put each skill in the pack that actually uses it. Merged
+together rather than shipped as four consecutive major versions, because four
+breaking announcements for one coherent piece of work is noise, not honesty.
+
+Breaking in four ways. All four are id or surface removals with no alias —
+this repository ships no redirects.
+
+### Self-test code no longer ships
+
+All nine `--self-test` blocks moved out of the shipped entry points into
+`test/`. **Shipped bytes: 866,220 → 716,692 (−17.3%)**, same 22 files.
+
+The `--self-test` flag is gone from every shipped command. Anything invoking
+`node <pack>/scripts/<command>.mjs --self-test` must call the corresponding
+`test/<command>-self-test.mjs` instead.
+
+A build-time `define` could not do this: the gate is `argv.includes('--self-test')`,
+a runtime value no constant folds, and output was measured byte-identical with
+and without. Moving the code out of `src/` was the only mechanism.
+
+**The original measurement was wrong, and the agent doing the work caught it.**
+The probe reported 31% of entry-point source as self-test; it required a line to
+*start* with `function`, so every `export function selfTest()` was skipped. The
+real figure is **42%** — 3,438 of 8,232 lines. `demo-zoom.mjs` alone carries 650
+lines and had been reported as having none. A measurement that misses cases
+quietly is the same failure as a gate that passes vacuously.
+
+### `pr-delivery` moved to `kai-engineering`
+
+`kai-core-pr-delivery` → `pr-delivery`, provided by `kai-engineering`.
+
+The blocker was never the content — the catalog already filed it under
+*Engineering craft*, and three of its four routes were engineering agents. The
+fourth was `director-chief-of-staff`, a core agent, and core may not reach a
+department.
+
+That route is gone, on the director's own terms. Its hard rule 1 is *"Direct;
+do not do the principals' work"*, and every sibling bullet in the same list
+routes work to a role. The `pr-delivery` bullet was the only one loading a
+doing-contract. The director now invokes `workflow-pull-request`, which already
+owned that span.
+
+**Named gap:** a `kai-core`-only install has no PR-delivery capability. Same
+shape as the existing `workflow-ship` gap; the director's rule 11 reports it.
+
+### `create-agent` withdrawn from the shipped surface
+
+`kai-core-create-agent` was a procedure for authoring *kai's own agents*, with a
+companion checklist for "changing Kai itself" — and every consumer of core
+received it. `workflow-self-check` was retired for exactly this reason, and the
+code says so.
+
+Nothing routed it. It reached a session only through `user-invocable: true`.
+
+The content is not deleted: it is contributor documentation at
+`docs/reference/agent-authoring/`, where the taxonomy and model tables stay
+pinned to the validator constants. `references/kai-repository.md` was dropped
+rather than moved — it duplicated `AGENTS.md` and had already drifted, still
+claiming "all eight packages" after the surface became three.
+
+### Creative parsers separated from the capture command
+
+`demo-capture.mjs` shipped as a `kai-creative` entry point that **no shipped
+instruction named**. It survived because the three real commands imported
+`parseScreenplay`/`parseTake` from it — so the bundler hoisted the entire
+962-line CLI, usage text and all, into the chunk every creative command loads.
+
+The parsers are now `src/creative/lib/screenplay.mjs`; the command is parked in
+`incubator/kai-creative/`.
+
+| | before | after |
+|---|---:|---:|
+| shared chunk | 40,368 B | **13,180 B** (−67%) |
+| `kai-creative` total | 209,408 B | **181,682 B** (−13%) |
+
+Dormant, not retired — decided from the record, not by preference. CHANGELOG
+9.0.0 removed live recording but kept the module *"because the other media
+helpers depend on it"*, and the creative-skills-foundation design asked to
+*"preserve inactive outside exported plugin sources"*. That second clause is
+what kept it shipping; extracting the parsers is what finally honours the first.
+
+### Also in this release
+
+- The shipped guided installer in `kai-core-workspace-onboarding` told consumers
+  to run `copilot plugin marketplace add RubenSaucedo/kai`. The repository moved
+  to the `ketzalcode` organisation; the old path works only through a GitHub
+  transfer redirect this project does not control. Corrected here, along with
+  the `owner` fields in the published marketplace index. Remaining occurrences
+  are tracked in #238 — most are dated records where the old owner is correct.
+
+### Surface
+
+**21 agents and 35 skills**, down from 36. `kai-core` 5 / 23,
+`kai-engineering` 13 / 6, `kai-creative` 3 / 6.
+
+### Verified
+
+`npm test` passes end to end. `validate-plugin` reports 21 agents and 35 skills.
+All four gates clean, `pack-preview --check` confirms the committed trees match
+a fresh build, and `consumer-install-self-test` runs every shipped entry point
+from a copied pack with no `node_modules`.
+
 ## [17.0.0] - 2026-09-29
 
 Moves `content-grounding` out of core. Breaking: an id leaves `kai-core`, and
@@ -4308,6 +4413,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[18.0.0]: https://github.com/ketzalcode/kai/compare/v17.0.0...v18.0.0
 [17.0.0]: https://github.com/ketzalcode/kai/compare/v16.0.1...v17.0.0
 [16.0.1]: https://github.com/ketzalcode/kai/compare/v16.0.0...v16.0.1
 [16.0.0]: https://github.com/ketzalcode/kai/compare/v15.0.0...v16.0.0

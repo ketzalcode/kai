@@ -4,7 +4,7 @@
 // silent skip is worse than no check, so the suite that proves it must keep
 // running; only its address changed.
 
-import { parseScreenplay, parseTake } from '../src/creative/demo-capture.mjs';
+import { parseScreenplay, parseTake } from '../src/creative/lib/screenplay.mjs';
 import {
   PLACEMENTS, WPM,
   checkProvenance, checkWordBudget, checkDuration, checkTail, checkArrival, checkSize,
