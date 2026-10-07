@@ -42,6 +42,51 @@ export function gifAssembleArgs({ frameGlob, fps, outputPath }) {
   ];
 }
 
+// ---------------------------------------------------------------------------
+// The colour path
+// ---------------------------------------------------------------------------
+//
+// `drawtext` cannot carry per-cell colour, so the colour path does not use it.
+// Cells are rasterised here as rectangle fills — every glyph the converter
+// emits is an axis-aligned partition of its cell — and handed to ffmpeg as raw
+// RGB. No font file, no glyph metrics, and nothing to escape.
+
+export function rawVideoArgs({ rawPath, width, height, fps, outputPath, frames = null }) {
+  const args = [
+    '-y',
+    '-v', 'error',
+    '-f', 'rawvideo',
+    '-pix_fmt', 'rgb24',
+    '-s', `${width}x${height}`,
+    '-r', String(fps),
+    '-i', rawPath,
+  ];
+  if (frames !== null) args.push('-frames:v', String(frames));
+  if (outputPath.endsWith('.gif')) {
+    args.push(
+      '-filter_complex',
+      '[0:v]split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer',
+      '-loop', '0',
+    );
+  }
+  args.push(outputPath);
+  return args;
+}
+
+export function tileArgs({ rawPath, width, height, columns, rows, outputPath }) {
+  return [
+    '-y',
+    '-v', 'error',
+    '-f', 'rawvideo',
+    '-pix_fmt', 'rgb24',
+    '-s', `${width}x${height}`,
+    '-i', rawPath,
+    '-vf', `tile=${columns}x${rows}`,
+    '-frames:v', '1',
+    outputPath,
+  ];
+}
+
 export function planGif({ doc, framesDir, outputPath, fontFile, cellWidth, cellHeight }) {
   const commands = doc.frames.map((_frame, index) => ({
     command: 'ffmpeg',

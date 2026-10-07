@@ -1,5 +1,6 @@
-export const PALETTES = Object.freeze(['blocks', 'ascii', 'minimal']);
-export const COLORS = Object.freeze(['mono', 'ansi16']);
+export const PALETTES = Object.freeze(['blocks', 'ascii', 'minimal', 'half', 'quad']);
+export const COLORS = Object.freeze(['mono', 'indexed']);
+export const COLOUR_PALETTES = Object.freeze(['half', 'quad']);
 
 export const DEFAULT_PROFILES = Object.freeze({
   readme: Object.freeze({
@@ -18,6 +19,15 @@ export const DEFAULT_PROFILES = Object.freeze({
     fps: 24,
     palette: 'blocks',
     color: 'mono',
+    cellAspect: 0.5,
+  }),
+  photo: Object.freeze({
+    id: 'photo',
+    cols: 110,
+    rows: 44,
+    fps: 12,
+    palette: 'half',
+    color: 'indexed',
     cellAspect: 0.5,
   }),
 });
@@ -44,6 +54,17 @@ export function resolveProfile(input = {}) {
   }
   if (!COLORS.includes(profile.color)) {
     errors.push(`color must be one of ${COLORS.join(', ')}`);
+  }
+  // v1 accepted a colour mode and then discarded it in both the GIF path and
+  // the player. A mode is either honoured end to end or rejected here.
+  const colourPalette = COLOUR_PALETTES.includes(profile.palette);
+  if (colourPalette && profile.color !== 'indexed') {
+    errors.push(`palette "${profile.palette}" carries per-cell colour, so color must be "indexed"`);
+  }
+  if (!colourPalette && profile.color === 'indexed') {
+    errors.push(
+      `color "indexed" needs a sub-cell palette (${COLOUR_PALETTES.join(' or ')}), not "${profile.palette}"`,
+    );
   }
   if (!(typeof profile.cellAspect === 'number' && profile.cellAspect > 0)) {
     errors.push('cellAspect must be a positive number');
