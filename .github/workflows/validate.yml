@@ -10,9 +10,10 @@ name: validate
 # workspace-doctor self-test, the host-loader acceptance mirror, the release-guard
 # self-test, the pack-generator self-test and its regenerate-and-diff check, the
 # four named partition gates (partition, collision, partial-install, version-skew),
-# and a syntax/parse check of shipped helper scripts. On pull requests it
-# additionally runs the release-guard gate: a behavior-sensitive change must carry
-# a version bump plus changelog/README updates. A separate `coordination-runtime`
+# and a syntax/parse check of shipped helper scripts. It rejects new maintainer
+# commits that do not use the approved GitHub noreply identity. On pull requests
+# it additionally runs the release-guard gate: a behavior-sensitive change must
+# carry a version bump plus changelog/README updates. A separate `coordination-runtime`
 # job executes the coordination inputs, store, engine, context, evidence, report,
 # host, migration and CLI suites on every supported Node version and on Windows,
 # because that runtime is executable code over `node:sqlite` rather than
@@ -51,6 +52,13 @@ jobs:
           # ship. This must stay inside the `engines` range in package.json.
           node-version: '24.15.0'
           cache: npm
+      - name: Commit metadata guard self-test
+        run: node test/commit-metadata-guard-self-test.mjs
+      - name: Reject non-noreply maintainer commit metadata
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node .github/scripts/check-commit-metadata.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
       # The generator now builds shipped executables with esbuild, so every step
       # below that materialises a pack needs the devDependencies present. Nothing
       # a consumer runs needs them: the build happens here and the result is
