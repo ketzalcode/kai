@@ -320,6 +320,7 @@ a publication, or a host-verification claim.
 | I want to… | Go to |
 | ---------- | ----- |
 | **Install it and finish one real thing** | [Getting started](docs/getting-started.md) — install, initialize, first request |
+| **See the shipped architecture** | [Architecture](docs/architecture.md) — package topology, generated JavaScript, workspace layout, and work hierarchy |
 | **Understand the model before I commit** | [How kai works](docs/how-kai-works.md) — which role fires when, and why |
 | **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
 | **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the three packages supply |

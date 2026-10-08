@@ -8,6 +8,7 @@ import {
   closeStore,
   openStore,
 } from '../../src/core/lib/coordination-runtime/store.mjs';
+import {canonicalPath} from '../../src/core/lib/workspace-path-safety.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const fixedNow = '2026-09-16T12:00:00.000Z';
@@ -34,8 +35,8 @@ export const fixtureIds = Object.freeze({
 });
 
 export function allocateTemporaryRoot(prefix, checkoutRoot = repoRoot) {
-  const temporaryDirectory = resolve(tmpdir());
-  const checkout = resolve(checkoutRoot);
+  const temporaryDirectory = canonicalPath(tmpdir());
+  const checkout = canonicalPath(checkoutRoot);
   const pathFromCheckout = relative(checkout, temporaryDirectory);
   const outsideCheckout = pathFromCheckout === '..'
     || pathFromCheckout.startsWith(`..${sep}`)

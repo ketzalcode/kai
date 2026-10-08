@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {
-  existsSync, mkdirSync, readFileSync, rmSync, writeFileSync,
+  existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync,
+  unlinkSync, writeFileSync,
 } from 'node:fs';
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
+import {tmpdir} from 'node:os';
 import test from 'node:test';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
@@ -20,6 +22,7 @@ import {
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import * as storeApi from '../src/core/lib/coordination-runtime/store.mjs';
 import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {exactPath} from '../src/core/lib/workspace-path-safety.mjs';
 import {
   allocateTemporaryRoot,
   command,
@@ -286,9 +289,11 @@ await test('store case fixture allocates outside the checkout', () => {
 await test('temporary root allocator refuses OS temp inside the checkout', () => {
   const previousTemp = process.env.TEMP;
   const previousTmp = process.env.TMP;
+  const previousTmpDir = process.env.TMPDIR;
   let allocatedRoot;
   process.env.TEMP = repoRoot;
   process.env.TMP = repoRoot;
+  process.env.TMPDIR = repoRoot;
   try {
     assert.throws(
       () => {
@@ -305,6 +310,68 @@ await test('temporary root allocator refuses OS temp inside the checkout', () =>
     else process.env.TEMP = previousTemp;
     if (previousTmp === undefined) delete process.env.TMP;
     else process.env.TMP = previousTmp;
+    if (previousTmpDir === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmpDir;
+  }
+});
+
+await test('temporary root allocator returns a canonical path when OS temp is an alias', () => {
+  const physicalTemp = mkdtempSync(join(tmpdir(), 'kai-coordination-temp-target-'));
+  const aliasedTemp = `${physicalTemp}-alias`;
+  const previousTemp = process.env.TEMP;
+  const previousTmp = process.env.TMP;
+  const previousTmpDir = process.env.TMPDIR;
+  let allocatedRoot;
+  symlinkSync(physicalTemp, aliasedTemp, process.platform === 'win32' ? 'junction' : 'dir');
+  process.env.TEMP = aliasedTemp;
+  process.env.TMP = aliasedTemp;
+  process.env.TMPDIR = aliasedTemp;
+  try {
+    allocatedRoot = allocateTemporaryRoot('kai-coordination-aliased-location-', repoRoot);
+    assert.equal(exactPath(allocatedRoot), true);
+  } finally {
+    if (allocatedRoot) rmSync(allocatedRoot, {recursive: true, force: true});
+    unlinkSync(aliasedTemp);
+    rmSync(physicalTemp, {recursive: true, force: true});
+    if (previousTemp === undefined) delete process.env.TEMP;
+    else process.env.TEMP = previousTemp;
+    if (previousTmp === undefined) delete process.env.TMP;
+    else process.env.TMP = previousTmp;
+    if (previousTmpDir === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmpDir;
+  }
+});
+
+await test('temporary root allocator rejects temp inside an aliased checkout', () => {
+  const physicalCheckout = mkdtempSync(join(tmpdir(), 'kai-coordination-checkout-target-'));
+  const aliasedCheckout = `${physicalCheckout}-alias`;
+  const nestedTemp = join(physicalCheckout, 'temp');
+  const previousTemp = process.env.TEMP;
+  const previousTmp = process.env.TMP;
+  const previousTmpDir = process.env.TMPDIR;
+  mkdirSync(nestedTemp);
+  symlinkSync(
+    physicalCheckout,
+    aliasedCheckout,
+    process.platform === 'win32' ? 'junction' : 'dir',
+  );
+  process.env.TEMP = nestedTemp;
+  process.env.TMP = nestedTemp;
+  process.env.TMPDIR = nestedTemp;
+  try {
+    assert.throws(
+      () => allocateTemporaryRoot('kai-coordination-aliased-checkout-', aliasedCheckout),
+      /OS temporary directory must be outside checkout/,
+    );
+  } finally {
+    unlinkSync(aliasedCheckout);
+    rmSync(physicalCheckout, {recursive: true, force: true});
+    if (previousTemp === undefined) delete process.env.TEMP;
+    else process.env.TEMP = previousTemp;
+    if (previousTmp === undefined) delete process.env.TMP;
+    else process.env.TMP = previousTmp;
+    if (previousTmpDir === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmpDir;
   }
 });
 
