@@ -149,6 +149,7 @@ project/
 │  │  │  ├─ drafts/
 │  │  │  ├─ evidence/
 │  │  │  └─ scratch/
+│  │  ├─ features/<id>/{drafts,evidence,scratch}/
 │  │  ├─ decisions/<id>/{drafts,evidence,scratch}/
 │  │  ├─ reports/<id>/{drafts,evidence,scratch}/
 │  │  └─ archive/<type>/<id>/...
@@ -170,6 +171,7 @@ project/
    ├─ README.md
    ├─ DIRECTION.md
    ├─ core/
+   │  ├─ features/<id>/...
    │  ├─ decisions/<id>/...
    │  └─ reports/<id>/...
    ├─ engineering/
@@ -209,8 +211,8 @@ does not manufacture a database.
 is not ready until its four sections are non-empty. Initialization never
 invents project direction.
 
-No empty `core/decisions`, `engineering`, `creative`, `archive`, lifecycle, or
-subtype directory is part of the initial footprint.
+No empty `core/features`, `core/decisions`, `engineering`, `creative`,
+`archive`, lifecycle, or subtype directory is part of the initial footprint.
 
 ## Private workspace policy
 
@@ -315,6 +317,7 @@ depend on departments.
 | Type | Purpose |
 | --- | --- |
 | `direction` | private drafts/evidence for the root `DIRECTION.md` |
+| `features` | accepted core coordination/runtime feature knowledge |
 | `decisions` | accepted cross-pack coordination or operating decisions |
 | `reports` | accepted cross-pack summaries and coordination reports |
 
