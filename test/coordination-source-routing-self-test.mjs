@@ -502,6 +502,7 @@ assert.ok(packPlan.webOutputContractErrors({
 'web evaluation mutation must reject rerun prose that contradicts the ID grammar');
 for (const contradiction of [
   'Reruns reuse the previous ID.',
+  'Reruns reuse a prior ID.',
   'The artifact UUID is the path ID.',
 ]) {
   assert.ok(packPlan.webOutputContractErrors({

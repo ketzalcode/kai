@@ -1888,7 +1888,7 @@ export function webOutputContractErrors({id, body}) {
     ].every(pattern => pattern.test(flat));
     const contradictoryProse =
       /web-evaluation-<artifact-id>|artifact UUID makes every rerun/i.test(text)
-      || /\breruns?\s+(?:must\s+|may\s+|can\s+)?reuses?\s+(?:the\s+)?(?:previous|earlier|same)(?:\s+report)?\s+ID\b/i.test(text)
+      || /\breruns?\s+(?:must\s+|may\s+|can\s+)?reuses?\s+(?:(?:the\s+)?(?:previous|earlier|same)|a\s+prior)(?:\s+report)?\s+ID\b/i.test(text)
       || /\bartifact UUID\s+(?:is|becomes|serves as)\s+(?:the\s+)?(?:report\s+)?path ID\b/i.test(text);
     if (!proseMatchesGrammar || contradictoryProse) {
       errors.push(`${id}: web-evaluation ID grammar/prose drift; date, sequence, descriptor, and rerun allocation must agree`);
