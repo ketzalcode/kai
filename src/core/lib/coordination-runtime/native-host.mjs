@@ -397,9 +397,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
         catalog = cap.catalog;
         grants = [{actor: command.actor, actions: commandActions(command), recordKind: command.recordKind,
           recordId: command.recordId,
-          basisRef: HIERARCHY_KINDS.has(command.recordKind)
-            ? subjectRef({kind: command.recordKind, id: command.recordId}, command.expectedVersion)
-            : `${command.recordKind}/${command.recordId}@${command.expectedVersion}`}];
+          basisRef: `${command.recordKind}/${command.recordId}@${command.expectedVersion}`}];
         if (['attempt.start', 'effect.intent'].includes(command.kind)) grants.push({
           actor: command.actor, actions: [command.kind], recordKind: 'task', recordId: command.payload.taskId,
           basisRef: subjectRef({kind: 'task', id: command.payload.taskId}, command.payload.taskVersion),
@@ -434,7 +432,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
         verifyCapture: c => {
           if (!capture || capture.type !== 'command' || !sameActor(capture.actor, c.actor)
             || capture.root !== root || capture.taskId !== c.recordId
-            || canonicalJson(capture.subject) !== canonicalJson(c.payload.body.subject)
+            || canonicalJson(capture.subject) !== canonicalJson(c.payload.body.content_ref)
             || capture.criteria !== c.payload.body.criteria_ref
             || canonicalJson(capture.inputs) !== canonicalJson(taskBasis(root, store, readRecord(store, 'task', c.recordId)).inputs)) {
             fail('EVIDENCE_GAP', 'no host-owned capture for this actor, Task, subject and current input criteria');

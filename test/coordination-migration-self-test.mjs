@@ -5,7 +5,7 @@ import {isAbsolute, join, dirname, relative, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {syncBuiltinESMExports} from 'node:module';
-import {randomUUID} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {
   migrateWorkspace, canRollback, rollbackMigration, recoverMigration,
@@ -18,14 +18,38 @@ import {checkWorkspace} from '../src/core/workspace-doctor.mjs';
 import {collect} from '../src/core/work-status.mjs';
 import {resolveWorkspaceRoot} from '../src/core/lib/workspace-resolve.mjs';
 import {
-  allocateTemporaryRoot, command, authority, seedItem, seedInitiative,
+  allocateTemporaryRoot,
+  authority,
+  command,
+  fixtureIds,
+  seedItem,
+  seedInitiative,
+  seedTask,
 } from './helpers/coordination-runtime-fixture.mjs';
-import {buildReport, writeReport} from '../src/core/lib/coordination-runtime/report.mjs';
+import {
+  buildReport,
+  reportPaths,
+  writeReport,
+} from '../src/core/lib/coordination-runtime/report.mjs';
 import {bindEvidenceRuntime, hashArtifact, registerArtifact} from '../src/core/lib/coordination-runtime/evidence.mjs';
+import {canonicalJson} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {redactReport} from '../src/core/lib/coordination-runtime/report-safety.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const roles = ['eng-lead-architecture', 'eng-builder-software', 'eng-reviewer-code'];
 const stamp = '2026-09-16T12:00:00.000Z';
+const direction = `# Vision
+A composable workspace.
+
+# Mission
+Coordinate exact work safely.
+
+# Current Goal
+Exercise Task runtime behavior.
+
+# Out of Scope
+Schema 5 workspace activation remains deferred.
+`;
 const put = (root, path, bytes) => {
   const target = join(root, ...path.split('/'));
   fs.mkdirSync(dirname(target), {recursive: true});
@@ -51,11 +75,12 @@ function fixture(fn, {git = true, mode = 'repo-local'} = {}) {
       workspace_id: 'migration-test-workspace', storage_mode: mode, workspace_root: '.',
       state: '.kai/state', runs: '.kai/runs', review: '.kai/review',
       archive: '.kai/archive', personal: '.kai/personal',
-      projects: [{id: 'project', path: '.', publication_root: 'docs'}], areas: [],
+      projects: [{id: 'project', path: '.', publication_root: 'docs/kai'}], areas: [],
     }, null, 2) + '\n');
     for (const file of ['CONVENTIONS.md', 'state/ACTIVE.md', 'state/BOARD.md', 'state/backlog.md', 'state/initiatives/INDEX.md']) {
       put(root, `.kai/${file}`, '# Legacy source\n');
     }
+    put(root, 'docs/kai/DIRECTION.md', direction);
     fs.mkdirSync(join(root, '.kai', 'state', 'threads'), {recursive: true});
     put(root, '.kai/state/initiatives/demo-initiative/initiative.md', `---
 id: demo-initiative
@@ -133,6 +158,57 @@ function migrated(root) {
 function withStore(root, fn, mode = 'read') {
   const store = openStore({path: dbPath(root), mode});
   try { return fn(store); } finally { closeStore(store); }
+}
+function seedTypedTask(store, overrides = {}) {
+  return seedTask(store, {
+    state: 'proposed',
+    producer_actor: null,
+    producing_actors: [],
+    acceptance_actor: null,
+    ...overrides,
+  });
+}
+function createTypedTask(store, overrides = {}) {
+  const seeded = seedTypedTask(store, overrides);
+  store.database.prepare("DELETE FROM records WHERE kind = 'task' AND id = ?")
+    .run(seeded.id);
+  const actor = {role: seeded.body.scope_authority, runId: 'typed-migration-run'};
+  const create = command('task.create', {
+    actor,
+    recordId: seeded.id,
+    expectedVersion: 0,
+    payload: {body: seeded.body},
+  });
+  return applyCommand(store, create, authority(actor, 'task.create', {
+    recordId: seeded.id,
+    version: 0,
+  }));
+}
+function updateTypedTask(store, changes = {title: 'Changed typed Task'}) {
+  const current = readRecord(store, 'task', fixtureIds.task);
+  const actor = {role: current.body.scope_authority, runId: 'typed-migration-run'};
+  const update = command('task.update', {
+    actor,
+    recordId: current.id,
+    expectedVersion: current.version,
+    payload: {changes},
+  });
+  return applyCommand(store, update, authority(actor, 'task.update', {
+    recordId: current.id,
+    version: current.version,
+  }));
+}
+function persistTypedReport(root, store) {
+  if (!readRecord(store, 'task', fixtureIds.task)) seedTypedTask(store);
+  const subject = {kind: 'task', id: fixtureIds.task};
+  const view = buildReport(store, {subject});
+  const target = {
+    directory: relative(root, reportPaths({root, subject}).directory).replaceAll('\\', '/'),
+    accepted_hash: createHash('sha256')
+      .update(canonicalJson(redactReport(view)))
+      .digest('hex'),
+  };
+  return writeReport({root, subject, view, target});
 }
 function boundary(name, replacement, fn) {
   const original = fs[name];
@@ -264,8 +340,7 @@ test('rollback preserves unrelated user edits but refuses new runtime events and
   assert.equal(fs.existsSync(receipt.backupPath), true);
   migrated(root);
   withStore(root, store => {
-    const cmd = command('item.update', {actor: {role: 'operator', runId: 'real-operator-run'}, expectedVersion: 7, payload: {title: 'New work'}});
-    applyCommand(store, cmd, authority(cmd.actor, 'item.update', {version: 7}));
+    createTypedTask(store);
     assert.equal(canRollback(store), false);
   }, 'write');
   assert.throws(() => rollbackMigration({root, confirm: true}), /new|runtime|rollback/i);
@@ -301,15 +376,35 @@ test('external schema 4 registry resolves and duplicate bindings still fail', ()
   assert.match(resolveWorkspaceRoot({cwd: project, env}).reason, /2 entries/);
 }));
 
-test('runtime commands cannot bypass schema 3 or recreate a quarantined original ID', () => fixture(root => {
+test('runtime commands cannot bypass schema 3 or revive retired legacy item commands', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {
-    const body = {...seedBody(), state: 'proposed'};
-    const cmd = command('item.create', {actor: {role: 'operator', runId: 'new-real-run'}, expectedVersion: 0, payload: {body}});
-    assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {version: 0})), /quarantin|legacy/i);
+    const retiredBody = {...seedBody(), state: 'proposed'};
+    const retired = command('item.create', {
+      actor: {role: 'operator', runId: 'new-real-run'},
+      expectedVersion: 0,
+      payload: {body: retiredBody},
+    });
+    assert.throws(
+      () => applyCommand(store, retired, authority(retired.actor, 'item.create', {version: 0})),
+      error => error.code === 'INVALID_INPUT',
+    );
+    const seeded = seedTypedTask(store);
+    store.database.prepare("DELETE FROM records WHERE kind = 'task' AND id = ?")
+      .run(seeded.id);
+    const actor = {role: seeded.body.scope_authority, runId: 'typed-schema-run'};
+    const create = command('task.create', {
+      actor,
+      recordId: seeded.id,
+      expectedVersion: 0,
+      payload: {body: seeded.body},
+    });
     put(root, '.kai/manifest.json', JSON.stringify({...readManifest(root), schema_version: 3}));
-    assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {version: 0})), /schema/i);
+    assert.throws(() => applyCommand(store, create, authority(actor, 'task.create', {
+      recordId: seeded.id,
+      version: 0,
+    })), /schema/i);
   }, 'write');
 }));
 
@@ -405,10 +500,17 @@ test('repair requires bound host authorization, retains history, and forbids reo
     assert.equal(canRollback(store), false);
     const closed = readLegacyRecords(store).find(s => s.declaredId === 'closed');
     assert.throws(() => repairLegacyRecord(store, {...request, operationId: randomUUID(), sourceId: closed.sourceId, body: {...seedBody(), id: 'closed'}}), /reopen|historical/i);
-    // The revalidated scope still needs a new explicit host action grant to promote.
-    const promote = command('item.promote', {actor: request.actor, expectedVersion: 7, payload: {at: stamp}});
-    assert.throws(() => applyCommand(store, promote, {roles, grants: []}), /authority/i);
-    assert.equal(applyCommand(store, promote, authority(promote.actor, 'item.promote', {version: 7})).data.record.body.state, 'ready');
+    // Repaired legacy records remain inspectable history; retired item commands cannot act on them.
+    const promote = command('item.promote', {
+      actor: request.actor,
+      expectedVersion: 7,
+      payload: {at: stamp},
+    });
+    assert.throws(
+      () => applyCommand(store, promote, authority(promote.actor, 'item.promote', {version: 7})),
+      error => error.code === 'INVALID_INPUT',
+    );
+    assert.equal(readRecord(store, 'item', 'demo').body.state, 'proposed');
   }, 'write');
 }));
 
@@ -416,8 +518,8 @@ test('read-only inspection validates current owned report plus member, view and 
   migrated(root);
   let output;
   withStore(root, store => {
-    output = writeReport({root, itemId: 'demo', view: buildReport(store, {itemId: 'demo'})});
-  });
+    output = persistTypedReport(root, store);
+  }, 'write');
   assert.equal(inspectRuntime(root).warnings.some(w => /changed\/incomplete derived/.test(w)), false);
   const html = fs.readFileSync(output.path);
   fs.appendFileSync(output.path, '\nEdited report');
@@ -425,7 +527,7 @@ test('read-only inspection validates current owned report plus member, view and 
   fs.writeFileSync(output.path, html);
   const metadata = fs.readFileSync(output.metadataPath);
   const changed = JSON.parse(metadata);
-  changed.view.item.title = 'Tampered view';
+  changed.view.subject.title = 'Tampered view';
   fs.writeFileSync(output.metadataPath, JSON.stringify(changed));
   assert.ok(inspectRuntime(root).warnings.some(w => /changed\/incomplete derived/.test(w)));
   fs.writeFileSync(output.metadataPath, metadata);
@@ -454,7 +556,11 @@ test('WAL store inspection is read-only and checkpointed rollback keeps every ba
   withStore(root, store => {
     store.database.exec('PRAGMA journal_mode=WAL; BEGIN IMMEDIATE; COMMIT;');
     const before = fs.readdirSync(join(root, '.kai', 'state')).sort();
-    assert.equal(inspectRuntime(root).runtime.items[0].id, 'demo');
+    assert.equal(
+      inspectRuntime(root).runtime.records.some(record =>
+        record.kind === 'item' && record.id === 'demo'),
+      true,
+    );
     assert.deepEqual(fs.readdirSync(join(root, '.kai', 'state')).sort(), before);
     assert.equal(canRollback(store), true);
   }, 'write');
@@ -544,17 +650,19 @@ test('incomplete backup failure can be abandoned without deleting new user files
 test('report live sequence and partial exports warn without blocking unrelated safe coordination', () => fixture(root => {
   migrated(root);
   let report;
-  withStore(root, store => { report = writeReport({root, itemId: 'demo', view: buildReport(store, {itemId: 'demo'})}); });
-  put(root, '.kai/review/coordination/' + report.directory.split(/[\\/]/).at(-1) + '/snapshot-9-partial.html', 'partial output');
   withStore(root, store => {
-    const cmd = command('item.update', {actor: {role: 'operator', runId: 'new-run'}, expectedVersion: 7, payload: {title: 'Changed runtime title'}});
-    applyCommand(store, cmd, authority(cmd.actor, 'item.update', {version: 7}));
+    report = persistTypedReport(root, store);
+  }, 'write');
+  put(root, `${relative(root, report.directory).replaceAll('\\', '/')}/snapshot-9-partial.html`,
+    'partial output');
+  withStore(root, store => {
+    updateTypedTask(store, {title: 'Changed runtime title'});
   }, 'write');
   const inspected = inspectRuntime(root);
   assert.ok(inspected.warnings.some(w => /stale derived report/.test(w)));
   assert.ok(inspected.warnings.some(w => /partial derived output/.test(w)));
   assert.equal(checkWorkspace(root, {intent: 'coordinate'}).errors.length, 0);
-  assert.equal(collect(root).totals.items, 1);
+  assert.equal(collect(root).status.totals.tasks, 1);
 }));
 
 test('other live SQLite files are refused rather than blindly copied with a WAL', () => fixture(root => {
@@ -570,10 +678,10 @@ test('other live SQLite files are refused rather than blindly copied with a WAL'
 test('shared privacy loss after activation blocks runtime writes without editing Git files', () => fixture(root => {
   migrated(root);
   withStore(root, store => {
+    seedTypedTask(store);
     gitRun(root, ['add', '-f', '--', '.kai/state/coordination.sqlite']);
-    const cmd = command('item.update', {actor: {role: 'operator', runId: 'operator-run'}, expectedVersion: 7, payload: {title: 'Unsafe write'}});
-    assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.update', {version: 7})), /tracked|private/i);
-    assert.equal(readRecord(store, 'item', 'demo').version, 7);
+    assert.throws(() => updateTypedTask(store, {title: 'Unsafe write'}), /tracked|private/i);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).version, 1);
   }, 'write');
 }, {mode: 'shared'}));
 
@@ -747,7 +855,7 @@ test('round1 rollback cannot retire a concurrently authorized repair at manifest
 }));
 
 for (const state of ['completed', 'shipped']) {
-  test(`round1 archived ${state} identity and version cannot be reused or repaired`, () => fixture(root => {
+  test(`round1 archived ${state} identity stays historical after item commands retire`, () => fixture(root => {
     const path = '.kai/archive/old-work/closed.md';
     const raw = legacyItem().replace('id: demo\n', 'id: closed\n').replace('state: proposed', `state: ${state}`).replace('version: 7', 'version: 9');
     put(root, path, raw);
@@ -755,7 +863,13 @@ for (const state of ['completed', 'shipped']) {
     withStore(root, store => {
       const cmd = command('item.create', {recordId: 'closed', actor: {role: 'operator', runId: 'new-run'},
         expectedVersion: 0, payload: {body: {...seedBody(), id: 'closed'}}});
-      assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {recordId: 'closed', version: 0})), /legacy|histor|quarantin/i);
+      assert.throws(
+        () => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {
+          recordId: 'closed',
+          version: 0,
+        })),
+        error => error.code === 'INVALID_INPUT',
+      );
       const source = readLegacyRecords(store).find(s => s.path === path);
       assert.equal(source.kind, 'item');
       assert.equal(source.declaredId, 'closed');
@@ -808,14 +922,14 @@ for (const mode of ['repo-local', 'shared', 'external']) {
 
 test('round1 schema4 checks every existing private lane and storage mode without changing files', () => fixture(root => {
   migrated(root);
+  withStore(root, store => seedTypedTask(store), 'write');
   for (const path of ['.kai/runs/raw.md', '.kai/personal/note.md', '.kai/local.json', '.kai/activity.jsonl.1']) {
     put(root, path, 'private bytes');
     gitRun(root, ['add', '-f', '--', path]);
     const before = gitRun(root, ['ls-files', '--stage']);
     assert.ok(checkWorkspace(root, {intent: 'coordinate'}).errors.some(e => /tracked|private/.test(e)));
     withStore(root, store => {
-      const cmd = command('item.update', {actor: {role: 'operator', runId: 'run'}, expectedVersion: 7, payload: {title: 'Unsafe'}});
-      assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.update', {version: 7})), /tracked|private/i);
+      assert.throws(() => updateTypedTask(store, {title: 'Unsafe'}), /tracked|private/i);
     }, 'write');
     assert.equal(gitRun(root, ['ls-files', '--stage']), before);
     gitRun(root, ['rm', '--cached', '--quiet', '--', path]);
@@ -942,7 +1056,10 @@ test('round1 oversized coordination metadata quarantines exact original identity
     assert.ok(source.issues.some(i => /oversized|limit|bounded/i.test(i)));
     assert.equal(readLegacyRecords(store, {sourceId: source.sourceId, includeRaw: true})[0].raw.toString(), raw);
     const cmd = command('item.create', {actor: {role: 'operator', runId: 'run'}, expectedVersion: 0, payload: {body: seedBody()}});
-    assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {version: 0})), /legacy|quarantin|identity/i);
+    assert.throws(
+      () => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {version: 0})),
+      error => error.code === 'INVALID_INPUT',
+    );
   }, 'write');
 }));
 
@@ -1095,26 +1212,31 @@ test('round1 repair cannot lose privacy checks when the manifest migration marke
   }, 'write');
 }));
 
-test('round1 ambiguous archived IDs reserve unresolved identities rather than only the first ID', () => fixture(root => {
+test('round1 ambiguous archived IDs remain quarantined after item commands retire', () => fixture(root => {
   put(root, '.kai/archive/ambiguous.md', legacyItem('id: second-original\nstate: completed\n'));
   migrated(root);
   withStore(root, store => {
     const cmd = command('item.create', {recordId: 'second-original', actor: {role: 'operator', runId: 'new-run'},
       expectedVersion: 0, payload: {body: {...seedBody(), id: 'second-original'}}});
-    assert.throws(() => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {recordId: 'second-original', version: 0})),
-      /legacy|quarantin|identity/i);
+    assert.throws(
+      () => applyCommand(store, cmd, authority(cmd.actor, 'item.create', {
+        recordId: 'second-original',
+        version: 0,
+      })),
+      error => error.code === 'INVALID_INPUT',
+    );
     assert.equal(readRecord(store, 'item', 'second-original'), null);
   }, 'write');
 }));
 
-function createItem(store, id) {
+function createRetiredItem(store, id) {
   const cmd = command('item.create', {recordId: id, actor: {role: 'operator', runId: 'fresh-scope-run'},
     expectedVersion: 0, payload: {body: {...seedBody(), id}}});
   return applyCommand(store, cmd, authority(cmd.actor, 'item.create', {recordId: id, version: 0}));
 }
 
 for (const identity of ['id: second-original', 'slug: second-original']) {
-  test(`round2 oversized complete header preserves ambiguous ${identity} reservation`, () => fixture(root => {
+  test(`round2 oversized complete header preserves ambiguous ${identity} quarantine`, () => fixture(root => {
     const initiative = identity.startsWith('slug');
     const path = initiative ? '.kai/state/initiatives/history/initiative.md' : '.kai/archive/old-work/closed.md';
     const raw = (initiative
@@ -1124,7 +1246,10 @@ for (const identity of ['id: second-original', 'slug: second-original']) {
     put(root, path, raw);
     migrated(root);
     withStore(root, store => {
-      assert.throws(() => createItem(store, 'second-original'), /legacy|quarantin|identity/i);
+      assert.throws(
+        () => createRetiredItem(store, 'second-original'),
+        error => error.code === 'INVALID_INPUT',
+      );
       const source = readLegacyRecords(store).find(s => s.path === path);
       assert.equal(source.status, 'quarantined');
       assert.equal(source.parsed.identityUnresolved, true);
@@ -1139,21 +1264,25 @@ for (const identity of ['id: second-original', 'slug: second-original']) {
   }));
 }
 
-test('round2 oversized unambiguous complete header reserves only its original identity', () => fixture(root => {
+test('round2 oversized legacy identity stays quarantined while typed Task namespace remains usable', () => fixture(root => {
   const path = '.kai/archive/old-work/closed.md';
   const raw = legacyItem().replace('id: demo\n', 'id: first-original\n').replace('state: proposed', 'state: completed')
     .replace('version: 7', 'version: 9') + 'x'.repeat(70 * 1024);
   put(root, path, raw);
   migrated(root);
   withStore(root, store => {
-    assert.throws(() => createItem(store, 'first-original'), /legacy|quarantin|identity/i);
+    assert.throws(
+      () => createRetiredItem(store, 'first-original'),
+      error => error.code === 'INVALID_INPUT',
+    );
     const source = readLegacyRecords(store).find(s => s.path === path);
     assert.equal(source.declaredId, 'first-original');
     assert.notEqual(source.parsed.identityUnresolved, true);
     assert.equal(source.parsed.fields.version, '9');
     assert.equal(source.parsed.declaredState, 'completed');
-    assert.equal(createItem(store, 'fresh-independent').recordVersion, 1);
-    assert.equal(readRecord(store, 'item', 'fresh-independent').body.state, 'proposed');
+    const typedId = 'engineering:task:fresh-independent';
+    assert.equal(createTypedTask(store, {id: typedId}).recordVersion, 1);
+    assert.equal(readRecord(store, 'task', typedId).body.state, 'proposed');
   }, 'write');
 }));
 
@@ -1428,16 +1557,23 @@ test('Task10A repair accepts a registered cross-item design as context without t
   migrated(root);
   withStore(root, store => {
     const actor = {role: 'eng-builder-software', runId: 'design-producer'};
-    const path = '.kai/state/brief.md';
+    const designId = 'engineering:task:design';
+    const path = '.kai/engineering/features/demo/drafts/brief.md';
     put(root, path, 'Cross-item design revision');
     const subject = hashArtifact({root, relativePath: path});
-    seedItem(store, {id: 'design', state: 'in-review', producer_actor: actor,
+    seedTask(store, {id: designId, state: 'in-review', producer_actor: actor,
       acceptance_actor: null, change_ref: subject, artifact_targets: [path]});
     const artifactId = randomUUID();
-    bindEvidenceRuntime(store, {root, authority: authority(actor, 'artifact.register', {recordId: 'design'}),
-      runs: [{actor, directory: '.kai/runs/design-producer'}]});
+    bindEvidenceRuntime(store, {
+      root,
+      authority: authority(actor, 'artifact.register', {recordId: designId}),
+      runs: [{
+        actor,
+        directory: '.kai/engineering/features/demo/scratch/design-producer',
+      }],
+    });
     registerArtifact(store, command('artifact.register', {
-      recordId: 'design', actor, payload: {artifactId, assetId: randomUUID(), subject,
+      recordId: designId, actor, payload: {artifactId, assetId: randomUUID(), subject,
         projectId: null, classification: 'internal', mediaType: 'text/markdown', title: 'Design',
         inputAssetIds: [], at: stamp},
     }));

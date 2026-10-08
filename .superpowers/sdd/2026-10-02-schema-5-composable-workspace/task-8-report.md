@@ -198,3 +198,103 @@ No open correctness finding remains from the review.
 - Schema-5 manifest/path activation is intentionally not live until Task 9.
 - Generated plugin artifacts, release metadata, and the full `npm test` remain
   intentionally deferred to Task 12.
+
+## Fix round 1/5 — 2026-10-06
+
+All five review findings were addressed.
+
+### Restored CLI lifecycle coverage
+
+The eight typed hierarchy-surface cases remain in
+`coordination-cli-self-test.mjs`. The removed 32-case real-process lifecycle
+suite is restored as `coordination-cli-lifecycle-self-test.mjs` and is part of
+`npm test`.
+
+The restored suite covers typed Task transitions, evidence capture, retained
+artifacts, independent review, completion acceptance, handoff, terminal reopen
+refusal, writer contention, exact authority, privacy, migration/rollback, and
+native-host behavior. Its engineering and creative chains now use typed
+Epic/Feature/Requirement/Task ancestry.
+
+Restoring those cases exposed and fixed two native-host regressions:
+
+- command grants now use the basis format consumed by runtime authority checks;
+- observed evidence capture is matched to `content_ref`, not the retired
+  verdict `subject` shape.
+
+`docs/reference/coordination-acceptance.md` now names the lifecycle suite where
+that process evidence actually lives.
+
+### Hierarchy fixes
+
+- `deriveAttention` now reloads the selected record after opening its read
+  transaction and uses the same reader/snapshot for the record, ancestors,
+  dependencies, approvals, questions, and next action.
+- bounded context reports the nearest effective hierarchy hold for Tasks and
+  child records, including its source subject, reason, release condition,
+  basis references, setter, and timestamp.
+- Requirement planning rejects one-sided Requirement→Task membership as
+  `relationship-invalid`.
+- proposed Feature and Requirement staffing includes the owning parent role
+  that actually holds activation authority.
+- planning remains advisory with `automatic: false`; the CLI surface regression
+  still proves status/context/detail/messages/export/plan do not mutate the
+  Task or event stream.
+
+### RED evidence
+
+Before the fixes:
+
+```text
+coordination-hierarchy-view-self-test.mjs
+5 passed, 6 failed
+```
+
+The failures were the deriveAttention snapshot race, effective ancestor hold,
+one-sided Requirement membership, and both activation-authority staffing cases.
+
+Restoring the prior CLI suite against the typed runtime initially produced:
+
+```text
+32 tests
+15 passed
+17 failed
+```
+
+The failures identified every retired `item`/`initiative` selector and command
+that needed a typed lifecycle replacement rather than deletion.
+
+### GREEN evidence
+
+```text
+npm run coordination:hierarchy-view-self-test
+11 passed, 0 failed
+
+node test/coordination-cli-self-test.mjs
+8 passed, 0 failed
+
+node test/coordination-cli-lifecycle-self-test.mjs
+32 passed, 0 failed
+
+node test/coordination-context-self-test.mjs
+34 passed, 0 failed
+
+node test/work-status-self-test.mjs
+all checks passed
+
+node test/coordination-host-self-test.mjs
+54 passed, 0 failed
+
+node test/coordination-authority-self-test.mjs
+all checks passed
+
+node test/coordination-migration-self-test.mjs
+118 passed, 0 failed
+
+npm run check-syntax
+74 JS/MJS helpers parsed cleanly
+```
+
+The full `npm test` was not run. The explicitly requested hierarchy-view, CLI,
+context, work-status, host, authority, migration, and restored regression
+suites all passed.

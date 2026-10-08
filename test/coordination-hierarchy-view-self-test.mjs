@@ -418,7 +418,7 @@ function seedHierarchy(store) {
         set_by: {role: 'creative-lead-design', runId: 'creative-context'},
         set_at: NOW,
         release_condition: 'Operator approves the revised public identity.',
-        basis_refs: [],
+        basis_refs: ['direction:public-identity'],
       },
     },
   }));
@@ -581,6 +581,70 @@ test('attention is derived, keeps every reason, gives needs-human precedence, an
     }).reasons.some(reason => reason.code === 'missing-evidence'), true);
   }));
 
+test('deriveAttention rereads the selected record inside its SQLite snapshot', async () =>
+  withHierarchyWorkspace(({root, store}) => {
+    const stale = readRecord(store, 'feature', ids.core);
+    const writer = openStore({
+      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      mode: 'write',
+    });
+    const originalExec = store.database.exec.bind(store.database);
+    let advanced = false;
+    store.database.exec = sql => {
+      const result = originalExec(sql);
+      if (sql === 'BEGIN DEFERRED' && !advanced) {
+        advanced = true;
+        const current = readRecord(writer, 'feature', ids.core);
+        writer.database.prepare(`
+          UPDATE records
+          SET version = ?, body = ?
+          WHERE kind = 'feature' AND id = ?
+        `).run(
+          current.version + 1,
+          JSON.stringify({
+            ...current.body,
+            state: 'proposed',
+            scope_authority: 'operator',
+            updated_at: '2026-10-06T18:01:00.000Z',
+          }),
+          ids.core,
+        );
+        const epic = readRecord(writer, 'epic', ids.alpha);
+        writer.database.prepare(`
+          UPDATE records
+          SET version = ?, body = ?
+          WHERE kind = 'epic' AND id = ?
+        `).run(
+          epic.version + 1,
+          JSON.stringify({
+            ...epic.body,
+            owner: 'operator',
+            updated_at: '2026-10-06T18:01:00.000Z',
+          }),
+          ids.alpha,
+        );
+      }
+      return result;
+    };
+    try {
+      const attention = deriveAttention(store, {
+        record: stale,
+        direction: DIRECTION,
+        roles: ROLES,
+      });
+      assert.equal(advanced, true);
+      assert.equal(attention.value, 'needs-human');
+      assert.ok(attention.reasons.some(reason => reason.code === 'human-activation'));
+      assert.deepEqual(attention.next_action, {
+        kind: 'feature.activate',
+        role: 'operator',
+      });
+    } finally {
+      store.database.exec = originalExec;
+      closeStore(writer);
+    }
+  }));
+
 test('hierarchy context is bounded and includes the selected record, chain, children, dependencies, decisions, questions, messages, and hold', async () =>
   withHierarchyWorkspace(({store, fixture}) => {
     const projection = hierarchyContext(store, {
@@ -602,8 +666,28 @@ test('hierarchy context is bounded and includes the selected record, chain, chil
     assert.equal(packet.current_decisions[0].ref, `approval:${fixture.decisionId}`);
     assert.equal(packet.unresolved_questions[0].ref, `question:${fixture.communication.questionId}`);
     assert.equal(packet.recent_messages[0].ref, `message:${fixture.communication.messageId}`);
-    assert.deepEqual(packet.active_hold, fixture.creative.body.hold);
+    assert.deepEqual(packet.active_hold, {
+      source: {kind: 'feature', id: ids.creative},
+      ...fixture.creative.body.hold,
+    });
     assert.equal(packet.attention.value, 'needs-human');
+  }));
+
+test('Task context includes the nearest effective ancestor hold and its release basis', async () =>
+  withHierarchyWorkspace(({store, fixture}) => {
+    const projection = hierarchyContext(store, {
+      subject: {kind: 'task', id: ids.heldTask},
+      maxBytes: 24 * 1024,
+      recentLimit: 8,
+      direction: DIRECTION,
+      roles: ROLES,
+    });
+    const packet = JSON.parse(projection.text);
+
+    assert.deepEqual(packet.active_hold, {
+      source: {kind: 'feature', id: ids.creative},
+      ...fixture.creative.body.hold,
+    });
   }));
 
 test('plan returns only executable Tasks, never dispatches, and explains every exclusion', async () =>
@@ -641,6 +725,105 @@ test('plan returns only executable Tasks, never dispatches, and explains every e
     assert.equal(stale.automatic, false);
     assert.deepEqual(stale.tasks, []);
     assert.ok(stale.excluded[0].reasons.some(reason => reason.code === 'stale-direction'));
+  }));
+
+test('Requirement plan excludes Tasks whose reverse Requirement membership is missing', async () =>
+  withHierarchyWorkspace(({store}) => {
+    const secondRequirement = 'core:requirement:secondary';
+    const oneSidedTask = 'core:task:one-sided-membership';
+    const core = readRecord(store, 'feature', ids.core);
+    store.database.prepare(`
+      UPDATE records
+      SET body = ?
+      WHERE kind = 'feature' AND id = ?
+    `).run(JSON.stringify({
+      ...core.body,
+      required_requirements: [...core.body.required_requirements, secondRequirement],
+    }), ids.core);
+    seedRecord(store, record('requirement', requirementBody({
+      id: secondRequirement,
+      pack: 'core',
+      featureId: ids.core,
+      taskIds: [oneSidedTask],
+    })));
+    seedRecord(store, record('task', taskBody({
+      id: oneSidedTask,
+      pack: 'core',
+      featureId: ids.core,
+      requirementId: secondRequirement,
+    })));
+    const selected = readRecord(store, 'requirement', ids.coreRequirement);
+    store.database.prepare(`
+      UPDATE records
+      SET body = ?
+      WHERE kind = 'requirement' AND id = ?
+    `).run(JSON.stringify({
+      ...selected.body,
+      required_tasks: [...selected.body.required_tasks, oneSidedTask],
+    }), ids.coreRequirement);
+
+    const plan = taskPlan(store, {
+      subject: {kind: 'requirement', id: ids.coreRequirement},
+      direction: DIRECTION,
+      roles: ROLES,
+    });
+    assert.equal(plan.tasks.some(task => task.id === oneSidedTask), false);
+    const exclusion = plan.excluded.find(task => task.id === oneSidedTask);
+    assert.ok(exclusion);
+    assert.deepEqual(exclusion.reasons, [{
+      code: 'relationship-invalid',
+      message: `Task does not declare Requirement ${ids.coreRequirement}`,
+    }]);
+  }));
+
+test('proposed Feature and Requirement staffing includes the owning parent activation authority', async () =>
+  withHierarchyWorkspace(({store}) => {
+    const alpha = readRecord(store, 'epic', ids.alpha);
+    store.database.prepare(`
+      UPDATE records
+      SET body = ?
+      WHERE kind = 'epic' AND id = ?
+    `).run(JSON.stringify({...alpha.body, owner: 'missing-epic-owner'}), ids.alpha);
+    const core = readRecord(store, 'feature', ids.core);
+    store.database.prepare(`
+      UPDATE records
+      SET body = ?
+      WHERE kind = 'feature' AND id = ?
+    `).run(JSON.stringify({...core.body, state: 'proposed'}), ids.core);
+
+    assert.deepEqual(deriveAttention(store, {
+      record: readRecord(store, 'feature', ids.core),
+      direction: DIRECTION,
+      roles: ROLES,
+    }).staffing_gaps, [{
+      role: 'missing-epic-owner',
+      responsibilities: ['activation-authority'],
+    }]);
+  }));
+
+test('proposed Requirement staffing uses the Feature owner as activation authority', async () =>
+  withHierarchyWorkspace(({store}) => {
+    const core = readRecord(store, 'feature', ids.core);
+    store.database.prepare(`
+      UPDATE records
+      SET body = ?
+      WHERE kind = 'feature' AND id = ?
+    `).run(JSON.stringify({...core.body, owner: 'missing-feature-owner'}), ids.core);
+    const requirement = readRecord(store, 'requirement', ids.coreRequirement);
+    store.database.prepare(`
+      UPDATE records
+      SET body = ?
+      WHERE kind = 'requirement' AND id = ?
+    `).run(JSON.stringify({...requirement.body, state: 'proposed'}), ids.coreRequirement);
+
+    assert.deepEqual(deriveAttention(store, {
+      record: readRecord(store, 'requirement', ids.coreRequirement),
+      direction: DIRECTION,
+      roles: ROLES,
+    }).staffing_gaps, [{
+      role: 'missing-feature-owner',
+      responsibilities: ['activation-authority'],
+    }]);
   }));
 
 test('each hierarchy projection uses one SQLite snapshot even when nested context readers participate', async () =>

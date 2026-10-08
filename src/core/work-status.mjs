@@ -44,6 +44,7 @@ import {
 } from './lib/coordination-runtime/store.mjs';
 import {currentDirectionForStore} from './lib/coordination-runtime/hierarchy-engine.mjs';
 import {hierarchyStatus} from './lib/coordination-runtime/hierarchy-view.mjs';
+import {readLegacyRecords} from './lib/coordination-runtime/migration.mjs';
 
 // Severity order drives both the print order and the exit code.
 const SECTIONS = [
@@ -375,7 +376,21 @@ function collectHierarchy(root, now, roles) {
         });
       }
     }
-    const flagged = new Set(findings.map(finding => finding.item));
+    for (const source of readLegacyRecords(store).filter(source =>
+      source.status === 'quarantined')) {
+      findings.push({
+        section: 'integrity',
+        item: source.declaredId ?? source.path,
+        tier: 'derived',
+        headline: `quarantined legacy ${source.kind}`,
+        why: source.issues.join('; '),
+        path: source.path,
+      });
+    }
+    const hierarchyIds = new Set(nodes.map(node => `${node.kind}/${node.id}`));
+    const flagged = new Set(findings
+      .map(finding => finding.item)
+      .filter(item => hierarchyIds.has(item)));
     return {
       ok: true,
       hierarchy: true,

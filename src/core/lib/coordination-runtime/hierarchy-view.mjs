@@ -225,7 +225,7 @@ function reason(code, attention, record, message, source = 'derived') {
   };
 }
 
-function installedRoleGaps(record, roles) {
+function installedRoleGaps(reader, record, roles) {
   const installed = new Set(roles);
   const required = new Map();
   const add = (role, responsibility) => {
@@ -245,6 +245,10 @@ function installedRoleGaps(record, roles) {
     add(record.body.owner, 'owner');
     add(record.body.scope_authority, 'scope-authority');
     add(record.body.completion_authority, 'completion-authority');
+    if (record.body.state === 'proposed'
+      && (record.kind === 'feature' || record.kind === 'requirement')) {
+      add(activationRole(reader, record), 'activation-authority');
+    }
   }
   return [...required.entries()]
     .map(([role, responsibilities]) => ({
@@ -552,7 +556,7 @@ function deriveAttentionInSnapshot(reader, record, direction, roles) {
   return {
     value,
     reasons: visible,
-    staffing_gaps: terminal ? [] : installedRoleGaps(record, roles),
+    staffing_gaps: terminal ? [] : installedRoleGaps(reader, record, roles),
     next_action: nextAction(reader, record),
   };
 }
@@ -560,8 +564,13 @@ function deriveAttentionInSnapshot(reader, record, direction, roles) {
 export function deriveAttention(store, {record, direction, roles}) {
   validateInputs(direction, roles);
   if (!record || typeof record !== 'object') invalid('attention record is required');
-  return readSnapshot(store, () =>
-    deriveAttentionInSnapshot(readerFor(store), record, direction, roles));
+  validateHierarchySubject(recordSubject(record), 'attention subject');
+  return readSnapshot(store, () => {
+    const reader = readerFor(store);
+    const selected = reader.get(record.kind, record.id);
+    if (!selected) gap(`${record.kind}/${record.id} does not exist`);
+    return deriveAttentionInSnapshot(reader, selected, direction, roles);
+  });
 }
 
 function statusNode(reader, record, direction, roles, extra = {}) {
@@ -753,6 +762,23 @@ function contextDependencies(reader, record) {
   }));
 }
 
+function contextActiveHold(reader, record) {
+  const candidates = [];
+  if (record.kind !== 'task') candidates.push(record);
+  if (record.kind === 'task') {
+    for (const requirementId of [...record.body.satisfies].sort()) {
+      const requirement = reader.get('requirement', requirementId);
+      if (requirement) candidates.push(requirement);
+    }
+  }
+  const feature = featureFor(reader, record);
+  if (feature && feature.id !== record.id) candidates.push(feature);
+  const epic = epicFor(reader, record);
+  if (epic && epic.id !== record.id) candidates.push(epic);
+  const source = candidates.find(candidate => candidate.body.hold !== null);
+  return source ? {source: recordSubject(source), ...source.body.hold} : null;
+}
+
 function hierarchyContextExtras(reader, record, direction, roles, basePacket) {
   const attention = deriveAttentionInSnapshot(reader, record, direction, roles);
   return {
@@ -763,7 +789,7 @@ function hierarchyContextExtras(reader, record, direction, roles, basePacket) {
     dependencies: contextDependencies(reader, record),
     authorities: basePacket.authority,
     current_decisions: basePacket.decisions,
-    active_hold: record.kind === 'task' ? null : record.body.hold,
+    active_hold: contextActiveHold(reader, record),
     attention,
     next_allowed_action: attention.next_action,
   };
@@ -851,13 +877,16 @@ function taskCandidates(reader, subject) {
   return reader.all('task').filter(task => featureIds.has(task.body.feature_id));
 }
 
-function exclusionReasons(task, attention) {
+function exclusionReasons(task, attention, selected) {
   const reasons = [];
   const add = (code, message) => {
     if (!reasons.some(entry => entry.code === code && entry.message === message)) {
       reasons.push({code, message});
     }
   };
+  if (selected.kind === 'requirement' && !task.body.satisfies.includes(selected.id)) {
+    add('relationship-invalid', `Task does not declare Requirement ${selected.id}`);
+  }
   if (task.body.state === 'proposed') add('proposed', 'Task is still proposed');
   else if (!GRANTABLE_STATES.has(task.body.state)) {
     add(
@@ -900,7 +929,7 @@ export function taskPlan(store, {subject, direction, roles}) {
       .sort((left, right) =>
         left.body.priority - right.body.priority || left.id.localeCompare(right.id))) {
       const attention = deriveAttentionInSnapshot(reader, task, direction, roles);
-      const reasons = exclusionReasons(task, attention);
+      const reasons = exclusionReasons(task, attention, selected);
       if (reasons.length > 0) {
         excluded.push({
           kind: 'task',
