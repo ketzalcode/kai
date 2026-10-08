@@ -3,18 +3,86 @@ import {
   readFileSync, readdirSync, readSync, writeFileSync,
 } from 'node:fs';
 import {createHash} from 'node:crypto';
-import {dirname, isAbsolute, join, relative, resolve} from 'node:path';
+import {basename, dirname, isAbsolute, join, relative, resolve} from 'node:path';
 import {RuntimeError, canonicalJson} from './contract.mjs';
 import {durablePath} from './evidence-content.mjs';
 import {pathHasLink, escapesRoot, normalized, inspectPrivateLanes, canonicalPath} from '../workspace-path-safety.mjs';
 import {readWorkspaceManifest, loadWorkspaceRegistry} from '../workspace-resolve.mjs';
 import {inspectGitPrivacy, workspaceGit} from '../workspace-git-privacy.mjs';
+import {COORDINATION_DATABASE} from '../workspace-layout.mjs';
 
 export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+export function schema5MigrationLockPath(root) {
+  const canonical = canonicalPath(root);
+  return join(
+    dirname(canonical),
+    `.${basename(canonical)}.${hash(canonical).slice(0, 12)}.schema5-migration.lock`,
+  );
+}
+export function nativeWriterTokenPrefix(root) {
+  const canonical = canonicalPath(root);
+  return `.${basename(canonical)}.${hash(canonical).slice(0, 12)}.native-writer-`;
+}
+export function nativeWriterTokenPath(root, id) {
+  const canonical = canonicalPath(root);
+  return join(dirname(canonical), `${nativeWriterTokenPrefix(root)}${id}.lock`);
+}
 export const fail = (code, message) => { throw new RuntimeError(code, message); };
 export const LOCK = '.kai/state/migration.lock';
 export const DATABASE = '.kai/state/coordination.sqlite';
 export const MIGRATIONS = '.kai/archive/coordination-migrations';
+export function logicalStoreDigest(store, {
+  excludeMetadata = ['migration_baseline'],
+} = {}) {
+  const database = store?.database;
+  if (!database || typeof database.prepare !== 'function') {
+    fail('INVALID_INPUT', 'logical store digest requires an open coordination store');
+  }
+  if (!Array.isArray(excludeMetadata)
+    || excludeMetadata.some(key => typeof key !== 'string')) {
+    fail('INVALID_INPUT', 'logical store digest metadata exclusions must be strings');
+  }
+  const tables = new Set(database.prepare(
+    "SELECT name FROM sqlite_master WHERE type = 'table'",
+  ).all().map(row => row.name));
+  const result = {
+    records: database.prepare(`
+      SELECT kind, id, subject_kind, subject_id, version, body
+      FROM records ORDER BY kind, id
+    `).all(),
+    events: database.prepare(`
+      SELECT seq, operation_id, subject_kind, subject_id, event_kind, payload,
+        message_id, approval_id, question_id, thread_id
+      FROM events ORDER BY seq
+    `).all(),
+    operations: database.prepare(`
+      SELECT id, payload_digest, receipt FROM operations ORDER BY id
+    `).all(),
+  };
+  if (tables.has('legacy_sources')) {
+    result.legacy_sources = database.prepare(
+      'SELECT * FROM legacy_sources ORDER BY source_id',
+    ).all();
+  }
+  for (const [table, order] of [
+    ['migration_id_map', 'source_kind, source_id'],
+    ['migration_sources', 'path'],
+    ['migration_legacy_metadata', 'source_key'],
+    ['migration_legacy_records', 'kind, id'],
+    ['migration_legacy_events', 'source_seq'],
+    ['migration_legacy_operations', 'source_id'],
+    ['migration_legacy_extra', 'table_name, row_index'],
+  ]) {
+    if (tables.has(table)) {
+      result[table] = database.prepare(`SELECT * FROM ${table} ORDER BY ${order}`).all();
+    }
+  }
+  const excluded = new Set(excludeMetadata);
+  result.metadata = database.prepare(
+    'SELECT key, value FROM metadata ORDER BY key',
+  ).all().filter(row => !excluded.has(row.key));
+  return hash(canonicalJson(result));
+}
 export function safePath(root, name) {
   const path = durablePath(name);
   if (!path.startsWith('.kai/') || path.startsWith('project:')) fail('INVALID_INPUT', 'migration paths must be private workspace paths');
@@ -118,13 +186,21 @@ export function migrationManifest(root, versions = [3, 4], env = process.env) {
 }
 
 const privateNames = [DATABASE, `${DATABASE}-wal`, `${DATABASE}-shm`, `${DATABASE}-journal`,
-  LOCK, `${MIGRATIONS}/`, '.kai/review/coordination/', '.kai/state/host/'];
+  COORDINATION_DATABASE, `${COORDINATION_DATABASE}-wal`, `${COORDINATION_DATABASE}-shm`,
+  `${COORDINATION_DATABASE}-journal`, LOCK, `${MIGRATIONS}/`,
+  '.kai/core/runtime/host/', '.kai/state/host/'];
 export function privateAdmission(root, {admit = false} = {}) {
   const manifest = readWorkspaceManifest(root);
   if (!manifest.ok) fail('INVALID_INPUT', manifest.reason);
   const git = args => workspaceGit(root, args);
-  const privacy = inspectGitPrivacy(root, manifest.manifest.storage_mode, {extraPrivate: privateNames, privateDatabases: true});
+  const placement = manifest.manifest.schema_version === 5
+    ? manifest.manifest.placement
+    : manifest.manifest.storage_mode;
+  const privacy = inspectGitPrivacy(root, placement, {extraPrivate: privateNames, privateDatabases: true});
   if (privacy.errors.length) return {errors: privacy.errors, admitted: []};
+  if (placement === 'repo-local' && !privacy.gitRoot) {
+    return {errors: ['repo-local placement requires a readable Git work tree'], admitted: []};
+  }
   if (!privacy.gitRoot) return {errors: [], admitted: []};
   // Both sides are canonicalised: git reports the real on-disk name while `root`
   // may still carry a Windows 8.3 short component, and `relative()` between the
@@ -155,7 +231,10 @@ export function sourceSnapshot(root) {
   const files = [];
   function walk(name) {
     if (name === LOCK || name === MIGRATIONS || name === DATABASE || name.startsWith(`${DATABASE}-`)
-      || name.toLowerCase() === '.kai/state/host') return;
+      || name.toLowerCase() === '.kai/state/host'
+      || name.toLowerCase().startsWith('.kai/state/host/')
+      || name.toLowerCase() === '.kai/core/runtime/host'
+      || name.toLowerCase().startsWith('.kai/core/runtime/host/')) return;
     const path = safePath(root, name);
     const stat = lstatSync(path);
     if (stat.isDirectory()) {

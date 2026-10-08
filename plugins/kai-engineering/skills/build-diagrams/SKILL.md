@@ -1,6 +1,7 @@
 ---
 name: build-diagrams
 description: "Use when the user explicitly requests a diagram, or when an authorized artifact contains a supported system, data, flow, state, topology, or hierarchy relationship that would be clearer visually."
+durable-output-producer: false
 tools: [read, search, edit]
 ---
 

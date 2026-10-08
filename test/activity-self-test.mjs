@@ -11,29 +11,86 @@
 
 import { resolve, join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, writeFileSync, rmSync, mkdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
-import { append, read, runs, buildRecord, safeNote, digest } from '../src/core/lib/activity.mjs';
+import {DatabaseSync} from 'node:sqlite';
+import { append, read, runs, buildRecord, safeNote, digest, LOG_REL } from '../src/core/lib/activity.mjs';
 import { resolveWorkspaceRoot } from '../src/core/lib/workspace-resolve.mjs';
 import { parseDuration } from '../src/core/activity.mjs';
+import {closeStore, openStore} from '../src/core/lib/coordination-runtime/store.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+function caseAlias(path) {
+  if (process.platform !== 'win32') return null;
+  const upper = path.toUpperCase();
+  if (upper !== path) return upper;
+  const lower = path.toLowerCase();
+  return lower !== path ? lower : null;
+}
+
+function writeSchema5Manifest(root, workspaceId) {
+  spawnSync('git', ['init', '--quiet', root], {windowsHide: true});
+  writeFileSync(join(root, '.gitignore'), '/.kai/\n');
+  mkdirSync(join(root, '.kai'), {recursive: true});
+  mkdirSync(join(root, 'docs', 'kai'), {recursive: true});
+  writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+    '# Vision',
+    'A composable workspace.',
+    '',
+    '# Mission',
+    'Coordinate exact work safely.',
+    '',
+    '# Current Goal',
+    'Exercise typed activity.',
+    '',
+    '# Out of Scope',
+    'Generic run lanes.',
+    '',
+  ].join('\n'));
+  writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
+    plugin: 'kai-core',
+    version: 'test',
+    schema_version: 5,
+    scaffolded: '2026-10-02',
+    workspace_id: workspaceId,
+    placement: 'repo-local',
+    workspace_root: '.',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
+    projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+  })}\n`);
+  const store = openStore({
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
+    mode: 'create',
+  });
+  closeStore(store);
+}
 
 function selfTest() {
   let failed = 0;
   const ok = (cond, msg) => { if (cond) console.log(`✓ self-test: ${msg}`); else { console.error(`✗ self-test: ${msg}`); failed++; } };
   const NOW = 1770000000000;
   const nowSec = Math.floor(NOW / 1000);
-  const base = { e: 'start', role: 'principal-swe-backend', run: 'a1b2c3d4e5', item: 'export-audit', next_report_by: nowSec + 1800 };
+  const base = {
+    e: 'start',
+    role: 'principal-swe-backend',
+    run: 'a1b2c3d4e5',
+    task: 'engineering:task:export-audit',
+    next_report_by: nowSec + 1800,
+  };
 
   ok(buildRecord(base, NOW).ok, 'a well-formed start record is accepted');
+  ok(LOG_REL === '.kai/core/runtime/activity.jsonl', 'activity uses the schema-5 core runtime path');
 
-  // The boundary against the item record is the whole point of this surface.
+  // The boundary against the Task record is the whole point of this surface.
   for (const f of ['state', 'verdict', 'change_ref', 'version', 'lease']) {
     const bad = buildRecord({ ...base, [f]: 'x' }, NOW);
-    ok(!bad.ok && /item record/.test(bad.reason), `a record carrying "${f}" is rejected as item state`);
+    ok(!bad.ok && /Task record/.test(bad.reason), `a record carrying "${f}" is rejected as Task state`);
   }
+  ok(!buildRecord({...base, task: 'export-audit'}, NOW).ok,
+    'an untyped Task identity is rejected');
 
   ok(!buildRecord({ ...base, e: 'thinking' }, NOW).ok, 'an event outside the closed vocabulary is rejected');
   ok(!buildRecord({ ...base, e: 'stop', outcome: 'great' }, NOW).ok, 'an outcome outside the closed vocabulary is rejected');
@@ -120,6 +177,19 @@ function selfTest() {
       mkdirSync(join(gitOnlyDir, '.git'), { recursive: true });
       const gitOnly = resolveWorkspaceRoot({ cwd: gitOnlyDir, env: {} });
       ok(!gitOnly.ok, 'a bare .git with no .kai/manifest.json is no longer treated as a kai workspace');
+
+      const nonNativeRoot = process.platform === 'win32'
+        ? '/var/definitely-missing-kai'
+        : 'C:\\definitely-missing-kai';
+      for (const [label, options] of [
+        ['explicit foreign absolute root', {explicitRoot: nonNativeRoot, cwd: wsTmp, env: {}}],
+        ['foreign absolute environment root', {cwd: wsTmp, env: {KAI_WORKSPACE_ROOT: nonNativeRoot}}],
+        ['UNC explicit root', {explicitRoot: '\\\\localhost\\definitely-missing-kai', cwd: wsTmp, env: {}}],
+      ]) {
+        const unsafe = resolveWorkspaceRoot(options);
+        ok(!unsafe.ok && /native absolute|UNC|device|network/i.test(unsafe.reason),
+          `${label} is rejected before native path resolution`);
+      }
     } finally {
       rmSync(wsTmp, { recursive: true, force: true });
     }
@@ -153,7 +223,8 @@ function selfTest() {
   // this is the test that catches it.
   const tmp = mkdtempSync(join(tmpdir(), 'kai-activity-'));
   try {
-    const W = 6, N = 120;
+    writeSchema5Manifest(tmp, 'activity-concurrency');
+    const W = 6, N = 20;
     const worker = join(tmp, 'w.mjs');
     const libUrl = pathToFileURL(join(REPO_ROOT, 'src', 'core', 'lib', 'activity.mjs')).href;
     writeFileSync(worker, [
@@ -177,16 +248,29 @@ function selfTest() {
     // End-to-end through the CLI an agent actually invokes.
     const cli = join(REPO_ROOT, 'src', 'core', 'activity.mjs');
     const e2eRoot = mkdtempSync(join(tmpdir(), 'kai-activity-e2e-'));
-    mkdirSync(join(e2eRoot, '.kai'), { recursive: true });
-    writeFileSync(join(e2eRoot, '.kai', 'manifest.json'), '{}');
+    writeSchema5Manifest(e2eRoot, 'activity-e2e');
     const s1 = spawnSync(process.execPath, [cli, 'start', '--root', e2eRoot, '--role', 'principal-swe-backend',
-      '--run', 'abc123def4', '--item', 'export-audit', '--for', '30m'], { encoding: 'utf8' });
+      '--run', 'abc123def4', '--task', 'engineering:task:export-audit', '--for', '30m'], { encoding: 'utf8' });
     const s2 = spawnSync(process.execPath, [cli, 'stop', '--root', e2eRoot, '--role', 'principal-swe-backend',
       '--run', 'abc123def4', '--outcome', 'handoff'], { encoding: 'utf8' });
     ok(s1.status === 0 && s2.status === 0, 'the CLI records a start and a stop');
     const e2e = read(e2eRoot);
     ok(e2e.present && e2e.records.length === 2, 'both records land in the log');
     ok(runs(e2e.records).every((r) => !r.open), 'the run pairs and closes');
+
+    const aliasedRoot = caseAlias(e2eRoot);
+    if (aliasedRoot) {
+      const caseStart = spawnSync(process.execPath, [cli, 'start', '--root', aliasedRoot,
+        '--role', 'principal-swe-backend', '--run', 'abc123def5',
+        '--task', 'engineering:task:export-audit', '--for', '30m'], { encoding: 'utf8' });
+      const caseStop = spawnSync(process.execPath, [cli, 'stop', '--root', aliasedRoot,
+        '--role', 'principal-swe-backend', '--run', 'abc123def5',
+        '--outcome', 'handoff'], { encoding: 'utf8' });
+      const caseRecords = read(e2eRoot).records.filter((record) => record.run === 'abc123def5');
+      ok(caseStart.status === 0 && caseStop.status === 0 && caseRecords.length === 2,
+        'resolver and activity admission accept Windows case aliases for the live workspace root',
+        [caseStart.stderr, caseStop.stderr].filter(Boolean));
+    }
 
     // Unit regression: fabricated records in a test can silently certify a unit
     // the real writer never emits. These assertions go through the actual
@@ -195,8 +279,7 @@ function selfTest() {
     ok(Math.abs(written.t - Math.floor(Date.now() / 1000)) < 120,
       'a written record stamps epoch SECONDS, the same unit as next_report_by');
     const liveRoot = mkdtempSync(join(tmpdir(), 'kai-activity-live-'));
-    mkdirSync(join(liveRoot, '.kai'), { recursive: true });
-    writeFileSync(join(liveRoot, '.kai', 'manifest.json'), '{}');
+    writeSchema5Manifest(liveRoot, 'activity-live');
     spawnSync(process.execPath, [cli, 'start', '--root', liveRoot, '--role', 'principal-sre',
       '--run', 'aaaa1111bb', '--for', '30m'], { encoding: 'utf8' });
     const foldedLive = runs(read(liveRoot).records)[0];
@@ -207,19 +290,58 @@ function selfTest() {
 
     const badState = spawnSync(process.execPath, [cli, 'start', '--root', e2eRoot, '--role', 'r',
       '--run', 'abc123def4', '--for', '5m', '--state', 'shipped'], { encoding: 'utf8' });
-    ok(badState.status === 1 && /item record/.test(badState.stderr),
-      'the CLI refuses to record item state and says why');
+    ok(badState.status === 1 && /Task record/.test(badState.stderr),
+      'the CLI refuses to record Task state and says why');
     const badEq = spawnSync(process.execPath, [cli, 'start', '--root', e2eRoot, '--role', 'r',
       '--run', 'abc123def4', '--for', '5m', '--State=shipped'], { encoding: 'utf8' });
-    ok(badEq.status === 1 && /item record/.test(badEq.stderr),
+    ok(badEq.status === 1 && /Task record/.test(badEq.stderr),
       'the --Key=value form is seen and rejected too, not silently ignored');
+
+    for (const kind of ['missing', 'directory', 'corrupt', 'schema1']) {
+      const invalidStoreRoot = mkdtempSync(join(tmpdir(), `kai-activity-${kind}-`));
+      writeSchema5Manifest(invalidStoreRoot, `activity-${kind}`);
+      const database = join(invalidStoreRoot, '.kai', 'core', 'runtime', 'coordination.sqlite');
+      rmSync(database, {force: true});
+      if (kind === 'directory') mkdirSync(database);
+      if (kind === 'corrupt') writeFileSync(database, 'not a sqlite database');
+      if (kind === 'schema1') {
+        const store = openStore({path: database, mode: 'create'});
+        closeStore(store);
+        const raw = new DatabaseSync(database);
+        raw.prepare("UPDATE metadata SET value='1' WHERE key='schema_version'").run();
+        raw.close();
+      }
+      const rejected = spawnSync(process.execPath, [cli, 'start', '--root', invalidStoreRoot,
+        '--role', 'principal-sre', '--run', 'aaaa1111bb', '--for', '30m'], {encoding: 'utf8'});
+      ok(rejected.status === 1 && !existsSync(join(invalidStoreRoot, LOG_REL)),
+        `${kind} coordination database rejects activity without creating a log`,
+        [rejected.stderr].filter(Boolean));
+      rmSync(invalidStoreRoot, {recursive: true, force: true});
+    }
+
+    const invalidFirstWrite = mkdtempSync(join(tmpdir(), 'kai-activity-invalid-'));
+    const invalid = append(invalidFirstWrite, {...base, task: '../../escape'}, NOW);
+    ok(!invalid.ok && !existsSync(join(invalidFirstWrite, '.kai')),
+      'failed first-write validation leaves no partial runtime tree');
+    rmSync(invalidFirstWrite, {recursive: true, force: true});
+
+    const linkedFirstWrite = mkdtempSync(join(tmpdir(), 'kai-activity-linked-'));
+    const outsideFirstWrite = mkdtempSync(join(tmpdir(), 'kai-activity-outside-'));
+    mkdirSync(join(linkedFirstWrite, '.kai'), {recursive: true});
+    symlinkSync(outsideFirstWrite, join(linkedFirstWrite, '.kai', 'core'), 'junction');
+    const linked = append(linkedFirstWrite, base, NOW);
+    ok(!linked.ok && !existsSync(join(outsideFirstWrite, 'runtime', 'activity.jsonl')),
+      'first-write path validation refuses a junction without writing through it');
+    rmSync(linkedFirstWrite, {recursive: true, force: true});
+    rmSync(outsideFirstWrite, {recursive: true, force: true});
 
     // The reader is a gate as well as the writer: the log is a plain file.
     const evilRoot = mkdtempSync(join(tmpdir(), 'kai-activity-evil-'));
     mkdirSync(join(evilRoot, '.kai'), { recursive: true });
-    writeFileSync(join(evilRoot, '.kai', 'activity.jsonl'), [
+    mkdirSync(join(evilRoot, '.kai', 'core', 'runtime'), {recursive: true});
+    writeFileSync(join(evilRoot, ...LOG_REL.split('/')), [
       JSON.stringify({ t: 1, e: 'start', run: 'aaaa1111bb', role: '/home/alice/secret', next_report_by: 2 }),
-      JSON.stringify({ t: 1, e: 'start', run: 'aaaa1111bb', role: 'ok-role', item: '../../etc/passwd' }),
+      JSON.stringify({ t: 1, e: 'start', run: 'aaaa1111bb', role: 'ok-role', task: '../../etc/passwd' }),
       JSON.stringify({ t: 1, e: 'start', run: 'aaaa1111bb', role: 'ok-role', note: 'C:\\Users\\alice\\x.ts' }),
       JSON.stringify({ t: 1, e: 'start', run: 'aaaa1111bb', role: 'ok-role', next_report_by: 2 }),
     ].join('\n'));

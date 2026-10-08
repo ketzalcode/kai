@@ -35,9 +35,17 @@ export function captureInputBasis(context, tx, references, seen = new Set(), obs
     } else {
       captureInputBasis(context, tx, record.body.evidence_refs, next, observe);
     }
-    const owner = tx.get('item', record.itemId);
-    if (!owner) fail('EVIDENCE_GAP', `applicable input ${reference} has no owning item`);
-    return {reference, digest: digest({record, ownerCriteria: criteriaRef(owner.body)})};
+    const owner = record.subject
+      ? tx.get(record.subject.kind, record.subject.id)
+      : null;
+    if (!owner) fail('EVIDENCE_GAP', `applicable input ${reference} has no owning hierarchy subject`);
+    return {
+      reference,
+      digest: digest({
+        record,
+        ownerCriteria: criteriaRef(owner, (kind, id) => tx.get(kind, id)),
+      }),
+    };
   });
 }
 
@@ -56,5 +64,5 @@ export function inputBasisCurrent(context, tx, basis) {
 }
 
 export function artifactInputReferences(item, inputAssetIds) {
-  return [...item.context_artifacts, ...inputAssetIds.map(id => `asset:${id}`)];
+  return [...(item.context_artifacts ?? []), ...inputAssetIds.map(id => `asset:${id}`)];
 }

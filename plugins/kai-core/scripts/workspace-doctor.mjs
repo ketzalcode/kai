@@ -4,19 +4,22 @@ import {
   adoptWorkspace,
   checkWorkspace,
   forgetWorkspace,
+  initializeWorkspace,
   migrationExitCode,
   migrationInventory,
   writeRegistry
-} from "./chunk-P7FT5J4P.mjs";
-import "./chunk-MQFOEJS3.mjs";
-import "./chunk-N2OMFFGC.mjs";
-import "./chunk-7QZFFPOT.mjs";
-import "./chunk-VTZRFV57.mjs";
-import "./chunk-VP4QXWCX.mjs";
+} from "./chunk-IKN5OKAP.mjs";
+import "./chunk-XOIC64U7.mjs";
+import "./chunk-6ABDJP5R.mjs";
+import "./chunk-S4A2HMCB.mjs";
+import "./chunk-2WT4K7YK.mjs";
+import "./chunk-XLDNBMDG.mjs";
+import "./chunk-ITUOITH3.mjs";
 export {
   adoptWorkspace,
   checkWorkspace,
   forgetWorkspace,
+  initializeWorkspace,
   migrationExitCode,
   migrationInventory,
   writeRegistry

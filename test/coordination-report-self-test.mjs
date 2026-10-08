@@ -6,22 +6,75 @@ import fs, {existsSync, linkSync, mkdirSync, readFileSync, rmSync, symlinkSync, 
 import {syncBuiltinESMExports} from 'node:module';
 import {dirname, join} from 'node:path';
 import {
-  buildReport, renderHtml, renderMarkdown, writeReport, reportPaths,
+  buildReport as buildTypedReport,
+  renderHtml as renderTypedHtml,
+  renderMarkdown as renderTypedMarkdown,
+  writeReport as writeTypedReport,
+  reportPaths as typedReportPaths,
 } from '../src/core/lib/coordination-runtime/report.mjs';
-import {RuntimeError, criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {
+  RuntimeError, canonicalJson, criteriaRef, subjectRef, validateRecord,
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {redactReport} from '../src/core/lib/coordination-runtime/report-safety.mjs';
 import {renderLanding} from '../src/core/lib/coordination-runtime/report-render.mjs';
 import {hashBundle} from '../src/core/lib/coordination-runtime/evidence-content.mjs';
-import {closeStore, openStore, readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
-import {projectContext, readDetail, readMessages} from '../src/core/lib/coordination-runtime/context.mjs';
-import {withWorkspace, seedItem, seedRecord} from './helpers/coordination-runtime-fixture.mjs';
+import {closeStore, openStore, readRecord as readTypedRecord} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
-  NOW, acceptReport, addReportArtifact, appendMessage, appendVerdict, file, hash, mutateBody,
-  payload, setupReport, source, verdict, seedHostAttempt,
+  projectContext as projectTypedContext, readDetail, readMessages as readTypedMessages,
+} from '../src/core/lib/coordination-runtime/context.mjs';
+import {fixtureIds, withWorkspace, seedRecord, seedTask} from './helpers/coordination-runtime-fixture.mjs';
+import {
+  NOW, acceptReport, addReportArtifact, appendMessage, appendVerdict, builder, file, hash, mutateBody,
+  payload, reportSubject, reportWriteInput, setupReport, source, verdict, seedHostAttempt,
 } from './helpers/coordination-report-fixture.mjs';
 
 const code = expected => error => error?.code === expected;
 const boundarySecret = '0123456789abcdefghijklmnopqrstuvwx';
+const legacySubject = id => id === 'demo'
+  ? reportSubject
+  : {kind: 'task', id: `engineering:task:legacy-${hash(id).slice(0, 16)}`};
+const readRecord = (store, kind, id) =>
+  readTypedRecord(store, kind === 'item' ? 'task' : kind, kind === 'item' ? legacySubject(id).id : id);
+const seedItem = (store, overrides = {}) =>
+  seedTask(store, {...overrides, ...(overrides.id ? {id: legacySubject(overrides.id).id} : {})});
+const buildReport = (store, options = {}) => {
+  const view = buildTypedReport(store, {subject: options.subject ?? legacySubject(options.itemId ?? 'demo')});
+  return {...view, item: view.subject};
+};
+const typedView = view => view.subject ? view : {...view, subject: view.item};
+const renderHtml = view => renderTypedHtml(typedView(view));
+const renderMarkdown = view => renderTypedMarkdown(typedView(view));
+const writeReport = ({root, view, subject, itemId}) => {
+  const selected = subject ?? (itemId === undefined ? reportSubject : legacySubject(itemId));
+  return writeTypedReport(selected === reportSubject
+    ? reportWriteInput(root, view)
+    : {
+        root,
+        subject: selected,
+        view,
+        target: {
+          directory: typedReportPaths({root, subject: selected}).directory
+            .slice(root.length + 1).replaceAll('\\', '/'),
+          accepted_hash: hash(canonicalJson(redactReport(view))),
+        },
+      });
+};
+const reportPaths = ({root, itemId, subject = legacySubject(itemId ?? 'demo'), ...options}) =>
+  typedReportPaths({root, subject, ...options});
+const projectContext = (store, options = {}) =>
+  projectTypedContext(store, {subject: options.subject ?? legacySubject(options.itemId ?? 'demo'), ...options});
+const readMessages = (store, options = {}) => {
+  const subject = options.subject ?? legacySubject(options.threadId ?? 'demo');
+  const basisVersion = options.basisVersion ?? 1;
+  return readTypedMessages(store, {
+    ...options,
+    subject,
+    threadId: options.threadId?.includes('/')
+      ? options.threadId
+      : subjectRef(subject, basisVersion),
+    basisVersion,
+  });
+};
 function setReportLease(store, token) {
   mutateBody(store, 'item', 'demo', body => { body.lease = {
     holder: {role: 'eng-builder-software', runId: 'producer-run'}, token,
@@ -298,7 +351,9 @@ for (const [label, bytes, expected, encoding, count] of [
       const page = meta.companions.find(c => c.kind === 'artifact-preview');
       assert.doesNotMatch(readFileSync(join(out.directory, page.file), 'utf8'), /CHANGED LIVE|CHANGED RETAINED|\ufffd/);
       const damaged = buildReport(store, {itemId: 'demo'});
-      assert.ok(damaged.inspection.artifactPreviews[0].gap, 'subsequent missing/corrupt retained bytes remain gaps');
+      assert.equal(damaged.inspection.artifactPreviews.length, 0,
+        'broken private evidence is withheld rather than copied into a report');
+      assert.ok(damaged.gaps.some(gap => gap.ref === 'private-evidence'));
     });
   });
 }
@@ -332,7 +387,11 @@ test('round2 full integrity hashing and preview capture use bounded real-file re
 
 test('round2 one artifact budget covers all its retained bundle members', async () => {
   await withWorkspace(({root, store}) => {
-    const paths = ['.kai/runs/report-fixture/first.bin', '.kai/runs/report-fixture/second.bin', '.kai/runs/report-fixture/third.bin'];
+    const paths = [
+      '.kai/engineering/reports/report-fixture/scratch/first.bin',
+      '.kai/engineering/reports/report-fixture/scratch/second.bin',
+      '.kai/engineering/reports/report-fixture/scratch/third.bin',
+    ];
     for (const path of paths) file(root, path, Buffer.alloc(40000));
     setupReport(root, store, {change_ref: hashBundle({root, paths})});
     const view = buildReport(store, {itemId: 'demo'});
@@ -361,8 +420,9 @@ test('round2 aggregate budget omits previews not integrity checks or full requir
       body.kind = 'question';
       body.payload = {questionKind: 'decision', blocking: true, context: full, ask: full, answerBy: 'before work'};
     });
-    seedRecord(store, {kind: 'question', id: 'budget-question', itemId: 'demo', version: 1, body: {
-      schema_version: 1, question_id: 'budget-question', item_id: 'demo',
+    seedRecord(store, {kind: 'question', id: 'budget-question',
+      subject: reportSubject, version: 1, body: {
+      schema_version: 1, question_id: 'budget-question', subject: reportSubject,
       asker: {role: 'eng-builder-software', runId: 'producer-run'},
       recipient: 'eng-reviewer-code', kind: 'decision', blocking: true, status: 'open',
       context: full, ask: full, answer_by: 'before work',
@@ -399,10 +459,9 @@ test('round2 aggregate budget omits previews not integrity checks or full requir
     file(root, previews[16].retainedPath, Buffer.alloc(65537, 1));
     rmSync(join(root, previews[17].retainedPath));
     const damaged = buildReport(store, {itemId: 'demo'});
-    for (const index of [16, 17]) {
-      assert.ok(damaged.inspection.artifactPreviews[index].gap, 'exhausted budget must not hide corrupt or missing files');
-      assert.equal(damaged.inspection.artifactPreviews[index].content, null);
-    }
+    assert.equal(damaged.inspection.artifactPreviews.length, 0,
+      'a broken accepted report set is withheld as a whole');
+    assert.ok(damaged.gaps.some(gap => gap.ref === 'private-evidence'));
   });
 });
 
@@ -436,21 +495,19 @@ const bare = () => ({
   throughSeq: 7, generatedAt: '2026-09-16T21:00:00Z',
 });
 
-test('round1 mismatched item thread messages are withheld from summaries as well as companions', async () => {
+test('round1 mismatched envelope/body subjects fail closed before report rendering', async () => {
   await withWorkspace(({root, store}) => {
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const message = appendMessage(store, 1);
-    message.body.item_id = 'other';
-    message.body.thread_id = 'other';
+    message.body.subject = legacySubject('other');
+    message.body.thread_id = subjectRef(message.body.subject, 1);
     message.body.payload.did = 'OUT-OF-SCOPE-CONTENT';
-    store.database.prepare("UPDATE records SET item_id='other', body=? WHERE kind='message' AND id=?")
+    store.database.prepare(`
+      UPDATE records SET body = ?
+      WHERE kind = 'message' AND id = ?
+    `)
       .run(JSON.stringify(message.body), message.id);
-    store.database.prepare("UPDATE events SET thread_id='demo' WHERE message_id=?").run(message.id);
-    const view = buildReport(store, {itemId: 'demo'});
-    assert.doesNotMatch(JSON.stringify(view), /OUT-OF-SCOPE-CONTENT/);
-    assert.ok(view.gaps.some(g => /scope|mismatch/.test(g.message)), JSON.stringify(view.gaps));
-    const out = writeReport({root, itemId: 'demo', view});
-    assert.doesNotMatch(readFileSync(out.metadataPath, 'utf8'), /OUT-OF-SCOPE-CONTENT/);
+    assert.throws(() => buildReport(store, {itemId: 'demo'}), code('RECOVERY_REQUIRED'));
   });
 });
 
@@ -465,12 +522,13 @@ test('round1 repeated sanitization preserves actual redaction counts and binary 
     // Keep the original exact artifact registration; changed retained bytes must never be previewed.
     file(root, a.snapshots[0].snapshot_path, bytes);
     const view = buildReport(store, {itemId: 'demo'});
-    assert.ok(view.inspection.artifactPreviews[0].gap);
+    assert.equal(view.inspection.artifactPreviews.length, 0);
+    assert.ok(view.gaps.some(gap => gap.ref === 'private-evidence'));
     const out = writeReport({root, itemId: 'demo', view});
     const meta = JSON.parse(readFileSync(out.metadataPath));
     const page = meta.companions.find(c => c.kind === 'artifact-preview');
-    assert.match(readFileSync(join(out.directory, page.file), 'utf8'), /do not match registered digest/);
-    assert.doesNotMatch(readFileSync(join(out.directory, page.file), 'utf8'), /BINARY-SECRET/);
+    assert.equal(page, undefined, 'broken private evidence has no generated preview companion');
+    assert.doesNotMatch(readFileSync(out.metadataPath, 'utf8'), /BINARY-SECRET/);
   });
 });
 
@@ -574,7 +632,6 @@ test('round1 offline companions retain full older messages and exact inert snaps
     const {artifactId} = setupReport(root, store);
     const first = appendMessage(store, 0, {long: true});
     for (let i = 1; i < 121; i++) appendMessage(store, i);
-    appendMessage(store, 999, {threadId: 'unrelated-thread'});
     const view = buildReport(store, {itemId: 'demo'});
     appendMessage(store, 1000);
     mutateBody(store, 'message', first.id, b => { b.payload.did = 'AFTER CAPTURE'; });
@@ -601,19 +658,21 @@ test('round1 offline companions retain full older messages and exact inert snaps
 test('round1 pending failed satisfied and missing dependencies stay distinct without lifecycle changes', async () => {
   await withWorkspace(({store}) => {
     seedItem(store, {state: 'ready', acceptance_actor: null, depends_on: [
-      {item: 'pending', requires: 'completed'}, {item: 'failed', requires: 'completed'},
-      {item: 'done', requires: 'completed'}, {item: 'missing', requires: 'completed'},
+      {task: legacySubject('pending').id, requires: 'completed'},
+      {task: legacySubject('failed').id, requires: 'completed'},
+      {task: legacySubject('done').id, requires: 'completed'},
+      {task: legacySubject('missing').id, requires: 'completed'},
     ]});
     seedItem(store, {id: 'pending', state: 'in-review', acceptance_actor: null});
     seedItem(store, {id: 'failed', state: 'dropped', acceptance_actor: null});
     seedItem(store, {id: 'done'});
     const view = buildReport(store, {itemId: 'demo'});
-    assert.ok(view.blockers.some(b => b.ref === 'item:pending' && b.status === 'pending'));
-    assert.ok(view.blockers.some(b => b.ref === 'item:failed' && b.status === 'failed'));
-    assert.ok(view.blockers.some(b => b.ref === 'item:missing' && b.status === 'missing'));
-    assert.ok(!view.blockers.some(b => b.ref === 'item:done'));
-    assert.ok(view.gaps.some(g => g.ref === 'item:pending' && g.severity === 'pending'));
-    assert.ok(view.gaps.some(g => g.ref === 'item:failed' && g.severity === 'gap'));
+    assert.ok(view.blockers.some(b => b.ref === `task:${legacySubject('pending').id}` && b.status === 'pending'));
+    assert.ok(view.blockers.some(b => b.ref === `task:${legacySubject('failed').id}` && b.status === 'failed'));
+    assert.ok(view.blockers.some(b => b.ref === `task:${legacySubject('missing').id}` && b.status === 'missing'));
+    assert.ok(!view.blockers.some(b => b.ref === `task:${legacySubject('done').id}`));
+    assert.ok(view.gaps.some(g => g.ref === `task:${legacySubject('pending').id}` && g.severity === 'pending'));
+    assert.ok(view.gaps.some(g => g.ref === `task:${legacySubject('failed').id}` && g.severity === 'gap'));
     assert.equal(readRecord(store, 'item', 'demo').body.state, 'ready');
   });
 });
@@ -672,10 +731,8 @@ test('round1 visible provenance and redaction notice include actual omitted bear
 
 test('round1 Git changes use registered bound immutable commits without diff or textconv helpers', async () => {
   await withWorkspace(({root, store}) => {
-    const project = join(root, 'project');
-    mkdirSync(project);
+    const project = root;
     const git = args => execFileSync('git', ['--no-pager', '-C', project, ...args], {encoding: 'utf8'}).trim();
-    git(['init', '--quiet']);
     git(['config', 'core.autocrlf', 'false']);
     git(['config', 'user.name', 'Synthetic fixture']);
     git(['config', 'user.email', 'fixture@example.invalid']);
@@ -690,7 +747,7 @@ test('round1 Git changes use registered bound immutable commits without diff or 
     const head = git(['rev-parse', 'HEAD']);
     const manifestPath = join(root, '.kai', 'manifest.json');
     const manifest = JSON.parse(readFileSync(manifestPath));
-    manifest.projects = [{id: 'bound', path: project, publication_root: 'docs'}];
+    manifest.projects[0].id = 'bound';
     writeFileSync(manifestPath, JSON.stringify(manifest));
     const {artifactId} = setupReport(root, store, {change_ref: {kind: 'git', base, head}});
     // setupReport registers a Git artifact only with an explicit project binding.
@@ -727,8 +784,10 @@ test('host uncertainty and unresolved effects are visible with the outcome, not 
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const attempt = seedHostAttempt(store, [{status: 'timeout', liveness: 'unknown'}]);
     const effectId = randomUUID();
-    seedRecord(store, {kind: 'effect', id: effectId, itemId: 'demo', version: 1, body: {
-      schema_version: 1, effect_id: effectId, attempt_id: attempt.id, item_id: 'demo', item_version: 1,
+    seedRecord(store, {kind: 'effect', id: effectId,
+      subject: reportSubject, version: 1, body: {
+      schema_version: 1, effect_id: effectId, attempt_id: attempt.id,
+      subject: reportSubject, subject_version: 1,
       actor: {role: 'eng-builder-software', runId: 'producer-run'}, intended_action: 'Synthetic effect only',
       idempotency_key: null, external: false, paid: false, created_at: NOW, observations: [],
       outcome: 'unknown', gaps: ['EFFECT_OUTCOME_UNKNOWN'],
@@ -754,7 +813,7 @@ test('exporting hostile item IDs really writes only encoded owned outputs and pr
     assert.ok(existsSync(first.path));
     assert.ok(existsSync(second.path));
     assert.equal(dirname(first.path), reportPaths({root, itemId}).directory);
-    assert.equal(JSON.parse(readFileSync(first.metadataPath)).item.id, itemId);
+    assert.equal(JSON.parse(readFileSync(first.metadataPath)).subject.id, legacySubject(itemId).id);
   });
 });
 
@@ -772,7 +831,6 @@ test('exact artifact producer identity prevents misleading independent review la
     const review = appendVerdict(store, verdict(store, 'review', artifactId));
     mutateBody(store, 'artifact', artifactId, b => {
       b.producer = review.body.reviewer;
-      b.subject = {path: b.subject.path, digest: b.subject.digest, kind: b.subject.kind};
     });
     const view = buildReport(store, {itemId: 'demo'});
     assert.equal(view.reviews[0].independent, false);
@@ -803,7 +861,7 @@ test('current accepted coverage verifies real retained proof and maps only expli
     assert.deepEqual(view.criteria[0].evidenceRefs, [`artifact:${artifactId}`]);
     assert.equal(view.reviews[0].independent, true);
     assert.equal(view.reviews[0].integrity, 'verified');
-    assert.equal(view.artifacts[0].subject.digest, hash(payload));
+    assert.equal(view.artifacts[0].content_ref.digest, hash(payload));
     assert.equal(view.artifacts[0].snapshots.length, 1);
     assert.doesNotMatch(renderHtml(view), /globalThis\.evidenceExecuted/);
   });
@@ -870,7 +928,10 @@ test('self review and missing registered references are broken positive claims',
     }));
     appendVerdict(store, verdict(store, 'approval', randomUUID()));
     const view = buildReport(store, {itemId: 'demo'});
-    assert.equal(view.reviews[0].independent, false);
+    assert.equal(
+      view.reviews.find(review => review.reviewer.runId === 'producer-run').independent,
+      false,
+    );
     assert.equal(view.integrity.status, 'gap');
     assert.ok(view.gaps.some(g => /missing|another item/.test(g.message)));
     assert.ok(view.gaps.some(g => /producing|independen/.test(g.message)));
@@ -898,7 +959,7 @@ test('a missing recent message preserves report obligations and a bounded histor
     const message = appendMessage(store, 1);
     store.database.prepare("DELETE FROM records WHERE kind='message' AND id=?").run(message.id);
     const view = buildReport(store, {itemId: 'demo'});
-    assert.equal(view.item.id, 'demo');
+    assert.equal(view.item.id, fixtureIds.task);
     assert.equal(view.decisions.length, 1);
     assert.ok(view.gaps.some(g => /missing/.test(g.message)));
     assert.equal(view.history.totalMessages, null);
@@ -954,7 +1015,7 @@ test('known gaps are surfaced but unexpected query failures propagate', async ()
     };
     try { assert.throws(() => buildReport(store, {itemId: 'demo'}), error => error === boom); }
     finally { store.database.prepare = original; }
-    assert.equal(readRecord(store, 'item', 'demo').id, 'demo', 'snapshot rolled back');
+    assert.equal(readRecord(store, 'item', 'demo').id, fixtureIds.task, 'snapshot rolled back');
   });
 });
 
@@ -962,6 +1023,9 @@ test('one read snapshot includes item, proof and chronology despite a concurrent
   await withWorkspace(({root, store}) => {
     setupReport(root, store);
     store.database.exec('PRAGMA journal_mode=WAL');
+    const initialThroughSeq = Number(store.database.prepare(
+      'SELECT COALESCE(MAX(seq), 0) AS seq FROM events',
+    ).get().seq);
     const writer = openStore({path: store.path, mode: 'write'});
     const original = store.database.prepare.bind(store.database);
     let changed = false;
@@ -976,9 +1040,9 @@ test('one read snapshot includes item, proof and chronology despite a concurrent
     try {
       const view = buildReport(store, {itemId: 'demo'});
       assert.equal(changed, true);
-      assert.equal(view.item.title, 'Demo knowledge item');
+      assert.equal(view.item.title, 'Demo knowledge Task');
       assert.equal(view.messages.length, 0);
-      assert.equal(view.throughSeq, 1);
+      assert.equal(view.throughSeq, initialThroughSeq);
     } finally { store.database.prepare = original; closeStore(writer); }
   });
 });
@@ -1011,11 +1075,11 @@ test('derived immutable outputs carry identity, sequence, time, hashes and no YA
     assert.equal(hash(html), result.digest);
     assert.ok(html.toString().startsWith('<!doctype html>'));
     const metadata = JSON.parse(readFileSync(result.metadataPath));
-    assert.equal(metadata.schema_version, 2);
+    assert.equal(metadata.schema_version, 3);
     assert.equal(metadata.kind, 'kai-coordination-report');
     assert.equal(metadata.derived, true);
     assert.equal(metadata.workspace.id, view.workspace.id);
-    assert.equal(metadata.item.id, 'demo');
+    assert.equal(metadata.subject.id, fixtureIds.task);
     assert.equal(metadata.through_seq, view.throughSeq);
     assert.equal(metadata.generated_at, view.generatedAt);
     assert.equal(metadata.html.digest, result.digest);
@@ -1033,8 +1097,11 @@ test('Windows hostile item IDs are collision-resistant encoded filenames, never 
     const ids = ['../outside', '..\\outside', 'CON', 'nul.txt', 'a:b', 'a?b', 'a#b', 'a%b', 'Case', 'case', 'x'.repeat(800)];
     const paths = ids.map(itemId => reportPaths({root, itemId}).directory);
     assert.equal(new Set(paths.map(p => p.toLowerCase())).size, ids.length);
-    assert.ok(paths.every(p => dirname(p) === join(root, '.kai', 'review', 'coordination')));
-    assert.throws(() => reportPaths({root, itemId: ''}), code('INVALID_INPUT'));
+    assert.ok(paths.every(path => path.replaceAll('\\', '/').includes('/.kai/core/reports/')));
+    assert.throws(() => typedReportPaths({
+      root,
+      subject: {kind: 'task', id: ''},
+    }), code('INVALID_INPUT'));
   });
 });
 
@@ -1126,8 +1193,9 @@ test('answered questions retain complete resolution and missing resolution-messa
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const id = 'addressed-question';
     seedRecord(store, {
-      kind: 'question', id, itemId: 'demo', version: 1, body: {
-        schema_version: 1, question_id: id, item_id: 'demo', asker: {role: 'eng-builder-software', runId: 'producer-run'},
+      kind: 'question', id, subject: reportSubject, version: 1, body: {
+        schema_version: 1, question_id: id, subject: reportSubject,
+        asker: {role: 'eng-builder-software', runId: 'producer-run'},
         recipient: 'eng-reviewer-code', kind: 'decision', blocking: true, status: 'answered',
         context: 'Do not lose the original issue.', ask: 'Can we narrow scope?', answer_by: 'before work',
         opened_message_id: randomUUID(), answer_message_ids: [randomUUID()],
@@ -1146,7 +1214,7 @@ test('answered questions retain complete resolution and missing resolution-messa
 test('a current approval cannot hide missing mandatory reviews behind independently verified artifact bytes', async () => {
   await withWorkspace(({root, store}) => {
     const {artifactId} = setupReport(root, store);
-    appendVerdict(store, verdict(store, 'approval', artifactId));
+    store.database.prepare("DELETE FROM records WHERE kind = 'review'").run();
     const view = buildReport(store, {itemId: 'demo'});
     assert.equal(view.integrity.status, 'gap');
     assert.ok(view.gaps.some(g => g.severity === 'broken-claim' && /lacks current.*review/.test(g.message)));
@@ -1157,19 +1225,77 @@ test('a current approval cannot hide missing mandatory reviews behind independen
 test('transitive negative evidence invalidates an apparently approved review', async () => {
   await withWorkspace(({root, store}) => {
     const {artifactId} = setupReport(root, store);
-    const item = readRecord(store, 'item', 'demo').body;
+    const item = readRecord(store, 'item', 'demo');
     const id = randomUUID();
-    seedRecord(store, {kind: 'evidence', id, itemId: 'demo', version: 1, body: {
-      schema_version: 1, evidence_id: id, item_id: 'demo', kind: 'dod-dimension',
-      subject: item.change_ref, criteria_ref: criteriaRef(item), supersedes: [], dimension: 'verified',
+    seedRecord(store, {kind: 'evidence', id,
+      subject: reportSubject, version: 1, body: {
+      schema_version: 1, evidence_id: id, subject: reportSubject, kind: 'dod-dimension',
+      content_ref: item.body.change_ref,
+      criteria_ref: criteriaRef(item, (kind, recordId) => readTypedRecord(store, kind, recordId)),
+      supersedes: [], dimension: 'verified',
       outcome: 'gap', evidence_refs: [`artifact:${artifactId}`], reason: 'Known failed check',
       data: {}, created_at: NOW,
     }});
-    appendVerdict(store, verdict(store, 'review', artifactId, {evidence_refs: [`evidence:${id}`]}));
+    const negativeReview = appendVerdict(
+      store,
+      verdict(store, 'review', artifactId, {evidence_refs: [`evidence:${id}`]}),
+    );
     const view = buildReport(store, {itemId: 'demo'});
-    assert.equal(view.reviews[0].integrity, 'gap');
+    assert.equal(view.reviews.find(review => review.id === negativeReview.id).integrity, 'gap');
     assert.equal(view.criteria[0].status, 'gap');
     assert.ok(view.gaps.some(g => /negative evidence/.test(g.message)));
+  });
+});
+
+test('private proof content is withheld unless represented by an accepted public report artifact', async () => {
+  await withWorkspace(({root, store}) => {
+    const safeExcerpt = 'SAFE ACCEPTED EXCERPT';
+    const {artifactId} = setupReport(root, store, {}, safeExcerpt);
+    const task = readRecord(store, 'task', fixtureIds.task);
+    const evidenceId = randomUUID();
+    const privateMarker = 'PRIVATE-PROOF-MARKER';
+    seedRecord(store, validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: reportSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        evidence_id: evidenceId,
+        subject: reportSubject,
+        kind: 'dod-dimension',
+        content_ref: task.body.change_ref,
+        criteria_ref: criteriaRef(task, (kind, id) => readTypedRecord(store, kind, id)),
+        supersedes: [],
+        dimension: 'verified',
+        outcome: 'clear',
+        evidence_refs: [`artifact:${artifactId}`],
+        reason: privateMarker,
+        data: {},
+        created_at: NOW,
+        provenance: {
+          tier: 'observed',
+          capture: {
+            source: 'host-command',
+            reference: 'host:private-proof',
+            actor: builder,
+            captured_at: NOW,
+            command: ['node', privateMarker],
+            exit_code: 0,
+            checks: [privateMarker],
+            classification: 'confidential',
+            command_digest: 'a'.repeat(64),
+          },
+        },
+      },
+    }));
+
+    const view = buildReport(store, {subject: reportSubject});
+    assert.equal(view.inspection.artifactPreviews.length, 1);
+    assert.match(view.inspection.artifactPreviews[0].content, /SAFE ACCEPTED EXCERPT/);
+    assert.doesNotMatch(JSON.stringify(view), new RegExp(privateMarker));
+    assert.ok(view.gaps.some(gap => gap.ref === `evidence:${evidenceId}`
+      && /private evidence/i.test(gap.message)));
   });
 });
 
@@ -1232,15 +1358,19 @@ test('a readable open question without persisted chronology is a gap, not health
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const messageId = randomUUID();
     const id = 'imported-open-question';
-    seedRecord(store, {kind: 'message', id: messageId, itemId: 'demo', version: 1, body: {
-      schema_version: 1, message_id: messageId, thread_id: 'demo', item_id: 'demo',
+    seedRecord(store, {kind: 'message', id: messageId,
+      subject: reportSubject, version: 1, body: {
+      schema_version: 1, message_id: messageId, subject: reportSubject,
+      thread_id: subjectRef(reportSubject, 1),
       parent_id: null, sender_role: 'eng-builder-software', sender_run: 'producer-run',
       recipient: 'eng-reviewer-code', kind: 'question', created_at: NOW, basis_version: 1,
       payload: {questionKind: 'decision', blocking: false, context: 'Scope', ask: 'Can scope narrow?', answerBy: 'next'},
       artifact_refs: [], evidence_refs: [], provenance: 'durable-thread',
     }});
-    seedRecord(store, {kind: 'question', id, itemId: 'demo', version: 1, body: {
-      schema_version: 1, question_id: id, item_id: 'demo', asker: {role: 'eng-builder-software', runId: 'producer-run'},
+    seedRecord(store, {kind: 'question', id,
+      subject: reportSubject, version: 1, body: {
+      schema_version: 1, question_id: id, subject: reportSubject,
+      asker: {role: 'eng-builder-software', runId: 'producer-run'},
       recipient: 'eng-reviewer-code', kind: 'decision', blocking: false, status: 'open',
       context: 'Scope', ask: 'Can scope narrow?', answer_by: 'next',
       opened_message_id: messageId, answer_message_ids: [], resolution: null,
@@ -1267,3 +1397,16 @@ for (const state of ['release-ready', 'deploying', 'production-verification', 's
     });
   });
 }
+
+test('report paths bind the exact typed subject and never use retired generic lanes', async () => {
+  await withWorkspace(({root, store}) => {
+    seedTask(store);
+    const subject = {kind: 'task', id: fixtureIds.task};
+    const paths = reportPaths({root, subject});
+    const normalized = paths.directory.replaceAll('\\', '/');
+    assert.match(normalized, /\/\.kai\/core\/reports\//);
+    assert.doesNotMatch(normalized, /\/\.kai\/engineering\/reports\/[^/]+\/(?:drafts|evidence|scratch)(?:\/|$)/);
+    assert.doesNotMatch(normalized, /\/\.kai\/(?:runs|review)\//);
+    assert.deepEqual(paths.subject, subject);
+  });
+});

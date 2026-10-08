@@ -1,289 +1,217 @@
-[kai](../README.md) / [Docs](README.md) / Workspace model
+[kai](../README.md) / [Docs](README.md) / Workspaces
 
-# Workspace model
+# Workspaces
 
-Kai separates private operational state from intentionally published project
-knowledge. Schema 4 adds a coordination runtime store beside that layout;
-schema 3 remains readable as an inspect-only workspace.
-
-```text
-project repository                         Kai workspace
-------------------                         -------------
-docs/kai/                                  .kai/
-  decisions/                                 manifest.json
-  specs/                                     state/
-  reports/                                   runs/
-                                              review/
-                                              archive/
-                                              personal/
-```
-
-`docs/kai` is the default publication root, not a required name. A project may
-use an existing documentation root instead. Kai creates only the configured
-root.
-
-## Private workspace
+Kai schema 5 separates private operational state from accepted project
+knowledge:
 
 ```text
-<workspace-root>/.kai/
-├─ manifest.json
-├─ CONVENTIONS.md
-├─ state/
-│  ├─ coordination.sqlite
-│  ├─ ACTIVE.md
-│  ├─ BOARD.md
-│  ├─ backlog.md
-│  ├─ items/<item-id>.md
-│  ├─ threads/<item-id>.md
-│  └─ initiatives/
-│     ├─ INDEX.md
-│     └─ <slug>/
-│        ├─ northstar.md
-│        ├─ log.md
-│        ├─ backlog.md
-│        ├─ deliverables.md
-│        ├─ director-summary.md
-│        └─ artifacts/
-├─ runs/
-├─ review/
-├─ archive/
-└─ personal/
+.kai/       private, ignored, untracked
+docs/kai/   committed accepted knowledge
 ```
 
-- `.kai/state/coordination.sqlite` is the authoritative coordination record
-  under schema 4, read with `status`, `detail`, `messages` and `export`.
-- `BOARD.md`, `items/<item-id>.md` and `threads/<item-id>.md` are **retained
-  historical import sources**: they are what a pre-schema-4 workspace was
-  migrated from, nothing writes them under schema 4, so they are no longer
-  updated and are never read as authority. Authored material — north stars,
-  briefs, designs, decision rationale — stays authored content and is
-  registered, never derived.
-- `.kai/runs/` contains raw evidence and scratch output.
-- `.kai/review/` contains review-ready drafts such as
-  `designs/<item-id>/options.html`.
-- `.kai/archive/` contains closed operational history.
-- `.kai/personal/` contains operator-private assistant, identity, consultation,
-  proactive, and learning state.
+Installing a pack creates no workspace directory. Direct answers and direct
+code changes create no Kai state.
 
-Activity and observer files also stay private:
+## Placement
+
+Schema 5 supports:
+
+| Placement | Private workspace | Project behavior |
+| --- | --- | --- |
+| `repo-local` | `<project>/.kai/` | all of `/.kai/` is ignored and untracked |
+| `external` | registered durable directory outside the project | project contains no `.kai/` |
+
+An external workspace uses the same private tree and publishes accepted
+knowledge into its bound project's configured `publication_root`.
+
+## Manifest
+
+```json
+{
+  "plugin": "kai-core",
+  "version": "<plugin-version>",
+  "schema_version": 5,
+  "scaffolded": "<YYYY-MM-DD>",
+  "workspace_id": "<stable-id>",
+  "placement": "repo-local",
+  "workspace_root": ".",
+  "private_root": ".kai",
+  "direction": "docs/kai/DIRECTION.md",
+  "projects": [
+    {
+      "id": "<project-id>",
+      "path": ".",
+      "publication_root": "docs/kai"
+    }
+  ]
+}
+```
+
+The manifest does not list installed packs or pre-create their folders.
+Directory presence records actual use.
+
+## Initial footprint
+
+A new ready workspace creates only:
 
 ```text
-.kai/activity.jsonl
-.kai/observed.jsonl
-.kai/observer-consent
+.kai/manifest.json
+.kai/core/runtime/coordination.sqlite
+docs/kai/README.md
+docs/kai/DIRECTION.md
+the managed /.kai/ ignore block for repo-local placement
 ```
 
-## Coordination runtime
+Initialization is confirmed, failure-clean, and manifest-last. It never invents
+Direction or seeds empty department trees.
 
-Coordinated reads and writes go through one entry point:
+## Direction
 
-```bash
-node scripts/coordinate.mjs inspect --root <workspace-dir>
-node scripts/coordinate.mjs status  --root <workspace-dir>
-node scripts/coordinate.mjs apply   --root <workspace-dir>   # one JSON command on stdin
-node scripts/coordinate.mjs direct                            # single-shot work, no workspace
+Coordinated work requires one operator-owned file:
+
+```markdown
+# Vision
+
+<enduring destination>
+
+# Mission
+
+<who the repository serves and why>
+
+# Current Goal
+
+<one observable, time-bounded Current Goal>
+
+# Out of Scope
+
+- <explicit exclusion>
 ```
 
-`inspect` is the preflight. Successfully loading `kai-core-contract-v1` only
-proves the plugin is installed; it is not permission to operate a schema-4
-workspace.
+There is one observable, time-bounded Current Goal. Direction contains no task
+list, roadmap, generated status, or parking lot.
 
-| Manifest | Reads | Coordinated writes |
-|---|---|---|
-| `schema_version: 4` with a store | yes | yes |
-| `schema_version: 4`, no store | `inspect` only — it reports the absent store as the expected pre-`init` condition | refused; `init --confirm --capability <uuid>` creates it |
-| `schema_version: 3` | `inspect`, `status`, `legacy` only — **inspect-only** | refused with `SCHEMA_MISMATCH` |
+## Private typed work
 
-There is no automatic upgrade. A schema-3 workspace migrates only through the
-explicit offline ladder (`request` → `authorize` → `migrate --confirm
---capability <uuid>`), with `recover` and `rollback` as its explicit recovery
-routes. No command creates the coordination database implicitly.
+The shared grammar is:
 
-Writes are commands, not file edits. `BOARD.md`, `state/items/*.md` and
-`state/threads/*.md` are retained historical import sources that are no longer
-updated: editing one changes a stale file, not the record, and nothing reads it
-back. The cross-item board is `status`; `export --item <id>` writes the offline
-HTML report for one item.
-
-`plan --item <id>` returns an ordered queue with `automatic: false` — kai does
-not dispatch roles by itself. Peer model/effect observation is not implemented
-and returns `UNSUPPORTED_HOST`.
-
-What the runtime has actually been shown to do, case by case — including the
-installed-host scenario that failed and the cases nothing verifies — is recorded
-in [the coordination acceptance record](reference/coordination-acceptance.md).
-
-## Storage modes
-
-| Mode | Workspace location | Repository behavior |
-|---|---|---|
-| `external` | Durable directory outside the project | Zero operational Kai footprint; a machine-local registry pairs project and workspace. |
-| `repo-local` | Project `.kai/` | Entire tree is ignored and untracked. |
-| `shared` | Project `.kai/` | Manifest, conventions, and state may be tracked; private runtime lanes remain ignored. |
-
-External discovery uses `$KAI_HOME/workspaces.json`, with `KAI_HOME` defaulting
-to `~/.kai`. A registry row contains absolute project and workspace roots plus
-the same `workspace_id` as the external manifest. Missing, duplicate, or
-mismatched bindings fail closed.
-
-Inspect or manage the registry with:
-
-```bash
-node scripts/workspace-doctor.mjs --registry
-node scripts/workspace-doctor.mjs --adopt <project-dir> --root <workspace-dir>
-node scripts/workspace-doctor.mjs --forget <project-dir>
+```text
+.kai/<pack>/<type>/<id>/{drafts,evidence,scratch}/
+.kai/<pack>/<type>/<subtype>/<id>/{drafts,evidence,scratch}/
+.kai/<pack>/archive/<type>/<id>/...
+.kai/<pack>/archive/<type>/<subtype>/<id>/...
 ```
 
-`--forget` removes only the binding. It never deletes workspace files.
+Directories appear only on the first valid write. Unknown pack, type, subtype,
+ID, lifecycle, arbitrary root, link, junction, nested Git root, alias,
+collision, or path escape is a refusal.
+
+Each shipped pack owns exactly one publication vocabulary:
+
+| Pack | Publication contract |
+| --- | --- |
+| core | `kai-core-workspace-publication` |
+| engineering | `engineering-workspace-publication` |
+| creative | `creative-workspace-publication` |
+
+The owning contract defines allowed types, subtypes, formats, publication
+authority, and privacy. Core does not duplicate department vocabularies.
 
 ## Publication
 
-Accepted current project knowledge publishes under each project's
-`publication_root`:
+Accepted project knowledge mirrors the validated private route under
+`docs/kai/` without the lifecycle segment:
 
 ```text
-<project-root>/<publication-root>/
-├─ README.md
-├─ decisions/
-├─ specs/
-└─ reports/
+.kai/engineering/documentation/architecture/auth-boundary/drafts/adr.md
+  -> docs/kai/engineering/documentation/architecture/auth-boundary/adr.md
 ```
 
-Working artifacts remain private. Publication requires an acceptance authority
-and the exact accepted revision. Public work-item targets use:
+Publication copies one exact accepted revision and records its hash, authority,
+subject version, provenance, and inputs. It never renames mutable private work.
+
+Scratch, unaccepted drafts, private evidence, arbitrary roots, and unsafe media
+destinations cannot publish. Retained private drafts and evidence move to the
+typed archive path at closure.
+
+## Coordination
+
+SQLite at `.kai/core/runtime/coordination.sqlite` is the **only coordination
+authority**.
 
 ```text
-project:<project-id>:<project-relative-path>
+Direction Current Goal
+└─ Epic
+   └─ <pack> Feature
+      └─ Requirement
+         └─ Task
 ```
 
-Example:
+Use the runtime:
 
 ```text
-project:api:docs/kai/decisions/export-api.md
+node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"
 ```
 
-Private targets remain workspace-relative, for example:
+`status`, `detail`, `context`, `messages`, `plan`, and `export` are read
+surfaces. `plan` returns executable Tasks only and reports `automatic: false`.
+Reports and exports are views, not authority.
+
+No Markdown board, backlog, milestone, thread, Task, or hierarchy log is
+authoritative or maintained in schema 5.
+
+## Direct work
+
+An ordinary directly authorized request:
+
+- requires no Direction read;
+- initializes no workspace;
+- creates no Epic, Feature, Requirement, or Task;
+- acquires no lease;
+- creates no pack directory.
+
+When direct work grows into coordinated multi-role execution, Kai presents the
+proposed hierarchy and obtains named authority before creating records.
+
+## Validate
 
 ```text
-.kai/state/initiatives/export/artifacts/decisions/export-api.md
-.kai/review/designs/export-ui/options.html
+node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
+node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 ```
 
-## Closure
+For external placement, require exact registry pairing. Before every write,
+resolve real paths again and refuse changed aliases, links, junctions, nested
+Git roots, collisions, or escapes.
 
-Execution state and asset validity are separate. A completed investigation may
-later become stale; its work item remains completed while revalidation becomes
-new work.
+## Explicit migration
 
-When an initiative reaches a terminal state:
+<!-- kai:schema4-history -->
+Schema 3 and schema 4 may contain shared placement, `.kai/state/`,
+`.kai/runs/`, `.kai/review/`, `.kai/personal/`, initiatives, generic items,
+boards, backlogs, milestones, and threads. Schema 2 may also use visible
+`kai/coordination/`, `kai/initiatives/`, `kai/library/`, and `kai/personal/`
+roots. These are historical sources, not live destinations.
+<!-- /kai:schema4-history -->
 
-1. required work reaches its required state;
-2. every asset has disposition, validity, authority, and provenance;
-3. backlog entries are promoted, deferred, rejected, or superseded;
-4. ownership and follow-up work are explicit;
-5. the initiative leaves `.kai/state/ACTIVE.md`;
-6. it remains discoverable in `.kai/state/initiatives/INDEX.md`;
-7. its operational record may move to `.kai/archive/initiatives/<slug>/`.
+Older workspaces remain inspectable and read-only. They require an **explicit
+schema-5 migration**. Migration is offline, backup-first, ownership-classified,
+and manifest-last:
 
-Published project documents do not move when the private initiative record is
-archived.
+1. inspect the old manifest, database, authored files, Git state, registry, and
+   publication tree;
+2. produce the complete hierarchy and artifact classification worksheet;
+3. obtain operator Direction and approval;
+4. verify a durable backup outside the live workspace;
+5. reconcile tracked private files and active leases;
+6. stage typed records and pack-owned artifact paths;
+7. reject unknown ownership instead of creating a fallback lane;
+8. validate hierarchy, privacy, paths, provenance, and read views;
+9. move the database to `.kai/core/runtime/coordination.sqlite`;
+10. activate the schema-5 manifest last.
 
-## Schema-2 migration
+Failure leaves the older workspace authoritative and the verified backup
+available. There are no aliases or dual writes.
 
-<!-- kai:allow-legacy-roots -->
-Schema 2 used a visible `kai/coordination/`, `kai/initiatives/`,
-`kai/library/`, and `kai/personal/` corpus. Migration first chooses a storage
-mode and publication root, then classifies content:
-
-- coordination moves to `.kai/state/`;
-- initiative working records move to `.kai/state/initiatives/`;
-- personal state moves to `.kai/personal/`;
-- raw evidence moves to `.kai/runs/`;
-- review drafts move to `.kai/review/`;
-- only accepted current knowledge publishes;
-- closed operational history may archive.
-
-The migration never bulk publishes the old library and never keeps both
-layouts. `schema_version: 3` is written last.
-<!-- /kai:allow-legacy-roots -->
-
-## Seeing what needs you
-
-`work-status` reads authoritative item records and prints only exceptions:
-
-```bash
-node scripts/work-status.mjs --root .
-node scripts/work-status.mjs --root . --json
-```
-
-| Section | Meaning |
-|---|---|
-| **NEEDS YOU** | An open `@operator` question or a human-only deployment state. |
-| **INTEGRITY** | Contradictory records, stale review binding, missing dependency, or unreadable state. |
-| **BLOCKED** | Declared blocked work or an unmet typed dependency. |
-| **UNKNOWN** | Expired lease, missing next actor, unresolved question packet, or missed self-declared activity deadline. |
-
-The report distinguishes `declared` facts from conditions the tool derived. It
-does not claim an agent crashed merely because it stopped reporting.
-
-## Declared activity
-
-Agents append start, progress, and stop events to the gitignored activity log:
-
-```bash
-RUN=$(node scripts/activity.mjs new-run)
-node scripts/activity.mjs start --root . --role principal-swe-backend \
-  --item export-audit --run "$RUN" --for 45m
-node scripts/activity.mjs stop --root . --role principal-swe-backend \
-  --run "$RUN" --outcome handoff
-```
-
-The deadline makes one fact checkable: the role declared it would report by a
-time, and that time passed. The log cannot prove why.
-
-## Observing subagents
-
-The opt-in observer records actual host subagent start and stop events in
-`.kai/observed.jsonl`. It is designed to answer who participated, who finished,
-and when work returned to a parent.
-
-```bash
-npm run observe:status
-npm run observe:enable
-node scripts/observe-subagent.mjs --disable
-```
-
-The hook ships with `kai-core` but remains inert until the workspace consent
-marker exists. It does not block, rewrite, or delay a subagent response.
-
-Start the terminal viewer with:
-
-```bash
-npm run observe:watch
-```
-
-The viewer merges two evidence tiers:
-
-- **declared** Kai-role activity from `.kai/activity.jsonl`;
-- **observed** host subagent lifecycle events from `.kai/observed.jsonl`.
-
-It labels ambiguity instead of inventing identity. A host subagent is not
-automatically assumed to be a specific Kai role.
-
-Response summaries are a separate opt-in because host responses may contain
-sensitive prose. Participation-only observation is the default.
-
-## Limits
-
-- Operational state does not run itself; roles must update it, and nothing in
-  the runtime dispatches a role automatically.
-- Coordinated multi-role execution is designed and source-routed, not measured:
-  the one native probe that has been run used a synthetic human-approval
-  fixture.
-- External registry discovery is machine-local, not synchronized.
-- `repo-local` state does not survive a clone.
-- `shared` mode exposes operational state to repository collaborators.
-- Publication does not make an asset current unless lifecycle metadata says it
-  is accepted and valid.
-- No mode permits secrets, raw browser state, or private personal content in
-  project publication.
+The measured runtime acceptance record is
+[Coordination acceptance](reference/coordination-acceptance.md).

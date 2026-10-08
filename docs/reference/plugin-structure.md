@@ -110,6 +110,9 @@ New skills should:
 - Be framework-agnostic unless explicitly scoped (e.g., `react-style`).
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
+- Declare `durable-output-producer: true|false` in frontmatter. A `true` skill
+  routes its owning pack publication skill immediately before
+  `kai-core-asset-producing`; a `false` skill routes neither.
 
 The normal contribution path runs `npm test` — the dependency-free checks below,
 which also run in CI on every pull request.
@@ -257,7 +260,7 @@ Also in `AGENTS.md` → **Releasing this plugin**:
    map only: the `name@marketplace` override key is measured, but the bare-`name`
    key the doctor assumes for a **direct** install has never been exercised on a
    real host. It is documented as inferred, not gated — see the parked
-   measurement proposal and its revisit trigger in the pack-split initiative
+   measurement proposal and its revisit trigger in the pack-split research
    backlog.
 5. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
 

@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 21,
-    "skills": 35
+    "skills": 38
   },
   "agents": [
     "creative-lead-design",
@@ -18,8 +18,8 @@
     "eng-reviewer-reliability",
     "eng-reviewer-security",
     "workflow-creative-demo-production",
+    "workflow-epic-init",
     "workflow-incident-response",
-    "workflow-initiative-init",
     "workflow-proactive-scan",
     "workflow-pull-request",
     "workflow-ship",
@@ -30,6 +30,8 @@
     "build-diagrams",
     "coding-standards",
     "content-grounding",
+    "creative-workspace-publication",
+    "engineering-workspace-publication",
     "html-block-diagrams",
     "kai-core-asset-closing",
     "kai-core-asset-producing",
@@ -37,7 +39,6 @@
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
     "kai-core-fleet-observation",
-    "kai-core-initiative-stewardship",
     "kai-core-issue-analysis",
     "kai-core-no-self-remediation",
     "kai-core-operating-rules",
@@ -50,10 +51,12 @@
     "kai-core-work-acting",
     "kai-core-work-activity",
     "kai-core-work-granting",
-    "kai-core-work-item",
-    "kai-core-workspace-initiative",
+    "kai-core-work-hierarchy",
+    "kai-core-work-stewardship",
+    "kai-core-work-task",
     "kai-core-workspace-onboarding",
     "kai-core-workspace-paths",
+    "kai-core-workspace-publication",
     "mockups-ascii",
     "mockups-html",
     "onboard-to-codebase",

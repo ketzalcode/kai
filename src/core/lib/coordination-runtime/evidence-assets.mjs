@@ -1,8 +1,14 @@
-import {criteriaRef, isProducingRun, operatorDecisionActor, subjectEquals} from './contract.mjs';
+import {canonicalJson, criteriaRef, isProducingRun, operatorDecisionActor} from './contract.mjs';
 import {effectiveApprovals, requireReviews} from './acceptance.mjs';
 import {requireActingAuthority, sameActor} from './authority.mjs';
 import {assertWorkspacePath, fail, verifyTarget} from './evidence-content.mjs';
-import {hasPublicationHistory, verifyAssetContent, verifyVerdict} from './evidence-integrity.mjs';
+import {parseTypedArtifactRoute} from '../workspace-layout.mjs';
+import {
+  hasPublicationHistory,
+  verifyAssetContent,
+  verifyParentCompletionApproval,
+  verifyVerdict,
+} from './evidence-integrity.mjs';
 
 const DISPOSITION = new Map([
   ['scratch', ['draft', 'discarded']],
@@ -20,28 +26,71 @@ const VALIDITY = new Map([
   ['expired', ['superseded', 'invalidated', 'retired']],
   ['superseded', []], ['invalidated', []], ['retired', []],
 ]);
+const contentEquals = (left, right) =>
+  left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
+const lookup = tx => (kind, id) => tx.get(kind, id);
+const routeIdentity = route =>
+  [route.pack, route.type, route.subtype, route.id, route.members];
+
+function typedRoute(path, visibility) {
+  const local = path.replace(/^project:[a-z][a-z0-9-]*:/, '');
+  try {
+    const parsed = parseTypedArtifactRoute(local);
+    if (parsed.visibility !== visibility) {
+      fail('INVALID_INPUT', `${visibility} placement requires a typed ${visibility} artifact route`);
+    }
+    return parsed;
+  } catch (error) {
+    if (error?.code) throw error;
+    fail('INVALID_INPUT', error.message);
+  }
+}
+
+function subjectPack(item) {
+  return item.kind === 'epic' ? 'core' : item.body.pack;
+}
 
 function artifactFor(context, tx, asset, verify = true) {
   if (verify) return verifyAssetContent(context, tx, asset);
   const artifact = tx.get('artifact', asset.artifact_id);
-  if (!artifact || artifact.itemId !== asset.item_id) fail('EVIDENCE_GAP', 'asset has no registered artifact');
+  if (artifact?.subject?.kind !== asset.subject.kind || artifact.subject.id !== asset.subject.id) {
+    fail('EVIDENCE_GAP', 'asset has no registered artifact');
+  }
   return artifact.body;
 }
 
-function accepted(tx, item, asset, artifact, approvalId) {
-  requireReviews(tx, item);
-  const approvals = effectiveApprovals(tx.list('approval', item.id).map(r => r.body), item.body)
+function accepted(context, tx, item, asset, artifact, approvalId) {
+  if (item.kind === 'task') requireReviews(tx, item);
+  const approvals = effectiveApprovals(
+    tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
+    item,
+    lookup(tx),
+  )
     .filter(a => a.kind === 'completion' && a.authority.role === item.body.completion_authority);
   const decision = approvals.find(a => a.approval_id === approvalId);
   if (!decision || approvals.some(a => a.decision !== 'approved')
-    || isProducingRun(item.body, decision.authority)
+    || (item.kind === 'task' && isProducingRun(item.body, decision.authority))
     || decision.authority.runId === asset.producer.runId
-    || !subjectEquals(decision.subject, artifact.subject)
-    || artifact.criteria_ref !== criteriaRef(item.body)
-    || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)) {
+    || artifact.criteria_ref !== criteriaRef(item, lookup(tx))
+    || (item.kind === 'task'
+      && (!contentEquals(decision.content_ref, artifact.content_ref)
+        || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)))) {
     fail('EVIDENCE_GAP', 'asset acceptance requires an effective independent decision for these exact bytes and criteria');
   }
-  verifyVerdict(tx, item, decision, decision.authority);
+  if (item.kind === 'task') {
+    verifyVerdict(tx, item, decision, decision.authority);
+  } else {
+    const acceptedArtifacts = verifyParentCompletionApproval(
+      context,
+      tx,
+      item,
+      decision.evidence_refs,
+    );
+    if (!acceptedArtifacts.includes(artifact.artifact_id)) {
+      fail('EVIDENCE_GAP',
+        'parent asset acceptance requires this exact report artifact in the completion proof');
+    }
+  }
   return decision;
 }
 
@@ -52,9 +101,9 @@ function inputsCurrent(context, tx, asset, seen = new Set()) {
     const input = tx.get('asset', id)?.body;
     if (!input || input.validity !== 'current' || input.superseded_by !== null
       || new Set(['scratch', 'draft', 'discarded', 'retracted']).has(input.disposition)) return false;
-    const item = tx.get('item', input.item_id);
+    const item = tx.get(input.subject.kind, input.subject.id);
     const artifact = artifactFor(context, tx, input);
-    accepted(tx, item, input, artifact, input.completion_approval_id);
+    accepted(context, tx, item, input, artifact, input.completion_approval_id);
     return inputsCurrent(context, tx, input, seen);
   });
 }
@@ -62,7 +111,8 @@ function inputsCurrent(context, tx, asset, seen = new Set()) {
 function moved(record, changes, reason, at, itemVersion) {
   const body = {...record.body, ...changes, updated_at: at};
   body.history = [...body.history, {
-    disposition: body.disposition, validity: body.validity, target: body.target, reason, at, at_item_version: itemVersion,
+    disposition: body.disposition, validity: body.validity, target: body.target,
+    reason, at, at_subject_version: itemVersion,
   }];
   return {...record, version: record.version + 1, body};
 }
@@ -70,7 +120,9 @@ function moved(record, changes, reason, at, itemVersion) {
 export function applyAssetTransition({context, tx, item, command, authority}) {
   const p = command.payload;
   const record = tx.get('asset', p.assetId);
-  if (!record || record.itemId !== item.id) fail('EVIDENCE_GAP', 'asset transition must bind the owning item');
+  if (record?.subject?.kind !== item.kind || record.subject.id !== item.id) {
+    fail('EVIDENCE_GAP', 'asset transition must bind the owning hierarchy subject');
+  }
   const asset = record.body;
   if ((p.disposition !== asset.disposition && !DISPOSITION.get(asset.disposition).includes(p.disposition))
     || (p.validity !== asset.validity && !VALIDITY.get(asset.validity).includes(p.validity))) {
@@ -84,7 +136,11 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     fail('INVALID_INPUT', 'accepted or team-facing working assets cannot be discarded');
   }
   if (personalDiscard) {
-    const decisions = effectiveApprovals(tx.list('approval', item.id).map(r => r.body), item.body)
+    const decisions = effectiveApprovals(
+      tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
+      item,
+      lookup(tx),
+    )
       .filter(a => a.kind === 'scope' && a.authority.role === 'operator');
     const consent = decisions.find(a => a.approval_id === p.approvalId);
     if (command.actor.role !== 'operator' || !consent?.provenance
@@ -101,7 +157,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   const target = p.target ?? asset.target;
   const publishedBefore = hasPublicationHistory(asset);
   if (publishedBefore && !unchangedTarget) fail('INVALID_INPUT', 'published history remains at its canonical path');
-  if (!unchangedTarget && !item.body.artifact_targets.includes(target)) {
+  if (!unchangedTarget && !(item.body.artifact_targets ?? []).includes(target)) {
     fail('AUTHORITY_REQUIRED', 'target is not a declared item artifact target');
   }
   const publishing = p.disposition === 'published' && asset.disposition !== 'published';
@@ -112,7 +168,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   let validity = p.validity;
   const approvalId = personalDiscard ? asset.completion_approval_id : p.approvalId ?? asset.completion_approval_id;
   const publicTarget = target.startsWith('project:')
-    && !(artifact.subject.kind === 'git' && target === `project:${artifact.project_id}:@git`);
+    && !(artifact.content_ref.kind === 'git' && target === `project:${artifact.project_id}:@git`);
   if (publicTarget && !(metadataOnlyInvalidation && publishedBefore)) {
     if (artifact.classification !== 'public' || validity !== 'current'
       || asset.history.some(h => h.disposition === 'personal')) {
@@ -122,25 +178,46 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   if (publishing && (!publicTarget || validity !== 'current')) {
     fail('INVALID_INPUT', 'publication requires a current accepted project-qualified target');
   }
+  if (publishing) {
+    const privateSources = typedRoute(asset.target, 'private').routes;
+    const publicDestination = typedRoute(target, 'public');
+    const pack = subjectPack(item);
+    const privateSource = privateSources.find(source =>
+      source.lifecycle === 'drafts'
+      && source.pack === pack
+      && publicDestination.routes.some(destination =>
+        destination.pack === pack
+        && canonicalJson(routeIdentity(destination)) === canonicalJson(routeIdentity(source))));
+    if (asset.disposition !== 'working' || asset.validity !== 'current'
+      || asset.completion_approval_id === null || !privateSource) {
+      fail('INVALID_INPUT',
+        'publication requires an accepted retained draft on the mirrored typed route for this hierarchy subject');
+    }
+  }
   if (p.supersedes !== null && (validity !== 'current'
     || !['working', 'published', 'archived'].includes(p.disposition))) {
     fail('EVIDENCE_GAP', 'supersession requires a current accepted durable successor');
   }
-  if (p.approvalId !== null && !personalDiscard) accepted(tx, item, asset, artifact, approvalId);
+  if (p.approvalId !== null && !personalDiscard) {
+    accepted(context, tx, item, asset, artifact, approvalId);
+  }
   if (validity === 'current' || publishing || p.supersedes !== null || (publicTarget && !metadataOnlyInvalidation)) {
     if (new Set(['stale', 'unknown']).has(asset.validity)
       && (p.approvalId === null || p.approvalId === asset.completion_approval_id)) {
       fail('EVIDENCE_GAP', 'revalidation requires a fresh explicit independent acceptance');
     }
-    const operatorDecision = command.actor.role === 'operator' ? accepted(tx, item, asset, artifact, approvalId) : null;
+    const operatorDecision = command.actor.role === 'operator'
+      ? accepted(context, tx, item, asset, artifact, approvalId)
+      : null;
     const applyingHumanDecision = operatorDecision?.provenance
       && sameActor(operatorDecision.authority, operatorDecisionActor(operatorDecision.provenance));
     if ((isProducingRun(item.body, command.actor) || asset.producer.runId === command.actor.runId) && !applyingHumanDecision) {
       fail('AUTHORITY_REQUIRED', 'a producing run cannot close its own asset');
     }
-    const decision = operatorDecision ?? accepted(tx, item, asset, artifact, approvalId);
+    const decision = operatorDecision
+      ?? accepted(context, tx, item, asset, artifact, approvalId);
     if (new Set(['stale', 'unknown']).has(asset.validity)
-      && !(decision.recorded_at_item_version > asset.history.at(-1).at_item_version)) {
+      && Date.parse(decision.created_at) < Date.parse(asset.history.at(-1).at)) {
       fail('EVIDENCE_GAP', 'revalidation cannot reuse acceptance recorded before the validity change');
     }
     if (!inputsCurrent(context, tx, asset)) {
@@ -153,10 +230,13 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   if (p.validity === 'superseded' && asset.superseded_by === null) {
     fail('INVALID_INPUT', 'supersession must be requested by the successor');
   }
-  if (p.disposition === 'working' && !target.startsWith('.kai/state/')) {
-    fail('INVALID_INPUT', 'working assets require a declared private state target');
-  } else if (p.disposition === 'personal' && !target.startsWith('.kai/personal/')) {
-    fail('INVALID_INPUT', 'personal assets must remain in the personal lane');
+  if (p.disposition === 'working') {
+    const route = typedRoute(target, 'private').routes[0];
+    if (route.pack !== subjectPack(item)) {
+      fail('INVALID_INPUT', 'working assets require a typed private route owned by the hierarchy subject pack');
+    }
+  } else if (p.disposition === 'personal' && !/\/personal(?:\/|$)/.test(target)) {
+    fail('INVALID_INPUT', 'personal assets must remain in an explicitly personal typed path');
   }
   if (!metadataOnlyInvalidation && (target !== asset.target || publicTarget)) {
     assertWorkspacePath(context.root, target);
@@ -172,19 +252,22 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
       || new Set(['retracted', 'discarded']).has(previous.body.disposition)) {
       fail('EVIDENCE_GAP', 'predecessor cannot be superseded or already has a conflicting successor');
     }
-    const predecessorItem = tx.get('item', previous.itemId);
-    if (!predecessorItem || predecessorItem.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'predecessor is under recovery hold');
-    if (previous.itemId !== item.id) {
-      requireActingAuthority(tx, predecessorItem, {
-        ...command, recordId: predecessorItem.id, expectedVersion: predecessorItem.version, leaseToken: null,
+    const predecessorTask = previous.subject?.kind === 'task'
+      ? tx.get('task', previous.subject.id)
+      : null;
+    if (!predecessorTask || predecessorTask.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'predecessor is under recovery hold');
+    if (previous.subject.id !== item.id) {
+      requireActingAuthority(tx, predecessorTask, {
+        ...command, recordId: predecessorTask.id, expectedVersion: predecessorTask.version, leaseToken: null,
       }, authority, command.kind);
-      if (isProducingRun(predecessorItem.body, command.actor)) fail('AUTHORITY_REQUIRED', 'predecessor production history requires independence');
+      if (isProducingRun(predecessorTask.body, command.actor)) fail('AUTHORITY_REQUIRED', 'predecessor production history requires independence');
     }
     const previousArtifact = artifactFor(context, tx, previous.body);
     if (previous.body.validity === 'current') {
-      accepted(tx, predecessorItem, previous.body, previousArtifact, previous.body.completion_approval_id);
+      accepted(context, tx, predecessorTask, previous.body, previousArtifact,
+        previous.body.completion_approval_id);
     }
-    tx.put(moved(previous, {validity: 'superseded', superseded_by: asset.asset_id}, p.reason, p.at, predecessorItem.version));
+    tx.put(moved(previous, {validity: 'superseded', superseded_by: asset.asset_id}, p.reason, p.at, predecessorTask.version));
   }
   tx.put(moved(record, {
     disposition: p.disposition, validity, target, completion_approval_id: approvalId,

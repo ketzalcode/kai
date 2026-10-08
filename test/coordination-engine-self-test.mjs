@@ -6,22 +6,28 @@ import {dirname, join} from 'node:path';
 import {
   RuntimeError,
   criteriaRef,
+  subjectRef,
   validateCommand,
   validateRecord,
   validateSubjectRef,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
-import {bindEvidenceRuntime} from '../src/core/lib/coordination-runtime/evidence.mjs';
+import {projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
+import {
+  bindEvidenceRuntime,
+  registerEvidence,
+} from '../src/core/lib/coordination-runtime/evidence.mjs';
 import {retainSubject} from '../src/core/lib/coordination-runtime/evidence-content.mjs';
-import {readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
+import {listRecords, readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
   authority,
   command,
-  seedInitiative,
-  seedItem,
+  fixtureIds,
+  seedTask,
   seedRecord,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
+import {workspaceRootFromCoordinationDatabase} from '../src/core/lib/workspace-layout.mjs';
 
 const NOW = '2026-09-16T12:00:00.000Z';
 const LATER = '2099-09-16T13:00:00.000Z';
@@ -32,7 +38,8 @@ const quality = {role: 'eng-reviewer-quality', runId: 'quality-run'};
 const steward = {role: 'eng-lead-architecture', runId: 'steward-run'};
 const shipper = {role: 'workflow-ship', runId: 'ship-run'};
 const operator = {role: 'operator', runId: 'operator-run'};
-const runDirectory = '.kai/runs/engine/2026-09-16/01-fixture';
+const taskId = slug => `engineering:task:${slug}`;
+const runDirectory = '.kai/engineering/reports/engine-fixture/scratch';
 const subjectBytes = 'Exact engine completion fixture bytes.';
 const subject = {
   kind: 'sha256',
@@ -40,8 +47,14 @@ const subject = {
   digest: createHash('sha256').update(subjectBytes).digest('hex'),
 };
 
-function retainedRefs(store, itemId, artifactSubject = subject, binding = criteriaRef(readRecord(store, 'item', itemId).body)) {
-  const root = dirname(dirname(dirname(store.path)));
+const criteriaFor = (store, taskIdValue) => {
+  const task = readRecord(store, 'task', taskIdValue);
+  return criteriaRef(task, (kind, id) => readRecord(store, kind, id));
+};
+
+function retainedRefs(store, taskIdValue, artifactSubject = subject,
+  binding = criteriaFor(store, taskIdValue)) {
+  const root = workspaceRootFromCoordinationDatabase(store.path);
   bindEvidenceRuntime(store, {root, authority: {roles: [], grants: []}, runs: []});
   const id = randomUUID();
   const exactSubject = artifactSubject ?? subject;
@@ -50,10 +63,11 @@ function retainedRefs(store, itemId, artifactSubject = subject, binding = criter
   writeFileSync(absolute, exactSubject.digest === subject.digest ? subjectBytes : 'Other immutable revision.');
   const retained = retainSubject(root, exactSubject, null, runDirectory, id);
   seedRecord(store, {
-    kind: 'artifact', id, itemId, version: 1,
+    kind: 'artifact', id, subject: {kind: 'task', id: taskIdValue}, version: 1,
     body: {
-      schema_version: 1, artifact_id: id, item_id: itemId, producer: builder,
-      subject: exactSubject, criteria_ref: binding, project_id: null, run_directory: runDirectory,
+      schema_version: 1, artifact_id: id, subject: {kind: 'task', id: taskIdValue},
+      producer: builder, content_ref: exactSubject, criteria_ref: binding,
+      project_id: null, run_directory: runDirectory,
       ...retained, classification: 'internal', media_type: 'text/plain',
       title: 'Engine retained content fixture', created_at: NOW,
     },
@@ -65,7 +79,7 @@ function grant(actor, action, version, options = {}) {
   return authority(actor, action, {version, ...options});
 }
 
-function itemCommand(kind, actor, expectedVersion, payload, leaseToken = null) {
+function taskCommand(kind, actor, expectedVersion, payload, leaseToken = null) {
   return command(kind, {
     actor,
     expectedVersion,
@@ -76,34 +90,34 @@ function itemCommand(kind, actor, expectedVersion, payload, leaseToken = null) {
 
 function seedReview(store, {
   id = randomUUID(),
-  itemId = 'demo',
+  taskId: taskIdValue = fixtureIds.task,
   actor = reviewer,
   kind = 'independent-code',
   reviewSubject = subject,
   verdict = 'approved',
   criteria = ['The runtime behavior is verified.'],
   createdAt = NOW,
-  binding = criteriaRef(readRecord(store, 'item', itemId).body),
+  binding = criteriaFor(store, taskIdValue),
   supersedes = [],
 } = {}) {
   return seedRecord(store, {
     kind: 'review',
     id,
-    itemId,
+    subject: {kind: 'task', id: taskIdValue},
     version: 1,
     body: {
       schema_version: 1,
       review_id: id,
-      item_id: itemId,
+      subject: {kind: 'task', id: taskIdValue},
       reviewer: actor,
       kind,
-      subject: reviewSubject,
+      content_ref: reviewSubject,
       criteria,
       criteria_ref: binding,
       supersedes,
       verdict,
       finding_refs: [],
-      evidence_refs: retainedRefs(store, itemId, reviewSubject, binding),
+      evidence_refs: retainedRefs(store, taskIdValue, reviewSubject, binding),
       created_at: createdAt,
     },
   });
@@ -111,12 +125,12 @@ function seedReview(store, {
 
 function seedApproval(store, {
   id = randomUUID(),
-  itemId = 'demo',
+  taskId: taskIdValue = fixtureIds.task,
   actor = reviewer,
   kind = 'completion',
   approvalSubject = subject,
   decision = 'approved',
-  binding = criteriaRef(readRecord(store, 'item', itemId).body),
+  binding = criteriaFor(store, taskIdValue),
   supersedes = [],
   deployment = kind.startsWith('operator-deploy-')
     ? {environment: 'production', environment_class: 'production', deployment_id: 'deploy-123'} : null,
@@ -125,21 +139,21 @@ function seedApproval(store, {
   return seedRecord(store, {
     kind: 'approval',
     id,
-    itemId,
+    subject: {kind: 'task', id: taskIdValue},
     version: 1,
     body: {
       schema_version: 1,
       approval_id: id,
-      item_id: itemId,
+      subject: {kind: 'task', id: taskIdValue},
       authority: actor,
       kind,
-      subject: approvalSubject,
+      content_ref: approvalSubject,
       criteria_ref: binding,
       supersedes,
       deployment,
       recovery,
       decision,
-      evidence_refs: retainedRefs(store, itemId, approvalSubject, binding),
+      evidence_refs: retainedRefs(store, taskIdValue, approvalSubject, binding),
       reason: 'The exact subject satisfies the acceptance contract.',
       created_at: NOW,
     },
@@ -148,7 +162,7 @@ function seedApproval(store, {
 
 function seedEvidence(store, {
   id = randomUUID(),
-  itemId = 'demo',
+  taskId: taskIdValue = fixtureIds.task,
   kind,
   evidenceSubject = subject,
   dimension = null,
@@ -166,19 +180,19 @@ function seedEvidence(store, {
   return seedRecord(store, {
     kind: 'evidence',
     id,
-    itemId,
+    subject: {kind: 'task', id: taskIdValue},
     version: 1,
     body: {
       schema_version: 1,
       evidence_id: id,
-      item_id: itemId,
+      subject: {kind: 'task', id: taskIdValue},
       kind,
-      subject: evidenceSubject,
+      content_ref: kind === 'recovery-reconciliation' ? null : evidenceSubject,
       criteria_ref: kind === 'recovery-reconciliation'
-        ? null : criteriaRef(readRecord(store, 'item', itemId).body),
+        ? null : criteriaFor(store, taskIdValue),
       dimension,
       outcome,
-      evidence_refs: retainedRefs(store, itemId, evidenceSubject),
+      evidence_refs: retainedRefs(store, taskIdValue, evidenceSubject),
       reason: outcome === 'waived' ? 'Not applicable to this bounded change.' : null,
       data: normalizedData,
       supersedes,
@@ -211,7 +225,7 @@ function activeLease(holder = builder, token = 'lease-token', overrides = {}) {
   };
 }
 
-function transitionAuthority(actor, version, action = 'item.transition') {
+function transitionAuthority(actor, version, action = 'task.transition') {
   return grant(actor, action, version);
 }
 
@@ -240,13 +254,13 @@ await test('command and domain validation are closed over Task4 shapes', () => {
       digest: 'c'.repeat(64),
     }],
   });
-  assert.throws(() => validateCommand(itemCommand(
-    'item.transition',
+  assert.throws(() => validateCommand(taskCommand(
+    'task.transition',
     builder,
     1,
     {to: 'in-review', at: NOW, reason: 'Ready', accepted: true},
   )), error => error.code === 'INVALID_INPUT');
-  assert.throws(() => validateCommand(itemCommand(
+  assert.throws(() => validateCommand(taskCommand(
     'question.answer',
     reviewer,
     1,
@@ -267,15 +281,15 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   assert.throws(() => validateRecord({
     kind: 'review',
     id: randomUUID(),
-    itemId: 'demo',
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       review_id: randomUUID(),
-      item_id: 'demo',
+      subject: {kind: 'task', id: fixtureIds.task},
       reviewer,
       kind: 'independent-code',
-      subject,
+      content_ref: subject,
       criteria: [],
       verdict: 'approved',
       finding_refs: [],
@@ -287,15 +301,15 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   assert.throws(() => validateRecord({
     kind: 'review',
     id: randomUUID(),
-    itemId: 'demo',
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       review_id: randomUUID(),
-      item_id: 'demo',
+      subject: {kind: 'task', id: fixtureIds.task},
       reviewer,
       kind: 'independent-code',
-      subject: {kind: 'git', base: 'main', head: 'mutable-name'},
+      content_ref: {kind: 'git', base: 'main', head: 'mutable-name'},
       criteria: ['Correctness'],
       verdict: 'approved',
       finding_refs: [],
@@ -305,72 +319,63 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   }), error => error.code === 'INVALID_INPUT');
 });
 
-await test('initiative and item creation require explicit authority and preserve supplied scoped inputs', async () => {
+await test('task.create requires Requirement authority or an explicit delegated specialist', async () => {
   await withWorkspace(({store}) => {
-    const initiativeBody = {
-      schema_version: 1,
-      id: 'initiative-new',
-      title: 'New initiative',
-      status: 'proposed',
-      owner: steward.role,
-      scope: {current: ['Use supplied research']},
-      milestones: [],
-      backlog: [],
-      north_star_ref: '.kai/state/initiatives/initiative-new/northstar.md',
-      updated_at: NOW,
-    };
-    const createInitiative = command('initiative.create', {
-      actor: steward,
-      recordKind: 'initiative',
-      recordId: initiativeBody.id,
-      expectedVersion: 0,
-      payload: {body: initiativeBody},
-    });
-    assert.throws(() => applyCommand(store, createInitiative, {
-      roles: [steward.role],
-      grants: [],
-    }), error => error.code === 'AUTHORITY_REQUIRED');
-    const createdInitiative = applyCommand(
-      store,
-      createInitiative,
-      grant(steward, 'initiative.create', 0, {
-        recordKind: 'initiative',
-        recordId: initiativeBody.id,
-      }),
-    );
-    assert.equal(createdInitiative.recordVersion, 1);
-
-    const itemBody = {
-      ...seedItemBody(),
-      id: 'supplied-input',
-      initiative: initiativeBody.id,
+    const body = {
+      ...seedTaskBody(),
+      id: taskId('supplied-input'),
       state: 'proposed',
       scope_authority: steward.role,
       completion_authority: reviewer.role,
+      producer_actor: null,
+      producing_actors: [],
+      acceptance_actor: null,
       context_artifacts: ['docs/supplied-scope.md'],
     };
-    const createItem = command('item.create', {
+    seedTask(store, body);
+    store.database.prepare("DELETE FROM records WHERE kind = 'task' AND id = ?").run(body.id);
+    const createTask = command('task.create', {
       actor: steward,
-      recordId: itemBody.id,
+      recordId: body.id,
       expectedVersion: 0,
-      payload: {body: itemBody},
+      payload: {body},
     });
-    applyCommand(store, createItem, grant(steward, 'item.create', 0, {
-      recordId: itemBody.id,
+    assert.throws(() => applyCommand(store, createTask, {
+      roles: [steward.role, reviewer.role, quality.role],
+      grants: [],
+    }), error => error.code === 'AUTHORITY_REQUIRED');
+    const created = applyCommand(store, createTask, grant(steward, 'task.create', 0, {
+      recordId: body.id,
     }));
     assert.deepEqual(
-      readRecord(store, 'item', itemBody.id).body.context_artifacts,
+      created.data.record.body.context_artifacts,
       ['docs/supplied-scope.md'],
     );
+
+    const delegatedBody = {...body, id: taskId('delegated-specialist')};
+    seedTask(store, delegatedBody);
+    store.database.prepare("DELETE FROM records WHERE kind = 'task' AND id = ?")
+      .run(delegatedBody.id);
+    const delegated = command('task.create', {
+      actor: quality,
+      recordId: delegatedBody.id,
+      expectedVersion: 0,
+      payload: {body: delegatedBody},
+    });
+    assert.equal(applyCommand(store, delegated, grant(quality, 'task.create', 0, {
+      recordId: delegatedBody.id,
+    })).recordVersion, 1);
   });
 });
 
-function seedItemBody(overrides = {}) {
+function seedTaskBody(overrides = {}) {
   return {
     schema_version: 1,
-    id: 'demo',
-    title: 'Demo item',
-    initiative: 'demo-initiative',
+    id: fixtureIds.task,
+    pack: 'engineering',
+    feature_id: fixtureIds.feature,
+    satisfies: [fixtureIds.requirement],
+    title: 'Demo Task',
     delivery_class: 'knowledge',
     state: 'completed',
     resume_state: null,
@@ -395,7 +400,6 @@ function seedItemBody(overrides = {}) {
     recovery_hold: null,
     producing_actors: overrides.producer_actor === null ? [] : [overrides.producer_actor ?? builder],
     waiting_on_questions: [],
-    required_for_milestone: true,
     review_requirements: [],
     change_ref: null,
     updated_at: NOW,
@@ -403,66 +407,49 @@ function seedItemBody(overrides = {}) {
   };
 }
 
-await test('initiative updates lifecycle, milestones, and backlog only under its owner grant', async () => {
+await test('task.update cannot change pack, Feature, or Requirement membership', async () => {
   await withWorkspace(({store}) => {
-    seedInitiative(store, {status: 'proposed'});
-    const update = command('initiative.update', {
-      actor: steward,
-      recordKind: 'initiative',
-      recordId: 'demo-initiative',
-      payload: {
-        changes: {
-          status: 'active',
-          milestones: [{
-            id: 'm1',
-            title: 'Runtime complete',
-            delivery_class: 'knowledge',
-            required_items: [],
-            status: 'active',
-          }],
-          backlog: [{
-            id: 'b1',
-            title: 'Later enhancement',
-            status: 'parked',
-            item_id: null,
-            reason: 'Not in the thin core.',
-          }],
-          updated_at: NOW,
-        },
+    seedTask(store, {state: 'in-progress', lease: activeLease()});
+    for (const changes of [
+      {pack: 'creative'},
+      {feature_id: 'engineering:feature:other'},
+      {satisfies: ['engineering:requirement:other']},
+      {
+        feature_id: 'engineering:feature:other',
+        satisfies: ['engineering:requirement:other'],
       },
-    });
-    assert.throws(() => applyCommand(store, update, {
-      roles: [steward.role],
-      grants: [],
-    }), error => error.code === 'AUTHORITY_REQUIRED');
-    applyCommand(store, update, grant(steward, 'initiative.update', 1, {
-      recordKind: 'initiative',
-      recordId: 'demo-initiative',
-    }));
-    assert.equal(readRecord(store, 'initiative', 'demo-initiative').body.status, 'active');
+    ]) {
+      assert.throws(() => validateCommand(taskCommand(
+        'task.update',
+        builder,
+        1,
+        {changes: {...changes, updated_at: NOW}},
+        'lease-token',
+      )), error => error.code === 'INVALID_INPUT');
+    }
   });
 });
 
-await test('item.update changes descriptive fields but cannot change lifecycle or scope approval', async () => {
+await test('task.update changes descriptive fields but cannot change lifecycle or scope approval', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-progress', lease: activeLease()});
-    const result = applyCommand(store, itemCommand(
-      'item.update',
+    seedTask(store, {state: 'in-progress', lease: activeLease()});
+    const result = applyCommand(store, taskCommand(
+      'task.update',
       builder,
       1,
       {changes: {title: 'Revised', updated_at: NOW}},
       'lease-token',
-    ), grant(builder, 'item.update', 1));
+    ), grant(builder, 'task.update', 1));
     assert.equal(result.data.record.body.title, 'Revised');
-    assert.throws(() => validateCommand(itemCommand(
-      'item.update',
+    assert.throws(() => validateCommand(taskCommand(
+      'task.update',
       builder,
       2,
       {changes: {state: 'shipped'}},
       'lease-token',
     )), error => error.code === 'INVALID_INPUT');
-    assert.throws(() => validateCommand(itemCommand(
-      'item.update',
+    assert.throws(() => validateCommand(taskCommand(
+      'task.update',
       builder,
       2,
       {changes: {scope_authority: builder.role}},
@@ -473,12 +460,12 @@ await test('item.update changes descriptive fields but cannot change lifecycle o
 
 await test('promotion requires the declared scope authority plus an explicit grant', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'proposed',
       producer_actor: null,
       acceptance_actor: null,
     });
-    const promote = itemCommand('item.promote', steward, 1, {at: NOW});
+    const promote = taskCommand('task.promote', steward, 1, {at: NOW});
     assert.throws(() => applyCommand(store, promote, {
       roles: [
         steward.role,
@@ -491,57 +478,446 @@ await test('promotion requires the declared scope authority plus an explicit gra
       ...promote,
       operationId: randomUUID(),
       actor: builder,
-    }, grant(builder, 'item.promote', 1)), error =>
+    }, grant(builder, 'task.promote', 1)), error =>
       error.code === 'AUTHORITY_REQUIRED');
     const result = applyCommand(store, {
       ...promote,
       operationId: randomUUID(),
-    }, grant(steward, 'item.promote', 1));
+    }, grant(steward, 'task.promote', 1));
     assert.equal(result.data.record.body.state, 'ready');
+  });
+});
+
+await test('task.promote requires every satisfied Requirement to be active', async () => {
+  await withWorkspace(({store}) => {
+    const secondRequirement = 'engineering:requirement:second';
+    seedTask(store, {
+      state: 'proposed',
+      producer_actor: null,
+      acceptance_actor: null,
+      satisfies: [fixtureIds.requirement, secondRequirement],
+    });
+    const requirement = readRecord(store, 'requirement', secondRequirement);
+    store.database.prepare(
+      "UPDATE records SET body = ? WHERE kind = 'requirement' AND id = ?",
+    ).run(JSON.stringify({...requirement.body, state: 'proposed'}), secondRequirement);
+    const promote = taskCommand('task.promote', steward, 1, {at: NOW});
+    assert.throws(() => applyCommand(store, promote, grant(steward, 'task.promote', 1)),
+      error => error.code === 'EVIDENCE_GAP' && /active/i.test(error.message));
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'proposed');
   });
 });
 
 await test('granting rejects pending dependencies without calling them blocked', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'ready',
       producer_actor: null,
       acceptance_actor: null,
-      depends_on: [{item: 'upstream', requires: 'completed'}],
+      depends_on: [{task: taskId('upstream'), requires: 'completed'}],
     });
-    seedRecord(store, {
-      kind: 'item',
-      id: 'upstream',
-      itemId: 'upstream',
-      version: 1,
-      body: seedItemBody({
-        id: 'upstream',
-        state: 'in-progress',
-        producer_actor: builder,
-        acceptance_actor: null,
-      }),
+    seedTask(store, {
+      id: taskId('upstream'),
+      state: 'in-progress',
+      producer_actor: builder,
+      acceptance_actor: null,
     });
-    const reserve = itemCommand('item.grant', steward, 1, {
+    const reserve = taskCommand('task.grant', steward, 1, {
       holder: builder,
-      actions: ['item.update', 'item.transition', 'item.handoff', 'question.open'],
+      actions: ['task.update', 'task.transition', 'task.handoff', 'question.open'],
       acquiredAt: NOW,
       expiresAt: LATER,
     });
-    assert.throws(() => applyCommand(store, reserve, grant(steward, 'item.grant', 1)),
+    assert.throws(() => applyCommand(store, reserve, grant(steward, 'task.grant', 1)),
       error => error.code === 'EVIDENCE_GAP');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'ready');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'ready');
   });
+});
+
+await test('task.grant requires aligned active ancestors without an effective hold', async () => {
+  await withWorkspace(({store}) => {
+    seedTask(store, {
+      state: 'ready',
+      producer_actor: null,
+      acceptance_actor: null,
+    });
+    const feature = readRecord(store, 'feature', fixtureIds.feature);
+    store.database.prepare(
+      "UPDATE records SET body = ? WHERE kind = 'feature' AND id = ?",
+    ).run(JSON.stringify({
+      ...feature.body,
+      hold: {
+        reason: 'Pause execution.',
+        set_by: steward,
+        set_at: NOW,
+        release_condition: 'Explicit release.',
+        basis_refs: [],
+      },
+    }), fixtureIds.feature);
+    const reserve = taskCommand('task.grant', steward, 1, {
+      holder: builder,
+      actions: ['task.update'],
+      acquiredAt: NOW,
+      expiresAt: LATER,
+    });
+    assert.throws(() => applyCommand(store, reserve, grant(steward, 'task.grant', 1)),
+      error => error.code === 'EVIDENCE_GAP' && /hold/i.test(error.message));
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.lease, null);
+  });
+});
+
+await test('Direction drift permits leased evidence and a safe handoff but blocks forward work', async () => {
+  await withWorkspace(({root, store}) => {
+    seedTask(store, {
+      state: 'ready',
+      producer_actor: null,
+      acceptance_actor: null,
+      change_ref: subject,
+      next_role: builder.role,
+      touches: ['src/drift/**'],
+    });
+    const reserved = applyCommand(store, taskCommand('task.grant', steward, 1, {
+      holder: builder,
+      actions: ['task.transition', 'task.handoff', 'evidence.register'],
+      acquiredAt: NOW,
+      expiresAt: LATER,
+    }), grant(steward, 'task.grant', 1)).data.record;
+    const token = reserved.body.lease.token;
+    const evidenceRefs = retainedRefs(store, fixtureIds.task);
+    bindEvidenceRuntime(store, {
+      root,
+      authority: {
+        roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role],
+        grants: [],
+      },
+      runs: [],
+    });
+    seedTask(store, {
+      id: taskId('stale-promotion'),
+      state: 'proposed',
+      producer_actor: null,
+      acceptance_actor: null,
+      touches: ['src/promotion/**'],
+    });
+    seedTask(store, {
+      id: taskId('stale-grant'),
+      state: 'ready',
+      producer_actor: null,
+      acceptance_actor: null,
+      touches: ['src/grant/**'],
+    });
+    seedTask(store, {
+      id: taskId('stale-drop'),
+      state: 'proposed',
+      producer_actor: null,
+      acceptance_actor: null,
+      touches: ['src/drop/**'],
+    });
+    writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+      '# Vision',
+      'A composable workspace.',
+      '',
+      '# Mission',
+      'Coordinate exact work safely.',
+      '',
+      '# Current Goal',
+      'A changed Direction invalidates forward execution.',
+      '',
+      '# Out of Scope',
+      'Schema 5 workspace activation remains deferred.',
+      '',
+    ].join('\n'));
+
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
+      builder,
+      reserved.version,
+      {to: 'in-review', at: NOW, reason: 'Forward work is stale.', subject},
+      token,
+    ), {roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role], grants: []}),
+    error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
+      builder,
+      reserved.version,
+      {to: 'blocked', at: NOW, reason: 'Direction drift cannot change execution state.'},
+      token,
+    ), {roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role], grants: []}),
+    error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    const dropped = taskCommand('task.transition', steward, 1, {
+      to: 'dropped', at: NOW, reason: 'Direction drift cannot drop the Task.',
+    });
+    dropped.recordId = taskId('stale-drop');
+    assert.throws(() => applyCommand(store, dropped, grant(steward, 'task.transition', 1, {
+      recordId: dropped.recordId,
+    })), error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    const promoted = taskCommand('task.promote', steward, 1, {
+      at: NOW,
+    });
+    promoted.recordId = taskId('stale-promotion');
+    assert.throws(() => applyCommand(store, promoted, grant(steward, 'task.promote', 1, {
+      recordId: promoted.recordId,
+    })), error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    const regrant = taskCommand('task.grant', steward, 1, {
+      holder: builder,
+      actions: ['task.update'],
+      acquiredAt: NOW,
+      expiresAt: LATER,
+    });
+    regrant.recordId = taskId('stale-grant');
+    assert.throws(() => applyCommand(store, regrant, grant(steward, 'task.grant', 1, {
+      recordId: regrant.recordId,
+    })), error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    const evidenceId = randomUUID();
+    const recorded = registerEvidence(store, taskCommand(
+      'evidence.register',
+      builder,
+      reserved.version,
+      {
+        tier: 'declared',
+        body: {
+          schema_version: 1,
+          evidence_id: evidenceId,
+          subject: {kind: 'task', id: fixtureIds.task},
+          kind: 'dod-dimension',
+          content_ref: subject,
+          criteria_ref: criteriaFor(store, fixtureIds.task),
+          supersedes: [],
+          dimension: 'verified',
+          outcome: 'gap',
+          evidence_refs: evidenceRefs,
+          reason: null,
+          data: {},
+          created_at: NOW,
+        },
+      },
+      token,
+    ));
+    assert.equal(recorded.ok, true);
+
+    const unsafe = taskCommand('task.handoff', builder, reserved.version, {
+      toRole: reviewer.role,
+      state: null,
+      createdAt: NOW,
+      messageId: randomUUID(),
+      parentId: null,
+      content: {
+        did: 'Recorded current evidence.',
+        needs: 'Realign the Task.',
+        assetState: 'Preserved.',
+        authority: 'Direction changed.',
+        revalidation: 'Required before forward work.',
+        questions: [],
+      },
+      artifactRefs: [],
+      evidenceRefs: [`evidence:${evidenceId}`],
+      provenance: 'durable-thread',
+    }, token);
+    assert.throws(() => applyCommand(store, unsafe, {
+      roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role],
+      grants: [],
+    }), error => error.code === 'AUTHORITY_REQUIRED' && /safe owner/i.test(error.message));
+
+    const safe = {
+      ...unsafe,
+      operationId: randomUUID(),
+      payload: {...unsafe.payload, toRole: steward.role, messageId: randomUUID()},
+    };
+    const handedOff = applyCommand(store, safe, {
+      roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role],
+      grants: [],
+    }).data.record;
+    assert.equal(handedOff.body.state, 'in-progress');
+    assert.equal(handedOff.body.next_role, steward.role);
+    assert.equal(handedOff.body.lease, null);
+  });
+});
+
+await test('Direction drift rejects fresh host grants for unleased evidence and handoff', async () => {
+  for (const action of ['evidence', 'handoff']) {
+    await withWorkspace(({root, store}) => {
+      seedTask(store, {
+        state: 'in-progress',
+        change_ref: subject,
+        next_role: builder.role,
+        lease: null,
+        touches: [`src/unleased-${action}/**`],
+      });
+      const evidenceRefs = retainedRefs(store, fixtureIds.task);
+      writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+        '# Vision',
+        'A composable workspace.',
+        '',
+        '# Mission',
+        'Coordinate exact work safely.',
+        '',
+        '# Current Goal',
+        'A changed Direction invalidates unleased exceptions.',
+        '',
+        '# Out of Scope',
+        'Schema 5 workspace activation remains deferred.',
+        '',
+      ].join('\n'));
+
+      if (action === 'evidence') {
+        bindEvidenceRuntime(store, {
+          root,
+          authority: grant(builder, 'evidence.register', 1),
+          runs: [],
+        });
+        assert.throws(() => registerEvidence(store, taskCommand(
+          'evidence.register',
+          builder,
+          1,
+          {
+            tier: 'declared',
+            body: {
+              schema_version: 1,
+              evidence_id: randomUUID(),
+              subject: {kind: 'task', id: fixtureIds.task},
+              kind: 'dod-dimension',
+              content_ref: subject,
+              criteria_ref: criteriaFor(store, fixtureIds.task),
+              supersedes: [],
+              dimension: 'verified',
+              outcome: 'gap',
+              evidence_refs: evidenceRefs,
+              reason: null,
+              data: {},
+              created_at: NOW,
+            },
+          },
+        )), error => error.code === 'LEASE_CONFLICT');
+      } else {
+        assert.throws(() => applyCommand(store, taskCommand('task.handoff', builder, 1, {
+          toRole: steward.role,
+          state: null,
+          createdAt: NOW,
+          messageId: randomUUID(),
+          parentId: null,
+          content: {
+            did: 'No leased work exists.',
+            needs: 'Realign the Task.',
+            assetState: 'Preserved.',
+            authority: 'Direction changed.',
+            revalidation: 'Required before forward work.',
+            questions: [],
+          },
+          artifactRefs: [],
+          evidenceRefs: [],
+          provenance: 'durable-thread',
+        }), grant(builder, 'task.handoff', 1)),
+        error => error.code === 'LEASE_CONFLICT');
+      }
+    });
+  }
+});
+
+await test('Direction-stale leased handoff rejects state changes and unsafe owners', async () => {
+  for (const scenario of [
+    ...[
+      'proposed',
+      'ready',
+      'in-progress',
+      'in-review',
+      'completed',
+      'release-ready',
+      'deploying',
+      'production-verification',
+      'shipped',
+      'blocked',
+      'dropped',
+    ].map(state => ({
+      name: state,
+      holder: state === 'dropped' ? steward : builder,
+      state,
+      toRole: steward.role,
+    })),
+    {name: 'wrong-role', holder: builder, state: null, toRole: reviewer.role},
+  ]) {
+    await withWorkspace(({root, store}) => {
+      seedTask(store, {
+        state: 'ready',
+        producer_actor: null,
+        acceptance_actor: null,
+        change_ref: subject,
+        next_role: scenario.holder.role,
+        touches: [`src/stale-handoff-${scenario.name}/**`],
+      });
+      const reserved = applyCommand(store, taskCommand('task.grant', steward, 1, {
+        holder: scenario.holder,
+        actions: ['task.handoff', 'task.transition'],
+        acquiredAt: NOW,
+        expiresAt: LATER,
+      }), grant(steward, 'task.grant', 1)).data.record;
+      writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+        '# Vision',
+        'A composable workspace.',
+        '',
+        '# Mission',
+        'Coordinate exact work safely.',
+        '',
+        '# Current Goal',
+        'A changed Direction permits only state-preserving safe handoff.',
+        '',
+        '# Out of Scope',
+        'Schema 5 workspace activation remains deferred.',
+        '',
+      ].join('\n'));
+
+      const payload = {
+        toRole: scenario.toRole,
+        state: scenario.state,
+        createdAt: NOW,
+        messageId: randomUUID(),
+        parentId: null,
+        content: {
+          did: 'Preserved the stale work.',
+          needs: 'Realign the Task.',
+          assetState: 'Preserved.',
+          authority: 'Direction changed.',
+          revalidation: 'Required before forward work.',
+          questions: [],
+        },
+        artifactRefs: [],
+        evidenceRefs: [],
+        provenance: 'durable-thread',
+        ...(scenario.state === 'in-review' ? {subject} : {}),
+      };
+      const actingAuthority = scenario.state === 'dropped'
+        ? grant(steward, 'task.transition', reserved.version)
+        : {
+          roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role],
+          grants: [],
+        };
+      assert.throws(() => applyCommand(store, taskCommand(
+        'task.handoff',
+        scenario.holder,
+        reserved.version,
+        payload,
+        reserved.body.lease.token,
+      ), actingAuthority), error => error.code === 'AUTHORITY_REQUIRED'
+        && (scenario.state === null
+          ? /safe owner/i.test(error.message)
+          : /preserve execution state/i.test(error.message)));
+    });
+  }
 });
 
 await test('ready items cannot bypass reservation with a direct transition', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'ready',
       producer_actor: null,
       acceptance_actor: null,
     });
-    assert.throws(() => applyCommand(store, itemCommand(
-      'item.transition',
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
       builder,
       1,
       {to: 'in-progress', at: NOW, reason: 'Bypass the grant.'},
@@ -552,25 +928,19 @@ await test('ready items cannot bypass reservation with a direct transition', asy
 
 await test('granting converts a failed dependency into a truthful blocked resume state', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'ready',
       producer_actor: null,
       acceptance_actor: null,
-      depends_on: [{item: 'upstream', requires: 'completed'}],
+      depends_on: [{task: taskId('upstream'), requires: 'completed'}],
     });
-    seedRecord(store, {
-      kind: 'item',
-      id: 'upstream',
-      itemId: 'upstream',
-      version: 1,
-      body: seedItemBody({id: 'upstream', state: 'dropped'}),
-    });
-    const result = applyCommand(store, itemCommand('item.grant', steward, 1, {
+    seedTask(store, {id: taskId('upstream'), state: 'dropped'});
+    const result = applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: builder,
-      actions: ['item.update'],
+      actions: ['task.update'],
       acquiredAt: NOW,
       expiresAt: LATER,
-    }), grant(steward, 'item.grant', 1));
+    }), grant(steward, 'task.grant', 1));
     assert.equal(result.data.record.body.state, 'blocked');
     assert.equal(result.data.record.body.resume_state, 'ready');
     assert.equal(result.data.record.body.lease, null);
@@ -579,73 +949,67 @@ await test('granting converts a failed dependency into a truthful blocked resume
 
 await test('granting rejects same-role regrant, stale tokens, unavailable roles, and touch conflicts', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-progress', lease: activeLease()});
-    assert.throws(() => applyCommand(store, itemCommand('item.grant', steward, 1, {
+    seedTask(store, {state: 'in-progress', lease: activeLease()});
+    assert.throws(() => applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: builder,
-      actions: ['item.update'],
+      actions: ['task.update'],
       acquiredAt: NOW,
       expiresAt: LATER,
-    }), grant(steward, 'item.grant', 1)), error =>
+    }), grant(steward, 'task.grant', 1)), error =>
       error.code === 'LEASE_CONFLICT');
 
-    assert.throws(() => applyCommand(store, itemCommand(
-      'item.update',
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.update',
       builder,
       1,
       {changes: {title: 'Stale token'}},
       'old-token',
-    ), grant(builder, 'item.update', 1)), error =>
+    ), grant(builder, 'task.update', 1)), error =>
       error.code === 'LEASE_CONFLICT');
   });
 
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'ready',
       producer_actor: null,
       acceptance_actor: null,
       touches: ['src/demo/**'],
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.grant', steward, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: {role: 'missing-role', runId: 'missing-run'},
-      actions: ['item.update'],
+      actions: ['task.update'],
       acquiredAt: NOW,
       expiresAt: LATER,
-    }), grant(steward, 'item.grant', 1)), error =>
+    }), grant(steward, 'task.grant', 1)), error =>
       error.code === 'ROLE_UNAVAILABLE');
   });
 
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'ready',
       producer_actor: null,
       acceptance_actor: null,
       touches: ['src/demo/**'],
     });
-    seedRecord(store, {
-      kind: 'item',
-      id: 'active-item',
-      itemId: 'active-item',
-      version: 1,
-      body: seedItemBody({
-        id: 'active-item',
-        state: 'in-progress',
-        touches: ['src/demo/file.mjs'],
-        lease: activeLease(quality, 'other-token'),
-      }),
+    seedTask(store, {
+      id: taskId('active-task'),
+      state: 'in-progress',
+      touches: ['src/demo/file.mjs'],
+      lease: activeLease(quality, 'other-token'),
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.grant', steward, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: builder,
-      actions: ['item.update'],
+      actions: ['task.update'],
       acquiredAt: NOW,
       expiresAt: LATER,
-    }), grant(steward, 'item.grant', 1)), error =>
+    }), grant(steward, 'task.grant', 1)), error =>
       error.code === 'LEASE_CONFLICT');
   });
 });
 
 await test('review-state grants preserve state and issue persisted lease authority', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       delivery_class: 'product-change',
       state: 'in-review',
       change_ref: subject,
@@ -654,19 +1018,20 @@ await test('review-state grants preserve state and issue persisted lease authori
       next_role: reviewer.role,
       review_requirements: [{role: reviewer.role, kind: 'independent-code'}],
     });
-    const result = applyCommand(store, itemCommand('item.grant', steward, 1, {
+    const result = applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: reviewer,
-      actions: ['item.handoff', 'item.transition'],
+      actions: ['task.handoff', 'task.transition'],
       acquiredAt: NOW,
       expiresAt: LATER,
-    }), grant(steward, 'item.grant', 1));
+    }), grant(steward, 'task.grant', 1));
     assert.equal(result.data.record.body.state, 'in-review');
     assert.deepEqual(result.data.record.body.change_ref, subject);
     assert.equal(result.data.record.body.lease.holder.role, reviewer.role);
     assert.notEqual(result.data.record.body.lease.token, null);
     const persistedGrant = store.database.prepare(`
-      SELECT id FROM records WHERE kind = 'grant' AND item_id = 'demo'
-    `).get();
+      SELECT id FROM records
+      WHERE kind = 'grant' AND subject_kind = 'task' AND subject_id = ?
+    `).get(fixtureIds.task);
     assert.equal(readRecord(store, 'grant', persistedGrant.id).body.lease_token,
       result.data.record.body.lease.token);
   });
@@ -674,21 +1039,21 @@ await test('review-state grants preserve state and issue persisted lease authori
 
 await test('persisted lease grants authorize the holder without caller-invented grants', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'ready',
       producer_actor: null,
       acceptance_actor: null,
       next_role: builder.role,
     });
-    const reserved = applyCommand(store, itemCommand('item.grant', steward, 1, {
+    const reserved = applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: builder,
-      actions: ['item.update', 'item.transition', 'item.handoff', 'question.open'],
+      actions: ['task.update', 'task.transition', 'task.handoff', 'question.open'],
       acquiredAt: NOW,
       expiresAt: LATER,
-    }), grant(steward, 'item.grant', 1));
+    }), grant(steward, 'task.grant', 1));
     const token = reserved.data.record.body.lease.token;
-    const updated = applyCommand(store, itemCommand(
-      'item.update',
+    const updated = applyCommand(store, taskCommand(
+      'task.update',
       builder,
       2,
       {changes: {title: 'Authorized by persisted grant', updated_at: NOW}},
@@ -709,38 +1074,32 @@ await test('persisted lease grants authorize the holder without caller-invented 
 
 await test('dependency cycles are rejected on create and update', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
-      id: 'a',
-      depends_on: [{item: 'b', requires: 'completed'}],
+    seedTask(store, {
+      id: taskId('a'),
+      depends_on: [{task: taskId('b'), requires: 'completed'}],
     });
-    seedRecord(store, {
-      kind: 'item',
-      id: 'b',
-      itemId: 'b',
-      version: 1,
-      body: seedItemBody({id: 'b', depends_on: []}),
-    });
-    const update = command('item.update', {
+    seedTask(store, {id: taskId('b'), depends_on: []});
+    const update = command('task.update', {
       actor: steward,
-      recordId: 'b',
+      recordId: taskId('b'),
       payload: {
         changes: {
-          depends_on: [{item: 'a', requires: 'completed'}],
+          depends_on: [{task: taskId('a'), requires: 'completed'}],
           updated_at: NOW,
         },
       },
     });
-    assert.throws(() => applyCommand(store, update, grant(steward, 'item.update', 1, {
-      recordId: 'b',
+    assert.throws(() => applyCommand(store, update, grant(steward, 'task.update', 1, {
+      recordId: taskId('b'),
     })), error => error.code === 'INVALID_INPUT');
   });
 });
 
-await test('blocking questions update item, question, and message atomically', async () => {
+await test('blocking questions update Task, question, and message atomically', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-review', lease: activeLease(builder)});
+    seedTask(store, {state: 'in-review', lease: activeLease(builder)});
     const messageId = randomUUID();
-    const opened = applyCommand(store, itemCommand(
+    const opened = applyCommand(store, taskCommand(
       'question.open',
       builder,
       1,
@@ -768,13 +1127,61 @@ await test('blocking questions update item, question, and message atomically', a
     assert.equal(opened.data.record.body.resume_state, 'in-review');
     assert.deepEqual(opened.data.record.body.waiting_on_questions, ['q1']);
     assert.equal(readRecord(store, 'question', 'q1').body.status, 'open');
-    assert.equal(readRecord(store, 'message', messageId).body.basis_version, 1);
+    const message = readRecord(store, 'message', messageId).body;
+    assert.equal(message.basis_version, opened.data.record.version);
+    assert.equal(message.thread_id,
+      subjectRef({kind: 'task', id: fixtureIds.task}, opened.data.record.version));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${messageId}`);
+  });
+});
+
+await test('message commands advance an unchanged parent body before binding its thread', async () => {
+  await withWorkspace(({store}) => {
+    seedTask(store);
+    const messageId = randomUUID();
+    const opened = applyCommand(store, command('question.open', {
+      actor: steward,
+      recordKind: 'feature',
+      recordId: fixtureIds.feature,
+      expectedVersion: 1,
+      payload: {
+        questionId: 'parent-q1',
+        messageId,
+        parentId: null,
+        recipient: reviewer.role,
+        kind: 'question',
+        createdAt: NOW,
+        content: {
+          questionKind: 'decision',
+          blocking: false,
+          context: 'Parent criteria are otherwise unchanged.',
+          ask: 'Is the exact parent report ready?',
+          answerBy: 'Before parent completion proof',
+        },
+        artifactRefs: [],
+        evidenceRefs: [],
+        provenance: 'durable-thread',
+      },
+    }), grant(steward, 'question.open', 1, {
+      recordKind: 'feature',
+      recordId: fixtureIds.feature,
+    }));
+    assert.equal(opened.data.record.version, 2);
+    const message = readRecord(store, 'message', messageId).body;
+    assert.equal(message.basis_version, 2);
+    assert.equal(message.thread_id,
+      subjectRef({kind: 'feature', id: fixtureIds.feature}, 2));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'feature', id: fixtureIds.feature},
+    }).text).recent_messages.at(-1).ref, `message:${messageId}`);
   });
 });
 
 await test('valid peer answers clear only their question and require authorized restoration', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked',
       resume_state: 'in-review',
       waiting_on_questions: ['q1', 'q2'],
@@ -791,14 +1198,14 @@ await test('valid peer answers clear only their question and require authorized 
       expectedVersion: 1,
       answer: 'The artifact is valid.',
     });
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.waiting_on_questions, ['q2']);
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'blocked');
-    assert.throws(() => applyCommand(store, itemCommand(
-      'item.restore',
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.waiting_on_questions, ['q2']);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'blocked');
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.restore',
       shipper,
       2,
       {at: NOW},
-    ), grant(shipper, 'item.restore', 2)), error =>
+    ), grant(shipper, 'task.restore', 2)), error =>
       error.code === 'EVIDENCE_GAP');
     answerQuestion(store, {
       questionId: 'q2',
@@ -808,21 +1215,28 @@ await test('valid peer answers clear only their question and require authorized 
       expectedVersion: 2,
       answer: 'The checks are green.',
     });
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.waiting_on_questions, []);
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'blocked');
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.waiting_on_questions, []);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'blocked');
+    const answerId = readRecord(store, 'question', 'q2').body.answer_message_ids.at(-1);
+    const answer = readRecord(store, 'message', answerId).body;
+    assert.equal(answer.basis_version, 3);
+    assert.equal(answer.thread_id, subjectRef({kind: 'task', id: fixtureIds.task}, 3));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${answerId}`);
 
-    const denied = itemCommand('item.restore', reviewer, 3, {at: NOW});
+    const denied = taskCommand('task.restore', reviewer, 3, {at: NOW});
     assert.throws(() => applyCommand(store, denied, {
       roles: [reviewer.role],
       grants: [],
     }), error => error.code === 'AUTHORITY_REQUIRED');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'blocked');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'blocked');
 
     const restored = applyCommand(store, {
       ...denied,
       operationId: randomUUID(),
       actor: shipper,
-    }, grant(shipper, 'item.restore', 3));
+    }, grant(shipper, 'task.restore', 3));
     assert.equal(restored.data.record.body.state, 'in-review');
     assert.equal(restored.data.record.body.resume_state, null);
   });
@@ -833,13 +1247,13 @@ function seedQuestion(store, id, recipient) {
   seedRecord(store, {
     kind: 'message',
     id: messageId,
-    itemId: 'demo',
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       message_id: messageId,
-      thread_id: 'demo',
-      item_id: 'demo',
+      subject: {kind: 'task', id: fixtureIds.task},
+      thread_id: subjectRef({kind: 'task', id: fixtureIds.task}, 1),
       parent_id: null,
       sender_role: builder.role,
       sender_run: builder.runId,
@@ -862,12 +1276,12 @@ function seedQuestion(store, id, recipient) {
   seedRecord(store, {
     kind: 'question',
     id,
-    itemId: 'demo',
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       question_id: id,
-      item_id: 'demo',
+      subject: {kind: 'task', id: fixtureIds.task},
       asker: builder,
       recipient,
       kind: 'fact',
@@ -895,7 +1309,9 @@ function answerQuestion(store, {
   actorAuthority = {roles: [sender.role], grants: []},
   resolves,
 }) {
-  return applyCommand(store, itemCommand(
+  expectedVersion = readRecord(store, 'task', fixtureIds.task).version;
+  const createdAt = new Date(Date.parse(NOW) + expectedVersion * 1000).toISOString();
+  return applyCommand(store, taskCommand(
     'question.answer',
     sender,
     expectedVersion,
@@ -905,7 +1321,7 @@ function answerQuestion(store, {
       parentId,
       recipient,
       kind: 'answer',
-      createdAt: NOW,
+      createdAt,
       content: {status: 'answered', answer, lane, ...(resolves ? {resolves} : {})},
       artifactRefs: [],
       evidenceRefs: [],
@@ -916,7 +1332,7 @@ function answerQuestion(store, {
 
 await test('out-of-lane and contradictory answers do not clear blockers', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked',
       resume_state: 'in-progress',
       waiting_on_questions: ['q1'],
@@ -932,7 +1348,7 @@ await test('out-of-lane and contradictory answers do not clear blockers', async 
       answer: 'Ask another team.',
       lane: 'out-of-lane',
     });
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.waiting_on_questions, ['q1']);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.waiting_on_questions, ['q1']);
     answerQuestion(store, {
       questionId: 'q1',
       parentId,
@@ -941,7 +1357,7 @@ await test('out-of-lane and contradictory answers do not clear blockers', async 
       expectedVersion: 2,
       answer: 'First answer.',
     });
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.waiting_on_questions, []);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.waiting_on_questions, []);
     answerQuestion(store, {
       questionId: 'q1',
       parentId,
@@ -950,14 +1366,14 @@ await test('out-of-lane and contradictory answers do not clear blockers', async 
       expectedVersion: 3,
       answer: 'Contradictory answer.',
     });
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.waiting_on_questions, ['q1']);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.waiting_on_questions, ['q1']);
     assert.equal(readRecord(store, 'question', 'q1').body.status, 'open');
   });
 });
 
 await test('answers enforce addressed sender, recipient, parent, and operator reservation', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked',
       resume_state: 'in-progress',
       waiting_on_questions: ['q1'],
@@ -980,21 +1396,21 @@ await test('answers enforce addressed sender, recipient, parent, and operator re
       expectedVersion: 1,
       answer: 'Wrong parent.',
     }), error => error.code === 'INVALID_INPUT');
-    assert.throws(() => applyCommand(store, itemCommand('item.grant', steward, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.grant', steward, 1, {
       holder: operator,
       actions: ['question.answer'],
       acquiredAt: NOW,
       expiresAt: LATER,
     }), {
       roles: [steward.role, 'operator'],
-      grants: grant(steward, 'item.grant', 1).grants,
+      grants: grant(steward, 'task.grant', 1).grants,
     }), error => error.code === 'INVALID_INPUT');
   });
 });
 
 await test('operator answers use an explicit host grant without becoming an installed role', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked',
       resume_state: 'in-progress',
       waiting_on_questions: ['q1'],
@@ -1013,9 +1429,9 @@ await test('operator answers use an explicit host grant without becoming an inst
         grants: [{
           actor: operator,
           actions: ['question.answer'],
-          recordKind: 'item',
-          recordId: 'demo',
-          basisRef: 'item/demo@1',
+          recordKind: 'task',
+          recordId: fixtureIds.task,
+          basisRef: `task/${fixtureIds.task}@1`,
         }],
       },
     });
@@ -1025,8 +1441,8 @@ await test('operator answers use an explicit host grant without becoming an inst
 
 await test('operator is not used as the recipient for role-owned fact questions', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-progress', lease: activeLease()});
-    assert.throws(() => applyCommand(store, itemCommand(
+    seedTask(store, {state: 'in-progress', lease: activeLease()});
+    assert.throws(() => applyCommand(store, taskCommand(
       'question.open',
       builder,
       1,
@@ -1056,8 +1472,8 @@ await test('operator is not used as the recipient for role-owned fact questions'
 
 await test('duplicate message command returns its original receipt', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-progress', lease: activeLease()});
-    const open = itemCommand('question.open', builder, 1, {
+    seedTask(store, {state: 'in-progress', lease: activeLease()});
+    const open = taskCommand('question.open', builder, 1, {
       questionId: 'q1',
       messageId: randomUUID(),
       parentId: null,
@@ -1091,15 +1507,15 @@ await test('duplicate message command returns its original receipt', async () =>
 
 await test('handoff applies lifecycle guards, writes a message, and clears the lease', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress',
       lease: activeLease(),
       producer_actor: builder,
       review_requirements: [{role: reviewer.role, kind: 'independent-code'}],
     });
     const messageId = randomUUID();
-    const result = applyCommand(store, itemCommand(
-      'item.handoff',
+    const result = applyCommand(store, taskCommand(
+      'task.handoff',
       builder,
       1,
       {
@@ -1122,17 +1538,24 @@ await test('handoff applies lifecycle guards, writes a message, and clears the l
         provenance: 'durable-thread',
       },
       'lease-token',
-    ), grant(builder, ['item.handoff', 'item.transition'], 1));
+    ), grant(builder, ['task.handoff', 'task.transition'], 1));
     assert.equal(result.data.record.body.state, 'in-review');
     assert.deepEqual(result.data.record.body.change_ref, subject);
     assert.equal(result.data.record.body.lease, null);
-    assert.equal(readRecord(store, 'message', messageId).body.kind, 'handoff');
+    const message = readRecord(store, 'message', messageId).body;
+    assert.equal(message.kind, 'handoff');
+    assert.equal(message.basis_version, result.data.record.version);
+    assert.equal(message.thread_id,
+      subjectRef({kind: 'task', id: fixtureIds.task}, result.data.record.version));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${messageId}`);
   });
 });
 
 await test('knowledge completion consumes persisted reviews and completion approval', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-review',
       lease: activeLease(reviewer, 'review-token'),
       change_ref: subject,
@@ -1142,8 +1565,8 @@ await test('knowledge completion consumes persisted reviews and completion appro
     });
     seedReview(store);
     seedApproval(store);
-    const result = applyCommand(store, itemCommand(
-      'item.transition',
+    const result = applyCommand(store, taskCommand(
+      'task.transition',
       reviewer,
       1,
       {to: 'completed', at: NOW, reason: 'Accepted exact revision.'},
@@ -1156,7 +1579,7 @@ await test('knowledge completion consumes persisted reviews and completion appro
 
 await test('a producer cannot self-accept and mutable names cannot satisfy subject binding', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-review',
       lease: activeLease(builder),
       change_ref: subject,
@@ -1166,8 +1589,8 @@ await test('a producer cannot self-accept and mutable names cannot satisfy subje
       review_requirements: [],
     });
     seedApproval(store, {actor: builder});
-    assert.throws(() => applyCommand(store, itemCommand(
-      'item.transition',
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
       builder,
       1,
       {to: 'completed', at: NOW, reason: 'Self accepted.'},
@@ -1179,7 +1602,7 @@ await test('a producer cannot self-accept and mutable names cannot satisfy subje
 
 await test('reviews and approvals for another immutable subject cannot satisfy completion', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-review',
       lease: activeLease(reviewer, 'review-token'),
       change_ref: subject,
@@ -1194,8 +1617,8 @@ await test('reviews and approvals for another immutable subject cannot satisfy c
     };
     seedReview(store, {reviewSubject: otherSubject});
     seedApproval(store, {approvalSubject: otherSubject});
-    assert.throws(() => applyCommand(store, itemCommand(
-      'item.transition',
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
       reviewer,
       1,
       {to: 'completed', at: NOW, reason: 'Wrong revision.'},
@@ -1207,7 +1630,7 @@ await test('reviews and approvals for another immutable subject cannot satisfy c
 
 await test('release readiness requires all persisted reviews, acceptance, and six evidenced dimensions', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       delivery_class: 'product-change',
       state: 'in-review',
       lease: activeLease(shipper, 'ship-token'),
@@ -1223,8 +1646,8 @@ await test('release readiness requires all persisted reviews, acceptance, and si
     seedReview(store);
     seedApproval(store);
     seedReleaseEvidence(store);
-    assert.throws(() => applyCommand(store, itemCommand(
-      'item.transition',
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
       shipper,
       1,
       {to: 'release-ready', at: NOW, reason: 'All gates claimed in payload.'},
@@ -1232,8 +1655,8 @@ await test('release readiness requires all persisted reviews, acceptance, and si
     ), transitionAuthority(shipper, 1)), error =>
       error.code === 'EVIDENCE_GAP');
     seedReview(store, {actor: quality, kind: 'ui-system'});
-    const result = applyCommand(store, itemCommand(
-      'item.transition',
+    const result = applyCommand(store, taskCommand(
+      'task.transition',
       shipper,
       1,
       {to: 'release-ready', at: NOW, reason: 'Persisted gates are complete.'},
@@ -1245,7 +1668,7 @@ await test('release readiness requires all persisted reviews, acceptance, and si
 
 await test('deployment start, completion, and shipped use separate persisted operator/evidence gates', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       delivery_class: 'product-change',
       state: 'release-ready',
       lease: activeLease(shipper, 'ship-token'),
@@ -1253,8 +1676,8 @@ await test('deployment start, completion, and shipped use separate persisted ope
       producer_actor: builder,
       acceptance_actor: reviewer,
     });
-    const start = itemCommand(
-      'item.transition',
+    const start = taskCommand(
+      'task.transition',
       shipper,
       1,
       {to: 'deploying', at: NOW, reason: 'Operator started deployment.'},
@@ -1271,10 +1694,12 @@ await test('deployment start, completion, and shipped use separate persisted ope
 
     const completionLease = activeLease(shipper, 'complete-token', {version_at_grant: 2});
     store.database.prepare(`
-      UPDATE records SET body = ? WHERE kind = 'item' AND id = 'demo'
-    `).run(JSON.stringify({...deploying.data.record.body, lease: completionLease}));
-    const complete = itemCommand(
-      'item.transition',
+      UPDATE records SET body = ? WHERE kind = 'task' AND id = ?
+    `).run(JSON.stringify({...deploying.data.record.body, lease: completionLease}),
+      fixtureIds.task);
+    seedApproval(store, {actor: operator, kind: 'operator-deploy-start'});
+    const complete = taskCommand(
+      'task.transition',
       shipper,
       2,
       {to: 'production-verification', at: NOW, reason: 'Deployment completed.'},
@@ -1296,10 +1721,14 @@ await test('deployment start, completion, and shipped use separate persisted ope
 
     const verifyLease = activeLease(shipper, 'verify-token', {version_at_grant: 3});
     store.database.prepare(`
-      UPDATE records SET body = ? WHERE kind = 'item' AND id = 'demo'
-    `).run(JSON.stringify({...verifying.data.record.body, lease: verifyLease}));
-    const finish = itemCommand(
-      'item.transition',
+      UPDATE records SET body = ? WHERE kind = 'task' AND id = ?
+    `).run(JSON.stringify({...verifying.data.record.body, lease: verifyLease}),
+      fixtureIds.task);
+    seedApproval(store, {actor: operator, kind: 'operator-deploy-start'});
+    seedApproval(store, {actor: operator, kind: 'operator-deploy-complete'});
+    seedEvidence(store, {kind: 'deployment'});
+    const finish = taskCommand(
+      'task.transition',
       shipper,
       3,
       {to: 'shipped', at: NOW, reason: 'Production checks passed.'},
@@ -1318,13 +1747,13 @@ await test('deployment start, completion, and shipped use separate persisted ope
 
 await test('recovery requires expiry plus reconciled evidence and invalidates the stale token', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress',
       lease: activeLease(builder, 'stale-token', {
         expires_at: EXPIRED,
       }),
     });
-    const recover = itemCommand('attempt.recover', steward, 1, {
+    const recover = taskCommand('attempt.recover', steward, 1, {
       attemptId: randomUUID(),
       observed: 'No partial product changes.',
       disposition: 'safe-to-resume',
@@ -1340,7 +1769,7 @@ await test('recovery requires expiry plus reconciled evidence and invalidates th
       kind: 'recovery-reconciliation',
       evidenceSubject: null,
       data: {
-        stale_lease_token: readRecord(store, 'item', 'demo').body.lease.token,
+        stale_lease_token: readRecord(store, 'task', fixtureIds.task).body.lease.token,
         disposition: 'safe-to-resume',
         observed: 'No partial product changes.',
       },
@@ -1362,7 +1791,7 @@ await test('recovery requires expiry plus reconciled evidence and invalidates th
 
 await test('conflicting recovery blocks and routes to operator without a new lease', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress',
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
@@ -1375,7 +1804,7 @@ await test('conflicting recovery blocks and routes to operator without a new lea
         observed: 'Overlapping uncommitted changes exist.',
       },
     });
-    const result = applyCommand(store, itemCommand('attempt.recover', steward, 1, {
+    const result = applyCommand(store, taskCommand('attempt.recover', steward, 1, {
       attemptId: randomUUID(),
       observed: 'Overlapping uncommitted changes exist.',
       disposition: 'conflicting-partial-work',
@@ -1393,26 +1822,26 @@ await test('conflicting recovery blocks and routes to operator without a new lea
 
 await test('the required two-blocker restore case refuses role-name-only authority', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked',
       resume_state: 'in-review',
       waiting_on_questions: ['q1', 'q2'],
     });
     const auth = {roles: ['eng-reviewer-code'], grants: []};
-    const denied = command('item.restore', {
+    const denied = command('task.restore', {
       actor: reviewer,
       payload: {at: NOW},
     });
     assert.throws(() => applyCommand(store, denied, auth),
       error => error.code === 'AUTHORITY_REQUIRED');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'blocked');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'blocked');
   });
 });
 
 assert.ok(RuntimeError);
 
 function reviewItem(store, overrides = {}) {
-  return seedItem(store, {
+  return seedTask(store, {
     state: 'in-review',
     change_ref: subject,
     producer_actor: builder,
@@ -1424,16 +1853,16 @@ function reviewItem(store, overrides = {}) {
 }
 
 function completeKnowledge(store, version = 1) {
-  return applyCommand(store, itemCommand('item.transition', reviewer, version, {
+  return applyCommand(store, taskCommand('task.transition', reviewer, version, {
     to: 'completed', at: NOW, reason: 'Accept the current criteria and subject.',
-  }), grant(reviewer, 'item.transition', version));
+  }), grant(reviewer, 'task.transition', version));
 }
 
 function reserve(store, holder = builder, version = 1) {
-  return applyCommand(store, itemCommand('item.grant', steward, version, {
-    holder, actions: ['item.update', 'item.transition', 'item.handoff', 'question.open'],
+  return applyCommand(store, taskCommand('task.grant', steward, version, {
+    holder, actions: ['task.update', 'task.transition', 'task.handoff', 'question.open'],
     acquiredAt: NOW, expiresAt: LATER,
-  }), grant(steward, 'item.grant', version));
+  }), grant(steward, 'task.grant', version));
 }
 
 function recoverExpired(store, overrides = {}, version = 1, actions = ['attempt.recover']) {
@@ -1449,12 +1878,12 @@ function recoverExpired(store, overrides = {}, version = 1, actions = ['attempt.
   const evidence = seedEvidence(store, {
     kind: 'recovery-reconciliation', evidenceSubject: null,
     data: {
-      stale_lease_token: readRecord(store, 'item', 'demo').body.lease.token,
+      stale_lease_token: readRecord(store, 'task', fixtureIds.task).body.lease.token,
       disposition: payload.disposition,
       observed: payload.observed,
     },
   });
-  return applyCommand(store, itemCommand('attempt.recover', steward, version, {
+  return applyCommand(store, taskCommand('attempt.recover', steward, version, {
     ...payload, recoveryEvidenceIds: [evidence.id],
   }), grant(steward, actions, version));
 }
@@ -1464,11 +1893,11 @@ await test('round1 F1 reviews and approval cannot accept changed current criteri
     reviewItem(store);
     seedReview(store);
     seedApproval(store);
-    applyCommand(store, itemCommand('item.update', reviewer, 1, {
+    applyCommand(store, taskCommand('task.update', reviewer, 1, {
       changes: {acceptance: ['New unreviewed acceptance criterion.']},
-    }), grant(reviewer, 'item.update', 1));
+    }), grant(reviewer, 'task.update', 1));
     assert.throws(() => completeKnowledge(store, 2), error => error.code === 'EVIDENCE_GAP');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'in-review');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'in-review');
   });
 });
 
@@ -1492,32 +1921,32 @@ await test('round1 F3 staging verification cannot establish shipment', async () 
       kind: 'production-verification',
       data: {environment: 'staging', deployment_id: 'deploy-123', checks: ['smoke']},
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.transition', shipper, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.transition', shipper, 1, {
       to: 'shipped', at: NOW, reason: 'Staging is not production.',
-    }), grant(shipper, 'item.transition', 1)), error => error.code === 'EVIDENCE_GAP');
+    }), grant(shipper, 'task.transition', 1)), error => error.code === 'EVIDENCE_GAP');
   });
 });
 
 await test('round1 F4 live touch-set update cannot collide with another holder', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-progress', touches: ['src/a.mjs'], lease: activeLease()});
-    seedItem(store, {
-      id: 'other', state: 'in-progress', touches: ['src/b.mjs'],
+    seedTask(store, {state: 'in-progress', touches: ['src/a.mjs'], lease: activeLease()});
+    seedTask(store, {
+      id: taskId('other'), state: 'in-progress', touches: ['src/b.mjs'],
       lease: activeLease(quality, 'other-token'),
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.update', builder, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.update', builder, 1, {
       changes: {touches: ['src/b.mjs']},
-    }, 'lease-token'), grant(builder, 'item.update', 1)),
+    }, 'lease-token'), grant(builder, 'task.update', 1)),
     error => error.code === 'LEASE_CONFLICT');
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.touches, ['src/a.mjs']);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.touches, ['src/a.mjs']);
   });
 });
 
 await test('round1 F4 uncertain intersecting globs serialize', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'ready', touches: ['src/f*'], next_role: builder.role});
-    seedItem(store, {
-      id: 'other', state: 'in-progress', touches: ['src/foo*'],
+    seedTask(store, {state: 'ready', touches: ['src/f*'], next_role: builder.role});
+    seedTask(store, {
+      id: taskId('other'), state: 'in-progress', touches: ['src/foo*'],
       lease: activeLease(quality, 'other-token'),
     });
     assert.throws(() => reserve(store), error => error.code === 'LEASE_CONFLICT');
@@ -1526,24 +1955,24 @@ await test('round1 F4 uncertain intersecting globs serialize', async () => {
 
 await test('round1 F5 trusted host grant cannot bypass lease expiry', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress', lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.update', builder, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.update', builder, 1, {
       changes: {title: 'Expired mutation'},
-    }, 'stale-token'), grant(builder, 'item.update', 1)),
+    }, 'stale-token'), grant(builder, 'task.update', 1)),
     error => error.code === 'RECOVERY_REQUIRED');
   });
 });
 
 await test('round1 F6 restored in-progress work is reservable by a replacement run', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked', resume_state: 'in-progress', next_role: builder.role,
       producer_actor: builder, acceptance_actor: null,
     });
-    applyCommand(store, itemCommand('item.restore', steward, 1, {at: NOW}),
-      grant(steward, 'item.restore', 1));
+    applyCommand(store, taskCommand('task.restore', steward, 1, {at: NOW}),
+      grant(steward, 'task.restore', 1));
     const result = reserve(store, {...builder, runId: 'replacement-run'}, 2);
     assert.equal(result.data.record.body.state, 'in-progress');
     assert.equal(result.data.record.body.lease.holder.runId, 'replacement-run');
@@ -1553,9 +1982,9 @@ await test('round1 F6 restored in-progress work is reservable by a replacement r
 await test('round1 F6 review rework routes back to a reservable producing role', async () => {
   await withWorkspace(({store}) => {
     reviewItem(store);
-    applyCommand(store, itemCommand('item.transition', reviewer, 1, {
+    applyCommand(store, taskCommand('task.transition', reviewer, 1, {
       to: 'in-progress', at: NOW, reason: 'Rework is needed.',
-    }), grant(reviewer, 'item.transition', 1));
+    }), grant(reviewer, 'task.transition', 1));
     const result = reserve(store, {...builder, runId: 'replacement-run'}, 2);
     assert.equal(result.data.record.body.lease.holder.runId, 'replacement-run');
   });
@@ -1563,15 +1992,25 @@ await test('round1 F6 review rework routes back to a reservable producing role',
 
 await test('round1 F7 recovered builder can submit without erasing prior producing actors', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress', producer_actor: builder, acceptance_actor: null,
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     const recovered = recoverExpired(store).data.record;
+    const recoveryMessage = listRecords(store, {
+      kind: 'message',
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).find(record => record.body.kind === 'recovery');
+    assert.equal(recoveryMessage.body.basis_version, recovered.version);
+    assert.equal(recoveryMessage.body.thread_id,
+      subjectRef({kind: 'task', id: fixtureIds.task}, recovered.version));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${recoveryMessage.id}`);
     const replacement = recovered.body.lease.holder;
-    const submitted = applyCommand(store, itemCommand('item.transition', replacement, 2, {
+    const submitted = applyCommand(store, taskCommand('task.transition', replacement, 2, {
       to: 'in-review', at: NOW, reason: 'Reconciled work is ready.', subject,
-    }, recovered.body.lease.token), {roles: grant(steward, 'item.grant', 1).roles, grants: []});
+    }, recovered.body.lease.token), {roles: grant(steward, 'task.grant', 1).roles, grants: []});
     assert.equal(submitted.data.record.body.state, 'in-review');
     assert.deepEqual(submitted.data.record.body.producing_actors, [builder, replacement]);
   });
@@ -1579,19 +2018,20 @@ await test('round1 F7 recovered builder can submit without erasing prior produci
 
 await test('round1 F8 recovery cannot redispatch after a failed dependency', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {id: 'upstream', state: 'dropped'});
-    seedItem(store, {
-      state: 'in-progress', depends_on: [{item: 'upstream', requires: 'completed'}],
+    seedTask(store, {id: taskId('upstream'), state: 'dropped'});
+    seedTask(store, {
+      state: 'in-progress',
+      depends_on: [{task: taskId('upstream'), requires: 'completed'}],
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     assert.throws(() => recoverExpired(store), error => error.code === 'RECOVERY_REQUIRED');
-    assert.equal(readRecord(store, 'item', 'demo').body.lease.token, 'stale-token');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.lease.token, 'stale-token');
   });
 });
 
 await test('round1 F8 recovery cannot redispatch with unanswered blockers', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress', waiting_on_questions: ['q1'],
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
@@ -1602,21 +2042,21 @@ await test('round1 F8 recovery cannot redispatch with unanswered blockers', asyn
 
 await test('round1 F9 conflicting partial work requires persisted operator resolution', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress',
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     recoverExpired(store, {
       disposition: 'conflicting-partial-work', redispatch: null, expiresAt: null,
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.restore', steward, 2, {at: NOW}),
-      grant(steward, 'item.restore', 2)), error => error.code === 'AUTHORITY_REQUIRED');
+    assert.throws(() => applyCommand(store, taskCommand('task.restore', steward, 2, {at: NOW}),
+      grant(steward, 'task.restore', 2)), error => error.code === 'AUTHORITY_REQUIRED');
   });
 });
 
 await test('round1 F10 late contradictory answer cannot reopen terminal work', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'completed'});
+    seedTask(store, {state: 'completed'});
     const parentId = seedQuestion(store, 'q1', reviewer.role);
     const answer = version => ({
       questionId: 'q1', parentId, sender: reviewer, recipient: builder.role,
@@ -1624,10 +2064,10 @@ await test('round1 F10 late contradictory answer cannot reopen terminal work', a
     });
     answerQuestion(store, answer(1));
     answerQuestion(store, answer(2));
-    const item = readRecord(store, 'item', 'demo').body;
-    assert.equal(item.state, 'completed');
-    assert.equal(item.resume_state, null);
-    assert.deepEqual(item.waiting_on_questions, []);
+    const task = readRecord(store, 'task', fixtureIds.task).body;
+    assert.equal(task.state, 'completed');
+    assert.equal(task.resume_state, null);
+    assert.deepEqual(task.waiting_on_questions, []);
     assert.equal(readRecord(store, 'question', 'q1').body.answer_message_ids.length, 2);
   });
 });
@@ -1645,47 +2085,48 @@ await test('round1 F10 late contradiction releases the live review reservation s
       questionId: 'q1', parentId, sender: quality, recipient: builder.role,
       expectedVersion: 3, answer: 'No.',
     });
-    const blocked = readRecord(store, 'item', 'demo').body;
+    const blocked = readRecord(store, 'task', fixtureIds.task).body;
     assert.equal(blocked.state, 'blocked');
     assert.equal(blocked.resume_state, 'in-review');
     assert.equal(blocked.lease, null);
     const grants = store.database.prepare("SELECT id FROM records WHERE kind = 'grant'").all();
     assert.ok(grants.every(({id}) => readRecord(store, 'grant', id).body.status === 'revoked'));
-    assert.throws(() => applyCommand(store, itemCommand('item.update', reviewer, 4, {
+    assert.throws(() => applyCommand(store, taskCommand('task.update', reviewer, 4, {
       changes: {title: 'Stale holder'},
-    }, reserved.body.lease.token), {roles: grant(steward, 'item.grant', 1).roles, grants: []}),
+    }, reserved.body.lease.token), {roles: grant(steward, 'task.grant', 1).roles, grants: []}),
     error => error.code === 'AUTHORITY_REQUIRED');
   });
 });
 
 await test('round1 F11 scope authority can drop blocked work with failed dependencies', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {id: 'upstream', state: 'dropped'});
-    seedItem(store, {
+    seedTask(store, {id: taskId('upstream'), state: 'dropped'});
+    seedTask(store, {
       state: 'blocked', resume_state: 'ready',
-      depends_on: [{item: 'upstream', requires: 'completed'}],
+      depends_on: [{task: taskId('upstream'), requires: 'completed'}],
     });
-    const drop = actor => itemCommand('item.transition', actor, 1, {
+    const drop = actor => taskCommand('task.transition', actor, 1, {
       to: 'dropped', at: NOW, reason: 'The prerequisite was abandoned.',
     });
-    assert.throws(() => applyCommand(store, drop(reviewer), grant(reviewer, 'item.transition', 1)),
+    assert.throws(() => applyCommand(store, drop(reviewer), grant(reviewer, 'task.transition', 1)),
       error => error.code === 'AUTHORITY_REQUIRED');
-    assert.equal(applyCommand(store, drop(steward), grant(steward, 'item.transition', 1))
+    assert.equal(applyCommand(store, drop(steward), grant(steward, 'task.transition', 1))
       .data.record.body.state, 'dropped');
   });
 });
 
-await test('round1 F12 initiative creation cannot bypass closure guards', async () => {
+await test('task creation cannot bypass the proposed-state gate', async () => {
   await withWorkspace(({store}) => {
-    const body = seedInitiative(store).body;
-    const create = command('initiative.create', {
-      actor: steward, recordKind: 'initiative', recordId: 'closed', expectedVersion: 0,
-      payload: {body: {...body, id: 'closed', status: 'shipped'}},
+    const body = seedTask(store, {id: taskId('closed')}).body;
+    store.database.prepare("DELETE FROM records WHERE kind = 'task' AND id = ?").run(body.id);
+    const create = command('task.create', {
+      actor: steward, recordId: body.id, expectedVersion: 0,
+      payload: {body: {...body, state: 'completed'}},
     });
-    assert.throws(() => applyCommand(store, create, grant(steward, 'initiative.create', 0, {
-      recordKind: 'initiative', recordId: 'closed',
+    assert.throws(() => applyCommand(store, create, grant(steward, 'task.create', 0, {
+      recordId: body.id,
     })), error => error.code === 'INVALID_INPUT');
-    assert.equal(readRecord(store, 'initiative', 'closed'), null);
+    assert.equal(readRecord(store, 'task', body.id), null);
   });
 });
 
@@ -1694,9 +2135,9 @@ await test('round1 F1 refreshed review cannot reuse stale completion approval', 
     reviewItem(store);
     seedReview(store);
     seedApproval(store);
-    applyCommand(store, itemCommand('item.update', reviewer, 1, {
+    applyCommand(store, taskCommand('task.update', reviewer, 1, {
       changes: {acceptance: ['Replacement criterion.']},
-    }), grant(reviewer, 'item.update', 1));
+    }), grant(reviewer, 'task.update', 1));
     seedReview(store, {criteria: ['Replacement criterion.']});
     assert.throws(() => completeKnowledge(store, 2), error => error.code === 'EVIDENCE_GAP');
     seedApproval(store);
@@ -1757,9 +2198,9 @@ await test('round1 F3 verification must match the operator-confirmed deployment 
       kind: 'production-verification',
       data: {environment: 'prod-eu-west', deployment_id: 'older-release', checks: ['health']},
     });
-    const finish = () => applyCommand(store, itemCommand('item.transition', shipper, 1, {
+    const finish = () => applyCommand(store, taskCommand('task.transition', shipper, 1, {
       to: 'shipped', at: NOW, reason: 'Verify the confirmed production deployment.',
-    }), grant(shipper, 'item.transition', 1));
+    }), grant(shipper, 'task.transition', 1));
     assert.throws(finish, error => error.code === 'EVIDENCE_GAP');
     seedEvidence(store, {
       kind: 'production-verification',
@@ -1795,7 +2236,7 @@ await test('round1 F7 every earlier producing run remains ineligible for complet
 
 await test('round1 F9 operator resolution binds the attempt and permits separately granted resumption', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress', producer_actor: builder, acceptance_actor: null,
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
@@ -1810,9 +2251,9 @@ await test('round1 F9 operator resolution binds the attempt and permits separate
     const resolution = seedApproval(store, {
       actor: operator, kind: 'operator-recovery-resolution', approvalSubject: null, recovery,
     });
-    const result = applyCommand(store, itemCommand('item.restore', steward, 2, {
+    const result = applyCommand(store, taskCommand('task.restore', steward, 2, {
       at: NOW, recoveryApprovalId: resolution.id,
-    }), grant(steward, 'item.restore', 2));
+    }), grant(steward, 'task.restore', 2));
     assert.equal(result.data.record.body.state, 'in-progress');
     assert.equal(result.data.record.body.recovery_hold, null);
     assert.equal(result.data.record.body.lease, null);
@@ -1827,12 +2268,12 @@ await test('round1 F1 accepted states cannot silently acquire unaccepted replace
   for (const state of ['completed', 'release-ready', 'deploying', 'production-verification', 'shipped']) {
     await withWorkspace(({store}) => {
       reviewItem(store, {state, delivery_class: state === 'completed' ? 'knowledge' : 'product-change'});
-      assert.throws(() => applyCommand(store, itemCommand('item.update', steward, 1, {
+      assert.throws(() => applyCommand(store, taskCommand('task.update', steward, 1, {
         changes: {acceptance: ['Unaccepted replacement criterion.']},
-      }), grant(steward, 'item.update', 1)), error => error.code === 'INVALID_INPUT');
-      const title = applyCommand(store, itemCommand('item.update', steward, 1, {
+      }), grant(steward, 'task.update', 1)), error => error.code === 'INVALID_INPUT');
+      const title = applyCommand(store, taskCommand('task.update', steward, 1, {
         changes: {title: 'An accurate descriptive title'},
-      }), grant(steward, 'item.update', 1));
+      }), grant(steward, 'task.update', 1));
       assert.equal(title.data.record.body.state, state);
     });
   }
@@ -1841,9 +2282,9 @@ await test('round1 F1 accepted states cannot silently acquire unaccepted replace
 await test('round1 F4 aliased path separators and dot segments cannot claim disjointness', async () => {
   for (const touches of [['src/./foo*'], ['src//foo*'], ['.\\src\\foo*']]) {
     await withWorkspace(({store}) => {
-      seedItem(store, {state: 'ready', touches, next_role: builder.role});
-      seedItem(store, {
-        id: 'other', state: 'in-progress', touches: ['src/foo.mjs'],
+      seedTask(store, {state: 'ready', touches, next_role: builder.role});
+      seedTask(store, {
+        id: taskId('other'), state: 'in-progress', touches: ['src/foo.mjs'],
         lease: activeLease(quality, 'other-token'),
       });
       assert.throws(() => reserve(store), error => error.code === 'LEASE_CONFLICT');
@@ -1853,19 +2294,19 @@ await test('round1 F4 aliased path separators and dot segments cannot claim disj
 
 await test('round1 F8 recovering a blocked review still requires an immutable submitted subject', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'blocked', resume_state: 'in-review', change_ref: null,
       lease: activeLease(reviewer, 'stale-token', {expires_at: EXPIRED}),
     });
     assert.throws(() => recoverExpired(store, {redispatch: reviewer}, 1,
-      ['attempt.recover', 'item.restore']),
+      ['attempt.recover', 'task.restore']),
       error => error.code === 'EVIDENCE_GAP');
   });
 });
 
 await test('round1 F9 incompatible operator resolutions cannot be selected opportunistically', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress', lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     const recovered = recoverExpired(store, {
@@ -1882,9 +2323,9 @@ await test('round1 F9 incompatible operator resolutions cannot be selected oppor
       actor: operator, kind: 'operator-recovery-resolution', approvalSubject: null,
       recovery: {...recovery, resume_role: quality.role},
     });
-    const restore = id => applyCommand(store, itemCommand('item.restore', steward, 2, {
+    const restore = id => applyCommand(store, taskCommand('task.restore', steward, 2, {
       at: NOW, recoveryApprovalId: id,
-    }), grant(steward, 'item.restore', 2));
+    }), grant(steward, 'task.restore', 2));
     assert.throws(() => restore(first.id), error => error.code === 'AUTHORITY_REQUIRED');
     const resolved = seedApproval(store, {
       actor: operator, kind: 'operator-recovery-resolution', approvalSubject: null,
@@ -1911,8 +2352,8 @@ await test('round1 F10 the authorized question owner can reconcile a late contra
     });
     assert.equal(reconciled.data.record.body.state, 'blocked');
     assert.deepEqual(reconciled.data.record.body.waiting_on_questions, []);
-    applyCommand(store, itemCommand('item.restore', steward, 5, {at: NOW}),
-      grant(steward, 'item.restore', 5));
+    applyCommand(store, taskCommand('task.restore', steward, 5, {at: NOW}),
+      grant(steward, 'task.restore', 5));
     const resumed = reserve(store, reviewer, 6);
     assert.equal(resumed.data.record.body.state, 'in-review');
     assert.equal(resumed.data.record.body.lease.holder.runId, reviewer.runId);
@@ -1926,14 +2367,14 @@ await test('round1 F1 changed acceptance requires renewed six-dimension release 
     seedReview(store);
     seedApproval(store);
     seedReleaseEvidence(store);
-    applyCommand(store, itemCommand('item.update', steward, 1, {
+    applyCommand(store, taskCommand('task.update', steward, 1, {
       changes: {acceptance: ['Revised release criteria.']},
-    }), grant(steward, 'item.update', 1));
+    }), grant(steward, 'task.update', 1));
     seedReview(store, {criteria: ['Revised release criteria.']});
     seedApproval(store);
-    const release = () => applyCommand(store, itemCommand('item.transition', shipper, 2, {
+    const release = () => applyCommand(store, taskCommand('task.transition', shipper, 2, {
       to: 'release-ready', at: NOW, reason: 'Accept the revised release.',
-    }), grant(shipper, 'item.transition', 2));
+    }), grant(shipper, 'task.transition', 2));
     assert.throws(release, error => error.code === 'EVIDENCE_GAP');
     seedReleaseEvidence(store);
     assert.equal(release().data.record.body.state, 'release-ready');
@@ -1956,7 +2397,7 @@ await test('round1 F2 supersession rejects missing references, cross-scope links
       }
       seedApproval(store);
       assert.throws(() => completeKnowledge(store), error => error.code === 'EVIDENCE_GAP');
-      assert.equal(readRecord(store, 'item', 'demo').version, 1);
+      assert.equal(readRecord(store, 'task', fixtureIds.task).version, 1);
     });
   }
 });
@@ -1979,9 +2420,9 @@ await test('round1 F3 staging deployment and mismatched operator contexts cannot
         kind: 'deployment',
         data: {environment: scenario === 'staging' ? 'staging' : 'production', deployment_id: 'deploy-123'},
       });
-      assert.throws(() => applyCommand(store, itemCommand('item.transition', shipper, 1, {
+      assert.throws(() => applyCommand(store, taskCommand('task.transition', shipper, 1, {
         to: 'production-verification', at: NOW, reason: 'Record observed deployment.',
-      }), grant(shipper, 'item.transition', 1)),
+      }), grant(shipper, 'task.transition', 1)),
       error => error.code === (scenario === 'staging' ? 'EVIDENCE_GAP' : 'AUTHORITY_REQUIRED'));
     });
   }
@@ -1994,30 +2435,30 @@ await test('round1 F4 proven disjoint touch sets still permit grants and live up
     ['src/f*', 'test/f*'],
   ]) {
     await withWorkspace(({store}) => {
-      seedItem(store, {state: 'ready', touches: [left], next_role: builder.role});
-      seedItem(store, {
-        id: 'other', state: 'in-progress', touches: [right],
+      seedTask(store, {state: 'ready', touches: [left], next_role: builder.role});
+      seedTask(store, {
+        id: taskId('other'), state: 'in-progress', touches: [right],
         lease: activeLease(quality, 'other-token'),
       });
       const reserved = reserve(store).data.record;
-      const updated = applyCommand(store, itemCommand('item.update', builder, 2, {
+      const updated = applyCommand(store, taskCommand('task.update', builder, 2, {
         changes: {touches: ['docs/independent.md']},
-      }, reserved.body.lease.token), {roles: grant(steward, 'item.grant', 1).roles, grants: []});
+      }, reserved.body.lease.token), {roles: grant(steward, 'task.grant', 1).roles, grants: []});
       assert.deepEqual(updated.data.record.body.touches, ['docs/independent.md']);
     });
   }
 });
 
 await test('round1 F5 expiry refuses host-authorized transition, handoff, and question opening', async () => {
-  for (const kind of ['item.transition', 'item.handoff', 'question.open']) {
+  for (const kind of ['task.transition', 'task.handoff', 'question.open']) {
     await withWorkspace(({store}) => {
-      seedItem(store, {
+      seedTask(store, {
         state: 'in-progress', producer_actor: builder, acceptance_actor: null,
         lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
       });
-      const payload = kind === 'item.transition'
+      const payload = kind === 'task.transition'
         ? {to: 'in-review', at: NOW, reason: 'Submit expired work.', subject}
-        : kind === 'item.handoff' ? {
+        : kind === 'task.handoff' ? {
           toRole: reviewer.role, state: 'in-review', subject, createdAt: NOW,
           messageId: randomUUID(), parentId: null, artifactRefs: [], evidenceRefs: [],
           provenance: 'durable-thread',
@@ -2029,10 +2470,10 @@ await test('round1 F5 expiry refuses host-authorized transition, handoff, and qu
           content: {questionKind: 'fact', blocking: true, context: 'Context', ask: 'Question?',
             answerBy: 'next-dispatch'},
         };
-      assert.throws(() => applyCommand(store, itemCommand(kind, builder, 1, payload, 'stale-token'),
-        grant(builder, [...new Set([kind, 'item.transition'])], 1)),
+      assert.throws(() => applyCommand(store, taskCommand(kind, builder, 1, payload, 'stale-token'),
+        grant(builder, [...new Set([kind, 'task.transition'])], 1)),
       error => error.code === 'RECOVERY_REQUIRED');
-      assert.equal(readRecord(store, 'item', 'demo').body.lease.token, 'stale-token');
+      assert.equal(readRecord(store, 'task', fixtureIds.task).body.lease.token, 'stale-token');
       assert.equal(store.database.prepare("SELECT count(*) AS n FROM records WHERE kind = 'message'").get().n, 0);
     });
   }
@@ -2040,21 +2481,22 @@ await test('round1 F5 expiry refuses host-authorized transition, handoff, and qu
 
 await test('round1 F7 successive replacement builders retain the complete producer history', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {
+    seedTask(store, {
       state: 'in-progress', producer_actor: builder, acceptance_actor: null,
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     const second = {...builder, runId: 'second-builder'};
     const third = {...builder, runId: 'third-builder'};
     const replaced = recoverExpired(store, {redispatch: second}).data.record;
-    store.database.prepare("UPDATE records SET body = ? WHERE kind = 'item' AND id = 'demo'")
-      .run(JSON.stringify({...replaced.body, lease: {...replaced.body.lease, expires_at: EXPIRED}}));
+    store.database.prepare("UPDATE records SET body = ? WHERE kind = 'task' AND id = ?")
+      .run(JSON.stringify({...replaced.body, lease: {...replaced.body.lease, expires_at: EXPIRED}}),
+        fixtureIds.task);
     const recovered = recoverExpired(store, {redispatch: third}, 2).data.record;
     assert.deepEqual(recovered.body.producing_actors, [builder, second, third]);
     assert.deepEqual(recovered.body.producer_actor, third);
-    const submitted = applyCommand(store, itemCommand('item.transition', third, 3, {
+    const submitted = applyCommand(store, taskCommand('task.transition', third, 3, {
       to: 'in-review', at: NOW, reason: 'Submit all reconciled work.', subject,
-    }, recovered.body.lease.token), {roles: grant(steward, 'item.grant', 1).roles, grants: []});
+    }, recovered.body.lease.token), {roles: grant(steward, 'task.grant', 1).roles, grants: []});
     assert.equal(submitted.data.record.body.state, 'in-review');
   });
 });
@@ -2062,16 +2504,18 @@ await test('round1 F7 successive replacement builders retain the complete produc
 await test('round1 F8 pending dependencies and unavailable recipients refuse recovery atomically', async () => {
   for (const scenario of ['pending', 'unavailable']) {
     await withWorkspace(({store}) => {
-      seedItem(store, {id: 'upstream', state: 'in-progress'});
-      seedItem(store, {
+      seedTask(store, {id: taskId('upstream'), state: 'in-progress'});
+      seedTask(store, {
         state: 'in-progress', producer_actor: builder, acceptance_actor: null,
-        depends_on: scenario === 'pending' ? [{item: 'upstream', requires: 'completed'}] : [],
+        depends_on: scenario === 'pending'
+          ? [{task: taskId('upstream'), requires: 'completed'}]
+          : [],
         lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
       });
       assert.throws(() => recoverExpired(store, {
         redispatch: scenario === 'unavailable' ? {role: 'missing', runId: 'missing-run'} : builder,
       }), error => error.code === (scenario === 'pending' ? 'EVIDENCE_GAP' : 'ROLE_UNAVAILABLE'));
-      assert.equal(readRecord(store, 'item', 'demo').body.lease.token, 'stale-token');
+      assert.equal(readRecord(store, 'task', fixtureIds.task).body.lease.token, 'stale-token');
       assert.equal(store.database.prepare("SELECT count(*) AS n FROM records WHERE kind IN ('attempt','grant','message')").get().n, 0);
     });
   }
@@ -2079,26 +2523,26 @@ await test('round1 F8 pending dependencies and unavailable recipients refuse rec
 
 await test('round1 F9 routing updates, handoffs, and regrants cannot release a recovery hold', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {state: 'in-progress', lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED})});
+    seedTask(store, {state: 'in-progress', lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED})});
     recoverExpired(store, {disposition: 'conflicting-partial-work', redispatch: null, expiresAt: null});
-    assert.throws(() => applyCommand(store, itemCommand('item.update', steward, 2, {
+    assert.throws(() => applyCommand(store, taskCommand('task.update', steward, 2, {
       changes: {next_role: builder.role},
-    }), grant(steward, 'item.update', 2)), error => error.code === 'AUTHORITY_REQUIRED');
+    }), grant(steward, 'task.update', 2)), error => error.code === 'AUTHORITY_REQUIRED');
     assert.throws(() => reserve(store, builder, 2), error => error.code === 'AUTHORITY_REQUIRED');
-    assert.throws(() => applyCommand(store, itemCommand('item.handoff', steward, 2, {
+    assert.throws(() => applyCommand(store, taskCommand('task.handoff', steward, 2, {
       toRole: builder.role, state: null, createdAt: NOW, messageId: randomUUID(), parentId: null,
       content: {did: 'Inspected', needs: 'Resume', assetState: 'Pending', authority: 'Claimed',
         revalidation: 'Pending', questions: []},
       artifactRefs: [], evidenceRefs: [], provenance: 'durable-thread',
-    }), grant(steward, 'item.handoff', 2)), error => error.code === 'AUTHORITY_REQUIRED');
-    assert.equal(readRecord(store, 'item', 'demo').body.next_role, 'operator');
+    }), grant(steward, 'task.handoff', 2)), error => error.code === 'AUTHORITY_REQUIRED');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.next_role, 'operator');
   });
 });
 
 await test('round1 F9 operator resolution rejects a different stale token, owner, or rejected decision', async () => {
   for (const scenario of ['token', 'owner', 'rejected']) {
     await withWorkspace(({store}) => {
-      seedItem(store, {state: 'in-progress', lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED})});
+      seedTask(store, {state: 'in-progress', lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED})});
       const held = recoverExpired(store, {
         disposition: 'conflicting-partial-work', redispatch: null, expiresAt: null,
       }).data.record;
@@ -2112,10 +2556,10 @@ await test('round1 F9 operator resolution rejects a different stale token, owner
           disposition: 'safe-to-resume', resume_role: builder.role,
         },
       });
-      assert.throws(() => applyCommand(store, itemCommand('item.restore', steward, 2, {
+      assert.throws(() => applyCommand(store, taskCommand('task.restore', steward, 2, {
         at: NOW, recoveryApprovalId: approval.id,
-      }), grant(steward, 'item.restore', 2)), error => error.code === 'AUTHORITY_REQUIRED');
-      assert.equal(readRecord(store, 'item', 'demo').body.recovery_hold, held.body.recovery_hold);
+      }), grant(steward, 'task.restore', 2)), error => error.code === 'AUTHORITY_REQUIRED');
+      assert.equal(readRecord(store, 'task', fixtureIds.task).body.recovery_hold, held.body.recovery_hold);
     });
   }
 });
@@ -2130,7 +2574,7 @@ await test('round1 F10 late contradiction on an expired reservation remains reco
     });
     answer(1, 'Yes.');
     answer(2, 'No.');
-    const blocked = readRecord(store, 'item', 'demo').body;
+    const blocked = readRecord(store, 'task', fixtureIds.task).body;
     assert.equal(blocked.state, 'blocked');
     assert.equal(blocked.lease.token, 'stale-token');
     assert.throws(() => recoverExpired(store, {redispatch: reviewer}, 3),
@@ -2143,7 +2587,7 @@ await test('round1 F10 late contradiction on an expired reservation remains reco
     }), error => error.code === 'INVALID_INPUT');
     answer(3, 'Definitive.', {resolves, actorAuthority: grant(quality, 'question.answer', 3)});
     const recovered = recoverExpired(store, {redispatch: reviewer}, 4,
-      ['attempt.recover', 'item.restore']).data.record;
+      ['attempt.recover', 'task.restore']).data.record;
     assert.equal(recovered.body.state, 'in-review');
     assert.equal(recovered.body.resume_state, null);
     assert.deepEqual(recovered.body.producing_actors, [builder]);
@@ -2153,19 +2597,19 @@ await test('round1 F10 late contradiction on an expired reservation remains reco
 
 await test('round1 F8 F11 expired failed-dependency work can reconcile without redispatch before dropping', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store, {id: 'upstream', state: 'dropped'});
-    seedItem(store, {
+    seedTask(store, {id: taskId('upstream'), state: 'dropped'});
+    seedTask(store, {
       state: 'blocked', resume_state: 'in-progress',
-      depends_on: [{item: 'upstream', requires: 'completed'}],
+      depends_on: [{task: taskId('upstream'), requires: 'completed'}],
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     const reconciled = recoverExpired(store, {redispatch: null, expiresAt: null}).data.record;
     assert.equal(reconciled.body.state, 'blocked');
     assert.equal(reconciled.body.lease, null);
     assert.equal(store.database.prepare("SELECT count(*) AS n FROM records WHERE kind = 'grant'").get().n, 0);
-    const dropped = applyCommand(store, itemCommand('item.transition', steward, 2, {
+    const dropped = applyCommand(store, taskCommand('task.transition', steward, 2, {
       to: 'dropped', at: NOW, reason: 'Safely reconciled; prerequisite was dropped.',
-    }), grant(steward, 'item.transition', 2));
+    }), grant(steward, 'task.transition', 2));
     assert.equal(dropped.data.record.body.state, 'dropped');
   });
 });
@@ -2177,9 +2621,9 @@ await test('round1 evidenced gaps require explicit supersession rather than disa
     seedApproval(store);
     seedReleaseEvidence(store);
     const gap = seedEvidence(store, {kind: 'dod-dimension', dimension: 'verified', outcome: 'gap'});
-    const release = () => applyCommand(store, itemCommand('item.transition', shipper, 1, {
+    const release = () => applyCommand(store, taskCommand('task.transition', shipper, 1, {
       to: 'release-ready', at: NOW, reason: 'Reverify the previous evidence gap.',
-    }), grant(shipper, 'item.transition', 1));
+    }), grant(shipper, 'task.transition', 1));
     assert.throws(release, error => error.code === 'EVIDENCE_GAP');
     seedEvidence(store, {kind: 'dod-dimension', dimension: 'verified', outcome: 'clear', supersedes: [gap.id]});
     assert.equal(release().data.record.body.state, 'release-ready');
@@ -2195,9 +2639,9 @@ await test('round1 failed production checks need same-deployment supersession be
     seedEvidence(store, {kind: 'deployment'});
     const failed = seedEvidence(store, {kind: 'production-verification', outcome: 'failed'});
     seedEvidence(store, {kind: 'production-verification'});
-    const finish = () => applyCommand(store, itemCommand('item.transition', shipper, 1, {
+    const finish = () => applyCommand(store, taskCommand('task.transition', shipper, 1, {
       to: 'shipped', at: NOW, reason: 'Recheck the failed production condition.',
-    }), grant(shipper, 'item.transition', 1));
+    }), grant(shipper, 'task.transition', 1));
     assert.throws(finish, error => error.code === 'EVIDENCE_GAP');
     seedEvidence(store, {kind: 'production-verification', supersedes: [failed.id]});
     assert.equal(finish().data.record.body.state, 'shipped');
@@ -2236,24 +2680,24 @@ await test('round2 recovery authority alone cannot restore blocked review work',
       data: {stale_lease_token: 'stale-token', disposition: 'safe-to-resume', observed: 'Reviewed snapshot reconciled.'},
     });
     const recoveryOnly = grant(steward, 'attempt.recover', 1);
-    const recover = itemCommand('attempt.recover', steward, 1, {
+    const recover = taskCommand('attempt.recover', steward, 1, {
       attemptId: randomUUID(), observed: 'Reviewed snapshot reconciled.',
       disposition: 'safe-to-resume', recoveryEvidenceIds: [evidence.id],
       redispatch: reviewer, createdAt: NOW, expiresAt: LATER,
     });
-    assert.throws(() => applyCommand(store, itemCommand('item.restore', steward, 1, {
+    assert.throws(() => applyCommand(store, taskCommand('task.restore', steward, 1, {
       at: NOW,
     }), recoveryOnly), error => error.code === 'AUTHORITY_REQUIRED');
     assert.throws(() => applyCommand(store, recover, recoveryOnly),
       error => error.code === 'AUTHORITY_REQUIRED');
-    const unchanged = readRecord(store, 'item', 'demo');
+    const unchanged = readRecord(store, 'task', fixtureIds.task);
     assert.equal(unchanged.version, 1);
     assert.equal(unchanged.body.state, 'blocked');
     assert.equal(unchanged.body.resume_state, 'in-review');
     assert.equal(unchanged.body.lease.token, 'stale-token');
     assert.equal(store.database.prepare("SELECT count(*) AS n FROM records WHERE kind IN ('attempt','grant','message')").get().n, 0);
     const restored = applyCommand(store, recover,
-      grant(steward, ['attempt.recover', 'item.restore'], 1)).data.record;
+      grant(steward, ['attempt.recover', 'task.restore'], 1)).data.record;
     assert.equal(restored.body.state, 'in-review');
     assert.equal(restored.body.resume_state, null);
     assert.deepEqual(restored.body.lease.holder, reviewer);
@@ -2272,18 +2716,18 @@ await test('round2 blocked shipping recovery requires workflow-ship and restorat
         kind: 'recovery-reconciliation', evidenceSubject: null,
         data: {stale_lease_token: 'stale-token', disposition: 'safe-to-resume', observed: 'Production action reconciled.'},
       });
-      const recover = itemCommand('attempt.recover', shipper, 1, {
+      const recover = taskCommand('attempt.recover', shipper, 1, {
         attemptId: randomUUID(), observed: 'Production action reconciled.',
         disposition: 'safe-to-resume', recoveryEvidenceIds: [evidence.id],
         redispatch: shipper, createdAt: NOW, expiresAt: LATER,
       });
       assert.throws(() => applyCommand(store, {...recover, actor: steward},
-        grant(steward, ['attempt.recover', 'item.restore'], 1)),
+        grant(steward, ['attempt.recover', 'task.restore'], 1)),
       error => error.code === 'AUTHORITY_REQUIRED');
       assert.throws(() => applyCommand(store, recover, grant(shipper, 'attempt.recover', 1)),
         error => error.code === 'AUTHORITY_REQUIRED');
       const restored = applyCommand(store, recover,
-        grant(shipper, ['attempt.recover', 'item.restore'], 1)).data.record;
+        grant(shipper, ['attempt.recover', 'task.restore'], 1)).data.record;
       assert.equal(restored.body.state, resumeState);
       assert.equal(restored.body.resume_state, null);
       assert.deepEqual(restored.body.lease.holder, shipper);

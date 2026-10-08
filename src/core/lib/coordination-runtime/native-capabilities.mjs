@@ -1,9 +1,26 @@
-import {createHmac, randomBytes, timingSafeEqual} from 'node:crypto';
-import {existsSync} from 'node:fs';
+import {createHmac, randomBytes, randomUUID, timingSafeEqual} from 'node:crypto';
+import {
+  closeSync,
+  existsSync,
+  fsyncSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import {canonicalJson, RuntimeError} from './contract.mjs';
-import {safePath, exactFile, exclusiveFile, privateAdmission} from './migration-files.mjs';
+import {
+  safePath,
+  exactFile,
+  exclusiveFile,
+  nativeWriterTokenPath,
+  privateAdmission,
+  schema5MigrationLockPath,
+} from './migration-files.mjs';
 
-const lane = '.kai/state/host';
+const lane = '.kai/core/runtime/host';
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 const kinds = new Set(['requests', 'capabilities', 'captures', 'preparations', 'reservations']);
 const requireKind = kind => { if (!kinds.has(kind)) fail('INVALID_INPUT', 'unsupported native issuer record kind'); };
@@ -30,16 +47,87 @@ function key(root, create) {
 function signature(root, payload, create = false) {
   return createHmac('sha256', key(root, create)).update(canonicalJson(payload)).digest('hex');
 }
+function assertIssuerWriteAllowed(root) {
+  const path = schema5MigrationLockPath(root);
+  if (!existsSync(path)) return;
+  let lock;
+  try {
+    lock = JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    fail('RECOVERY_REQUIRED', 'offline migration/rollback lock is invalid');
+  }
+  if (lock.rollback === true) {
+    fail('RECOVERY_REQUIRED', 'offline rollback lock prevents native host authority writes');
+  }
+}
+
+function releaseWriterToken(token) {
+  if (!existsSync(token.path)) {
+    fail('RECOVERY_REQUIRED', 'native writer admission token disappeared');
+  }
+  const stat = lstatSync(token.path);
+  if (!stat.isFile() || stat.nlink !== 1
+    || readFileSync(token.path, 'utf8') !== canonicalJson(token.value)) {
+    fail('RECOVERY_REQUIRED', 'native writer admission token changed');
+  }
+  unlinkSync(token.path);
+}
+
+function acquireWriterToken(root) {
+  const id = randomUUID();
+  const path = nativeWriterTokenPath(root, id);
+  const pending = `${path}.pending-${randomUUID()}`;
+  const value = {
+    schema_version: 1,
+    id,
+    root,
+    pid: process.pid,
+    created_at: new Date().toISOString(),
+  };
+  const fd = openSync(pending, 'wx', 0o600);
+  try {
+    writeFileSync(fd, canonicalJson(value));
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  try {
+    renameSync(pending, path);
+    const token = {path, value};
+    try {
+      assertIssuerWriteAllowed(root);
+      return token;
+    } catch (error) {
+      releaseWriterToken(token);
+      throw error;
+    }
+  } catch (error) {
+    if (existsSync(pending)) unlinkSync(pending);
+    throw error;
+  }
+}
+
+function withWriterAdmission(root, write) {
+  const token = acquireWriterToken(root);
+  try {
+    return write();
+  } finally {
+    releaseWriterToken(token);
+  }
+}
+
 export function writeIssued(root, kind, id, payload) {
   requireKind(kind);
   capabilityId(id);
-  const value = {payload, mac: signature(root, payload, true)};
-  const name = `${lane}/${kind}/${id}.json`;
-  if (existsSync(safePath(root, name))) {
-    if (canonicalJson(readIssued(root, kind, id)) !== canonicalJson(payload)) fail('OPERATION_CONFLICT', 'issued identity already has different content');
-    return;
-  }
-  exclusiveFile(root, name, canonicalJson(value));
+  return withWriterAdmission(root, () => {
+    const value = {payload, mac: signature(root, payload, true)};
+    const name = `${lane}/${kind}/${id}.json`;
+    if (existsSync(safePath(root, name))) {
+      if (canonicalJson(readIssued(root, kind, id)) !== canonicalJson(payload)) fail('OPERATION_CONFLICT', 'issued identity already has different content');
+      return;
+    }
+    exclusiveFile(root, name, canonicalJson(value));
+  });
 }
 export function readIssued(root, kind, id) {
   requireKind(kind);

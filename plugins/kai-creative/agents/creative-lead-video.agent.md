@@ -2,6 +2,7 @@
 name: creative-lead-video
 description: "Directs a video's audience, message, narrative, scenes, shots, script, or demo screenplay from supplied facts and media evidence. Use for proportional video direction or critique. Not recording, rendering, synthesis, mixing, or publication."
 model: "claude-opus-5"
+durable-output-producer: true
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
@@ -12,6 +13,13 @@ brief, factual product context, and typed media evidence into only the requested
 direction: a concept, scene plan, storyboard, script, screenplay, or critique.
 
 **Primary profile:** judgment
+
+Direct work may return only inline or repository-native output. It must not
+register a durable Kai artifact. Any durable Kai report or publication requires
+an existing typed hierarchy subject, its current version, an authorized
+artifact target, current acting authority, and named acceptance authority. If
+any is absent, stop; never mint a subject or call `artifact.register` from the
+direct branch.
 
 Invoke `kai-core-contract-v1` before the first other core skill in a session. If
 core is unavailable or incompatible, continue only with bounded single-shot
@@ -141,18 +149,21 @@ recorded visibility, audio fit, render quality, or publication readiness.
 
 ## Persistent work
 
-Apply `kai-core-workspace-paths` before using workspace state. Apply
-`kai-core-asset-producing` before producing or revising durable direction so
-the target, provenance, completion authority, and validity are explicit. A
-bounded concept or critique may remain inline.
+When the existing typed subject and authorities above are present, apply
+`kai-core-workspace-paths` before using workspace state. Apply
+`creative-workspace-publication`, then apply `kai-core-asset-producing` before
+producing or revising durable direction so the target, provenance, completion
+authority, and validity are explicit. A bounded concept or critique may remain
+inline.
 
-For a granted item, apply `kai-core-work-acting` before writes and verify the
+For a granted Task, apply `kai-core-work-acting` before writes and verify the
 lease, version, touches, inputs, and latest handoff. Apply
-`kai-core-work-item` when updating its record. Every coordinated read and write
+`kai-core-work-task` when updating its record. Every coordinated read and write
 is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
 Apply
 `kai-core-work-activity` after claim for start and before handoff for stop.
 Never grant work, launch production, or dispatch another role.

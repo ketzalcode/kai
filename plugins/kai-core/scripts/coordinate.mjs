@@ -1,23 +1,27 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
-  RuntimeError
-} from "./chunk-VP4QXWCX.mjs";
+  HIERARCHY_KINDS,
+  RECORD_KINDS,
+  RuntimeError,
+  validateHierarchySubject
+} from "./chunk-XLDNBMDG.mjs";
+import "./chunk-ITUOITH3.mjs";
 
 // src/core/coordinate.mjs
-import { pathToFileURL } from "node:url";
-import { isAbsolute } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { isAbsolute, resolve } from "node:path";
 var flags = {
   direct: [],
   inspect: ["deep"],
   status: [],
-  context: ["item", "max-bytes", "recent-limit"],
+  context: ["kind", "id", "max-bytes", "recent-limit"],
   detail: ["kind", "id"],
-  messages: ["item", "before-seq", "limit"],
-  export: ["item"],
+  messages: ["kind", "id", "before-seq", "limit"],
+  export: ["kind", "id"],
   legacy: ["source", "raw"],
   hash: ["path"],
-  init: ["confirm", "capability"],
+  "migration-plan": [],
   migrate: ["confirm", "capability"],
   recover: ["confirm", "action", "capability"],
   rollback: ["confirm", "capability"],
@@ -29,15 +33,33 @@ var flags = {
   receipt: ["request", "tool-call"],
   prepare: [],
   delegate: ["capability"],
-  claim: ["item", "capability"],
+  claim: ["task", "capability"],
   capabilities: [],
-  plan: ["item"]
+  plan: ["kind", "id"]
 };
 var booleans = /* @__PURE__ */ new Set(["deep", "raw", "confirm"]);
 var inputVerbs = /* @__PURE__ */ new Set(["apply", "repair", "request", "capture", "prepare", "delegate"]);
+var hierarchyVerbs = /* @__PURE__ */ new Set(["context", "messages", "export", "plan"]);
 var invalid = (message) => {
   throw new RuntimeError("INVALID_INPUT", message);
 };
+function runtimeEntrypointPath() {
+  const entrypoint = resolve(fileURLToPath(import.meta.url));
+  const argvEntry = process.argv[1];
+  if (!argvEntry) throw new Error("entrypoint verification requires process.argv[1]");
+  const invoked = resolve(argvEntry);
+  if (invoked !== entrypoint) {
+    throw new Error(`entrypoint mismatch: ${invoked} !== ${entrypoint}`);
+  }
+  return entrypoint;
+}
+function withEntrypointReport(result, env, entrypoint) {
+  if (env?.KAI_TEST_REPORT_COORDINATION_ENTRYPOINT !== "1") return result;
+  return {
+    ...result,
+    entrypoint: entrypoint ?? resolve(fileURLToPath(import.meta.url))
+  };
+}
 function parseArguments(argv) {
   const [verb, ...rest] = argv;
   if (!Object.hasOwn(flags, verb)) invalid(`unknown verb; expected ${Object.keys(flags).join(", ")}`);
@@ -61,6 +83,25 @@ function parseArguments(argv) {
   }
   if (options["max-bytes"] !== void 0 && (options["max-bytes"] < 1 || options["max-bytes"] > 24 * 1024)) invalid("--max-bytes must be 1..24576");
   if (options["recent-limit"] !== void 0 && options["recent-limit"] > 8) invalid("--recent-limit must be 0..8");
+  if (hierarchyVerbs.has(verb)) {
+    if (options.kind === void 0) invalid("--kind is required");
+    if (options.id === void 0) invalid("--id is required");
+    validateHierarchySubject({ kind: options.kind, id: options.id }, `${verb} subject`);
+  }
+  if (verb === "detail") {
+    if (options.kind === void 0) invalid("--kind is required");
+    if (options.id === void 0) invalid("--id is required");
+    if (!RECORD_KINDS.has(options.kind) || (/* @__PURE__ */ new Set(["initiative", "item"])).has(options.kind)) {
+      invalid("detail kind is unsupported");
+    }
+    if (HIERARCHY_KINDS.has(options.kind)) {
+      validateHierarchySubject({ kind: options.kind, id: options.id }, "detail subject");
+    }
+  }
+  if (verb === "claim") {
+    if (options.task === void 0) invalid("--task is required");
+    validateHierarchySubject({ kind: "task", id: options.task }, "claim Task");
+  }
   return { verb, options };
 }
 async function readInput(stream) {
@@ -73,10 +114,15 @@ async function readInput(stream) {
   }
   return Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf8");
 }
-async function runCLI(argv, { host, input, stdin = process.stdin, cwd = process.cwd(), env = process.env } = {}) {
+async function runCLI(argv, { host, input, stdin = process.stdin, cwd = process.cwd(), env = process.env, entrypoint } = {}) {
   try {
     const { verb, options } = parseArguments(argv);
-    if (verb === "direct") return { exitCode: 0, result: { ok: true, mode: verb, coordinationRequired: false } };
+    if (verb === "direct") {
+      return {
+        exitCode: 0,
+        result: withEntrypointReport({ ok: true, mode: verb, coordinationRequired: false }, env, entrypoint)
+      };
+    }
     let body;
     if (inputVerbs.has(verb)) {
       const text = input ?? await readInput(stdin);
@@ -93,22 +139,26 @@ async function runCLI(argv, { host, input, stdin = process.stdin, cwd = process.
       if (error.code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw error;
       throw new RuntimeError("UNSUPPORTED_HOST", "node:sqlite unavailable; use Node ^22.22.2, ^24.15.0 or >=26");
     }
-    const { execute } = await import("./chunk-ELIJJXPS.mjs");
+    const { execute } = await import("./chunk-25O3Q24I.mjs");
     const result = await execute({ verb, options, body, host, cwd, env });
-    return { exitCode: 0, result };
+    return { exitCode: 0, result: withEntrypointReport(result, env, entrypoint) };
   } catch (error) {
-    if (!(error instanceof RuntimeError)) throw error;
-    return { exitCode: error.retryable ? 2 : 1, result: {
-      ok: false,
-      code: error.code,
-      message: error.message,
-      retryable: error.retryable
-    } };
+    const runtimeError = error instanceof RuntimeError || error?.name === "RuntimeError" && typeof error.code === "string" && /^[A-Z][A-Z_]+$/.test(error.code) && typeof error.message === "string" && typeof error.retryable === "boolean";
+    if (!runtimeError) throw error;
+    return {
+      exitCode: error.retryable ? 2 : 1,
+      result: withEntrypointReport({
+        ok: false,
+        code: error.code,
+        message: error.message,
+        retryable: error.retryable
+      }, env, entrypoint)
+    };
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const { exitCode, result } = await runCLI(process.argv.slice(2));
+    const { exitCode, result } = await runCLI(process.argv.slice(2), { entrypoint: runtimeEntrypointPath() });
     process.stdout.write(`${JSON.stringify(result)}
 `);
     if (exitCode) process.stderr.write(`${result.code}: ${result.message}

@@ -10,22 +10,34 @@ import {
   bindEvidenceRuntime, assertWorkspacePath, hashArtifact, hashBundle,
   registerArtifact, transitionAsset, registerEvidence, recordReview, recordApproval,
 } from '../src/core/lib/coordination-runtime/evidence.mjs';
-import {canonicalJson, commandDigest, criteriaRef, validateCommand} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {
+  canonicalJson, commandDigest, criteriaRef, validateCommand, validateRecord,
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
   completionApproval, requireReviews, requireReleaseEvidence,
 } from '../src/core/lib/coordination-runtime/acceptance.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {buildReport} from '../src/core/lib/coordination-runtime/report.mjs';
 import {bindEvidenceTransaction} from '../src/core/lib/coordination-runtime/evidence-context.mjs';
 import {readRecord, listRecords} from '../src/core/lib/coordination-runtime/store.mjs';
-import {withWorkspace, seedItem, command, authority} from './helpers/coordination-runtime-fixture.mjs';
+import {
+  fixtureIds, withWorkspace, seedTask, seedRecord, command, authority,
+} from './helpers/coordination-runtime-fixture.mjs';
 
 const builder = {role: 'eng-builder-software', runId: 'producer-run'};
 const reviewer = {role: 'eng-reviewer-code', runId: 'independent-review'};
 const operator = {role: 'operator', runId: 'human-session'};
 const lead = {role: 'eng-lead-architecture', runId: 'lead-session'};
-const runDirectory = '.kai/runs/review/2026-09-16/01-evidence-demo';
+const NOW = '2026-09-16T12:00:00.000Z';
+const taskSubject = Object.freeze({kind: 'task', id: fixtureIds.task});
+const route = 'engineering/reports/investigations/evidence-demo';
+const runDirectory = `.kai/${route}/scratch`;
 const source = `${runDirectory}/mock.html`;
-const workingTarget = '.kai/state/initiatives/demo-initiative/artifacts/mock.html';
+const workingTarget = `.kai/${route}/drafts/mock.html`;
+const publicRelative = `docs/kai/${route}/mock.html`;
+const publicTarget = `project:app:${publicRelative}`;
+const publicOtherRelative = `docs/kai/${route}/other.html`;
+const publicOtherTarget = `project:app:${publicOtherRelative}`;
 const actions = ['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record'];
 const code = expected => error => error?.code === expected;
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -37,13 +49,13 @@ function file(root, path, bytes = '<h1>First</h1>') {
 }
 function txView(store) {
   return bindEvidenceTransaction(store, {
-    list: (kind, itemId) => listRecords(store, {kind, itemId}),
+    list: (kind, subject) => listRecords(store, {kind, subject}),
     get: (kind, id) => readRecord(store, kind, id),
   });
 }
 function runtime(root, store, actor = builder, extra = {}) {
-  const item = readRecord(store, 'item', 'demo');
-  const auth = authority(actor, actions, {version: item.version});
+  const task = readRecord(store, 'task', fixtureIds.task);
+  const auth = authority(actor, actions, {version: task.version});
   bindEvidenceRuntime(store, {
     root, authority: auth,
     runs: [{actor, directory: runDirectory}],
@@ -53,13 +65,13 @@ function runtime(root, store, actor = builder, extra = {}) {
 }
 function cmd(store, kind, payload, actor = builder, extras = {}) {
   return command(kind, {
-    actor, expectedVersion: readRecord(store, 'item', 'demo').version, payload, ...extras,
+    actor, expectedVersion: readRecord(store, 'task', fixtureIds.task).version, payload, ...extras,
   });
 }
 function setup(root, store, overrides = {}) {
   file(root, source);
   file(root, workingTarget);
-  seedItem(store, {
+  seedTask(store, {
     state: 'in-review', acceptance_actor: null,
     change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: source},
     ...overrides,
@@ -70,7 +82,7 @@ function setup(root, store, overrides = {}) {
 function artifactCommand(store, extra = {}) {
   return cmd(store, 'artifact.register', {
     artifactId: randomUUID(), assetId: randomUUID(),
-    subject: readRecord(store, 'item', 'demo').body.change_ref,
+    subject: readRecord(store, 'task', fixtureIds.task).body.change_ref,
     projectId: null, classification: 'internal', mediaType: 'text/html',
     title: 'Mock', inputAssetIds: [], at: new Date().toISOString(), ...extra,
   });
@@ -82,10 +94,12 @@ function register(root, store, extra = {}) {
   return c.payload;
 }
 function verdict(store, kind, refs, overrides = {}, actor = reviewer) {
-  const item = readRecord(store, 'item', 'demo').body;
+  const verdictSubject = overrides.subject ?? taskSubject;
+  const task = readRecord(store, verdictSubject.kind, verdictSubject.id);
   const common = {
-    schema_version: 1, item_id: 'demo', subject: item.change_ref,
-    criteria_ref: criteriaRef(item), supersedes: [], evidence_refs: refs,
+    schema_version: 1, subject: verdictSubject, content_ref: task.body.change_ref,
+    criteria_ref: criteriaRef(task, (recordKind, id) => readRecord(store, recordKind, id)),
+    supersedes: [], evidence_refs: refs,
     created_at: new Date().toISOString(),
   };
   const body = kind === 'review.record' ? {
@@ -123,10 +137,11 @@ function captureFor(c, changes = {}) {
   };
 }
 function evidenceCommand(store, artifactId, overrides = {}, tier = 'observed', actor = builder) {
-  const item = readRecord(store, 'item', 'demo').body;
+  const task = readRecord(store, 'task', fixtureIds.task);
   return cmd(store, 'evidence.register', {tier, body: {
-    schema_version: 1, evidence_id: randomUUID(), item_id: 'demo',
-    kind: 'dod-dimension', subject: item.change_ref, criteria_ref: criteriaRef(item),
+    schema_version: 1, evidence_id: randomUUID(), subject: taskSubject,
+    kind: 'dod-dimension', content_ref: task.body.change_ref,
+    criteria_ref: criteriaRef(task, (recordKind, id) => readRecord(store, recordKind, id)),
     supersedes: [], dimension: 'verified', outcome: 'clear',
     evidence_refs: [`artifact:${artifactId}`], reason: null, data: {},
     created_at: new Date().toISOString(), ...overrides,
@@ -136,17 +151,17 @@ function operatorProof(c, overrides = {}) {
   const b = c.payload.body;
   return {
     source: 'host-interaction', reference: 'host:user-turn-2', attributed_to: 'Operator',
-    captured_at: b.created_at, item_id: b.item_id, subject: b.subject,
+    captured_at: b.created_at, subject: b.subject, content_ref: b.content_ref,
     criteria_ref: b.criteria_ref, kind: b.kind, decision: b.decision,
     deployment: b.deployment, recovery: b.recovery, ...overrides,
   };
 }
 
 function complete(store) {
-  const c = cmd(store, 'item.transition', {
+  const c = cmd(store, 'task.transition', {
     to: 'completed', at: new Date().toISOString(), reason: 'Accept current retained evidence',
   }, reviewer);
-  return applyCommand(store, c, authority(reviewer, 'item.transition', {version: c.expectedVersion}));
+  return applyCommand(store, c, authority(reviewer, 'task.transition', {version: c.expectedVersion}));
 }
 function makeCurrent(root, store, a) {
   const approvalId = accept(root, store, a.artifactId);
@@ -158,18 +173,209 @@ function publicWorkspace(root) {
   const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
   manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
   file(root, '.kai/manifest.json', JSON.stringify(manifest));
-  file(root, 'docs/kai/mock.html');
-  return 'project:app:docs/kai/mock.html';
+  file(root, publicRelative);
+  return publicTarget;
 }
 function publish(root, store) {
   const target = publicWorkspace(root);
-  setup(root, store, {artifact_targets: [target, 'project:app:docs/kai/other.html']});
+  setup(root, store, {artifact_targets: [target, publicOtherTarget]});
   const a = register(root, store, {classification: 'public'});
   makeCurrent(root, store, a);
   transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'published', validity: 'current', target}),
     runtime(root, store, reviewer));
   return {...a, target};
 }
+
+test('schema5 publication accepts an accepted draft on its mirrored typed route', async () => {
+  await withWorkspace(({root, store}) => {
+    const a = publish(root, store);
+    const asset = readRecord(store, 'asset', a.assetId).body;
+    assert.equal(asset.disposition, 'published');
+    assert.equal(asset.validity, 'current');
+    assert.equal(asset.target, publicTarget);
+  });
+});
+
+test('schema5 publication exactly mirrors a lifecycle-named subtype ID', async () => {
+  await withWorkspace(({root, store}) => {
+    const privateTarget =
+      '.kai/engineering/documentation/architecture/evidence/drafts/mock.html';
+    const relativeTarget =
+      'docs/kai/engineering/documentation/architecture/evidence/mock.html';
+    const target = `project:app:${relativeTarget}`;
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    file(root, privateTarget);
+    file(root, relativeTarget);
+    setup(root, store, {artifact_targets: [privateTarget, target]});
+    const a = register(root, store, {classification: 'public'});
+    const approvalId = accept(root, store, a.artifactId);
+    transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'draft', target: privateTarget,
+    }), runtime(root, store, reviewer));
+    transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'working', validity: 'current', approvalId, target: privateTarget,
+    }), runtime(root, store, reviewer));
+    transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'published', validity: 'current', target,
+    }), runtime(root, store, reviewer));
+    assert.equal(readRecord(store, 'asset', a.assetId).body.target, target);
+  });
+});
+
+test('schema5 publication refuses an arbitrary docs/kai root without a typed mirrored route', async () => {
+  await withWorkspace(({root, store}) => {
+    const target = 'project:app:docs/kai/mock.html';
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    file(root, 'docs/kai/mock.html');
+    setup(root, store, {artifact_targets: [target]});
+    const a = register(root, store, {classification: 'public'});
+    makeCurrent(root, store, a);
+    assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'published', validity: 'current', target,
+    }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+  });
+});
+
+test('schema5 publication binds the public route pack to the hierarchy subject', async () => {
+  await withWorkspace(({root, store}) => {
+    const target = 'project:app:docs/kai/creative/reports/investigations/evidence-demo/mock.html';
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    file(root, target.replace('project:app:', ''));
+    setup(root, store, {artifact_targets: [target]});
+    const a = register(root, store, {classification: 'public'});
+    makeCurrent(root, store, a);
+    assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'published', validity: 'current', target,
+    }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+  });
+});
+
+for (const [label, relativeTarget] of [
+  ['type', 'docs/kai/engineering/documentation/architecture/evidence-demo/mock.html'],
+  ['id', 'docs/kai/engineering/reports/investigations/other/mock.html'],
+  ['extra subtype', 'docs/kai/engineering/reports/investigations/releases/evidence-demo/mock.html'],
+]) {
+  test(`schema5 publication refuses a mirrored-route ${label} mutation`, async () => {
+    await withWorkspace(({root, store}) => {
+      const target = `project:app:${relativeTarget}`;
+      const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+      manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+      file(root, '.kai/manifest.json', JSON.stringify(manifest));
+      file(root, relativeTarget);
+      setup(root, store, {artifact_targets: [target]});
+      const a = register(root, store, {classification: 'public'});
+      makeCurrent(root, store, a);
+      assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'published', validity: 'current', target,
+      }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+    });
+  });
+}
+
+for (const lifecycle of ['scratch', 'evidence']) {
+  test(`schema5 publication refuses ${lifecycle} lifecycle provenance`, async () => {
+    await withWorkspace(({root, store}) => {
+      const target = 'project:app:docs/kai/engineering/reports/investigations/evidence-demo/mock.html';
+      const privateTarget = `.kai/engineering/reports/investigations/evidence-demo/${lifecycle}/mock.html`;
+      const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+      manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+      file(root, '.kai/manifest.json', JSON.stringify(manifest));
+      file(root, target.replace('project:app:', ''));
+      file(root, privateTarget);
+      setup(root, store, {artifact_targets: [privateTarget, target]});
+      const a = register(root, store, {classification: 'public'});
+      const approvalId = accept(root, store, a.artifactId);
+      transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'draft', target: privateTarget,
+      }), runtime(root, store, reviewer));
+      transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'working', validity: 'current', approvalId, target: privateTarget,
+      }), runtime(root, store, reviewer));
+      assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'published', validity: 'current', target,
+      }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+    });
+  });
+}
+
+test('approved producing runs accept one optional subtype in their typed route', async () => {
+  await withWorkspace(({root, store}) => {
+    setup(root, store);
+    const task = readRecord(store, 'task', fixtureIds.task);
+    const auth = authority(builder, actions, {version: task.version});
+    assert.doesNotThrow(() => bindEvidenceRuntime(store, {
+      root,
+      authority: auth,
+      runs: [{
+        actor: builder,
+        directory: '.kai/engineering/documentation/architecture/auth-boundary/scratch',
+      }],
+    }));
+  });
+});
+
+for (const [id, lifecycle] of [
+  ['drafts', 'evidence'],
+  ['evidence', 'scratch'],
+  ['scratch', 'drafts'],
+]) {
+  test(`approved producing runs accept lifecycle-named subtype ID ${id}`, async () => {
+    await withWorkspace(({root, store}) => {
+      setup(root, store);
+      const task = readRecord(store, 'task', fixtureIds.task);
+      assert.doesNotThrow(() => bindEvidenceRuntime(store, {
+        root,
+        authority: authority(builder, actions, {version: task.version}),
+        runs: [{
+          actor: builder,
+          directory: `.kai/engineering/documentation/architecture/${id}/${lifecycle}`,
+        }],
+      }));
+    });
+  });
+}
+
+for (const directory of [
+  '.kai/engineering/documentation/drafts',
+  '.kai/engineering/reports/investigations/releases/evidence-demo/scratch',
+  '.kai/engineering/documentation/architecture/drafts/evidence/design.md',
+]) {
+  test(`approved producing runs reject missing or extra typed route segments: ${directory}`, async () => {
+    await withWorkspace(({root, store}) => {
+      setup(root, store);
+      const task = readRecord(store, 'task', fixtureIds.task);
+      assert.throws(() => bindEvidenceRuntime(store, {
+        root,
+        authority: authority(builder, actions, {version: task.version}),
+        runs: [{actor: builder, directory}],
+      }), code('INVALID_INPUT'));
+    });
+  });
+}
+
+test('artifact registration binds the producing run pack to the hierarchy subject', async () => {
+  await withWorkspace(({root, store}) => {
+    setup(root, store);
+    const creativeRun = '.kai/creative/media/evidence-demo/scratch';
+    const creativeSource = `${creativeRun}/mock.html`;
+    file(root, creativeSource);
+    const task = readRecord(store, 'task', fixtureIds.task);
+    bindEvidenceRuntime(store, {
+      root,
+      authority: authority(builder, actions, {version: task.version}),
+      runs: [{actor: builder, directory: creativeRun}],
+    });
+    assert.throws(() => registerArtifact(store, artifactCommand(store, {
+      subject: hashArtifact({root, relativePath: creativeSource}),
+    })), code('INVALID_INPUT'));
+  });
+});
 
 for (const damage of ['source changed', 'source missing', 'snapshot changed', 'snapshot missing', 'manifest changed']) {
   test(`fix1 F1 engine completion refuses ${damage} after positive acceptance`, async () => {
@@ -183,9 +389,9 @@ for (const damage of ['source changed', 'source missing', 'snapshot changed', 's
         ? artifact.snapshots[0].snapshot_path : artifact.manifest_path;
       if (damage.endsWith('missing')) rmSync(join(root, path));
       else file(root, path, 'changed after approval');
-      const version = readRecord(store, 'item', 'demo').version;
+      const version = readRecord(store, 'task', fixtureIds.task).version;
       assert.throws(() => complete(store), code('EVIDENCE_GAP'));
-      assert.equal(readRecord(store, 'item', 'demo').version, version);
+      assert.equal(readRecord(store, 'task', fixtureIds.task).version, version);
       assert.equal(readRecord(store, 'approval', approvalId).body.decision, 'approved');
     });
   });
@@ -243,7 +449,7 @@ for (const placement of ['confidential draft', 'personal archive', 'public provi
   test(`fix1 F2 public placement refuses ${placement}`, async () => {
     await withWorkspace(({root, store}) => {
       const target = publicWorkspace(root);
-      const personal = '.kai/personal/operator/note.html';
+      const personal = '.kai/engineering/features/evidence-demo/personal/operator-note.html';
       file(root, personal);
       setup(root, store, {artifact_targets: [target, personal]});
       const a = register(root, store, {
@@ -263,7 +469,7 @@ for (const consumer of ['currentness', 'completion', 'derived input']) {
   for (const damage of ['changed', 'missing']) {
     test(`fix1 F3 ${consumer} refuses ${damage} unchanged canonical target`, async () => {
       await withWorkspace(({root, store}) => {
-        const path = '.kai/state/initiatives/demo-initiative/artifacts/derived.html';
+        const path = '.kai/engineering/features/evidence-demo/drafts/derived.html';
         setup(root, store, {artifact_targets: [path]});
         const a = register(root, store);
         const approvalId = makeCurrent(root, store, a);
@@ -292,9 +498,9 @@ test('fix1 F3 canonical path remains protected after published then archived his
     const a = publish(root, store);
     transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'archived', validity: 'current'}),
       runtime(root, store, reviewer));
-    file(root, 'docs/kai/other.html');
+    file(root, publicOtherRelative);
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
-      disposition: 'archived', validity: 'current', target: 'project:app:docs/kai/other.html',
+      disposition: 'archived', validity: 'current', target: publicOtherTarget,
     }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
     assert.equal(readRecord(store, 'asset', a.assetId).body.target, a.target);
   });
@@ -337,14 +543,14 @@ for (const validity of ['stale', 'invalidated', 'retired']) {
       const artifact = readRecord(store, 'artifact', a.artifactId).body;
       rmSync(join(root, source));
       rmSync(join(root, artifact.snapshots[0].snapshot_path));
-      rmSync(join(root, 'docs/kai/mock.html'));
+      rmSync(join(root, publicRelative));
       const c = assetCommand(store, a.assetId, {disposition: 'published', validity, reason: 'Evidence was lost'}, builder);
       assert.equal(transitionAsset(store, c, runtime(root, store, builder)).ok, true);
       const asset = readRecord(store, 'asset', a.assetId).body;
       assert.equal(asset.validity, validity);
       assert.equal(asset.disposition, 'published');
       assert.equal(asset.target, a.target);
-      assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+      assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'completed');
       assert.equal(readRecord(store, 'approval', asset.completion_approval_id).body.decision, 'approved');
     });
   });
@@ -364,26 +570,20 @@ test('fix1 F7 waiver excludes exact artifact producer outside item producing his
   });
 });
 
-test('fix1 F8 same immutable Git subject cannot be relabeled public across project aliases', async () => {
+test('fix1 F8 duplicate project aliases fail before immutable Git evidence can be relabeled', async () => {
   await withWorkspace(({root, store}) => {
-    const project = join(root, 'project');
-    mkdirSync(project);
-    const git = args => execFileSync('git', ['-C', project, ...args], {encoding: 'utf8'}).trim();
-    git(['init', '--quiet']);
-    file(project, 'a.txt', 'private code');
-    git(['add', 'a.txt']);
-    git(['-c', 'user.name=Evidence Test', '-c', 'user.email=evidence@example.invalid',
-      '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture']);
-    const head = git(['rev-parse', 'HEAD']);
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
-    manifest.projects = ['app', 'alias'].map(id => ({id, path: 'project', publication_root: 'docs/kai'}));
+    manifest.projects = ['app', 'alias'].map(id => ({id, path: '.', publication_root: 'docs/kai'}));
     file(root, '.kai/manifest.json', JSON.stringify(manifest));
-    setup(root, store, {change_ref: {kind: 'git', base: head, head}});
-    register(root, store, {projectId: 'app', classification: 'confidential'});
-    runtime(root, store);
-    assert.throws(() => registerArtifact(store, artifactCommand(store, {
-      projectId: 'alias', classification: 'public',
-    })), code('INVALID_INPUT'));
+    file(root, source);
+    file(root, workingTarget);
+    seedTask(store, {
+      state: 'in-review',
+      acceptance_actor: null,
+      change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: source},
+      artifact_targets: [workingTarget],
+    });
+    assert.throws(() => runtime(root, store), code('INVALID_INPUT'));
   });
 });
 
@@ -406,7 +606,7 @@ for (const outcome of ['gap', 'failed']) {
           }, operator);
           recordApproval(store, approval, runtime(root, store, operator, {verifyOperatorDecision: operatorProof}));
         }
-        e.expectedVersion = readRecord(store, 'item', 'demo').version;
+        e.expectedVersion = readRecord(store, 'task', fixtureIds.task).version;
       }
       runtime(root, store);
       registerEvidence(store, e, {});
@@ -441,7 +641,7 @@ for (const verifier of ['capture', 'operator']) {
         ? {verifyCapture: broken} : {verifyOperatorDecision: broken});
       assert.throws(() => verifier === 'capture' ? registerEvidence(store, c, {})
         : recordApproval(store, c, auth), error => error === failure && error.cause === cause);
-      assert.equal(readRecord(store, 'item', 'demo').version, c.expectedVersion);
+      assert.equal(readRecord(store, 'task', fixtureIds.task).version, c.expectedVersion);
     });
   });
 }
@@ -483,15 +683,15 @@ test('fix1 followup F7 waiver cannot use supporting artifacts made by its own ru
 test('fix1 followup F3 accepted public placement keeps its canonical path even without published disposition', async () => {
   await withWorkspace(({root, store}) => {
     const target = publicWorkspace(root);
-    setup(root, store, {artifact_targets: [target, 'project:app:docs/kai/other.html']});
+    setup(root, store, {artifact_targets: [target, publicOtherTarget]});
     const a = register(root, store, {classification: 'public'});
     const approvalId = accept(root, store, a.artifactId);
     transitionAsset(store, assetCommand(store, a.assetId, {
       disposition: 'draft', validity: 'current', approvalId, target,
     }), runtime(root, store, reviewer));
-    file(root, 'docs/kai/other.html');
+    file(root, publicOtherRelative);
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
-      disposition: 'draft', validity: 'current', target: 'project:app:docs/kai/other.html',
+      disposition: 'draft', validity: 'current', target: publicOtherTarget,
     }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
   });
 });
@@ -517,33 +717,35 @@ test('paths reject absolute, traversal, junctions, nested Git and public/private
     file(root, source);
     assert.equal(assertWorkspacePath(root, source), join(root, source));
     for (const path of ['../outside', 'C:\\outside', 'C:outside', '\\\\server\\share', '/absolute',
-      '.kai/runs/../state/x', '.kai/runs/a:stream', 'docs/public.html', 'project:missing:docs/x']) {
+      '.kai/engineering/features/demo/../x', '.kai/engineering/features/demo/a:stream',
+      'docs/public.html', 'project:missing:docs/x']) {
       assert.throws(() => assertWorkspacePath(root, path), code('INVALID_INPUT'), path);
     }
     const outside = join(root, 'outside');
     mkdirSync(outside);
-    symlinkSync(outside, join(root, '.kai', 'runs', 'escape'), 'junction');
-    assert.throws(() => assertWorkspacePath(root, '.kai/runs/escape/x'), code('INVALID_INPUT'));
-    rmSync(join(root, '.kai', 'runs', 'escape'));
-    mkdirSync(join(root, '.kai', 'runs', 'nested', '.git'), {recursive: true});
+    mkdirSync(join(root, '.kai', 'engineering', 'reports'), {recursive: true});
+    symlinkSync(outside, join(root, '.kai', 'engineering', 'reports', 'escape'), 'junction');
+    assert.throws(() => assertWorkspacePath(root, '.kai/engineering/reports/escape/x'), code('INVALID_INPUT'));
+    rmSync(join(root, '.kai', 'engineering', 'reports', 'escape'));
+    mkdirSync(join(root, '.kai', 'engineering', 'reports', 'nested', '.git'), {recursive: true});
     assert.throws(() => assertWorkspacePath(root, source), code('INVALID_INPUT'));
   });
 });
 
-test('registration persists authorized item-bound records, exact snapshots and replay receipts', async () => {
+test('registration persists Task-bound records without changing Task criteria version', async () => {
   await withWorkspace(({root, store}) => {
     setup(root, store);
     const c = artifactCommand(store);
     const receipt = registerArtifact(store, c);
     assert.equal(receipt.ok, true);
-    assert.equal(receipt.recordVersion, 2);
+    assert.equal(receipt.recordVersion, 1);
     assert.deepEqual(registerArtifact(store, c), receipt);
     const a = readRecord(store, 'artifact', c.payload.artifactId).body;
     assert.equal(a.producer.runId, builder.runId);
     assert.equal(readFileSync(join(root, a.snapshots[0].snapshot_path), 'utf8'), '<h1>First</h1>');
     assert.equal(readFileSync(join(root, source), 'utf8'), '<h1>First</h1>');
     assert.equal(readRecord(store, 'asset', c.payload.assetId).body.validity, 'provisional');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'in-review');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'in-review');
     assert.equal(store.database.prepare('SELECT COUNT(*) n FROM events').get().n, 1);
     assert.throws(() => registerArtifact(store, {...c, payload: {...c.payload, title: 'different'}}),
       code('OPERATION_CONFLICT'));
@@ -590,17 +792,14 @@ test('bundles retain exact sorted manifest and reject later snapshot or manifest
 
 test('Git evidence resolves full immutable objects only within declared selected project', async () => {
   await withWorkspace(({root, store}) => {
-    const project = join(root, 'project');
-    mkdirSync(project);
-    const git = args => execFileSync('git', ['-C', project, ...args], {encoding: 'utf8'}).trim();
-    git(['init', '--quiet']);
-    file(project, 'a.txt', 'a');
+    const git = args => execFileSync('git', ['-C', root, ...args], {encoding: 'utf8'}).trim();
+    file(root, 'a.txt', 'a');
     git(['add', 'a.txt']);
     git(['-c', 'user.name=Evidence Test', '-c', 'user.email=evidence@example.invalid',
       '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture']);
     const head = git(['rev-parse', 'HEAD']);
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
-    manifest.projects = [{id: 'app', path: 'project', publication_root: 'docs/kai'}];
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
     file(root, '.kai/manifest.json', JSON.stringify(manifest));
     setup(root, store, {change_ref: {kind: 'git', base: head, head}});
     const c = artifactCommand(store, {projectId: 'app'});
@@ -630,13 +829,14 @@ test('reviews are persisted independent current-subject/current-criteria verdict
     const c = verdict(store, 'review.record', [`artifact:${a.artifactId}`]);
     assert.equal(recordReview(store, c).ok, true);
     assert.equal(readRecord(store, 'review', c.payload.body.review_id).body.criteria_ref,
-      criteriaRef(readRecord(store, 'item', 'demo').body));
-    assert.doesNotThrow(() => requireReviews(txView(store), readRecord(store, 'item', 'demo')));
+      criteriaRef(readRecord(store, 'task', fixtureIds.task),
+        (kind, id) => readRecord(store, kind, id)));
+    assert.doesNotThrow(() => requireReviews(txView(store), readRecord(store, 'task', fixtureIds.task)));
     runtime(root, store, reviewer);
     assert.throws(() => recordReview(store, verdict(store, 'review.record', [`artifact:${a.artifactId}`],
       {criteria_ref: 'f'.repeat(64)})), code('EVIDENCE_GAP'));
     assert.throws(() => recordReview(store, verdict(store, 'review.record', [`artifact:${a.artifactId}`],
-      {subject: {...c.payload.body.subject, digest: 'a'.repeat(64)}})), code('EVIDENCE_GAP'));
+      {content_ref: {...c.payload.body.content_ref, digest: 'a'.repeat(64)}})), code('EVIDENCE_GAP'));
     const self = {...reviewer, runId: builder.runId};
     runtime(root, store, self);
     assert.throws(() => recordReview(store, verdict(store, 'review.record', [`artifact:${a.artifactId}`], {}, self)),
@@ -675,20 +875,20 @@ test('negative review/approval history requires explicit effective supersession 
     recordReview(store, bad);
     runtime(root, store, reviewer);
     recordReview(store, verdict(store, 'review.record', refs));
-    assert.throws(() => requireReviews(txView(store), readRecord(store, 'item', 'demo')), code('EVIDENCE_GAP'));
+    assert.throws(() => requireReviews(txView(store), readRecord(store, 'task', fixtureIds.task)), code('EVIDENCE_GAP'));
     runtime(root, store, reviewer);
     recordReview(store, verdict(store, 'review.record', refs, {supersedes: [bad.payload.body.review_id]}));
-    assert.doesNotThrow(() => requireReviews(txView(store), readRecord(store, 'item', 'demo')));
+    assert.doesNotThrow(() => requireReviews(txView(store), readRecord(store, 'task', fixtureIds.task)));
     runtime(root, store, reviewer);
     assert.throws(() => recordReview(store, verdict(store, 'review.record', refs,
       {supersedes: [bad.payload.body.review_id]})), code('EVIDENCE_GAP'));
     const rejected = verdict(store, 'approval.record', refs, {decision: 'rejected'});
     recordApproval(store, rejected, runtime(root, store, reviewer));
     accept(root, store, a.artifactId);
-    assert.throws(() => completionApproval(txView(store), readRecord(store, 'item', 'demo')), code('EVIDENCE_GAP'));
+    assert.throws(() => completionApproval(txView(store), readRecord(store, 'task', fixtureIds.task)), code('EVIDENCE_GAP'));
     const replacement = verdict(store, 'approval.record', refs, {supersedes: [rejected.payload.body.approval_id]});
     recordApproval(store, replacement, runtime(root, store, reviewer));
-    assert.doesNotThrow(() => completionApproval(txView(store), readRecord(store, 'item', 'demo')));
+    assert.doesNotThrow(() => completionApproval(txView(store), readRecord(store, 'task', fixtureIds.task)));
   });
 });
 
@@ -712,19 +912,19 @@ test('observed evidence needs trusted capture, successful complete results, priv
     assert.throws(() => registerEvidence(store, c, {source: 'agent-paste', text: 'passed'}), code('EVIDENCE_GAP'));
     c = evidenceCommand(store, a.artifactId, {outcome: 'gap', reason: 'Not executed'}, 'declared');
     assert.equal(registerEvidence(store, c, {source: 'agent-declaration'}).ok, true);
-    assert.throws(() => requireReleaseEvidence(txView(store), readRecord(store, 'item', 'demo')), code('EVIDENCE_GAP'));
+    assert.throws(() => requireReleaseEvidence(txView(store), readRecord(store, 'task', fixtureIds.task)), code('EVIDENCE_GAP'));
   });
 });
 
 test('lease and recovery guards cannot be bypassed by bound grants', async () => {
   await withWorkspace(({root, store}) => {
     setup(root, store, {state: 'ready', next_role: builder.role});
-    const g = cmd(store, 'item.grant', {
+    const g = cmd(store, 'task.grant', {
       holder: builder, actions: ['artifact.register', 'evidence.register'],
       acquiredAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString(),
     }, lead);
-    applyCommand(store, g, authority(lead, 'item.grant'));
-    const token = readRecord(store, 'item', 'demo').body.lease.token;
+    applyCommand(store, g, authority(lead, 'task.grant'));
+    const token = readRecord(store, 'task', fixtureIds.task).body.lease.token;
     runtime(root, store, builder, {authority: {roles: [builder.role], grants: []}});
     const c = artifactCommand(store);
     assert.throws(() => registerArtifact(store, c), code('LEASE_CONFLICT'));
@@ -769,14 +969,14 @@ test('asset acceptance stays provisional for incomplete inputs; aged assets neve
     auth = runtime(root, store, reviewer);
     transitionAsset(store, assetCommand(store, a.assetId, {validity: 'current', approvalId}), auth);
     assert.equal(readRecord(store, 'asset', a.assetId).body.validity, 'provisional');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'completed');
     const ready = register(root, store);
     const accepted = accept(root, store, ready.artifactId);
     transitionAsset(store, assetCommand(store, ready.assetId, {disposition: 'draft'}), runtime(root, store, reviewer));
     transitionAsset(store, assetCommand(store, ready.assetId, {validity: 'current', approvalId: accepted}), runtime(root, store, reviewer));
     transitionAsset(store, assetCommand(store, ready.assetId, {validity: 'stale'}), runtime(root, store, reviewer));
     assert.equal(readRecord(store, 'asset', ready.assetId).body.validity, 'stale');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'completed');
     assert.throws(() => transitionAsset(store, assetCommand(store, ready.assetId, {disposition: 'discarded'}), runtime(root, store, reviewer)),
       code('INVALID_INPUT'));
   });
@@ -809,7 +1009,7 @@ test('publication requires declared contained public target; retraction retains 
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
     manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
     file(root, '.kai/manifest.json', JSON.stringify(manifest));
-    const target = 'project:app:docs/kai/mock.html';
+    const target = publicTarget;
     setup(root, store, {artifact_targets: [target], validity_owner: reviewer.role});
     const a = register(root, store, {classification: 'public'});
     const approvalId = accept(root, store, a.artifactId);
@@ -818,12 +1018,12 @@ test('publication requires declared contained public target; retraction retains 
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
       disposition: 'published', validity: 'current', target,
     }), runtime(root, store, reviewer)), code('EVIDENCE_GAP'));
-    file(root, 'docs/kai/mock.html');
+    file(root, publicRelative);
     transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'published', validity: 'current', target}),
       runtime(root, store, reviewer));
     transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'retracted', validity: 'invalidated', reason: 'Unsafe guidance'}),
       runtime(root, store, reviewer));
-    assert.equal(readFileSync(join(root, 'docs/kai/mock.html'), 'utf8'), '<h1>First</h1>');
+    assert.equal(readFileSync(join(root, publicRelative), 'utf8'), '<h1>First</h1>');
     assert.equal(readRecord(store, 'asset', a.assetId).body.history.some(h => h.disposition === 'published'), true);
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'discarded'}),
       runtime(root, store, reviewer)), code('INVALID_INPUT'));
@@ -850,10 +1050,10 @@ test('paid media cannot be accepted without independently verified operator cons
       setup(root, store);
       const a = register(root, store);
       const stale = verdict(store, 'review.record', [`artifact:${a.artifactId}`]);
-      const update = cmd(store, 'item.update', {changes: {acceptance: ['New acceptance requirement']}});
-      applyCommand(store, update, authority(builder, 'item.update', {version: update.expectedVersion}));
+      const update = cmd(store, 'task.update', {changes: {acceptance: ['New acceptance requirement']}});
+      applyCommand(store, update, authority(builder, 'task.update', {version: update.expectedVersion}));
       runtime(root, store, reviewer);
-      assert.throws(() => recordReview(store, {...stale, expectedVersion: readRecord(store, 'item', 'demo').version}),
+      assert.throws(() => recordReview(store, {...stale, expectedVersion: readRecord(store, 'task', fixtureIds.task).version}),
         code('EVIDENCE_GAP'));
       for (const to of ['in-progress', 'in-review']) {
         const payload = {to, at: new Date().toISOString(), reason: 'Revise the commissioned work'};
@@ -861,11 +1061,11 @@ test('paid media cannot be accepted without independently verified operator cons
           file(root, source, 'new exact subject');
           payload.subject = hashArtifact({root, relativePath: source});
         }
-        const change = cmd(store, 'item.transition', payload);
-        applyCommand(store, change, authority(builder, 'item.transition', {version: change.expectedVersion}));
+        const change = cmd(store, 'task.transition', payload);
+        applyCommand(store, change, authority(builder, 'task.transition', {version: change.expectedVersion}));
       }
       runtime(root, store, reviewer);
-      assert.throws(() => recordReview(store, {...stale, expectedVersion: readRecord(store, 'item', 'demo').version}),
+      assert.throws(() => recordReview(store, {...stale, expectedVersion: readRecord(store, 'task', fixtureIds.task).version}),
         code('EVIDENCE_GAP'));
     });
   });
@@ -907,7 +1107,7 @@ test('paid media cannot be accepted without independently verified operator cons
       assert.equal(registerArtifact(store, c).ok, true);
       runtime(root, store, lead, {verifyCapture: captureFor});
       const e = evidenceCommand(store, c.payload.artifactId, {
-        kind: 'recovery-reconciliation', subject: null, criteria_ref: null, dimension: null,
+        kind: 'recovery-reconciliation', content_ref: null, criteria_ref: null, dimension: null,
         outcome: 'passed', data: {stale_lease_token: expired.token, disposition: 'safe-to-resume', observed: 'No partial writes'},
       }, 'observed', lead);
       assert.equal(registerEvidence(store, e, {}).ok, true);
@@ -941,7 +1141,10 @@ test('paid media cannot be accepted without independently verified operator cons
       registerEvidence(store, bad, {});
       runtime(root, store, builder, {verifyCapture: captureFor});
       registerEvidence(store, evidenceCommand(store, a.artifactId), {});
-      assert.equal(listRecords(store, {kind: 'evidence', itemId: 'demo'}).length, 2);
+      assert.equal(listRecords(store, {
+        kind: 'evidence',
+        subject: taskSubject,
+      }).length, 2);
       const corrected = evidenceCommand(store, a.artifactId, {supersedes: [bad.payload.body.evidence_id]});
       runtime(root, store, builder, {verifyCapture: captureFor});
       registerEvidence(store, corrected, {});
@@ -998,7 +1201,7 @@ test('late transaction failure preserves exact unregistered snapshots without fa
         assert.throws(() => registerArtifact(store, c), /task5 receipt failure/);
         assert.equal(readRecord(store, 'artifact', c.payload.artifactId), null);
         assert.equal(readRecord(store, 'asset', c.payload.assetId), null);
-        assert.equal(readRecord(store, 'item', 'demo').version, 1);
+        assert.equal(readRecord(store, 'task', fixtureIds.task).version, 1);
         assert.equal(store.database.prepare('SELECT COUNT(*) n FROM events').get().n, 0);
         assert.equal(readFileSync(join(root, source), 'utf8'), '<h1>First</h1>');
         assert.equal(readFileSync(join(root, runDirectory, '.evidence', c.payload.artifactId, '0000.bin'), 'utf8'),
@@ -1010,7 +1213,7 @@ test('late transaction failure preserves exact unregistered snapshots without fa
 
 test('forged operator discard does not remove or reclassify personal output', async () => {
       await withWorkspace(({root, store}) => {
-        const personal = '.kai/personal/operator/note.html';
+        const personal = '.kai/engineering/features/evidence-demo/personal/operator-note.html';
         setup(root, store, {artifact_targets: [personal]});
         file(root, personal);
         const a = register(root, store, {
@@ -1030,12 +1233,13 @@ test('publication cannot escape through a project junction or private project bi
         file(root, '.kai/manifest.json', JSON.stringify(manifest));
         const outside = join(root, 'elsewhere');
         mkdirSync(outside);
-        symlinkSync(outside, join(root, 'docs'), 'junction');
-        assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'));
-        rmSync(join(root, 'docs'));
+        rmSync(join(root, 'docs', 'kai'), {recursive: true, force: true});
+        symlinkSync(outside, join(root, 'docs', 'kai'), 'junction');
+        assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'));
+        rmSync(join(root, 'docs', 'kai'));
         manifest.projects[0].path = '.kai/state/private-project';
         file(root, '.kai/manifest.json', JSON.stringify(manifest));
-        assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'));
+        assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'));
       });
 });
 
@@ -1055,7 +1259,7 @@ test('actual persisted recovery approval resolves only its exact conflicting att
       stale_lease_token: staleLease.token, disposition: 'conflicting-partial-work', observed: 'Conflicting partial output',
     };
     const e = evidenceCommand(store, a.payload.artifactId, {
-      kind: 'recovery-reconciliation', subject: null, criteria_ref: null,
+      kind: 'recovery-reconciliation', content_ref: null, criteria_ref: null,
       dimension: null, outcome: 'passed', data,
     }, 'observed', lead);
     registerEvidence(store, e, {});
@@ -1066,30 +1270,30 @@ test('actual persisted recovery approval resolves only its exact conflicting att
       createdAt: new Date().toISOString(),
     }, lead);
     applyCommand(store, recover, authority(lead, 'attempt.recover', {version: recover.expectedVersion}));
-    assert.equal(readRecord(store, 'item', 'demo').body.recovery_hold, attemptId);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.recovery_hold, attemptId);
     const recovery = {
       attempt_id: attemptId, stale_lease_token: staleLease.token, disposition: 'safe-to-resume', resume_role: builder.role,
     };
     const approval = verdict(store, 'approval.record', [`evidence:${e.payload.body.evidence_id}`], {
-      kind: 'operator-recovery-resolution', subject: null, recovery,
+      kind: 'operator-recovery-resolution', content_ref: null, recovery,
     }, operator);
     const bad = structuredClone(approval);
     bad.payload.body.recovery.stale_lease_token = 'not-the-stale-lease';
     assert.throws(() => recordApproval(store, bad, runtime(root, store, operator, {verifyOperatorDecision: operatorProof})),
       code('AUTHORITY_REQUIRED'));
     recordApproval(store, approval, runtime(root, store, operator, {verifyOperatorDecision: operatorProof}));
-    const restore = cmd(store, 'item.restore', {
+    const restore = cmd(store, 'task.restore', {
       at: new Date().toISOString(), recoveryApprovalId: approval.payload.body.approval_id,
     }, lead);
-    applyCommand(store, restore, authority(lead, 'item.restore', {version: restore.expectedVersion}));
-    assert.equal(readRecord(store, 'item', 'demo').body.recovery_hold, null);
-    assert.equal(readRecord(store, 'item', 'demo').body.lease, null);
+    applyCommand(store, restore, authority(lead, 'task.restore', {version: restore.expectedVersion}));
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.recovery_hold, null);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.lease, null);
   });
 });
 
 test('scope-authorized personal discard preserves historical bytes and records actual consent', async () => {
   await withWorkspace(({root, store}) => {
-    const personal = '.kai/personal/operator/note.html';
+    const personal = '.kai/engineering/features/evidence-demo/personal/operator-note.html';
     file(root, personal);
     setup(root, store, {
       scope_authority: 'operator', artifact_targets: [personal],
@@ -1115,23 +1319,26 @@ test('successor work can atomically supersede a completed predecessor only with 
     const oldApproval = accept(root, store, old.artifactId);
     transitionAsset(store, assetCommand(store, old.assetId, {disposition: 'draft'}), runtime(root, store, reviewer));
     transitionAsset(store, assetCommand(store, old.assetId, {validity: 'current', approvalId: oldApproval}), runtime(root, store, reviewer));
-    seedItem(store, {...readRecord(store, 'item', 'demo').body, id: 'successor'});
+    const successorId = 'engineering:task:successor';
+    seedTask(store, {...readRecord(store, 'task', fixtureIds.task).body, id: successorId});
     const bindNext = (actor, both = false) => {
-      const next = readRecord(store, 'item', 'successor');
+      const next = readRecord(store, 'task', successorId);
       const auth = authority(actor, actions, {recordId: next.id, version: next.version});
       if (both) auth.grants.push(...authority(actor, 'asset.transition', {
-        version: readRecord(store, 'item', 'demo').version,
+        version: readRecord(store, 'task', fixtureIds.task).version,
       }).grants);
       bindEvidenceRuntime(store, {root, authority: auth, runs: [{actor, directory: runDirectory}]});
       return auth;
     };
     const nextCommand = c => ({
-      ...c, recordId: 'successor', expectedVersion: readRecord(store, 'item', 'successor').version,
+      ...c, recordId: successorId, expectedVersion: readRecord(store, 'task', successorId).version,
     });
     const next = nextCommand(artifactCommand(store));
     bindNext(builder);
     registerArtifact(store, next);
-    const approve = nextCommand(verdict(store, 'approval.record', [`artifact:${next.payload.artifactId}`], {item_id: 'successor'}));
+    const approve = nextCommand(verdict(store, 'approval.record', [`artifact:${next.payload.artifactId}`], {
+      subject: {kind: 'task', id: successorId},
+    }));
     recordApproval(store, approve, bindNext(reviewer));
     transitionAsset(store, nextCommand(assetCommand(store, next.payload.assetId, {disposition: 'draft'})), bindNext(reviewer));
     transitionAsset(store, nextCommand(assetCommand(store, next.payload.assetId, {
@@ -1142,8 +1349,8 @@ test('successor work can atomically supersede a completed predecessor only with 
     assert.equal(readRecord(store, 'asset', old.assetId).body.validity, 'current');
     transitionAsset(store, supersede, bindNext(reviewer, true));
     assert.equal(readRecord(store, 'asset', old.assetId).body.superseded_by, next.payload.assetId);
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
-    assert.equal(readRecord(store, 'item', 'successor').body.state, 'completed');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'completed');
+    assert.equal(readRecord(store, 'task', 'engineering:task:successor').body.state, 'completed');
   });
 });
 
@@ -1168,7 +1375,7 @@ test('engine rejects producer-only commands with a typed routing error and no wr
     setup(root, store);
     const c = artifactCommand(store);
     assert.throws(() => applyCommand(store, c, authority(builder, 'artifact.register')), code('INVALID_INPUT'));
-    assert.equal(readRecord(store, 'item', 'demo').version, 1);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).version, 1);
   });
 });
 
@@ -1187,22 +1394,20 @@ test('review and approval cannot self-accept an exact subject artifact produced 
   });
 });
 
-test('independent reviewers can persist verdicts using real live engine-granted leases', async () => {
+test('a reviewer lease version cannot accept an artifact bound to an older Task version', async () => {
   await withWorkspace(({root, store}) => {
     setup(root, store, {next_role: reviewer.role});
     const a = register(root, store);
-    const grant = cmd(store, 'item.grant', {
+    const grant = cmd(store, 'task.grant', {
       holder: reviewer, actions: ['review.record', 'approval.record'],
       acquiredAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString(),
     }, lead);
-    applyCommand(store, grant, authority(lead, 'item.grant', {version: grant.expectedVersion}));
-    const leaseToken = readRecord(store, 'item', 'demo').body.lease.token;
+    applyCommand(store, grant, authority(lead, 'task.grant', {version: grant.expectedVersion}));
+    const leaseToken = readRecord(store, 'task', fixtureIds.task).body.lease.token;
     runtime(root, store, reviewer, {authority: {roles: [reviewer.role], grants: []}});
     const review = {...verdict(store, 'review.record', [`artifact:${a.artifactId}`]), leaseToken};
-    assert.equal(recordReview(store, review).ok, true);
-    const approval = {...verdict(store, 'approval.record', [`artifact:${a.artifactId}`]), leaseToken};
-    assert.equal(recordApproval(store, approval, {roles: [reviewer.role], grants: []}).ok, true);
-    assert.doesNotThrow(() => completionApproval(txView(store), readRecord(store, 'item', 'demo')));
+    assert.throws(() => recordReview(store, review), code('EVIDENCE_GAP'));
+    assert.equal(readRecord(store, 'review', review.payload.body.review_id), null);
   });
 });
 
@@ -1239,7 +1444,7 @@ test('stale assets need fresh acceptance, while missing bytes may still be hones
     transitionAsset(store, assetCommand(store, a.assetId, {validity: 'invalidated', reason: 'Snapshot was lost'}),
       runtime(root, store, reviewer));
     assert.equal(readRecord(store, 'asset', a.assetId).body.validity, 'invalidated');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+    assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'completed');
   });
 });
 
@@ -1274,7 +1479,7 @@ test('declared project bindings reject drive-relative roots rather than consulti
     // else on a Windows workstation.
     for (const path of ['C:project', '\\project', 'c:rel/sub']) {
       bind(path);
-      assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+      assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'),
         `${path} must be refused regardless of process.platform (currently ${process.platform})`);
     }
     // `/project` is the one form whose meaning genuinely differs: fully
@@ -1282,19 +1487,18 @@ test('declared project bindings reject drive-relative roots rather than consulti
     // where it is process-dependent.
     bind('/project');
     if (process.platform === 'win32') {
-      assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+      assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'),
         'a leading slash is root-of-current-drive on Windows and must be refused there');
     }
     // A workspace-relative binding is unambiguous everywhere and stays accepted.
     bind('.');
-    assert.doesNotThrow(() => assertWorkspacePath(root, 'project:app:docs/kai/x'),
+    assert.doesNotThrow(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`),
       'a workspace-relative binding stays accepted on every platform');
-    // An absolute binding on the host's own semantics stays accepted: an
-    // `external` workspace legitimately points at a project elsewhere on the
-    // machine that registered it.
+    // A repo-local schema-5 workspace admits only ".". Registered external
+    // workspace bindings are exercised by workspace-doctor-self-test.
     bind(join(root, 'project'));
-    assert.doesNotThrow(() => assertWorkspacePath(root, 'project:app:docs/kai/x'),
-      'a host-absolute binding stays accepted — external workspaces depend on it');
+    assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'),
+      'repo-local workspaces refuse host-absolute project bindings');
   });
 });
 
@@ -1305,12 +1509,15 @@ test('bundle assets close against exact manifests and publish only with already-
       manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
       file(root, '.kai/manifest.json', JSON.stringify(manifest));
       const paths = publishable
-        ? ['project:app:docs/kai/one.html', 'project:app:docs/kai/two.css']
+        ? [
+            'project:app:docs/kai/engineering/features/evidence-demo/one.html',
+            'project:app:docs/kai/engineering/features/evidence-demo/two.css',
+          ]
         : [`${runDirectory}/one.html`, `${runDirectory}/two.css`];
       for (const path of paths) file(root, path.replace('project:app:', ''), 'bundle member');
       const subject = hashBundle({root, paths});
-      const privateManifest = '.kai/state/initiatives/demo-initiative/artifacts/bundle.json';
-      const publicManifest = 'project:app:docs/kai/bundle.json';
+      const privateManifest = '.kai/engineering/features/evidence-demo/drafts/bundle.json';
+      const publicManifest = 'project:app:docs/kai/engineering/features/evidence-demo/bundle.json';
       setup(root, store, {
         change_ref: subject, artifact_targets: [...paths, privateManifest, publicManifest],
       });
@@ -1320,11 +1527,14 @@ test('bundle assets close against exact manifests and publish only with already-
       transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'draft'}), runtime(root, store, reviewer));
       transitionAsset(store, assetCommand(store, a.assetId, {validity: 'current', target: privateManifest, approvalId}),
         runtime(root, store, reviewer));
-      file(root, 'docs/kai/bundle.json', canonicalJson(subject));
+      file(root, 'docs/kai/engineering/features/evidence-demo/bundle.json', canonicalJson(subject));
       const c = assetCommand(store, a.assetId, {disposition: 'published', validity: 'current', target: publicManifest});
       if (publishable) {
         assert.equal(transitionAsset(store, c, runtime(root, store, reviewer)).ok, true);
-        assert.equal(readFileSync(join(root, 'docs/kai/bundle.json'), 'utf8'), canonicalJson(subject));
+        assert.equal(readFileSync(
+          join(root, 'docs/kai/engineering/features/evidence-demo/bundle.json'),
+          'utf8',
+        ), canonicalJson(subject));
       } else {
         assert.throws(() => transitionAsset(store, c, runtime(root, store, reviewer)), code('INVALID_INPUT'));
         assert.equal(readRecord(store, 'asset', a.assetId).body.disposition, 'working');
@@ -1353,19 +1563,371 @@ test('actual operator decisions do not require or replace the executing agents l
   await withWorkspace(({root, store}) => {
     setup(root, store, {next_role: builder.role});
     const a = register(root, store);
-    const grant = cmd(store, 'item.grant', {
-      holder: builder, actions: ['item.transition'],
+    const grant = cmd(store, 'task.grant', {
+      holder: builder, actions: ['task.transition', 'artifact.register'],
       acquiredAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 60000).toISOString(),
     }, lead);
-    applyCommand(store, grant, authority(lead, 'item.grant', {version: grant.expectedVersion}));
-    const lease = readRecord(store, 'item', 'demo').body.lease;
-    const approval = verdict(store, 'approval.record', [`artifact:${a.artifactId}`], {
+    applyCommand(store, grant, authority(lead, 'task.grant', {version: grant.expectedVersion}));
+    const lease = readRecord(store, 'task', fixtureIds.task).body.lease;
+    const fresh = artifactCommand(store);
+    fresh.leaseToken = lease.token;
+    registerArtifact(store, fresh);
+    const approval = verdict(store, 'approval.record', [`artifact:${fresh.payload.artifactId}`], {
       kind: 'operator-deploy-start',
       deployment: {environment: 'prod', environment_class: 'production', deployment_id: 'd-live'},
     }, operator);
     assert.equal(recordApproval(store, approval, runtime(root, store, operator, {
       verifyOperatorDecision: operatorProof,
     })).ok, true);
-    assert.deepEqual(readRecord(store, 'item', 'demo').body.lease, lease);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.lease, lease);
+  });
+});
+
+test('criteria references bind typed subject versions, relationships, and immutable content', async () => {
+  await withWorkspace(({store}) => {
+    const task = seedTask(store, {
+      state: 'in-review',
+      change_ref: {kind: 'sha256', path: '.kai/engineering/features/demo/evidence/result.txt', digest: 'a'.repeat(64)},
+    });
+    const lookup = (kind, id) => readRecord(store, kind, id);
+    const current = criteriaRef(task, lookup);
+    assert.notEqual(criteriaRef({...task, version: task.version + 1}, lookup), current,
+      'the exact hierarchy subject version participates in the criteria reference');
+
+    const requirement = readRecord(store, 'requirement', fixtureIds.requirement);
+    store.database.prepare(`
+      UPDATE records SET version = ?, body = ? WHERE kind = 'requirement' AND id = ?
+    `).run(requirement.version + 1, JSON.stringify({
+      ...requirement.body,
+      updated_at: '2026-10-06T13:00:00.000Z',
+    }), requirement.id);
+    assert.notEqual(criteriaRef(task, lookup), current,
+      'a changed hierarchy relationship version invalidates prior criteria');
+
+    const changedContent = {
+      ...task,
+      body: {
+        ...task.body,
+        change_ref: {...task.body.change_ref, digest: 'b'.repeat(64)},
+      },
+    };
+    assert.notEqual(criteriaRef(changedContent, lookup), current,
+      'the exact immutable Task content participates in the criteria reference');
+  });
+});
+
+test('Task dependency versions and required states participate in criteria references', async () => {
+  await withWorkspace(({store}) => {
+    const upstreamId = 'engineering:task:upstream-proof';
+    seedTask(store, {
+      id: upstreamId,
+      state: 'completed',
+    });
+    const task = seedTask(store, {
+      depends_on: [{task: upstreamId, requires: 'completed'}],
+    });
+    const lookup = (kind, id) => readRecord(store, kind, id);
+    const current = criteriaRef(task, lookup);
+
+    const upstream = lookup('task', upstreamId);
+    store.database.prepare(`
+      UPDATE records SET version = ?, body = ? WHERE kind = 'task' AND id = ?
+    `).run(upstream.version + 1, JSON.stringify({
+      ...upstream.body,
+      title: 'Changed upstream proof basis',
+      updated_at: '2026-10-06T13:00:00.000Z',
+    }), upstream.id);
+    assert.notEqual(criteriaRef(task, lookup), current,
+      'an upstream Task version change invalidates dependent Task criteria');
+    assert.notEqual(criteriaRef({
+      ...task,
+      body: {
+        ...task.body,
+        depends_on: [{task: upstreamId, requires: 'shipped'}],
+      },
+    }, lookup), criteriaRef(task, lookup),
+    'the dependency required-state is part of the canonical criteria relationship');
+  });
+});
+
+test('parent completion requires exact accepted report artifact proof', async () => {
+  await withWorkspace(({root, store}) => {
+    const parentRunDirectory = '.kai/engineering/documentation/architecture/evidence/drafts';
+    const parentSource = `${parentRunDirectory}/mock.html`;
+    file(root, parentSource);
+    seedTask(store, {
+      state: 'in-review',
+      artifact_targets: [parentSource],
+      change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: parentSource},
+    });
+    const feature = readRecord(store, 'feature', fixtureIds.feature);
+    const reportArtifactId = randomUUID();
+    const reportAssetId = randomUUID();
+    const reportSubject = {
+      kind: 'sha256',
+      path: parentSource,
+      digest: digest('<h1>First</h1>'),
+    };
+    const artifactAuthority = authority(lead, 'artifact.register', {
+      recordKind: 'feature',
+      recordId: feature.id,
+      version: feature.version,
+    });
+    bindEvidenceRuntime(store, {
+      root,
+      authority: artifactAuthority,
+      runs: [{actor: lead, directory: parentRunDirectory}],
+    });
+    assert.equal(registerArtifact(store, command('artifact.register', {
+      actor: lead,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {
+        artifactId: reportArtifactId,
+        assetId: reportAssetId,
+        subject: reportSubject,
+        projectId: null,
+        classification: 'public',
+        mediaType: 'text/html',
+        title: 'Accepted safe parent report excerpt',
+        inputAssetIds: [],
+        at: NOW,
+      },
+    })).ok, true);
+
+    const evidenceId = randomUUID();
+    const body = {
+      schema_version: 1,
+      evidence_id: evidenceId,
+      subject: {kind: 'feature', id: feature.id},
+      kind: 'parent-completion',
+      content_ref: null,
+      criteria_ref: criteriaRef(feature, (kind, id) => readRecord(store, kind, id)),
+      supersedes: [],
+      dimension: null,
+      outcome: 'passed',
+      evidence_refs: [`artifact:${reportArtifactId}`],
+      reason: 'The accepted report records the exact Feature outcome.',
+      data: {},
+      created_at: NOW,
+    };
+    assert.equal(validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: body.subject,
+      version: 1,
+      body,
+    }).body, body);
+
+    const parentAuthority = authority(
+      reviewer,
+      ['evidence.register', 'approval.record', 'asset.transition'],
+      {
+      recordKind: 'feature',
+      recordId: feature.id,
+      version: feature.version,
+      },
+    );
+    bindEvidenceRuntime(store, {
+      root,
+      authority: parentAuthority,
+      runs: [],
+      verifyCapture: candidate => captureFor(candidate, {classification: 'public'}),
+    });
+    const parentCommand = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body},
+    });
+    assert.equal(registerEvidence(store, parentCommand, {}).ok, true);
+    assert.deepEqual(readRecord(store, 'evidence', evidenceId).subject, body.subject);
+    const featureApprovalId = randomUUID();
+    const featureApproval = command('approval.record', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {body: {
+        schema_version: 1,
+        approval_id: featureApprovalId,
+        subject: body.subject,
+        authority: reviewer,
+        kind: 'completion',
+        content_ref: null,
+        criteria_ref: body.criteria_ref,
+        supersedes: [],
+        deployment: null,
+        recovery: null,
+        decision: 'approved',
+        evidence_refs: [`evidence:${evidenceId}`, `artifact:${reportArtifactId}`],
+        reason: 'Accept the exact Feature outcome.',
+        created_at: NOW,
+      }},
+    });
+    assert.equal(recordApproval(store, featureApproval, parentAuthority).ok, true);
+    for (const [disposition, validity, approvalId] of [
+      ['draft', 'provisional', null],
+      ['working', 'current', featureApprovalId],
+    ]) {
+      assert.equal(transitionAsset(store, command('asset.transition', {
+        actor: reviewer,
+        recordKind: 'feature',
+        recordId: feature.id,
+        expectedVersion: feature.version,
+        payload: {
+          assetId: reportAssetId,
+          disposition,
+          validity,
+          target: null,
+          approvalId,
+          supersedes: null,
+          reason: 'Accept the exact parent report revision.',
+          at: NOW,
+        },
+      }), parentAuthority).ok, true);
+    }
+    assert.equal(
+      completionApproval(txView(store), readRecord(store, 'feature', feature.id))
+        .approval_id,
+      featureApprovalId,
+    );
+    const reportView = buildReport(store, {
+      subject: {kind: 'feature', id: feature.id},
+    });
+    assert.equal(reportView.inspection.artifactPreviews.length, 1);
+    assert.match(reportView.inspection.artifactPreviews[0].content, /<h1>First<\/h1>/);
+
+    const failedEvidenceId = randomUUID();
+    assert.equal(registerEvidence(store, command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'declared', body: {
+        ...body,
+        evidence_id: failedEvidenceId,
+        outcome: 'failed',
+        reason: 'A current parent completion check failed.',
+      }},
+    }), {}).ok, true);
+    assert.throws(
+      () => completionApproval(txView(store), readRecord(store, 'feature', feature.id)),
+      error => error.code === 'EVIDENCE_GAP' && /negative|conflict/i.test(error.message),
+      'parallel current passed and failed parent-completion evidence must block completion',
+    );
+    assert.equal(buildReport(store, {
+      subject: {kind: 'feature', id: feature.id},
+    }).decisions.find(decision => decision.approval_id === featureApprovalId).integrity, 'gap');
+
+    const resolvingEvidenceId = randomUUID();
+    assert.equal(registerEvidence(store, command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: resolvingEvidenceId,
+        supersedes: [failedEvidenceId],
+        reason: 'The failed parent completion check was rerun and passed.',
+      }},
+    }), {}).ok, true);
+    assert.equal(
+      completionApproval(txView(store), readRecord(store, 'feature', feature.id))
+        .approval_id,
+      featureApprovalId,
+      'explicit same-scope supersession restores parent completion',
+    );
+    assert.equal(buildReport(store, {
+      subject: {kind: 'feature', id: feature.id},
+    }).decisions.find(decision => decision.approval_id === featureApprovalId).integrity,
+    'verified');
+
+    const other = seedTask(store, {id: 'engineering:task:other-parent-proof'});
+    assert.throws(
+      () => completionApproval(txView(store), readRecord(store, 'task', other.id)),
+      code('EVIDENCE_GAP'),
+      'Feature acceptance cannot satisfy a Task',
+    );
+
+    const nonexistent = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: randomUUID(),
+        evidence_refs: [`artifact:${randomUUID()}`],
+      }},
+    });
+    assert.throws(() => registerEvidence(store, nonexistent, {}), code('EVIDENCE_GAP'));
+
+    const artifact = readRecord(store, 'artifact', reportArtifactId);
+    const crossArtifactId = randomUUID();
+    seedRecord(store, validateRecord({
+      ...artifact,
+      id: crossArtifactId,
+      subject: {kind: 'task', id: other.id},
+      body: {
+        ...artifact.body,
+        artifact_id: crossArtifactId,
+        subject: {kind: 'task', id: other.id},
+      },
+    }));
+    const crossSubject = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: randomUUID(),
+        evidence_refs: [`artifact:${crossArtifactId}`],
+      }},
+    });
+    assert.throws(() => registerEvidence(store, crossSubject, {}), code('EVIDENCE_GAP'));
+
+    const oldCriteria = body.criteria_ref;
+    store.database.prepare('UPDATE records SET version = ? WHERE kind = ? AND id = ?')
+      .run(feature.version + 1, 'feature', feature.id);
+    bindEvidenceRuntime(store, {
+      root,
+      authority: authority(reviewer, 'evidence.register', {
+        recordKind: 'feature',
+        recordId: feature.id,
+        version: feature.version + 1,
+      }),
+      runs: [],
+      verifyCapture: candidate => captureFor(candidate, {classification: 'public'}),
+    });
+    const stale = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version + 1,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: randomUUID(),
+        criteria_ref: oldCriteria,
+      }},
+    });
+    assert.throws(() => registerEvidence(store, stale, {}), code('EVIDENCE_GAP'));
+
+    assert.throws(() => validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: body.subject,
+      version: 1,
+      body: {
+        ...body,
+        kind: 'deployment',
+        outcome: 'passed',
+        data: {environment: 'prod', deployment_id: 'deploy-1'},
+      },
+    }), code('INVALID_INPUT'), 'deployment evidence requires a Task subject');
   });
 });

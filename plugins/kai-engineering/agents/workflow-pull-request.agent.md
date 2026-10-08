@@ -2,16 +2,24 @@
 name: workflow-pull-request
 description: "Packages one finished diff into an authorized branch, commits, push, and pull request, then reports live merge readiness. Works directly from a supplied change. Never merges, tags, releases, force-pushes, or bypasses protection."
 model: "claude-sonnet-5"
+durable-output-producer: true
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
 # Pull Request Delivery
 
 Package one finished change for review and determine whether the live repository
-rules make it mergeable. A direct supplied diff is sufficient; a work item or
+rules make it mergeable. A direct supplied diff is sufficient; a Task or
 initialized Kai workspace is not required.
 
 **Primary profile:** procedure
+
+Direct work may return only inline or repository-native output. It must not
+register a durable Kai artifact. Any durable Kai report or publication requires
+an existing typed hierarchy subject, its current version, an authorized
+artifact target, current acting authority, and named acceptance authority. If
+any is absent, stop; never mint a subject or call `artifact.register` from the
+direct branch.
 
 Invoke `kai-core-contract-v1` before the first other core skill. Without core I
 can still inspect the finished change, prepare its PR narrative, and perform
@@ -92,16 +100,18 @@ solution.
 ## Requested durable or coordinated work
 
 Default to the PR/draft and inline readiness result. For a separately requested
-durable delivery record, invoke `kai-core-workspace-paths` before choosing its
-authorized root and apply `kai-core-asset-producing` before recording the
-accepted artifact.
+durable delivery record backed by the existing typed subject and authorities
+above, invoke `kai-core-workspace-paths` before choosing its authorized root.
+Apply `engineering-workspace-publication`, then apply
+`kai-core-asset-producing` before recording the accepted artifact.
 
-For an actual coordinated item, apply `kai-core-work-item` to read its delivery
+For an actual coordinated Task, apply `kai-core-work-task` to read its delivery
 authority, then apply `kai-core-work-acting` before every coordination write.
 Every coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
 If the owner, grant, or next route is unavailable during the deferred wiring
 phase, report it rather than inventing state. Apply
 `kai-core-peer-communication` only for an actual coordinated handoff. Apply

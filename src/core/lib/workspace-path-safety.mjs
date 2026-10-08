@@ -2,6 +2,13 @@ import {existsSync, lstatSync, readdirSync, realpathSync} from 'node:fs';
 import {basename, dirname, isAbsolute, join, relative, resolve, sep} from 'node:path';
 import {isNull, unquote} from './coordination.mjs';
 
+export const SHIPPED_PACK_NAMESPACES = new Set(['core', 'engineering', 'creative']);
+export const ACTIVE_ARTIFACT_LIFECYCLES = new Set(['drafts', 'evidence', 'scratch']);
+
+const RESERVED_DEVICE_SEGMENT = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i;
+const DRIVE_RELATIVE_SEGMENT = /^[A-Za-z]:(?![\\/])/;
+const DRIVE_ABSOLUTE_SEGMENT = /^[A-Za-z]:[\\/]/;
+
 // These diagnostic helpers are shared with the workspace doctor.
 export function badPath(p) {
   const t = unquote(p);
@@ -16,6 +23,46 @@ export function badPath(p) {
   if (norm.split('/').some(seg => seg === '..')) return 'path escaping the workspace root';
   if (/session-state/i.test(t)) return 'session-state-relative path';
   return null;
+}
+
+export function badWorkspaceSegment(value) {
+  if (typeof value !== 'string') return 'non-string segment';
+  if (value.length === 0) return 'empty segment';
+  if (value === '.') return 'dot segment';
+  if (value === '..') return 'dot-dot segment';
+
+  const normalizedValue = value.replace(/\\/g, '/');
+  if (value.startsWith('\\\\') || normalizedValue.startsWith('//')) return 'UNC / share segment';
+  if (DRIVE_RELATIVE_SEGMENT.test(value) || DRIVE_RELATIVE_SEGMENT.test(normalizedValue)) return 'drive-relative segment';
+  if (value.startsWith('/') || value.startsWith('\\')
+    || DRIVE_ABSOLUTE_SEGMENT.test(value) || DRIVE_ABSOLUTE_SEGMENT.test(normalizedValue)) {
+    return 'absolute segment';
+  }
+  if (normalizedValue.includes('/')) return 'mixed-separator segment';
+  if (/[:<>"|?*\x00-\x1f]/.test(value)) return 'unsafe segment';
+  if (RESERVED_DEVICE_SEGMENT.test(value)) return 'reserved-device segment';
+  if (/[. ]$/.test(value)) return 'trailing-dot-space segment';
+  return null;
+}
+
+export function assertWorkspaceSegment(value, label = 'segment') {
+  const problem = badWorkspaceSegment(value);
+  if (problem) throw new TypeError(`${label} must be a safe workspace segment (${problem})`);
+  return value;
+}
+
+export function assertShippedPackNamespace(value) {
+  const pack = assertWorkspaceSegment(value, 'pack');
+  if (!SHIPPED_PACK_NAMESPACES.has(pack)) throw new TypeError(`unknown pack namespace "${pack}"`);
+  return pack;
+}
+
+export function assertArtifactLifecycle(value) {
+  const lifecycle = assertWorkspaceSegment(value, 'lifecycle');
+  if (!ACTIVE_ARTIFACT_LIFECYCLES.has(lifecycle)) {
+    throw new TypeError('lifecycle must be one of drafts, evidence, or scratch');
+  }
+  return lifecycle;
 }
 
 export function canonicalPath(path) {
@@ -37,6 +84,14 @@ export function canonicalPath(path) {
   // lowercases afterwards, so casing differences remain irrelevant.
   const canonical = existsSync(existing) ? realpathSync.native(existing) : existing;
   return resolve(canonical, ...tail);
+}
+
+export function exactPath(path) {
+  const requested = resolve(path);
+  const canonical = canonicalPath(path);
+  return process.platform === 'win32'
+    ? requested.toLowerCase() === canonical.toLowerCase()
+    : requested === canonical;
 }
 
 export function normalized(path) {

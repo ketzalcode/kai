@@ -24,9 +24,48 @@ Supplied briefs, factual maps, media and evidence can be direct inputs; their
 usual producer is not a mandatory installed sibling. Missing evidence narrows
 the answer. It never licenses invented facts or a simulated specialist verdict.
 Scope, design acceptance, independent assessment and release approval remain
-with their real owners. The shipped surface is 21 agents / 35 skills across
-core, engineering, and creative; retired gtm/personal plugins have no aliases;
-private `.kai/personal/` data remains unchanged.
+with their real owners. The shipped surface is 21 agents / 38 skills across
+core, engineering, and creative; retired install names have no aliases.
+
+## Schema-5 authority and workspace boundaries
+
+Direction is the root contract for coordinated work. The operator owns the
+accepted bytes in `docs/kai/DIRECTION.md`: Vision, Mission, one Current Goal,
+and Out of Scope. The runtime hashes that complete revision. Open Epics whose
+binding becomes stale derive attention and stop new promotion or grants until
+their named authority carries, holds, cancels, or supersedes them.
+
+```text
+Direction Current Goal
+└─ Epic                         cross-pack outcome
+   └─ pack Feature              Core, Engineering, or Creative outcome
+      └─ Requirement            verifiable obligation
+         └─ Task                executable, leased work
+```
+
+`.kai/core/runtime/coordination.sqlite` is the authority for Epic, Feature,
+Requirement, Task, events, messages, evidence, grants, and leases. Parent
+records use the small `proposed → active → completed` lifecycle and derive
+attention; Tasks retain the detailed execution, review, deployment, recovery,
+and shipping gates. Child completion never closes a parent automatically.
+
+The filesystem boundary is equally strict:
+
+```text
+.kai/<pack>/<type>/<id>/{drafts,evidence,scratch}   private, ignored state
+docs/kai/<pack>/<type>/<id>/...                     accepted publication
+```
+
+Pack directories appear only on the first valid write. Publication copies one
+authority-accepted revision; scratch, unaccepted drafts, and private evidence
+cannot publish. Engineering code, tests, configuration, migrations, and normal
+repository documentation stay at repository-native paths.
+
+Direct work remains outside this system. A directly authorized answer or code
+change reads no Direction, initializes no workspace, creates no hierarchy
+record, and claims no lease. If the request expands into durable multi-role
+coordination, Kai presents the proposed hierarchy and waits for authority
+instead of backfilling records silently.
 
 ## Interaction scenarios
 
@@ -48,47 +87,38 @@ The agents fall into a handful of independent flows. The biggest is
 into it or stand on their own. Each diagram is a *scenario*, not a
 mandatory pipeline.
 
-**Durable, per-item coordination state.** These agents are single-shot and
-stateless, but the coordination they share is not: it must survive sessions and
-handoffs, so it lives under the target workspace's `.kai/state/`. In `shared`
-mode this surface may be committed. In `repo-local` mode it is durable only
-within that checkout, so it does not cross machines, clones, CI, or cloud
-agents. In `external` mode it is durable at the registered workspace root and
-must not be described as committed unless that directory is actually
-version-controlled. A single mutable board is not safe as the authoritative
-store: two agents working in parallel would edit the same file and create
-conflicts or overwrite each other. Therefore `items/<item-id>.md` is the
-**authoritative state** for one work item, `threads/<item-id>.md` is that item's
-append-only communication log, and `BOARD.md` is a **derived human index**,
-refreshed by the director after reconciliation — agents never treat an
-out-of-date board row as authority. Parallel agents normally touch different
-item and thread files.
+**Durable private coordination state.** These agents are single-shot and
+stateless, but coordinated work survives sessions in
+`.kai/core/runtime/coordination.sqlite`. SQLite is the only coordination
+authority. `repo-local` keeps all of `/.kai/` ignored and untracked; `external`
+uses a registered durable workspace outside the project. Human-readable
+reports are views, never state agents maintain by hand. Parallel commands use
+exact versions and leases, so conflicts are refused rather than overwritten.
 
-**0 · Onboarding (when durable workspace state is needed)** — `workflow-workspace-init`
-validates the full workspace contract for either a repository or a durable
-standalone folder and seeds private assistant and identity stubs.
+**0 · Onboarding (when durable workspace state is needed)** —
+`workflow-workspace-init` validates the schema-5 workspace contract and creates
+only the manifest, coordination database, publication README, Direction, and
+managed privacy block.
 
 ```
- project ──► workflow-workspace-init ──► external | repo-local | shared workspace
+ project ──► workflow-workspace-init ──► external | repo-local workspace
                                               │
-                                              ├─► .kai/state + runs + review + archive
-                                              └─► project publication root (default docs/kai)
+                                              ├─► .kai/core/runtime/coordination.sqlite
+                                              ├─► typed private artifacts on first write
+                                              └─► accepted knowledge under docs/kai
 ```
 
-**0b · North star (optional, spans weeks/months)** — run
-`workflow-initiative-init` to turn mission + vision into a proposed north star,
-stable milestones, success measures, and initial items. The steward approves
-and activates it; later agents load it only when work matches its scope.
+**0b · Direction and Epic intake (for coordinated work)** — the operator owns
+Vision, Mission, one observable time-bounded Current Goal, and Out of Scope.
+`workflow-epic-init` presents one Direction-aligned Epic proposal and creates no
+record before named authority approval.
 
 ```
- mission + vision ──► workflow-initiative-init ──► proposed north star + milestone items
-                                                       │
-                                      PM/steward approves + activates
-                                                       ▼
-                                      .kai/state/ACTIVE.md points to the north star
-                                                            ▼
-   any later agent, before substantial work:  target in scope? ──yes──► load + steer toward it
-                                                            └──no──► work context-free (no pollution)
+ Direction Current Goal ──► workflow-epic-init ──► authority-approved proposed Epic
+                                                          │
+                                             steward activates approved scope
+                                                          ▼
+                                 pack Feature ──► Requirement ──► executable Task
 ```
 
 **1 · Directed delivery** — talk to the Chief of Staff; it
@@ -199,8 +229,8 @@ needs, plus bounded demo production from approved direction and existing media.
 | Situation | Who fires |
 |-----------|-----------|
 | Install the plugin into a fresh repo / re-assert structure | `workflow-workspace-init` (once) |
-| Start a new mission/vision initiative | `workflow-initiative-init`, then steward approval |
-| Drive an item or initiative end to end / resume the team | `director-chief-of-staff` |
+| Start a Direction-aligned Epic proposal | `workflow-epic-init`, then named authority approval |
+| Grant and reconcile approved executable Tasks | `director-chief-of-staff` |
 | Large / parallel / multi-owner / deadline work | `director-chief-of-staff` |
 | Small or already-sequenced work | straight to the domain engineer(s) |
 | Investigate a bounded issue or option, or "what changed in AI, and does it matter to us?" | `eng-advisor-investigation` |
@@ -220,7 +250,7 @@ needs, plus bounded demo production from approved direction and existing media.
 | Open a PR for a finished change (branch, narrative, version, merge readiness) | `workflow-pull-request` |
 | Prepare a built slice / record deployment start / confirm production shipment | `workflow-ship` PREPARE / CONFIRM-START / CONFIRM-COMPLETE |
 | Get *pushed* updates on a cadence (you host an external runner) | `workflow-proactive-scan` (see `examples/proactive-runner/`) |
-| "What's next on this initiative?" / groom + prioritize the board | `director-chief-of-staff` (as steward, via `kai-core-initiative-stewardship`) |
+| "What's next under this Epic or Feature?" / plan executable Tasks | `director-chief-of-staff` with `kai-core-work-stewardship` |
 | Catch up on the week (messages + docs + watched code) | `workflow-weekly-pulse` (writes via `kai-core-pulse-digest`) |
 
 `director-chief-of-staff` owns orchestration only. Scope, technical judgment,

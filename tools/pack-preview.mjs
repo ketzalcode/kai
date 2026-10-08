@@ -47,6 +47,13 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
   agentTaxonomyErrors, requiresCoordinatedRunContracts, loadedSkills, agentRoutingErrors,
+  publicationSkillForPack, publicationInventoryErrors, publicationContractErrors,
+  publicationRoutingErrors, activeWorkspaceLanguageErrors,
+  markdownCoordinationAuthorityErrors, directionContractErrors,
+  epicWorkflowContractErrors, chiefOfStaffContractErrors,
+  durableOutputProducerDeclaration, agentDirectOutputErrors,
+  activeGuideDecisionFiles, workflowShipContractErrors,
+  stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
   agentProfileModelErrors,
   agentPromptLimitErrors, agentAuthoringReferenceErrors,
   ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT, ACTING_EXEMPT,
@@ -1271,16 +1278,18 @@ function selfTest() {
   }).some((m) => /must not declare an eager `\*\*Inherits:\*\*` line/.test(m)),
   'an eager **Inherits:** line is rejected outright, with no opt-in marker gating the one-shape rule');
   const routingBody = [
+    'durable-output-producer: false',
     'Invoke `kai-core-contract-v1` before the first other core skill.',
     'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
     'State the limitation once and tell the operator to install or update `kai-core`.',
     'Load `kai-core-operating-rules` before coordinated work.',
     'Load `kai-core-workspace-paths` before touching workspace state.',
-    'Load `kai-core-work-acting` before acting on a coordinated item.',
+    'Load `kai-core-work-acting` before acting on a coordinated Task.',
     'Load `kai-core-work-activity` before recording a run.',
   ].join('\n');
   const routingOptions = {
     id: 'eng-builder-frontend',
+    pack: 'engineering',
     body: routingBody,
     tools: ['read', 'skill'],
     knownSkills: [
@@ -1388,6 +1397,256 @@ function selfTest() {
     knownSkills: ['kai-core-contract-v1', 'kai-core-operating-rules'],
   }).some((e) => /must load `kai-core-operating-rules`/.test(e)),
   'a contract that is only name-dropped does not count as loaded');
+
+  // --- schema-5 publication and hierarchy source gates ---------------------
+  const liveSkills = sourceSkillFiles(ROOT);
+  const publicationSkills = liveSkills.filter(entry =>
+    entry.id.endsWith('workspace-publication'));
+  ok(publicationSkills.length === 3
+    && publicationInventoryErrors(liveSkills).length === 0,
+  `publication inventory inspects exactly one skill in each shipped pack (count=${publicationSkills.length})`);
+  ok(publicationInventoryErrors(liveSkills.filter(entry =>
+    entry.id !== 'engineering-workspace-publication'))
+    .some(message => /kai-engineering.*exactly one publication skill/.test(message)),
+  'removing one pack publication skill fails the inventory gate by pack name');
+
+  const publicationBodies = publicationSkills.map(entry => ({
+    ...entry,
+    body: readFileSync(entry.path, 'utf8'),
+  }));
+  ok(publicationBodies.length === 3
+    && publicationBodies.every(entry =>
+      publicationContractErrors(entry).length === 0),
+  `canonical publication tables validate a non-vacuous live corpus (count=${publicationBodies.length})`);
+  const corePublication = publicationBodies.find(entry => entry.pack === 'core');
+  ok(publicationContractErrors({
+    ...corePublication,
+    body: corePublication.body.replace('| `direction` |', '| `initiatives` |'),
+  }).some(message => /canonical type set/.test(message)),
+  'changing a canonical publication type fails the table gate');
+  const creativePublication = publicationBodies.find(entry => entry.pack === 'creative');
+  ok(publicationContractErrors({
+    ...creativePublication,
+    body: creativePublication.body.replace('unsafe media destination', ''),
+  }).some(message => /unsafe media destination/.test(message)),
+  'removing unsafe-media refusal fails the publication contract');
+
+  const routedSources = [
+    ...sourceAgentFiles(ROOT),
+    ...sourceSkillFiles(ROOT),
+  ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
+  const declaredByKind = Object.fromEntries(['agent', 'skill'].map(kind => {
+    const entries = routedSources.filter(entry => entry.kind === kind);
+    return [kind, {
+      entries,
+      producers: entries.filter(entry =>
+        durableOutputProducerDeclaration(entry) === true),
+      nonProducers: entries.filter(entry =>
+        durableOutputProducerDeclaration(entry) === false),
+    }];
+  }));
+  const routedAgents = declaredByKind.agent.entries;
+  ok(Object.values(declaredByKind).every(corpus =>
+    corpus.producers.length > 0 && corpus.nonProducers.length > 0)
+    && routedSources.every(entry =>
+      publicationRoutingErrors(entry).length === 0)
+    && routedAgents.every(entry => agentDirectOutputErrors(entry).length === 0),
+  `publication ordering inspects agent producers=${declaredByKind.agent.producers.length}, `
+    + `agent non-producers=${declaredByKind.agent.nonProducers.length}, `
+    + `skill producers=${declaredByKind.skill.producers.length}, `
+    + `skill non-producers=${declaredByKind.skill.nonProducers.length}`);
+  for (const [kind, corpus] of Object.entries(declaredByKind)) {
+    const routeMutation = corpus.producers[0];
+    const nonProducerMutation = corpus.nonProducers[0];
+    if (!routeMutation || !nonProducerMutation) continue;
+    const routeOwner = publicationSkillForPack(routeMutation.pack);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body
+        .replace(
+          new RegExp(
+            `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
+            'gi',
+          ),
+          '',
+        )
+        .replace(
+          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+          '',
+        ),
+    }).some(message => message.includes('declared durable-output producer')),
+    `removing both ${kind} producer routes fails from the authoritative declaration`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(
+        'durable-output-producer: true',
+        'durable-output-producer: false',
+      ),
+    }).some(message => message.includes('declared non-producer')),
+    `falsifying a ${kind} producer declaration fails while producer routes remain`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(/^durable-output-producer:\s*true\s*$/m, ''),
+    }).some(message => /must declare frontmatter/.test(message)),
+    `removing a ${kind} producer declaration fails by declaration name`);
+    const wrongPublication = routeMutation.pack === 'creative'
+      ? 'engineering-workspace-publication'
+      : 'creative-workspace-publication';
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(routeOwner, wrongPublication),
+    }).some(message => /cannot route publication skill owned by another pack/.test(message)),
+    `routing a ${kind} producer through another pack publication skill fails`);
+    ok(publicationRoutingErrors({
+      ...nonProducerMutation,
+      body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`, then apply \`kai-core-asset-producing\`.\n`,
+    }).some(message => /declared non-producer/.test(message)),
+    `adding producer routes to a declared ${kind} non-producer fails by classification`);
+  }
+  const agentRouteMutation = declaredByKind.agent.producers[0];
+  ok(agentDirectOutputErrors({
+    ...agentRouteMutation,
+    body: agentRouteMutation.body.replace('existing typed hierarchy subject', 'new report request'),
+  }).some(message => /existing typed hierarchy subject/.test(message)),
+  'removing the typed-subject gate from direct durable output fails');
+
+  ok(routedSources.length > 0
+    && routedSources.every(entry =>
+      activeWorkspaceLanguageErrors(entry).length === 0),
+  `active-language gate inspects every shipped source (count=${routedSources.length})`);
+  ok(activeWorkspaceLanguageErrors({
+    body: 'Create a new initiative under `.kai/runs/misc/`.',
+  }).length >= 2,
+  'restoring old hierarchy and fallback-lane language fails by specific gates');
+  ok(markdownCoordinationAuthorityErrors({
+    body: '`BOARD.md` is the authoritative coordination backlog.',
+  }).some(message => /Markdown coordination authority/.test(message)),
+  'restoring an authoritative Markdown board fails by gate name');
+
+  const activeDocs = activeGuideDecisionFiles(ROOT)
+    .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
+  ok(activeDocs.length >= 10
+    && activeDocs.every(entry =>
+      activeWorkspaceLanguageErrors(entry).length === 0
+      && markdownCoordinationAuthorityErrors(entry).length === 0),
+  `active guide/decision gate inspects a non-vacuous corpus (count=${activeDocs.length})`);
+  const activeDocMutation = activeDocs.find(entry =>
+    entry.rel === 'docs/reference/agent-authoring/README.md');
+  ok(activeDocMutation && activeWorkspaceLanguageErrors({
+    ...activeDocMutation,
+    body: `${activeDocMutation.body}\nCreate a work item under \`.kai/state/items/demo.md\`.\n`,
+  }).length >= 2,
+  'restoring schema-4 language in an active guide fails the corpus-wide gate');
+  ok([
+    'Generated coordination state validates item schemas before use.',
+    'Release assessment requires a coordination item before transition.',
+    'Current coordination examples identify the item owners.',
+  ].every(phrase => activeWorkspaceLanguageErrors({
+    ...activeDocMutation,
+    body: `${activeDocMutation.body}\n${phrase}\n`,
+  }).some(message => /generic coordination item semantics/.test(message))),
+  'schema-4 semantic item phrases fail only in active coordination prose');
+  ok(activeWorkspaceLanguageErrors({
+    body: 'Catalog item owners maintain JSON item schemas for storefront imports.',
+  }).length === 0 && activeWorkspaceLanguageErrors({
+    body: '<!-- kai:schema4-history -->\n'
+      + 'Coordination item schemas and item owners are historical.\n'
+      + '<!-- /kai:schema4-history -->',
+  }).length === 0,
+  'ordinary non-coordination and explicit historical prose remain outside the semantic gate');
+
+  const directionBody = readFileSync(skillPath('kai-core-workspace-paths'), 'utf8');
+  ok(directionContractErrors({body: directionBody}).length === 0,
+    'Direction gate inspects the live workspace path contract');
+  ok(directionContractErrors({
+    body: directionBody.replace(/^# Mission\s*$/m, '# Purpose'),
+  }).some(message => /Mission/.test(message)),
+  'removing a required Direction section fails by section name');
+
+  const epicBody = readFileSync(agentSourceFile(ROOT, 'workflow-epic-init'), 'utf8');
+  ok(epicWorkflowContractErrors({body: epicBody}).length === 0,
+    'Epic workflow gate inspects the live replacement workflow');
+  ok(epicWorkflowContractErrors({
+    body: epicBody.replace(/creates no record before\s+named authority approval/i, ''),
+  }).some(message => /no record before named authority approval/.test(message)),
+  'allowing pre-approval Epic creation fails by authority rule');
+
+  const chiefBody = readFileSync(agentSourceFile(ROOT, 'director-chief-of-staff'), 'utf8');
+  ok(chiefOfStaffContractErrors({body: chiefBody}).length === 0,
+    'Chief of Staff boundary gate inspects the live dispatch role');
+  ok(chiefOfStaffContractErrors({
+    body: chiefBody.replace('cannot invent', 'may invent'),
+  }).some(message => /cannot invent/.test(message)),
+  'allowing Chief of Staff to invent hierarchy scope fails by boundary name');
+
+  const workflowShipBody = readAgent('workflow-ship');
+  ok(workflowShipContractErrors({body: workflowShipBody}).length === 0,
+    'workflow-ship failure and restore semantics match the runtime');
+  ok(workflowShipContractErrors({
+    body: workflowShipBody.replace(
+      /resumes the\s+recorded allowed original state/i,
+      'returns the Task to release-ready',
+    ),
+  }).some(message => /never rewind to release-ready/.test(message)),
+  'workflow-ship release-ready rewind mutation fails');
+  ok(workflowShipContractErrors({
+    body: workflowShipBody.replace('release Task', 'release item'),
+  }).some(message => /generic item/.test(message)),
+  'workflow-ship generic-item mutation fails');
+
+  const stewardshipBody = readFileSync(skillPath('kai-core-work-stewardship'), 'utf8');
+  ok(stewardshipAuthorityErrors({body: stewardshipBody}).length === 0,
+    'stewardship proposal and activation authority matches runtime');
+  ok(stewardshipAuthorityErrors({
+    body: stewardshipBody.replace(
+      'Feature owner or delegated pack/scope authority',
+      'Feature scope authority',
+    ),
+  }).some(message => /Requirement proposal/.test(message)),
+  'stewardship authority mutation fails by action name');
+
+  const evaluationBody = readFileSync(skillPath('kai-core-web-evaluation'), 'utf8');
+  const extractionBody = readFileSync(skillPath('kai-core-web-content-extraction'), 'utf8');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation', body: evaluationBody,
+  }).length === 0 && webOutputContractErrors({
+    id: 'kai-core-web-content-extraction', body: extractionBody,
+  }).length === 0,
+  'web contracts use typed private/public paths and collision-safe report IDs');
+  const evaluationIdGrammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: evaluationBody.replace(
+      `.kai/core/reports/${evaluationIdGrammar}/`,
+      `<working-root>/qa/${evaluationIdGrammar}/`,
+    ),
+  }).some(message => /typed core report path/.test(message)),
+  'web evaluation QA-root mutation fails');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: evaluationBody.replace(
+      `.kai/core/reports/${evaluationIdGrammar}/{drafts,evidence,scratch}`,
+      '.kai/core/reports/web-evaluation-<artifact-id>/{drafts,evidence,scratch}',
+    ),
+  }).some(message => /exact web-evaluation ID grammar/.test(message)),
+  'web evaluation private/public grammar drift fails');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: evaluationBody.replace(
+      'Every rerun allocates a new `<NN>` and never reuses an earlier ID.',
+      'Every rerun reuses the previous report ID.',
+    ),
+  }).some(message => /grammar\/prose drift/.test(message)),
+  'web evaluation rerun prose drift fails');
+
+  const grantingBody = readFileSync(skillPath('kai-core-work-granting'), 'utf8');
+  ok(directModeContractErrors({body: grantingBody}).length === 0,
+    'direct mode uses the direct verb and checks coordinationRequired:false');
+  ok(directModeContractErrors({
+    body: grantingBody.replace(' direct --root ', ' inspect --root '),
+  }).some(message => /`direct` runtime verb/.test(message)),
+  'inspect cannot authorize direct mode');
+
   ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
     && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
   'the approved model set and deterministic profile mapping contain the same identifiers');
@@ -1556,6 +1815,7 @@ function gateSkew() {
     const body = readFileSync(agent.path, 'utf8');
     for (const msg of agentRoutingErrors({
       id: agent.id,
+      pack: agent.pack,
       body,
       tools: declaredTools(body),
       knownSkills,

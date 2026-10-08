@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { routedSkills, sourceSkillFiles } from '../tools/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // This contract is written for creative *methods*: user-invocable, no declared
@@ -15,7 +16,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // roster from disk is the point: before 17.0.0 this list was hardcoded, so a
 // creative skill the list forgot would have been exempt from the whole contract
 // and nothing would have said so.
-const CONTRACT_STYLE_SKILLS = new Set(['content-grounding']);
+const CONTRACT_STYLE_SKILLS = new Set([
+  'content-grounding',
+  'creative-workspace-publication',
+]);
 const creativeSkillIds = sourceSkillFiles(root)
   .filter(entry => entry.pack === 'creative')
   .map(entry => entry.id);
@@ -44,6 +48,8 @@ const failures = [];
 const selectedIds = selected === 'all' ? ids : [selected];
 const normalize = body => body.replace(/\s+/g, ' ').trim().toLowerCase();
 const knownSkills = new Set(sourceSkillFiles(root).map(entry => entry.id));
+assert.equal(typeof packPlan.publicationRoutingErrors, 'function',
+  'creative skill tests require the shared publication-routing validator');
 
 function expect(id, condition, label) {
   if (!condition) failures.push(`${id}: ${label}`);
@@ -74,8 +80,11 @@ function parseSkill(id) {
   const field = name =>
     frontmatter[1].match(new RegExp(`^${name}:\\s*(.+)$`, 'm'))?.[1].trim();
   const description = (field('description') ?? '').replace(/^["']|["']$/g, '');
+  const durableOutputProducer = field('durable-output-producer');
   expect(id, field('name') === id, `frontmatter name must be ${id}`);
   expect(id, /^Use when\b/.test(description), 'description must be trigger-only and start with "Use when"');
+  expect(id, /^(?:true|false)$/.test(durableOutputProducer ?? ''),
+    'frontmatter must declare durable-output-producer true or false');
   expectNoMatch(
     id,
     description,
@@ -98,6 +107,14 @@ function parseSkill(id) {
   expect(id, unresolvedRoutes.length === 0,
     `routed skills must resolve to active definitions (missing: ${unresolvedRoutes.join(', ')})`);
   expectNoMatch(id, body, 'eager inheritance list', /^\*\*Inherits:\*\*/m);
+  for (const message of packPlan.publicationRoutingErrors({
+    pack: 'creative',
+    id,
+    kind: 'skill',
+    body,
+  })) {
+    failures.push(`${id}: ${message}`);
+  }
 
   const referencePaths = [...body.matchAll(/references\/[a-z0-9._/-]+\.md/gi)]
     .map(match => match[0])
@@ -110,6 +127,7 @@ function parseSkill(id) {
   return {
     body,
     description,
+    durableOutputProducer,
     normalized: normalize(body),
     path,
     routes,
@@ -364,9 +382,96 @@ for (const id of selectedIds) {
   contracts[id](parseSkill(id));
 }
 
+const parsedSelected = selectedIds.map(parseSkill).filter(Boolean);
+const durableProducers = parsedSelected.filter(skill =>
+  packPlan.durableOutputProducerDeclaration({
+    kind: 'skill',
+    body: skill.body,
+  }) === true);
+const nonProducers = parsedSelected.filter(skill =>
+  packPlan.durableOutputProducerDeclaration({
+    kind: 'skill',
+    body: skill.body,
+  }) === false);
+if (selected === 'all') {
+  expect('creative-publication-mutation', durableProducers.length > 0,
+    'expected at least one durable creative method producer');
+  expect('creative-publication-mutation', nonProducers.length > 0,
+    'expected at least one declared creative method non-producer');
+  const durableProducer = durableProducers[0];
+  if (durableProducer) {
+    let mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-publication-mutation',
+      kind: 'skill',
+      body: durableProducer.body
+        .replace(
+          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`[^.]*\.\s*/gi,
+          '',
+        )
+        .replace(
+          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+          '',
+        ),
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message => message.includes('declared durable-output producer')),
+      'removing both producer routes must fail from the skill declaration',
+    );
+    mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-publication-mutation',
+      kind: 'skill',
+      body: durableProducer.body.replace(
+        'durable-output-producer: true',
+        'durable-output-producer: false',
+      ),
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message => message.includes('declared non-producer')),
+      'flipping a producer declaration must fail while routes remain',
+    );
+    mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-publication-mutation',
+      kind: 'skill',
+      body: durableProducer.body.replace(
+        'creative-workspace-publication',
+        'engineering-workspace-publication',
+      ),
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message =>
+        message.includes('cannot route publication skill owned by another pack')),
+      'routing a producer through the wrong pack publication skill must fail',
+    );
+  }
+  const nonProducer = nonProducers[0];
+  if (nonProducer) {
+    const mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-nonproducer-mutation',
+      kind: 'skill',
+      body: `${nonProducer.body}\nLoad \`creative-workspace-publication\`, then Load \`kai-core-asset-producing\`.\n`,
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message => message.includes('declared non-producer')),
+      'adding both producer routes to a declared skill non-producer must fail',
+    );
+  }
+}
+
 assert.deepEqual(
   failures,
   [],
   `creative skill contract assertions failed (${selected})`,
 );
-console.log(`creative skill contract assertions passed (${selected})`);
+console.log(
+  `creative skill contract assertions passed (${selected}; `
+  + `methods=${selectedIds.length}, declared producers=${durableProducers.length}, `
+  + `declared non-producers=${nonProducers.length})`,
+);

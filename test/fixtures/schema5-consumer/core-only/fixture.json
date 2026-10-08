@@ -1,0 +1,13 @@
+{
+  "name": "core only",
+  "packs": ["core"],
+  "artifact": {
+    "pack": "core",
+    "type": "features",
+    "subtype": null,
+    "id": "consumer-core-feature",
+    "file": "feature.md",
+    "privateDirectory": ".kai/core/features/consumer-core-feature/drafts",
+    "publicationDirectory": "docs/kai/core/features/consumer-core-feature"
+  }
+}

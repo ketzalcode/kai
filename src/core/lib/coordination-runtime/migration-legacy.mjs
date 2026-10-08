@@ -279,7 +279,13 @@ function parseSource(root, entry, roles) {
   }
   const version = kind === 'item' ? Number(fields.version) : Number(fields.version ?? 1);
   try {
-    source.record = validateRecord({kind, id: source.declaredId, itemId: kind === 'item' ? source.declaredId : null, version, body});
+    source.record = validateRecord({
+      kind,
+      id: source.declaredId,
+      subject: kind === 'item' ? {kind: 'item', id: source.declaredId} : null,
+      version,
+      body,
+    });
   } catch (error) { source.issues.push(error.message); source.record = null; }
   if (!source.issues.length) source.status = 'converted';
   return source;
@@ -330,4 +336,47 @@ export function parseLegacySources(root, files, roles) {
     }
   } while (changed);
   return sources;
+}
+
+export function legacyClassificationSources(rows, existing = new Set()) {
+  if (!Array.isArray(rows)) return [];
+  const sources = [];
+  for (const row of rows) {
+    if (!row || !new Set(['initiative', 'item']).has(row.kind)) continue;
+    const declaredId = typeof row.declared_id === 'string' && row.declared_id
+      ? row.declared_id
+      : null;
+    const key = `${row.kind}\0${declaredId}`;
+    if (declaredId && existing.has(key)
+      && new Set(['converted', 'revalidated']).has(row.status)) continue;
+    let parsed = {};
+    let issues = [];
+    try {
+      parsed = JSON.parse(row.parsed);
+      issues = JSON.parse(row.issues);
+    } catch {
+      fail('RECOVERY_REQUIRED', `legacy source classification metadata is malformed: ${row.path}`);
+    }
+    const declaredVersion = Number(parsed.fields?.version);
+    const version = Number.isSafeInteger(declaredVersion) && declaredVersion > 0
+      ? declaredVersion
+      : Number(row.version);
+    sources.push({
+      kind: row.kind,
+      id: `source:${row.source_id}`,
+      declared_id: declaredId,
+      version: Number.isSafeInteger(version) && version > 0 ? version : 1,
+      lifecycle: parsed.declaredState ?? null,
+      updated_at: parsed.updated ?? parsed.fields?.updated_at ?? parsed.fields?.updated ?? null,
+      digest: row.digest,
+      body: null,
+      record_available: false,
+      source_path: row.path,
+      source_id: row.source_id,
+      source_status: row.status,
+      issues,
+    });
+  }
+  return sources.sort((left, right) =>
+    left.kind.localeCompare(right.kind) || left.id.localeCompare(right.id));
 }

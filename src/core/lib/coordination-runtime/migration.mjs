@@ -1,5 +1,8 @@
-import {chmodSync, closeSync, constants, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync} from 'node:fs';
-import {dirname, resolve} from 'node:path';
+import {
+  chmodSync, closeSync, constants, copyFileSync, existsSync, fsyncSync,
+  lstatSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync,
+} from 'node:fs';
+import {dirname, isAbsolute, relative, resolve, sep} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {openStore, closeStore, readSnapshot, readRecord} from './store.mjs';
 import {assertExactKeys, canonicalJson, validateRecord, validateActor} from './contract.mjs';
@@ -7,12 +10,19 @@ import {assertWorkspacePath, exactBytes} from './evidence-content.mjs';
 import {parseLegacySources, roleKnown} from './migration-legacy.mjs';
 import {
   DATABASE, LOCK, MIGRATIONS, hash, fail, safePath, exactFile, exclusiveFile,
-  migrationManifest, privateAdmission, sourceSnapshot, sameSnapshot, fileFingerprint,
+  logicalStoreDigest, migrationManifest, privateAdmission, sourceSnapshot,
+  sameSnapshot, fileFingerprint,
 } from './migration-files.mjs';
 import {read as readActivity, runs} from '../activity.mjs';
 import {isNull, TERMINAL} from '../coordination.mjs';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {captureInputBasis} from './input-basis.mjs';
+import {
+  canonicalPath,
+  exactPath,
+  pathHasLink,
+} from '../workspace-path-safety.mjs';
+import {workspaceRootFromCoordinationDatabase} from '../workspace-layout.mjs';
 
 const inFlight = new Set();
 const repairs = new WeakMap();
@@ -20,20 +30,22 @@ const json = (root, path) => JSON.parse(exactFile(root, path));
 function confirmed(confirm) {
   if (confirm !== true) fail('AUTHORITY_REQUIRED', 'confirm:true must explicitly acknowledge offline migration/recovery');
 }
+function stagingUnavailable() {
+  fail('SCHEMA_MISMATCH',
+    'schema 3/4 live stores are read-only; only explicit offline migration staging may write');
+}
+export function createLegacyMigrationStagingStore({root, name, env = process.env}) {
+  migrationManifest(root, [3], env);
+  if (typeof name !== 'string'
+    || !new RegExp(`^${MIGRATIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[0-9a-f-]{36}/staged\\.sqlite$`, 'i').test(name)) {
+    fail('INVALID_INPUT', 'legacy migration staging store must use its exact private migration path');
+  }
+  return openStore({path: safePath(root, name), mode: 'create'});
+}
 function privateWorkspace(root, admit = false) {
   const privacy = privateAdmission(root, {admit});
   if (privacy.errors.length) fail('INVALID_INPUT', privacy.errors.join('; '));
   return privacy;
-}
-function logicalDigest(store) {
-  const db = store.database;
-  const result = {};
-  for (const table of ['records', 'events', 'operations', 'legacy_sources']) {
-    result[table] = db.prepare(`SELECT * FROM ${table} ORDER BY 1, 2`).all().map(row =>
-      Object.fromEntries(Object.entries(row).map(([key, v]) => [key, v instanceof Uint8Array ? Buffer.from(v).toString('hex') : v])));
-  }
-  result.metadata = db.prepare("SELECT * FROM metadata WHERE key != 'migration_baseline' ORDER BY key").all();
-  return hash(canonicalJson(result));
 }
 function finishStore(store) {
   const result = store.database.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get();
@@ -83,7 +95,7 @@ function readyPlan(root, directory) {
 function validateStagedStore(root, plan, ready, name) {
   const store = openStore({path: safePath(root, name), mode: 'read'});
   try {
-    if (!canRollback(store) || logicalDigest(store) !== ready.stateDigest) fail('RECOVERY_REQUIRED', 'staged store changed or contains new runtime work');
+    if (!canRollback(store) || logicalStoreDigest(store) !== ready.stateDigest) fail('RECOVERY_REQUIRED', 'staged store changed or contains new runtime work');
     for (const row of store.database.prepare('SELECT kind,id FROM records').all()) readRecord(store, row.kind, row.id);
     const identity = JSON.parse(store.database.prepare("SELECT value FROM metadata WHERE key='migration'").get().value);
     if (identity.id !== plan.id || identity.root !== resolve(root) || identity.workspaceId !== plan.workspaceId) {
@@ -168,7 +180,11 @@ export function migrateWorkspace({root, confirm, roles = [], env = process.env} 
     verifyBackup(root, plan);
     sameSnapshot(files, sourceSnapshot(root));
     exclusiveFile(root, `${directory}/staged.sqlite`, Buffer.alloc(0));
-    store = openStore({path: safePath(root, `${directory}/staged.sqlite`), mode: 'create'});
+    store = createLegacyMigrationStagingStore({
+      root,
+      name: `${directory}/staged.sqlite`,
+      env,
+    });
     store.database.exec(`BEGIN IMMEDIATE;
       CREATE TABLE legacy_sources (
         source_id TEXT PRIMARY KEY, path TEXT NOT NULL UNIQUE, digest TEXT NOT NULL,
@@ -181,15 +197,28 @@ export function migrateWorkspace({root, confirm, roles = [], env = process.env} 
         source.size, `${directory}/backup/${source.path}`, JSON.stringify(source.parsed), canonicalJson(source.issues), source.status, source.version);
       if (source.status === 'converted') {
         const r = source.record;
-        store.database.prepare('INSERT INTO records VALUES (?,?,?,?,?)').run(r.kind, r.id, r.itemId, r.version, canonicalJson(r.body));
+        store.database.prepare(`
+          INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          r.kind,
+          r.id,
+          r.subject?.kind ?? null,
+          r.subject?.id ?? null,
+          r.version,
+          canonicalJson(r.body),
+        );
       }
     }
-    store.database.prepare('INSERT INTO events(operation_id,item_id,payload) VALUES(?,NULL,?)').run(id,
+    store.database.prepare(`
+      INSERT INTO events(operation_id, subject_kind, subject_id, payload)
+      VALUES (?, NULL, NULL, ?)
+    `).run(id,
       canonicalJson({kind: 'workspace.migrate', actor: null, sourceSchema: 3, migrationId: id,
         sourceCount: sources.length, provenance: 'legacy-declared', timestamp: null}));
     store.database.prepare('INSERT INTO metadata VALUES (?,?)').run('migration',
       canonicalJson({id, root: resolve(root), workspaceId: manifest.workspace_id, directory}));
-    const stateDigest = logicalDigest(store);
+    const stateDigest = logicalStoreDigest(store);
     store.database.prepare('INSERT INTO metadata VALUES (?,?)').run('migration_baseline', stateDigest);
     store.database.exec('COMMIT');
     finishStore(store);
@@ -204,7 +233,7 @@ export function migrateWorkspace({root, confirm, roles = [], env = process.env} 
 export function canRollback(store) {
   return readSnapshot(store, () => {
     const baseline = store.database.prepare("SELECT value FROM metadata WHERE key='migration_baseline'").get();
-    return !!baseline && logicalDigest(store) === baseline.value;
+    return !!baseline && logicalStoreDigest(store) === baseline.value;
   });
 }
 
@@ -313,7 +342,7 @@ export function rollbackMigration({root, confirm, env = process.env} = {}) {
   } finally { closeStore(store); }
 }
 function canRollbackInTransaction(store, ready) {
-  return logicalDigest(store) === ready.stateDigest;
+  return logicalStoreDigest(store) === ready.stateDigest;
 }
 
 /** Lists expose bounded metadata only. Raw history is an explicit single-source
@@ -321,6 +350,98 @@ function canRollbackInTransaction(store, ready) {
  */
 export function readLegacyRecords(store, {sourceId, includeRaw = false} = {}) {
   if (includeRaw && typeof sourceId !== 'string') fail('INVALID_INPUT', 'raw legacy reads require a single sourceId');
+  const migrated = store.database.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='migration_sources'",
+  ).get();
+  if (migrated) {
+    let metadata;
+    try {
+      metadata = JSON.parse(store.database.prepare(
+        "SELECT value FROM metadata WHERE key='migration_v5'",
+      ).get()?.value ?? 'null');
+    } catch {
+      fail('EVIDENCE_GAP', 'schema-5 migration provenance metadata is invalid');
+    }
+    if (!metadata || typeof metadata.backup_path !== 'string'
+      || typeof metadata.receipt_path !== 'string'
+      || !isAbsolute(metadata.backup_path)
+      || resolve(metadata.receipt_path) !== resolve(metadata.backup_path, 'receipt.json')) {
+      fail('EVIDENCE_GAP', 'schema-5 migration provenance has an invalid external receipt binding');
+    }
+    const receiptPath = resolve(metadata.receipt_path);
+    if (pathHasLink(dirname(receiptPath), receiptPath) || !exactPath(receiptPath)) {
+      fail('EVIDENCE_GAP', 'schema-5 migration receipt is linked or aliased');
+    }
+    let receipt;
+    try {
+      receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+    } catch {
+      fail('EVIDENCE_GAP', 'schema-5 migration receipt is missing or invalid');
+    }
+    let workspaceRoot;
+    try {
+      workspaceRoot = workspaceRootFromCoordinationDatabase(store.path);
+    } catch {
+      fail('EVIDENCE_GAP', 'schema-5 migration provenance belongs to another store path');
+    }
+    if (receipt.activated !== true || receipt.digest !== metadata.receipt_digest
+      || hash(canonicalJson(receipt.payload)) !== receipt.digest
+      || typeof receipt.payload?.workspace_root !== 'string'
+      || !isAbsolute(receipt.payload.workspace_root)
+      || canonicalPath(receipt.payload.workspace_root) !== canonicalPath(workspaceRoot)
+      || receipt.payload.backup_path !== metadata.backup_path) {
+      fail('EVIDENCE_GAP', 'schema-5 migration receipt does not bind this workspace and backup');
+    }
+    const select = `SELECT source_id,path,digest,size,category,owner_hint,
+      classification,backup_relative FROM migration_sources`;
+    const rows = sourceId === undefined
+      ? store.database.prepare(`${select} ORDER BY path`).all()
+      : store.database.prepare(`${select} WHERE source_id=?`).all(sourceId);
+    return rows.map(row => {
+      if (row.source_id !== hash(row.path)
+        || row.backup_relative !== `private/${row.path}`) {
+        fail('EVIDENCE_GAP', 'schema-5 migration source identity is invalid');
+      }
+      let classification;
+      try {
+        classification = JSON.parse(row.classification);
+      } catch {
+        fail('EVIDENCE_GAP', 'schema-5 migration source classification is invalid');
+      }
+      const source = {
+        sourceId: row.source_id,
+        path: row.path,
+        digest: row.digest,
+        kind: row.category,
+        declaredId: null,
+        size: row.size,
+        backupPath: row.backup_relative,
+        parsed: {ownerHint: row.owner_hint, classification},
+        issues: [],
+        status: classification.action === 'migrate' ? 'migrated' : 'historical',
+        version: 1,
+      };
+      if (includeRaw) {
+        const absolute = resolve(metadata.backup_path, ...row.backup_relative.split('/'));
+        const rel = relative(canonicalPath(metadata.backup_path), canonicalPath(absolute));
+        if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)
+          || pathHasLink(metadata.backup_path, absolute) || !exactPath(absolute)) {
+          fail('EVIDENCE_GAP', 'schema-5 migration source backup escapes or aliases its verified root');
+        }
+        const stat = lstatSync(absolute);
+        const raw = readFileSync(absolute);
+        const after = lstatSync(absolute);
+        if (!stat.isFile() || stat.nlink !== 1 || raw.length !== row.size
+          || stat.dev !== after.dev || stat.ino !== after.ino
+          || stat.size !== after.size || stat.mtimeMs !== after.mtimeMs
+          || hash(raw) !== row.digest) {
+          fail('EVIDENCE_GAP', 'schema-5 migration source backup size or digest changed');
+        }
+        source.raw = raw;
+      }
+      return source;
+    });
+  }
   const table = store.database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='legacy_sources'").get();
   if (!table) return [];
   const columns = store.database.prepare('PRAGMA table_info(legacy_sources)').all().map(c => c.name);
@@ -354,12 +475,14 @@ export function readLegacyRecords(store, {sourceId, includeRaw = false} = {}) {
  * source bytes and unknown historical actors remain untouched.
  */
 export function bindMigrationRepair(store, {root, roles, verify} = {}) {
+  stagingUnavailable();
   migrationManifest(root, [4]);
   if (store.closed || store.mode === 'read' || resolve(store.path) !== safePath(root, DATABASE)
     || !Array.isArray(roles) || typeof verify !== 'function') fail('AUTHORITY_REQUIRED', 'repair requires explicit store/root and trusted host verifier');
   repairs.set(store, {root, roles: [...roles], verify});
 }
 export function repairLegacyRecord(store, request) {
+  stagingUnavailable();
   const binding = repairs.get(store);
   if (!binding || store.closed) fail('AUTHORITY_REQUIRED', 'bind a trusted host repair verifier first');
   const input = JSON.parse(canonicalJson(request));
@@ -400,8 +523,15 @@ export function repairLegacyRecord(store, request) {
     if (typeof originalVersion !== 'string' || !/^[1-9]\d*$/.test(originalVersion) || !Number.isSafeInteger(Number(originalVersion))) {
       fail('INVALID_INPUT', 'unknown or unsupported original version history cannot be revalidated');
     }
-    const record = validateRecord({kind: source.kind, id: source.declaredId, itemId: source.kind === 'item' ? source.declaredId : null,
-      version: Number(originalVersion), body: input.body});
+    const record = validateRecord({
+      kind: source.kind,
+      id: source.declaredId,
+      subject: source.kind === 'item'
+        ? {kind: 'item', id: source.declaredId}
+        : null,
+      version: Number(originalVersion),
+      body: input.body,
+    });
     if (record.kind === 'item') {
       const b = record.body;
       if (b.state !== 'proposed' || b.lease !== null || b.change_ref !== null || b.producer_actor !== null
@@ -429,12 +559,32 @@ export function repairLegacyRecord(store, request) {
     // A host decision may change storage admission or yield to an offline owner.
     migrationManifest(binding.root, [4]);
     assertWorkspaceWrite(store.path, {requirePrivate: true});
-    store.database.prepare('INSERT INTO records VALUES (?,?,?,?,?)').run(record.kind, record.id, record.itemId, record.version, canonicalJson(record.body));
+    store.database.prepare(`
+      INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      record.kind,
+      record.id,
+      record.subject?.kind ?? null,
+      record.subject?.id ?? null,
+      record.version,
+      canonicalJson(record.body),
+    );
     store.database.prepare("UPDATE legacy_sources SET status='revalidated',version=version+1 WHERE source_id=?").run(source.sourceId);
-    const event = store.database.prepare('INSERT INTO events(operation_id,item_id,payload) VALUES(?,?,?)').run(input.operationId, record.itemId,
+    const eventSubject = record.kind === 'item'
+      ? {kind: 'item', id: record.id}
+      : record.subject;
+    const event = store.database.prepare(`
+      INSERT INTO events(operation_id, subject_kind, subject_id, payload)
+      VALUES (?, ?, ?, ?)
+    `).run(
+      input.operationId,
+      eventSubject?.kind ?? null,
+      eventSubject?.id ?? null,
       canonicalJson({kind: 'legacy.revalidate', actor: input.actor, sourceId: source.sourceId, sourceDigest: source.digest,
         sourcePath: source.path, sourceSize: source.size, sourceBackupPath: source.backupPath,
-        reason: input.reason, recordKind: record.kind, recordId: record.id, body: record.body}));
+        reason: input.reason, recordKind: record.kind, recordId: record.id, body: record.body}),
+    );
     const receipt = {ok: true, operationId: input.operationId, recordVersion: record.version, eventSeq: Number(event.lastInsertRowid), data: {record}};
     store.database.prepare('INSERT INTO operations VALUES(?,?,?)').run(input.operationId, digest, canonicalJson(receipt));
     store.database.exec('COMMIT');

@@ -1,6 +1,7 @@
 ---
 name: kai-core-web-evaluation
 description: "Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports."
+durable-output-producer: true
 tools: [playwright, execute, edit, read, ask_user]
 ---
 
@@ -64,75 +65,75 @@ force it into the QA/UX findings scaffold below.
 
 ## Folder layout
 
-All output for a single run lives in:
+All output for a single evaluation lives in:
 
 ```
-<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/
-  report.md
-  screenshots/
-    01-<short-slug>.png
-    02-<short-slug>.png
-    ...
-  trace.zip        (optional, if Playwright trace recording was on)
+.kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/
+  drafts/
+    report.md
+  evidence/
+    screenshots/
+      01-<short-slug>.png
+      02-<short-slug>.png
+      ...
+    trace.zip        (optional, if Playwright trace recording was on)
+```
+
+The canonical forms are:
+
+```text
+.kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/{drafts,evidence,scratch}
+docs/kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/
 ```
 
 In evidence-only mode, the run folder contains only raw local evidence
 such as `screenshots/`, trace, and non-secret capture metadata. It must not
 create `report.md` or the derived map there; the map goes only to the
-canonical initiative `artifact_targets` entry.
+validated Task `artifact_targets` entry.
 
-- Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
-  loaded north star, or `kai-core-workspace-paths`. Never substitute the calling
-  agent's repository/cwd for a different target workspace.
-- `<YYYY-MM-DD>` is the **local date** — the deterministic anchor. Every QA, UX,
-  SEO, PM, persona, and explore/extract run for a day lives under it. The date is
-  never model-generated, so a run is always where you expect it.
-- `<NN>` is a **zero-padded, per-day sequential run index**. Pick it by listing
-  `<working-root>/qa/<today>/` and taking the highest existing index + 1 (`01` if
-  empty); runs then sort in the order they ran. Never fill a lower gap and never
-  reuse or overwrite an index.
-- `<flavor>` identifies the calling agent's lens — typical values: `qa`
-  (`eng-reviewer-quality`), `explore`, `extract`, `stress`. New auditing agents
-  pick a short kebab slug.
-- `<descriptor>` is descriptive only, **not** the grouping key. Use the
-  work-item/epic key when the run has one (e.g. `kai-59`) so same-epic runs stay
-  greppable; otherwise a kebab slug for the surface (derived from the target URL
-  or feature name). Examples:
+- Resolve `<workspace-root>` and the bound project from the dispatch packet,
+  current Direction, or `kai-core-workspace-paths`. Never substitute the
+  calling agent's repository/cwd for a different target workspace.
+- Load `kai-core-workspace-publication`, then Load `kai-core-asset-producing`
+  before retaining a durable evaluation report.
+- The exact report ID grammar is
+  `web-evaluation-<YYYYMMDD>-<NN>-<descriptor>`.
+  - `<YYYYMMDD>` is the local evaluation date in eight-digit `YYYYMMDD` form.
+  - `<NN>` is the next unused positive sequence for that date, zero-padded to
+    at least two digits.
+  - `<descriptor>` is a required lowercase kebab-case surface description,
+    limited to five short words.
+- Derive the descriptor from the evaluated surface:
   - `https://app.contoso.com/checkout` → `contoso-checkout`
   - User said "the new onboarding flow" → `onboarding-flow`
-  - When in doubt, use a short slug — never block the run on it; the date + index
-    already locate the run.
+  - When in doubt, use a short factual slug; do not omit the descriptor.
+- Before writing, check that exact ID is absent from both the private and public
+  report roots, then create the private report root atomically. If another run
+  wins the collision, increment `<NN>` and retry.
+- Every rerun allocates a new `<NN>` and never reuses an earlier ID.
+- Store the calling lens (`qa`, `explore`, `stress`, or another short kebab
+  slug), local timezone, typed subject/version, and evaluated URL in
+  `report.md` metadata. The subject-bound `artifact.register` UUID remains
+  coordination provenance; it is not the typed report path ID.
 
-**Placement is mandatory — never write elsewhere.** QA / evaluation / stress
-output always lands under `<working-root>/qa/`. Never write it to Copilot
+**Placement is mandatory — never write elsewhere.** Evaluation output lands
+under the validated typed core report path. Never write it to Copilot
 session-state, a temp directory, or the calling agent's cwd. When a browser or
-stress harness takes an output dir (`OUT`), it MUST resolve under
-`<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`; reject or rewrite
-any `OUT` that resolves elsewhere. This holds **even when a non-QA agent** (e.g.
-an orchestrator running a stress harness) drives the run — the canonical qa path
-is mandatory regardless of caller.
+stress harness takes an output dir (`OUT`), it must resolve under that report's
+`evidence/` directory; reject any other destination.
 
-**One folder per run — never collapse the path.** It is always
-`<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/` — never fuse the
-segments and never drop the date or index. Same agent, same day → same shape
-every run, so a day's audits group under one `qa/<YYYY-MM-DD>/` tree, ordered as
-they ran.
+**One folder per evaluation — never collapse the path.** The typed report ID
+retains date, sequence, and descriptor so evaluations remain distinct.
 
 ## Zone, gitignore & promotion
 
-Runs land in the resolved **working root** under `qa/`, which
-`workflow-workspace-init` gitignores **wholesale** (see
-`kai-core-workspace-paths`). You do **not** patch `.gitignore` per folder
-anymore: the whole working root is ephemeral by design. A run's
-`report.md`, its `screenshots/`, and the heavy artifacts (traces, HARs,
-logs) are all working output that lives there.
+Evaluations land under the typed private core report root. All of `.kai/` is
+ignored and untracked. Do not patch `.gitignore` per folder. `report.md` stays
+under `drafts/`; screenshots, traces, HARs, and logs stay under `evidence/`.
 
-To **share** a defect report, the calling agent promotes the curated
-markdown to
-`<project-root>/<publication-root>/qa-findings/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/report.md`
-with durable asset metadata — that committed copy is what travels via
-`git pull`.
-Screenshots stay in the working root as local evidence, referenced by their
+To publish a defect report, the calling agent accepts one exact curated
+revision and mirrors it through the core publication contract. Screenshots stay
+private evidence, referenced by their
 run path; promote the text, not the binaries.
 
 If the target workspace was never onboarded, stop and invoke
@@ -184,8 +185,8 @@ mode** if `ask_user` is available; otherwise default to headless.
   take a 16th, it must justify why in the report.
 - Take the screenshot at the viewport where the issue is
   reproducible. Note the viewport in the report row.
-- **Screenshots stay local evidence — not committed.** They live in the run
-  folder under the ignored `.kai/runs/` root. Heavy binaries, including
+- **Screenshots stay local evidence — not committed.** They live under the
+  typed report's private `evidence/` directory. Heavy binaries, including
   `screenshots/`, never enter project publication. When you publish a report,
   publish the **text** and reference evidence by its private run path.
   Keep filenames stable so the report's local links don't break across renames.
@@ -273,9 +274,11 @@ If the agent is approaching any cap, it should:
 ## Anti-patterns
 
 - ❌ Writing the report into the repo root, Copilot session-state, a temp
-  directory, or the calling agent's cwd. Always use
-  `<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`, even when a
-  non-QA agent or a browser/stress harness (`OUT`) drives the run.
+  directory, a retired generic QA root, or the calling agent's cwd. Always use the
+  validated
+  `.kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/` private
+  path, even when a non-QA agent or a browser/stress harness (`OUT`) drives the
+  run.
 - ❌ Taking a screenshot per page just to "have coverage". Each
   screenshot must be referenced.
 - ❌ Reporting a finding without a viewport (QA flavor) or without
@@ -290,24 +293,22 @@ If the agent is approaching any cap, it should:
   per-action approval.
 - ❌ Recommending fixes the agent can't justify. Speculation
   belongs in `## Next steps`, not in a finding row.
-- ❌ Auto-committing anything, or hand-patching `.gitignore`. The whole
-  `.kai/runs/` root is ignored centrally by `workflow-workspace-init`;
-  sharing happens by publishing the accepted report to
-  `<project-root>/<publication-root>/qa-findings/` (the calling agent's call),
-  never by committing inside the working root.
+- ❌ Auto-committing anything, or hand-patching `.gitignore`. The typed report
+  stays ignored; sharing happens only by publishing an accepted report through
+  the core publication contract, never by committing private evidence.
   The agent never runs git.
 
 ## Output contract
 
 When the skill (and the calling agent) finishes a run:
 
-1. `report.md` exists at the run-folder path.
+1. `report.md` exists at the typed report draft path.
 2. Every row in the findings/friction tables has at least:
    priority, title, observation, and either a screenshot or a
    URL + selector citation.
-3. The run lives under the resolved working root's `qa/<YYYY-MM-DD>/` area; no
-   per-folder `.gitignore` patching is done. Sharing is via promotion of
-   `report.md` to `<project-root>/<publication-root>/qa-findings/`.
+3. The evaluation lives under the validated typed core report path; no
+   per-folder `.gitignore` patching is done. Publication requires exact-revision
+   acceptance.
 4. The agent posts back to the user: run folder path, finding
    count by priority, and a one-line top-line verdict.
 5. No commits, no pushes. The user owns git.

@@ -1,6 +1,7 @@
 ---
 name: kai-core-web-content-extraction
 description: "Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption."
+durable-output-producer: true
 tools: [playwright, execute, edit, read, ask_user]
 ---
 
@@ -51,9 +52,8 @@ this one is for harvesting the words on a UI.
 3. **No credentials in chat.** If the surface requires login, use the
    login-pause pattern below. Never type a password on the user's
    behalf, even if it's saved in their browser.
-4. **One run, one output folder.** Do not overwrite a prior run's
-   markdown; create a new `<NN>`-indexed run folder under the goal
-   (`<NN>` = highest existing + 1, never filling gaps). Re-runs are explicit.
+4. **One run, one typed report ID.** Do not overwrite a prior extraction.
+   Generate a new artifact UUID and use it in the report ID for every rerun.
 5. **Cite the source.** Every generated markdown file lists the
    original URL(s) it was extracted from. The user must always be one
    click away from the source of truth.
@@ -67,32 +67,44 @@ this one is for harvesting the words on a UI.
 
 ## Folder layout
 
-All output for a single run lives in:
+All output for a single extraction lives in:
 
 ```
-<workspace-root>/.kai/runs/learn/<goal-slug>/<NN>-extract-<source-slug>/
-  module.md          ← narration content, all units concatenated
-  questions.md       ← knowledge-check questions, for self-testing
-  source.md          ← metadata: original URL, walked URLs, timings, failures
-  raw/               ← optional per-unit raw snapshots, gitignored
-    01-<unit-slug>.md
-    02-<unit-slug>.md
-    ...
+.kai/core/reports/<report-id>/
+  drafts/
+    module.md          ← narration content, all units concatenated
+    questions.md       ← knowledge-check questions, for self-testing
+    source.md          ← metadata: original URL, walked URLs, timings, failures
+  evidence/
+    raw/               ← optional per-unit raw snapshots
+      01-<unit-slug>.md
+      02-<unit-slug>.md
+      ...
+```
+
+The canonical forms are:
+
+```text
+.kai/core/reports/<id>/{drafts,evidence,scratch}
+docs/kai/core/reports/<id>/
 ```
 
 - `<workspace-root>` is the absolute root resolved by the calling agent.
   Load `kai-core-workspace-paths` before placing output; use that contract's
   resolution order, including external workspaces. If resolution fails, stop
   before writing; never substitute a git root or incidental cwd.
-- `<goal-slug>` is the **durable learning goal** this run belongs to — a
-  descriptive kebab-case slug like `learn-react`, `az-204`, or
-  `prep-for-interview-vercel` — so every run toward one goal stays in one
-  folder. The calling agent resolves it from the operator's intent; when none
-  is given it **defaults to `<source-slug>`**. Reuse an existing goal folder
-  rather than minting a near-duplicate.
-- `<NN>` is the two-digit run index **within the goal**: the highest existing
-  index + 1, never filling gaps, so runs sort in the order they ran (the same
-  rule as the date-first areas — `learn`/`lessons` swap the date for the goal).
+- Load `kai-core-workspace-publication`, then Load `kai-core-asset-producing`
+  before retaining the extraction as a durable core report.
+- For this skill, `<id>` is `<report-id>`, and `<report-id>` is
+  `web-extract-<artifact-id>`. Generate the `artifact-id` as
+  the UUID that the subject-bound `artifact.register` command will validate.
+  This collision-safe typed ID gives every rerun its own represented report
+  path without inventing an extra run-directory grammar.
+- `<goal-slug>` is the durable learning goal metadata for this extraction — a
+  descriptive kebab-case value like `learn-react`, `az-204`, or
+  `prep-for-interview-vercel`. The calling agent resolves it from operator
+  intent; when none is given it defaults to `<source-slug>`. Store it in
+  `source.md`, not in an unrepresented path layer.
 - `<source-slug>` is a kebab-case slug for what was extracted. Derivation rules:
   - **Microsoft Learn module:** the segment after `/training/modules/`
     (e.g. `get-started-ai-fundamentals`).
@@ -100,27 +112,19 @@ All output for a single run lives in:
   - **Coursera / edX / Udemy course:** the course slug from the URL.
   - **Generic article / doc page:** the last path segment, lowercased.
   - **When ambiguous:** ask the user once.
-- When an artifact in a **separate** run needs to point back to this one, it
-  records the link in its **frontmatter** (a `produced_from:` path) rather than
-  baking this run's path into its own folder name — keeping the goal-first layout
-  stable and inter-agent hand-off independent of folder nesting. Output
-  co-located inside this run (like a teacher's `lessons/` subfolder) is simply
-  part of the run, not a cross-reference.
+- When a later artifact needs to point back to this extraction, it records the
+  typed report ID and accepted asset reference in its provenance rather than
+  inventing a nested run folder.
 
-## Zone, gitignore & promotion
+## Privacy and publication
 
-Runs land in the **run root** — `.kai/runs/learn/` — which
-`workflow-workspace-init` gitignores **wholesale** (see
-`kai-core-workspace-paths`). You do **not** patch `.gitignore` per folder; the
-working root is ephemeral. The extracted markdown (`module.md`,
-`questions.md`, `source.md`) and the `raw/` snapshots all live there as
-working output.
+The extraction lives under its validated typed private report path. All of
+`.kai/` is ignored and untracked; do not patch `.gitignore` per folder.
+Markdown stays under `drafts/` and raw snapshots stay under `evidence/`.
 
-These lesson deliverables default to the **working (local)** zone. To
-**share** them — so they travel via `git pull` — the operator passes
-`--share` and the calling agent publishes the markdown to
-`<project-root>/<publication-root>/lessons/<goal-slug>/<source-slug>/` with
-durable asset metadata. Raw snapshots and audio remain private and regenerable.
+Publication requires named-authority acceptance of one exact revision and
+mirrors through the core publication contract. Raw snapshots and audio remain
+private and regenerable.
 
 ## Login pause pattern
 
@@ -383,10 +387,9 @@ If the agent hits a cap, it should:
 - ❌ Capturing correct-answer markings in `questions.md`.
 - ❌ Leaving raw HTML tags in the markdown output — clean it or drop
   it.
-- ❌ Auto-committing anything, or hand-patching `.gitignore`. The `.kai/runs/`
-  working root is ignored centrally; markdown is private by default and shared
-  by publication to `<project-root>/<publication-root>/lessons/`. The agent
-  never runs git.
+- ❌ Auto-committing anything, or hand-patching `.gitignore`. The typed private
+  report stays ignored; only an accepted revision can mirror through the core
+  publication contract. The agent never runs git.
 - ❌ Bypassing the login-pause pattern by guessing creds.
 - ❌ Inferring content for sections that didn't render. Always write
   `_Content not extracted: <reason>_`.
@@ -395,14 +398,13 @@ If the agent hits a cap, it should:
 
 When the skill finishes a run:
 
-1. `module.md`, `questions.md`, and `source.md` all exist at the
-   run-folder path.
+1. `module.md`, `questions.md`, and `source.md` all exist at the typed report
+   draft path.
 2. Every unit referenced in `source.md` either contributed to
    `module.md` or has a `failed:` reason listed.
-3. The run lives under the gitignored `.kai/runs/learn/` run root; no
-   per-folder `.gitignore` patching is done. Markdown defaults to local;
-   publish to `<project-root>/<publication-root>/lessons/` with `--share`.
-4. The calling agent receives: run folder path, unit count, word
+3. The extraction lives under its typed private core report path; no per-folder
+   `.gitignore` patching is done. Publication requires exact-revision acceptance.
+4. The calling agent receives: typed report path, unit count, word
    count, question count, and any partial / failure flags.
 5. No commits, no audio generation, no auto-cleanup. The user owns
    git; the calling agent owns the audio handoff.

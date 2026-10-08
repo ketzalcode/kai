@@ -1,21 +1,33 @@
 import {existsSync, readdirSync} from 'node:fs';
 import {basename} from 'node:path';
-import {migrationManifest, privateAdmission, safePath, exactFile, sourceSnapshot, DATABASE, LOCK} from './migration-files.mjs';
-import {openStore, closeStore, readRecord, readSnapshot} from './store.mjs';
+import {
+  migrationManifest, privateAdmission, safePath, exactFile, sourceSnapshot,
+  schema5MigrationLockPath, DATABASE, LOCK,
+} from './migration-files.mjs';
+import {readWorkspaceManifest, validateSchema5Manifest} from '../workspace-resolve.mjs';
+import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from '../workspace-layout.mjs';
+import {inspectGitPrivacy} from '../workspace-git-privacy.mjs';
+import {readDirection} from '../direction.mjs';
+import {
+  closeStore,
+  openHistoricalStore,
+  openStore,
+  readRecord,
+  readSnapshot,
+  readStoreSummary,
+} from './store.mjs';
 import {readLegacyRecords, verifyMigration} from './migration.mjs';
 import {inspectReportIndex, reportPaths} from './report-paths.mjs';
 import {TERMINAL} from '../coordination.mjs';
 import {projectContext} from './context.mjs';
-import {itemStateSatisfies} from './engine.mjs';
+import {taskStateSatisfies} from './engine.mjs';
 
 /**
  * Never opens with create/write mode, migrates, repairs, or reads views as state.
  *
- * `intent: 'inspect'` treats an absent schema-4 store as a reported condition
- * rather than a failure: a scaffolded schema-4 manifest legitimately has no
- * database until the authorized `init` runs, and inspecting that window is how
- * an operator confirms the scaffold before creating the store. `coordinate`
- * intent keeps refusing it, because a coordinated write has nowhere to land.
+ * Historical schema-3/4 stores are read-only. `intent: 'inspect'` reports an
+ * absent historical store without creating one; `coordinate` keeps refusing
+ * because only an explicit offline schema-5 migration may activate writes.
  */
 export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} = {}) {
   const result = {errors: [], warnings: [], migrations: [], runtime: null};
@@ -25,35 +37,81 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
   }
   let store;
   try {
+    const current = readWorkspaceManifest(root);
+    if (current.ok && current.manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+      const validation = validateSchema5Manifest(root, current.manifest, {env});
+      result.errors.push(...validation.errors);
+      const privacy = inspectGitPrivacy(root, current.manifest.placement);
+      result.errors.push(...privacy.errors, ...privacy.missing.map(path =>
+        `private workspace path must be ignored: ${path}`));
+      if (current.manifest.placement === 'repo-local' && !privacy.gitRoot) {
+        result.errors.push('repo-local placement requires a readable Git work tree');
+      }
+      result.warnings.push(...privacy.warnings);
+      try { readDirection({workspaceRoot: root, manifest: current.manifest}); }
+      catch (error) { result.errors.push(error.message); }
+      if (result.errors.length) return result;
+      const databasePath = safePath(root, COORDINATION_DATABASE);
+      if (!existsSync(databasePath)) {
+        result.errors.push(`schema 5 coordination database is missing at ${COORDINATION_DATABASE}`);
+        return result;
+      }
+      exactFile(root, COORDINATION_DATABASE);
+      store = openStore({path: databasePath, mode: 'read'});
+      result.runtime = readStoreSummary(store);
+      if (existsSync(schema5MigrationLockPath(root))) {
+        result.migrations.push('incomplete schema-5 migration; explicit recovery required');
+        result.warnings.push('schema-5 activation receipt is incomplete; runtime writes remain held');
+        if (intent === 'coordinate') {
+          result.errors.push('incomplete schema-5 migration prevents coordinated writes');
+        }
+      }
+      return result;
+    }
     const manifest = migrationManifest(root, [3, 4], env);
+    if (existsSync(schema5MigrationLockPath(root))) {
+      result.migrations.push('incomplete schema-5 migration; explicit offline recovery required');
+      result.warnings.push('schema-5 migration lock exists; coordinated writes remain held');
+    }
     if (existsSync(safePath(root, LOCK))) {
       result.migrations.push('incomplete/competing migration; explicit offline recovery required');
       result.warnings.push('migration lock exists; coordinated writes are held');
     }
     if (manifest.schema_version === 3) {
-      result.migrations.push('schema 3 is inspect-only; explicit offline schema 4 migration required for coordination');
+      result.migrations.push('schema 3 is inspect-only; first run its explicit historical schema-4 migration, then classify schema 4 for schema 5');
       if (existsSync(safePath(root, DATABASE))) result.warnings.push('unactivated database is not authority; inspect migration recovery');
       return result;
     }
     result.errors.push(...privateAdmission(root).errors);
     if (!existsSync(safePath(root, DATABASE))) {
       if (intent === 'inspect') {
-        result.warnings.push('schema 4 coordination database does not exist yet; this is the expected state before the authorized init and inspection will not create it');
+        result.warnings.push('schema 4 coordination database is absent; this historical workspace remains read-only and inspection will not create it');
       } else {
-        result.errors.push('schema 4 coordination database is missing; inspection will not create it');
+        result.errors.push('schema 4 is read-only; explicit offline schema 5 migration is required and inspection will not create a database');
       }
       return result;
     }
     exactFile(root, DATABASE);
-    store = openStore({path: safePath(root, DATABASE), mode: 'read'});
+    const databasePath = safePath(root, DATABASE);
+    try {
+      store = openStore({path: databasePath, mode: 'read'});
+    } catch (error) {
+      if (error?.code !== 'SCHEMA_MISMATCH') throw error;
+      store = openHistoricalStore({
+        path: databasePath,
+        expectedStoreVersion: 1,
+      });
+    }
     readSnapshot(store, () => {
       const throughSeq = Number(store.database.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM events').get().seq);
-      const items = [];
+      const records = [];
       const findings = [];
       const add = (item, section, headline, why, path = DATABASE) =>
         findings.push({section, item, tier: 'derived', headline, why, path});
-      for (const row of store.database.prepare("SELECT id FROM records WHERE kind='item' ORDER BY id").all()) {
-        try { items.push(readRecord(store, 'item', row.id)); }
+      for (const row of store.database.prepare(
+        "SELECT kind, id FROM records WHERE kind IN ('item', 'task') ORDER BY kind, id",
+      ).all()) {
+        try { records.push(readRecord(store, row.kind, row.id)); }
         catch (error) { add(row.id, 'integrity', 'runtime record is malformed', error.message); }
       }
       const sources = readLegacyRecords(store);
@@ -61,40 +119,44 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
         result.warnings.push(`quarantined ${source.kind}/${source.declaredId ?? source.path}: ${source.issues.join('; ')}`);
         add(source.declaredId ?? source.path, 'integrity', `quarantined legacy ${source.kind}`, source.issues.join('; '), source.path);
       }
-      for (const item of items) {
-        if (item.body.state === 'blocked') add(item.id, 'blocked', 'recorded lifecycle is blocked', 'Resolve recorded blockers through authorized runtime commands.');
-        if (['release-ready', 'deploying', 'production-verification'].includes(item.body.state)) {
-          add(item.id, 'needs-you', 'recorded lifecycle waits on an operator', 'No deployment or production action is inferred.');
+      for (const record of records) {
+        if (record.body.state === 'blocked') add(record.id, 'blocked', 'recorded lifecycle is blocked', 'Resolve recorded blockers through authorized runtime commands.');
+        if (['release-ready', 'deploying', 'production-verification'].includes(record.body.state)) {
+          add(record.id, 'needs-you', 'recorded lifecycle waits on an operator', 'No deployment or production action is inferred.');
         }
-        for (const dep of item.body.depends_on) {
-          const upstream = items.find(i => i.id === dep.item);
-          if (!upstream) add(item.id, 'integrity', 'dependency is missing or quarantined', dep.item);
-          else if (!TERMINAL.has(item.body.state) && !itemStateSatisfies(upstream, dep.requires)) {
-            add(item.id, 'blocked', 'dependency gate is not satisfied', `${dep.item} requires ${dep.requires}`);
+        for (const dep of record.body.depends_on) {
+          const dependencyId = dep.task ?? dep.item;
+          const upstream = records.find(candidate =>
+            candidate.kind === record.kind && candidate.id === dependencyId);
+          if (!upstream) add(record.id, 'integrity', 'dependency is missing or quarantined', dependencyId);
+          else if (!TERMINAL.has(record.body.state) && !taskStateSatisfies(upstream, dep.requires)) {
+            add(record.id, 'blocked', 'dependency gate is not satisfied', `${dependencyId} requires ${dep.requires}`);
           }
         }
-        try { projectContext(store, {itemId: item.id}); }
-        catch (error) { add(item.id, 'unknown', 'runtime context/evidence gap', error.message); }
+        if (record.kind !== 'task') continue;
+        const subject = {kind: 'task', id: record.id};
+        try { projectContext(store, {subject}); }
+        catch (error) { add(record.id, 'unknown', 'runtime context/evidence gap', error.message); }
         try {
-          const report = inspectReportIndex({root, itemId: item.id});
-          const paths = reportPaths({root, itemId: item.id});
+          const report = inspectReportIndex({root, subject});
+          const paths = reportPaths({root, subject});
           if (!report) {
             if (existsSync(paths.directory) && readdirSync(paths.directory).length) {
-              result.warnings.push(`partial/old derived report for ${item.id}: no complete owned index`);
+              result.warnings.push(`partial/old derived report for ${record.id}: no complete owned index`);
             }
           } else {
             const metadata = report.metadata;
-            if (metadata.through_seq !== throughSeq || metadata.item.version !== item.version) {
-              result.warnings.push(`stale derived report for ${item.id}: source sequence ${metadata.through_seq}, live ${throughSeq}; item version ${metadata.item.version}, live ${item.version}`);
+            if (metadata.through_seq !== throughSeq || metadata.subject_version !== record.version) {
+              result.warnings.push(`stale derived report for ${record.id}: source sequence ${metadata.through_seq}, live ${throughSeq}; subject version ${metadata.subject_version}, live ${record.version}`);
             }
             const selected = new Set(['index.html', basename(report.paths.metadataPath), metadata.html.file,
               metadata.markdown.file, ...metadata.companions.map(c => c.file)]);
             const others = readdirSync(paths.directory).filter(file => !selected.has(file));
-            if (others.length) result.warnings.push(`older or partial derived output remains for ${item.id}; selected complete generation alone was verified`);
+            if (others.length) result.warnings.push(`older or partial derived output remains for ${record.id}; selected complete generation alone was verified`);
           }
-        } catch (error) { result.warnings.push(`changed/incomplete derived report for ${item.id}: ${error.message}`); }
+        } catch (error) { result.warnings.push(`changed/incomplete derived report for ${record.id}: ${error.message}`); }
       }
-      result.runtime = {throughSeq, items, findings, sources};
+      result.runtime = {throughSeq, records, findings, sources};
     });
     if (manifest.coordination_migration) {
       try {

@@ -1,6 +1,7 @@
 ---
 name: kai-core-design-grounding
 description: "Use when design, frontend, or visual-identity work needs evidence of an app's settled visual language, or when a design-system reference is explicitly requested."
+durable-output-producer: false
 tools: [read, edit, search]
 ---
 
@@ -38,16 +39,13 @@ generated JSON. It answers "what is this app's settled visual language?" so a
 design proposal can cite it. A bounded direct mock or advisory answer does not
 owe this artifact merely because it uses visual evidence.
 
-Canonical location (the initiative's applied snapshot):
+The caller supplies a target already validated by its owning pack publication
+contract. This core grounding skill does not duplicate a department vocabulary
+or invent a destination.
 
-```text
-.kai/state/initiatives/<slug>/artifacts/design-system.md
-```
-
-A reference that outgrows one initiative — a durable, cross-initiative design
-system for an app touched by several efforts — is a **promotion** to a shared
-library type, which is a scope-expanding change: emit a `PROPOSAL` (see
-below), don't create it unilaterally.
+A reference that outgrows one Feature is a scope-expanding change: emit a
+`PROPOSAL` (see below) and let the named scope authority decide its durable
+Feature or documentation home. Do not create it unilaterally.
 
 Shape (fill what the app actually has; mark the rest as gaps):
 
@@ -148,9 +146,10 @@ When derivation still needs live-app evidence after considering supplied inputs
 ```text
 DESIGN SYSTEM EXTRACTION REQUEST
 target:                 <URL / environment>
-initiative:
+feature:
+task:
 artifact_targets:
-  - .kai/state/initiatives/<slug>/artifacts/design-system-extract.md
+  - <validated typed private target>
 surfaces in scope:      <the full set of screens to walk — not just the landing page>
 viewports:              <desktop + mobile at minimum>
 roles/auth:
@@ -158,8 +157,8 @@ known token sources:    <repo paths if any>
 needed by:              <the design decision this grounds>
 ```
 
-For a requested extraction, the producer writes, at `.kai/state/initiatives/<slug>/artifacts/design-system-extract.md`,
-**observed visual facts only — no recommendations**:
+For a requested extraction, the producer writes to the validated typed private
+target and records **observed visual facts only — no recommendations**:
 
 ```markdown
 # Design System Extract — <target> (observed facts only)
@@ -208,12 +207,12 @@ PROPOSAL
   friction_cost:    A new design/engineering convention; touches type tokens
                     across shared components.
   mission_tradeoff: Improves readability and hierarchy; risks token churn if
-                    adopted mid-milestone.
-  scope_target:     <the initiative/milestone the type-scale foundation belongs to>
+                    adopted during active Feature delivery.
+  scope_target:     <the Feature or Requirement the type-scale foundation belongs to>
 ```
 
 The designer **recommends**; it never establishes durable system rules by fiat.
-`eng-builder-software` owns the feasibility of any new token; the item's
+`eng-builder-software` owns the feasibility of any new token; the Task's
 declared `scope_authority` / steward owns the scope of a system addition.
 
 ## Designer ↔ frontend ownership split and the collaboration seam

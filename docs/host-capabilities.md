@@ -14,7 +14,7 @@ capability is absent, and a few features simply require the richer host.
 | Capability | Copilot CLI | Copilot coding agent (cloud) |
 |---|---|---|
 | Agents + skills (the declarative core) | ✅ | ✅ |
-| Coordination runtime (`scripts/coordinate.mjs`, schema-4 store) | ✅ | ⚠️ read-only in practice — see the gap below |
+| Coordination runtime (`scripts/coordinate.mjs`, schema-5 store) | ✅ | ⚠️ capability-gated writes depend on host receipts — see below |
 | Live peer sub-agents (`agent` / `write_agent` / `read_agent`) | ✅ | ❌ — fall back to the durable record |
 | Peer model/effect observation | ❌ `UNSUPPORTED_HOST` | ❌ `UNSUPPORTED_HOST` |
 | Native session `resume` | ❌ not advertised | ❌ not advertised |
@@ -29,31 +29,61 @@ are richest in the **CLI**; single-agent review, design, and planning run well i
 the degraded mode and either takes the recorded fallback or fails fast naming
 what's missing — it never silently pretends the capability is present.
 
-## The coordination runtime's host gap
+## Initialization and the host receipt gap
 
-The runtime itself is plain local Node plus SQLite, not a service — but it
-cannot **create** a store on a host that has no `ask_user` journal, and the
-cloud coding agent is such a host.
+Workspace creation is an explicit confirmed standalone initializer outside the
+native coordination capability surface. It runs before native coordination,
+accepts the approved schema-5 manifest on stdin, and activates the manifest and
+schema-2 store as one manifest-last unit. It creates no request or capability
+files and does not depend on an `ask_user` journal.
 
-Every coordinated write requires an issued capability, and the only two issuers
-are `authorize` and `delegate`. `delegate` can only subdivide a capability that
-already exists, so the chain starts at `authorize`, which resolves a human
-decision by re-reading the host's own event journal: it requires
+After activation, human-gated coordinated actions still use issued
+capabilities. `authorize` resolves a human decision by re-reading the host's own
+event journal: it requires
 `COPILOT_AGENT_SESSION_ID` **and** an existing
 `~/.copilot/session-state/<id>/events.jsonl` containing the matching `ask_user`
 tool call. Without that journal the lookup fails with `UNSUPPORTED_HOST` — *this
 context has no standalone journal*.
 
-The consequence is concrete: `init` requires an authorized capability, so on a
-journal-less host it can never succeed, the store is never created, and every
-verb except `inspect` then refuses with `SCHEMA_MISMATCH` — *coordination store
-is missing; use explicit authorized init*. So on the cloud coding agent, treat
-the coordination runtime as **inspect-only**: schema reads work, coordinated
-work does not. A store created elsewhere and carried in is out of scope here —
-that has not been measured.
+The consequence is narrower than workspace creation: a journal-less host can
+inspect an already-activated schema-5 workspace, but cannot fabricate a human
+receipt for actions that require one. It must report `UNSUPPORTED_HOST` rather
+than treating typed chat as approval. Historical schema-3/4 workspaces remain
+read-only and require explicit schema-5 migration; no host may initialize or
+write them.
 
-This gap is a host-journal dependency, not a missing feature in kai, and it has
-not been closed on any host.
+## Typed capabilities, hierarchy reads, and migration
+
+Schema 5 binds every write capability to the exact action it can authorize:
+
+| Scope | Binding |
+| --- | --- |
+| `command` | Exact canonical command bytes, actor, typed record, expected version, subject, criteria, and current inputs |
+| `run` | One Task, one actor, an explicit subset of supported Task actions, and the Task's current basis |
+| `coordination` | One Task, its current routing basis, one coordinator identity, and explicit routing actions |
+| `delegation` | A bounded subset of an existing coordination capability for one prepared role and Task |
+| `maintenance` | One exact migration, recovery, rollback, or repair action |
+
+Capabilities do not grant authority by role name alone. Task grants and claims
+re-read the current Task, lease, grant, dependencies, Direction binding, and
+input basis before accepting a command.
+
+Read surfaces are typed but do not need write authority:
+
+- `status` returns the Goal-rooted Epic/Feature roll-up and attention reasons;
+- `detail --kind --id` reads one exact record;
+- `context --kind --id` returns the bounded parent/child chain, authorities,
+  evidence, and next allowed action;
+- `plan --kind --id` returns executable Tasks only and remains
+  `automatic: false`;
+- `export --kind --id` produces a report, never authority.
+
+Schema-4 migration starts with the read-only `migration-plan` worksheet. The
+operator-facing `migrate-v5` capability embeds that complete canonical
+worksheet and displays its worksheet, source-manifest, source-store, backup
+inventory, Direction, placement, and classification bindings. Execution uses
+the capability-bound worksheet; it does not accept a second mutable plan.
+Recovery and rollback require their own exact maintenance scopes.
 
 ## What has actually been measured
 
@@ -93,7 +123,7 @@ skill in the imperative, at the exact instruction that needs it, and routes
 
 ```markdown
 Invoke `kai-core-contract-v1` before the first other core skill.
-Load `kai-core-work-item` before writing an item record.
+Load `kai-core-work-task` before writing a Task record.
 ```
 
 `npm test` enforces those routes so a required contract can never be silently
@@ -103,8 +133,8 @@ paragraph as its core route — a loose vocabulary-and-placement check that
 accepts any of several verbs, not one fixed phrase. What the refusal says in the
 agent's own words, and that it narrows the agent to bounded direct work, is
 judged in review rather than by CI. Because a skill loads on demand rather
-than automatically, each route sits at the step whose rule it carries. All
-eight current packages use task-local routes, without eager declarations or
+than automatically, each route sits at the step whose rule it carries. All three
+shipped packages use task-local routes, without eager declarations or
 dependency-guard blocks. The current refactor was inspected at source level;
 effective tool grants, skill execution and degraded-mode behavior have not
 been rerun in either host.

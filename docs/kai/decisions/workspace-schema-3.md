@@ -15,15 +15,24 @@ completion:
   at: 2026-08-31
   revision_at_verdict: 1
 validity:
-  status: current
+  status: superseded
   owner: kai-core
-  as_of: 2026-08-31
+  as_of: 2026-10-07
   revalidate_by: null
 ---
 
-# Decision: private workspace, explicit publication
+# Historical decision: workspace schema 3
 
-## Decision
+> **Superseded.** This file is retained as migration history only. It does not
+> prescribe live paths, coordination state, placement, or publication. Use the
+> current [schema-5 workspace guide](../../workspaces.md), the
+> [`kai-core-workspace-paths`](../../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md)
+> contract, and the
+> [`kai-core-workspace-publication`](../../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md)
+> contract.
+
+<!-- kai:schema4-history -->
+## Superseded decision
 
 Kai schema 3 separates private operational state from accepted project
 knowledge.
@@ -80,3 +89,4 @@ The former generic publication tree and initiative artifacts are classified
 instead of bulk published. Only accepted, current project knowledge moves to
 the configured publication root. The migration writes `schema_version: 3`
 last.
+<!-- /kai:schema4-history -->

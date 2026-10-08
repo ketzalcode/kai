@@ -32,6 +32,7 @@ const finalSkillIds = [
   // callers were already creative. The prefix went with the move: a department
   // may not hold a `kai-core-` name.
   'content-grounding',
+  'creative-workspace-publication',
   'html-block-diagrams',
   'mockups-ascii',
   'mockups-html',

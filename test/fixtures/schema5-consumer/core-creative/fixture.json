@@ -1,0 +1,13 @@
+{
+  "name": "core + creative",
+  "packs": ["core", "creative"],
+  "artifact": {
+    "pack": "creative",
+    "type": "media",
+    "subtype": null,
+    "id": "consumer-media",
+    "file": "destination.md",
+    "privateDirectory": ".kai/creative/media/consumer-media/drafts",
+    "publicationDirectory": "docs/kai/creative/media/consumer-media"
+  }
+}

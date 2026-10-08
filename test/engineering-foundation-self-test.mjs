@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   sourceAgentFiles, sourceSkillFiles, materializePacks, collectReferences,
+  durableOutputProducerDeclaration, publicationRoutingErrors,
 } from '../tools/lib/pack-plan.mjs';
 import {
   incubatedIds, documentationReferenceExists,
@@ -16,6 +17,7 @@ const normalizeContract = body => body.replace(/\s+/g, ' ').trim().toLowerCase()
 const keep = [
   'build-diagrams', 'coding-standards', 'onboard-to-codebase',
   'pr-delivery', 'pr-sizing', 'research-before-coding',
+  'engineering-workspace-publication',
 ].sort();
 const parked = [
   'doc-review-rigor', 'review-security-privacy', 'review-rollout-operability',
@@ -25,6 +27,41 @@ const parked = [
 ];
 const skills = sourceSkillFiles(root).filter(entry => entry.pack === 'engineering');
 assert.deepEqual(skills.map(entry => entry.id).sort(), keep);
+let declaredSkillNonProducers = 0;
+for (const entry of skills) {
+  const body = readFileSync(entry.path, 'utf8');
+  assert.equal(durableOutputProducerDeclaration({...entry, body}), false,
+    `${entry.id}: engineering skills explicitly declare non-production`);
+  assert.deepEqual(publicationRoutingErrors({...entry, body}), [],
+    `${entry.id}: declared engineering skill non-producer routes neither production contract`);
+  declaredSkillNonProducers += 1;
+}
+assert.ok(declaredSkillNonProducers > 0,
+  'engineering skill publication routing must inspect declared non-producers');
+const nonProducerSkill = {
+  ...skills[0],
+  body: readFileSync(skills[0].path, 'utf8'),
+};
+assert.ok(publicationRoutingErrors({
+  ...nonProducerSkill,
+  body: `${nonProducerSkill.body}\n`
+    + 'Load `engineering-workspace-publication`, then Load `kai-core-asset-producing`.\n',
+}).some(message => message.includes('declared non-producer')),
+  'adding both producer routes to an engineering skill non-producer must fail');
+assert.ok(publicationRoutingErrors({
+  ...nonProducerSkill,
+  body: nonProducerSkill.body.replace(
+    'durable-output-producer: false',
+    'durable-output-producer: true',
+  ),
+}).some(message => message.includes('declared durable-output producer')),
+  'flipping an engineering skill declaration to producer must require both routes');
+assert.ok(publicationRoutingErrors({
+  ...nonProducerSkill,
+  body: `${nonProducerSkill.body}\n`
+    + 'Load `creative-workspace-publication`, then Load `kai-core-asset-producing`.\n',
+}).some(message => message.includes('cannot route publication skill owned by another pack')),
+  'an engineering skill must reject another pack publication route');
 const CodingStandardsBody = readFileSync(
   join(root, 'plugins', 'kai-engineering', 'skills', 'coding-standards', 'SKILL.md'),
   'utf8',

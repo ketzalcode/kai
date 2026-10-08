@@ -5,7 +5,7 @@ import {mkdirSync, writeFileSync, appendFileSync} from 'node:fs';
 import {dirname, join, delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
-import {withWorkspace, seedItem, seedInitiative} from './helpers/coordination-runtime-fixture.mjs';
+import {fixtureIds, withWorkspace, seedTask} from './helpers/coordination-runtime-fixture.mjs';
 import {readRecord, readStoreSummary} from '../src/core/lib/coordination-runtime/store.mjs';
 import {privateAdmission} from '../src/core/lib/coordination-runtime/migration-files.mjs';
 import {readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
@@ -33,8 +33,7 @@ test('actual native preparation -> reservation -> standalone context -> safe com
     return output.result;
   };
   privateAdmission(root, {admit: true});
-  seedInitiative(store);
-  seedItem(store, {state: 'ready', next_role: 'eng-builder-software', producer_actor: null,
+  seedTask(store, {state: 'ready', next_role: 'eng-builder-software', producer_actor: null,
     producing_actors: [], acceptance_actor: null});
   const prepared = invoke('prepare', {role: 'eng-builder-software'});
   const actor = prepared.preparation.actor;
@@ -45,9 +44,9 @@ test('actual native preparation -> reservation -> standalone context -> safe com
   const syntheticHome = join(root, 'synthetic-human-home');
   const directorEnv = {...env, USERPROFILE: syntheticHome, HOME: syntheticHome};
   const director = {role: 'eng-lead-architecture', runId: env.COPILOT_AGENT_SESSION_ID};
-  const command = {operationId: randomUUID(), kind: 'item.grant', actor: director,
-    recordKind: 'item', recordId: 'demo', expectedVersion: 1, leaseToken: null,
-    payload: {holder: actor, actions: ['evidence.register', 'item.handoff'],
+  const command = {operationId: randomUUID(), kind: 'task.grant', actor: director,
+    recordKind: 'task', recordId: fixtureIds.task, expectedVersion: 1, leaseToken: null,
+    payload: {holder: actor, actions: ['evidence.register', 'task.handoff'],
       acquiredAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 3600_000).toISOString()}};
   const request = invoke('request', {type: 'command', command}, [], directorEnv).request;
   const journalDir = join(syntheticHome, '.copilot', 'session-state', director.runId);
@@ -65,10 +64,10 @@ test('actual native preparation -> reservation -> standalone context -> safe com
   assert.equal(reserved.data.record.body.lease.holder.runId, actor.runId);
   const before = readStoreSummary(store);
   const workerEnv = {...env, COPILOT_AGENT_SESSION_ID: actor.runId};
-  const capture = invoke('request', {type: 'capture', actor, itemId: 'demo', classification: 'internal',
-    command: `node '${cli}' claim --root '${root}' --item demo`,
+  const capture = invoke('request', {type: 'capture', actor, taskId: fixtureIds.task, classification: 'internal',
+    command: `node '${cli}' claim --root '${root}' --task ${fixtureIds.task}`,
     checks: ['Native actual context matches prepared reservation']}, [], workerEnv).request;
-  const identityCapture = invoke('request', {type: 'capture', actor, itemId: 'demo', classification: 'internal',
+  const identityCapture = invoke('request', {type: 'capture', actor, taskId: fixtureIds.task, classification: 'internal',
     command: 'Write-Output $env:COPILOT_AGENT_SESSION_ID',
     checks: ['Actual tool environment identity only; not a coordination CLI receipt']}, [], workerEnv).request;
   const trustedDirectories = [join(checkout, 'src', 'core'), join(checkout, 'plugins', 'kai-core'),
@@ -104,7 +103,7 @@ test('actual native preparation -> reservation -> standalone context -> safe com
         identityCommand: event.data.arguments?.command === identityCapture.command,
         claimCommand: event.data.arguments?.command === capture.command});
     }
-    evidence.parentInspection = run('claim', undefined, ['--item', 'demo'], workerEnv);
+    evidence.parentInspection = run('claim', undefined, ['--task', fixtureIds.task], workerEnv);
     evidence.identityCapture = run('capture', {requestId: identityCapture.nonce}, [], workerEnv);
     evidence.claimCapture = run('capture', {requestId: capture.nonce}, [], workerEnv);
     if (evidence.identityCapture.status === 0) {
@@ -129,7 +128,7 @@ test('actual native preparation -> reservation -> standalone context -> safe com
     }
     evidence.unchangedRuntime = JSON.stringify(readStoreSummary(store)) === JSON.stringify(before);
     assert.equal(evidence.unchangedRuntime, true, 'native probe did not perform domain writes');
-    assert.equal(readRecord(store, 'item', 'demo').version, 2);
+    assert.equal(readRecord(store, 'task', fixtureIds.task).version, 2);
     assert.equal(evidence.environmentIdentityMatched, true, JSON.stringify(evidence.identityCapture));
     assert.equal(evidence.actualCLIReceiptMatched, true, JSON.stringify(evidence.claimCapture));
   } finally {

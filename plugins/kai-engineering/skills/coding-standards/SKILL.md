@@ -1,6 +1,7 @@
 ---
 name: coding-standards
 description: "Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified."
+durable-output-producer: false
 tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"

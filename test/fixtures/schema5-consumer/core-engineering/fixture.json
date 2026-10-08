@@ -1,0 +1,13 @@
+{
+  "name": "core + engineering",
+  "packs": ["core", "engineering"],
+  "artifact": {
+    "pack": "engineering",
+    "type": "documentation",
+    "subtype": "architecture",
+    "id": "consumer-architecture",
+    "file": "architecture.md",
+    "privateDirectory": ".kai/engineering/documentation/architecture/consumer-architecture/drafts",
+    "publicationDirectory": "docs/kai/engineering/documentation/architecture/consumer-architecture"
+  }
+}

@@ -1,20 +1,34 @@
 import {execFileSync} from 'node:child_process';
-import {canonicalJson, RuntimeError, validateRecord} from './contract.mjs';
+import {
+  canonicalJson, RuntimeError, subjectEquals, subjectRef, validateRecord,
+} from './contract.mjs';
 import {projectBinding, scanExactFile, verifySubject} from './evidence-content.mjs';
 import {artifactPreviewLimits, hash, knownGap} from './report-safety.mjs';
 
 /** Human export only. Indexed exclusive keysets, no OFFSET or suffix recount. */
-export function captureHistory(store, itemId, throughSeq, addGap) {
+export function captureHistory(store, subject, version, throughSeq, addGap) {
+  const subjectColumn = store.schemaVersion === 1 ? 'item_id' : 'subject_id';
+  const subjectKind = store.schemaVersion === 1 ? null : subject.kind;
+  const subjectFilter = store.schemaVersion === 1
+    ? `e.${subjectColumn} = ?`
+    : `e.subject_kind = ? AND e.${subjectColumn} = ?`;
   const statement = store.database.prepare(`
-    SELECT e.seq, e.message_id, r.kind, r.id, r.item_id, r.version, r.body
+    SELECT e.seq, e.message_id, r.kind, r.id, r.subject_kind, r.subject_id,
+      r.version, r.body
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-    WHERE e.thread_id = ? AND e.message_id IS NOT NULL AND e.seq < ?
+    WHERE e.thread_id = ? AND ${subjectFilter}
+      AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT 50
   `);
   const pages = [];
   let beforeSeq = throughSeq + 1;
+  const threadId = subjectRef(subject, version);
   for (;;) {
-    const rows = statement.all(itemId, beforeSeq);
+    const rows = statement.all(
+      threadId,
+      ...(subjectKind === null ? [subject.id] : [subjectKind, subject.id]),
+      beforeSeq,
+    );
     if (!rows.length) break;
     pages.push(rows.map(row => {
       const ref = `message:${row.message_id}`;
@@ -22,10 +36,19 @@ export function captureHistory(store, itemId, throughSeq, addGap) {
       if (row.id === null) {
         entry.gap = 'Message referenced by this event is missing; no payload invented.';
       } else {
-        const record = validateRecord({kind: row.kind, id: row.id, itemId: row.item_id,
-          version: row.version, body: JSON.parse(row.body)});
-        if (record.itemId !== itemId || record.body.thread_id !== itemId) {
-          entry.gap = 'Message item/thread mismatches captured scope; content withheld.';
+        const record = validateRecord({
+          kind: row.kind,
+          id: row.id,
+          subject: row.subject_kind === null
+            ? null
+            : {kind: row.subject_kind, id: row.subject_id},
+          version: row.version,
+          body: JSON.parse(row.body),
+        });
+        if (!subjectEquals(record.subject, subject)
+          || record.body.thread_id !== threadId
+          || record.body.basis_version !== version) {
+          entry.gap = 'Message subject/thread mismatches captured scope; content withheld.';
         } else entry.record = record;
       }
       if (entry.gap) addGap(ref, entry.gap);
@@ -46,7 +69,7 @@ export function captureArtifacts(root, artifacts, addGap) {
     try {
       if (artifact.manifest_path !== `${artifact.run_directory}/.evidence/${artifact.artifact_id}/manifest.json`
         || scanExactFile(root, artifact.manifest_path).digest !== hash(canonicalJson({
-          subject: artifact.subject, snapshots: artifact.snapshots,
+          subject: artifact.content_ref, snapshots: artifact.snapshots,
         }))) throw new RuntimeError('EVIDENCE_GAP', 'Retained manifest/path does not match registered artifact.');
     } catch (error) {
       if (!knownGap(error)) throw error;
@@ -110,30 +133,30 @@ export function captureChanges(root, artifacts, addGap) {
   const changes = [];
   const seen = new Set();
   for (const artifact of artifacts) {
-    if (artifact.subject.kind !== 'git') {
+    if (artifact.content_ref.kind !== 'git') {
       for (const entry of artifact.snapshots) changes.push({
         ref: artifact.ref, kind: 'recorded-revision', path: entry.path, digest: entry.digest,
         status: artifact.status, provenance: 'declared',
       });
       continue;
     }
-    const key = canonicalJson([artifact.project_id, artifact.subject]);
+    const key = canonicalJson([artifact.project_id, artifact.content_ref]);
     if (seen.has(key)) continue;
     seen.add(key);
     try {
-      verifySubject(root, artifact.subject, artifact.project_id);
+      verifySubject(root, artifact.content_ref, artifact.project_id);
       const {projectRoot} = projectBinding(root, artifact.project_id);
       const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^GIT_/i.test(name)));
       const bytes = execFileSync('git', ['--no-pager', '-C', projectRoot,
         'diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-status', '-z',
-        artifact.subject.base, artifact.subject.head, '--'], {
+        artifact.content_ref.base, artifact.content_ref.head, '--'], {
         encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
         env: {...env, GIT_NO_REPLACE_OBJECTS: '1', GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0', GIT_NO_LAZY_FETCH: '1'},
       });
       const fields = bytes.split('\0');
       if (fields.pop() !== '' || fields.length % 2) throw new RuntimeError('EVIDENCE_GAP', 'Malformed Git path listing.');
       for (let i = 0; i < fields.length; i += 2) changes.push({
-        ref: artifact.ref, kind: 'git', projectId: artifact.project_id, ...artifact.subject,
+        ref: artifact.ref, kind: 'git', projectId: artifact.project_id, ...artifact.content_ref,
         path: fields[i + 1], status: fields[i], provenance: 'derived',
       });
     } catch (error) {

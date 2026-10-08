@@ -1,6 +1,7 @@
 ---
 name: video-align-narration
 description: "Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo."
+durable-output-producer: true
 user-invocable: true
 ---
 
@@ -28,7 +29,7 @@ distinct output path. A finished render is not a prerequisite for a
 placement-only assessment. No zoom or new synthesis is required merely
 because alignment was requested.
 
-Before shared workspace or claim checks, Load `kai-core-contract-v1`.
+Before core workspace or claim checks, Load `kai-core-contract-v1`.
 Without compatible core, bounded advice on supplied evidence may continue,
 but not coordination or `.kai` state. Tell the operator to install or update
 core before coordinated work resumes.
@@ -106,8 +107,9 @@ It does not preserve another audio track or mix music. If that is required,
 report the unsupported composition rather than silently dropping that audio.
 
 Load `kai-core-workspace-paths` before persistent output, and Load
-`kai-core-asset-producing` when retaining durable plans or reports. Raw clips,
-recordings, and renders remain private run evidence.
+`creative-workspace-publication`, then Load `kai-core-asset-producing` when
+retaining durable plans or reports. Raw clips, recordings, and renders remain
+typed private evidence.
 
 ## Outcome and stop
 

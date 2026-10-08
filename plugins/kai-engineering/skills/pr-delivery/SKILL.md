@@ -1,6 +1,7 @@
 ---
 name: pr-delivery
 description: "PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff."
+durable-output-producer: false
 tools: [execute, read, edit, search]
 ---
 
@@ -45,12 +46,11 @@ model-generated slug drifts between sessions. Take the highest rung available:
 | Rung | Anchor | Example |
 |---|---|---|
 | 1 | GitHub issue number | `kai/feat/28-progressive-onboarding` |
-| 2 | Coordination item id | `kai/feat/kai-59-run-path-migration` |
+| 2 | Coordination Task id | `kai/feat/engineering-task-run-path-migration` |
 | 3 | Local date `YYYY-MM-DD` | `kai/fix/2026-08-08-crlf-guard` |
 
-Rung 2 matches the run grammar in `kai-core-workspace-paths`, whose `<descriptor>`
-already prefers the work-item key so same-epic artifacts stay greppable. A
-branch on rung 2 greps against the item, its runs, and its PR at once.
+Rung 2 uses the typed Task key so same-Epic work stays greppable. A branch on
+rung 2 greps against the Task and its PR at once.
 
 Rung 3 needs no `<NN>` index. A run folder's descriptor is optional, so runs need
 the index to stay unique; a branch slug is **mandatory**, so two same-day changes
@@ -59,9 +59,10 @@ change twice.
 
 ### A `feat` on rung 3 is a smell — say so, do not block
 
-`kai-core-scope-discipline` routes anything scope-expanding to the committed backlog as a
-PROPOSAL. So a **feature** with no issue and no coordination item means the work
-was never scoped, and the PR is the first time anyone sees it.
+`kai-core-scope-discipline` keeps unapproved scope expansion conversational and
+routes durable proposals to named authority. So a **feature** with no issue and
+no coordination Task means the work was never scoped, and the PR is the first
+time anyone sees it.
 
 Report it and offer to file the issue. **Do not block** — a spike or an explicit
 operator "just do it" is legitimate. Consistent with how `kai-core-definition-of-done`
@@ -144,7 +145,7 @@ The exact command that ran.
 
 ## Rollout / reversibility         <- trigger: not instantly reversible
 
-Closes #28                         <- trigger: rung 1 (rungs 2 and 3 cite the item or nothing)
+Closes #28                         <- trigger: rung 1 (rungs 2 and 3 cite the Task or nothing)
 ```
 
 ### Problem — diagnosis before remedy
@@ -199,8 +200,8 @@ before/after of the one element that moved is enough for a copy tweak, and a
 full-surface pair is warranted for a layout change. What is not acceptable is a
 reviewer having to run the branch locally to find out what changed.
 
-This is not only for the reviewer. Raw QA screenshots live under `.kai/runs/`
-and are private runtime evidence, so they die with the run folder. The PR is
+This is not only for the reviewer. Raw QA screenshots live under a typed
+private report's `evidence/` directory. The PR is
 the **only durable home** for before/after
 evidence, and putting it there means the next person reads the PR instead of
 re-running Playwright.
@@ -286,7 +287,7 @@ Before opening the PR:
   cannot disagree with the diagnosis.
 - "Tests pass" with no command, or a Verification section written before the
   command was run.
-- A `feat` branch with no issue and no coordination item, delivered silently.
+- A `feat` branch with no issue and no coordination Task, delivered silently.
 - Bumping a minor because the diff was large, or a patch because it felt small —
   semver describes the **surface**, not the effort.
 - A UI change whose reviewer has to run the branch locally to see what moved.

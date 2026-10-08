@@ -79,6 +79,17 @@ Complete the agent contract from the template:
 7. Platform tools and situational skills, each with an activation trigger.
 8. Behavioral acceptance cases.
 
+Every shipped agent and skill frontmatter declares
+`durable-output-producer: true` or `false`. Set it to `true` only when that
+source has an authorized branch that can retain a typed Kai artifact. A
+declared producer routes its owning pack publication skill immediately before
+`kai-core-asset-producing`; a declared non-producer routes neither.
+
+Direct work returns only inline or repository-native output. A durable Kai
+report or publication requires an existing typed hierarchy subject, its current
+version, an authorized artifact target, current acting authority, and named
+acceptance authority. Never create a subject merely to save a direct answer.
+
 Default to progressive loading. An agent body carries only instructions
 needed on every invocation and names each skill inside the instruction that
 needs it, at the exact workflow step; it never preloads a skill list or collects
@@ -170,12 +181,15 @@ fires it, and only from core or the agent's own package:
 | --- | --- |
 | the first other core skill in a session | the core contract probe |
 | coordinated kai work | the operating rules |
-| creating or changing durable output | asset producing |
+| interpreting Epic, Feature, Requirement, or Task relationships | work hierarchy |
+| promoting, holding, reprioritizing, or closing parent scope | work stewardship |
+| creating, promoting, executing, reviewing, or restoring a Task | work task |
+| acting on an existing typed subject | work acting |
+| granting or reconciling a Task lease | work granting |
+| validating a durable type, subtype, and private/public path | the source pack's workspace publication contract |
+| creating or changing authorized durable output | asset producing, immediately after the owning publication contract |
 | accepting, promoting, or closing durable output | asset closing |
 | resolving a root or placing a file | workspace paths |
-| reading or writing initiative state | workspace initiative |
-| acting on a work item | work acting, with the work-item record |
-| granting or reconciling a lease | work granting |
 | recording a bounded run | work activity |
 
 The [agents & skills catalog](../agents-and-skills.md) carries the exact ids.
@@ -215,7 +229,7 @@ also update.
 
 ## Result
 
-Record, in the PR or the work item:
+Record, in the PR or the authorized Task:
 
 ```text
 Agent: <created or refined id>

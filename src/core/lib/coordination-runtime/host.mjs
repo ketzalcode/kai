@@ -5,9 +5,15 @@ import {
 import {requireActorAvailable, requireHostActionGrant, requireLease, sameActor} from './authority.mjs';
 import {applyOperation} from './store.mjs';
 import {GRANTABLE_STATES, SHIP_STATES} from './engine.mjs';
+import {assertAlignedAncestors, currentDirectionForStore} from './hierarchy-engine.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
 import {assertWorkspacePath, workspaceManifest} from './evidence-content.mjs';
 import {planDispatch, validateRoster} from './host-plan.mjs';
+import {
+  COORDINATION_DATABASE,
+  LEGACY_COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+} from '../workspace-layout.mjs';
 import {
   MAX_OBSERVATIONS, attemptSummary, clone, effectSummary, fail, latestTerminalObservations, sanitizeFacts,
   validateCapabilities, validateHostObservation,
@@ -18,13 +24,15 @@ const bindings = new WeakMap();
 const equal = (left, right) => canonicalJson(left) === canonicalJson(right);
 // Declared risk flags cannot prove an unresolved effect is safe to repeat.
 const uncertainEffect = body => ['unknown', 'conflicting'].includes(body.outcome);
+const bindsTask = (record, taskId) =>
+  record?.subject?.kind === 'task' && record.subject.id === taskId;
 
 /**
  * Trusted in-process composition, never a JSON/CLI authority endpoint.
  * Discovery, grants, profiles and verifyObservation come from the real host.
  * profiles maps role IDs to their source-declared primary profile. capabilities
  * is {peerDispatch, resume, modelOverride, usage, models: [], efforts: []}.
- * maxAttempts is a required trusted item-wide bound (1..10).
+ * maxAttempts is a required trusted Task-wide bound (1..10).
  * The synchronous verifier checks its own opaque capture/receipt registry and
  * returns {commandDigest, actor, observationId, attemptId, effectId, capturedAt,
  * source: 'host'|'local', facts}, or null. It must NOT attest caller self-reports.
@@ -38,12 +46,15 @@ export function bindHostRuntime(store, options) {
   assertExactKeys(options, new Set([
     'root', 'authority', 'roster', 'profiles', 'capabilities', 'maxAttempts', 'verifyObservation',
   ]), 'host runtime', new Set(['root', 'authority', 'roster', 'profiles', 'capabilities', 'maxAttempts']));
-  workspaceManifest(options.root);
+  const manifest = workspaceManifest(options.root);
+  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
+    ? COORDINATION_DATABASE
+    : LEGACY_COORDINATION_DATABASE;
   if (!store || store.closed || !isAbsolute(store.path)
-    || normalized(store.path) !== normalized(join(options.root, '.kai', 'state', 'coordination.sqlite'))) {
+    || normalized(store.path) !== normalized(join(options.root, ...database.split('/')))) {
     fail('INVALID_INPUT', 'host workspace must be explicitly bound to this store');
   }
-  assertWorkspacePath(options.root, '.kai/state/coordination.sqlite');
+  assertWorkspacePath(options.root, database);
   validateAuthority(options.authority);
   validateRoster(options.roster, options.profiles);
   validateCapabilities(options.capabilities);
@@ -69,33 +80,38 @@ function contextFor(store, command, kinds) {
   return {context, cmd};
 }
 
-function actingItem(tx, command, context, target) {
+function actingTask(store, tx, command, context, target) {
   const p = command.payload;
-  const item = tx.get('item', p.itemId);
-  if (!item) fail('EVIDENCE_GAP', 'host intent requires an existing work item');
-  if (item.version !== p.itemVersion) fail('VERSION_CONFLICT', 'host intent item version is stale');
-  if (!GRANTABLE_STATES.has(item.body.state)
-    || item.body.recovery_hold !== null || item.body.waiting_on_questions.length > 0) {
-    fail('RECOVERY_REQUIRED', 'work item is not available for host execution');
+  const task = tx.get('task', p.taskId);
+  if (!task) fail('EVIDENCE_GAP', 'host intent requires an existing Task');
+  if (task.version !== p.taskVersion) fail('VERSION_CONFLICT', 'host intent Task version is stale');
+  const feature = tx.get('feature', task.body.feature_id);
+  const epic = feature && tx.get('epic', feature.body.epic_id);
+  if (!epic) fail('EVIDENCE_GAP', 'host intent requires current Task ancestors');
+  assertAlignedAncestors(tx, task, currentDirectionForStore(store, epic.body.direction_ref));
+  if (!GRANTABLE_STATES.has(task.body.state)
+    || task.body.recovery_hold !== null || task.body.waiting_on_questions.length > 0) {
+    fail('RECOVERY_REQUIRED', 'Task is not available for host execution');
   }
-  if (target.role === 'operator' || (SHIP_STATES.has(item.body.state) && target.role !== 'workflow-ship')) {
+  if (target.role === 'operator' || (SHIP_STATES.has(task.body.state) && target.role !== 'workflow-ship')) {
     fail('AUTHORITY_REQUIRED', 'host execution cannot replace the shipping role or the operator');
   }
   requireHostActionGrant({
-    ...command, recordKind: 'item', recordId: item.id, expectedVersion: item.version,
+    ...command, recordKind: 'task', recordId: task.id, expectedVersion: task.version,
   }, context.authority, command.kind);
-  if (item.body.lease !== null) requireLease(item, {...command, actor: target});
+  if (task.body.lease !== null) requireLease(task, {...command, actor: target});
   else if (command.leaseToken !== null) fail('LEASE_CONFLICT', 'host intent supplied a lease that no longer exists');
-  return item;
+  return task;
 }
 
-function noUnresolvedEffects(tx, itemId) {
-  if (tx.list('effect', itemId).some(record => uncertainEffect(record.body))) {
+function noUnresolvedEffects(tx, taskId) {
+  if (tx.list('effect', {kind: 'task', id: taskId})
+    .some(record => uncertainEffect(record.body))) {
     fail('RECOVERY_REQUIRED', 'effect outcome is unresolved; never automatically replay');
   }
 }
 
-function resumeContext(tx, context, command, item, planned, previous) {
+function resumeContext(tx, context, command, task, planned, previous) {
   const p = command.payload;
   const sameRun = tx.list('host-attempt').filter(record => record.body.target.runId === p.target.runId);
   if (p.resumeFrom === null) {
@@ -104,13 +120,13 @@ function resumeContext(tx, context, command, item, planned, previous) {
   }
   if (!context.capabilities.resume) fail('UNSUPPORTED_HOST', 'host resume is unsupported');
   const prior = previous.find(record => record.id === p.resumeFrom)?.body;
-  if (!prior || prior.status !== 'failed' || prior.item_version !== item.version
+  if (!prior || prior.status !== 'failed' || prior.subject_version !== task.version
     || prior.profile !== p.profile || prior.agent_id !== planned.agentId
     || prior.requested_model !== p.requestedModel || prior.requested_effort !== p.effort
     || prior.independence_key !== p.independenceKey || !sameActor(prior.target, p.target)
-    || sameRun.some(record => record.itemId !== item.id || record.body.profile !== p.profile
+    || sameRun.some(record => !bindsTask(record, task.id) || record.body.profile !== p.profile
       || record.body.target.role !== p.target.role || record.body.independence_key !== p.independenceKey)) {
-    fail('RECOVERY_REQUIRED', 'resume cannot cross item, role, profile, run or independence boundaries');
+    fail('RECOVERY_REQUIRED', 'resume cannot cross Task, role, profile, run or independence boundaries');
   }
   const latest = latestTerminalObservations(prior);
   if (!latest.length || latest.some(({facts}) => facts.status !== 'failed'
@@ -123,37 +139,38 @@ function resumeContext(tx, context, command, item, planned, previous) {
 
 /**
  * attempt.start targets a NEW host-attempt UUID at version 0. payload carries
- * itemId/itemVersion, target Actor, profile/requestedModel/effort,
+ * taskId/taskVersion, target Actor, profile/requestedModel/effort,
  * independenceKey, resumeFrom (null by default), createdAt. Authority requires
- * BOTH exact host-attempt/UUID@0 and item/ID@itemVersion host action grants.
- * A live acting lease must belong to target; no item/grant/lifecycle is written.
+ * BOTH exact host-attempt/UUID@0 and task/ID@taskVersion host action grants.
+ * A live acting lease must belong to target; no Task/grant/lifecycle is written.
  * A committed receipt records intent only, never acknowledgement or execution.
  */
 export function recordAttempt(store, command) {
   const {context, cmd} = contextFor(store, command, ['attempt.start']);
   return applyOperation(store, cmd, (_current, tx) => {
     const p = cmd.payload;
-    const item = actingItem(tx, cmd, context, p.target);
-    if (p.target.role !== item.body.next_role) fail('INVALID_INPUT', 'target must be the item next role');
+    const task = actingTask(store, tx, cmd, context, p.target);
+    if (p.target.role !== task.body.next_role) fail('INVALID_INPUT', 'target must be the Task next role');
     const planned = planDispatch({
-      item: item.body, roster: context.roster, profiles: context.profiles, capabilities: context.capabilities,
+      task: task.body, roster: context.roster, profiles: context.profiles, capabilities: context.capabilities,
       request: {role: p.target.role, profile: p.profile, model: p.requestedModel, effort: p.effort},
     }).queue[0];
     if (['review', 'technical-review'].includes(p.profile)
-      && item.body.producing_actors.some(producer => producer.runId === p.target.runId)) {
+      && task.body.producing_actors.some(producer => producer.runId === p.target.runId)) {
       fail('RECOVERY_REQUIRED', 'independent review cannot reuse a producing run');
     }
     if (p.resumeFrom !== null && !context.capabilities.resume) fail('UNSUPPORTED_HOST', 'host resume is unsupported');
-    noUnresolvedEffects(tx, item.id);
-    const previous = tx.list('host-attempt', item.id);
+    noUnresolvedEffects(tx, task.id);
+    const previous = tx.list('host-attempt', {kind: 'task', id: task.id});
     if (previous.length >= context.maxAttempts
       || previous.some(record => ['intent', 'uncertain', 'conflicting', 'mismatched'].includes(record.body.status)
-        || (record.body.status === 'completed' && record.body.item_version === item.version))) {
+        || (record.body.status === 'completed' && record.body.subject_version === task.version))) {
       fail('RECOVERY_REQUIRED', 'attempt is unresolved, already completed or bounded attempts exhausted; no automatic redispatch');
     }
-    const resume = resumeContext(tx, context, cmd, item, planned, previous);
+    const resume = resumeContext(tx, context, cmd, task, planned, previous);
     return {
-      schema_version: 1, attempt_id: cmd.recordId, item_id: item.id, item_version: item.version,
+      schema_version: 1, attempt_id: cmd.recordId,
+      subject: {kind: 'task', id: task.id}, subject_version: task.version,
       actor: cmd.actor, target: p.target, agent_id: planned.agentId, profile: p.profile,
       requested_model: p.requestedModel, requested_effort: p.effort, independence_key: p.independenceKey,
       ...resume, capabilities: clone(context.capabilities), settings: planned.settings,
@@ -201,7 +218,7 @@ function recordObservation(store, command, handle, effect) {
   const receipt = applyOperation(store, cmd, (current, tx) => {
     if (!current) fail('EVIDENCE_GAP', 'observation requires a persisted intent');
     if (effect && (current.body.attempt_id !== cmd.payload.attemptId
-      || tx.get('host-attempt', current.body.attempt_id)?.itemId !== current.itemId)) {
+      || !bindsTask(tx.get('host-attempt', current.body.attempt_id), current.subject?.id))) {
       fail('EVIDENCE_GAP', 'effect result must bind its exact persisted attempt');
     }
     const retained = current.body.observations.find(o => o.observationId === observation.observationId);
@@ -221,7 +238,9 @@ function conflictingSessions(tx, current, observation) {
   if (observation.source !== 'host' || observation.facts.sessionId === null) return [];
   return tx.list('host-attempt').filter(record => record.id !== current.id
     && record.body.observations.some(o => o.source === 'host' && o.facts.sessionId === observation.facts.sessionId)
-    && (current.body.context === 'fresh-single-shot' || record.itemId !== current.itemId
+    && (current.body.context === 'fresh-single-shot'
+      || record.subject?.kind !== current.subject?.kind
+      || record.subject?.id !== current.subject?.id
       || !sameActor(record.body.target, current.body.target)
       || record.body.profile !== current.body.profile
       || record.body.independence_key !== current.body.independence_key))
@@ -234,10 +253,10 @@ export function recordHostResult(store, command, observation) {
 }
 
 /**
- * effect.intent creates effect/UUID@0 with itemId/itemVersion, attemptId,
+ * effect.intent creates effect/UUID@0 with taskId/taskVersion, attemptId,
  * intendedAction, idempotencyKey (nullable), external, paid, createdAt.
  * effect.result targets that effect and carries {attemptId, observationId}.
- * Like attempts, intents need BOTH primary and item-scoped host grants.
+ * Like attempts, intents need BOTH primary and Task-scoped host grants.
  * These records plan/observe effects; they never execute or replay the action.
  */
 export function recordEffect(store, command, observation) {
@@ -246,19 +265,22 @@ export function recordEffect(store, command, observation) {
   return applyOperation(store, cmd, (_current, tx) => {
     const p = cmd.payload;
     const attempt = tx.get('host-attempt', p.attemptId);
-    if (!attempt || attempt.itemId !== p.itemId) fail('EVIDENCE_GAP', 'effect intent requires the exact persisted host attempt');
-    const item = actingItem(tx, cmd, context, attempt.body.target);
-    if (attempt.body.item_version !== item.version || attempt.body.status !== 'intent') {
+    if (!bindsTask(attempt, p.taskId)) {
+      fail('EVIDENCE_GAP', 'effect intent requires the exact persisted host attempt');
+    }
+    const task = actingTask(store, tx, cmd, context, attempt.body.target);
+    if (attempt.body.subject_version !== task.version || attempt.body.status !== 'intent') {
       fail('RECOVERY_REQUIRED', 'effect intent requires a current, unresolved execution intent');
     }
-    noUnresolvedEffects(tx, item.id);
-    if (tx.list('effect', item.id).some(record => p.idempotencyKey !== null
+    noUnresolvedEffects(tx, task.id);
+    if (tx.list('effect', {kind: 'task', id: task.id}).some(record => p.idempotencyKey !== null
       && record.body.idempotency_key === p.idempotencyKey)) {
       fail('OPERATION_CONFLICT', 'effect idempotency key is already retained; reconcile its result');
     }
     const body = {
-      schema_version: 1, effect_id: cmd.recordId, attempt_id: p.attemptId, item_id: item.id,
-      item_version: item.version, actor: cmd.actor, intended_action: p.intendedAction,
+      schema_version: 1, effect_id: cmd.recordId, attempt_id: p.attemptId,
+      subject: {kind: 'task', id: task.id}, subject_version: task.version,
+      actor: cmd.actor, intended_action: p.intendedAction,
       idempotency_key: p.idempotencyKey, external: p.external, paid: p.paid,
       created_at: p.createdAt, observations: [],
     };

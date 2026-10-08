@@ -61,6 +61,7 @@ Use this shell:
 name: <agent-id>
 description: "<what it owns, when it applies, and the nearest routing distinction>"
 model: "<approved model id>"
+durable-output-producer: <true | false>
 tools: [read, search, skill]
 ---
 
@@ -69,6 +70,13 @@ tools: [read, search, skill]
 <One paragraph: responsibility and why the role exists.>
 
 **Primary profile:** <profile>
+
+Direct work may return only inline or repository-native output. It must not
+register a durable Kai artifact. Any durable Kai report or publication requires
+an existing typed hierarchy subject, its current version, an authorized
+artifact target, current acting authority, and named acceptance authority. If
+any is absent, stop; never mint a subject or call `artifact.register` from the
+direct branch.
 
 ## <Craft section>
 
@@ -107,6 +115,10 @@ form. Add one only where overlapping authority is genuinely ambiguous.
 
 Use the model mapped by `model-selection.md`. Add tools required by actual
 actions. Every Kai agent that dispatches skills includes `skill`.
+
+Set `durable-output-producer` to `true` only when the body has an authorized
+durable branch. That branch loads the source pack's publication contract
+immediately before `kai-core-asset-producing`. A `false` agent routes neither.
 
 `tools` is a GitHub custom-agent profile field, not an Agent Skills standard.
 Its aliases and fallback behavior are host-specific, and other catalogs use

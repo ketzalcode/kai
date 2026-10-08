@@ -25,6 +25,8 @@ import {
   readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
   lstatSync, readlinkSync, symlinkSync, openSync, closeSync,
 } from 'node:fs';
+import fs from 'node:fs';
+import {syncBuiltinESMExports} from 'node:module';
 import { spawn, spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -38,7 +40,7 @@ import {
 } from '../src/core/lib/workspace-resolve.mjs';
 import { normalized } from '../src/core/lib/workspace-path-safety.mjs';
 import {
-  checkWorkspace, adoptWorkspace, forgetWorkspace,
+  checkWorkspace, initializeWorkspace, adoptWorkspace, forgetWorkspace,
   writeRegistry, migrationExitCode, migrationInventory,
 } from '../src/core/workspace-doctor.mjs';
 
@@ -47,6 +49,33 @@ const selfPath = join(REPO_ROOT, 'src', 'core', 'workspace-doctor.mjs');
 
 function sleepSync(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function caseAlias(path) {
+  if (process.platform !== 'win32') return null;
+  const upper = path.toUpperCase();
+  if (upper !== path) return upper;
+  const lower = path.toLowerCase();
+  return lower !== path ? lower : null;
+}
+
+function captureClaimRemovalFailure(claimPath, callback) {
+  const originalRmSync = fs.rmSync;
+  fs.rmSync = function failingClaimRemoval(path, options) {
+    if (normalized(path) === normalized(claimPath)) {
+      throw Object.assign(new Error('injected claim cleanup failure'), {code: 'EPERM'});
+    }
+    return originalRmSync(path, options);
+  };
+  syncBuiltinESMExports();
+  try {
+    return {result: callback(), error: null};
+  } catch (error) {
+    return {result: null, error};
+  } finally {
+    fs.rmSync = originalRmSync;
+    syncBuiltinESMExports();
+  }
 }
 
 function selfTest() {
@@ -60,6 +89,394 @@ function selfTest() {
       details.forEach((detail) => console.log(`    ${detail}`));
     }
   };
+
+  const direction = [
+    '# Vision',
+    'A composable private workspace.',
+    '',
+    '# Mission',
+    'Coordinate exact work safely.',
+    '',
+    '# Current Goal',
+    'Activate schema 5.',
+    '',
+    '# Out of Scope',
+    'Inventing project direction.',
+    '',
+  ].join('\n');
+  const schema5Manifest = (overrides = {}) => ({
+    plugin: 'kai-core',
+    version: 'test',
+    schema_version: 5,
+    scaffolded: '2026-10-02',
+    workspace_id: 'stable-id',
+    placement: 'repo-local',
+    workspace_root: '.',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
+    projects: [{
+      id: 'default',
+      path: '.',
+      publication_root: 'docs/kai',
+    }],
+    ...overrides,
+  });
+
+  const unconfirmedRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-unconfirmed-'));
+  try {
+    spawnSync('git', ['init', '--quiet', unconfirmedRoot], {windowsHide: true});
+    writeFileSync(join(unconfirmedRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(unconfirmedRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(unconfirmedRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const unconfirmed = initializeWorkspace({
+      root: unconfirmedRoot,
+      manifest: schema5Manifest({workspace_id: 'unconfirmed-init'}),
+    });
+    ok(!unconfirmed.ok
+      && unconfirmed.code === 'AUTHORITY_REQUIRED'
+      && !existsSync(join(unconfirmedRoot, '.kai')),
+    'the standalone initializer requires explicit confirmation before any workspace mutation',
+    [unconfirmed.reason, ...snapshotTree(unconfirmedRoot)]);
+  } finally {
+    rmSync(unconfirmedRoot, {recursive: true, force: true});
+  }
+
+  const schema5Root = mkdtempSync(join(tmpdir(), 'kai-schema5-init-'));
+  try {
+    spawnSync('git', ['init', '--quiet', schema5Root], {windowsHide: true});
+    writeFileSync(join(schema5Root, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(schema5Root, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(schema5Root, 'docs', 'kai', 'DIRECTION.md'), direction);
+
+    const initialized = spawnSync(process.execPath, [
+      selfPath,
+      '--initialize',
+      '--root',
+      schema5Root,
+      '--confirm',
+    ], {
+      input: JSON.stringify(schema5Manifest()),
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+    ok(initialized.status === 0,
+      'the explicit confirmed standalone initializer activates schema 5',
+      [initialized.stderr, initialized.stdout].filter(Boolean));
+    const initializedFiles = snapshotTree(schema5Root)
+      .filter(entry => !entry.startsWith('.git/'))
+      .filter(entry => entry !== '.git/')
+      .sort();
+    const expectedFiles = [
+      '.gitignore:/.kai/\n',
+      '.kai/',
+      '.kai/core/',
+      '.kai/core/runtime/',
+      '.kai/core/runtime/coordination.sqlite:',
+      '.kai/manifest.json:',
+      'docs/',
+      'docs/kai/',
+      `docs/kai/DIRECTION.md:${direction}`,
+      'docs/kai/README.md:',
+    ];
+    ok(
+      expectedFiles.every(expected => initializedFiles.some(actual =>
+        expected.endsWith(':') ? actual.startsWith(expected) : actual === expected))
+        && initializedFiles.length === expectedFiles.length,
+      'initialization creates only manifest, schema-2 store, README, and the supplied Direction',
+      initializedFiles,
+    );
+    const forbiddenInitialDirectories = [
+      'engineering', 'creative', 'personal', 'learning', 'runs', 'review', 'archive', 'artifacts',
+    ];
+    ok(
+      forbiddenInitialDirectories.every(name =>
+        !initializedFiles.some(entry => entry.split('/').includes(name))),
+      'initialization creates no department, personal, generic, run, review, or archive directory',
+      initializedFiles,
+    );
+    const ignore = spawnSync('git', ['--no-pager', '-C', schema5Root, 'check-ignore', '--no-index', '-q', '--', '.kai/'],
+      {encoding: 'utf8', windowsHide: true});
+    const tracked = spawnSync('git', ['--no-pager', '-C', schema5Root, 'ls-files', '--', '.kai'],
+      {encoding: 'utf8', windowsHide: true});
+    ok(ignore.status === 0 && tracked.stdout.trim() === '',
+      'repo-local initialization leaves the whole .kai tree ignored and untracked',
+      [ignore.stderr, tracked.stdout, tracked.stderr].filter(Boolean));
+    const healthySchema5 = checkWorkspace(schema5Root);
+    ok(healthySchema5.errors.length === 0,
+      'the activated schema-5 workspace passes doctor validation',
+      healthySchema5.errors);
+
+    const manifestPath = join(schema5Root, '.kai', 'manifest.json');
+    const exactManifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    for (const [key, value] of [
+      ['runs', '.kai/runs'],
+      ['installed_packs', ['kai-core']],
+    ]) {
+      writeFileSync(manifestPath, `${JSON.stringify({...exactManifest, [key]: value}, null, 2)}\n`);
+      const retiredKey = checkWorkspace(schema5Root);
+      ok(new RegExp(`unexpected key "${key}"|retired.*"${key}"`, 'i').test(retiredKey.errors.join('\n')),
+        `schema 5 rejects manifest key "${key}" instead of aliasing it`,
+        retiredKey.errors);
+    }
+    writeFileSync(manifestPath, `${JSON.stringify({...exactManifest, placement: 'shared'}, null, 2)}\n`);
+    const sharedPlacement = checkWorkspace(schema5Root);
+    ok(/placement.*repo-local.*external/i.test(sharedPlacement.errors.join('\n')),
+      'schema 5 rejects retired shared placement',
+      sharedPlacement.errors);
+    for (const [label, projectPath] of [
+      ['UNC', '\\\\server\\share'],
+      ['device', '\\\\?\\C:\\workspace'],
+      ['POSIX absolute', '/var/kai/project'],
+    ]) {
+      writeFileSync(manifestPath, `${JSON.stringify({
+        ...exactManifest,
+        projects: [{...exactManifest.projects[0], path: projectPath}],
+      }, null, 2)}\n`);
+      const unsafe = checkWorkspace(schema5Root);
+      ok(/must be "\."|UNC|device|network|native absolute/i.test(unsafe.errors.join('\n')),
+        `schema 5 refuses ${label} project paths without traversing them`,
+        unsafe.errors);
+    }
+    writeFileSync(manifestPath, `${JSON.stringify(exactManifest, null, 2)}\n`);
+  } finally {
+    rmSync(schema5Root, {recursive: true, force: true});
+  }
+
+  const concurrentInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-concurrent-init-'));
+  try {
+    spawnSync('git', ['init', '--quiet', concurrentInitRoot], {windowsHide: true});
+    writeFileSync(join(concurrentInitRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(concurrentInitRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(concurrentInitRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const winnerManifest = schema5Manifest({workspace_id: 'concurrent-winner'});
+    const loserManifest = schema5Manifest({workspace_id: 'concurrent-loser'});
+    const privateRoot = join(concurrentInitRoot, '.kai');
+    const originalMkdirSync = fs.mkdirSync;
+    let injected = false;
+    let winner;
+    fs.mkdirSync = function interleavedMkdir(path, options) {
+      const result = originalMkdirSync(path, options);
+      if (!injected && normalized(path) === normalized(privateRoot)) {
+        injected = true;
+        winner = initializeWorkspace({
+          root: concurrentInitRoot,
+          manifest: winnerManifest,
+          confirm: true,
+        });
+      }
+      return result;
+    };
+    syncBuiltinESMExports();
+    let loser;
+    try {
+      loser = initializeWorkspace({
+        root: concurrentInitRoot,
+        manifest: loserManifest,
+        confirm: true,
+      });
+    } finally {
+      fs.mkdirSync = originalMkdirSync;
+      syncBuiltinESMExports();
+    }
+    const survivingManifest = existsSync(join(privateRoot, 'manifest.json'))
+      ? JSON.parse(readFileSync(join(privateRoot, 'manifest.json'), 'utf8'))
+      : null;
+    const checked = survivingManifest ? checkWorkspace(concurrentInitRoot) : {errors: ['manifest missing']};
+    ok(winner?.ok
+      && !loser?.ok
+      && loser.code === 'VERSION_CONFLICT'
+      && survivingManifest?.workspace_id === winnerManifest.workspace_id
+      && existsSync(join(privateRoot, 'core', 'runtime', 'coordination.sqlite'))
+      && checked.errors.length === 0,
+    'a losing concurrent initializer cannot delete or replace the winner manifest and database',
+    [
+      `winner=${JSON.stringify(winner)}`,
+      `loser=${JSON.stringify(loser)}`,
+      ...checked.errors,
+      ...snapshotTree(concurrentInitRoot),
+    ]);
+  } finally {
+    rmSync(concurrentInitRoot, {recursive: true, force: true});
+  }
+
+  const activatedCleanupRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-activated-cleanup-'));
+  try {
+    spawnSync('git', ['init', '--quiet', activatedCleanupRoot], {windowsHide: true});
+    writeFileSync(join(activatedCleanupRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(activatedCleanupRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(activatedCleanupRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const claimPath = join(activatedCleanupRoot, '.kai', '.initialize.json');
+    const captured = captureClaimRemovalFailure(claimPath, () => initializeWorkspace({
+      root: activatedCleanupRoot,
+      manifest: schema5Manifest({workspace_id: 'activated-cleanup'}),
+      confirm: true,
+    }));
+    const result = captured.result;
+    const checked = existsSync(join(activatedCleanupRoot, '.kai', 'manifest.json'))
+      ? checkWorkspace(activatedCleanupRoot)
+      : {errors: ['manifest missing']};
+    ok(captured.error === null
+      && !result?.ok
+      && result.code === 'RECOVERY_REQUIRED'
+      && result.activated === true
+      && result.recovery?.claim?.path === '.kai/.initialize.json'
+      && result.recovery.claim.owned === true
+      && result.recovery.claim.stale === true
+      && result.recovery.claim.cleanup_error?.code === 'EPERM'
+      && existsSync(claimPath)
+      && existsSync(join(activatedCleanupRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
+      && checked.errors.length === 0,
+    'activated initialization returns structured recovery when its owned claim cannot be removed',
+    [
+      `result=${JSON.stringify(result)}`,
+      `error=${captured.error?.stack ?? captured.error}`,
+      ...checked.errors,
+      ...snapshotTree(activatedCleanupRoot),
+    ]);
+  } finally {
+    rmSync(activatedCleanupRoot, {recursive: true, force: true});
+  }
+
+  const failedCleanupRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-failed-cleanup-'));
+  try {
+    spawnSync('git', ['init', '--quiet', failedCleanupRoot], {windowsHide: true});
+    writeFileSync(join(failedCleanupRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(failedCleanupRoot, 'docs', 'kai', 'README.md'), {recursive: true});
+    writeFileSync(join(failedCleanupRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const claimPath = join(failedCleanupRoot, '.kai', '.initialize.json');
+    const captured = captureClaimRemovalFailure(claimPath, () => initializeWorkspace({
+      root: failedCleanupRoot,
+      manifest: schema5Manifest({workspace_id: 'failed-cleanup'}),
+      confirm: true,
+    }));
+    const result = captured.result;
+    ok(captured.error === null
+      && !result?.ok
+      && result.code === 'RECOVERY_REQUIRED'
+      && result.activated === false
+      && result.recovery?.claim?.path === '.kai/.initialize.json'
+      && result.recovery.claim.owned === true
+      && result.recovery.claim.stale === true
+      && result.recovery.claim.cleanup_error?.code === 'EPERM'
+      && result.recovery.original_failure?.code === 'INVALID_INPUT'
+      && /README\.md must be an exact unlinked file/.test(result.recovery.original_failure.reason)
+      && existsSync(claimPath)
+      && !existsSync(join(failedCleanupRoot, '.kai', 'manifest.json'))
+      && !existsSync(join(failedCleanupRoot, '.kai', 'core', 'runtime', 'coordination.sqlite')),
+    'failed initialization preserves its original failure under structured claim recovery metadata',
+    [
+      `result=${JSON.stringify(result)}`,
+      `error=${captured.error?.stack ?? captured.error}`,
+      ...snapshotTree(failedCleanupRoot),
+    ]);
+  } finally {
+    rmSync(failedCleanupRoot, {recursive: true, force: true});
+  }
+
+  const failedInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-failed-init-'));
+  try {
+    spawnSync('git', ['init', '--quiet', failedInitRoot], {windowsHide: true});
+    writeFileSync(join(failedInitRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(failedInitRoot, 'docs', 'kai', 'README.md'), {recursive: true});
+    writeFileSync(join(failedInitRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const failedInit = initializeWorkspace({
+      root: failedInitRoot,
+      manifest: schema5Manifest({workspace_id: 'failed-init'}),
+      confirm: true,
+    });
+    ok(!failedInit.ok
+      && !existsSync(join(failedInitRoot, '.kai', 'manifest.json'))
+      && !existsSync(join(failedInitRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
+      && (!existsSync(join(failedInitRoot, '.kai'))
+        || !readdirSync(join(failedInitRoot, '.kai'), {withFileTypes: true})
+          .some(entry => entry.name.includes('manifest'))),
+    'an initialization failure cleans its staged manifest and new store',
+    [failedInit.reason, ...snapshotTree(failedInitRoot)]);
+  } finally {
+    rmSync(failedInitRoot, {recursive: true, force: true});
+  }
+
+  const missingDirectionRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-no-direction-'));
+  try {
+    spawnSync('git', ['init', '--quiet', missingDirectionRoot], {windowsHide: true});
+    writeFileSync(join(missingDirectionRoot, '.gitignore'), '/.kai/\n');
+    const missingDirection = initializeWorkspace({
+      root: missingDirectionRoot,
+      manifest: schema5Manifest({workspace_id: 'no-direction'}),
+      confirm: true,
+    });
+    ok(!missingDirection.ok
+      && /DIRECTION_REQUIRED|direction/i.test(`${missingDirection.code} ${missingDirection.reason}`)
+      && !existsSync(join(missingDirectionRoot, '.kai')),
+    'missing operator Direction fails before any private tree is created',
+    [missingDirection.reason]);
+  } finally {
+    rmSync(missingDirectionRoot, {recursive: true, force: true});
+  }
+
+  const linkedInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-linked-init-'));
+  const linkedInitOutside = mkdtempSync(join(tmpdir(), 'kai-schema5-linked-outside-'));
+  try {
+    spawnSync('git', ['init', '--quiet', linkedInitRoot], {windowsHide: true});
+    writeFileSync(join(linkedInitRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(linkedInitRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(linkedInitRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    symlinkSync(linkedInitOutside, join(linkedInitRoot, '.kai'), 'junction');
+    const linkedInit = initializeWorkspace({
+      root: linkedInitRoot,
+      manifest: schema5Manifest({workspace_id: 'linked-init'}),
+      confirm: true,
+    });
+    ok(!linkedInit.ok
+      && !existsSync(join(linkedInitOutside, 'manifest.json'))
+      && !existsSync(join(linkedInitOutside, 'core')),
+    'initialization refuses a linked private root before staging any file',
+    [linkedInit.reason].filter(Boolean));
+  } finally {
+    rmSync(linkedInitRoot, {recursive: true, force: true});
+    rmSync(linkedInitOutside, {recursive: true, force: true});
+  }
+
+  const externalRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-external-'));
+  try {
+    const projectRoot = join(externalRoot, 'project');
+    const workspaceRoot = join(externalRoot, 'workspace');
+    const env = {KAI_HOME: join(externalRoot, 'home')};
+    mkdirSync(join(projectRoot, 'docs', 'kai'), {recursive: true});
+    mkdirSync(workspaceRoot, {recursive: true});
+    writeFileSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    writeFileSync(join(projectRoot, 'docs', 'kai', 'README.md'), '# Operator-owned Kai index\n');
+    const manifest = schema5Manifest({
+      workspace_id: 'external-stable-id',
+      placement: 'external',
+      workspace_root: workspaceRoot,
+      projects: [{id: 'default', path: projectRoot, publication_root: 'docs/kai'}],
+    });
+    writeRegistry([{
+      project_root: projectRoot,
+      workspace_root: workspaceRoot,
+      workspace_id: manifest.workspace_id,
+    }], env);
+    const initialized = initializeWorkspace({root: workspaceRoot, manifest, env, confirm: true});
+    ok(initialized.ok
+      && existsSync(join(workspaceRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
+      && !existsSync(join(projectRoot, '.kai'))
+      && readFileSync(join(projectRoot, 'docs', 'kai', 'README.md'), 'utf8') === '# Operator-owned Kai index\n',
+    'external initialization preserves registry binding, project privacy, and an existing README',
+    [initialized.reason].filter(Boolean));
+    const checked = checkWorkspace(workspaceRoot, {env});
+    ok(checked.errors.length === 0,
+      'an initialized external schema-5 workspace validates against its exact project binding',
+      checked.errors);
+    const forgotten = forgetWorkspace({projectRoot, env});
+    ok(forgotten.ok
+      && existsSync(join(workspaceRoot, '.kai', 'manifest.json'))
+      && existsSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md')),
+    'removing an installation binding never deletes .kai or docs/kai content',
+    [forgotten.reason].filter(Boolean));
+  } finally {
+    rmSync(externalRoot, {recursive: true, force: true});
+  }
 
   const good = checkWorkspace(join(fx, 'repo-workspace'));
   ok(good.errors.length === 0, 'healthy schema-3 shared fixture passes', good.errors);
@@ -93,9 +510,9 @@ function selfTest() {
     fm: frontmatter(readFileSync(join(REPO_ROOT, 'plugins', 'kai-core', 'templates', 'publication', name), 'utf8')),
   }));
   ok(
-    publicationTemplates.every(({ fm }) => fm && scalar(fm, 'item') === '<work-item-id>'),
-    'publication templates declare the owning work item',
-    publicationTemplates.filter(({ fm }) => !fm || scalar(fm, 'item') !== '<work-item-id>').map(({ name }) => name),
+    publicationTemplates.every(({ fm }) => fm && scalar(fm, 'task') === '<typed-task-id>'),
+    'publication templates declare the owning typed Task',
+    publicationTemplates.filter(({ fm }) => !fm || scalar(fm, 'task') !== '<typed-task-id>').map(({ name }) => name),
   );
 
   const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-schema3-'));
@@ -237,10 +654,9 @@ function selfTest() {
       'public artifact targets cannot bypass project qualification',
       unqualifiedPublication.errors);
 
-    // A schema-4 manifest with no coordination store yet is the expected state
-    // between `workflow-workspace-init` scaffolding and the authorized `init`.
-    // Inspect intent reports it as a condition; coordinate intent still refuses,
-    // because a coordinated write has nowhere to land.
+    // A schema-4 manifest without a store is historical read-only state.
+    // Inspection reports it without creating anything; coordinate intent routes
+    // only to explicit offline schema-5 migration.
     const preInitWorkspace = join(tmpRoot, 'pre-init-schema4-workspace');
     cpSync(join(fx, 'repo-workspace'), preInitWorkspace, { recursive: true });
     const preInitManifestPath = join(preInitWorkspace, '.kai', 'manifest.json');
@@ -250,15 +666,16 @@ function selfTest() {
     const preInitInspect = checkWorkspace(preInitWorkspace, { intent: 'inspect' });
     ok(
       preInitInspect.errors.length === 0
-        && /coordination database does not exist yet/i.test(preInitInspect.warnings.join('\n')),
-      'a scaffolded schema-4 workspace with no store is an inspect condition, not an error',
+        && /historical workspace remains read-only/i.test(preInitInspect.warnings.join('\n')),
+      'a schema-4 workspace with no store remains a read-only inspection condition',
       [...preInitInspect.errors.map((e) => `error: ${e}`),
         ...preInitInspect.warnings.map((w) => `warning: ${w}`)],
     );
     const preInitCoordinate = checkWorkspace(preInitWorkspace, { intent: 'coordinate' });
     ok(
-      preInitCoordinate.errors.some((e) => /coordination database is missing/i.test(e)),
-      'coordinated writes still refuse a schema-4 workspace with no store',
+      preInitCoordinate.errors.some((e) =>
+        /schema 4 is read-only; explicit offline schema 5 migration is required/i.test(e)),
+      'coordinated writes refuse schema 4 and route to explicit schema-5 migration',
       preInitCoordinate.errors,
     );
 
@@ -484,9 +901,74 @@ function selfTest() {
         [resolvedCli.stderr, resolvedCli.stdout].filter(Boolean));
 
       const registeredEntries = loadWorkspaceRegistry(env).entries;
+      for (const [label, unsafePath] of [
+        ['UNC', '\\\\localhost\\definitely-missing-kai'],
+        ['Windows absolute', 'C:\\definitely-missing-kai'],
+        ['POSIX absolute', '/definitely-missing-kai'],
+      ]) {
+        writeFileSync(registryPath(env), `${JSON.stringify({
+          schema_version: 1,
+          workspaces: [{
+            project_root: unsafePath,
+            workspace_root: workspaceRoot,
+            workspace_id: manifest.workspace_id,
+          }],
+        }, null, 2)}\n`);
+        const loadedUnsafe = loadWorkspaceRegistry(env);
+        const discoveredUnsafe = resolveWorkspaceRoot({cwd: projectRoot, env});
+        ok(!loadedUnsafe.ok && !discoveredUnsafe.ok,
+          `registry validation and discovery both reject ${label} path forms`,
+          [loadedUnsafe.reason, discoveredUnsafe.reason].filter(Boolean));
+      }
+      writeRegistry(registeredEntries, env);
+
+      const aliasProject = join(tmpRoot, 'project-alias');
+      const aliasWorkspace = join(tmpRoot, 'workspace-alias');
+      symlinkSync(projectRoot, aliasProject, 'junction');
+      symlinkSync(workspaceRoot, aliasWorkspace, 'junction');
+      writeFileSync(registryPath(env), `${JSON.stringify({
+        schema_version: 1,
+        workspaces: [{
+          project_root: aliasProject,
+          workspace_root: aliasWorkspace,
+          workspace_id: manifest.workspace_id,
+        }],
+      }, null, 2)}\n`);
+      const loadedAlias = loadWorkspaceRegistry(env);
+      const discoveredAlias = resolveWorkspaceRoot({cwd: projectRoot, env});
+      ok(!loadedAlias.ok && !discoveredAlias.ok
+        && /alias|link|junction/i.test(`${loadedAlias.reason} ${discoveredAlias.reason}`),
+      'registry validation and discovery apply the same link and canonical-alias refusal',
+      [loadedAlias.reason, discoveredAlias.reason].filter(Boolean));
+      rmSync(aliasProject, {force: true});
+      rmSync(aliasWorkspace, {force: true});
+      writeRegistry(registeredEntries, env);
+
+      const aliasedProjectRoot = caseAlias(projectRoot);
+      const aliasedWorkspaceRoot = caseAlias(workspaceRoot);
+      if (aliasedProjectRoot && aliasedWorkspaceRoot) {
+        writeFileSync(registryPath(env), `${JSON.stringify({
+          schema_version: 1,
+          workspaces: [{
+            project_root: aliasedProjectRoot,
+            workspace_root: aliasedWorkspaceRoot,
+            workspace_id: manifest.workspace_id,
+          }],
+        }, null, 2)}\n`);
+        const loadedCaseAlias = loadWorkspaceRegistry(env);
+        const discoveredCaseAlias = resolveWorkspaceRoot({cwd: aliasedProjectRoot, env});
+        ok(loadedCaseAlias.ok && discoveredCaseAlias.ok
+          && normalized(discoveredCaseAlias.root) === normalized(workspaceRoot),
+        'registry validation and discovery accept Windows case aliases consistently',
+        [loadedCaseAlias.reason, discoveredCaseAlias.reason].filter(Boolean));
+        writeRegistry(registeredEntries, env);
+      }
+
+      const duplicateWorkspace = join(tmpRoot, 'duplicate-workspace');
+      mkdirSync(duplicateWorkspace);
       writeRegistry([...registeredEntries, {
         project_root: registeredEntries[0].project_root,
-        workspace_root: join(tmpRoot, 'duplicate-workspace'),
+        workspace_root: duplicateWorkspace,
         workspace_id: 'duplicate-workspace',
       }], env);
       const duplicateBinding = checkWorkspace(workspaceRoot, { env });
@@ -561,6 +1043,47 @@ function selfTest() {
       const mismatched = checkWorkspace(workspaceRoot, { env });
       ok(/not paired|not registered/i.test(mismatched.errors.join('\n')),
         'registry and manifest workspace ids cannot drift silently', mismatched.errors);
+
+      writeRegistry([{
+        project_root: projectRoot,
+        workspace_root: workspaceRoot,
+        workspace_id: manifest.workspace_id,
+      }], env);
+      const staleProjectRoot = join(tmpRoot, 'stale-project');
+      const staleWorkspaceRoot = join(tmpRoot, 'stale-workspace');
+      writeRegistry([
+        {
+          project_root: projectRoot,
+          workspace_root: workspaceRoot,
+          workspace_id: manifest.workspace_id,
+        },
+        {
+          project_root: staleProjectRoot,
+          workspace_root: staleWorkspaceRoot,
+          workspace_id: 'stale-workspace',
+        },
+      ], env);
+      const forgottenWithUnrelatedStale = forgetWorkspace({ projectRoot, env });
+      const staleRetained = JSON.parse(readFileSync(registryPath(env), 'utf8'));
+      ok(forgottenWithUnrelatedStale.ok
+        && staleRetained.workspaces.length === 1
+        && staleRetained.workspaces[0].project_root === staleProjectRoot,
+      'forget removes the requested binding even when unrelated stale rows remain',
+      [forgottenWithUnrelatedStale.reason].filter(Boolean));
+
+      writeRegistry([{
+        project_root: staleProjectRoot,
+        workspace_root: staleWorkspaceRoot,
+        workspace_id: 'stale-workspace',
+      }], env);
+      const forgottenMissingTarget = forgetWorkspace({
+        projectRoot: caseAlias(staleProjectRoot) || staleProjectRoot,
+        env,
+      });
+      const emptiedStaleRegistry = JSON.parse(readFileSync(registryPath(env), 'utf8'));
+      ok(forgottenMissingTarget.ok && emptiedStaleRegistry.workspaces.length === 0,
+        'forget removes a missing-target binding by lexical path validation only',
+        [forgottenMissingTarget.reason].filter(Boolean));
 
       writeRegistry([{
         project_root: projectRoot,

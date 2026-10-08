@@ -3,18 +3,31 @@ import {test} from 'node:test';
 import {randomUUID} from 'node:crypto';
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {join, dirname} from 'node:path';
-import {withWorkspace, seedItem, seedInitiative, authority, command} from './helpers/coordination-runtime-fixture.mjs';
+import {
+  fixtureIds, withWorkspace, seedTask, seedInitiative, authority, command as baseCommand,
+} from './helpers/coordination-runtime-fixture.mjs';
 import {criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {bindEvidenceRuntime, hashArtifact, registerArtifact, recordApproval, transitionAsset} from '../src/core/lib/coordination-runtime/evidence.mjs';
-import {readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
+import {readRecord as readTypedRecord} from '../src/core/lib/coordination-runtime/store.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
-import {projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
-import {buildReport} from '../src/core/lib/coordination-runtime/report.mjs';
+import {projectContext as projectTypedContext} from '../src/core/lib/coordination-runtime/context.mjs';
+import {buildReport as buildTypedReport} from '../src/core/lib/coordination-runtime/report.mjs';
 
 const builder = {role: 'eng-builder-software', runId: 'build-context'};
 const reviewer = {role: 'eng-reviewer-code', runId: 'review-context'};
-const inputFile = '.kai/state/design.md';
-const outputFile = '.kai/runs/native/build-context/answer.md';
+const idFor = id => id === 'demo' ? fixtureIds.task : id.includes(':') ? id : `engineering:task:${id}`;
+const subjectFor = id => ({kind: 'task', id: idFor(id)});
+const seedItem = (store, overrides = {}) =>
+  seedTask(store, {...overrides, ...(overrides.id ? {id: idFor(overrides.id)} : {})});
+const readRecord = (store, kind, id) =>
+  readTypedRecord(store, kind === 'item' ? 'task' : kind, kind === 'item' ? idFor(id) : id);
+const command = (kind, options = {}) => baseCommand(kind.replace(/^item\./, 'task.'), options);
+const projectContext = (store, {itemId, ...options}) =>
+  projectTypedContext(store, {subject: subjectFor(itemId), ...options});
+const buildReport = (store, {itemId}) =>
+  buildTypedReport(store, {subject: subjectFor(itemId)});
+const inputFile = '.kai/engineering/reports/input-basis/evidence/design.md';
+const outputFile = '.kai/engineering/reports/input-basis/scratch/answer.md';
 const at = () => new Date().toISOString();
 function file(root, path, bytes) {
   mkdirSync(dirname(join(root, path)), {recursive: true});
@@ -22,18 +35,36 @@ function file(root, path, bytes) {
 }
 function bind(root, store, actor, kind, id) {
   const item = readRecord(store, 'item', id);
-  const auth = authority(actor, kind, {recordId: id, version: item.version});
-  bindEvidenceRuntime(store, {root, authority: auth, runs: [{actor, directory: `.kai/runs/native/${actor.runId}`}]});
+  const action = kind.replace(/^item\./, 'task.');
+  const auth = authority(actor, action, {recordId: item.id, version: item.version});
+  bindEvidenceRuntime(store, {
+    root,
+    authority: auth,
+    runs: [{actor, directory: '.kai/engineering/reports/input-basis/scratch'}],
+  });
   return auth;
 }
 function cmd(store, kind, id, payload, actor = builder) {
-  return command(kind, {recordId: id, expectedVersion: readRecord(store, 'item', id).version, payload, actor});
+  return command(kind, {
+    recordId: idFor(id),
+    expectedVersion: readRecord(store, 'item', id).version,
+    payload,
+    actor,
+  });
 }
+const criteriaFor = (store, id = 'demo') => {
+  const task = readRecord(store, 'item', id);
+  return criteriaRef(task, (kind, recordId) => readTypedRecord(store, kind, recordId));
+};
 
 test('changing applicable context references changes the acceptance criteria', () => withWorkspace(({store}) => {
   const item = seedItem(store);
-  assert.notEqual(criteriaRef({...item.body, context_artifacts: ['.kai/state/brief-a.md']}),
-    criteriaRef({...item.body, context_artifacts: ['.kai/state/brief-b.md']}));
+  assert.notEqual(
+    criteriaRef({...item, body: {...item.body, context_artifacts: ['.kai/engineering/reports/input-basis/evidence/brief-a.md']}},
+      (kind, id) => readTypedRecord(store, kind, id)),
+    criteriaRef({...item, body: {...item.body, context_artifacts: ['.kai/engineering/reports/input-basis/evidence/brief-b.md']}},
+      (kind, id) => readTypedRecord(store, kind, id)),
+  );
 }));
 
 test('cross-item design is context, not same-item verdict evidence; changing its bytes invalidates acceptance', () => withWorkspace(({root, store}) => {
@@ -64,8 +95,8 @@ test('cross-item design is context, not same-item verdict evidence; changing its
   }));
   const item = readRecord(store, 'item', 'implementation');
   const approval = cmd(store, 'approval.record', 'implementation', {body: {
-    schema_version: 1, approval_id: randomUUID(), item_id: item.id, authority: reviewer,
-    kind: 'completion', subject: item.body.change_ref, criteria_ref: criteriaRef(item.body),
+    schema_version: 1, approval_id: randomUUID(), subject: subjectFor('implementation'), authority: reviewer,
+    kind: 'completion', content_ref: item.body.change_ref, criteria_ref: criteriaFor(store, 'implementation'),
     supersedes: [], deployment: null, recovery: null, decision: 'approved',
     evidence_refs: [`artifact:${outputId}`], reason: 'Reviewed output against design', created_at: at(),
   }}, reviewer);
@@ -97,8 +128,8 @@ test('revising a cross-item input asset invalidates the derived output even when
     const item = readRecord(store, 'item', 'derived');
     bind(root, store, reviewer, 'approval.record', item.id);
     recordApproval(store, cmd(store, 'approval.record', item.id, {body: {
-      schema_version: 1, approval_id: randomUUID(), item_id: item.id, authority: reviewer,
-      kind: 'completion', subject: output.subject, criteria_ref: criteriaRef(item.body), supersedes: [],
+      schema_version: 1, approval_id: randomUUID(), subject: subjectFor('derived'), authority: reviewer,
+      kind: 'completion', content_ref: output.subject, criteria_ref: criteriaFor(store, 'derived'), supersedes: [],
       deployment: null, recovery: null, decision: 'approved', evidence_refs: [`artifact:${output.artifactId}`],
       reason: 'Accept this exact input revision', created_at: at(),
     }}, reviewer));
@@ -129,8 +160,8 @@ test('a fresh registered input basis and explicitly superseding verdict can reva
       const approvalId = randomUUID();
       bind(root, store, reviewer, 'approval.record', 'demo');
       recordApproval(store, cmd(store, 'approval.record', 'demo', {body: {
-        schema_version: 1, approval_id: approvalId, item_id: 'demo', authority: reviewer,
-        kind: 'completion', subject, criteria_ref: criteriaRef(readRecord(store, 'item', 'demo').body),
+        schema_version: 1, approval_id: approvalId, subject: subjectFor('demo'), authority: reviewer,
+        kind: 'completion', content_ref: subject, criteria_ref: criteriaFor(store),
         supersedes, deployment: null, recovery: null, decision: 'approved',
         evidence_refs: [`artifact:${artifactId}`], reason: 'Reviewed against this registered basis', created_at: at(),
       }}, reviewer));
@@ -141,12 +172,14 @@ test('a fresh registered input basis and explicitly superseding verdict can reva
     file(root, inputFile, 'Brief v2');
     const second = register();
     const fresh = accept(second, [first]);
+    const report = buildReport(store, {itemId: 'demo'});
     const finish = cmd(store, 'item.transition', 'demo', {to: 'completed', at: at(), reason: 'Fresh explicit acceptance'}, reviewer);
     assert.equal(applyCommand(store, finish, bind(root, store, reviewer, 'item.transition', 'demo')).ok, true);
-    const report = buildReport(store, {itemId: 'demo'});
     assert.equal(report.decisions.find(a => a.id === fresh).integrity, 'verified',
       'obsolete same-output input basis must not poison fresh superseding approval');
-    assert.equal(report.artifacts.find(a => a.id === firstArtifact).status, 'historical');
+    assert.equal(report.artifacts.find(a => a.id === firstArtifact), undefined,
+      'private obsolete input evidence is not copied into the report');
+    assert.ok(report.gaps.some(g => g.ref === 'private-evidence'));
     assert.equal(report.decisions.find(a => a.id === first).status, 'superseded');
     assert.equal(report.decisions.find(a => a.id === first).integrity, 'gap',
       'supersession must not hide the stale cited input basis');
@@ -156,7 +189,7 @@ test('a fresh registered input basis and explicitly superseding verdict can reva
 
 for (const inputKind of ['artifact', 'asset', 'evidence', 'file', 'recursive', 'legacy-personal', 'legacy-context']) {
   test(`known personal ${inputKind} context cannot produce a public derivative`, () => withWorkspace(({root, store}) => {
-    const privateFile = '.kai/personal/brief.md';
+    const privateFile = '.kai/engineering/reports/input-basis/personal/brief.md';
     file(root, privateFile, 'Private personal source');
     const source = hashArtifact({root, relativePath: privateFile});
     seedItem(store, {id: 'personal-input', state: 'in-review', acceptance_actor: null,
@@ -174,11 +207,14 @@ for (const inputKind of ['artifact', 'asset', 'evidence', 'file', 'recursive', '
     if (inputKind === 'evidence') {
       // Legacy supported evidence whose public metadata points at personal content.
       const evidenceId = randomUUID();
-      store.database.prepare('INSERT INTO records (kind,id,item_id,version,body) VALUES (?,?,?,?,?)')
-        .run('evidence', evidenceId, 'personal-input', 1, JSON.stringify({
-          schema_version: 1, evidence_id: evidenceId, item_id: 'personal-input',
-          kind: 'dod-dimension', subject: source,
-          criteria_ref: criteriaRef(readRecord(store, 'item', 'personal-input').body),
+      store.database.prepare(`
+        INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+        VALUES (?, ?, 'task', ?, ?, ?)
+      `)
+        .run('evidence', evidenceId, idFor('personal-input'), 1, JSON.stringify({
+          schema_version: 1, evidence_id: evidenceId, subject: subjectFor('personal-input'),
+          kind: 'dod-dimension', content_ref: source,
+          criteria_ref: criteriaFor(store, 'personal-input'),
           supersedes: [], dimension: 'verified', outcome: 'clear',
           evidence_refs: [`artifact:${artifactId}`], reason: null, data: {}, created_at: at(),
           provenance: {tier: 'declared', capture: null},
@@ -221,24 +257,31 @@ for (const inputKind of ['artifact', 'asset', 'evidence', 'file', 'recursive', '
 }
 
 const personalAliases = [
-  '.kai\\personal\\brief.md', '.kai/./personal/brief.md', '.kai/personal/./brief.md',
-  ...(process.platform === 'win32' ? ['.kai/personal/BRIEF.md'] : []),
+  '.kai\\engineering\\reports\\input-basis\\personal\\brief.md',
+  '.kai/engineering/./reports/input-basis/personal/brief.md',
+  '.kai/engineering/reports/input-basis/personal/./brief.md',
+  ...(process.platform === 'win32'
+    ? ['.kai/engineering/reports/input-basis/personal/BRIEF.md'] : []),
 ];
 for (const alias of personalAliases) {
   for (const via of ['file', 'evidence', 'captured-artifact']) {
     test(`canonical personal input privacy through ${via}: ${alias}`, () => withWorkspace(({root, store}) => {
-      file(root, '.kai/personal/brief.md', 'Unregistered personal bytes');
+      file(root, '.kai/engineering/reports/input-basis/personal/brief.md', 'Unregistered personal bytes');
       file(root, outputFile, 'Unrelated derivative bytes');
       seedItem(store, {state: 'in-review', acceptance_actor: null, producer_actor: builder,
         context_artifacts: [alias]});
       let reference = alias;
       if (via === 'evidence') {
         const evidenceId = randomUUID();
-        store.database.prepare('INSERT INTO records (kind,id,item_id,version,body) VALUES (?,?,?,?,?)')
-          .run('evidence', evidenceId, 'demo', 1, JSON.stringify({
-            schema_version: 1, evidence_id: evidenceId, item_id: 'demo',
-            kind: 'dod-dimension', subject: hashArtifact({root, relativePath: outputFile}),
-            criteria_ref: criteriaRef(readRecord(store, 'item', 'demo').body),
+        store.database.prepare(`
+          INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+          VALUES (?, ?, 'task', ?, ?, ?)
+        `)
+          .run('evidence', evidenceId, fixtureIds.task, 1, JSON.stringify({
+            schema_version: 1, evidence_id: evidenceId, subject: subjectFor('demo'),
+            kind: 'dod-dimension',
+            content_ref: hashArtifact({root, relativePath: outputFile}),
+            criteria_ref: criteriaFor(store),
             supersedes: [], dimension: 'verified', outcome: 'clear', evidence_refs: [alias],
             reason: null, data: {}, created_at: at(), provenance: {tier: 'declared', capture: null},
           }));
@@ -257,7 +300,7 @@ for (const alias of personalAliases) {
       }
       seedItem(store, {id: 'derivative', state: 'in-review', acceptance_actor: null, producer_actor: builder,
         context_artifacts: [reference]});
-      const derivativeFile = '.kai/runs/native/build-context/derivative.md';
+      const derivativeFile = '.kai/engineering/reports/input-basis/scratch/derivative.md';
       file(root, derivativeFile, 'New derivative, not a registered content alias');
       const register = classification => {
         bind(root, store, builder, 'artifact.register', 'derivative');
@@ -275,16 +318,37 @@ for (const alias of personalAliases) {
   }
 }
 
-test('canonical public file aliases still permit a public derivative', () => withWorkspace(({root, store}) => {
+test('canonical private evidence aliases cannot produce a public derivative', () => withWorkspace(({root, store}) => {
   file(root, inputFile, 'Public design');
   file(root, outputFile, 'Public output');
   seedItem(store, {state: 'in-review', producer_actor: builder, acceptance_actor: null,
-    context_artifacts: ['.kai\\state\\design.md', '.kai/./state/design.md']});
+    context_artifacts: [
+      '.kai\\engineering\\reports\\input-basis\\evidence\\design.md',
+      '.kai/engineering/./reports/input-basis/evidence/design.md',
+    ]});
+  bind(root, store, builder, 'artifact.register', 'demo');
+  assert.throws(() => registerArtifact(store, cmd(store, 'artifact.register', 'demo', {
+    artifactId: randomUUID(), assetId: randomUUID(), subject: hashArtifact({root, relativePath: outputFile}),
+    projectId: null, classification: 'public', mediaType: 'text/markdown',
+    title: 'Public aliases', inputAssetIds: [], at: at(),
+  })), error => error.code === 'INVALID_INPUT' && /privacy/.test(error.message));
+}));
+
+test('an explicitly public typed context file can produce a public derivative', () => withWorkspace(({root, store}) => {
+  const publicInput = 'project:default:docs/kai/engineering/reports/investigations/input-basis/design.md';
+  file(root, 'docs/kai/engineering/reports/investigations/input-basis/design.md', 'Accepted public design');
+  file(root, outputFile, 'Public output');
+  seedItem(store, {
+    state: 'in-review',
+    producer_actor: builder,
+    acceptance_actor: null,
+    context_artifacts: [publicInput],
+  });
   bind(root, store, builder, 'artifact.register', 'demo');
   assert.equal(registerArtifact(store, cmd(store, 'artifact.register', 'demo', {
     artifactId: randomUUID(), assetId: randomUUID(), subject: hashArtifact({root, relativePath: outputFile}),
     projectId: null, classification: 'public', mediaType: 'text/markdown',
-    title: 'Public aliases', inputAssetIds: [], at: at(),
+    title: 'Public context', inputAssetIds: [], at: at(),
   })).ok, true);
 }));
 

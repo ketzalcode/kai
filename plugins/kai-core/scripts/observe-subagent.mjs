@@ -2,26 +2,46 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import {
   MAX_BYTES,
   MAX_LINE,
+  activityWorkspaceAdmission,
   digest,
   looksAbsolute,
   safeNote
-} from "./chunk-7QZFFPOT.mjs";
+} from "./chunk-S4A2HMCB.mjs";
 import {
+  escapesRoot,
+  pathHasLink,
   resolveWorkspaceRoot
-} from "./chunk-VTZRFV57.mjs";
+} from "./chunk-2WT4K7YK.mjs";
+import "./chunk-XLDNBMDG.mjs";
+import "./chunk-ITUOITH3.mjs";
 
 // src/core/observe-subagent.mjs
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, statSync, renameSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-var OBSERVED_REL = ".kai/observed.jsonl";
-var CONSENT_REL = ".kai/observer-consent";
+var OBSERVED_REL = ".kai/core/runtime/observed.jsonl";
+var CONSENT_REL = ".kai/core/runtime/observer-consent";
 var OBSERVED_EVENTS = /* @__PURE__ */ new Set(["start", "stop"]);
 var NAME_RE = /^[a-z0-9-]{1,60}$/;
 function findWorkspace(cwd, env = process.env) {
   if (typeof cwd !== "string" || !cwd) return null;
   const r = resolveWorkspaceRoot({ cwd, env });
   return r.ok ? r.root : null;
+}
+function writableWorkspace(root, env) {
+  const admission = activityWorkspaceAdmission(root, env);
+  if (!admission.ok) return admission;
+  const errors = [];
+  for (const path of [
+    join(root, OBSERVED_REL),
+    join(root, CONSENT_REL)
+  ]) {
+    if (escapesRoot(root, path) || pathHasLink(root, path)) {
+      errors.push("schema-5 runtime paths cannot traverse links or escape the workspace");
+      break;
+    }
+  }
+  return errors.length ? { ok: false, reason: errors.join("; ") } : admission;
 }
 function hasConsent(root) {
   return !!root && existsSync(join(root, CONSENT_REL));
@@ -84,10 +104,15 @@ function rotate(file) {
   } catch {
   }
 }
-function appendObserved(root, event, payload, now = Date.now(), opts = {}) {
+function appendObserved(root, event, payload, now = Date.now(), opts = {}, env = process.env) {
   const built = buildObserved(event, payload, now, opts);
   if (!built.ok) return built;
+  const admitted = writableWorkspace(root, env);
+  if (!admitted.ok) return admitted;
   const file = join(root, OBSERVED_REL);
+  if (escapesRoot(root, file) || pathHasLink(root, file)) {
+    return { ok: false, reason: "observed activity path traverses a link or escapes the workspace" };
+  }
   try {
     mkdirSync(dirname(file), { recursive: true });
     rotate(file);
@@ -123,7 +148,8 @@ function main(argv, stdinText, now = Date.now(), env = process.env) {
     event === "subagentStart" ? "start" : event === "subagentStop" ? "stop" : event,
     payload,
     now,
-    { summary: wantsSummary(root) }
+    { summary: wantsSummary(root) },
+    resolverEnv
   );
 }
 var isEntry = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
@@ -138,6 +164,11 @@ function adminCli(argv) {
     process.exit(2);
   }
   const root = r.root;
+  const writable = writableWorkspace(root, process.env);
+  if (!writable.ok) {
+    console.error(`observe-subagent: ${writable.reason}`);
+    process.exit(2);
+  }
   const marker = join(root, CONSENT_REL);
   if (argv.includes("--enable")) {
     const summary = argv.includes("--with-summary");

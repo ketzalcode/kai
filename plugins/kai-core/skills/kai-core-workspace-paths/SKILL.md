@@ -1,243 +1,142 @@
 ---
 name: kai-core-workspace-paths
-description: "Defines workspace resolution, the private .kai layout, publication, storage modes, and the artifact path convention. Use when resolving a root or choosing an artifact path."
-tools: [execute, read, search]
+description: "Use when resolving a Kai workspace, project binding, Direction file, coordination database, or typed private/public artifact path."
+durable-output-producer: false
+tools: [read, execute, search]
 ---
 
 # Workspace paths
 
-This skill is the source of truth for where Kai resolves roots and places
-files. It defines workspace resolution, the private `.kai/` layout, project
-publication, storage modes, the run grammar, the agent checklist, and the
-artifact path convention.
+Schema 5 has one private operational root and one project publication root:
 
-**Never invent an output path.** Resolve the workspace and target project
-before reading coordination state, dispatching work, or writing an artifact.
+```text
+.kai/       private, ignored, untracked
+docs/kai/   committed accepted knowledge
+```
+
+Directories appear only on the first valid write. Installing a pack creates no
+pack directory.
 
 ## Resolution
 
-Resolve one absolute `<workspace-root>` in this order:
+Resolve the workspace before any coordinated read or write.
 
-1. an explicit workspace root in the work packet;
-2. `KAI_WORKSPACE_ROOT`;
-3. an in-tree `.kai/manifest.json`, searching upward only from ambient `cwd`;
-4. the machine-local `$KAI_HOME/workspaces.json` registry;
-5. refusal with a clear reason.
+1. Discover `.kai/manifest.json` for `repo-local` placement or use the
+   registered external workspace binding.
+2. Validate exact native paths, project identity, workspace identity, case,
+   links, junctions, nested Git roots, and publication-root containment.
+3. Resolve the configured project and its `publication_root`.
+4. Read Direction from the configured project.
+5. Treat `.kai/core/runtime/coordination.sqlite` as the only coordination
+   authority.
 
-Explicit and environment roots are exact. Never search upward from them.
-`KAI_HOME` defaults to the user's `~/.kai`. Session-state, temp directories,
-and an incidental agent cwd are never durable workspace roots.
+Direct assistance needs no workspace, manifest, Direction, or database.
+Coordinated work refuses an absent or invalid workspace and routes explicit
+onboarding.
 
-An external registry row is valid only when:
+## Manifest
 
-- `project_root` and `workspace_root` are absolute;
-- one project has exactly one matching row;
-- the external manifest binds that project;
-- the registry and manifest carry the same `workspace_id`.
-
-Any mismatch stops resolution. Never guess between duplicate or stale rows.
-
-The bootstrap sentinel is always:
-
-```text
-<workspace-root>/.kai/manifest.json
-```
-
-## Private workspace
-
-```text
-<workspace-root>/
-└─ .kai/
-   ├─ manifest.json
-   ├─ CONVENTIONS.md
-   ├─ state/
-   │  ├─ coordination.sqlite
-   │  ├─ ACTIVE.md
-   │  ├─ BOARD.md
-   │  ├─ backlog.md
-   │  ├─ items/
-   │  ├─ threads/
-   │  └─ initiatives/
-   │     ├─ INDEX.md
-   │     └─ <slug>/
-   │        ├─ northstar.md
-   │        ├─ log.md
-   │        ├─ backlog.md
-   │        ├─ deliverables.md
-   │        ├─ director-summary.md
-   │        └─ artifacts/
-   ├─ runs/
-   ├─ review/
-   ├─ archive/
-   └─ personal/
-```
-
-Under schema 4, `state/coordination.sqlite` is the authoritative coordination
-record, read with `status`, `detail`, `messages` and `export`. `BOARD.md`,
-`items/<id>.md` and `threads/<id>.md` are **retained historical import sources**:
-nothing writes them under schema 4, so they are no longer updated and are never
-read as authority. Change coordinated state only by submitting a runtime command
-through `scripts/coordinate.mjs` (see `kai-core-work-granting`). Authored
-material — briefs, designs, decision rationale, reports — stays real authored
-content at its own path and becomes a registered artifact, never a derived file.
-
-The lanes have one purpose each:
-
-| Lane | Purpose |
-|---|---|
-| `.kai/state/` | Authoritative coordination store plus initiative state, backlog, and retained pre-migration item/thread/board history. |
-| `.kai/runs/` | Raw evidence, browser output, scratch, and reproducible run artifacts. |
-| `.kai/review/` | Review-ready drafts and choices that are not accepted project authority. |
-| `.kai/archive/` | Closed operational history removed from active state. |
-| `.kai/personal/` | Operator-private agenda, identity, consultation, proactive, and learning state. |
-
-Observer and activity files are private runtime state beside those lanes:
-
-```text
-.kai/activity.jsonl
-.kai/activity.jsonl.1
-.kai/observed.jsonl
-.kai/observed.jsonl.1
-.kai/observer-consent
-```
-
-They are never trackable, including in `shared` mode.
-
-Every fixed `.kai/` path must resolve physically below the workspace root.
-Private lanes may not contain symbolic links, junctions, or nested Git
-repositories; those can redirect writes or track private evidence outside the
-workspace's declared Git policy.
-
-## Project publication
-
-Every manifest binds at least one project:
+Schema 5 uses only `repo-local` or registered `external` placement:
 
 ```json
 {
-  "id": "api",
-  "path": ".",
-  "publication_root": "docs/kai"
+  "plugin": "kai-core",
+  "version": "<plugin-version>",
+  "schema_version": 5,
+  "scaffolded": "<YYYY-MM-DD>",
+  "workspace_id": "<stable-id>",
+  "placement": "repo-local",
+  "workspace_root": ".",
+  "private_root": ".kai",
+  "direction": "docs/kai/DIRECTION.md",
+  "projects": [
+    {
+      "id": "<project-id>",
+      "path": ".",
+      "publication_root": "docs/kai"
+    }
+  ]
 }
 ```
 
-`path` is `.` only when the workspace is inside that project. External
-workspaces use an absolute project path. `publication_root` is project-relative,
-must stay inside the project, and must not be below `.kai/`.
+The manifest does not list installed packs or pre-create their trees. For
+external placement, `workspace_root` and project paths are exact registered
+absolute paths; the project itself contains no `.kai/`.
 
-The default public shape is:
+## Direction
 
-```text
-<project-root>/<publication-root>/
-├─ README.md
-├─ decisions/
-├─ specs/
-└─ reports/
+`docs/kai/DIRECTION.md` is required for coordinated work and has exactly these
+non-empty sections:
+
+```markdown
+# Vision
+
+<enduring destination>
+
+# Mission
+
+<who the repository serves and why>
+
+# Current Goal
+
+<one observable, time-bounded Current Goal>
+
+# Out of Scope
+
+- <explicit exclusion>
 ```
 
-An existing project-native documentation root may replace `docs/kai`. Create
-only the configured root. Provider plugins may define explicit extensions such
-as `content/` or `learning/`; they do not create a second Kai publication root.
+There is one observable, time-bounded Current Goal. Direction contains no
+roadmap, task list, generated status, or parking lot. Git carries its revision
+history.
 
-Publication is deliberate. Private coordination, drafts, evidence, personal
-state, and unaccepted findings never move there automatically. Accepted current
-knowledge may publish after its completion authority approves the exact
-revision.
+## Typed artifact grammar
 
-Private artifact targets are workspace-relative:
+Every durable private artifact path includes its owning pack, allowed type,
+stable ID, and active lifecycle:
 
 ```text
-.kai/state/initiatives/export/artifacts/decisions/export-api.md
-.kai/review/designs/export-ui/options.html
+.kai/<pack>/<type>/<id>/{drafts,evidence,scratch}/
+.kai/<pack>/<type>/<subtype>/<id>/{drafts,evidence,scratch}/
+.kai/<pack>/archive/<type>/<id>/...
+.kai/<pack>/archive/<type>/<subtype>/<id>/...
 ```
 
-Public artifact targets use the project-qualified form:
+Accepted publication mirrors the validated pack/type/subtype/ID route under
+the configured project:
 
 ```text
-project:api:docs/kai/decisions/export-api.md
-project:web:docs/kai/specs/export-ui.md
+docs/kai/<pack>/<type>/<id>/...
+docs/kai/<pack>/<type>/<subtype>/<id>/...
 ```
 
-The path after the second colon is relative to the selected project root.
-Never record a machine-absolute project path in a work item.
+The owning pack publication skill is the only source for allowed types,
+subtypes, formats, publication rules, and privacy rules. Core path grammar does
+not duplicate Engineering or Creative vocabularies.
 
-## Storage modes
+Refuse an unknown pack, type, subtype, ID, lifecycle, arbitrary root, path
+escape, link, junction, case alias, nested Git root, collision, or destination
+outside the configured project. Path derivation never creates directories.
 
-| `storage_mode` | Workspace location | Git contract |
-|---|---|---|
-| `external` | Durable directory outside the project | Project may have zero Kai files; registry pairing is required. |
-| `repo-local` | Project `.kai/` | The entire `/.kai/` tree is ignored and untracked. |
-| `shared` | Project `.kai/` | Manifest, conventions, and `.kai/state/` may be tracked; private runtime lanes remain ignored. |
+## Privacy
 
-`external` is the zero-footprint default when the operator does not want Kai
-state in the project. `repo-local` trades portability for simple local
-discovery. `shared` is an explicit decision to collaborate through operational
-state.
+For `repo-local`, the managed Git block ignores all of `/.kai/`; verify it is
+untracked before the first write. For `external`, the registered workspace is
+outside the project and the project contains no `.kai/`.
 
-Publication is independent of storage mode. Any mode may publish accepted
-knowledge to the target project's configured publication root.
+Drafts, evidence, scratch, runtime state, host capabilities, activity, and
+observation data never enter Git. Accepted collaboration happens through the
+configured `docs/kai/` publication root.
 
-## Run grammar
+## Explicit migration
 
-`<working-root>` is the resolved `<workspace-root>/.kai/runs` directory. It is
-an alias used by run-producing agents, never a separate configurable root and
-never the process current working directory.
+<!-- kai:schema4-history -->
+Schema 3 and schema 4 may contain shared placement, `.kai/state/`,
+`.kai/runs/`, `.kai/review/`, `.kai/personal/`, initiatives, generic items,
+boards, milestones, and threads. Those are historical migration inputs only.
+<!-- /kai:schema4-history -->
 
-Most raw runs use:
-
-```text
-.kai/runs/<area>/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/<artifact>
-```
-
-- `<NN>` is the next zero-padded index for that area and day.
-- Never fill a lower gap or reuse an index.
-- One role run owns one run directory.
-- Credentials, tokens, cookies, and browser state never leave `.kai/runs/`.
-- Browser `OUT` directories must resolve below the current run directory.
-
-Goal-oriented `learn` and `lessons` runs replace the date with a stable goal
-slug. `pulse` replaces it with an ISO week. These exceptions retain the
-`<NN>-<flavor>-<descriptor>` tail.
-
-Canonical areas are:
-
-```text
-qa eng product revenue support review ship incident ai learn lessons pulse content
-```
-
-Add an area to the manifest contract before using a new one.
-
-## Agent checklist
-
-1. Resolve and validate the workspace manifest.
-2. Resolve the target project and its `publication_root`.
-3. Read `.kai/state/ACTIVE.md`; load only matching initiatives.
-4. Use `.kai/runs/` for raw evidence and `.kai/review/` for review-ready drafts.
-5. Keep initiative working artifacts below `.kai/state/initiatives/<slug>/`.
-6. Record private targets as workspace-relative and public targets as
-   `project:<id>:<relative-path>`.
-7. Publish only accepted current knowledge.
-8. Keep personal state and runtime logs private.
-9. Archive terminal operational history without moving published knowledge.
-10. Never create an unregistered root or arbitrary backlog, report, design, or
-    TODO path.
-
-A direct single-shot request resolves none of this: it needs no coordination
-database, no initiative and no report tree. Resolve a workspace when the work
-actually writes durable Kai state.
-
-## Artifact path convention
-
-An item's durable asset lands at:
-
-    .kai/state/initiatives/<slug>/artifacts/<domain>/<item-id>.md
-
-`<domain>` is declared by the producing role in its own body, not listed here.
-Adding a role does not change this contract.
-
-Three departures are real, and only these:
-
-| Departure | Form | Why |
-| --- | --- | --- |
-| Bundle output | `.../artifacts/<domain>/<item-id>/` (a directory) | the deliverable is several files, not one document |
-| De-identified signal | `.../artifacts/<domain>/<item-id>.md`, contents de-identified | the location carries a privacy obligation, so the producing role states it |
-| Public incident report, unaffiliated item only | `project:<project-id>:docs/kai/reports/incidents/<incident-id>.md` | only when that project's configured `publication_root` is `docs/kai`; affiliated incidents follow the ordinary convention at `.../artifacts/incidents/<item-id>.md`; raw evidence stays in `.kai/runs/` |
+Old workspaces remain inspectable but not writable. Migration is explicit,
+offline, backup-first, ownership-classified, and manifest-last. Unknown or
+ambiguous ownership blocks activation; nothing enters a fallback lane. Failure
+leaves the old workspace authoritative and the verified backup intact.

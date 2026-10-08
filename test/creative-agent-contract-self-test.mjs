@@ -9,6 +9,7 @@ import {
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 import { parseScreenplay } from '../src/creative/lib/screenplay.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +31,7 @@ const inactiveCreativeSkills = [
   'ui-mockup',
   'video-direction',
 ];
+const creativePublicationSkill = 'creative-workspace-publication';
 const targetIds = [
   'creative-lead-design',
   'creative-lead-video',
@@ -40,7 +42,10 @@ const knownSkills = new Set([
     .filter(entry => entry.pack === 'core')
     .map(entry => entry.id),
   ...finalCreativeSkills,
+  creativePublicationSkill,
 ]);
+assert.equal(typeof packPlan.publicationRoutingErrors, 'function',
+  'creative agent tests require the shared publication-routing validator');
 const knownAgents = new Set([
   ...sourceAgentFiles(root).map(entry => entry.id),
   ...targetIds,
@@ -62,6 +67,7 @@ function parseAgent(id) {
       description: field('description'),
       model: field('model'),
       tools: JSON.parse(field('tools')),
+      durableOutputProducer: field('durable-output-producer'),
     },
   };
 }
@@ -94,6 +100,8 @@ function assertContract(agent, {
 }) {
   assert.equal(agent.fm.name, agent.id);
   assert.equal(agent.fm.model, `"${model}"`);
+  assert.equal(agent.fm.durableOutputProducer, 'true',
+    `${agent.id}: creative agents explicitly declare durable output production`);
   assert.deepEqual(agent.fm.tools, tools, `${agent.id}: tools must stay least-privilege`);
   assert.ok(!agent.fm.tools.some(tool =>
     ['agent', 'read_agent', 'write_agent'].includes(tool)),
@@ -109,11 +117,24 @@ function assertContract(agent, {
   );
   assert.deepEqual(agentRoutingErrors({
     id: agent.id,
+    pack: 'creative',
     body: agent.body,
     tools: agent.fm.tools,
     knownSkills,
     knownAgents,
   }), [], `${agent.id}: on-demand routing contract`);
+  assert.deepEqual(
+    packPlan.publicationRoutingErrors({
+      pack: 'creative', id: agent.id, kind: 'agent', body: agent.body,
+    }),
+    [],
+    `${agent.id}: creative publication route must immediately precede asset production`,
+  );
+  assert.deepEqual(
+    packPlan.agentDirectOutputErrors({pack: 'creative', id: agent.id, body: agent.body}),
+    [],
+    `${agent.id}: direct output cannot become an unauthorized durable Kai artifact`,
+  );
   assert.doesNotMatch(agent.body, /^\*\*Inherits:\*\*/m);
 
   const routes = new Set(routedSkills(agent.body));
@@ -252,6 +273,40 @@ const productionContract = {
 };
 assertContract(production, productionContract);
 
+const creativeProducers = [design, video, production].filter(agent =>
+  packPlan.durableOutputProducerDeclaration(agent) === true);
+assert.ok(creativeProducers.length > 0,
+  'creative publication routing must inspect at least one declared durable producer');
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    pack: 'creative',
+    id: creativeProducers[0].id,
+    kind: 'agent',
+    body: creativeProducers[0].body
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`[^.]*\.\s*/gi,
+        '',
+      )
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+        '',
+      ),
+  }).some(message => message.includes('declared durable-output producer')),
+  'removing both creative production routes must fail from the producer declaration',
+);
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    pack: 'creative',
+    id: creativeProducers[0].id,
+    kind: 'agent',
+    body: creativeProducers[0].body.replace(
+      'durable-output-producer: true',
+      'durable-output-producer: false',
+    ),
+  }).some(message => message.includes('declared non-producer')),
+  'falsifying a creative producer declaration must fail while routes remain',
+);
+
 assert.throws(
   () => assertContract(
     withExtraRoute(design, 'Invoke `video-render-zoom` when a production focus effect would help.'),
@@ -279,4 +334,7 @@ assert.deepEqual(
   'the three roles must cover the approved six-skill interface',
 );
 
-console.log('creative agent contract assertions passed');
+console.log(
+  `creative agent contract assertions passed `
+  + `(agents=${targetIds.length}, durable producers=${creativeProducers.length})`,
+);

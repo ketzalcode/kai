@@ -58,6 +58,62 @@ const sourceSkills = packPlan.sourceSkillFiles(root);
 const references = packPlan.collectReferences(root);
 const emitted = packPlan.materializePacks({ root, version: canonicalVersion });
 
+// --- schema-5 source inventory ---------------------------------------------
+const publicationSkills = {
+  core: 'kai-core-workspace-publication',
+  engineering: 'engineering-workspace-publication',
+  creative: 'creative-workspace-publication',
+};
+const publicationEntries = sourceSkills.filter(entry =>
+  Object.values(publicationSkills).includes(entry.id));
+assert.equal(publicationEntries.length, 3,
+  `expected one publication skill in each shipped pack, found ${publicationEntries.length}`);
+for (const [pack, id] of Object.entries(publicationSkills)) {
+  assert.deepEqual(
+    publicationEntries.filter(entry => entry.pack === pack).map(entry => entry.id),
+    [id],
+    `kai-${pack} must own exactly its canonical publication skill`,
+  );
+}
+
+for (const id of [
+  'kai-core-work-hierarchy',
+  'kai-core-work-stewardship',
+  'kai-core-work-task',
+]) {
+  assert.ok(sourceSkills.some(entry => entry.pack === 'core' && entry.id === id),
+    `kai-core must ship ${id}`);
+}
+assert.ok(sourceAgents.some(entry =>
+  entry.pack === 'core' && entry.id === 'workflow-epic-init'),
+'kai-core must ship workflow-epic-init');
+
+for (const id of [
+  'kai-core-workspace-initiative',
+  'kai-core-work-item',
+  'kai-core-initiative-stewardship',
+]) {
+  assert.ok(!sourceSkills.some(entry => entry.id === id),
+    `retired skill ${id} must not remain discoverable`);
+}
+assert.ok(!sourceAgents.some(entry => entry.id === 'workflow-initiative-init'),
+  'retired agent workflow-initiative-init must not remain discoverable');
+
+assert.equal(typeof packPlan.publicationInventoryErrors, 'function',
+  'pack-plan must export publicationInventoryErrors for source and generated mutation gates');
+if (typeof packPlan.publicationInventoryErrors === 'function') {
+  assert.deepEqual(packPlan.publicationInventoryErrors(sourceSkills), [],
+    'the live source inventory must satisfy the one-publication-skill-per-pack contract');
+  const withoutEngineering = sourceSkills.filter(entry =>
+    entry.id !== publicationSkills.engineering);
+  assert.ok(
+    packPlan.publicationInventoryErrors(withoutEngineering)
+      .some(message => message.includes('kai-engineering') &&
+        message.includes('exactly one publication skill')),
+    'removing the engineering publication skill must fail by pack and rule name',
+  );
+}
+
 assert.deepEqual(packPlan.INCUBATED_PACKS.map(packPlan.packPluginName).sort(),
   [...incubated].sort(), 'the declared incubated set matches this contract');
 assert.deepEqual(packPlan.PACK_ORDER.map(packPlan.packPluginName).sort(), [...published].sort(),
@@ -140,4 +196,7 @@ for (const name of readdirSync(join(root, 'incubator'), { withFileTypes: true })
     `${name}: every incubator directory is accounted for in incubator/README.md`);
 }
 
-console.log('package availability, incubation isolation, and publication rejection assertions passed');
+console.log(
+  `package availability assertions passed `
+  + `(publication packs=${publicationEntries.length}, hierarchy skills=3, active agents=${sourceAgents.length})`,
+);

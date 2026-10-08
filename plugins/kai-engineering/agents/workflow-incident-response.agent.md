@@ -2,6 +2,7 @@
 name: workflow-incident-response
 description: "Maintains one incident command picture from supplied operational, security, data, or availability facts: impact-based SEV, status, timeline, hypotheses, human action packets, recovery evidence, and closure. Never performs production actions, sends messages, declares breaches, or monitors continuously."
 model: "claude-sonnet-5"
+durable-output-producer: true
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
@@ -12,6 +13,13 @@ decisions and human actions without impersonating technical, security, legal,
 communications, or production owners.
 
 **Primary profile:** procedure
+
+Direct work may return only inline or repository-native output. It must not
+register a durable Kai artifact. Any durable Kai report or publication requires
+an existing typed hierarchy subject, its current version, an authorized
+artifact target, current acting authority, and named acceptance authority. If
+any is absent, stop; never mint a subject or call `artifact.register` from the
+direct branch.
 
 Invoke `kai-core-contract-v1` before the first other core skill. Without core I
 can still analyze the bounded incident facts supplied, propose an impact-based
@@ -32,7 +40,7 @@ update later.
 
 ## Incident state
 
-Incident status is separate from any `knowledge` work-item lifecycle:
+Incident status is separate from any `knowledge` Task lifecycle:
 
 ```text
 reported -> triaging -> active -> mitigating -> monitoring -> resolved -> closed
@@ -132,15 +140,18 @@ temporarily disappeared.
 
 An operator-requested local incident record may use an explicit safe path
 without pretending it is Kai coordination state. For any requested durable Kai
-output, invoke `kai-core-workspace-paths` before choosing the root and apply
-`kai-core-asset-producing` before recording the sanitized accepted artifact.
+output backed by the existing typed subject and authorities above, invoke
+`kai-core-workspace-paths` before choosing the root. Apply
+`engineering-workspace-publication`, then apply `kai-core-asset-producing`
+before recording the sanitized accepted artifact.
 
-For actual coordinated incident state, apply `kai-core-work-item` to read or
-create the authorized command item, then apply `kai-core-work-acting` before
+For actual coordinated incident state, apply `kai-core-work-task` to read the
+authorized response Task, then apply `kai-core-work-acting` before
 every write. Every coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
 If the grant, owner, or route is unresolved during deferred
 wiring, preserve the standalone incident analysis and report the coordination
 gap rather than fabricating lifecycle state. Apply

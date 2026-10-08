@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {
-  readFileSync, rmSync, writeFileSync,
+  existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync,
+  unlinkSync, writeFileSync,
 } from 'node:fs';
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
+import {tmpdir} from 'node:os';
 import test from 'node:test';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
@@ -13,30 +15,42 @@ import {
   RuntimeError,
   canonicalJson,
   commandDigest,
+  criteriaRef,
+  subjectRef,
   validateCommand,
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
-import {
-  applyOperation,
-  closeStore,
-  listRecords,
-  openStore,
-  readRecord,
-} from '../src/core/lib/coordination-runtime/store.mjs';
+import * as storeApi from '../src/core/lib/coordination-runtime/store.mjs';
+import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {exactPath} from '../src/core/lib/workspace-path-safety.mjs';
 import {
   allocateTemporaryRoot,
   command,
-  seedItem,
+  fixtureIds,
+  seedTask,
+  seedRecord,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const {
+  applyOperation,
+  closeStore,
+  listRecords,
+  openHistoricalStore,
+  openStore,
+  readRecord,
+  readSubjectView,
+} = storeApi;
+const {logicalStoreDigest} = migrationFiles;
+const taskSubject = id => ({kind: 'task', id});
+const primaryId = fixtureIds.task;
 
-function questionBody(id, ask) {
+function questionBody(id, ask, subject = taskSubject(primaryId)) {
   return {
     schema_version: 1,
     question_id: id,
-    item_id: 'demo',
+    subject,
     asker: {role: 'eng-builder-software', runId: 'builder-run'},
     recipient: 'eng-reviewer-code',
     kind: 'fact',
@@ -49,6 +63,196 @@ function questionBody(id, ask) {
     answer_message_ids: [],
     resolution: null,
   };
+}
+
+function epicBody(id = 'epic:typed-store') {
+  return {
+    schema_version: 1,
+    id,
+    title: 'Exercise typed SQLite subjects',
+    state: 'active',
+    completion_disposition: null,
+    owner: 'operator',
+    scope_authority: 'operator',
+    completion_authority: 'operator',
+    priority: 1,
+    outcome: 'The coordination store persists typed hierarchy subjects.',
+    acceptance: ['Typed subjects remain isolated and durable.'],
+    hold: null,
+    created_at: '2026-09-16T12:00:00.000Z',
+    updated_at: '2026-09-16T12:00:00.000Z',
+    direction_ref: {
+      path: 'docs/kai/DIRECTION.md',
+      hash: 'b'.repeat(64),
+      goal: 'Ship typed coordination subjects.',
+    },
+    contribution: 'Generalizes the store before the semantic Task cutover.',
+    scope_fit: 'Changes only the persistence envelope and query boundary.',
+    required_features: [],
+    optional_features: [],
+  };
+}
+
+function legacyItemBody(id = 'historical-item') {
+  return {
+    schema_version: 1,
+    id,
+    title: 'Historical schema-4 item',
+    initiative: 'historical-initiative',
+    delivery_class: 'knowledge',
+    state: 'proposed',
+    resume_state: null,
+    scope_authority: 'eng-lead-architecture',
+    completion_authority: 'eng-reviewer-code',
+    producer_actor: null,
+    producing_actors: [],
+    acceptance_actor: null,
+    priority: 1,
+    next_role: 'eng-builder-software',
+    outcome: 'Released schema-1 records remain readable.',
+    acceptance: ['The historical item decodes without schema-5 reinterpretation.'],
+    artifact_expectation: 'none',
+    artifact_expectation_reason: 'The historical record is the test subject.',
+    artifact_class: null,
+    durability: null,
+    validity_owner: null,
+    artifact_targets: [],
+    context_artifacts: [],
+    touches: ['src/core/lib/coordination-runtime/store.mjs'],
+    depends_on: [],
+    lease: null,
+    recovery_hold: null,
+    waiting_on_questions: [],
+    required_for_milestone: true,
+    review_requirements: [],
+    change_ref: null,
+    updated_at: '2026-09-16T12:00:00.000Z',
+  };
+}
+
+function messageBody(id, {
+  kind = 'handoff',
+  artifactRefs = [],
+  evidenceRefs = [],
+  subject = taskSubject(primaryId),
+} = {}) {
+  const payload = kind === 'question'
+    ? {
+        questionKind: 'fact',
+        blocking: false,
+        context: 'Typed-subject isolation.',
+        ask: 'Can a foreign subject enter this view?',
+        answerBy: 'before projection',
+      }
+    : kind === 'answer'
+      ? {
+          status: 'answered',
+          answer: 'No.',
+          lane: 'in-lane',
+        }
+      : kind === 'recovery'
+        ? {
+            observed: 'Foreign recovery record.',
+            disposition: 'conflicting-partial-work',
+            staleLeaseToken: 'foreign-stale-lease',
+            newLeaseToken: null,
+          }
+        : {
+            did: 'Persisted a foreign handoff.',
+            needs: 'Keep typed subjects isolated.',
+            assetState: 'none — product change',
+            authority: 'pending',
+            revalidation: 'not applicable',
+            questions: [],
+          };
+  return {
+    schema_version: 1,
+    message_id: id,
+    subject,
+    thread_id: subjectRef(subject, 1),
+    parent_id: null,
+    sender_role: 'eng-builder-software',
+    sender_run: 'foreign-subject-run',
+    recipient: 'eng-reviewer-code',
+    kind,
+    created_at: '2026-09-16T12:00:00.000Z',
+    basis_version: 1,
+    payload,
+    artifact_refs: artifactRefs,
+    evidence_refs: evidenceRefs,
+    provenance: 'durable-thread',
+  };
+}
+
+function createSchema1Store(path) {
+  const database = new DatabaseSync(path);
+  database.exec(`
+    CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE records (
+      kind TEXT NOT NULL, id TEXT NOT NULL, item_id TEXT,
+      version INTEGER NOT NULL CHECK (version > 0),
+      body TEXT NOT NULL CHECK (json_valid(body)),
+      PRIMARY KEY (kind, id)
+    );
+    CREATE TABLE events (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT,
+      operation_id TEXT NOT NULL, item_id TEXT,
+      payload TEXT NOT NULL CHECK (json_valid(payload)),
+      event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED,
+      message_id TEXT GENERATED ALWAYS AS (
+        CASE json_extract(payload, '$.kind')
+          WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
+          WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
+          WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
+          WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
+        END
+      ) STORED,
+      approval_id TEXT GENERATED ALWAYS AS (
+        CASE WHEN json_extract(payload, '$.kind') = 'approval.record'
+          THEN json_extract(payload, '$.payload.body.approval_id') END
+      ) STORED,
+      question_id TEXT GENERATED ALWAYS AS (
+        CASE WHEN json_extract(payload, '$.kind') = 'question.open'
+          THEN json_extract(payload, '$.payload.questionId') END
+      ) STORED,
+      thread_id TEXT
+    );
+    CREATE TABLE operations (
+      id TEXT PRIMARY KEY, payload_digest TEXT NOT NULL,
+      receipt TEXT NOT NULL CHECK (json_valid(receipt))
+    );
+    CREATE INDEX records_by_item ON records(kind, item_id);
+    CREATE INDEX records_by_question_status ON records(item_id, json_extract(body, '$.status'))
+      WHERE kind = 'question';
+    CREATE INDEX records_by_criteria ON records(kind, item_id, json_extract(body, '$.criteria_ref'));
+    CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL;
+    CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL;
+    CREATE INDEX events_by_item_kind ON events(item_id, event_kind, seq, question_id);
+    CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL;
+    CREATE TRIGGER events_capture_thread AFTER INSERT ON events
+      WHEN NEW.message_id IS NOT NULL
+      BEGIN
+        UPDATE events SET thread_id = COALESCE(
+          (SELECT json_extract(body, '$.thread_id') FROM records
+            WHERE kind = 'message' AND id = NEW.message_id), NEW.item_id)
+        WHERE seq = NEW.seq;
+      END;
+    CREATE TRIGGER messages_capture_thread AFTER INSERT ON records
+      WHEN NEW.kind = 'message'
+      BEGIN
+        UPDATE events SET thread_id = json_extract(NEW.body, '$.thread_id')
+        WHERE message_id = NEW.id;
+      END;
+    CREATE TRIGGER messages_update_thread AFTER UPDATE OF body ON records
+      WHEN NEW.kind = 'message'
+      BEGIN
+        UPDATE events SET thread_id = json_extract(NEW.body, '$.thread_id')
+        WHERE message_id = NEW.id;
+      END;
+  `);
+  database.prepare("INSERT INTO metadata VALUES ('schema_version', '1')").run();
+  database.prepare("INSERT INTO metadata VALUES ('message_schema_version', '1')").run();
+  database.close();
 }
 
 function allocatedCase(prefix, fn) {
@@ -85,9 +289,11 @@ await test('store case fixture allocates outside the checkout', () => {
 await test('temporary root allocator refuses OS temp inside the checkout', () => {
   const previousTemp = process.env.TEMP;
   const previousTmp = process.env.TMP;
+  const previousTmpDir = process.env.TMPDIR;
   let allocatedRoot;
   process.env.TEMP = repoRoot;
   process.env.TMP = repoRoot;
+  process.env.TMPDIR = repoRoot;
   try {
     assert.throws(
       () => {
@@ -104,6 +310,68 @@ await test('temporary root allocator refuses OS temp inside the checkout', () =>
     else process.env.TEMP = previousTemp;
     if (previousTmp === undefined) delete process.env.TMP;
     else process.env.TMP = previousTmp;
+    if (previousTmpDir === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmpDir;
+  }
+});
+
+await test('temporary root allocator returns a canonical path when OS temp is an alias', () => {
+  const physicalTemp = mkdtempSync(join(tmpdir(), 'kai-coordination-temp-target-'));
+  const aliasedTemp = `${physicalTemp}-alias`;
+  const previousTemp = process.env.TEMP;
+  const previousTmp = process.env.TMP;
+  const previousTmpDir = process.env.TMPDIR;
+  let allocatedRoot;
+  symlinkSync(physicalTemp, aliasedTemp, process.platform === 'win32' ? 'junction' : 'dir');
+  process.env.TEMP = aliasedTemp;
+  process.env.TMP = aliasedTemp;
+  process.env.TMPDIR = aliasedTemp;
+  try {
+    allocatedRoot = allocateTemporaryRoot('kai-coordination-aliased-location-', repoRoot);
+    assert.equal(exactPath(allocatedRoot), true);
+  } finally {
+    if (allocatedRoot) rmSync(allocatedRoot, {recursive: true, force: true});
+    unlinkSync(aliasedTemp);
+    rmSync(physicalTemp, {recursive: true, force: true});
+    if (previousTemp === undefined) delete process.env.TEMP;
+    else process.env.TEMP = previousTemp;
+    if (previousTmp === undefined) delete process.env.TMP;
+    else process.env.TMP = previousTmp;
+    if (previousTmpDir === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmpDir;
+  }
+});
+
+await test('temporary root allocator rejects temp inside an aliased checkout', () => {
+  const physicalCheckout = mkdtempSync(join(tmpdir(), 'kai-coordination-checkout-target-'));
+  const aliasedCheckout = `${physicalCheckout}-alias`;
+  const nestedTemp = join(physicalCheckout, 'temp');
+  const previousTemp = process.env.TEMP;
+  const previousTmp = process.env.TMP;
+  const previousTmpDir = process.env.TMPDIR;
+  mkdirSync(nestedTemp);
+  symlinkSync(
+    physicalCheckout,
+    aliasedCheckout,
+    process.platform === 'win32' ? 'junction' : 'dir',
+  );
+  process.env.TEMP = nestedTemp;
+  process.env.TMP = nestedTemp;
+  process.env.TMPDIR = nestedTemp;
+  try {
+    assert.throws(
+      () => allocateTemporaryRoot('kai-coordination-aliased-checkout-', aliasedCheckout),
+      /OS temporary directory must be outside checkout/,
+    );
+  } finally {
+    unlinkSync(aliasedCheckout);
+    rmSync(physicalCheckout, {recursive: true, force: true});
+    if (previousTemp === undefined) delete process.env.TEMP;
+    else process.env.TEMP = previousTemp;
+    if (previousTmp === undefined) delete process.env.TMP;
+    else process.env.TMP = previousTmp;
+    if (previousTmpDir === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmpDir;
   }
 });
 
@@ -182,11 +450,11 @@ assert.equal(
   '{"list":[3,2,1],"nested":{"a":null,"b":true},"z":1}',
 );
 assert.equal(
-  commandDigest(command('item.update', {
+  commandDigest(command('task.update', {
     operationId: '00000000-0000-4000-8000-000000000001',
     payload: {title: 'Revised'},
   })),
-  commandDigest(command('item.update', {
+  commandDigest(command('task.update', {
     operationId: '00000000-0000-4000-8000-000000000001',
     payload: {title: 'Revised'},
   })),
@@ -200,90 +468,385 @@ assert.throws(() => canonicalJson(cyclic), error =>
 assert.throws(() => canonicalJson({bad: undefined}), error =>
   error instanceof RuntimeError && error.code === 'INVALID_INPUT');
 
-assert.ok(COMMAND_KINDS.has('item.update'));
+assert.ok(COMMAND_KINDS.has('task.update'));
 assert.ok(RECORD_KINDS.has('item'));
 assert.throws(() => validateCommand(command('unknown.command')), error =>
   error.code === 'INVALID_INPUT');
-assert.throws(() => validateCommand(command('item.update', {
+assert.throws(() => validateCommand(command('task.update', {
   payload: {state: 'shipped'},
 })), error => error.code === 'INVALID_INPUT');
 assert.throws(() => validateCommand({
-  ...command('item.update', {payload: {title: 'Valid'}}),
+  ...command('task.update', {payload: {title: 'Valid'}}),
   authority: {roles: ['operator']},
 }), error => error.code === 'INVALID_INPUT');
 assert.throws(() => validateRecord({
   kind: 'item',
   id: 'demo',
-  itemId: 'demo',
+  subject: taskSubject(primaryId),
   version: 1,
   body: [],
 }), error => error.code === 'INVALID_INPUT');
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   assert.deepEqual(
     store.database.prepare('SELECT key, value FROM metadata ORDER BY key').all()
       .map(({key, value}) => ({key, value})),
     [
       {key: 'message_schema_version', value: '1'},
-      {key: 'schema_version', value: '1'},
+      {key: 'schema_version', value: '2'},
     ],
   );
-  const op = command('item.update', {payload: {title: 'Revised'}});
+  const op = command('task.update', {payload: {title: 'Revised'}});
   const mutate = current => ({...current.body, title: 'Revised'});
   const first = applyOperation(store, op, mutate);
   assert.deepEqual(applyOperation(store, op, mutate), first);
   assert.equal(first.recordVersion, 2);
-  assert.equal(readRecord(store, 'item', 'demo').version, 2);
+  assert.equal(readRecord(store, 'task', primaryId).version, 2);
+  assert.deepEqual(
+    {...store.database.prepare(`
+      SELECT subject_kind, subject_id FROM events WHERE seq = ?
+    `).get(first.eventSeq)},
+    {subject_kind: 'task', subject_id: primaryId},
+  );
   assert.throws(() => applyOperation(store,
     {...op, payload: {title: 'Different'}}, mutate),
   error => error.code === 'OPERATION_CONFLICT');
   assert.throws(() => applyOperation(store,
-    command('item.update', {
+    command('task.update', {
       expectedVersion: 1,
       payload: {title: 'Stale'},
     }), mutate),
   error => error.code === 'VERSION_CONFLICT');
 });
 
+await test('schema 2 stores root records and isolates typed hierarchy subjects', async () => {
+  await withWorkspace(({store}) => {
+    const columns = store.database.prepare('PRAGMA table_xinfo(records)').all()
+      .map(column => column.name);
+    assert.deepEqual(columns, [
+      'kind',
+      'id',
+      'subject_kind',
+      'subject_id',
+      'version',
+      'body',
+    ]);
+
+    const epic = {
+      kind: 'epic',
+      id: 'epic:typed-store',
+      subject: null,
+      version: 1,
+      body: epicBody(),
+    };
+    seedRecord(store, epic);
+    assert.deepEqual(readRecord(store, epic.kind, epic.id).subject, null);
+
+    const subjects = [
+      {kind: 'epic', id: 'epic:typed-store'},
+      {kind: 'feature', id: 'core:feature:typed-store'},
+      {kind: 'requirement', id: 'core:requirement:typed-store'},
+      {kind: 'task', id: 'core:task:typed-store'},
+    ];
+    for (const [index, subject] of subjects.entries()) {
+      const id = `typed-question-${index}`;
+      seedRecord(store, {
+        kind: 'question',
+        id,
+        subject,
+        version: 1,
+        body: questionBody(id, `Question for ${subject.kind}`, subject),
+      });
+    }
+
+    assert.equal(listRecords(store, {kind: 'question'}).length, subjects.length);
+    assert.deepEqual(
+      listRecords(store, {kind: 'question', subject: subjects[0]})
+        .map(record => record.subject),
+      [subjects[0]],
+    );
+    assert.deepEqual(listRecords(store, {kind: 'question', subject: null}), []);
+
+    assert.throws(
+      () => listRecords(store, {
+        kind: 'question',
+        subject: {kind: 'epic', id: null},
+      }),
+      error => error.code === 'INVALID_INPUT',
+    );
+    assert.throws(
+      () => validateRecord({
+        kind: 'question',
+        id: 'invalid-subject',
+        subject: {kind: 'epic'},
+        version: 1,
+        body: questionBody('invalid-subject', 'Invalid subject'),
+      }),
+      error => error.code === 'INVALID_INPUT',
+    );
+    assert.throws(() => store.database.prepare(`
+      INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+      VALUES ('question', 'sql-mismatch', 'epic', NULL, 1, '{}')
+    `).run(), error => error.code === 'ERR_SQLITE_ERROR');
+    assert.throws(() => store.database.prepare(`
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+      VALUES ('sql-mismatch', NULL, 'epic:typed-store', '{"kind":"mismatch"}')
+    `).run(), error => error.code === 'ERR_SQLITE_ERROR');
+
+    const before = logicalStoreDigest(store);
+    store.database.prepare(`
+      UPDATE records SET subject_id = 'epic:other'
+      WHERE kind = 'question' AND id = 'typed-question-0'
+    `).run();
+    assert.notEqual(logicalStoreDigest(store), before);
+  });
+});
+
+await test('readSubjectView loads cross-subject inputs but keeps local obligations isolated', async () => {
+  await withWorkspace(({store}) => {
+    const foreignSubject = {kind: 'task', id: 'engineering:task:foreign-store'};
+    const openingId = '00000000-0000-4000-8000-000000000101';
+    const answerId = '00000000-0000-4000-8000-000000000102';
+    const recoveryId = '00000000-0000-4000-8000-000000000103';
+    const artifactId = '00000000-0000-4000-8000-000000000104';
+    const evidenceId = '00000000-0000-4000-8000-000000000105';
+    const item = seedTask(store, {
+      state: 'blocked',
+      resume_state: 'in-progress',
+      next_role: 'operator',
+      waiting_on_questions: ['foreign-question'],
+      recovery_hold: recoveryId,
+      context_artifacts: [`artifact:${artifactId}`, `evidence:${evidenceId}`],
+    });
+    const foreignTask = seedTask(store, {id: foreignSubject.id});
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: 'local-question',
+      subject: taskSubject(primaryId),
+      version: 1,
+      body: {
+        ...questionBody('local-question', 'Do foreign messages stay excluded?'),
+        opened_message_id: openingId,
+        answer_message_ids: [answerId],
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: 'foreign-question',
+      subject: foreignSubject,
+      version: 1,
+      body: questionBody('foreign-question', 'Do foreign questions stay excluded?', foreignSubject),
+    }));
+    for (const [id, kind] of [[openingId, 'question'], [answerId, 'answer'], [recoveryId, 'recovery']]) {
+      seedRecord(store, validateRecord({
+        kind: 'message',
+        id,
+        subject: foreignSubject,
+        version: 1,
+        body: messageBody(id, {kind, subject: foreignSubject}),
+      }));
+    }
+    const staleLease = {
+      holder: {role: 'eng-builder-software', runId: 'foreign-subject-run'},
+      token: 'foreign-stale-lease',
+      version_at_grant: 1,
+      acquired_at: '2026-09-16T10:00:00.000Z',
+      expires_at: '2026-09-16T11:00:00.000Z',
+    };
+    seedRecord(store, validateRecord({
+      kind: 'attempt',
+      id: recoveryId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        attempt_id: recoveryId,
+        subject: foreignSubject,
+        grantor: {role: 'eng-lead-architecture', runId: 'recovery-steward'},
+        stale_lease: staleLease,
+        observed: 'Foreign recovery record.',
+        disposition: 'conflicting-partial-work',
+        recovery_evidence_ids: [evidenceId],
+        new_lease: null,
+        created_at: '2026-09-16T12:00:00.000Z',
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'artifact',
+      id: artifactId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        artifact_id: artifactId,
+        subject: foreignSubject,
+        producer: {role: 'eng-builder-software', runId: 'foreign-subject-run'},
+        content_ref: {kind: 'git', base: 'a'.repeat(40), head: 'b'.repeat(40)},
+        criteria_ref: criteriaRef(foreignTask, (kind, id) => readRecord(store, kind, id)),
+        project_id: null,
+        run_directory: '.kai/engineering/reports/foreign-store/scratch',
+        snapshots: [],
+        manifest_path: null,
+        classification: 'internal',
+        media_type: 'text/plain',
+        title: 'Foreign artifact',
+        created_at: '2026-09-16T12:00:00.000Z',
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        evidence_id: evidenceId,
+        subject: foreignSubject,
+        kind: 'recovery-reconciliation',
+        content_ref: null,
+        criteria_ref: null,
+        supersedes: [],
+        dimension: null,
+        outcome: 'passed',
+        evidence_refs: ['retained/foreign-recovery.txt'],
+        reason: 'Foreign evidence must not enter the item view.',
+        data: {
+          stale_lease_token: staleLease.token,
+          disposition: 'conflicting-partial-work',
+          observed: 'Foreign recovery record.',
+        },
+        created_at: '2026-09-16T12:00:00.000Z',
+      },
+    }));
+
+    const view = readSubjectView(store, {
+      subject: taskSubject(primaryId),
+      recentLimit: 0,
+    });
+    const localQuestion = view.questions.find(entry => entry.record?.id === 'local-question');
+    assert.equal(view.questions.filter(entry => entry.record === null).length, 1);
+    assert.equal(localQuestion.openedMessage, null);
+    assert.deepEqual(localQuestion.answerMessages, [null]);
+    assert.equal(view.recoveryHold.record, null);
+    assert.equal(view.recoveryHold.message, null);
+    assert.deepEqual(
+      view.referencedDetails.map(entry => [entry.reference, entry.record?.subject]),
+      [
+        [`artifact:${artifactId}`, foreignSubject],
+        [`evidence:${evidenceId}`, foreignSubject],
+      ],
+    );
+  });
+});
+
+await test('readSubjectView recent messages and counts isolate same-ID typed threads', async () => {
+  await withWorkspace(({store}) => {
+    seedTask(store);
+    const messageId = '00000000-0000-4000-8000-000000000106';
+    seedRecord(store, validateRecord({
+      kind: 'message',
+      id: messageId,
+      subject: {kind: 'task', id: primaryId},
+      version: 1,
+      body: messageBody(messageId),
+    }));
+    store.database.prepare(`
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+      VALUES (?, 'task', 'demo', ?)
+    `).run('foreign-thread-event', JSON.stringify({
+      kind: 'task.handoff',
+      payload: {messageId},
+    }));
+
+    const view = readSubjectView(store, {
+      subject: taskSubject(primaryId),
+      recentLimit: 8,
+    });
+    assert.deepEqual(view.recentMessages, []);
+    assert.equal(view.messageCount, 0);
+    assert.equal(view.latestHandoff, null);
+  });
+});
+
+await test('readSubjectView holds one SQLite snapshot while a WAL writer advances', async () => {
+  await withWorkspace(({store}) => {
+    store.database.exec('PRAGMA journal_mode=WAL');
+    seedTask(store);
+    const writer = openStore({path: store.path, mode: 'write'});
+    const prepare = store.database.prepare;
+    let advanced = false;
+    try {
+      store.database.prepare = function(sql) {
+        if (!advanced && /\bFROM records\b/i.test(sql)) {
+          advanced = true;
+          applyOperation(
+            writer,
+            command('task.update', {payload: {title: 'Writer advanced'}}),
+            current => ({...current.body, title: 'Writer advanced'}),
+          );
+        }
+        return prepare.call(this, sql);
+      };
+      const view = readSubjectView(store, {
+        subject: taskSubject(primaryId),
+        recentLimit: 0,
+      });
+      assert.equal(advanced, true);
+      assert.equal(view.throughSeq, 0);
+      assert.equal(view.record.body.title, 'Demo knowledge Task');
+    } finally {
+      store.database.prepare = prepare;
+      closeStore(writer);
+    }
+    assert.equal(
+      readSubjectView(store, {
+        subject: taskSubject(primaryId),
+        recentLimit: 0,
+      }).record.body.title,
+      'Writer advanced',
+    );
+  });
+});
+
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   assert.throws(() => applyOperation(
     store,
-    command('item.update', {payload: {title: 'Allowed'}}),
+    command('task.update', {payload: {title: 'Allowed'}}),
     current => ({...current.body, title: 'Allowed', state: 'shipped'}),
   ), error => error.code === 'INVALID_INPUT');
-  assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+  assert.equal(readRecord(store, 'task', primaryId).body.state, 'completed');
   assert.throws(() => readRecord(store, 'unknown', 'demo'), error =>
     error.code === 'INVALID_INPUT');
-  assert.throws(() => listRecords(store, {kind: 'unknown', itemId: 'demo'}), error =>
+  assert.throws(() => listRecords(store, {kind: 'unknown', subject: taskSubject(primaryId)}), error =>
     error.code === 'INVALID_INPUT');
 });
 
 await test('mutation cannot rewrite the primary validation baseline', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Allowed'}}),
+      command('task.update', {payload: {title: 'Allowed'}}),
       current => {
         current.body.state = 'shipped';
         return {...current.body, title: 'Allowed'};
       },
     ), error => error.code === 'INVALID_INPUT');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+    assert.equal(readRecord(store, 'task', primaryId).body.state, 'completed');
   });
 });
 
 await test('mutation cannot change the command after its digest is computed', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
-    const operation = command('item.update', {payload: {title: 'Original'}});
+    seedTask(store);
+    const operation = command('task.update', {payload: {title: 'Original'}});
     assert.throws(() => applyOperation(store, operation, current => {
       operation.payload.title = 'Injected';
       return {...current.body, title: 'Injected'};
     }), error => error.code === 'INVALID_INPUT');
-    assert.equal(readRecord(store, 'item', 'demo').body.title, 'Demo knowledge item');
+    assert.equal(readRecord(store, 'task', primaryId).body.title, 'Demo knowledge Task');
     operation.payload.title = 'Original';
     const result = applyOperation(
       store,
@@ -296,13 +859,13 @@ await test('mutation cannot change the command after its digest is computed', as
 
 await test('callback lock-shaped errors remain callback errors', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     const callbackError = new Error('database is locked');
     callbackError.code = 'ERR_SQLITE_ERROR';
     callbackError.errcode = 5;
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Not written'}}),
+      command('task.update', {payload: {title: 'Not written'}}),
       () => {
         throw callbackError;
       },
@@ -311,11 +874,11 @@ await test('callback lock-shaped errors remain callback errors', async () => {
 });
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   let escapedTransaction;
   applyOperation(
     store,
-    command('item.update', {payload: {title: 'Scoped transaction'}}),
+    command('task.update', {payload: {title: 'Scoped transaction'}}),
     (current, tx) => {
       escapedTransaction = tx;
       return {...current.body, title: 'Scoped transaction'};
@@ -326,13 +889,13 @@ await withWorkspace(({store}) => {
 });
 
 await withWorkspace(({root, store}) => {
-  seedItem(store);
-  const operation = command('item.update', {payload: {title: 'Persisted'}});
+  seedTask(store);
+  const operation = command('task.update', {payload: {title: 'Persisted'}});
   const result = applyOperation(store, operation, (current, tx) => {
     tx.put({
       kind: 'question',
       id: 'question-1',
-      itemId: 'demo',
+      subject: taskSubject(primaryId),
       version: 1,
       body: questionBody('question-1', 'Persisted?'),
     });
@@ -340,15 +903,15 @@ await withWorkspace(({root, store}) => {
     return {...current.body, title: 'Persisted'};
   });
   assert.ok(result.eventSeq > 0);
-  assert.equal(listRecords(store, {kind: 'question', itemId: 'demo'}).length, 1);
+  assert.equal(listRecords(store, {kind: 'question', subject: taskSubject(primaryId)}).length, 1);
   closeStore(store);
 
   const reopened = openStore({
-    path: join(root, '.kai', 'state', 'coordination.sqlite'),
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
     mode: 'write',
   });
   try {
-    assert.equal(readRecord(reopened, 'item', 'demo').body.title, 'Persisted');
+    assert.equal(readRecord(reopened, 'task', primaryId).body.title, 'Persisted');
     assert.equal(readRecord(reopened, 'question', 'question-1').version, 1);
     assert.deepEqual(applyOperation(reopened, operation, () => {
       throw new Error('replay must not call mutate');
@@ -359,21 +922,21 @@ await withWorkspace(({root, store}) => {
 });
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   const beforeEvents = store.database.prepare('SELECT count(*) AS count FROM events').get().count;
-  const failed = command('item.update', {payload: {title: 'Rolled back'}});
+  const failed = command('task.update', {payload: {title: 'Rolled back'}});
   assert.throws(() => applyOperation(store, failed, (current, tx) => {
     tx.put({
       kind: 'question',
       id: 'rolled-back-question',
-      itemId: 'demo',
+      subject: taskSubject(primaryId),
       version: 1,
       body: questionBody('rolled-back-question', 'Must disappear'),
     });
     tx.appendEvent({kind: 'must.rollback'});
     throw new Error('mutation failed');
   }), /mutation failed/);
-  assert.equal(readRecord(store, 'item', 'demo').body.title, 'Demo knowledge item');
+  assert.equal(readRecord(store, 'task', primaryId).body.title, 'Demo knowledge Task');
   assert.equal(readRecord(store, 'question', 'rolled-back-question'), null);
   assert.equal(
     store.database.prepare('SELECT count(*) AS count FROM events').get().count,
@@ -387,17 +950,17 @@ await withWorkspace(({store}) => {
 });
 
 await withWorkspace(({root, store}) => {
-  seedItem(store);
+  seedTask(store);
   closeStore(store);
   const readOnly = openStore({
-    path: join(root, '.kai', 'state', 'coordination.sqlite'),
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
     mode: 'read',
   });
   try {
-    assert.equal(readRecord(readOnly, 'item', 'demo').version, 1);
+    assert.equal(readRecord(readOnly, 'task', primaryId).version, 1);
     assert.throws(() => applyOperation(
       readOnly,
-      command('item.update', {payload: {title: 'Denied'}}),
+      command('task.update', {payload: {title: 'Denied'}}),
       current => ({...current.body, title: 'Denied'}),
     ), error => error.code === 'INVALID_INPUT');
   } finally {
@@ -407,8 +970,8 @@ await withWorkspace(({root, store}) => {
 
 await withWorkspace(({store}) => {
   store.database.prepare(`
-    INSERT INTO records (kind, id, item_id, version, body)
-    VALUES ('item', 'malformed', 'malformed', 1, '[]')
+    INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+    VALUES ('item', 'malformed', 'item', 'malformed', 1, '[]')
   `).run();
   assert.throws(() => readRecord(store, 'item', 'malformed'), error =>
     error.code === 'RECOVERY_REQUIRED');
@@ -425,11 +988,151 @@ allocatedCase('schema', root => {
     error.code === 'SCHEMA_MISMATCH');
 });
 
+await test('lower-level mutations fail closed for schema 3/4 and non-live database paths', async () => {
+  for (const schema of [3, 4]) {
+    allocatedCase(`historical-write-${schema}`, root => {
+      const state = join(root, '.kai', 'state');
+      mkdirSync(state, {recursive: true});
+      writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
+        plugin: 'kai-core',
+        version: 'test',
+        schema_version: schema,
+        scaffolded: '2026-10-02',
+        workspace_id: `historical-${schema}`,
+        storage_mode: 'repo-local',
+        workspace_root: '.',
+        state: '.kai/state',
+        runs: '.kai/runs',
+        review: '.kai/review',
+        archive: '.kai/archive',
+        personal: '.kai/personal',
+        projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+        areas: [],
+      }, null, 2)}\n`);
+      const store = openStore({
+        path: join(state, 'coordination.sqlite'),
+        mode: 'create',
+      });
+      try {
+        seedTask(store);
+        assert.throws(
+          () => applyOperation(
+            store,
+            command('task.update', {payload: {title: 'Forbidden historical write'}}),
+            current => ({...current.body, title: 'Forbidden historical write'}),
+          ),
+          error => error.code === 'SCHEMA_MISMATCH',
+        );
+        assert.equal(readRecord(store, 'task', primaryId).version, 1);
+        assert.equal(existsSync(join(root, '.kai', 'state', 'migration.lock')), false);
+      } finally {
+        closeStore(store);
+      }
+    });
+  }
+
+  allocatedCase('foreign-write-path', root => {
+    const store = openStore({path: join(root, 'coordination.sqlite'), mode: 'create'});
+    try {
+      seedTask(store);
+      assert.throws(
+        () => applyOperation(
+          store,
+          command('task.update', {payload: {title: 'Forbidden foreign write'}}),
+          current => ({...current.body, title: 'Forbidden foreign write'}),
+        ),
+        error => error.code === 'SCHEMA_MISMATCH',
+      );
+      assert.equal(readRecord(store, 'task', primaryId).version, 1);
+    } finally {
+      closeStore(store);
+    }
+  });
+});
+
+await test('schema 1 stores open only through the read-only historical API', () => {
+  allocatedCase('historical-schema', root => {
+    const path = join(root, 'coordination.sqlite');
+    createSchema1Store(path);
+    const database = new DatabaseSync(path);
+    const body = legacyItemBody();
+    database.prepare(`
+      INSERT INTO records (kind, id, item_id, version, body)
+      VALUES ('item', ?, ?, 1, ?)
+    `).run(body.id, body.id, JSON.stringify(body));
+    database.close();
+    assert.throws(() => openStore({path, mode: 'read'}), error =>
+      error.code === 'SCHEMA_MISMATCH');
+    assert.throws(() => openHistoricalStore({
+      path,
+      expectedStoreVersion: 1,
+      mode: 'write',
+    }), error => error.code === 'INVALID_INPUT');
+
+    const historical = openHistoricalStore({
+      path,
+      expectedStoreVersion: 1,
+    });
+    try {
+      assert.equal(historical.mode, 'read');
+      assert.equal(historical.schemaVersion, 1);
+      assert.deepEqual(listRecords(historical, {kind: 'item'}), [{
+        kind: 'item',
+        id: body.id,
+        subject: {kind: 'item', id: body.id},
+        version: 1,
+        body,
+      }]);
+      assert.throws(
+        () => historical.database.prepare(`
+          INSERT INTO metadata (key, value) VALUES ('forbidden', 'write')
+        `).run(),
+        error => error.code === 'ERR_SQLITE_ERROR',
+      );
+      assert.throws(
+        () => applyOperation(
+          historical,
+          command('task.update', {payload: {title: 'Denied'}}),
+          current => current.body,
+        ),
+        error => error.code === 'INVALID_INPUT',
+      );
+    } finally {
+      closeStore(historical);
+    }
+  });
+});
+
+await test('historical schema 1 rejects impossible schema-5 Task records', () => {
+  allocatedCase('historical-schema-task', root => {
+    const path = join(root, 'coordination.sqlite');
+    createSchema1Store(path);
+    const database = new DatabaseSync(path);
+    database.prepare(`
+      INSERT INTO records (kind, id, item_id, version, body)
+      VALUES ('task', 'core:task:impossible', NULL, 1, '{}')
+    `).run();
+    database.close();
+    let historical;
+    try {
+      assert.throws(
+        () => {
+          historical = openHistoricalStore({path, expectedStoreVersion: 1});
+        },
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /schema 1 cannot contain task records/i.test(error.message),
+      );
+    } finally {
+      closeStore(historical);
+    }
+  });
+});
+
 await test('open rejects a schema missing its required index', () => {
   allocatedCase('schema-index', root => {
     const path = join(root, 'coordination.sqlite');
     const store = openStore({path, mode: 'create'});
-    store.database.exec('DROP INDEX records_by_item');
+    store.database.exec('DROP INDEX records_by_subject');
     closeStore(store);
     let reopened;
     try {
@@ -442,11 +1145,11 @@ await test('open rejects a schema missing its required index', () => {
   });
 });
 
-await test('v1 indexed chronology is physical schema, never an implicit read/write migration', () => {
+await test('v2 indexed chronology is physical schema, never an implicit read/write migration', () => {
   const objects = [
     ['index', 'events_by_thread'],
     ['index', 'events_by_message'],
-    ['index', 'events_by_item_kind'],
+    ['index', 'events_by_subject_kind'],
     ['index', 'events_by_approval'],
     ['index', 'records_by_question_status'],
     ['index', 'records_by_criteria'],
@@ -476,7 +1179,7 @@ await test('v1 indexed chronology is physical schema, never an implicit read/wri
   }
 });
 
-await test('v1 rejects replaced chronology indexes, triggers and generated-column expressions', () => {
+await test('v2 rejects replaced chronology indexes, triggers and generated-column expressions', () => {
   const changeMessagePath = path => database => {
     const schema = database.prepare(`
       SELECT type, name, sql FROM sqlite_master
@@ -590,28 +1293,28 @@ allocatedCase('modes', root => {
 });
 
 await withWorkspace(async ({root, store}) => {
-  seedItem(store);
-  const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
+  seedTask(store);
+  const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
   await withChildLock(databasePath, 'BEGIN IMMEDIATE', () => {
     const started = Date.now();
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Contended'}}),
+      command('task.update', {payload: {title: 'Contended'}}),
       current => ({...current.body, title: 'Contended'}),
     ), error => error.code === 'STORE_BUSY' && error.retryable === true);
     assert.ok(Date.now() - started >= 800, 'busy_timeout should bound contention near one second');
   });
-  assert.equal(readRecord(store, 'item', 'demo').version, 1);
+  assert.equal(readRecord(store, 'task', primaryId).version, 1);
 });
 
 await test('read operations translate SQLite lock exhaustion to STORE_BUSY', async () => {
   await withWorkspace(async ({root, store}) => {
-    seedItem(store);
-    const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
+    seedTask(store);
+    const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
     await withChildLock(databasePath, 'BEGIN EXCLUSIVE', () => {
-      assert.throws(() => readRecord(store, 'item', 'demo'), error =>
+      assert.throws(() => readRecord(store, 'task', primaryId), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
-      assert.throws(() => listRecords(store, {kind: 'item', itemId: 'demo'}), error =>
+      assert.throws(() => listRecords(store, {kind: 'item', subject: taskSubject(primaryId)}), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
     });
   });
@@ -619,7 +1322,7 @@ await test('read operations translate SQLite lock exhaustion to STORE_BUSY', asy
 
 await test('receipt insertion failure rolls back the primary write and event', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     store.database.exec(`
       CREATE TRIGGER abort_receipt_insert
       BEFORE INSERT ON operations
@@ -629,7 +1332,7 @@ await test('receipt insertion failure rolls back the primary write and event', a
     `);
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Must roll back'}}),
+      command('task.update', {payload: {title: 'Must roll back'}}),
       (current, tx) => {
         tx.appendEvent({kind: 'must.rollback'});
         return {...current.body, title: 'Must roll back'};
@@ -637,7 +1340,7 @@ await test('receipt insertion failure rolls back the primary write and event', a
     ), error =>
       error.code === 'ERR_SQLITE_ERROR'
       && /forced receipt abort/.test(error.message));
-    assert.equal(readRecord(store, 'item', 'demo').body.title, 'Demo knowledge item');
+    assert.equal(readRecord(store, 'task', primaryId).body.title, 'Demo knowledge Task');
     assert.equal(
       store.database.prepare('SELECT count(*) AS count FROM events').get().count,
       0,
@@ -651,8 +1354,8 @@ await test('receipt insertion failure rolls back the primary write and event', a
 
 await test('late receipt failure rolls back and exposes rollback uncertainty', async () => {
   await withWorkspace(({root, store}) => {
-    seedItem(store);
-    const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
+    seedTask(store);
+    const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
     store.database.exec(`
       CREATE TRIGGER abort_receipt
       BEFORE INSERT ON operations
@@ -664,7 +1367,7 @@ await test('late receipt failure rolls back and exposes rollback uncertainty', a
     try {
       applyOperation(
         store,
-        command('item.update', {payload: {title: 'Must roll back'}}),
+        command('task.update', {payload: {title: 'Must roll back'}}),
         (current, tx) => {
           tx.appendEvent({kind: 'must.rollback'});
           return {...current.body, title: 'Must roll back'};
@@ -683,7 +1386,7 @@ await test('late receipt failure rolls back and exposes rollback uncertainty', a
 
     const reopened = openStore({path: databasePath, mode: 'write'});
     try {
-      assert.equal(readRecord(reopened, 'item', 'demo').body.title, 'Demo knowledge item');
+      assert.equal(readRecord(reopened, 'task', primaryId).body.title, 'Demo knowledge Task');
       assert.equal(
         reopened.database.prepare('SELECT count(*) AS count FROM events').get().count,
         0,

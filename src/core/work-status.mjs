@@ -3,9 +3,9 @@
 //
 // Answers one question: **where must I intervene?**
 //
-// It reads the authoritative item records under <root>/.kai/state/items/
-// (never BOARD.md, which is itself a derived index and can drift) and prints
-// only what needs attention. Healthy work is counted, not listed.
+// It reads schema-4 legacy item files or the transactionally consistent typed
+// hierarchy store, then prints only what needs attention. Healthy work is
+// counted, not listed.
 //
 // HONESTY CONTRACT
 // ----------------
@@ -25,7 +25,7 @@
 // Node built-ins only; no install step. Writes nothing.
 
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-import { join, resolve, basename } from 'node:path';
+import { join, resolve, basename, delimiter } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import {
@@ -36,7 +36,16 @@ import {
 import { checkWorkspace } from './workspace-doctor.mjs';
 import { read as readActivity, runs } from './lib/activity.mjs';
 import { resolveWorkspaceRoot, readWorkspaceManifest } from './lib/workspace-resolve.mjs';
-import { inspectRuntime } from './lib/coordination-runtime/inspection.mjs';
+import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from './lib/workspace-layout.mjs';
+import {
+  closeStore,
+  listAllRecords,
+  openStore,
+  readSnapshot,
+} from './lib/coordination-runtime/store.mjs';
+import {currentDirectionForStore} from './lib/coordination-runtime/hierarchy-engine.mjs';
+import {hierarchyStatus} from './lib/coordination-runtime/hierarchy-view.mjs';
+import {readLegacyRecords} from './lib/coordination-runtime/migration.mjs';
 
 // Severity order drives both the print order and the exit code.
 const SECTIONS = [
@@ -301,25 +310,121 @@ function findCoordRoot(root) {
   return existsSync(join(stateRoot, 'items')) ? stateRoot : null;
 }
 
-export function collect(root, now = Date.now()) {
-  const manifest = readWorkspaceManifest(root);
-  if (manifest.ok && manifest.manifest.schema_version === 4) {
-    const inspection = inspectRuntime(root);
-    if (!inspection.runtime) return {ok: false, reason: inspection.errors.join('; ')};
-    const {items, findings, sources, throughSeq} = inspection.runtime;
-    for (const warning of inspection.warnings.filter(w => !w.startsWith('quarantined '))) {
-      findings.push({section: 'unknown', item: 'workspace', tier: 'derived',
-        headline: warning, why: 'Derived output is not current authority.', path: '.kai/review/coordination'});
+function installedRoles(env = process.env) {
+  const roles = new Set();
+  for (const pluginRoot of (env.KAI_COPILOT_PLUGIN_DIRS ?? '').split(delimiter).filter(Boolean)) {
+    const directory = join(pluginRoot, 'agents');
+    if (!existsSync(directory)) continue;
+    for (const file of readdirSync(directory)) {
+      if (file.endsWith('.agent.md')) roles.add(file.slice(0, -'.agent.md'.length));
     }
-    const quarantined = sources.filter(s => s.kind === 'item' && s.status === 'quarantined');
-    const flagged = new Set(findings.filter(f => items.some(i => i.id === f.item)).map(f => f.item));
-    return {ok: true, generated_at: new Date(now).toISOString(), workspace: basename(root),
-      git: gitContext(root), through_seq: throughSeq, live: null,
-      doctor: {errors: inspection.errors.length, warnings: inspection.warnings.length},
-      totals: {items: items.length + quarantined.length, flagged: flagged.size + quarantined.length,
-        healthy: items.length - flagged.size, terminal: items.filter(i => TERMINAL.has(i.body.state)).length
-          + quarantined.filter(s => TERMINAL.has(s.parsed.declaredState)).length},
-      findings};
+  }
+  return [...roles].sort();
+}
+
+function hierarchyNodes(status) {
+  const nodes = [];
+  for (const epic of status.epics) {
+    nodes.push(epic);
+    for (const pack of epic.packs) {
+      for (const feature of pack.features) {
+        nodes.push(feature);
+        for (const requirement of feature.requirements) {
+          nodes.push(requirement);
+          nodes.push(...requirement.tasks);
+        }
+      }
+    }
+  }
+  return nodes.filter(node => !node.missing);
+}
+
+function collectHierarchy(root, now, roles, database = '.kai/state/coordination.sqlite') {
+  const path = join(root, ...database.split('/'));
+  if (!existsSync(path)) {
+    return {ok: false, reason: `coordination database is missing at ${database}`};
+  }
+  let store;
+  try {
+    store = openStore({path, mode: 'read'});
+    const status = readSnapshot(store, () => {
+      const [epic] = listAllRecords(store, {kind: 'epic'});
+      const direction = epic ? currentDirectionForStore(store, epic.body.direction_ref) : null;
+      return hierarchyStatus(store, {direction, roles});
+    });
+    const findings = [];
+    const nodes = hierarchyNodes(status);
+    for (const node of nodes) {
+      const item = `${node.kind}/${node.id}`;
+      for (const attention of node.attention.reasons) {
+        findings.push({
+          section: attention.attention === 'needs-human' ? 'needs-you' : 'blocked',
+          item,
+          tier: 'derived',
+          headline: attention.message,
+          why: `Derived ${attention.code} condition from the transactionally consistent hierarchy snapshot.`,
+          path: database,
+        });
+      }
+      for (const staffing of node.attention.staffing_gaps) {
+        findings.push({
+          section: 'unknown',
+          item,
+          tier: 'derived',
+          headline: `installed role "${staffing.role}" is unavailable`,
+          why: `Session staffing gap for ${staffing.responsibilities.join(', ')}; the hierarchy record was not changed.`,
+          path: database,
+        });
+      }
+    }
+    for (const source of readLegacyRecords(store).filter(source =>
+      source.status === 'quarantined')) {
+      findings.push({
+        section: 'integrity',
+        item: source.declaredId ?? source.path,
+        tier: 'derived',
+        headline: `quarantined legacy ${source.kind}`,
+        why: source.issues.join('; '),
+        path: source.path,
+      });
+    }
+    const hierarchyIds = new Set(nodes.map(node => `${node.kind}/${node.id}`));
+    const flagged = new Set(findings
+      .map(finding => finding.item)
+      .filter(item => hierarchyIds.has(item)));
+    return {
+      ok: true,
+      hierarchy: true,
+      generated_at: new Date(now).toISOString(),
+      workspace: basename(root),
+      git: gitContext(root),
+      through_seq: status.through_seq,
+      goal: status.goal,
+      status,
+      live: null,
+      doctor: null,
+      totals: {
+        records: status.totals.records,
+        flagged: flagged.size,
+        healthy: status.totals.records - flagged.size,
+        terminal: status.totals.terminal,
+      },
+      findings,
+    };
+  } catch (error) {
+    return {ok: false, reason: error.message};
+  } finally {
+    closeStore(store);
+  }
+}
+
+export function collect(root, now = Date.now(), {roles = []} = {}) {
+  const manifest = readWorkspaceManifest(root);
+  if (manifest.ok && manifest.manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+    return collectHierarchy(root, now, roles, COORDINATION_DATABASE);
+  }
+  if (manifest.ok && manifest.manifest.schema_version === 4) {
+    return collectHierarchy(root, now, roles);
   }
   if (manifest.ok && manifest.manifest.schema_version !== 3) {
     return {ok: false, reason: `unsupported workspace schema ${manifest.manifest.schema_version}; inspection refuses to guess`};
@@ -391,7 +496,8 @@ export function render(r) {
 
   L.push('');
   if (!r.findings.length) L.push('Nothing needs you. No exception found in the recorded state.');
-  L.push(`${r.totals.items} item(s): ${r.totals.flagged} flagged, ${r.totals.healthy} without a finding (${r.totals.terminal} terminal).`);
+  const total = r.hierarchy ? r.totals.records : r.totals.items;
+  L.push(`${total} ${r.hierarchy ? 'hierarchy record(s)' : 'item(s)'}: ${r.totals.flagged} flagged, ${r.totals.healthy} without a finding (${r.totals.terminal} terminal).`);
   if (r.live) {
     L.push(r.live.open
       ? `Activity: ${r.live.open} run(s) open${r.live.overdue ? `, ${r.live.overdue} past its declared deadline` : ''} — ${r.live.roles.join(', ')}. Role attribution is self-reported.`
@@ -418,7 +524,7 @@ if (isEntry) {
     process.exit(2);
   }
   const root = r.root;
-  const status = collect(root);
+  const status = collect(root, Date.now(), {roles: installedRoles()});
   if (argv.includes('--json')) console.log(JSON.stringify(status, null, 2));
   else console.log(render(status));
   // Exit non-zero only for coordination that cannot be trusted — not for

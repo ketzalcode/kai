@@ -1,8 +1,14 @@
 import {spawnSync} from 'node:child_process';
 import {canonicalPath} from './workspace-path-safety.mjs';
 
-export const PRIVATE_PREFIXES = ['.kai/runs/', '.kai/review/', '.kai/personal/', '.kai/archive/'];
+export const PRIVATE_PREFIXES = ['.kai/'];
 export const PRIVATE_FILES = [
+  '.kai/core/runtime/activity.jsonl', '.kai/core/runtime/activity.jsonl.1',
+  '.kai/core/runtime/observed.jsonl', '.kai/core/runtime/observed.jsonl.1',
+  '.kai/core/runtime/observer-consent', '.kai/local.json',
+];
+const LEGACY_PRIVATE_PREFIXES = ['.kai/runs/', '.kai/review/', '.kai/personal/', '.kai/archive/'];
+const LEGACY_PRIVATE_FILES = [
   '.kai/activity.jsonl', '.kai/activity.jsonl.1', '.kai/observed.jsonl',
   '.kai/observed.jsonl.1', '.kai/observer-consent', '.kai/local.json',
 ];
@@ -22,7 +28,7 @@ export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabas
   const git = args => workspaceGit(root, args);
   const top = git(['rev-parse', '--show-toplevel']);
   if (top.status !== 0) {
-    if (mode !== 'external') warnings.push(`storage_mode "${mode}" is not inside a readable git work tree`);
+    if (mode !== 'external') warnings.push(`placement "${mode}" is not inside a readable git work tree`);
     return {errors, warnings, missing, gitRoot: null};
   }
   const tracked = git(['ls-files', '-z', '--', '.kai']);
@@ -31,23 +37,29 @@ export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabas
     return {errors, warnings, missing, gitRoot: canonicalPath(top.stdout.trim())};
   }
   const paths = tracked.stdout.split('\0').filter(Boolean);
-  const privatePaths = [...PRIVATE_PREFIXES, ...PRIVATE_FILES, ...extraPrivate];
+  const privatePaths = mode === 'shared'
+    ? [...LEGACY_PRIVATE_PREFIXES, ...LEGACY_PRIVATE_FILES, ...extraPrivate]
+    : [...PRIVATE_PREFIXES, ...PRIVATE_FILES, ...extraPrivate];
   const isPrivate = path => privatePaths.some(p => p.endsWith('/') ? path.startsWith(p) : path === p);
-  const bad = mode === 'repo-local' ? paths : paths.filter(path => isPrivate(path)
-    || (privateDatabases && /\.(?:sqlite|sqlite3|db)(?:-(?:wal|shm|journal))?$/i.test(path)));
-  if (bad.length) errors.push(`storage_mode "${mode}" has tracked private .kai path(s); these must be untracked: ${bad.join(', ')}`);
+  const bad = mode === 'shared'
+    ? paths.filter(path => isPrivate(path)
+      || (privateDatabases && /\.(?:sqlite|sqlite3|db)(?:-(?:wal|shm|journal))?$/i.test(path)))
+    : paths;
+  if (bad.length) errors.push(`placement "${mode}" has tracked private .kai path(s); these must be untracked: ${bad.join(', ')}`);
   const ignored = path => {
     const result = git(['check-ignore', '--no-index', '-q', '--', path]);
     if (![0, 1].includes(result.status)) errors.push(`cannot inspect Git privacy for ${path}`);
     return result.status === 0;
   };
-  if (mode === 'repo-local') {
+  if (mode === 'repo-local' || mode === 'external') {
     if (!ignored('.kai/')) missing.push('.kai/');
-  } else if (mode === 'shared' || mode === 'external') {
+  } else if (mode === 'shared') {
     if (ignored('.kai/manifest.json') || ignored('.kai/state/BOARD.md')) {
-      errors.push(`storage_mode "${mode}" requires .kai/manifest.json and .kai/state/ to remain trackable in a version-controlled workspace`);
+      errors.push('legacy shared storage requires .kai/manifest.json and .kai/state/ to remain trackable');
     }
     for (const path of privatePaths) if (!ignored(path)) missing.push(path);
+  } else {
+    errors.push(`placement must be "repo-local" or "external" (found ${JSON.stringify(mode)})`);
   }
   return {errors, warnings, missing, gitRoot: canonicalPath(top.stdout.trim())};
 }

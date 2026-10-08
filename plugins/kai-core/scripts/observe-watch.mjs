@@ -2,16 +2,17 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
   resolveWorkspaceRoot
-} from "./chunk-VTZRFV57.mjs";
+} from "./chunk-2WT4K7YK.mjs";
+import "./chunk-ITUOITH3.mjs";
 
 // src/core/observe-watch.mjs
 import { readFileSync, existsSync, watch, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-var OBSERVED_REL = ".kai/observed.jsonl";
-var ROTATED_REL = ".kai/observed.jsonl.1";
-var ACTIVITY_REL = ".kai/activity.jsonl";
-var ACTIVITY_ROTATED_REL = ".kai/activity.jsonl.1";
+var OBSERVED_REL = ".kai/core/runtime/observed.jsonl";
+var ROTATED_REL = ".kai/core/runtime/observed.jsonl.1";
+var ACTIVITY_REL = ".kai/core/runtime/activity.jsonl";
+var ACTIVITY_ROTATED_REL = ".kai/core/runtime/activity.jsonl.1";
 var MAX_READ = 512 * 1024;
 var ROLE_RE = /^([a-z0-9-]{1,20}:)?[a-z0-9-]{1,60}$/;
 var EVENTS = /* @__PURE__ */ new Set(["start", "stop", "progress"]);

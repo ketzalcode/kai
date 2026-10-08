@@ -1,6 +1,7 @@
 ---
 name: mockups-html
 description: "Use when an HTML mock is requested, or a UI choice depends on visual hierarchy, component appearance, or responsive layout."
+durable-output-producer: true
 user-invocable: true
 ---
 
@@ -80,9 +81,10 @@ prose-sufficient or settled question may receive no new mock; an unavailable
 requested artifact remains a named gap.
 
 Load `kai-core-workspace-paths` before choosing a persistent target.
-Load `kai-core-asset-producing` when retaining or revising a durable design,
-and Load `kai-core-asset-closing` when recording disposition or acceptance.
-Use the caller's existing target/lane; do not create an initiative for a mock.
+Load `creative-workspace-publication`, then Load `kai-core-asset-producing`
+when retaining or revising a durable design, and Load `kai-core-asset-closing`
+when recording disposition or acceptance. Use the caller's validated typed
+target; do not create hierarchy scope for a mock.
 
 Stop at the mock and recommendation. Do not lock or adopt a consequential
 choice without its owner/authority. Do not implement production frontend

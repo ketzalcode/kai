@@ -1,5 +1,11 @@
-import {dirname, join} from 'node:path';
-import {RuntimeError, criteriaRef, isProducingRun, subjectEquals} from './contract.mjs';
+import {join} from 'node:path';
+import {
+  RuntimeError,
+  canonicalJson,
+  criteriaRef,
+  isProducingRun,
+  subjectRef,
+} from './contract.mjs';
 import {
   completionApproval, effectiveApprovals, effectiveEvidence, effectiveReviews,
   matchesAcceptance, recoveryResolution, requireDeploymentEvidence,
@@ -7,12 +13,23 @@ import {
 } from './acceptance.mjs';
 import {verifyArtifact, workspaceManifest} from './evidence-content.mjs';
 import {bindEvidenceReadView} from './evidence-context.mjs';
-import {itemStateSatisfies} from './engine.mjs';
+import {taskStateSatisfies} from './engine.mjs';
 import {captureArtifacts, captureChanges, captureHistory} from './report-capture.mjs';
 import {artifactBasisCurrent, verifyAssetContent, verifyReferences, verifyVerdict} from './evidence-integrity.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
-import {listRecords, readContextView, readRecord, readSnapshot} from './store.mjs';
+import {
+  COORDINATION_DATABASE,
+  LEGACY_COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+  workspaceRootFromCoordinationDatabase,
+} from '../workspace-layout.mjs';
+import {listRecords, readRecord, readSnapshot, readSubjectView} from './store.mjs';
 import {artifactPreviewLimits, knownGap, redactReport, snapshotWarning} from './report-safety.mjs';
+
+const bindsSubject = (record, subject) =>
+  record?.subject?.kind === subject.kind && record.subject.id === subject.id;
+const contentEquals = (left, right) =>
+  left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 
 const terminal = new Set(['completed', 'shipped', 'dropped']);
 const positive = value => ['approved', 'clear', 'waived', 'passed'].includes(value);
@@ -39,11 +56,14 @@ function excerpt(value, limit = 512) {
  * All DB reads share one SQLite snapshot. Filesystem integrity is separately
  * checked during generation; this is not an atomic DB+filesystem snapshot.
  */
-export function buildReport(store, {itemId}) {
-  if (typeof itemId !== 'string' || !itemId) throw new RuntimeError('INVALID_INPUT', 'report itemId is required');
-  const root = dirname(dirname(dirname(store.path)));
+export function buildReport(store, {subject}) {
+  if (!subject || typeof subject !== 'object') throw new RuntimeError('INVALID_INPUT', 'report subject is required');
+  const root = workspaceRootFromCoordinationDatabase(store.path);
   const manifest = workspaceManifest(root);
-  if (normalized(store.path) !== normalized(join(root, '.kai', 'state', 'coordination.sqlite'))) {
+  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
+    ? COORDINATION_DATABASE
+    : LEGACY_COORDINATION_DATABASE;
+  if (normalized(store.path) !== normalized(join(root, ...database.split('/')))) {
     throw new RuntimeError('INVALID_INPUT', 'report store must belong to the explicit workspace');
   }
   return readSnapshot(store, () => {
@@ -64,18 +84,22 @@ export function buildReport(store, {itemId}) {
         return {ok: false};
       }
     };
-    const contextRead = check(`item:${itemId}`, () => readContextView(store, {itemId, recentLimit: 8}));
+    const contextRead = check(`${subject.kind}:${subject.id}`, () => readSubjectView(store, {
+      subject,
+      recentLimit: 8,
+    }));
     const context = contextRead.value;
-    const item = context?.item ?? readRecord(store, 'item', itemId);
-    if (!item) throw new RuntimeError('EVIDENCE_GAP', `item/${itemId} does not exist`);
+    const item = context?.record ?? readRecord(store, subject.kind, subject.id);
+    if (!item) throw new RuntimeError('EVIDENCE_GAP', `${subject.kind}/${subject.id} does not exist`);
     const throughSeq = context?.throughSeq ?? Number(store.database.prepare(
       'SELECT COALESCE(MAX(seq), 0) AS seq FROM events').get().seq);
     const cache = new Map();
     const recordsById = new Map();
-    const list = (kind, id) => {
-      const key = `${kind}\0${id}`;
+    const itemSubject = subject;
+    const list = (kind, subject = undefined) => {
+      const key = `${kind}\0${subject === undefined ? '*' : canonicalJson(subject)}`;
       if (!cache.has(key)) {
-        const records = listRecords(store, {kind, itemId: id});
+        const records = listRecords(store, {kind, subject});
         cache.set(key, records);
         records.forEach(r => recordsById.set(`${kind}\0${r.id}`, r));
       }
@@ -90,12 +114,21 @@ export function buildReport(store, {itemId}) {
       },
     }, {root});
     const body = item.body;
-    const artifacts = list('artifact', itemId).map(record => ({
+    const currentCriteria = check(
+      'criteria',
+      () => criteriaRef(item, (kind, id) => tx.get(kind, id)),
+    ).value ?? null;
+    const artifacts = list('artifact', itemSubject).map(record => ({
       id: record.id, ref: `artifact:${record.id}`, version: record.version, ...record.body,
-      status: matchesAcceptance(record.body, body) ? 'current' : 'historical',
+      status: bindsSubject(record, itemSubject)
+        && currentCriteria !== null
+        && record.body.criteria_ref === currentCriteria
+        && (item.kind !== 'task' || contentEquals(record.body.content_ref, item.body.change_ref))
+        ? 'current'
+        : 'historical',
       integrity: 'not-rechecked', assets: [],
     }));
-    const assets = list('asset', itemId);
+    const assets = list('asset', itemSubject);
     const assetsByArtifact = new Map();
     for (const asset of assets) {
       const entries = assetsByArtifact.get(asset.body.artifact_id) ?? [];
@@ -138,17 +171,21 @@ export function buildReport(store, {itemId}) {
     const approvalChronology = new Map((context?.approvals ?? []).map(a => [a.record.id, a.eventSeq]));
     const verdicts = {};
     for (const [kind, idKey, effectiveFn] of groups) {
-      const records = list(kind, itemId);
-      const result = check(`${kind}s`, () => effectiveFn(records.map(r => r.body), body));
+      const records = list(kind, itemSubject);
+      const result = check(`${kind}s`, () =>
+        effectiveFn(records.map(r => r.body), item, (recordKind, id) => tx.get(recordKind, id)));
       const effectiveIds = result.ok ? new Set(result.value.map(b => b[idKey])) : null;
       verdicts[kind] = records.map(record => {
         const b = record.body;
         const recovery = b.kind === 'operator-recovery-resolution';
-        const current = recovery ? b.criteria_ref === criteriaRef(body)
-          && b.recovery.attempt_id === body.recovery_hold : matchesAcceptance(b, body);
+        const current = currentCriteria !== null
+          && (recovery
+            ? b.criteria_ref === currentCriteria
+              && b.recovery.attempt_id === body.recovery_hold
+            : matchesAcceptance(b, item, (recordKind, id) => tx.get(recordKind, id)));
         const actor = b.reviewer ?? b.authority ?? null;
-        const independent = actor === null ? null : !isProducingRun(body, actor)
-          && !artifacts.some(a => subjectEquals(a.subject, b.subject)
+        const independent = actor === null ? null : (item.kind !== 'task' || !isProducingRun(body, actor))
+          && !artifacts.some(a => contentEquals(a.content_ref, b.content_ref)
             && a.producer.runId === actor.runId);
         const status = !current ? 'historical' : effectiveIds === null ? 'conflict'
           : effectiveIds.has(record.id) ? 'current' : 'superseded';
@@ -179,11 +216,13 @@ export function buildReport(store, {itemId}) {
           if (recovery) {
             recoveryResolution(tx, item, record.id);
             verifyReferences({root}, tx, item, b.evidence_refs, {recovery: true, positive: false});
-          } else {
+          } else if (item.kind === 'task') {
             verifyVerdict(tx, item, b, actor);
             if (artifacts.some(a => a.status === 'current' && a.integrity === 'gap')) {
               throw new RuntimeError('EVIDENCE_GAP', 'Current subject artifact or asset has an integrity/validity gap.');
             }
+          } else {
+            verifyReferences({root}, tx, item, b.evidence_refs);
           }
         }, 'broken-claim');
         entry.integrity = verified.ok ? 'verified' : 'gap';
@@ -197,26 +236,31 @@ export function buildReport(store, {itemId}) {
       && d.kind === 'completion' && d.decision === 'approved');
     if (completionClaims.length) {
       const completion = check('completion', () => completionApproval(tx, item), 'broken-claim');
-      const requiredReviews = check('required-reviews', () => requireReviews(tx, item), 'broken-claim');
-      if (!completion.ok || !requiredReviews.ok) completionClaims.forEach(c => { c.integrity = 'gap'; });
+      const requiredReviews = item.kind === 'task'
+        ? check('required-reviews', () => requireReviews(tx, item), 'broken-claim')
+        : {ok: true};
+      if (!completion.ok || !requiredReviews.ok) {
+        completionClaims.forEach(c => { c.integrity = 'gap'; });
+      }
     }
     if (terminal.has(body.state) && body.state !== 'dropped' && !completionClaims.length) {
       addGap('completion', 'Recorded terminal state retained; current completion proof is missing or stale.');
     }
     const recordedPhase = body.state === 'blocked' ? body.resume_state : body.state;
-    if (['release-ready', 'deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
+    if (item.kind === 'task'
+      && ['release-ready', 'deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
       check('completion', () => completionApproval(tx, item), 'broken-claim');
       check('required-reviews', () => requireReviews(tx, item), 'broken-claim');
       check('release-evidence', () => requireReleaseEvidence(tx, item), 'broken-claim');
     }
-    if (['deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
+    if (item.kind === 'task' && ['deploying', 'production-verification', 'shipped'].includes(recordedPhase)) {
       check('deployment-start', () => requireOperatorApproval(tx, item, 'operator-deploy-start'), 'broken-claim');
     }
-    if (['production-verification', 'shipped'].includes(recordedPhase)) {
+    if (item.kind === 'task' && ['production-verification', 'shipped'].includes(recordedPhase)) {
       check('deployment-complete', () => requireOperatorApproval(tx, item, 'operator-deploy-complete'), 'broken-claim');
       check('deployment', () => requireDeploymentEvidence(tx, item, 'deployment'), 'broken-claim');
     }
-    if (recordedPhase === 'shipped') {
+    if (item.kind === 'task' && recordedPhase === 'shipped') {
       check('production-verification', () => requireDeploymentEvidence(tx, item, 'production-verification'), 'broken-claim');
     }
     const criteria = body.acceptance.map((text, index) => {
@@ -228,15 +272,17 @@ export function buildReport(store, {itemId}) {
       const bad = support.some(r => ['gap', 'negative'].includes(r.integrity));
       const good = support.filter(r => r.integrity === 'verified');
       return {
-        id: `criterion-${index + 1}`, text, criteriaRef: criteriaRef(body),
+        id: `criterion-${index + 1}`,
+        text,
+        criteriaRef: currentCriteria,
         status: bad ? 'gap' : good.length ? 'verified' : 'pending',
         verdictRefs: support.map(r => r.ref),
         evidenceRefs: [...new Set(support.flatMap(r => r.evidence_refs))],
-        explanation: 'Exact criterion text matched to review criteria or observed check labels; item-level approval alone does not imply per-criterion coverage.',
+        explanation: 'Exact criterion text matched to review criteria or observed check labels; subject-level approval alone does not imply per-criterion coverage.',
       };
     });
     const references = new Set([
-      ...body.context_artifacts,
+      ...(body.context_artifacts ?? []),
       ...(context?.referencedDetails.map(d => d.reference) ?? []),
     ]);
     for (const reference of references) {
@@ -244,7 +290,7 @@ export function buildReport(store, {itemId}) {
       if (!match) addGap(reference, 'Reference is not a registered artifact/evidence identity; not linked.');
       else if (!tx.get(match[1].toLowerCase(), match[2])) addGap(reference, 'Referenced record is missing.');
     }
-    const questions = list('question', itemId).map(record => ({
+    const questions = list('question', itemSubject).map(record => ({
       id: record.id, ref: `question:${record.id}`, version: record.version, ...record.body,
       disposition: terminal.has(body.state) ? 'historical-follow-up'
         : record.body.status === 'answered' ? 'addressed'
@@ -252,7 +298,7 @@ export function buildReport(store, {itemId}) {
     }));
     const blockers = questions.filter(q => q.disposition === 'blocking');
     const questionsById = new Map(questions.map(q => [q.id, q]));
-    for (const id of body.waiting_on_questions) {
+    for (const id of body.waiting_on_questions ?? []) {
       const question = questionsById.get(id);
       if (!question || (!terminal.has(body.state) && (question.status !== 'open' || !question.blocking))) {
         addGap(`question:${id}`, 'Required question is missing or no longer matches its blocking obligation.');
@@ -268,12 +314,12 @@ export function buildReport(store, {itemId}) {
     }
     for (const question of questions) {
       const opening = tx.get('message', question.opened_message_id);
-      if (!opening || opening.itemId !== itemId || opening.body.kind !== 'question') {
+      if (!bindsSubject(opening, subject) || opening.body.kind !== 'question') {
         addGap(question.ref, 'Question opening message is missing or mismatched.');
       }
       for (const id of question.answer_message_ids) {
         const answer = tx.get('message', id);
-        if (!answer || answer.itemId !== itemId || answer.body.kind !== 'answer') {
+        if (!bindsSubject(answer, subject) || answer.body.kind !== 'answer') {
           addGap(question.ref, 'Question answer message is missing or mismatched.');
         }
       }
@@ -287,34 +333,39 @@ export function buildReport(store, {itemId}) {
     }
     if (body.recovery_hold) {
       const attempt = tx.get('attempt', body.recovery_hold);
-      if (!attempt || attempt.itemId !== itemId || attempt.body.disposition !== 'conflicting-partial-work') {
+      if (!bindsSubject(attempt, subject)
+        || attempt.body.disposition !== 'conflicting-partial-work') {
         addGap(`attempt:${body.recovery_hold}`, 'Recovery hold attempt is missing or mismatched.');
       }
     }
-    const dependencies = (context?.dependencies ?? body.depends_on.map(dependency => ({
-      dependency, record: tx.get('item', dependency.item),
-    }))).map(({dependency, record}) => ({
-      item: dependency.item, requires: dependency.requires, state: record?.body.state ?? null,
-      version: record?.version ?? null,
-      status: !record ? 'missing' : record.body.state === 'dropped' ? 'failed'
-        : itemStateSatisfies(record, dependency.requires) ? 'satisfied' : 'pending',
-    }));
+    const dependencies = (context?.dependencies ?? (body.depends_on ?? []).map(dependency => {
+      const dependencyId = dependency.task;
+      return {dependency, record: tx.get('task', dependencyId)};
+    })).map(({dependency, record}) => {
+      const dependencyId = dependency.task;
+      return {
+        task: dependencyId, requires: dependency.requires, state: record?.body.state ?? null,
+        version: record?.version ?? null,
+        status: !record ? 'missing' : record.body.state === 'dropped' ? 'failed'
+          : taskStateSatisfies(record, dependency.requires) ? 'satisfied' : 'pending',
+      };
+    });
     for (const dependency of dependencies) {
       if (dependency.status === 'satisfied') continue;
-      const ref = `item:${dependency.item}`;
+      const ref = `task:${dependency.task}`;
       const ask = dependency.status === 'pending'
-        ? `Waiting for ${dependency.item}: recorded ${dependency.state}; requires ${dependency.requires}.`
+        ? `Waiting for ${dependency.task}: recorded ${dependency.state}; requires ${dependency.requires}.`
         : dependency.status === 'failed'
-          ? `Dependency ${dependency.item} was dropped; recorded requirement ${dependency.requires} failed. Owner decision required.`
-          : `Dependency ${dependency.item} is missing; restore evidence before resolving its requirement.`;
+          ? `Dependency ${dependency.task} was dropped; recorded requirement ${dependency.requires} failed. Owner decision required.`
+          : `Dependency ${dependency.task} is missing; restore evidence before resolving its requirement.`;
       addGap(ref, ask, dependency.status === 'pending' ? 'pending' : 'gap');
       if (!terminal.has(body.state)) blockers.push({ref, kind: 'dependency', status: dependency.status, ask});
     }
     const attempts = [
-      ...list('host-attempt', itemId).map(r => ({id: r.id, ref: `host-attempt:${r.id}`, type: 'host', version: r.version, ...r.body})),
-      ...list('attempt', itemId).map(r => ({id: r.id, ref: `attempt:${r.id}`, type: 'recovery', version: r.version, ...r.body})),
+      ...list('host-attempt', itemSubject).map(r => ({id: r.id, ref: `host-attempt:${r.id}`, type: 'host', version: r.version, ...r.body})),
+      ...list('attempt', itemSubject).map(r => ({id: r.id, ref: `attempt:${r.id}`, type: 'recovery', version: r.version, ...r.body})),
     ];
-    const effects = list('effect', itemId).map(r => ({id: r.id, ref: `effect:${r.id}`, version: r.version, ...r.body}));
+    const effects = list('effect', itemSubject).map(r => ({id: r.id, ref: `effect:${r.id}`, version: r.version, ...r.body}));
     for (const attempt of attempts.filter(a => a.type === 'host')) {
       if (['intent', 'uncertain', 'conflicting', 'mismatched'].includes(attempt.status)) {
         const message = `Host attempt is ${attempt.status}; reconcile liveness, model and outcome before further execution.`;
@@ -330,27 +381,78 @@ export function buildReport(store, {itemId}) {
       }
     }
     const rawMessages = (context?.recentMessages ?? []).filter(({record}) => {
-      const inScope = record.itemId === itemId && record.body.thread_id === itemId;
-      if (!inScope) addGap(`message:${record.id}`, 'Message item/thread mismatches captured scope; content withheld.');
+      const inScope = bindsSubject(record, subject)
+        && record.body.thread_id === subjectRef(subject, item.version);
+      if (!inScope) addGap(`message:${record.id}`, 'Message subject/thread mismatches captured scope; content withheld.');
       return inScope;
     }).map(({record, eventSeq}) => ({
       id: record.id, ref: `message:${record.id}`, eventSeq, ...record.body,
     }));
     // Redact across records before making excerpts, so a bearer copied into prose
     // is removed even if its defining field is outside the selected excerpt.
+    const acceptedReportArtifacts = new Set(decisions
+      .filter(decision => decision.status === 'current'
+        && decision.kind === 'completion'
+        && decision.decision === 'approved'
+        && decision.integrity === 'verified')
+      .flatMap(decision => decision.evidence_refs)
+      .filter(reference => reference.startsWith('artifact:'))
+      .map(reference => reference.slice('artifact:'.length)));
+    const acceptedApprovalIds = new Set(decisions
+      .filter(decision => decision.status === 'current'
+        && decision.kind === 'completion'
+        && decision.decision === 'approved'
+        && decision.integrity === 'verified')
+      .map(decision => decision.approval_id));
+    const reportArtifacts = artifacts.filter(artifact =>
+      artifact.classification === 'public'
+      && artifact.status === 'current'
+      && artifact.integrity === 'verified'
+      && acceptedReportArtifacts.has(artifact.id)
+      && (item.kind === 'task' || artifact.assets.some(asset =>
+          asset.validity === 'current'
+          && acceptedApprovalIds.has(asset.completion_approval_id)
+          && !new Set(['scratch', 'draft', 'discarded', 'retracted'])
+            .has(asset.disposition))));
+    if (artifacts.length > reportArtifacts.length) {
+      addGap('private-evidence', 'Private evidence metadata and bytes were withheld from the report.', 'pending');
+    }
+    const reportEvidence = evidence.filter(entry => {
+      const classification = entry.provenance?.capture?.classification ?? 'public';
+      if (classification === 'public') return true;
+      addGap(entry.ref,
+        'Private evidence content was withheld; only an accepted public report artifact safe excerpt may be shown.',
+        'pending');
+      return false;
+    });
     const inspection = {
-      threadId: itemId, throughSeq,
-      messagePages: captureHistory(store, itemId, throughSeq, addGap),
-      artifactPreviews: captureArtifacts(root, artifacts, addGap),
+      subject,
+      throughSeq,
+      messagePages: captureHistory(store, subject, item.version, throughSeq, addGap),
+      artifactPreviews: captureArtifacts(root, reportArtifacts, addGap),
     };
     inspection.previewBudget = {...artifactPreviewLimits,
       capturedBytes: inspection.artifactPreviews.reduce((sum, preview) => sum + preview.previewBytes, 0)};
-    const changes = captureChanges(root, artifacts, addGap);
+    const changes = captureChanges(root, reportArtifacts, addGap);
     const safe = redactReport({
-      schema_version: 1,
+      schema_version: 2,
       workspace: {id: manifest.workspace_id, root: normalized(root)},
-      item: {...body, version: item.version, criteriaRef: criteriaRef(body)},
-      decisions, criteria, artifacts, reviews, evidence, questions, blockers, attempts, effects,
+      subject: {
+        kind: item.kind,
+        id: item.id,
+        version: item.version,
+        ...body,
+        criteriaRef: currentCriteria,
+      },
+      decisions,
+      criteria,
+      artifacts: reportArtifacts,
+      reviews,
+      evidence: reportEvidence,
+      questions,
+      blockers,
+      attempts,
+      effects,
       changes, inspection,
       messages: rawMessages, gaps, throughSeq, generatedAt: new Date().toISOString(),
       snapshotWarning,
@@ -360,18 +462,27 @@ export function buildReport(store, {itemId}) {
         scope: 'Current proof checks only; not an acceptance decision or coverage total.',
       },
       obligations: {
-        reviewRequirements: body.review_requirements,
-        artifactExpectation: body.artifact_expectation,
-        artifactReason: body.artifact_expectation_reason,
-        artifactTargets: body.artifact_targets,
+        reviewRequirements: body.review_requirements ?? [],
+        artifactExpectation: body.artifact_expectation ?? null,
+        artifactReason: body.artifact_expectation_reason ?? null,
+        artifactTargets: body.artifact_targets ?? [],
         dependencies,
       },
       history: {
         totalMessages: context?.messageCount ?? null,
         shownMessages: rawMessages.length,
-        cursor: !context ? {threadId: itemId, beforeSeq: throughSeq + 1, remainingCount: null}
+        cursor: !context ? {
+          subject,
+          threadId: subjectRef(subject, item.version),
+          basisVersion: item.version,
+          beforeSeq: throughSeq + 1,
+          remainingCount: null,
+        }
           : context.messageCount > rawMessages.length ? {
-          threadId: itemId, beforeSeq: rawMessages[0]?.eventSeq ?? throughSeq + 1,
+          subject,
+          threadId: subjectRef(subject, item.version),
+          basisVersion: item.version,
+          beforeSeq: rawMessages[0]?.eventSeq ?? throughSeq + 1,
           remainingCount: context.messageCount - rawMessages.length,
         } : null,
         limitation: 'Recent message excerpts only (512 UTF-8 bytes each). Full and older messages are captured in linked offline pages from this same database snapshot. Verdicts, artifact registry metadata and question records below are not truncated. Artifact content previews have separately disclosed byte budgets.',

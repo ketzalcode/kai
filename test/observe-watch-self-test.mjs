@@ -157,7 +157,7 @@ function selfTest() {
   // --- rotation ------------------------------------------------------------
   // The declared writer rotates exactly like the observer. Reading only the
   // current generation retires an agent that is still running.
-  ok(ACTIVITY_ROTATED_REL === '.kai/activity.jsonl.1',
+  ok(ACTIVITY_ROTATED_REL === '.kai/core/runtime/activity.jsonl.1',
     'the rotated declared log is read, matching what the activity writer renames to');
   const acrossRotation = reduceState(readAndParse([
     { src: 'declared', text: decl({ t: 10, e: 'start', role: 'a', run: 'r1', next_report_by: 900 }) },

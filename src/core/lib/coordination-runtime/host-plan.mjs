@@ -1,5 +1,15 @@
 import {assertExactKeys, isPlainObject} from './contract.mjs';
 import {approvedProfileModel, clone, fail, text, validateCapabilities} from './host-schema.mjs';
+import {taskPlan} from './hierarchy-view.mjs';
+
+/**
+ * Advisory hierarchy planning. This traverses persisted scope and returns
+ * executable Tasks; it never discovers a host, dispatches work, or acquires a
+ * lease.
+ */
+export function planHierarchy({store, subject, direction, roles}) {
+  return taskPlan(store, {subject, direction, roles});
+}
 
 export function validateRoster(roster, profiles) {
   if (!Array.isArray(roster) || !isPlainObject(profiles)) fail('INVALID_INPUT', 'host roster/profiles are required');
@@ -18,19 +28,21 @@ export function validateRoster(roster, profiles) {
  * Pure planning, not authorization or a launcher. Roster IDs and primary
  * profiles must be supplied by trusted host discovery/source loading.
  */
-export function planDispatch({item, roster, profiles, capabilities, request = {}}) {
-  if (!item || typeof item.next_role !== 'string') fail('ROLE_UNAVAILABLE', 'item has no next role');
+export function planDispatch({task, roster, profiles, capabilities, request = {}}) {
+  if (!task || typeof task.next_role !== 'string') {
+    fail('ROLE_UNAVAILABLE', 'Task has no next role');
+  }
   if (!Array.isArray(roster) || roster.some(entry => !isPlainObject(entry))) {
     fail('INVALID_INPUT', 'roster must be an array of entries');
   }
-  const entries = roster.filter(entry => entry.role === item.next_role);
+  const entries = roster.filter(entry => entry.role === task.next_role);
   if (entries.length !== 1) fail('ROLE_UNAVAILABLE', 'exact next role must resolve to one qualified host ID');
   validateRoster(roster, profiles);
   validateCapabilities(capabilities);
   assertExactKeys(request, new Set(['role', 'profile', 'model', 'fallbackModel', 'effort']), 'dispatch request', new Set());
-  const profile = profiles[item.next_role];
-  const requiredModel = approvedProfileModel(item.next_role, profile);
-  if ((request.role !== undefined && request.role !== item.next_role)
+  const profile = profiles[task.next_role];
+  const requiredModel = approvedProfileModel(task.next_role, profile);
+  if ((request.role !== undefined && request.role !== task.next_role)
     || (request.profile !== undefined && request.profile !== profile)) {
     fail('INVALID_INPUT', 'requested role/profile is inconsistent with the installed role');
   }
@@ -54,7 +66,7 @@ export function planDispatch({item, roster, profiles, capabilities, request = {}
     mode: capabilities.peerDispatch ? 'peer-available' : 'ordered-queue',
     automatic: false,
     queue: [{
-      agentId: entry.id, role: item.next_role, profile, requestedModel: requiredModel,
+      agentId: entry.id, role: task.next_role, profile, requestedModel: requiredModel,
       settings: clone(settings), context: 'fresh-single-shot',
     }],
   };
