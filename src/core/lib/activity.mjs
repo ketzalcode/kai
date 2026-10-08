@@ -1,7 +1,7 @@
 // Shared activity-log reading and writing.
 //
-// The activity log is the *ephemeral* sibling of the coordination item record.
-// The item record is a compare-and-swap surface: every write is version-
+// The activity log is the *ephemeral* sibling of the coordination Task record.
+// The Task record is a compare-and-swap surface: every write is version-
 // incrementing and lease-verified, so a high-frequency heartbeat cannot live
 // there without inflating the very field that detects racing. This log is the
 // opposite shape — append-only, one line per record, never read-modify-write.
@@ -9,7 +9,7 @@
 // THE BOUNDARY (enforced here, not merely documented)
 // ---------------------------------------------------
 // This log carries "who is doing what right now". It MUST NOT carry state,
-// verdicts, reviews, or decisions — those stay authoritative on the item. A
+// verdicts, reviews, or decisions — those stay authoritative on the Task. A
 // record that tries to express one is rejected at write time by `buildRecord`,
 // because a boundary defended only by prose is a boundary that drifts.
 //
@@ -30,9 +30,13 @@
 
 import { appendFileSync, readFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import {readWorkspaceManifest} from './workspace-resolve.mjs';
+import {WORKSPACE_SCHEMA_VERSION} from './workspace-layout.mjs';
+import {escapesRoot, pathHasLink} from './workspace-path-safety.mjs';
 
 // Workspace-relative by contract: an absolute path must never be recorded.
-export const LOG_REL = '.kai/activity.jsonl';
+export const LOG_REL = '.kai/core/runtime/activity.jsonl';
+export const LEGACY_LOG_REL = '.kai/activity.jsonl';
 
 // Closed vocabulary. An unknown event is dropped rather than invented, on the
 // classifyGapReason precedent — a free-form event type is a free-form schema.
@@ -42,8 +46,8 @@ export const EVENTS = new Set(['start', 'progress', 'stop']);
 // and how it handed off, never what the work concluded.
 export const OUTCOMES = new Set(['handoff', 'done', 'blocked', 'abandoned']);
 
-// Fields that would fork the truth with the item record. Naming any of these is
-// a contract violation, not a warning: the item is the only place they are real.
+// Fields that would fork the truth with the Task record. Naming any of these is
+// a contract violation, not a warning: the Task is the only place they are real.
 export const FORBIDDEN_FIELDS = new Set([
   'state', 'resume_state', 'verdict', 'review', 'completed_reviews',
   'review_requirements', 'change_ref', 'version', 'lease', 'decision', 'approved',
@@ -54,7 +58,8 @@ export const FORBIDDEN_FIELDS = new Set([
 // corrupt line would otherwise carry a username or a path straight into output
 // that is designed to be pasted into a public issue.
 const ROLE_RE = /^[a-z0-9-]{1,60}$/;
-const ITEM_RE = /^[a-z0-9-]{1,80}$/;
+const TASK_RE = /^(?:core|engineering|creative):task:[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const LEGACY_ITEM_RE = /^[a-z0-9-]{1,80}$/;
 const RUN_RE = /^[a-z0-9]{6,16}$/;
 
 export const MAX_NOTE = 120;
@@ -93,14 +98,14 @@ export function safeNote(note) {
 
 /**
  * Validate and normalize one record. Returns { ok, record } or { ok:false, reason }.
- * Rejection is the enforcement point for the item/log boundary.
+ * Rejection is the enforcement point for the Task/log boundary.
  */
 export function buildRecord(input, now = Date.now()) {
   if (!input || typeof input !== 'object') return { ok: false, reason: 'record must be an object' };
 
   for (const k of Object.keys(input)) {
     if (FORBIDDEN_FIELDS.has(k)) {
-      return { ok: false, reason: `field "${k}" belongs to the item record, not the activity log` };
+      return { ok: false, reason: `field "${k}" belongs to the Task record, not the activity log` };
     }
   }
 
@@ -110,8 +115,10 @@ export function buildRecord(input, now = Date.now()) {
   const role = String(input.role || '').trim();
   if (!ROLE_RE.test(role)) return { ok: false, reason: 'role must be a kebab-case role id' };
 
-  const item = input.item == null ? null : String(input.item).trim();
-  if (item !== null && !ITEM_RE.test(item)) return { ok: false, reason: 'item must be a kebab-case item id' };
+  const task = input.task == null ? null : String(input.task).trim();
+  if (task !== null && !TASK_RE.test(task)) {
+    return { ok: false, reason: 'task must be a typed "<pack>:task:<slug>" identity' };
+  }
 
   const run = String(input.run || '').trim();
   if (!RUN_RE.test(run)) return { ok: false, reason: 'run must be a short opaque id' };
@@ -125,7 +132,7 @@ export function buildRecord(input, now = Date.now()) {
     src: 'declared', e, role, run,
   };
   if (!Number.isFinite(rec.t)) return { ok: false, reason: 't must be an epoch-seconds integer' };
-  if (item) rec.item = item;
+  if (task) rec.task = task;
 
   if (e === 'stop') {
     const outcome = String(input.outcome || '').trim();
@@ -178,6 +185,9 @@ export function append(root, input, now = Date.now()) {
   const built = buildRecord(input, now);
   if (!built.ok) return built;
   const file = logPath(root);
+  if (escapesRoot(root, file) || pathHasLink(root, file)) {
+    return {ok: false, reason: 'activity path traverses a link or escapes the workspace'};
+  }
   try {
     mkdirSync(dirname(file), { recursive: true });
     rotate(file);
@@ -192,12 +202,13 @@ export function append(root, input, now = Date.now()) {
 // file, so a hand-edit, an external writer, or a partial line could otherwise
 // carry a path or a username into rendered output. A record that fails these
 // shapes is counted as skipped, exactly like a corrupt line.
-function readable(r) {
+function readable(r, {legacy = false} = {}) {
   if (!r || typeof r !== 'object') return false;
   if (!EVENTS.has(r.e)) return false;
   if (typeof r.run !== 'string' || !RUN_RE.test(r.run)) return false;
   if (typeof r.role !== 'string' || !ROLE_RE.test(r.role)) return false;
-  if (r.item != null && !(typeof r.item === 'string' && ITEM_RE.test(r.item))) return false;
+  if (r.task != null && !(typeof r.task === 'string' && TASK_RE.test(r.task))) return false;
+  if (r.item != null && (!legacy || typeof r.item !== 'string' || !LEGACY_ITEM_RE.test(r.item))) return false;
   if (r.next_report_by != null && !Number.isFinite(Number(r.next_report_by))) return false;
   if (r.outcome != null && !OUTCOMES.has(r.outcome)) return false;
   if (r.note != null && (typeof r.note !== 'string' || r.note.length > MAX_NOTE || looksAbsolute(r.note))) return false;
@@ -209,7 +220,9 @@ function readable(r) {
  * must degrade to absent rather than break the report that consumes it.
  */
 export function read(root) {
-  const file = logPath(root);
+  const manifest = readWorkspaceManifest(root);
+  const legacy = manifest.ok && manifest.manifest.schema_version < WORKSPACE_SCHEMA_VERSION;
+  const file = legacy ? join(root, LEGACY_LOG_REL) : logPath(root);
   if (!existsSync(file)) return { present: false, records: [], skipped: 0 };
   let raw;
   try { raw = readFileSync(file, 'utf8'); } catch { return { present: false, records: [], skipped: 0 }; }
@@ -219,7 +232,7 @@ export function read(root) {
     if (!line.trim()) continue;
     try {
       const r = JSON.parse(line);
-      if (readable(r)) records.push(r);
+      if (readable(r, {legacy})) records.push(r);
       else skipped++;
     } catch { skipped++; }
   }
@@ -238,11 +251,23 @@ export function runs(records, now = Date.now()) {
   for (const r of records) {
     let s = byRun.get(r.run);
     if (!s) {
-      s = { run: r.run, role: r.role, item: r.item || null, started: null, last: null, deadline: null, stopped: null, outcome: null, events: 0 };
+      s = {
+        run: r.run,
+        role: r.role,
+        task: r.task || null,
+        item: r.item || null,
+        started: null,
+        last: null,
+        deadline: null,
+        stopped: null,
+        outcome: null,
+        events: 0,
+      };
       byRun.set(r.run, s);
     }
     s.events++;
     if (r.role) s.role = r.role;
+    if (r.task) s.task = r.task;
     if (r.item) s.item = r.item;
     if (r.e === 'start') s.started = r.t;
     if (r.e === 'stop') { s.stopped = r.t; s.outcome = r.outcome || null; }

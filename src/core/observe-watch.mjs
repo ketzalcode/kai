@@ -4,7 +4,7 @@
 //
 // WHY THIS EXISTS
 //
-// `.kai/observed.jsonl` answers the question that reports cannot: which roles
+// `.kai/core/runtime/observed.jsonl` answers the question that reports cannot: which roles
 // actually took part in a piece of work, in what order. But reading a JSONL
 // file is not watching a team. The gap this closes is attention: a supervisor
 // should be able to glance at a second terminal and see who is working, rather
@@ -34,11 +34,11 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
 
-export const OBSERVED_REL = '.kai/observed.jsonl';
+export const OBSERVED_REL = '.kai/core/runtime/observed.jsonl';
 // The writer rotates at MAX_BYTES, so the previous generation is where an
 // in-flight start goes when a rotation lands mid-run. Reading only the current
 // file would erase workers that are still open.
-export const ROTATED_REL = '.kai/observed.jsonl.1';
+export const ROTATED_REL = '.kai/core/runtime/observed.jsonl.1';
 
 // The declared tier. Agents write this themselves; the host writes the observed
 // tier. Both are needed because neither is complete on its own: the host emits
@@ -49,11 +49,11 @@ export const ROTATED_REL = '.kai/observed.jsonl.1';
 // They are merged for display and never reconciled into a single truth. An
 // agent present in one tier and absent from the other is the normal case, not
 // a discrepancy to resolve.
-export const ACTIVITY_REL = '.kai/activity.jsonl';
+export const ACTIVITY_REL = '.kai/core/runtime/activity.jsonl';
 // The declared writer rotates at the same bound as the observer, so an
 // in-flight declared run lives in the previous generation after a rotation.
 // Omitting this made a healthy, running agent vanish from the view.
-export const ACTIVITY_ROTATED_REL = '.kai/activity.jsonl.1';
+export const ACTIVITY_ROTATED_REL = '.kai/core/runtime/activity.jsonl.1';
 
 // Kept in step with the writer. A viewer that read more than the writer can
 // produce would be reading something else.

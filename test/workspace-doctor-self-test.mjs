@@ -38,7 +38,7 @@ import {
 } from '../src/core/lib/workspace-resolve.mjs';
 import { normalized } from '../src/core/lib/workspace-path-safety.mjs';
 import {
-  checkWorkspace, adoptWorkspace, forgetWorkspace,
+  checkWorkspace, initializeWorkspace, adoptWorkspace, forgetWorkspace,
   writeRegistry, migrationExitCode, migrationInventory,
 } from '../src/core/workspace-doctor.mjs';
 
@@ -60,6 +60,232 @@ function selfTest() {
       details.forEach((detail) => console.log(`    ${detail}`));
     }
   };
+
+  const direction = [
+    '# Vision',
+    'A composable private workspace.',
+    '',
+    '# Mission',
+    'Coordinate exact work safely.',
+    '',
+    '# Current Goal',
+    'Activate schema 5.',
+    '',
+    '# Out of Scope',
+    'Inventing project direction.',
+    '',
+  ].join('\n');
+  const schema5Manifest = (overrides = {}) => ({
+    plugin: 'kai-core',
+    version: 'test',
+    schema_version: 5,
+    scaffolded: '2026-10-02',
+    workspace_id: 'stable-id',
+    placement: 'repo-local',
+    workspace_root: '.',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
+    projects: [{
+      id: 'default',
+      path: '.',
+      publication_root: 'docs/kai',
+    }],
+    ...overrides,
+  });
+
+  const schema5Root = mkdtempSync(join(tmpdir(), 'kai-schema5-init-'));
+  try {
+    spawnSync('git', ['init', '--quiet', schema5Root], {windowsHide: true});
+    writeFileSync(join(schema5Root, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(schema5Root, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(schema5Root, 'docs', 'kai', 'DIRECTION.md'), direction);
+
+    const initialized = initializeWorkspace({
+      root: schema5Root,
+      manifest: schema5Manifest(),
+    });
+    ok(initialized.ok, 'schema-5 initialization succeeds from operator-supplied Direction', [initialized.reason]);
+    const initializedFiles = snapshotTree(schema5Root)
+      .filter(entry => !entry.startsWith('.git/'))
+      .filter(entry => entry !== '.git/')
+      .sort();
+    const expectedFiles = [
+      '.gitignore:/.kai/\n',
+      '.kai/',
+      '.kai/core/',
+      '.kai/core/runtime/',
+      '.kai/core/runtime/coordination.sqlite:',
+      '.kai/manifest.json:',
+      'docs/',
+      'docs/kai/',
+      `docs/kai/DIRECTION.md:${direction}`,
+      'docs/kai/README.md:',
+    ];
+    ok(
+      expectedFiles.every(expected => initializedFiles.some(actual =>
+        expected.endsWith(':') ? actual.startsWith(expected) : actual === expected))
+        && initializedFiles.length === expectedFiles.length,
+      'initialization creates only manifest, schema-2 store, README, and the supplied Direction',
+      initializedFiles,
+    );
+    const forbiddenInitialDirectories = [
+      'engineering', 'creative', 'personal', 'learning', 'runs', 'review', 'archive', 'artifacts',
+    ];
+    ok(
+      forbiddenInitialDirectories.every(name =>
+        !initializedFiles.some(entry => entry.split('/').includes(name))),
+      'initialization creates no department, personal, generic, run, review, or archive directory',
+      initializedFiles,
+    );
+    const ignore = spawnSync('git', ['--no-pager', '-C', schema5Root, 'check-ignore', '--no-index', '-q', '--', '.kai/'],
+      {encoding: 'utf8', windowsHide: true});
+    const tracked = spawnSync('git', ['--no-pager', '-C', schema5Root, 'ls-files', '--', '.kai'],
+      {encoding: 'utf8', windowsHide: true});
+    ok(ignore.status === 0 && tracked.stdout.trim() === '',
+      'repo-local initialization leaves the whole .kai tree ignored and untracked',
+      [ignore.stderr, tracked.stdout, tracked.stderr].filter(Boolean));
+    const healthySchema5 = checkWorkspace(schema5Root);
+    ok(healthySchema5.errors.length === 0,
+      'the activated schema-5 workspace passes doctor validation',
+      healthySchema5.errors);
+
+    const manifestPath = join(schema5Root, '.kai', 'manifest.json');
+    const exactManifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    for (const [key, value] of [
+      ['runs', '.kai/runs'],
+      ['installed_packs', ['kai-core']],
+    ]) {
+      writeFileSync(manifestPath, `${JSON.stringify({...exactManifest, [key]: value}, null, 2)}\n`);
+      const retiredKey = checkWorkspace(schema5Root);
+      ok(new RegExp(`unexpected key "${key}"|retired.*"${key}"`, 'i').test(retiredKey.errors.join('\n')),
+        `schema 5 rejects manifest key "${key}" instead of aliasing it`,
+        retiredKey.errors);
+    }
+    writeFileSync(manifestPath, `${JSON.stringify({...exactManifest, placement: 'shared'}, null, 2)}\n`);
+    const sharedPlacement = checkWorkspace(schema5Root);
+    ok(/placement.*repo-local.*external/i.test(sharedPlacement.errors.join('\n')),
+      'schema 5 rejects retired shared placement',
+      sharedPlacement.errors);
+    for (const [label, projectPath] of [
+      ['UNC', '\\\\server\\share'],
+      ['device', '\\\\?\\C:\\workspace'],
+      ['POSIX absolute', '/var/kai/project'],
+    ]) {
+      writeFileSync(manifestPath, `${JSON.stringify({
+        ...exactManifest,
+        projects: [{...exactManifest.projects[0], path: projectPath}],
+      }, null, 2)}\n`);
+      const unsafe = checkWorkspace(schema5Root);
+      ok(/must be "\."|UNC|device|network|native absolute/i.test(unsafe.errors.join('\n')),
+        `schema 5 refuses ${label} project paths without traversing them`,
+        unsafe.errors);
+    }
+    writeFileSync(manifestPath, `${JSON.stringify(exactManifest, null, 2)}\n`);
+  } finally {
+    rmSync(schema5Root, {recursive: true, force: true});
+  }
+
+  const failedInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-failed-init-'));
+  try {
+    spawnSync('git', ['init', '--quiet', failedInitRoot], {windowsHide: true});
+    writeFileSync(join(failedInitRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(failedInitRoot, 'docs', 'kai', 'README.md'), {recursive: true});
+    writeFileSync(join(failedInitRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const failedInit = initializeWorkspace({
+      root: failedInitRoot,
+      manifest: schema5Manifest({workspace_id: 'failed-init'}),
+    });
+    ok(!failedInit.ok
+      && !existsSync(join(failedInitRoot, '.kai', 'manifest.json'))
+      && !existsSync(join(failedInitRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
+      && (!existsSync(join(failedInitRoot, '.kai'))
+        || !readdirSync(join(failedInitRoot, '.kai'), {withFileTypes: true})
+          .some(entry => entry.name.includes('manifest'))),
+    'an initialization failure cleans its staged manifest and new store',
+    [failedInit.reason, ...snapshotTree(failedInitRoot)]);
+  } finally {
+    rmSync(failedInitRoot, {recursive: true, force: true});
+  }
+
+  const missingDirectionRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-no-direction-'));
+  try {
+    spawnSync('git', ['init', '--quiet', missingDirectionRoot], {windowsHide: true});
+    writeFileSync(join(missingDirectionRoot, '.gitignore'), '/.kai/\n');
+    const missingDirection = initializeWorkspace({
+      root: missingDirectionRoot,
+      manifest: schema5Manifest({workspace_id: 'no-direction'}),
+    });
+    ok(!missingDirection.ok
+      && /DIRECTION_REQUIRED|direction/i.test(`${missingDirection.code} ${missingDirection.reason}`)
+      && !existsSync(join(missingDirectionRoot, '.kai')),
+    'missing operator Direction fails before any private tree is created',
+    [missingDirection.reason]);
+  } finally {
+    rmSync(missingDirectionRoot, {recursive: true, force: true});
+  }
+
+  const linkedInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-linked-init-'));
+  const linkedInitOutside = mkdtempSync(join(tmpdir(), 'kai-schema5-linked-outside-'));
+  try {
+    spawnSync('git', ['init', '--quiet', linkedInitRoot], {windowsHide: true});
+    writeFileSync(join(linkedInitRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(linkedInitRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(linkedInitRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    symlinkSync(linkedInitOutside, join(linkedInitRoot, '.kai'), 'junction');
+    const linkedInit = initializeWorkspace({
+      root: linkedInitRoot,
+      manifest: schema5Manifest({workspace_id: 'linked-init'}),
+    });
+    ok(!linkedInit.ok
+      && !existsSync(join(linkedInitOutside, 'manifest.json'))
+      && !existsSync(join(linkedInitOutside, 'core')),
+    'initialization refuses a linked private root before staging any file',
+    [linkedInit.reason].filter(Boolean));
+  } finally {
+    rmSync(linkedInitRoot, {recursive: true, force: true});
+    rmSync(linkedInitOutside, {recursive: true, force: true});
+  }
+
+  const externalRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-external-'));
+  try {
+    const projectRoot = join(externalRoot, 'project');
+    const workspaceRoot = join(externalRoot, 'workspace');
+    const env = {KAI_HOME: join(externalRoot, 'home')};
+    mkdirSync(join(projectRoot, 'docs', 'kai'), {recursive: true});
+    mkdirSync(workspaceRoot, {recursive: true});
+    writeFileSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    writeFileSync(join(projectRoot, 'docs', 'kai', 'README.md'), '# Operator-owned Kai index\n');
+    const manifest = schema5Manifest({
+      workspace_id: 'external-stable-id',
+      placement: 'external',
+      workspace_root: workspaceRoot,
+      projects: [{id: 'default', path: projectRoot, publication_root: 'docs/kai'}],
+    });
+    writeRegistry([{
+      project_root: projectRoot,
+      workspace_root: workspaceRoot,
+      workspace_id: manifest.workspace_id,
+    }], env);
+    const initialized = initializeWorkspace({root: workspaceRoot, manifest, env});
+    ok(initialized.ok
+      && existsSync(join(workspaceRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
+      && !existsSync(join(projectRoot, '.kai'))
+      && readFileSync(join(projectRoot, 'docs', 'kai', 'README.md'), 'utf8') === '# Operator-owned Kai index\n',
+    'external initialization preserves registry binding, project privacy, and an existing README',
+    [initialized.reason].filter(Boolean));
+    const checked = checkWorkspace(workspaceRoot, {env});
+    ok(checked.errors.length === 0,
+      'an initialized external schema-5 workspace validates against its exact project binding',
+      checked.errors);
+    const forgotten = forgetWorkspace({projectRoot, env});
+    ok(forgotten.ok
+      && existsSync(join(workspaceRoot, '.kai', 'manifest.json'))
+      && existsSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md')),
+    'removing an installation binding never deletes .kai or docs/kai content',
+    [forgotten.reason].filter(Boolean));
+  } finally {
+    rmSync(externalRoot, {recursive: true, force: true});
+  }
 
   const good = checkWorkspace(join(fx, 'repo-workspace'));
   ok(good.errors.length === 0, 'healthy schema-3 shared fixture passes', good.errors);

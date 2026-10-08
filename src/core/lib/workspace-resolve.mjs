@@ -15,12 +15,36 @@ import {
   dirname, isAbsolute, join, parse as parsePath, relative, resolve as resolvePath, sep,
 } from 'node:path';
 import {
-  badPath, escapesRoot, exactPath, normalized, pathHasLink, resolvedProjectPath,
+  badPath, canonicalPath, escapesRoot, exactPath, normalized, pathHasLink, resolvedProjectPath,
 } from './workspace-path-safety.mjs';
+import {
+  DIRECTION_PATH,
+  PRIVATE_ROOT,
+  WORKSPACE_SCHEMA_VERSION,
+} from './workspace-layout.mjs';
 
 export const MANIFEST_REL = join('.kai', 'manifest.json');
 export const REGISTRY_FILE = 'workspaces.json';
+export const SCHEMA5_MANIFEST_KEYS = Object.freeze([
+  'plugin',
+  'version',
+  'schema_version',
+  'scaffolded',
+  'workspace_id',
+  'placement',
+  'workspace_root',
+  'private_root',
+  'direction',
+  'projects',
+]);
+export const SCHEMA5_PROJECT_KEYS = Object.freeze([
+  'id',
+  'path',
+  'publication_root',
+]);
 const MAX_SEARCH_DEPTH = 64;
+const PROJECT_ID = /^[a-z][a-z0-9-]*$/;
+const WORKSPACE_ID = /^[a-z0-9][a-z0-9-]{7,}$/i;
 
 function fail(code, message) {
   const error = new Error(message);
@@ -77,6 +101,196 @@ export function readWorkspaceManifest(root) {
   return { ok: true, path, manifest: parsed.value };
 }
 
+function exactKeys(value, required, label, errors) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    errors.push(`${label} must be an object`);
+    return;
+  }
+  const expected = new Set(required);
+  for (const key of required) {
+    if (!Object.hasOwn(value, key)) errors.push(`${label} missing required key "${key}"`);
+  }
+  for (const key of Object.keys(value)) {
+    if (!expected.has(key)) errors.push(`${label} contains unexpected key "${key}"`);
+  }
+}
+
+function portableAbsoluteKind(value) {
+  if (typeof value !== 'string') return null;
+  if (/^(?:\\\\|\/\/)/.test(value)) return 'network';
+  if (/^[A-Za-z]:[\\/]/.test(value)) return 'windows';
+  if (/^\//.test(value)) return 'posix';
+  return null;
+}
+
+function isNativeAbsolute(value) {
+  const kind = portableAbsoluteKind(value);
+  return isAbsolute(value)
+    && (process.platform === 'win32' ? kind === 'windows' : kind === 'posix');
+}
+
+function usesCanonicalPhysicalPath(value) {
+  const requested = resolvePath(value);
+  const canonical = canonicalPath(value);
+  return (process.platform === 'win32' ? requested.toLowerCase() : requested)
+    === (process.platform === 'win32' ? canonical.toLowerCase() : canonical);
+}
+
+export function validateSchema5Manifest(root, manifest, {
+  env = process.env,
+  allowUnregisteredExternal = false,
+} = {}) {
+  root = resolvePath(root);
+  const errors = [];
+  exactKeys(manifest, SCHEMA5_MANIFEST_KEYS, '.kai/manifest.json', errors);
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+    return {errors, projects: []};
+  }
+  const rootKind = portableAbsoluteKind(root);
+  if (rootKind === 'network') errors.push('workspace root cannot use a UNC, device, or network path');
+  else if (pathHasLink(root, root) || !usesCanonicalPhysicalPath(root)) {
+    errors.push('workspace root cannot use a symbolic link, junction, or filesystem alias');
+  }
+  if (manifest.plugin !== 'kai-core') errors.push('.kai/manifest.json "plugin" must be exactly "kai-core"');
+  if (typeof manifest.version !== 'string' || !manifest.version.trim()) {
+    errors.push('.kai/manifest.json "version" must be a non-empty string');
+  }
+  if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+    errors.push(`.kai/manifest.json "schema_version" must be ${WORKSPACE_SCHEMA_VERSION}`);
+  }
+  if (typeof manifest.scaffolded !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(manifest.scaffolded)) {
+    errors.push('.kai/manifest.json "scaffolded" must be an ISO date or timestamp');
+  }
+  if (typeof manifest.workspace_id !== 'string' || !WORKSPACE_ID.test(manifest.workspace_id)) {
+    errors.push('.kai/manifest.json "workspace_id" must be a stable UUID or UUID-like identifier');
+  }
+  if (!['repo-local', 'external'].includes(manifest.placement)) {
+    errors.push('.kai/manifest.json "placement" must be "repo-local" or "external"');
+  }
+  if (manifest.private_root !== PRIVATE_ROOT) {
+    errors.push(`.kai/manifest.json "private_root" must be exactly "${PRIVATE_ROOT}"`);
+  }
+  if (manifest.direction !== DIRECTION_PATH) {
+    errors.push(`.kai/manifest.json "direction" must be exactly "${DIRECTION_PATH}"`);
+  }
+  if (manifest.placement === 'repo-local' && manifest.workspace_root !== '.') {
+    errors.push('.kai/manifest.json repo-local "workspace_root" must be "."');
+  }
+  if (manifest.placement === 'external') {
+    const kind = portableAbsoluteKind(manifest.workspace_root);
+    if (!kind || !isNativeAbsolute(manifest.workspace_root)) {
+      errors.push('.kai/manifest.json external "workspace_root" must be a native absolute path');
+    } else if (kind === 'network') {
+      errors.push('.kai/manifest.json external "workspace_root" cannot use a UNC, device, or network path');
+    } else if (normalized(manifest.workspace_root) !== normalized(root)) {
+      errors.push(`.kai/manifest.json external "workspace_root" does not match "${root}"`);
+    }
+  }
+
+  const projects = [];
+  if (!Array.isArray(manifest.projects) || manifest.projects.length === 0) {
+    errors.push('.kai/manifest.json "projects" must contain at least one project binding');
+  } else {
+    const ids = new Set();
+    const roots = new Set();
+    for (const [index, project] of manifest.projects.entries()) {
+      const label = `.kai/manifest.json projects[${index}]`;
+      exactKeys(project, SCHEMA5_PROJECT_KEYS, label, errors);
+      if (!project || typeof project !== 'object' || Array.isArray(project)) continue;
+      if (!PROJECT_ID.test(project.id || '')) errors.push(`${label}.id must be kebab-case`);
+      else if (ids.has(project.id)) errors.push(`${label}.id "${project.id}" is duplicated`);
+      else ids.add(project.id);
+
+      try {
+        assertSafeProjectPath(project);
+      } catch (error) {
+        errors.push(`${label}.path is unsafe: ${error.message}`);
+      }
+      const pathKind = portableAbsoluteKind(project.path);
+      if (manifest.placement === 'repo-local' && project.path !== '.') {
+        errors.push(`${label}.path must be "." for repo-local placement`);
+      }
+      if (manifest.placement === 'external' && (!pathKind || !isNativeAbsolute(project.path))) {
+        errors.push(`${label}.path must be a native absolute path for external placement`);
+      }
+      if (pathKind === 'network') errors.push(`${label}.path cannot use a UNC, device, or network path`);
+
+      const publicationProblem = badPath(project.publication_root);
+      const publicationRoot = typeof project.publication_root === 'string'
+        ? project.publication_root.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '')
+        : '';
+      if (!publicationRoot) errors.push(`${label}.publication_root is required`);
+      else if (publicationProblem) errors.push(`${label}.publication_root is a ${publicationProblem}`);
+      else if (publicationRoot.toLowerCase() === PRIVATE_ROOT
+        || publicationRoot.toLowerCase().startsWith(`${PRIVATE_ROOT}/`)) {
+        errors.push(`${label}.publication_root must be outside ${PRIVATE_ROOT}/`);
+      } else if (publicationRoot !== 'docs/kai') {
+        errors.push(`${label}.publication_root must be exactly "docs/kai"`);
+      }
+
+      if (typeof project.path !== 'string' || !project.path.trim()
+        || pathKind === 'network'
+        || (manifest.placement === 'repo-local' && project.path !== '.')
+        || (manifest.placement === 'external' && !isNativeAbsolute(project.path))) {
+        continue;
+      }
+      const projectRoot = resolvedProjectPath(root, project.path);
+      const canonicalRoot = canonicalPath(projectRoot);
+      if (!existsSync(projectRoot)) errors.push(`${label}.path does not exist: "${projectRoot}"`);
+      else if (pathHasLink(projectRoot, projectRoot) || !usesCanonicalPhysicalPath(projectRoot)) {
+        errors.push(`${label}.path cannot use a symbolic link, junction, or filesystem alias`);
+      }
+      const rootKey = normalized(projectRoot);
+      if (roots.has(rootKey)) errors.push(`${label}.path duplicates another project binding`);
+      roots.add(rootKey);
+      if (manifest.placement === 'external'
+        && (!escapesRoot(root, projectRoot) || !escapesRoot(projectRoot, root))) {
+        errors.push(`${label}.path overlaps the external workspace root`);
+      }
+      const projectPrivateRoot = join(projectRoot, '.kai');
+      if (manifest.placement === 'external'
+        && (existsSync(projectPrivateRoot) || pathHasLink(projectRoot, projectPrivateRoot))) {
+        errors.push(`${label}.path must not contain project-local .kai state for external placement`);
+      }
+
+      const publicationRootAbsolute = resolvePath(projectRoot, ...publicationRoot.split('/').filter(Boolean));
+      if (publicationRoot && (escapesRoot(projectRoot, publicationRootAbsolute)
+        || pathHasLink(projectRoot, publicationRootAbsolute)
+        || (existsSync(publicationRootAbsolute) && !usesCanonicalPhysicalPath(publicationRootAbsolute)))) {
+        errors.push(`${label}.publication_root escapes the configured project through a link or alias`);
+      }
+      projects.push({
+        project,
+        projectRoot: canonicalRoot,
+        publicationRoot,
+        publicationRootAbsolute,
+      });
+    }
+  }
+
+  if (manifest.placement === 'external' && !allowUnregisteredExternal) {
+    const registry = loadWorkspaceRegistry(env);
+    if (!registry.ok) errors.push(registry.reason);
+    else {
+      if (!registry.entries.some(entry => entry.workspace_id === manifest.workspace_id
+        && normalized(entry.workspace_root) === normalized(root))) {
+        errors.push(`external workspace is not registered in "${registry.path}"`);
+      }
+      for (const {project, projectRoot} of projects) {
+        const matches = registry.entries.filter(entry =>
+          normalized(entry.project_root) === normalized(projectRoot));
+        if (matches.length !== 1) {
+          errors.push(`external project "${project.id}" requires exactly one registry binding`);
+        } else if (matches[0].workspace_id !== manifest.workspace_id
+          || normalized(matches[0].workspace_root) !== normalized(root)) {
+          errors.push(`external project "${project.id}" is not paired with this workspace`);
+        }
+      }
+    }
+  }
+  return {errors, projects};
+}
+
 export function loadWorkspaceRegistry(env = process.env) {
   const path = registryPath(env);
   if (!existsSync(path)) return { ok: true, path, entries: [] };
@@ -94,8 +308,13 @@ export function loadWorkspaceRegistry(env = process.env) {
         return { ok: false, reason: `${path} workspaces[${index}] is missing string "${key}"` };
       }
     }
-    if (!isAbsolute(entry.project_root) || !isAbsolute(entry.workspace_root)) {
-      return { ok: false, reason: `${path} workspaces[${index}] project_root and workspace_root must be absolute` };
+    if (!isNativeAbsolute(entry.project_root) || !isNativeAbsolute(entry.workspace_root)
+      || portableAbsoluteKind(entry.project_root) === 'network'
+      || portableAbsoluteKind(entry.workspace_root) === 'network') {
+      return {
+        ok: false,
+        reason: `${path} workspaces[${index}] project_root and workspace_root must be native non-network absolute paths`,
+      };
     }
   }
   return { ok: true, path, entries: parsed.value.workspaces };
@@ -110,26 +329,35 @@ function validateRegisteredWorkspace(entry, projectRoot) {
       return { ok: false, reason: `workspace registry entry is missing "${key}"` };
     }
   }
-  if (!isAbsolute(entry.project_root) || !isAbsolute(entry.workspace_root)) {
-    return { ok: false, reason: 'workspace registry paths must be absolute' };
+  if (!isNativeAbsolute(entry.project_root) || !isNativeAbsolute(entry.workspace_root)
+    || portableAbsoluteKind(entry.project_root) === 'network'
+    || portableAbsoluteKind(entry.workspace_root) === 'network') {
+    return { ok: false, reason: 'workspace registry paths must be native non-network absolute paths' };
   }
   if (normalized(entry.project_root) !== normalized(projectRoot)) {
     return { ok: false, reason: 'workspace registry project path changed during resolution' };
+  }
+  if (!usesCanonicalPhysicalPath(entry.project_root)
+    || !usesCanonicalPhysicalPath(entry.workspace_root)
+    || pathHasLink(entry.project_root, entry.project_root)
+    || pathHasLink(entry.workspace_root, entry.workspace_root)) {
+    return {ok: false, reason: 'workspace registry paths cannot use links, junctions, or filesystem aliases'};
   }
 
   const manifestResult = readWorkspaceManifest(entry.workspace_root);
   if (!manifestResult.ok) return manifestResult;
   const manifest = manifestResult.manifest;
-  if (![3, 4].includes(manifest.schema_version)) {
+  if (![3, 4, 5].includes(manifest.schema_version)) {
     return {
       ok: false,
-      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3 or 4`,
+      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3, 4, or 5`,
     };
   }
-  if (manifest.storage_mode !== 'external') {
+  const placement = manifest.schema_version === 5 ? manifest.placement : manifest.storage_mode;
+  if (placement !== 'external') {
     return {
       ok: false,
-      reason: `registered workspace manifest storage_mode must be "external", found ${JSON.stringify(manifest.storage_mode)}`,
+      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(placement)}`,
     };
   }
   if (manifest.workspace_id !== entry.workspace_id) {
@@ -159,7 +387,7 @@ export function findRegisteredWorkspace(cwd, env = process.env) {
   const registry = loadWorkspaceRegistry(env);
   if (!registry.ok) return registry;
   const matches = registry.entries
-    .filter((entry) => typeof entry?.project_root === 'string' && isAbsolute(entry.project_root))
+    .filter((entry) => typeof entry?.project_root === 'string' && isNativeAbsolute(entry.project_root))
     .filter((entry) => isWithin(entry.project_root, cwd))
     .sort((left, right) => normalized(right.project_root).length - normalized(left.project_root).length);
   if (!matches.length) return { ok: true, root: null, registryPath: registry.path };

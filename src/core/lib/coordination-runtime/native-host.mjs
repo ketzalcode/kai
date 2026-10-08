@@ -1,14 +1,15 @@
 import {randomUUID, createHash} from 'node:crypto';
-import {existsSync} from 'node:fs';
+import {existsSync, lstatSync, renameSync, rmSync, writeFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef, subjectRef,
   validateActor, validateCommand, validateRecord, COMMAND_KINDS, PARENT_COMMAND_KINDS,
   CLASSIFICATIONS, HIERARCHY_KINDS} from './contract.mjs';
 import {contextIdentity, matchHumanDecision, readNativeTool} from './native-receipts.mjs';
 import {capabilityId, readIssued, writeIssued} from './native-capabilities.mjs';
 import {createTrustedEmbedding} from './host-composition.mjs';
-import {migrationManifest, privateAdmission, safePath, exactFile, DATABASE, LOCK} from './migration-files.mjs';
+import {privateAdmission, safePath, exactFile, LOCK} from './migration-files.mjs';
 import {openStore, closeStore, readRecord, listRecords, readOperationReceipt} from './store.mjs';
-import {assertWorkspaceWrite} from './workspace-guard.mjs';
+import {assertWorkspaceWrite, readWorkspaceContract} from './workspace-guard.mjs';
 import {migrateWorkspace, recoverMigration, rollbackMigration, bindMigrationRepair, repairLegacyRecord} from './migration.mjs';
 import {planDispatch} from './host.mjs';
 import {sameActor} from './authority.mjs';
@@ -16,6 +17,12 @@ import {captureInputBasis} from './input-basis.mjs';
 import {verifyNativeContext} from './native-context.mjs';
 import {routingActions, delegatedActions, routingBasis, requireRoutingScope} from './native-routing.mjs';
 import {copilotLaunch} from './native-discovery.mjs';
+import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from '../workspace-layout.mjs';
+import {readDirection} from '../direction.mjs';
+import {resolveConfiguredProject} from '../workspace-resolve.mjs';
+import {exactPath, inspectPrivateLanes, pathHasLink} from '../workspace-path-safety.mjs';
+
+const DATABASE = COORDINATION_DATABASE;
 
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 const hash = value => createHash('sha256').update(canonicalJson(value)).digest('hex');
@@ -310,7 +317,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
       const receipt = await matchHumanDecision({env, request, toolCallId: options['tool-call']});
       const actor = request.scope.command?.actor ?? request.scope.actor ?? request.scope.request?.actor;
       let catalog;
-      if (existsSync(safePath(root, `.kai/state/host/capabilities/${request.nonce}.json`))) {
+      if (existsSync(safePath(root, `.kai/core/runtime/host/capabilities/${request.nonce}.json`))) {
         const existing = readIssued(root, 'capabilities', request.nonce);
         if (canonicalJson(existing.request) !== canonicalJson(request) || canonicalJson(existing.receipt) !== canonicalJson(receipt)) {
           fail('OPERATION_CONFLICT', 'this nonce already has a different issued decision receipt');
@@ -332,7 +339,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
           fail('AUTHORITY_REQUIRED', 'repair requires a matched decision for the exact repair request');
         }
         ensureIdentity(body.actor);
-        assertWorkspaceWrite(safePath(root, DATABASE), {requirePrivate: true});
+        assertWorkspaceWrite(safePath(root, DATABASE), {requirePrivate: true, env});
         const store = openStore({path: safePath(root, DATABASE), mode: 'write'});
         try {
           bindMigrationRepair(store, {root, roles: cap.catalog.roster.map(e => e.role),
@@ -349,14 +356,61 @@ export function createNativeHost({env = process.env, discover} = {}) {
         return recoverMigration({root, confirm: true, action: options.action, env});
       }
       if (verb === 'rollback') return rollbackMigration({root, confirm: true, env});
-      migrationManifest(root, [4], env);
+      const manifest = readWorkspaceContract(root, {
+        env,
+        versions: [WORKSPACE_SCHEMA_VERSION],
+      });
       const path = safePath(root, DATABASE);
       if (existsSync(path)) fail('VERSION_CONFLICT', 'store already exists; init never replaces or repairs it');
       const privacy = privateAdmission(root, {admit: true});
       if (privacy.errors.length) fail('INVALID_INPUT', privacy.errors.join('; '));
-      assertWorkspaceWrite(path, {requirePrivate: true});
-      const store = openStore({path, mode: 'create'});
-      closeStore(store);
+      for (const retired of ['state', 'runs', 'review', 'archive', 'personal', 'areas', 'shared']) {
+        if (existsSync(join(root, '.kai', retired))) {
+          fail('INVALID_INPUT', `schema-5 initialization refuses retired generic root ".kai/${retired}"`);
+        }
+      }
+      const privateTree = inspectPrivateLanes(root, ['.kai']);
+      if (privateTree.symbolicLinks.length || privateTree.gitRoots.length || privateTree.unreadable.length) {
+        fail('INVALID_INPUT', 'schema-5 private tree contains links, nested Git, or unreadable paths');
+      }
+      readDirection({workspaceRoot: root, manifest});
+      const project = resolveConfiguredProject({workspaceRoot: root, manifest});
+      const readme = join(project.publicationRootAbsolute, 'README.md');
+      const manifestPath = safePath(root, '.kai/manifest.json');
+      const staged = safePath(root, `.kai/.manifest-${process.pid}-${randomUUID()}.tmp`);
+      const backup = safePath(root, `.kai/.manifest-${process.pid}-${randomUUID()}.bak`);
+      let createdReadme = false;
+      let deactivated = false;
+      let store;
+      try {
+        writeFileSync(staged, exactFile(root, '.kai/manifest.json'), {flag: 'wx', mode: 0o600});
+        renameSync(manifestPath, backup);
+        deactivated = true;
+        store = openStore({path, mode: 'create'});
+        closeStore(store);
+        store = null;
+        if (!existsSync(readme)) {
+          writeFileSync(readme, '# Kai\n\nAccepted Kai knowledge belongs below this directory.\n', {flag: 'wx'});
+          createdReadme = true;
+        } else if (!lstatSync(readme).isFile()
+          || pathHasLink(project.projectRoot, readme)
+          || !exactPath(readme)) {
+          fail('INVALID_INPUT', 'docs/kai/README.md must be an exact unlinked regular file');
+        }
+        renameSync(staged, manifestPath);
+        deactivated = false;
+        try { rmSync(backup, {force: true}); }
+        catch { /* activation is authoritative; a retained backup is safer than deleting the live store */ }
+      } catch (error) {
+        closeStore(store);
+        for (const candidate of [path, `${path}-wal`, `${path}-shm`, `${path}-journal`, staged]) {
+          rmSync(candidate, {force: true});
+        }
+        if (createdReadme) rmSync(readme, {force: true});
+        if (deactivated && existsSync(backup) && !existsSync(manifestPath)) renameSync(backup, manifestPath);
+        else rmSync(backup, {force: true});
+        throw error;
+      }
       return {initialized: true, databasePath: path, privateAdmission: privacy.admitted};
     },
     async apply({root, store, command, options}) {
@@ -448,7 +502,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
       const result = await embedding.apply({root, store, command, options});
       const lease = command.kind === 'task.grant' && result.data.record.body.lease;
       if (lease) {
-        const name = `.kai/state/host/reservations/${lease.token}.json`;
+        const name = `.kai/core/runtime/host/reservations/${lease.token}.json`;
         if (!existsSync(safePath(root, name))) writeIssued(root, 'reservations', lease.token, {
           taskId: command.recordId, actor: lease.holder, leaseToken: lease.token,
           operationId: command.operationId, reservedAt: new Date().toISOString(),

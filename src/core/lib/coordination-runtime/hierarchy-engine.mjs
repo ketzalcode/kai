@@ -1,5 +1,6 @@
-import {basename, dirname, posix as path} from 'node:path';
+import {basename, posix as path} from 'node:path';
 import {readDirection} from '../direction.mjs';
+import {workspaceRootFromCoordinationDatabase} from '../workspace-layout.mjs';
 import {directionPath} from '../workspace-layout.mjs';
 import {readWorkspaceManifest} from '../workspace-resolve.mjs';
 import {
@@ -152,7 +153,7 @@ function appendMutationEvent(
 }
 
 function workspaceRoot(store) {
-  return dirname(dirname(dirname(store.path)));
+  return workspaceRootFromCoordinationDatabase(store.path);
 }
 
 function configuredDirectionPath(project) {

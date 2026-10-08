@@ -35,23 +35,44 @@ const DIRECTION = [
   '',
 ].join('\n');
 mkdirSync(scratch, {recursive: true});
-export function workspace(fn, schema = 4) {
+export function workspace(fn, schema = 5) {
   const root = mkdtempSync(join(scratch, 'case-'));
-  mkdirSync(join(root, '.kai', 'state'), {recursive: true});
+  const runtimeRoot = schema === 5
+    ? join(root, '.kai', 'core', 'runtime')
+    : join(root, '.kai', 'state');
+  mkdirSync(runtimeRoot, {recursive: true});
   mkdirSync(join(root, 'docs', 'kai'), {recursive: true});
   writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), DIRECTION);
-  writeFileSync(join(root, '.kai', 'manifest.json'), JSON.stringify({
+  const common = {
     plugin: 'kai-core', version: 'test', schema_version: schema,
     scaffolded: new Date().toISOString(), workspace_id: randomUUID(),
-    storage_mode: 'repo-local', workspace_root: '.', state: '.kai/state',
-    runs: '.kai/runs', review: '.kai/review', archive: '.kai/archive',
-    personal: '.kai/personal',
+    workspace_root: '.',
     projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+  };
+  writeFileSync(join(root, '.kai', 'manifest.json'), JSON.stringify(schema === 5 ? {
+    ...common,
+    placement: 'repo-local',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
+  } : {
+    ...common,
+    storage_mode: 'repo-local',
+    state: '.kai/state',
+    runs: '.kai/runs',
+    review: '.kai/review',
+    archive: '.kai/archive',
+    personal: '.kai/personal',
     areas: [],
   }));
   // A separate real Git root keeps privacy admission independent of the checkout.
   spawnSync('git', ['init', '--quiet', root]);
   try { return fn(root); } finally { rmSync(root, {recursive: true, force: true}); }
+}
+function databasePath(root) {
+  const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8'));
+  return manifest.schema_version === 5
+    ? join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')
+    : join(root, '.kai', 'state', 'coordination.sqlite');
 }
 function invoke(root, verb, args = [], input, env = {}) {
   const result = spawnSync(process.execPath, [cli, verb, '--root', root, ...args], {
@@ -65,10 +86,10 @@ test('read-only inspect reports the actual runtime entrypoint and ignores forged
   const result = invoke(root, 'inspect');
   assert.equal(result.status, 0);
   assert.equal(result.json.entrypoint, resolve(cli));
-  assert.equal(result.json.schemaVersion, 4);
+  assert.equal(result.json.schemaVersion, 5);
   assert.equal(result.json.mode, 'inspect');
   assert.equal(result.json.storeExists, false);
-  assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
+  assert.equal(existsSync(databasePath(root)), false);
   const nativeInspect = native(root, 'inspect');
   assert.equal(nativeInspect.status, 0, JSON.stringify(nativeInspect.json));
   assert.equal(nativeInspect.json.entrypoint, resolve(cli));
@@ -94,7 +115,7 @@ test('strict parser rejects raw authority, unknown flags and malformed input', (
 test('schema 3 mutation refuses without creating a store; explicit root wins', () => workspace(root => {
   const result = invoke(root, 'apply', [], {}, {KAI_WORKSPACE_ROOT: 'invalid'});
   assert.equal(result.json.code, 'SCHEMA_MISMATCH');
-  assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
+  assert.equal(existsSync(databasePath(root)), false);
   assert.equal(invoke(root, 'inspect', [], undefined, {KAI_WORKSPACE_ROOT: 'invalid'}).json.schemaVersion, 3);
 }, 3));
 
@@ -193,7 +214,7 @@ test('native explicit init requires a matched strict human response, not success
     const call = human(root, request, reply);
     const refused = native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', call]);
     assert.equal(refused.json.code, 'AUTHORITY_REQUIRED');
-    assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
+    assert.equal(existsSync(databasePath(root)), false);
   }
   const failed = human(root, request, `APPROVE ${request.nonce}`, 'native-context-one', false);
   assert.equal(native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', failed]).json.code, 'AUTHORITY_REQUIRED');
@@ -255,7 +276,7 @@ test('native issuer rechecks private admission for every write and use after ini
 
 function seededNativeTask(root, overrides = {}) {
   initialize(root);
-  const store = openStore({path: join(root, '.kai', 'state', 'coordination.sqlite'), mode: 'write'});
+  const store = openStore({path: databasePath(root), mode: 'write'});
   try {
     return seedTask(store, {
       state: 'in-review',
@@ -272,7 +293,7 @@ function taskCommand(root, kind, actor, payload) {
 }
 function taskCriteria(root, task) {
   const store = openStore({
-    path: join(root, '.kai', 'state', 'coordination.sqlite'),
+    path: databasePath(root),
     mode: 'read',
   });
   try {
@@ -295,8 +316,9 @@ function exactNative(root, command) {
 
 test('broken old registered brief permits exact prospective repair by its scope owner, not old-scope reuse', () => workspace(root => {
   const owner = {role: 'eng-lead-architecture', runId: 'native-context-one'};
-  const oldPath = '.kai/state/old-brief.md';
+  const oldPath = '.kai/core/reports/old-brief/evidence/brief.md';
   seededNativeTask(root, {artifact_targets: [oldPath]});
+  mkdirSync(dirname(join(root, oldPath)), {recursive: true});
   writeFileSync(join(root, oldPath), 'Registered old brief');
   const oldArtifact = randomUUID();
   assert.equal(exactNative(root, taskCommand(root, 'artifact.register', owner, {
@@ -310,8 +332,10 @@ test('broken old registered brief permits exact prospective repair by its scope 
   })).status, 0);
   const oldGrant = authorize(root, {type: 'run', actor: owner, taskId: TASK_ID, actions: ['task.update']});
   writeFileSync(join(root, oldPath), 'Changed bytes invalidate the registered old brief');
-  writeFileSync(join(root, '.kai', 'state', 'replacement.md'), 'Valid replacement brief');
-  const repair = taskCommand(root, 'task.update', owner, {changes: {context_artifacts: ['.kai/state/replacement.md']}});
+  const replacementPath = '.kai/core/reports/replacement/evidence/brief.md';
+  mkdirSync(dirname(join(root, replacementPath)), {recursive: true});
+  writeFileSync(join(root, replacementPath), 'Valid replacement brief');
+  const repair = taskCommand(root, 'task.update', owner, {changes: {context_artifacts: [replacementPath]}});
   assert.equal(native(root, 'apply', repair, ['--capability', oldGrant]).json.code, 'EVIDENCE_GAP');
   const wrongOwner = {...repair, actor: {role: 'eng-builder-software', runId: owner.runId}};
   assert.equal(native(root, 'request', {type: 'command', command: wrongOwner}).json.code, 'AUTHORITY_REQUIRED');
@@ -323,9 +347,9 @@ test('broken old registered brief permits exact prospective repair by its scope 
   const cap = native(root, 'authorize', undefined, ['--request', requested.json.request.nonce, '--tool-call', call]).json.capability;
   const altered = {...repair, payload: {changes: {context_artifacts: []}}};
   assert.equal(native(root, 'apply', altered, ['--capability', cap]).json.code, 'AUTHORITY_REQUIRED');
-  writeFileSync(join(root, '.kai', 'state', 'replacement.md'), 'Changed after decision');
+  writeFileSync(join(root, replacementPath), 'Changed after decision');
   assert.equal(native(root, 'apply', repair, ['--capability', cap]).json.code, 'EVIDENCE_GAP');
-  writeFileSync(join(root, '.kai', 'state', 'replacement.md'), 'Valid replacement brief');
+  writeFileSync(join(root, replacementPath), 'Valid replacement brief');
   assert.equal(native(root, 'apply', repair, ['--capability', cap]).status, 0);
   assert.equal(native(root, 'apply', repair, ['--capability', cap]).json.operationId, repair.operationId,
     'exact repair redelivery returns its old receipt without reusing the grant for new work');
@@ -443,7 +467,7 @@ test('a legacy signed coordination request cannot newly authorize an unsupported
   human(root, legacy);
   const result = native(root, 'authorize', undefined, ['--request', nonce]);
   assert.equal(result.json.code, 'INVALID_INPUT');
-  assert.equal(existsSync(join(root, '.kai', 'state', 'host', 'capabilities', `${nonce}.json`)), false);
+  assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host', 'capabilities', `${nonce}.json`)), false);
 }));
 
 for (const action of ['question.answer', 'task.handoff']) {
@@ -565,10 +589,11 @@ test('coordinator routing is renewed after implementation-subject or criteria ch
   seededNativeTask(root, {state: 'in-review'});
   const capability = authorize(root, {type: 'coordination', actor: owner, taskId: TASK_ID,
     actions: ['task.handoff', 'task.grant', 'task.update']});
-  const path = '.kai/state/new-output.md', bytes = 'New implementation subject';
+  const path = '.kai/core/reports/new-output/evidence/output.md', bytes = 'New implementation subject';
+  mkdirSync(dirname(join(root, path)), {recursive: true});
   writeFileSync(join(root, path), bytes);
   const subject = {kind: 'sha256', path, digest: createHash('sha256').update(bytes).digest('hex')};
-  const store = openStore({path: join(root, '.kai', 'state', 'coordination.sqlite'), mode: 'write'});
+  const store = openStore({path: databasePath(root), mode: 'write'});
   try { store.database.prepare("UPDATE records SET body = json_set(body, '$.change_ref', json(?)) WHERE kind='task' AND id=?").run(JSON.stringify(subject), TASK_ID); }
   finally { closeStore(store); }
   const route = taskCommand(root, 'task.handoff', owner, {
@@ -642,13 +667,13 @@ test('capture requires exact actual authorized tool execution; retains result wi
     type: 'assistant.message', data: {content: 'visible', reasoning: 'MUST_NOT_RETAIN_REASONING'},
   })});
   assert.equal(native(root, 'capture', {requestId: handle}, ['--tool-call', nativeStream]).json.code, 'UNSUPPORTED_HOST');
-  assert.equal(existsSync(join(root, '.kai', 'state', 'host', 'captures', `${handle}.json`)), false);
+  assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host', 'captures', `${handle}.json`)), false);
   const receipt = commandReceipt(root, request.json.request, {exit: 7, text: 'ACTUAL_FAILURE_MARKER'});
   const captured = native(root, 'capture', {requestId: handle}, ['--tool-call', receipt]);
   assert.equal(captured.status, 0, JSON.stringify(captured.json));
   assert.equal(captured.json.exitCode, 7);
   assert.equal(captured.json.capturedCommand, request.json.request.command);
-  const saved = readFileSync(join(root, '.kai', 'state', 'host', 'captures', `${captured.json.capture}.json`), 'utf8');
+  const saved = readFileSync(join(root, '.kai', 'core', 'runtime', 'host', 'captures', `${captured.json.capture}.json`), 'utf8');
   assert.ok(saved.includes('ACTUAL_FAILURE_MARKER'));
   assert.ok(saved.includes('node --version'));
   assert.equal(native(root, 'capture', {requestId: handle, exit_code: 0}, ['--tool-call', receipt]).json.code, 'INVALID_INPUT');
@@ -661,22 +686,19 @@ test('status lists typed hierarchy Tasks without a selector', () => workspace(ro
   assert.equal(status.json.status.totals.tasks, 0);
 }));
 
-test('export remains read-only across shared-mode privacy drift', () => workspace(root => {
-  const manifestPath = join(root, '.kai', 'manifest.json');
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  writeFileSync(manifestPath, JSON.stringify({...manifest, storage_mode: 'shared'}));
+test('export remains read-only across private-policy drift', () => workspace(root => {
   const task = seededNativeTask(root);
   assert.equal(task.body.id, TASK_ID);
   const exclude = join(root, '.git', 'info', 'exclude');
-  assert.match(readFileSync(exclude, 'utf8'), /\.kai\/review\/coordination\//,
-    'init admits the private report directory into shared-mode Git metadata');
+  assert.match(readFileSync(exclude, 'utf8'), /\.kai\//,
+    'init admits the complete private workspace into Git metadata');
   const exported = invoke(root, 'export', ['--kind', 'task', '--id', TASK_ID]);
   assert.equal(exported.status, 0, JSON.stringify(exported.json));
   assert.equal(existsSync(join(root, '.kai', 'review', 'coordination')), false);
   writeFileSync(exclude, '');
   const command = taskCommand(root, 'task.update', {role: 'operator', runId: 'native-context-one'}, {title: 'Drifted'});
   assert.equal(native(root, 'apply', command, []).json.code, 'INVALID_INPUT',
-    'the coordinated write path already refuses a drifted shared workspace');
+    'the coordinated write path refuses a workspace whose private policy drifted');
   const drifted = invoke(root, 'export', ['--kind', 'task', '--id', TASK_ID]);
   assert.equal(drifted.status, 0, JSON.stringify(drifted.json));
   assert.equal(drifted.json.report.subject.id, TASK_ID);
@@ -698,7 +720,7 @@ for (const domain of ['engineering', 'creative']) {
     const featureId = `${domain}:feature:cli-chain`;
     const requirementId = `${domain}:requirement:cli-chain`;
     const outputTarget = `.kai/${domain}/features/cli-chain/drafts/output.html`;
-    const inputPath = `.kai/${domain}/features/cli-chain/context/brief.md`;
+    const inputPath = `.kai/${domain}/features/cli-chain/evidence/brief.md`;
     const get = (id = taskId) =>
       invoke(root, 'detail', ['--kind', 'task', '--id', id]).json.record;
     const envelope = (kind, actor, payload, extra = {}) => ({
@@ -721,7 +743,7 @@ for (const domain of ['engineering', 'creative']) {
       return result.json;
     };
     const store = openStore({
-      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      path: databasePath(root),
       mode: 'write',
     });
     let body;
@@ -955,23 +977,17 @@ for (const domain of ['engineering', 'creative']) {
   }));
 }
 
-test('explicit migration and rollback use reviewed offline APIs without leaking issuer material as legacy', () => workspace(root => {
-  mkdirSync(join(root, '.kai', 'state', 'Host'), {recursive: true});
-  const cap = authorize(root, {type: 'maintenance', action: 'migrate'});
-  assert.equal(native(root, 'migrate', undefined, ['--capability', cap]).json.code, 'AUTHORITY_REQUIRED');
-  const migrated = native(root, 'migrate', undefined, ['--confirm', '--capability', cap]);
-  assert.equal(migrated.status, 0, JSON.stringify(migrated.json));
-  assert.equal(migrated.json.schemaVersion, 4);
-  assert.equal(invoke(root, 'inspect').json.schemaVersion, 4);
-  const legacy = invoke(root, 'legacy');
-  assert.equal(legacy.status, 0, JSON.stringify(legacy.json));
-  assert.equal(legacy.json.sources.some(source => source.path.toLowerCase().startsWith('.kai/state/host/')), false);
-  const rollback = authorize(root, {type: 'maintenance', action: 'rollback'});
-  const rolledBack = native(root, 'rollback', undefined, ['--confirm', '--capability', rollback]);
-  assert.equal(rolledBack.status, 0, JSON.stringify(rolledBack.json));
-  assert.equal(rolledBack.json.schemaVersion, 3);
-  assert.equal(rolledBack.json.storeExists, false);
+test('schema 3 migration and rollback writes remain disabled until explicit schema-5 migration exists', () => workspace(root => {
+  for (const result of [
+    native(root, 'request', {type: 'maintenance', action: 'migrate'}),
+    native(root, 'migrate', undefined, ['--confirm', '--capability', randomUUID()]),
+    native(root, 'rollback', undefined, ['--confirm', '--capability', randomUUID()]),
+  ]) {
+    assert.equal(result.status, 1, JSON.stringify(result.json));
+    assert.equal(result.json.code, 'SCHEMA_MISMATCH');
+  }
   assert.equal(invoke(root, 'inspect').json.schemaVersion, 3);
+  assert.equal(existsSync(join(root, '.kai', 'core')), false);
 }, 3));
 
 test('SQLite-disabled process is a precise host gap; context override cannot exceed 24 KiB', () => workspace(root => {
@@ -1004,7 +1020,7 @@ test('schema 3 legacy inspection exposes exact selected original bytes without o
   const selected = invoke(root, 'legacy', ['--source', source.sourceId, '--raw']);
   assert.equal(selected.status, 0, JSON.stringify(selected.json));
   assert.equal(Buffer.from(selected.json.sources[0].raw, 'base64').toString(), bytes);
-  assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
+  assert.equal(existsSync(databasePath(root)), false);
 }, 3));
 
 test('real SQLite writer contention returns retryable exit 2 without replaying the command', () => workspace(root => {
@@ -1016,7 +1032,7 @@ test('real SQLite writer contention returns retryable exit 2 without replaying t
     {title: 'Contention'},
   );
   const capability = authorize(root, {type: 'command', command});
-  const store = openStore({path: join(root, '.kai', 'state', 'coordination.sqlite'), mode: 'write'});
+  const store = openStore({path: databasePath(root), mode: 'write'});
   try {
     store.database.exec('BEGIN IMMEDIATE');
     const result = native(root, 'apply', command, ['--capability', capability]);
@@ -1036,7 +1052,7 @@ test('ordinary inspect validates the existing SQLite schema without auditing his
   const good = invoke(root, 'inspect');
   assert.equal(good.status, 0);
   assert.equal(good.json.runtime?.taskCount, 0);
-  const store = openStore({path: join(root, '.kai', 'state', 'coordination.sqlite'), mode: 'write'});
+  const store = openStore({path: databasePath(root), mode: 'write'});
   store.database.prepare("UPDATE metadata SET value = '99' WHERE key = 'schema_version'").run();
   closeStore(store);
   const unsupported = invoke(root, 'inspect');

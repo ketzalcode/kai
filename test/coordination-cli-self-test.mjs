@@ -58,31 +58,47 @@ const roles = [
 
 mkdirSync(scratch, {recursive: true});
 
-async function workspace(run, {schema = 4, createStore = false} = {}) {
+async function workspace(run, {schema = 5, createStore = false} = {}) {
   const root = mkdtempSync(join(scratch, 'case-'));
-  mkdirSync(join(root, '.kai', 'state'), {recursive: true});
+  spawnSync('git', ['init', '--quiet', root], {windowsHide: true});
+  writeFileSync(join(root, '.gitignore'), '/.kai/\n');
+  const runtimeRoot = schema === 5
+    ? join(root, '.kai', 'core', 'runtime')
+    : join(root, '.kai', 'state');
+  mkdirSync(runtimeRoot, {recursive: true});
   mkdirSync(join(root, 'docs', 'kai'), {recursive: true});
   writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), DIRECTION);
-  writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
+  const common = {
     plugin: 'kai-core',
     version: 'test',
     schema_version: schema,
     scaffolded: NOW,
     workspace_id: `cli-${randomUUID()}`,
-    storage_mode: 'repo-local',
     workspace_root: '.',
-    state: '.kai/state',
-    runs: '.kai/runs',
-    review: '.kai/review',
-    archive: '.kai/archive',
-    personal: '.kai/personal',
     projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
-    areas: [],
-  }, null, 2)}\n`);
+  };
+  const manifest = schema === 5
+    ? {
+      ...common,
+      placement: 'repo-local',
+      private_root: '.kai',
+      direction: 'docs/kai/DIRECTION.md',
+    }
+    : {
+      ...common,
+      storage_mode: 'repo-local',
+      state: '.kai/state',
+      runs: '.kai/runs',
+      review: '.kai/review',
+      archive: '.kai/archive',
+      personal: '.kai/personal',
+      areas: [],
+    };
+  writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   let store = null;
   if (createStore) {
     store = openStore({
-      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      path: join(runtimeRoot, 'coordination.sqlite'),
       mode: 'create',
     });
   }
@@ -171,10 +187,10 @@ test('read-only inspect reports schema without creating a missing database', asy
   workspace(async ({root}) => {
     const result = await runCLI(['inspect', '--root', root]);
     assert.equal(result.exitCode, 0);
-    assert.equal(result.result.schemaVersion, 4);
+    assert.equal(result.result.schemaVersion, 5);
     assert.equal(result.result.storeExists, false);
-    assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
-  }));
+    assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
+  }, {schema: 5}));
 
 test('strict parser rejects unknown flags, malformed identities, and every old --item selector', () => {
   for (const argv of [
@@ -204,13 +220,40 @@ test('strict parser rejects unknown flags, malformed identities, and every old -
   });
 });
 
-test('schema 3 mutation refuses without creating a store; direct work needs no workspace', async () => {
-  await workspace(async ({root}) => {
-    const result = await runCLI(['apply', '--root', root], {input: '{}'});
-    assert.equal(result.exitCode, 1);
-    assert.equal(result.result.code, 'SCHEMA_MISMATCH');
-    assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
-  }, {schema: 3});
+test('schema 3 and 4 remain inspect/status-only and every write is SCHEMA_MISMATCH', async () => {
+  for (const schema of [3, 4]) {
+    await workspace(async ({root, store}) => {
+      if (store) {
+        seedTask(store, {
+          state: 'ready',
+          producer_actor: null,
+          producing_actors: [],
+          acceptance_actor: null,
+        });
+        closeStore(store);
+      }
+      for (const argv of [
+        ['apply', '--root', root],
+        ['request', '--root', root],
+        ['init', '--root', root, '--confirm', '--capability', randomUUID()],
+        ['claim', '--root', root, '--task', fixtureIds.task],
+      ]) {
+        const input = argv[0] === 'apply'
+          ? '{}'
+          : argv[0] === 'request'
+            ? JSON.stringify({type: 'maintenance', action: 'init'})
+            : undefined;
+        const result = await runCLI(argv, {input});
+        assert.equal(result.exitCode, 1, `${schema}: ${argv[0]}`);
+        assert.equal(result.result.code, 'SCHEMA_MISMATCH', `${schema}: ${argv[0]}`);
+      }
+      const inspect = await runCLI(['inspect', '--root', root]);
+      const status = await runCLI(['status', '--root', root]);
+      assert.equal(inspect.exitCode, 0, `${schema}: inspect`);
+      assert.equal(status.exitCode, 0, `${schema}: status`);
+      assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
+    }, {schema, createStore: schema === 4});
+  }
 
   const direct = await runCLI(['direct']);
   assert.equal(direct.exitCode, 0);
@@ -235,7 +278,7 @@ test('typed status, context, detail, messages, export, and plan share the hierar
     closeStore(store);
 
     const status = await runCLI(['status', '--root', root], {host: selectedHost});
-    assert.equal(status.exitCode, 0);
+    assert.equal(status.exitCode, 0, JSON.stringify(status.result));
     assert.equal(status.result.status.goal.text, 'Exercise Task runtime behavior.');
     assert.equal(status.result.status.epics[0].packs[0].features[0].requirements[0].tasks[0].id,
       fixtureIds.task);
@@ -309,11 +352,11 @@ test('typed status, context, detail, messages, export, and plan share the hierar
     ], {host: selectedHost});
     assert.equal(plan.exitCode, 0);
     assert.equal(plan.result.automatic, false);
-    assert.deepEqual(plan.result.tasks.map(entry => entry.id), [fixtureIds.task]);
+    assert.deepEqual(plan.result.tasks.map(entry => entry.id), [fixtureIds.task], JSON.stringify(plan.result));
     assert.equal(selectedHost.calls.plan, 0);
 
     const verify = openStore({
-      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
       mode: 'read',
     });
     try {
@@ -327,7 +370,7 @@ test('typed status, context, detail, messages, export, and plan share the hierar
     } finally {
       closeStore(verify);
     }
-  }, {createStore: true}));
+  }, {schema: 5, createStore: true}));
 
 test('claim accepts only --task and forwards the exact typed Task without changing it', async () =>
   workspace(async ({root, store}) => {
@@ -352,7 +395,7 @@ test('claim accepts only --task and forwards the exact typed Task without changi
     assert.equal(selectedHost.calls.claim[0].options.task, fixtureIds.task);
 
     const verify = openStore({
-      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
       mode: 'read',
     });
     try {
@@ -360,7 +403,7 @@ test('claim accepts only --task and forwards the exact typed Task without changi
     } finally {
       closeStore(verify);
     }
-  }, {createStore: true}));
+  }, {schema: 5, createStore: true}));
 
 test('context limits and typed read errors are returned as INVALID_INPUT JSON', async () =>
   workspace(async ({root, store}) => {
@@ -376,7 +419,7 @@ test('context limits and typed read errors are returned as INVALID_INPUT JSON', 
       assert.equal(result.exitCode, 1);
       assert.equal(result.result.code, 'INVALID_INPUT');
     }
-  }, {createStore: true}));
+  }, {schema: 5, createStore: true}));
 
 test('ordinary inspect validates the existing SQLite schema and reports Task count', async () =>
   workspace(async ({root, store}) => {
@@ -387,7 +430,7 @@ test('ordinary inspect validates the existing SQLite schema and reports Task cou
     assert.equal(good.result.runtime.taskCount, 1);
 
     const writable = openStore({
-      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
       mode: 'write',
     });
     writable.database.prepare(
@@ -397,7 +440,7 @@ test('ordinary inspect validates the existing SQLite schema and reports Task cou
     const unsupported = await runCLI(['inspect', '--root', root]);
     assert.equal(unsupported.exitCode, 1);
     assert.equal(unsupported.result.code, 'SCHEMA_MISMATCH');
-  }, {createStore: true}));
+  }, {schema: 5, createStore: true}));
 
 test('SQLite-disabled process is a precise host gap', () =>
   workspace(({root}) => {
@@ -410,4 +453,4 @@ test('SQLite-disabled process is a precise host gap', () =>
     ], {encoding: 'utf8'});
     assert.equal(result.status, 1);
     assert.equal(JSON.parse(result.stdout).code, 'UNSUPPORTED_HOST');
-  }));
+  }, {schema: 5}));

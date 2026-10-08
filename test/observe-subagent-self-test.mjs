@@ -8,14 +8,15 @@
 // function: the guarantee is about what reaches the host's stdin/stdout, and a
 // function call cannot observe that.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { MAX_NOTE } from '../src/core/lib/activity.mjs';
+import {closeStore, openStore} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
-  OBSERVED_REL, CONSENT_REL, buildObserved, main, wantsSummary,
+  OBSERVED_REL, CONSENT_REL, appendObserved, buildObserved, main, wantsSummary,
 } from '../src/core/observe-subagent.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,7 +31,43 @@ function selfTest() {
 
   const tmp = join(tmpdir(), `kai-observe-${process.pid}`);
   mkdirSync(join(tmp, '.kai'), { recursive: true });
-  writeFileSync(join(tmp, '.kai', 'manifest.json'), '{}');
+  spawnSync('git', ['init', '--quiet', tmp], {windowsHide: true});
+  writeFileSync(join(tmp, '.gitignore'), '/.kai/\n');
+  mkdirSync(join(tmp, 'docs', 'kai'), {recursive: true});
+  writeFileSync(join(tmp, 'docs', 'kai', 'DIRECTION.md'), [
+    '# Vision',
+    'A composable workspace.',
+    '',
+    '# Mission',
+    'Observe participation safely.',
+    '',
+    '# Current Goal',
+    'Exercise schema-5 observation.',
+    '',
+    '# Out of Scope',
+    'Generic observation lanes.',
+    '',
+  ].join('\n'));
+  writeFileSync(join(tmp, '.kai', 'manifest.json'), `${JSON.stringify({
+    plugin: 'kai-core',
+    version: 'test',
+    schema_version: 5,
+    scaffolded: '2026-10-02',
+    workspace_id: 'observer-workspace',
+    placement: 'repo-local',
+    workspace_root: '.',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
+    projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+  })}\n`);
+  closeStore(openStore({
+    path: join(tmp, '.kai', 'core', 'runtime', 'coordination.sqlite'),
+    mode: 'create',
+  }));
+  ok(OBSERVED_REL === '.kai/core/runtime/observed.jsonl',
+    'observed activity uses the schema-5 core runtime path');
+  ok(CONSENT_REL === '.kai/core/runtime/observer-consent',
+    'observer consent uses the schema-5 core runtime path');
   const payload = (extra = {}) => ({
     sessionId: 'session-uuid-abc',
     timestamp: Date.now(),
@@ -111,11 +148,23 @@ function selfTest() {
   ok(!buildObserved('start', payload({ agentName: '../../etc/passwd' })).ok, 'an agentName that is not a plain name is refused');
   ok(!buildObserved('start', payload({ agentName: '' })).ok, 'a missing agentName is refused rather than recorded as unknown');
 
+  const linkedRoot = join(tmpdir(), `kai-observe-linked-${process.pid}`);
+  const outsideRoot = join(tmpdir(), `kai-observe-outside-${process.pid}`);
+  mkdirSync(join(linkedRoot, '.kai'), {recursive: true});
+  mkdirSync(outsideRoot, {recursive: true});
+  symlinkSync(outsideRoot, join(linkedRoot, '.kai', 'core'), 'junction');
+  const linkedWrite = appendObserved(linkedRoot, 'start', payload());
+  ok(!linkedWrite.ok && !existsSync(join(outsideRoot, 'runtime', 'observed.jsonl')),
+    'observed first-write validation refuses a junction without writing through it');
+  rmSync(linkedRoot, {recursive: true, force: true});
+  rmSync(outsideRoot, {recursive: true, force: true});
+
   // --- consent gate --------------------------------------------------------
   const denied = main(['subagentStart'], JSON.stringify(payload()));
   ok(!denied.ok && /not enabled/.test(denied.reason), 'without a consent marker nothing is written');
   ok(!existsSync(join(tmp, OBSERVED_REL)), 'the declined path leaves no file behind at all');
 
+  mkdirSync(dirname(join(tmp, CONSENT_REL)), {recursive: true});
   writeFileSync(join(tmp, CONSENT_REL), 'enabled\n');
   const allowed = main(['subagentStop'], JSON.stringify(payload({ agentId: 'agent-1', response: 'Done.' })));
   ok(allowed.ok, 'with consent present the record is written');
@@ -173,12 +222,38 @@ function selfTest() {
     mkdirSync(projectRoot, { recursive: true });
     mkdirSync(join(workspaceRoot, '.kai'), { recursive: true });
     mkdirSync(kaiHome, { recursive: true });
+    mkdirSync(join(projectRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md'), [
+      '# Vision',
+      'An external private workspace.',
+      '',
+      '# Mission',
+      'Observe bound project participation.',
+      '',
+      '# Current Goal',
+      'Exercise external discovery.',
+      '',
+      '# Out of Scope',
+      'Project-local private state.',
+      '',
+    ].join('\n'));
     writeFileSync(join(workspaceRoot, '.kai', 'manifest.json'), `${JSON.stringify({
-      schema_version: 3,
-      storage_mode: 'external',
+      plugin: 'kai-core',
+      version: 'test',
+      schema_version: 5,
+      scaffolded: '2026-10-02',
+      placement: 'external',
+      workspace_root: workspaceRoot,
+      private_root: '.kai',
+      direction: 'docs/kai/DIRECTION.md',
       workspace_id: 'observer-external-workspace',
-      projects: [{ id: 'fixture', path: projectRoot }],
+      projects: [{ id: 'fixture', path: projectRoot, publication_root: 'docs/kai' }],
     }, null, 2)}\n`);
+    closeStore(openStore({
+      path: join(workspaceRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'),
+      mode: 'create',
+    }));
+    mkdirSync(dirname(join(workspaceRoot, CONSENT_REL)), {recursive: true});
     writeFileSync(join(workspaceRoot, CONSENT_REL), 'enabled\n');
     writeFileSync(join(kaiHome, 'workspaces.json'), `${JSON.stringify({
       schema_version: 1,

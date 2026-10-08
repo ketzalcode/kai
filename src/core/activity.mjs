@@ -4,12 +4,12 @@
 // Agents are prompt documents with no runtime, so "reporting" has to be a
 // command they can run. This is that command: one bounded append per call.
 //
-//   activity start    --root <ws> --role <r> --run <id> [--item <i>] --for 30m
+//   activity start    --root <ws> --role <r> --run <id> [--task <id>] --for 30m
 //   activity progress --root <ws> --role <r> --run <id> --for 20m [--note "..."]
 //   activity stop     --root <ws> --role <r> --run <id> --outcome handoff
 //
 // It reports *activity*, never *state*. State, verdicts, and reviews live on
-// the coordination item and are rejected here by the shared library.
+// the coordination Task and are rejected here by the shared library.
 //
 // Exits 0 on a successful append and 0 on a rejected one only when --quiet is
 // set; otherwise a rejection exits 1 so a mistake in an agent's invocation is
@@ -18,10 +18,21 @@
 // Node built-ins only; writes one gitignored file.
 
 import { resolve } from 'node:path';
+import {existsSync} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { append, read, runs, LOG_REL, FORBIDDEN_FIELDS } from './lib/activity.mjs';
-import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
+import {
+  readWorkspaceManifest,
+  resolveWorkspaceRoot,
+  validateSchema5Manifest,
+} from './lib/workspace-resolve.mjs';
+import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+} from './lib/workspace-layout.mjs';
+import {inspectGitPrivacy} from './lib/workspace-git-privacy.mjs';
+import {readDirection} from './lib/direction.mjs';
 
 const DUR = /^(\d+)(s|m|h)$/;
 
@@ -65,7 +76,7 @@ function main(argv) {
       `  writes ${LOG_REL} (gitignored, append-only)`,
       '',
       '  --for <30m|2h|90s>   when this run will report next (required for start/progress)',
-      '  --item <item-id>     the coordination item this run serves',
+      '  --task <typed-id>    the coordination Task this run serves',
       '  --outcome <handoff|done|blocked|abandoned>   required for stop',
       '  --note "<text>"      one short bounded line; paths are rejected',
       '  --new-run            print a fresh run id and exit',
@@ -92,7 +103,7 @@ function main(argv) {
     if (!open.length) { console.log(`activity: ${log.records.length} record(s), no open run`); return 0; }
     for (const r of open) {
       const flag = r.overdue ? ' OVERDUE' : '';
-      console.log(`  ${r.role}${r.item ? ` on ${r.item}` : ''} — run ${r.run}, silent ${Math.round((r.silent_for || 0) / 60)}m${flag}`);
+      console.log(`  ${r.role}${r.task ? ` on ${r.task}` : ''} — run ${r.run}, silent ${Math.round((r.silent_for || 0) / 60)}m${flag}`);
     }
     return 0;
   }
@@ -102,7 +113,32 @@ function main(argv) {
     return 1;
   }
 
-  const input = { e: cmd, role: args.role, run: args.run, item: args.item, note: args.note };
+  const manifest = readWorkspaceManifest(root);
+  if (!manifest.ok || manifest.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+    console.error('activity: SCHEMA_MISMATCH — schema 3/4 workspaces are read-only');
+    return 1;
+  }
+  const validation = validateSchema5Manifest(root, manifest.manifest);
+  const privacy = inspectGitPrivacy(root, manifest.manifest.placement);
+  const errors = [
+    ...validation.errors,
+    ...privacy.errors,
+    ...privacy.missing.map(path => `private workspace path must be ignored: ${path}`),
+  ];
+  if (manifest.manifest.placement === 'repo-local' && !privacy.gitRoot) {
+    errors.push('repo-local placement requires a readable Git work tree');
+  }
+  try { readDirection({workspaceRoot: root, manifest: manifest.manifest}); }
+  catch (error) { errors.push(error.message); }
+  if (!existsSync(resolve(root, ...COORDINATION_DATABASE.split('/')))) {
+    errors.push(`coordination database is missing at ${COORDINATION_DATABASE}`);
+  }
+  if (errors.length) {
+    console.error(`activity: not recorded — ${errors.join('; ')}`);
+    return 1;
+  }
+
+  const input = { e: cmd, role: args.role, run: args.run, task: args.task, note: args.note };
   // The library rejects forbidden fields, but the CLI must reject the *flags*
   // too: an agent that reaches for `--state` should be told the boundary exists
   // rather than have the flag silently ignored.

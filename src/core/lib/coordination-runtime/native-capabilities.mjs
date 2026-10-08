@@ -3,7 +3,7 @@ import {existsSync} from 'node:fs';
 import {canonicalJson, RuntimeError} from './contract.mjs';
 import {safePath, exactFile, exclusiveFile, privateAdmission} from './migration-files.mjs';
 
-const lane = '.kai/state/host';
+const lane = '.kai/core/runtime/host';
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 const kinds = new Set(['requests', 'capabilities', 'captures', 'preparations', 'reservations']);
 const requireKind = kind => { if (!kinds.has(kind)) fail('INVALID_INPUT', 'unsupported native issuer record kind'); };

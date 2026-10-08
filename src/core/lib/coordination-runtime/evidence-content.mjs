@@ -10,7 +10,8 @@ import {
 import {
   badPath, escapesRoot, inspectPrivateLanes, normalized, pathHasLink, resolvedProjectPath,
 } from '../workspace-path-safety.mjs';
-import {readWorkspaceManifest} from '../workspace-resolve.mjs';
+import {readWorkspaceManifest, validateSchema5Manifest} from '../workspace-resolve.mjs';
+import {WORKSPACE_SCHEMA_VERSION} from '../workspace-layout.mjs';
 
 export function fail(code, message) {
   throw new RuntimeError(code, message);
@@ -44,9 +45,16 @@ export function workspaceManifest(root) {
   const result = readWorkspaceManifest(root);
   if (!result.ok) fail('INVALID_INPUT', result.reason);
   const m = result.manifest;
-  if (m.schema_version !== 4) fail('SCHEMA_MISMATCH', 'evidence requires workspace schema 4');
-  if (!Array.isArray(m.projects)) fail('INVALID_INPUT', 'workspace projects must be declared');
-  if (m.state !== '.kai/state') fail('INVALID_INPUT', 'unsupported workspace state binding');
+  if (m.schema_version === 4) {
+    if (!Array.isArray(m.projects)) fail('INVALID_INPUT', 'workspace projects must be declared');
+    if (m.state !== '.kai/state') fail('INVALID_INPUT', 'unsupported workspace state binding');
+    return m;
+  }
+  if (m.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+    fail('SCHEMA_MISMATCH', 'evidence requires workspace schema 4 or 5');
+  }
+  const validation = validateSchema5Manifest(root, m);
+  if (validation.errors.length) fail('INVALID_INPUT', validation.errors.join('; '));
   return m;
 }
 

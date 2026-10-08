@@ -6,8 +6,21 @@ import {
   validateCommand,
   validateHierarchySubject,
 } from './contract.mjs';
-import {migrationManifest, safePath, DATABASE, sourceSnapshot, exactFile, hash} from './migration-files.mjs';
-import {assertWorkspaceWrite} from './workspace-guard.mjs';
+import {
+  safePath,
+  DATABASE as LEGACY_DATABASE,
+  sourceSnapshot,
+  exactFile,
+  hash,
+} from './migration-files.mjs';
+import {
+  assertWorkspaceWrite,
+  readWorkspaceContract,
+} from './workspace-guard.mjs';
+import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+} from '../workspace-layout.mjs';
 import {
   openStore,
   closeStore,
@@ -78,19 +91,24 @@ export async function execute({verb, options, body, host, cwd, env}) {
   const resolved = resolveWorkspaceRoot({explicitRoot: options.root, cwd, env});
   if (!resolved.ok) fail('INVALID_INPUT', resolved.reason);
   const {root} = resolved;
-  const manifest = migrationManifest(root, [3, 4], env);
-  const path = safePath(root, DATABASE);
+  const manifest = readWorkspaceContract(root, {env});
+  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
+    ? COORDINATION_DATABASE
+    : LEGACY_DATABASE;
+  const path = safePath(root, database);
   const base = {ok: true, mode: verb, root, schemaVersion: manifest.schema_version, storeExists: existsSync(path)};
   if (reads.has(verb)) {
     if (verb === 'inspect') {
       let runtime = null;
-      if (manifest.schema_version === 4 && base.storeExists) {
+      if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION && base.storeExists) {
         const store = openStore({path, mode: 'read'});
         try { runtime = readStoreSummary(store); } finally { closeStore(store); }
+      } else if (manifest.schema_version < WORKSPACE_SCHEMA_VERSION) {
+        runtime = inspectRuntime(root, {env, intent: 'inspect'}).runtime;
       }
       return {...base, runtime, ...(options.deep ? {inspection: inspectRuntime(root, {env, intent: 'inspect'})} : {})};
     }
-    if (manifest.schema_version === 3) {
+    if (manifest.schema_version < WORKSPACE_SCHEMA_VERSION) {
       if (verb === 'legacy') {
         if (options.raw && !options.source) fail('INVALID_INPUT', 'raw legacy reads require one --source ID');
         const sources = sourceSnapshot(root).map(source => ({...source, sourceId: hash(source.path), status: 'historical-unverified'}))
@@ -102,9 +120,20 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
       if (verb === 'status') {
         const {collect} = await import('../../work-status.mjs');
-        return {...base, status: collect(root)};
+        const status = collect(root);
+        if (status.ok || manifest.schema_version === 3) return {...base, status};
+        const historical = inspectRuntime(root, {env, intent: 'inspect'});
+        return {...base, status: {
+          ok: historical.errors.length === 0,
+          historical: true,
+          schemaVersion: manifest.schema_version,
+          runtime: historical.runtime,
+          errors: historical.errors,
+          warnings: historical.warnings,
+          migrations: historical.migrations,
+        }};
       }
-      fail('SCHEMA_MISMATCH', 'schema 3 supports inspect/status/legacy only; explicitly migrate for runtime detail');
+      fail('SCHEMA_MISMATCH', 'schema 3/4 supports inspect/status/legacy only; explicitly migrate for runtime detail');
     }
     if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use explicit authorized init');
     const store = openStore({path, mode: 'read'});
@@ -182,8 +211,8 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
     } finally { closeStore(store); }
   }
-  if (manifest.schema_version !== 4 && !['request', 'authorize', 'receipt', 'capabilities', 'migrate', 'recover', 'rollback'].includes(verb)) {
-    fail('SCHEMA_MISMATCH', 'schema 3 is inspect-only; use explicit offline migration');
+  if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+    fail('SCHEMA_MISMATCH', 'schema 3/4 workspaces are read-only; explicit schema-5 migration is required');
   }
   if (verb === 'apply') validateCommand(body);
   if (!host) {
@@ -195,10 +224,10 @@ export async function execute({verb, options, body, host, cwd, env}) {
   }
   if (['init', 'migrate', 'recover', 'rollback', 'repair'].includes(verb)) {
     const result = await host.maintenance({root, verb, body, options, env});
-    return {...base, ...result, schemaVersion: migrationManifest(root, [3, 4], env).schema_version,
+    return {...base, ...result, schemaVersion: readWorkspaceContract(root, {env}).schema_version,
       storeExists: existsSync(path)};
   }
-  assertWorkspaceWrite(path, {requirePrivate: true});
+  assertWorkspaceWrite(path, {requirePrivate: true, env});
   if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use explicit authorized init');
   const store = openStore({path, mode: 'write'});
   try {

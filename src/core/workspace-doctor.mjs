@@ -24,7 +24,7 @@
 
 import {
   readFileSync, existsSync, readdirSync, writeFileSync, mkdirSync, rmSync,
-  lstatSync, renameSync, openSync, closeSync, unlinkSync,
+  lstatSync, renameSync, openSync, closeSync, unlinkSync, rmdirSync,
 } from 'node:fs';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -39,24 +39,28 @@ import {
 } from './lib/migration-doctor.mjs';
 import {
   defaultKaiHome, loadWorkspaceRegistry, readWorkspaceManifest, registryPath, resolveWorkspaceRoot,
+  validateSchema5Manifest,
 } from './lib/workspace-resolve.mjs';
 import {
-  badPath, normalized, canonicalPath, resolvedProjectPath, escapesRoot, inspectPrivateLanes,
+  badPath, normalized, canonicalPath, resolvedProjectPath, escapesRoot, exactPath,
+  inspectPrivateLanes, pathHasLink,
 } from './lib/workspace-path-safety.mjs';
 import { inspectRuntime } from './lib/coordination-runtime/inspection.mjs';
 import { inspectGitPrivacy } from './lib/workspace-git-privacy.mjs';
+import {readDirection} from './lib/direction.mjs';
+import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+} from './lib/workspace-layout.mjs';
+import {
+  closeStore,
+  openStore,
+} from './lib/coordination-runtime/store.mjs';
 
 // --- Contract constants the current plugin generates -----------------------
-// Two numbers, deliberately: `CURRENT_SCHEMA_VERSION` is the structural shape
-// (fixed roots, areas, required paths) that schema 3 introduced and schema 4
-// keeps, and the checks below are written against it. `CURRENT_CONTRACT_VERSION`
-// is what the plugin now generates and what coordinated work requires — a
-// schema-4 manifest is handled by the runtime inspector above, so every
-// migration message must name 4 as the destination. Schema 3 is inspect-only:
-// arriving at 3 is a step on the ladder, not the end of it.
-const CURRENT_SCHEMA_VERSION = 3;
-const CURRENT_CONTRACT_VERSION = 4;
-const REQUIRED_MANIFEST_KEYS = [
+const CURRENT_SCHEMA_VERSION = WORKSPACE_SCHEMA_VERSION;
+const LEGACY_LAYOUT_VERSION = 3;
+const LEGACY_REQUIRED_MANIFEST_KEYS = [
   'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_id',
   'storage_mode', 'workspace_root', 'state', 'runs', 'review', 'archive',
   'personal', 'projects', 'areas',
@@ -121,13 +125,204 @@ function provenLegacyRoots(root) {
 }
 
 function checkGitMode(root, mode, err, warn) {
+  if (mode === 'shared') return;
   const privacy = inspectGitPrivacy(root, mode);
   privacy.errors.forEach(err);
   privacy.warnings.forEach(warn);
   for (const path of privacy.missing) {
     err(mode === 'repo-local' && path === '.kai/'
-      ? 'storage_mode "repo-local" requires the entire .kai/ directory to be ignored'
-      : `storage_mode "${mode}" requires "${path}" to be ignored`);
+      ? 'placement "repo-local" requires the entire .kai/ directory to be ignored'
+      : `placement "${mode}" requires "${path}" to be ignored`);
+  }
+}
+
+const SCHEMA5_FORBIDDEN_ROOTS = [
+  '.kai/state',
+  '.kai/runs',
+  '.kai/review',
+  '.kai/archive',
+  '.kai/personal',
+  '.kai/areas',
+  '.kai/shared',
+];
+
+function schema5WorkspaceValidation(root, manifest, options = {}) {
+  const errors = [];
+  const warnings = [];
+  const shape = validateSchema5Manifest(root, manifest, {
+    env: options.env ?? process.env,
+    allowUnregisteredExternal: options.allowUnregisteredExternal ?? false,
+  });
+  errors.push(...shape.errors);
+  if (shape.errors.length) return {errors, warnings, projects: shape.projects};
+
+  const privacy = inspectGitPrivacy(root, manifest.placement);
+  errors.push(...privacy.errors);
+  warnings.push(...privacy.warnings);
+  if (manifest.placement === 'repo-local' && !privacy.gitRoot) {
+    errors.push('repo-local placement requires a readable Git work tree so .kai privacy can be verified');
+  }
+  for (const path of privacy.missing) {
+    errors.push(`placement "${manifest.placement}" requires the entire .kai/ directory to be ignored (missing ${path})`);
+  }
+
+  if (manifest.placement === 'external') {
+    for (const {projectRoot} of shape.projects) {
+      if (existsSync(join(projectRoot, '.kai'))) {
+        errors.push(`external project "${projectRoot}" must not contain a .kai directory`);
+      }
+    }
+  }
+
+  try {
+    readDirection({workspaceRoot: root, manifest});
+  } catch (error) {
+    errors.push(`${error.code ?? 'INVALID_DIRECTION'}: ${error.message}`);
+  }
+
+  const privateRoot = join(root, '.kai');
+  if (!existsSync(privateRoot)) {
+    if (options.requireActivated) errors.push('schema-5 workspace is missing required directory ".kai"');
+  } else if (!lstatSync(privateRoot).isDirectory() || pathHasLink(root, privateRoot) || !exactPath(privateRoot)) {
+    errors.push('schema-5 private root ".kai" must be an exact unlinked directory');
+  } else if (!options.requireActivated && readdirSync(privateRoot).length > 0) {
+    errors.push('schema-5 initialization requires an absent or empty .kai directory');
+  }
+  for (const forbidden of SCHEMA5_FORBIDDEN_ROOTS) {
+    if (existsSync(join(root, ...forbidden.split('/')))) {
+      errors.push(`schema-5 workspace contains retired generic root "${forbidden}"`);
+    }
+  }
+  const lanes = inspectPrivateLanes(root, ['.kai']);
+  for (const path of lanes.symbolicLinks) errors.push(`private workspace path "${path}" is a symbolic link or junction`);
+  for (const path of lanes.gitRoots) errors.push(`private workspace path "${path}" contains a nested Git repository`);
+  for (const detail of lanes.unreadable) errors.push(`private workspace path is unreadable: ${detail}`);
+
+  if (!options.requireActivated) return {errors, warnings, projects: shape.projects};
+
+  const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
+  if (!existsSync(databasePath)) {
+    errors.push(`schema-5 workspace is missing required store "${COORDINATION_DATABASE}"`);
+  } else if (pathHasLink(root, databasePath) || !exactPath(databasePath)
+    || !lstatSync(databasePath).isFile()) {
+    errors.push(`schema-5 store "${COORDINATION_DATABASE}" must be an exact unlinked file`);
+  } else {
+    let store;
+    try {
+      store = openStore({path: databasePath, mode: 'read'});
+    } catch (error) {
+      errors.push(`${error.code ?? 'SCHEMA_MISMATCH'}: ${error.message}`);
+    } finally {
+      closeStore(store);
+    }
+  }
+
+  const selected = shape.projects.length === 1
+    ? shape.projects[0]
+    : shape.projects.find(project => project.project.id === 'default');
+  if (!selected) errors.push('schema-5 workspace with multiple projects requires one "default" project');
+  else if (!existsSync(join(selected.publicationRootAbsolute, 'README.md'))) {
+    errors.push(`${selected.project.publication_root}/README.md is missing`);
+  } else {
+    const readme = join(selected.publicationRootAbsolute, 'README.md');
+    if (!lstatSync(readme).isFile() || pathHasLink(selected.projectRoot, readme) || !exactPath(readme)) {
+      errors.push(`${selected.project.publication_root}/README.md must be an exact unlinked file`);
+    }
+  }
+  return {errors, warnings, projects: shape.projects};
+}
+
+const README_CONTENT = [
+  '# Kai',
+  '',
+  'Accepted Kai knowledge belongs below this directory. Private runtime state stays in `.kai/`.',
+  '',
+].join('\n');
+
+export function initializeWorkspace({
+  root,
+  manifest,
+  env = process.env,
+} = {}) {
+  root = resolve(root);
+  const manifestPath = join(root, '.kai', 'manifest.json');
+  if (existsSync(manifestPath)) {
+    return {ok: false, code: 'VERSION_CONFLICT', reason: '.kai/manifest.json already exists'};
+  }
+  const validation = schema5WorkspaceValidation(root, manifest, {
+    env,
+    requireActivated: false,
+  });
+  if (validation.errors.length) {
+    const [first] = validation.errors;
+    const code = /^([A-Z_]+):/.exec(first)?.[1] ?? 'INVALID_INPUT';
+    return {ok: false, code, reason: first};
+  }
+
+  const selected = validation.projects.length === 1
+    ? validation.projects[0]
+    : validation.projects.find(project => project.project.id === 'default');
+  if (!selected) {
+    return {ok: false, code: 'INVALID_INPUT', reason: 'multiple projects require one "default" project'};
+  }
+
+  const privateRoot = join(root, '.kai');
+  const coreRoot = join(privateRoot, 'core');
+  const runtimeRoot = join(coreRoot, 'runtime');
+  const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
+  const readmePath = join(selected.publicationRootAbsolute, 'README.md');
+  const stagedManifest = join(privateRoot, `.manifest-${process.pid}-${randomUUID()}.tmp`);
+  const createdDirectories = [privateRoot, coreRoot, runtimeRoot].filter(path => !existsSync(path));
+  let createdReadme = false;
+  let store;
+  try {
+    mkdirSync(privateRoot, {recursive: true});
+    writeFileSync(stagedManifest, `${JSON.stringify(manifest, null, 2)}\n`, {flag: 'wx', mode: 0o600});
+    store = openStore({path: databasePath, mode: 'create'});
+    closeStore(store);
+    store = null;
+    if (!existsSync(readmePath)) {
+      writeFileSync(readmePath, README_CONTENT, {flag: 'wx'});
+      createdReadme = true;
+    } else if (!lstatSync(readmePath).isFile() || pathHasLink(selected.projectRoot, readmePath)
+      || !exactPath(readmePath)) {
+      throw Object.assign(new Error('docs/kai/README.md must be an exact unlinked file'), {code: 'INVALID_INPUT'});
+    }
+    const activation = schema5WorkspaceValidation(root, manifest, {
+      env,
+      requireActivated: true,
+    });
+    if (activation.errors.length) {
+      throw Object.assign(new Error(activation.errors.join('; ')), {code: 'INVALID_INPUT'});
+    }
+    renameSync(stagedManifest, manifestPath);
+    return {
+      ok: true,
+      root,
+      manifestPath,
+      databasePath,
+      readmePath,
+    };
+  } catch (error) {
+    closeStore(store);
+    for (const path of [
+      databasePath,
+      `${databasePath}-wal`,
+      `${databasePath}-shm`,
+      `${databasePath}-journal`,
+      stagedManifest,
+    ]) {
+      rmSync(path, {force: true});
+    }
+    if (createdReadme) rmSync(readmePath, {force: true});
+    for (const path of [...createdDirectories].reverse()) {
+      try { rmdirSync(path); } catch { /* preserve pre-existing or non-empty directories */ }
+    }
+    return {
+      ok: false,
+      code: error.code ?? 'INVALID_INPUT',
+      reason: error.message,
+    };
   }
 }
 
@@ -160,22 +355,38 @@ export function checkWorkspace(root, options = {}) {
     err('.kai/manifest.json must contain a JSON object');
     return { errors, warnings, migrations };
   }
+  if (m.schema_version === CURRENT_SCHEMA_VERSION) {
+    const checked = schema5WorkspaceValidation(root, m, {
+      env: options.env ?? process.env,
+      allowUnregisteredExternal: options.allowUnregisteredExternal ?? false,
+      requireActivated: true,
+    });
+    return {
+      errors: checked.errors,
+      warnings: checked.warnings,
+      migrations,
+    };
+  }
   if (m.schema_version === 4) {
     const inspection = inspectRuntime(root, {env: options.env ?? process.env, intent});
     if (intent === 'coordinate' && inspection.migrations.length) {
       inspection.errors.push('pending migration recovery prevents coordinated writes');
     }
+    inspection.migrations.push('schema 4 is inspect-only; explicit offline migration to schema 5 is required for coordination');
+    if (intent === 'coordinate') {
+      inspection.errors.push('schema 4 coordinated writes are refused; explicitly migrate to schema 5 first');
+    }
     return {errors: inspection.errors, warnings: inspection.warnings, migrations: inspection.migrations};
   }
   if (m.schema_version === 3) {
-    migrations.push('schema 3 is inspect-only; explicit offline migration to schema 4 is required for coordination');
-    if (intent === 'coordinate') err('schema 3 coordinated writes are refused; explicitly migrate to schema 4 first');
+    migrations.push('schema 3 is inspect-only; explicit offline migration to schema 5 is required for coordination');
+    if (intent === 'coordinate') err('schema 3 coordinated writes are refused; explicitly migrate to schema 5 first');
   }
 
-  for (const k of REQUIRED_MANIFEST_KEYS) {
+  for (const k of LEGACY_REQUIRED_MANIFEST_KEYS) {
     if (!(k in m)) {
       if (k === 'schema_version') continue; // handled by migration logic below
-      if (Number.isInteger(m.schema_version) && m.schema_version < CURRENT_SCHEMA_VERSION) continue;
+      if (Number.isInteger(m.schema_version) && m.schema_version < LEGACY_LAYOUT_VERSION) continue;
       err(`.kai/manifest.json missing required key "${k}"`);
     }
   }
@@ -198,7 +409,7 @@ export function checkWorkspace(root, options = {}) {
       err(`.kai/manifest.json external "workspace_root" resolves to "${resolve(m.workspace_root)}", not "${root}"`);
     }
   }
-  if (Number.isInteger(m.schema_version) && m.schema_version >= CURRENT_SCHEMA_VERSION && !Array.isArray(m.areas)) {
+  if (Number.isInteger(m.schema_version) && m.schema_version >= LEGACY_LAYOUT_VERSION && !Array.isArray(m.areas)) {
     err('.kai/manifest.json "areas" must be an array');
   } else if (Array.isArray(m.areas)) {
     const a = new Set(m.areas);
@@ -209,20 +420,18 @@ export function checkWorkspace(root, options = {}) {
 
   const sv = m.schema_version;
   if (sv === undefined || sv === 0) {
-    migrations.push(`schema_version absent → migrate to ${CURRENT_SCHEMA_VERSION} (add schema_version, reconcile fixed roots/areas, drop retired fields).`);
-    migrations.push(`apply migration step → ${CURRENT_CONTRACT_VERSION} (explicit offline migration into the coordination store; schema ${CURRENT_SCHEMA_VERSION} alone is inspect-only).`);
-    err(`workspace schema is pre-versioned; migration to schema_version ${CURRENT_CONTRACT_VERSION} required before claiming work.`);
+    migrations.push(`schema_version absent → migrate explicitly to ${CURRENT_SCHEMA_VERSION}.`);
+    err(`workspace schema is pre-versioned; migration to schema_version ${CURRENT_SCHEMA_VERSION} required before claiming work.`);
   } else if (!Number.isInteger(sv)) {
     err(`.kai/manifest.json "schema_version" must be an integer (found ${JSON.stringify(sv)}).`);
-  } else if (sv < CURRENT_SCHEMA_VERSION) {
-    for (let v = sv + 1; v <= CURRENT_SCHEMA_VERSION; v++) migrations.push(`apply migration step → ${v} (see kai-core-workspace-onboarding ladder).`);
-    migrations.push(`apply migration step → ${CURRENT_CONTRACT_VERSION} (explicit offline migration into the coordination store; schema ${CURRENT_SCHEMA_VERSION} alone is inspect-only).`);
-    err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_CONTRACT_VERSION}; migration required before claiming work.`);
+  } else if (sv < LEGACY_LAYOUT_VERSION) {
+    migrations.push(`apply explicit migration to schema ${CURRENT_SCHEMA_VERSION} (see kai-core-workspace-onboarding ladder).`);
+    err(`workspace schema_version ${sv} is behind the current contract ${CURRENT_SCHEMA_VERSION}; migration required before claiming work.`);
   } else if (sv > CURRENT_SCHEMA_VERSION) {
-    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_CONTRACT_VERSION}; update kai-core before claiming work.`);
+    err(`workspace schema_version ${sv} is newer than this plugin's contract ${CURRENT_SCHEMA_VERSION}; update kai-core before claiming work.`);
   }
 
-  if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
+  if (Number.isInteger(sv) && sv >= LEGACY_LAYOUT_VERSION) {
     for (const retired of RETIRED_SCHEMA_2_KEYS) {
       if (retired in m) err(`.kai/manifest.json still contains retired schema-2 key "${retired}"`);
     }
@@ -267,7 +476,7 @@ export function checkWorkspace(root, options = {}) {
   };
   for (const key of Object.keys(DEFAULT_ROOTS)) {
     const declared = rootOf(key);
-    if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION && m[key] !== DEFAULT_ROOTS[key]) {
+    if (Number.isInteger(sv) && sv >= LEGACY_LAYOUT_VERSION && m[key] !== DEFAULT_ROOTS[key]) {
       err(`.kai/manifest.json "${key}" must be exactly "${DEFAULT_ROOTS[key]}" (found ${JSON.stringify(m[key])}); the layout is a contract constant, not a per-workspace setting.`);
     }
   }
@@ -276,7 +485,7 @@ export function checkWorkspace(root, options = {}) {
   const projectPublicationRoots = new Map();
   const projectRoots = new Map();
   if (!Array.isArray(m.projects) || m.projects.length === 0) {
-    if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
+    if (Number.isInteger(sv) && sv >= LEGACY_LAYOUT_VERSION) {
       err('.kai/manifest.json "projects" must contain at least one project binding');
     }
   } else {
@@ -349,7 +558,7 @@ export function checkWorkspace(root, options = {}) {
     }
   }
 
-  if (Number.isInteger(sv) && sv >= CURRENT_SCHEMA_VERSION) {
+  if (Number.isInteger(sv) && sv >= LEGACY_LAYOUT_VERSION) {
     checkGitMode(root, m.storage_mode, err, warn);
   }
 
@@ -841,7 +1050,10 @@ export function adoptWorkspace({ root, projectRoot, env = process.env }) {
     return { ok: false, reason: `workspace is invalid: ${checked.errors[0]}` };
   }
   const manifest = readWorkspaceManifest(root).manifest;
-  if (manifest.storage_mode !== 'external') {
+  const placement = manifest.schema_version === CURRENT_SCHEMA_VERSION
+    ? manifest.placement
+    : manifest.storage_mode;
+  if (placement !== 'external') {
     return { ok: false, reason: 'only external workspaces need machine-local registry adoption' };
   }
   const project = manifest.projects.find(

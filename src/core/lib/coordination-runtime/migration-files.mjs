@@ -9,6 +9,7 @@ import {durablePath} from './evidence-content.mjs';
 import {pathHasLink, escapesRoot, normalized, inspectPrivateLanes, canonicalPath} from '../workspace-path-safety.mjs';
 import {readWorkspaceManifest, loadWorkspaceRegistry} from '../workspace-resolve.mjs';
 import {inspectGitPrivacy, workspaceGit} from '../workspace-git-privacy.mjs';
+import {COORDINATION_DATABASE} from '../workspace-layout.mjs';
 
 export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 export const fail = (code, message) => { throw new RuntimeError(code, message); };
@@ -152,13 +153,21 @@ export function migrationManifest(root, versions = [3, 4], env = process.env) {
 }
 
 const privateNames = [DATABASE, `${DATABASE}-wal`, `${DATABASE}-shm`, `${DATABASE}-journal`,
-  LOCK, `${MIGRATIONS}/`, '.kai/review/coordination/', '.kai/state/host/'];
+  COORDINATION_DATABASE, `${COORDINATION_DATABASE}-wal`, `${COORDINATION_DATABASE}-shm`,
+  `${COORDINATION_DATABASE}-journal`, LOCK, `${MIGRATIONS}/`,
+  '.kai/core/runtime/host/', '.kai/state/host/'];
 export function privateAdmission(root, {admit = false} = {}) {
   const manifest = readWorkspaceManifest(root);
   if (!manifest.ok) fail('INVALID_INPUT', manifest.reason);
   const git = args => workspaceGit(root, args);
-  const privacy = inspectGitPrivacy(root, manifest.manifest.storage_mode, {extraPrivate: privateNames, privateDatabases: true});
+  const placement = manifest.manifest.schema_version === 5
+    ? manifest.manifest.placement
+    : manifest.manifest.storage_mode;
+  const privacy = inspectGitPrivacy(root, placement, {extraPrivate: privateNames, privateDatabases: true});
   if (privacy.errors.length) return {errors: privacy.errors, admitted: []};
+  if (placement === 'repo-local' && !privacy.gitRoot) {
+    return {errors: ['repo-local placement requires a readable Git work tree'], admitted: []};
+  }
   if (!privacy.gitRoot) return {errors: [], admitted: []};
   // Both sides are canonicalised: git reports the real on-disk name while `root`
   // may still carry a Windows 8.3 short component, and `relative()` between the

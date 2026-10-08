@@ -16,7 +16,7 @@
 //     13-33s of added latency per session, paid by every installer including one
 //     who declines. Two spawns per subagent is noise.
 //   * NOT the main agent -- that is the operator's own conversation, not an
-//     employee working an item.
+//     employee working a Task.
 //
 // Two hard output rules, both load-bearing:
 //
@@ -37,10 +37,21 @@ import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, sta
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { digest, looksAbsolute, safeNote, MAX_LINE, MAX_BYTES } from './lib/activity.mjs';
-import { resolveWorkspaceRoot } from './lib/workspace-resolve.mjs';
+import {
+  readWorkspaceManifest,
+  resolveWorkspaceRoot,
+  validateSchema5Manifest,
+} from './lib/workspace-resolve.mjs';
+import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+} from './lib/workspace-layout.mjs';
+import {inspectGitPrivacy} from './lib/workspace-git-privacy.mjs';
+import {readDirection} from './lib/direction.mjs';
+import {escapesRoot, pathHasLink} from './lib/workspace-path-safety.mjs';
 
-export const OBSERVED_REL = '.kai/observed.jsonl';
-export const CONSENT_REL = '.kai/observer-consent';
+export const OBSERVED_REL = '.kai/core/runtime/observed.jsonl';
+export const CONSENT_REL = '.kai/core/runtime/observer-consent';
 
 // Mirrors the declared log's vocabulary so a viewer can merge the two streams
 // without translating between them.
@@ -70,6 +81,40 @@ export function findWorkspace(cwd, env = process.env) {
   if (typeof cwd !== 'string' || !cwd) return null;
   const r = resolveWorkspaceRoot({ cwd, env });
   return r.ok ? r.root : null;
+}
+
+function writableWorkspace(root, env) {
+  const manifest = readWorkspaceManifest(root);
+  if (!manifest.ok || manifest.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+    return {ok: false, reason: 'SCHEMA_MISMATCH: schema 3/4 workspaces are read-only'};
+  }
+  const validation = validateSchema5Manifest(root, manifest.manifest, {env});
+  const privacy = inspectGitPrivacy(root, manifest.manifest.placement);
+  const errors = [
+    ...validation.errors,
+    ...privacy.errors,
+    ...privacy.missing.map(path => `private workspace path must be ignored: ${path}`),
+  ];
+  if (manifest.manifest.placement === 'repo-local' && !privacy.gitRoot) {
+    errors.push('repo-local placement requires a readable Git work tree');
+  }
+  try { readDirection({workspaceRoot: root, manifest: manifest.manifest}); }
+  catch (error) { errors.push(error.message); }
+  const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
+  if (!existsSync(databasePath)) {
+    errors.push(`coordination database is missing at ${COORDINATION_DATABASE}`);
+  }
+  for (const path of [
+    databasePath,
+    join(root, OBSERVED_REL),
+    join(root, CONSENT_REL),
+  ]) {
+    if (escapesRoot(root, path) || pathHasLink(root, path)) {
+      errors.push('schema-5 runtime paths cannot traverse links or escape the workspace');
+      break;
+    }
+  }
+  return errors.length ? {ok: false, reason: errors.join('; ')} : {ok: true, manifest: manifest.manifest};
 }
 
 // ---------------------------------------------------------------------------
@@ -205,6 +250,9 @@ export function appendObserved(root, event, payload, now = Date.now(), opts = {}
   const built = buildObserved(event, payload, now, opts);
   if (!built.ok) return built;
   const file = join(root, OBSERVED_REL);
+  if (escapesRoot(root, file) || pathHasLink(root, file)) {
+    return {ok: false, reason: 'observed activity path traverses a link or escapes the workspace'};
+  }
   try {
     mkdirSync(dirname(file), { recursive: true });
     rotate(file);
@@ -242,6 +290,8 @@ export function main(argv, stdinText, now = Date.now(), env = process.env) {
   delete resolverEnv.KAI_WORKSPACE_ROOT;
   const root = findWorkspace(payload && payload.cwd, resolverEnv);
   if (!root) return { ok: false, reason: 'no workspace root found' };
+  const writable = writableWorkspace(root, resolverEnv);
+  if (!writable.ok) return writable;
   if (!hasConsent(root)) return { ok: false, reason: 'observer not enabled for this workspace' };
   return appendObserved(
     root,
@@ -272,6 +322,11 @@ function adminCli(argv) {
     process.exit(2);
   }
   const root = r.root;
+  const writable = writableWorkspace(root, process.env);
+  if (!writable.ok) {
+    console.error(`observe-subagent: ${writable.reason}`);
+    process.exit(2);
+  }
   const marker = join(root, CONSENT_REL);
 
   if (argv.includes('--enable')) {

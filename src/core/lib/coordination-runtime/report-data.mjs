@@ -1,4 +1,4 @@
-import {dirname, join} from 'node:path';
+import {join} from 'node:path';
 import {
   RuntimeError,
   canonicalJson,
@@ -17,6 +17,12 @@ import {taskStateSatisfies} from './engine.mjs';
 import {captureArtifacts, captureChanges, captureHistory} from './report-capture.mjs';
 import {artifactBasisCurrent, verifyAssetContent, verifyReferences, verifyVerdict} from './evidence-integrity.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
+import {
+  COORDINATION_DATABASE,
+  LEGACY_COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+  workspaceRootFromCoordinationDatabase,
+} from '../workspace-layout.mjs';
 import {listRecords, readRecord, readSnapshot, readSubjectView} from './store.mjs';
 import {artifactPreviewLimits, knownGap, redactReport, snapshotWarning} from './report-safety.mjs';
 
@@ -52,9 +58,12 @@ function excerpt(value, limit = 512) {
  */
 export function buildReport(store, {subject}) {
   if (!subject || typeof subject !== 'object') throw new RuntimeError('INVALID_INPUT', 'report subject is required');
-  const root = dirname(dirname(dirname(store.path)));
+  const root = workspaceRootFromCoordinationDatabase(store.path);
   const manifest = workspaceManifest(root);
-  if (normalized(store.path) !== normalized(join(root, '.kai', 'state', 'coordination.sqlite'))) {
+  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
+    ? COORDINATION_DATABASE
+    : LEGACY_COORDINATION_DATABASE;
+  if (normalized(store.path) !== normalized(join(root, ...database.split('/')))) {
     throw new RuntimeError('INVALID_INPUT', 'report store must belong to the explicit workspace');
   }
   return readSnapshot(store, () => {

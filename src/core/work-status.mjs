@@ -36,6 +36,7 @@ import {
 import { checkWorkspace } from './workspace-doctor.mjs';
 import { read as readActivity, runs } from './lib/activity.mjs';
 import { resolveWorkspaceRoot, readWorkspaceManifest } from './lib/workspace-resolve.mjs';
+import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from './lib/workspace-layout.mjs';
 import {
   closeStore,
   listAllRecords,
@@ -338,10 +339,10 @@ function hierarchyNodes(status) {
   return nodes.filter(node => !node.missing);
 }
 
-function collectHierarchy(root, now, roles) {
-  const path = join(root, '.kai', 'state', 'coordination.sqlite');
+function collectHierarchy(root, now, roles, database = '.kai/state/coordination.sqlite') {
+  const path = join(root, ...database.split('/'));
   if (!existsSync(path)) {
-    return {ok: false, reason: 'schema 4 coordination database is missing'};
+    return {ok: false, reason: `coordination database is missing at ${database}`};
   }
   let store;
   try {
@@ -362,7 +363,7 @@ function collectHierarchy(root, now, roles) {
           tier: 'derived',
           headline: attention.message,
           why: `Derived ${attention.code} condition from the transactionally consistent hierarchy snapshot.`,
-          path: '.kai/state/coordination.sqlite',
+          path: database,
         });
       }
       for (const staffing of node.attention.staffing_gaps) {
@@ -372,7 +373,7 @@ function collectHierarchy(root, now, roles) {
           tier: 'derived',
           headline: `installed role "${staffing.role}" is unavailable`,
           why: `Session staffing gap for ${staffing.responsibilities.join(', ')}; the hierarchy record was not changed.`,
-          path: '.kai/state/coordination.sqlite',
+          path: database,
         });
       }
     }
@@ -419,6 +420,9 @@ function collectHierarchy(root, now, roles) {
 
 export function collect(root, now = Date.now(), {roles = []} = {}) {
   const manifest = readWorkspaceManifest(root);
+  if (manifest.ok && manifest.manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+    return collectHierarchy(root, now, roles, COORDINATION_DATABASE);
+  }
   if (manifest.ok && manifest.manifest.schema_version === 4) {
     return collectHierarchy(root, now, roles);
   }

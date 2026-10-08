@@ -2,6 +2,11 @@ import {isAbsolute, join} from 'node:path';
 import {assertExactKeys, canonicalJson, validateActor, validateAuthority} from './contract.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
 import {assertWorkspacePath, durablePath, fail, workspaceManifest} from './evidence-content.mjs';
+import {
+  COORDINATION_DATABASE,
+  LEGACY_COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+} from '../workspace-layout.mjs';
 
 const bindings = new WeakMap();
 const transactions = new WeakMap();
@@ -12,12 +17,15 @@ export function bindEvidenceRuntime(store, options) {
   assertExactKeys(options, new Set([
     'root', 'authority', 'runs', 'verifyCapture', 'verifyOperatorDecision',
   ]), 'evidence runtime', new Set(['root', 'authority', 'runs']));
-  workspaceManifest(options.root);
+  const manifest = workspaceManifest(options.root);
+  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
+    ? COORDINATION_DATABASE
+    : LEGACY_COORDINATION_DATABASE;
   if (!store || store.closed || !isAbsolute(store.path)
-    || normalized(store.path) !== normalized(join(options.root, '.kai', 'state', 'coordination.sqlite'))) {
+    || normalized(store.path) !== normalized(join(options.root, ...database.split('/')))) {
     fail('INVALID_INPUT', 'evidence workspace must be explicitly bound to this store');
   }
-  assertWorkspacePath(options.root, '.kai/state/coordination.sqlite');
+  assertWorkspacePath(options.root, database);
   validateAuthority(options.authority);
   if (!Array.isArray(options.runs)) fail('INVALID_INPUT', 'approved run bindings must be an array');
   const actors = new Set();
