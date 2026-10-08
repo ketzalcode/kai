@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash, randomUUID} from 'node:crypto';
-import {execFileSync, spawnSync} from 'node:child_process';
+import {execFileSync, spawn, spawnSync} from 'node:child_process';
 import fs, {
   appendFileSync,
   existsSync,
@@ -15,7 +15,7 @@ import {syncBuiltinESMExports} from 'node:module';
 import {DatabaseSync} from 'node:sqlite';
 import {basename, dirname, join, relative, resolve, sep} from 'node:path';
 import test from 'node:test';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {runCLI} from '../src/core/coordinate.mjs';
 import {
   canonicalJson,
@@ -723,6 +723,87 @@ function boundary(name, replacement, run) {
   }
 }
 
+function launchModule(script, args, env = {}) {
+  const child = spawn(process.execPath, [
+    '--input-type=module',
+    '-e',
+    script,
+  ], {
+    cwd: checkout,
+    windowsHide: true,
+    env: {
+      ...process.env,
+      ...env,
+      KAI_TEST_ARGS: JSON.stringify(args),
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', chunk => { stdout += chunk; });
+  child.stderr.on('data', chunk => { stderr += chunk; });
+  return {
+    child,
+    done: new Promise(resolve => {
+      child.on('exit', (code, signal) => resolve({code, signal, stdout, stderr}));
+    }),
+  };
+}
+
+async function waitForPath(path, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!existsSync(path)) {
+    if (Date.now() >= deadline) {
+      assert.fail(`timed out waiting for ${path}`);
+    }
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+}
+
+function nativeWriterTokenNames(root) {
+  return readdirSync(dirname(root))
+    .filter(name => name.includes('.native-writer-') && name.endsWith('.lock'))
+    .sort();
+}
+
+async function migrateThroughNativeHost({root, backupRoot, env}) {
+  const worksheet = completeWorksheet(buildMigrationWorksheet({root, env}), {
+    root,
+    backupRoot,
+    env,
+  });
+  const runId = randomUUID();
+  const host = createNativeHost({
+    env: {...env, COPILOT_AGENT_SESSION_ID: runId},
+    discover: async () => ({
+      roster: ROLES.map(role => ({id: `fixture:${role}`, role, model: null})),
+    }),
+  });
+  const requested = await host.request({
+    root,
+    body: {type: 'maintenance', action: 'migrate-v5', worksheet},
+  });
+  const persisted = readIssued(root, 'requests', requested.request.nonce);
+  writeIssued(root, 'capabilities', requested.request.nonce, {
+    request: persisted,
+    receipt: {
+      reference: 'synthetic-test-approval',
+      captured_at: NOW,
+    },
+    catalog: {
+      roster: ROLES.map(role => ({id: `fixture:${role}`, role, model: null})),
+    },
+  });
+  const receipt = await host.maintenance({
+    root,
+    verb: 'migrate',
+    body: {},
+    options: {confirm: true, capability: requested.request.nonce},
+    env,
+  });
+  return {receipt, capability: requested.request.nonce};
+}
+
 function assertSchema4Authoritative(root) {
   const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8'));
   assert.equal(manifest.schema_version, 4);
@@ -1205,6 +1286,86 @@ test('quiescence inventories every nonterminal state plus grants, leases, and re
         );
       }
     }
+    assert.doesNotThrow(() => validateMigrationWorksheet({
+      root,
+      worksheet: reconciled,
+      roles: ROLES,
+    }));
+  }));
+
+test('quiescence inventories every open typed question regardless of subject or blocking', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const questions = [
+      {
+        id: 'feature-open-question',
+        subject: {kind: 'feature', id: 'engineering:feature:migration'},
+        blocking: true,
+      },
+      {
+        id: 'requirement-open-question',
+        subject: {kind: 'requirement', id: 'engineering:requirement:migration'},
+        blocking: false,
+      },
+      {
+        id: 'task-nonblocking-question',
+        subject: {kind: 'task', id: 'engineering:task:build-api'},
+        blocking: false,
+      },
+    ];
+    const store = openStore({
+      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      mode: 'write',
+    });
+    try {
+      for (const question of questions) {
+        seedRecord(store, {
+          kind: 'question',
+          id: question.id,
+          subject: question.subject,
+          version: 1,
+          body: {
+            schema_version: 1,
+            question_id: question.id,
+            subject: question.subject,
+            asker: {role: 'eng-lead-architecture', runId: 'question-asker'},
+            recipient: 'eng-reviewer-code',
+            kind: 'decision',
+            blocking: question.blocking,
+            status: 'open',
+            context: 'Migration quiescence must retain this open question.',
+            ask: 'How is this question explicitly reconciled before migration?',
+            answer_by: NOW,
+            opened_message_id: randomUUID(),
+            answer_message_ids: [],
+            resolution: null,
+          },
+        });
+      }
+    } finally {
+      closeStore(store);
+    }
+
+    const plan = buildMigrationWorksheet({root});
+    for (const question of questions) {
+      const active = plan.active_work.find(entry =>
+        entry.source.kind === 'question' && entry.source.id === question.id);
+      assert.ok(active, `missing ${question.id}`);
+      assert.ok(active.reasons.some(reason =>
+        reason.includes(question.subject.kind)
+        && reason.includes(question.blocking ? 'blocking' : 'nonblocking')));
+    }
+
+    const unresolved = completeWorksheet(plan, {
+      root,
+      backupRoot,
+      reconcileActive: false,
+    });
+    assert.throws(
+      () => validateMigrationWorksheet({root, worksheet: unresolved, roles: ROLES}),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /question|reconcil|active/i.test(error.message),
+    );
+    const reconciled = completeWorksheet(plan, {root, backupRoot});
     assert.doesNotThrow(() => validateMigrationWorksheet({
       root,
       worksheet: reconciled,
@@ -1811,6 +1972,53 @@ test('tampered recovery state cannot replace the capability-bound worksheet', ()
     assertSchema4Authoritative(root);
   }));
 
+test('abandon rejects state-nominated unrelated paths before live activation', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(() => boundary('mkdirSync', (original, path, options) => {
+      if (String(path).includes('.kai-stage-')) {
+        throw Object.assign(new Error('interrupt after backup'), {code: 'EIO'});
+      }
+      return original(path, options);
+    }, () => migrateWorkspaceV5({
+      root,
+      confirm: true,
+      worksheet,
+      roles: ROLES,
+    })), /interrupt after backup/);
+    const unrelated = join(dirname(root), 'unrelated-user-data.txt');
+    writeFileSync(unrelated, 'must survive tampered abandon state\n');
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    const statePath = join(lock.backup_path, 'state.json');
+    const state = JSON.parse(readFileSync(statePath, 'utf8'));
+    state.installed_targets = [{
+      path: '../unrelated-user-data.txt',
+      type: 'file',
+      digest: sha256(readFileSync(unrelated)),
+      size: readFileSync(unrelated).length,
+    }];
+    writeFileSync(statePath, canonicalJson(state));
+    assert.throws(
+      () => recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+      }),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /state|target|inventory|tamper|binding/i.test(error.message),
+    );
+    assert.equal(
+      readFileSync(unrelated, 'utf8'),
+      'must survive tampered abandon state\n',
+    );
+    assert.equal(existsSync(v5MigrationLockPath(root)), true);
+    assertSchema4Authoritative(root);
+  }));
+
 test('atomic replacement is preflighted before any live schema-4 tree mutation', () =>
   schema4Workspace(({root, backupRoot}) => {
     const manifestPath = join(root, '.kai', 'manifest.json');
@@ -2158,6 +2366,169 @@ test('rollback holds its filesystem lock and exclusive SQLite barrier across aut
     assert.equal(hostWriterLockObserved, true);
     assert.equal(sqliteBarrierObserved, true);
   }));
+
+test('native writer admission deterministically closes both rollback interleavings', async t => {
+  const writerScript = String.raw`
+    import fs from 'node:fs';
+    import {syncBuiltinESMExports} from 'node:module';
+    const args = JSON.parse(process.env.KAI_TEST_ARGS);
+    const pause = () => {
+      fs.writeFileSync(args.marker, 'ready');
+      const wait = new Int32Array(new SharedArrayBuffer(4));
+      while (!fs.existsSync(args.release)) Atomics.wait(wait, 0, 0, 10);
+    };
+    if (args.mode === 'before-recheck') {
+      const original = fs.renameSync;
+      fs.renameSync = (from, to) => {
+        const result = original(from, to);
+        if (String(to).includes('.native-writer-')
+          && String(to).endsWith('.lock')
+          && !String(to).includes('.pending-')) pause();
+        return result;
+      };
+    } else {
+      const original = fs.openSync;
+      fs.openSync = (path, ...rest) => {
+        if (String(path) === args.target) pause();
+        return original(path, ...rest);
+      };
+    }
+    syncBuiltinESMExports();
+    const {writeIssued} = await import(args.capabilitiesUrl);
+    let result;
+    try {
+      writeIssued(args.root, 'requests', args.id, args.payload);
+      result = {ok: true};
+    } catch (error) {
+      result = {ok: false, code: error.code ?? null, message: error.message};
+    }
+    fs.writeFileSync(args.result, JSON.stringify(result));
+  `;
+  const rollbackScript = String.raw`
+    import fs from 'node:fs';
+    const args = JSON.parse(process.env.KAI_TEST_ARGS);
+    const {rollbackWorkspaceV5} = await import(args.migrationUrl);
+    let output;
+    try {
+      output = {
+        ok: true,
+        result: rollbackWorkspaceV5({
+          root: args.root,
+          confirm: true,
+          env: process.env,
+        }),
+      };
+    } catch (error) {
+      output = {ok: false, code: error.code ?? null, message: error.message};
+    }
+    fs.writeFileSync(args.result, JSON.stringify(output));
+  `;
+  const capabilitiesUrl = pathToFileURL(join(
+    checkout,
+    'src',
+    'core',
+    'lib',
+    'coordination-runtime',
+    'native-capabilities.mjs',
+  )).href;
+  const migrationUrl = pathToFileURL(join(
+    checkout,
+    'src',
+    'core',
+    'lib',
+    'coordination-runtime',
+    'migration-v5.mjs',
+  )).href;
+
+  for (const scenario of [
+    {
+      mode: 'before-recheck',
+      writerOk: false,
+      writerCode: 'RECOVERY_REQUIRED',
+      captured: false,
+    },
+    {
+      mode: 'before-write',
+      writerOk: true,
+      writerCode: null,
+      captured: true,
+    },
+  ]) {
+    await t.test(scenario.mode, () => schema4Workspace(async ({
+      root,
+      backupRoot,
+      env,
+    }) => {
+      await migrateThroughNativeHost({root, backupRoot, env});
+      const id = randomUUID();
+      const marker = join(backupRoot, `${scenario.mode}-writer-ready`);
+      const release = join(backupRoot, `${scenario.mode}-writer-release`);
+      const writerResultPath = join(backupRoot, `${scenario.mode}-writer-result.json`);
+      const rollbackResultPath = join(backupRoot, `${scenario.mode}-rollback-result.json`);
+      const target = join(
+        root,
+        '.kai',
+        'core',
+        'runtime',
+        'host',
+        'requests',
+        `${id}.json`,
+      );
+      const writer = launchModule(writerScript, {
+        mode: scenario.mode,
+        root,
+        id,
+        payload: {kind: 'deterministic-writer-race', mode: scenario.mode},
+        marker,
+        release,
+        result: writerResultPath,
+        target,
+        capabilitiesUrl,
+      }, env);
+      await waitForPath(marker);
+      const tokens = nativeWriterTokenNames(root);
+      if (tokens.length !== 1) {
+        writeFileSync(release, 'continue');
+        await writer.done;
+      }
+      assert.equal(tokens.length, 1, `expected one writer token, got ${tokens.join(', ')}`);
+      const rollback = launchModule(rollbackScript, {
+        root,
+        result: rollbackResultPath,
+        migrationUrl,
+      }, env);
+      await waitForPath(v5MigrationLockPath(root));
+      await new Promise(resolve => setTimeout(resolve, 100));
+      assert.equal(
+        existsSync(rollbackResultPath),
+        false,
+        'rollback must drain the admitted writer before completing',
+      );
+      writeFileSync(release, 'continue');
+      const [writerExit, rollbackExit] = await Promise.all([
+        writer.done,
+        rollback.done,
+      ]);
+      assert.equal(writerExit.code, 0, writerExit.stderr || writerExit.stdout);
+      assert.equal(rollbackExit.code, 0, rollbackExit.stderr || rollbackExit.stdout);
+      const writerResult = JSON.parse(readFileSync(writerResultPath, 'utf8'));
+      const rollbackResult = JSON.parse(readFileSync(rollbackResultPath, 'utf8'));
+      assert.equal(writerResult.ok, scenario.writerOk, JSON.stringify(writerResult));
+      assert.equal(writerResult.code ?? null, scenario.writerCode);
+      assert.equal(rollbackResult.ok, true, JSON.stringify(rollbackResult));
+      const captured = existsSync(join(
+        rollbackResult.result.rollbackAuditPath,
+        'host',
+        'requests',
+        `${id}.json`,
+      ));
+      assert.equal(captured, scenario.captured);
+      assertSchema4Authoritative(root);
+      assert.equal(existsSync(v5MigrationLockPath(root)), false);
+      assert.deepEqual(nativeWriterTokenNames(root), []);
+    }));
+  }
+});
 
 test('rollback returns RECOVERY_REQUIRED after the first schema-5 event', () =>
   schema4Workspace(({root, backupRoot}) => {

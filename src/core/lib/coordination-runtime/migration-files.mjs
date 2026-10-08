@@ -19,14 +19,28 @@ export function schema5MigrationLockPath(root) {
     `.${basename(canonical)}.${hash(canonical).slice(0, 12)}.schema5-migration.lock`,
   );
 }
+export function nativeWriterTokenPrefix(root) {
+  const canonical = canonicalPath(root);
+  return `.${basename(canonical)}.${hash(canonical).slice(0, 12)}.native-writer-`;
+}
+export function nativeWriterTokenPath(root, id) {
+  const canonical = canonicalPath(root);
+  return join(dirname(canonical), `${nativeWriterTokenPrefix(root)}${id}.lock`);
+}
 export const fail = (code, message) => { throw new RuntimeError(code, message); };
 export const LOCK = '.kai/state/migration.lock';
 export const DATABASE = '.kai/state/coordination.sqlite';
 export const MIGRATIONS = '.kai/archive/coordination-migrations';
-export function logicalStoreDigest(store) {
+export function logicalStoreDigest(store, {
+  excludeMetadata = ['migration_baseline'],
+} = {}) {
   const database = store?.database;
   if (!database || typeof database.prepare !== 'function') {
     fail('INVALID_INPUT', 'logical store digest requires an open coordination store');
+  }
+  if (!Array.isArray(excludeMetadata)
+    || excludeMetadata.some(key => typeof key !== 'string')) {
+    fail('INVALID_INPUT', 'logical store digest metadata exclusions must be strings');
   }
   const tables = new Set(database.prepare(
     "SELECT name FROM sqlite_master WHERE type = 'table'",
@@ -63,11 +77,10 @@ export function logicalStoreDigest(store) {
       result[table] = database.prepare(`SELECT * FROM ${table} ORDER BY ${order}`).all();
     }
   }
-  result.metadata = database.prepare(`
-    SELECT key, value FROM metadata
-    WHERE key != 'migration_baseline'
-    ORDER BY key
-  `).all();
+  const excluded = new Set(excludeMetadata);
+  result.metadata = database.prepare(
+    'SELECT key, value FROM metadata ORDER BY key',
+  ).all().filter(row => !excluded.has(row.key));
   return hash(canonicalJson(result));
 }
 export function safePath(root, name) {
