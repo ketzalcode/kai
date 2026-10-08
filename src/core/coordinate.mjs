@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {isAbsolute} from 'node:path';
 import {
   HIERARCHY_KINDS,
@@ -24,6 +24,14 @@ const booleans = new Set(['deep', 'raw', 'confirm']);
 const inputVerbs = new Set(['apply', 'repair', 'request', 'capture', 'prepare', 'delegate']);
 const hierarchyVerbs = new Set(['context', 'messages', 'export', 'plan']);
 const invalid = message => { throw new RuntimeError('INVALID_INPUT', message); };
+
+function withEntrypointReport(result, env) {
+  if (env?.KAI_TEST_REPORT_COORDINATION_ENTRYPOINT !== '1') return result;
+  return {
+    ...result,
+    entrypoint: env.KAI_TEST_COORDINATION_ENTRYPOINT_LABEL ?? fileURLToPath(import.meta.url),
+  };
+}
 
 export function parseArguments(argv) {
   const [verb, ...rest] = argv;
@@ -85,7 +93,12 @@ async function readInput(stream) {
 export async function runCLI(argv, {host, input, stdin = process.stdin, cwd = process.cwd(), env = process.env} = {}) {
   try {
     const {verb, options} = parseArguments(argv);
-    if (verb === 'direct') return {exitCode: 0, result: {ok: true, mode: verb, coordinationRequired: false}};
+    if (verb === 'direct') {
+      return {
+        exitCode: 0,
+        result: withEntrypointReport({ok: true, mode: verb, coordinationRequired: false}, env),
+      };
+    }
     let body;
     if (inputVerbs.has(verb)) {
       const text = input ?? await readInput(stdin);
@@ -99,12 +112,15 @@ export async function runCLI(argv, {host, input, stdin = process.stdin, cwd = pr
     }
     const {execute} = await import('./lib/coordination-runtime/cli.mjs');
     const result = await execute({verb, options, body, host, cwd, env});
-    return {exitCode: 0, result};
+    return {exitCode: 0, result: withEntrypointReport(result, env)};
   } catch (error) {
     if (!(error instanceof RuntimeError)) throw error;
-    return {exitCode: error.retryable ? 2 : 1, result: {
-      ok: false, code: error.code, message: error.message, retryable: error.retryable,
-    }};
+    return {
+      exitCode: error.retryable ? 2 : 1,
+      result: withEntrypointReport({
+        ok: false, code: error.code, message: error.message, retryable: error.retryable,
+      }, env),
+    };
   }
 }
 

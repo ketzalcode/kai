@@ -15,9 +15,9 @@ import {
 } from './helpers/coordination-runtime-fixture.mjs';
 import {writeIssued, readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
 import {nativeEvents} from '../src/core/lib/coordination-runtime/native-receipts.mjs';
+import {cliEntrypoint as cli, cliEntrypointLabel, withEntrypointEnv} from './helpers/coordination-cli-entrypoint.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');
-const cli = join(checkout, 'src', 'core', 'coordinate.mjs');
 const scratch = join(checkout, '.superpowers', 'cli-tests');
 const TASK_ID = fixtureIds.task;
 const DIRECTION = [
@@ -56,18 +56,22 @@ export function workspace(fn, schema = 4) {
 function invoke(root, verb, args = [], input, env = {}) {
   const result = spawnSync(process.execPath, [cli, verb, '--root', root, ...args], {
     cwd: checkout, encoding: 'utf8', input: input === undefined ? '' : JSON.stringify(input),
-    env: {...process.env, ...env},
+    env: withEntrypointEnv({...process.env, ...env}),
   });
   return {...result, json: JSON.parse(result.stdout)};
 }
 
-test('read-only inspect reports schema without creating a missing database', () => workspace(root => {
+test(`read-only inspect reports schema without creating a missing database via ${cliEntrypointLabel}`, () => workspace(root => {
   const result = invoke(root, 'inspect');
   assert.equal(result.status, 0);
+  assert.equal(result.json.entrypoint, cliEntrypointLabel);
   assert.equal(result.json.schemaVersion, 4);
   assert.equal(result.json.mode, 'inspect');
   assert.equal(result.json.storeExists, false);
   assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
+  const nativeInspect = native(root, 'inspect');
+  assert.equal(nativeInspect.status, 0, JSON.stringify(nativeInspect.json));
+  assert.equal(nativeInspect.json.entrypoint, cliEntrypointLabel);
 }));
 
 test('strict parser rejects raw authority, unknown flags and malformed input', () => workspace(root => {
@@ -118,9 +122,9 @@ function native(root, verb, body, args = [], runId = 'native-context-one') {
   const entry = process.env.KAI_TEST_NATIVE_DEFAULT === '1' ? cli : fixture;
   const result = spawnSync(process.execPath, [entry, verb, '--root', root, ...args], {
     encoding: 'utf8', input: body === undefined ? '' : JSON.stringify(body),
-    env: {...process.env, USERPROFILE: root, HOME: root, COPILOT_AGENT_SESSION_ID: runId,
+    env: withEntrypointEnv({...process.env, USERPROFILE: root, HOME: root, COPILOT_AGENT_SESSION_ID: runId,
       KAI_COPILOT_PLUGIN_DIRS: ['kai-core', 'kai-engineering', 'kai-creative']
-        .map(p => join(checkout, 'plugins', p)).join(delimiter)},
+        .map(p => join(checkout, 'plugins', p)).join(delimiter)}),
   });
   assert.ok(result.stdout, result.stderr);
   return {...result, json: JSON.parse(result.stdout)};

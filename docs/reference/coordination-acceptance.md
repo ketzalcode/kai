@@ -15,25 +15,23 @@ for version **12.0.0**. It walks the acceptance-case table in
 There is no fourth verdict. A case that is only partly established is split into
 the part that is covered and the part that is not.
 
-## Release stop conditions — resolved in the 13.0.0 preparation
+## Release stop conditions — source acceptance only
 
-Both conditions recorded against the 12.0.0 preparation have since been
-resolved by the package-incubation change. The original findings are kept
-below for provenance.
+This record establishes source-runtime behaviour. It does **not** claim that
+regenerated `plugins/` artifacts, pack-preview gates, or clean-consumer
+execution already pass.
 
-- `npm test` now passes end to end, and `validate-plugin` reports
-  **0 errors** (observed 2026-09-17, Node 24.14.0). The 261-error baseline was
-  cleared by incubating the five unfinished packages, correcting references to
-  retired `principal-*` identities in active documents, and allowing them in
-  historical ones only.
-- `node scripts/pack-preview.mjs --self-test` now completes with **222 checks
-  passed**, and `--gate all` and `--check` are clean. The `TypeError` was a
-  stale `plan.local.personal` lookup against a pack retired several versions
-  earlier; the self-test now runs against the real three-pack partition.
-- A passing `npm test` is not a release. The `13.0.0` metadata is prepared
-  metadata only: not a tag, not a release, not a publication, and not a
-  host-verification claim. Nothing in this document was verified on an
-  installed host.
+- The source CLI suites currently cited here are
+  `test/coordination-cli-self-test.mjs` (**8** tests),
+  `test/coordination-cli-lifecycle-self-test.mjs` (**32** tests, defaulting to
+  `src/core/coordinate.mjs`), and
+  `test/coordination-migration-self-test.mjs` (**118** tests).
+- The release gate for emitted runtime behaviour is still pending: after pack
+  generation, Task 12 must run the exact same lifecycle matrix against an
+  explicitly supplied generated entrypoint,
+  `plugins/kai-core/scripts/coordinate.mjs`.
+- A passing source suite is not a release. Nothing in this document should be
+  read as a tag, publication, regenerated-pack, or host-verification claim.
 
 ### As originally recorded for 12.0.0
 
@@ -73,15 +71,15 @@ below for provenance.
 | Typed addressed messages and multiple-blocker restoration | Covered by automated test | `coordination-thread-self-test.mjs` (thread/question parsing and reconciliation). `coordination-engine-self-test.mjs`: *blocking questions update item, question, and message atomically*, *answers enforce addressed sender, recipient, parent, and operator reservation*, *the required two-blocker restore case refuses role-name-only authority*, *out-of-lane and contradictory answers do not clear blockers*. |
 | Bounded context with retrievable evidence | Covered by automated test | `coordination-context-self-test.mjs`: *all mandatory obligation, hold, question and reference bytes overflow explicitly at 24 KiB*, *mandatory Unicode context uses actual UTF-8 bytes and never truncates acceptance*, *10,000 messages keep projection metadata bounded and remain pageable*, *projection holds one SQLite snapshot while a WAL writer advances*. A real coordinated agent reading this projection through the CLI was **attempted and failed** — see scenario 1 below. |
 | Content-bound engineering/creative evidence and independent acceptance | Covered by automated test | `coordination-evidence-self-test.mjs`: *observed evidence needs trusted capture, successful complete results, privacy and exact coverage*, *a valid capture cannot be replayed against a different claimed outcome*, *review and approval cannot self-accept an exact subject artifact produced outside Task history*, *post-registration byte changes prevent later review, even while original manifest exists*. `coordination-inputs-self-test.mjs` covers input-basis invalidation. `coordination-cli-lifecycle-self-test.mjs` runs the whole typed engineering and creative Task chain as real processes. |
-| Offline HTML, privacy, provenance, snapshot honesty | Covered by automated test | `coordination-report-self-test.mjs` (45 cases), including *renderers escape untrusted text, stamp snapshots and never invent model or cost*, *lease bearer tokens never reach either human renderer or derived sidecars*, *visible provenance and redaction notice include actual omitted bearer fields*, *derived immutable outputs carry identity, sequence, time, hashes and no YAML header*. CI runs this suite on Node 22, 24 and 26. The browser leg (`npm run coordination:report-browser-self-test`) is **not** part of `npm test` or CI and was **not** run for this record. |
+| Offline HTML, privacy, provenance, snapshot honesty | Covered by automated test | `coordination-report-self-test.mjs`, including *renderers escape untrusted text, stamp snapshots and never invent model or cost*, *lease bearer tokens never reach either human renderer or derived sidecars*, *visible provenance and redaction notice include actual omitted bearer fields*, *derived immutable outputs carry identity, sequence, time, hashes and no YAML header*. CI runs this suite on Node 22, 24 and 26. The browser leg (`npm run coordination:report-browser-self-test`) is **not** part of `npm test` or CI and was **not** run for this record. |
 | Explicit profiles, actual-versus-requested models, measured costs — profile/model policy and telemetry handling | Covered by automated test | `coordination-host-self-test.mjs`: *only approved available models and supported overrides are planned, never an invented fallback*, *six real core sources retain their profiles and acquire the shared approved model pins*, *unknown model, effort, usage, cost and timings survive actual persisted host results as null*, *allowlisted telemetry keeps premium/nano-AIU cumulative checkpoints, not fabricated dollars or internals*, *failed and mismatched model or effort observations remain explicit gaps, not domain acceptance*. |
 | Explicit profiles, actual-versus-requested models, measured costs — requested versus observed model on a **coordinated dispatch** | Not verified | Observed models exist only for **direct** role runs (`host-engineering-direct-baseline.json`: `gpt-5.6-terra`; `host-creative-direct-baseline.json`; `host-creative-direct-noeng.json`: `claude-opus-5`). No run pinned a model through a coordinated dispatch and then compared the requested pin against the observed `assistant.message` model. Elapsed times and usage counters were captured, but no baseline/new pair was run, so no comparison of any kind is claimed. |
-| Legacy inspection, schema-4 migration, private/shared semantics | Covered by automated test | `coordination-migration-self-test.mjs` (57 cases), including *explicit offline migration preserves bytes and IDs while converting safe source authorities*, *actual rename failure before activation leaves source authoritative and explicit recovery usable*, *tracked SQLite is refused and shared privacy admission only changes private Git metadata*, *a competing real process cannot migrate while the offline owner holds its lock*. `coordination-cli-lifecycle-self-test.mjs` adds the schema-3 inspect-only and rollback process cases. |
-| Direct-use preservation — direct work needs no database and no sibling package | Measured against the installed host | Scenario 2 below: a real creative direct run with only `kai-core` and `kai-creative` installed completed with `changedFileCount` 0 and created no coordination database (`host-creative-direct-noeng.json`, `scenario-direct-creative.json`). Supporting test: `coordination-cli-self-test.mjs` *direct domain commands have no implicit workspace or database requirement*. |
+| Legacy inspection, schema-4 migration, private/shared semantics | Covered by automated test | `coordination-migration-self-test.mjs` (**118** tests), including *explicit offline migration preserves bytes and IDs while converting safe source authorities*, *actual rename failure before activation leaves source authoritative and explicit recovery usable*, *tracked SQLite is refused and shared privacy admission only changes private Git metadata*, *a competing real process cannot migrate while the offline owner holds its lock*. `coordination-cli-lifecycle-self-test.mjs` (**32** tests) adds the schema-3 inspect-only and rollback process cases. |
+| Direct-use preservation — direct work needs no database and no sibling package | Measured against the installed host | Scenario 2 below: a real creative direct run with only `kai-core` and `kai-creative` installed completed with `changedFileCount` 0 and created no coordination database (`host-creative-direct-noeng.json`, `scenario-direct-creative.json`). Supporting source test: `coordination-cli-self-test.mjs` (**8** tests), including *direct domain commands have no implicit workspace or database requirement*. |
 | Host capability degradation — role absent from the installed roster | Measured against the installed host | Scenario 3 below: `ROLE_UNAVAILABLE`, `retryable: false`, no substituted role, no model prompt (`scenario-role-unavailable.json`). Supporting test: `coordination-host-self-test.mjs` *missing exact role and ambiguous qualified IDs fail rather than alias matching*. |
-| Host capability degradation — missing `node:sqlite` | Covered by automated test | `coordination-cli-self-test.mjs` *SQLite-disabled process is a precise host gap; context override cannot exceed 24 KiB*. No run on a host without `node:sqlite` was performed. |
-| Packaging and pack ownership | Covered by automated test | `test/coordination-foundation-self-test.mjs` asserts that `materializePacks` emits `kai-core/scripts/coordinate.mjs` and that every runtime module was compiled into it, and that neither `kai-creative` nor `kai-engineering` receives the executable. `node tools/pack-preview.mjs --check` passes against the committed `plugins/` tree. |
-| Release policy gate | Not verified | `pack-preview --self-test` and `--gate all` abort on the pre-existing `TypeError` above, so the generator's own gates never execute. `npm test` never reaches them because `validate-plugin` fails first. |
+| Host capability degradation — missing `node:sqlite` | Covered by automated test | `coordination-cli-self-test.mjs` (**8** tests), including *SQLite-disabled process is a precise host gap; context override cannot exceed 24 KiB*. No run on a host without `node:sqlite` was performed. |
+| Packaging and pack ownership | Covered by automated test | `test/coordination-foundation-self-test.mjs` asserts that `materializePacks` emits `kai-core/scripts/coordinate.mjs` and that every runtime module was compiled into it, and that neither `kai-creative` nor `kai-engineering` receives the executable. That is a source/generator contract only; it does **not** verify the committed generated `plugins/` tree or execute the emitted entrypoint. |
+| Release policy gate | Not verified | Task 12 owns the regenerated-pack gate: after pack generation it must run `test/coordination-cli-lifecycle-self-test.mjs` against the explicit generated entrypoint `plugins/kai-core/scripts/coordinate.mjs`, then run the pack-preview and clean-consumer checks for the emitted artifacts. Those gates were not run for this record. |
 | Actual-host acceptance — coordinated handshake (prepared identity, reservation ordering, worker environment, exact CLI receipt) | Measured against the installed host | `test/coordination-native-handshake-self-test.mjs`, one real Copilot 1.0.85 run (gated by `KAI_TEST_NATIVE_HANDSHAKE=1`, recorded in `native-permission-report.md`): the prepared UUID became the actual session, model work followed the reservation, and both the environment identity and the CLI receipt matched. The human approval was a synthetic fixture, so this is not human acceptance. |
 | Actual-host acceptance — coordinated evidence registration by a real agent | Not verified | Attempted once in scenario 1 below and failed: both worker tool calls were denied by the host, so no context read, no content proof and no observed evidence were produced from a real run. |
 
@@ -181,8 +179,13 @@ path, **not** host acceptance.
 
 Repository (public):
 
-- `test/coordination-*-self-test.mjs` — 13 suites in `npm test`; CI runs the nine
-  runtime suites on Node 22.22.2, 24.15.0 and 26.0.0.
+- `test/coordination-cli-self-test.mjs` — **8** source-entrypoint CLI tests.
+- `test/coordination-cli-lifecycle-self-test.mjs` — **32** source-entrypoint
+  lifecycle/process tests; the same matrix is reserved for Task 12 against the
+  generated `plugins/kai-core/scripts/coordinate.mjs` entrypoint after pack
+  generation.
+- `test/coordination-migration-self-test.mjs` — **118** migration and
+  rollback tests.
 - `test/coordination-native-handshake-self-test.mjs` — one real coordinated
   handshake, gated by `KAI_TEST_NATIVE_HANDSHAKE=1`, synthetic human fixture.
 - `test/coordination-native-scenarios-self-test.mjs` — the three scenarios above,
@@ -203,4 +206,6 @@ Private session evidence (not committed; kept under `.superpowers`):
    host.
 5. Private HTML evidence produced from a real coordinated run, and the browser
    report acceptance leg.
-6. The release policy gates, which cannot run while `pack-preview` aborts.
+6. The regenerated-pack release gate: the generated
+   `plugins/kai-core/scripts/coordinate.mjs` lifecycle run plus the emitted-pack
+   checks owned by Task 12.

@@ -1,7 +1,7 @@
 // SYNTHETIC operator/catalog fixture. It is not actual human acceptance.
 // Only the metadata discovery seam is replaced; native receipt matching,
 // capabilities, parser, SQLite, files, Git and all domain operations are real.
-import {runCLI} from '../../src/core/coordinate.mjs';
+import {runCLI} from './coordination-cli-entrypoint.mjs';
 import {createNativeHost} from '../../src/core/lib/coordination-runtime/native-host.mjs';
 import {randomUUID} from 'node:crypto';
 
