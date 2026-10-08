@@ -14,30 +14,22 @@ import { homedir } from 'node:os';
 import {
   dirname, isAbsolute, join, parse as parsePath, relative, resolve as resolvePath, sep,
 } from 'node:path';
+import {
+  badPath, canonicalPath, escapesRoot, normalized, pathHasLink, resolvedProjectPath,
+} from './workspace-path-safety.mjs';
 
 export const MANIFEST_REL = join('.kai', 'manifest.json');
 export const REGISTRY_FILE = 'workspaces.json';
 const MAX_SEARCH_DEPTH = 64;
 
-function normalizePath(path) {
-  let existing = resolvePath(path);
-  const tail = [];
-  while (!existsSync(existing)) {
-    const parent = dirname(existing);
-    if (parent === existing) break;
-    tail.unshift(existing.slice(parent.length).replace(/^[\\/]+/, ''));
-    existing = parent;
-  }
-  // .native resolves a Windows 8.3 short component to its real on-disk name;
-  // the JS implementation leaves it short, which made the same directory compare
-  // unequal to itself when one side came from an external tool.
-  const canonical = existsSync(existing) ? realpathSync.native(existing) : existing;
-  const resolved = resolvePath(canonical, ...tail);
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+function fail(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  throw error;
 }
 
 function isWithin(parent, candidate) {
-  const rel = relative(normalizePath(parent), normalizePath(candidate));
+  const rel = relative(normalized(parent), normalized(candidate));
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
 }
 
@@ -121,7 +113,7 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   if (!isAbsolute(entry.project_root) || !isAbsolute(entry.workspace_root)) {
     return { ok: false, reason: 'workspace registry paths must be absolute' };
   }
-  if (normalizePath(entry.project_root) !== normalizePath(projectRoot)) {
+  if (normalized(entry.project_root) !== normalized(projectRoot)) {
     return { ok: false, reason: 'workspace registry project path changed during resolution' };
   }
 
@@ -151,10 +143,8 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   }
   const bindsProject = manifest.projects.some((project) => {
     if (!project || typeof project.path !== 'string') return false;
-    const manifestProject = isAbsolute(project.path)
-      ? project.path
-      : resolvePath(entry.workspace_root, project.path);
-    return normalizePath(manifestProject) === normalizePath(projectRoot);
+    const manifestProject = resolvedProjectPath(entry.workspace_root, project.path);
+    return normalized(manifestProject) === normalized(projectRoot);
   });
   if (!bindsProject) {
     return {
@@ -171,12 +161,12 @@ export function findRegisteredWorkspace(cwd, env = process.env) {
   const matches = registry.entries
     .filter((entry) => typeof entry?.project_root === 'string' && isAbsolute(entry.project_root))
     .filter((entry) => isWithin(entry.project_root, cwd))
-    .sort((left, right) => normalizePath(right.project_root).length - normalizePath(left.project_root).length);
+    .sort((left, right) => normalized(right.project_root).length - normalized(left.project_root).length);
   if (!matches.length) return { ok: true, root: null, registryPath: registry.path };
 
   const projectRoot = realpathSync.native(matches[0].project_root);
   const duplicate = matches.filter(
-    (entry) => normalizePath(entry.project_root) === normalizePath(projectRoot),
+    (entry) => normalized(entry.project_root) === normalized(projectRoot),
   );
   if (duplicate.length > 1) {
     return {
@@ -235,5 +225,83 @@ export function resolveWorkspaceRoot(opts = {}) {
   return {
     ok: false,
     reason: `no kai workspace found from "${resolvePath(cwd)}"; no in-tree manifest or registry binding exists`,
+  };
+}
+
+function normalizePublicationRoot(publicationRoot) {
+  if (typeof publicationRoot !== 'string' || !publicationRoot.trim()) {
+    fail('PATH_ESCAPE', 'project publication_root is required');
+  }
+  const problem = badPath(publicationRoot);
+  if (problem) fail('PATH_ESCAPE', `project publication_root must stay project-relative (${problem})`);
+  const normalizedRoot = publicationRoot.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+  if (!normalizedRoot) fail('PATH_ESCAPE', 'project publication_root is required');
+  if (normalizedRoot.toLowerCase() === '.kai' || normalizedRoot.toLowerCase().startsWith('.kai/')) {
+    fail('PATH_ESCAPE', 'project publication_root must stay outside .kai/');
+  }
+  return normalizedRoot;
+}
+
+function selectConfiguredProject(manifest, projectId) {
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+    throw new TypeError('workspace manifest must be an object');
+  }
+  if (!Array.isArray(manifest.projects) || manifest.projects.length === 0) {
+    throw new TypeError('workspace manifest must declare at least one project');
+  }
+  if (projectId != null) {
+    const matches = manifest.projects.filter(project => project?.id === projectId);
+    if (matches.length !== 1) throw new TypeError(`manifest project "${projectId}" must resolve exactly once`);
+    return matches[0];
+  }
+  if (manifest.projects.length === 1) return manifest.projects[0];
+  const defaults = manifest.projects.filter(project => project?.id === 'default');
+  if (defaults.length === 1) return defaults[0];
+  throw new TypeError('projectId is required when the manifest declares multiple projects');
+}
+
+function exactPath(path) {
+  return resolvePath(path) === canonicalPath(path);
+}
+
+function assertSafeProjectPath(project) {
+  if (typeof project?.path !== 'string' || !project.path.trim()) {
+    fail('PATH_ESCAPE', 'project path is required');
+  }
+  if (/^(\\\\|\/\/)/.test(project.path)) fail('PATH_ESCAPE', 'project path cannot use a network share');
+  if (/^[A-Za-z]:(?![\\/])/.test(project.path)
+    || /^\\(?!\\)/.test(project.path)
+    || (process.platform === 'win32' && isAbsolute(project.path) && !/^[A-Za-z]:[\\/]/.test(project.path))) {
+    fail('PATH_ESCAPE', 'project path cannot depend on the current drive or working directory');
+  }
+}
+
+export function resolveConfiguredProject({workspaceRoot, manifest, projectId}) {
+  const root = resolvePath(workspaceRoot);
+  const project = selectConfiguredProject(manifest, projectId);
+  assertSafeProjectPath(project);
+
+  const projectRoot = resolvedProjectPath(root, project.path);
+  if (pathHasLink(projectRoot, projectRoot) || !exactPath(projectRoot)) {
+    fail('PATH_ESCAPE', `project "${project.id ?? 'configured'}" must resolve to its exact canonical path`);
+  }
+  if (normalized(projectRoot) !== normalized(root) && !escapesRoot(join(root, '.kai'), projectRoot)) {
+    fail('PATH_ESCAPE', 'configured project cannot alias private workspace state');
+  }
+
+  const publicationRoot = normalizePublicationRoot(project.publication_root);
+  const publicationRootAbsolute = resolvePath(projectRoot, ...publicationRoot.split('/'));
+  if (escapesRoot(projectRoot, publicationRootAbsolute)
+    || pathHasLink(projectRoot, publicationRootAbsolute)
+    || !exactPath(publicationRootAbsolute)) {
+    fail('PATH_ESCAPE', `project "${project.id ?? 'configured'}" publication_root escapes the configured project`);
+  }
+
+  return {
+    project,
+    projectRoot,
+    publicationRoot,
+    publicationRootAbsolute,
+    workspaceRoot: root,
   };
 }
