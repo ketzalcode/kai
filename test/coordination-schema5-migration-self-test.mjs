@@ -2019,6 +2019,121 @@ test('abandon rejects state-nominated unrelated paths before live activation', (
     assertSchema4Authoritative(root);
   }));
 
+test('post-install abandon rejects jointly tampered state and receipt inventories', async t => {
+  const cases = [
+    {
+      name: 'parent traversal',
+      mutate({root, state, receipt}) {
+        const path = join(dirname(root), 'round3-parent-victim.txt');
+        writeFileSync(path, 'parent victim must survive\n');
+        const bytes = readFileSync(path);
+        const entry = {
+          path: '../round3-parent-victim.txt',
+          type: 'file',
+          digest: sha256(bytes),
+          size: bytes.length,
+        };
+        receipt.payload.schema5_files.authored_targets.push(entry);
+        state.installed_targets.push(entry);
+        return {path, bytes};
+      },
+    },
+    {
+      name: 'in-root unrelated file',
+      mutate({root, state, receipt}) {
+        const path = put(root, '.kai/round3-unrelated.txt', 'in-root victim must survive\n');
+        const bytes = readFileSync(path);
+        const entry = {
+          path: '.kai/round3-unrelated.txt',
+          type: 'file',
+          digest: sha256(bytes),
+          size: bytes.length,
+        };
+        receipt.payload.schema5_files.authored_targets.push(entry);
+        state.installed_targets.push(entry);
+        return {path, bytes};
+      },
+    },
+    {
+      name: 'extra typed entry',
+      mutate({root, state, receipt}) {
+        const relativePath =
+          '.kai/engineering/spec/round3-extra/drafts/unrelated.md';
+        const path = put(root, relativePath, 'extra typed victim must survive\n');
+        const bytes = readFileSync(path);
+        const entry = {
+          path: relativePath,
+          type: 'file',
+          digest: sha256(bytes),
+          size: bytes.length,
+        };
+        receipt.payload.schema5_files.authored_targets.push(entry);
+        state.installed_targets.push(entry);
+        return {path, bytes};
+      },
+    },
+    {
+      name: 'altered digest',
+      mutate({root, state, receipt}) {
+        const entry = receipt.payload.schema5_files.authored_targets[0];
+        const stateEntry = state.installed_targets.find(candidate =>
+          candidate.path === entry.path);
+        entry.digest = 'f'.repeat(64);
+        stateEntry.digest = entry.digest;
+        const path = join(root, ...entry.path.split('/'));
+        return {path, bytes: readFileSync(path)};
+      },
+    },
+  ];
+
+  for (const scenario of cases) {
+    await t.test(scenario.name, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      const manifestPath = join(root, '.kai', 'manifest.json');
+      assert.throws(
+        () => boundary('renameSync', (original, from, to) => {
+          if (String(to) === manifestPath) {
+            throw Object.assign(new Error('stop after db move'), {code: 'EIO'});
+          }
+          return original(from, to);
+        }, () => migrateWorkspaceV5({
+          root,
+          confirm: true,
+          worksheet,
+          roles: ROLES,
+        })),
+        /stop after db move/,
+      );
+      const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+      const statePath = join(lock.backup_path, 'state.json');
+      const receiptPath = join(lock.backup_path, 'receipt.json');
+      const state = JSON.parse(readFileSync(statePath, 'utf8'));
+      const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+      const victim = scenario.mutate({root, state, receipt});
+      receipt.digest = sha256(canonicalJson(receipt.payload));
+      state.receipt = receipt;
+      writeFileSync(receiptPath, canonicalJson(receipt));
+      writeFileSync(statePath, canonicalJson(state));
+      assert.throws(
+        () => recoverWorkspaceV5({
+          root,
+          confirm: true,
+          action: 'abandon',
+          roles: ROLES,
+        }),
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /anchor|receipt|state|inventory|path|digest|binding/i.test(error.message),
+      );
+      assert.deepEqual(readFileSync(victim.path), victim.bytes);
+      assert.equal(existsSync(v5MigrationLockPath(root)), true);
+      assertSchema4Authoritative(root);
+    }));
+  }
+});
+
 test('atomic replacement is preflighted before any live schema-4 tree mutation', () =>
   schema4Workspace(({root, backupRoot}) => {
     const manifestPath = join(root, '.kai', 'manifest.json');

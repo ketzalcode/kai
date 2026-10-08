@@ -102,6 +102,8 @@ const WORKSHEET_KEYS = [
 ];
 const LEGACY_DATABASE = '.kai/state/coordination.sqlite';
 const HOST_RUNTIME = '.kai/core/runtime/host/';
+const ABANDON_ANCHOR_METADATA = 'migration_v5_abandon_anchor';
+const ACTIVATION_READY_FILE = 'activation-ready.json';
 const FORBIDDEN_SCHEMA5_ROOTS = [
   '.kai/state',
   '.kai/runs',
@@ -200,6 +202,132 @@ function nativeAbsolute(value, label) {
     fail('INVALID_INPUT', `${label} must use the native absolute path form`);
   }
   return resolve(value);
+}
+
+function schema5InventoryPath(value, label) {
+  if (typeof value !== 'string'
+    || value.includes('\\')
+    || badPath(value)
+    || !value.startsWith('.kai/')
+    || value.split('/').some(segment =>
+      segment === '' || segment === '.' || segment === '..')) {
+    fail('RECOVERY_REQUIRED', `${label} is not a safe private relative path`);
+  }
+  return value;
+}
+
+function liveSchema5InventoryPath(root, value, label) {
+  return safePath(root, schema5InventoryPath(value, label));
+}
+
+function stagedSchema5InventoryPath(lock, value, label) {
+  value = schema5InventoryPath(value, label);
+  const base = resolve(lock.stage_path, 'schema5-files');
+  const target = resolve(base, ...value.split('/'));
+  if (escapesRoot(base, target)
+    || !normalized(target).startsWith(`${normalized(base)}${sep}`)) {
+    fail('RECOVERY_REQUIRED', `${label} escapes the migration stage`);
+  }
+  if (existsSync(target) && pathHasLink(base, target)) {
+    fail('RECOVERY_REQUIRED', `${label} traverses a linked migration stage`);
+  }
+  return target;
+}
+
+function schema5ManifestBytes(candidateManifest) {
+  return Buffer.from(
+    `${JSON.stringify(JSON.parse(canonicalJson(candidateManifest)), null, 2)}\n`,
+  );
+}
+
+function schema5InstalledInventory(worksheet, candidateManifest) {
+  const manifestBytes = schema5ManifestBytes(candidateManifest);
+  const authoredTargets = worksheet.authored_files
+    .filter(entry => entry.classification.action === 'migrate')
+    .map(entry => ({
+      path: schema5InventoryPath(
+        entry.classification.target,
+        `authored target ${entry.classification.target}`,
+      ),
+      type: 'file',
+      digest: entry.digest,
+      size: entry.size,
+    }))
+    .sort((left, right) => left.path.localeCompare(right.path));
+  if (new Set(authoredTargets.map(entry => entry.path)).size
+    !== authoredTargets.length) {
+    fail('RECOVERY_REQUIRED', 'schema-5 installed inventory has duplicate targets');
+  }
+  return {
+    schema_version: 1,
+    manifest: {
+      path: '.kai/manifest.json',
+      type: 'file',
+      digest: hash(manifestBytes),
+      size: manifestBytes.length,
+    },
+    authored_targets: authoredTargets,
+    database: {
+      path: COORDINATION_DATABASE,
+      type: 'sqlite',
+    },
+  };
+}
+
+function migrationStateIdentity(state) {
+  return {
+    schema_version: state.schema_version,
+    migration_id: state.id,
+    worksheet_digest: state.worksheet_digest,
+    backup_inventory_digest: state.worksheet.backup_inventory_digest,
+    candidate_manifest_digest: digest(state.candidate_manifest),
+    ready_digest: state.ready_digest,
+    authorization_digest: state.authorization?.digest ?? null,
+  };
+}
+
+function receiptBasisFromPayload(payload) {
+  return {
+    schema_version: payload.schema_version,
+    migration_id: payload.migration_id,
+    workspace_id: payload.workspace_id,
+    workspace_root: payload.workspace_root,
+    source_manifest_digest: payload.source_manifest_digest,
+    source_store_digest: payload.source_store_digest,
+    worksheet_digest: payload.worksheet_digest,
+    backup_inventory_digest: payload.backup_inventory_digest,
+    ready_digest: payload.ready_digest,
+    authorization_digest: payload.authorization_digest,
+    backup_path: payload.backup_path,
+    activated_manifest_digest: payload.activated_manifest_digest,
+    activation_baseline: payload.activation_baseline,
+    schema5_files: {
+      schema_version: payload.schema5_files?.schema_version,
+      manifest: payload.schema5_files?.manifest,
+      authored_targets: payload.schema5_files?.authored_targets,
+      database: {
+        path: payload.schema5_files?.database?.path,
+        type: payload.schema5_files?.database?.type,
+      },
+    },
+  };
+}
+
+function abandonAnchor({state, receiptBasis, installedInventory}) {
+  const stateIdentity = migrationStateIdentity(state);
+  const payload = {
+    schema_version: 1,
+    migration_id: state.id,
+    worksheet_digest: state.worksheet_digest,
+    ready_digest: state.ready_digest,
+    state_identity: stateIdentity,
+    state_identity_digest: digest(stateIdentity),
+    receipt_basis: receiptBasis,
+    receipt_basis_digest: digest(receiptBasis),
+    installed_inventory: installedInventory,
+    installed_inventory_digest: digest(installedInventory),
+  };
+  return {payload, digest: digest(payload)};
 }
 
 function fsyncDirectory(path) {
@@ -1693,6 +1821,9 @@ function verifyBackup(backupPath, worksheet, ready, authorization = null) {
     'ready.json',
     'state.json',
     ...(authorization ? ['authorization', 'authorization.json'] : []),
+    ...(existsSync(join(backupPath, ACTIVATION_READY_FILE))
+      ? [ACTIVATION_READY_FILE]
+      : []),
     ...(existsSync(join(backupPath, 'receipt.json')) ? ['receipt.json'] : []),
   ]);
   const unexpected = readdirSync(backupPath).find(name => !allowed.has(name));
@@ -1795,6 +1926,20 @@ function immutableTriggers(database) {
         END
       `);
     }
+  }
+  for (const operation of ['UPDATE', 'DELETE']) {
+    database.exec(`
+      CREATE TRIGGER immutable_migration_v5_metadata_${operation.toLowerCase()}
+      BEFORE ${operation} ON metadata
+      WHEN OLD.key IN (
+        '${ABANDON_ANCHOR_METADATA}',
+        'migration_v5_baseline',
+        'migration_v5'
+      )
+      BEGIN
+        SELECT RAISE(ABORT, 'immutable migration metadata');
+      END
+    `);
   }
 }
 
@@ -1986,10 +2131,12 @@ function stageMigrationStore(root, validated, lock, state) {
       'migration_v5_baseline',
       canonicalJson(baseline),
     );
-    immutableTriggers(store.database);
-    const databaseDigest = schema5DatabaseDigest(store);
-    const manifestBytes = Buffer.from(`${JSON.stringify(validated.candidateManifest, null, 2)}\n`);
-    const payload = {
+    const installedInventory = schema5InstalledInventory(
+      validated.worksheet,
+      validated.candidateManifest,
+    );
+    const manifestBytes = schema5ManifestBytes(validated.candidateManifest);
+    const receiptBasis = {
       schema_version: 1,
       migration_id: lock.id,
       workspace_id: validated.sourceManifest.workspace_id,
@@ -2001,29 +2148,47 @@ function stageMigrationStore(root, validated, lock, state) {
       ready_digest: state.ready_digest,
       authorization_digest: state.authorization?.digest ?? null,
       backup_path: lock.backup_path,
-      activated_manifest_digest: hash(manifestBytes),
+      activated_manifest_digest: installedInventory.manifest.digest,
       activation_baseline: baseline,
+      schema5_files: installedInventory,
+    };
+    const anchor = abandonAnchor({
+      state,
+      receiptBasis,
+      installedInventory,
+    });
+    store.database.prepare('INSERT INTO metadata VALUES(?,?)').run(
+      ABANDON_ANCHOR_METADATA,
+      canonicalJson(anchor),
+    );
+    immutableTriggers(store.database);
+    const databaseDigest = schema5DatabaseDigest(store);
+    const activationReadyPayload = {
+      schema_version: 1,
+      migration_id: lock.id,
+      worksheet_digest: validated.worksheetDigest,
+      ready_digest: state.ready_digest,
+      abandon_anchor_digest: anchor.digest,
+      state_identity_digest: anchor.payload.state_identity_digest,
+      receipt_basis_digest: anchor.payload.receipt_basis_digest,
+      installed_inventory_digest: anchor.payload.installed_inventory_digest,
+      database_digest: databaseDigest,
+    };
+    const activationReady = {
+      payload: activationReadyPayload,
+      digest: digest(activationReadyPayload),
+    };
+    const payload = {
+      ...receiptBasis,
       schema5_files: {
-        manifest: {
-          path: '.kai/manifest.json',
-          type: 'file',
-          digest: hash(manifestBytes),
-          size: manifestBytes.length,
-        },
-        authored_targets: validated.worksheet.authored_files
-          .filter(entry => entry.classification.action === 'migrate')
-          .map(entry => ({
-            path: entry.classification.target,
-            type: 'file',
-            digest: entry.digest,
-            size: entry.size,
-          })),
+        ...installedInventory,
         database: {
-          path: COORDINATION_DATABASE,
-          type: 'sqlite',
+          ...installedInventory.database,
           digest: databaseDigest,
         },
       },
+      abandon_anchor_digest: anchor.digest,
+      activation_ready_digest: activationReady.digest,
     };
     const receipt = {
       payload,
@@ -2040,14 +2205,22 @@ function stageMigrationStore(root, validated, lock, state) {
         receipt_path: join(lock.backup_path, 'receipt.json'),
         backup_path: lock.backup_path,
         migration_id: lock.id,
+        worksheet_digest: validated.worksheetDigest,
+        ready_digest: state.ready_digest,
+        abandon_anchor_digest: anchor.digest,
+        activation_ready_digest: activationReady.digest,
       }),
     );
     store.database.exec('COMMIT');
     finishStagedStore(store);
     store = null;
     durableWrite(join(lock.stage_path, 'schema5-manifest.json'), manifestBytes);
+    durableWrite(
+      join(lock.backup_path, ACTIVATION_READY_FILE),
+      canonicalJson(activationReady),
+    );
     durableWrite(join(lock.backup_path, 'receipt.json'), canonicalJson(receipt));
-    verifyStagedStore(root, validated, lock, receipt);
+    verifyStagedStore(root, validated, lock, state, receipt);
     state.phase = 'staged';
     state.receipt = receipt;
     writeState(lock, state);
@@ -2063,7 +2236,7 @@ function stageMigrationStore(root, validated, lock, state) {
   }
 }
 
-function verifyStagedStore(root, validated, lock, receipt, path = null) {
+function verifyStagedStore(root, validated, lock, state, receipt, path = null) {
   const databasePath = path ?? join(lock.stage_path, ...COORDINATION_DATABASE.split('/'));
   const store = openStore({path: databasePath, mode: 'read'});
   try {
@@ -2106,6 +2279,14 @@ function verifyStagedStore(root, validated, lock, receipt, path = null) {
       'staged schema-5 database',
       store,
     );
+    verifyInstalledMigrationAnchor({
+      root,
+      lock,
+      state,
+      receipt,
+      databasePath,
+      open: store,
+    });
   } finally {
     closeStore(store);
   }
@@ -2182,6 +2363,129 @@ function assertOwnedDatabase(path, expected, label, open = null) {
     if (schema5DatabaseDigest(store) !== expected.digest) {
       fail('RECOVERY_REQUIRED', `${label} digest changed`);
     }
+  } finally {
+    if (open === null) closeStore(store);
+  }
+}
+
+function metadataJson(database, key, label) {
+  let value;
+  try {
+    value = JSON.parse(database.prepare(
+      'SELECT value FROM metadata WHERE key=?',
+    ).get(key)?.value ?? 'null');
+  } catch {
+    fail('RECOVERY_REQUIRED', `${label} is invalid`);
+  }
+  if (!value) fail('RECOVERY_REQUIRED', `${label} is missing`);
+  return value;
+}
+
+function verifyInstalledMigrationAnchor({
+  root,
+  lock,
+  state,
+  receipt,
+  databasePath,
+  open = null,
+}) {
+  const plannedInventory = schema5InstalledInventory(
+    state.worksheet,
+    state.candidate_manifest,
+  );
+  const files = receipt?.payload?.schema5_files;
+  if (!files || !Array.isArray(files.authored_targets)
+    || !files.database
+    || !/^[a-f0-9]{64}$/.test(files.database.digest)) {
+    fail('RECOVERY_REQUIRED', 'migration receipt installed inventory is invalid');
+  }
+  const expectedFiles = {
+    ...plannedInventory,
+    database: {
+      ...plannedInventory.database,
+      digest: files.database.digest,
+    },
+  };
+  if (canonicalJson(files) !== canonicalJson(expectedFiles)) {
+    fail('RECOVERY_REQUIRED', 'migration receipt installed inventory is outside the authorized plan');
+  }
+  const store = open ?? openStore({path: databasePath, mode: 'read'});
+  try {
+    const metadata = metadataJson(
+      store.database,
+      'migration_v5',
+      'schema-5 migration metadata',
+    );
+    const anchor = metadataJson(
+      store.database,
+      ABANDON_ANCHOR_METADATA,
+      'schema-5 abandon anchor',
+    );
+    if (!anchor.payload
+      || anchor.digest !== digest(anchor.payload)
+      || anchor.payload.migration_id !== lock.id
+      || anchor.payload.worksheet_digest !== lock.worksheet_digest
+      || canonicalJson(anchor.payload.installed_inventory)
+        !== canonicalJson(plannedInventory)
+      || anchor.payload.installed_inventory_digest !== digest(plannedInventory)) {
+      fail('RECOVERY_REQUIRED', 'schema-5 abandon inventory anchor changed');
+    }
+    const stateIdentity = migrationStateIdentity(state);
+    if (canonicalJson(anchor.payload.state_identity)
+        !== canonicalJson(stateIdentity)
+      || anchor.payload.state_identity_digest !== digest(stateIdentity)) {
+      fail('RECOVERY_REQUIRED', 'schema-5 abandon state identity is not database-anchored');
+    }
+    const receiptBasis = receiptBasisFromPayload(receipt.payload);
+    if (canonicalJson(anchor.payload.receipt_basis)
+        !== canonicalJson(receiptBasis)
+      || anchor.payload.receipt_basis_digest !== digest(receiptBasis)) {
+      fail('RECOVERY_REQUIRED', 'schema-5 receipt basis is not database-anchored');
+    }
+    if (receipt.digest !== digest(receipt.payload)
+      || receipt.payload.abandon_anchor_digest !== anchor.digest
+      || metadata.receipt_digest !== receipt.digest
+      || metadata.migration_id !== lock.id
+      || metadata.worksheet_digest !== lock.worksheet_digest
+      || metadata.ready_digest !== state.ready_digest
+      || metadata.abandon_anchor_digest !== anchor.digest
+      || metadata.activation_ready_digest
+        !== receipt.payload.activation_ready_digest) {
+      fail('RECOVERY_REQUIRED', 'schema-5 receipt digest is not database-anchored');
+    }
+    const activationReady = readJson(
+      join(lock.backup_path, ACTIVATION_READY_FILE),
+      'schema-5 activation ready record',
+    );
+    const expectedActivationPayload = {
+      schema_version: 1,
+      migration_id: lock.id,
+      worksheet_digest: lock.worksheet_digest,
+      ready_digest: state.ready_digest,
+      abandon_anchor_digest: anchor.digest,
+      state_identity_digest: anchor.payload.state_identity_digest,
+      receipt_basis_digest: anchor.payload.receipt_basis_digest,
+      installed_inventory_digest: anchor.payload.installed_inventory_digest,
+      database_digest: files.database.digest,
+    };
+    if (activationReady.digest !== digest(activationReady.payload)
+      || activationReady.digest !== receipt.payload.activation_ready_digest
+      || canonicalJson(activationReady.payload)
+        !== canonicalJson(expectedActivationPayload)) {
+      fail('RECOVERY_REQUIRED', 'schema-5 activation ready binding changed');
+    }
+    assertOwnedDatabase(
+      databasePath,
+      expectedFiles.database,
+      'database-anchored schema-5 store',
+      store,
+    );
+    return {
+      plannedInventory,
+      installedFiles: expectedFiles,
+      anchor,
+      activationReady,
+    };
   } finally {
     if (open === null) closeStore(store);
   }
@@ -2317,6 +2621,7 @@ function validateActivationTree(root, validated, lock, state) {
     root,
     validated,
     lock,
+    state,
     state.receipt,
     safePath(root, COORDINATION_DATABASE),
   );
@@ -2554,34 +2859,50 @@ function validateAbandonState(root, lock, state) {
       fail('RECOVERY_REQUIRED', 'pre-activation abandon found an unbound live schema-5 database');
     }
     if (state.phase === 'staged') {
-      const files = state.receipt.payload.schema5_files;
-      if (!files || !Array.isArray(files.authored_targets) || !files.database) {
-        fail('RECOVERY_REQUIRED', 'staged abandon receipt lacks immutable file inventory');
-      }
-      for (const entry of files.authored_targets) {
+      const stagedDatabase = join(
+        lock.stage_path,
+        ...COORDINATION_DATABASE.split('/'),
+      );
+      const anchored = verifyInstalledMigrationAnchor({
+        root,
+        lock,
+        state,
+        receipt: state.receipt,
+        databasePath: stagedDatabase,
+      });
+      for (const entry of anchored.installedFiles.authored_targets) {
         assertOwnedFile(
-          join(
-            lock.stage_path,
-            'schema5-files',
-            ...entry.path.split('/'),
+          stagedSchema5InventoryPath(
+            lock,
+            entry.path,
+            `staged schema-5 target ${entry.path}`,
           ),
           entry,
           `staged schema-5 target ${entry.path}`,
         );
       }
       assertOwnedDatabase(
-        join(lock.stage_path, ...COORDINATION_DATABASE.split('/')),
-        files.database,
+        stagedDatabase,
+        anchored.installedFiles.database,
         'staged schema-5 database',
       );
     }
     return {live: false, targets: [], database: null};
   }
 
-  const files = state.receipt.payload.schema5_files;
-  if (!files || !Array.isArray(files.authored_targets) || !files.database) {
-    fail('RECOVERY_REQUIRED', 'abandon receipt lacks immutable live cleanup inventory');
-  }
+  const liveDatabase = safePath(root, COORDINATION_DATABASE);
+  const stagedDatabase = join(lock.stage_path, ...COORDINATION_DATABASE.split('/'));
+  const anchoredDatabase = existsSync(stagedDatabase)
+    ? stagedDatabase
+    : liveDatabase;
+  const anchored = verifyInstalledMigrationAnchor({
+    root,
+    lock,
+    state,
+    receipt: state.receipt,
+    databasePath: anchoredDatabase,
+  });
+  const files = anchored.installedFiles;
   const expectedTargets = new Map(files.authored_targets.map(entry => [entry.path, entry]));
   const stateTargets = new Map();
   for (const entry of state.installed_targets) {
@@ -2594,11 +2915,15 @@ function validateAbandonState(root, lock, state) {
   }
   const installedTargets = [];
   for (const entry of files.authored_targets) {
-    const livePath = join(root, ...entry.path.split('/'));
-    const stagedPath = join(
-      lock.stage_path,
-      'schema5-files',
-      ...entry.path.split('/'),
+    const livePath = liveSchema5InventoryPath(
+      root,
+      entry.path,
+      `migration-owned target ${entry.path}`,
+    );
+    const stagedPath = stagedSchema5InventoryPath(
+      lock,
+      entry.path,
+      `staged schema-5 target ${entry.path}`,
     );
     const liveExists = existsSync(livePath);
     const stagedExists = existsSync(stagedPath);
@@ -2620,8 +2945,6 @@ function validateAbandonState(root, lock, state) {
     fail('RECOVERY_REQUIRED', 'abandon state target inventory does not match installed bytes');
   }
 
-  const liveDatabase = safePath(root, COORDINATION_DATABASE);
-  const stagedDatabase = join(lock.stage_path, ...COORDINATION_DATABASE.split('/'));
   const databaseLive = existsSync(liveDatabase);
   const databaseStaged = existsSync(stagedDatabase);
   let installedDatabase = null;
@@ -2657,7 +2980,11 @@ function validateAbandonState(root, lock, state) {
 function removeMigratedTargets(root, authority) {
   for (const entry of authority.targets) {
     assertOwnedFile(
-      join(root, ...entry.path.split('/')),
+      liveSchema5InventoryPath(
+        root,
+        entry.path,
+        `migration-owned target ${entry.path}`,
+      ),
       entry,
       `migration-owned target ${entry.path}`,
     );
@@ -2670,7 +2997,11 @@ function removeMigratedTargets(root, authority) {
     );
   }
   for (const entry of authority.targets) {
-    unlinkSync(join(root, ...entry.path.split('/')));
+    unlinkSync(liveSchema5InventoryPath(
+      root,
+      entry.path,
+      `migration-owned target ${entry.path}`,
+    ));
   }
   if (authority.database) unlinkSync(safePath(root, COORDINATION_DATABASE));
 }
@@ -2962,30 +3293,45 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
   return {hostRoot, liveInventory, auditRoot};
 }
 
-function verifyLiveSchema5Files(root, receipt, store = null) {
+function verifyLiveSchema5Files(root, receipt, plannedInventory, store = null) {
   const files = receipt.payload.schema5_files;
   if (!files?.manifest || !Array.isArray(files.authored_targets)
     || !files.database) {
     fail('RECOVERY_REQUIRED', 'migration receipt lacks exact schema-5 file ownership');
   }
+  const expectedFiles = {
+    ...plannedInventory,
+    database: {
+      ...plannedInventory.database,
+      digest: files.database.digest,
+    },
+  };
+  if (canonicalJson(files) !== canonicalJson(expectedFiles)) {
+    fail('RECOVERY_REQUIRED', 'migration receipt file inventory is outside the authorized plan');
+  }
   assertOwnedFile(
     safePath(root, '.kai/manifest.json'),
-    files.manifest,
+    expectedFiles.manifest,
     'live schema-5 manifest',
   );
-  for (const entry of files.authored_targets) {
+  for (const entry of expectedFiles.authored_targets) {
     assertOwnedFile(
-      join(root, ...entry.path.split('/')),
+      liveSchema5InventoryPath(
+        root,
+        entry.path,
+        `live schema-5 authored target ${entry.path}`,
+      ),
       entry,
       `live schema-5 authored target ${entry.path}`,
     );
   }
   assertOwnedDatabase(
     safePath(root, COORDINATION_DATABASE),
-    files.database,
+    expectedFiles.database,
     'live schema-5 database',
     store,
   );
+  return expectedFiles;
 }
 
 function installRollbackFiles(root, restoreRoot, inventory) {
@@ -3013,15 +3359,19 @@ function removeInstalledRollbackFiles(installed) {
   }
 }
 
-function finishSchema5Cleanup(root, receipt, hostProof) {
-  for (const entry of receipt.payload.schema5_files.authored_targets) {
-    const target = join(root, ...entry.path.split('/'));
+function finishSchema5Cleanup(root, installedFiles, hostProof) {
+  for (const entry of installedFiles.authored_targets) {
+    const target = liveSchema5InventoryPath(
+      root,
+      entry.path,
+      `migration-owned schema-5 target ${entry.path}`,
+    );
     assertOwnedFile(target, entry, `migration-owned schema-5 target ${entry.path}`);
   }
   const database = safePath(root, COORDINATION_DATABASE);
   assertOwnedDatabase(
     database,
-    receipt.payload.schema5_files.database,
+    installedFiles.database,
     'migration-owned schema-5 database',
   );
   if (hostProof) {
@@ -3033,8 +3383,12 @@ function finishSchema5Cleanup(root, receipt, hostProof) {
       'schema-5 host runtime changed after external audit preservation',
     );
   }
-  for (const entry of receipt.payload.schema5_files.authored_targets) {
-    unlinkSync(join(root, ...entry.path.split('/')));
+  for (const entry of installedFiles.authored_targets) {
+    unlinkSync(liveSchema5InventoryPath(
+      root,
+      entry.path,
+      `migration-owned schema-5 target ${entry.path}`,
+    ));
   }
   unlinkSync(database);
   if (hostProof) rmSync(hostProof.hostRoot, {recursive: true, force: false});
@@ -3075,6 +3429,10 @@ export function rollbackWorkspaceV5({
     fail('RECOVERY_REQUIRED', 'schema-5 manifest changed after activation');
   }
   const authority = backupAuthority(migration.backup_path, receipt);
+  const rollbackInventory = schema5InstalledInventory(
+    authority.worksheet,
+    manifest,
+  );
   const lock = {
     schema_version: 1,
     id: randomUUID(),
@@ -3099,7 +3457,11 @@ export function rollbackWorkspaceV5({
       authority.worksheet.backup_inventory,
     );
     assertAtomicReplacementSupported(lock);
-    verifyLiveSchema5Files(root, receipt);
+    const installedFiles = verifyLiveSchema5Files(
+      root,
+      receipt,
+      rollbackInventory,
+    );
     barrier = beginRollbackBarrier(root, migration.receipt_digest);
     const hostProof = preserveRollbackHost(
       root,
@@ -3125,12 +3487,17 @@ export function rollbackWorkspaceV5({
         );
       }
     }
-    verifyLiveSchema5Files(root, receipt, barrier.store);
+    verifyLiveSchema5Files(
+      root,
+      receipt,
+      rollbackInventory,
+      barrier.store,
+    );
     renameSync(stagedManifest, liveManifest);
     manifestSwitched = true;
     closeRollbackBarrier(barrier, true);
     barrier = null;
-    finishSchema5Cleanup(root, receipt, hostProof);
+    finishSchema5Cleanup(root, installedFiles, hostProof);
     for (const entry of authority.worksheet.backup_inventory.private_files) {
       assertOwnedFile(
         join(root, ...entry.path.split('/')),
