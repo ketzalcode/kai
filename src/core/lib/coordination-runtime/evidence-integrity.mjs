@@ -20,8 +20,7 @@ function hasPublicSafeExcerptPath(root, path) {
   try {
     const parsed = parseTypedArtifactRoute(path);
     return parsed.visibility === 'private'
-      && parsed.routes.length === 1
-      && parsed.routes[0].lifecycle === 'drafts';
+      && parsed.routes.some(route => route.lifecycle === 'drafts');
   } catch {
     return false;
   }

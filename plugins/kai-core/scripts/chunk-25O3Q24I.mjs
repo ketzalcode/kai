@@ -6,15 +6,15 @@ import {
   knownGap,
   redactReport,
   snapshotWarning
-} from "./chunk-D5GOZU63.mjs";
+} from "./chunk-XOIC64U7.mjs";
 import {
   buildMigrationWorksheet,
   planHierarchy
-} from "./chunk-MIP6BZ2R.mjs";
+} from "./chunk-HLIXNC7Y.mjs";
 import {
   hierarchyContext,
   hierarchyStatus
-} from "./chunk-FIXHXIAB.mjs";
+} from "./chunk-4P3U2F6L.mjs";
 import {
   artifactBasisCurrent,
   bindEvidenceReadView,
@@ -36,7 +36,7 @@ import {
   verifyAssetContent,
   verifyReferences,
   verifyVerdict
-} from "./chunk-KN2NB5DE.mjs";
+} from "./chunk-6ABDJP5R.mjs";
 import {
   DATABASE,
   assertWorkspaceWrite,
@@ -737,7 +737,7 @@ var hierarchySubject = (options) => validateHierarchySubject({
 async function installedRoles(host, root, env) {
   let selected = host;
   if (!selected) {
-    const { createNativeHost } = await import("./chunk-MKFUYZ6U.mjs");
+    const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
     selected = createNativeHost({ env });
   }
   if (!selected?.capabilities) return [];
@@ -905,7 +905,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
       fail("RECOVERY_REQUIRED", "an interrupted schema-5 migration accepts only explicit recovery maintenance");
     }
     if (!host) {
-      const { createNativeHost } = await import("./chunk-MKFUYZ6U.mjs");
+      const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
       host = createNativeHost({ env });
     }
     if (["request", "authorize", "receipt"].includes(verb)) {
@@ -944,7 +944,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
       }
     }
     if (!host) {
-      const { createNativeHost } = await import("./chunk-MKFUYZ6U.mjs");
+      const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
       host = createNativeHost({ env });
     }
     if (["request", "authorize", "receipt"].includes(verb)) {
@@ -982,7 +982,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
     closeStore(admitted);
   }
   if (!host) {
-    const { createNativeHost } = await import("./chunk-MKFUYZ6U.mjs");
+    const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
     host = createNativeHost({ env });
   }
   if (["request", "authorize", "receipt", "capture", "capabilities", "prepare"].includes(verb)) {

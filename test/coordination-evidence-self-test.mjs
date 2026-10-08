@@ -1652,7 +1652,7 @@ test('Task dependency versions and required states participate in criteria refer
 
 test('parent completion requires exact accepted report artifact proof', async () => {
   await withWorkspace(({root, store}) => {
-    const parentRunDirectory = `.kai/${route}/drafts`;
+    const parentRunDirectory = '.kai/engineering/documentation/architecture/evidence/drafts';
     const parentSource = `${parentRunDirectory}/mock.html`;
     file(root, parentSource);
     seedTask(store, {

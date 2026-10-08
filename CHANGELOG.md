@@ -4,6 +4,13 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [19.0.1] - 2026-10-08
+
+### Fixed
+
+- Accepted parent-completion excerpts now recognize a valid private `drafts`
+  route when optional-subtype parsing returns another structural candidate.
+
 ## [19.0.0] - 2026-10-02
 
 ### Changed
@@ -4434,6 +4441,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[19.0.1]: https://github.com/ketzalcode/kai/compare/v19.0.0...v19.0.1
 [19.0.0]: https://github.com/ketzalcode/kai/compare/v18.0.0...v19.0.0
 [18.0.0]: https://github.com/ketzalcode/kai/compare/v17.0.0...v18.0.0
 [17.0.0]: https://github.com/ketzalcode/kai/compare/v16.0.1...v17.0.0

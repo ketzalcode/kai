@@ -2777,7 +2777,7 @@ function hasPublicSafeExcerptPath(root, path2) {
   if (pathPrivacy(root, path2) === "public") return true;
   try {
     const parsed = parseTypedArtifactRoute(path2);
-    return parsed.visibility === "private" && parsed.routes.length === 1 && parsed.routes[0].lifecycle === "drafts";
+    return parsed.visibility === "private" && parsed.routes.some((route) => route.lifecycle === "drafts");
   } catch {
     return false;
   }
