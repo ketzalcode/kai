@@ -18,7 +18,12 @@ import {mkdirSync, writeFileSync, appendFileSync, existsSync, readdirSync, rmSyn
 import {dirname, join, delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID, createHash} from 'node:crypto';
-import {withWorkspace, seedItem, seedInitiative, allocateTemporaryRoot} from './helpers/coordination-runtime-fixture.mjs';
+import {
+  allocateTemporaryRoot,
+  fixtureIds,
+  seedTask,
+  withWorkspace,
+} from './helpers/coordination-runtime-fixture.mjs';
 import {criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {readRecord, listRecords} from '../src/core/lib/coordination-runtime/store.mjs';
 import {privateAdmission} from '../src/core/lib/coordination-runtime/migration-files.mjs';
@@ -136,17 +141,17 @@ test('coordinated engineering worker reads bounded context and produces the cont
   mkdirSync(dirname(join(root, relativePath)), {recursive: true});
   writeFileSync(join(root, relativePath), bytes);
   const subject = {kind: 'sha256', path: relativePath, digest: digest(bytes)};
-  seedInitiative(store);
-  const seeded = seedItem(store, {state: 'ready', next_role: 'eng-builder-software',
+  const seeded = seedTask(store, {state: 'ready', next_role: 'eng-builder-software',
     producer_actor: null, producing_actors: [], acceptance_actor: null,
     change_ref: subject, artifact_targets: [relativePath]});
   const criteria = criteriaRef(seeded.body);
   const syntheticHome = join(root, 'synthetic-human-home');
   const directorEnv = {...env, USERPROFILE: syntheticHome, HOME: syntheticHome};
   const director = {role: 'eng-lead-architecture', runId: env.COPILOT_AGENT_SESSION_ID};
-  const version = () => invoke('detail', undefined, ['--kind', 'item', '--id', 'demo']).record.version;
-  const grant = {operationId: randomUUID(), kind: 'item.grant', actor: director,
-    recordKind: 'item', recordId: 'demo', expectedVersion: version(), leaseToken: null,
+  const version = () => invoke('detail', undefined,
+    ['--kind', 'task', '--id', fixtureIds.task]).record.version;
+  const grant = {operationId: randomUUID(), kind: 'task.grant', actor: director,
+    recordKind: 'task', recordId: fixtureIds.task, expectedVersion: version(), leaseToken: null,
     payload: {holder: actor, actions: ['artifact.register', 'evidence.register'],
       acquiredAt: at(), expiresAt: new Date(Date.now() + 3600_000).toISOString()}};
   const grantRequest = invoke('request', {type: 'command', command: grant}, [], directorEnv).request;
@@ -160,10 +165,12 @@ test('coordinated engineering worker reads bounded context and produces the cont
     ? {...env, COPILOT_AGENT_SESSION_ID: actor.runId}
     : {...env, COPILOT_AGENT_SESSION_ID: actor.runId,
       USERPROFILE: join(root, 'rehearsal-home'), HOME: join(root, 'rehearsal-home')};
-  const contextRequest = invoke('request', {type: 'capture', actor, itemId: 'demo', classification: 'internal',
-    command: `node '${cli}' context --root '${root}' --item demo`,
+  const contextRequest = invoke('request', {type: 'capture', actor, taskId: fixtureIds.task,
+    classification: 'internal',
+    command: `node '${cli}' context --root '${root}' --item ${fixtureIds.task}`,
     checks: ['Bounded coordination context read under the prepared identity']}, [], workerEnv).request;
-  const proofRequest = invoke('request', {type: 'capture', actor, itemId: 'demo', classification: 'internal',
+  const proofRequest = invoke('request', {type: 'capture', actor, taskId: fixtureIds.task,
+    classification: 'internal',
     command: `node '${cli}' hash --root '${root}' --path '${relativePath}'`,
     checks: ['Declared subject content digest recomputed from the retained file']}, [], workerEnv).request;
 
@@ -200,7 +207,7 @@ test('coordinated engineering worker reads bounded context and produces the cont
     }
     const before = listRecords(store, {
       kind: 'evidence',
-      subject: {kind: 'item', id: 'demo'},
+      subject: {kind: 'item', id: fixtureIds.task},
     }).length;
     const contextCapture = invoke('capture', {requestId: contextRequest.nonce}, [], workerEnv);
     const proofCapture = invoke('capture', {requestId: proofRequest.nonce}, [], workerEnv);
@@ -223,7 +230,7 @@ test('coordinated engineering worker reads bounded context and produces the cont
     assert.deepEqual(recomputed.subject, subject);
     assert.equal(before, listRecords(store, {
       kind: 'evidence',
-      subject: {kind: 'item', id: 'demo'},
+      subject: {kind: 'item', id: fixtureIds.task},
     }).length);
     evidence.workerWroteNoRecords = true;
 
@@ -232,14 +239,15 @@ test('coordinated engineering worker reads bounded context and produces the cont
     // The host-owned capture, not the harness, is what binds them to real work.
     const artifactId = randomUUID();
     const artifact = {operationId: randomUUID(), kind: 'artifact.register', actor,
-      recordKind: 'item', recordId: 'demo', expectedVersion: version(), leaseToken,
+      recordKind: 'task', recordId: fixtureIds.task, expectedVersion: version(), leaseToken,
       payload: {artifactId, assetId: randomUUID(), subject, projectId: null, classification: 'internal',
         mediaType: 'text/markdown', title: 'Coordinated scenario subject', inputAssetIds: [], at: at()}};
     invoke('apply', artifact, [], workerEnv);
     const evidenceId = randomUUID();
     const register = {operationId: randomUUID(), kind: 'evidence.register', actor,
-      recordKind: 'item', recordId: 'demo', expectedVersion: version(), leaseToken,
-      payload: {tier: 'observed', body: {schema_version: 1, evidence_id: evidenceId, item_id: 'demo',
+      recordKind: 'task', recordId: fixtureIds.task, expectedVersion: version(), leaseToken,
+      payload: {tier: 'observed', body: {schema_version: 1, evidence_id: evidenceId,
+        item_id: fixtureIds.task,
         kind: 'dod-dimension', subject, criteria_ref: criteria, supersedes: [], dimension: 'verified',
         outcome: 'clear', evidence_refs: [`artifact:${artifactId}`], reason: null, data: {},
         created_at: proofCapture.capturedAt}}};

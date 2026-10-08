@@ -13,7 +13,7 @@ import {
 } from './acceptance.mjs';
 import {verifyArtifact, workspaceManifest} from './evidence-content.mjs';
 import {bindEvidenceReadView} from './evidence-context.mjs';
-import {itemStateSatisfies} from './engine.mjs';
+import {taskStateSatisfies} from './engine.mjs';
 import {captureArtifacts, captureChanges, captureHistory} from './report-capture.mjs';
 import {artifactBasisCurrent, verifyAssetContent, verifyReferences, verifyVerdict} from './evidence-integrity.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
@@ -305,14 +305,18 @@ export function buildReport(store, {itemId}) {
         addGap(`attempt:${body.recovery_hold}`, 'Recovery hold attempt is missing or mismatched.');
       }
     }
-    const dependencies = (context?.dependencies ?? body.depends_on.map(dependency => ({
-      dependency, record: tx.get('item', dependency.item),
-    }))).map(({dependency, record}) => ({
-      item: dependency.item, requires: dependency.requires, state: record?.body.state ?? null,
-      version: record?.version ?? null,
-      status: !record ? 'missing' : record.body.state === 'dropped' ? 'failed'
-        : itemStateSatisfies(record, dependency.requires) ? 'satisfied' : 'pending',
-    }));
+    const dependencies = (context?.dependencies ?? body.depends_on.map(dependency => {
+      const dependencyId = dependency.task ?? dependency.item;
+      return {dependency, record: tx.get(item.kind, dependencyId)};
+    })).map(({dependency, record}) => {
+      const dependencyId = dependency.task ?? dependency.item;
+      return {
+        item: dependencyId, requires: dependency.requires, state: record?.body.state ?? null,
+        version: record?.version ?? null,
+        status: !record ? 'missing' : record.body.state === 'dropped' ? 'failed'
+          : taskStateSatisfies(record, dependency.requires) ? 'satisfied' : 'pending',
+      };
+    });
     for (const dependency of dependencies) {
       if (dependency.status === 'satisfied') continue;
       const ref = `item:${dependency.item}`;

@@ -1,7 +1,8 @@
 import {randomUUID, createHash} from 'node:crypto';
 import {existsSync} from 'node:fs';
 import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef,
-  validateActor, validateCommand, validateRecord, COMMAND_KINDS, CLASSIFICATIONS} from './contract.mjs';
+  validateActor, validateCommand, validateRecord, COMMAND_KINDS, PARENT_COMMAND_KINDS,
+  CLASSIFICATIONS} from './contract.mjs';
 import {contextIdentity, matchHumanDecision, readNativeTool} from './native-receipts.mjs';
 import {capabilityId, readIssued, writeIssued} from './native-capabilities.mjs';
 import {createTrustedEmbedding} from './host-composition.mjs';
@@ -20,40 +21,41 @@ const fail = (code, message) => { throw new RuntimeError(code, message); };
 const hash = value => createHash('sha256').update(canonicalJson(value)).digest('hex');
 const exact = (value, keys, label) => assertExactKeys(value, new Set(keys), label);
 const manifestHash = root => hash(JSON.parse(exactFile(root, '.kai/manifest.json')));
-const runActions = new Set([...COMMAND_KINDS].filter(k => !k.startsWith('initiative.')
-  && !k.startsWith('attempt.') && !k.startsWith('effect.') && k !== 'item.create'));
-const commandActions = command => [command.kind, ...(command.kind === 'item.handoff'
-  && command.payload.state !== null ? ['item.transition'] : [])];
+const runActions = new Set([...COMMAND_KINDS].filter(k => !PARENT_COMMAND_KINDS.has(k)
+  && !k.startsWith('attempt.')
+  && !k.startsWith('effect.') && k !== 'task.create'));
+const commandActions = command => [command.kind, ...(command.kind === 'task.handoff'
+  && command.payload.state !== null ? ['task.transition'] : [])];
 function currentBasis(root, id) {
   const store = openStore({path: safePath(root, DATABASE), mode: 'read'});
   try {
-    const item = readRecord(store, 'item', id) ?? fail('EVIDENCE_GAP', 'run scope requires an existing item');
-    return itemBasis(root, store, item);
+    const task = readRecord(store, 'task', id) ?? fail('EVIDENCE_GAP', 'run scope requires an existing Task');
+    return taskBasis(root, store, task);
   }
   finally { closeStore(store); }
 }
-function itemBasis(root, store, item) {
-  return {subject: item.body.change_ref, criteria: criteriaRef(item.body),
-    inputs: captureInputBasis({root}, {get: (kind, id) => readRecord(store, kind, id)}, item.body.context_artifacts)};
+function taskBasis(root, store, task) {
+  return {subject: task.body.change_ref, criteria: criteriaRef(task.body),
+    inputs: captureInputBasis({root}, {get: (kind, id) => readRecord(store, kind, id)}, task.body.context_artifacts)};
 }
 function commandBasis(root, store, command) {
-  const item = readRecord(store, 'item', command.recordId) ?? fail('EVIDENCE_GAP', 'command scope requires an existing item');
-  const changes = command.kind === 'item.update' ? command.payload.changes : null;
-  if (!changes || !Object.hasOwn(changes, 'context_artifacts')) return itemBasis(root, store, item);
-  if (command.actor.role !== item.body.scope_authority) {
+  const task = readRecord(store, 'task', command.recordId) ?? fail('EVIDENCE_GAP', 'command scope requires an existing Task');
+  const changes = command.kind === 'task.update' ? command.payload.changes : null;
+  if (!changes || !Object.hasOwn(changes, 'context_artifacts')) return taskBasis(root, store, task);
+  if (command.actor.role !== task.body.scope_authority) {
     fail('AUTHORITY_REQUIRED', 'prospective context replacement requires the actual scope owner decision');
   }
-  const prospective = validateRecord({...item, body: {...item.body, ...changes}});
+  const prospective = validateRecord({...task, body: {...task.body, ...changes}});
   const tx = {get: (kind, id) => readRecord(store, kind, id)};
-  const priorBasis = {subject: item.body.change_ref, criteria: criteriaRef(item.body), inputs: [], gaps: []};
-  for (const reference of [...new Set(item.body.context_artifacts)].sort()) {
+  const priorBasis = {subject: task.body.change_ref, criteria: criteriaRef(task.body), inputs: [], gaps: []};
+  for (const reference of [...new Set(task.body.context_artifacts)].sort()) {
     try { priorBasis.inputs.push(...captureInputBasis({root}, tx, [reference])); }
     catch (error) {
       if (!(error instanceof RuntimeError) || error.code !== 'EVIDENCE_GAP') throw error;
       priorBasis.gaps.push({reference, code: error.code, message: error.message});
     }
   }
-  return {priorBasis, prospectiveBasis: itemBasis(root, store, prospective)};
+  return {priorBasis, prospectiveBasis: taskBasis(root, store, prospective)};
 }
 function requestCommandBasis(root, command) {
   const store = openStore({path: safePath(root, DATABASE), mode: 'read'});
@@ -114,7 +116,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
     const scope = cap.request.scope;
     const parent = capability(root, cap.parentCapability, false);
     if (parent.request.scope.type !== 'coordination'
-      || parent.request.scope.itemId !== scope.itemId
+      || parent.request.scope.taskId !== scope.taskId
       || scope.actions.some(a => !delegatedActions.has(a) || !parent.request.scope.actions.includes(a))) {
       fail('AUTHORITY_REQUIRED', 'delegation is not a bounded subset of an actual coordinator grant');
     }
@@ -124,17 +126,17 @@ export function createNativeHost({env = process.env, discover} = {}) {
     const context = await verifyNativeContext({env, root, preparation: prepared, reservedAt: cap.request.createdAt});
     return {prepared, context};
   }
-  async function leaseContext(root, store, actor, itemId, token) {
-    const item = readRecord(store, 'item', itemId);
-    const lease = item?.body.lease;
+  async function leaseContext(root, store, actor, taskId, token) {
+    const task = readRecord(store, 'task', taskId);
+    const lease = task?.body.lease;
     const grant = lease && lease.token === token && sameActor(lease.holder, actor)
       && Date.parse(lease.expires_at) > Date.now()
-      && listRecords(store, {kind: 'grant', subject: {kind: 'item', id: itemId}})
+      && listRecords(store, {kind: 'grant', subject: {kind: 'item', id: taskId}})
         .find(r => sameActor(r.body.actor, actor) && r.body.lease_token === token
           && r.body.status === 'active' && Date.parse(r.body.expires_at) > Date.now());
     if (!grant) fail('AUTHORITY_REQUIRED', 'the actual actor must hold a live persisted lease or bounded delegation');
     const reserved = readIssued(root, 'reservations', token);
-    if (reserved.itemId !== itemId || !sameActor(reserved.actor, actor) || reserved.leaseToken !== token) {
+    if (reserved.taskId !== taskId || !sameActor(reserved.actor, actor) || reserved.leaseToken !== token) {
       fail('AUTHORITY_REQUIRED', 'native reservation is not bound to this persisted lease');
     }
     const prepared = preparation(root, actor);
@@ -163,30 +165,30 @@ export function createNativeHost({env = process.env, discover} = {}) {
       const launch = copilotLaunch(env);
       return {preparation: prepared, discovery: catalog,
         launch: {executable: launch.executable, arguments: [`--session-id=${id}`, `--agent=${prepared.agentId}`, ...launch.pluginArguments]},
-        instruction: 'Metadata only; not permission to start model work. First persist item.grant or delegate to this actor. Then launch this standalone context in this workspace using these identity arguments and existing host permissions. Its first command should be claim. Native ACP metadata-only sessions are not promised to survive transport closure.'};
+        instruction: 'Metadata only; not permission to start model work. First persist task.grant or delegate to this actor. Then launch this standalone context in this workspace using these identity arguments and existing host permissions. Its first command should be claim. Native ACP metadata-only sessions are not promised to survive transport closure.'};
     },
     async delegate({root, store, body, options}) {
-      exact(body, ['actor', 'itemId', 'preparation', 'actions', 'questionId'], 'role delegation');
+      exact(body, ['actor', 'taskId', 'preparation', 'actions', 'questionId'], 'role delegation');
       ensureIdentity(body.actor);
       const parent = capability(root, options.capability);
       if (parent.request.scope.type !== 'coordination' || !sameActor(parent.request.scope.actor, body.actor)
-        || parent.request.scope.itemId !== body.itemId
+        || parent.request.scope.taskId !== body.taskId
         || !Array.isArray(body.actions) || !body.actions.length || new Set(body.actions).size !== body.actions.length
         || body.actions.some(a => !delegatedActions.has(a) || !parent.request.scope.actions.includes(a))) {
         fail('AUTHORITY_REQUIRED', 'delegation requires an already-authorized coordinator and explicit bounded role-owned actions');
       }
-      const item = requireRoutingScope(root, store, parent);
+      const task = requireRoutingScope(root, store, parent);
       const prepared = readIssued(root, 'preparations', body.preparation);
       preparation(root, prepared.actor);
       if (prepared.requesterContext !== identity()) fail('AUTHORITY_REQUIRED', 'only the preparing coordinator can delegate this context');
       const question = body.questionId === null ? null : readRecord(store, 'question', body.questionId);
       if (body.actions.includes('question.answer')
-        && (question?.subject?.kind !== 'item' || question.subject.id !== body.itemId
+        && (question?.subject?.kind !== 'item' || question.subject.id !== body.taskId
         || question.body.recipient !== prepared.actor.role || prepared.actor.role === 'operator')) {
         fail('AUTHORITY_REQUIRED', 'answer delegation must bind the actual addressed role and question');
       }
       if (!body.actions.includes('question.answer') && body.questionId !== null) fail('INVALID_INPUT', 'question binding is only for an answer delegation');
-      if (!question && ![item.body.next_role, item.body.scope_authority].includes(prepared.actor.role)) {
+      if (!question && ![task.body.next_role, task.body.scope_authority].includes(prepared.actor.role)) {
         fail('AUTHORITY_REQUIRED', 'handoff delegation must be assigned to the current routed role or scope owner');
       }
       const nonce = randomUUID();
@@ -194,7 +196,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
         createdAt: new Date().toISOString(), expiresAt: new Date(Math.min(
           Date.parse(parent.request.expiresAt), Date.parse(prepared.expiresAt))).toISOString(),
         routingBasis: parent.request.routingBasis, scope: {type: 'delegation', actor: prepared.actor,
-          itemId: body.itemId, actions: body.actions, questionId: body.questionId}};
+          taskId: body.taskId, actions: body.actions, questionId: body.questionId}};
       writeIssued(root, 'capabilities', nonce, {request, parentCapability: options.capability, catalog: prepared.catalog});
       return {capability: nonce, actor: prepared.actor, expiresAt: request.expiresAt, reservedAt: request.createdAt};
     },
@@ -203,13 +205,13 @@ export function createNativeHost({env = process.env, discover} = {}) {
       preparation(root, prepared.actor);
       if (options.capability) {
         const cap = capability(root, options.capability);
-        if (cap.request.scope.type !== 'delegation' || cap.request.scope.itemId !== options.item
-          || !sameActor(cap.request.scope.actor, prepared.actor)) fail('AUTHORITY_REQUIRED', 'claim requires this prepared actor and exact delegated item');
+        if (cap.request.scope.type !== 'delegation' || cap.request.scope.taskId !== options.task
+          || !sameActor(cap.request.scope.actor, prepared.actor)) fail('AUTHORITY_REQUIRED', 'claim requires this prepared actor and exact delegated Task');
         const {context} = await delegatedContext(root, store, cap);
         return {actor: prepared.actor, context, actions: cap.request.scope.actions, leaseToken: null};
       }
-      const lease = readRecord(store, 'item', options.item)?.body.lease;
-      const bound = await leaseContext(root, store, prepared.actor, options.item, lease?.token);
+      const lease = readRecord(store, 'task', options.task)?.body.lease;
+      const bound = await leaseContext(root, store, prepared.actor, options.task, lease?.token);
       return {actor: prepared.actor, context: bound.context, actions: bound.grant.body.actions, leaseToken: bound.leaseToken};
     },
     async request({root, body}) {
@@ -223,11 +225,11 @@ export function createNativeHost({env = process.env, discover} = {}) {
         payload.subject = body.command.payload.body?.subject ?? body.command.payload.subject ?? null;
         payload.criteria = body.command.payload.body?.criteria_ref ?? null;
         payload.action = body.command.kind;
-        if (body.command.recordKind === 'item' && body.command.expectedVersion > 0) {
+        if (body.command.recordKind === 'task' && body.command.expectedVersion > 0) {
           Object.assign(payload, requestCommandBasis(root, body.command));
         }
       } else if (body.type === 'coordination') {
-        exact(body, ['type', 'actor', 'itemId', 'actions'], 'coordination request');
+        exact(body, ['type', 'actor', 'taskId', 'actions'], 'coordination request');
         ensureIdentity(body.actor);
         if (body.actor.role === 'operator' || !Array.isArray(body.actions) || !body.actions.length
           || new Set(body.actions).size !== body.actions.length || body.actions.some(a => !routingActions.has(a))) {
@@ -235,18 +237,18 @@ export function createNativeHost({env = process.env, discover} = {}) {
         }
         const store = openStore({path: safePath(root, DATABASE), mode: 'read'});
         try {
-          const item = readRecord(store, 'item', body.itemId) ?? fail('EVIDENCE_GAP', 'coordination requires an existing item');
-          payload.routingBasis = routingBasis(root, store, item);
+          const task = readRecord(store, 'task', body.taskId) ?? fail('EVIDENCE_GAP', 'coordination requires an existing Task');
+          payload.routingBasis = routingBasis(root, store, task);
         } finally { closeStore(store); }
         payload.action = body.actions;
       } else if (body.type === 'run') {
-        exact(body, ['type', 'actor', 'itemId', 'actions'], 'run request');
+        exact(body, ['type', 'actor', 'taskId', 'actions'], 'run request');
         ensureIdentity(body.actor);
         if (body.actor.role === 'operator' || !Array.isArray(body.actions) || !body.actions.length
           || new Set(body.actions).size !== body.actions.length || body.actions.some(a => !runActions.has(a))) {
-          fail('INVALID_INPUT', 'run actions must be explicit supported item actions for a non-operator');
+          fail('INVALID_INPUT', 'run actions must be explicit supported Task actions for a non-operator');
         }
-        Object.assign(payload, currentBasis(root, body.itemId), {action: body.actions});
+        Object.assign(payload, currentBasis(root, body.taskId), {action: body.actions});
       } else if (body.type === 'maintenance') {
         exact(body, ['type', 'action'], 'maintenance request');
         if (!['init', 'migrate', 'recover-activate', 'recover-abandon', 'rollback'].includes(body.action)) fail('INVALID_INPUT', 'unsupported maintenance action');
@@ -257,16 +259,16 @@ export function createNativeHost({env = process.env, discover} = {}) {
         ensureIdentity(body.request.actor);
         payload.subject = hash(body.request); payload.criteria = null; payload.action = 'repair';
       } else if (body.type === 'capture') {
-        exact(body, ['type', 'actor', 'itemId', 'command', 'checks', 'classification'], 'capture request');
+        exact(body, ['type', 'actor', 'taskId', 'command', 'checks', 'classification'], 'capture request');
         ensureIdentity(body.actor);
         if (typeof body.command !== 'string' || !body.command.trim() || Buffer.byteLength(body.command) > 32 * 1024
           || !Array.isArray(body.checks) || body.checks.length > 64
           || body.checks.some(c => typeof c !== 'string' || !c.trim() || c.length > 256)
           || new Set(body.checks).size !== body.checks.length || !CLASSIFICATIONS.has(body.classification)
-          || (body.itemId !== null && (typeof body.itemId !== 'string' || !body.itemId))) {
-          fail('INVALID_INPUT', 'capture needs an exact PowerShell command, bounded check labels, classification and itemId|null');
+          || (body.taskId !== null && (typeof body.taskId !== 'string' || !body.taskId))) {
+          fail('INVALID_INPUT', 'capture needs an exact PowerShell command, bounded check labels, classification and taskId|null');
         }
-        if (body.itemId !== null) Object.assign(payload, currentBasis(root, body.itemId));
+        if (body.taskId !== null) Object.assign(payload, currentBasis(root, body.taskId));
         else { payload.subject = null; payload.criteria = null; payload.inputs = []; }
         const request = {...payload, command: `# Kai capture ${payload.nonce}\n${body.command}`,
           instruction: 'Run this exact command once through the existing authorized native PowerShell tool. This request neither authorizes nor executes it. Then use receipt/capture with this request nonce; --tool-call is optional when known. Never replay an uncertain effect.'};
@@ -366,19 +368,19 @@ export function createNativeHost({env = process.env, discover} = {}) {
               priorBasis: cap.request.priorBasis, prospectiveBasis: cap.request.prospectiveBasis,
             })) fail('EVIDENCE_GAP', 'prospective replacement or explicit prior basis gaps changed after decision');
           } else if (cap.request.inputs) {
-            const current = readRecord(store, 'item', command.recordId);
-            const basis = current && itemBasis(root, store, current);
+            const current = readRecord(store, 'task', command.recordId);
+            const basis = current && taskBasis(root, store, current);
             if (!basis || canonicalJson(basis.inputs) !== canonicalJson(cap.request.inputs)) fail('EVIDENCE_GAP', 'command capability applicable input basis changed');
           }
         } else if (scope.type === 'run') {
-          const item = readRecord(store, 'item', scope.itemId);
-          if (!sameActor(scope.actor, command.actor) || command.recordKind !== 'item'
-            || command.recordId !== scope.itemId || commandActions(command).some(action => !scope.actions.includes(action))
-            || !item || canonicalJson(itemBasis(root, store, item)) !== canonicalJson({
+          const task = readRecord(store, 'task', scope.taskId);
+          if (!sameActor(scope.actor, command.actor) || command.recordKind !== 'task'
+            || command.recordId !== scope.taskId || commandActions(command).some(action => !scope.actions.includes(action))
+            || !task || canonicalJson(taskBasis(root, store, task)) !== canonicalJson({
               subject: cap.request.subject, criteria: cap.request.criteria, inputs: cap.request.inputs})) {
             fail('AUTHORITY_REQUIRED', 'run capability does not cover the actor, action, subject and current input criteria');
           }
-          if (command.kind === 'approval.record' && item.body.artifact_class === 'paid-media') {
+          if (command.kind === 'approval.record' && task.body.artifact_class === 'paid-media') {
             fail('AUTHORITY_REQUIRED', 'paid-media approval requires a command-specific actual human decision');
           }
         } else if (scope.type === 'coordination' || scope.type === 'delegation') {
@@ -390,15 +392,15 @@ export function createNativeHost({env = process.env, discover} = {}) {
         grants = [{actor: command.actor, actions: commandActions(command), recordKind: command.recordKind,
           recordId: command.recordId, basisRef: `${command.recordKind}/${command.recordId}@${command.expectedVersion}`}];
         if (['attempt.start', 'effect.intent'].includes(command.kind)) grants.push({
-          actor: command.actor, actions: [command.kind], recordKind: 'item', recordId: command.payload.itemId,
-          basisRef: `item/${command.payload.itemId}@${command.payload.itemVersion}`,
+          actor: command.actor, actions: [command.kind], recordKind: 'task', recordId: command.payload.taskId,
+          basisRef: `task/${command.payload.taskId}@${command.payload.taskVersion}`,
         });
       } else {
         const bound = await leaseContext(root, store, command.actor, command.recordId, command.leaseToken);
         if (commandActions(command).some(a => !bound.grant.body.actions.includes(a))) fail('AUTHORITY_REQUIRED', 'lease does not authorize the complete command');
         catalog = bound.prepared.catalog;
       }
-      if (command.kind === 'item.grant') preparation(root, command.payload.holder);
+      if (command.kind === 'task.grant') preparation(root, command.payload.holder);
       let capture;
       if (options.capture) capture = readIssued(root, 'captures', options.capture);
       const decision = () => {
@@ -413,11 +415,11 @@ export function createNativeHost({env = process.env, discover} = {}) {
         runs: ({actor}) => [{actor, directory: `.kai/runs/native/${actor.runId}`}],
         verifyCapture: c => {
           if (!capture || capture.type !== 'command' || !sameActor(capture.actor, c.actor)
-            || capture.root !== root || capture.itemId !== c.recordId
+            || capture.root !== root || capture.taskId !== c.recordId
             || canonicalJson(capture.subject) !== canonicalJson(c.payload.body.subject)
             || capture.criteria !== c.payload.body.criteria_ref
-            || canonicalJson(capture.inputs) !== canonicalJson(itemBasis(root, store, readRecord(store, 'item', c.recordId)).inputs)) {
-            fail('EVIDENCE_GAP', 'no host-owned capture for this actor, item, subject and current input criteria');
+            || canonicalJson(capture.inputs) !== canonicalJson(taskBasis(root, store, readRecord(store, 'task', c.recordId)).inputs)) {
+            fail('EVIDENCE_GAP', 'no host-owned capture for this actor, Task, subject and current input criteria');
           }
           return {...capture.proof, command_digest: commandDigest(c)};
         },
@@ -428,22 +430,22 @@ export function createNativeHost({env = process.env, discover} = {}) {
         roster: catalog.roster, profiles: catalog.profiles, capabilities: catalog.capabilities,
       });
       const result = await embedding.apply({root, store, command, options});
-      const lease = command.kind === 'item.grant' && result.data.record.body.lease;
+      const lease = command.kind === 'task.grant' && result.data.record.body.lease;
       if (lease) {
         const name = `.kai/state/host/reservations/${lease.token}.json`;
         if (!existsSync(safePath(root, name))) writeIssued(root, 'reservations', lease.token, {
-          itemId: command.recordId, actor: lease.holder, leaseToken: lease.token,
+          taskId: command.recordId, actor: lease.holder, leaseToken: lease.token,
           operationId: command.operationId, reservedAt: new Date().toISOString(),
         });
         else readIssued(root, 'reservations', lease.token);
       }
       return result;
     },
-    async plan({root, store, itemId}) {
+    async plan({root, store, taskId}) {
       const catalog = await discovery(root);
-      const item = readRecord(store, 'item', itemId) ?? fail('EVIDENCE_GAP', 'item does not exist');
-      return {...planDispatch({item: item.body, ...catalog}),
-        gap: 'No automatic peer dispatch or effect replay. For each queued native role: prepare, persist item.grant or delegate, then launch the standalone --session-id context with existing host permissions. Inspect claim before acting; metadata preparation alone does not authorize model work.'};
+      const task = readRecord(store, 'task', taskId) ?? fail('EVIDENCE_GAP', 'Task does not exist');
+      return {...planDispatch({task: task.body, ...catalog}),
+        gap: 'No automatic peer dispatch or effect replay. For each queued native role: prepare, persist task.grant or delegate, then launch the standalone --session-id context with existing host permissions. Inspect claim before acting; metadata preparation alone does not authorize model work.'};
     },
     async capture({root, body, options}) {
       exact(body, ['requestId'], 'capture delivery');
@@ -471,7 +473,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
         command: ['powershell', '-Command', receipt.start.arguments.command],
         exit_code: Number(exit[1]), checks: request.scope.checks, classification: request.scope.classification,
       };
-      const capture = {type: 'command', root, actor: request.scope.actor, itemId: request.scope.itemId,
+      const capture = {type: 'command', root, actor: request.scope.actor, taskId: request.scope.taskId,
         subject: request.subject, criteria: request.criteria, inputs: request.inputs, proof, result,
         toolCallId: receipt.toolCallId, startEventId: receipt.start.id, completeEventId: receipt.complete.id};
       writeIssued(root, 'captures', request.nonce, capture);

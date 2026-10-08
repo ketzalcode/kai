@@ -94,22 +94,22 @@ export function leaseIsLive(lease) {
   return lease !== null && Date.parse(lease.expires_at) > Date.now();
 }
 
-export function requireLease(item, command) {
-  if (item.body.lease !== null && !leaseIsLive(item.body.lease)) {
-    fail('RECOVERY_REQUIRED', `item/${item.id} lease expired and must be reconciled`);
+export function requireLease(task, command) {
+  if (task.body.lease !== null && !leaseIsLive(task.body.lease)) {
+    fail('RECOVERY_REQUIRED', `task/${task.id} lease expired and must be reconciled`);
   }
-  if (item.body.lease === null
-    || !sameActor(item.body.lease.holder, command.actor)
-    || item.body.lease.token !== command.leaseToken) {
-    fail('LEASE_CONFLICT', `command does not hold the current lease for item/${item.id}`);
+  if (task.body.lease === null
+    || !sameActor(task.body.lease.holder, command.actor)
+    || task.body.lease.token !== command.leaseToken) {
+    fail('LEASE_CONFLICT', `command does not hold the current lease for task/${task.id}`);
   }
 }
 
-export function requireActingAuthority(tx, item, command, authority, action) {
-  if (item.body.lease === null) {
+export function requireActingAuthority(tx, task, command, authority, action) {
+  if (task.body.lease === null) {
     requireHostActionGrant(command, authority, action);
     return;
   }
-  requireLease(item, command);
+  requireLease(task, command);
   requireActionGrant(tx, command, authority, action);
 }

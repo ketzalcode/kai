@@ -204,7 +204,10 @@ function recoveryHold(view) {
 
 function dependencies(view) {
   return view.dependencies.map(({dependency, record}) => {
-    if (!record) gap(`item/${view.item.id} references missing dependency item/${dependency.item}`);
+    const dependencyId = dependency.task ?? dependency.item;
+    if (!record) {
+      gap(`${view.item.kind}/${view.item.id} references missing dependency ${view.item.kind}/${dependencyId}`);
+    }
     return {
       item_id: record.id,
       item_version: record.version,

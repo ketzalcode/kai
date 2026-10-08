@@ -1,6 +1,6 @@
 import {
-  LIFECYCLE,
-  REQUIRES_STATES,
+  TASK_DEPENDENCY_STATES,
+  TASK_LIFECYCLE,
 } from '../coordination.mjs';
 import {
   PACKS,
@@ -96,29 +96,8 @@ const LEGACY_ITEM_BODY_FIELDS = new Set([
   'updated_at',
 ]);
 
-const LEGACY_ITEM_UPDATE_FIELDS = new Set([
-  'title',
-  'priority',
-  'next_role',
-  'outcome',
-  'acceptance',
-  'artifact_expectation',
-  'artifact_expectation_reason',
-  'artifact_class',
-  'durability',
-  'validity_owner',
-  'artifact_targets',
-  'context_artifacts',
-  'touches',
-  'depends_on',
-  'required_for_milestone',
-  'updated_at',
-]);
-
 const TASK_UPDATE_FIELDS = new Set([
   'title',
-  'feature_id',
-  'satisfies',
   'priority',
   'next_role',
   'outcome',
@@ -145,16 +124,6 @@ export const TASK_COMMAND_KINDS = new Set([
   'task.restore',
 ]);
 
-export const LEGACY_ITEM_COMMAND_KINDS = new Set([
-  'item.create',
-  'item.update',
-  'item.promote',
-  'item.grant',
-  'item.transition',
-  'item.handoff',
-  'item.restore',
-]);
-
 function validateDependencies(value, label, {entryKey, typedKind = null} = {}) {
   if (!Array.isArray(value)) invalid(`${label} must be an array`);
   const seen = new Set();
@@ -162,7 +131,7 @@ function validateDependencies(value, label, {entryKey, typedKind = null} = {}) {
     assertExactKeys(dependency, new Set([entryKey, 'requires']), `${label}[${index}]`);
     assertNonEmptyString(dependency[entryKey], `${label}[${index}].${entryKey}`);
     if (typedKind !== null) parseTypedId(dependency[entryKey], typedKind, `${label}[${index}].${entryKey}`);
-    if (!REQUIRES_STATES.has(dependency.requires)) {
+    if (!TASK_DEPENDENCY_STATES.has(dependency.requires)) {
       invalid(`${label}[${index}].requires is unsupported`);
     }
     if (seen.has(dependency[entryKey])) {
@@ -220,8 +189,8 @@ function validateTaskLikeBody(body, label, {legacy = false} = {}) {
   if (!ITEM_DELIVERY_CLASSES.has(body.delivery_class)) {
     invalid(`${label}.delivery_class is unsupported`);
   }
-  if (!LIFECYCLE.has(body.state)) invalid(`${label}.state is unsupported`);
-  if (body.resume_state !== null && (!LIFECYCLE.has(body.resume_state)
+  if (!TASK_LIFECYCLE.has(body.state)) invalid(`${label}.state is unsupported`);
+  if (body.resume_state !== null && (!TASK_LIFECYCLE.has(body.resume_state)
     || body.resume_state === 'blocked')) {
     invalid(`${label}.resume_state is unsupported`);
   }
@@ -382,7 +351,7 @@ function validateTaskLikeTransition(command, {kind, recordKind}) {
     `${kind} payload`,
     new Set(['to', 'at', 'reason']),
   );
-  if (!LIFECYCLE.has(command.payload.to)) invalid(`${kind} payload.to is unsupported`);
+  if (!TASK_LIFECYCLE.has(command.payload.to)) invalid(`${kind} payload.to is unsupported`);
   assertTimestamp(command.payload.at, `${kind} payload.at`);
   assertNonEmptyString(command.payload.reason, `${kind} payload.reason`);
   if (Object.hasOwn(command.payload, 'subject')) {
@@ -418,7 +387,7 @@ function validateTaskLikeHandoff(command, {kind, recordKind}) {
     required,
   );
   assertNonEmptyString(command.payload.toRole, `${kind} payload.toRole`);
-  if (command.payload.state !== null && !LIFECYCLE.has(command.payload.state)) {
+  if (command.payload.state !== null && !TASK_LIFECYCLE.has(command.payload.state)) {
     invalid(`${kind} payload.state is unsupported`);
   }
   if (Object.hasOwn(command.payload, 'subject')) {
@@ -493,59 +462,11 @@ const taskCommandValidators = new Map([
   })],
 ]);
 
-const legacyItemCommandValidators = new Map([
-  ['item.create', command => validateCreate(command, 'item', validateLegacyItemBody)],
-  ['item.update', command => validateTaskLikeUpdate(command, {
-    commandKind: 'item.update',
-    recordKind: 'item',
-    fields: LEGACY_ITEM_UPDATE_FIELDS,
-  })],
-  ['item.promote', command => validateTaskLikePromote(command, {
-    kind: 'item.promote',
-    recordKind: 'item',
-  })],
-  ['item.grant', command => validateTaskLikeGrant(command, {
-    kind: 'item.grant',
-    recordKind: 'item',
-    actions: new Set([
-      'item.update',
-      'item.transition',
-      'item.handoff',
-      'question.open',
-      'artifact.register',
-      'asset.transition',
-      'evidence.register',
-      'review.record',
-      'approval.record',
-    ]),
-  })],
-  ['item.transition', command => validateTaskLikeTransition(command, {
-    kind: 'item.transition',
-    recordKind: 'item',
-  })],
-  ['item.handoff', command => validateTaskLikeHandoff(command, {
-    kind: 'item.handoff',
-    recordKind: 'item',
-  })],
-  ['item.restore', command => validateTaskLikeRestore(command, {
-    kind: 'item.restore',
-    recordKind: 'item',
-  })],
-]);
-
 export function validateTaskCommand(command) {
   if (!TASK_COMMAND_KINDS.has(command.kind)) {
     invalid(`unsupported command kind "${command.kind}"`);
   }
   taskCommandValidators.get(command.kind)(command);
-  return command;
-}
-
-export function validateLegacyItemCommand(command) {
-  if (!LEGACY_ITEM_COMMAND_KINDS.has(command.kind)) {
-    invalid(`unsupported command kind "${command.kind}"`);
-  }
-  legacyItemCommandValidators.get(command.kind)(command);
   return command;
 }
 
@@ -593,28 +514,6 @@ export function validateTaskCommandMutation(command, current, nextBody) {
         'change_ref', 'updated_at',
       ])],
       ['task.restore', new Set(['state', 'resume_state', 'next_role', 'recovery_hold', 'updated_at'])],
-    ]),
-  });
-}
-
-export function validateLegacyItemCommandMutation(command, current, nextBody) {
-  return validateTaskLikeCommandMutation(command, current, nextBody, {
-    updateCommand: 'item.update',
-    updateFailure: 'item.update may only apply the descriptive changes in its payload',
-    allowedByKind: new Map([
-      ['item.promote', new Set(['state', 'updated_at'])],
-      ['item.grant', new Set([
-        'state', 'resume_state', 'producer_actor', 'producing_actors', 'next_role', 'lease', 'updated_at',
-      ])],
-      ['item.transition', new Set([
-        'state', 'resume_state', 'acceptance_actor', 'next_role', 'lease',
-        'change_ref', 'updated_at',
-      ])],
-      ['item.handoff', new Set([
-        'state', 'resume_state', 'acceptance_actor', 'next_role', 'lease',
-        'change_ref', 'updated_at',
-      ])],
-      ['item.restore', new Set(['state', 'resume_state', 'next_role', 'recovery_hold', 'updated_at'])],
     ]),
   });
 }

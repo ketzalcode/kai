@@ -22,7 +22,8 @@ import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-
 import {
   allocateTemporaryRoot,
   command,
-  seedItem,
+  fixtureIds,
+  seedTask,
   seedRecord,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
@@ -39,12 +40,13 @@ const {
 } = storeApi;
 const {logicalStoreDigest} = migrationFiles;
 const itemSubject = id => ({kind: 'item', id});
+const primaryId = fixtureIds.task;
 
 function questionBody(id, ask) {
   return {
     schema_version: 1,
     question_id: id,
-    item_id: 'demo',
+    item_id: primaryId,
     asker: {role: 'eng-builder-software', runId: 'builder-run'},
     recipient: 'eng-reviewer-code',
     kind: 'fact',
@@ -161,8 +163,8 @@ function messageBody(id, {
   return {
     schema_version: 1,
     message_id: id,
-    thread_id: 'demo',
-    item_id: 'demo',
+    thread_id: primaryId,
+    item_id: primaryId,
     parent_id: null,
     sender_role: 'eng-builder-software',
     sender_run: 'foreign-subject-run',
@@ -379,11 +381,11 @@ assert.equal(
   '{"list":[3,2,1],"nested":{"a":null,"b":true},"z":1}',
 );
 assert.equal(
-  commandDigest(command('item.update', {
+  commandDigest(command('task.update', {
     operationId: '00000000-0000-4000-8000-000000000001',
     payload: {title: 'Revised'},
   })),
-  commandDigest(command('item.update', {
+  commandDigest(command('task.update', {
     operationId: '00000000-0000-4000-8000-000000000001',
     payload: {title: 'Revised'},
   })),
@@ -397,27 +399,27 @@ assert.throws(() => canonicalJson(cyclic), error =>
 assert.throws(() => canonicalJson({bad: undefined}), error =>
   error instanceof RuntimeError && error.code === 'INVALID_INPUT');
 
-assert.ok(COMMAND_KINDS.has('item.update'));
+assert.ok(COMMAND_KINDS.has('task.update'));
 assert.ok(RECORD_KINDS.has('item'));
 assert.throws(() => validateCommand(command('unknown.command')), error =>
   error.code === 'INVALID_INPUT');
-assert.throws(() => validateCommand(command('item.update', {
+assert.throws(() => validateCommand(command('task.update', {
   payload: {state: 'shipped'},
 })), error => error.code === 'INVALID_INPUT');
 assert.throws(() => validateCommand({
-  ...command('item.update', {payload: {title: 'Valid'}}),
+  ...command('task.update', {payload: {title: 'Valid'}}),
   authority: {roles: ['operator']},
 }), error => error.code === 'INVALID_INPUT');
 assert.throws(() => validateRecord({
   kind: 'item',
   id: 'demo',
-  subject: itemSubject('demo'),
+  subject: itemSubject(primaryId),
   version: 1,
   body: [],
 }), error => error.code === 'INVALID_INPUT');
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   assert.deepEqual(
     store.database.prepare('SELECT key, value FROM metadata ORDER BY key').all()
       .map(({key, value}) => ({key, value})),
@@ -426,23 +428,23 @@ await withWorkspace(({store}) => {
       {key: 'schema_version', value: '2'},
     ],
   );
-  const op = command('item.update', {payload: {title: 'Revised'}});
+  const op = command('task.update', {payload: {title: 'Revised'}});
   const mutate = current => ({...current.body, title: 'Revised'});
   const first = applyOperation(store, op, mutate);
   assert.deepEqual(applyOperation(store, op, mutate), first);
   assert.equal(first.recordVersion, 2);
-  assert.equal(readRecord(store, 'item', 'demo').version, 2);
+  assert.equal(readRecord(store, 'task', primaryId).version, 2);
   assert.deepEqual(
     {...store.database.prepare(`
       SELECT subject_kind, subject_id FROM events WHERE seq = ?
     `).get(first.eventSeq)},
-    {subject_kind: 'item', subject_id: 'demo'},
+    {subject_kind: 'task', subject_id: primaryId},
   );
   assert.throws(() => applyOperation(store,
     {...op, payload: {title: 'Different'}}, mutate),
   error => error.code === 'OPERATION_CONFLICT');
   assert.throws(() => applyOperation(store,
-    command('item.update', {
+    command('task.update', {
       expectedVersion: 1,
       payload: {title: 'Stale'},
     }), mutate),
@@ -534,13 +536,13 @@ await test('schema 2 stores root records and isolates typed hierarchy subjects',
 
 await test('readSubjectView rejects exact references owned by another typed subject', async () => {
   await withWorkspace(({store}) => {
-    const foreignSubject = {kind: 'task', id: 'demo'};
+    const foreignSubject = {kind: 'task', id: primaryId};
     const openingId = '00000000-0000-4000-8000-000000000101';
     const answerId = '00000000-0000-4000-8000-000000000102';
     const recoveryId = '00000000-0000-4000-8000-000000000103';
     const artifactId = '00000000-0000-4000-8000-000000000104';
     const evidenceId = '00000000-0000-4000-8000-000000000105';
-    const item = seedItem(store, {
+    const item = seedTask(store, {
       state: 'blocked',
       resume_state: 'in-progress',
       next_role: 'operator',
@@ -551,7 +553,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
     seedRecord(store, validateRecord({
       kind: 'question',
       id: 'local-question',
-      subject: itemSubject('demo'),
+      subject: itemSubject(primaryId),
       version: 1,
       body: {
         ...questionBody('local-question', 'Do foreign messages stay excluded?'),
@@ -590,7 +592,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
       body: {
         schema_version: 1,
         attempt_id: recoveryId,
-        item_id: 'demo',
+        item_id: primaryId,
         grantor: {role: 'eng-lead-architecture', runId: 'recovery-steward'},
         stale_lease: staleLease,
         observed: 'Foreign recovery record.',
@@ -608,7 +610,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
       body: {
         schema_version: 1,
         artifact_id: artifactId,
-        item_id: 'demo',
+        item_id: primaryId,
         producer: {role: 'eng-builder-software', runId: 'foreign-subject-run'},
         subject: {kind: 'git', base: 'a'.repeat(40), head: 'b'.repeat(40)},
         criteria_ref: criteriaRef(item.body),
@@ -630,7 +632,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
       body: {
         schema_version: 1,
         evidence_id: evidenceId,
-        item_id: 'demo',
+        item_id: primaryId,
         kind: 'recovery-reconciliation',
         subject: null,
         criteria_ref: null,
@@ -649,7 +651,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
     }));
 
     const view = readSubjectView(store, {
-      subject: itemSubject('demo'),
+      subject: itemSubject(primaryId),
       recentLimit: 0,
     });
     const localQuestion = view.questions.find(entry => entry.record?.id === 'local-question');
@@ -670,12 +672,12 @@ await test('readSubjectView rejects exact references owned by another typed subj
 
 await test('readSubjectView recent messages and counts isolate same-ID typed threads', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     const messageId = '00000000-0000-4000-8000-000000000106';
     seedRecord(store, validateRecord({
       kind: 'message',
       id: messageId,
-      subject: {kind: 'task', id: 'demo'},
+      subject: {kind: 'task', id: primaryId},
       version: 1,
       body: messageBody(messageId),
     }));
@@ -688,7 +690,7 @@ await test('readSubjectView recent messages and counts isolate same-ID typed thr
     }));
 
     const view = readSubjectView(store, {
-      subject: itemSubject('demo'),
+      subject: itemSubject(primaryId),
       recentLimit: 8,
     });
     assert.deepEqual(view.recentMessages, []);
@@ -700,7 +702,7 @@ await test('readSubjectView recent messages and counts isolate same-ID typed thr
 await test('readSubjectView holds one SQLite snapshot while a WAL writer advances', async () => {
   await withWorkspace(({store}) => {
     store.database.exec('PRAGMA journal_mode=WAL');
-    seedItem(store);
+    seedTask(store);
     const writer = openStore({path: store.path, mode: 'write'});
     const prepare = store.database.prepare;
     let advanced = false;
@@ -710,26 +712,26 @@ await test('readSubjectView holds one SQLite snapshot while a WAL writer advance
           advanced = true;
           applyOperation(
             writer,
-            command('item.update', {payload: {title: 'Writer advanced'}}),
+            command('task.update', {payload: {title: 'Writer advanced'}}),
             current => ({...current.body, title: 'Writer advanced'}),
           );
         }
         return prepare.call(this, sql);
       };
       const view = readSubjectView(store, {
-        subject: itemSubject('demo'),
+        subject: itemSubject(primaryId),
         recentLimit: 0,
       });
       assert.equal(advanced, true);
       assert.equal(view.throughSeq, 0);
-      assert.equal(view.item.body.title, 'Demo knowledge item');
+      assert.equal(view.item.body.title, 'Demo knowledge Task');
     } finally {
       store.database.prepare = prepare;
       closeStore(writer);
     }
     assert.equal(
       readSubjectView(store, {
-        subject: itemSubject('demo'),
+        subject: itemSubject(primaryId),
         recentLimit: 0,
       }).item.body.title,
       'Writer advanced',
@@ -738,43 +740,43 @@ await test('readSubjectView holds one SQLite snapshot while a WAL writer advance
 });
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   assert.throws(() => applyOperation(
     store,
-    command('item.update', {payload: {title: 'Allowed'}}),
+    command('task.update', {payload: {title: 'Allowed'}}),
     current => ({...current.body, title: 'Allowed', state: 'shipped'}),
   ), error => error.code === 'INVALID_INPUT');
-  assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+  assert.equal(readRecord(store, 'task', primaryId).body.state, 'completed');
   assert.throws(() => readRecord(store, 'unknown', 'demo'), error =>
     error.code === 'INVALID_INPUT');
-  assert.throws(() => listRecords(store, {kind: 'unknown', subject: itemSubject('demo')}), error =>
+  assert.throws(() => listRecords(store, {kind: 'unknown', subject: itemSubject(primaryId)}), error =>
     error.code === 'INVALID_INPUT');
 });
 
 await test('mutation cannot rewrite the primary validation baseline', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Allowed'}}),
+      command('task.update', {payload: {title: 'Allowed'}}),
       current => {
         current.body.state = 'shipped';
         return {...current.body, title: 'Allowed'};
       },
     ), error => error.code === 'INVALID_INPUT');
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
+    assert.equal(readRecord(store, 'task', primaryId).body.state, 'completed');
   });
 });
 
 await test('mutation cannot change the command after its digest is computed', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
-    const operation = command('item.update', {payload: {title: 'Original'}});
+    seedTask(store);
+    const operation = command('task.update', {payload: {title: 'Original'}});
     assert.throws(() => applyOperation(store, operation, current => {
       operation.payload.title = 'Injected';
       return {...current.body, title: 'Injected'};
     }), error => error.code === 'INVALID_INPUT');
-    assert.equal(readRecord(store, 'item', 'demo').body.title, 'Demo knowledge item');
+    assert.equal(readRecord(store, 'task', primaryId).body.title, 'Demo knowledge Task');
     operation.payload.title = 'Original';
     const result = applyOperation(
       store,
@@ -787,13 +789,13 @@ await test('mutation cannot change the command after its digest is computed', as
 
 await test('callback lock-shaped errors remain callback errors', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     const callbackError = new Error('database is locked');
     callbackError.code = 'ERR_SQLITE_ERROR';
     callbackError.errcode = 5;
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Not written'}}),
+      command('task.update', {payload: {title: 'Not written'}}),
       () => {
         throw callbackError;
       },
@@ -802,11 +804,11 @@ await test('callback lock-shaped errors remain callback errors', async () => {
 });
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   let escapedTransaction;
   applyOperation(
     store,
-    command('item.update', {payload: {title: 'Scoped transaction'}}),
+    command('task.update', {payload: {title: 'Scoped transaction'}}),
     (current, tx) => {
       escapedTransaction = tx;
       return {...current.body, title: 'Scoped transaction'};
@@ -817,13 +819,13 @@ await withWorkspace(({store}) => {
 });
 
 await withWorkspace(({root, store}) => {
-  seedItem(store);
-  const operation = command('item.update', {payload: {title: 'Persisted'}});
+  seedTask(store);
+  const operation = command('task.update', {payload: {title: 'Persisted'}});
   const result = applyOperation(store, operation, (current, tx) => {
     tx.put({
       kind: 'question',
       id: 'question-1',
-      subject: itemSubject('demo'),
+      subject: itemSubject(primaryId),
       version: 1,
       body: questionBody('question-1', 'Persisted?'),
     });
@@ -831,7 +833,7 @@ await withWorkspace(({root, store}) => {
     return {...current.body, title: 'Persisted'};
   });
   assert.ok(result.eventSeq > 0);
-  assert.equal(listRecords(store, {kind: 'question', subject: itemSubject('demo')}).length, 1);
+  assert.equal(listRecords(store, {kind: 'question', subject: itemSubject(primaryId)}).length, 1);
   closeStore(store);
 
   const reopened = openStore({
@@ -839,7 +841,7 @@ await withWorkspace(({root, store}) => {
     mode: 'write',
   });
   try {
-    assert.equal(readRecord(reopened, 'item', 'demo').body.title, 'Persisted');
+    assert.equal(readRecord(reopened, 'task', primaryId).body.title, 'Persisted');
     assert.equal(readRecord(reopened, 'question', 'question-1').version, 1);
     assert.deepEqual(applyOperation(reopened, operation, () => {
       throw new Error('replay must not call mutate');
@@ -850,21 +852,21 @@ await withWorkspace(({root, store}) => {
 });
 
 await withWorkspace(({store}) => {
-  seedItem(store);
+  seedTask(store);
   const beforeEvents = store.database.prepare('SELECT count(*) AS count FROM events').get().count;
-  const failed = command('item.update', {payload: {title: 'Rolled back'}});
+  const failed = command('task.update', {payload: {title: 'Rolled back'}});
   assert.throws(() => applyOperation(store, failed, (current, tx) => {
     tx.put({
       kind: 'question',
       id: 'rolled-back-question',
-      subject: itemSubject('demo'),
+      subject: itemSubject(primaryId),
       version: 1,
       body: questionBody('rolled-back-question', 'Must disappear'),
     });
     tx.appendEvent({kind: 'must.rollback'});
     throw new Error('mutation failed');
   }), /mutation failed/);
-  assert.equal(readRecord(store, 'item', 'demo').body.title, 'Demo knowledge item');
+  assert.equal(readRecord(store, 'task', primaryId).body.title, 'Demo knowledge Task');
   assert.equal(readRecord(store, 'question', 'rolled-back-question'), null);
   assert.equal(
     store.database.prepare('SELECT count(*) AS count FROM events').get().count,
@@ -878,17 +880,17 @@ await withWorkspace(({store}) => {
 });
 
 await withWorkspace(({root, store}) => {
-  seedItem(store);
+  seedTask(store);
   closeStore(store);
   const readOnly = openStore({
     path: join(root, '.kai', 'state', 'coordination.sqlite'),
     mode: 'read',
   });
   try {
-    assert.equal(readRecord(readOnly, 'item', 'demo').version, 1);
+    assert.equal(readRecord(readOnly, 'task', primaryId).version, 1);
     assert.throws(() => applyOperation(
       readOnly,
-      command('item.update', {payload: {title: 'Denied'}}),
+      command('task.update', {payload: {title: 'Denied'}}),
       current => ({...current.body, title: 'Denied'}),
     ), error => error.code === 'INVALID_INPUT');
   } finally {
@@ -958,7 +960,7 @@ await test('schema 1 stores open only through the read-only historical API', () 
       assert.throws(
         () => applyOperation(
           historical,
-          command('item.update', {payload: {title: 'Denied'}}),
+          command('task.update', {payload: {title: 'Denied'}}),
           current => current.body,
         ),
         error => error.code === 'INVALID_INPUT',
@@ -1159,28 +1161,28 @@ allocatedCase('modes', root => {
 });
 
 await withWorkspace(async ({root, store}) => {
-  seedItem(store);
+  seedTask(store);
   const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
   await withChildLock(databasePath, 'BEGIN IMMEDIATE', () => {
     const started = Date.now();
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Contended'}}),
+      command('task.update', {payload: {title: 'Contended'}}),
       current => ({...current.body, title: 'Contended'}),
     ), error => error.code === 'STORE_BUSY' && error.retryable === true);
     assert.ok(Date.now() - started >= 800, 'busy_timeout should bound contention near one second');
   });
-  assert.equal(readRecord(store, 'item', 'demo').version, 1);
+  assert.equal(readRecord(store, 'task', primaryId).version, 1);
 });
 
 await test('read operations translate SQLite lock exhaustion to STORE_BUSY', async () => {
   await withWorkspace(async ({root, store}) => {
-    seedItem(store);
+    seedTask(store);
     const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
     await withChildLock(databasePath, 'BEGIN EXCLUSIVE', () => {
-      assert.throws(() => readRecord(store, 'item', 'demo'), error =>
+      assert.throws(() => readRecord(store, 'task', primaryId), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
-      assert.throws(() => listRecords(store, {kind: 'item', subject: itemSubject('demo')}), error =>
+      assert.throws(() => listRecords(store, {kind: 'item', subject: itemSubject(primaryId)}), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
     });
   });
@@ -1188,7 +1190,7 @@ await test('read operations translate SQLite lock exhaustion to STORE_BUSY', asy
 
 await test('receipt insertion failure rolls back the primary write and event', async () => {
   await withWorkspace(({store}) => {
-    seedItem(store);
+    seedTask(store);
     store.database.exec(`
       CREATE TRIGGER abort_receipt_insert
       BEFORE INSERT ON operations
@@ -1198,7 +1200,7 @@ await test('receipt insertion failure rolls back the primary write and event', a
     `);
     assert.throws(() => applyOperation(
       store,
-      command('item.update', {payload: {title: 'Must roll back'}}),
+      command('task.update', {payload: {title: 'Must roll back'}}),
       (current, tx) => {
         tx.appendEvent({kind: 'must.rollback'});
         return {...current.body, title: 'Must roll back'};
@@ -1206,7 +1208,7 @@ await test('receipt insertion failure rolls back the primary write and event', a
     ), error =>
       error.code === 'ERR_SQLITE_ERROR'
       && /forced receipt abort/.test(error.message));
-    assert.equal(readRecord(store, 'item', 'demo').body.title, 'Demo knowledge item');
+    assert.equal(readRecord(store, 'task', primaryId).body.title, 'Demo knowledge Task');
     assert.equal(
       store.database.prepare('SELECT count(*) AS count FROM events').get().count,
       0,
@@ -1220,7 +1222,7 @@ await test('receipt insertion failure rolls back the primary write and event', a
 
 await test('late receipt failure rolls back and exposes rollback uncertainty', async () => {
   await withWorkspace(({root, store}) => {
-    seedItem(store);
+    seedTask(store);
     const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
     store.database.exec(`
       CREATE TRIGGER abort_receipt
@@ -1233,7 +1235,7 @@ await test('late receipt failure rolls back and exposes rollback uncertainty', a
     try {
       applyOperation(
         store,
-        command('item.update', {payload: {title: 'Must roll back'}}),
+        command('task.update', {payload: {title: 'Must roll back'}}),
         (current, tx) => {
           tx.appendEvent({kind: 'must.rollback'});
           return {...current.body, title: 'Must roll back'};
@@ -1252,7 +1254,7 @@ await test('late receipt failure rolls back and exposes rollback uncertainty', a
 
     const reopened = openStore({path: databasePath, mode: 'write'});
     try {
-      assert.equal(readRecord(reopened, 'item', 'demo').body.title, 'Demo knowledge item');
+      assert.equal(readRecord(reopened, 'task', primaryId).body.title, 'Demo knowledge Task');
       assert.equal(
         reopened.database.prepare('SELECT count(*) AS count FROM events').get().count,
         0,

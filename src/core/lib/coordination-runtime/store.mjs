@@ -31,6 +31,7 @@ const EVENTS_TABLE_SQL = `CREATE TABLE events (
       WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
       WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
       WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
+      WHEN 'task.handoff' THEN json_extract(payload, '$.payload.messageId')
       WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
     END
   ) STORED,
@@ -693,7 +694,8 @@ export function readSubjectView(store, options) {
     const throughSeq = Number(runSqlite(() => store.database.prepare(
       'SELECT COALESCE(MAX(seq), 0) AS seq FROM events',
     ).get()).seq);
-    const item = readRecord(store, subject.kind, subject.id);
+    const item = readRecord(store, subject.kind, subject.id)
+      ?? (subject.kind === 'item' ? readRecord(store, 'task', subject.id) : null);
     if (!item) {
       return {
         throughSeq,
@@ -711,7 +713,11 @@ export function readSubjectView(store, options) {
 
     const dependencies = (item.body.depends_on ?? []).map(dependency => ({
       dependency,
-      record: readRecord(store, subject.kind, dependency.item),
+      record: readRecord(
+        store,
+        item.kind,
+        item.kind === 'task' ? dependency.task : dependency.item,
+      ),
     }));
     const chronology = (column, id) => {
       const filter = subjectFilter(store, subject);
@@ -784,7 +790,8 @@ export function readSubjectView(store, options) {
       SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
       FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
         AND ${matchingSubjects(store, 'r', 'e')}
-      WHERE ${handoffFilter.sql} AND e.event_kind = 'item.handoff' AND e.seq <= ?
+      WHERE ${handoffFilter.sql}
+        AND e.event_kind IN ('item.handoff', 'task.handoff') AND e.seq <= ?
       ORDER BY e.seq DESC LIMIT 1
     `).get(...handoffFilter.params, throughSeq));
     const latestHandoff = handoffRow ? {
@@ -1083,7 +1090,7 @@ export function applyOperation(store, command, mutate) {
           || internalCommand.recordKind === 'initiative'
           ? null
         : ['attempt.start', 'effect.intent'].includes(internalCommand.kind)
-          ? {kind: 'item', id: internalCommand.payload.itemId}
+          ? {kind: 'item', id: internalCommand.payload.taskId}
           : null);
     const eventSubject = HIERARCHY_KINDS.has(internalCommand.recordKind)
       ? {kind: internalCommand.recordKind, id: internalCommand.recordId}

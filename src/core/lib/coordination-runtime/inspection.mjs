@@ -12,7 +12,7 @@ import {readLegacyRecords, verifyMigration} from './migration.mjs';
 import {inspectReportIndex, reportPaths} from './report-paths.mjs';
 import {TERMINAL} from '../coordination.mjs';
 import {projectContext} from './context.mjs';
-import {itemStateSatisfies} from './engine.mjs';
+import {taskStateSatisfies} from './engine.mjs';
 
 /**
  * Never opens with create/write mode, migrates, repairs, or reads views as state.
@@ -67,8 +67,10 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
       const findings = [];
       const add = (item, section, headline, why, path = DATABASE) =>
         findings.push({section, item, tier: 'derived', headline, why, path});
-      for (const row of store.database.prepare("SELECT id FROM records WHERE kind='item' ORDER BY id").all()) {
-        try { items.push(readRecord(store, 'item', row.id)); }
+      for (const row of store.database.prepare(
+        "SELECT kind, id FROM records WHERE kind IN ('item', 'task') ORDER BY kind, id",
+      ).all()) {
+        try { items.push(readRecord(store, row.kind, row.id)); }
         catch (error) { add(row.id, 'integrity', 'runtime record is malformed', error.message); }
       }
       const sources = readLegacyRecords(store);
@@ -82,10 +84,11 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
           add(item.id, 'needs-you', 'recorded lifecycle waits on an operator', 'No deployment or production action is inferred.');
         }
         for (const dep of item.body.depends_on) {
-          const upstream = items.find(i => i.id === dep.item);
-          if (!upstream) add(item.id, 'integrity', 'dependency is missing or quarantined', dep.item);
-          else if (!TERMINAL.has(item.body.state) && !itemStateSatisfies(upstream, dep.requires)) {
-            add(item.id, 'blocked', 'dependency gate is not satisfied', `${dep.item} requires ${dep.requires}`);
+          const dependencyId = dep.task ?? dep.item;
+          const upstream = items.find(i => i.kind === item.kind && i.id === dependencyId);
+          if (!upstream) add(item.id, 'integrity', 'dependency is missing or quarantined', dependencyId);
+          else if (!TERMINAL.has(item.body.state) && !taskStateSatisfies(upstream, dep.requires)) {
+            add(item.id, 'blocked', 'dependency gate is not satisfied', `${dependencyId} requires ${dep.requires}`);
           }
         }
         try { projectContext(store, {itemId: item.id}); }

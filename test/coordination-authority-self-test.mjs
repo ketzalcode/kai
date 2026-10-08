@@ -38,11 +38,33 @@ const paths = {
   definitionOfDone: corePath('skills', 'kai-core-definition-of-done', 'SKILL.md'),
   peerCommunication: corePath('skills', 'kai-core-peer-communication', 'SKILL.md'),
   design: join(root, 'plugins', 'kai-creative', 'agents', 'creative-lead-design.agent.md'),
+  runtimeContract: join(root, 'src', 'core', 'lib', 'coordination-runtime', 'contract.mjs'),
+  runtimeEngine: join(root, 'src', 'core', 'lib', 'coordination-runtime', 'engine.mjs'),
 };
 
 const source = Object.fromEntries(
   Object.entries(paths).map(([key, path]) => [key, readRaw(path)]),
 );
+
+// Executable work has one live command surface. Legacy event readers may retain
+// old strings, but validators and dispatchers may not expose retired commands.
+{
+  const validators = source.runtimeContract.match(
+    /const commandValidators = new Map\(\[([\s\S]*?)\n\]\);/,
+  );
+  const handlers = source.runtimeEngine.match(
+    /const handlers = new Map\(\[([\s\S]*?)\n\]\);/,
+  );
+  assert.ok(validators, 'runtime command validator map remains explicit');
+  assert.ok(handlers, 'runtime command dispatcher map remains explicit');
+  for (const [label, body] of [
+    ['validator', validators[1]],
+    ['dispatcher', handlers[1]],
+  ]) {
+    assert.doesNotMatch(body, /\['(?:initiative|item)\./,
+      `live ${label} has no initiative.* or item.* command key`);
+  }
+}
 
 // --- Explicit scope/completion authority, no compulsory product-agent proxy ---
 

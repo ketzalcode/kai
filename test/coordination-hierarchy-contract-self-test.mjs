@@ -446,8 +446,6 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
     taskCommand('update', {
       changes: {
         title: 'Refine the Task title',
-        feature_id: task.body.feature_id,
-        satisfies: task.body.satisfies,
         updated_at: LATER,
       },
     }),
@@ -514,7 +512,7 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
     payload: {body: legacyRecord.body},
   };
   assert.equal(validateRecord(legacyRecord), legacyRecord);
-  assert.equal(validateCommand(legacyCommand), legacyCommand);
+  assert.throws(() => validateCommand(legacyCommand), invalid());
 });
 
 test('parent updates require an explicit mutation timestamp', () => {

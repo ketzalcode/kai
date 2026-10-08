@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {readFileSync, writeFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {test} from 'node:test';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
@@ -21,16 +22,22 @@ import {agentProfileModelErrors} from '../tools/lib/pack-plan.mjs';
 // that deliberately installs nothing.
 import {ROLE_PROFILE_MODELS} from '../src/core/lib/agent-model-policy.mjs';
 import {parseFrontmatter, stripQuotes, loaderErrors} from '../src/core/lib/loader-contract.mjs';
-import {authority, command, seedItem, withWorkspace} from './helpers/coordination-runtime-fixture.mjs';
+import {
+  authority,
+  command,
+  fixtureIds,
+  seedTask,
+  withWorkspace,
+} from './helpers/coordination-runtime-fixture.mjs';
 
 const role = 'eng-builder-software';
 const model = 'claude-sonnet-5';
 const qualifiedId = 'kai-engineering:eng-builder-software';
 const actor = {role, runId: 'host-recorder'};
 const roster = [{id: qualifiedId, role, model}];
-const itemRecords = (store, kind, itemId = 'demo') => listRecords(store, {
+const taskRecords = (store, kind, taskId = fixtureIds.task) => listRecords(store, {
   kind,
-  subject: {kind: 'item', id: itemId},
+  subject: {kind: 'item', id: taskId},
 });
 const profiles = {[role]: 'execution'};
 const capabilities = {
@@ -41,7 +48,7 @@ const code = expected => error => error.code === expected;
 const tests = [];
 const check = (name, fn) => tests.push([name, fn]);
 const input = overrides => ({
-  item: {next_role: role}, roster, profiles, capabilities, ...overrides,
+  task: {next_role: role}, roster, profiles, capabilities, ...overrides,
 });
 
 // Only this adapter can attest observations. JSON copies of its opaque handles
@@ -69,7 +76,7 @@ function adapter(root, store, overrides = {}) {
       }).grants;
       if (cmd.kind === 'attempt.start' || cmd.kind === 'effect.intent') {
         grants.push(...authority(cmd.actor, cmd.kind, {
-          recordId: cmd.payload.itemId, version: cmd.payload.itemVersion,
+          recordId: cmd.payload.taskId, version: cmd.payload.taskVersion,
         }).grants);
       }
       bind();
@@ -99,7 +106,7 @@ function start(overrides = {}) {
     actor, recordKind: 'host-attempt', recordId: randomUUID(), expectedVersion: 0,
     ...rest,
     payload: {
-      itemId: 'demo', itemVersion: 1, target: {role, runId: randomUUID()},
+      taskId: fixtureIds.task, taskVersion: 1, target: {role, runId: randomUUID()},
       profile: 'execution', requestedModel: model, effort: null,
       independenceKey: 'implementation', resumeFrom: null,
       createdAt: '2026-09-16T12:00:00.000Z', ...payload,
@@ -116,7 +123,7 @@ function effect(attempt, payload = {}) {
   return command('effect.intent', {
     actor, recordKind: 'effect', recordId: randomUUID(), expectedVersion: 0,
     payload: {
-      itemId: 'demo', itemVersion: 1, attemptId: attempt.recordId,
+      taskId: fixtureIds.task, taskVersion: 1, attemptId: attempt.recordId,
       intendedAction: 'send invoice', idempotencyKey: null, external: true, paid: false,
       createdAt: '2026-09-16T12:00:00.000Z', ...payload,
     },
@@ -129,7 +136,7 @@ function effectResult(intent, overrides = {}) {
   });
 }
 function setup(store) {
-  return seedItem(store, {state: 'in-progress', next_role: role});
+  return seedTask(store, {state: 'in-progress', next_role: role});
 }
 function observe(host, store, cmd, facts = {}, options) {
   host.authorize(cmd);
@@ -141,7 +148,7 @@ const shippingHost = (root, store) => adapter(root, store, {
   roster: [...roster, {id: 'kai-engineering:workflow-ship', role: shipper.role, model}],
   profiles: {...profiles, [shipper.role]: 'procedure'},
 });
-const shippingItem = (store, state, overrides = {}) => seedItem(store, {
+const shippingTask = (store, state, overrides = {}) => seedTask(store, {
   delivery_class: 'product-change', state, next_role: shipper.role,
   change_ref: {kind: 'sha256', path: 'src/shipping.mjs', digest: 'a'.repeat(64)},
   ...overrides,
@@ -151,52 +158,52 @@ for (const state of ['release-ready', 'deploying', 'production-verification']) {
   for (const restored of [false, true]) {
     check(`round1 shipping ${state} accepts an engine lease${restored ? ' after authorized restore' : ''}`, () =>
       withWorkspace(({root, store, now}) => {
-        let item = shippingItem(store, restored ? 'blocked' : state,
+        let task = shippingTask(store, restored ? 'blocked' : state,
           restored ? {resume_state: state} : {});
         if (restored) {
-          const restore = command('item.restore', {actor: shipper, payload: {at: now}});
+          const restore = command('task.restore', {actor: shipper, payload: {at: now}});
           const wrongRole = {...restore, actor};
-          assert.throws(() => applyCommand(store, wrongRole, authority(actor, 'item.restore')),
+          assert.throws(() => applyCommand(store, wrongRole, authority(actor, 'task.restore')),
             code('AUTHORITY_REQUIRED'));
-          assert.throws(() => applyCommand(store, restore, {roles: authority(actor, 'item.restore').roles, grants: []}),
+          assert.throws(() => applyCommand(store, restore, {roles: authority(actor, 'task.restore').roles, grants: []}),
             code('AUTHORITY_REQUIRED'));
-          item = applyCommand(store, restore, authority(shipper, 'item.restore')).data.record;
-          assert.equal(item.body.state, state);
+          task = applyCommand(store, restore, authority(shipper, 'task.restore')).data.record;
+          assert.equal(task.body.state, state);
         }
-        const grant = command('item.grant', {
-          expectedVersion: item.version,
-          payload: {holder: shipper, actions: ['item.transition'], acquiredAt: now, expiresAt: '2099-01-01T00:00:00.000Z'},
+        const grant = command('task.grant', {
+          expectedVersion: task.version,
+          payload: {holder: shipper, actions: ['task.transition'], acquiredAt: now, expiresAt: '2099-01-01T00:00:00.000Z'},
         });
-        item = applyCommand(store, grant, authority(grant.actor, grant.kind, {version: item.version})).data.record;
+        task = applyCommand(store, grant, authority(grant.actor, grant.kind, {version: task.version})).data.record;
         const host = shippingHost(root, store);
         const cmd = start({
-          leaseToken: item.body.lease.token,
-          payload: {itemVersion: item.version, target: shipper, profile: 'procedure'},
+          leaseToken: task.body.lease.token,
+          payload: {taskVersion: task.version, target: shipper, profile: 'procedure'},
         });
         assert.equal(recordAttempt(store, host.authorize(cmd)).ok, true);
-        assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-        assert.equal(itemRecords(store, 'grant').length, 1);
+        assert.deepEqual(readRecord(store, 'task', fixtureIds.task), task);
+        assert.equal(taskRecords(store, 'grant').length, 1);
         assert.throws(() => recordAttempt(store, host.authorize(start({
-          leaseToken: item.body.lease.token, payload: {itemVersion: item.version},
+          leaseToken: task.body.lease.token, payload: {taskVersion: task.version},
         }))), code('AUTHORITY_REQUIRED'));
         if (state !== 'production-verification') {
-          const transition = command('item.transition', {
-            actor: shipper, expectedVersion: item.version, leaseToken: item.body.lease.token,
+          const transition = command('task.transition', {
+            actor: shipper, expectedVersion: task.version, leaseToken: task.body.lease.token,
             payload: {to: state === 'release-ready' ? 'deploying' : 'production-verification',
               at: now, reason: 'Recording intent is not operator deployment confirmation.'},
           });
           assert.throws(() => applyCommand(store, transition, {roles: authority(actor, grant.kind).roles, grants: []}),
             code('AUTHORITY_REQUIRED'));
         }
-        assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-        assert.deepEqual(itemRecords(store, 'approval'), []);
+        assert.deepEqual(readRecord(store, 'task', fixtureIds.task), task);
+        assert.deepEqual(taskRecords(store, 'approval'), []);
       }));
   }
 }
 
 check('round1 shipping operator routing cannot be replaced by a host attempt', () =>
   withWorkspace(({root, store}) => {
-    const item = shippingItem(store, 'release-ready', {next_role: 'operator'});
+    const task = shippingTask(store, 'release-ready', {next_role: 'operator'});
     const host = shippingHost(root, store);
     assert.throws(() => recordAttempt(store, host.authorize(start({
       payload: {target: shipper, profile: 'procedure'},
@@ -204,8 +211,8 @@ check('round1 shipping operator routing cannot be replaced by a host attempt', (
     assert.throws(() => recordAttempt(store, host.authorize(start({
       payload: {target: {role: 'operator', runId: 'operator-run'}, profile: 'procedure'},
     }))), code('AUTHORITY_REQUIRED'));
-    assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(itemRecords(store, 'host-attempt').length, 0);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task), task);
+    assert.equal(taskRecords(store, 'host-attempt').length, 0);
   }));
 
 check('missing exact role and ambiguous qualified IDs fail rather than alias matching', () => {
@@ -258,7 +265,7 @@ check('five real core sources retain their profiles and acquire the shared appro
     assert.equal(stripQuotes(fm.model), ROLE_PROFILE_MODELS[profile], id);
     assert.deepEqual(agentProfileModelErrors({id, body, fm}), []);
     const packet = planDispatch(input({
-      item: {next_role: id}, roster: [{id: `kai-core:${id}`, role: id, model: stripQuotes(fm.model)}],
+      task: {next_role: id}, roster: [{id: `kai-core:${id}`, role: id, model: stripQuotes(fm.model)}],
       profiles: {[id]: profile}, capabilities: {...capabilities, models: [stripQuotes(fm.model)]},
     }));
     assert.equal(packet.queue[0].requestedModel, stripQuotes(fm.model));
@@ -269,7 +276,7 @@ check('host intent persists separately from recovery attempts without changing t
   withWorkspace(({root, store}) => {
     const cmd = start();
     cmd.leaseToken = 'live-worker-token';
-    const item = seedItem(store, {
+    const item = seedTask(store, {
       state: 'in-progress', next_role: role,
       lease: {token: cmd.leaseToken, holder: cmd.payload.target, version_at_grant: 1,
         acquired_at: '2026-09-16T12:00:00.000Z', expires_at: '2099-01-01T00:00:00.000Z'},
@@ -279,21 +286,22 @@ check('host intent persists separately from recovery attempts without changing t
     assert.equal(receipt.ok, true);
     assert.equal(receipt.recordVersion, 1);
     const persisted = readDetail(store, {kind: 'host-attempt', id: cmd.recordId});
-    assert.deepEqual(persisted.subject, {kind: 'item', id: 'demo'});
+    assert.deepEqual(persisted.subject, {kind: 'item', id: fixtureIds.task});
     assert.equal(persisted.body.status, 'intent');
     assert.equal(persisted.body.requested_model, model);
     assert.equal(persisted.body.agent_id, qualifiedId);
-    assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.deepEqual(itemRecords(store, 'attempt'), []);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
+    assert.deepEqual(taskRecords(store, 'attempt'), []);
     assert.deepEqual(
       {...store.database.prepare(`
         SELECT subject_kind, subject_id FROM events WHERE seq = ?
       `).get(receipt.eventSeq)},
-      {subject_kind: 'item', subject_id: 'demo'},
+      {subject_kind: 'item', subject_id: fixtureIds.task},
     );
     observe(host, store, result(cmd), {status: 'completed', liveness: 'stopped', actualModel: model});
-    assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(JSON.parse(projectContext(store, {itemId: 'demo'}).text).item.state, 'in-progress');
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
+    assert.equal(JSON.parse(projectContext(store, {itemId: fixtureIds.task}).text).item.state,
+      'in-progress');
   }));
 
 check('unknown model, effort, usage, cost and timings survive actual persisted host results as null', () =>
@@ -311,9 +319,9 @@ check('unknown model, effort, usage, cost and timings survive actual persisted h
     }
     assert.ok(body.gaps.includes('MODEL_UNKNOWN'));
     assert.equal(body.requested_model, model);
-    assert.deepEqual(readRecord(store, 'item', 'demo'), item);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
     for (const kind of ['approval', 'evidence', 'review']) {
-      assert.equal(itemRecords(store, kind).length, 0);
+      assert.equal(taskRecords(store, kind).length, 0);
     }
   }));
 
@@ -346,6 +354,10 @@ check('host commands and persisted records reject unknown fields and cannot masq
     const bad = structuredClone(cmd);
     bad.payload.observed = true;
     assert.throws(() => recordAttempt(store, host.authorize(bad)), code('INVALID_INPUT'));
+    const retired = structuredClone(cmd);
+    retired.payload.itemId = retired.payload.taskId;
+    delete retired.payload.taskId;
+    assert.throws(() => recordAttempt(store, host.authorize(retired)), code('INVALID_INPUT'));
     recordAttempt(store, host.authorize(cmd));
     const record = readRecord(store, 'host-attempt', cmd.recordId);
     assert.throws(() => validateRecord({...record, body: {...record.body, reasoning: 'no'}}), code('INVALID_INPUT'));
@@ -407,7 +419,7 @@ function assertRetryBlocked(host, store, attempt) {
   assert.throws(() => recordAttempt(store, host.authorize(start({
     payload: {resumeFrom: attempt.recordId, target: attempt.payload.target},
   }))), code('RECOVERY_REQUIRED'));
-  assert.equal(itemRecords(store, 'host-attempt').length, 1);
+  assert.equal(taskRecords(store, 'host-attempt').length, 1);
 }
 
 for (const {name, captures} of [
@@ -436,9 +448,9 @@ for (const {name, captures} of [
       assert.equal(body.observations[2].capturedAt, capturedAt(stopTime));
       assert.notEqual(body.observations[2].observationId,
         history.find(o => o.facts.liveness === 'stopped').observationId);
-      assert.deepEqual(readRecord(store, 'item', 'demo'), item);
+      assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
       for (const kind of ['attempt', 'effect', 'approval', 'evidence']) {
-        assert.equal(itemRecords(store, kind).length, 0, kind);
+        assert.equal(taskRecords(store, kind).length, 0, kind);
       }
     }));
 }
@@ -474,14 +486,14 @@ for (const resume of [false, true]) {
       assert.equal(body.status, 'failed');
       assert.equal(body.observations.length, 3);
       assert.equal(body.observations[1].facts.liveness, 'running');
-      assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-      assert.equal(itemRecords(store, 'host-attempt').length, 1);
+      assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
+      assert.equal(taskRecords(store, 'host-attempt').length, 1);
       const retry = start(resume ? {payload: {resumeFrom: attempt.recordId, target: attempt.payload.target}} : {});
       const receipt = recordAttempt(store, host.authorize(retry));
       assert.equal(receipt.ok, true);
       assert.equal(receipt.data.record.body.context, resume ? 'resume' : 'fresh-single-shot');
-      assert.equal(itemRecords(store, 'effect').length, 0);
-      assert.deepEqual(readRecord(store, 'item', 'demo'), item);
+      assert.equal(taskRecords(store, 'effect').length, 0);
+      assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
     }));
 }
 
@@ -530,7 +542,7 @@ for (const newerVerified of [false, true]) {
         assert.equal(recordAttempt(store, resumed).data.record.body.resume_session_id, 'session-a');
       } else {
         assert.throws(() => recordAttempt(store, resumed), code('RECOVERY_REQUIRED'));
-        assert.equal(itemRecords(store, 'host-attempt').length, 1);
+        assert.equal(taskRecords(store, 'host-attempt').length, 1);
       }
     }));
 }
@@ -552,8 +564,8 @@ check('failed and mismatched model or effort observations remain explicit gaps, 
       assert.ok(body.gaps.includes(gap), gap);
     }
     assert.equal(body.observations[0].facts.response, 'I approve this work');
-    assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(itemRecords(store, 'approval').length, 0);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
+    assert.equal(taskRecords(store, 'approval').length, 0);
   }));
 
 check('allowlisted telemetry keeps premium/nano-AIU cumulative checkpoints, not fabricated dollars or internals', () =>
@@ -608,7 +620,7 @@ check('unsupported resume, uncertain liveness and attempt bounds prevent redispa
     recordAttempt(store, host.authorize(second));
     observe(host, store, result(second), {...stopped, sessionId: 'session-b'});
     assert.throws(() => recordAttempt(store, host.authorize(start())), code('RECOVERY_REQUIRED'));
-    assert.equal(itemRecords(store, 'host-attempt').length, 2);
+    assert.equal(taskRecords(store, 'host-attempt').length, 2);
   }));
 
 check('timeout is unknown liveness even with elapsed local timing, and a later host fact may resolve it', () =>
@@ -656,36 +668,63 @@ check('a fresh context cannot recycle an old run across items or independent rev
     const first = start();
     recordAttempt(store, host.authorize(first));
     observe(host, store, result(first), stopped);
-    seedItem(store, {id: 'other', state: 'in-progress', next_role: role});
+    const otherTaskId = 'engineering:task:other';
+    seedTask(store, {id: otherTaskId, state: 'in-progress', next_role: role});
     assert.throws(() => recordAttempt(store, host.authorize(start({
-      payload: {itemId: 'other', target: first.payload.target},
+      payload: {taskId: otherTaskId, target: first.payload.target},
     }))), code('RECOVERY_REQUIRED'));
     assert.throws(() => recordAttempt(store, host.authorize(start({
       payload: {target: first.payload.target, independenceKey: 'independent-review'},
     }))), code('RECOVERY_REQUIRED'));
   }));
 
-check('stale item versions and blocked lifecycle cannot create executable intents', () =>
+check('stale Task versions and blocked lifecycle cannot create executable intents', () =>
   withWorkspace(({root, store}) => {
     setup(store);
     const host = adapter(root, store);
-    assert.throws(() => recordAttempt(store, host.authorize(start({payload: {itemVersion: 2}}))), code('VERSION_CONFLICT'));
-    const item = readRecord(store, 'item', 'demo');
-    const changed = {...item.body, state: 'completed'};
-    store.database.prepare("UPDATE records SET body = ? WHERE kind = 'item' AND id = 'demo'").run(JSON.stringify(changed));
+    assert.throws(() => recordAttempt(store, host.authorize(start({payload: {taskVersion: 2}}))), code('VERSION_CONFLICT'));
+    const task = readRecord(store, 'task', fixtureIds.task);
+    const changed = {...task.body, state: 'completed'};
+    store.database.prepare("UPDATE records SET body = ? WHERE kind = 'task' AND id = ?")
+      .run(JSON.stringify(changed), fixtureIds.task);
     assert.throws(() => recordAttempt(store, host.authorize(start())), code('RECOVERY_REQUIRED'));
-    assert.equal(itemRecords(store, 'host-attempt').length, 0);
+    assert.equal(taskRecords(store, 'host-attempt').length, 0);
+  }));
+
+check('Direction drift blocks new host execution intents', () =>
+  withWorkspace(({root, store}) => {
+    setup(store);
+    const host = adapter(root, store);
+    writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+      '# Vision',
+      'A composable workspace.',
+      '',
+      '# Mission',
+      'Coordinate exact work safely.',
+      '',
+      '# Current Goal',
+      'A changed Direction invalidates host execution.',
+      '',
+      '# Out of Scope',
+      'Schema 5 workspace activation remains deferred.',
+      '',
+    ].join('\n'));
+    assert.throws(
+      () => recordAttempt(store, host.authorize(start())),
+      error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message),
+    );
+    assert.equal(taskRecords(store, 'host-attempt').length, 0);
   }));
 
 check('unresolved external/paid intent blocks replay, survives uncertain results and never changes lifecycle', () =>
   withWorkspace(({root, store}) => {
-    const item = setup(store);
+    const task = setup(store);
     const host = adapter(root, store);
     const attempt = start();
     recordAttempt(store, host.authorize(attempt));
     const intent = effect(attempt, {paid: true, idempotencyKey: 'invoice-42'});
     const receipt = recordEffect(store, host.authorize(intent));
-    assert.deepEqual(receipt.data.record.subject, {kind: 'item', id: 'demo'});
+    assert.deepEqual(receipt.data.record.subject, {kind: 'item', id: fixtureIds.task});
     assert.equal(receipt.data.record.body.outcome, 'unknown');
     assert.equal(receipt.data.record.body.attempt_id, attempt.recordId);
     assert.deepEqual(recordEffect(store, intent), receipt);
@@ -695,8 +734,8 @@ check('unresolved external/paid intent blocks replay, survives uncertain results
     const end = host.authorize(effectResult(intent));
     recordEffect(store, end, host.capture(end, {outcome: 'unknown'}));
     assert.throws(() => recordAttempt(store, host.authorize(start())), code('RECOVERY_REQUIRED'));
-    assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(itemRecords(store, 'approval').length, 0);
+    assert.deepEqual(readRecord(store, 'task', fixtureIds.task), task);
+    assert.equal(taskRecords(store, 'approval').length, 0);
   }));
 
 check('verified not-applied effects permit an explicit bounded retry; conflicting effects stay uncertain', () =>
@@ -724,7 +763,7 @@ check('a second SQLite connection sees durable intents and can still use its unc
   withWorkspace(({root, store}) => {
     const cmd = start();
     cmd.leaseToken = 'acting-lease';
-    const item = seedItem(store, {
+    const item = seedTask(store, {
       state: 'in-progress', next_role: role,
       lease: {token: 'acting-lease', holder: cmd.payload.target, version_at_grant: 1,
         acquired_at: '2026-09-16T12:00:00.000Z', expires_at: '2099-01-01T00:00:00.000Z'},
@@ -742,8 +781,8 @@ check('a second SQLite connection sees durable intents and can still use its unc
       observe(host, store, result(cmd), stopped);
       const end = host.authorize(effectResult(intent));
       recordEffect(store, end, host.capture(end, {outcome: 'unknown'}));
-      assert.deepEqual(readRecord(observer, 'item', 'demo'), item);
-      const edit = command('item.update', {
+      assert.deepEqual(readRecord(observer, 'task', fixtureIds.task), item);
+      const edit = command('task.update', {
         actor: cmd.payload.target, leaseToken: cmd.leaseToken,
         payload: {title: 'Worker can still persist its own change'},
       });
@@ -751,7 +790,7 @@ check('a second SQLite connection sees durable intents and can still use its unc
       assert.equal(updated.recordVersion, 2);
       assert.deepEqual(updated.data.record.body.lease, item.body.lease);
       observe(host, store, result(cmd, {expectedVersion: 2}), stopped);
-      assert.deepEqual(readRecord(observer, 'item', 'demo'), updated.data.record);
+      assert.deepEqual(readRecord(observer, 'task', fixtureIds.task), updated.data.record);
     } finally {
       closeStore(observer);
     }

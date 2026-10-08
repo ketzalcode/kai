@@ -9,25 +9,40 @@
 // install step.
 
 // Canonical lifecycle states.
-export const LIFECYCLE = new Set([
+export const TASK_LIFECYCLE = new Set([
   'proposed', 'ready', 'in-progress', 'in-review', 'blocked', 'completed',
   'release-ready', 'deploying', 'production-verification', 'shipped', 'dropped',
 ]);
 
 // States at or past in-review require a change_ref bound to the implementation.
-export const NEEDS_CHANGE_REF = new Set([
+export const TASK_NEEDS_CHANGE_REF = new Set([
   'in-review', 'release-ready', 'deploying', 'production-verification', 'shipped',
 ]);
 
-// Valid typed-dependency "requires" gates (see kai-core-work-item).
-export const REQUIRES_STATES = new Set(['in-review', 'completed', 'release-ready', 'shipped']);
+export const TASK_DEPENDENCY_STATES = new Set([
+  'in-review',
+  'completed',
+  'release-ready',
+  'shipped',
+]);
 
 // States that are finished: no further role action is expected.
-export const TERMINAL = new Set(['shipped', 'completed', 'dropped']);
+export const TASK_TERMINAL_STATES = new Set(['shipped', 'completed', 'dropped']);
 
 // Deployment is a human act (see kai-core-operating-rules), so these states are
 // waiting on the operator by definition, not on any kai role.
-export const OPERATOR_GATED = new Set(['release-ready', 'deploying', 'production-verification']);
+export const TASK_OPERATOR_GATED_STATES = new Set([
+  'release-ready',
+  'deploying',
+  'production-verification',
+]);
+
+// Historical schema-3 Markdown inspection and migration aliases.
+export const LIFECYCLE = TASK_LIFECYCLE;
+export const NEEDS_CHANGE_REF = TASK_NEEDS_CHANGE_REF;
+export const REQUIRES_STATES = TASK_DEPENDENCY_STATES;
+export const TERMINAL = TASK_TERMINAL_STATES;
+export const OPERATOR_GATED = TASK_OPERATOR_GATED_STATES;
 
 export function frontmatter(raw) {
   const lines = raw.split(/\r?\n/);
@@ -66,7 +81,7 @@ export const unquote = (s) => {
     ? t.slice(1, -1) : t;
 };
 
-// Extract typed dependencies ({item, requires}) under a top-level `depends_on:`.
+// Historical schema-3 parser for legacy `{item, requires}` Markdown.
 export function dependsOn(fmLines) {
   const out = [];
   let inBlock = false;

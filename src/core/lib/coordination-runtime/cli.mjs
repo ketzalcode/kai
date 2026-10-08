@@ -49,7 +49,7 @@ export async function execute({verb, options, body, host, cwd, env}) {
     if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use explicit authorized init');
     const store = openStore({path, mode: 'read'});
     try {
-      if (verb === 'status') return {...base, items: listAllRecords(store, {kind: 'item'})};
+      if (verb === 'status') return {...base, tasks: listAllRecords(store, {kind: 'task'})};
       if (verb === 'context') return {...base, context: projectContext(store, {
         itemId: required(options, 'item'), maxBytes: options['max-bytes'], recentLimit: options['recent-limit'],
       })};
@@ -90,7 +90,7 @@ export async function execute({verb, options, body, host, cwd, env}) {
   try {
     if (verb === 'delegate') return {...base, ...await host.delegate({root, store, body, options})};
     if (verb === 'claim') return {...base, ...await host.claim({root, store, options})};
-    if (verb === 'plan') return {...base, ...await host.plan({root, store, itemId: required(options, 'item')})};
+    if (verb === 'plan') return {...base, ...await host.plan({root, store, taskId: required(options, 'task')})};
     return await host.apply({root, store, command: body, options});
   } finally { closeStore(store); }
 }

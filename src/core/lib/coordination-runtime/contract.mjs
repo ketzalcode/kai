@@ -13,7 +13,6 @@ import {
   invalid,
   isPlainObject,
   validateActor,
-  validateChangesPayload,
   validateNullableActor,
   validateNullableSubject,
   validateSubjectRef,
@@ -31,8 +30,6 @@ import {
 import {
   TASK_COMMAND_KINDS,
   validateLegacyItemBody,
-  validateLegacyItemCommand,
-  validateLegacyItemCommandMutation,
   validateTaskCommand,
   validateTaskCommandMutation,
 } from './task-contract.mjs';
@@ -65,8 +62,6 @@ export {
 export {
   TASK_COMMAND_KINDS,
   validateLegacyItemBody,
-  validateLegacyItemCommand,
-  validateLegacyItemCommandMutation,
   validateTaskBody,
   validateTaskCommand,
   validateTaskCommandMutation,
@@ -108,15 +103,6 @@ const HOST_COMMANDS = new Set(['attempt.start', 'attempt.result', 'effect.intent
 
 export const COMMAND_KINDS = new Set([
   ...PARENT_COMMAND_KINDS,
-  'initiative.create',
-  'initiative.update',
-  'item.create',
-  'item.update',
-  'item.promote',
-  'item.grant',
-  'item.transition',
-  'item.handoff',
-  'item.restore',
   ...TASK_COMMAND_KINDS,
   'question.open',
   'question.answer',
@@ -181,14 +167,14 @@ const RECOVERY_DISPOSITIONS = new Set([
   'conflicting-partial-work',
 ]);
 
-export function criteriaRef(item) {
+export function criteriaRef(task) {
   const fields = [
     'outcome', 'acceptance', 'completion_authority', 'review_requirements',
     'artifact_expectation', 'artifact_expectation_reason', 'artifact_class',
     'durability', 'validity_owner', 'artifact_targets',
   ];
-  const criteria = Object.fromEntries(fields.map(key => [key, item[key]]));
-  if (item.context_artifacts?.length) criteria.context_artifacts = item.context_artifacts;
+  const criteria = Object.fromEntries(fields.map(key => [key, task[key]]));
+  if (task.context_artifacts?.length) criteria.context_artifacts = task.context_artifacts;
   return createHash('sha256').update(canonicalJson(criteria)).digest('hex');
 }
 
@@ -196,8 +182,8 @@ export function subjectEquals(left, right) {
   return left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 }
 
-export function isProducingRun(item, actor) {
-  return item.producing_actors.some(producer => producer.runId === actor.runId);
+export function isProducingRun(task, actor) {
+  return task.producing_actors.some(producer => producer.runId === actor.runId);
 }
 
 function validateStringMap(value, label) {
@@ -761,7 +747,7 @@ function validateAssetBody(body, label) {
 }
 
 function validateProducerCommand(command) {
-  if (command.recordKind !== 'item' || command.expectedVersion < 1) invalid(`${command.kind} requires an existing item`);
+  if (command.recordKind !== 'task' || command.expectedVersion < 1) invalid(`${command.kind} requires an existing Task`);
   if (command.kind === 'artifact.register') {
     const required = new Set([
       'artifactId', 'assetId', 'subject', 'projectId', 'classification', 'mediaType', 'title', 'inputAssetIds', 'at',
@@ -794,7 +780,9 @@ function validateProducerCommand(command) {
     assertExactKeys(command.payload, new Set(command.kind === 'evidence.register' ? ['body', 'tier'] : ['body']), `${command.kind} payload`);
     const kind = command.kind.split('.')[0];
     recordBodyValidators.get(kind)(command.payload.body, `${command.kind} body`);
-    if (command.payload.body.item_id !== command.recordId) invalid(`${command.kind} must bind the primary item`);
+    if (command.payload.body.item_id !== command.recordId) {
+      invalid(`${command.kind} must bind the primary Task`);
+    }
     if (Object.hasOwn(command.payload.body, 'provenance')) invalid('provenance is host-derived, not command input');
     if (Object.hasOwn(command.payload.body, 'recorded_at_item_version')) invalid('recorded item version is runtime-derived');
     if (kind === 'evidence' && !new Set(['observed', 'declared']).has(command.payload.tier)) invalid('evidence.register tier is unsupported');
@@ -817,33 +805,8 @@ const recordBodyValidators = new Map([
   ['effect', (body, label) => validateHostRecord(body, label, true)],
 ]);
 
-function validateCreate(command, expectedKind, bodyValidator) {
-  if (command.recordKind !== expectedKind) {
-    invalid(`${command.kind} requires recordKind "${expectedKind}"`);
-  }
-  if (command.expectedVersion !== 0) invalid(`${command.kind} requires version 0`);
-  if (command.leaseToken !== null) invalid(`${command.kind} cannot carry a lease token`);
-  assertExactKeys(command.payload, new Set(['body']), `${command.kind} payload`);
-  bodyValidator(command.payload.body, `${command.kind} payload.body`);
-  if (command.payload.body.id !== command.recordId) {
-    invalid(`${command.kind} body id must match command.recordId`);
-  }
-}
-
-function validateInitiativeUpdate(command) {
-  if (command.recordKind !== 'initiative') {
-    invalid('initiative.update requires recordKind "initiative"');
-  }
-  if (command.expectedVersion < 1) {
-    invalid('initiative.update requires an existing record version');
-  }
-  validateChangesPayload(command, new Set([
-    'title', 'status', 'scope', 'milestones', 'backlog', 'north_star_ref', 'updated_at',
-  ]), 'initiative.update');
-}
-
 function validateAtPayload(command, kind, keys) {
-  if (command.recordKind !== 'item') invalid(`${kind} requires recordKind "item"`);
+  if (command.recordKind !== 'task') invalid(`${kind} requires recordKind "task"`);
   if (command.expectedVersion < 1) invalid(`${kind} requires an existing record version`);
   assertExactKeys(command.payload, new Set(keys), `${kind} payload`);
 }
@@ -851,11 +814,11 @@ function validateAtPayload(command, kind, keys) {
 function validateHandoffContent(content) {
   assertExactKeys(content, new Set([
     'did', 'needs', 'assetState', 'authority', 'revalidation', 'questions',
-  ]), 'item.handoff payload.content');
+  ]), 'task.handoff payload.content');
   for (const key of ['did', 'needs', 'assetState', 'authority', 'revalidation']) {
-    assertNonEmptyString(content[key], `item.handoff payload.content.${key}`);
+    assertNonEmptyString(content[key], `task.handoff payload.content.${key}`);
   }
-  assertStringArray(content.questions, 'item.handoff payload.content.questions');
+  assertStringArray(content.questions, 'task.handoff payload.content.questions');
 }
 
 function validateMessagePayload(command, kind, contentValidator) {
@@ -965,16 +928,6 @@ const commandValidators = new Map([
   ...[...TASK_COMMAND_KINDS].map(kind => [kind, validateTaskCommand]),
   ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
     .map(kind => [kind, validateProducerCommand]),
-  ['initiative.create', command =>
-    validateCreate(command, 'initiative', validateInitiativeBody)],
-  ['initiative.update', validateInitiativeUpdate],
-  ['item.create', validateLegacyItemCommand],
-  ['item.update', validateLegacyItemCommand],
-  ['item.promote', validateLegacyItemCommand],
-  ['item.grant', validateLegacyItemCommand],
-  ['item.transition', validateLegacyItemCommand],
-  ['item.handoff', validateLegacyItemCommand],
-  ['item.restore', validateLegacyItemCommand],
   ['question.open', command =>
     validateMessagePayload(command, 'question.open', validateQuestionContent)],
   ['question.answer', command =>
@@ -1058,10 +1011,6 @@ export function validateCommandMutation(command, current, nextBody) {
     validateTaskCommandMutation(command, current, nextBody);
     return nextBody;
   }
-  if (command.kind.startsWith('item.')) {
-    validateLegacyItemCommandMutation(command, current, nextBody);
-    return nextBody;
-  }
   if (command.kind.endsWith('.create')) {
     if (current) invalid(`${command.kind} requires a missing record`);
     if (canonicalJson(nextBody) !== canonicalJson(command.payload.body)) {
@@ -1070,28 +1019,21 @@ export function validateCommandMutation(command, current, nextBody) {
     return nextBody;
   }
   if (!current) invalid(`${command.kind} requires an existing record`);
-  if (command.kind === 'initiative.update') {
-    const expected = {...current.body, ...command.payload.changes};
-    if (canonicalJson(nextBody) !== canonicalJson(expected)) {
-      invalid('initiative.update may only apply the changes in its payload');
-    }
-  } else {
-    const allowedByKind = new Map([
-      ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
-        .map(kind => [kind, new Set()]),
-      ['question.open', new Set([
-        'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
-      ])],
-      ['question.answer', new Set([
-        'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
-      ])],
-      ['attempt.recover', new Set([
-        'state', 'resume_state', 'next_role', 'lease', 'producer_actor',
-        'producing_actors', 'recovery_hold', 'updated_at',
-      ])],
-    ]);
-    assertChangedOnly(current, nextBody, allowedByKind.get(command.kind), command.kind);
-  }
+  const allowedByKind = new Map([
+    ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
+      .map(kind => [kind, new Set()]),
+    ['question.open', new Set([
+      'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
+    ])],
+    ['question.answer', new Set([
+      'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
+    ])],
+    ['attempt.recover', new Set([
+      'state', 'resume_state', 'next_role', 'lease', 'producer_actor',
+      'producing_actors', 'recovery_hold', 'updated_at',
+    ])],
+  ]);
+  assertChangedOnly(current, nextBody, allowedByKind.get(command.kind), command.kind);
   return nextBody;
 }
 

@@ -57,12 +57,12 @@ export function validateHostCommand(command) {
     return;
   }
   if (command.expectedVersion !== 0) invalid('host intent creation expects version 0');
-  const common = ['itemId', 'itemVersion', 'createdAt'];
+  const common = ['taskId', 'taskVersion', 'createdAt'];
   exact(p, [...common, ...(attempt
     ? ['target', 'profile', 'requestedModel', 'effort', 'independenceKey', 'resumeFrom']
     : ['attemptId', 'intendedAction', 'idempotencyKey', 'external', 'paid'])], 'intent payload');
-  text(p.itemId, 'itemId');
-  positive(p.itemVersion, 'itemVersion');
+  text(p.taskId, 'taskId');
+  positive(p.taskVersion, 'taskVersion');
   assertTimestamp(p.createdAt, 'createdAt');
   if (attempt) {
     validateActor(p.target);
@@ -287,7 +287,8 @@ export function validateHostMutation(command, current, nextBody) {
   const result = command.kind.endsWith('.result');
   if (!result) {
     if (current) invalid('host intent requires a missing record');
-    if (nextBody.item_id !== command.payload.itemId || nextBody.item_version !== command.payload.itemVersion
+    if (nextBody.item_id !== command.payload.taskId
+      || nextBody.item_version !== command.payload.taskVersion
       || canonicalJson(nextBody.actor) !== canonicalJson(command.actor)
       || nextBody.created_at !== command.payload.createdAt || nextBody.observations.length !== 0) {
       invalid('host intent must preserve the command identity');
