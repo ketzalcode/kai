@@ -230,14 +230,16 @@ export function effectSummary(body) {
 }
 
 export function validateHostRecord(body, label, effect = false) {
-  const common = ['schema_version', 'item_id', 'item_version', 'actor', 'created_at', 'observations', 'gaps'];
+  const common = ['schema_version', 'subject', 'subject_version', 'actor', 'created_at', 'observations', 'gaps'];
   exact(body, [...common, ...(effect
     ? ['effect_id', 'attempt_id', 'intended_action', 'idempotency_key', 'external', 'paid', 'outcome']
     : ['attempt_id', 'target', 'agent_id', 'profile', 'requested_model', 'requested_effort',
       'independence_key', 'context', 'resume_from', 'resume_session_id', 'capabilities', 'settings', 'status'])], label);
   if (body.schema_version !== 1) invalid('host record schema_version must be 1');
-  text(body.item_id, 'item_id');
-  positive(body.item_version, 'item_version');
+  exact(body.subject, ['kind', 'id'], 'subject');
+  if (body.subject.kind !== 'task') invalid('host record subject must be a Task');
+  text(body.subject.id, 'subject.id');
+  positive(body.subject_version, 'subject_version');
   validateActor(body.actor);
   assertTimestamp(body.created_at, 'created_at');
   uuid(body.attempt_id, 'attempt_id');
@@ -287,8 +289,9 @@ export function validateHostMutation(command, current, nextBody) {
   const result = command.kind.endsWith('.result');
   if (!result) {
     if (current) invalid('host intent requires a missing record');
-    if (nextBody.item_id !== command.payload.taskId
-      || nextBody.item_version !== command.payload.taskVersion
+    if (nextBody.subject?.kind !== 'task'
+      || nextBody.subject.id !== command.payload.taskId
+      || nextBody.subject_version !== command.payload.taskVersion
       || canonicalJson(nextBody.actor) !== canonicalJson(command.actor)
       || nextBody.created_at !== command.payload.createdAt || nextBody.observations.length !== 0) {
       invalid('host intent must preserve the command identity');

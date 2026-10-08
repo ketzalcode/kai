@@ -2,6 +2,8 @@ import {randomUUID} from 'node:crypto';
 import {
   RuntimeError,
   criteriaRef,
+  subjectEquals,
+  subjectRef,
 } from './contract.mjs';
 import {
   completionApproval,
@@ -346,14 +348,18 @@ function putMessage(tx, task, command, {
   if (tx.get('message', messageId)) {
     fail('OPERATION_CONFLICT', `message/${messageId} already exists`);
   }
-  if (parentId !== null && !tx.get('message', parentId)) {
-    fail('INVALID_INPUT', `parent message/${parentId} does not exist`);
+  if (parentId !== null) {
+    const parent = tx.get('message', parentId);
+    if (!parent) fail('INVALID_INPUT', `parent message/${parentId} does not exist`);
+    if (!subjectEquals(parent.subject, {kind: task.kind, id: task.id})) {
+      fail('INVALID_INPUT', `parent message/${parentId} belongs to another hierarchy subject`);
+    }
   }
   const body = {
     schema_version: 1,
     message_id: messageId,
-    thread_id: task.id,
-    item_id: task.id,
+    subject: {kind: task.kind, id: task.id},
+    thread_id: subjectRef({kind: task.kind, id: task.id}, task.version),
     parent_id: parentId,
     sender_role: command.actor.role,
     sender_run: command.actor.runId,
@@ -369,7 +375,7 @@ function putMessage(tx, task, command, {
   tx.put({
     kind: 'message',
     id: messageId,
-    subject: {kind: 'item', id: task.id},
+    subject: body.subject,
     version: 1,
     body,
   });
@@ -402,7 +408,8 @@ function handleTaskUpdate(current, tx, command, authority, runtime) {
   const acceptedState = current.body.state === 'blocked'
     ? current.body.resume_state : current.body.state;
   if ((TASK_TERMINAL_STATES.has(acceptedState) || SHIP_STATES.has(acceptedState))
-    && criteriaRef(next) !== criteriaRef(current.body)) {
+    && criteriaRef({...current, body: next}, (kind, id) => tx.get(kind, id))
+      !== criteriaRef(current, (kind, id) => tx.get(kind, id))) {
     fail('INVALID_INPUT', 'accepted criteria are frozen; record changed requirements as new work');
   }
   if (current.body.recovery_hold !== null && Object.hasOwn(changes, 'next_role')) {
@@ -437,17 +444,17 @@ function createPersistedGrant(tx, task, command, holder, actions, acquiredAt, ex
   tx.put({
     kind: 'grant',
     id: grantId,
-    subject: {kind: 'item', id: task.id},
+    subject: {kind: 'task', id: task.id},
     version: 1,
     body: {
       schema_version: 1,
       grant_id: grantId,
-      item_id: task.id,
+      subject: {kind: 'task', id: task.id},
       actor: holder,
       actions,
       record_kind: 'task',
       record_id: task.id,
-      basis_ref: `task/${task.id}@${task.version}`,
+      basis_ref: subjectRef({kind: 'task', id: task.id}, task.version),
       lease_token: token,
       issued_by: command.actor,
       created_at: acquiredAt,
@@ -460,7 +467,7 @@ function createPersistedGrant(tx, task, command, holder, actions, acquiredAt, ex
 
 function retireLeaseGrants(tx, task, status) {
   if (task.body.lease === null) return;
-  for (const record of tx.list('grant', {kind: 'item', id: task.id})) {
+  for (const record of tx.list('grant', {kind: 'task', id: task.id})) {
     if (record.body.lease_token === task.body.lease.token && record.body.status === 'active') {
       tx.put({...record, version: record.version + 1, body: {...record.body, status}});
     }
@@ -668,9 +675,14 @@ function handleTaskRestore(current, tx, command, authority, runtime) {
 }
 
 function handleQuestionOpen(current, tx, command, authority, runtime) {
-  assertCurrentAlignment(tx, current, runtime);
-  requireActingAuthority(tx, current, command, authority, 'question.open');
-  if (TASK_TERMINAL_STATES.has(current.body.state)) {
+  const task = current.kind === 'task';
+  if (task) {
+    assertCurrentAlignment(tx, current, runtime);
+    requireActingAuthority(tx, current, command, authority, 'question.open');
+  } else {
+    requireActionGrant(tx, command, authority, 'question.open');
+  }
+  if (task && TASK_TERMINAL_STATES.has(current.body.state)) {
     fail('INVALID_INPUT', 'terminal Tasks cannot open questions');
   }
   if (command.payload.kind !== 'question') {
@@ -701,12 +713,12 @@ function handleQuestionOpen(current, tx, command, authority, runtime) {
   tx.put({
     kind: 'question',
     id: command.payload.questionId,
-    subject: {kind: 'item', id: current.id},
+    subject: {kind: current.kind, id: current.id},
     version: 1,
     body: {
       schema_version: 1,
       question_id: command.payload.questionId,
-      item_id: current.id,
+      subject: {kind: current.kind, id: current.id},
       asker: command.actor,
       recipient: command.payload.recipient,
       kind: content.questionKind,
@@ -720,7 +732,7 @@ function handleQuestionOpen(current, tx, command, authority, runtime) {
       resolution: null,
     },
   });
-  if (!content.blocking) {
+  if (!task || !content.blocking) {
     return {...current.body, updated_at: command.payload.createdAt};
   }
   retireLeaseGrants(tx, current, 'revoked');
@@ -743,7 +755,8 @@ function effectiveAnswers(tx, question, answerIds) {
   const answers = answerIds
     .map(id => tx.get('message', id)?.body)
     .filter(candidate => candidate?.kind === 'answer'
-      && candidate.item_id === question.subject.id
+      && candidate.subject.kind === question.subject.kind
+      && candidate.subject.id === question.subject.id
       && candidate.sender_role === question.body.recipient
       && candidate.recipient === question.body.asker.role
       && candidate.parent_id === question.body.opened_message_id
@@ -754,12 +767,13 @@ function effectiveAnswers(tx, question, answerIds) {
 }
 
 function handleQuestionAnswer(current, tx, command, authority, runtime) {
-  assertCurrentAlignment(tx, current, runtime);
+  const task = current.kind === 'task';
+  if (task) assertCurrentAlignment(tx, current, runtime);
   if (command.payload.kind !== 'answer') {
     fail('INVALID_INPUT', 'question.answer message kind must be "answer"');
   }
   const question = tx.get('question', command.payload.questionId);
-  if (question?.subject?.kind !== 'item' || question.subject.id !== current.id) {
+  if (question?.subject?.kind !== current.kind || question.subject.id !== current.id) {
     fail('INVALID_INPUT',
       `question/${command.payload.questionId} does not belong to task/${current.id}`);
   }
@@ -824,7 +838,7 @@ function handleQuestionAnswer(current, tx, command, authority, runtime) {
     },
   });
 
-  if (TASK_TERMINAL_STATES.has(current.body.state)) {
+  if (!task || TASK_TERMINAL_STATES.has(current.body.state)) {
     return {...current.body, updated_at: command.payload.createdAt};
   }
   let waiting = current.body.waiting_on_questions;
@@ -856,7 +870,7 @@ function recoveryEvidence(tx, task, command) {
   }
   for (const id of command.payload.recoveryEvidenceIds) {
     const record = tx.get('evidence', id);
-    if (record?.subject?.kind !== 'item' || record.subject.id !== task.id
+    if (record?.subject?.kind !== 'task' || record.subject.id !== task.id
       || record.body.kind !== 'recovery-reconciliation'
       || record.body.outcome !== 'passed'
       || record.body.data.stale_lease_token !== task.body.lease.token
@@ -962,12 +976,12 @@ function handleAttemptRecover(current, tx, command, authority, runtime) {
   tx.put({
     kind: 'attempt',
     id: command.payload.attemptId,
-    subject: {kind: 'item', id: current.id},
+    subject: {kind: 'task', id: current.id},
     version: 1,
     body: {
       schema_version: 1,
       attempt_id: command.payload.attemptId,
-      item_id: current.id,
+      subject: {kind: 'task', id: current.id},
       grantor: command.actor,
       stale_lease: staleLease,
       observed: command.payload.observed,

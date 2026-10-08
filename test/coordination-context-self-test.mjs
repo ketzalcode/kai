@@ -4,12 +4,13 @@ import test from 'node:test';
 import {
   RuntimeError,
   criteriaRef,
+  subjectRef,
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
-  projectContext,
+  projectContext as projectTypedContext,
   readDetail,
-  readMessages,
+  readMessages as readTypedMessages,
 } from '../src/core/lib/coordination-runtime/context.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
 import {
@@ -19,17 +20,41 @@ import {
 } from '../src/core/lib/coordination-runtime/store.mjs';
 import {
   command,
-  seedItem,
+  fixtureIds,
   seedRecord,
+  seedTask,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
 
 const NOW = '2026-09-16T12:00:00.000Z';
 const SUBJECT = {
   kind: 'sha256',
-  path: '.kai/runs/context/subject.txt',
+  path: '.kai/engineering/features/context/evidence/subject.txt',
   digest: 'a'.repeat(64),
 };
+
+const taskSubject = id => ({
+  kind: 'task',
+  id: id === 'demo' ? fixtureIds.task
+    : id.includes(':') ? id : `engineering:task:${id.replaceAll(/[^a-z0-9-]/gi, '-').toLowerCase()}`,
+});
+const seedItem = (store, overrides = {}) =>
+  seedTask(store, {...overrides, ...(overrides.id ? {id: taskSubject(overrides.id).id} : {})});
+const projectContext = (store, options = {}) => {
+  const {itemId, ...rest} = options;
+  return projectTypedContext(store, {
+    ...rest,
+    subject: options.subject ?? taskSubject(itemId ?? 'demo'),
+  });
+};
+const readMessages = (store, options = {}) => {
+  const {threadId, ...rest} = options;
+  return readTypedMessages(store, {
+    ...rest,
+    subject: options.subject ?? taskSubject(threadId ?? 'demo'),
+  });
+};
+const lookup = store => (kind, id) => readDetail(store, {kind, id});
 
 function uuidFor(index) {
   return `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`;
@@ -57,16 +82,17 @@ function messageRecord({
   artifactRefs = [],
   evidenceRefs = [],
 }) {
+  const subject = taskSubject(itemId);
   return validateRecord({
     kind: 'message',
     id,
-    subject: {kind: 'item', id: itemId},
+    subject,
     version: 1,
     body: {
       schema_version: 1,
       message_id: id,
-      thread_id: threadId,
-      item_id: itemId,
+      subject,
+      thread_id: threadId === itemId ? subjectRef(subject, basisVersion) : threadId,
       parent_id: null,
       sender_role: 'eng-builder-software',
       sender_run: 'context-builder',
@@ -85,7 +111,7 @@ function messageRecord({
 function appendMessage(store, record, operationId = `message-${record.id}`, questionId = null) {
   seedRecord(store, record);
   const eventKind = record.body.kind === 'handoff'
-    ? 'item.handoff'
+    ? 'task.handoff'
     : record.body.kind === 'question'
       ? 'question.open'
       : record.body.kind === 'answer'
@@ -97,7 +123,7 @@ function appendMessage(store, record, operationId = `message-${record.id}`, ques
       role: record.body.sender_role,
       runId: record.body.sender_run,
     },
-    recordKind: 'item',
+    recordKind: record.subject.kind,
     recordId: record.subject.id,
     payload: record.body.kind === 'recovery'
       ? {attemptId: record.id}
@@ -105,8 +131,8 @@ function appendMessage(store, record, operationId = `message-${record.id}`, ques
   };
   return Number(store.database.prepare(`
     INSERT INTO events (operation_id, subject_kind, subject_id, payload)
-    VALUES (?, 'item', ?, ?)
-  `).run(operationId, record.subject.id, JSON.stringify(payload)).lastInsertRowid);
+    VALUES (?, ?, ?, ?)
+  `).run(operationId, record.subject.kind, record.subject.id, JSON.stringify(payload)).lastInsertRowid);
 }
 
 function appendApproval(store, item, {
@@ -120,16 +146,16 @@ function appendApproval(store, item, {
   const record = validateRecord({
     kind: 'approval',
     id,
-    subject: {kind: 'item', id: item.id},
+    subject: {kind: item.kind, id: item.id},
     version: 1,
     body: {
       schema_version: 1,
       approval_id: id,
-      item_id: item.id,
+      subject: {kind: item.kind, id: item.id},
       authority: {role: recovery ? 'operator' : item.body.completion_authority, runId: 'acceptance-run'},
       kind,
-      subject: recovery ? null : item.body.change_ref,
-      criteria_ref: criteriaRef(item.body),
+      content_ref: recovery ? null : item.body.change_ref,
+      criteria_ref: criteriaRef(item, lookup(store)),
       supersedes: [],
       deployment: null,
       recovery,
@@ -143,14 +169,14 @@ function appendApproval(store, item, {
   const event = {
     kind: 'approval.record',
     actor: record.body.authority,
-    recordKind: 'item',
+    recordKind: item.kind,
     recordId: item.id,
     payload: {body: record.body},
   };
   const eventSeq = Number(store.database.prepare(`
     INSERT INTO events (operation_id, subject_kind, subject_id, payload)
-    VALUES (?, 'item', ?, ?)
-  `).run(`approval-${id}`, item.id, JSON.stringify(event)).lastInsertRowid);
+    VALUES (?, ?, ?, ?)
+  `).run(`approval-${id}`, item.kind, item.id, JSON.stringify(event)).lastInsertRowid);
   return {...record, eventSeq};
 }
 
@@ -176,12 +202,12 @@ function seedBlockingQuestion(store, itemId = 'demo', {
   seedRecord(store, validateRecord({
     kind: 'question',
     id: questionId,
-    subject: {kind: 'item', id: itemId},
+    subject: taskSubject(itemId),
     version: 1,
     body: {
       schema_version: 1,
       question_id: questionId,
-      item_id: itemId,
+      subject: taskSubject(itemId),
       asker: {role: 'eng-builder-software', runId: 'context-builder'},
       recipient: 'eng-reviewer-code',
       kind: 'decision',
@@ -209,9 +235,9 @@ function seedRecoveryHold(store, {observed = 'Conflicting edits need an exact op
     expires_at: '2026-09-15T11:00:00.000Z',
   };
   const attempt = validateRecord({
-    kind: 'attempt', id, subject: {kind: 'item', id: 'demo'}, version: 1,
+    kind: 'attempt', id, subject: taskSubject('demo'), version: 1,
     body: {
-      schema_version: 1, attempt_id: id, item_id: 'demo',
+      schema_version: 1, attempt_id: id, subject: taskSubject('demo'),
       grantor: {role: 'eng-lead-architecture', runId: 'recovery-steward'},
       stale_lease: staleLease, observed, disposition: 'conflicting-partial-work',
       recovery_evidence_ids: [evidenceId], new_lease: null, created_at: NOW,
@@ -220,10 +246,10 @@ function seedRecoveryHold(store, {observed = 'Conflicting edits need an exact op
   seedRecord(store, attempt);
   seedRecord(store, validateRecord({
     kind: 'evidence', id: evidenceId,
-    subject: {kind: 'item', id: 'demo'}, version: 1,
+    subject: taskSubject('demo'), version: 1,
     body: {
-      schema_version: 1, evidence_id: evidenceId, item_id: 'demo',
-      kind: 'recovery-reconciliation', subject: null, criteria_ref: null,
+      schema_version: 1, evidence_id: evidenceId, subject: taskSubject('demo'),
+      kind: 'recovery-reconciliation', content_ref: null, criteria_ref: null,
       supersedes: [], dimension: null, outcome: 'passed',
       evidence_refs: ['retained/reconciliation.txt'], reason: observed,
       data: {
@@ -286,7 +312,7 @@ await test('recovery hold and operator resolution survive zero recent messages a
     for (const recentLimit of [0, 8]) {
       const projection = projectContext(store, {itemId: 'demo', recentLimit});
       const packet = JSON.parse(projection.text);
-      assert.equal(packet.item.recovery_hold, attempt.id);
+      assert.equal(packet.subject.recovery_hold, attempt.id);
       assert.equal(packet.recovery_hold.observed, attempt.body.observed);
       assert.equal(packet.recovery_hold.disposition, 'conflicting-partial-work');
       assert.equal(packet.recovery_hold.required_resolution.authority, 'operator');
@@ -367,7 +393,7 @@ await test('persisted recovery resolution retains its exact reason and binding, 
     const packet = JSON.parse(projection.text);
     assert.deepEqual(packet.decisions[0].recovery, binding);
     assert.equal(packet.decisions[0].reason, reason);
-    assert.equal(packet.item.recovery_hold, attempt.id);
+    assert.equal(packet.subject.recovery_hold, attempt.id);
     assert.ok(projection.references.some(ref => ref.kind === 'approval' && ref.id === approval.id));
   });
 });
@@ -378,10 +404,10 @@ await test('mandatory reference lists are complete beyond sixteen entries and ch
     seedItem(store, {context_artifacts: refs});
     const projection = projectContext(store, {itemId: 'demo', recentLimit: 0});
     assert.deepEqual(JSON.parse(projection.text).selected_artifact_evidence_references, refs);
-    const item = readDetail(store, {kind: 'item', id: 'demo'});
+    const item = readDetail(store, {kind: 'task', id: fixtureIds.task});
     item.body.context_artifacts[16] = `retained/${'義'.repeat(9000)}`;
-    store.database.prepare("UPDATE records SET body = ? WHERE kind = 'item' AND id = 'demo'")
-      .run(JSON.stringify(item.body));
+    store.database.prepare("UPDATE records SET body = ? WHERE kind = 'task' AND id = ?")
+      .run(JSON.stringify(item.body), fixtureIds.task);
     assert.throws(() => projectContext(store, {itemId: 'demo', recentLimit: 0}),
       error => error.code === 'CONTEXT_BUDGET');
   });
@@ -410,7 +436,7 @@ await test('late answered blockers on terminal work stay historical and remain r
       lease: null,
     });
 
-    const dropped = applyCommand(store, command('item.transition', {
+    const dropped = applyCommand(store, command('task.transition', {
       actor: {role: 'eng-lead-architecture', runId: 'steward-run'},
       expectedVersion: 1,
       payload: {
@@ -422,10 +448,10 @@ await test('late answered blockers on terminal work stay historical and remain r
       roles: ['eng-lead-architecture'],
       grants: [{
         actor: {role: 'eng-lead-architecture', runId: 'steward-run'},
-        actions: ['item.transition'],
-        recordKind: 'item',
-        recordId: 'demo',
-        basisRef: 'item/demo@1',
+        actions: ['task.transition'],
+        recordKind: 'task',
+        recordId: fixtureIds.task,
+        basisRef: subjectRef({kind: 'task', id: fixtureIds.task}, 1),
       }],
     });
     assert.equal(dropped.data.record.body.state, 'dropped');
@@ -516,13 +542,15 @@ await test('all mandatory obligation, hold, question and reference bytes overflo
 });
 
 function insertMessageHistory(store, count, {threadId = 'demo', itemId = 'demo'} = {}) {
+  const subject = taskSubject(itemId);
+  const boundThread = threadId === itemId ? subjectRef(subject, 1) : threadId;
   const insertRecord = store.database.prepare(`
     INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
-    VALUES ('message', ?, 'item', ?, 1, ?)
+    VALUES ('message', ?, ?, ?, 1, ?)
   `);
   const insertEvent = store.database.prepare(`
     INSERT INTO events (operation_id, subject_kind, subject_id, payload)
-    VALUES (?, 'item', ?, ?)
+    VALUES (?, ?, ?, ?)
   `);
   store.database.exec('BEGIN');
   try {
@@ -531,16 +559,16 @@ function insertMessageHistory(store, count, {threadId = 'demo', itemId = 'demo'}
       const record = messageRecord({
         id,
         itemId,
-        threadId,
+        threadId: boundThread,
         createdAt: new Date(Date.parse(NOW) - index * 1000).toISOString(),
         payload: handoffPayload(index),
       });
-      insertRecord.run(id, itemId, JSON.stringify(record.body));
-      insertEvent.run(`bulk-message-${index}`, itemId, JSON.stringify({
-        kind: 'item.handoff',
+      insertRecord.run(id, subject.kind, subject.id, JSON.stringify(record.body));
+      insertEvent.run(`bulk-message-${index}`, subject.kind, subject.id, JSON.stringify({
+        kind: 'task.handoff',
         actor: {role: record.body.sender_role, runId: record.body.sender_run},
-        recordKind: 'item',
-        recordId: itemId,
+        recordKind: subject.kind,
+        recordId: subject.id,
         payload: {messageId: id},
       }));
     }
@@ -592,8 +620,8 @@ await test('project context is deterministic, bounded, complete, and ordered by 
     assert.deepEqual(packet.history_cursor, first.historyCursor);
     assert.equal(packet.authority.completion_authority, 'eng-reviewer-code');
     assert.deepEqual(packet.acceptance, item.body.acceptance);
-    assert.equal(packet.revision.item_version, 1);
-    assert.equal(packet.revision.criteria_ref, criteriaRef(item.body));
+    assert.equal(packet.revision.subject_version, 1);
+    assert.equal(packet.revision.criteria_ref, criteriaRef(item, lookup(store)));
     assert.deepEqual(packet.revision.change_ref, SUBJECT);
     assert.equal(packet.blockers[0].ask, 'Approve the explicit bounded rollout?');
     assert.equal(packet.decisions[0].decision, 'approved');
@@ -668,14 +696,14 @@ await test('projection sequence advances without mutating or retroactively chang
     const before = projectContext(store, {itemId: 'demo'});
     applyOperation(
       store,
-      command('item.update', {payload: {title: 'Advanced snapshot'}}),
+      command('task.update', {payload: {title: 'Advanced snapshot'}}),
       current => ({...current.body, title: 'Advanced snapshot'}),
     );
     const after = projectContext(store, {itemId: 'demo'});
-    assert.equal(JSON.parse(before.text).item.title, 'Demo knowledge item');
-    assert.equal(JSON.parse(before.text).revision.item_version, 1);
-    assert.equal(JSON.parse(after.text).item.title, 'Advanced snapshot');
-    assert.equal(JSON.parse(after.text).revision.item_version, 2);
+    assert.equal(JSON.parse(before.text).subject.title, 'Demo knowledge Task');
+    assert.equal(JSON.parse(before.text).revision.subject_version, 1);
+    assert.equal(JSON.parse(after.text).subject.title, 'Advanced snapshot');
+    assert.equal(JSON.parse(after.text).revision.subject_version, 2);
     assert.ok(after.throughSeq > before.throughSeq);
   });
 });
@@ -702,7 +730,7 @@ await test('projection holds one SQLite snapshot while a WAL writer advances', a
           const secondApproval = validateRecord({
             kind: 'approval',
             id: secondApprovalId,
-            subject: {kind: 'item', id: item.id},
+            subject: {kind: 'task', id: item.id},
             version: 1,
             body: {
               ...readDetail(writer, {kind: 'approval', id: firstApproval.id}).body,
@@ -711,24 +739,24 @@ await test('projection holds one SQLite snapshot while a WAL writer advances', a
           });
           applyOperation(
             writer,
-            command('item.update', {payload: {title: 'Writer advanced'}}),
+            command('task.update', {payload: {title: 'Writer advanced'}}),
             (current, tx) => {
               tx.put(secondMessage);
               tx.put(secondApproval);
               tx.appendEvent({
-                kind: 'item.handoff',
+                kind: 'task.handoff',
                 actor: {
                   role: secondMessage.body.sender_role,
                   runId: secondMessage.body.sender_run,
                 },
-                recordKind: 'item',
+                recordKind: 'task',
                 recordId: item.id,
                 payload: {messageId: secondMessage.id},
               });
               tx.appendEvent({
                 kind: 'approval.record',
                 actor: secondApproval.body.authority,
-                recordKind: 'item',
+                recordKind: 'task',
                 recordId: item.id,
                 payload: {body: secondApproval.body},
               });
@@ -743,8 +771,8 @@ await test('projection holds one SQLite snapshot while a WAL writer advances', a
       const packet = JSON.parse(projection.text);
       assert.equal(advanced, true);
       assert.equal(projection.throughSeq, initialThroughSeq);
-      assert.equal(packet.item.title, 'Demo knowledge item');
-      assert.equal(packet.revision.item_version, 1);
+      assert.equal(packet.subject.title, 'Demo knowledge Task');
+      assert.equal(packet.revision.subject_version, 1);
       assert.equal(packet.recent_messages.length, 1);
       assert.equal(packet.decisions.length, 1);
     } finally {
@@ -753,10 +781,12 @@ await test('projection holds one SQLite snapshot while a WAL writer advances', a
     }
 
     const advancedProjection = JSON.parse(projectContext(store, {itemId: 'demo'}).text);
-    assert.equal(advancedProjection.item.title, 'Writer advanced');
-    assert.equal(advancedProjection.revision.item_version, 2);
-    assert.equal(advancedProjection.recent_messages.length, 2);
-    assert.equal(advancedProjection.decisions.length, 2);
+    assert.equal(advancedProjection.subject.title, 'Writer advanced');
+    assert.equal(advancedProjection.revision.subject_version, 2);
+    assert.equal(advancedProjection.recent_messages.length, 0,
+      'messages against older subject versions remain historical');
+    assert.equal(advancedProjection.decisions.length, 0,
+      'decisions against older criteria remain historical');
   });
 });
 
@@ -803,7 +833,7 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
     assert.equal(packet.recent_messages.length, 8);
     assert.equal(projection.historyCursor.remainingCount, 9_992);
     assert.deepEqual(Object.keys(projection.historyCursor).sort(),
-      ['beforeSeq', 'remainingCount', 'threadId']);
+      ['beforeSeq', 'remainingCount', 'subject']);
     assert.ok(projection.references.length <= 8,
       'history size cannot make projection reference metadata grow');
     assert.doesNotMatch(projection.text, new RegExp(uuidFor(1)));
@@ -815,14 +845,14 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
     let pageCount = 0;
     while (cursor) {
       const observed = observeQueries(store.database, () => readMessages(store, {
-        threadId: cursor.threadId,
+        subject: cursor.subject,
         beforeSeq: cursor.beforeSeq,
         remainingCount: -999, // Never trust caller counts to terminate pagination.
         limit: 97,
       }));
       const page = observed.result;
       assert.equal(page.hasMore, page.nextCursor !== null);
-      if (page.nextCursor) assert.deepEqual(Object.keys(page.nextCursor).sort(), ['beforeSeq', 'threadId']);
+      if (page.nextCursor) assert.deepEqual(Object.keys(page.nextCursor).sort(), ['beforeSeq', 'subject']);
       pageCalls.push(...observed.calls);
       pageCount += 1;
       assert.ok(page.messages.length <= 97);
@@ -830,7 +860,7 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
         assert.ok(page.messages[index - 1].eventSeq > page.messages[index].eventSeq);
       }
       for (const message of page.messages) {
-        assert.equal(message.body.thread_id, 'demo');
+        assert.equal(message.body.thread_id, subjectRef(taskSubject('demo'), 1));
         assert.equal(seen.has(message.id), false);
         seen.add(message.id);
       }
@@ -853,7 +883,8 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
     assert.ok(pageCalls.every(call => call.plan.every(detail =>
       !/\bSCAN\b|USE TEMP B-TREE/i.test(detail))), 'all history page plans must use indexed seeks without sorting');
     assert.ok(pageCalls.every(call => call.plan.some(detail =>
-      /SEARCH.*thread_id=\?.*seq<\?/i.test(detail))), 'each page seeks the thread and beforeSeq key');
+      /SEARCH.*subject_kind=\?.*subject_id=\?.*seq<\?/i.test(detail))),
+    'each page seeks the typed subject and beforeSeq key');
     assert.equal(pageCalls.length, pageCount, 'one bounded SELECT per continuation, no side scans');
     assert.ok(pageCalls.reduce((sum, call) => sum + call.rows, 0) <= 9_992 + pageCount);
   });
@@ -876,24 +907,29 @@ await test('1,000-message projection selects a bounded snapshot without event pa
   });
 });
 
-await test('thread identity survives missing cross-item detail and late insertion repairs event scoping', async () => {
+await test('thread identity survives missing detail and remains isolated by typed subject', async () => {
   await withWorkspace(({store}) => {
     const id = uuidFor(990001);
+    seedItem(store, {id: 'other-item'});
+    const other = taskSubject('other-item');
     const eventSeq = Number(store.database.prepare(`
-      INSERT INTO events(operation_id, subject_kind, subject_id, payload)
-      VALUES (?, 'item', ?, ?)
-    `).run('late-message', 'other-item', JSON.stringify({
-      kind: 'item.handoff', payload: {messageId: id},
-    })).lastInsertRowid);
+      INSERT INTO events(operation_id, subject_kind, subject_id, payload, thread_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('late-message', other.kind, other.id, JSON.stringify({
+      kind: 'task.handoff', payload: {messageId: id},
+    }), subjectRef(other, 1)).lastInsertRowid);
     assert.throws(() => readMessages(store, {threadId: 'other-item'}),
       error => error.code === 'EVIDENCE_GAP');
-    seedRecord(store, messageRecord({id, itemId: 'other-item', threadId: 'demo'}));
-    assert.deepEqual(readMessages(store, {threadId: 'other-item'}).messages, []);
-    const page = readMessages(store, {threadId: 'demo'});
+    seedRecord(store, messageRecord({
+      id,
+      itemId: 'other-item',
+    }));
+    const page = readMessages(store, {threadId: 'other-item'});
     assert.equal(page.messages[0].eventSeq, eventSeq);
     assert.equal(page.hasMore, false);
+    assert.deepEqual(readMessages(store, {threadId: 'demo'}).messages, []);
     store.database.prepare("DELETE FROM records WHERE kind = 'message' AND id = ?").run(id);
-    assert.throws(() => readMessages(store, {threadId: 'demo'}),
+    assert.throws(() => readMessages(store, {threadId: 'other-item'}),
       error => error.code === 'EVIDENCE_GAP', 'deletion must not erase the indexed thread identity');
   });
 });
@@ -905,16 +941,14 @@ await test('message pagination scopes and validates thread cursors and limits', 
     appendMessage(store, messageRecord({
       id: uuidFor(800002),
       itemId: 'other',
-      threadId: 'other-thread',
     }));
     appendMessage(store, messageRecord({
       id: uuidFor(800003),
       itemId: 'other',
-      threadId: 'demo',
     }));
     assert.deepEqual(
       readMessages(store, {threadId: 'demo', limit: 10}).messages.map(message => message.id),
-      [uuidFor(800003), uuidFor(800001)],
+      [uuidFor(800001)],
     );
     for (const options of [
       {threadId: '', limit: 10},
@@ -931,17 +965,75 @@ await test('message pagination scopes and validates thread cursors and limits', 
     assert.throws(() => projectContext(store, {itemId: 'demo', recentLimit: 9}),
       error => error.code === 'INVALID_INPUT');
     store.database.prepare(`
-      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
-      VALUES (?, 'item', ?, ?)
-    `).run('missing-message-event', 'demo', JSON.stringify({
-      kind: 'item.handoff',
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload, thread_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run('missing-message-event', 'task', fixtureIds.task, JSON.stringify({
+      kind: 'task.handoff',
       actor: {role: 'eng-builder-software', runId: 'missing-message'},
-      recordKind: 'item',
-      recordId: 'demo',
+      recordKind: 'task',
+      recordId: fixtureIds.task,
       payload: {messageId: uuidFor(899999)},
-    }));
+    }), subjectRef(taskSubject('demo'), 1));
     assert.throws(() => readMessages(store, {threadId: 'demo'}),
       error => error.code === 'EVIDENCE_GAP');
+  });
+});
+
+await test('hierarchy context reads communication from the exact typed subject', async () => {
+  await withWorkspace(({store}) => {
+    seedTask(store, {state: 'ready', producer_actor: null, acceptance_actor: null});
+    const feature = readDetail(store, {kind: 'feature', id: fixtureIds.feature});
+    const messageId = uuidFor(990001);
+    seedRecord(store, validateRecord({
+      kind: 'message',
+      id: messageId,
+      subject: {kind: 'feature', id: feature.id},
+      version: 1,
+      body: {
+        schema_version: 1,
+        message_id: messageId,
+        subject: {kind: 'feature', id: feature.id},
+        thread_id: subjectRef({kind: 'feature', id: feature.id}, feature.version),
+        parent_id: null,
+        sender_role: 'eng-lead-architecture',
+        sender_run: 'feature-thread',
+        recipient: 'eng-reviewer-code',
+        kind: 'handoff',
+        created_at: NOW,
+        basis_version: feature.version,
+        payload: handoffPayload('feature'),
+        artifact_refs: [],
+        evidence_refs: [],
+        provenance: 'durable-thread',
+      },
+    }));
+    store.database.prepare(`
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload, thread_id)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      'feature-message',
+      'feature',
+      feature.id,
+      JSON.stringify({
+        kind: 'feature.message',
+        actor: {role: 'eng-lead-architecture', runId: 'feature-thread'},
+        recordKind: 'feature',
+        recordId: feature.id,
+        payload: {messageId},
+      }),
+      subjectRef({kind: 'feature', id: feature.id}, feature.version),
+    );
+
+    const projection = projectContext(store, {
+      subject: {kind: 'feature', id: feature.id},
+      recentLimit: 8,
+    });
+    const packet = JSON.parse(projection.text);
+    assert.equal(packet.subject.kind, 'feature');
+    assert.equal(packet.subject.id, feature.id);
+    assert.equal(packet.subject.version, feature.version);
+    assert.equal(packet.recent_messages[0].ref, `message:${messageId}`);
+    assert.equal(packet.recent_messages[0].basis_version, feature.version);
   });
 });
 

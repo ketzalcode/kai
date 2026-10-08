@@ -20,7 +20,7 @@ const equal = (left, right) => canonicalJson(left) === canonicalJson(right);
 // Declared risk flags cannot prove an unresolved effect is safe to repeat.
 const uncertainEffect = body => ['unknown', 'conflicting'].includes(body.outcome);
 const bindsTask = (record, taskId) =>
-  record?.subject?.kind === 'item' && record.subject.id === taskId;
+  record?.subject?.kind === 'task' && record.subject.id === taskId;
 
 /**
  * Trusted in-process composition, never a JSON/CLI authority endpoint.
@@ -97,7 +97,7 @@ function actingTask(store, tx, command, context, target) {
 }
 
 function noUnresolvedEffects(tx, taskId) {
-  if (tx.list('effect', {kind: 'item', id: taskId})
+  if (tx.list('effect', {kind: 'task', id: taskId})
     .some(record => uncertainEffect(record.body))) {
     fail('RECOVERY_REQUIRED', 'effect outcome is unresolved; never automatically replay');
   }
@@ -112,7 +112,7 @@ function resumeContext(tx, context, command, task, planned, previous) {
   }
   if (!context.capabilities.resume) fail('UNSUPPORTED_HOST', 'host resume is unsupported');
   const prior = previous.find(record => record.id === p.resumeFrom)?.body;
-  if (!prior || prior.status !== 'failed' || prior.item_version !== task.version
+  if (!prior || prior.status !== 'failed' || prior.subject_version !== task.version
     || prior.profile !== p.profile || prior.agent_id !== planned.agentId
     || prior.requested_model !== p.requestedModel || prior.requested_effort !== p.effort
     || prior.independence_key !== p.independenceKey || !sameActor(prior.target, p.target)
@@ -153,15 +153,16 @@ export function recordAttempt(store, command) {
     }
     if (p.resumeFrom !== null && !context.capabilities.resume) fail('UNSUPPORTED_HOST', 'host resume is unsupported');
     noUnresolvedEffects(tx, task.id);
-    const previous = tx.list('host-attempt', {kind: 'item', id: task.id});
+    const previous = tx.list('host-attempt', {kind: 'task', id: task.id});
     if (previous.length >= context.maxAttempts
       || previous.some(record => ['intent', 'uncertain', 'conflicting', 'mismatched'].includes(record.body.status)
-        || (record.body.status === 'completed' && record.body.item_version === task.version))) {
+        || (record.body.status === 'completed' && record.body.subject_version === task.version))) {
       fail('RECOVERY_REQUIRED', 'attempt is unresolved, already completed or bounded attempts exhausted; no automatic redispatch');
     }
     const resume = resumeContext(tx, context, cmd, task, planned, previous);
     return {
-      schema_version: 1, attempt_id: cmd.recordId, item_id: task.id, item_version: task.version,
+      schema_version: 1, attempt_id: cmd.recordId,
+      subject: {kind: 'task', id: task.id}, subject_version: task.version,
       actor: cmd.actor, target: p.target, agent_id: planned.agentId, profile: p.profile,
       requested_model: p.requestedModel, requested_effort: p.effort, independence_key: p.independenceKey,
       ...resume, capabilities: clone(context.capabilities), settings: planned.settings,
@@ -260,17 +261,18 @@ export function recordEffect(store, command, observation) {
       fail('EVIDENCE_GAP', 'effect intent requires the exact persisted host attempt');
     }
     const task = actingTask(store, tx, cmd, context, attempt.body.target);
-    if (attempt.body.item_version !== task.version || attempt.body.status !== 'intent') {
+    if (attempt.body.subject_version !== task.version || attempt.body.status !== 'intent') {
       fail('RECOVERY_REQUIRED', 'effect intent requires a current, unresolved execution intent');
     }
     noUnresolvedEffects(tx, task.id);
-    if (tx.list('effect', {kind: 'item', id: task.id}).some(record => p.idempotencyKey !== null
+    if (tx.list('effect', {kind: 'task', id: task.id}).some(record => p.idempotencyKey !== null
       && record.body.idempotency_key === p.idempotencyKey)) {
       fail('OPERATION_CONFLICT', 'effect idempotency key is already retained; reconcile its result');
     }
     const body = {
-      schema_version: 1, effect_id: cmd.recordId, attempt_id: p.attemptId, item_id: task.id,
-      item_version: task.version, actor: cmd.actor, intended_action: p.intendedAction,
+      schema_version: 1, effect_id: cmd.recordId, attempt_id: p.attemptId,
+      subject: {kind: 'task', id: task.id}, subject_version: task.version,
+      actor: cmd.actor, intended_action: p.intendedAction,
       idempotency_key: p.idempotencyKey, external: p.external, paid: p.paid,
       created_at: p.createdAt, observations: [],
     };

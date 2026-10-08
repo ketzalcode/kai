@@ -1,8 +1,8 @@
 import {randomUUID, createHash} from 'node:crypto';
 import {existsSync} from 'node:fs';
-import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef,
+import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef, subjectRef,
   validateActor, validateCommand, validateRecord, COMMAND_KINDS, PARENT_COMMAND_KINDS,
-  CLASSIFICATIONS} from './contract.mjs';
+  CLASSIFICATIONS, HIERARCHY_KINDS} from './contract.mjs';
 import {contextIdentity, matchHumanDecision, readNativeTool} from './native-receipts.mjs';
 import {capabilityId, readIssued, writeIssued} from './native-capabilities.mjs';
 import {createTrustedEmbedding} from './host-composition.mjs';
@@ -35,7 +35,8 @@ function currentBasis(root, id) {
   finally { closeStore(store); }
 }
 function taskBasis(root, store, task) {
-  return {subject: task.body.change_ref, criteria: criteriaRef(task.body),
+  return {subject: task.body.change_ref,
+    criteria: criteriaRef(task, (kind, id) => readRecord(store, kind, id)),
     inputs: captureInputBasis({root}, {get: (kind, id) => readRecord(store, kind, id)}, task.body.context_artifacts)};
 }
 function commandBasis(root, store, command) {
@@ -47,7 +48,12 @@ function commandBasis(root, store, command) {
   }
   const prospective = validateRecord({...task, body: {...task.body, ...changes}});
   const tx = {get: (kind, id) => readRecord(store, kind, id)};
-  const priorBasis = {subject: task.body.change_ref, criteria: criteriaRef(task.body), inputs: [], gaps: []};
+  const priorBasis = {
+    subject: task.body.change_ref,
+    criteria: criteriaRef(task, (kind, id) => readRecord(store, kind, id)),
+    inputs: [],
+    gaps: [],
+  };
   for (const reference of [...new Set(task.body.context_artifacts)].sort()) {
     try { priorBasis.inputs.push(...captureInputBasis({root}, tx, [reference])); }
     catch (error) {
@@ -131,7 +137,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
     const lease = task?.body.lease;
     const grant = lease && lease.token === token && sameActor(lease.holder, actor)
       && Date.parse(lease.expires_at) > Date.now()
-      && listRecords(store, {kind: 'grant', subject: {kind: 'item', id: taskId}})
+      && listRecords(store, {kind: 'grant', subject: {kind: 'task', id: taskId}})
         .find(r => sameActor(r.body.actor, actor) && r.body.lease_token === token
           && r.body.status === 'active' && Date.parse(r.body.expires_at) > Date.now());
     if (!grant) fail('AUTHORITY_REQUIRED', 'the actual actor must hold a live persisted lease or bounded delegation');
@@ -390,10 +396,13 @@ export function createNativeHost({env = process.env, discover} = {}) {
         } else fail('AUTHORITY_REQUIRED', 'not an execution capability');
         catalog = cap.catalog;
         grants = [{actor: command.actor, actions: commandActions(command), recordKind: command.recordKind,
-          recordId: command.recordId, basisRef: `${command.recordKind}/${command.recordId}@${command.expectedVersion}`}];
+          recordId: command.recordId,
+          basisRef: HIERARCHY_KINDS.has(command.recordKind)
+            ? subjectRef({kind: command.recordKind, id: command.recordId}, command.expectedVersion)
+            : `${command.recordKind}/${command.recordId}@${command.expectedVersion}`}];
         if (['attempt.start', 'effect.intent'].includes(command.kind)) grants.push({
           actor: command.actor, actions: [command.kind], recordKind: 'task', recordId: command.payload.taskId,
-          basisRef: `task/${command.payload.taskId}@${command.payload.taskVersion}`,
+          basisRef: subjectRef({kind: 'task', id: command.payload.taskId}, command.payload.taskVersion),
         });
       } else {
         const bound = await leaseContext(root, store, command.actor, command.recordId, command.leaseToken);
@@ -408,11 +417,20 @@ export function createNativeHost({env = process.env, discover} = {}) {
         const {source, reference, attributed_to, captured_at} = cap.receipt;
         const b = command.payload.body;
         return {source, reference, attributed_to, captured_at, ...Object.fromEntries(
-          ['item_id', 'subject', 'criteria_ref', 'kind', 'decision', 'deployment', 'recovery'].map(k => [k, b[k]]))};
+          ['subject', 'content_ref', 'criteria_ref', 'kind', 'decision', 'deployment', 'recovery'].map(k => [k, b[k]]))};
       };
       const embedding = createTrustedEmbedding({
         identity, authorize: () => ({roles: catalog.roster.map(e => e.role), grants}),
-        runs: ({actor}) => [{actor, directory: `.kai/runs/native/${actor.runId}`}],
+        runs: ({actor}) => {
+          const taskId = command.recordKind === 'task'
+            ? command.recordId
+            : command.payload.taskId ?? readRecord(store, command.recordKind, command.recordId)?.subject?.id;
+          const task = taskId ? readRecord(store, 'task', taskId) : null;
+          return [{
+            actor,
+            directory: `.kai/${task?.body.pack ?? 'core'}/reports/native-${hash(actor).slice(0, 16)}/scratch`,
+          }];
+        },
         verifyCapture: c => {
           if (!capture || capture.type !== 'command' || !sameActor(capture.actor, c.actor)
             || capture.root !== root || capture.taskId !== c.recordId

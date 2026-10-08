@@ -9,6 +9,8 @@ import {
   canonicalJson,
   commandDigest,
   criteriaRef,
+  subjectRef,
+  validateHierarchySubject,
   validateCommand,
   validateCommandMutation,
   validateRecord,
@@ -18,7 +20,6 @@ const SCHEMA_VERSION = 2;
 const HISTORICAL_SCHEMA_VERSION = 1;
 const MESSAGE_SCHEMA_VERSION = 1;
 const STORE_MODES = new Set(['create', 'read', 'write']);
-const STORE_SUBJECT_KINDS = new Set([...HIERARCHY_KINDS, 'item']);
 const EVENTS_TABLE_SQL = `CREATE TABLE events (
   seq INTEGER PRIMARY KEY AUTOINCREMENT,
   operation_id TEXT NOT NULL,
@@ -32,7 +33,9 @@ const EVENTS_TABLE_SQL = `CREATE TABLE events (
       WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
       WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
       WHEN 'task.handoff' THEN json_extract(payload, '$.payload.messageId')
-      WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
+      WHEN 'epic.message' THEN json_extract(payload, '$.payload.messageId')
+      WHEN 'feature.message' THEN json_extract(payload, '$.payload.messageId')
+      WHEN 'requirement.message' THEN json_extract(payload, '$.payload.messageId')
     END
   ) STORED,
   approval_id TEXT GENERATED ALWAYS AS (
@@ -53,6 +56,8 @@ const REQUIRED_INDEX_SQL = [
   `CREATE INDEX records_by_criteria ON records(kind, subject_kind, subject_id, json_extract(body, '$.criteria_ref'))`,
   `CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL`,
   `CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL`,
+  `CREATE INDEX events_by_subject_messages ON events(subject_kind, subject_id, seq)
+    WHERE message_id IS NOT NULL`,
   `CREATE INDEX events_by_subject_kind ON events(subject_kind, subject_id, event_kind, seq, question_id)`,
   `CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL`,
 ];
@@ -64,7 +69,7 @@ const REQUIRED_TRIGGER_SQL = [
     BEGIN
       UPDATE events SET thread_id = COALESCE(
         (SELECT json_extract(body, '$.thread_id') FROM records
-          WHERE kind = 'message' AND id = NEW.message_id), NEW.subject_id)
+          WHERE kind = 'message' AND id = NEW.message_id), NEW.thread_id, NEW.subject_id)
       WHERE seq = NEW.seq;
     END`,
   `CREATE TRIGGER messages_capture_thread AFTER INSERT ON records
@@ -260,7 +265,11 @@ function parseJson(text, label) {
   }
 }
 
-function validateStoreSubject(subject, label, {allowNull = true, allowUndefined = false} = {}) {
+function validateStoreSubject(subject, label, {
+  allowNull = true,
+  allowUndefined = false,
+  allowLegacyItem = false,
+} = {}) {
   if (subject === undefined && allowUndefined) return subject;
   if (subject === null && allowNull) return subject;
   if (!subject || typeof subject !== 'object' || Array.isArray(subject)) {
@@ -269,16 +278,44 @@ function validateStoreSubject(subject, label, {allowNull = true, allowUndefined 
   if (canonicalJson(Object.keys(subject).sort()) !== '["id","kind"]') {
     invalid(`${label} must contain only kind and id`);
   }
-  if (!STORE_SUBJECT_KINDS.has(subject.kind)) {
-    invalid(`${label}.kind is unsupported`);
-  }
-  if (typeof subject.id !== 'string' || subject.id === '') {
-    invalid(`${label}.id must be a non-empty string`);
+  if (allowLegacyItem && subject.kind === 'item') {
+    if (typeof subject.id !== 'string' || subject.id === '') {
+      invalid(`${label}.id must be a non-empty string`);
+    }
+  } else {
+    validateHierarchySubject(subject, label);
   }
   return subject;
 }
 
-function decodeRecord(row) {
+function validateHistoricalRecord(record) {
+  if (record.kind === 'item' || record.kind === 'initiative') return validateRecord(record);
+  if (!record.body || typeof record.body !== 'object' || Array.isArray(record.body)
+    || record.body.schema_version !== 1 || record.subject?.kind !== 'item'
+    || record.body.item_id !== record.subject.id) {
+    recovery(`historical record ${record.kind}/${record.id} has an invalid Item binding`);
+  }
+  const identityKeys = new Map([
+    ['artifact', 'artifact_id'],
+    ['asset', 'asset_id'],
+    ['question', 'question_id'],
+    ['attempt', 'attempt_id'],
+    ['host-attempt', 'attempt_id'],
+    ['effect', 'effect_id'],
+    ['evidence', 'evidence_id'],
+    ['review', 'review_id'],
+    ['approval', 'approval_id'],
+    ['message', 'message_id'],
+    ['grant', 'grant_id'],
+  ]);
+  const identityKey = identityKeys.get(record.kind);
+  if (!identityKey || record.body[identityKey] !== record.id) {
+    recovery(`historical record ${record.kind}/${record.id} has an invalid identity`);
+  }
+  return record;
+}
+
+function decodeRecord(row, store = null) {
   if (!row) return null;
   const record = {
     kind: row.kind,
@@ -290,6 +327,9 @@ function decodeRecord(row) {
     body: parseJson(row.body, `record ${row.kind}/${row.id}`),
   };
   try {
+    if (store?.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
+      return validateHistoricalRecord(record);
+    }
     return validateRecord(record);
   } catch (error) {
     if (error instanceof RuntimeError && error.code === 'INVALID_INPUT') {
@@ -311,7 +351,9 @@ function recordProjection(store, alias = '') {
 }
 
 function subjectFilter(store, subject, alias = '') {
-  validateStoreSubject(subject, 'record subject');
+  validateStoreSubject(subject, 'record subject', {
+    allowLegacyItem: store.schemaVersion === HISTORICAL_SCHEMA_VERSION,
+  });
   const prefix = alias ? `${alias}.` : '';
   if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
     if (subject === null) return {sql: `${prefix}item_id IS NULL`, params: []};
@@ -345,7 +387,7 @@ function readSubjectRecord(store, kind, id, subject) {
     FROM records
     WHERE kind = ? AND id = ? AND ${filter.sql}
   `).get(kind, id, ...filter.params));
-  return decodeRecord(row);
+  return decodeRecord(row, store);
 }
 
 function validateReceipt(receipt, operationId) {
@@ -580,7 +622,7 @@ export function readRecord(store, kind, id) {
     FROM records
     WHERE kind = ? AND id = ?
   `).get(kind, id));
-  return decodeRecord(row);
+  return decodeRecord(row, store);
 }
 
 export function listRecords(store, options) {
@@ -594,6 +636,7 @@ export function listRecords(store, options) {
   validateStoreSubject(subject, 'record subject', {
     allowNull: true,
     allowUndefined: true,
+    allowLegacyItem: store.schemaVersion === HISTORICAL_SCHEMA_VERSION,
   });
 
   const rows = runSqlite(() => {
@@ -613,7 +656,7 @@ export function listRecords(store, options) {
       ORDER BY id
     `).all(kind, ...filter.params);
   });
-  return rows.map(decodeRecord);
+  return rows.map(row => decodeRecord(row, store));
 }
 
 export function listAllRecords(store, {kind}) {
@@ -623,8 +666,8 @@ export function listAllRecords(store, {kind}) {
 export function readStoreSummary(store) {
   return readSnapshot(store, () => runSqlite(() => {
     const throughSeq = Number(store.database.prepare('SELECT COALESCE(MAX(seq), 0) AS seq FROM events').get().seq);
-    const itemCount = Number(store.database.prepare("SELECT COUNT(*) AS count FROM records WHERE kind = 'item'").get().count);
-    return {throughSeq, itemCount};
+    const taskCount = Number(store.database.prepare("SELECT COUNT(*) AS count FROM records WHERE kind = 'task'").get().count);
+    return {throughSeq, taskCount};
   }));
 }
 
@@ -694,12 +737,11 @@ export function readSubjectView(store, options) {
     const throughSeq = Number(runSqlite(() => store.database.prepare(
       'SELECT COALESCE(MAX(seq), 0) AS seq FROM events',
     ).get()).seq);
-    const item = readRecord(store, subject.kind, subject.id)
-      ?? (subject.kind === 'item' ? readRecord(store, 'task', subject.id) : null);
-    if (!item) {
+    const record = readRecord(store, subject.kind, subject.id);
+    if (!record) {
       return {
         throughSeq,
-        item: null,
+        record: null,
         dependencies: [],
         questions: [],
         recoveryHold: null,
@@ -711,12 +753,12 @@ export function readSubjectView(store, options) {
       };
     }
 
-    const dependencies = (item.body.depends_on ?? []).map(dependency => ({
+    const dependencies = (record.kind === 'task' ? record.body.depends_on : []).map(dependency => ({
       dependency,
       record: readRecord(
         store,
-        item.kind,
-        item.kind === 'task' ? dependency.task : dependency.item,
+        'task',
+        dependency.task,
       ),
     }));
     const chronology = (column, id) => {
@@ -749,9 +791,9 @@ export function readSubjectView(store, options) {
       SELECT ${recordProjection(store)} FROM records INDEXED BY ${questionIndex}
       WHERE kind = 'question' AND ${questionFilter.sql}
         AND json_extract(body, '$.status') = 'open'
-    `).all(...questionFilter.params)).map(decodeRecord);
+    `).all(...questionFilter.params)).map(row => decodeRecord(row, store));
     const questionsById = new Map(questionRecords.map(record => [record.id, record]));
-    for (const id of item.body.waiting_on_questions ?? []) {
+    for (const id of record.body.waiting_on_questions ?? []) {
       if (!questionsById.has(id)) {
         questionsById.set(id, readSubjectRecord(store, 'question', id, subject));
       }
@@ -772,18 +814,20 @@ export function readSubjectView(store, options) {
       SELECT ${recordProjection(store)} FROM records
       WHERE kind = 'approval' AND ${approvalFilter.sql}
         AND json_extract(body, '$.criteria_ref') = ?
-    `).all(...approvalFilter.params, criteriaRef(item.body))).map(row => {
-      const record = decodeRecord(row);
+    `).all(...approvalFilter.params, criteriaRef(record, (kind, id) =>
+      readRecord(store, kind, id)))).map(row => {
+      const record = decodeRecord(row, store);
       return {record, eventSeq: chronology('approval_id', record.id)};
     });
-    const recoveryHoldId = item.body.recovery_hold ?? null;
+    const recoveryHoldId = record.body.recovery_hold ?? null;
     const recoveryHold = recoveryHoldId === null ? null : {
       record: readSubjectRecord(store, 'attempt', recoveryHoldId, subject),
       eventSeq: chronology('message_id', recoveryHoldId),
       message: readSubjectRecord(store, 'message', recoveryHoldId, subject),
     };
-    const recentMessages = messageRows(store, subject.id, throughSeq + 1, recentLimit, subject)
-      .map(row => ({eventSeq: Number(row.seq), record: decodeMessageRow(row)}))
+    const threadId = subjectRef(subject, record.version);
+    const recentMessages = messageRows(store, threadId, throughSeq + 1, recentLimit, subject)
+      .map(row => ({eventSeq: Number(row.seq), record: decodeMessageRow(row, store)}))
       .reverse();
     const handoffFilter = subjectFilter(store, subject, 'e');
     const handoffRow = runSqlite(() => store.database.prepare(`
@@ -791,20 +835,22 @@ export function readSubjectView(store, options) {
       FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
         AND ${matchingSubjects(store, 'r', 'e')}
       WHERE ${handoffFilter.sql}
-        AND e.event_kind IN ('item.handoff', 'task.handoff') AND e.seq <= ?
+        AND e.event_kind = 'task.handoff'
+        AND json_extract(r.body, '$.basis_version') = ?
+        AND e.seq <= ?
       ORDER BY e.seq DESC LIMIT 1
-    `).get(...handoffFilter.params, throughSeq));
+    `).get(...handoffFilter.params, record.version, throughSeq));
     const latestHandoff = handoffRow ? {
-      eventSeq: Number(handoffRow.seq), record: decodeMessageRow(handoffRow),
+      eventSeq: Number(handoffRow.seq), record: decodeMessageRow(handoffRow, store),
     } : null;
     const messageCountFilter = subjectFilter(store, subject);
     const messageCount = Number(runSqlite(() => store.database.prepare(`
       SELECT COUNT(*) AS count FROM events
       WHERE thread_id = ? AND ${messageCountFilter.sql}
         AND message_id IS NOT NULL AND seq <= ?
-    `).get(subject.id, ...messageCountFilter.params, throughSeq)).count);
+    `).get(threadId, ...messageCountFilter.params, throughSeq)).count);
 
-    const references = new Set(item.body.context_artifacts ?? []);
+    const references = new Set(record.body.context_artifacts ?? []);
     for (const {record} of approvals) {
       record.body.evidence_refs.forEach(reference => references.add(reference));
     }
@@ -833,14 +879,14 @@ export function readSubjectView(store, options) {
       if (identity) {
         referencedDetails.push({
           reference,
-          record: readSubjectRecord(store, identity.kind, identity.id, subject),
+          record: readRecord(store, identity.kind, identity.id),
         });
       }
     }
 
     return {
       throughSeq,
-      item,
+      record,
       dependencies,
       questions,
       recoveryHold,
@@ -867,14 +913,26 @@ function messageRows(store, threadId, beforeSeq, limit, subject = undefined) {
   `).all(threadId, ...filter.params, beforeSeq, limit));
 }
 
-function decodeMessageRow(row) {
+function decodeMessageRow(row, store) {
   if (row.id === null) {
     throw new RuntimeError(
       'EVIDENCE_GAP',
       `message/${row.message_id} referenced by event ${row.seq} is missing`,
     );
   }
-  return decodeRecord(row);
+  return decodeRecord(row, store);
+}
+
+function subjectMessageRows(store, subject, beforeSeq, limit) {
+  const filter = subjectFilter(store, subject, 'e');
+  return runSqlite(() => store.database.prepare(`
+    SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
+    FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
+      AND ${matchingSubjects(store, 'r', 'e')}
+    WHERE ${filter.sql}
+      AND e.message_id IS NOT NULL AND e.seq < ?
+    ORDER BY e.seq DESC LIMIT ?
+  `).all(...filter.params, beforeSeq, limit));
 }
 
 /**
@@ -882,11 +940,9 @@ function decodeMessageRow(row) {
  * LIMIT + 1 determines hasMore. Continuation cursors contain only threadId and
  * beforeSeq, never an untrusted count or a per-page suffix recount.
  */
-export function readMessagePage(store, {threadId, beforeSeq = null, limit}) {
+export function readMessagePage(store, {subject, beforeSeq = null, limit}) {
   assertStore(store);
-  if (typeof threadId !== 'string' || threadId === '') {
-    invalid('message threadId must be a string');
-  }
+  validateStoreSubject(subject, 'message subject', {allowNull: false});
   if (beforeSeq !== null
     && (!Number.isSafeInteger(beforeSeq) || beforeSeq < 1)) {
     invalid('message beforeSeq must be a positive safe integer or null');
@@ -896,15 +952,20 @@ export function readMessagePage(store, {threadId, beforeSeq = null, limit}) {
   }
 
   return readSnapshot(store, () => {
-    const rows = messageRows(store, threadId, beforeSeq ?? Number.MAX_SAFE_INTEGER, limit + 1);
+    const rows = subjectMessageRows(
+      store,
+      subject,
+      beforeSeq ?? Number.MAX_SAFE_INTEGER,
+      limit + 1,
+    );
     const messages = rows.map(row => ({
-      ...decodeMessageRow(row),
+      ...decodeMessageRow(row, store),
       eventSeq: Number(row.seq),
     })).slice(0, limit);
     const hasMore = rows.length > limit;
     const nextCursor = hasMore
       ? {
-          threadId,
+          subject,
           beforeSeq: messages.at(-1).eventSeq,
         }
       : null;
@@ -1084,13 +1145,11 @@ export function applyOperation(store, command, mutate) {
       ? null
       : snapshotJson(primaryBaseline);
     const primarySubject = primaryBaseline?.subject
-      ?? (internalCommand.recordKind === 'item'
-        ? {kind: 'item', id: internalCommand.recordId}
-        : HIERARCHY_KINDS.has(internalCommand.recordKind)
+      ?? (HIERARCHY_KINDS.has(internalCommand.recordKind)
           || internalCommand.recordKind === 'initiative'
           ? null
         : ['attempt.start', 'effect.intent'].includes(internalCommand.kind)
-          ? {kind: 'item', id: internalCommand.payload.taskId}
+          ? {kind: 'task', id: internalCommand.payload.taskId}
           : null);
     const eventSubject = HIERARCHY_KINDS.has(internalCommand.recordKind)
       ? {kind: internalCommand.recordKind, id: internalCommand.recordId}
@@ -1155,14 +1214,18 @@ export function applyOperation(store, command, mutate) {
       invalid('operation mutate callback must be synchronous');
     }
     validateCommandMutation(internalCommand, primaryBaseline, nextBody);
-    const primary = validateRecord({
-      kind: internalCommand.recordKind,
-      id: internalCommand.recordId,
-      subject: primarySubject,
-      version: internalCommand.expectedVersion + 1,
-      body: nextBody,
-    });
-    writeRecord(store.database, primary);
+    const unchangedPrimary = primaryBaseline !== null
+      && canonicalJson(nextBody) === canonicalJson(primaryBaseline.body);
+    const primary = unchangedPrimary
+      ? primaryBaseline
+      : validateRecord({
+          kind: internalCommand.recordKind,
+          id: internalCommand.recordId,
+          subject: primarySubject,
+          version: internalCommand.expectedVersion + 1,
+          body: nextBody,
+        });
+    if (!unchangedPrimary) writeRecord(store.database, primary);
     if (appendedEvents === 0) {
       eventSeq = appendEvent({
         kind: internalCommand.kind,

@@ -12,6 +12,8 @@ import {
   canonicalJson,
   invalid,
   isPlainObject,
+  parseEpicId,
+  parseTypedId,
   validateActor,
   validateNullableActor,
   validateNullableSubject,
@@ -145,6 +147,7 @@ export const EVIDENCE_KINDS = new Set([
   'deployment',
   'production-verification',
   'recovery-reconciliation',
+  'parent-completion',
 ]);
 export const DOD_DIMENSIONS = new Set([
   'scope-true',
@@ -167,19 +170,94 @@ const RECOVERY_DISPOSITIONS = new Set([
   'conflicting-partial-work',
 ]);
 
-export function criteriaRef(task) {
-  const fields = [
-    'outcome', 'acceptance', 'completion_authority', 'review_requirements',
-    'artifact_expectation', 'artifact_expectation_reason', 'artifact_class',
-    'durability', 'validity_owner', 'artifact_targets',
-  ];
-  const criteria = Object.fromEntries(fields.map(key => [key, task[key]]));
-  if (task.context_artifacts?.length) criteria.context_artifacts = task.context_artifacts;
-  return createHash('sha256').update(canonicalJson(criteria)).digest('hex');
+export function validateHierarchySubject(subject, label = 'subject') {
+  if (!isPlainObject(subject)) invalid(`${label} must be an object`);
+  assertExactKeys(subject, new Set(['kind', 'id']), label);
+  if (!HIERARCHY_KINDS.has(subject.kind)) invalid(`${label}.kind is unsupported`);
+  if (subject.kind === 'epic') parseEpicId(subject.id, `${label}.id`);
+  else parseTypedId(subject.id, subject.kind, `${label}.id`);
+  return subject;
+}
+
+export function subjectRef(subject, version) {
+  validateHierarchySubject(subject);
+  if (!Number.isSafeInteger(version) || version < 1) {
+    invalid('subject version must be a positive safe integer');
+  }
+  return `${subject.kind}/${subject.id}@${version}`;
 }
 
 export function subjectEquals(left, right) {
-  return left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
+  if (left === null || right === null || left === undefined || right === undefined) return false;
+  validateHierarchySubject(left, 'left subject');
+  validateHierarchySubject(right, 'right subject');
+  return left.kind === right.kind && left.id === right.id;
+}
+
+function relationshipSubjects(record) {
+  const body = record.body;
+  if (record.kind === 'epic') {
+    return [...body.required_features, ...body.optional_features]
+      .map(id => ({kind: 'feature', id}));
+  }
+  if (record.kind === 'feature') {
+    return [
+      {kind: 'epic', id: body.epic_id},
+      ...[...body.required_requirements, ...body.optional_requirements]
+        .map(id => ({kind: 'requirement', id})),
+      ...body.depends_on_features.map(dependency => ({kind: 'feature', id: dependency.feature})),
+    ];
+  }
+  if (record.kind === 'requirement') {
+    return [
+      {kind: 'feature', id: body.feature_id},
+      ...[...body.required_tasks, ...body.optional_tasks].map(id => ({kind: 'task', id})),
+    ];
+  }
+  return [
+    {kind: 'feature', id: body.feature_id},
+    ...body.satisfies.map(id => ({kind: 'requirement', id})),
+  ];
+}
+
+export function criteriaRef(record, lookup) {
+  if (!isPlainObject(record) || !HIERARCHY_KINDS.has(record.kind)
+    || record.id !== record.body?.id) {
+    invalid('criteriaRef requires a hierarchy record');
+  }
+  const subject = validateHierarchySubject({kind: record.kind, id: record.id});
+  if (!Number.isSafeInteger(record.version) || record.version < 1) {
+    invalid('criteriaRef record version must be a positive safe integer');
+  }
+  const relationships = relationshipSubjects(record);
+  if (relationships.length > 0 && typeof lookup !== 'function') {
+    invalid('criteriaRef requires a relationship lookup');
+  }
+  const relationshipRefs = relationships.map(relationship => {
+    const related = lookup(relationship.kind, relationship.id);
+    if (!related || related.kind !== relationship.kind || related.id !== relationship.id
+      || !Number.isSafeInteger(related.version) || related.version < 1) {
+      invalid(`criteriaRef relationship ${relationship.kind}/${relationship.id} is missing`);
+    }
+    return subjectRef(relationship, related.version);
+  }).sort();
+  const fields = record.kind === 'task'
+    ? [
+        'outcome', 'acceptance', 'completion_authority', 'review_requirements',
+        'artifact_expectation', 'artifact_expectation_reason', 'artifact_class',
+        'durability', 'validity_owner', 'artifact_targets',
+      ]
+    : ['outcome', 'acceptance', 'completion_authority'];
+  const criteria = Object.fromEntries(fields.map(key => [key, record.body[key]]));
+  if (record.kind === 'task' && record.body.context_artifacts?.length) {
+    criteria.context_artifacts = record.body.context_artifacts;
+  }
+  return createHash('sha256').update(canonicalJson({
+    subject: subjectRef(subject, record.version),
+    criteria,
+    relationships: relationshipRefs,
+    immutable_subject: record.kind === 'task' ? record.body.change_ref : null,
+  })).digest('hex');
 }
 
 export function isProducingRun(task, actor) {
@@ -264,7 +342,7 @@ function validateQuestionBody(body, label) {
   assertExactKeys(body, new Set([
     'schema_version',
     'question_id',
-    'item_id',
+    'subject',
     'asker',
     'recipient',
     'kind',
@@ -278,7 +356,8 @@ function validateQuestionBody(body, label) {
     'resolution',
   ]), label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
-  for (const key of ['question_id', 'item_id', 'recipient', 'context', 'ask', 'answer_by']) {
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  for (const key of ['question_id', 'recipient', 'context', 'ask', 'answer_by']) {
     assertNonEmptyString(body[key], `${label}.${key}`);
   }
   validateActor(body.asker, `${label}.asker`);
@@ -310,8 +389,8 @@ function validateMessageBody(body, label) {
   assertExactKeys(body, new Set([
     'schema_version',
     'message_id',
+    'subject',
     'thread_id',
-    'item_id',
     'parent_id',
     'sender_role',
     'sender_run',
@@ -326,7 +405,8 @@ function validateMessageBody(body, label) {
   ]), label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.message_id, `${label}.message_id`);
-  for (const key of ['thread_id', 'item_id', 'sender_role', 'sender_run', 'recipient']) {
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  for (const key of ['thread_id', 'sender_role', 'sender_run', 'recipient']) {
     assertNonEmptyString(body[key], `${label}.${key}`);
   }
   if (body.parent_id !== null) assertUuid(body.parent_id, `${label}.parent_id`);
@@ -334,6 +414,9 @@ function validateMessageBody(body, label) {
   assertTimestamp(body.created_at, `${label}.created_at`);
   if (!Number.isSafeInteger(body.basis_version) || body.basis_version < 1) {
     invalid(`${label}.basis_version must be a positive safe integer`);
+  }
+  if (body.thread_id !== subjectRef(body.subject, body.basis_version)) {
+    invalid(`${label}.thread_id must bind the exact subject version`);
   }
   if (body.kind === 'question') {
     validateQuestionContent(body.payload);
@@ -363,10 +446,10 @@ function validateReviewBody(body, label) {
   assertExactKeys(body, new Set([
     'schema_version',
     'review_id',
-    'item_id',
+    'subject',
     'reviewer',
     'kind',
-    'subject',
+    'content_ref',
     'criteria',
     'criteria_ref',
     'supersedes',
@@ -377,10 +460,11 @@ function validateReviewBody(body, label) {
   ]), label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.review_id, `${label}.review_id`);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   validateActor(body.reviewer, `${label}.reviewer`);
   assertNonEmptyString(body.kind, `${label}.kind`);
-  validateSubjectRef(body.subject, `${label}.subject`);
+  validateSubjectRef(body.content_ref, `${label}.content_ref`);
   assertStringArray(body.criteria, `${label}.criteria`, {nonEmpty: true});
   validateCriteriaRef(body.criteria_ref, `${label}.criteria_ref`);
   validateSupersedes(body.supersedes, body.review_id, label);
@@ -415,10 +499,10 @@ function validateApprovalBody(body, label) {
   const required = new Set([
     'schema_version',
     'approval_id',
-    'item_id',
+    'subject',
     'authority',
     'kind',
-    'subject',
+    'content_ref',
     'criteria_ref',
     'supersedes',
     'deployment',
@@ -428,21 +512,22 @@ function validateApprovalBody(body, label) {
     'reason',
     'created_at',
   ]);
-  assertExactKeys(body, new Set([...required, 'provenance', 'recorded_at_item_version']), label, required);
+  assertExactKeys(body, new Set([...required, 'provenance', 'recorded_at_subject_version']), label, required);
   if (Object.hasOwn(body, 'provenance')) validateDecisionProvenance(body.provenance, `${label}.provenance`);
-  if (Object.hasOwn(body, 'recorded_at_item_version')
-    && (!Number.isSafeInteger(body.recorded_at_item_version) || body.recorded_at_item_version < 1)) {
-    invalid(`${label}.recorded_at_item_version must be a positive item version`);
+  if (Object.hasOwn(body, 'recorded_at_subject_version')
+    && (!Number.isSafeInteger(body.recorded_at_subject_version) || body.recorded_at_subject_version < 1)) {
+    invalid(`${label}.recorded_at_subject_version must be a positive subject version`);
   }
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.approval_id, `${label}.approval_id`);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
   validateActor(body.authority, `${label}.authority`);
   if (!APPROVAL_KINDS.has(body.kind)) invalid(`${label}.kind is unsupported`);
   validateCriteriaRef(body.criteria_ref, `${label}.criteria_ref`);
   validateSupersedes(body.supersedes, body.approval_id, label);
   if (body.kind === 'operator-recovery-resolution') {
-    if (body.subject !== null) invalid(`${label}.subject must be null for recovery resolution`);
+    if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task for recovery resolution`);
+    if (body.content_ref !== null) invalid(`${label}.content_ref must be null for recovery resolution`);
     assertExactKeys(body.recovery, new Set([
       'attempt_id', 'stale_lease_token', 'disposition', 'resume_role',
     ]), `${label}.recovery`);
@@ -456,10 +541,14 @@ function validateApprovalBody(body, label) {
       invalid(`${label}.recovery.resume_role cannot lease to operator`);
     }
   } else {
-    validateSubjectRef(body.subject, `${label}.subject`);
+    if (body.subject.kind === 'task') validateSubjectRef(body.content_ref, `${label}.content_ref`);
+    else if (body.kind !== 'completion' || body.content_ref !== null) {
+      invalid(`${label} parent subjects support completion approval without a content_ref`);
+    }
     if (body.recovery !== null) invalid(`${label}.recovery is only for recovery resolution`);
   }
   if (body.kind === 'operator-deploy-start' || body.kind === 'operator-deploy-complete') {
+    if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task for deployment confirmation`);
     validateDeploymentContext(body.deployment, `${label}.deployment`);
   } else if (body.deployment !== null) {
     invalid(`${label}.deployment is only for deployment confirmation`);
@@ -476,9 +565,9 @@ function validateEvidenceBody(body, label) {
   const required = new Set([
     'schema_version',
     'evidence_id',
-    'item_id',
-    'kind',
     'subject',
+    'kind',
+    'content_ref',
     'criteria_ref',
     'supersedes',
     'dimension',
@@ -498,20 +587,27 @@ function validateEvidenceBody(body, label) {
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.evidence_id, `${label}.evidence_id`);
   validateSupersedes(body.supersedes, body.evidence_id, label);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
   if (!EVIDENCE_KINDS.has(body.kind)) invalid(`${label}.kind is unsupported`);
-  validateNullableSubject(body.subject, `${label}.subject`);
+  validateNullableSubject(body.content_ref, `${label}.content_ref`);
+  if (body.kind === 'parent-completion') {
+    if (body.subject.kind === 'task') invalid(`${label}.subject must be a parent hierarchy subject`);
+    if (body.content_ref !== null) invalid(`${label}.content_ref must be null for parent completion`);
+  } else if (body.subject.kind !== 'task') {
+    invalid(`${label}.subject must be a Task for execution evidence`);
+  }
   if (body.kind === 'recovery-reconciliation') {
     if (body.criteria_ref !== null) invalid(`${label}.criteria_ref must be null for recovery`);
     if (body.supersedes.length > 0) invalid(`${label} recovery reconciliation cannot supersede observations`);
   } else {
     validateCriteriaRef(body.criteria_ref, `${label}.criteria_ref`);
   }
-  if (body.kind === 'recovery-reconciliation' && body.subject !== null) {
-    invalid(`${label}.subject must be null for recovery reconciliation`);
+  if (body.kind === 'recovery-reconciliation' && body.content_ref !== null) {
+    invalid(`${label}.content_ref must be null for recovery reconciliation`);
   }
-  if (body.kind !== 'recovery-reconciliation' && body.subject === null) {
-    invalid(`${label}.subject is required`);
+  if (!new Set(['recovery-reconciliation', 'parent-completion']).has(body.kind)
+    && body.content_ref === null) {
+    invalid(`${label}.content_ref is required`);
   }
   if (body.kind === 'dod-dimension') {
     if (!DOD_DIMENSIONS.has(body.dimension)) invalid(`${label}.dimension is unsupported`);
@@ -539,7 +635,7 @@ function validateEvidenceBody(body, label) {
     assertNonEmptyString(body.data.environment, `${label}.data.environment`);
     assertNonEmptyString(body.data.deployment_id, `${label}.data.deployment_id`);
     assertStringArray(body.data.checks, `${label}.data.checks`, {nonEmpty: true});
-  } else {
+  } else if (body.kind === 'recovery-reconciliation') {
     assertExactKeys(body.data, new Set([
       'stale_lease_token', 'disposition', 'observed',
     ]), `${label}.data`);
@@ -549,6 +645,8 @@ function validateEvidenceBody(body, label) {
       invalid(`${label}.data.disposition is unsupported`);
     }
     assertNonEmptyString(body.data.observed, `${label}.data.observed`);
+  } else {
+    assertExactKeys(body.data, new Set(), `${label}.data`);
   }
   assertTimestamp(body.created_at, `${label}.created_at`);
 }
@@ -557,7 +655,7 @@ function validateGrantBody(body, label) {
   assertExactKeys(body, new Set([
     'schema_version',
     'grant_id',
-    'item_id',
+    'subject',
     'actor',
     'actions',
     'record_kind',
@@ -571,7 +669,8 @@ function validateGrantBody(body, label) {
   ]), label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.grant_id, `${label}.grant_id`);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   validateActor(body.actor, `${label}.actor`);
   assertStringArray(body.actions, `${label}.actions`, {nonEmpty: true});
   if (!RECORD_KINDS.has(body.record_kind)) invalid(`${label}.record_kind is unsupported`);
@@ -590,7 +689,7 @@ function validateAttemptBody(body, label) {
   assertExactKeys(body, new Set([
     'schema_version',
     'attempt_id',
-    'item_id',
+    'subject',
     'grantor',
     'stale_lease',
     'observed',
@@ -601,7 +700,8 @@ function validateAttemptBody(body, label) {
   ]), label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.attempt_id, `${label}.attempt_id`);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   validateActor(body.grantor, `${label}.grantor`);
   if (body.stale_lease === null) invalid(`${label}.stale_lease is required`);
   validateLease(body.stale_lease, `${label}.stale_lease`);
@@ -656,12 +756,12 @@ function validateDecisionProvenance(value, label) {
 }
 
 export function validateOperatorDecision(value) {
-  const keys = ['source', 'reference', 'attributed_to', 'captured_at', 'item_id', 'subject',
+  const keys = ['source', 'reference', 'attributed_to', 'captured_at', 'subject', 'content_ref',
     'criteria_ref', 'kind', 'decision', 'deployment', 'recovery'];
   assertExactKeys(value, new Set(keys), 'operator decision');
   validateDecisionProvenance(Object.fromEntries(keys.slice(0, 4).map(key => [key, value[key]])), 'operator decision provenance');
-  assertNonEmptyString(value.item_id, 'operator decision item_id');
-  validateNullableSubject(value.subject, 'operator decision subject');
+  validateHierarchySubject(value.subject, 'operator decision subject');
+  validateNullableSubject(value.content_ref, 'operator decision content_ref');
   validateCriteriaRef(value.criteria_ref, 'operator decision criteria_ref');
   if (!APPROVAL_KINDS.has(value.kind)) invalid('operator decision kind is unsupported');
   if (!new Set(['approved', 'rejected']).has(value.decision)) invalid('operator decision is unsupported');
@@ -675,7 +775,7 @@ export function operatorDecisionActor(provenance) {
 
 function validateArtifactBody(body, label) {
   const required = new Set([
-    'schema_version', 'artifact_id', 'item_id', 'producer', 'subject', 'criteria_ref',
+    'schema_version', 'artifact_id', 'subject', 'producer', 'content_ref', 'criteria_ref',
     'project_id', 'run_directory', 'snapshots', 'manifest_path', 'classification',
     'media_type', 'title', 'created_at',
   ]);
@@ -693,9 +793,10 @@ function validateArtifactBody(body, label) {
   }
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.artifact_id, `${label}.artifact_id`);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   validateActor(body.producer, `${label}.producer`);
-  validateSubjectRef(body.subject, `${label}.subject`);
+  validateSubjectRef(body.content_ref, `${label}.content_ref`);
   validateCriteriaRef(body.criteria_ref, `${label}.criteria_ref`);
   assertNullableString(body.project_id, `${label}.project_id`);
   assertNonEmptyString(body.run_directory, `${label}.run_directory`);
@@ -706,9 +807,9 @@ function validateArtifactBody(body, label) {
     assertNonEmptyString(snapshot.snapshot_path, `${label}.snapshot.snapshot_path`);
     validateCriteriaRef(snapshot.digest, `${label}.snapshot.digest`);
   }
-  if ((body.subject.kind === 'git') !== (body.snapshots.length === 0)) invalid(`${label} requires exact non-Git snapshots`);
+  if ((body.content_ref.kind === 'git') !== (body.snapshots.length === 0)) invalid(`${label} requires exact non-Git snapshots`);
   assertNullableString(body.manifest_path, `${label}.manifest_path`);
-  if ((body.subject.kind === 'git') !== (body.manifest_path === null)) invalid(`${label} requires non-Git manifest`);
+  if ((body.content_ref.kind === 'git') !== (body.manifest_path === null)) invalid(`${label} requires non-Git manifest`);
   if (!CLASSIFICATIONS.has(body.classification)) invalid(`${label}.classification is unsupported`);
   for (const key of ['media_type', 'title']) assertNonEmptyString(body[key], `${label}.${key}`);
   assertTimestamp(body.created_at, `${label}.created_at`);
@@ -716,13 +817,14 @@ function validateArtifactBody(body, label) {
 
 function validateAssetBody(body, label) {
   assertExactKeys(body, new Set([
-    'schema_version', 'asset_id', 'item_id', 'artifact_id', 'revision', 'producer',
+    'schema_version', 'asset_id', 'subject', 'artifact_id', 'revision', 'producer',
     'completion_authority', 'validity_owner', 'disposition', 'validity', 'target',
     'completion_approval_id', 'input_asset_ids', 'supersedes', 'superseded_by', 'history', 'updated_at',
   ]), label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   for (const key of ['asset_id', 'artifact_id']) assertUuid(body[key], `${label}.${key}`);
-  assertNonEmptyString(body.item_id, `${label}.item_id`);
+  validateHierarchySubject(body.subject, `${label}.subject`);
+  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   if (!Number.isSafeInteger(body.revision) || body.revision < 1) invalid(`${label}.revision must be positive`);
   validateActor(body.producer, `${label}.producer`);
   assertNonEmptyString(body.completion_authority, `${label}.completion_authority`);
@@ -736,8 +838,8 @@ function validateAssetBody(body, label) {
   for (const id of body.input_asset_ids) assertUuid(id, `${label}.input_asset_ids entry`);
   if (!Array.isArray(body.history) || body.history.length === 0) invalid(`${label}.history is required`);
   for (const entry of body.history) {
-    assertExactKeys(entry, new Set(['disposition', 'validity', 'target', 'reason', 'at', 'at_item_version']), `${label}.history entry`);
-    if (!Number.isSafeInteger(entry.at_item_version) || entry.at_item_version < 1) invalid(`${label}.history item version must be positive`);
+    assertExactKeys(entry, new Set(['disposition', 'validity', 'target', 'reason', 'at', 'at_subject_version']), `${label}.history entry`);
+    if (!Number.isSafeInteger(entry.at_subject_version) || entry.at_subject_version < 1) invalid(`${label}.history subject version must be positive`);
     if (!ASSET_DISPOSITIONS.has(entry.disposition) || !ASSET_VALIDITIES.has(entry.validity)) invalid(`${label} history has unsupported state`);
     assertNonEmptyString(entry.target, `${label}.history.target`);
     assertNonEmptyString(entry.reason, `${label}.history.reason`);
@@ -747,8 +849,11 @@ function validateAssetBody(body, label) {
 }
 
 function validateProducerCommand(command) {
-  if (command.recordKind !== 'task' || command.expectedVersion < 1) invalid(`${command.kind} requires an existing Task`);
+  if (!HIERARCHY_KINDS.has(command.recordKind) || command.expectedVersion < 1) {
+    invalid(`${command.kind} requires an existing hierarchy subject`);
+  }
   if (command.kind === 'artifact.register') {
+    if (command.recordKind !== 'task') invalid('artifact.register requires an existing Task');
     const required = new Set([
       'artifactId', 'assetId', 'subject', 'projectId', 'classification', 'mediaType', 'title', 'inputAssetIds', 'at',
     ]);
@@ -765,6 +870,7 @@ function validateProducerCommand(command) {
     for (const id of command.payload.inputAssetIds) assertUuid(id, 'artifact.register inputAssetIds entry');
     assertTimestamp(command.payload.at, 'artifact.register at');
   } else if (command.kind === 'asset.transition') {
+    if (command.recordKind !== 'task') invalid('asset.transition requires an existing Task');
     assertExactKeys(command.payload, new Set([
       'assetId', 'disposition', 'validity', 'target', 'approvalId', 'supersedes', 'reason', 'at',
     ]), 'asset.transition payload');
@@ -780,11 +886,23 @@ function validateProducerCommand(command) {
     assertExactKeys(command.payload, new Set(command.kind === 'evidence.register' ? ['body', 'tier'] : ['body']), `${command.kind} payload`);
     const kind = command.kind.split('.')[0];
     recordBodyValidators.get(kind)(command.payload.body, `${command.kind} body`);
-    if (command.payload.body.item_id !== command.recordId) {
-      invalid(`${command.kind} must bind the primary Task`);
+    const subject = {kind: command.recordKind, id: command.recordId};
+    if (!subjectEquals(command.payload.body.subject, subject)) {
+      invalid(`${command.kind} must bind the primary hierarchy subject`);
+    }
+    if (kind === 'review' && command.recordKind !== 'task') {
+      invalid('review.record requires an existing Task');
+    }
+    if (kind === 'approval' && command.recordKind !== 'task'
+      && command.payload.body.kind !== 'completion') {
+      invalid('only completion approvals may bind parent hierarchy subjects');
+    }
+    if (kind === 'evidence' && command.recordKind !== 'task'
+      && command.payload.body.kind !== 'parent-completion') {
+      invalid('only parent-completion evidence may bind parent hierarchy subjects');
     }
     if (Object.hasOwn(command.payload.body, 'provenance')) invalid('provenance is host-derived, not command input');
-    if (Object.hasOwn(command.payload.body, 'recorded_at_item_version')) invalid('recorded item version is runtime-derived');
+    if (Object.hasOwn(command.payload.body, 'recorded_at_subject_version')) invalid('recorded subject version is runtime-derived');
     if (kind === 'evidence' && !new Set(['observed', 'declared']).has(command.payload.tier)) invalid('evidence.register tier is unsupported');
   }
 }
@@ -806,7 +924,7 @@ const recordBodyValidators = new Map([
 ]);
 
 function validateAtPayload(command, kind, keys) {
-  if (command.recordKind !== 'task') invalid(`${kind} requires recordKind "task"`);
+  if (!HIERARCHY_KINDS.has(command.recordKind)) invalid(`${kind} requires a hierarchy recordKind`);
   if (command.expectedVersion < 1) invalid(`${kind} requires an existing record version`);
   assertExactKeys(command.payload, new Set(keys), `${kind} payload`);
 }
@@ -1055,12 +1173,13 @@ export function validateRecord(record) {
   }
   assertNonEmptyString(record.id, 'record.id');
   if (record.subject !== null) {
-    if (!isPlainObject(record.subject)) invalid('record.subject must be an object or null');
-    assertExactKeys(record.subject, new Set(['kind', 'id']), 'record.subject');
-    if (!new Set([...HIERARCHY_KINDS, 'item']).has(record.subject.kind)) {
-      invalid('record.subject.kind is unsupported');
+    if (record.subject.kind === 'item') {
+      if (!isPlainObject(record.subject)) invalid('record.subject must be an object or null');
+      assertExactKeys(record.subject, new Set(['kind', 'id']), 'record.subject');
+      assertNonEmptyString(record.subject.id, 'record.subject.id');
+    } else {
+      validateHierarchySubject(record.subject, 'record.subject');
     }
-    assertNonEmptyString(record.subject.id, 'record.subject.id');
   }
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
     invalid('record.version must be a positive safe integer');
@@ -1079,9 +1198,8 @@ export function validateRecord(record) {
   }
   if (new Set(['question', 'attempt', 'host-attempt', 'effect', 'evidence', 'review', 'approval', 'artifact', 'asset',
     'message', 'grant']).has(record.kind)
-    && (record.subject === null
-      || (record.subject.kind === 'item' && record.subject.id !== record.body.item_id))) {
-    invalid(`${record.kind} record subject must bind body.item_id during the schema-4 transition`);
+    && (record.subject === null || !subjectEquals(record.subject, record.body.subject))) {
+    invalid(`${record.kind} record envelope subject must match body.subject`);
   }
   const identityKeys = new Map([
     ['artifact', 'artifact_id'],

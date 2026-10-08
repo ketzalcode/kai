@@ -37,7 +37,7 @@ const actor = {role, runId: 'host-recorder'};
 const roster = [{id: qualifiedId, role, model}];
 const taskRecords = (store, kind, taskId = fixtureIds.task) => listRecords(store, {
   kind,
-  subject: {kind: 'item', id: taskId},
+  subject: {kind: 'task', id: taskId},
 });
 const profiles = {[role]: 'execution'};
 const capabilities = {
@@ -286,7 +286,7 @@ check('host intent persists separately from recovery attempts without changing t
     assert.equal(receipt.ok, true);
     assert.equal(receipt.recordVersion, 1);
     const persisted = readDetail(store, {kind: 'host-attempt', id: cmd.recordId});
-    assert.deepEqual(persisted.subject, {kind: 'item', id: fixtureIds.task});
+    assert.deepEqual(persisted.subject, {kind: 'task', id: fixtureIds.task});
     assert.equal(persisted.body.status, 'intent');
     assert.equal(persisted.body.requested_model, model);
     assert.equal(persisted.body.agent_id, qualifiedId);
@@ -296,11 +296,13 @@ check('host intent persists separately from recovery attempts without changing t
       {...store.database.prepare(`
         SELECT subject_kind, subject_id FROM events WHERE seq = ?
       `).get(receipt.eventSeq)},
-      {subject_kind: 'item', subject_id: fixtureIds.task},
+      {subject_kind: 'task', subject_id: fixtureIds.task},
     );
     observe(host, store, result(cmd), {status: 'completed', liveness: 'stopped', actualModel: model});
     assert.deepEqual(readRecord(store, 'task', fixtureIds.task), item);
-    assert.equal(JSON.parse(projectContext(store, {itemId: fixtureIds.task}).text).item.state,
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).subject.state,
       'in-progress');
   }));
 
@@ -399,7 +401,7 @@ check('duplicate completions are idempotent, changed captures conflict, contradi
     const duplicate = host.authorize({...end, operationId: randomUUID(), expectedVersion: 2});
     recordHostResult(store, duplicate, host.capture(duplicate, {status: 'completed', liveness: 'stopped', actualModel: model}));
     assert.equal(readRecord(store, 'host-attempt', cmd.recordId).body.observations.length, 1);
-    observe(host, store, result(cmd, {expectedVersion: 3}), stopped);
+    observe(host, store, result(cmd, {expectedVersion: 2}), stopped);
     const body = readRecord(store, 'host-attempt', cmd.recordId).body;
     assert.equal(body.status, 'conflicting');
     assert.equal(body.observations.length, 2);
@@ -724,7 +726,7 @@ check('unresolved external/paid intent blocks replay, survives uncertain results
     recordAttempt(store, host.authorize(attempt));
     const intent = effect(attempt, {paid: true, idempotencyKey: 'invoice-42'});
     const receipt = recordEffect(store, host.authorize(intent));
-    assert.deepEqual(receipt.data.record.subject, {kind: 'item', id: fixtureIds.task});
+    assert.deepEqual(receipt.data.record.subject, {kind: 'task', id: fixtureIds.task});
     assert.equal(receipt.data.record.body.outcome, 'unknown');
     assert.equal(receipt.data.record.body.attempt_id, attempt.recordId);
     assert.deepEqual(recordEffect(store, intent), receipt);

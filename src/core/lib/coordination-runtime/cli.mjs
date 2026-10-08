@@ -1,6 +1,6 @@
 import {existsSync} from 'node:fs';
 import {resolveWorkspaceRoot} from '../workspace-resolve.mjs';
-import {RuntimeError, validateCommand} from './contract.mjs';
+import {RuntimeError, validateCommand, validateHierarchySubject} from './contract.mjs';
 import {migrationManifest, safePath, DATABASE, sourceSnapshot, exactFile, hash} from './migration-files.mjs';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {openStore, closeStore, listAllRecords, readStoreSummary} from './store.mjs';
@@ -13,6 +13,10 @@ import {hashArtifact} from './evidence.mjs';
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 const reads = new Set(['inspect', 'status', 'context', 'detail', 'messages', 'export', 'legacy', 'hash']);
 const required = (options, name) => options[name] ?? fail('INVALID_INPUT', `--${name} is required`);
+const hierarchySubject = options => validateHierarchySubject({
+  kind: required(options, 'kind'),
+  id: required(options, 'id'),
+});
 
 export async function execute({verb, options, body, host, cwd, env}) {
   const resolved = resolveWorkspaceRoot({explicitRoot: options.root, cwd, env});
@@ -51,20 +55,28 @@ export async function execute({verb, options, body, host, cwd, env}) {
     try {
       if (verb === 'status') return {...base, tasks: listAllRecords(store, {kind: 'task'})};
       if (verb === 'context') return {...base, context: projectContext(store, {
-        itemId: required(options, 'item'), maxBytes: options['max-bytes'], recentLimit: options['recent-limit'],
+        subject: hierarchySubject(options),
+        maxBytes: options['max-bytes'],
+        recentLimit: options['recent-limit'],
       })};
       if (verb === 'detail') return {...base, record: readDetail(store, {kind: required(options, 'kind'), id: required(options, 'id')})};
       if (verb === 'messages') return {...base, ...readMessages(store, {
-        threadId: required(options, 'item'), beforeSeq: options['before-seq'], limit: options.limit,
+        subject: hierarchySubject(options),
+        beforeSeq: options['before-seq'],
+        limit: options.limit,
       })};
       if (verb === 'legacy') return {...base, sources: readLegacyRecords(store, {
         sourceId: options.source, includeRaw: options.raw ?? false,
       }).map(source => ({...source, ...(source.raw ? {raw: source.raw.toString('base64'), rawEncoding: 'base64'} : {})}))};
       if (verb === 'hash') return {...base, subject: hashArtifact({root, relativePath: required(options, 'path')})};
       if (verb === 'export') {
-        const itemId = required(options, 'item');
-        const view = buildReport(store, {itemId});
-        return {...base, report: writeReport({root, itemId, view})};
+        const subject = hierarchySubject(options);
+        const view = buildReport(store, {subject});
+        const target = {
+          directory: required(options, 'target'),
+          accepted_hash: required(options, 'accepted-hash'),
+        };
+        return {...base, report: writeReport({root, subject, view, target})};
       }
     } finally { closeStore(store); }
   }

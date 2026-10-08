@@ -26,6 +26,9 @@ export {bindEvidenceRuntime} from './evidence-context.mjs';
 export {verifyReferences} from './evidence-integrity.mjs';
 
 const clone = value => JSON.parse(canonicalJson(value));
+const contentEquals = (left, right) =>
+  left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
+const lookup = tx => (kind, id) => tx.get(kind, id);
 
 function ordinaryAuthority(store, tx, item, command, authority) {
   if (item.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'operator recovery hold must be resolved first');
@@ -52,7 +55,7 @@ function produce(store, command, kind, authority, action) {
   return applyOperation(store, input, (item, tx) => {
     bindEvidenceTransaction(store, tx);
     action({context, item, tx, command: input, authority: trusted});
-    // Registration serializes against the item, but never changes lifecycle or criteria.
+    // Registration serializes against the hierarchy subject without changing its criteria.
     return item.body;
   });
 }
@@ -62,17 +65,19 @@ function putNew(tx, kind, id, item, body) {
   tx.put(validateRecord({
     kind,
     id,
-    subject: {kind: 'item', id: item.id},
+    subject: body.subject,
     version: 1,
     body,
   }));
 }
 
-function currentBinding(body, item, {recovery = false} = {}) {
-  if (body.item_id !== item.id || body.criteria_ref !== (recovery ? null : criteriaRef(item.body))
-    || (!recovery && !subjectEquals(body.subject, item.body.change_ref))
-    || (recovery && body.subject !== null)) {
-    fail('EVIDENCE_GAP', 'record must bind the current item, exact subject, and criteria');
+function currentBinding(body, item, tx, {recovery = false} = {}) {
+  const expected = {kind: item.kind, id: item.id};
+  if (!subjectEquals(body.subject, expected)
+    || body.criteria_ref !== (recovery ? null : criteriaRef(item, lookup(tx)))
+    || (!recovery && item.kind === 'task' && !contentEquals(body.content_ref, item.body.change_ref))
+    || ((!recovery && item.kind !== 'task') || recovery) && body.content_ref !== null) {
+    fail('EVIDENCE_GAP', 'record must bind the current hierarchy subject, exact content, and criteria');
   }
 }
 
@@ -83,6 +88,16 @@ function independent(item, actor) {
 function contentEntries(subject) {
   return subject.kind === 'sha256' ? [{path: subject.path, digest: subject.digest}]
     : subject.kind === 'bundle-sha256' ? subject.entries : [];
+}
+
+function verifyAcceptedReportExcerpts(refs) {
+  if (!Array.isArray(refs) || refs.length === 0
+    || refs.some(reference =>
+      !/^report:(core|engineering|creative):[a-z0-9][a-z0-9._-]*:[a-z0-9][a-z0-9._-]*#[a-z0-9][a-z0-9._-]*$/i.test(reference))
+    || new Set(refs).size !== refs.length) {
+    fail('EVIDENCE_GAP', 'parent completion evidence requires explicit accepted report safe-excerpt references');
+  }
+  return [];
 }
 
 function operatorDecision(context, command) {
@@ -96,7 +111,7 @@ function operatorDecision(context, command) {
     fail('AUTHORITY_REQUIRED', 'an actual host interaction or attributed supplied operator decision is required');
   }
   const body = command.payload.body;
-  for (const key of ['item_id', 'subject', 'criteria_ref', 'kind', 'decision', 'deployment', 'recovery']) {
+  for (const key of ['subject', 'content_ref', 'criteria_ref', 'kind', 'decision', 'deployment', 'recovery']) {
     if (canonicalJson(proof[key]) !== canonicalJson(body[key])) {
       fail('AUTHORITY_REQUIRED', 'operator decision does not bind the exact approval claim');
     }
@@ -133,7 +148,7 @@ export function registerArtifact(store, command) {
       }
       const paths = new Set(selected.map(e => normalized(assertWorkspacePath(context.root, e.path))));
       for (const previous of registered) {
-        if ((subjectEquals(subject, previous.body.subject) || contentEntries(previous.body.subject).some(prior =>
+        if ((contentEquals(subject, previous.body.content_ref) || contentEntries(previous.body.content_ref).some(prior =>
           selected.some(entry => entry.digest === prior.digest)
           || paths.has(normalized(assertWorkspacePath(context.root, prior.path)))))
           && privacyRank[p.classification] < privacyRank[previous.body.classification]) {
@@ -155,8 +170,9 @@ export function registerArtifact(store, command) {
     // Filesystem output is intentionally not deleted on transaction failure.
     const retained = retainSubject(context.root, p.subject, p.projectId, run.directory, p.artifactId);
     putNew(tx, 'artifact', p.artifactId, item, {
-      schema_version: 1, artifact_id: p.artifactId, item_id: item.id, producer: command.actor,
-      subject: p.subject, criteria_ref: criteriaRef(item.body), project_id: p.projectId,
+      schema_version: 1, artifact_id: p.artifactId,
+      subject: {kind: item.kind, id: item.id}, producer: command.actor,
+      content_ref: p.subject, criteria_ref: criteriaRef(item, lookup(tx)), project_id: p.projectId,
       run_directory: run.directory, ...retained, classification: p.classification,
       media_type: p.mediaType, title: p.title, created_at: p.at,
       input_basis: inputBasis,
@@ -165,14 +181,15 @@ export function registerArtifact(store, command) {
       : retained.manifest_path ?? `project:${p.projectId}:@git`;
     const disposition = sourcePaths.some(path => pathPrivacy(context.root, path) === 'personal') ? 'personal' : 'scratch';
     putNew(tx, 'asset', p.assetId, item, {
-      schema_version: 1, asset_id: p.assetId, item_id: item.id, artifact_id: p.artifactId,
+      schema_version: 1, asset_id: p.assetId,
+      subject: {kind: item.kind, id: item.id}, artifact_id: p.artifactId,
       revision: 1, producer: command.actor, completion_authority: item.body.completion_authority,
       validity_owner: item.body.validity_owner, disposition, validity: 'provisional', target,
       completion_approval_id: null, input_asset_ids: p.inputAssetIds,
       supersedes: null, superseded_by: null, updated_at: p.at,
       history: [{
         disposition, validity: 'provisional', target, reason: 'Registered exact output',
-        at: p.at, at_item_version: command.expectedVersion,
+        at: p.at, at_subject_version: command.expectedVersion,
       }],
     });
   });
@@ -184,18 +201,18 @@ export function recordReview(store, command) {
     const b = command.payload.body;
     if (!sameActor(b.reviewer, command.actor)) fail('AUTHORITY_REQUIRED', 'review actor must match the command');
     independent(item, command.actor);
-    currentBinding(b, item);
+    currentBinding(b, item, tx);
     if (b.kind === 'product-design-acceptance'
       && (command.actor.role !== item.body.completion_authority
         || item.body.producing_actors.some(actor => actor.role === command.actor.role))) {
       fail('AUTHORITY_REQUIRED', 'product design acceptance requires an independent completion authority');
     }
-    subjectArtifact(context, tx, item, b.subject, command.actor);
+    subjectArtifact(context, tx, item, b.content_ref, command.actor);
     verifyReferences(context, tx, item, [...b.evidence_refs, ...b.finding_refs], {positive: b.verdict === 'approved'});
     effectiveReviews([
-      ...tx.list('review', {kind: 'item', id: item.id}).map(r => r.body),
+      ...tx.list('review', {kind: item.kind, id: item.id}).map(r => r.body),
       b,
-    ], item.body);
+    ], item, lookup(tx));
     putNew(tx, 'review', b.review_id, item, b);
   });
 }
@@ -204,6 +221,22 @@ export function recordApproval(store, command, authority) {
   return produce(store, command, 'approval.record', authority, ({context, item, tx, command, authority}) => {
     const b = command.payload.body;
     if (!sameActor(b.authority, command.actor)) fail('AUTHORITY_REQUIRED', 'approval actor must match the command');
+    if (item.kind !== 'task') {
+      requireNamedAuthority(tx, command, authority, command.kind, item.body.completion_authority);
+      if (b.kind !== 'completion') fail('INVALID_INPUT', 'parent subjects support completion approval only');
+      currentBinding(b, item, tx);
+      if (command.actor.role !== item.body.completion_authority) {
+        fail('AUTHORITY_REQUIRED', 'parent completion approval requires its declared completion authority');
+      }
+      verifyReferences(context, tx, item, b.evidence_refs);
+      const body = {...b, recorded_at_subject_version: command.expectedVersion};
+      effectiveApprovals([
+        ...tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
+        body,
+      ], item, lookup(tx));
+      putNew(tx, 'approval', b.approval_id, item, body);
+      return;
+    }
     const needsHuman = command.actor.role === 'operator' || item.body.artifact_class === 'paid-media';
     let provenance;
     if (needsHuman) {
@@ -220,8 +253,8 @@ export function recordApproval(store, command, authority) {
     if (recovery) {
       requireNamedAuthority(tx, command, authority, command.kind, 'operator');
       const attempt = tx.get('attempt', b.recovery.attempt_id);
-      if (b.criteria_ref !== criteriaRef(item.body) || item.body.recovery_hold !== b.recovery.attempt_id
-        || attempt?.subject?.kind !== 'item' || attempt.subject.id !== item.id
+      if (b.criteria_ref !== criteriaRef(item, lookup(tx)) || item.body.recovery_hold !== b.recovery.attempt_id
+        || attempt?.subject?.kind !== 'task' || attempt.subject.id !== item.id
         || attempt.body.disposition !== 'conflicting-partial-work'
         || attempt.body.stale_lease.token !== b.recovery.stale_lease_token) {
         fail('AUTHORITY_REQUIRED', 'operator recovery resolution requires the exact current conflicting attempt');
@@ -237,18 +270,23 @@ export function recordApproval(store, command, authority) {
       } else {
         ordinaryAuthority(store, tx, item, command, authority);
       }
-      currentBinding(b, item);
-      subjectArtifact(context, tx, item, b.subject, decisionActor);
+      currentBinding(b, item, tx);
+      subjectArtifact(context, tx, item, b.content_ref, decisionActor);
       const role = b.kind === 'completion' ? item.body.completion_authority
         : b.kind === 'scope' ? item.body.scope_authority : 'operator';
       if (command.actor.role !== role) fail('AUTHORITY_REQUIRED', 'approval must come from its declared authority');
     }
     verifyReferences(context, tx, item, b.evidence_refs, {recovery, positive: b.decision === 'approved'});
-    const body = {...b, authority: decisionActor, recorded_at_item_version: command.expectedVersion, ...(provenance ? {provenance} : {})};
+    const body = {
+      ...b,
+      authority: decisionActor,
+      recorded_at_subject_version: command.expectedVersion,
+      ...(provenance ? {provenance} : {}),
+    };
     const effective = effectiveApprovals([
-      ...tx.list('approval', {kind: 'item', id: item.id}).map(r => r.body),
+      ...tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
       body,
-    ], item.body);
+    ], item, lookup(tx));
     const deployments = effective.filter(a => a.deployment !== null && a.decision === 'approved');
     if (new Set(deployments.map(a => canonicalJson(a.deployment))).size > 1) {
       fail('AUTHORITY_REQUIRED', 'operator confirmations disagree about the production deployment');
@@ -261,8 +299,11 @@ export function recordApproval(store, command, authority) {
 export function registerEvidence(store, command, capture) {
   return produce(store, command, 'evidence.register', undefined, ({context, item, tx, command, authority}) => {
     const b = command.payload.body;
+    const parentCompletion = b.kind === 'parent-completion';
     const recovery = b.kind === 'recovery-reconciliation';
-    if (recovery) {
+    if (parentCompletion) {
+      requireNamedAuthority(tx, command, authority, command.kind, item.body.completion_authority);
+    } else if (recovery) {
       requireNamedAuthority(tx, command, authority, command.kind, item.body.scope_authority);
       if (!item.body.lease || leaseIsLive(item.body.lease)
         || item.body.lease.token !== b.data.stale_lease_token) {
@@ -271,9 +312,13 @@ export function registerEvidence(store, command, capture) {
     } else {
       ordinaryAuthority(store, tx, item, command, authority);
     }
-    currentBinding(b, item, {recovery});
-    if (!recovery) subjectArtifact(context, tx, item, b.subject, b.outcome === 'waived' ? command.actor : null);
-    const artifacts = verifyReferences(context, tx, item, b.evidence_refs, {recovery});
+    currentBinding(b, item, tx, {recovery});
+    if (!recovery && item.kind === 'task') {
+      subjectArtifact(context, tx, item, b.content_ref, b.outcome === 'waived' ? command.actor : null);
+    }
+    const artifacts = parentCompletion
+      ? verifyAcceptedReportExcerpts(b.evidence_refs)
+      : verifyReferences(context, tx, item, b.evidence_refs, {recovery});
     let observation = null;
     if (command.payload.tier === 'observed') {
       if (!context.verifyCapture) fail('INVALID_INPUT', 'agent paste or a source label is not observed capture');
@@ -316,9 +361,9 @@ export function registerEvidence(store, command, capture) {
     const body = {...b, provenance: {tier: command.payload.tier, capture: observation}};
     if (!recovery) {
       effectiveEvidence([
-        ...tx.list('evidence', {kind: 'item', id: item.id}).map(r => r.body),
+        ...tx.list('evidence', {kind: item.kind, id: item.id}).map(r => r.body),
         body,
-      ], item.body);
+      ], item, lookup(tx));
     }
     putNew(tx, 'evidence', b.evidence_id, item, body);
   });

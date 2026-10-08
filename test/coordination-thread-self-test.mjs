@@ -13,6 +13,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseThread, parseQuestions } from '../src/core/lib/coordination.mjs';
+import {
+  subjectEquals,
+  subjectRef,
+  validateHierarchySubject,
+  validateRecord,
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -306,6 +312,86 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   ].join('\n');
   assert.ok(Array.isArray(parseQuestions(raw)), 'parseQuestions still returns an array of questions');
   assert.equal(parseQuestions(raw)[0].status, 'answered');
+}
+
+// --- schema 5 durable communication binds one exact hierarchy subject ------
+{
+  const feature = {kind: 'feature', id: 'engineering:feature:typed-subject'};
+  assert.deepEqual(validateHierarchySubject(feature, 'message subject'), feature);
+  assert.equal(subjectRef(feature, 3), 'feature/engineering:feature:typed-subject@3');
+  assert.equal(subjectEquals(feature, {...feature}), true);
+  assert.equal(subjectEquals(feature, {kind: 'task', id: 'engineering:task:typed-subject'}), false);
+
+  const messageId = '00000000-0000-4000-8000-000000000091';
+  const message = {
+    kind: 'message',
+    id: messageId,
+    subject: feature,
+    version: 1,
+    body: {
+      schema_version: 1,
+      message_id: messageId,
+      subject: feature,
+      thread_id: subjectRef(feature, 3),
+      parent_id: null,
+      sender_role: 'eng-builder-software',
+      sender_run: 'typed-subject-run',
+      recipient: 'eng-lead-architecture',
+      kind: 'handoff',
+      created_at: '2026-10-06T12:00:00.000Z',
+      basis_version: 3,
+      payload: {
+        did: 'Bound the message to the Feature.',
+        needs: 'Feature-owner review.',
+        assetState: 'none',
+        authority: 'pending',
+        revalidation: 'required',
+        questions: [],
+      },
+      artifact_refs: [],
+      evidence_refs: [],
+      provenance: 'durable-thread',
+    },
+  };
+  assert.equal(validateRecord(message), message);
+  assert.throws(
+    () => validateRecord({
+      ...message,
+      subject: {kind: 'task', id: 'engineering:task:typed-subject'},
+    }),
+    error => error.code === 'INVALID_INPUT',
+    'the SQLite envelope and message body must bind the same typed subject',
+  );
+
+  const attemptId = '00000000-0000-4000-8000-000000000092';
+  assert.throws(
+    () => validateRecord({
+      kind: 'attempt',
+      id: attemptId,
+      subject: feature,
+      version: 1,
+      body: {
+        schema_version: 1,
+        attempt_id: attemptId,
+        subject: feature,
+        grantor: {role: 'eng-lead-architecture', runId: 'typed-subject-run'},
+        stale_lease: {
+          holder: {role: 'eng-builder-software', runId: 'typed-subject-run'},
+          token: 'typed-subject-lease',
+          version_at_grant: 3,
+          acquired_at: '2026-10-06T10:00:00.000Z',
+          expires_at: '2026-10-06T11:00:00.000Z',
+        },
+        observed: 'The execution lease expired.',
+        disposition: 'safe-to-resume',
+        recovery_evidence_ids: ['00000000-0000-4000-8000-000000000093'],
+        new_lease: null,
+        created_at: '2026-10-06T12:00:00.000Z',
+      },
+    }),
+    error => error.code === 'INVALID_INPUT',
+    'execution attempts require Task subjects',
+  );
 }
 
 console.log('✓ coordination-thread self-test: all checks passed');

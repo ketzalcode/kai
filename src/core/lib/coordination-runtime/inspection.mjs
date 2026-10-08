@@ -63,14 +63,14 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
     }
     readSnapshot(store, () => {
       const throughSeq = Number(store.database.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM events').get().seq);
-      const items = [];
+      const records = [];
       const findings = [];
       const add = (item, section, headline, why, path = DATABASE) =>
         findings.push({section, item, tier: 'derived', headline, why, path});
       for (const row of store.database.prepare(
         "SELECT kind, id FROM records WHERE kind IN ('item', 'task') ORDER BY kind, id",
       ).all()) {
-        try { items.push(readRecord(store, row.kind, row.id)); }
+        try { records.push(readRecord(store, row.kind, row.id)); }
         catch (error) { add(row.id, 'integrity', 'runtime record is malformed', error.message); }
       }
       const sources = readLegacyRecords(store);
@@ -78,41 +78,44 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
         result.warnings.push(`quarantined ${source.kind}/${source.declaredId ?? source.path}: ${source.issues.join('; ')}`);
         add(source.declaredId ?? source.path, 'integrity', `quarantined legacy ${source.kind}`, source.issues.join('; '), source.path);
       }
-      for (const item of items) {
-        if (item.body.state === 'blocked') add(item.id, 'blocked', 'recorded lifecycle is blocked', 'Resolve recorded blockers through authorized runtime commands.');
-        if (['release-ready', 'deploying', 'production-verification'].includes(item.body.state)) {
-          add(item.id, 'needs-you', 'recorded lifecycle waits on an operator', 'No deployment or production action is inferred.');
+      for (const record of records) {
+        if (record.body.state === 'blocked') add(record.id, 'blocked', 'recorded lifecycle is blocked', 'Resolve recorded blockers through authorized runtime commands.');
+        if (['release-ready', 'deploying', 'production-verification'].includes(record.body.state)) {
+          add(record.id, 'needs-you', 'recorded lifecycle waits on an operator', 'No deployment or production action is inferred.');
         }
-        for (const dep of item.body.depends_on) {
+        for (const dep of record.body.depends_on) {
           const dependencyId = dep.task ?? dep.item;
-          const upstream = items.find(i => i.kind === item.kind && i.id === dependencyId);
-          if (!upstream) add(item.id, 'integrity', 'dependency is missing or quarantined', dependencyId);
-          else if (!TERMINAL.has(item.body.state) && !taskStateSatisfies(upstream, dep.requires)) {
-            add(item.id, 'blocked', 'dependency gate is not satisfied', `${dependencyId} requires ${dep.requires}`);
+          const upstream = records.find(candidate =>
+            candidate.kind === record.kind && candidate.id === dependencyId);
+          if (!upstream) add(record.id, 'integrity', 'dependency is missing or quarantined', dependencyId);
+          else if (!TERMINAL.has(record.body.state) && !taskStateSatisfies(upstream, dep.requires)) {
+            add(record.id, 'blocked', 'dependency gate is not satisfied', `${dependencyId} requires ${dep.requires}`);
           }
         }
-        try { projectContext(store, {itemId: item.id}); }
-        catch (error) { add(item.id, 'unknown', 'runtime context/evidence gap', error.message); }
+        if (record.kind !== 'task') continue;
+        const subject = {kind: 'task', id: record.id};
+        try { projectContext(store, {subject}); }
+        catch (error) { add(record.id, 'unknown', 'runtime context/evidence gap', error.message); }
         try {
-          const report = inspectReportIndex({root, itemId: item.id});
-          const paths = reportPaths({root, itemId: item.id});
+          const report = inspectReportIndex({root, subject});
+          const paths = reportPaths({root, subject});
           if (!report) {
             if (existsSync(paths.directory) && readdirSync(paths.directory).length) {
-              result.warnings.push(`partial/old derived report for ${item.id}: no complete owned index`);
+              result.warnings.push(`partial/old derived report for ${record.id}: no complete owned index`);
             }
           } else {
             const metadata = report.metadata;
-            if (metadata.through_seq !== throughSeq || metadata.item.version !== item.version) {
-              result.warnings.push(`stale derived report for ${item.id}: source sequence ${metadata.through_seq}, live ${throughSeq}; item version ${metadata.item.version}, live ${item.version}`);
+            if (metadata.through_seq !== throughSeq || metadata.subject_version !== record.version) {
+              result.warnings.push(`stale derived report for ${record.id}: source sequence ${metadata.through_seq}, live ${throughSeq}; subject version ${metadata.subject_version}, live ${record.version}`);
             }
             const selected = new Set(['index.html', basename(report.paths.metadataPath), metadata.html.file,
               metadata.markdown.file, ...metadata.companions.map(c => c.file)]);
             const others = readdirSync(paths.directory).filter(file => !selected.has(file));
-            if (others.length) result.warnings.push(`older or partial derived output remains for ${item.id}; selected complete generation alone was verified`);
+            if (others.length) result.warnings.push(`older or partial derived output remains for ${record.id}; selected complete generation alone was verified`);
           }
-        } catch (error) { result.warnings.push(`changed/incomplete derived report for ${item.id}: ${error.message}`); }
+        } catch (error) { result.warnings.push(`changed/incomplete derived report for ${record.id}: ${error.message}`); }
       }
-      result.runtime = {throughSeq, items, findings, sources};
+      result.runtime = {throughSeq, records, findings, sources};
     });
     if (manifest.coordination_migration) {
       try {

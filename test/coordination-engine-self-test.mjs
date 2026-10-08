@@ -6,6 +6,7 @@ import {dirname, join} from 'node:path';
 import {
   RuntimeError,
   criteriaRef,
+  subjectRef,
   validateCommand,
   validateRecord,
   validateSubjectRef,
@@ -36,7 +37,7 @@ const steward = {role: 'eng-lead-architecture', runId: 'steward-run'};
 const shipper = {role: 'workflow-ship', runId: 'ship-run'};
 const operator = {role: 'operator', runId: 'operator-run'};
 const taskId = slug => `engineering:task:${slug}`;
-const runDirectory = '.kai/runs/engine/2026-09-16/01-fixture';
+const runDirectory = '.kai/engineering/reports/engine-fixture/scratch';
 const subjectBytes = 'Exact engine completion fixture bytes.';
 const subject = {
   kind: 'sha256',
@@ -44,8 +45,13 @@ const subject = {
   digest: createHash('sha256').update(subjectBytes).digest('hex'),
 };
 
+const criteriaFor = (store, taskIdValue) => {
+  const task = readRecord(store, 'task', taskIdValue);
+  return criteriaRef(task, (kind, id) => readRecord(store, kind, id));
+};
+
 function retainedRefs(store, taskIdValue, artifactSubject = subject,
-  binding = criteriaRef(readRecord(store, 'task', taskIdValue).body)) {
+  binding = criteriaFor(store, taskIdValue)) {
   const root = dirname(dirname(dirname(store.path)));
   bindEvidenceRuntime(store, {root, authority: {roles: [], grants: []}, runs: []});
   const id = randomUUID();
@@ -55,10 +61,11 @@ function retainedRefs(store, taskIdValue, artifactSubject = subject,
   writeFileSync(absolute, exactSubject.digest === subject.digest ? subjectBytes : 'Other immutable revision.');
   const retained = retainSubject(root, exactSubject, null, runDirectory, id);
   seedRecord(store, {
-    kind: 'artifact', id, subject: {kind: 'item', id: taskIdValue}, version: 1,
+    kind: 'artifact', id, subject: {kind: 'task', id: taskIdValue}, version: 1,
     body: {
-      schema_version: 1, artifact_id: id, item_id: taskIdValue, producer: builder,
-      subject: exactSubject, criteria_ref: binding, project_id: null, run_directory: runDirectory,
+      schema_version: 1, artifact_id: id, subject: {kind: 'task', id: taskIdValue},
+      producer: builder, content_ref: exactSubject, criteria_ref: binding,
+      project_id: null, run_directory: runDirectory,
       ...retained, classification: 'internal', media_type: 'text/plain',
       title: 'Engine retained content fixture', created_at: NOW,
     },
@@ -88,21 +95,21 @@ function seedReview(store, {
   verdict = 'approved',
   criteria = ['The runtime behavior is verified.'],
   createdAt = NOW,
-  binding = criteriaRef(readRecord(store, 'task', taskIdValue).body),
+  binding = criteriaFor(store, taskIdValue),
   supersedes = [],
 } = {}) {
   return seedRecord(store, {
     kind: 'review',
     id,
-    subject: {kind: 'item', id: taskIdValue},
+    subject: {kind: 'task', id: taskIdValue},
     version: 1,
     body: {
       schema_version: 1,
       review_id: id,
-      item_id: taskIdValue,
+      subject: {kind: 'task', id: taskIdValue},
       reviewer: actor,
       kind,
-      subject: reviewSubject,
+      content_ref: reviewSubject,
       criteria,
       criteria_ref: binding,
       supersedes,
@@ -121,7 +128,7 @@ function seedApproval(store, {
   kind = 'completion',
   approvalSubject = subject,
   decision = 'approved',
-  binding = criteriaRef(readRecord(store, 'task', taskIdValue).body),
+  binding = criteriaFor(store, taskIdValue),
   supersedes = [],
   deployment = kind.startsWith('operator-deploy-')
     ? {environment: 'production', environment_class: 'production', deployment_id: 'deploy-123'} : null,
@@ -130,15 +137,15 @@ function seedApproval(store, {
   return seedRecord(store, {
     kind: 'approval',
     id,
-    subject: {kind: 'item', id: taskIdValue},
+    subject: {kind: 'task', id: taskIdValue},
     version: 1,
     body: {
       schema_version: 1,
       approval_id: id,
-      item_id: taskIdValue,
+      subject: {kind: 'task', id: taskIdValue},
       authority: actor,
       kind,
-      subject: approvalSubject,
+      content_ref: approvalSubject,
       criteria_ref: binding,
       supersedes,
       deployment,
@@ -171,16 +178,16 @@ function seedEvidence(store, {
   return seedRecord(store, {
     kind: 'evidence',
     id,
-    subject: {kind: 'item', id: taskIdValue},
+    subject: {kind: 'task', id: taskIdValue},
     version: 1,
     body: {
       schema_version: 1,
       evidence_id: id,
-      item_id: taskIdValue,
+      subject: {kind: 'task', id: taskIdValue},
       kind,
-      subject: evidenceSubject,
+      content_ref: kind === 'recovery-reconciliation' ? null : evidenceSubject,
       criteria_ref: kind === 'recovery-reconciliation'
-        ? null : criteriaRef(readRecord(store, 'task', taskIdValue).body),
+        ? null : criteriaFor(store, taskIdValue),
       dimension,
       outcome,
       evidence_refs: retainedRefs(store, taskIdValue, evidenceSubject),
@@ -272,15 +279,15 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   assert.throws(() => validateRecord({
     kind: 'review',
     id: randomUUID(),
-    subject: {kind: 'item', id: fixtureIds.task},
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       review_id: randomUUID(),
-      item_id: fixtureIds.task,
+      subject: {kind: 'task', id: fixtureIds.task},
       reviewer,
       kind: 'independent-code',
-      subject,
+      content_ref: subject,
       criteria: [],
       verdict: 'approved',
       finding_refs: [],
@@ -292,15 +299,15 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   assert.throws(() => validateRecord({
     kind: 'review',
     id: randomUUID(),
-    subject: {kind: 'item', id: fixtureIds.task},
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       review_id: randomUUID(),
-      item_id: fixtureIds.task,
+      subject: {kind: 'task', id: fixtureIds.task},
       reviewer,
       kind: 'independent-code',
-      subject: {kind: 'git', base: 'main', head: 'mutable-name'},
+      content_ref: {kind: 'git', base: 'main', head: 'mutable-name'},
       criteria: ['Correctness'],
       verdict: 'approved',
       finding_refs: [],
@@ -674,10 +681,10 @@ await test('Direction drift permits leased evidence and a safe handoff but block
         body: {
           schema_version: 1,
           evidence_id: evidenceId,
-          item_id: fixtureIds.task,
+          subject: {kind: 'task', id: fixtureIds.task},
           kind: 'dod-dimension',
-          subject,
-          criteria_ref: criteriaRef(reserved.body),
+          content_ref: subject,
+          criteria_ref: criteriaFor(store, fixtureIds.task),
           supersedes: [],
           dimension: 'verified',
           outcome: 'gap',
@@ -691,7 +698,7 @@ await test('Direction drift permits leased evidence and a safe handoff but block
     ));
     assert.equal(recorded.ok, true);
 
-    const unsafe = taskCommand('task.handoff', builder, 3, {
+    const unsafe = taskCommand('task.handoff', builder, reserved.version, {
       toRole: reviewer.role,
       state: null,
       createdAt: NOW,
@@ -770,10 +777,10 @@ await test('Direction drift rejects fresh host grants for unleased evidence and 
             body: {
               schema_version: 1,
               evidence_id: randomUUID(),
-              item_id: fixtureIds.task,
+              subject: {kind: 'task', id: fixtureIds.task},
               kind: 'dod-dimension',
-              subject,
-              criteria_ref: criteriaRef(readRecord(store, 'task', fixtureIds.task).body),
+              content_ref: subject,
+              criteria_ref: criteriaFor(store, fixtureIds.task),
               supersedes: [],
               dimension: 'verified',
               outcome: 'gap',
@@ -1021,7 +1028,7 @@ await test('review-state grants preserve state and issue persisted lease authori
     assert.notEqual(result.data.record.body.lease.token, null);
     const persistedGrant = store.database.prepare(`
       SELECT id FROM records
-      WHERE kind = 'grant' AND subject_kind = 'item' AND subject_id = ?
+      WHERE kind = 'grant' AND subject_kind = 'task' AND subject_id = ?
     `).get(fixtureIds.task);
     assert.equal(readRecord(store, 'grant', persistedGrant.id).body.lease_token,
       result.data.record.body.lease.token);
@@ -1183,13 +1190,13 @@ function seedQuestion(store, id, recipient) {
   seedRecord(store, {
     kind: 'message',
     id: messageId,
-    subject: {kind: 'item', id: fixtureIds.task},
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       message_id: messageId,
-      thread_id: fixtureIds.task,
-      item_id: fixtureIds.task,
+      subject: {kind: 'task', id: fixtureIds.task},
+      thread_id: subjectRef({kind: 'task', id: fixtureIds.task}, 1),
       parent_id: null,
       sender_role: builder.role,
       sender_run: builder.runId,
@@ -1212,12 +1219,12 @@ function seedQuestion(store, id, recipient) {
   seedRecord(store, {
     kind: 'question',
     id,
-    subject: {kind: 'item', id: fixtureIds.task},
+    subject: {kind: 'task', id: fixtureIds.task},
     version: 1,
     body: {
       schema_version: 1,
       question_id: id,
-      item_id: fixtureIds.task,
+      subject: {kind: 'task', id: fixtureIds.task},
       asker: builder,
       recipient,
       kind: 'fact',
@@ -1245,6 +1252,8 @@ function answerQuestion(store, {
   actorAuthority = {roles: [sender.role], grants: []},
   resolves,
 }) {
+  expectedVersion = readRecord(store, 'task', fixtureIds.task).version;
+  const createdAt = new Date(Date.parse(NOW) + expectedVersion * 1000).toISOString();
   return applyCommand(store, taskCommand(
     'question.answer',
     sender,
@@ -1255,7 +1264,7 @@ function answerQuestion(store, {
       parentId,
       recipient,
       kind: 'answer',
-      createdAt: NOW,
+      createdAt,
       content: {status: 'answered', answer, lane, ...(resolves ? {resolves} : {})},
       artifactRefs: [],
       evidenceRefs: [],
@@ -1624,6 +1633,7 @@ await test('deployment start, completion, and shipped use separate persisted ope
       UPDATE records SET body = ? WHERE kind = 'task' AND id = ?
     `).run(JSON.stringify({...deploying.data.record.body, lease: completionLease}),
       fixtureIds.task);
+    seedApproval(store, {actor: operator, kind: 'operator-deploy-start'});
     const complete = taskCommand(
       'task.transition',
       shipper,
@@ -1650,6 +1660,9 @@ await test('deployment start, completion, and shipped use separate persisted ope
       UPDATE records SET body = ? WHERE kind = 'task' AND id = ?
     `).run(JSON.stringify({...verifying.data.record.body, lease: verifyLease}),
       fixtureIds.task);
+    seedApproval(store, {actor: operator, kind: 'operator-deploy-start'});
+    seedApproval(store, {actor: operator, kind: 'operator-deploy-complete'});
+    seedEvidence(store, {kind: 'deployment'});
     const finish = taskCommand(
       'task.transition',
       shipper,

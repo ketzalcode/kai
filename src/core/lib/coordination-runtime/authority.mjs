@@ -58,7 +58,7 @@ export function hasHostActionGrantForBasis(command, authority, action, basisRef)
 export function requireActionGrant(tx, command, authority, action) {
   const allowed = hasHostActionGrant(command, authority, action)
     || (command.leaseToken !== null
-      && tx.list('grant', {kind: 'item', id: command.recordId})
+      && tx.list('grant', {kind: 'task', id: command.recordId})
       .some(record => persistedGrantMatches(record, command, action)));
   if (!allowed) {
     fail('AUTHORITY_REQUIRED',

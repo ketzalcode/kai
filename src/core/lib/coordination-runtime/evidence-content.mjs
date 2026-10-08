@@ -46,9 +46,7 @@ export function workspaceManifest(root) {
   const m = result.manifest;
   if (m.schema_version !== 4) fail('SCHEMA_MISMATCH', 'evidence requires workspace schema 4');
   if (!Array.isArray(m.projects)) fail('INVALID_INPUT', 'workspace projects must be declared');
-  for (const lane of ['state', 'runs', 'review', 'archive', 'personal']) {
-    if (m[lane] !== `.kai/${lane}`) fail('INVALID_INPUT', `unsupported workspace ${lane} binding`);
-  }
+  if (m.state !== '.kai/state') fail('INVALID_INPUT', 'unsupported workspace state binding');
   return m;
 }
 
@@ -103,17 +101,15 @@ export function assertWorkspacePath(root, relativePath) {
     if (normalized(base) !== normalized(root) && !escapesRoot(join(root, '.kai'), base)) {
       fail('INVALID_INPUT', 'a project publication cannot alias private workspace state');
     }
-  } else if (!/^\.kai\/(runs|review|state|archive|personal)\//.test(path)) {
-    fail('INVALID_INPUT', 'private references require a .kai lane; public paths must be project-qualified');
+  } else if (!/^\.kai\/(?:state|core|engineering|creative)\//.test(path)) {
+    fail('INVALID_INPUT', 'private references require a typed .kai pack path; public paths must be project-qualified');
   }
   const absolute = resolve(base, ...local.split('/'));
   if (escapesRoot(base, absolute) || pathHasLink(base, absolute)) {
     fail('INVALID_INPUT', 'path escapes its root or traverses a symbolic link or junction');
   }
   if (!projectTarget) {
-    const inspection = inspectPrivateLanes(root, [
-      '.kai/state', '.kai/runs', '.kai/review', '.kai/archive', '.kai/personal',
-    ]);
+    const inspection = inspectPrivateLanes(root, ['.kai']);
     if (inspection.gitRoots.length || inspection.symbolicLinks.length || inspection.unreadable.length) {
       fail('INVALID_INPUT', 'private lanes contain nested Git roots, links, or unreadable directories');
     }
@@ -122,8 +118,11 @@ export function assertWorkspacePath(root, relativePath) {
 }
 
 export function pathPrivacy(root, path) {
-  return escapesRoot(join(root, '.kai', 'personal'), assertWorkspacePath(root, path))
-    ? 'public' : 'personal';
+  assertWorkspacePath(root, path);
+  if (path.startsWith('project:')) return 'public';
+  if (/\/personal(?:\/|$)/i.test(path)) return 'personal';
+  if (/^\.kai\/(core|engineering|creative)\/reports\//.test(path)) return 'public';
+  return 'internal';
 }
 
 function readExactFile(root, path, read) {
@@ -264,7 +263,7 @@ export function retainSubject(root, subject, projectId, runDirectory, artifactId
 }
 
 export function verifyArtifact(root, artifact) {
-  const entries = verifySubject(root, artifact.subject, artifact.project_id);
+  const entries = verifySubject(root, artifact.content_ref, artifact.project_id);
   if (canonicalJson(entries) !== canonicalJson(artifact.snapshots.map(({path, digest}) => ({path, digest})))) {
     fail('EVIDENCE_GAP', 'artifact snapshot manifest does not match its exact subject');
   }
@@ -274,10 +273,10 @@ export function verifyArtifact(root, artifact) {
       fail('EVIDENCE_GAP', 'retained snapshot is missing or changed');
     }
   }
-  if (artifact.subject.kind !== 'git') {
+  if (artifact.content_ref.kind !== 'git') {
     if (artifact.manifest_path !== `${artifact.run_directory}/.evidence/${artifact.artifact_id}/manifest.json`
       || scanExactFile(root, artifact.manifest_path).digest !== hash(canonicalJson({
-        subject: artifact.subject, snapshots: artifact.snapshots,
+        subject: artifact.content_ref, snapshots: artifact.snapshots,
       }))) {
       fail('EVIDENCE_GAP', 'retained manifest is missing or changed');
     }
@@ -285,20 +284,20 @@ export function verifyArtifact(root, artifact) {
 }
 
 export function verifyTarget(root, target, artifact) {
-  if (artifact.subject.kind !== 'sha256') {
-    if (artifact.subject.kind === 'bundle-sha256' && target.startsWith('project:')
-      && artifact.subject.entries.some(entry => !entry.path.startsWith('project:'))) {
+  if (artifact.content_ref.kind !== 'sha256') {
+    if (artifact.content_ref.kind === 'bundle-sha256' && target.startsWith('project:')
+      && artifact.content_ref.entries.some(entry => !entry.path.startsWith('project:'))) {
       fail('INVALID_INPUT', 'public bundle manifests cannot expose private member references');
     }
-    const manifest = artifact.subject.kind === 'git'
-      ? {project_id: artifact.project_id, subject: artifact.subject}
-      : artifact.subject;
+    const manifest = artifact.content_ref.kind === 'git'
+      ? {project_id: artifact.project_id, subject: artifact.content_ref}
+      : artifact.content_ref;
     if (scanExactFile(root, target).digest !== hash(canonicalJson(manifest))) {
       fail('EVIDENCE_GAP', 'canonical target must contain the exact immutable subject manifest');
     }
     return;
   }
-  if (hashArtifact({root, relativePath: target}).digest !== artifact.subject.digest) {
+  if (hashArtifact({root, relativePath: target}).digest !== artifact.content_ref.digest) {
     fail('EVIDENCE_GAP', 'canonical target does not contain the accepted exact bytes');
   }
 }

@@ -14,6 +14,7 @@ import {
   canonicalJson,
   commandDigest,
   criteriaRef,
+  subjectRef,
   validateCommand,
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
@@ -39,14 +40,14 @@ const {
   readSubjectView,
 } = storeApi;
 const {logicalStoreDigest} = migrationFiles;
-const itemSubject = id => ({kind: 'item', id});
+const taskSubject = id => ({kind: 'task', id});
 const primaryId = fixtureIds.task;
 
-function questionBody(id, ask) {
+function questionBody(id, ask, subject = taskSubject(primaryId)) {
   return {
     schema_version: 1,
     question_id: id,
-    item_id: primaryId,
+    subject,
     asker: {role: 'eng-builder-software', runId: 'builder-run'},
     recipient: 'eng-reviewer-code',
     kind: 'fact',
@@ -130,6 +131,7 @@ function messageBody(id, {
   kind = 'handoff',
   artifactRefs = [],
   evidenceRefs = [],
+  subject = taskSubject(primaryId),
 } = {}) {
   const payload = kind === 'question'
     ? {
@@ -163,8 +165,8 @@ function messageBody(id, {
   return {
     schema_version: 1,
     message_id: id,
-    thread_id: primaryId,
-    item_id: primaryId,
+    subject,
+    thread_id: subjectRef(subject, 1),
     parent_id: null,
     sender_role: 'eng-builder-software',
     sender_run: 'foreign-subject-run',
@@ -413,7 +415,7 @@ assert.throws(() => validateCommand({
 assert.throws(() => validateRecord({
   kind: 'item',
   id: 'demo',
-  subject: itemSubject(primaryId),
+  subject: taskSubject(primaryId),
   version: 1,
   body: [],
 }), error => error.code === 'INVALID_INPUT');
@@ -487,7 +489,7 @@ await test('schema 2 stores root records and isolates typed hierarchy subjects',
         id,
         subject,
         version: 1,
-        body: questionBody(id, `Question for ${subject.kind}`),
+        body: questionBody(id, `Question for ${subject.kind}`, subject),
       });
     }
 
@@ -534,9 +536,9 @@ await test('schema 2 stores root records and isolates typed hierarchy subjects',
   });
 });
 
-await test('readSubjectView rejects exact references owned by another typed subject', async () => {
+await test('readSubjectView loads cross-subject inputs but keeps local obligations isolated', async () => {
   await withWorkspace(({store}) => {
-    const foreignSubject = {kind: 'task', id: primaryId};
+    const foreignSubject = {kind: 'task', id: 'engineering:task:foreign-store'};
     const openingId = '00000000-0000-4000-8000-000000000101';
     const answerId = '00000000-0000-4000-8000-000000000102';
     const recoveryId = '00000000-0000-4000-8000-000000000103';
@@ -550,10 +552,11 @@ await test('readSubjectView rejects exact references owned by another typed subj
       recovery_hold: recoveryId,
       context_artifacts: [`artifact:${artifactId}`, `evidence:${evidenceId}`],
     });
+    const foreignTask = seedTask(store, {id: foreignSubject.id});
     seedRecord(store, validateRecord({
       kind: 'question',
       id: 'local-question',
-      subject: itemSubject(primaryId),
+      subject: taskSubject(primaryId),
       version: 1,
       body: {
         ...questionBody('local-question', 'Do foreign messages stay excluded?'),
@@ -566,7 +569,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
       id: 'foreign-question',
       subject: foreignSubject,
       version: 1,
-      body: questionBody('foreign-question', 'Do foreign questions stay excluded?'),
+      body: questionBody('foreign-question', 'Do foreign questions stay excluded?', foreignSubject),
     }));
     for (const [id, kind] of [[openingId, 'question'], [answerId, 'answer'], [recoveryId, 'recovery']]) {
       seedRecord(store, validateRecord({
@@ -574,7 +577,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
         id,
         subject: foreignSubject,
         version: 1,
-        body: messageBody(id, {kind}),
+        body: messageBody(id, {kind, subject: foreignSubject}),
       }));
     }
     const staleLease = {
@@ -592,7 +595,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
       body: {
         schema_version: 1,
         attempt_id: recoveryId,
-        item_id: primaryId,
+        subject: foreignSubject,
         grantor: {role: 'eng-lead-architecture', runId: 'recovery-steward'},
         stale_lease: staleLease,
         observed: 'Foreign recovery record.',
@@ -610,12 +613,12 @@ await test('readSubjectView rejects exact references owned by another typed subj
       body: {
         schema_version: 1,
         artifact_id: artifactId,
-        item_id: primaryId,
+        subject: foreignSubject,
         producer: {role: 'eng-builder-software', runId: 'foreign-subject-run'},
-        subject: {kind: 'git', base: 'a'.repeat(40), head: 'b'.repeat(40)},
-        criteria_ref: criteriaRef(item.body),
+        content_ref: {kind: 'git', base: 'a'.repeat(40), head: 'b'.repeat(40)},
+        criteria_ref: criteriaRef(foreignTask, (kind, id) => readRecord(store, kind, id)),
         project_id: null,
-        run_directory: '.kai/runs/foreign-subject',
+        run_directory: '.kai/engineering/reports/foreign-store/scratch',
         snapshots: [],
         manifest_path: null,
         classification: 'internal',
@@ -632,9 +635,9 @@ await test('readSubjectView rejects exact references owned by another typed subj
       body: {
         schema_version: 1,
         evidence_id: evidenceId,
-        item_id: primaryId,
+        subject: foreignSubject,
         kind: 'recovery-reconciliation',
-        subject: null,
+        content_ref: null,
         criteria_ref: null,
         supersedes: [],
         dimension: null,
@@ -651,7 +654,7 @@ await test('readSubjectView rejects exact references owned by another typed subj
     }));
 
     const view = readSubjectView(store, {
-      subject: itemSubject(primaryId),
+      subject: taskSubject(primaryId),
       recentLimit: 0,
     });
     const localQuestion = view.questions.find(entry => entry.record?.id === 'local-question');
@@ -661,10 +664,10 @@ await test('readSubjectView rejects exact references owned by another typed subj
     assert.equal(view.recoveryHold.record, null);
     assert.equal(view.recoveryHold.message, null);
     assert.deepEqual(
-      view.referencedDetails.map(entry => [entry.reference, entry.record]),
+      view.referencedDetails.map(entry => [entry.reference, entry.record?.subject]),
       [
-        [`artifact:${artifactId}`, null],
-        [`evidence:${evidenceId}`, null],
+        [`artifact:${artifactId}`, foreignSubject],
+        [`evidence:${evidenceId}`, foreignSubject],
       ],
     );
   });
@@ -685,12 +688,12 @@ await test('readSubjectView recent messages and counts isolate same-ID typed thr
       INSERT INTO events (operation_id, subject_kind, subject_id, payload)
       VALUES (?, 'task', 'demo', ?)
     `).run('foreign-thread-event', JSON.stringify({
-      kind: 'item.handoff',
+      kind: 'task.handoff',
       payload: {messageId},
     }));
 
     const view = readSubjectView(store, {
-      subject: itemSubject(primaryId),
+      subject: taskSubject(primaryId),
       recentLimit: 8,
     });
     assert.deepEqual(view.recentMessages, []);
@@ -719,21 +722,21 @@ await test('readSubjectView holds one SQLite snapshot while a WAL writer advance
         return prepare.call(this, sql);
       };
       const view = readSubjectView(store, {
-        subject: itemSubject(primaryId),
+        subject: taskSubject(primaryId),
         recentLimit: 0,
       });
       assert.equal(advanced, true);
       assert.equal(view.throughSeq, 0);
-      assert.equal(view.item.body.title, 'Demo knowledge Task');
+      assert.equal(view.record.body.title, 'Demo knowledge Task');
     } finally {
       store.database.prepare = prepare;
       closeStore(writer);
     }
     assert.equal(
       readSubjectView(store, {
-        subject: itemSubject(primaryId),
+        subject: taskSubject(primaryId),
         recentLimit: 0,
-      }).item.body.title,
+      }).record.body.title,
       'Writer advanced',
     );
   });
@@ -749,7 +752,7 @@ await withWorkspace(({store}) => {
   assert.equal(readRecord(store, 'task', primaryId).body.state, 'completed');
   assert.throws(() => readRecord(store, 'unknown', 'demo'), error =>
     error.code === 'INVALID_INPUT');
-  assert.throws(() => listRecords(store, {kind: 'unknown', subject: itemSubject(primaryId)}), error =>
+  assert.throws(() => listRecords(store, {kind: 'unknown', subject: taskSubject(primaryId)}), error =>
     error.code === 'INVALID_INPUT');
 });
 
@@ -825,7 +828,7 @@ await withWorkspace(({root, store}) => {
     tx.put({
       kind: 'question',
       id: 'question-1',
-      subject: itemSubject(primaryId),
+      subject: taskSubject(primaryId),
       version: 1,
       body: questionBody('question-1', 'Persisted?'),
     });
@@ -833,7 +836,7 @@ await withWorkspace(({root, store}) => {
     return {...current.body, title: 'Persisted'};
   });
   assert.ok(result.eventSeq > 0);
-  assert.equal(listRecords(store, {kind: 'question', subject: itemSubject(primaryId)}).length, 1);
+  assert.equal(listRecords(store, {kind: 'question', subject: taskSubject(primaryId)}).length, 1);
   closeStore(store);
 
   const reopened = openStore({
@@ -859,7 +862,7 @@ await withWorkspace(({store}) => {
     tx.put({
       kind: 'question',
       id: 'rolled-back-question',
-      subject: itemSubject(primaryId),
+      subject: taskSubject(primaryId),
       version: 1,
       body: questionBody('rolled-back-question', 'Must disappear'),
     });
@@ -1182,7 +1185,7 @@ await test('read operations translate SQLite lock exhaustion to STORE_BUSY', asy
     await withChildLock(databasePath, 'BEGIN EXCLUSIVE', () => {
       assert.throws(() => readRecord(store, 'task', primaryId), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
-      assert.throws(() => listRecords(store, {kind: 'item', subject: itemSubject(primaryId)}), error =>
+      assert.throws(() => listRecords(store, {kind: 'item', subject: taskSubject(primaryId)}), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
     });
   });

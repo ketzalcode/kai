@@ -1,4 +1,4 @@
-import {criteriaRef, isProducingRun, operatorDecisionActor, subjectEquals} from './contract.mjs';
+import {canonicalJson, criteriaRef, isProducingRun, operatorDecisionActor} from './contract.mjs';
 import {effectiveApprovals, requireReviews} from './acceptance.mjs';
 import {requireActingAuthority, sameActor} from './authority.mjs';
 import {assertWorkspacePath, fail, verifyTarget} from './evidence-content.mjs';
@@ -20,11 +20,14 @@ const VALIDITY = new Map([
   ['expired', ['superseded', 'invalidated', 'retired']],
   ['superseded', []], ['invalidated', []], ['retired', []],
 ]);
+const contentEquals = (left, right) =>
+  left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
+const lookup = tx => (kind, id) => tx.get(kind, id);
 
 function artifactFor(context, tx, asset, verify = true) {
   if (verify) return verifyAssetContent(context, tx, asset);
   const artifact = tx.get('artifact', asset.artifact_id);
-  if (artifact?.subject?.kind !== 'item' || artifact.subject.id !== asset.item_id) {
+  if (artifact?.subject?.kind !== asset.subject.kind || artifact.subject.id !== asset.subject.id) {
     fail('EVIDENCE_GAP', 'asset has no registered artifact');
   }
   return artifact.body;
@@ -33,16 +36,17 @@ function artifactFor(context, tx, asset, verify = true) {
 function accepted(tx, item, asset, artifact, approvalId) {
   requireReviews(tx, item);
   const approvals = effectiveApprovals(
-    tx.list('approval', {kind: 'item', id: item.id}).map(r => r.body),
-    item.body,
+    tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
+    item,
+    lookup(tx),
   )
     .filter(a => a.kind === 'completion' && a.authority.role === item.body.completion_authority);
   const decision = approvals.find(a => a.approval_id === approvalId);
   if (!decision || approvals.some(a => a.decision !== 'approved')
     || isProducingRun(item.body, decision.authority)
     || decision.authority.runId === asset.producer.runId
-    || !subjectEquals(decision.subject, artifact.subject)
-    || artifact.criteria_ref !== criteriaRef(item.body)
+    || !contentEquals(decision.content_ref, artifact.content_ref)
+    || artifact.criteria_ref !== criteriaRef(item, lookup(tx))
     || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)) {
     fail('EVIDENCE_GAP', 'asset acceptance requires an effective independent decision for these exact bytes and criteria');
   }
@@ -57,7 +61,7 @@ function inputsCurrent(context, tx, asset, seen = new Set()) {
     const input = tx.get('asset', id)?.body;
     if (!input || input.validity !== 'current' || input.superseded_by !== null
       || new Set(['scratch', 'draft', 'discarded', 'retracted']).has(input.disposition)) return false;
-    const item = tx.get('item', input.item_id);
+    const item = tx.get(input.subject.kind, input.subject.id);
     const artifact = artifactFor(context, tx, input);
     accepted(tx, item, input, artifact, input.completion_approval_id);
     return inputsCurrent(context, tx, input, seen);
@@ -67,7 +71,8 @@ function inputsCurrent(context, tx, asset, seen = new Set()) {
 function moved(record, changes, reason, at, itemVersion) {
   const body = {...record.body, ...changes, updated_at: at};
   body.history = [...body.history, {
-    disposition: body.disposition, validity: body.validity, target: body.target, reason, at, at_item_version: itemVersion,
+    disposition: body.disposition, validity: body.validity, target: body.target,
+    reason, at, at_subject_version: itemVersion,
   }];
   return {...record, version: record.version + 1, body};
 }
@@ -75,8 +80,8 @@ function moved(record, changes, reason, at, itemVersion) {
 export function applyAssetTransition({context, tx, item, command, authority}) {
   const p = command.payload;
   const record = tx.get('asset', p.assetId);
-  if (record?.subject?.kind !== 'item' || record.subject.id !== item.id) {
-    fail('EVIDENCE_GAP', 'asset transition must bind the owning item');
+  if (record?.subject?.kind !== item.kind || record.subject.id !== item.id) {
+    fail('EVIDENCE_GAP', 'asset transition must bind the owning hierarchy subject');
   }
   const asset = record.body;
   if ((p.disposition !== asset.disposition && !DISPOSITION.get(asset.disposition).includes(p.disposition))
@@ -92,8 +97,9 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   }
   if (personalDiscard) {
     const decisions = effectiveApprovals(
-      tx.list('approval', {kind: 'item', id: item.id}).map(r => r.body),
-      item.body,
+      tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
+      item,
+      lookup(tx),
     )
       .filter(a => a.kind === 'scope' && a.authority.role === 'operator');
     const consent = decisions.find(a => a.approval_id === p.approvalId);
@@ -122,7 +128,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   let validity = p.validity;
   const approvalId = personalDiscard ? asset.completion_approval_id : p.approvalId ?? asset.completion_approval_id;
   const publicTarget = target.startsWith('project:')
-    && !(artifact.subject.kind === 'git' && target === `project:${artifact.project_id}:@git`);
+    && !(artifact.content_ref.kind === 'git' && target === `project:${artifact.project_id}:@git`);
   if (publicTarget && !(metadataOnlyInvalidation && publishedBefore)) {
     if (artifact.classification !== 'public' || validity !== 'current'
       || asset.history.some(h => h.disposition === 'personal')) {
@@ -150,7 +156,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     }
     const decision = operatorDecision ?? accepted(tx, item, asset, artifact, approvalId);
     if (new Set(['stale', 'unknown']).has(asset.validity)
-      && !(decision.recorded_at_item_version > asset.history.at(-1).at_item_version)) {
+      && Date.parse(decision.created_at) < Date.parse(asset.history.at(-1).at)) {
       fail('EVIDENCE_GAP', 'revalidation cannot reuse acceptance recorded before the validity change');
     }
     if (!inputsCurrent(context, tx, asset)) {
@@ -163,10 +169,10 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   if (p.validity === 'superseded' && asset.superseded_by === null) {
     fail('INVALID_INPUT', 'supersession must be requested by the successor');
   }
-  if (p.disposition === 'working' && !target.startsWith('.kai/state/')) {
-    fail('INVALID_INPUT', 'working assets require a declared private state target');
-  } else if (p.disposition === 'personal' && !target.startsWith('.kai/personal/')) {
-    fail('INVALID_INPUT', 'personal assets must remain in the personal lane');
+  if (p.disposition === 'working' && !/^\.kai\/(core|engineering|creative)\//.test(target)) {
+    fail('INVALID_INPUT', 'working assets require a typed private artifact target');
+  } else if (p.disposition === 'personal' && !/\/personal(?:\/|$)/.test(target)) {
+    fail('INVALID_INPUT', 'personal assets must remain in an explicitly personal typed path');
   }
   if (!metadataOnlyInvalidation && (target !== asset.target || publicTarget)) {
     assertWorkspacePath(context.root, target);
@@ -182,21 +188,21 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
       || new Set(['retracted', 'discarded']).has(previous.body.disposition)) {
       fail('EVIDENCE_GAP', 'predecessor cannot be superseded or already has a conflicting successor');
     }
-    const predecessorItem = previous.subject?.kind === 'item'
-      ? tx.get('item', previous.subject.id)
+    const predecessorTask = previous.subject?.kind === 'task'
+      ? tx.get('task', previous.subject.id)
       : null;
-    if (!predecessorItem || predecessorItem.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'predecessor is under recovery hold');
+    if (!predecessorTask || predecessorTask.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'predecessor is under recovery hold');
     if (previous.subject.id !== item.id) {
-      requireActingAuthority(tx, predecessorItem, {
-        ...command, recordId: predecessorItem.id, expectedVersion: predecessorItem.version, leaseToken: null,
+      requireActingAuthority(tx, predecessorTask, {
+        ...command, recordId: predecessorTask.id, expectedVersion: predecessorTask.version, leaseToken: null,
       }, authority, command.kind);
-      if (isProducingRun(predecessorItem.body, command.actor)) fail('AUTHORITY_REQUIRED', 'predecessor production history requires independence');
+      if (isProducingRun(predecessorTask.body, command.actor)) fail('AUTHORITY_REQUIRED', 'predecessor production history requires independence');
     }
     const previousArtifact = artifactFor(context, tx, previous.body);
     if (previous.body.validity === 'current') {
-      accepted(tx, predecessorItem, previous.body, previousArtifact, previous.body.completion_approval_id);
+      accepted(tx, predecessorTask, previous.body, previousArtifact, previous.body.completion_approval_id);
     }
-    tx.put(moved(previous, {validity: 'superseded', superseded_by: asset.asset_id}, p.reason, p.at, predecessorItem.version));
+    tx.put(moved(previous, {validity: 'superseded', superseded_by: asset.asset_id}, p.reason, p.at, predecessorTask.version));
   }
   tx.put(moved(record, {
     disposition: p.disposition, validity, target, completion_approval_id: approvalId,

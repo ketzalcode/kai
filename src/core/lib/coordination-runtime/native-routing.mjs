@@ -16,7 +16,7 @@ export const parentGovernanceActions = new Set(PARENT_COMMAND_KINDS);
 const fail = message => { throw new RuntimeError('AUTHORITY_REQUIRED', message); };
 
 export function routingBasis(root, store, task) {
-  return {criteria: criteriaRef(task.body), inputs: captureInputBasis({root},
+  return {criteria: criteriaRef(task, (kind, id) => readRecord(store, kind, id)), inputs: captureInputBasis({root},
     {get: (kind, id) => readRecord(store, kind, id)}, task.body.context_artifacts),
   feature: task.body.feature_id, requirements: task.body.satisfies,
   scopeAuthority: task.body.scope_authority,
@@ -41,7 +41,7 @@ export function requireRoutingScope(root, store, cap, command = null) {
   }
   if (command.kind === 'question.answer') {
     const question = readRecord(store, 'question', command.payload.questionId);
-    if (question?.subject?.kind !== 'item' || question.subject.id !== task.id
+    if (question?.subject?.kind !== 'task' || question.subject.id !== task.id
       || question.body.recipient !== command.actor.role
       || command.actor.role === 'operator' || command.payload.content.resolves
       || (scope.type === 'delegation' && command.payload.questionId !== scope.questionId)) {

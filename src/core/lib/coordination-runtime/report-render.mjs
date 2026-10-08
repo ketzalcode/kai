@@ -32,8 +32,8 @@ const provenance = record => record.provenance?.tier ?? 'declared';
 export function inspectionPaths(view) {
   const digest = createHash('sha256');
   const add = value => digest.update(`${JSON.stringify(value)}\n`);
-  add([view.workspace, view.item?.id, view.throughSeq, view.generatedAt,
-    view.inspection?.threadId, view.inspection?.throughSeq, view.inspection?.previewBudget]);
+  add([view.workspace, view.subject?.kind, view.subject?.id, view.throughSeq, view.generatedAt,
+    view.inspection?.subject, view.inspection?.throughSeq, view.inspection?.previewBudget]);
   for (const page of view.inspection?.messagePages ?? []) {
     add(['message-page', page.length]);
     for (const entry of page) add(entry);
@@ -85,7 +85,7 @@ function sectionsFor(view) {
     const observations = a.observations ?? [];
     const requested = table(`Attempt ${a.id ?? unavailable}`,
       ['Identity / status', 'Requested role / profile / model / effort', 'Context / independence'], [row([
-        cell(`${a.ref ?? unavailable}\n${a.status ?? a.disposition ?? unavailable}\nItem version ${text(a.item_version)} · declared ${text(a.created_at)}`),
+        cell(`${a.ref ?? unavailable}\n${a.status ?? a.disposition ?? unavailable}\nSubject version ${text(a.subject_version)} · declared ${text(a.created_at)}`),
         cell(`${actor(a.target)}\nProfile ${text(a.profile)}\nModel ${text(a.requested_model)}\nEffort ${text(a.requested_effort)}`),
         cell(`${text(a.context)}\nResume from ${text(a.resume_from)}\nSession ${text(a.resume_session_id)}\nIndependence key ${text(a.independence_key)}`),
       ], a.ref)]);
@@ -103,10 +103,10 @@ function sectionsFor(view) {
   const sections = [
     {
       id: 'outcome', title: 'Outcome and current state', blocks: [
-        paragraph(view.item?.outcome ?? 'Outcome unavailable'),
+        paragraph(view.subject?.outcome ?? 'Outcome unavailable'),
         table('Recorded state and authority', ['Recorded lifecycle', 'Current proof checks', 'Authority / revision'], [row([
-          cell(view.item?.state), cell(`${view.integrity?.status ?? 'unavailable'} — not a new acceptance decision`),
-          cell(`Scope ${text(view.item?.scope_authority)}\nCompletion ${text(view.item?.completion_authority)}\nVersion ${text(view.item?.version)}\nCriteria ${text(view.item?.criteriaRef)}`),
+          cell(view.subject?.state), cell(`${view.integrity?.status ?? 'unavailable'} — not a new acceptance decision`),
+          cell(`Scope ${text(view.subject?.scope_authority)}\nCompletion ${text(view.subject?.completion_authority)}\nVersion ${text(view.subject?.version)}\nCriteria ${text(view.subject?.criteriaRef)}`),
         ])]),
         table('Blockers — terminal follow-ups do not reopen lifecycle', ['Reference', 'Required action'],
           (view.blockers ?? []).map(b => row([cell(b.ref), cell(b.ask ?? b.context ?? b.kind)]))),
@@ -116,7 +116,7 @@ function sectionsFor(view) {
     },
     {
       id: 'changes', title: 'Changes and important decisions', blocks: [
-        paragraph(`Declared scope — not verified changes: ${(view.item?.touches ?? []).join(', ') || 'none recorded'}`),
+        paragraph(`Declared scope — not verified changes: ${(view.subject?.touches ?? []).join(', ') || 'none recorded'}`),
         paragraph('Git paths below are derived read-only from exact registered base/head in the bound project, with renames disabled (add/delete pairs). Recorded artifact revisions are not a diff. No before/after change semantics are inferred for non-Git evidence.'),
         table('Changed paths and recorded revision evidence',
           ['Path / source', 'Recorded status / provenance', 'Exact revision'],
@@ -141,7 +141,7 @@ function sectionsFor(view) {
     },
     {
       id: 'coverage', title: 'Criteria-to-evidence coverage and exact artifacts', blocks: [
-        paragraph('Coverage is explicit, not inferred from a model response, lifecycle state or item-level approval. Pending means not supplied yet; a broken positive claim is a gap.'),
+        paragraph('Coverage is explicit, not inferred from a model response, lifecycle state or subject-level approval. Pending means not supplied yet; a broken positive claim is a gap.'),
         table('Acceptance criteria and exact support', ['Criterion', 'Coverage', 'Verdicts / evidence'],
           (view.criteria ?? []).map(c => row([
             cell(c.text), cell(`${c.status}\n${c.explanation ?? ''}`),
@@ -157,7 +157,7 @@ function sectionsFor(view) {
         paragraph(artifactPreviewPolicy),
         ...(view.artifacts?.length ? view.artifacts.flatMap(a => [
           table(a.title ?? a.ref, ['Artifact / producer', 'Exact subject / criteria', 'Status / classification'], [row([
-            cell(`${a.ref}\n${actor(a.producer)}`), cell(`${text(a.subject)}\nCriteria ${text(a.criteria_ref)}`),
+            cell(`${a.ref}\n${actor(a.producer)}`), cell(`${text(a.content_ref)}\nCriteria ${text(a.criteria_ref)}`),
             cell(`${a.status} · ${a.integrity}\nProvenance: declared\n${a.classification} · ${a.media_type}`),
           ], a.ref)]),
           table('Retained snapshot identities', ['Source path', 'SHA-256 digest', 'Retained path'],
@@ -198,7 +198,7 @@ function sectionsFor(view) {
           ['Message', 'Chronology', 'Sender / kind', 'Payload excerpt', 'References'], messageRows)]),
         ...(destinations.histories.length ? [link('Full and older messages', destinations.histories[0])]
           : [paragraph('No captured messages. No live data is fetched by this document.')]),
-        detail('Captured history scope', [paragraph(`Sequence cursor: ${text(history.cursor)}. Captured item/thread only, through sequence ${view.throughSeq}.`)]),
+        detail('Captured history scope', [paragraph(`Sequence cursor: ${text(history.cursor)}. Captured typed subject only, through sequence ${view.throughSeq}.`)]),
       ],
     },
     {
@@ -277,7 +277,7 @@ export function renderHtml(input) {
 <h1>Coordination evidence report</h1>
 ${subjectHtml(view)}
 <p class="status-strip">${h(statusLine(view))}</p>
-<p class="stamp">Workspace ${h(view.workspace?.id)} · item ${h(view.item?.id)} · version ${h(view.item?.version)}<br>Through sequence ${h(view.throughSeq)} · generated <time datetime="${h(view.generatedAt)}">${h(view.generatedAt)}</time></p>
+<p class="stamp">Workspace ${h(view.workspace?.id)} · ${h(view.subject?.kind)} ${h(view.subject?.id)} · version ${h(view.subject?.version)}<br>Through sequence ${h(view.throughSeq)} · generated <time datetime="${h(view.generatedAt)}">${h(view.generatedAt)}</time></p>
 <p class="warning">${h(snapshotWarning)}</p>
 <p class="stamp">${h(redactionNotice(view))}</p>
 <nav aria-label="Report sections">${sections.map(s => `<a href="#${s.id}">${h(s.title)}</a>`).join('')}</nav></header>
@@ -302,17 +302,17 @@ export function renderMarkdown(input) {
           : `| None recorded ${block.headers.slice(1).map(() => '| ').join('')}|`}`;
     }).join('\n\n');
   }
-  return `# Coordination evidence report\n\nSubject: ${m(view.item?.title)}\n\n${m(statusLine(view))}\n\nWorkspace ${m(view.workspace?.id)} · item ${m(view.item?.id)} · version ${m(view.item?.version)}\n\nThrough sequence ${m(view.throughSeq)} · generated ${m(view.generatedAt)}\n\n${m(snapshotWarning)}\n\n${m(redactionNotice(view))}\n\n${
+  return `# Coordination evidence report\n\nSubject: ${m(view.subject?.title)}\n\n${m(statusLine(view))}\n\nWorkspace ${m(view.workspace?.id)} · ${m(view.subject?.kind)} ${m(view.subject?.id)} · version ${m(view.subject?.version)}\n\nThrough sequence ${m(view.throughSeq)} · generated ${m(view.generatedAt)}\n\n${m(snapshotWarning)}\n\n${m(redactionNotice(view))}\n\n${
     sections.map(s => `## ${m(s.title)}\n\n${blocksMarkdown(s.blocks)}`).join('\n\n')}\n`;
 }
 
 function statusLine(view) {
   const blockers = view.blockers?.length ?? 0;
-  return `Recorded state: ${text(view.item?.state)} · Proof checks: ${view.integrity?.status ?? 'unavailable'} (not acceptance) · Blockers: ${blockers}${blockers ? ' — inspect required actions below.' : ' recorded; check pending criteria and gaps before acting.'}`;
+  return `Recorded state: ${text(view.subject?.state)} · Proof checks: ${view.integrity?.status ?? 'unavailable'} (not acceptance) · Blockers: ${blockers}${blockers ? ' — inspect required actions below.' : ' recorded; check pending criteria and gaps before acting.'}`;
 }
 
 function subjectHtml(view) {
-  const full = text(view.item?.title);
+  const full = text(view.subject?.title);
   const chars = [...full];
   return `<p class="subject">Subject: ${h(chars.length > 140 ? `${chars.slice(0, 137).join('')}…` : full)}</p><details><summary>Full recorded subject</summary><p>${h(full)}</p></details>`;
 }
@@ -322,7 +322,7 @@ function offlinePage(view, title, contents, links = []) {
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
 <title>${h(title)}</title><style>${css}</style></head><body><a class="skip" href="#main">Skip to report</a>
 <header><h1>${h(title)}</h1>${subjectHtml(view)}<p class="status-strip">${h(statusLine(view))}</p>
-<p class="stamp">Workspace ${h(view.workspace?.id)} · item ${h(view.item?.id)} · through sequence ${h(view.throughSeq)} · generated ${h(view.generatedAt)}</p>
+<p class="stamp">Workspace ${h(view.workspace?.id)} · ${h(view.subject?.kind)} ${h(view.subject?.id)} · through sequence ${h(view.throughSeq)} · generated ${h(view.generatedAt)}</p>
 <p class="warning">${h(snapshotWarning)}</p><p>${h(redactionNotice(view))}</p>
 <nav aria-label="Offline inspection">${links.filter(l => generatedLink(l.href)).map(l => `<a href="${h(l.href)}">${h(l.text)}</a>`).join(' ')}</nav></header>
 <main id="main" tabindex="-1">${contents}</main></body></html>\n`;

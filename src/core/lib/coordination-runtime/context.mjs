@@ -2,6 +2,9 @@ import {
   RuntimeError,
   canonicalJson,
   criteriaRef,
+  subjectEquals,
+  subjectRef,
+  validateHierarchySubject,
 } from './contract.mjs';
 import {effectiveApprovals} from './acceptance-verdicts.mjs';
 import {
@@ -16,8 +19,7 @@ const MAX_RECENT_LIMIT = 8;
 const MAX_MESSAGE_PAGE = 100;
 const MAX_EXCERPT_BYTES = 512;
 const TERMINAL = new Set(['completed', 'shipped', 'dropped']);
-const bindsItem = (record, itemId) =>
-  record?.subject?.kind === 'item' && record.subject.id === itemId;
+const bindsSubject = (record, subject) => subjectEquals(record?.subject, subject);
 
 function invalid(message) {
   throw new RuntimeError('INVALID_INPUT', message);
@@ -31,8 +33,8 @@ function assertNonEmptyString(value, label) {
   if (typeof value !== 'string' || value === '') invalid(`${label} must be a string`);
 }
 
-function validateProjectionOptions(itemId, maxBytes, recentLimit) {
-  assertNonEmptyString(itemId, 'context itemId');
+function validateProjectionOptions(subject, maxBytes, recentLimit) {
+  validateHierarchySubject(subject, 'context subject');
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) {
     invalid('context maxBytes must be a positive safe integer');
   }
@@ -88,10 +90,11 @@ function unique(values) {
   return [...new Set(values)];
 }
 
-function currentDecisions(view) {
+function currentDecisions(view, get) {
   const effective = effectiveApprovals(
     view.approvals.map(({record}) => record.body),
-    view.item.body,
+    view.record,
+    get,
   );
   const byId = new Map(view.approvals.map(entry => [entry.record.id, entry]));
   return effective.map(body => {
@@ -118,27 +121,28 @@ function currentDecisions(view) {
 }
 
 function unresolvedQuestions(view) {
-  const waiting = new Set(view.item.body.waiting_on_questions);
-  const terminal = TERMINAL.has(view.item.body.state);
+  const subject = {kind: view.record.kind, id: view.record.id};
+  const waiting = new Set(view.record.body.waiting_on_questions ?? []);
+  const terminal = TERMINAL.has(view.record.body.state);
   return view.questions.map(entry => {
     const question = entry.record;
-    if (!question) gap('item references a missing question');
-    if (!bindsItem(question, view.item.id)
+    if (!question) gap('hierarchy subject references a missing question');
+    if (!bindsSubject(question, subject)
       || (!terminal && question.body.status !== 'open')
       || (!terminal && waiting.has(question.id) && question.body.blocking !== true)) {
-      gap(`question/${question.id} is not an unresolved question for item/${view.item.id}`);
+      gap(`question/${question.id} is not unresolved for ${subject.kind}/${subject.id}`);
     }
     if (entry.eventSeq === null) {
       gap(`question/${question.id} has no persisted opening-message chronology`);
     }
     if (!entry.openedMessage
-      || !bindsItem(entry.openedMessage, view.item.id)
+      || !bindsSubject(entry.openedMessage, subject)
       || entry.openedMessage.body.message_id !== question.body.opened_message_id
       || entry.openedMessage.body.kind !== 'question') {
       gap(`question/${question.id} references a missing opening message`);
     }
     for (const message of entry.answerMessages) {
-      if (!bindsItem(message, view.item.id) || message.body.kind !== 'answer') {
+      if (!bindsSubject(message, subject) || message.body.kind !== 'answer') {
         gap(`question/${question.id} references a missing answer message`);
       }
     }
@@ -149,7 +153,7 @@ function unresolvedQuestions(view) {
         event_seq: entry.eventSeq,
         kind: question.body.kind,
         blocking: question.body.blocking,
-        disposition: TERMINAL.has(view.item.body.state) ? 'historical-follow-up'
+        disposition: TERMINAL.has(view.record.body.state) ? 'historical-follow-up'
           : question.body.blocking ? 'blocking' : 'nonblocking',
         status: question.body.status,
         asker: question.body.asker,
@@ -166,16 +170,17 @@ function unresolvedQuestions(view) {
 }
 
 function recoveryHold(view) {
-  if (view.item.body.recovery_hold === null) return null;
+  if (view.record.kind !== 'task' || view.record.body.recovery_hold === null) return null;
   const entry = view.recoveryHold;
   const attempt = entry?.record;
-  if (!bindsItem(attempt, view.item.id)
-    || attempt.id !== view.item.body.recovery_hold
+  const subject = {kind: 'task', id: view.record.id};
+  if (!bindsSubject(attempt, subject)
+    || attempt.id !== view.record.body.recovery_hold
     || attempt.body.disposition !== 'conflicting-partial-work') {
-    gap(`item/${view.item.id} references a missing or mismatched recovery attempt`);
+    gap(`task/${view.record.id} references a missing or mismatched recovery attempt`);
   }
   if (!entry.message || entry.eventSeq === null
-    || !bindsItem(entry.message, view.item.id) || entry.message.body.kind !== 'recovery') {
+    || !bindsSubject(entry.message, subject) || entry.message.body.kind !== 'recovery') {
     gap(`attempt/${attempt.id} references a missing recovery message or event`);
   }
   return {
@@ -193,10 +198,10 @@ function recoveryHold(view) {
       kind: 'operator-recovery-resolution',
       attempt_id: attempt.id,
       stale_lease_token: attempt.body.stale_lease.token,
-      criteria_ref: criteriaRef(view.item.body),
+      criteria_ref: view.criteriaRef,
       disposition: 'safe-to-resume',
-      scope: TERMINAL.has(view.item.body.state) ? 'before-restoration' : 'before-resumption',
-      release: 'persist exact operator approval, then separately authorized item.restore',
+      scope: TERMINAL.has(view.record.body.state) ? 'before-restoration' : 'before-resumption',
+      release: 'persist exact operator approval, then separately authorized task.restore',
       evidence_verification: 'not_performed',
     },
   };
@@ -204,23 +209,26 @@ function recoveryHold(view) {
 
 function dependencies(view) {
   return view.dependencies.map(({dependency, record}) => {
-    const dependencyId = dependency.task ?? dependency.item;
+    const dependencyId = dependency.task;
     if (!record) {
-      gap(`${view.item.kind}/${view.item.id} references missing dependency ${view.item.kind}/${dependencyId}`);
+      gap(`${view.record.kind}/${view.record.id} references missing dependency task/${dependencyId}`);
     }
     return {
-      item_id: record.id,
-      item_version: record.version,
+      task_id: record.id,
+      task_version: record.version,
       state: record.body.state,
+      resume_state: record.body.resume_state ?? null,
+      recovery_hold: record.body.recovery_hold ?? null,
       requires: dependency.requires,
     };
   });
 }
 
-function ensureMessage(entry, label, itemId) {
+function ensureMessage(entry, label, subject, version) {
   if (!entry?.record) gap(`${label} references a missing message`);
-  if (entry.record.body.thread_id !== itemId) {
-    gap(`${label} does not belong to thread/${itemId}`);
+  const threadId = subjectRef(subject, version);
+  if (!bindsSubject(entry.record, subject) || entry.record.body.thread_id !== threadId) {
+    gap(`${label} does not belong to ${threadId}`);
   }
   return entry;
 }
@@ -237,7 +245,7 @@ function selectedEvidenceReferences(
   latestHandoff,
 ) {
   const values = [
-    ...view.item.body.context_artifacts,
+    ...(view.record.body.context_artifacts ?? []),
     ...questions.flatMap(({entry}) =>
       [entry.openedMessage, ...entry.answerMessages].flatMap(message => [
         ...message.body.artifact_refs, ...message.body.evidence_refs,
@@ -270,7 +278,7 @@ function historyCursor(view, selectedMessages) {
   const remainingCount = view.messageCount - selectedMessages.length;
   if (remainingCount <= 0) return null;
   return {
-    threadId: view.item.id,
+    subject: {kind: view.record.kind, id: view.record.id},
     beforeSeq: selectedMessages.length > 0
       ? selectedMessages[0].eventSeq
       : view.throughSeq + 1,
@@ -319,45 +327,51 @@ function packetFor(view, {
   }
   const cursor = historyCursor(view, selectedMessages);
   const referenceList = [...references.values()];
-  const item = view.item;
+  const record = view.record;
+  const subject = {kind: record.kind, id: record.id};
   const packet = {
     schema_version: 1,
     through_seq: view.throughSeq,
-    item: {
-      id: item.id,
-      title: item.body.title,
-      state: item.body.state,
-      resume_state: item.body.resume_state,
-      recovery_hold: item.body.recovery_hold,
-      outcome: item.body.outcome,
+    subject: {
+      kind: record.kind,
+      id: record.id,
+      version: record.version,
+      title: record.body.title,
+      state: record.body.state,
+      resume_state: record.body.resume_state ?? null,
+      recovery_hold: record.body.recovery_hold ?? null,
+      completion_disposition: record.body.completion_disposition ?? null,
+      outcome: record.body.outcome,
     },
     authority: {
-      scope_authority: item.body.scope_authority,
-      completion_authority: item.body.completion_authority,
-      acceptance_actor: item.body.acceptance_actor,
-      next_role: item.body.next_role,
-      lease: item.body.lease === null ? null : {
-        holder: item.body.lease.holder,
-        token: item.body.lease.token,
-        version_at_grant: item.body.lease.version_at_grant,
-        expires_at: item.body.lease.expires_at,
+      owner: record.body.owner ?? null,
+      scope_authority: record.body.scope_authority,
+      completion_authority: record.body.completion_authority,
+      acceptance_actor: record.body.acceptance_actor ?? null,
+      next_role: record.body.next_role ?? null,
+      lease: record.body.lease == null ? null : {
+        holder: record.body.lease.holder,
+        token: record.body.lease.token,
+        version_at_grant: record.body.lease.version_at_grant,
+        expires_at: record.body.lease.expires_at,
       },
     },
     revision: {
-      item_version: item.version,
-      criteria_ref: criteriaRef(item.body),
-      change_ref: item.body.change_ref,
-      updated_at: item.body.updated_at,
+      subject_ref: subjectRef(subject, record.version),
+      subject_version: record.version,
+      criteria_ref: view.criteriaRef,
+      change_ref: record.body.change_ref ?? null,
+      updated_at: record.body.updated_at,
     },
-    acceptance: item.body.acceptance,
-    review_requirements: item.body.review_requirements,
+    acceptance: record.body.acceptance,
+    review_requirements: record.body.review_requirements ?? [],
     artifact_obligations: {
-      artifact_expectation: item.body.artifact_expectation,
-      artifact_expectation_reason: item.body.artifact_expectation_reason,
-      artifact_class: item.body.artifact_class,
-      durability: item.body.durability,
-      validity_owner: item.body.validity_owner,
-      artifact_targets: item.body.artifact_targets,
+      artifact_expectation: record.body.artifact_expectation ?? null,
+      artifact_expectation_reason: record.body.artifact_expectation_reason ?? null,
+      artifact_class: record.body.artifact_class ?? null,
+      durability: record.body.durability ?? null,
+      validity_owner: record.body.validity_owner ?? null,
+      artifact_targets: record.body.artifact_targets ?? [],
     },
     dependencies: dependencyEntries,
     unresolved_questions: questionEntries.map(({summary}) => summary),
@@ -365,7 +379,7 @@ function packetFor(view, {
     blockers: [
       ...questionEntries.filter(({summary}) => summary.disposition === 'blocking')
         .map(({summary}) => summary),
-      ...(recovery && !TERMINAL.has(item.body.state)
+      ...(recovery && !TERMINAL.has(record.body.state)
         ? [{kind: 'recovery-hold', ref: recovery.ref, required_authority: 'operator'}] : []),
     ],
     decisions: decisionEntries.map(({summary}) => summary),
@@ -388,26 +402,28 @@ function packetFor(view, {
  * callers must not append an unbounded history list.
  */
 export function projectContext(store, {
-  itemId,
+  subject,
   maxBytes = DEFAULT_MAX_BYTES,
   recentLimit = DEFAULT_RECENT_LIMIT,
 }) {
-  validateProjectionOptions(itemId, maxBytes, recentLimit);
+  validateProjectionOptions(subject, maxBytes, recentLimit);
   const view = readSubjectView(store, {
-    subject: {kind: 'item', id: itemId},
+    subject,
     recentLimit,
   });
-  if (!view.item) gap(`item/${itemId} does not exist`);
+  if (!view.record) gap(`${subject.kind}/${subject.id} does not exist`);
+  const get = (kind, id) => readRecord(store, kind, id);
+  view.criteriaRef = criteriaRef(view.record, get);
 
   const questionEntries = unresolvedQuestions(view);
   const recovery = recoveryHold(view);
-  const decisionEntries = currentDecisions(view);
+  const decisionEntries = currentDecisions(view, get);
   const dependencyEntries = dependencies(view);
   const latestHandoff = view.latestHandoff === null
     ? null
-    : ensureMessage(view.latestHandoff, 'latest handoff', itemId);
+    : ensureMessage(view.latestHandoff, 'latest handoff', subject, view.record.version);
   const recent = view.recentMessages.map((entry, index) =>
-    ensureMessage(entry, `recent message ${index + 1}`, itemId));
+    ensureMessage(entry, `recent message ${index + 1}`, subject, view.record.version));
   const fixed = {
     questionEntries,
     recovery,
@@ -464,11 +480,11 @@ export function readDetail(store, {kind, id}) {
  * remainingCount. Caller counts are ignored; each page uses LIMIT + 1.
  */
 export function readMessages(store, {
-  threadId,
+  subject,
   beforeSeq = null,
   limit = 50,
 }) {
-  assertNonEmptyString(threadId, 'message threadId');
+  validateHierarchySubject(subject, 'message subject');
   if (beforeSeq !== null
     && (!Number.isSafeInteger(beforeSeq) || beforeSeq < 1)) {
     invalid('message beforeSeq must be a positive safe integer or null');
@@ -476,5 +492,5 @@ export function readMessages(store, {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_MESSAGE_PAGE) {
     invalid(`message limit must be an integer from 1 through ${MAX_MESSAGE_PAGE}`);
   }
-  return readMessagePage(store, {threadId, beforeSeq, limit});
+  return readMessagePage(store, {subject, beforeSeq, limit});
 }
