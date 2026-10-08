@@ -1,7 +1,7 @@
 ---
 asset_id: <stable-id>
 asset_class: specification
-item: <work-item-id>
+task: <typed-task-id>
 title: <title>
 produced_by: <role>
 created: <YYYY-MM-DD>

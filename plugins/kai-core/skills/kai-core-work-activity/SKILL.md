@@ -1,135 +1,69 @@
 ---
 name: kai-core-work-activity
-description: "Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl."
+description: "Use when a coordinated role should emit optional append-only start, progress, stop, deadline, or silence signals."
 tools: [execute, read, search]
 requires_tools: [execute]
 ---
 
-# Work Activity
+# Work activity
 
-`kai-core-work-item` records what a piece of work **is**. This records what an
-agent **is doing right now**. Both are needed, and they must never be the same
-file.
+`kai-core-work-task` defines what executable work is. Activity reports what an
+actor says it is doing now. They are deliberately separate.
 
-The coordination item is a compare-and-swap surface: every write increments
-`version` and is verified against a lease token. That protocol is what makes
-parallel ownership safe, and it is exactly why a heartbeat cannot live there —
-a frequent write would inflate the field that detects racing, and a
-read-modify-write would be the lost-update pattern the append-only design
-avoids.
+| Surface | Task record | Activity log |
+| --- | --- | --- |
+| Location | `.kai/core/runtime/coordination.sqlite` | `.kai/core/runtime/activity.jsonl` |
+| Shape | versioned transactional record | append-only JSON lines |
+| Carries | authority, state, lease, reviews, evidence | role, optional typed Task, run, deadline, phase |
+| Authority | only coordination authority | non-authoritative optional signal |
 
-| | Item record | Activity log |
-|---|---|---|
-| Path | the runtime store, read with `detail`/`status` | `.kai/activity.jsonl` (gitignored) |
-| Shape | compare-and-swap, versioned | append-only, one line per record |
-| Carries | state, ownership, reviews, verdicts | who, which item, when they report next |
-| Changes | ~10x per item, across days | ~2x per agent run |
-| Authority | authoritative | **non-authoritative**, optional |
-
-**If you are about to record a state, a verdict, a review, or a decision, you
-are in the wrong file.** The writer rejects those fields rather than trusting
-this paragraph.
-
-This log is an **optional participation signal**. It is non-authoritative by
-construction: an append never advances lifecycle state, never satisfies a
-review, and never certifies that a model or a role was actually invoked. Only a
-runtime command changes coordinated state, and only a real host receipt
-evidences a real command. Skipping the log costs visibility, never correctness.
-
-## What it buys
-
-Between two item updates, a supervisor can only say `UNKNOWN` — the item has
-not moved, and silence is indistinguishable from progress. This log narrows
-that, and gives agents something they never had: **a live view of their peers**
-before they claim work.
-
-- Who else is in flight right now, and on which item.
-- Whether the peer you are about to ask is mid-run.
-- Whether a run has gone silent past the deadline it set for itself.
+An activity append never advances lifecycle, grants work, satisfies review,
+records a decision, or certifies that a model ran. A missing append costs
+visibility, never correctness.
 
 ## When to append
 
-Two appends per run is the target. If reporting feels like bookkeeping you will
-drift from it, and a log that is drifted from is worse than no log — it reports
-confidence it has not earned.
+1. `start` after a valid claim and before Task work.
+2. `progress` only when a phase changes the honest next-report estimate.
+3. `stop` before the final handoff, including blocked or abandoned work.
 
-1. **`start`** — immediately after claiming an item and before doing work.
-2. **`progress`** — only when crossing a phase that changes your own estimate
-   (finished research, started implementation, began a long-running build).
-   Optional. Never per file or per tool call.
-3. **`stop`** — before your final handoff, always, including when you stop
-   blocked or abandon the run.
+Every start/progress supplies `--for`, the bounded window until the next report.
 
-Every `start` and `progress` declares `--for`, the window after which your
-silence is *checkable*. Set it to the honest upper bound of the next phase, not
-to the whole run. If you will exceed it, append a `progress` with a new window.
+## Commands
 
-## The commands
-
-`<kai-plugin>` is the plugin install directory; `<root>` is the workspace root
-resolved per `kai-core-workspace-paths`.
-
-```bash
-# once per run, at the top
-RUN=$(node <kai-plugin>/scripts/activity.mjs new-run)
+```text
+node <kai-plugin>/scripts/activity.mjs new-run
 
 node <kai-plugin>/scripts/activity.mjs start \
-  --root <root> --role eng-builder-software --item export-audit \
-  --run "$RUN" --for 45m
+  --root <workspace-root> --role eng-builder-software \
+  --task engineering:task:export-audit --run <run-id> --for 45m
 
 node <kai-plugin>/scripts/activity.mjs progress \
-  --root <root> --role eng-builder-software --run "$RUN" \
-  --for 30m --note "implementation underway"
+  --root <workspace-root> --role eng-builder-software \
+  --run <run-id> --for 30m --note "implementation underway"
 
 node <kai-plugin>/scripts/activity.mjs stop \
-  --root <root> --role eng-builder-software --run "$RUN" --outcome handoff
+  --root <workspace-root> --role eng-builder-software \
+  --run <run-id> --outcome handoff
 
-# who else is live
-node <kai-plugin>/scripts/activity.mjs show --root <root>
+node <kai-plugin>/scripts/activity.mjs show --root <workspace-root>
 ```
 
-| Field | Meaning |
-|---|---|
-| `--role` | your kebab-case role id, never a person |
-| `--item` | the coordination item this run serves, when there is one |
-| `--run` | one opaque id per run, pairing your `start` with your `stop` |
-| `--for` | `30m`, `2h`, `90s` — when you will report next |
-| `--outcome` | `handoff`, `done`, `blocked`, `abandoned` (stop only) |
-| `--note` | one short line, bounded to 120 chars, paths rejected |
+`--task`, when present, is a full typed Task ID. `--note` is one short phase
+description; paths, prompts, commands, usernames, and diffs are rejected.
 
-## Failure is not your problem
+## Failure behavior
 
-The writer never throws and never blocks work. A rejected or failed append is
-reported and dropped; it does not fail the task. **Never** retry an append in a
-loop, never gate work on the log, and never treat a missing log as an error.
-
-## Honesty
-
-Every record is tiered `declared`, matching `work-status`. This is
-self-reported: an agent that crashes never writes its `stop`, and an agent that
-forgets never writes at all.
-
-So this log **does not** claim to detect a crash. What it makes checkable is
-narrower and true:
-
-> the run declared it would report by `T`, and `T` has passed
-
-That is a `derived` finding — the agent's own commitment measured against a
-clock — and it is the strongest claim available without an external observer.
-Attributing silence to a crash requires the host, not this file.
+The append path is best-effort and never blocks Task work. Report and drop a
+failed append; do not retry in a loop. Never infer a crash from silence. The
+only derived statement is that a run's own declared report deadline passed.
 
 ## Hard rules
 
-- **Never** record `state`, `resume_state`, `verdict`, `review`, `change_ref`,
-  `version`, `lease`, or `decision`. The writer rejects them.
-- **Never** put a filesystem path, a username, a command, a prompt, or a diff in
-  `--note`. It is one short line about *what phase you are in*, nothing else.
-- **Never** hand-edit `.kai/activity.jsonl`, and never rewrite it. Append only.
-- **Never** substitute an activity append for a coordination update. A HANDOFF
-  is still a HANDOFF, submitted as a runtime command; `stop` does not hand
-  anything off and cannot advance lifecycle state.
-- **Never** read this log to decide whether work is complete. It reports
-  activity; the item reports truth.
-- **Never** treat a `start` as proof that a role or model ran. This log cannot
-  certify a model invocation — only a real host receipt can, and kai captures
-  those through `scripts/coordinate.mjs capture`, not here.
+- Never record state, verdict, review, decision, change reference, version,
+  lease, or authority in activity.
+- Never hand-edit or rewrite the log.
+- Never substitute `stop` for `task.handoff`.
+- Never use activity to decide completion.
+- Never treat `start` as proof that a role or model ran; only a verified host
+  receipt can establish that.

@@ -97,15 +97,17 @@ independent security or reliability verdict.
 
 Apply `pr-delivery` when explicitly asked to prepare the finished PR.
 For a requested durable artifact, apply `kai-core-workspace-paths` before
-choosing its path and apply `kai-core-asset-producing` before publishing it. Ordinary
+choosing its path, then apply `engineering-workspace-publication`. Apply
+`kai-core-asset-producing` before publishing it. Ordinary
 local work requires neither `.kai` nor another agent.
 
-For actual coordinated work, apply `kai-core-work-item` to read the item and
+For actual coordinated work, apply `kai-core-work-task` to read the Task and
 apply `kai-core-work-acting` before state writes. Every coordinated read and
 write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
-An unresolved owner or old route remains a coordination gap. Apply
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
+An unresolved owner or route remains a coordination gap. Apply
 `kai-core-peer-communication` only to an actual coordinated handoff and apply
 `kai-core-work-activity` when recording the run.

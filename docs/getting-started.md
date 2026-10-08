@@ -40,11 +40,10 @@ Initialize this repository as a kai workspace.
 
 - **external** keeps the project free of Kai state and pairs it through the
   machine-local registry;
-- **repo-local** uses project `.kai/` but ignores it completely;
-- **shared** allows the manifest, conventions, and `.kai/state/` to be tracked.
+- **repo-local** uses project `.kai/` but ignores it completely.
 
 It also confirms the project publication root, defaulting to `docs/kai`.
-Private coordination, drafts, evidence, and personal state remain under
+Private coordination, drafts, evidence, scratch, and runtime state remain under
 `.kai/`; only accepted project knowledge publishes. See
 [Workspace model](workspaces.md) for the full contract.
 
@@ -57,7 +56,7 @@ coherent change, including the tests for its changed behavior.
 ```
 
 For explicitly requested coordination across installed specialties,
-`director-chief-of-staff` manages work items and handoffs; specialist authority
+`director-chief-of-staff` grants and reconciles Tasks and handoffs; specialist authority
 stays with each owner. Neither it nor workspace init is required for ordinary
 direct engineering or creative work.
 
@@ -67,25 +66,24 @@ direct engineering or creative work.
 node <path-to-kai>/scripts/workspace-doctor.mjs
 ```
 
-It reports whether the workspace is claimable, whether the board has drifted
-from the authoritative items, and whether any schema migration is due.
+It reports whether the schema-5 workspace, Direction, private paths, database,
+registry, and Git contract are healthy, and whether explicit migration is due.
 
 **5. See where this ends up.**
 [`examples/e2e-feature-delivery/`](../examples/e2e-feature-delivery/) is a
-committed, CI-validated workspace showing the same feature carried from brief to
-production: the decision with its rejected options, the full handoff thread
-including `deploying` and `production-verification`, revision-bound reviews, a
-design sign-off on the net-new UI surface, an item correctly stuck at
-`in-review`, and one adjacent idea routed to a proposal instead of being built.
+committed, CI-validated example showing one feature carried from brief to
+production with rejected options, handoffs, revision-bound reviews, design
+sign-off, and an adjacent idea kept outside approved scope.
 
 ### What you can ignore at first
 
-kai ships **21 agents and 35 skills** across three packages — core,
+kai ships **21 agents and 38 skills** across three packages — core,
 engineering, and creative. Five earlier packages (product, marketing, revenue,
 assistant, and learning) are incubated: parked in `incubator/`, not installable,
 and tracked on [Package availability](reference/package-availability.md).
-You do not need to learn them. You need three things: **ask for outcomes**, **let the
-work item be the source of truth**, and **remember that only you ship**.
+You do not need to learn them. You need three things: **ask for outcomes**,
+**treat SQLite as the only coordination authority**, and **remember that only
+you ship**.
 Everything else is reference material — read it when you hit the thing it
 describes.
 
@@ -140,9 +138,8 @@ whole roster. [Creative's package note](reference/packages/kai-creative.md)
 lists direct requests, supplied inputs, outputs, and external-tool prerequisites.
 
 Core carries the shared scripts and fleet hooks. Its provider-root paths are
-independent of any companion package's location. Whatever your storage mode,
-preserve `.kai/personal/` and all private records; plugin removal is never data
-migration.
+independent of any companion package's location. Preserve all existing private
+records; plugin removal is never data migration.
 
 ### Replacing retired packages
 
@@ -172,8 +169,8 @@ keep the existing install if you still rely on those capabilities.
    session and inspect the result.
 
 This is explicit plugin replacement, not an automatic installer or workspace
-migration. Preserve `.kai/personal/`, private history and every existing
-workspace storage mode. Do not delete data to retire an install name.
+migration. Preserve private history and every existing workspace until its
+explicit migration is verified. Do not delete data to retire an install name.
 
 ### Upgrading from the `kai` monolith
 
@@ -328,7 +325,7 @@ node <kai-plugin>/scripts/workspace-doctor.mjs
   `kai-core-workspace-onboarding`;
 - validates generated coordination state — item schemas, lifecycle states,
   `change_ref`-bound reviews, typed dependencies and cycles, lease shape/expiry,
-  path containment, and `BOARD.md` drift.
+  Direction, path containment, and private Git safety.
 
 If it reports **migration required** or errors, run `workflow-workspace-init`
 (idempotent) to reconcile, then re-run the doctor until it reports the workspace
@@ -343,14 +340,13 @@ and schema-4 workspaces stay **inspect-only**: `inspect`, `status`, and `legacy`
 read them, and coordinated writes are refused with `SCHEMA_MISMATCH`. Never
 initialize or write a schema-4 store. See [workspaces](workspaces.md).
 
-<!-- kai:allow-legacy-roots -->
+<!-- kai:schema4-history -->
 > **Upgrading from schema 2?** Choose `external` or `repo-local`,
 > then classify the former `kai/coordination/`, `kai/initiatives/`,
-> `kai/library/`, and `kai/personal/` content. Coordination and initiative work
-> become `.kai/state/`; personal state becomes `.kai/personal/`; only accepted
-> current project knowledge publishes. The migration never bulk publishes the
-> old library and never keeps both layouts.
-<!-- /kai:allow-legacy-roots -->
+> `kai/library/`, and `kai/personal/` content by hierarchy owner and allowed
+> pack publication type. Unknown ownership blocks activation. Only accepted
+> current project knowledge publishes, and the migration keeps no aliases.
+<!-- /kai:schema4-history -->
 
 ## Media tooling (optional)
 

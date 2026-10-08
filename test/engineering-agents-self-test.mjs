@@ -6,6 +6,7 @@ import {
   sourceAgentFiles, sourceSkillFiles, materializePacks, collectReferences,
   agentRoutingErrors, agentProfileModelErrors, agentTaxonomyErrors, normalizeLF,
 } from '../tools/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 import {
   parseFrontmatter, parseToolList, stripQuotes, loaderErrors,
 } from '../src/core/lib/loader-contract.mjs';
@@ -29,6 +30,8 @@ const expected = {
 const agents = sourceAgentFiles(root).filter(entry => entry.pack === 'engineering');
 assert.deepEqual(agents.map(entry => entry.id).sort(), Object.keys(expected).sort(),
   'engineering discovery must expose the standalone roster, not retired identities');
+assert.equal(typeof packPlan.publicationRoutingErrors, 'function',
+  'engineering agent tests require the shared publication-routing validator');
 const allSkills = sourceSkillFiles(root);
 const availableSkills = new Set(allSkills
   .filter(entry => ['core', 'engineering'].includes(entry.pack)).map(entry => entry.id));
@@ -47,6 +50,7 @@ const emittedAgents = [...files.keys()]
   .map(key => key.slice('kai-engineering/agents/'.length, -'.agent.md'.length)).sort();
 assert.deepEqual(emittedAgents, Object.keys(expected).sort(),
   'the emitted plugin must match source discovery');
+let durableProducers = 0;
 for (const entry of agents) {
   const body = readFileSync(entry.path, 'utf8');
   assert.equal(files.get(`kai-engineering/agents/${entry.id}.agent.md`), normalizeLF(body),
@@ -61,9 +65,15 @@ for (const entry of agents) {
   const tools = parseToolList(parsed.fm.tools);
   assert.ok(tools.includes('skill'), `${entry.id}: skill loading must be available`);
   assert.deepEqual(agentRoutingErrors({
-    id: entry.id, body, tools, knownSkills: availableSkills,
+    id: entry.id, pack: entry.pack, body, tools, knownSkills: availableSkills,
     knownAgents: new Set(agents.map(agent => agent.id)),
   }), [], `${entry.id}: core routes and bounded fallback`);
+  const publicationErrors = packPlan.publicationRoutingErrors({...entry, body});
+  assert.deepEqual(publicationErrors, [],
+    `${entry.id}: engineering publication route must immediately precede asset production`);
+  if (packPlan.routedSkills(body).includes('kai-core-asset-producing')) {
+    durableProducers += 1;
+  }
   assert.ok(body.length <= 20_000, `${entry.id}: focused prompt budget`);
   if (entry.id.startsWith('eng-reviewer-') ||
     ['eng-advisor-investigation', 'eng-lead-technical-writing'].includes(entry.id)) {
@@ -71,6 +81,22 @@ for (const entry of agents) {
       ref.target === 'kai-core-no-self-remediation' && ref.firing.includes('loaded')),
     `${entry.id}: assessment output must not become product remediation`);
   }
+  assert.ok(durableProducers > 0,
+    'engineering publication routing must inspect at least one durable producer');
+  const mutatedProducer = agents
+    .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}))
+    .find(entry => packPlan.routedSkills(entry.body).includes('kai-core-asset-producing'));
+  assert.ok(mutatedProducer, 'engineering mutation needs one live durable producer');
+  assert.ok(
+    packPlan.publicationRoutingErrors({
+      ...mutatedProducer,
+      body: mutatedProducer.body.replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`engineering-workspace-publication`[^.]*\.\s*/i,
+        '',
+      ),
+    }).some(message => message.includes('must route `engineering-workspace-publication`')),
+    'removing an engineering producer publication route must fail by owning skill name',
+  );
   if (entry.id === 'eng-advisor-investigation' || entry.id === 'eng-reviewer-code') {
     assert.ok(tools.includes('edit') && tools.includes('execute'),
       `${entry.id}: requested evidence and reviewer-owned coordination records need write tools`);
@@ -98,4 +124,7 @@ assert.ok(!files.has('kai-engineering/agents/principal-solutions-architect.agent
   'engineering must not reabsorb pre-sales solution judgment from the incubated revenue package');
 assert.ok(![...files.keys()].some(key => key.endsWith('principal-solutions-architect.agent.md')),
   'and no pack emits it at all while kai-revenue is incubated');
-console.log('engineering standalone discovery, loader, model, route and emission assertions passed');
+console.log(
+  `engineering standalone discovery, loader, model, route and emission assertions passed `
+  + `(agents=${agents.length}, durable producers=${durableProducers})`,
+);

@@ -8,7 +8,7 @@ tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 # Pull Request Delivery
 
 Package one finished change for review and determine whether the live repository
-rules make it mergeable. A direct supplied diff is sufficient; a work item or
+rules make it mergeable. A direct supplied diff is sufficient; a Task or
 initialized Kai workspace is not required.
 
 **Primary profile:** procedure
@@ -93,15 +93,16 @@ solution.
 
 Default to the PR/draft and inline readiness result. For a separately requested
 durable delivery record, invoke `kai-core-workspace-paths` before choosing its
-authorized root and apply `kai-core-asset-producing` before recording the
-accepted artifact.
+authorized root. Apply `engineering-workspace-publication`, then apply
+`kai-core-asset-producing` before recording the accepted artifact.
 
-For an actual coordinated item, apply `kai-core-work-item` to read its delivery
+For an actual coordinated Task, apply `kai-core-work-task` to read its delivery
 authority, then apply `kai-core-work-acting` before every coordination write.
 Every coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
 If the owner, grant, or next route is unavailable during the deferred wiring
 phase, report it rather than inventing state. Apply
 `kai-core-peer-communication` only for an actual coordinated handoff. Apply

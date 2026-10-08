@@ -89,20 +89,22 @@ and code quality without duplicating the same finding.
 
 Default to findings in the caller's requested format; do not create a report
 tree. For a requested durable review, apply `kai-core-workspace-paths` to resolve
-the assessment output root and apply `kai-core-asset-producing` before recording
-the accepted report. Keep that output separate from the reviewed target.
+the assessment output root, then apply `engineering-workspace-publication`.
+Apply `kai-core-asset-producing` before recording the accepted report. Keep that
+output separate from the reviewed target.
 
-For an actual coordinated review, apply `kai-core-work-item` to read the item
+For an actual coordinated review, apply `kai-core-work-task` to read the Task
 and exact `change_ref`, and apply `kai-core-work-acting` before each state write.
 Hold the valid review grant, record your own verdict/evidence with a
 `review.record` command, submit the handoff and select the next unmet
 requirement without changing the implementation. Every coordinated read and
 write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
 Apply `kai-core-work-granting` only for
-an authorized no-director self-grant. If an owner or legacy route cannot be
+an authorized no-director self-grant. If an owner or route cannot be
 resolved, report the gap instead of inventing a grant or transition.
 Apply `kai-core-peer-communication` for the actual handoff and apply
 `kai-core-work-activity` when recording the run. Any implementation change

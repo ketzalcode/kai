@@ -47,6 +47,10 @@ import {
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
   availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
   agentTaxonomyErrors, requiresCoordinatedRunContracts, loadedSkills, agentRoutingErrors,
+  publicationSkillForPack, publicationInventoryErrors, publicationContractErrors,
+  publicationRoutingErrors, activeWorkspaceLanguageErrors,
+  markdownCoordinationAuthorityErrors, directionContractErrors,
+  epicWorkflowContractErrors, chiefOfStaffContractErrors,
   agentProfileModelErrors,
   agentPromptLimitErrors, agentAuthoringReferenceErrors,
   ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT, ACTING_EXEMPT,
@@ -1276,11 +1280,12 @@ function selfTest() {
     'State the limitation once and tell the operator to install or update `kai-core`.',
     'Load `kai-core-operating-rules` before coordinated work.',
     'Load `kai-core-workspace-paths` before touching workspace state.',
-    'Load `kai-core-work-acting` before acting on a coordinated item.',
+    'Load `kai-core-work-acting` before acting on a coordinated Task.',
     'Load `kai-core-work-activity` before recording a run.',
   ].join('\n');
   const routingOptions = {
     id: 'eng-builder-frontend',
+    pack: 'engineering',
     body: routingBody,
     tools: ['read', 'skill'],
     knownSkills: [
@@ -1388,6 +1393,106 @@ function selfTest() {
     knownSkills: ['kai-core-contract-v1', 'kai-core-operating-rules'],
   }).some((e) => /must load `kai-core-operating-rules`/.test(e)),
   'a contract that is only name-dropped does not count as loaded');
+
+  // --- schema-5 publication and hierarchy source gates ---------------------
+  const liveSkills = sourceSkillFiles(ROOT);
+  const publicationSkills = liveSkills.filter(entry =>
+    entry.id.endsWith('workspace-publication'));
+  ok(publicationSkills.length === 3
+    && publicationInventoryErrors(liveSkills).length === 0,
+  `publication inventory inspects exactly one skill in each shipped pack (count=${publicationSkills.length})`);
+  ok(publicationInventoryErrors(liveSkills.filter(entry =>
+    entry.id !== 'engineering-workspace-publication'))
+    .some(message => /kai-engineering.*exactly one publication skill/.test(message)),
+  'removing one pack publication skill fails the inventory gate by pack name');
+
+  const publicationBodies = publicationSkills.map(entry => ({
+    ...entry,
+    body: readFileSync(entry.path, 'utf8'),
+  }));
+  ok(publicationBodies.length === 3
+    && publicationBodies.every(entry =>
+      publicationContractErrors(entry).length === 0),
+  `canonical publication tables validate a non-vacuous live corpus (count=${publicationBodies.length})`);
+  const corePublication = publicationBodies.find(entry => entry.pack === 'core');
+  ok(publicationContractErrors({
+    ...corePublication,
+    body: corePublication.body.replace('| `direction` |', '| `initiatives` |'),
+  }).some(message => /canonical type set/.test(message)),
+  'changing a canonical publication type fails the table gate');
+  const creativePublication = publicationBodies.find(entry => entry.pack === 'creative');
+  ok(publicationContractErrors({
+    ...creativePublication,
+    body: creativePublication.body.replace('unsafe media destination', ''),
+  }).some(message => /unsafe media destination/.test(message)),
+  'removing unsafe-media refusal fails the publication contract');
+
+  const routedSources = [
+    ...sourceAgentFiles(ROOT),
+    ...sourceSkillFiles(ROOT),
+  ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
+  const liveProducers = routedSources.filter(entry =>
+    routedSkills(entry.body).includes('kai-core-asset-producing'));
+  const liveNonProducers = routedSources.filter(entry =>
+    !routedSkills(entry.body).includes('kai-core-asset-producing'));
+  ok(liveProducers.length > 0 && liveNonProducers.length > 0
+    && routedSources.every(entry =>
+      publicationRoutingErrors(entry).length === 0),
+  `publication ordering inspects producers=${liveProducers.length} and non-producers=${liveNonProducers.length}`);
+  const routeMutation = liveProducers[0];
+  const routeOwner = publicationSkillForPack(routeMutation.pack);
+  ok(publicationRoutingErrors({
+    ...routeMutation,
+    body: routeMutation.body.replace(
+      new RegExp(`(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\``, 'i'),
+      '',
+    ),
+  }).some(message => message.includes(`must route \`${routeOwner}\``)),
+  'removing a producer publication route fails by owning skill name');
+  const nonProducerMutation = liveNonProducers[0];
+  ok(publicationRoutingErrors({
+    ...nonProducerMutation,
+    body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`.\n`,
+  }).some(message => /non-producer/.test(message)),
+  'adding a publication route to a non-producer fails by classification');
+
+  ok(routedSources.length > 0
+    && routedSources.every(entry =>
+      activeWorkspaceLanguageErrors(entry).length === 0),
+  `active-language gate inspects every shipped source (count=${routedSources.length})`);
+  ok(activeWorkspaceLanguageErrors({
+    body: 'Create a new initiative under `.kai/runs/misc/`.',
+  }).length >= 2,
+  'restoring old hierarchy and fallback-lane language fails by specific gates');
+  ok(markdownCoordinationAuthorityErrors({
+    body: '`BOARD.md` is the authoritative coordination backlog.',
+  }).some(message => /Markdown coordination authority/.test(message)),
+  'restoring an authoritative Markdown board fails by gate name');
+
+  const directionBody = readFileSync(skillPath('kai-core-workspace-paths'), 'utf8');
+  ok(directionContractErrors({body: directionBody}).length === 0,
+    'Direction gate inspects the live workspace path contract');
+  ok(directionContractErrors({
+    body: directionBody.replace(/^# Mission\s*$/m, '# Purpose'),
+  }).some(message => /Mission/.test(message)),
+  'removing a required Direction section fails by section name');
+
+  const epicBody = readFileSync(agentSourceFile(ROOT, 'workflow-epic-init'), 'utf8');
+  ok(epicWorkflowContractErrors({body: epicBody}).length === 0,
+    'Epic workflow gate inspects the live replacement workflow');
+  ok(epicWorkflowContractErrors({
+    body: epicBody.replace(/creates no record before\s+named authority approval/i, ''),
+  }).some(message => /no record before named authority approval/.test(message)),
+  'allowing pre-approval Epic creation fails by authority rule');
+
+  const chiefBody = readFileSync(agentSourceFile(ROOT, 'director-chief-of-staff'), 'utf8');
+  ok(chiefOfStaffContractErrors({body: chiefBody}).length === 0,
+    'Chief of Staff boundary gate inspects the live dispatch role');
+  ok(chiefOfStaffContractErrors({
+    body: chiefBody.replace('cannot invent', 'may invent'),
+  }).some(message => /cannot invent/.test(message)),
+  'allowing Chief of Staff to invent hierarchy scope fails by boundary name');
+
   ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
     && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
   'the approved model set and deterministic profile mapping contain the same identifiers');
@@ -1556,6 +1661,7 @@ function gateSkew() {
     const body = readFileSync(agent.path, 'utf8');
     for (const msg of agentRoutingErrors({
       id: agent.id,
+      pack: agent.pack,
       body,
       tools: declaredTools(body),
       knownSkills,

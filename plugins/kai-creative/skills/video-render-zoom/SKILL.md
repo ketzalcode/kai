@@ -79,13 +79,14 @@ activity from the plan.
 
 ## Output and authority
 
-Before shared workspace or asset rules, Load `kai-core-contract-v1`.
+Before core workspace or asset rules, Load `kai-core-contract-v1`.
 Without compatible core, bounded focus advice from supplied evidence may
 continue, but not coordination or `.kai` state. Tell the operator to install
 or update core before coordinated rendering resumes.
 Load `kai-core-workspace-paths` before persistent output and Load
-`kai-core-asset-producing` when retaining a durable plan or report. Keep raw
-frames and renders in the private run lane.
+`creative-workspace-publication`, then Load `kai-core-asset-producing` when
+retaining a durable plan or report. Keep raw frames and renders in typed private
+evidence.
 
 Return the requested insights, plan, command, render, or review sheet and any
 gaps. Check that a claimed output file exists and report actual inspection

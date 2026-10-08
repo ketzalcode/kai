@@ -257,7 +257,7 @@ Also in `AGENTS.md` → **Releasing this plugin**:
    map only: the `name@marketplace` override key is measured, but the bare-`name`
    key the doctor assumes for a **direct** install has never been exercised on a
    real host. It is documented as inferred, not gated — see the parked
-   measurement proposal and its revisit trigger in the pack-split initiative
+   measurement proposal and its revisit trigger in the pack-split research
    backlog.
 5. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
 

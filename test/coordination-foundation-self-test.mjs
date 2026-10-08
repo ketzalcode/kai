@@ -23,10 +23,10 @@ import { readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bundlePack } from '../tools/lib/bundle.mjs';
-import { materializePacks, moduleSpecifiers } from '../tools/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const files = materializePacks({ root: repoRoot, version: '99.0.0-test' });
+const files = packPlan.materializePacks({ root: repoRoot, version: '99.0.0-test' });
 
 // ---------------------------------------------------------------------------
 // 1. Core owns the entry point and the store the plan names explicitly.
@@ -93,7 +93,7 @@ for (const pack of ['creative', 'engineering']) {
 //    different chunk set, so the closure — not just the entry point — is what
 //    has to hold. Every chunk the emitted files import must itself be emitted.
 // ---------------------------------------------------------------------------
-const coreOnly = materializePacks({
+const coreOnly = packPlan.materializePacks({
   root: repoRoot, version: '99.0.0-test', packs: ['core'],
 });
 assert.ok(coreOnly.has('kai-core/scripts/coordinate.mjs'),
@@ -103,7 +103,7 @@ const coreOnlyScripts = [...coreOnly.keys()].filter((key) => /^kai-core\/scripts
 assert.ok(coreOnlyScripts.length > 0, 'a core-only install must emit shipped scripts');
 const danglingCoreOnly = [];
 for (const key of coreOnlyScripts) {
-  for (const specifier of moduleSpecifiers(coreOnly.get(key))) {
+  for (const specifier of packPlan.moduleSpecifiers(coreOnly.get(key))) {
     if (!specifier.startsWith('./')) continue;
     const target = `kai-core/scripts/${specifier.slice(2)}`;
     if (!coreOnly.has(target)) danglingCoreOnly.push(`${key} -> ${specifier}`);
@@ -126,4 +126,64 @@ assert.ok(routesToCli.length > 0,
   'no shipped kai-core skill references scripts/coordinate.mjs, so nothing '
   + 'collects the runtime closure through normal asset routing');
 
-console.log('coordination foundation self-test: all checks passed');
+// ---------------------------------------------------------------------------
+// 6. The emitted contract surface contains the schema-5 publication and work
+//    contracts, with one publication skill per shipped pack and no aliases.
+// ---------------------------------------------------------------------------
+const expectedPublication = new Map([
+  ['core', 'kai-core-workspace-publication'],
+  ['engineering', 'engineering-workspace-publication'],
+  ['creative', 'creative-workspace-publication'],
+]);
+const emittedSkills = [...files.keys()]
+  .map(key => packPlan.parseGeneratedKey(key))
+  .filter(entry => entry?.kind === 'skill');
+const emittedPublication = emittedSkills.filter(entry =>
+  expectedPublication.get(entry.pack) === entry.id);
+assert.equal(emittedPublication.length, expectedPublication.size,
+  `expected ${expectedPublication.size} emitted publication skills, found ${emittedPublication.length}`);
+for (const [pack, id] of expectedPublication) {
+  assert.deepEqual(
+    emittedPublication.filter(entry => entry.pack === pack).map(entry => entry.id),
+    [id],
+    `generated kai-${pack} must contain exactly ${id}`,
+  );
+}
+
+for (const key of [
+  'kai-core/skills/kai-core-work-hierarchy/SKILL.md',
+  'kai-core/skills/kai-core-work-stewardship/SKILL.md',
+  'kai-core/skills/kai-core-work-task/SKILL.md',
+  'kai-core/agents/workflow-epic-init.agent.md',
+]) {
+  assert.ok(files.has(key), `generated surface must include ${key}`);
+}
+for (const key of [
+  'kai-core/skills/kai-core-workspace-initiative/SKILL.md',
+  'kai-core/skills/kai-core-work-item/SKILL.md',
+  'kai-core/skills/kai-core-initiative-stewardship/SKILL.md',
+  'kai-core/agents/workflow-initiative-init.agent.md',
+]) {
+  assert.ok(!files.has(key), `generated surface must not retain ${key}`);
+}
+
+assert.equal(typeof packPlan.publicationInventoryErrors, 'function',
+  'pack-plan must expose publicationInventoryErrors to validate emitted mutations');
+if (typeof packPlan.publicationInventoryErrors === 'function') {
+  assert.deepEqual(packPlan.publicationInventoryErrors(emittedSkills), [],
+    'emitted skills must satisfy the publication inventory contract');
+  const removed = emittedSkills.filter(entry =>
+    entry.id !== expectedPublication.get('creative'));
+  assert.ok(
+    packPlan.publicationInventoryErrors(removed)
+      .some(message => message.includes('kai-creative') &&
+        message.includes('exactly one publication skill')),
+    'removing the emitted creative publication skill must fail by pack and rule name',
+  );
+}
+
+console.log(
+  `coordination foundation self-test passed `
+  + `(runtime modules=${runtimeModules.length}, publication packs=${emittedPublication.length}, `
+  + `routing skills=${routesToCli.length})`,
+);

@@ -4,9 +4,8 @@
 //     agent/skill and `inherit` references, and plugin.json paths;
 //   • release hygiene — plugin.json and package.json declare the same version;
 //   • host-tool allowlist — every declared `tools:` entry is a real host tool;
-//   • workspace-contract consistency — the managed .gitignore block, the
-//     .kai/runs areas, initiative artifact directories, and the library/<type>
-//     set stay in sync across the manifest schema and scaffolds;
+//   • workspace-contract consistency — private schema-5 placement, Direction,
+//     typed pack publication, hierarchy authority, and explicit migration;
 //   • the partition — every agent in exactly one pack, every skill with exactly
 //     one provider, every reviewed override still placing a skill inheritance
 //     cannot, core's `kai-core-*` namespace held in both directions, no id
@@ -17,7 +16,6 @@
 //   • cross-pack references — every routed, user-invoked and orchestrated
 //     reference, plus every invoked script and hooks.json itself, resolves to
 //     core or to the referring body's own pack;
-//   • fixtures — the sample repository-mode manifest matches the schema.
 // Dependency-free (Node built-ins only) so CI runs it with no install step.
 //
 // Run: `node scripts/validate-plugin.mjs` (or `npm run validate`).
@@ -46,6 +44,9 @@ import {
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
+  publicationInventoryErrors, publicationContractErrors, publicationRoutingErrors,
+  activeWorkspaceLanguageErrors, markdownCoordinationAuthorityErrors,
+  directionContractErrors, epicWorkflowContractErrors, chiefOfStaffContractErrors,
   RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
   RETIRED_ENGINEERING_AGENT_IDS, RETIRED_DIRECTOR_AGENT_IDS, RETIRED_CORE_SKILL_IDS,
   RETIRED_CORE_AGENT_IDS, sourceAssetIndex, sourceAssetPath,
@@ -207,7 +208,8 @@ const refScanFiles = [
   join(ROOT, 'AGENTS.md'),
   join(ROOT, 'README.md'),
   ...publicDocFiles(),
-].filter(existsSync);
+].filter(existsSync).filter(path =>
+  rel(path) !== 'docs/reference/agents-and-skills.md');
 
 // Backtick tokens matching either a supported kind prefix or the complete new
 // provider-posture-scope prefix are agent references. Requiring the posture
@@ -324,6 +326,7 @@ for (const agent of agentFiles) {
   const raw = readFileSync(agent.path, 'utf8').replace(/\r\n/g, '\n');
   for (const msg of agentRoutingErrors({
     id: agent.id,
+    pack: agent.pack,
     body: raw,
     tools: parseToolList(agent.fm?.tools) || [],
     knownSkills: skillIds,
@@ -724,36 +727,26 @@ if (!existsSync(mktPath)) {
 
 // ---------------------------------------------------------------------------
 // Contract consistency — the workspace contract is described in several files
-// that must not drift apart. Structural checks stay green when, say, a new run
-// area is added to the manifest but forgotten in a scaffold; these catch it.
+// that must not drift apart. These checks consume the same helpers exercised by
+// source and mutation self-tests.
 // ---------------------------------------------------------------------------
 const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-// kai-core-workspace-conventions split by reader (see its drop record): the
-// roots / storage-mode / publication-root half is kai-core-workspace-paths, and
-// the manifest / run-area half is kai-core-workspace-initiative. Each concept is
-// checked below against the file that actually carries it — concatenating the
-// two would let a concept bound in neither file pass because the word happens to
-// appear in the other.
 const pathsSkillPath = skillSourceFile(ROOT, 'kai-core-workspace-paths');
-const initiativeSkillPath = skillSourceFile(ROOT, 'kai-core-workspace-initiative');
 const onboardingPath = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
 const wsInitPath = agentSourceFile(ROOT, 'workflow-workspace-init');
-const initiativeInitPath = agentSourceFile(ROOT, 'workflow-initiative-init');
+const epicInitPath = agentSourceFile(ROOT, 'workflow-epic-init');
+const directorPath = agentSourceFile(ROOT, 'director-chief-of-staff');
 const pathsSkill = pathsSkillPath ? readIf(pathsSkillPath) : null;
-const initiativeSkill = initiativeSkillPath ? readIf(initiativeSkillPath) : null;
 const onboarding = onboardingPath ? readIf(onboardingPath) : null;
 const wsInit = wsInitPath ? readIf(wsInitPath) : null;
-const initiativeInit = initiativeInitPath ? readIf(initiativeInitPath) : null;
+const epicInit = epicInitPath ? readIf(epicInitPath) : null;
+const director = directorPath ? readIf(directorPath) : null;
 const pathsSkillRel = pathsSkillPath ? rel(pathsSkillPath) : 'skill:kai-core-workspace-paths';
-const initiativeSkillRel = initiativeSkillPath ? rel(initiativeSkillPath) : 'skill:kai-core-workspace-initiative';
 const onboardingRel = onboardingPath ? rel(onboardingPath) : 'skill:kai-core-workspace-onboarding';
 const wsInitRel = wsInitPath ? rel(wsInitPath) : 'agent:workflow-workspace-init';
-const initiativeInitRel = initiativeInitPath ? rel(initiativeInitPath) : 'agent:workflow-initiative-init';
+const epicInitRel = epicInitPath ? rel(epicInitPath) : 'agent:workflow-epic-init';
+const directorRel = directorPath ? rel(directorPath) : 'agent:director-chief-of-staff';
 const gitignore = readIf(join(ROOT, '.gitignore'));
-
-const toSet = (arr) => new Set(arr);
-const setEq = (a, b) => a && b && a.size === b.size && [...a].every((x) => b.has(x));
-const dirTokens = (s) => toSet([...s.matchAll(/([a-z][a-z0-9-]*)\//g)].map((m) => m[1]).filter((d) => d !== 'library' && d !== 'runs'));
 
 // The split installer is prose executed by an agent, so pin the load-bearing
 // order and failure semantics here instead of treating documentation presence
@@ -834,8 +827,7 @@ if (wsInit) {
   }
 }
 
-// 1. The source repository dogfoods external mode, while onboarding documents
-//    mode-specific managed blocks. Both must keep recognizable markers.
+// Managed private-workspace block.
 function managedBlock(text) {
   if (!text) return null;
   const start = text.indexOf('# >>> kai workspace');
@@ -849,120 +841,134 @@ const giBlock = managedBlock(gitignore);
 const obBlock = managedBlock(onboarding);
 if (giBlock === null) err('.gitignore', 'missing the managed "# >>> kai workspace" block');
 if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block template');
-if (giBlock && !giBlock.includes('/.kai/')) {
-  err('.gitignore', 'external-mode dogfood block must ignore the repository-root .kai directory');
-}
+  if (giBlock && !giBlock.includes('/.kai/')) {
+    err('.gitignore', 'managed workspace block must ignore the repository-root .kai directory');
+  }
 
-// 2. The .kai/runs areas must match the documented manifest and fixture.
-const mAreasM = initiativeSkill && initiativeSkill.match(/"areas":\s*\[([^\]]*)\]/);
-const mAreas = mAreasM ? toSet(mAreasM[1].split(',').map((x) => stripQuotes(x)).filter(Boolean)) : null;
-if (!mAreas) err(initiativeSkillRel, 'could not locate the manifest "areas" list');
-
-// 2b. Every concrete `.kai/runs/<area>/` literal in a shipped agent or skill must
-//     resolve to a registered run area. Placeholder segments like
-//     `.kai/runs/<area>/` never match — the capture requires a lowercase letter,
-//     not `<` — so only real, hard-coded area names are checked. The trailing
-//     lookahead accepts a path separator or any word boundary (backtick, quote,
-//     whitespace, punctuation, end), so `.kai/runs/self-check` without a trailing
-//     slash is still caught. This flags an agent inventing an unregistered area.
-if (mAreas) {
-  const AREA_LITERAL = /\.kai[/\\]runs[/\\]([a-z][a-z0-9-]+)(?=[/\\`'"\s.,;:)\]]|$)/g;
-  for (const f of allFiles) {
-    const raw = readFileSync(f.path, 'utf8');
-    const seen = new Set();
-    for (const m of raw.matchAll(AREA_LITERAL)) {
-      if (mAreas.has(m[1]) || seen.has(m[1])) continue;
-      seen.add(m[1]);
-      err(rel(f.path), `references unregistered run area \`.kai/runs/${m[1]}/\` (add it to the manifest areas list or use a registered area)`);
+  // Schema-5 manifest, Direction, and initialization contracts.
+  for (const [path, text] of [
+    [pathsSkillRel, pathsSkill],
+    [onboardingRel, onboarding],
+  ]) {
+    for (const required of [
+      '"schema_version": 5',
+      '"placement"',
+      '"private_root": ".kai"',
+      '"direction": "docs/kai/DIRECTION.md"',
+      '"publication_root": "docs/kai"',
+      '.kai/core/runtime/coordination.sqlite',
+    ]) {
+      if (!text?.includes(required)) err(path, `does not bind schema-5 workspace concept ${JSON.stringify(required)}`);
+    }
+    for (const msg of directionContractErrors({id: path, body: text ?? ''})) err(path, msg);
+  }
+  for (const required of [
+    'schema-5',
+    '`external`',
+    '`repo-local`',
+    '.kai/core/runtime/coordination.sqlite',
+    'docs/kai/DIRECTION.md',
+  ]) {
+    if (!wsInit?.includes(required)) {
+      err(wsInitRel, `does not bind the workspace initializer concept ${JSON.stringify(required)}`);
     }
   }
-}
-
-// 2c. Schema 3 removes the visible kai/ corpus. Shipped prompts, docs, and
-//     examples may name schema-2 paths only inside an explicit migration region.
-const RETIRED_CORPUS = /(^|[^.])kai[/\\](coordination|initiatives|library|personal)(?=[/\\`'"\s.,;:)\]]|$)/g;
-const LEGACY_OPEN = /<!--\s*kai:allow-legacy-roots\s*-->/;
-const LEGACY_CLOSE = /<!--\s*\/kai:allow-legacy-roots\s*-->/;
-const corpusScanFiles = [...allFiles.map((f) => f.path), ...publicDocFiles()];
-for (const extra of ['AGENTS.md', 'README.md']) {
-  const p = join(ROOT, extra);
-  if (existsSync(p)) corpusScanFiles.push(p);
-}
-const examplesDir = join(ROOT, 'examples');
-if (existsSync(examplesDir)) {
-  const walk = (dir) => {
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (/\.(md|ya?ml|json|sh|ps1|mjs|js)$/i.test(e.name)) corpusScanFiles.push(p);
-    }
-  };
-  walk(examplesDir);
-}
-for (const path of corpusScanFiles) {
-  const lines = readFileSync(path, 'utf8').split(/\r?\n/);
-  const seen = new Set();
-  let exempt = false;
-  lines.forEach((line, i) => {
-    if (LEGACY_OPEN.test(line)) { exempt = true; return; }
-    if (LEGACY_CLOSE.test(line)) { exempt = false; return; }
-    if (exempt) return;
-    for (const m of line.matchAll(RETIRED_CORPUS)) {
-      const retiredRoot = m[2];
-      const key = `${retiredRoot}:${i}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      err(rel(path), `line ${i + 1} references retired schema-2 path \`kai/${retiredRoot}\`; use .kai state or the project publication root, or wrap deliberate migration text in <!-- kai:allow-legacy-roots -->`);
-    }
-  });
-  if (exempt) err(rel(path), 'an unclosed <!-- kai:allow-legacy-roots --> region suppresses retired-path checking to end of file');
-}
-
-// 3. The authoritative documents must expose the schema-3 private/public split.
-for (const [path, text] of [
-  [pathsSkillRel, pathsSkill],
-  [onboardingRel, onboarding],
-  [wsInitRel, wsInit],
-]) {
-  for (const required of ['.kai/state', 'publication_root', 'storage_mode']) {
-    if (!text?.includes(required)) err(path, `does not bind schema-3 workspace concept ${JSON.stringify(required)}`);
+  for (const msg of directionContractErrors({id: wsInitRel, body: wsInit ?? ''})) {
+    err(wsInitRel, msg);
   }
-}
-
-// ---------------------------------------------------------------------------
-// Fixtures — a self-contained shared workspace manifest that must match schema 3.
-// ---------------------------------------------------------------------------
-const REQUIRED_MANIFEST_KEYS = [
-  'plugin', 'version', 'schema_version', 'scaffolded', 'workspace_id',
-  'storage_mode', 'workspace_root', 'state', 'runs', 'review', 'archive',
-  'personal', 'projects', 'areas',
-];
-const fixtureManifest = join(ROOT, 'test/fixtures/repo-workspace/.kai/manifest.json');
-if (existsSync(fixtureManifest)) {
-  const fr = 'test/fixtures/repo-workspace/.kai/manifest.json';
-  let fx;
-  try { fx = JSON.parse(readFileSync(fixtureManifest, 'utf8')); }
-  catch (e) { err(fr, `invalid JSON: ${e.message}`); }
-  if (fx) {
-    for (const k of REQUIRED_MANIFEST_KEYS) {
-      if (!(k in fx)) err(fr, `manifest missing required key "${k}"`);
-    }
-    if (fx.plugin !== 'kai-core') err(fr, 'manifest "plugin" must be "kai-core"');
-    if (fx.schema_version !== 3) err(fr, 'manifest "schema_version" must be 3');
-    if (fx.storage_mode !== 'shared') err(fr, 'fixture "storage_mode" must be "shared"');
-    if (fx.workspace_root !== '.') err(fr, 'shared fixture "workspace_root" must be "."');
-    if (fx.state !== '.kai/state') err(fr, 'fixture "state" must be ".kai/state"');
-    if (!Array.isArray(fx.projects) || fx.projects.length !== 1
-      || fx.projects[0].path !== '.' || fx.projects[0].publication_root !== 'docs/kai') {
-      err(fr, 'fixture must bind one local project with publication_root "docs/kai"');
-    }
-    if (mAreas && !setEq(toSet(fx.areas || []), mAreas)) {
-      err(fr, 'fixture manifest areas differ from the documented manifest areas');
+  for (const required of [
+    '.kai/manifest.json',
+    '.kai/core/runtime/coordination.sqlite',
+    'docs/kai/README.md',
+    'docs/kai/DIRECTION.md',
+  ]) {
+    if (!onboarding?.includes(required) || !wsInit?.includes(required)) {
+      err(onboardingRel, `initializer footprint must include ${required} in onboarding and workflow-workspace-init`);
     }
   }
-}
 
-// ---------------------------------------------------------------------------
+  // Publication inventory, vocabulary, producer ordering, and retired-language
+  // gates apply to every shipped source, not a hard-coded producer roster.
+  for (const msg of publicationInventoryErrors(skillFiles)) {
+    err('plugins/', msg);
+  }
+  for (const skill of skillFiles.filter(entry => entry.id.endsWith('workspace-publication'))) {
+    const body = readFileSync(skill.path, 'utf8');
+    for (const msg of publicationContractErrors({...skill, body})) err(skill.rel, msg);
+  }
+  for (const entry of allFiles) {
+    const body = readFileSync(entry.path, 'utf8');
+    for (const msg of publicationRoutingErrors({...entry, body})) err(entry.rel, msg);
+    for (const msg of activeWorkspaceLanguageErrors({...entry, body})) err(entry.rel, msg);
+    for (const msg of markdownCoordinationAuthorityErrors({...entry, body})) err(entry.rel, msg);
+  }
+
+  for (const [id, path, body] of [
+    ['workflow-epic-init', epicInitRel, epicInit],
+  ]) {
+    for (const msg of epicWorkflowContractErrors({id, body: body ?? ''})) err(path, msg);
+  }
+  for (const msg of chiefOfStaffContractErrors({
+    id: 'director-chief-of-staff',
+    body: director ?? '',
+  })) {
+    err(directorRel, msg);
+  }
+
+  for (const id of [
+    'kai-core-work-hierarchy',
+    'kai-core-work-stewardship',
+    'kai-core-work-task',
+    'kai-core-work-acting',
+    'kai-core-work-granting',
+  ]) {
+    const path = skillSourceFile(ROOT, id);
+    const body = path ? readIf(path) : null;
+    const label = path ? rel(path) : `skill:${id}`;
+    if (!body?.includes('.kai/core/runtime/coordination.sqlite')
+      || !/only\s+coordination\s+authority/i.test(body)) {
+      err(label, 'must name .kai/core/runtime/coordination.sqlite as the only coordination authority');
+    }
+  }
+
+  // Current workspace/package guides may not present retired source contracts as
+  // live. Generated catalog output is refreshed with the release task.
+  for (const path of [
+    join(ROOT, 'README.md'),
+    join(ROOT, 'docs', 'getting-started.md'),
+    join(ROOT, 'docs', 'host-capabilities.md'),
+    join(ROOT, 'docs', 'how-kai-works.md'),
+    join(ROOT, 'docs', 'workspaces.md'),
+    join(ROOT, 'docs', 'reference', 'plugin-structure.md'),
+    join(ROOT, 'docs', 'reference', 'packages', 'kai-engineering.md'),
+    join(ROOT, 'docs', 'reference', 'packages', 'kai-creative.md'),
+  ]) {
+    if (!existsSync(path)) continue;
+    const body = readFileSync(path, 'utf8');
+    for (const msg of activeWorkspaceLanguageErrors({body})) {
+      err(rel(path), msg);
+    }
+    for (const msg of markdownCoordinationAuthorityErrors({body})) {
+      err(rel(path), msg);
+    }
+    if (path.endsWith('workspaces.md')
+      && !/explicit[\s\S]{0,120}schema[- ]5 migration/i.test(body)) {
+      err(rel(path), 'must route historical workspaces through explicit schema-5 migration');
+    }
+  }
+
+  if (!onboarding || !/no automatic upgrade/i.test(onboarding)
+    || !/backup-first/i.test(onboarding) || !/manifest-last/i.test(onboarding)) {
+    err(onboardingRel, 'migration must be explicit, backup-first, manifest-last, and never automatic');
+  }
+  if (!pathsSkill || !/first valid write/i.test(pathsSkill)) {
+    err(pathsSkillRel, 'shared path grammar must materialize directories only on the first valid write');
+  }
+  if (!/does\s+not\s+duplicate\s+Engineering\s+or\s+Creative\s+vocabularies/i.test(pathsSkill ?? '')) {
+    err(pathsSkillRel, 'shared path grammar must not duplicate department vocabularies');
+  }
+
+  // ---------------------------------------------------------------------------
 // Release hygiene (#35): a released version must be well-formed and fully
 // documented, and dependency metadata must stay internally consistent. These
 // are static, git-free checks so `npm test` runs them everywhere; the

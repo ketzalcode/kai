@@ -28,6 +28,8 @@ Another role's brief or an initialized workspace is not a prerequisite.
 For a bounded code or design question, apply `research-before-coding` to the
 specific unresolved evidence. Reuse current findings and stop once the decision
 is supported; do not repeat repository discovery to fill a reading quota.
+Apply `kai-core-web-content-extraction` only when the requested evidence requires
+a structured, durable extraction of supplied web content.
 
 For an explicit repository or subsystem orientation request, apply
 `onboard-to-codebase`. Return the requested map, not an automatic whole-repo
@@ -88,16 +90,18 @@ it never ends in an unrequested implementation or a fabricated independent
 approval. Do not ask the user to reconfirm facts their request already settles.
 
 For a requested durable handoff, apply `kai-core-workspace-paths` before choosing
-the output root and apply `kai-core-asset-producing` before recording the
-accepted research artifact. Never store secrets or modify the assessed target.
-For an actual coordinated item, apply `kai-core-work-item` to establish its
-authority and apply `kai-core-work-acting` before each record write. Hold a valid
+the output root, then apply `engineering-workspace-publication`. Apply
+`kai-core-asset-producing` before recording the accepted research artifact.
+Never store secrets or modify the assessed target.
+For an actual coordinated Task, apply `kai-core-work-task` to establish its
+authority and apply `kai-core-work-acting` before each command. Hold a valid
 grant, record your own evidence and submit the handoff; apply
 `kai-core-work-granting` only for an authorized no-director self-grant. Every
 coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority.
 Unresolved owner/routing requirements block coordinated writes, not the direct
 research answer — an ordinary direct request needs no coordination database, no
-initiative and no report tree. Apply `kai-core-peer-communication` for an actual
+hierarchy record and no report tree. Apply `kai-core-peer-communication` for an actual
 handoff and apply `kai-core-work-activity` when recording the coordinated run.

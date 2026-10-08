@@ -9,7 +9,7 @@ release, installed-host acceptance or completed cross-agent migration.
 Supply the task, scope and available evidence directly. No product brief
 producer, designer, engineering manager or director must be installed.
 An ordinary code change or inline assessment needs no coordination database, no
-initiative and no report tree, and does not require `.kai` initialization.
+hierarchy record and no report tree, and does not require `.kai` initialization.
 
 Required evidence is still required: an absent independent review, approved
 design explicitly required by the task, production deployment confirmation or
@@ -18,16 +18,21 @@ independence, and missing agent installation never creates a waiver.
 
 ## Coordinated use
 
-When an agent actually holds a coordinated item, every read and write is a
+When an agent actually holds a coordinated Task, every read and write is a
 runtime command — `node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root
-"<workspace-root>"`, with `apply` taking one JSON command on stdin. Markdown
-under `.kai/state/` is retained pre-schema-4 history, not the write surface
-and not the read surface — `status`, `detail` and `messages` read the store,
-and a review verdict counts only when it arrived as a `review.record` command
-bound to the exact `change_ref`. A schema-3 workspace stays readable through
-`inspect`, `status` and `legacy` only and refuses coordinated writes with
-`SCHEMA_MISMATCH`; migration is explicit and offline. Nothing dispatches a
-role automatically: `plan` returns an ordered queue with `automatic: false`.
+"<workspace-root>"`, with `apply` taking one JSON command on stdin. SQLite at
+`.kai/core/runtime/coordination.sqlite` is the only coordination authority;
+`status`, typed `detail`, `context`, and `messages` read it. A review verdict
+counts only when it arrived as a `review.record` command bound to the exact
+`change_ref`. Older workspaces refuse writes until explicit offline schema-5
+migration. Nothing dispatches a role automatically: `plan` returns executable
+Tasks with `automatic: false`.
+
+Every durable engineering producer loads
+`engineering-workspace-publication` immediately before
+`kai-core-asset-producing`. Architecture is
+`documentation/architecture`; investigations and releases are report
+subtypes. Ordinary implementation stays at repository-native paths.
 
 Choose a role by its output, not a mandatory sequence:
 
@@ -44,7 +49,7 @@ Choose a role by its output, not a mandatory sequence:
 | `eng-reviewer-privacy-compliance` | Obligation analysis and independent compliance assessment | review / `claude-opus-5` |
 | `eng-lead-technical-writing` | Developer documentation or editorial assessment | judgment / `claude-opus-5` |
 | `workflow-pull-request` | Authorized PR preparation and live merge-readiness assessment | procedure / `claude-sonnet-5` |
-| `workflow-ship` | Release readiness and, for valid coordinated items, evidenced lifecycle updates | procedure / `claude-sonnet-5` |
+| `workflow-ship` | Release readiness and, for valid coordinated Tasks, evidenced lifecycle updates | procedure / `claude-sonnet-5` |
 | `workflow-incident-response` | Bounded incident command, timeline and human action packets | procedure / `claude-sonnet-5` |
 
 Models follow the existing approved core policy, not per-task automatic model
@@ -151,5 +156,5 @@ Ongoing direct-use feedback replaces a prerequisite pilot. Useful feedback names
 the role, request, supplied inputs, actual behavior, expected behavior and the
 exact failure or unnecessary step. Check ordinary fixes, requested orientation,
 plan-only requests, independent review, missing evidence, API-only QA, locale
-coverage and release assessment without an initiative. No synthetic persona
+coverage and release assessment without hierarchy setup. No synthetic persona
 simulation counts as independent acceptance.

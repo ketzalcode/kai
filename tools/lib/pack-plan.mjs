@@ -37,6 +37,16 @@ export const REFUSAL = 'KAI-CORE-MISSING';
 // prefix core alone may use removes that ambiguity; see namespaceErrors.
 export const CORE_SKILL_PREFIX = 'kai-core-';
 
+export const PUBLICATION_SKILLS = Object.freeze({
+  core: 'kai-core-workspace-publication',
+  engineering: 'engineering-workspace-publication',
+  creative: 'creative-workspace-publication',
+});
+
+export function publicationSkillForPack(pack) {
+  return PUBLICATION_SKILLS[pack] ?? null;
+}
+
 // The default committed-tree root. release-guard classifies changes under it as
 // behavior-sensitive, the validator discovers manifests under it, and the
 // generator writes the reviewed committed slice there.
@@ -208,13 +218,16 @@ export const RETIRED_DIRECTOR_AGENT_IDS = new Set([
 // script dragged 113 KB of release tooling into `kai-core` with it.
 export const RETIRED_CORE_AGENT_IDS = new Set([
   'workflow-self-check',
+  'workflow-initiative-init',
 ]);
 
 // Core skills that were renamed or split. Historical plans and ship records
-// legitimately name them; no active body may. `kai-core-workspace-conventions`
-// became `kai-core-workspace-paths` plus `kai-core-workspace-initiative`.
+// legitimately name them; no active body may.
 export const RETIRED_CORE_SKILL_IDS = new Set([
   'kai-core-workspace-conventions',
+  'kai-core-workspace-initiative',
+  'kai-core-work-item',
+  'kai-core-initiative-stewardship',
   // Moved to kai-creative as `content-grounding` in 17.0.0. Core never routed
   // it — both shipped callers were creative — and a department may not hold a
   // `kai-core-` name, so the move and the rename are one change.
@@ -254,7 +267,7 @@ export const RETIRED_CORE_SKILL_IDS = new Set([
 ]);
 
 export const NEW_AGENT_IDS = {
-  core: [],
+  core: ['workflow-epic-init'],
   assistant: ['personal-assistant'],
   creative: [
     'creative-lead-design', 'creative-lead-video',
@@ -289,7 +302,8 @@ export const ACTIVE_PACKS = Object.freeze(
 export const PACKS = Object.fromEntries(
   ACTIVE_PACKS
     .map((pack) => [pack, [
-      ...MIGRATION_BASELINE_PACKS[pack].filter(id => !RETIRED_ENGINEERING_AGENT_IDS.has(id)),
+      ...MIGRATION_BASELINE_PACKS[pack].filter(id =>
+        !RETIRED_ENGINEERING_AGENT_IDS.has(id) && !RETIRED_CORE_AGENT_IDS.has(id)),
       ...NEW_AGENT_IDS[pack],
     ]]),
 );
@@ -409,6 +423,250 @@ export function sourceSkillFiles(root = REPO_ROOT) {
     }
   }
   return files;
+}
+
+export function publicationInventoryErrors(entries, packs = PACK_ORDER) {
+  const errors = [];
+  const publicationEntries = entries.filter(entry =>
+    typeof entry?.id === 'string' && entry.id.endsWith('workspace-publication'));
+  for (const pack of packs) {
+    const expected = publicationSkillForPack(pack);
+    const owned = publicationEntries.filter(entry => entry.pack === pack);
+    if (owned.length !== 1) {
+      errors.push(`${packPluginName(pack)} must ship exactly one publication skill `
+        + `(expected \`${expected}\`, found ${owned.length})`);
+      continue;
+    }
+    if (owned[0].id !== expected) {
+      errors.push(`${packPluginName(pack)} publication skill must be \`${expected}\`, `
+        + `not \`${owned[0].id}\``);
+    }
+  }
+  for (const entry of publicationEntries) {
+    if (!packs.includes(entry.pack)) {
+      errors.push(`${entry.id} belongs to non-shipped pack ${packPluginName(entry.pack)}`);
+    }
+  }
+  return errors;
+}
+
+const PUBLICATION_TABLE_HEADERS = Object.freeze([
+  'namespace',
+  'type',
+  'subtype',
+  'private form',
+  'public form',
+  'formats',
+  'publication rule',
+  'privacy rule',
+]);
+
+const PUBLICATION_ROWS = Object.freeze({
+  core: Object.freeze([
+    Object.freeze({
+      type: 'direction',
+      subtype: '-',
+      privateForm: '.kai/core/direction/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/DIRECTION.md',
+    }),
+    Object.freeze({
+      type: 'features',
+      subtype: '-',
+      privateForm: '.kai/core/features/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/core/features/<id>/',
+    }),
+    Object.freeze({
+      type: 'decisions',
+      subtype: '-',
+      privateForm: '.kai/core/decisions/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/core/decisions/<id>/',
+    }),
+    Object.freeze({
+      type: 'reports',
+      subtype: '-',
+      privateForm: '.kai/core/reports/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/core/reports/<id>/',
+    }),
+  ]),
+  engineering: Object.freeze([
+    Object.freeze({
+      type: 'features',
+      subtype: '-',
+      privateForm: '.kai/engineering/features/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/engineering/features/<id>/',
+    }),
+    Object.freeze({
+      type: 'documentation',
+      subtype: 'architecture',
+      privateForm: '.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/engineering/documentation/architecture/<id>/',
+    }),
+    Object.freeze({
+      type: 'decisions',
+      subtype: '-',
+      privateForm: '.kai/engineering/decisions/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/engineering/decisions/<id>/',
+    }),
+    Object.freeze({
+      type: 'reports',
+      subtype: 'investigations',
+      privateForm: '.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/engineering/reports/investigations/<id>/',
+    }),
+    Object.freeze({
+      type: 'reports',
+      subtype: 'releases',
+      privateForm: '.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/engineering/reports/releases/<id>/',
+    }),
+  ]),
+  creative: Object.freeze([
+    Object.freeze({
+      type: 'features',
+      subtype: '-',
+      privateForm: '.kai/creative/features/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/creative/features/<id>/',
+    }),
+    Object.freeze({
+      type: 'documentation',
+      subtype: '-',
+      privateForm: '.kai/creative/documentation/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/creative/documentation/<id>/',
+    }),
+    Object.freeze({
+      type: 'decisions',
+      subtype: '-',
+      privateForm: '.kai/creative/decisions/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/creative/decisions/<id>/',
+    }),
+    Object.freeze({
+      type: 'reports',
+      subtype: '-',
+      privateForm: '.kai/creative/reports/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/creative/reports/<id>/',
+    }),
+    Object.freeze({
+      type: 'media',
+      subtype: '-',
+      privateForm: '.kai/creative/media/<id>/{drafts,evidence,scratch}',
+      publicForm: 'docs/kai/creative/media/<id>/',
+    }),
+  ]),
+});
+
+const cleanTableCell = cell => cell.trim()
+  .replace(/^`|`$/g, '')
+  .replace(/\\\|/g, '|');
+
+function markdownTables(body) {
+  const lines = normalizeLF(body ?? '').split('\n');
+  const tables = [];
+  for (let index = 0; index < lines.length - 1; index += 1) {
+    if (!lines[index].trim().startsWith('|')) continue;
+    if (!/^\s*\|(?:\s*:?-+:?\s*\|)+\s*$/.test(lines[index + 1])) continue;
+    const cells = line => line.trim().replace(/^\||\|$/g, '').split('|').map(cleanTableCell);
+    const headers = cells(lines[index]).map(cell => cell.toLowerCase());
+    const rows = [];
+    let cursor = index + 2;
+    while (cursor < lines.length && lines[cursor].trim().startsWith('|')) {
+      rows.push(cells(lines[cursor]));
+      cursor += 1;
+    }
+    tables.push({headers, rows});
+    index = cursor - 1;
+  }
+  return tables;
+}
+
+const rowKey = row => `${row.type}/${row.subtype}`;
+const sorted = values => [...values].sort((left, right) => left.localeCompare(right));
+
+export function publicationContractErrors({pack, id, body}) {
+  const errors = [];
+  const expectedId = publicationSkillForPack(pack);
+  if (!expectedId) return [`${id ?? '(unknown)'} has no shipped publication namespace for ${pack}`];
+  if (id !== expectedId) {
+    errors.push(`${packPluginName(pack)} publication contract must use id \`${expectedId}\``);
+  }
+
+  const canonical = markdownTables(body).filter(table =>
+    table.headers.join('|') === PUBLICATION_TABLE_HEADERS.join('|'));
+  if (canonical.length !== 1) {
+    errors.push('must contain exactly one canonical vocabulary table with namespace, type, subtype, '
+      + 'private form, public form, formats, publication rule, and privacy rule');
+    return errors;
+  }
+
+  const expectedRows = PUBLICATION_ROWS[pack];
+  const actualRows = [];
+  for (const [index, cells] of canonical[0].rows.entries()) {
+    if (cells.length !== PUBLICATION_TABLE_HEADERS.length) {
+      errors.push(`canonical vocabulary row ${index + 1} must contain ${PUBLICATION_TABLE_HEADERS.length} fields`);
+      continue;
+    }
+    const [
+      namespace,
+      type,
+      subtype,
+      privateForm,
+      publicForm,
+      formats,
+      publicationRule,
+      privacyRule,
+    ] = cells;
+    if (namespace !== pack) {
+      errors.push(`canonical vocabulary row ${index + 1} namespace must be \`${pack}\``);
+    }
+    if (!formats) errors.push(`canonical vocabulary row ${index + 1} formats must not be empty`);
+    if (!/accept/i.test(publicationRule)
+      || !/(?:authority|operator)/i.test(publicationRule)
+      || !/(?:hash|revision)/i.test(publicationRule)) {
+      errors.push(`canonical vocabulary row ${index + 1} publication rule must bind accepted revision/hash and authority`);
+    }
+    if (!/(?:private|never publish|must not publish)/i.test(privacyRule)
+      || !/evidence/i.test(privacyRule)) {
+      errors.push(`canonical vocabulary row ${index + 1} privacy rule must keep evidence private`);
+    }
+    actualRows.push({type, subtype, privateForm, publicForm});
+  }
+
+  const expectedTypes = sorted(new Set(expectedRows.map(row => row.type)));
+  const actualTypes = sorted(new Set(actualRows.map(row => row.type)));
+  if (expectedTypes.join('|') !== actualTypes.join('|')) {
+    errors.push(`canonical type set must be ${expectedTypes.join(', ')}; found ${actualTypes.join(', ') || '(none)'}`);
+  }
+  const expectedSubtypes = sorted(expectedRows.map(rowKey));
+  const actualSubtypes = sorted(actualRows.map(rowKey));
+  if (expectedSubtypes.join('|') !== actualSubtypes.join('|')) {
+    errors.push(`canonical subtype set must be ${expectedSubtypes.join(', ')}; found ${actualSubtypes.join(', ') || '(none)'}`);
+  }
+
+  const expectedByKey = new Map(expectedRows.map(row => [rowKey(row), row]));
+  for (const row of actualRows) {
+    const expected = expectedByKey.get(rowKey(row));
+    if (!expected) continue;
+    if (row.privateForm !== expected.privateForm) {
+      errors.push(`${rowKey(row)} private form must be \`${expected.privateForm}\``);
+    }
+    if (row.publicForm !== expected.publicForm) {
+      errors.push(`${rowKey(row)} public form must be \`${expected.publicForm}\``);
+    }
+  }
+
+  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ').toLowerCase();
+  for (const phrase of [
+    'unknown type or subtype',
+    'scratch can never publish',
+    'an unaccepted draft can never publish',
+    'private evidence can never publish',
+    'an arbitrary root can never publish',
+  ]) {
+    if (!flat.includes(phrase)) errors.push(`must explicitly refuse ${phrase}`);
+  }
+  if (pack === 'creative' && !flat.includes('unsafe media destination')) {
+    errors.push('must explicitly refuse an unsafe media destination');
+  }
+  return errors;
 }
 
 export function skillCompanionFiles(root, id) {
@@ -1026,8 +1284,8 @@ export const ACTIVITY_EXEMPT = new Map([
 ]);
 
 // `kai-core-work-acting` is the acting half of coordination: verify-lease-
-// before-write, collisions, handoffs, and review routing on a `.kai/state/`
-// item the role already holds. A role that never holds a coordinated item —
+// before-write, collisions, handoffs, and review routing for a Task the role
+// already holds. A role that never holds a coordinated Task —
 // it only reads team state and writes its own private lane — has nothing to
 // act on, so requiring the contract is miscalibrated. No shipped role claims
 // that exemption today; the map stays as the declared seam for the next one.
@@ -1035,7 +1293,8 @@ export const ACTING_EXEMPT = new Map([
 ]);
 
 export function agentRoutingErrors({
-  id, body, tools = [], knownSkills = [], knownAgents = [], activityExempt = false, actingExempt = false,
+  id, pack = null, body, tools = [], knownSkills = [], knownAgents = [],
+  activityExempt = false, actingExempt = false,
 }) {
   const text = normalizeLF(body ?? '');
   const errors = [];
@@ -1099,6 +1358,9 @@ export function agentRoutingErrors({
   }
   if (actingExempt && routed.has('kai-core-work-acting')) {
     errors.push('is acting-exempt but routes `kai-core-work-acting`; remove the exemption or the route');
+  }
+  if (pack !== null) {
+    errors.push(...publicationRoutingErrors({pack, id, kind: 'agent', body: text}));
   }
   // The refusal belongs to the role, so its wording is the author's. This is
   // not a structural check and does not pretend to be: it is a small vocabulary
@@ -1271,7 +1533,7 @@ function flattenProse(text) {
   return parts.join(' ').replace(/\s+/g, ' ');
 }
 
-export function routedSkills(body) {
+function routedSkillOccurrences(body) {
   // Strip fenced code blocks (properly closed or unterminated, indented or not)
   // so that documented examples are not parsed as routes.
   const stripped = normalizeLF(body ?? '')
@@ -1295,9 +1557,176 @@ export function routedSkills(body) {
     );
     const clause = flat.slice(clauseStart + 1, m.index);
     if (ROUTE_NEGATION.test(clause)) continue;
-    if (!out.includes(m[1])) out.push(m[1]);
+    out.push({id: m[1], index: m.index, end: m.index + m[0].length});
   }
   return out;
+}
+
+export function routedSkills(body) {
+  const out = [];
+  for (const route of routedSkillOccurrences(body)) {
+    if (!out.includes(route.id)) out.push(route.id);
+  }
+  return out;
+}
+
+export function publicationRoutingErrors({pack, id = '(unknown)', body}) {
+  const errors = [];
+  const owner = publicationSkillForPack(pack);
+  if (!owner) {
+    return [`${id}: cannot derive an owning publication skill from source pack ${pack ?? '(missing)'}`];
+  }
+
+  const occurrences = routedSkillOccurrences(body);
+  const publicationIds = new Set(Object.values(PUBLICATION_SKILLS));
+  const publicationRoutes = occurrences.filter(route => publicationIds.has(route.id));
+  const productionRoutes = occurrences.filter(route => route.id === 'kai-core-asset-producing');
+  const foreign = publicationRoutes.filter(route => route.id !== owner);
+  for (const route of foreign) {
+    errors.push(`cannot route publication skill owned by another pack: \`${route.id}\`; `
+      + `${packPluginName(pack)} owns \`${owner}\``);
+  }
+
+  if (productionRoutes.length === 0) {
+    if (publicationRoutes.length > 0) {
+      errors.push(`non-producer must not route \`${owner}\` without \`kai-core-asset-producing\``);
+    }
+    return errors;
+  }
+
+  if (!publicationRoutes.some(route => route.id === owner)) {
+    errors.push(`durable producer must route \`${owner}\` immediately before \`kai-core-asset-producing\``);
+    return errors;
+  }
+
+  for (const production of productionRoutes) {
+    const at = occurrences.indexOf(production);
+    const previous = occurrences[at - 1];
+    if (!previous || previous.id !== owner) {
+      errors.push(`must route \`${owner}\` immediately before each \`kai-core-asset-producing\` route`);
+    }
+  }
+  for (const publication of publicationRoutes.filter(route => route.id === owner)) {
+    const at = occurrences.indexOf(publication);
+    const next = occurrences[at + 1];
+    if (!next || next.id !== 'kai-core-asset-producing') {
+      errors.push(`\`${owner}\` is a producer-only route and must sit immediately before \`kai-core-asset-producing\``);
+    }
+  }
+  return [...new Set(errors)];
+}
+
+const HISTORY_OPEN = '<!-- kai:schema4-history -->';
+const HISTORY_CLOSE = '<!-- /kai:schema4-history -->';
+
+function activeContractText(body) {
+  const text = normalizeLF(body ?? '');
+  const kept = [];
+  let historical = false;
+  let unclosed = false;
+  for (const line of text.split('\n')) {
+    if (line.includes(HISTORY_OPEN)) {
+      historical = true;
+      continue;
+    }
+    if (line.includes(HISTORY_CLOSE)) {
+      historical = false;
+      continue;
+    }
+    if (!historical) kept.push(line);
+  }
+  if (historical) unclosed = true;
+  return {text: kept.join('\n'), unclosed};
+}
+
+export function activeWorkspaceLanguageErrors({body}) {
+  const errors = [];
+  const active = activeContractText(body);
+  if (active.unclosed) errors.push(`unclosed ${HISTORY_OPEN} region`);
+  const text = active.text;
+  const checks = [
+    [
+      /workflow-initiative-init|kai-core-workspace-initiative|kai-core-work-item|kai-core-initiative-stewardship/i,
+      'references a removed schema-4 agent or skill contract',
+    ],
+    [/\.kai[\\/](?:runs|review|personal)(?:[\\/]|`|\b)/i,
+      'references a retired generic/private lane instead of a typed schema-5 pack path'],
+    [/\.kai[\\/]state(?:[\\/]|`|\b)/i,
+      'references the retired schema-4 state tree as a live path'],
+    [/(?:placement|storage_mode)["'`]?\s*[:=]\s*["'`]shared["'`]|shared\s+(?:placement|workspace|mode)/i,
+      'presents retired shared placement as live'],
+    [/\binitiatives?\b/i,
+      'presents retired initiative vocabulary as live'],
+    [
+      /`item`|\bitem\.(?:create|grant|update|transition|handoff|promote)\b|--kind\s+item\b|--item\b|work[- ]item|item record|coordinated item|granted item/i,
+      'presents retired generic item vocabulary as live',
+    ],
+  ];
+  for (const [pattern, message] of checks) {
+    if (pattern.test(text)) errors.push(message);
+  }
+  return errors;
+}
+
+export function markdownCoordinationAuthorityErrors({body}) {
+  const {text, unclosed} = activeContractText(body);
+  const errors = unclosed ? [`unclosed ${HISTORY_OPEN} region`] : [];
+  const subject =
+    /(?:`?BOARD\.md`?|Markdown\s+(?:board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index|record)|(?:board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index))/i;
+  const authority = /authoritative|coordination authority|source of truth/i;
+  const prohibition = /\b(?:no|not|never|cannot|can't|isn't|is not|forbid\w*|rather than|instead of)\b/i;
+  const sentences = text.replace(/\r?\n/g, ' ').split(/(?<=[.!?])\s+/);
+  for (const sentence of sentences) {
+    const claimsAuthority = (subject.test(sentence) && authority.test(sentence))
+      || /(?:authoritative|source of truth)[^.]{0,160}(?:BOARD\.md|board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index|record)/i.test(sentence);
+    if (claimsAuthority && !prohibition.test(sentence)) {
+      errors.push('Markdown coordination authority is forbidden; SQLite is the only coordination authority');
+      break;
+    }
+  }
+  return errors;
+}
+
+export function directionContractErrors({body}) {
+  const errors = [];
+  const text = normalizeLF(body ?? '');
+  for (const heading of ['Vision', 'Mission', 'Current Goal', 'Out of Scope']) {
+    if (!new RegExp(`^\\s*# ${heading}\\s*$`, 'm').test(text)) {
+      errors.push(`Direction contract must include the exact # ${heading} section`);
+    }
+  }
+  const flat = text.replace(/\s+/g, ' ');
+  if (!/one observable, time-bounded Current Goal/i.test(flat)) {
+    errors.push('Direction contract must require one observable, time-bounded Current Goal');
+  }
+  return errors;
+}
+
+export function epicWorkflowContractErrors({body}) {
+  const errors = [];
+  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
+  if (!/starts? from (?:the )?current Direction/i.test(flat)) {
+    errors.push('Epic workflow must start from current Direction');
+  }
+  if (!/creates no record before named authority approval/i.test(flat)) {
+    errors.push('Epic workflow creates no record before named authority approval');
+  }
+  if (!/suggestion[\s\S]{0,160}conversational[\s\S]{0,160}named authority/i.test(flat)) {
+    errors.push('Epic suggestions without named authority approval must remain conversational');
+  }
+  return errors;
+}
+
+export function chiefOfStaffContractErrors({body}) {
+  const errors = [];
+  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
+  if (!/grants Tasks only/i.test(flat) || !/task\.grant/.test(flat)) {
+    errors.push('Chief of Staff grants Tasks only through task.grant');
+  }
+  if (!/cannot invent[\s\S]{0,200}Epic[\s\S]{0,80}Feature[\s\S]{0,80}Requirement[\s\S]{0,160}scope[\s\S]{0,80}priority[\s\S]{0,80}authorit[\s\S]{0,80}acceptance/i.test(flat)) {
+    errors.push('Chief of Staff cannot invent Epic/Feature/Requirement scope, priority, authority, or acceptance');
+  }
+  return errors;
 }
 
 // Situational dispatch targets declared in a body, in declaration order.

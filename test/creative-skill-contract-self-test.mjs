@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { routedSkills, sourceSkillFiles } from '../tools/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // This contract is written for creative *methods*: user-invocable, no declared
@@ -15,7 +16,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 // roster from disk is the point: before 17.0.0 this list was hardcoded, so a
 // creative skill the list forgot would have been exempt from the whole contract
 // and nothing would have said so.
-const CONTRACT_STYLE_SKILLS = new Set(['content-grounding']);
+const CONTRACT_STYLE_SKILLS = new Set([
+  'content-grounding',
+  'creative-workspace-publication',
+]);
 const creativeSkillIds = sourceSkillFiles(root)
   .filter(entry => entry.pack === 'creative')
   .map(entry => entry.id);
@@ -44,6 +48,8 @@ const failures = [];
 const selectedIds = selected === 'all' ? ids : [selected];
 const normalize = body => body.replace(/\s+/g, ' ').trim().toLowerCase();
 const knownSkills = new Set(sourceSkillFiles(root).map(entry => entry.id));
+assert.equal(typeof packPlan.publicationRoutingErrors, 'function',
+  'creative skill tests require the shared publication-routing validator');
 
 function expect(id, condition, label) {
   if (!condition) failures.push(`${id}: ${label}`);
@@ -98,6 +104,14 @@ function parseSkill(id) {
   expect(id, unresolvedRoutes.length === 0,
     `routed skills must resolve to active definitions (missing: ${unresolvedRoutes.join(', ')})`);
   expectNoMatch(id, body, 'eager inheritance list', /^\*\*Inherits:\*\*/m);
+  for (const message of packPlan.publicationRoutingErrors({
+    pack: 'creative',
+    id,
+    kind: 'skill',
+    body,
+  })) {
+    failures.push(`${id}: ${message}`);
+  }
 
   const referencePaths = [...body.matchAll(/references\/[a-z0-9._/-]+\.md/gi)]
     .map(match => match[0])
@@ -364,9 +378,38 @@ for (const id of selectedIds) {
   contracts[id](parseSkill(id));
 }
 
+const parsedSelected = selectedIds.map(parseSkill).filter(Boolean);
+const durableProducer = parsedSelected.find(skill =>
+  skill.routes.includes('kai-core-asset-producing'));
+if (selected === 'all') {
+  expect('creative-publication-mutation', Boolean(durableProducer),
+    'expected at least one durable creative method producer');
+  if (durableProducer) {
+    const mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-publication-mutation',
+      kind: 'skill',
+      body: durableProducer.body.replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`/i,
+        '',
+      ),
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message =>
+        message.includes('must route `creative-workspace-publication`')),
+      'removing the owning publication route must fail by skill name',
+    );
+  }
+}
+
 assert.deepEqual(
   failures,
   [],
   `creative skill contract assertions failed (${selected})`,
 );
-console.log(`creative skill contract assertions passed (${selected})`);
+console.log(
+  `creative skill contract assertions passed (${selected}; `
+  + `methods=${selectedIds.length}, durable producers=${parsedSelected.filter(skill =>
+    skill.routes.includes('kai-core-asset-producing')).length})`,
+);

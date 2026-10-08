@@ -9,6 +9,7 @@ import {
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
+import * as packPlan from '../tools/lib/pack-plan.mjs';
 import { parseScreenplay } from '../src/creative/lib/screenplay.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,6 +31,7 @@ const inactiveCreativeSkills = [
   'ui-mockup',
   'video-direction',
 ];
+const creativePublicationSkill = 'creative-workspace-publication';
 const targetIds = [
   'creative-lead-design',
   'creative-lead-video',
@@ -40,7 +42,10 @@ const knownSkills = new Set([
     .filter(entry => entry.pack === 'core')
     .map(entry => entry.id),
   ...finalCreativeSkills,
+  creativePublicationSkill,
 ]);
+assert.equal(typeof packPlan.publicationRoutingErrors, 'function',
+  'creative agent tests require the shared publication-routing validator');
 const knownAgents = new Set([
   ...sourceAgentFiles(root).map(entry => entry.id),
   ...targetIds,
@@ -109,11 +114,17 @@ function assertContract(agent, {
   );
   assert.deepEqual(agentRoutingErrors({
     id: agent.id,
+    pack: 'creative',
     body: agent.body,
     tools: agent.fm.tools,
     knownSkills,
     knownAgents,
   }), [], `${agent.id}: on-demand routing contract`);
+  assert.deepEqual(
+    packPlan.publicationRoutingErrors({pack: 'creative', id: agent.id, body: agent.body}),
+    [],
+    `${agent.id}: creative publication route must immediately precede asset production`,
+  );
   assert.doesNotMatch(agent.body, /^\*\*Inherits:\*\*/m);
 
   const routes = new Set(routedSkills(agent.body));
@@ -252,6 +263,22 @@ const productionContract = {
 };
 assertContract(production, productionContract);
 
+const creativeProducers = [design, video, production].filter(agent =>
+  routedSkills(agent.body).includes('kai-core-asset-producing'));
+assert.ok(creativeProducers.length > 0,
+  'creative publication routing must inspect at least one durable producer');
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    pack: 'creative',
+    id: creativeProducers[0].id,
+    body: creativeProducers[0].body.replace(
+      /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`/i,
+      '',
+    ),
+  }).some(message => message.includes('must route `creative-workspace-publication`')),
+  'removing a creative producer publication route must fail by owning skill name',
+);
+
 assert.throws(
   () => assertContract(
     withExtraRoute(design, 'Invoke `video-render-zoom` when a production focus effect would help.'),
@@ -279,4 +306,7 @@ assert.deepEqual(
   'the three roles must cover the approved six-skill interface',
 );
 
-console.log('creative agent contract assertions passed');
+console.log(
+  `creative agent contract assertions passed `
+  + `(agents=${targetIds.length}, durable producers=${creativeProducers.length})`,
+);

@@ -66,9 +66,10 @@ An unavailable requested mock is a named gap, not a successful no-addition
 result.
 
 ASCII is independent of HTML: no automatic HTML stage follows. Inline answers
-need no browser, files, workspace, or initiative. If the caller explicitly
+need no browser, files, workspace, or hierarchy record. If the caller explicitly
 owes a durable design, Load `kai-core-workspace-paths` before choosing its
-existing target, and Load `kai-core-asset-producing` before revising that asset.
+existing target. Load `creative-workspace-publication`, then Load
+`kai-core-asset-producing` before revising that asset.
 Load `kai-core-asset-closing` only when disposition or acceptance is requested.
 
 Stop at the mock and recommendation. The operator or explicitly delegated

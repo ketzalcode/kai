@@ -90,7 +90,7 @@ skill in the imperative, at the exact instruction that needs it, and routes
 
 ```markdown
 Invoke `kai-core-contract-v1` before the first other core skill.
-Load `kai-core-work-item` before writing an item record.
+Load `kai-core-work-task` before writing a Task record.
 ```
 
 `npm test` enforces those routes so a required contract can never be silently

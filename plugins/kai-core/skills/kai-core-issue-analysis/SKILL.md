@@ -192,8 +192,8 @@ Some issues should not be built. Reporting that is a **successful outcome**:
 - **not the real problem** — it prescribes a solution to an unstated problem that
   has a better answer;
 - **several issues wearing one hat** — propose the split;
-- **not issue-shaped at all** — it is really an initiative, and belongs to
-  `workflow-initiative-init`; or it cannot be framed until someone has explored
+- **not issue-shaped at all** — it is really an Epic proposal, and belongs to
+  `workflow-epic-init`; or it cannot be framed until someone has explored
   the live product; or it carries a security or privacy
   dimension that its owner should see before an approach is chosen.
 

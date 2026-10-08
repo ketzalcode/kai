@@ -256,7 +256,7 @@ check('only approved available models and supported overrides are planned, never
 check('five real core sources retain their profiles and acquire the shared approved model pins', () => {
   const expected = {
     'director-chief-of-staff': 'judgment',
-    'workflow-initiative-init': 'procedure',
+    'workflow-epic-init': 'procedure',
     'workflow-proactive-scan': 'procedure',
     'workflow-weekly-pulse': 'procedure',
     'workflow-workspace-init': 'procedure',

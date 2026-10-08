@@ -103,16 +103,17 @@ retains the rollback plan and release transitions.
 
 Default direct assessment can be inline. For a requested durable readiness or
 release record, invoke `kai-core-workspace-paths` before choosing the authorized
-root and apply `kai-core-asset-producing` before recording the accepted
-artifact.
+root. Apply `engineering-workspace-publication`, then apply
+`kai-core-asset-producing` before recording the accepted artifact.
 
-For formal lifecycle state, apply `kai-core-work-item` to read eligibility,
+For formal lifecycle state, apply `kai-core-work-task` to read eligibility,
 revision, reviews, and current state, then apply `kai-core-work-acting` before
 every write. Every coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`),
-and each transition is an `item.transition` command; `.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary direct request needs no
-coordination database, no initiative and no report tree — but it also produces
-no lifecycle transition.
+and each transition is a `task.transition` command. SQLite at
+`.kai/core/runtime/coordination.sqlite` is the only coordination authority. An
+ordinary direct request needs no coordination database, no hierarchy record and
+no report tree — but it also produces no lifecycle transition.
 If the required owner, grant, or route is unresolved during the
 deferred wiring phase, stop and report it rather than faking the transition.
 Apply `kai-core-peer-communication` only for an actual coordinated handoff.

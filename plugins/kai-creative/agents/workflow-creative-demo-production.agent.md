@@ -127,17 +127,19 @@ acceptance.
 ## Persistent work
 
 Apply `kai-core-workspace-paths` before reading or writing workspace state.
-Apply `kai-core-asset-producing` before creating or revising durable plans,
-reports, or final media so target, provenance, custody, completion authority,
-and validity are explicit. Raw media remains private run evidence unless an
-authorized asset contract says otherwise.
+Apply `creative-workspace-publication`, then apply
+`kai-core-asset-producing` before creating or revising durable plans, reports,
+or final media so target, provenance, custody, completion authority, and
+validity are explicit. Raw media remains typed private evidence unless the
+accepted media rule approves a safe durable destination.
 
-For a granted item, apply `kai-core-work-acting` before writes and verify lease,
-version, touches, inputs, and latest handoff. Apply `kai-core-work-item` for its
+For a granted Task, apply `kai-core-work-acting` before writes and verify lease,
+version, touches, inputs, and latest handoff. Apply `kai-core-work-task` for its
 record. Every coordinated read and write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
 Apply `kai-core-work-activity` after claim for start and before handoff
 for stop. Never grant work or dispatch roles.
 

@@ -16,10 +16,12 @@ inside this repository only.
 | --- | --- |
 | Role kinds, staying in lane, test ownership, human-only gates, shipping honesty, `@operator` | `kai-core-operating-rules` |
 | Acting on granted work: verify-before-write, collisions, handoffs, review routing | `kai-core-work-acting` |
-| Granting and reconciling work: leases, lifecycle, recovery, dispatch, backlog, board | `kai-core-work-granting` |
-| The durable work-item record and its schema | `kai-core-work-item` |
-| Workspace resolution, `.kai` layout, storage modes, artifact paths | `kai-core-workspace-paths` |
-| Initiative layout, coordination, closure, and the schema-3 manifest | `kai-core-workspace-initiative` |
+| Granting and reconciling executable work: planning, leases, recovery, and Task dispatch | `kai-core-work-granting` |
+| Epic, Feature, Requirement, and Task meanings and relationships | `kai-core-work-hierarchy` |
+| Executable Task schema, lifecycle, lease, and recovery rules | `kai-core-work-task` |
+| Scope authority, promotion, holds, reprioritization, and parent closure | `kai-core-work-stewardship` |
+| Workspace resolution, private schema-5 placement, Direction, and typed path grammar | `kai-core-workspace-paths`, `kai-core-workspace-onboarding` |
+| Pack-owned artifact vocabularies and formats | `kai-core-workspace-publication`, `engineering-workspace-publication`, `creative-workspace-publication` |
 | Producing and closing durable assets | `kai-core-asset-producing`, `kai-core-asset-closing` |
 | Persona-specific craft | `plugins/*/agents/*.agent.md` |
 | Releasing this plugin | this file, below |
@@ -39,8 +41,8 @@ operator to install or update `kai-core` before resuming coordinated work.
 
 Every shipped package uses task-local routes. The retired
 go-to-market and personal plugins are not compatibility aliases; do not
-reintroduce their eager declarations or dependency guards. `.kai/personal/`
-remains the private data lane and is unrelated to plugin retirement.
+reintroduce their eager declarations or dependency guards. Schema 5 has no
+generic personal lane; older private data is handled only by explicit migration.
 
 The install owners are `kai-core`, `kai-engineering`, and `kai-creative`.
 Keep each source in one owning package. A capability package's

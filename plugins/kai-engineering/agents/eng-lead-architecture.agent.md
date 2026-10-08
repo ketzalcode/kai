@@ -91,16 +91,18 @@ question or acceptance condition named. An accepted design is not built,
 reviewed independently, deployed or production-verified.
 
 For requested Kai artifacts, apply `kai-core-workspace-paths` before choosing
-their destination and apply `kai-core-asset-producing` before publishing the accepted
-record. Do not create `.kai` for a normal inline answer.
+their destination, then apply `engineering-workspace-publication`. Apply
+`kai-core-asset-producing` before publishing the accepted record. Do not create
+`.kai` for a normal inline answer.
 
-Only for an actual coordinated item, apply `kai-core-work-item` to its authority
+Only for an actual coordinated Task, apply `kai-core-work-task` to its authority
 and apply `kai-core-work-acting` before writing state. Every coordinated read and
 write is a runtime command
 (`node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"`);
-`.kai/state` Markdown is retained pre-schema-4 history, never the write surface. An ordinary
-direct request needs no coordination database, no initiative and no report tree.
-Legacy routing gaps remain
+SQLite at `.kai/core/runtime/coordination.sqlite` is the only coordination
+authority. An ordinary direct request needs no coordination database, no
+hierarchy record and no report tree.
+Routing gaps remain
 explicit; never dispatch a fictional owner. Apply `kai-core-peer-communication`
 for an actual coordinated handoff and apply `kai-core-work-activity` when recording
 that run.

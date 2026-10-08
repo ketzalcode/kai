@@ -16,6 +16,7 @@ const normalizeContract = body => body.replace(/\s+/g, ' ').trim().toLowerCase()
 const keep = [
   'build-diagrams', 'coding-standards', 'onboard-to-codebase',
   'pr-delivery', 'pr-sizing', 'research-before-coding',
+  'engineering-workspace-publication',
 ].sort();
 const parked = [
   'doc-review-rigor', 'review-security-privacy', 'review-rollout-operability',

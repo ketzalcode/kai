@@ -175,7 +175,7 @@ team-visible). Accepted project knowledge publishes separately, under a root
 that defaults to `docs/kai/`.
 
 **4. For coordinated delivery**, ask `director-chief-of-staff`. It sequences
-work items and handoffs; it does not take any specialist's acceptance authority,
+approved Tasks and handoffs; it does not take any specialist's acceptance authority,
 and it is not a prerequisite for ordinary direct work.
 
 **[Full walkthrough →](docs/getting-started.md)** ·
@@ -260,7 +260,7 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **21 agents and 35 skills** |
+| Surface | **21 agents and 38 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 
