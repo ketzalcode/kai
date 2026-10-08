@@ -279,6 +279,11 @@ function historyCursor(view, selectedMessages) {
   if (remainingCount <= 0) return null;
   return {
     subject: {kind: view.record.kind, id: view.record.id},
+    threadId: subjectRef(
+      {kind: view.record.kind, id: view.record.id},
+      view.record.version,
+    ),
+    basisVersion: view.record.version,
     beforeSeq: selectedMessages.length > 0
       ? selectedMessages[0].eventSeq
       : view.throughSeq + 1,
@@ -476,15 +481,24 @@ export function readDetail(store, {kind, id}) {
 /**
  * Read one bounded older-history page ordered by persisted event sequence.
  * Returns {messages, hasMore, nextCursor}; nextCursor is null or
- * {threadId, beforeSeq}. Only projectContext's initial cursor has an exact
+ * {subject, threadId, basisVersion, beforeSeq}. Only projectContext's initial cursor has an exact
  * remainingCount. Caller counts are ignored; each page uses LIMIT + 1.
  */
 export function readMessages(store, {
   subject,
+  threadId,
+  basisVersion,
   beforeSeq = null,
   limit = 50,
 }) {
   validateHierarchySubject(subject, 'message subject');
+  assertNonEmptyString(threadId, 'message threadId');
+  if (!Number.isSafeInteger(basisVersion) || basisVersion < 1) {
+    invalid('message basisVersion must be a positive safe integer');
+  }
+  if (threadId !== subjectRef(subject, basisVersion)) {
+    invalid('message threadId must bind the requested typed subject and basisVersion');
+  }
   if (beforeSeq !== null
     && (!Number.isSafeInteger(beforeSeq) || beforeSeq < 1)) {
     invalid('message beforeSeq must be a positive safe integer or null');
@@ -492,5 +506,11 @@ export function readMessages(store, {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_MESSAGE_PAGE) {
     invalid(`message limit must be an integer from 1 through ${MAX_MESSAGE_PAGE}`);
   }
-  return readMessagePage(store, {subject, beforeSeq, limit});
+  return readMessagePage(store, {
+    subject,
+    threadId,
+    basisVersion,
+    beforeSeq,
+    limit,
+  });
 }

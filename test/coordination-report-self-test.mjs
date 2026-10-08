@@ -13,7 +13,7 @@ import {
   reportPaths as typedReportPaths,
 } from '../src/core/lib/coordination-runtime/report.mjs';
 import {
-  RuntimeError, canonicalJson, criteriaRef, subjectRef,
+  RuntimeError, canonicalJson, criteriaRef, subjectRef, validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import {redactReport} from '../src/core/lib/coordination-runtime/report-safety.mjs';
 import {renderLanding} from '../src/core/lib/coordination-runtime/report-render.mjs';
@@ -24,7 +24,7 @@ import {
 } from '../src/core/lib/coordination-runtime/context.mjs';
 import {fixtureIds, withWorkspace, seedRecord, seedTask} from './helpers/coordination-runtime-fixture.mjs';
 import {
-  NOW, acceptReport, addReportArtifact, appendMessage, appendVerdict, file, hash, mutateBody,
+  NOW, acceptReport, addReportArtifact, appendMessage, appendVerdict, builder, file, hash, mutateBody,
   payload, reportSubject, reportWriteInput, setupReport, source, verdict, seedHostAttempt,
 } from './helpers/coordination-report-fixture.mjs';
 
@@ -63,8 +63,18 @@ const reportPaths = ({root, itemId, subject = legacySubject(itemId ?? 'demo'), .
   typedReportPaths({root, subject, ...options});
 const projectContext = (store, options = {}) =>
   projectTypedContext(store, {subject: options.subject ?? legacySubject(options.itemId ?? 'demo'), ...options});
-const readMessages = (store, options = {}) =>
-  readTypedMessages(store, {subject: options.subject ?? legacySubject(options.threadId ?? 'demo'), ...options});
+const readMessages = (store, options = {}) => {
+  const subject = options.subject ?? legacySubject(options.threadId ?? 'demo');
+  const basisVersion = options.basisVersion ?? 1;
+  return readTypedMessages(store, {
+    ...options,
+    subject,
+    threadId: options.threadId?.includes('/')
+      ? options.threadId
+      : subjectRef(subject, basisVersion),
+    basisVersion,
+  });
+};
 function setReportLease(store, token) {
   mutateBody(store, 'item', 'demo', body => { body.lease = {
     holder: {role: 'eng-builder-software', runId: 'producer-run'}, token,
@@ -920,7 +930,10 @@ test('self review and missing registered references are broken positive claims',
     }));
     appendVerdict(store, verdict(store, 'approval', randomUUID()));
     const view = buildReport(store, {itemId: 'demo'});
-    assert.equal(view.reviews[0].independent, false);
+    assert.equal(
+      view.reviews.find(review => review.reviewer.runId === 'producer-run').independent,
+      false,
+    );
     assert.equal(view.integrity.status, 'gap');
     assert.ok(view.gaps.some(g => /missing|another item/.test(g.message)));
     assert.ok(view.gaps.some(g => /producing|independen/.test(g.message)));
@@ -1225,11 +1238,66 @@ test('transitive negative evidence invalidates an apparently approved review', a
       outcome: 'gap', evidence_refs: [`artifact:${artifactId}`], reason: 'Known failed check',
       data: {}, created_at: NOW,
     }});
-    appendVerdict(store, verdict(store, 'review', artifactId, {evidence_refs: [`evidence:${id}`]}));
+    const negativeReview = appendVerdict(
+      store,
+      verdict(store, 'review', artifactId, {evidence_refs: [`evidence:${id}`]}),
+    );
     const view = buildReport(store, {itemId: 'demo'});
-    assert.equal(view.reviews[0].integrity, 'gap');
+    assert.equal(view.reviews.find(review => review.id === negativeReview.id).integrity, 'gap');
     assert.equal(view.criteria[0].status, 'gap');
     assert.ok(view.gaps.some(g => /negative evidence/.test(g.message)));
+  });
+});
+
+test('private proof content is withheld unless represented by an accepted public report artifact', async () => {
+  await withWorkspace(({root, store}) => {
+    const safeExcerpt = 'SAFE ACCEPTED EXCERPT';
+    const {artifactId} = setupReport(root, store, {}, safeExcerpt);
+    const task = readRecord(store, 'task', fixtureIds.task);
+    const evidenceId = randomUUID();
+    const privateMarker = 'PRIVATE-PROOF-MARKER';
+    seedRecord(store, validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: reportSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        evidence_id: evidenceId,
+        subject: reportSubject,
+        kind: 'dod-dimension',
+        content_ref: task.body.change_ref,
+        criteria_ref: criteriaRef(task, (kind, id) => readTypedRecord(store, kind, id)),
+        supersedes: [],
+        dimension: 'verified',
+        outcome: 'clear',
+        evidence_refs: [`artifact:${artifactId}`],
+        reason: privateMarker,
+        data: {},
+        created_at: NOW,
+        provenance: {
+          tier: 'observed',
+          capture: {
+            source: 'host-command',
+            reference: 'host:private-proof',
+            actor: builder,
+            captured_at: NOW,
+            command: ['node', privateMarker],
+            exit_code: 0,
+            checks: [privateMarker],
+            classification: 'confidential',
+            command_digest: 'a'.repeat(64),
+          },
+        },
+      },
+    }));
+
+    const view = buildReport(store, {subject: reportSubject});
+    assert.equal(view.inspection.artifactPreviews.length, 1);
+    assert.match(view.inspection.artifactPreviews[0].content, /SAFE ACCEPTED EXCERPT/);
+    assert.doesNotMatch(JSON.stringify(view), new RegExp(privateMarker));
+    assert.ok(view.gaps.some(gap => gap.ref === `evidence:${evidenceId}`
+      && /private evidence/i.test(gap.message)));
   });
 });
 

@@ -48,10 +48,15 @@ const projectContext = (store, options = {}) => {
   });
 };
 const readMessages = (store, options = {}) => {
-  const {threadId, ...rest} = options;
+  const {threadId, basisVersion = 1, ...rest} = options;
+  const subject = options.subject ?? taskSubject(threadId ?? 'demo');
   return readTypedMessages(store, {
     ...rest,
-    subject: options.subject ?? taskSubject(threadId ?? 'demo'),
+    subject,
+    threadId: threadId === undefined || !threadId.includes('/')
+      ? subjectRef(subject, basisVersion)
+      : threadId,
+    basisVersion,
   });
 };
 const lookup = store => (kind, id) => readDetail(store, {kind, id});
@@ -833,7 +838,7 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
     assert.equal(packet.recent_messages.length, 8);
     assert.equal(projection.historyCursor.remainingCount, 9_992);
     assert.deepEqual(Object.keys(projection.historyCursor).sort(),
-      ['beforeSeq', 'remainingCount', 'subject']);
+      ['basisVersion', 'beforeSeq', 'remainingCount', 'subject', 'threadId']);
     assert.ok(projection.references.length <= 8,
       'history size cannot make projection reference metadata grow');
     assert.doesNotMatch(projection.text, new RegExp(uuidFor(1)));
@@ -846,13 +851,18 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
     while (cursor) {
       const observed = observeQueries(store.database, () => readMessages(store, {
         subject: cursor.subject,
+        threadId: cursor.threadId,
+        basisVersion: cursor.basisVersion,
         beforeSeq: cursor.beforeSeq,
         remainingCount: -999, // Never trust caller counts to terminate pagination.
         limit: 97,
       }));
       const page = observed.result;
       assert.equal(page.hasMore, page.nextCursor !== null);
-      if (page.nextCursor) assert.deepEqual(Object.keys(page.nextCursor).sort(), ['beforeSeq', 'subject']);
+      if (page.nextCursor) {
+        assert.deepEqual(Object.keys(page.nextCursor).sort(),
+          ['basisVersion', 'beforeSeq', 'subject', 'threadId']);
+      }
       pageCalls.push(...observed.calls);
       pageCount += 1;
       assert.ok(page.messages.length <= 97);
@@ -882,9 +892,12 @@ await test('10,000 messages keep projection metadata bounded and remain pageable
     assert.ok(pageCalls.every(call => call.rows <= 98), 'each keyset query reads at most LIMIT + 1');
     assert.ok(pageCalls.every(call => call.plan.every(detail =>
       !/\bSCAN\b|USE TEMP B-TREE/i.test(detail))), 'all history page plans must use indexed seeks without sorting');
-    assert.ok(pageCalls.every(call => call.plan.some(detail =>
-      /SEARCH.*subject_kind=\?.*subject_id=\?.*seq<\?/i.test(detail))),
-    'each page seeks the typed subject and beforeSeq key');
+    assert.ok(pageCalls.every(call =>
+      /thread_id\s*=\s*\?/i.test(call.sql)
+      && /subject_kind\s*=\s*\?/i.test(call.sql)
+      && /subject_id\s*=\s*\?/i.test(call.sql)
+      && call.plan.some(detail => /SEARCH.*thread_id=\?.*seq<\?/i.test(detail))),
+    'each page filters the typed subject and seeks the exact thread/beforeSeq key');
     assert.equal(pageCalls.length, pageCount, 'one bounded SELECT per continuation, no side scans');
     assert.ok(pageCalls.reduce((sum, call) => sum + call.rows, 0) <= 9_992 + pageCount);
   });
@@ -939,6 +952,10 @@ await test('message pagination scopes and validates thread cursors and limits', 
     seedItem(store);
     appendMessage(store, messageRecord({id: uuidFor(800001)}));
     appendMessage(store, messageRecord({
+      id: uuidFor(800004),
+      basisVersion: 2,
+    }));
+    appendMessage(store, messageRecord({
       id: uuidFor(800002),
       itemId: 'other',
     }));
@@ -949,6 +966,7 @@ await test('message pagination scopes and validates thread cursors and limits', 
     assert.deepEqual(
       readMessages(store, {threadId: 'demo', limit: 10}).messages.map(message => message.id),
       [uuidFor(800001)],
+      'same-subject messages from another subject-version thread stay historical',
     );
     for (const options of [
       {threadId: '', limit: 10},
@@ -956,6 +974,12 @@ await test('message pagination scopes and validates thread cursors and limits', 
       {threadId: 'demo', beforeSeq: 1.5, limit: 10},
       {threadId: 'demo', limit: 0},
       {threadId: 'demo', limit: 101},
+      {
+        subject: taskSubject('demo'),
+        threadId: subjectRef(taskSubject('demo'), 2),
+        basisVersion: 1,
+        limit: 10,
+      },
     ]) {
       assert.throws(() => readMessages(store, options),
         error => error.code === 'INVALID_INPUT');

@@ -194,29 +194,40 @@ export function subjectEquals(left, right) {
   return left.kind === right.kind && left.id === right.id;
 }
 
-function relationshipSubjects(record) {
+function relationshipBindings(record) {
   const body = record.body;
   if (record.kind === 'epic') {
     return [...body.required_features, ...body.optional_features]
-      .map(id => ({kind: 'feature', id}));
+      .map(id => ({subject: {kind: 'feature', id}, requiredState: null}));
   }
   if (record.kind === 'feature') {
     return [
-      {kind: 'epic', id: body.epic_id},
+      {subject: {kind: 'epic', id: body.epic_id}, requiredState: null},
       ...[...body.required_requirements, ...body.optional_requirements]
-        .map(id => ({kind: 'requirement', id})),
-      ...body.depends_on_features.map(dependency => ({kind: 'feature', id: dependency.feature})),
+        .map(id => ({subject: {kind: 'requirement', id}, requiredState: null})),
+      ...body.depends_on_features.map(dependency => ({
+        subject: {kind: 'feature', id: dependency.feature},
+        requiredState: dependency.requires,
+      })),
     ];
   }
   if (record.kind === 'requirement') {
     return [
-      {kind: 'feature', id: body.feature_id},
-      ...[...body.required_tasks, ...body.optional_tasks].map(id => ({kind: 'task', id})),
+      {subject: {kind: 'feature', id: body.feature_id}, requiredState: null},
+      ...[...body.required_tasks, ...body.optional_tasks]
+        .map(id => ({subject: {kind: 'task', id}, requiredState: null})),
     ];
   }
   return [
-    {kind: 'feature', id: body.feature_id},
-    ...body.satisfies.map(id => ({kind: 'requirement', id})),
+    {subject: {kind: 'feature', id: body.feature_id}, requiredState: null},
+    ...body.satisfies.map(id => ({
+      subject: {kind: 'requirement', id},
+      requiredState: null,
+    })),
+    ...body.depends_on.map(dependency => ({
+      subject: {kind: 'task', id: dependency.task},
+      requiredState: dependency.requires,
+    })),
   ];
 }
 
@@ -229,18 +240,22 @@ export function criteriaRef(record, lookup) {
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
     invalid('criteriaRef record version must be a positive safe integer');
   }
-  const relationships = relationshipSubjects(record);
+  const relationships = relationshipBindings(record);
   if (relationships.length > 0 && typeof lookup !== 'function') {
     invalid('criteriaRef requires a relationship lookup');
   }
-  const relationshipRefs = relationships.map(relationship => {
+  const relationshipRefs = relationships.map(({subject: relationship, requiredState}) => {
     const related = lookup(relationship.kind, relationship.id);
     if (!related || related.kind !== relationship.kind || related.id !== relationship.id
       || !Number.isSafeInteger(related.version) || related.version < 1) {
       invalid(`criteriaRef relationship ${relationship.kind}/${relationship.id} is missing`);
     }
-    return subjectRef(relationship, related.version);
-  }).sort();
+    return {
+      subject: subjectRef(relationship, related.version),
+      required_state: requiredState,
+    };
+  }).sort((left, right) => left.subject.localeCompare(right.subject)
+    || String(left.required_state).localeCompare(String(right.required_state)));
   const fields = record.kind === 'task'
     ? [
         'outcome', 'acceptance', 'completion_authority', 'review_requirements',
@@ -261,7 +276,8 @@ export function criteriaRef(record, lookup) {
 }
 
 export function isProducingRun(task, actor) {
-  return task.producing_actors.some(producer => producer.runId === actor.runId);
+  return Array.isArray(task.producing_actors)
+    && task.producing_actors.some(producer => producer.runId === actor.runId);
 }
 
 function validateStringMap(value, label) {
@@ -794,7 +810,6 @@ function validateArtifactBody(body, label) {
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   assertUuid(body.artifact_id, `${label}.artifact_id`);
   validateHierarchySubject(body.subject, `${label}.subject`);
-  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   validateActor(body.producer, `${label}.producer`);
   validateSubjectRef(body.content_ref, `${label}.content_ref`);
   validateCriteriaRef(body.criteria_ref, `${label}.criteria_ref`);
@@ -824,7 +839,6 @@ function validateAssetBody(body, label) {
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
   for (const key of ['asset_id', 'artifact_id']) assertUuid(body[key], `${label}.${key}`);
   validateHierarchySubject(body.subject, `${label}.subject`);
-  if (body.subject.kind !== 'task') invalid(`${label}.subject must be a Task`);
   if (!Number.isSafeInteger(body.revision) || body.revision < 1) invalid(`${label}.revision must be positive`);
   validateActor(body.producer, `${label}.producer`);
   assertNonEmptyString(body.completion_authority, `${label}.completion_authority`);
@@ -853,7 +867,6 @@ function validateProducerCommand(command) {
     invalid(`${command.kind} requires an existing hierarchy subject`);
   }
   if (command.kind === 'artifact.register') {
-    if (command.recordKind !== 'task') invalid('artifact.register requires an existing Task');
     const required = new Set([
       'artifactId', 'assetId', 'subject', 'projectId', 'classification', 'mediaType', 'title', 'inputAssetIds', 'at',
     ]);
@@ -870,7 +883,6 @@ function validateProducerCommand(command) {
     for (const id of command.payload.inputAssetIds) assertUuid(id, 'artifact.register inputAssetIds entry');
     assertTimestamp(command.payload.at, 'artifact.register at');
   } else if (command.kind === 'asset.transition') {
-    if (command.recordKind !== 'task') invalid('asset.transition requires an existing Task');
     assertExactKeys(command.payload, new Set([
       'assetId', 'disposition', 'validity', 'target', 'approvalId', 'supersedes', 'reason', 'at',
     ]), 'asset.transition payload');

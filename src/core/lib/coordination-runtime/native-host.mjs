@@ -189,7 +189,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
       if (prepared.requesterContext !== identity()) fail('AUTHORITY_REQUIRED', 'only the preparing coordinator can delegate this context');
       const question = body.questionId === null ? null : readRecord(store, 'question', body.questionId);
       if (body.actions.includes('question.answer')
-        && (question?.subject?.kind !== 'item' || question.subject.id !== body.taskId
+        && (question?.subject?.kind !== 'task' || question.subject.id !== body.taskId
         || question.body.recipient !== prepared.actor.role || prepared.actor.role === 'operator')) {
         fail('AUTHORITY_REQUIRED', 'answer delegation must bind the actual addressed role and question');
       }

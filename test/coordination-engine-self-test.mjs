@@ -12,12 +12,13 @@ import {
   validateSubjectRef,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
 import {
   bindEvidenceRuntime,
   registerEvidence,
 } from '../src/core/lib/coordination-runtime/evidence.mjs';
 import {retainSubject} from '../src/core/lib/coordination-runtime/evidence-content.mjs';
-import {readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
+import {listRecords, readRecord} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
   authority,
   command,
@@ -1125,7 +1126,55 @@ await test('blocking questions update Task, question, and message atomically', a
     assert.equal(opened.data.record.body.resume_state, 'in-review');
     assert.deepEqual(opened.data.record.body.waiting_on_questions, ['q1']);
     assert.equal(readRecord(store, 'question', 'q1').body.status, 'open');
-    assert.equal(readRecord(store, 'message', messageId).body.basis_version, 1);
+    const message = readRecord(store, 'message', messageId).body;
+    assert.equal(message.basis_version, opened.data.record.version);
+    assert.equal(message.thread_id,
+      subjectRef({kind: 'task', id: fixtureIds.task}, opened.data.record.version));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${messageId}`);
+  });
+});
+
+await test('message commands advance an unchanged parent body before binding its thread', async () => {
+  await withWorkspace(({store}) => {
+    seedTask(store);
+    const messageId = randomUUID();
+    const opened = applyCommand(store, command('question.open', {
+      actor: steward,
+      recordKind: 'feature',
+      recordId: fixtureIds.feature,
+      expectedVersion: 1,
+      payload: {
+        questionId: 'parent-q1',
+        messageId,
+        parentId: null,
+        recipient: reviewer.role,
+        kind: 'question',
+        createdAt: NOW,
+        content: {
+          questionKind: 'decision',
+          blocking: false,
+          context: 'Parent criteria are otherwise unchanged.',
+          ask: 'Is the exact parent report ready?',
+          answerBy: 'Before parent completion proof',
+        },
+        artifactRefs: [],
+        evidenceRefs: [],
+        provenance: 'durable-thread',
+      },
+    }), grant(steward, 'question.open', 1, {
+      recordKind: 'feature',
+      recordId: fixtureIds.feature,
+    }));
+    assert.equal(opened.data.record.version, 2);
+    const message = readRecord(store, 'message', messageId).body;
+    assert.equal(message.basis_version, 2);
+    assert.equal(message.thread_id,
+      subjectRef({kind: 'feature', id: fixtureIds.feature}, 2));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'feature', id: fixtureIds.feature},
+    }).text).recent_messages.at(-1).ref, `message:${messageId}`);
   });
 });
 
@@ -1167,6 +1216,13 @@ await test('valid peer answers clear only their question and require authorized 
     });
     assert.deepEqual(readRecord(store, 'task', fixtureIds.task).body.waiting_on_questions, []);
     assert.equal(readRecord(store, 'task', fixtureIds.task).body.state, 'blocked');
+    const answerId = readRecord(store, 'question', 'q2').body.answer_message_ids.at(-1);
+    const answer = readRecord(store, 'message', answerId).body;
+    assert.equal(answer.basis_version, 3);
+    assert.equal(answer.thread_id, subjectRef({kind: 'task', id: fixtureIds.task}, 3));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${answerId}`);
 
     const denied = taskCommand('task.restore', reviewer, 3, {at: NOW});
     assert.throws(() => applyCommand(store, denied, {
@@ -1485,7 +1541,14 @@ await test('handoff applies lifecycle guards, writes a message, and clears the l
     assert.equal(result.data.record.body.state, 'in-review');
     assert.deepEqual(result.data.record.body.change_ref, subject);
     assert.equal(result.data.record.body.lease, null);
-    assert.equal(readRecord(store, 'message', messageId).body.kind, 'handoff');
+    const message = readRecord(store, 'message', messageId).body;
+    assert.equal(message.kind, 'handoff');
+    assert.equal(message.basis_version, result.data.record.version);
+    assert.equal(message.thread_id,
+      subjectRef({kind: 'task', id: fixtureIds.task}, result.data.record.version));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${messageId}`);
   });
 });
 
@@ -1933,6 +1996,16 @@ await test('round1 F7 recovered builder can submit without erasing prior produci
       lease: activeLease(builder, 'stale-token', {expires_at: EXPIRED}),
     });
     const recovered = recoverExpired(store).data.record;
+    const recoveryMessage = listRecords(store, {
+      kind: 'message',
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).find(record => record.body.kind === 'recovery');
+    assert.equal(recoveryMessage.body.basis_version, recovered.version);
+    assert.equal(recoveryMessage.body.thread_id,
+      subjectRef({kind: 'task', id: fixtureIds.task}, recovered.version));
+    assert.equal(JSON.parse(projectContext(store, {
+      subject: {kind: 'task', id: fixtureIds.task},
+    }).text).recent_messages.at(-1).ref, `message:${recoveryMessage.id}`);
     const replacement = recovered.body.lease.holder;
     const submitted = applyCommand(store, taskCommand('task.transition', replacement, 2, {
       to: 'in-review', at: NOW, reason: 'Reconciled work is ready.', subject,

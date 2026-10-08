@@ -225,3 +225,76 @@ assumptions.
   intentionally deferred to Task 12.
 - The report suite is intentionally exhaustive and took roughly 15–17 minutes
   on this Windows environment.
+
+## Fix round 1/5 — 2026-10-06
+
+### Findings addressed
+
+1. Command-created handoff, question, answer, and recovery messages now bind
+   the resulting hierarchy subject version. Message commands advance the
+   primary version even when their descriptive body is otherwise unchanged.
+   Context cursors and continuation reads bind the exact typed subject,
+   `thread_id`, `basis_version`, and sequence cursor. Report history capture
+   applies the same filters.
+2. Removed the invented `report:` reference grammar. Parent completion now
+   uses one persisted chain:
+   - an exact parent-subject public report artifact;
+   - a parent-subject `parent-completion` evidence record with observed capture;
+   - a current completion-authority approval that explicitly references both
+     the evidence and report artifact;
+   - one current accepted asset revision bound to that approval;
+   - current parent criteria/version and filesystem integrity verification.
+   Missing, stale, and cross-subject records fail closed. Report output withholds
+   private observed evidence content; only an explicitly accepted public report
+   artifact is captured as a bounded, escaped safe excerpt.
+3. Native `question.answer` delegation now requires a Task-owned question.
+   The existing exact Task ID, addressed recipient, non-operator, parent
+   capability, routing basis, and bounded-action checks remain intact.
+4. Task criteria relationship bindings now include every `depends_on` Task
+   ID, version, and required state in canonical order. A dependency version or
+   required-state change invalidates dependent proof.
+
+Task 6 lifecycle, lease, recovery-hold, and stale-Direction gates were not
+relaxed.
+
+### Regression evidence
+
+The new tests were observed failing before their corresponding fixes:
+
+| Regression | RED evidence |
+| --- | --- |
+| Result-version message binding | Targeted engine tests reported message basis versions `1 !== 2` and `2 !== 3`; an unchanged parent question command returned record version `1 !== 2`. |
+| Exact thread pagination | Context pagination returned a same-subject version-2 message while requesting the version-1 thread. |
+| Task dependency proof | The criteria hash remained identical after the upstream Task version changed. |
+| Native Task answer delegation | The native host rejected a real Task question with `AUTHORITY_REQUIRED` because it checked legacy kind `item`. |
+| Parent proof/public report chain | The final positive chain requires a parent-bound artifact/evidence/approval/accepted revision; nonexistent, stale, and cross-subject variants are asserted as `EVIDENCE_GAP`. |
+
+### Final verification
+
+All commands ran from:
+
+```text
+C:\src\kai\.worktrees\schema5-composable-workspace
+```
+
+| Command | Result |
+| --- | --- |
+| `node test/coordination-thread-self-test.mjs` | Exit 0 — all checks passed |
+| `node test/coordination-context-self-test.mjs` | Exit 0 — 34 passed |
+| `node test/coordination-evidence-self-test.mjs` | Exit 0 — 82 passed |
+| `node test/coordination-report-self-test.mjs` | Exit 0 — 85 passed |
+| `node test/coordination-host-self-test.mjs` | Exit 0 — 54 passed, including native Task answer delegation |
+| `node test/coordination-engine-self-test.mjs` | Exit 0 — 79 passed |
+| `node test/coordination-store-self-test.mjs` | Exit 0 — 20 passed |
+| `node test/coordination-inputs-self-test.mjs` | Exit 0 — 28 passed |
+| `node test/coordination-hierarchy-contract-self-test.mjs` | Exit 0 — 8 passed |
+| `node test/coordination-hierarchy-engine-self-test.mjs` | Exit 0 — 11 passed |
+| `node test/coordination-authority-self-test.mjs` | Exit 0 — all checks passed |
+| `node test/coordination-report-browser-self-test.mjs` | Exit 0 — 1280 px and 320 px file-URL safety/layout checks passed; synthetic, not host visual acceptance |
+| `node tools/check-syntax.mjs` | Exit 0 — 73 helpers parse cleanly |
+| Typed message CLI parser assertion | Exit 0 — exact subject/thread/basis options parsed |
+| `git diff --check` | Exit 0 |
+
+Full `npm test`, release metadata, generated packs, and final hierarchy CLI
+cutover remain deferred to their controller-owned later tasks. No subagents
+were dispatched.

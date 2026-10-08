@@ -7,18 +7,28 @@ import {artifactPreviewLimits, hash, knownGap} from './report-safety.mjs';
 
 /** Human export only. Indexed exclusive keysets, no OFFSET or suffix recount. */
 export function captureHistory(store, subject, version, throughSeq, addGap) {
+  const subjectColumn = store.schemaVersion === 1 ? 'item_id' : 'subject_id';
+  const subjectKind = store.schemaVersion === 1 ? null : subject.kind;
+  const subjectFilter = store.schemaVersion === 1
+    ? `e.${subjectColumn} = ?`
+    : `e.subject_kind = ? AND e.${subjectColumn} = ?`;
   const statement = store.database.prepare(`
     SELECT e.seq, e.message_id, r.kind, r.id, r.subject_kind, r.subject_id,
       r.version, r.body
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-    WHERE e.thread_id = ? AND e.message_id IS NOT NULL AND e.seq < ?
+    WHERE e.thread_id = ? AND ${subjectFilter}
+      AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT 50
   `);
   const pages = [];
   let beforeSeq = throughSeq + 1;
   const threadId = subjectRef(subject, version);
   for (;;) {
-    const rows = statement.all(threadId, beforeSeq);
+    const rows = statement.all(
+      threadId,
+      ...(subjectKind === null ? [subject.id] : [subjectKind, subject.id]),
+      beforeSeq,
+    );
     if (!rows.length) break;
     pages.push(rows.map(row => {
       const ref = `message:${row.message_id}`;
@@ -35,7 +45,9 @@ export function captureHistory(store, subject, version, throughSeq, addGap) {
           version: row.version,
           body: JSON.parse(row.body),
         });
-        if (!subjectEquals(record.subject, subject) || record.body.thread_id !== threadId) {
+        if (!subjectEquals(record.subject, subject)
+          || record.body.thread_id !== threadId
+          || record.body.basis_version !== version) {
           entry.gap = 'Message subject/thread mismatches captured scope; content withheld.';
         } else entry.record = record;
       }

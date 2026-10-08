@@ -7,6 +7,7 @@ import {buildReport, writeReport} from '../src/core/lib/coordination-runtime/rep
 import {withWorkspace} from './helpers/coordination-runtime-fixture.mjs';
 import {
   NOW, acceptReport, addReportArtifact, appendMessage, hash, mutateBody, payload, seedHostAttempt, setupReport,
+  reportSubject, reportWriteInput,
 } from './helpers/coordination-report-fixture.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -51,8 +52,8 @@ try {
     });
     mutateBody(store, 'approval', store.database.prepare("SELECT id FROM records WHERE kind='approval'").get().id,
       body => { body.reason = malicious + ' [click](javascript:alert(1)) ' + longLabel; });
-    const view = buildReport(store, {itemId: 'demo'});
-    const output = writeReport({root, itemId: 'demo', view});
+    const view = buildReport(store, {subject: reportSubject});
+    const output = writeReport(reportWriteInput(root, view));
     assert.equal(typeof output.path, 'string', 'export must produce a real offline document');
     const page = await browser.newPage();
     const requests = [];
@@ -123,7 +124,7 @@ try {
       assert.equal(await history.getAttribute('open'), null);
       const subject = page.locator('header details').first();
       await subject.locator('summary').click();
-      assert.equal(await subject.locator('p').innerText(), view.item.title);
+      assert.equal(await subject.locator('p').innerText(), view.subject.title);
       await subject.locator('summary').click();
       assert.ok((await page.locator('.subject').innerText()).length <= 150);
       await page.evaluate(() => scrollTo(0, 0));
@@ -181,8 +182,8 @@ try {
       }, null, 2));
     }
     for (let i = 1; i < 17; i++) addReportArtifact(root, store);
-    const limitedView = buildReport(store, {itemId: 'demo'});
-    const limitedOutput = writeReport({root, itemId: 'demo', view: limitedView});
+    const limitedView = buildReport(store, {subject: reportSubject});
+    const limitedOutput = writeReport(reportWriteInput(root, limitedView));
     await page.goto(pathToFileURL(limitedOutput.indexPath).href);
     await page.getByRole('link', {name: 'Open captured report', exact: true}).click();
     await page.getByRole('link', {name: 'No preview — inspect presentation limitation', exact: true}).first().click();
@@ -207,8 +208,8 @@ try {
         holder: {role: 'eng-builder-software', runId: 'producer-run'}, token: secret,
         acquired_at: NOW, expires_at: '2026-09-17T12:00:00.000Z', version_at_grant: 1,
       }; });
-      const view = buildReport(store, {itemId: 'demo'});
-      const output = writeReport({root, itemId: 'demo', view});
+      const view = buildReport(store, {subject: reportSubject});
+      const output = writeReport(reportWriteInput(root, view));
       const page = await browser.newPage();
       const requests = [];
       const errors = [];

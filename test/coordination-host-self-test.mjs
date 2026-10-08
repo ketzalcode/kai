@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';
+import {createHash, randomUUID} from 'node:crypto';
 import {readFileSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {test} from 'node:test';
@@ -9,13 +9,16 @@ import {
   bindHostRuntime, planDispatch, recordAttempt, recordHostResult, recordEffect,
 } from '../src/core/lib/coordination-runtime/host.mjs';
 import {
-  commandDigest, validateCommand, validateRecord,
+  canonicalJson, commandDigest, subjectRef, validateCommand, validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import {
   readRecord, listRecords, openStore, closeStore, applyOperation,
 } from '../src/core/lib/coordination-runtime/store.mjs';
 import {readDetail, projectContext} from '../src/core/lib/coordination-runtime/context.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {createNativeHost} from '../src/core/lib/coordination-runtime/native-host.mjs';
+import {writeIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
+import {routingBasis} from '../src/core/lib/coordination-runtime/native-routing.mjs';
 import {agentProfileModelErrors} from '../tools/lib/pack-plan.mjs';
 // Straight from the policy that owns it. Reaching it through the generator
 // re-export dragged the whole build pipeline — esbuild included — into a job
@@ -26,6 +29,7 @@ import {
   authority,
   command,
   fixtureIds,
+  seedRecord,
   seedTask,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
@@ -958,6 +962,132 @@ check('malformed host mutation fails with the shared input error', () =>
     const body = {...record.body, attempt_id: other.recordId, target: other.payload.target};
     delete body.observations;
     assert.throws(() => applyOperation(store, other, () => body), code('INVALID_INPUT'));
+  }));
+
+check('native question-answer delegation binds the exact Task question and recipient', () =>
+  withWorkspace(async ({root, store}) => {
+    const owner = {role: 'eng-lead-architecture', runId: 'native-owner'};
+    const recipient = {role: 'eng-reviewer-code', runId: randomUUID()};
+    seedTask(store, {
+      state: 'ready',
+      next_role: recipient.role,
+      producer_actor: null,
+      producing_actors: [],
+      acceptance_actor: null,
+    });
+    const questionId = 'native-task-question';
+    const messageId = randomUUID();
+    seedRecord(store, validateRecord({
+      kind: 'message',
+      id: messageId,
+      subject: {kind: 'task', id: fixtureIds.task},
+      version: 1,
+      body: {
+        schema_version: 1,
+        message_id: messageId,
+        subject: {kind: 'task', id: fixtureIds.task},
+        thread_id: subjectRef({kind: 'task', id: fixtureIds.task}, 1),
+        parent_id: null,
+        sender_role: owner.role,
+        sender_run: owner.runId,
+        recipient: recipient.role,
+        kind: 'question',
+        created_at: '2026-09-16T12:00:00.000Z',
+        basis_version: 1,
+        payload: {
+          questionKind: 'fact',
+          blocking: false,
+          context: 'Native bounded delegation.',
+          ask: 'Which focused suite should run?',
+          answerBy: 'Before handoff',
+        },
+        artifact_refs: [],
+        evidence_refs: [],
+        provenance: 'durable-thread',
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: questionId,
+      subject: {kind: 'task', id: fixtureIds.task},
+      version: 1,
+      body: {
+        schema_version: 1,
+        question_id: questionId,
+        subject: {kind: 'task', id: fixtureIds.task},
+        asker: owner,
+        recipient: recipient.role,
+        kind: 'fact',
+        blocking: false,
+        status: 'open',
+        context: 'Native bounded delegation.',
+        ask: 'Which focused suite should run?',
+        answer_by: 'Before handoff',
+        opened_message_id: messageId,
+        answer_message_ids: [],
+        resolution: null,
+      },
+    }));
+
+    const env = {...process.env, COPILOT_AGENT_SESSION_ID: owner.runId};
+    const host = createNativeHost({
+      env,
+      discover: async ({role: requestedRole}) => ({
+        host: {name: 'synthetic-native-host', version: 'test'},
+        roster: [{id: `fixture:${requestedRole}`, role: requestedRole, model: null}],
+        profiles: {},
+        capabilities: {
+          peerDispatch: false,
+          resume: false,
+          modelOverride: false,
+          usage: false,
+          models: [],
+          efforts: [],
+        },
+        modelPromptSent: false,
+        transportClosed: true,
+        prepared: {actor: recipient, agentId: `fixture:${requestedRole}`},
+      }),
+    });
+    const prepared = await host.prepare({root, body: {role: recipient.role}});
+    const parentCapability = randomUUID();
+    const now = new Date().toISOString();
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8'));
+    writeIssued(root, 'capabilities', parentCapability, {
+      request: {
+        nonce: parentCapability,
+        root,
+        workspaceManifest: createHash('sha256')
+          .update(canonicalJson(manifest))
+          .digest('hex'),
+        requesterContext: owner.runId,
+        createdAt: now,
+        expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+        routingBasis: routingBasis(root, store, readRecord(store, 'task', fixtureIds.task)),
+        scope: {
+          type: 'coordination',
+          actor: owner,
+          taskId: fixtureIds.task,
+          actions: ['question.answer'],
+        },
+      },
+      catalog: prepared.discovery,
+    });
+
+    const delegated = await host.delegate({
+      root,
+      store,
+      body: {
+        actor: owner,
+        taskId: fixtureIds.task,
+        preparation: prepared.preparation.id,
+        actions: ['question.answer'],
+        questionId,
+      },
+      options: {capability: parentCapability},
+    });
+    assert.equal(delegated.actor.runId, recipient.runId);
+    assert.equal(delegated.expiresAt <= prepared.preparation.expiresAt, true);
   }));
 
 check('private host schema imports independently without a contract initialization cycle', () => {

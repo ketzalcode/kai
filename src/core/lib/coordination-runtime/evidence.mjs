@@ -18,7 +18,12 @@ import {
 } from './evidence-content.mjs';
 import {applyAssetTransition} from './evidence-assets.mjs';
 import {bindEvidenceTransaction, contextFor} from './evidence-context.mjs';
-import {subjectArtifact, verifyReferences} from './evidence-integrity.mjs';
+import {
+  subjectArtifact,
+  verifyParentCompletionApproval,
+  verifyParentCompletionEvidence,
+  verifyReferences,
+} from './evidence-integrity.mjs';
 import {captureInputBasis, artifactInputReferences, privacyRank} from './input-basis.mjs';
 
 export {assertWorkspacePath, hashArtifact, hashBundle} from './evidence-content.mjs';
@@ -31,6 +36,18 @@ const contentEquals = (left, right) =>
 const lookup = tx => (kind, id) => tx.get(kind, id);
 
 function ordinaryAuthority(store, tx, item, command, authority) {
+  if (item.kind !== 'task') {
+    if (command.leaseToken !== null) {
+      fail('LEASE_CONFLICT', 'parent hierarchy evidence commands cannot carry a Task lease');
+    }
+    if (![item.body.owner, item.body.scope_authority, item.body.completion_authority]
+      .includes(command.actor.role)) {
+      fail('AUTHORITY_REQUIRED',
+        'parent hierarchy evidence requires its owner or declared authority');
+    }
+    requireHostActionGrant(command, authority, command.kind);
+    return;
+  }
   if (item.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'operator recovery hold must be resolved first');
   if (item.body.lease === null && command.leaseToken !== null) fail('LEASE_CONFLICT', 'command carries a retired lease');
   if (item.kind === 'task' && hasStaleDirection(
@@ -90,16 +107,6 @@ function contentEntries(subject) {
     : subject.kind === 'bundle-sha256' ? subject.entries : [];
 }
 
-function verifyAcceptedReportExcerpts(refs) {
-  if (!Array.isArray(refs) || refs.length === 0
-    || refs.some(reference =>
-      !/^report:(core|engineering|creative):[a-z0-9][a-z0-9._-]*:[a-z0-9][a-z0-9._-]*#[a-z0-9][a-z0-9._-]*$/i.test(reference))
-    || new Set(refs).size !== refs.length) {
-    fail('EVIDENCE_GAP', 'parent completion evidence requires explicit accepted report safe-excerpt references');
-  }
-  return [];
-}
-
 function operatorDecision(context, command) {
   const supplied = context.verifyOperatorDecision?.(clone(command)) ?? null;
   let proof;
@@ -124,6 +131,9 @@ export function registerArtifact(store, command) {
   return produce(store, command, 'artifact.register', undefined, ({context, item, tx, command, authority}) => {
     const p = command.payload;
     if (p.recoveryLeaseToken !== undefined) {
+      if (item.kind !== 'task') {
+        fail('INVALID_INPUT', 'parent hierarchy artifacts do not support Task lease recovery');
+      }
       requireNamedAuthority(tx, command, authority, command.kind, item.body.scope_authority);
       if (!item.body.lease || leaseIsLive(item.body.lease)
         || item.body.lease.token !== p.recoveryLeaseToken || command.leaseToken !== null) {
@@ -158,7 +168,8 @@ export function registerArtifact(store, command) {
     };
     requirePrivacy({subject: p.subject, classification: p.classification});
     for (const path of sourcePaths) {
-      if (!path.startsWith(`${run.directory}/`) && !item.body.artifact_targets.includes(path)) {
+      if (!path.startsWith(`${run.directory}/`)
+        && !(item.body.artifact_targets ?? []).includes(path)) {
         fail('AUTHORITY_REQUIRED', 'artifact source is outside the approved run and declared targets');
       }
       if ((path.startsWith('project:') && p.classification !== 'public')
@@ -184,7 +195,8 @@ export function registerArtifact(store, command) {
       schema_version: 1, asset_id: p.assetId,
       subject: {kind: item.kind, id: item.id}, artifact_id: p.artifactId,
       revision: 1, producer: command.actor, completion_authority: item.body.completion_authority,
-      validity_owner: item.body.validity_owner, disposition, validity: 'provisional', target,
+      validity_owner: item.body.validity_owner ?? item.body.completion_authority,
+      disposition, validity: 'provisional', target,
       completion_approval_id: null, input_asset_ids: p.inputAssetIds,
       supersedes: null, superseded_by: null, updated_at: p.at,
       history: [{
@@ -228,7 +240,7 @@ export function recordApproval(store, command, authority) {
       if (command.actor.role !== item.body.completion_authority) {
         fail('AUTHORITY_REQUIRED', 'parent completion approval requires its declared completion authority');
       }
-      verifyReferences(context, tx, item, b.evidence_refs);
+      verifyParentCompletionApproval(context, tx, item, b.evidence_refs);
       const body = {...b, recorded_at_subject_version: command.expectedVersion};
       effectiveApprovals([
         ...tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
@@ -317,7 +329,7 @@ export function registerEvidence(store, command, capture) {
       subjectArtifact(context, tx, item, b.content_ref, b.outcome === 'waived' ? command.actor : null);
     }
     const artifacts = parentCompletion
-      ? verifyAcceptedReportExcerpts(b.evidence_refs)
+      ? verifyParentCompletionEvidence(context, tx, item, b.evidence_refs)
       : verifyReferences(context, tx, item, b.evidence_refs, {recovery});
     let observation = null;
     if (command.payload.tier === 'observed') {

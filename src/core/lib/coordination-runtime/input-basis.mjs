@@ -64,5 +64,5 @@ export function inputBasisCurrent(context, tx, basis) {
 }
 
 export function artifactInputReferences(item, inputAssetIds) {
-  return [...item.context_artifacts, ...inputAssetIds.map(id => `asset:${id}`)];
+  return [...(item.context_artifacts ?? []), ...inputAssetIds.map(id => `asset:${id}`)];
 }

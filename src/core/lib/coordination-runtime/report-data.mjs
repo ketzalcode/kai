@@ -105,9 +105,18 @@ export function buildReport(store, {subject}) {
       },
     }, {root});
     const body = item.body;
+    const currentCriteria = check(
+      'criteria',
+      () => criteriaRef(item, (kind, id) => tx.get(kind, id)),
+    ).value ?? null;
     const artifacts = list('artifact', itemSubject).map(record => ({
       id: record.id, ref: `artifact:${record.id}`, version: record.version, ...record.body,
-      status: matchesAcceptance(record.body, item, (kind, id) => tx.get(kind, id)) ? 'current' : 'historical',
+      status: bindsSubject(record, itemSubject)
+        && currentCriteria !== null
+        && record.body.criteria_ref === currentCriteria
+        && (item.kind !== 'task' || contentEquals(record.body.content_ref, item.body.change_ref))
+        ? 'current'
+        : 'historical',
       integrity: 'not-rechecked', assets: [],
     }));
     const assets = list('asset', itemSubject);
@@ -160,9 +169,11 @@ export function buildReport(store, {subject}) {
       verdicts[kind] = records.map(record => {
         const b = record.body;
         const recovery = b.kind === 'operator-recovery-resolution';
-        const current = recovery ? b.criteria_ref === criteriaRef(item, (recordKind, id) => tx.get(recordKind, id))
-          && b.recovery.attempt_id === body.recovery_hold
-          : matchesAcceptance(b, item, (recordKind, id) => tx.get(recordKind, id));
+        const current = currentCriteria !== null
+          && (recovery
+            ? b.criteria_ref === currentCriteria
+              && b.recovery.attempt_id === body.recovery_hold
+            : matchesAcceptance(b, item, (recordKind, id) => tx.get(recordKind, id)));
         const actor = b.reviewer ?? b.authority ?? null;
         const independent = actor === null ? null : (item.kind !== 'task' || !isProducingRun(body, actor))
           && !artifacts.some(a => contentEquals(a.content_ref, b.content_ref)
@@ -214,10 +225,14 @@ export function buildReport(store, {subject}) {
     const evidence = verdicts.evidence;
     const completionClaims = decisions.filter(d => d.status === 'current'
       && d.kind === 'completion' && d.decision === 'approved');
-    if (item.kind === 'task' && completionClaims.length) {
+    if (completionClaims.length) {
       const completion = check('completion', () => completionApproval(tx, item), 'broken-claim');
-      const requiredReviews = check('required-reviews', () => requireReviews(tx, item), 'broken-claim');
-      if (!completion.ok || !requiredReviews.ok) completionClaims.forEach(c => { c.integrity = 'gap'; });
+      const requiredReviews = item.kind === 'task'
+        ? check('required-reviews', () => requireReviews(tx, item), 'broken-claim')
+        : {ok: true};
+      if (!completion.ok || !requiredReviews.ok) {
+        completionClaims.forEach(c => { c.integrity = 'gap'; });
+      }
     }
     if (terminal.has(body.state) && body.state !== 'dropped' && !completionClaims.length) {
       addGap('completion', 'Recorded terminal state retained; current completion proof is missing or stale.');
@@ -250,7 +265,7 @@ export function buildReport(store, {subject}) {
       return {
         id: `criterion-${index + 1}`,
         text,
-        criteriaRef: criteriaRef(item, (kind, id) => tx.get(kind, id)),
+        criteriaRef: currentCriteria,
         status: bad ? 'gap' : good.length ? 'verified' : 'pending',
         verdictRefs: support.map(r => r.ref),
         evidenceRefs: [...new Set(support.flatMap(r => r.evidence_refs))],
@@ -374,14 +389,33 @@ export function buildReport(store, {subject}) {
       .flatMap(decision => decision.evidence_refs)
       .filter(reference => reference.startsWith('artifact:'))
       .map(reference => reference.slice('artifact:'.length)));
+    const acceptedApprovalIds = new Set(decisions
+      .filter(decision => decision.status === 'current'
+        && decision.kind === 'completion'
+        && decision.decision === 'approved'
+        && decision.integrity === 'verified')
+      .map(decision => decision.approval_id));
     const reportArtifacts = artifacts.filter(artifact =>
       artifact.classification === 'public'
       && artifact.status === 'current'
       && artifact.integrity === 'verified'
-      && acceptedReportArtifacts.has(artifact.id));
+      && acceptedReportArtifacts.has(artifact.id)
+      && (item.kind === 'task' || artifact.assets.some(asset =>
+          asset.validity === 'current'
+          && acceptedApprovalIds.has(asset.completion_approval_id)
+          && !new Set(['scratch', 'draft', 'discarded', 'retracted'])
+            .has(asset.disposition))));
     if (artifacts.length > reportArtifacts.length) {
       addGap('private-evidence', 'Private evidence metadata and bytes were withheld from the report.', 'pending');
     }
+    const reportEvidence = evidence.filter(entry => {
+      const classification = entry.provenance?.capture?.classification ?? 'public';
+      if (classification === 'public') return true;
+      addGap(entry.ref,
+        'Private evidence content was withheld; only an accepted public report artifact safe excerpt may be shown.',
+        'pending');
+      return false;
+    });
     const inspection = {
       subject,
       throughSeq,
@@ -399,13 +433,13 @@ export function buildReport(store, {subject}) {
         id: item.id,
         version: item.version,
         ...body,
-        criteriaRef: criteriaRef(item, (kind, id) => tx.get(kind, id)),
+        criteriaRef: currentCriteria,
       },
       decisions,
       criteria,
       artifacts: reportArtifacts,
       reviews,
-      evidence,
+      evidence: reportEvidence,
       questions,
       blockers,
       attempts,
@@ -428,9 +462,18 @@ export function buildReport(store, {subject}) {
       history: {
         totalMessages: context?.messageCount ?? null,
         shownMessages: rawMessages.length,
-        cursor: !context ? {subject, beforeSeq: throughSeq + 1, remainingCount: null}
+        cursor: !context ? {
+          subject,
+          threadId: subjectRef(subject, item.version),
+          basisVersion: item.version,
+          beforeSeq: throughSeq + 1,
+          remainingCount: null,
+        }
           : context.messageCount > rawMessages.length ? {
-          subject, beforeSeq: rawMessages[0]?.eventSeq ?? throughSeq + 1,
+          subject,
+          threadId: subjectRef(subject, item.version),
+          basisVersion: item.version,
+          beforeSeq: rawMessages[0]?.eventSeq ?? throughSeq + 1,
           remainingCount: context.messageCount - rawMessages.length,
         } : null,
         limitation: 'Recent message excerpts only (512 UTF-8 bytes each). Full and older messages are captured in linked offline pages from this same database snapshot. Verdicts, artifact registry metadata and question records below are not truncated. Artifact content previews have separately disclosed byte budgets.',

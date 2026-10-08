@@ -17,6 +17,7 @@ import {
   completionApproval, requireReviews, requireReleaseEvidence,
 } from '../src/core/lib/coordination-runtime/acceptance.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
+import {buildReport} from '../src/core/lib/coordination-runtime/report.mjs';
 import {bindEvidenceTransaction} from '../src/core/lib/coordination-runtime/evidence-context.mjs';
 import {readRecord, listRecords} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
@@ -1423,10 +1424,84 @@ test('criteria references bind typed subject versions, relationships, and immuta
   });
 });
 
-test('parent completion evidence is typed and execution evidence stays Task-only', async () => {
+test('Task dependency versions and required states participate in criteria references', async () => {
   await withWorkspace(({store}) => {
-    seedTask(store);
+    const upstreamId = 'engineering:task:upstream-proof';
+    seedTask(store, {
+      id: upstreamId,
+      state: 'completed',
+    });
+    const task = seedTask(store, {
+      depends_on: [{task: upstreamId, requires: 'completed'}],
+    });
+    const lookup = (kind, id) => readRecord(store, kind, id);
+    const current = criteriaRef(task, lookup);
+
+    const upstream = lookup('task', upstreamId);
+    store.database.prepare(`
+      UPDATE records SET version = ?, body = ? WHERE kind = 'task' AND id = ?
+    `).run(upstream.version + 1, JSON.stringify({
+      ...upstream.body,
+      title: 'Changed upstream proof basis',
+      updated_at: '2026-10-06T13:00:00.000Z',
+    }), upstream.id);
+    assert.notEqual(criteriaRef(task, lookup), current,
+      'an upstream Task version change invalidates dependent Task criteria');
+    assert.notEqual(criteriaRef({
+      ...task,
+      body: {
+        ...task.body,
+        depends_on: [{task: upstreamId, requires: 'shipped'}],
+      },
+    }, lookup), criteriaRef(task, lookup),
+    'the dependency required-state is part of the canonical criteria relationship');
+  });
+});
+
+test('parent completion requires exact accepted report artifact proof', async () => {
+  await withWorkspace(({root, store}) => {
+    file(root, source);
+    seedTask(store, {
+      state: 'in-review',
+      artifact_targets: [source],
+      change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: source},
+    });
     const feature = readRecord(store, 'feature', fixtureIds.feature);
+    const reportArtifactId = randomUUID();
+    const reportAssetId = randomUUID();
+    const reportSubject = {
+      kind: 'sha256',
+      path: source,
+      digest: digest('<h1>First</h1>'),
+    };
+    const artifactAuthority = authority(lead, 'artifact.register', {
+      recordKind: 'feature',
+      recordId: feature.id,
+      version: feature.version,
+    });
+    bindEvidenceRuntime(store, {
+      root,
+      authority: artifactAuthority,
+      runs: [{actor: lead, directory: runDirectory}],
+    });
+    assert.equal(registerArtifact(store, command('artifact.register', {
+      actor: lead,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {
+        artifactId: reportArtifactId,
+        assetId: reportAssetId,
+        subject: reportSubject,
+        projectId: null,
+        classification: 'public',
+        mediaType: 'text/html',
+        title: 'Accepted safe parent report excerpt',
+        inputAssetIds: [],
+        at: NOW,
+      },
+    })).ok, true);
+
     const evidenceId = randomUUID();
     const body = {
       schema_version: 1,
@@ -1438,7 +1513,7 @@ test('parent completion evidence is typed and execution evidence stays Task-only
       supersedes: [],
       dimension: null,
       outcome: 'passed',
-      evidence_refs: ['report:engineering:reports:feature-demo#accepted-summary'],
+      evidence_refs: [`artifact:${reportArtifactId}`],
       reason: 'The accepted report records the exact Feature outcome.',
       data: {},
       created_at: NOW,
@@ -1451,16 +1526,20 @@ test('parent completion evidence is typed and execution evidence stays Task-only
       body,
     }).body, body);
 
-    const parentAuthority = authority(reviewer, 'evidence.register', {
+    const parentAuthority = authority(
+      reviewer,
+      ['evidence.register', 'approval.record', 'asset.transition'],
+      {
       recordKind: 'feature',
       recordId: feature.id,
       version: feature.version,
-    });
+      },
+    );
     bindEvidenceRuntime(store, {
       root: dirname(dirname(dirname(store.path))),
       authority: parentAuthority,
       runs: [],
-      verifyCapture: captureFor,
+      verifyCapture: candidate => captureFor(candidate, {classification: 'public'}),
     });
     const parentCommand = command('evidence.register', {
       actor: reviewer,
@@ -1472,12 +1551,12 @@ test('parent completion evidence is typed and execution evidence stays Task-only
     assert.equal(registerEvidence(store, parentCommand, {}).ok, true);
     assert.deepEqual(readRecord(store, 'evidence', evidenceId).subject, body.subject);
     const featureApprovalId = randomUUID();
-    seedRecord(store, validateRecord({
-      kind: 'approval',
-      id: featureApprovalId,
-      subject: body.subject,
-      version: 1,
-      body: {
+    const featureApproval = command('approval.record', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {body: {
         schema_version: 1,
         approval_id: featureApprovalId,
         subject: body.subject,
@@ -1489,16 +1568,113 @@ test('parent completion evidence is typed and execution evidence stays Task-only
         deployment: null,
         recovery: null,
         decision: 'approved',
-        evidence_refs: body.evidence_refs,
+        evidence_refs: [`evidence:${evidenceId}`, `artifact:${reportArtifactId}`],
         reason: 'Accept the exact Feature outcome.',
         created_at: NOW,
-      },
-    }));
+      }},
+    });
+    assert.equal(recordApproval(store, featureApproval, parentAuthority).ok, true);
+    for (const [disposition, validity, approvalId] of [
+      ['draft', 'provisional', null],
+      ['working', 'current', featureApprovalId],
+    ]) {
+      assert.equal(transitionAsset(store, command('asset.transition', {
+        actor: reviewer,
+        recordKind: 'feature',
+        recordId: feature.id,
+        expectedVersion: feature.version,
+        payload: {
+          assetId: reportAssetId,
+          disposition,
+          validity,
+          target: null,
+          approvalId,
+          supersedes: null,
+          reason: 'Accept the exact parent report revision.',
+          at: NOW,
+        },
+      }), parentAuthority).ok, true);
+    }
+    assert.equal(
+      completionApproval(txView(store), readRecord(store, 'feature', feature.id))
+        .approval_id,
+      featureApprovalId,
+    );
+    const reportView = buildReport(store, {
+      subject: {kind: 'feature', id: feature.id},
+    });
+    assert.equal(reportView.inspection.artifactPreviews.length, 1);
+    assert.match(reportView.inspection.artifactPreviews[0].content, /<h1>First<\/h1>/);
+    const other = seedTask(store, {id: 'engineering:task:other-parent-proof'});
     assert.throws(
-      () => completionApproval(txView(store), readRecord(store, 'task', fixtureIds.task)),
+      () => completionApproval(txView(store), readRecord(store, 'task', other.id)),
       code('EVIDENCE_GAP'),
       'Feature acceptance cannot satisfy a Task',
     );
+
+    const nonexistent = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: randomUUID(),
+        evidence_refs: [`artifact:${randomUUID()}`],
+      }},
+    });
+    assert.throws(() => registerEvidence(store, nonexistent, {}), code('EVIDENCE_GAP'));
+
+    const artifact = readRecord(store, 'artifact', reportArtifactId);
+    const crossArtifactId = randomUUID();
+    seedRecord(store, validateRecord({
+      ...artifact,
+      id: crossArtifactId,
+      subject: {kind: 'task', id: other.id},
+      body: {
+        ...artifact.body,
+        artifact_id: crossArtifactId,
+        subject: {kind: 'task', id: other.id},
+      },
+    }));
+    const crossSubject = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: randomUUID(),
+        evidence_refs: [`artifact:${crossArtifactId}`],
+      }},
+    });
+    assert.throws(() => registerEvidence(store, crossSubject, {}), code('EVIDENCE_GAP'));
+
+    const oldCriteria = body.criteria_ref;
+    store.database.prepare('UPDATE records SET version = ? WHERE kind = ? AND id = ?')
+      .run(feature.version + 1, 'feature', feature.id);
+    bindEvidenceRuntime(store, {
+      root,
+      authority: authority(reviewer, 'evidence.register', {
+        recordKind: 'feature',
+        recordId: feature.id,
+        version: feature.version + 1,
+      }),
+      runs: [],
+      verifyCapture: candidate => captureFor(candidate, {classification: 'public'}),
+    });
+    const stale = command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version + 1,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: randomUUID(),
+        criteria_ref: oldCriteria,
+      }},
+    });
+    assert.throws(() => registerEvidence(store, stale, {}), code('EVIDENCE_GAP'));
 
     assert.throws(() => validateRecord({
       kind: 'evidence',

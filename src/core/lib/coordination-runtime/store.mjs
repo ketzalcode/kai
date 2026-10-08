@@ -20,6 +20,12 @@ const SCHEMA_VERSION = 2;
 const HISTORICAL_SCHEMA_VERSION = 1;
 const MESSAGE_SCHEMA_VERSION = 1;
 const STORE_MODES = new Set(['create', 'read', 'write']);
+const MESSAGE_COMMANDS = new Set([
+  'task.handoff',
+  'question.open',
+  'question.answer',
+  'attempt.recover',
+]);
 const EVENTS_TABLE_SQL = `CREATE TABLE events (
   seq INTEGER PRIMARY KEY AUTOINCREMENT,
   operation_id TEXT NOT NULL,
@@ -923,26 +929,26 @@ function decodeMessageRow(row, store) {
   return decodeRecord(row, store);
 }
 
-function subjectMessageRows(store, subject, beforeSeq, limit) {
-  const filter = subjectFilter(store, subject, 'e');
-  return runSqlite(() => store.database.prepare(`
-    SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
-    FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-      AND ${matchingSubjects(store, 'r', 'e')}
-    WHERE ${filter.sql}
-      AND e.message_id IS NOT NULL AND e.seq < ?
-    ORDER BY e.seq DESC LIMIT ?
-  `).all(...filter.params, beforeSeq, limit));
-}
-
 /**
  * Read one bounded page from a durable message thread in reverse event order.
- * LIMIT + 1 determines hasMore. Continuation cursors contain only threadId and
- * beforeSeq, never an untrusted count or a per-page suffix recount.
+ * LIMIT + 1 determines hasMore. Continuation cursors bind the exact typed
+ * subject, thread and basis version, never an untrusted count or suffix recount.
  */
-export function readMessagePage(store, {subject, beforeSeq = null, limit}) {
+export function readMessagePage(store, {
+  subject,
+  threadId,
+  basisVersion,
+  beforeSeq = null,
+  limit,
+}) {
   assertStore(store);
   validateStoreSubject(subject, 'message subject', {allowNull: false});
+  if (typeof threadId !== 'string' || threadId !== subjectRef(subject, basisVersion)) {
+    invalid('message thread must bind the requested typed subject and basis version');
+  }
+  if (!Number.isSafeInteger(basisVersion) || basisVersion < 1) {
+    invalid('message basis version must be a positive safe integer');
+  }
   if (beforeSeq !== null
     && (!Number.isSafeInteger(beforeSeq) || beforeSeq < 1)) {
     invalid('message beforeSeq must be a positive safe integer or null');
@@ -952,20 +958,30 @@ export function readMessagePage(store, {subject, beforeSeq = null, limit}) {
   }
 
   return readSnapshot(store, () => {
-    const rows = subjectMessageRows(
+    const rows = messageRows(
       store,
-      subject,
+      threadId,
       beforeSeq ?? Number.MAX_SAFE_INTEGER,
       limit + 1,
+      subject,
     );
-    const messages = rows.map(row => ({
-      ...decodeMessageRow(row, store),
-      eventSeq: Number(row.seq),
-    })).slice(0, limit);
+    const messages = rows.map(row => {
+      const record = decodeMessageRow(row, store);
+      if (record.body.thread_id !== threadId
+        || record.body.basis_version !== basisVersion) {
+        throw new RuntimeError(
+          'EVIDENCE_GAP',
+          `message/${record.id} does not belong to ${threadId}`,
+        );
+      }
+      return {...record, eventSeq: Number(row.seq)};
+    }).slice(0, limit);
     const hasMore = rows.length > limit;
     const nextCursor = hasMore
       ? {
           subject,
+          threadId,
+          basisVersion,
           beforeSeq: messages.at(-1).eventSeq,
         }
       : null;
@@ -1215,6 +1231,7 @@ export function applyOperation(store, command, mutate) {
     }
     validateCommandMutation(internalCommand, primaryBaseline, nextBody);
     const unchangedPrimary = primaryBaseline !== null
+      && !MESSAGE_COMMANDS.has(internalCommand.kind)
       && canonicalJson(nextBody) === canonicalJson(primaryBaseline.body);
     const primary = unchangedPrimary
       ? primaryBaseline

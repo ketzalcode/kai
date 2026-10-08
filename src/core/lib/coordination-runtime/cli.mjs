@@ -62,6 +62,8 @@ export async function execute({verb, options, body, host, cwd, env}) {
       if (verb === 'detail') return {...base, record: readDetail(store, {kind: required(options, 'kind'), id: required(options, 'id')})};
       if (verb === 'messages') return {...base, ...readMessages(store, {
         subject: hierarchySubject(options),
+        threadId: required(options, 'thread'),
+        basisVersion: required(options, 'basis-version'),
         beforeSeq: options['before-seq'],
         limit: options.limit,
       })};

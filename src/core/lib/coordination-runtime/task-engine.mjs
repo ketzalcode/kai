@@ -344,7 +344,7 @@ function putMessage(tx, task, command, {
   artifactRefs,
   evidenceRefs,
   provenance,
-}) {
+}, basisVersion = task.version + 1) {
   if (tx.get('message', messageId)) {
     fail('OPERATION_CONFLICT', `message/${messageId} already exists`);
   }
@@ -359,14 +359,14 @@ function putMessage(tx, task, command, {
     schema_version: 1,
     message_id: messageId,
     subject: {kind: task.kind, id: task.id},
-    thread_id: subjectRef({kind: task.kind, id: task.id}, task.version),
+    thread_id: subjectRef({kind: task.kind, id: task.id}, basisVersion),
     parent_id: parentId,
     sender_role: command.actor.role,
     sender_run: command.actor.runId,
     recipient,
     kind,
     created_at: createdAt,
-    basis_version: task.version,
+    basis_version: basisVersion,
     payload: content,
     artifact_refs: artifactRefs,
     evidence_refs: evidenceRefs,

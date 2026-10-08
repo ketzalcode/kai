@@ -4,9 +4,9 @@ import {isAbsolute} from 'node:path';
 import {RuntimeError} from './lib/coordination-runtime/contract.mjs';
 
 const flags = {
-  direct: [], inspect: ['deep'], status: [], context: ['item', 'max-bytes', 'recent-limit'],
-  detail: ['kind', 'id'], messages: ['item', 'before-seq', 'limit'],
-  export: ['item'], legacy: ['source', 'raw'], hash: ['path'],
+  direct: [], inspect: ['deep'], status: [], context: ['kind', 'id', 'max-bytes', 'recent-limit'],
+  detail: ['kind', 'id'], messages: ['kind', 'id', 'thread', 'basis-version', 'before-seq', 'limit'],
+  export: ['kind', 'id', 'target', 'accepted-hash'], legacy: ['source', 'raw'], hash: ['path'],
   init: ['confirm', 'capability'], migrate: ['confirm', 'capability'],
   recover: ['confirm', 'action', 'capability'], rollback: ['confirm', 'capability'],
   repair: ['capability'], apply: ['capability', 'capture'],
@@ -34,7 +34,7 @@ export function parseArguments(argv) {
     }
   }
   if (options.root && !isAbsolute(options.root)) invalid('--root must be absolute');
-  for (const key of ['max-bytes', 'recent-limit', 'before-seq', 'limit']) {
+  for (const key of ['max-bytes', 'recent-limit', 'basis-version', 'before-seq', 'limit']) {
     if (options[key] !== undefined) {
       if (!/^\d+$/.test(options[key]) || !Number.isSafeInteger(Number(options[key]))) invalid(`--${key} requires an integer`);
       options[key] = Number(options[key]);

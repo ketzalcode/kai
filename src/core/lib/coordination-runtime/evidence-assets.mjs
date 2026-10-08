@@ -2,7 +2,12 @@ import {canonicalJson, criteriaRef, isProducingRun, operatorDecisionActor} from 
 import {effectiveApprovals, requireReviews} from './acceptance.mjs';
 import {requireActingAuthority, sameActor} from './authority.mjs';
 import {assertWorkspacePath, fail, verifyTarget} from './evidence-content.mjs';
-import {hasPublicationHistory, verifyAssetContent, verifyVerdict} from './evidence-integrity.mjs';
+import {
+  hasPublicationHistory,
+  verifyAssetContent,
+  verifyParentCompletionApproval,
+  verifyVerdict,
+} from './evidence-integrity.mjs';
 
 const DISPOSITION = new Map([
   ['scratch', ['draft', 'discarded']],
@@ -33,8 +38,8 @@ function artifactFor(context, tx, asset, verify = true) {
   return artifact.body;
 }
 
-function accepted(tx, item, asset, artifact, approvalId) {
-  requireReviews(tx, item);
+function accepted(context, tx, item, asset, artifact, approvalId) {
+  if (item.kind === 'task') requireReviews(tx, item);
   const approvals = effectiveApprovals(
     tx.list('approval', {kind: item.kind, id: item.id}).map(r => r.body),
     item,
@@ -43,14 +48,28 @@ function accepted(tx, item, asset, artifact, approvalId) {
     .filter(a => a.kind === 'completion' && a.authority.role === item.body.completion_authority);
   const decision = approvals.find(a => a.approval_id === approvalId);
   if (!decision || approvals.some(a => a.decision !== 'approved')
-    || isProducingRun(item.body, decision.authority)
+    || (item.kind === 'task' && isProducingRun(item.body, decision.authority))
     || decision.authority.runId === asset.producer.runId
-    || !contentEquals(decision.content_ref, artifact.content_ref)
     || artifact.criteria_ref !== criteriaRef(item, lookup(tx))
-    || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)) {
+    || (item.kind === 'task'
+      && (!contentEquals(decision.content_ref, artifact.content_ref)
+        || !decision.evidence_refs.includes(`artifact:${artifact.artifact_id}`)))) {
     fail('EVIDENCE_GAP', 'asset acceptance requires an effective independent decision for these exact bytes and criteria');
   }
-  verifyVerdict(tx, item, decision, decision.authority);
+  if (item.kind === 'task') {
+    verifyVerdict(tx, item, decision, decision.authority);
+  } else {
+    const acceptedArtifacts = verifyParentCompletionApproval(
+      context,
+      tx,
+      item,
+      decision.evidence_refs,
+    );
+    if (!acceptedArtifacts.includes(artifact.artifact_id)) {
+      fail('EVIDENCE_GAP',
+        'parent asset acceptance requires this exact report artifact in the completion proof');
+    }
+  }
   return decision;
 }
 
@@ -63,7 +82,7 @@ function inputsCurrent(context, tx, asset, seen = new Set()) {
       || new Set(['scratch', 'draft', 'discarded', 'retracted']).has(input.disposition)) return false;
     const item = tx.get(input.subject.kind, input.subject.id);
     const artifact = artifactFor(context, tx, input);
-    accepted(tx, item, input, artifact, input.completion_approval_id);
+    accepted(context, tx, item, input, artifact, input.completion_approval_id);
     return inputsCurrent(context, tx, input, seen);
   });
 }
@@ -117,7 +136,7 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   const target = p.target ?? asset.target;
   const publishedBefore = hasPublicationHistory(asset);
   if (publishedBefore && !unchangedTarget) fail('INVALID_INPUT', 'published history remains at its canonical path');
-  if (!unchangedTarget && !item.body.artifact_targets.includes(target)) {
+  if (!unchangedTarget && !(item.body.artifact_targets ?? []).includes(target)) {
     fail('AUTHORITY_REQUIRED', 'target is not a declared item artifact target');
   }
   const publishing = p.disposition === 'published' && asset.disposition !== 'published';
@@ -142,19 +161,24 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     || !['working', 'published', 'archived'].includes(p.disposition))) {
     fail('EVIDENCE_GAP', 'supersession requires a current accepted durable successor');
   }
-  if (p.approvalId !== null && !personalDiscard) accepted(tx, item, asset, artifact, approvalId);
+  if (p.approvalId !== null && !personalDiscard) {
+    accepted(context, tx, item, asset, artifact, approvalId);
+  }
   if (validity === 'current' || publishing || p.supersedes !== null || (publicTarget && !metadataOnlyInvalidation)) {
     if (new Set(['stale', 'unknown']).has(asset.validity)
       && (p.approvalId === null || p.approvalId === asset.completion_approval_id)) {
       fail('EVIDENCE_GAP', 'revalidation requires a fresh explicit independent acceptance');
     }
-    const operatorDecision = command.actor.role === 'operator' ? accepted(tx, item, asset, artifact, approvalId) : null;
+    const operatorDecision = command.actor.role === 'operator'
+      ? accepted(context, tx, item, asset, artifact, approvalId)
+      : null;
     const applyingHumanDecision = operatorDecision?.provenance
       && sameActor(operatorDecision.authority, operatorDecisionActor(operatorDecision.provenance));
     if ((isProducingRun(item.body, command.actor) || asset.producer.runId === command.actor.runId) && !applyingHumanDecision) {
       fail('AUTHORITY_REQUIRED', 'a producing run cannot close its own asset');
     }
-    const decision = operatorDecision ?? accepted(tx, item, asset, artifact, approvalId);
+    const decision = operatorDecision
+      ?? accepted(context, tx, item, asset, artifact, approvalId);
     if (new Set(['stale', 'unknown']).has(asset.validity)
       && Date.parse(decision.created_at) < Date.parse(asset.history.at(-1).at)) {
       fail('EVIDENCE_GAP', 'revalidation cannot reuse acceptance recorded before the validity change');
@@ -200,7 +224,8 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     }
     const previousArtifact = artifactFor(context, tx, previous.body);
     if (previous.body.validity === 'current') {
-      accepted(tx, predecessorTask, previous.body, previousArtifact, previous.body.completion_approval_id);
+      accepted(context, tx, predecessorTask, previous.body, previousArtifact,
+        previous.body.completion_approval_id);
     }
     tx.put(moved(previous, {validity: 'superseded', superseded_by: asset.asset_id}, p.reason, p.at, predecessorTask.version));
   }

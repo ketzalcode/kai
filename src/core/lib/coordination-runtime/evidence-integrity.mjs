@@ -1,7 +1,11 @@
 import {canonicalJson, criteriaRef, isProducingRun, subjectEquals} from './contract.mjs';
-import {effectiveEvidence, evidenceScope, matchesAcceptance} from './acceptance-verdicts.mjs';
+import {
+  effectiveEvidence,
+  evidenceScope,
+  matchesAcceptance,
+} from './acceptance-verdicts.mjs';
 import {contextFor} from './evidence-context.mjs';
-import {fail, verifyArtifact, verifyTarget} from './evidence-content.mjs';
+import {fail, pathPrivacy, verifyArtifact, verifyTarget} from './evidence-content.mjs';
 import {verifyInputBasis, inputBasisCurrent} from './input-basis.mjs';
 
 const contentEquals = (left, right) =>
@@ -36,9 +40,117 @@ function verifyRegisteredArtifact(context, tx, record) {
   else assets.forEach(asset => verifyAssetContent(context, tx, asset.body));
 }
 
+function parentReportArtifact(context, tx, parent, reference, approvalId = null) {
+  const match = /^artifact:([0-9a-f-]+)$/i.exec(reference);
+  if (!match) {
+    fail('EVIDENCE_GAP', 'parent completion proof must reference persisted report artifacts');
+  }
+  const artifact = tx.get('artifact', match[1]);
+  if (!bindsSubject(artifact, {kind: parent.kind, id: parent.id})
+    || artifact.body.classification !== 'public'
+    || !artifactBasisCurrent(context, tx, parent, artifact.body)) {
+    fail('EVIDENCE_GAP', 'parent completion report artifact is missing, stale, or not public');
+  }
+  const paths = artifact.body.content_ref.kind === 'git'
+    ? []
+    : artifact.body.content_ref.kind === 'sha256'
+      ? [artifact.body.content_ref.path]
+      : artifact.body.content_ref.entries.map(entry => entry.path);
+  if (paths.some(path => pathPrivacy(context.root, path) !== 'public')) {
+    fail('EVIDENCE_GAP', 'parent completion report artifact has no public safe-excerpt lane');
+  }
+  verifyRegisteredArtifact(context, tx, artifact);
+  if (approvalId !== null) {
+    const assets = tx.list('asset', artifact.subject)
+      .filter(record => record.body.artifact_id === artifact.id
+        && record.body.validity === 'current'
+        && !new Set(['scratch', 'draft', 'discarded', 'retracted'])
+          .has(record.body.disposition)
+        && record.body.completion_approval_id === approvalId);
+    if (assets.length !== 1
+      || assets[0].body.history.at(-1).at_subject_version !== parent.version) {
+      fail('EVIDENCE_GAP',
+        'parent completion report artifact lacks one accepted current revision');
+    }
+    verifyAssetContent(context, tx, assets[0].body);
+  }
+  return artifact.body;
+}
+
+export function verifyParentCompletionEvidence(
+  context,
+  tx,
+  parent,
+  refs,
+  {approvalId = null} = {},
+) {
+  if (parent.kind === 'task' || !Array.isArray(refs) || refs.length === 0
+    || refs.some(reference => !/^artifact:([0-9a-f-]+)$/i.test(reference))
+    || new Set(refs).size !== refs.length) {
+    fail('EVIDENCE_GAP', 'parent completion requires exact accepted report artifact proof');
+  }
+  return refs.map(reference =>
+    parentReportArtifact(context, tx, parent, reference, approvalId));
+}
+
+export function verifyParentCompletionApproval(
+  context,
+  tx,
+  parent,
+  refs,
+  {approvalId = null} = {},
+) {
+  if (parent.kind === 'task' || !Array.isArray(refs) || refs.length === 0
+    || new Set(refs).size !== refs.length) {
+    fail('EVIDENCE_GAP', 'parent completion approval requires persisted parent-completion evidence');
+  }
+  const evidenceRefs = refs.filter(reference => /^evidence:([0-9a-f-]+)$/i.test(reference));
+  const artifactRefs = refs.filter(reference => /^artifact:([0-9a-f-]+)$/i.test(reference));
+  if (evidenceRefs.length === 0 || artifactRefs.length === 0
+    || evidenceRefs.length + artifactRefs.length !== refs.length) {
+    fail('EVIDENCE_GAP',
+      'parent completion approval requires persisted evidence and explicit report artifacts');
+  }
+  const effective = effectiveEvidence(
+    tx.list('evidence', {kind: parent.kind, id: parent.id}).map(record => record.body),
+    parent,
+    lookup(tx),
+  );
+  const evidenceArtifacts = new Set();
+  for (const reference of evidenceRefs) {
+    const id = reference.slice('evidence:'.length);
+    const record = tx.get('evidence', id);
+    if (!record || !subjectEquals(record.subject, {kind: parent.kind, id: parent.id})
+      || record.body.kind !== 'parent-completion'
+      || record.body.outcome !== 'passed'
+      || record.body.provenance?.tier !== 'observed'
+      || !effective.some(candidate => candidate.evidence_id === id)) {
+      fail('EVIDENCE_GAP', 'parent completion evidence is missing, stale, negative, or cross-subject');
+    }
+    for (const artifact of verifyParentCompletionEvidence(
+      context,
+      tx,
+      parent,
+      record.body.evidence_refs,
+      {approvalId},
+    )) {
+      evidenceArtifacts.add(artifact.artifact_id);
+    }
+  }
+  for (const reference of artifactRefs) {
+    const artifact = parentReportArtifact(context, tx, parent, reference, approvalId);
+    if (!evidenceArtifacts.has(artifact.artifact_id)) {
+      fail('EVIDENCE_GAP',
+        'explicitly accepted report artifact is not part of the parent completion evidence');
+    }
+  }
+  return artifactRefs.map(reference => reference.slice('artifact:'.length));
+}
+
 export function artifactBasisCurrent(context, tx, item, artifact) {
   return artifact.criteria_ref === criteriaRef(item, lookup(tx))
-    && item.body.context_artifacts.every(ref => artifact.input_basis?.some(b => b.reference === ref))
+    && (item.body.context_artifacts ?? [])
+      .every(ref => artifact.input_basis?.some(b => b.reference === ref))
     && inputBasisCurrent(context, tx, artifact.input_basis ?? []);
 }
 

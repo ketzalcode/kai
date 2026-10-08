@@ -5,7 +5,11 @@ import {
   isProducingRun,
 } from './contract.mjs';
 import {effectiveApprovals, effectiveEvidence, effectiveReviews} from './acceptance-verdicts.mjs';
-import {verifyVerdict} from './evidence-integrity.mjs';
+import {contextFor} from './evidence-context.mjs';
+import {
+  verifyParentCompletionApproval,
+  verifyVerdict,
+} from './evidence-integrity.mjs';
 
 export {effectiveApprovals, effectiveEvidence, effectiveReviews, matchesAcceptance} from './acceptance-verdicts.mjs';
 
@@ -51,11 +55,27 @@ export function requireReviews(tx, item) {
 }
 
 export function completionApproval(tx, item) {
-  taskOnly(item, 'Task completion approval');
   const matching = effectiveApprovals(bodies(tx, 'approval', item), item, lookup(tx)).filter(approval =>
     approval.kind === 'completion' && approval.authority.role === item.body.completion_authority);
   if (matching.length === 0) {
-    fail('EVIDENCE_GAP', `task/${item.id} lacks current completion-authority approval`);
+    fail('EVIDENCE_GAP',
+      `${item.kind}/${item.id} lacks current completion-authority approval`);
+  }
+  if (item.kind !== 'task') {
+    if (matching.some(approval => approval.decision !== 'approved'
+      || approval.recorded_at_subject_version !== item.version)) {
+      fail('EVIDENCE_GAP',
+        'an effective parent completion decision rejects or predates the current revision');
+    }
+    const context = contextFor(tx);
+    matching.forEach(approval => verifyParentCompletionApproval(
+      context,
+      tx,
+      item,
+      approval.evidence_refs,
+      {approvalId: approval.approval_id},
+    ));
+    return matching[0];
   }
   const independent = matching.filter(approval => !isProducingRun(item.body, approval.authority));
   if (independent.length === 0) fail('AUTHORITY_REQUIRED', 'a producing run cannot accept its own work');
