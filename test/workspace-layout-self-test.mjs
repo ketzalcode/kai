@@ -166,10 +166,55 @@ test('typed artifact route parsing supports exactly one optional subtype', () =>
   );
 });
 
+test('typed private routes preserve lifecycle-named IDs as subtype candidates', () => {
+  for (const [id, lifecycle] of [
+    ['drafts', 'evidence'],
+    ['evidence', 'scratch'],
+    ['scratch', 'drafts'],
+  ]) {
+    const nonSubtypePath = `.kai/engineering/features/${id}/${lifecycle}/brief.md`;
+    assert.deepEqual(parseTypedArtifactRoute(nonSubtypePath), {
+      path: nonSubtypePath,
+      visibility: 'private',
+      routes: [{
+        pack: 'engineering',
+        type: 'features',
+        subtype: null,
+        id,
+        lifecycle,
+        members: ['brief.md'],
+      }],
+    });
+
+    const subtypePath =
+      `.kai/engineering/documentation/architecture/${id}/${lifecycle}/design.md`;
+    assert.deepEqual(parseTypedArtifactRoute(subtypePath), {
+      path: subtypePath,
+      visibility: 'private',
+      routes: [{
+        pack: 'engineering',
+        type: 'documentation',
+        subtype: null,
+        id: 'architecture',
+        lifecycle: id,
+        members: [lifecycle, 'design.md'],
+      }, {
+        pack: 'engineering',
+        type: 'documentation',
+        subtype: 'architecture',
+        id,
+        lifecycle,
+        members: ['design.md'],
+      }],
+    });
+  }
+});
+
 test('typed private route parsing rejects missing ids and more than one subtype', () => {
   for (const path of [
     '.kai/engineering/reports/drafts/report.md',
     '.kai/engineering/reports/investigations/releases/status/drafts/report.md',
+    '.kai/engineering/documentation/architecture/auth-boundary/extra/drafts/design.md',
   ]) {
     assert.throws(() => parseTypedArtifactRoute(path), /typed private artifact route/i, path);
   }

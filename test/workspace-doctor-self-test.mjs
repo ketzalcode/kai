@@ -59,6 +59,25 @@ function caseAlias(path) {
   return lower !== path ? lower : null;
 }
 
+function captureClaimRemovalFailure(claimPath, callback) {
+  const originalRmSync = fs.rmSync;
+  fs.rmSync = function failingClaimRemoval(path, options) {
+    if (normalized(path) === normalized(claimPath)) {
+      throw Object.assign(new Error('injected claim cleanup failure'), {code: 'EPERM'});
+    }
+    return originalRmSync(path, options);
+  };
+  syncBuiltinESMExports();
+  try {
+    return {result: callback(), error: null};
+  } catch (error) {
+    return {result: null, error};
+  } finally {
+    fs.rmSync = originalRmSync;
+    syncBuiltinESMExports();
+  }
+}
+
 function selfTest() {
   const fx = join(REPO_ROOT, 'test', 'fixtures');
   let failed = 0;
@@ -278,6 +297,80 @@ function selfTest() {
     ]);
   } finally {
     rmSync(concurrentInitRoot, {recursive: true, force: true});
+  }
+
+  const activatedCleanupRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-activated-cleanup-'));
+  try {
+    spawnSync('git', ['init', '--quiet', activatedCleanupRoot], {windowsHide: true});
+    writeFileSync(join(activatedCleanupRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(activatedCleanupRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(activatedCleanupRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const claimPath = join(activatedCleanupRoot, '.kai', '.initialize.json');
+    const captured = captureClaimRemovalFailure(claimPath, () => initializeWorkspace({
+      root: activatedCleanupRoot,
+      manifest: schema5Manifest({workspace_id: 'activated-cleanup'}),
+      confirm: true,
+    }));
+    const result = captured.result;
+    const checked = existsSync(join(activatedCleanupRoot, '.kai', 'manifest.json'))
+      ? checkWorkspace(activatedCleanupRoot)
+      : {errors: ['manifest missing']};
+    ok(captured.error === null
+      && !result?.ok
+      && result.code === 'RECOVERY_REQUIRED'
+      && result.activated === true
+      && result.recovery?.claim?.path === '.kai/.initialize.json'
+      && result.recovery.claim.owned === true
+      && result.recovery.claim.stale === true
+      && result.recovery.claim.cleanup_error?.code === 'EPERM'
+      && existsSync(claimPath)
+      && existsSync(join(activatedCleanupRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
+      && checked.errors.length === 0,
+    'activated initialization returns structured recovery when its owned claim cannot be removed',
+    [
+      `result=${JSON.stringify(result)}`,
+      `error=${captured.error?.stack ?? captured.error}`,
+      ...checked.errors,
+      ...snapshotTree(activatedCleanupRoot),
+    ]);
+  } finally {
+    rmSync(activatedCleanupRoot, {recursive: true, force: true});
+  }
+
+  const failedCleanupRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-failed-cleanup-'));
+  try {
+    spawnSync('git', ['init', '--quiet', failedCleanupRoot], {windowsHide: true});
+    writeFileSync(join(failedCleanupRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(failedCleanupRoot, 'docs', 'kai', 'README.md'), {recursive: true});
+    writeFileSync(join(failedCleanupRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const claimPath = join(failedCleanupRoot, '.kai', '.initialize.json');
+    const captured = captureClaimRemovalFailure(claimPath, () => initializeWorkspace({
+      root: failedCleanupRoot,
+      manifest: schema5Manifest({workspace_id: 'failed-cleanup'}),
+      confirm: true,
+    }));
+    const result = captured.result;
+    ok(captured.error === null
+      && !result?.ok
+      && result.code === 'RECOVERY_REQUIRED'
+      && result.activated === false
+      && result.recovery?.claim?.path === '.kai/.initialize.json'
+      && result.recovery.claim.owned === true
+      && result.recovery.claim.stale === true
+      && result.recovery.claim.cleanup_error?.code === 'EPERM'
+      && result.recovery.original_failure?.code === 'INVALID_INPUT'
+      && /README\.md must be an exact unlinked file/.test(result.recovery.original_failure.reason)
+      && existsSync(claimPath)
+      && !existsSync(join(failedCleanupRoot, '.kai', 'manifest.json'))
+      && !existsSync(join(failedCleanupRoot, '.kai', 'core', 'runtime', 'coordination.sqlite')),
+    'failed initialization preserves its original failure under structured claim recovery metadata',
+    [
+      `result=${JSON.stringify(result)}`,
+      `error=${captured.error?.stack ?? captured.error}`,
+      ...snapshotTree(failedCleanupRoot),
+    ]);
+  } finally {
+    rmSync(failedCleanupRoot, {recursive: true, force: true});
   }
 
   const failedInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-failed-init-'));

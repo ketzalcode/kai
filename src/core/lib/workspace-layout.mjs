@@ -57,30 +57,32 @@ export function parseTypedArtifactRoute(relativePath) {
   const segments = safeRouteSegments(relativePath);
   if (segments[0] === PRIVATE_ROOT) {
     const route = segments.slice(1);
-    let parsed;
+    const routes = [];
     if (ACTIVE_ARTIFACT_LIFECYCLES.has(route[3])) {
-      parsed = parsedRoute({
+      routes.push(parsedRoute({
         pack: route[0],
         type: route[1],
         id: route[2],
         lifecycle: assertArtifactLifecycle(route[3]),
         members: route.slice(4),
-      });
-    } else if (ACTIVE_ARTIFACT_LIFECYCLES.has(route[4])) {
-      parsed = parsedRoute({
+      }));
+    }
+    if (ACTIVE_ARTIFACT_LIFECYCLES.has(route[4])) {
+      routes.push(parsedRoute({
         pack: route[0],
         type: route[1],
         subtype: route[2],
         id: route[3],
         lifecycle: assertArtifactLifecycle(route[4]),
         members: route.slice(5),
-      });
-    } else {
+      }));
+    }
+    if (routes.length === 0) {
       throw new TypeError(
         'typed private artifact route must contain pack, type, optional subtype, id, and lifecycle',
       );
     }
-    return {path: relativePath, visibility: 'private', routes: [parsed]};
+    return {path: relativePath, visibility: 'private', routes};
   }
 
   const publicRoot = PUBLICATION_ROOT.split('/');

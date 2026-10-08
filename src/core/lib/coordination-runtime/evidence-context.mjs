@@ -38,9 +38,9 @@ export function bindEvidenceRuntime(store, options) {
     let route;
     try {
       const parsed = parseTypedArtifactRoute(directory);
-      [route] = parsed.routes;
-      if (parsed.visibility !== 'private' || parsed.routes.length !== 1
-        || route.members.length !== 0) {
+      const completeRoutes = parsed.routes.filter(candidate => candidate.members.length === 0);
+      [route] = completeRoutes;
+      if (parsed.visibility !== 'private' || completeRoutes.length !== 1) {
         fail('INVALID_INPUT', 'approved run directory must be one complete typed private artifact route');
       }
     } catch (error) {

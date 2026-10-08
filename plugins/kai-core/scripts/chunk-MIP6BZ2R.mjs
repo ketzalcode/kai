@@ -3,7 +3,7 @@ import {
   hierarchyContext,
   hierarchyStatus,
   taskPlan
-} from "./chunk-MYXGL74E.mjs";
+} from "./chunk-FIXHXIAB.mjs";
 import {
   artifactInputReferences,
   bindEvidenceTransaction,
@@ -34,7 +34,7 @@ import {
   verifyParentCompletionEvidence,
   verifyReferences,
   verifyVerdict
-} from "./chunk-3GWXG66W.mjs";
+} from "./chunk-KN2NB5DE.mjs";
 import {
   applyOperation,
   assertWorkspacePath,
@@ -57,7 +57,7 @@ import {
   schema5MigrationLockPath,
   verifyTarget,
   workspaceGit
-} from "./chunk-GYNRRGQI.mjs";
+} from "./chunk-S4A2HMCB.mjs";
 import {
   ACTIVE_ARTIFACT_LIFECYCLES,
   COORDINATION_DATABASE,
@@ -76,7 +76,7 @@ import {
   registryPath,
   resolveConfiguredProject,
   validateSchema5Manifest
-} from "./chunk-S3PHSJ44.mjs";
+} from "./chunk-2WT4K7YK.mjs";
 import {
   HIERARCHY_KINDS,
   PACKS,
@@ -4253,11 +4253,11 @@ function applyAssetTransition({ context, tx, item, command, authority }) {
     fail2("INVALID_INPUT", "publication requires a current accepted project-qualified target");
   }
   if (publishing) {
-    const privateSource = typedRoute(asset.target, "private").routes[0];
+    const privateSources = typedRoute(asset.target, "private").routes;
     const publicDestination = typedRoute(target, "public");
     const pack = subjectPack(item);
-    const matchingDestination = publicDestination.routes.find((route) => canonicalJson(routeIdentity(route)) === canonicalJson(routeIdentity(privateSource)));
-    if (asset.disposition !== "working" || asset.validity !== "current" || asset.completion_approval_id === null || privateSource.lifecycle !== "drafts" || privateSource.pack !== pack || !matchingDestination || matchingDestination.pack !== pack) {
+    const privateSource = privateSources.find((source) => source.lifecycle === "drafts" && source.pack === pack && publicDestination.routes.some((destination) => destination.pack === pack && canonicalJson(routeIdentity(destination)) === canonicalJson(routeIdentity(source))));
+    if (asset.disposition !== "working" || asset.validity !== "current" || asset.completion_approval_id === null || !privateSource) {
       fail2(
         "INVALID_INPUT",
         "publication requires an accepted retained draft on the mirrored typed route for this hierarchy subject"

@@ -4,7 +4,7 @@ import {
   readLegacyRecords,
   taskStateSatisfies,
   verifyMigration
-} from "./chunk-3GWXG66W.mjs";
+} from "./chunk-KN2NB5DE.mjs";
 import {
   DATABASE,
   LOCK,
@@ -24,7 +24,7 @@ import {
   schema5MigrationLockPath,
   sourceSnapshot,
   workspaceManifest
-} from "./chunk-GYNRRGQI.mjs";
+} from "./chunk-S4A2HMCB.mjs";
 import {
   COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
@@ -33,7 +33,7 @@ import {
   privateArtifactDirectory,
   readWorkspaceManifest,
   validateSchema5Manifest
-} from "./chunk-S3PHSJ44.mjs";
+} from "./chunk-2WT4K7YK.mjs";
 import {
   RuntimeError,
   canonicalJson,

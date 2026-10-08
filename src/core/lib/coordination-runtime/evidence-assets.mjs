@@ -179,14 +179,17 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     fail('INVALID_INPUT', 'publication requires a current accepted project-qualified target');
   }
   if (publishing) {
-    const privateSource = typedRoute(asset.target, 'private').routes[0];
+    const privateSources = typedRoute(asset.target, 'private').routes;
     const publicDestination = typedRoute(target, 'public');
     const pack = subjectPack(item);
-    const matchingDestination = publicDestination.routes.find(route =>
-      canonicalJson(routeIdentity(route)) === canonicalJson(routeIdentity(privateSource)));
+    const privateSource = privateSources.find(source =>
+      source.lifecycle === 'drafts'
+      && source.pack === pack
+      && publicDestination.routes.some(destination =>
+        destination.pack === pack
+        && canonicalJson(routeIdentity(destination)) === canonicalJson(routeIdentity(source))));
     if (asset.disposition !== 'working' || asset.validity !== 'current'
-      || asset.completion_approval_id === null || privateSource.lifecycle !== 'drafts'
-      || privateSource.pack !== pack || !matchingDestination || matchingDestination.pack !== pack) {
+      || asset.completion_approval_id === null || !privateSource) {
       fail('INVALID_INPUT',
         'publication requires an accepted retained draft on the mirrored typed route for this hierarchy subject');
     }

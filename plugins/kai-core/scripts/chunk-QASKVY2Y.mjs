@@ -1,14 +1,14 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
   inspectRuntime
-} from "./chunk-KXQHJRMI.mjs";
+} from "./chunk-D5GOZU63.mjs";
 import {
   closeStore,
   inspectGitPrivacy,
   openStore,
   readDirection,
   schema5MigrationLockPath
-} from "./chunk-GYNRRGQI.mjs";
+} from "./chunk-S4A2HMCB.mjs";
 import {
   COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
@@ -28,7 +28,7 @@ import {
   resolveWorkspaceRoot,
   resolvedProjectPath,
   validateSchema5Manifest
-} from "./chunk-S3PHSJ44.mjs";
+} from "./chunk-2WT4K7YK.mjs";
 import {
   LIFECYCLE,
   NEEDS_CHANGE_REF,
@@ -1100,8 +1100,45 @@ function initializationFingerprint(path) {
   }
 }
 function removeOwnedInitializationFile(path, fingerprint) {
-  if (fingerprint !== null && JSON.stringify(initializationFingerprint(path)) === JSON.stringify(fingerprint)) {
+  if (fingerprint === null) return { ok: true, removed: false };
+  const current = initializationFingerprint(path);
+  if (current === null) {
+    try {
+      lstatSync(path);
+    } catch (error) {
+      if (error.code === "ENOENT") return { ok: true, removed: false };
+      return {
+        ok: false,
+        owned: false,
+        code: error.code ?? "FILESYSTEM_ERROR",
+        reason: "initialization cleanup could not verify file ownership"
+      };
+    }
+    return {
+      ok: false,
+      owned: false,
+      code: "OWNERSHIP_CHANGED",
+      reason: "initialization cleanup retained a file whose ownership changed"
+    };
+  }
+  if (JSON.stringify(current) !== JSON.stringify(fingerprint)) {
+    return {
+      ok: false,
+      owned: false,
+      code: "OWNERSHIP_CHANGED",
+      reason: "initialization cleanup retained a file whose ownership changed"
+    };
+  }
+  try {
     rmSync(path, { force: true });
+    return { ok: true, removed: true };
+  } catch (error) {
+    return {
+      ok: false,
+      owned: true,
+      code: error.code ?? "FILESYSTEM_ERROR",
+      reason: error.message
+    };
   }
 }
 function initializeWorkspace({
@@ -1152,8 +1189,11 @@ function initializeWorkspace({
   const createdPrivateRoot = !existsSync2(privateRoot);
   const createdDirectories = [];
   const ownedFiles = /* @__PURE__ */ new Map();
+  const cleanupFailures = [];
   let claimFingerprint = null;
+  let claimCleanup = { ok: true, removed: false };
   let activated = false;
+  let result;
   let store;
   try {
     mkdirSync(privateRoot, { recursive: true });
@@ -1231,7 +1271,7 @@ function initializeWorkspace({
     renameSync(stagedManifest, manifestPath);
     ownedFiles.delete(stagedManifest);
     activated = true;
-    return {
+    result = {
       ok: true,
       root,
       manifestPath,
@@ -1241,7 +1281,14 @@ function initializeWorkspace({
   } catch (error) {
     closeStore(store);
     for (const [path, fingerprint] of ownedFiles) {
-      removeOwnedInitializationFile(path, fingerprint);
+      const cleanup = removeOwnedInitializationFile(path, fingerprint);
+      if (!cleanup.ok) {
+        cleanupFailures.push({
+          path: relative2(root, path).split(sep).join("/"),
+          owned: cleanup.owned,
+          cleanup_error: { code: cleanup.code, reason: cleanup.reason }
+        });
+      }
     }
     for (const path of [...createdDirectories].reverse()) {
       try {
@@ -1249,13 +1296,20 @@ function initializeWorkspace({
       } catch {
       }
     }
-    return {
+    result = {
       ok: false,
       code: error.code ?? "INVALID_INPUT",
       reason: error.message
     };
   } finally {
-    removeOwnedInitializationFile(claimPath, claimFingerprint);
+    claimCleanup = removeOwnedInitializationFile(claimPath, claimFingerprint);
+    if (!claimCleanup.ok) {
+      cleanupFailures.push({
+        path: ".kai/.initialize.json",
+        owned: claimCleanup.owned,
+        cleanup_error: { code: claimCleanup.code, reason: claimCleanup.reason }
+      });
+    }
     if (!activated && createdPrivateRoot) {
       try {
         rmdirSync(privateRoot);
@@ -1263,6 +1317,34 @@ function initializeWorkspace({
       }
     }
   }
+  if (cleanupFailures.length > 0) {
+    return {
+      ok: false,
+      code: "RECOVERY_REQUIRED",
+      reason: activated ? "workspace activated but initialization cleanup requires explicit recovery" : "workspace initialization failed and cleanup requires explicit recovery",
+      activated,
+      ...activated ? {
+        root: result.root,
+        manifestPath: result.manifestPath,
+        databasePath: result.databasePath,
+        readmePath: result.readmePath
+      } : {},
+      recovery: {
+        claim: claimCleanup.ok ? null : {
+          path: ".kai/.initialize.json",
+          owned: claimCleanup.owned,
+          stale: true,
+          cleanup_error: { code: claimCleanup.code, reason: claimCleanup.reason }
+        },
+        cleanup: cleanupFailures,
+        original_failure: result.ok ? null : {
+          code: result.code,
+          reason: result.reason
+        }
+      }
+    };
+  }
+  return result;
 }
 function checkWorkspace(root, options = {}) {
   const rootProblem = nativeAbsolutePathProblem(root, {

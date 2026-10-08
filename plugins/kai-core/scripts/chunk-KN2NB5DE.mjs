@@ -35,7 +35,7 @@ import {
   verifyArtifact,
   verifyTarget,
   workspaceManifest
-} from "./chunk-GYNRRGQI.mjs";
+} from "./chunk-S4A2HMCB.mjs";
 import {
   COORDINATION_DATABASE,
   LEGACY_COORDINATION_DATABASE,
@@ -48,7 +48,7 @@ import {
   pathHasLink,
   readWorkspaceManifest,
   workspaceRootFromCoordinationDatabase
-} from "./chunk-S3PHSJ44.mjs";
+} from "./chunk-2WT4K7YK.mjs";
 import {
   DOD_DIMENSIONS,
   RuntimeError,
@@ -2721,8 +2721,9 @@ function bindEvidenceRuntime(store, options) {
     let route;
     try {
       const parsed = parseTypedArtifactRoute(directory);
-      [route] = parsed.routes;
-      if (parsed.visibility !== "private" || parsed.routes.length !== 1 || route.members.length !== 0) {
+      const completeRoutes = parsed.routes.filter((candidate) => candidate.members.length === 0);
+      [route] = completeRoutes;
+      if (parsed.visibility !== "private" || completeRoutes.length !== 1) {
         fail("INVALID_INPUT", "approved run directory must be one complete typed private artifact route");
       }
     } catch (error) {

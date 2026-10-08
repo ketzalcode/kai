@@ -196,6 +196,34 @@ test('schema5 publication accepts an accepted draft on its mirrored typed route'
   });
 });
 
+test('schema5 publication exactly mirrors a lifecycle-named subtype ID', async () => {
+  await withWorkspace(({root, store}) => {
+    const privateTarget =
+      '.kai/engineering/documentation/architecture/evidence/drafts/mock.html';
+    const relativeTarget =
+      'docs/kai/engineering/documentation/architecture/evidence/mock.html';
+    const target = `project:app:${relativeTarget}`;
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    file(root, privateTarget);
+    file(root, relativeTarget);
+    setup(root, store, {artifact_targets: [privateTarget, target]});
+    const a = register(root, store, {classification: 'public'});
+    const approvalId = accept(root, store, a.artifactId);
+    transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'draft', target: privateTarget,
+    }), runtime(root, store, reviewer));
+    transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'working', validity: 'current', approvalId, target: privateTarget,
+    }), runtime(root, store, reviewer));
+    transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'published', validity: 'current', target,
+    }), runtime(root, store, reviewer));
+    assert.equal(readRecord(store, 'asset', a.assetId).body.target, target);
+  });
+});
+
 test('schema5 publication refuses an arbitrary docs/kai root without a typed mirrored route', async () => {
   await withWorkspace(({root, store}) => {
     const target = 'project:app:docs/kai/mock.html';
@@ -292,9 +320,31 @@ test('approved producing runs accept one optional subtype in their typed route',
   });
 });
 
+for (const [id, lifecycle] of [
+  ['drafts', 'evidence'],
+  ['evidence', 'scratch'],
+  ['scratch', 'drafts'],
+]) {
+  test(`approved producing runs accept lifecycle-named subtype ID ${id}`, async () => {
+    await withWorkspace(({root, store}) => {
+      setup(root, store);
+      const task = readRecord(store, 'task', fixtureIds.task);
+      assert.doesNotThrow(() => bindEvidenceRuntime(store, {
+        root,
+        authority: authority(builder, actions, {version: task.version}),
+        runs: [{
+          actor: builder,
+          directory: `.kai/engineering/documentation/architecture/${id}/${lifecycle}`,
+        }],
+      }));
+    });
+  });
+}
+
 for (const directory of [
   '.kai/engineering/documentation/drafts',
   '.kai/engineering/reports/investigations/releases/evidence-demo/scratch',
+  '.kai/engineering/documentation/architecture/drafts/evidence/design.md',
 ]) {
   test(`approved producing runs reject missing or extra typed route segments: ${directory}`, async () => {
     await withWorkspace(({root, store}) => {
