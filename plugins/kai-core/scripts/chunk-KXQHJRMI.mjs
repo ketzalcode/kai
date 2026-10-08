@@ -4,7 +4,7 @@ import {
   readLegacyRecords,
   taskStateSatisfies,
   verifyMigration
-} from "./chunk-AVOAKVOX.mjs";
+} from "./chunk-3GWXG66W.mjs";
 import {
   DATABASE,
   LOCK,
@@ -24,15 +24,16 @@ import {
   schema5MigrationLockPath,
   sourceSnapshot,
   workspaceManifest
-} from "./chunk-RVMY63WZ.mjs";
+} from "./chunk-GYNRRGQI.mjs";
 import {
   COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
   normalized,
+  parseTypedArtifactRoute,
   privateArtifactDirectory,
   readWorkspaceManifest,
   validateSchema5Manifest
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import {
   RuntimeError,
   canonicalJson,
@@ -257,17 +258,21 @@ function renderLanding(metadata) {
 // src/core/lib/coordination-runtime/report-paths.mjs
 function reportRoute(subject) {
   validateHierarchySubject(subject, "report subject");
-  const pack = subject.kind === "epic" ? "core" : subject.id.split(":", 1)[0];
   const slug = subject.id.split(":").at(-1);
   return {
-    pack,
+    pack: "core",
     type: "reports",
     id: `${subject.kind}-${slug}-${hash(canonicalJson(subject)).slice(0, 12)}`,
     lifecycle: "evidence"
   };
 }
 function relativeDirectory(subject) {
-  return privateArtifactDirectory(reportRoute(subject));
+  const relative = privateArtifactDirectory(reportRoute(subject));
+  const parsed = parseTypedArtifactRoute(relative);
+  if (parsed.visibility !== "private" || parsed.routes.length !== 1 || parsed.routes[0].members.length !== 0) {
+    throw new RuntimeError("INVALID_INPUT", "coordination report route must be one complete typed private path");
+  }
+  return relative;
 }
 function sameSubject(left, right) {
   try {

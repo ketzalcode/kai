@@ -10,12 +10,13 @@ import {
   inspectPrivateLanes,
   loadWorkspaceRegistry,
   normalized,
+  parseTypedArtifactRoute,
   pathHasLink,
   readWorkspaceManifest,
   resolveConfiguredProject,
   resolvedProjectPath,
   validateSchema5Manifest
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import {
   HIERARCHY_KINDS,
   RECORD_KINDS,
@@ -165,7 +166,7 @@ function projectBinding(root, projectId) {
   return { project, projectRoot };
 }
 function assertWorkspacePath(root, relativePath) {
-  workspaceManifest(root);
+  const manifest = workspaceManifest(root);
   const path2 = durablePath(relativePath);
   const projectTarget = /^project:([a-z][a-z0-9-]*):(.*)$/.exec(path2);
   let base = root;
@@ -180,6 +181,29 @@ function assertWorkspacePath(root, relativePath) {
     }
     if (normalized(base) !== normalized(root) && !escapesRoot(join(root, ".kai"), base)) {
       fail("INVALID_INPUT", "a project publication cannot alias private workspace state");
+    }
+    if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+      try {
+        if (parseTypedArtifactRoute(local).visibility !== "public") {
+          fail("INVALID_INPUT", "project publications require a typed public artifact route");
+        }
+      } catch (error) {
+        if (error instanceof RuntimeError) throw error;
+        fail("INVALID_INPUT", error.message);
+      }
+    }
+  } else if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+    const runtimePath = path2 === COORDINATION_DATABASE || path2.startsWith(".kai/core/runtime/");
+    const personalPath = /^\.kai\/(core|engineering|creative)\/[^/]+\/[^/]+\/personal(?:\/|$)/.test(path2);
+    if (!runtimePath && !personalPath) {
+      try {
+        if (parseTypedArtifactRoute(path2).visibility !== "private") {
+          fail("INVALID_INPUT", "private references require a typed .kai artifact route");
+        }
+      } catch (error) {
+        if (error instanceof RuntimeError) throw error;
+        fail("INVALID_INPUT", error.message);
+      }
     }
   } else if (!/^\.kai\/(?:state|core|engineering|creative)\//.test(path2)) {
     fail("INVALID_INPUT", "private references require a typed .kai pack path; public paths must be project-qualified");
@@ -200,7 +224,6 @@ function pathPrivacy(root, path2) {
   assertWorkspacePath(root, path2);
   if (path2.startsWith("project:")) return "public";
   if (/\/personal(?:\/|$)/i.test(path2)) return "personal";
-  if (/^\.kai\/(core|engineering|creative)\/reports\//.test(path2)) return "public";
   return "internal";
 }
 function readExactFile(root, path2, read2) {
@@ -707,7 +730,7 @@ function readDirection({ workspaceRoot, manifest, projectId }) {
   let bytes;
   try {
     if (pathHasLink(project.projectRoot, absolutePath) || !exactPath(absolutePath)) {
-      fail3("PATH_ESCAPE", `${relativePath} must resolve without link or case aliases`);
+      fail3("PATH_ESCAPE", `${relativePath} must resolve without symbolic link or junction aliases`);
     }
     bytes = readFileSync3(absolutePath);
   } catch (error) {

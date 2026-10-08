@@ -2,7 +2,7 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
   resolveWorkspaceRoot
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import "./chunk-ITUOITH3.mjs";
 
 // src/core/observe-watch.mjs

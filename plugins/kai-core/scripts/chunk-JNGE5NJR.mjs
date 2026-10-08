@@ -3,7 +3,7 @@ import {
   hierarchyContext,
   hierarchyStatus,
   taskPlan
-} from "./chunk-K3LPE7V7.mjs";
+} from "./chunk-MYXGL74E.mjs";
 import {
   artifactInputReferences,
   bindEvidenceTransaction,
@@ -34,7 +34,7 @@ import {
   verifyParentCompletionEvidence,
   verifyReferences,
   verifyVerdict
-} from "./chunk-AVOAKVOX.mjs";
+} from "./chunk-3GWXG66W.mjs";
 import {
   applyOperation,
   assertWorkspacePath,
@@ -57,7 +57,7 @@ import {
   schema5MigrationLockPath,
   verifyTarget,
   workspaceGit
-} from "./chunk-RVMY63WZ.mjs";
+} from "./chunk-GYNRRGQI.mjs";
 import {
   ACTIVE_ARTIFACT_LIFECYCLES,
   COORDINATION_DATABASE,
@@ -70,12 +70,13 @@ import {
   exactPath,
   loadWorkspaceRegistry,
   normalized,
+  parseTypedArtifactRoute,
   pathHasLink,
   readWorkspaceManifest,
   registryPath,
   resolveConfiguredProject,
   validateSchema5Manifest
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import {
   HIERARCHY_KINDS,
   PACKS,
@@ -4124,6 +4125,23 @@ var VALIDITY = /* @__PURE__ */ new Map([
 ]);
 var contentEquals = (left, right) => left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 var lookup = (tx) => (kind, id) => tx.get(kind, id);
+var routeIdentity = (route) => [route.pack, route.type, route.subtype, route.id, route.members];
+function typedRoute(path, visibility) {
+  const local = path.replace(/^project:[a-z][a-z0-9-]*:/, "");
+  try {
+    const parsed = parseTypedArtifactRoute(local);
+    if (parsed.visibility !== visibility) {
+      fail2("INVALID_INPUT", `${visibility} placement requires a typed ${visibility} artifact route`);
+    }
+    return parsed;
+  } catch (error) {
+    if (error?.code) throw error;
+    fail2("INVALID_INPUT", error.message);
+  }
+}
+function subjectPack(item) {
+  return item.kind === "epic" ? "core" : item.body.pack;
+}
 function artifactFor(context, tx, asset, verify = true) {
   if (verify) return verifyAssetContent(context, tx, asset);
   const artifact = tx.get("artifact", asset.artifact_id);
@@ -4234,6 +4252,18 @@ function applyAssetTransition({ context, tx, item, command, authority }) {
   if (publishing && (!publicTarget || validity !== "current")) {
     fail2("INVALID_INPUT", "publication requires a current accepted project-qualified target");
   }
+  if (publishing) {
+    const privateSource = typedRoute(asset.target, "private").routes[0];
+    const publicDestination = typedRoute(target, "public");
+    const pack = subjectPack(item);
+    const matchingDestination = publicDestination.routes.find((route) => canonicalJson(routeIdentity(route)) === canonicalJson(routeIdentity(privateSource)));
+    if (asset.disposition !== "working" || asset.validity !== "current" || asset.completion_approval_id === null || privateSource.lifecycle !== "drafts" || privateSource.pack !== pack || !matchingDestination || matchingDestination.pack !== pack) {
+      fail2(
+        "INVALID_INPUT",
+        "publication requires an accepted retained draft on the mirrored typed route for this hierarchy subject"
+      );
+    }
+  }
   if (p.supersedes !== null && (validity !== "current" || !["working", "published", "archived"].includes(p.disposition))) {
     fail2("EVIDENCE_GAP", "supersession requires a current accepted durable successor");
   }
@@ -4263,8 +4293,11 @@ function applyAssetTransition({ context, tx, item, command, authority }) {
   if (p.validity === "superseded" && asset.superseded_by === null) {
     fail2("INVALID_INPUT", "supersession must be requested by the successor");
   }
-  if (p.disposition === "working" && !/^\.kai\/(core|engineering|creative)\//.test(target)) {
-    fail2("INVALID_INPUT", "working assets require a typed private artifact target");
+  if (p.disposition === "working") {
+    const route = typedRoute(target, "private").routes[0];
+    if (route.pack !== subjectPack(item)) {
+      fail2("INVALID_INPUT", "working assets require a typed private route owned by the hierarchy subject pack");
+    }
   } else if (p.disposition === "personal" && !/\/personal(?:\/|$)/.test(target)) {
     fail2("INVALID_INPUT", "personal assets must remain in an explicitly personal typed path");
   }
@@ -4415,6 +4448,16 @@ function registerArtifact(store, command) {
     if (tx.get("artifact", p.artifactId) || tx.get("asset", p.assetId)) fail2("VERSION_CONFLICT", "artifact and asset identities must be new");
     const run = context.runs.find((run2) => sameActor(run2.actor, command2.actor));
     if (!run) fail2("AUTHORITY_REQUIRED", "actor has no approved producing run directory");
+    const subjectPack2 = item.kind === "epic" ? "core" : item.body.pack;
+    let runRoute;
+    try {
+      [runRoute] = parseTypedArtifactRoute(run.directory).routes;
+    } catch (error) {
+      fail2("INVALID_INPUT", error.message);
+    }
+    if (runRoute.pack !== subjectPack2) {
+      fail2("INVALID_INPUT", "approved producing run pack must match the hierarchy subject pack");
+    }
     const entries = contentEntries(p.subject);
     const sourcePaths = entries.map((entry) => entry.path);
     const registered = tx.list("artifact");
@@ -4423,7 +4466,16 @@ function registerArtifact(store, command) {
         fail2("INVALID_INPUT", "derived artifacts cannot downgrade applicable input privacy");
       }
       const selected = contentEntries(subject);
-      if (selected.some((entry) => privacyRank[p.classification] < privacyRank[pathPrivacy(context.root, entry.path)])) {
+      const resolvedPrivacy = (entry) => {
+        const privacy = pathPrivacy(context.root, entry.path);
+        if (p.classification !== "public" || privacy !== "internal" || entry.path.startsWith("project:")) return privacy;
+        try {
+          return parseTypedArtifactRoute(entry.path).visibility === "private" ? "public" : privacy;
+        } catch {
+          return privacy;
+        }
+      };
+      if (selected.some((entry) => privacyRank[p.classification] < privacyRank[resolvedPrivacy(entry)])) {
         fail2("INVALID_INPUT", "derived artifacts cannot downgrade resolved source privacy");
       }
       const paths = new Set(selected.map((e) => normalized(assertWorkspacePath(context.root, e.path))));
@@ -4435,6 +4487,17 @@ function registerArtifact(store, command) {
     };
     requirePrivacy({ subject: p.subject, classification: p.classification });
     for (const path of sourcePaths) {
+      const localPath = path.replace(/^project:[a-z][a-z0-9-]*:/, "");
+      const personalPack = /^\.kai\/(core|engineering|creative)\/[^/]+\/[^/]+\/personal(?:\/|$)/.exec(localPath)?.[1];
+      let pathPacks;
+      try {
+        pathPacks = personalPack ? /* @__PURE__ */ new Set([personalPack]) : new Set(parseTypedArtifactRoute(localPath).routes.map((route) => route.pack));
+      } catch (error) {
+        fail2("INVALID_INPUT", error.message);
+      }
+      if (!pathPacks.has(subjectPack2)) {
+        fail2("INVALID_INPUT", "artifact source pack must match the hierarchy subject pack");
+      }
       if (!path.startsWith(`${run.directory}/`) && !(item.body.artifact_targets ?? []).includes(path)) {
         fail2("AUTHORITY_REQUIRED", "artifact source is outside the approved run and declared targets");
       }

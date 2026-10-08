@@ -13,6 +13,7 @@ import {
 import {applyOperation} from './store.mjs';
 import {currentDirectionForStore, hasStaleDirection} from './hierarchy-engine.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
+import {parseTypedArtifactRoute} from '../workspace-layout.mjs';
 import {
   assertWorkspacePath, fail, pathPrivacy, retainSubject,
 } from './evidence-content.mjs';
@@ -145,6 +146,16 @@ export function registerArtifact(store, command) {
     if (tx.get('artifact', p.artifactId) || tx.get('asset', p.assetId)) fail('VERSION_CONFLICT', 'artifact and asset identities must be new');
     const run = context.runs.find(run => sameActor(run.actor, command.actor));
     if (!run) fail('AUTHORITY_REQUIRED', 'actor has no approved producing run directory');
+    const subjectPack = item.kind === 'epic' ? 'core' : item.body.pack;
+    let runRoute;
+    try {
+      [runRoute] = parseTypedArtifactRoute(run.directory).routes;
+    } catch (error) {
+      fail('INVALID_INPUT', error.message);
+    }
+    if (runRoute.pack !== subjectPack) {
+      fail('INVALID_INPUT', 'approved producing run pack must match the hierarchy subject pack');
+    }
     const entries = contentEntries(p.subject);
     const sourcePaths = entries.map(entry => entry.path);
     const registered = tx.list('artifact');
@@ -153,7 +164,19 @@ export function registerArtifact(store, command) {
         fail('INVALID_INPUT', 'derived artifacts cannot downgrade applicable input privacy');
       }
       const selected = contentEntries(subject);
-      if (selected.some(entry => privacyRank[p.classification] < privacyRank[pathPrivacy(context.root, entry.path)])) {
+      const resolvedPrivacy = entry => {
+        const privacy = pathPrivacy(context.root, entry.path);
+        if (p.classification !== 'public' || privacy !== 'internal'
+          || entry.path.startsWith('project:')) return privacy;
+        try {
+          return parseTypedArtifactRoute(entry.path).visibility === 'private'
+            ? 'public'
+            : privacy;
+        } catch {
+          return privacy;
+        }
+      };
+      if (selected.some(entry => privacyRank[p.classification] < privacyRank[resolvedPrivacy(entry)])) {
         fail('INVALID_INPUT', 'derived artifacts cannot downgrade resolved source privacy');
       }
       const paths = new Set(selected.map(e => normalized(assertWorkspacePath(context.root, e.path))));
@@ -168,6 +191,20 @@ export function registerArtifact(store, command) {
     };
     requirePrivacy({subject: p.subject, classification: p.classification});
     for (const path of sourcePaths) {
+      const localPath = path.replace(/^project:[a-z][a-z0-9-]*:/, '');
+      const personalPack = /^\.kai\/(core|engineering|creative)\/[^/]+\/[^/]+\/personal(?:\/|$)/
+        .exec(localPath)?.[1];
+      let pathPacks;
+      try {
+        pathPacks = personalPack
+          ? new Set([personalPack])
+          : new Set(parseTypedArtifactRoute(localPath).routes.map(route => route.pack));
+      } catch (error) {
+        fail('INVALID_INPUT', error.message);
+      }
+      if (!pathPacks.has(subjectPack)) {
+        fail('INVALID_INPUT', 'artifact source pack must match the hierarchy subject pack');
+      }
       if (!path.startsWith(`${run.directory}/`)
         && !(item.body.artifact_targets ?? []).includes(path)) {
         fail('AUTHORITY_REQUIRED', 'artifact source is outside the approved run and declared targets');

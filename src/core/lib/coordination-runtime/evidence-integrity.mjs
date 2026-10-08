@@ -7,12 +7,25 @@ import {
 import {contextFor} from './evidence-context.mjs';
 import {fail, pathPrivacy, verifyArtifact, verifyTarget} from './evidence-content.mjs';
 import {verifyInputBasis, inputBasisCurrent} from './input-basis.mjs';
+import {parseTypedArtifactRoute} from '../workspace-layout.mjs';
 
 const contentEquals = (left, right) =>
   left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 const bindsSubject = (record, subject) => subjectEquals(record?.subject, subject);
 const lookup = tx => (kind, id) => tx.get(kind, id);
 const positiveEvidenceOutcomes = new Set(['clear', 'waived', 'passed']);
+
+function hasPublicSafeExcerptPath(root, path) {
+  if (pathPrivacy(root, path) === 'public') return true;
+  try {
+    const parsed = parseTypedArtifactRoute(path);
+    return parsed.visibility === 'private'
+      && parsed.routes.length === 1
+      && parsed.routes[0].lifecycle === 'drafts';
+  } catch {
+    return false;
+  }
+}
 
 function requirePositiveEffectiveEvidence(effective, record) {
   const scoped = effective.filter(candidate =>
@@ -67,7 +80,7 @@ function parentReportArtifact(context, tx, parent, reference, approvalId = null)
     : artifact.body.content_ref.kind === 'sha256'
       ? [artifact.body.content_ref.path]
       : artifact.body.content_ref.entries.map(entry => entry.path);
-  if (paths.some(path => pathPrivacy(context.root, path) !== 'public')) {
+  if (paths.some(path => !hasPublicSafeExcerptPath(context.root, path))) {
     fail('EVIDENCE_GAP', 'parent completion report artifact has no public safe-excerpt lane');
   }
   verifyRegisteredArtifact(context, tx, artifact);

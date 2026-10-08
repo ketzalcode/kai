@@ -11,7 +11,11 @@ import {
   badPath, escapesRoot, inspectPrivateLanes, normalized, pathHasLink, resolvedProjectPath,
 } from '../workspace-path-safety.mjs';
 import {readWorkspaceManifest, validateSchema5Manifest} from '../workspace-resolve.mjs';
-import {WORKSPACE_SCHEMA_VERSION} from '../workspace-layout.mjs';
+import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+  parseTypedArtifactRoute,
+} from '../workspace-layout.mjs';
 
 export function fail(code, message) {
   throw new RuntimeError(code, message);
@@ -91,7 +95,7 @@ export function projectBinding(root, projectId) {
 }
 
 export function assertWorkspacePath(root, relativePath) {
-  workspaceManifest(root);
+  const manifest = workspaceManifest(root);
   const path = durablePath(relativePath);
   const projectTarget = /^project:([a-z][a-z0-9-]*):(.*)$/.exec(path);
   let base = root;
@@ -108,6 +112,30 @@ export function assertWorkspacePath(root, relativePath) {
     }
     if (normalized(base) !== normalized(root) && !escapesRoot(join(root, '.kai'), base)) {
       fail('INVALID_INPUT', 'a project publication cannot alias private workspace state');
+    }
+    if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+      try {
+        if (parseTypedArtifactRoute(local).visibility !== 'public') {
+          fail('INVALID_INPUT', 'project publications require a typed public artifact route');
+        }
+      } catch (error) {
+        if (error instanceof RuntimeError) throw error;
+        fail('INVALID_INPUT', error.message);
+      }
+    }
+  } else if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+    const runtimePath = path === COORDINATION_DATABASE
+      || path.startsWith('.kai/core/runtime/');
+    const personalPath = /^\.kai\/(core|engineering|creative)\/[^/]+\/[^/]+\/personal(?:\/|$)/.test(path);
+    if (!runtimePath && !personalPath) {
+      try {
+        if (parseTypedArtifactRoute(path).visibility !== 'private') {
+          fail('INVALID_INPUT', 'private references require a typed .kai artifact route');
+        }
+      } catch (error) {
+        if (error instanceof RuntimeError) throw error;
+        fail('INVALID_INPUT', error.message);
+      }
     }
   } else if (!/^\.kai\/(?:state|core|engineering|creative)\//.test(path)) {
     fail('INVALID_INPUT', 'private references require a typed .kai pack path; public paths must be project-qualified');
@@ -129,7 +157,6 @@ export function pathPrivacy(root, path) {
   assertWorkspacePath(root, path);
   if (path.startsWith('project:')) return 'public';
   if (/\/personal(?:\/|$)/i.test(path)) return 'personal';
-  if (/^\.kai\/(core|engineering|creative)\/reports\//.test(path)) return 'public';
   return 'internal';
 }
 

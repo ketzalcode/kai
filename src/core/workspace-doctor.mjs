@@ -28,7 +28,7 @@ import {
   lstatSync, renameSync, openSync, closeSync, unlinkSync, rmdirSync,
 } from 'node:fs';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   LIFECYCLE, NEEDS_CHANGE_REF, REQUIRES_STATES,
@@ -245,6 +245,35 @@ const README_CONTENT = [
   '',
 ].join('\n');
 
+function initializationFingerprint(path) {
+  try {
+    const stat = lstatSync(path);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) return null;
+    const bytes = readFileSync(path);
+    const after = lstatSync(path);
+    if (!after.isFile() || after.isSymbolicLink() || after.nlink !== 1
+      || after.dev !== stat.dev || after.ino !== stat.ino
+      || after.size !== stat.size || after.mtimeMs !== stat.mtimeMs
+      || bytes.length !== stat.size) return null;
+    return {
+      dev: String(stat.dev),
+      ino: String(stat.ino),
+      size: stat.size,
+      mtimeMs: stat.mtimeMs,
+      digest: createHash('sha256').update(bytes).digest('hex'),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function removeOwnedInitializationFile(path, fingerprint) {
+  if (fingerprint !== null
+    && JSON.stringify(initializationFingerprint(path)) === JSON.stringify(fingerprint)) {
+    rmSync(path, {force: true});
+  }
+}
+
 export function initializeWorkspace({
   root,
   manifest,
@@ -291,19 +320,79 @@ export function initializeWorkspace({
   const runtimeRoot = join(coreRoot, 'runtime');
   const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
   const readmePath = join(selected.publicationRootAbsolute, 'README.md');
-  const stagedManifest = join(privateRoot, `.manifest-${process.pid}-${randomUUID()}.tmp`);
-  const createdDirectories = [privateRoot, coreRoot, runtimeRoot].filter(path => !existsSync(path));
-  let createdReadme = false;
+  const invocationId = randomUUID();
+  const claimPath = join(privateRoot, '.initialize.json');
+  const stagedManifest = join(privateRoot, `.manifest-${process.pid}-${invocationId}.tmp`);
+  const createdPrivateRoot = !existsSync(privateRoot);
+  const createdDirectories = [];
+  const ownedFiles = new Map();
+  let claimFingerprint = null;
+  let activated = false;
   let store;
   try {
     mkdirSync(privateRoot, {recursive: true});
+    try {
+      writeFileSync(claimPath, `${JSON.stringify({
+        schema_version: 1,
+        workspace_id: manifest.workspace_id,
+        invocation_id: invocationId,
+        manifest_digest: createHash('sha256')
+          .update(JSON.stringify(manifest))
+          .digest('hex'),
+      }, null, 2)}\n`, {flag: 'wx', mode: 0o600});
+    } catch (error) {
+      if (error.code === 'EEXIST') {
+        throw Object.assign(new Error('workspace initialization is already in progress'), {
+          code: 'VERSION_CONFLICT',
+        });
+      }
+      throw error;
+    }
+    claimFingerprint = initializationFingerprint(claimPath);
+    if (claimFingerprint === null) {
+      throw Object.assign(new Error('workspace initialization claim changed identity'), {
+        code: 'RECOVERY_REQUIRED',
+      });
+    }
+    if (existsSync(manifestPath)) {
+      throw Object.assign(new Error('.kai/manifest.json already exists'), {
+        code: 'VERSION_CONFLICT',
+      });
+    }
+    const unexpectedPrivateEntries = readdirSync(privateRoot)
+      .filter(entry => entry !== basename(claimPath));
+    if (unexpectedPrivateEntries.length > 0) {
+      throw Object.assign(new Error(
+        `workspace initialization found pre-existing private state: ${unexpectedPrivateEntries.join(', ')}`,
+      ), {code: 'VERSION_CONFLICT'});
+    }
+    for (const path of [coreRoot, runtimeRoot]) {
+      if (!existsSync(path)) {
+        mkdirSync(path);
+        createdDirectories.push(path);
+      }
+    }
+    if (existsSync(databasePath)) {
+      throw Object.assign(new Error(`${COORDINATION_DATABASE} already exists`), {
+        code: 'VERSION_CONFLICT',
+      });
+    }
     writeFileSync(stagedManifest, `${JSON.stringify(manifest, null, 2)}\n`, {flag: 'wx', mode: 0o600});
+    ownedFiles.set(stagedManifest, initializationFingerprint(stagedManifest));
     store = openStore({path: databasePath, mode: 'create'});
     closeStore(store);
     store = null;
+    for (const path of [
+      databasePath,
+      `${databasePath}-wal`,
+      `${databasePath}-shm`,
+      `${databasePath}-journal`,
+    ]) {
+      if (existsSync(path)) ownedFiles.set(path, initializationFingerprint(path));
+    }
     if (!existsSync(readmePath)) {
       writeFileSync(readmePath, README_CONTENT, {flag: 'wx'});
-      createdReadme = true;
+      ownedFiles.set(readmePath, initializationFingerprint(readmePath));
     } else if (!lstatSync(readmePath).isFile() || pathHasLink(selected.projectRoot, readmePath)
       || !exactPath(readmePath)) {
       throw Object.assign(new Error('docs/kai/README.md must be an exact unlinked file'), {code: 'INVALID_INPUT'});
@@ -316,6 +405,8 @@ export function initializeWorkspace({
       throw Object.assign(new Error(activation.errors.join('; ')), {code: 'INVALID_INPUT'});
     }
     renameSync(stagedManifest, manifestPath);
+    ownedFiles.delete(stagedManifest);
+    activated = true;
     return {
       ok: true,
       root,
@@ -325,16 +416,9 @@ export function initializeWorkspace({
     };
   } catch (error) {
     closeStore(store);
-    for (const path of [
-      databasePath,
-      `${databasePath}-wal`,
-      `${databasePath}-shm`,
-      `${databasePath}-journal`,
-      stagedManifest,
-    ]) {
-      rmSync(path, {force: true});
+    for (const [path, fingerprint] of ownedFiles) {
+      removeOwnedInitializationFile(path, fingerprint);
     }
-    if (createdReadme) rmSync(readmePath, {force: true});
     for (const path of [...createdDirectories].reverse()) {
       try { rmdirSync(path); } catch { /* preserve pre-existing or non-empty directories */ }
     }
@@ -343,6 +427,11 @@ export function initializeWorkspace({
       code: error.code ?? 'INVALID_INPUT',
       reason: error.message,
     };
+  } finally {
+    removeOwnedInitializationFile(claimPath, claimFingerprint);
+    if (!activated && createdPrivateRoot) {
+      try { rmdirSync(privateRoot); } catch { /* preserve a winner's or external state */ }
+    }
   }
 }
 

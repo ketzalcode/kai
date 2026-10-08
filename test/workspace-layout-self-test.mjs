@@ -11,6 +11,7 @@ import {
   WORKSPACE_SCHEMA_VERSION,
   archivedArtifactDirectory,
   directionPath,
+  parseTypedArtifactRoute,
   privateArtifactDirectory,
   publicationDirectory,
 } from '../src/core/lib/workspace-layout.mjs';
@@ -123,6 +124,55 @@ test('publication paths mirror the private pack type subtype and id route withou
     }),
     'docs/kai/core/reports/delivery-status',
   );
+});
+
+test('typed artifact route parsing supports exactly one optional subtype', () => {
+  assert.deepEqual(
+    parseTypedArtifactRoute('.kai/engineering/documentation/architecture/auth-boundary/drafts/design.md'),
+    {
+      path: '.kai/engineering/documentation/architecture/auth-boundary/drafts/design.md',
+      visibility: 'private',
+      routes: [{
+        pack: 'engineering',
+        type: 'documentation',
+        subtype: 'architecture',
+        id: 'auth-boundary',
+        lifecycle: 'drafts',
+        members: ['design.md'],
+      }],
+    },
+  );
+  assert.deepEqual(
+    parseTypedArtifactRoute('docs/kai/core/reports/delivery-status/index.html'),
+    {
+      path: 'docs/kai/core/reports/delivery-status/index.html',
+      visibility: 'public',
+      routes: [{
+        pack: 'core',
+        type: 'reports',
+        subtype: null,
+        id: 'delivery-status',
+        lifecycle: null,
+        members: ['index.html'],
+      }, {
+        pack: 'core',
+        type: 'reports',
+        subtype: 'delivery-status',
+        id: 'index.html',
+        lifecycle: null,
+        members: [],
+      }],
+    },
+  );
+});
+
+test('typed private route parsing rejects missing ids and more than one subtype', () => {
+  for (const path of [
+    '.kai/engineering/reports/drafts/report.md',
+    '.kai/engineering/reports/investigations/releases/status/drafts/report.md',
+  ]) {
+    assert.throws(() => parseTypedArtifactRoute(path), /typed private artifact route/i, path);
+  }
 });
 
 test('direction resolves only through the fixed direction path helper', () => {

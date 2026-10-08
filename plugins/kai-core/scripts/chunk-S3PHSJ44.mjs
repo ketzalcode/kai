@@ -150,6 +150,7 @@ function pathHasLink(root, candidate) {
 import { dirname as dirname2, posix as path, resolve as resolve2 } from "node:path";
 var WORKSPACE_SCHEMA_VERSION = 5;
 var PRIVATE_ROOT = ".kai";
+var PUBLICATION_ROOT = "docs/kai";
 var DIRECTION_PATH = "docs/kai/DIRECTION.md";
 var COORDINATION_DATABASE = ".kai/core/runtime/coordination.sqlite";
 var LEGACY_COORDINATION_DATABASE = ".kai/state/coordination.sqlite";
@@ -165,6 +166,82 @@ function assertDerivedPath(relativePath, label) {
   const problem = badPath(relativePath);
   if (problem) throw new TypeError(`${label} must stay workspace-relative (${problem})`);
   return relativePath;
+}
+function safeRouteSegments(relativePath) {
+  if (typeof relativePath !== "string" || relativePath.includes("\\")) {
+    throw new TypeError("typed artifact route must use a workspace-relative POSIX path");
+  }
+  const problem = badPath(relativePath);
+  if (problem) throw new TypeError(`typed artifact route must stay workspace-relative (${problem})`);
+  const segments = relativePath.split("/");
+  if (segments.some((segment) => segment.length === 0)) {
+    throw new TypeError("typed artifact route cannot contain empty segments");
+  }
+  return segments;
+}
+function parsedRoute({ pack, type, subtype = null, id, lifecycle = null, members = [] }) {
+  return {
+    pack: assertShippedPackNamespace(pack),
+    type: assertWorkspaceSegment(type, "type"),
+    subtype: subtype === null ? null : assertWorkspaceSegment(subtype, "subtype"),
+    id: assertWorkspaceSegment(id, "id"),
+    lifecycle,
+    members: members.map((member, index) => assertWorkspaceSegment(member, `member[${index}]`))
+  };
+}
+function parseTypedArtifactRoute(relativePath) {
+  const segments = safeRouteSegments(relativePath);
+  if (segments[0] === PRIVATE_ROOT) {
+    const route2 = segments.slice(1);
+    let parsed;
+    if (ACTIVE_ARTIFACT_LIFECYCLES.has(route2[3])) {
+      parsed = parsedRoute({
+        pack: route2[0],
+        type: route2[1],
+        id: route2[2],
+        lifecycle: assertArtifactLifecycle(route2[3]),
+        members: route2.slice(4)
+      });
+    } else if (ACTIVE_ARTIFACT_LIFECYCLES.has(route2[4])) {
+      parsed = parsedRoute({
+        pack: route2[0],
+        type: route2[1],
+        subtype: route2[2],
+        id: route2[3],
+        lifecycle: assertArtifactLifecycle(route2[4]),
+        members: route2.slice(5)
+      });
+    } else {
+      throw new TypeError(
+        "typed private artifact route must contain pack, type, optional subtype, id, and lifecycle"
+      );
+    }
+    return { path: relativePath, visibility: "private", routes: [parsed] };
+  }
+  const publicRoot = PUBLICATION_ROOT.split("/");
+  if (segments[0] !== publicRoot[0] || segments[1] !== publicRoot[1]) {
+    throw new TypeError(`typed public artifact route must stay below ${PUBLICATION_ROOT}`);
+  }
+  const route = segments.slice(publicRoot.length);
+  if (route.length < 3) {
+    throw new TypeError("typed public artifact route must contain pack, type, optional subtype, and id");
+  }
+  const routes = [parsedRoute({
+    pack: route[0],
+    type: route[1],
+    id: route[2],
+    members: route.slice(3)
+  })];
+  if (route.length >= 4) {
+    routes.push(parsedRoute({
+      pack: route[0],
+      type: route[1],
+      subtype: route[2],
+      id: route[3],
+      members: route.slice(4)
+    }));
+  }
+  return { path: relativePath, visibility: "public", routes };
 }
 function privateArtifactDirectory({ pack, type, subtype = null, id, lifecycle }) {
   return assertDerivedPath(
@@ -718,6 +795,7 @@ export {
   DIRECTION_PATH,
   COORDINATION_DATABASE,
   LEGACY_COORDINATION_DATABASE,
+  parseTypedArtifactRoute,
   privateArtifactDirectory,
   directionPath,
   workspaceRootFromCoordinationDatabase,

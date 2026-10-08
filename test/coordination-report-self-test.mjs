@@ -1097,7 +1097,7 @@ test('Windows hostile item IDs are collision-resistant encoded filenames, never 
     const ids = ['../outside', '..\\outside', 'CON', 'nul.txt', 'a:b', 'a?b', 'a#b', 'a%b', 'Case', 'case', 'x'.repeat(800)];
     const paths = ids.map(itemId => reportPaths({root, itemId}).directory);
     assert.equal(new Set(paths.map(p => p.toLowerCase())).size, ids.length);
-    assert.ok(paths.every(path => path.replaceAll('\\', '/').includes('/.kai/engineering/reports/')));
+    assert.ok(paths.every(path => path.replaceAll('\\', '/').includes('/.kai/core/reports/')));
     assert.throws(() => typedReportPaths({
       root,
       subject: {kind: 'task', id: ''},
@@ -1404,7 +1404,8 @@ test('report paths bind the exact typed subject and never use retired generic la
     const subject = {kind: 'task', id: fixtureIds.task};
     const paths = reportPaths({root, subject});
     const normalized = paths.directory.replaceAll('\\', '/');
-    assert.match(normalized, /\/\.kai\/engineering\/reports\//);
+    assert.match(normalized, /\/\.kai\/core\/reports\//);
+    assert.doesNotMatch(normalized, /\/\.kai\/engineering\/reports\/[^/]+\/(?:drafts|evidence|scratch)(?:\/|$)/);
     assert.doesNotMatch(normalized, /\/\.kai\/(?:runs|review)\//);
     assert.deepEqual(paths.subject, subject);
   });

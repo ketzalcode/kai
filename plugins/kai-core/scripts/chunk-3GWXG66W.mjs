@@ -35,7 +35,7 @@ import {
   verifyArtifact,
   verifyTarget,
   workspaceManifest
-} from "./chunk-RVMY63WZ.mjs";
+} from "./chunk-GYNRRGQI.mjs";
 import {
   COORDINATION_DATABASE,
   LEGACY_COORDINATION_DATABASE,
@@ -44,10 +44,11 @@ import {
   directionPath,
   exactPath,
   normalized,
+  parseTypedArtifactRoute,
   pathHasLink,
   readWorkspaceManifest,
   workspaceRootFromCoordinationDatabase
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import {
   DOD_DIMENSIONS,
   RuntimeError,
@@ -2717,7 +2718,18 @@ function bindEvidenceRuntime(store, options) {
     assertExactKeys(run, /* @__PURE__ */ new Set(["actor", "directory"]), "approved run");
     validateActor(run.actor);
     const directory = durablePath(run.directory);
-    if (directory !== run.directory || !/^\.kai\/(core|engineering|creative)\/[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*\/(drafts|evidence|scratch)(?:\/[a-z0-9][a-z0-9._-]*)*$/.test(directory) || actors.has(canonicalJson(run.actor)) || directories.has(directory.toLowerCase())) {
+    let route;
+    try {
+      const parsed = parseTypedArtifactRoute(directory);
+      [route] = parsed.routes;
+      if (parsed.visibility !== "private" || parsed.routes.length !== 1 || route.members.length !== 0) {
+        fail("INVALID_INPUT", "approved run directory must be one complete typed private artifact route");
+      }
+    } catch (error) {
+      if (error?.code) throw error;
+      fail("INVALID_INPUT", error.message);
+    }
+    if (directory !== run.directory || actors.has(canonicalJson(run.actor)) || directories.has(directory.toLowerCase())) {
       fail("INVALID_INPUT", "approved run directories must be unique typed private artifact paths");
     }
     assertWorkspacePath(options.root, `${directory}/.evidence/probe`);
@@ -2760,6 +2772,15 @@ var contentEquals2 = (left, right) => left !== null && right !== null && canonic
 var bindsSubject2 = (record, subject) => subjectEquals(record?.subject, subject);
 var lookup = (tx) => (kind, id) => tx.get(kind, id);
 var positiveEvidenceOutcomes = /* @__PURE__ */ new Set(["clear", "waived", "passed"]);
+function hasPublicSafeExcerptPath(root, path2) {
+  if (pathPrivacy(root, path2) === "public") return true;
+  try {
+    const parsed = parseTypedArtifactRoute(path2);
+    return parsed.visibility === "private" && parsed.routes.length === 1 && parsed.routes[0].lifecycle === "drafts";
+  } catch {
+    return false;
+  }
+}
 function requirePositiveEffectiveEvidence(effective, record) {
   const scoped = effective.filter((candidate) => evidenceScope(candidate) === evidenceScope(record));
   if (!effective.some((candidate) => candidate.evidence_id === record.evidence_id) || scoped.some((candidate) => !positiveEvidenceOutcomes.has(candidate.outcome))) {
@@ -2799,7 +2820,7 @@ function parentReportArtifact(context, tx, parent, reference, approvalId = null)
     fail("EVIDENCE_GAP", "parent completion report artifact is missing, stale, or not public");
   }
   const paths = artifact.body.content_ref.kind === "git" ? [] : artifact.body.content_ref.kind === "sha256" ? [artifact.body.content_ref.path] : artifact.body.content_ref.entries.map((entry) => entry.path);
-  if (paths.some((path2) => pathPrivacy(context.root, path2) !== "public")) {
+  if (paths.some((path2) => !hasPublicSafeExcerptPath(context.root, path2))) {
     fail("EVIDENCE_GAP", "parent completion report artifact has no public safe-excerpt lane");
   }
   verifyRegisteredArtifact(context, tx, artifact);

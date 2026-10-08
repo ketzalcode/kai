@@ -2,6 +2,7 @@ import {canonicalJson, criteriaRef, isProducingRun, operatorDecisionActor} from 
 import {effectiveApprovals, requireReviews} from './acceptance.mjs';
 import {requireActingAuthority, sameActor} from './authority.mjs';
 import {assertWorkspacePath, fail, verifyTarget} from './evidence-content.mjs';
+import {parseTypedArtifactRoute} from '../workspace-layout.mjs';
 import {
   hasPublicationHistory,
   verifyAssetContent,
@@ -28,6 +29,26 @@ const VALIDITY = new Map([
 const contentEquals = (left, right) =>
   left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 const lookup = tx => (kind, id) => tx.get(kind, id);
+const routeIdentity = route =>
+  [route.pack, route.type, route.subtype, route.id, route.members];
+
+function typedRoute(path, visibility) {
+  const local = path.replace(/^project:[a-z][a-z0-9-]*:/, '');
+  try {
+    const parsed = parseTypedArtifactRoute(local);
+    if (parsed.visibility !== visibility) {
+      fail('INVALID_INPUT', `${visibility} placement requires a typed ${visibility} artifact route`);
+    }
+    return parsed;
+  } catch (error) {
+    if (error?.code) throw error;
+    fail('INVALID_INPUT', error.message);
+  }
+}
+
+function subjectPack(item) {
+  return item.kind === 'epic' ? 'core' : item.body.pack;
+}
 
 function artifactFor(context, tx, asset, verify = true) {
   if (verify) return verifyAssetContent(context, tx, asset);
@@ -157,6 +178,19 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   if (publishing && (!publicTarget || validity !== 'current')) {
     fail('INVALID_INPUT', 'publication requires a current accepted project-qualified target');
   }
+  if (publishing) {
+    const privateSource = typedRoute(asset.target, 'private').routes[0];
+    const publicDestination = typedRoute(target, 'public');
+    const pack = subjectPack(item);
+    const matchingDestination = publicDestination.routes.find(route =>
+      canonicalJson(routeIdentity(route)) === canonicalJson(routeIdentity(privateSource)));
+    if (asset.disposition !== 'working' || asset.validity !== 'current'
+      || asset.completion_approval_id === null || privateSource.lifecycle !== 'drafts'
+      || privateSource.pack !== pack || !matchingDestination || matchingDestination.pack !== pack) {
+      fail('INVALID_INPUT',
+        'publication requires an accepted retained draft on the mirrored typed route for this hierarchy subject');
+    }
+  }
   if (p.supersedes !== null && (validity !== 'current'
     || !['working', 'published', 'archived'].includes(p.disposition))) {
     fail('EVIDENCE_GAP', 'supersession requires a current accepted durable successor');
@@ -193,8 +227,11 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
   if (p.validity === 'superseded' && asset.superseded_by === null) {
     fail('INVALID_INPUT', 'supersession must be requested by the successor');
   }
-  if (p.disposition === 'working' && !/^\.kai\/(core|engineering|creative)\//.test(target)) {
-    fail('INVALID_INPUT', 'working assets require a typed private artifact target');
+  if (p.disposition === 'working') {
+    const route = typedRoute(target, 'private').routes[0];
+    if (route.pack !== subjectPack(item)) {
+      fail('INVALID_INPUT', 'working assets require a typed private route owned by the hierarchy subject pack');
+    }
   } else if (p.disposition === 'personal' && !/\/personal(?:\/|$)/.test(target)) {
     fail('INVALID_INPUT', 'personal assets must remain in an explicitly personal typed path');
   }

@@ -11,14 +11,13 @@ import {assertWorkspacePath, workspaceManifest} from './evidence-content.mjs';
 import {hash} from './report-safety.mjs';
 import {renderLanding} from './report-render.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
-import {privateArtifactDirectory} from '../workspace-layout.mjs';
+import {parseTypedArtifactRoute, privateArtifactDirectory} from '../workspace-layout.mjs';
 
 function reportRoute(subject) {
   validateHierarchySubject(subject, 'report subject');
-  const pack = subject.kind === 'epic' ? 'core' : subject.id.split(':', 1)[0];
   const slug = subject.id.split(':').at(-1);
   return {
-    pack,
+    pack: 'core',
     type: 'reports',
     id: `${subject.kind}-${slug}-${hash(canonicalJson(subject)).slice(0, 12)}`,
     lifecycle: 'evidence',
@@ -26,7 +25,13 @@ function reportRoute(subject) {
 }
 
 function relativeDirectory(subject) {
-  return privateArtifactDirectory(reportRoute(subject));
+  const relative = privateArtifactDirectory(reportRoute(subject));
+  const parsed = parseTypedArtifactRoute(relative);
+  if (parsed.visibility !== 'private' || parsed.routes.length !== 1
+    || parsed.routes[0].members.length !== 0) {
+    throw new RuntimeError('INVALID_INPUT', 'coordination report route must be one complete typed private path');
+  }
+  return relative;
 }
 
 function sameSubject(left, right) {

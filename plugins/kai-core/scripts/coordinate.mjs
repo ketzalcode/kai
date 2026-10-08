@@ -139,7 +139,7 @@ async function runCLI(argv, { host, input, stdin = process.stdin, cwd = process.
       if (error.code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw error;
       throw new RuntimeError("UNSUPPORTED_HOST", "node:sqlite unavailable; use Node ^22.22.2, ^24.15.0 or >=26");
     }
-    const { execute } = await import("./chunk-VLYKFZKU.mjs");
+    const { execute } = await import("./chunk-5ZBVCPND.mjs");
     const result = await execute({ verb, options, body, host, cwd, env });
     return { exitCode: 0, result: withEntrypointReport(result, env, entrypoint) };
   } catch (error) {

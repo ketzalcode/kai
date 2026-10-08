@@ -6,6 +6,7 @@ import {
   COORDINATION_DATABASE,
   LEGACY_COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
+  parseTypedArtifactRoute,
 } from '../workspace-layout.mjs';
 
 const bindings = new WeakMap();
@@ -34,8 +35,19 @@ export function bindEvidenceRuntime(store, options) {
     assertExactKeys(run, new Set(['actor', 'directory']), 'approved run');
     validateActor(run.actor);
     const directory = durablePath(run.directory);
+    let route;
+    try {
+      const parsed = parseTypedArtifactRoute(directory);
+      [route] = parsed.routes;
+      if (parsed.visibility !== 'private' || parsed.routes.length !== 1
+        || route.members.length !== 0) {
+        fail('INVALID_INPUT', 'approved run directory must be one complete typed private artifact route');
+      }
+    } catch (error) {
+      if (error?.code) throw error;
+      fail('INVALID_INPUT', error.message);
+    }
     if (directory !== run.directory
-      || !/^\.kai\/(core|engineering|creative)\/[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*\/(drafts|evidence|scratch)(?:\/[a-z0-9][a-z0-9._-]*)*$/.test(directory)
       || actors.has(canonicalJson(run.actor)) || directories.has(directory.toLowerCase())) {
       fail('INVALID_INPUT', 'approved run directories must be unique typed private artifact paths');
     }

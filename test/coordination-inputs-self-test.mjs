@@ -318,7 +318,7 @@ for (const alias of personalAliases) {
   }
 }
 
-test('canonical public file aliases still permit a public derivative', () => withWorkspace(({root, store}) => {
+test('canonical private evidence aliases cannot produce a public derivative', () => withWorkspace(({root, store}) => {
   file(root, inputFile, 'Public design');
   file(root, outputFile, 'Public output');
   seedItem(store, {state: 'in-review', producer_actor: builder, acceptance_actor: null,
@@ -327,10 +327,28 @@ test('canonical public file aliases still permit a public derivative', () => wit
       '.kai/engineering/./reports/input-basis/evidence/design.md',
     ]});
   bind(root, store, builder, 'artifact.register', 'demo');
-  assert.equal(registerArtifact(store, cmd(store, 'artifact.register', 'demo', {
+  assert.throws(() => registerArtifact(store, cmd(store, 'artifact.register', 'demo', {
     artifactId: randomUUID(), assetId: randomUUID(), subject: hashArtifact({root, relativePath: outputFile}),
     projectId: null, classification: 'public', mediaType: 'text/markdown',
     title: 'Public aliases', inputAssetIds: [], at: at(),
+  })), error => error.code === 'INVALID_INPUT' && /privacy/.test(error.message));
+}));
+
+test('an explicitly public typed context file can produce a public derivative', () => withWorkspace(({root, store}) => {
+  const publicInput = 'project:default:docs/kai/engineering/reports/investigations/input-basis/design.md';
+  file(root, 'docs/kai/engineering/reports/investigations/input-basis/design.md', 'Accepted public design');
+  file(root, outputFile, 'Public output');
+  seedItem(store, {
+    state: 'in-review',
+    producer_actor: builder,
+    acceptance_actor: null,
+    context_artifacts: [publicInput],
+  });
+  bind(root, store, builder, 'artifact.register', 'demo');
+  assert.equal(registerArtifact(store, cmd(store, 'artifact.register', 'demo', {
+    artifactId: randomUUID(), assetId: randomUUID(), subject: hashArtifact({root, relativePath: outputFile}),
+    projectId: null, classification: 'public', mediaType: 'text/markdown',
+    title: 'Public context', inputAssetIds: [], at: at(),
   })).ok, true);
 }));
 

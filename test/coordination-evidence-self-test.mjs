@@ -30,9 +30,14 @@ const operator = {role: 'operator', runId: 'human-session'};
 const lead = {role: 'eng-lead-architecture', runId: 'lead-session'};
 const NOW = '2026-09-16T12:00:00.000Z';
 const taskSubject = Object.freeze({kind: 'task', id: fixtureIds.task});
-const runDirectory = '.kai/engineering/reports/evidence-demo/scratch';
+const route = 'engineering/reports/investigations/evidence-demo';
+const runDirectory = `.kai/${route}/scratch`;
 const source = `${runDirectory}/mock.html`;
-const workingTarget = '.kai/engineering/reports/evidence-demo/drafts/mock.html';
+const workingTarget = `.kai/${route}/drafts/mock.html`;
+const publicRelative = `docs/kai/${route}/mock.html`;
+const publicTarget = `project:app:${publicRelative}`;
+const publicOtherRelative = `docs/kai/${route}/other.html`;
+const publicOtherTarget = `project:app:${publicOtherRelative}`;
 const actions = ['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record'];
 const code = expected => error => error?.code === expected;
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -168,18 +173,159 @@ function publicWorkspace(root) {
   const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
   manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
   file(root, '.kai/manifest.json', JSON.stringify(manifest));
-  file(root, 'docs/kai/mock.html');
-  return 'project:app:docs/kai/mock.html';
+  file(root, publicRelative);
+  return publicTarget;
 }
 function publish(root, store) {
   const target = publicWorkspace(root);
-  setup(root, store, {artifact_targets: [target, 'project:app:docs/kai/other.html']});
+  setup(root, store, {artifact_targets: [target, publicOtherTarget]});
   const a = register(root, store, {classification: 'public'});
   makeCurrent(root, store, a);
   transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'published', validity: 'current', target}),
     runtime(root, store, reviewer));
   return {...a, target};
 }
+
+test('schema5 publication accepts an accepted draft on its mirrored typed route', async () => {
+  await withWorkspace(({root, store}) => {
+    const a = publish(root, store);
+    const asset = readRecord(store, 'asset', a.assetId).body;
+    assert.equal(asset.disposition, 'published');
+    assert.equal(asset.validity, 'current');
+    assert.equal(asset.target, publicTarget);
+  });
+});
+
+test('schema5 publication refuses an arbitrary docs/kai root without a typed mirrored route', async () => {
+  await withWorkspace(({root, store}) => {
+    const target = 'project:app:docs/kai/mock.html';
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    file(root, 'docs/kai/mock.html');
+    setup(root, store, {artifact_targets: [target]});
+    const a = register(root, store, {classification: 'public'});
+    makeCurrent(root, store, a);
+    assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'published', validity: 'current', target,
+    }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+  });
+});
+
+test('schema5 publication binds the public route pack to the hierarchy subject', async () => {
+  await withWorkspace(({root, store}) => {
+    const target = 'project:app:docs/kai/creative/reports/investigations/evidence-demo/mock.html';
+    const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+    file(root, '.kai/manifest.json', JSON.stringify(manifest));
+    file(root, target.replace('project:app:', ''));
+    setup(root, store, {artifact_targets: [target]});
+    const a = register(root, store, {classification: 'public'});
+    makeCurrent(root, store, a);
+    assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+      disposition: 'published', validity: 'current', target,
+    }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+  });
+});
+
+for (const [label, relativeTarget] of [
+  ['type', 'docs/kai/engineering/documentation/architecture/evidence-demo/mock.html'],
+  ['id', 'docs/kai/engineering/reports/investigations/other/mock.html'],
+  ['extra subtype', 'docs/kai/engineering/reports/investigations/releases/evidence-demo/mock.html'],
+]) {
+  test(`schema5 publication refuses a mirrored-route ${label} mutation`, async () => {
+    await withWorkspace(({root, store}) => {
+      const target = `project:app:${relativeTarget}`;
+      const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+      manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+      file(root, '.kai/manifest.json', JSON.stringify(manifest));
+      file(root, relativeTarget);
+      setup(root, store, {artifact_targets: [target]});
+      const a = register(root, store, {classification: 'public'});
+      makeCurrent(root, store, a);
+      assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'published', validity: 'current', target,
+      }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+    });
+  });
+}
+
+for (const lifecycle of ['scratch', 'evidence']) {
+  test(`schema5 publication refuses ${lifecycle} lifecycle provenance`, async () => {
+    await withWorkspace(({root, store}) => {
+      const target = 'project:app:docs/kai/engineering/reports/investigations/evidence-demo/mock.html';
+      const privateTarget = `.kai/engineering/reports/investigations/evidence-demo/${lifecycle}/mock.html`;
+      const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
+      manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
+      file(root, '.kai/manifest.json', JSON.stringify(manifest));
+      file(root, target.replace('project:app:', ''));
+      file(root, privateTarget);
+      setup(root, store, {artifact_targets: [privateTarget, target]});
+      const a = register(root, store, {classification: 'public'});
+      const approvalId = accept(root, store, a.artifactId);
+      transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'draft', target: privateTarget,
+      }), runtime(root, store, reviewer));
+      transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'working', validity: 'current', approvalId, target: privateTarget,
+      }), runtime(root, store, reviewer));
+      assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
+        disposition: 'published', validity: 'current', target,
+      }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
+    });
+  });
+}
+
+test('approved producing runs accept one optional subtype in their typed route', async () => {
+  await withWorkspace(({root, store}) => {
+    setup(root, store);
+    const task = readRecord(store, 'task', fixtureIds.task);
+    const auth = authority(builder, actions, {version: task.version});
+    assert.doesNotThrow(() => bindEvidenceRuntime(store, {
+      root,
+      authority: auth,
+      runs: [{
+        actor: builder,
+        directory: '.kai/engineering/documentation/architecture/auth-boundary/scratch',
+      }],
+    }));
+  });
+});
+
+for (const directory of [
+  '.kai/engineering/documentation/drafts',
+  '.kai/engineering/reports/investigations/releases/evidence-demo/scratch',
+]) {
+  test(`approved producing runs reject missing or extra typed route segments: ${directory}`, async () => {
+    await withWorkspace(({root, store}) => {
+      setup(root, store);
+      const task = readRecord(store, 'task', fixtureIds.task);
+      assert.throws(() => bindEvidenceRuntime(store, {
+        root,
+        authority: authority(builder, actions, {version: task.version}),
+        runs: [{actor: builder, directory}],
+      }), code('INVALID_INPUT'));
+    });
+  });
+}
+
+test('artifact registration binds the producing run pack to the hierarchy subject', async () => {
+  await withWorkspace(({root, store}) => {
+    setup(root, store);
+    const creativeRun = '.kai/creative/media/evidence-demo/scratch';
+    const creativeSource = `${creativeRun}/mock.html`;
+    file(root, creativeSource);
+    const task = readRecord(store, 'task', fixtureIds.task);
+    bindEvidenceRuntime(store, {
+      root,
+      authority: authority(builder, actions, {version: task.version}),
+      runs: [{actor: builder, directory: creativeRun}],
+    });
+    assert.throws(() => registerArtifact(store, artifactCommand(store, {
+      subject: hashArtifact({root, relativePath: creativeSource}),
+    })), code('INVALID_INPUT'));
+  });
+});
 
 for (const damage of ['source changed', 'source missing', 'snapshot changed', 'snapshot missing', 'manifest changed']) {
   test(`fix1 F1 engine completion refuses ${damage} after positive acceptance`, async () => {
@@ -302,9 +448,9 @@ test('fix1 F3 canonical path remains protected after published then archived his
     const a = publish(root, store);
     transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'archived', validity: 'current'}),
       runtime(root, store, reviewer));
-    file(root, 'docs/kai/other.html');
+    file(root, publicOtherRelative);
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
-      disposition: 'archived', validity: 'current', target: 'project:app:docs/kai/other.html',
+      disposition: 'archived', validity: 'current', target: publicOtherTarget,
     }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
     assert.equal(readRecord(store, 'asset', a.assetId).body.target, a.target);
   });
@@ -347,7 +493,7 @@ for (const validity of ['stale', 'invalidated', 'retired']) {
       const artifact = readRecord(store, 'artifact', a.artifactId).body;
       rmSync(join(root, source));
       rmSync(join(root, artifact.snapshots[0].snapshot_path));
-      rmSync(join(root, 'docs/kai/mock.html'));
+      rmSync(join(root, publicRelative));
       const c = assetCommand(store, a.assetId, {disposition: 'published', validity, reason: 'Evidence was lost'}, builder);
       assert.equal(transitionAsset(store, c, runtime(root, store, builder)).ok, true);
       const asset = readRecord(store, 'asset', a.assetId).body;
@@ -487,15 +633,15 @@ test('fix1 followup F7 waiver cannot use supporting artifacts made by its own ru
 test('fix1 followup F3 accepted public placement keeps its canonical path even without published disposition', async () => {
   await withWorkspace(({root, store}) => {
     const target = publicWorkspace(root);
-    setup(root, store, {artifact_targets: [target, 'project:app:docs/kai/other.html']});
+    setup(root, store, {artifact_targets: [target, publicOtherTarget]});
     const a = register(root, store, {classification: 'public'});
     const approvalId = accept(root, store, a.artifactId);
     transitionAsset(store, assetCommand(store, a.assetId, {
       disposition: 'draft', validity: 'current', approvalId, target,
     }), runtime(root, store, reviewer));
-    file(root, 'docs/kai/other.html');
+    file(root, publicOtherRelative);
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
-      disposition: 'draft', validity: 'current', target: 'project:app:docs/kai/other.html',
+      disposition: 'draft', validity: 'current', target: publicOtherTarget,
     }), runtime(root, store, reviewer)), code('INVALID_INPUT'));
   });
 });
@@ -813,7 +959,7 @@ test('publication requires declared contained public target; retraction retains 
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
     manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
     file(root, '.kai/manifest.json', JSON.stringify(manifest));
-    const target = 'project:app:docs/kai/mock.html';
+    const target = publicTarget;
     setup(root, store, {artifact_targets: [target], validity_owner: reviewer.role});
     const a = register(root, store, {classification: 'public'});
     const approvalId = accept(root, store, a.artifactId);
@@ -822,12 +968,12 @@ test('publication requires declared contained public target; retraction retains 
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {
       disposition: 'published', validity: 'current', target,
     }), runtime(root, store, reviewer)), code('EVIDENCE_GAP'));
-    file(root, 'docs/kai/mock.html');
+    file(root, publicRelative);
     transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'published', validity: 'current', target}),
       runtime(root, store, reviewer));
     transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'retracted', validity: 'invalidated', reason: 'Unsafe guidance'}),
       runtime(root, store, reviewer));
-    assert.equal(readFileSync(join(root, 'docs/kai/mock.html'), 'utf8'), '<h1>First</h1>');
+    assert.equal(readFileSync(join(root, publicRelative), 'utf8'), '<h1>First</h1>');
     assert.equal(readRecord(store, 'asset', a.assetId).body.history.some(h => h.disposition === 'published'), true);
     assert.throws(() => transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'discarded'}),
       runtime(root, store, reviewer)), code('INVALID_INPUT'));
@@ -1039,11 +1185,11 @@ test('publication cannot escape through a project junction or private project bi
         mkdirSync(outside);
         rmSync(join(root, 'docs', 'kai'), {recursive: true, force: true});
         symlinkSync(outside, join(root, 'docs', 'kai'), 'junction');
-        assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'));
+        assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'));
         rmSync(join(root, 'docs', 'kai'));
         manifest.projects[0].path = '.kai/state/private-project';
         file(root, '.kai/manifest.json', JSON.stringify(manifest));
-        assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'));
+        assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'));
       });
 });
 
@@ -1283,7 +1429,7 @@ test('declared project bindings reject drive-relative roots rather than consulti
     // else on a Windows workstation.
     for (const path of ['C:project', '\\project', 'c:rel/sub']) {
       bind(path);
-      assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+      assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'),
         `${path} must be refused regardless of process.platform (currently ${process.platform})`);
     }
     // `/project` is the one form whose meaning genuinely differs: fully
@@ -1291,17 +1437,17 @@ test('declared project bindings reject drive-relative roots rather than consulti
     // where it is process-dependent.
     bind('/project');
     if (process.platform === 'win32') {
-      assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+      assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'),
         'a leading slash is root-of-current-drive on Windows and must be refused there');
     }
     // A workspace-relative binding is unambiguous everywhere and stays accepted.
     bind('.');
-    assert.doesNotThrow(() => assertWorkspacePath(root, 'project:app:docs/kai/x'),
+    assert.doesNotThrow(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`),
       'a workspace-relative binding stays accepted on every platform');
     // A repo-local schema-5 workspace admits only ".". Registered external
     // workspace bindings are exercised by workspace-doctor-self-test.
     bind(join(root, 'project'));
-    assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+    assert.throws(() => assertWorkspacePath(root, `project:app:docs/kai/${route}/x`), code('INVALID_INPUT'),
       'repo-local workspaces refuse host-absolute project bindings');
   });
 });
@@ -1313,12 +1459,15 @@ test('bundle assets close against exact manifests and publish only with already-
       manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
       file(root, '.kai/manifest.json', JSON.stringify(manifest));
       const paths = publishable
-        ? ['project:app:docs/kai/one.html', 'project:app:docs/kai/two.css']
+        ? [
+            'project:app:docs/kai/engineering/features/evidence-demo/one.html',
+            'project:app:docs/kai/engineering/features/evidence-demo/two.css',
+          ]
         : [`${runDirectory}/one.html`, `${runDirectory}/two.css`];
       for (const path of paths) file(root, path.replace('project:app:', ''), 'bundle member');
       const subject = hashBundle({root, paths});
       const privateManifest = '.kai/engineering/features/evidence-demo/drafts/bundle.json';
-      const publicManifest = 'project:app:docs/kai/bundle.json';
+      const publicManifest = 'project:app:docs/kai/engineering/features/evidence-demo/bundle.json';
       setup(root, store, {
         change_ref: subject, artifact_targets: [...paths, privateManifest, publicManifest],
       });
@@ -1328,11 +1477,14 @@ test('bundle assets close against exact manifests and publish only with already-
       transitionAsset(store, assetCommand(store, a.assetId, {disposition: 'draft'}), runtime(root, store, reviewer));
       transitionAsset(store, assetCommand(store, a.assetId, {validity: 'current', target: privateManifest, approvalId}),
         runtime(root, store, reviewer));
-      file(root, 'docs/kai/bundle.json', canonicalJson(subject));
+      file(root, 'docs/kai/engineering/features/evidence-demo/bundle.json', canonicalJson(subject));
       const c = assetCommand(store, a.assetId, {disposition: 'published', validity: 'current', target: publicManifest});
       if (publishable) {
         assert.equal(transitionAsset(store, c, runtime(root, store, reviewer)).ok, true);
-        assert.equal(readFileSync(join(root, 'docs/kai/bundle.json'), 'utf8'), canonicalJson(subject));
+        assert.equal(readFileSync(
+          join(root, 'docs/kai/engineering/features/evidence-demo/bundle.json'),
+          'utf8',
+        ), canonicalJson(subject));
       } else {
         assert.throws(() => transitionAsset(store, c, runtime(root, store, reviewer)), code('INVALID_INPUT'));
         assert.equal(readRecord(store, 'asset', a.assetId).body.disposition, 'working');
@@ -1450,18 +1602,20 @@ test('Task dependency versions and required states participate in criteria refer
 
 test('parent completion requires exact accepted report artifact proof', async () => {
   await withWorkspace(({root, store}) => {
-    file(root, source);
+    const parentRunDirectory = `.kai/${route}/drafts`;
+    const parentSource = `${parentRunDirectory}/mock.html`;
+    file(root, parentSource);
     seedTask(store, {
       state: 'in-review',
-      artifact_targets: [source],
-      change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: source},
+      artifact_targets: [parentSource],
+      change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: parentSource},
     });
     const feature = readRecord(store, 'feature', fixtureIds.feature);
     const reportArtifactId = randomUUID();
     const reportAssetId = randomUUID();
     const reportSubject = {
       kind: 'sha256',
-      path: source,
+      path: parentSource,
       digest: digest('<h1>First</h1>'),
     };
     const artifactAuthority = authority(lead, 'artifact.register', {
@@ -1472,7 +1626,7 @@ test('parent completion requires exact accepted report artifact proof', async ()
     bindEvidenceRuntime(store, {
       root,
       authority: artifactAuthority,
-      runs: [{actor: lead, directory: runDirectory}],
+      runs: [{actor: lead, directory: parentRunDirectory}],
     });
     assert.equal(registerArtifact(store, command('artifact.register', {
       actor: lead,

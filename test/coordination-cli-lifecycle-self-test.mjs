@@ -312,7 +312,7 @@ function exactNative(root, command) {
 
 test('broken old registered brief permits exact prospective repair by its scope owner, not old-scope reuse', () => workspace(root => {
   const owner = {role: 'eng-lead-architecture', runId: 'native-context-one'};
-  const oldPath = '.kai/core/reports/old-brief/evidence/brief.md';
+  const oldPath = '.kai/engineering/reports/investigations/old-brief/evidence/brief.md';
   seededNativeTask(root, {artifact_targets: [oldPath]});
   mkdirSync(dirname(join(root, oldPath)), {recursive: true});
   writeFileSync(join(root, oldPath), 'Registered old brief');
@@ -328,7 +328,7 @@ test('broken old registered brief permits exact prospective repair by its scope 
   })).status, 0);
   const oldGrant = authorize(root, {type: 'run', actor: owner, taskId: TASK_ID, actions: ['task.update']});
   writeFileSync(join(root, oldPath), 'Changed bytes invalidate the registered old brief');
-  const replacementPath = '.kai/core/reports/replacement/evidence/brief.md';
+  const replacementPath = '.kai/engineering/reports/investigations/replacement/evidence/brief.md';
   mkdirSync(dirname(join(root, replacementPath)), {recursive: true});
   writeFileSync(join(root, replacementPath), 'Valid replacement brief');
   const repair = taskCommand(root, 'task.update', owner, {changes: {context_artifacts: [replacementPath]}});

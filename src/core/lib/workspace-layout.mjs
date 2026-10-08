@@ -1,5 +1,6 @@
 import {dirname, posix as path, resolve} from 'node:path';
 import {
+  ACTIVE_ARTIFACT_LIFECYCLES,
   assertArtifactLifecycle,
   assertShippedPackNamespace,
   assertWorkspaceSegment,
@@ -26,6 +27,86 @@ function assertDerivedPath(relativePath, label) {
   const problem = badPath(relativePath);
   if (problem) throw new TypeError(`${label} must stay workspace-relative (${problem})`);
   return relativePath;
+}
+
+function safeRouteSegments(relativePath) {
+  if (typeof relativePath !== 'string' || relativePath.includes('\\')) {
+    throw new TypeError('typed artifact route must use a workspace-relative POSIX path');
+  }
+  const problem = badPath(relativePath);
+  if (problem) throw new TypeError(`typed artifact route must stay workspace-relative (${problem})`);
+  const segments = relativePath.split('/');
+  if (segments.some(segment => segment.length === 0)) {
+    throw new TypeError('typed artifact route cannot contain empty segments');
+  }
+  return segments;
+}
+
+function parsedRoute({pack, type, subtype = null, id, lifecycle = null, members = []}) {
+  return {
+    pack: assertShippedPackNamespace(pack),
+    type: assertWorkspaceSegment(type, 'type'),
+    subtype: subtype === null ? null : assertWorkspaceSegment(subtype, 'subtype'),
+    id: assertWorkspaceSegment(id, 'id'),
+    lifecycle,
+    members: members.map((member, index) => assertWorkspaceSegment(member, `member[${index}]`)),
+  };
+}
+
+export function parseTypedArtifactRoute(relativePath) {
+  const segments = safeRouteSegments(relativePath);
+  if (segments[0] === PRIVATE_ROOT) {
+    const route = segments.slice(1);
+    let parsed;
+    if (ACTIVE_ARTIFACT_LIFECYCLES.has(route[3])) {
+      parsed = parsedRoute({
+        pack: route[0],
+        type: route[1],
+        id: route[2],
+        lifecycle: assertArtifactLifecycle(route[3]),
+        members: route.slice(4),
+      });
+    } else if (ACTIVE_ARTIFACT_LIFECYCLES.has(route[4])) {
+      parsed = parsedRoute({
+        pack: route[0],
+        type: route[1],
+        subtype: route[2],
+        id: route[3],
+        lifecycle: assertArtifactLifecycle(route[4]),
+        members: route.slice(5),
+      });
+    } else {
+      throw new TypeError(
+        'typed private artifact route must contain pack, type, optional subtype, id, and lifecycle',
+      );
+    }
+    return {path: relativePath, visibility: 'private', routes: [parsed]};
+  }
+
+  const publicRoot = PUBLICATION_ROOT.split('/');
+  if (segments[0] !== publicRoot[0] || segments[1] !== publicRoot[1]) {
+    throw new TypeError(`typed public artifact route must stay below ${PUBLICATION_ROOT}`);
+  }
+  const route = segments.slice(publicRoot.length);
+  if (route.length < 3) {
+    throw new TypeError('typed public artifact route must contain pack, type, optional subtype, and id');
+  }
+  const routes = [parsedRoute({
+    pack: route[0],
+    type: route[1],
+    id: route[2],
+    members: route.slice(3),
+  })];
+  if (route.length >= 4) {
+    routes.push(parsedRoute({
+      pack: route[0],
+      type: route[1],
+      subtype: route[2],
+      id: route[3],
+      members: route.slice(4),
+    }));
+  }
+  return {path: relativePath, visibility: 'public', routes};
 }
 
 export function privateArtifactDirectory({pack, type, subtype = null, id, lifecycle}) {

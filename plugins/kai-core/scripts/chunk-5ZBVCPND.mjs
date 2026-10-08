@@ -6,15 +6,15 @@ import {
   knownGap,
   redactReport,
   snapshotWarning
-} from "./chunk-3LIPICJ5.mjs";
+} from "./chunk-KXQHJRMI.mjs";
 import {
   buildMigrationWorksheet,
   planHierarchy
-} from "./chunk-PDYAMSXH.mjs";
+} from "./chunk-JNGE5NJR.mjs";
 import {
   hierarchyContext,
   hierarchyStatus
-} from "./chunk-K3LPE7V7.mjs";
+} from "./chunk-MYXGL74E.mjs";
 import {
   artifactBasisCurrent,
   bindEvidenceReadView,
@@ -36,7 +36,7 @@ import {
   verifyAssetContent,
   verifyReferences,
   verifyVerdict
-} from "./chunk-AVOAKVOX.mjs";
+} from "./chunk-3GWXG66W.mjs";
 import {
   DATABASE,
   assertWorkspaceWrite,
@@ -60,7 +60,7 @@ import {
   verifyArtifact,
   verifySubject,
   workspaceManifest
-} from "./chunk-RVMY63WZ.mjs";
+} from "./chunk-GYNRRGQI.mjs";
 import {
   COORDINATION_DATABASE,
   LEGACY_COORDINATION_DATABASE,
@@ -68,7 +68,7 @@ import {
   normalized,
   resolveWorkspaceRoot,
   workspaceRootFromCoordinationDatabase
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import {
   RuntimeError,
   canonicalJson,
@@ -737,7 +737,7 @@ var hierarchySubject = (options) => validateHierarchySubject({
 async function installedRoles(host, root, env) {
   let selected = host;
   if (!selected) {
-    const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
+    const { createNativeHost } = await import("./chunk-FN444IIJ.mjs");
     selected = createNativeHost({ env });
   }
   if (!selected?.capabilities) return [];
@@ -905,7 +905,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
       fail("RECOVERY_REQUIRED", "an interrupted schema-5 migration accepts only explicit recovery maintenance");
     }
     if (!host) {
-      const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
+      const { createNativeHost } = await import("./chunk-FN444IIJ.mjs");
       host = createNativeHost({ env });
     }
     if (["request", "authorize", "receipt"].includes(verb)) {
@@ -944,7 +944,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
       }
     }
     if (!host) {
-      const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
+      const { createNativeHost } = await import("./chunk-FN444IIJ.mjs");
       host = createNativeHost({ env });
     }
     if (["request", "authorize", "receipt"].includes(verb)) {
@@ -982,7 +982,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
     closeStore(admitted);
   }
   if (!host) {
-    const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
+    const { createNativeHost } = await import("./chunk-FN444IIJ.mjs");
     host = createNativeHost({ env });
   }
   if (["request", "authorize", "receipt", "capture", "capabilities", "prepare"].includes(verb)) {

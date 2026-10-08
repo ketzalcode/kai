@@ -25,6 +25,8 @@ import {
   readFileSync, existsSync, readdirSync, cpSync, writeFileSync, mkdirSync, mkdtempSync, rmSync,
   lstatSync, readlinkSync, symlinkSync, openSync, closeSync,
 } from 'node:fs';
+import fs from 'node:fs';
+import {syncBuiltinESMExports} from 'node:module';
 import { spawn, spawnSync } from 'node:child_process';
 import { join, resolve, dirname, basename, relative, isAbsolute, sep } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -219,6 +221,63 @@ function selfTest() {
     writeFileSync(manifestPath, `${JSON.stringify(exactManifest, null, 2)}\n`);
   } finally {
     rmSync(schema5Root, {recursive: true, force: true});
+  }
+
+  const concurrentInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-concurrent-init-'));
+  try {
+    spawnSync('git', ['init', '--quiet', concurrentInitRoot], {windowsHide: true});
+    writeFileSync(join(concurrentInitRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(concurrentInitRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(concurrentInitRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const winnerManifest = schema5Manifest({workspace_id: 'concurrent-winner'});
+    const loserManifest = schema5Manifest({workspace_id: 'concurrent-loser'});
+    const privateRoot = join(concurrentInitRoot, '.kai');
+    const originalMkdirSync = fs.mkdirSync;
+    let injected = false;
+    let winner;
+    fs.mkdirSync = function interleavedMkdir(path, options) {
+      const result = originalMkdirSync(path, options);
+      if (!injected && normalized(path) === normalized(privateRoot)) {
+        injected = true;
+        winner = initializeWorkspace({
+          root: concurrentInitRoot,
+          manifest: winnerManifest,
+          confirm: true,
+        });
+      }
+      return result;
+    };
+    syncBuiltinESMExports();
+    let loser;
+    try {
+      loser = initializeWorkspace({
+        root: concurrentInitRoot,
+        manifest: loserManifest,
+        confirm: true,
+      });
+    } finally {
+      fs.mkdirSync = originalMkdirSync;
+      syncBuiltinESMExports();
+    }
+    const survivingManifest = existsSync(join(privateRoot, 'manifest.json'))
+      ? JSON.parse(readFileSync(join(privateRoot, 'manifest.json'), 'utf8'))
+      : null;
+    const checked = survivingManifest ? checkWorkspace(concurrentInitRoot) : {errors: ['manifest missing']};
+    ok(winner?.ok
+      && !loser?.ok
+      && loser.code === 'VERSION_CONFLICT'
+      && survivingManifest?.workspace_id === winnerManifest.workspace_id
+      && existsSync(join(privateRoot, 'core', 'runtime', 'coordination.sqlite'))
+      && checked.errors.length === 0,
+    'a losing concurrent initializer cannot delete or replace the winner manifest and database',
+    [
+      `winner=${JSON.stringify(winner)}`,
+      `loser=${JSON.stringify(loser)}`,
+      ...checked.errors,
+      ...snapshotTree(concurrentInitRoot),
+    ]);
+  } finally {
+    rmSync(concurrentInitRoot, {recursive: true, force: true});
   }
 
   const failedInitRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-failed-init-'));

@@ -291,6 +291,21 @@ test('direct traversal, junction escape, and case alias escape are PATH_ESCAPE',
   );
 }));
 
+test('linked Direction PATH_ESCAPE diagnostic does not reject accepted Windows case aliases', () => withWorkspace((root) => {
+  const outside = write(root, 'outside-direction.md', validDirection());
+  mkdirSync(join(root, 'docs', 'kai'), {recursive: true});
+  symlinkSync(outside, join(root, 'docs', 'kai', 'DIRECTION.md'), 'file');
+  assert.throws(
+    () => readDirection({workspaceRoot: root, manifest: manifest()}),
+    error => {
+      assert.equal(error?.code, 'PATH_ESCAPE');
+      assert.match(error.message, /symbolic link|junction/i);
+      assert.doesNotMatch(error.message, /case aliases/i);
+      return true;
+    },
+  );
+}));
+
 test('requireDirection with coordinated false returns early without touching the filesystem', () => {
   const guardedManifest = new Proxy({}, {
     get() {

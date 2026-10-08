@@ -86,7 +86,7 @@ export function readDirection({workspaceRoot, manifest, projectId}) {
   let bytes;
   try {
     if (pathHasLink(project.projectRoot, absolutePath) || !exactPath(absolutePath)) {
-      fail('PATH_ESCAPE', `${relativePath} must resolve without link or case aliases`);
+      fail('PATH_ESCAPE', `${relativePath} must resolve without symbolic link or junction aliases`);
     }
     bytes = readFileSync(absolutePath);
   } catch (error) {

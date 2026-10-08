@@ -12,8 +12,8 @@ import {
   transitionAsset,
   validateMigrationWorksheet,
   validateRoster
-} from "./chunk-PDYAMSXH.mjs";
-import "./chunk-K3LPE7V7.mjs";
+} from "./chunk-JNGE5NJR.mjs";
+import "./chunk-MYXGL74E.mjs";
 import {
   GRANTABLE_STATES,
   SHIP_STATES,
@@ -31,7 +31,7 @@ import {
   requireLease,
   rollbackMigration,
   sameActor
-} from "./chunk-AVOAKVOX.mjs";
+} from "./chunk-3GWXG66W.mjs";
 import {
   LOCK,
   applyOperation,
@@ -49,14 +49,14 @@ import {
   safePath,
   schema5MigrationLockPath,
   workspaceManifest
-} from "./chunk-RVMY63WZ.mjs";
+} from "./chunk-GYNRRGQI.mjs";
 import {
   COORDINATION_DATABASE,
   LEGACY_COORDINATION_DATABASE,
   WORKSPACE_SCHEMA_VERSION,
   normalized,
   pathHasLink
-} from "./chunk-KUPTE65K.mjs";
+} from "./chunk-S3PHSJ44.mjs";
 import {
   copilotLaunch
 } from "./chunk-EYAI7HIN.mjs";
