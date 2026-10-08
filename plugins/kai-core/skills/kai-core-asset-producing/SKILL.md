@@ -12,6 +12,9 @@ That pack skill is the sole authority for namespace, type, subtype, formats,
 publication rules, and privacy rules.
 
 Core never substitutes a department vocabulary or invents a fallback lane.
+Before deriving a path, require an existing typed hierarchy subject, its
+current version, an authorized artifact target, current acting authority, and
+named acceptance authority. Direct work never enters this lifecycle.
 
 ## Interface
 
@@ -49,6 +52,8 @@ does not establish acceptance.
 
 Refuse before creating a directory or copying bytes when:
 
+- the typed hierarchy subject does not exist, its version is stale, or acting,
+  target, or acceptance authority is missing;
 - the owning publication route is absent, belongs to another pack, or is not
   immediately before this contract;
 - type or subtype is unknown;

@@ -68,12 +68,14 @@ for (const entry of agents) {
     id: entry.id, pack: entry.pack, body, tools, knownSkills: availableSkills,
     knownAgents: new Set(agents.map(agent => agent.id)),
   }), [], `${entry.id}: core routes and bounded fallback`);
+  assert.equal(packPlan.durableOutputProducerDeclaration({...entry, body}), true,
+    `${entry.id}: engineering agents explicitly declare durable output production`);
+  assert.deepEqual(packPlan.agentDirectOutputErrors({...entry, body}), [],
+    `${entry.id}: direct output cannot become an unauthorized durable Kai artifact`);
   const publicationErrors = packPlan.publicationRoutingErrors({...entry, body});
   assert.deepEqual(publicationErrors, [],
     `${entry.id}: engineering publication route must immediately precede asset production`);
-  if (packPlan.routedSkills(body).includes('kai-core-asset-producing')) {
-    durableProducers += 1;
-  }
+  durableProducers += 1;
   assert.ok(body.length <= 20_000, `${entry.id}: focused prompt budget`);
   if (entry.id.startsWith('eng-reviewer-') ||
     ['eng-advisor-investigation', 'eng-lead-technical-writing'].includes(entry.id)) {
@@ -81,22 +83,6 @@ for (const entry of agents) {
       ref.target === 'kai-core-no-self-remediation' && ref.firing.includes('loaded')),
     `${entry.id}: assessment output must not become product remediation`);
   }
-  assert.ok(durableProducers > 0,
-    'engineering publication routing must inspect at least one durable producer');
-  const mutatedProducer = agents
-    .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}))
-    .find(entry => packPlan.routedSkills(entry.body).includes('kai-core-asset-producing'));
-  assert.ok(mutatedProducer, 'engineering mutation needs one live durable producer');
-  assert.ok(
-    packPlan.publicationRoutingErrors({
-      ...mutatedProducer,
-      body: mutatedProducer.body.replace(
-        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`engineering-workspace-publication`[^.]*\.\s*/i,
-        '',
-      ),
-    }).some(message => message.includes('must route `engineering-workspace-publication`')),
-    'removing an engineering producer publication route must fail by owning skill name',
-  );
   if (entry.id === 'eng-advisor-investigation' || entry.id === 'eng-reviewer-code') {
     assert.ok(tools.includes('edit') && tools.includes('execute'),
       `${entry.id}: requested evidence and reviewer-owned coordination records need write tools`);
@@ -110,6 +96,37 @@ for (const entry of agents) {
     }
   }
 }
+assert.ok(durableProducers > 0,
+  'engineering publication routing must inspect at least one declared durable producer');
+const mutatedProducer = agents
+  .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}))
+  .find(entry => packPlan.durableOutputProducerDeclaration(entry) === true);
+assert.ok(mutatedProducer, 'engineering mutation needs one declared durable producer');
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    ...mutatedProducer,
+    body: mutatedProducer.body
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`engineering-workspace-publication`[^.]*\.\s*/gi,
+        '',
+      )
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+        '',
+      ),
+  }).some(message => message.includes('declared durable-output producer')),
+  'removing both engineering production routes must fail from the producer declaration',
+);
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    ...mutatedProducer,
+    body: mutatedProducer.body.replace(
+      'durable-output-producer: true',
+      'durable-output-producer: false',
+    ),
+  }).some(message => message.includes('declared non-producer')),
+  'falsifying an engineering producer declaration must fail while routes remain',
+);
 for (const skill of [
   'coding-standards', 'research-before-coding', 'onboard-to-codebase', 'pr-sizing', 'build-diagrams',
   'pr-delivery',

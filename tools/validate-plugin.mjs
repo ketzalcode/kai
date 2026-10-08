@@ -47,6 +47,8 @@ import {
   publicationInventoryErrors, publicationContractErrors, publicationRoutingErrors,
   activeWorkspaceLanguageErrors, markdownCoordinationAuthorityErrors,
   directionContractErrors, epicWorkflowContractErrors, chiefOfStaffContractErrors,
+  agentDirectOutputErrors, activeGuideDecisionFiles, workflowShipContractErrors,
+  stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
   RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
   RETIRED_ENGINEERING_AGENT_IDS, RETIRED_DIRECTOR_AGENT_IDS, RETIRED_CORE_SKILL_IDS,
   RETIRED_CORE_AGENT_IDS, sourceAssetIndex, sourceAssetPath,
@@ -898,7 +900,10 @@ if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block te
   }
   for (const entry of allFiles) {
     const body = readFileSync(entry.path, 'utf8');
-    for (const msg of publicationRoutingErrors({...entry, body})) err(entry.rel, msg);
+    for (const msg of publicationRoutingErrors({...entry, body, fm: entry.fm})) err(entry.rel, msg);
+    if (entry.kind === 'agent') {
+      for (const msg of agentDirectOutputErrors({...entry, body})) err(entry.rel, msg);
+    }
     for (const msg of activeWorkspaceLanguageErrors({...entry, body})) err(entry.rel, msg);
     for (const msg of markdownCoordinationAuthorityErrors({...entry, body})) err(entry.rel, msg);
   }
@@ -913,6 +918,30 @@ if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block te
     body: director ?? '',
   })) {
     err(directorRel, msg);
+  }
+
+  const shipRel = 'plugins/kai-engineering/agents/workflow-ship.agent.md';
+  const ship = readIf(join(ROOT, ...shipRel.split('/')));
+  for (const msg of workflowShipContractErrors({body: ship ?? ''})) err(shipRel, msg);
+
+  const stewardshipRel = 'plugins/kai-core/skills/kai-core-work-stewardship/SKILL.md';
+  const stewardship = readIf(join(ROOT, ...stewardshipRel.split('/')));
+  for (const msg of stewardshipAuthorityErrors({body: stewardship ?? ''})) {
+    err(stewardshipRel, msg);
+  }
+
+  for (const id of ['kai-core-web-evaluation', 'kai-core-web-content-extraction']) {
+    const path = skillSourceFile(ROOT, id);
+    const body = path ? readIf(path) : null;
+    for (const msg of webOutputContractErrors({id, body: body ?? ''})) {
+      err(path ? rel(path) : `skill:${id}`, msg);
+    }
+  }
+
+  const grantingPath = skillSourceFile(ROOT, 'kai-core-work-granting');
+  const grantingBody = grantingPath ? readIf(grantingPath) : null;
+  for (const msg of directModeContractErrors({body: grantingBody ?? ''})) {
+    err(grantingPath ? rel(grantingPath) : 'skill:kai-core-work-granting', msg);
   }
 
   for (const id of [
@@ -931,29 +960,21 @@ if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block te
     }
   }
 
-  // Current workspace/package guides may not present retired source contracts as
-  // live. Generated catalog output is refreshed with the release task.
-  for (const path of [
-    join(ROOT, 'README.md'),
-    join(ROOT, 'docs', 'getting-started.md'),
-    join(ROOT, 'docs', 'host-capabilities.md'),
-    join(ROOT, 'docs', 'how-kai-works.md'),
-    join(ROOT, 'docs', 'workspaces.md'),
-    join(ROOT, 'docs', 'reference', 'plugin-structure.md'),
-    join(ROOT, 'docs', 'reference', 'packages', 'kai-engineering.md'),
-    join(ROOT, 'docs', 'reference', 'packages', 'kai-creative.md'),
-  ]) {
-    if (!existsSync(path)) continue;
+  // Every current guide and decision is live contract text. Historical design,
+  // proposal, release-record, and evaluation trees remain excluded; explicit
+  // schema-history regions inside current guides are ignored by the shared
+  // language gates.
+  for (const {path, rel: guideRel} of activeGuideDecisionFiles(ROOT)) {
     const body = readFileSync(path, 'utf8');
     for (const msg of activeWorkspaceLanguageErrors({body})) {
-      err(rel(path), msg);
+      err(guideRel, msg);
     }
     for (const msg of markdownCoordinationAuthorityErrors({body})) {
-      err(rel(path), msg);
+      err(guideRel, msg);
     }
-    if (path.endsWith('workspaces.md')
+    if (guideRel === 'docs/workspaces.md'
       && !/explicit[\s\S]{0,120}schema[- ]5 migration/i.test(body)) {
-      err(rel(path), 'must route historical workspaces through explicit schema-5 migration');
+      err(guideRel, 'must route historical workspaces through explicit schema-5 migration');
     }
   }
 

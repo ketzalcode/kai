@@ -19,9 +19,17 @@ route explicit migration.
 
 ## Direct mode
 
-When `inspect` reports `coordinationRequired: false`, perform the directly
-authorized request without a database, Direction, hierarchy record, lease,
-dispatch plan, or report tree. Do not backfill coordination afterward.
+Run the dedicated runtime probe:
+
+```text
+node "<kai-plugin>/scripts/coordinate.mjs" direct --root "<workspace-root>"
+```
+
+Perform the directly authorized request without a database, Direction,
+hierarchy record, lease, dispatch plan, or report tree only when that command
+exits zero and returns `coordinationRequired: false`. `inspect` describes a
+workspace; it never authorizes direct mode. Do not backfill coordination
+afterward.
 
 ## Preflight
 

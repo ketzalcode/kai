@@ -67,6 +67,7 @@ function parseAgent(id) {
       description: field('description'),
       model: field('model'),
       tools: JSON.parse(field('tools')),
+      durableOutputProducer: field('durable-output-producer'),
     },
   };
 }
@@ -99,6 +100,8 @@ function assertContract(agent, {
 }) {
   assert.equal(agent.fm.name, agent.id);
   assert.equal(agent.fm.model, `"${model}"`);
+  assert.equal(agent.fm.durableOutputProducer, 'true',
+    `${agent.id}: creative agents explicitly declare durable output production`);
   assert.deepEqual(agent.fm.tools, tools, `${agent.id}: tools must stay least-privilege`);
   assert.ok(!agent.fm.tools.some(tool =>
     ['agent', 'read_agent', 'write_agent'].includes(tool)),
@@ -121,9 +124,16 @@ function assertContract(agent, {
     knownAgents,
   }), [], `${agent.id}: on-demand routing contract`);
   assert.deepEqual(
-    packPlan.publicationRoutingErrors({pack: 'creative', id: agent.id, body: agent.body}),
+    packPlan.publicationRoutingErrors({
+      pack: 'creative', id: agent.id, kind: 'agent', body: agent.body,
+    }),
     [],
     `${agent.id}: creative publication route must immediately precede asset production`,
+  );
+  assert.deepEqual(
+    packPlan.agentDirectOutputErrors({pack: 'creative', id: agent.id, body: agent.body}),
+    [],
+    `${agent.id}: direct output cannot become an unauthorized durable Kai artifact`,
   );
   assert.doesNotMatch(agent.body, /^\*\*Inherits:\*\*/m);
 
@@ -264,19 +274,37 @@ const productionContract = {
 assertContract(production, productionContract);
 
 const creativeProducers = [design, video, production].filter(agent =>
-  routedSkills(agent.body).includes('kai-core-asset-producing'));
+  packPlan.durableOutputProducerDeclaration(agent) === true);
 assert.ok(creativeProducers.length > 0,
-  'creative publication routing must inspect at least one durable producer');
+  'creative publication routing must inspect at least one declared durable producer');
 assert.ok(
   packPlan.publicationRoutingErrors({
     pack: 'creative',
     id: creativeProducers[0].id,
+    kind: 'agent',
+    body: creativeProducers[0].body
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`[^.]*\.\s*/gi,
+        '',
+      )
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+        '',
+      ),
+  }).some(message => message.includes('declared durable-output producer')),
+  'removing both creative production routes must fail from the producer declaration',
+);
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    pack: 'creative',
+    id: creativeProducers[0].id,
+    kind: 'agent',
     body: creativeProducers[0].body.replace(
-      /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`/i,
-      '',
+      'durable-output-producer: true',
+      'durable-output-producer: false',
     ),
-  }).some(message => message.includes('must route `creative-workspace-publication`')),
-  'removing a creative producer publication route must fail by owning skill name',
+  }).some(message => message.includes('declared non-producer')),
+  'falsifying a creative producer declaration must fail while routes remain',
 );
 
 assert.throws(

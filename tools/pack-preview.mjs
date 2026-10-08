@@ -51,6 +51,9 @@ import {
   publicationRoutingErrors, activeWorkspaceLanguageErrors,
   markdownCoordinationAuthorityErrors, directionContractErrors,
   epicWorkflowContractErrors, chiefOfStaffContractErrors,
+  durableOutputProducerDeclaration, agentDirectOutputErrors,
+  activeGuideDecisionFiles, workflowShipContractErrors,
+  stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
   agentProfileModelErrors,
   agentPromptLimitErrors, agentAuthoringReferenceErrors,
   ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT, ACTING_EXEMPT,
@@ -1275,6 +1278,7 @@ function selfTest() {
   }).some((m) => /must not declare an eager `\*\*Inherits:\*\*` line/.test(m)),
   'an eager **Inherits:** line is rejected outright, with no opt-in marker gating the one-shape rule');
   const routingBody = [
+    'durable-output-producer: false',
     'Invoke `kai-core-contract-v1` before the first other core skill.',
     'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
     'State the limitation once and tell the operator to install or update `kai-core`.',
@@ -1431,30 +1435,54 @@ function selfTest() {
     ...sourceAgentFiles(ROOT),
     ...sourceSkillFiles(ROOT),
   ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
-  const liveProducers = routedSources.filter(entry =>
-    routedSkills(entry.body).includes('kai-core-asset-producing'));
-  const liveNonProducers = routedSources.filter(entry =>
-    !routedSkills(entry.body).includes('kai-core-asset-producing'));
+  const routedAgents = routedSources.filter(entry => entry.kind === 'agent');
+  const liveProducers = routedAgents.filter(entry =>
+    durableOutputProducerDeclaration(entry) === true);
+  const liveNonProducers = routedAgents.filter(entry =>
+    durableOutputProducerDeclaration(entry) === false);
   ok(liveProducers.length > 0 && liveNonProducers.length > 0
     && routedSources.every(entry =>
-      publicationRoutingErrors(entry).length === 0),
-  `publication ordering inspects producers=${liveProducers.length} and non-producers=${liveNonProducers.length}`);
+      publicationRoutingErrors(entry).length === 0)
+    && routedAgents.every(entry => agentDirectOutputErrors(entry).length === 0),
+  `publication ordering inspects declared producers=${liveProducers.length} `
+    + `and declared non-producers=${liveNonProducers.length}`);
   const routeMutation = liveProducers[0];
   const routeOwner = publicationSkillForPack(routeMutation.pack);
   ok(publicationRoutingErrors({
     ...routeMutation,
+    body: routeMutation.body
+      .replace(
+        new RegExp(
+          `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
+          'gi',
+        ),
+        '',
+      )
+      .replace(
+        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+        '',
+      ),
+  }).some(message => message.includes('declared durable-output producer')),
+  'removing both producer routes fails from the authoritative declaration');
+  ok(publicationRoutingErrors({
+    ...routeMutation,
     body: routeMutation.body.replace(
-      new RegExp(`(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\``, 'i'),
-      '',
+      'durable-output-producer: true',
+      'durable-output-producer: false',
     ),
-  }).some(message => message.includes(`must route \`${routeOwner}\``)),
-  'removing a producer publication route fails by owning skill name');
+  }).some(message => message.includes('declared non-producer')),
+  'falsifying a producer declaration fails while producer routes remain');
   const nonProducerMutation = liveNonProducers[0];
   ok(publicationRoutingErrors({
     ...nonProducerMutation,
-    body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`.\n`,
-  }).some(message => /non-producer/.test(message)),
-  'adding a publication route to a non-producer fails by classification');
+    body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`, then apply \`kai-core-asset-producing\`.\n`,
+  }).some(message => /declared non-producer/.test(message)),
+  'adding producer routes to a declared non-producer fails by classification');
+  ok(agentDirectOutputErrors({
+    ...routeMutation,
+    body: routeMutation.body.replace('existing typed hierarchy subject', 'new report request'),
+  }).some(message => /existing typed hierarchy subject/.test(message)),
+  'removing the typed-subject gate from direct durable output fails');
 
   ok(routedSources.length > 0
     && routedSources.every(entry =>
@@ -1468,6 +1496,21 @@ function selfTest() {
     body: '`BOARD.md` is the authoritative coordination backlog.',
   }).some(message => /Markdown coordination authority/.test(message)),
   'restoring an authoritative Markdown board fails by gate name');
+
+  const activeDocs = activeGuideDecisionFiles(ROOT)
+    .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
+  ok(activeDocs.length >= 10
+    && activeDocs.every(entry =>
+      activeWorkspaceLanguageErrors(entry).length === 0
+      && markdownCoordinationAuthorityErrors(entry).length === 0),
+  `active guide/decision gate inspects a non-vacuous corpus (count=${activeDocs.length})`);
+  const activeDocMutation = activeDocs.find(entry =>
+    entry.rel === 'docs/reference/agent-authoring/README.md');
+  ok(activeDocMutation && activeWorkspaceLanguageErrors({
+    ...activeDocMutation,
+    body: `${activeDocMutation.body}\nCreate a work item under \`.kai/state/items/demo.md\`.\n`,
+  }).length >= 2,
+  'restoring schema-4 language in an active guide fails the corpus-wide gate');
 
   const directionBody = readFileSync(skillPath('kai-core-workspace-paths'), 'utf8');
   ok(directionContractErrors({body: directionBody}).length === 0,
@@ -1492,6 +1535,57 @@ function selfTest() {
     body: chiefBody.replace('cannot invent', 'may invent'),
   }).some(message => /cannot invent/.test(message)),
   'allowing Chief of Staff to invent hierarchy scope fails by boundary name');
+
+  const workflowShipBody = readAgent('workflow-ship');
+  ok(workflowShipContractErrors({body: workflowShipBody}).length === 0,
+    'workflow-ship failure and restore semantics match the runtime');
+  ok(workflowShipContractErrors({
+    body: workflowShipBody.replace(
+      /resumes the\s+recorded allowed original state/i,
+      'returns the Task to release-ready',
+    ),
+  }).some(message => /never rewind to release-ready/.test(message)),
+  'workflow-ship release-ready rewind mutation fails');
+  ok(workflowShipContractErrors({
+    body: workflowShipBody.replace('release Task', 'release item'),
+  }).some(message => /generic item/.test(message)),
+  'workflow-ship generic-item mutation fails');
+
+  const stewardshipBody = readFileSync(skillPath('kai-core-work-stewardship'), 'utf8');
+  ok(stewardshipAuthorityErrors({body: stewardshipBody}).length === 0,
+    'stewardship proposal and activation authority matches runtime');
+  ok(stewardshipAuthorityErrors({
+    body: stewardshipBody.replace(
+      'Feature owner or delegated pack/scope authority',
+      'Feature scope authority',
+    ),
+  }).some(message => /Requirement proposal/.test(message)),
+  'stewardship authority mutation fails by action name');
+
+  const evaluationBody = readFileSync(skillPath('kai-core-web-evaluation'), 'utf8');
+  const extractionBody = readFileSync(skillPath('kai-core-web-content-extraction'), 'utf8');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation', body: evaluationBody,
+  }).length === 0 && webOutputContractErrors({
+    id: 'kai-core-web-content-extraction', body: extractionBody,
+  }).length === 0,
+  'web contracts use typed private/public paths and collision-safe report IDs');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: evaluationBody.replace(
+      '.kai/core/reports/<id>/',
+      '<working-root>/qa/<id>/',
+    ),
+  }).some(message => /typed core report path/.test(message)),
+  'web evaluation QA-root mutation fails');
+
+  const grantingBody = readFileSync(skillPath('kai-core-work-granting'), 'utf8');
+  ok(directModeContractErrors({body: grantingBody}).length === 0,
+    'direct mode uses the direct verb and checks coordinationRequired:false');
+  ok(directModeContractErrors({
+    body: grantingBody.replace(' direct --root ', ' inspect --root '),
+  }).some(message => /`direct` runtime verb/.test(message)),
+  'inspect cannot authorize direct mode');
 
   ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
     && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),

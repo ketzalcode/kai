@@ -45,6 +45,7 @@ export const APPROVED_AGENT_MODELS = new Set([
   'gpt-5.6-sol',
   'gpt-5.6-terra',
 ]);
+export const DURABLE_OUTPUT_PRODUCER_KEY = 'durable-output-producer';
 
 export function parseFrontmatter(raw) {
   const lines = raw.split(/\r?\n/);
@@ -90,6 +91,15 @@ export function parseToolList(rawTools) {
   return t.slice(1, -1).split(',').map((x) => stripQuotes(x)).filter(Boolean);
 }
 
+export function durableOutputProducerValue(fm) {
+  const raw = fm?.[DURABLE_OUTPUT_PRODUCER_KEY];
+  if (raw === undefined) return null;
+  const value = raw.trim();
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return null;
+}
+
 // The authoring contract for a single kai entry.
 export function loaderErrors(kind, id, fm) {
   const out = [];
@@ -99,6 +109,16 @@ export function loaderErrors(kind, id, fm) {
   else if (name !== id) out.push(`frontmatter name "${name}" must equal ${kind} id "${id}"`);
 
   if (!stripQuotes(fm.description)) out.push('frontmatter `description` is missing or empty');
+
+  if (kind === 'agent') {
+    if (fm[DURABLE_OUTPUT_PRODUCER_KEY] === undefined) {
+      out.push(`kai agents require frontmatter \`${DURABLE_OUTPUT_PRODUCER_KEY}: true|false\``);
+    } else if (durableOutputProducerValue(fm) === null) {
+      out.push(`frontmatter \`${DURABLE_OUTPUT_PRODUCER_KEY}\` must be \`true\` or \`false\``);
+    }
+  } else if (fm[DURABLE_OUTPUT_PRODUCER_KEY] !== undefined) {
+    out.push(`frontmatter key \`${DURABLE_OUTPUT_PRODUCER_KEY}\` is agent-only and not valid on a skill`);
+  }
 
   // Custom agents use `tools` to control host capabilities. Agent Skills do not
   // define this field, but existing Kai skills may still carry it; validate it

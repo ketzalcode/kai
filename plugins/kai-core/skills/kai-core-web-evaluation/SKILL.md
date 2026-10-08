@@ -67,7 +67,7 @@ force it into the QA/UX findings scaffold below.
 All output for a single evaluation lives in:
 
 ```
-.kai/core/reports/web-evaluation-<YYYY-MM-DD>-<NN>-<descriptor>/
+.kai/core/reports/<report-id>/
   drafts/
     report.md
   evidence/
@@ -78,34 +78,34 @@ All output for a single evaluation lives in:
     trace.zip        (optional, if Playwright trace recording was on)
 ```
 
+The canonical forms are:
+
+```text
+.kai/core/reports/<id>/{drafts,evidence,scratch}
+docs/kai/core/reports/<id>/
+```
+
 In evidence-only mode, the run folder contains only raw local evidence
 such as `screenshots/`, trace, and non-secret capture metadata. It must not
 create `report.md` or the derived map there; the map goes only to the
 validated Task `artifact_targets` entry.
 
-- Resolve `<workspace-root>` and `<working-root>` from the dispatch packet,
-  current Direction, or `kai-core-workspace-paths`. Never substitute the calling
-  agent's repository/cwd for a different target workspace.
+- Resolve `<workspace-root>` and the bound project from the dispatch packet,
+  current Direction, or `kai-core-workspace-paths`. Never substitute the
+  calling agent's repository/cwd for a different target workspace.
 - Load `kai-core-workspace-publication`, then Load `kai-core-asset-producing`
   before retaining a durable evaluation report.
-- `<YYYY-MM-DD>` is the **local date** — the deterministic anchor. Every QA, UX,
-  SEO, PM, persona, and explore/extract run for a day lives under it. The date is
-  never model-generated, so a run is always where you expect it.
-- `<NN>` is a **zero-padded, per-day sequential run index**. Pick it by listing
-  `<working-root>/qa/<today>/` and taking the highest existing index + 1 (`01` if
-  empty); runs then sort in the order they ran. Never fill a lower gap and never
-  reuse or overwrite an index.
-- `<flavor>` identifies the calling agent's lens — typical values: `qa`
-  (`eng-reviewer-quality`), `explore`, `extract`, `stress`. New auditing agents
-  pick a short kebab slug.
-- `<descriptor>` is descriptive only, **not** the grouping key. Use the
-  Task or Feature key when one exists so related evaluations stay greppable;
-  otherwise use a kebab slug for the surface (derived from the target URL or
-  Feature name). Examples:
+- For this skill, `<id>` is `<report-id>`, and `<report-id>` is
+  `web-evaluation-<artifact-id>`. Generate the `artifact-id` as
+  the UUID that the subject-bound `artifact.register` command will validate.
+  That UUID makes every rerun collision-safe without adding a directory shape
+  absent from the core publication table.
+- Store the local date, calling lens (`qa`, `explore`, `stress`, or another
+  short kebab slug), typed subject/version, and descriptive surface slug in
+  `report.md` metadata instead of path segments. Example surface slugs:
   - `https://app.contoso.com/checkout` → `contoso-checkout`
   - User said "the new onboarding flow" → `onboarding-flow`
-  - When in doubt, use a short slug — never block the run on it; the date + index
-    already locate the run.
+  - When in doubt, use a short slug; the artifact UUID already locates the run.
 
 **Placement is mandatory — never write elsewhere.** Evaluation output lands
 under the validated typed core report path. Never write it to Copilot
@@ -265,9 +265,9 @@ If the agent is approaching any cap, it should:
 ## Anti-patterns
 
 - ❌ Writing the report into the repo root, Copilot session-state, a temp
-  directory, or the calling agent's cwd. Always use
-  `<working-root>/qa/<YYYY-MM-DD>/<NN>-<flavor>-<descriptor>/`, even when a
-  non-QA agent or a browser/stress harness (`OUT`) drives the run.
+  directory, a retired generic QA root, or the calling agent's cwd. Always use the
+  validated `.kai/core/reports/<report-id>/` private path, even when a non-QA
+  agent or a browser/stress harness (`OUT`) drives the run.
 - ❌ Taking a screenshot per page just to "have coverage". Each
   screenshot must be referenced.
 - ❌ Reporting a finding without a viewport (QA flavor) or without

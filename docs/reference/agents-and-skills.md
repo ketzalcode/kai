@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
      `npm test` fails if this file drifts from the shipped surface. -->
 
-The repository ships **21 agents** and **35 skills**.
+The repository ships **21 agents** and **38 skills**.
 
-The default marketplace supplies **21 agents** and **35 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **21 agents** and **38 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -27,8 +27,8 @@ Set a workspace up and keep its structure honest.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Creates or validates kai workspace state and guides the core-first split-pack install when requested. Verified after each step, non-destructive, and idempotent. |
-| [`workflow-initiative-init`](../../plugins/kai-core/agents/workflow-initiative-init.agent.md) | `kai-core` | Creates a scope-gated kai initiative workspace with north star, milestones, artifact paths, work records, and threads. Use when a new mission or initiative starts. Not execution before PM scope approval. |
+| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Use when installing Kai packs, initializing a private schema-5 workspace, repairing its binding, or running an explicit older-workspace migration. |
+| [`workflow-epic-init`](../../plugins/kai-core/agents/workflow-epic-init.agent.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning. |
 
 ### Direction
 
@@ -36,7 +36,7 @@ Delivery coordination, on explicit request. Nothing has to be routed through it.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`director-chief-of-staff`](../../plugins/kai-core/agents/director-chief-of-staff.agent.md) | `kai-core` | Coordinates Kai roles to drive an outcome, work item, initiative, or incident to truthful completion. Use when asking someone to ship, run, or drive work. Not personal agenda or task management. |
+| [`director-chief-of-staff`](../../plugins/kai-core/agents/director-chief-of-staff.agent.md) | `kai-core` | Coordinates approved Kai work by planning, granting, reconciling, and handing off executable Tasks without inventing product or hierarchy authority. |
 
 ### Engineering
 
@@ -102,45 +102,62 @@ Core-owned weekly synthesis and explicitly requested signal scans.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | `kai-core` | Produces a concise weekly activity digest via kai-core-pulse-digest while keeping source bindings private. Use when the operator asks for a week-in-review. Not posting, pushing, or mutating sources. |
-| [`workflow-proactive-scan`](../../plugins/kai-core/agents/workflow-proactive-scan.agent.md) | `kai-core` | Emits a read-only notification payload for newly actionable @operator signals and release-ready items. Use when an external scheduler runs a selected kai workspace scan. Not autonomous replies, approvals, commits, or deploys. |
+| [`workflow-weekly-pulse`](../../plugins/kai-core/agents/workflow-weekly-pulse.agent.md) | `kai-core` | Produces an explicitly requested private weekly synthesis from selected sources without changing coordinated work. |
+| [`workflow-proactive-scan`](../../plugins/kai-core/agents/workflow-proactive-scan.agent.md) | `kai-core` | Runs an explicitly requested read-only signal scan and writes a private typed core report payload without acting on findings. |
 
 ## Skills
 
 Skills are methods and contracts. Most are not invoked directly —
 an acting agent loads each one on demand, at the exact instruction that needs it.
 
-### Workspace & scope
+### Workspace & direction
 
-The shared contracts every acting agent loads: where work goes, and what it may change.
+Resolve private schema-5 workspaces, initialize Direction, and validate core publication vocabulary.
+
+| Name | Package | What it owns |
+| ---- | ------- | ------------ |
+| [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Use when resolving a Kai workspace, project binding, Direction file, coordination database, or typed private/public artifact path. |
+| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, repairing its private binding, or explicitly migrating an older workspace. |
+| [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material. |
+
+### Hierarchy & stewardship
+
+Define hierarchy meaning, authority, Task execution, acting, and granting.
+
+| Name | Package | What it owns |
+| ---- | ------- | ------------ |
+| [`kai-core-work-hierarchy`](../../plugins/kai-core/skills/kai-core-work-hierarchy/SKILL.md) | `kai-core` | Use when reading, proposing, or validating coordinated Epic, Feature, Requirement, or Task structure. |
+| [`kai-core-work-stewardship`](../../plugins/kai-core/skills/kai-core-work-stewardship/SKILL.md) | `kai-core` | Use when a named authority proposes, activates, prioritizes, holds, reprioritizes, or closes hierarchy scope. |
+| [`kai-core-work-task`](../../plugins/kai-core/skills/kai-core-work-task/SKILL.md) | `kai-core` | Use when creating, promoting, granting, executing, handing off, reviewing, restoring, or closing a coordinated Task. |
+| [`kai-core-work-acting`](../../plugins/kai-core/skills/kai-core-work-acting/SKILL.md) | `kai-core` | Use when an actor is about to read or mutate granted coordinated work, record evidence, ask a question, hand off, or submit review. |
+| [`kai-core-work-granting`](../../plugins/kai-core/skills/kai-core-work-granting/SKILL.md) | `kai-core` | Use when a grantor plans executable Tasks, issues or reconciles grants and leases, prepares a native role, or handles recovery. |
+
+### Pack publication
+
+Own the department vocabularies that validate typed private work and accepted public knowledge.
+
+| Name | Package | What it owns |
+| ---- | ------- | ------------ |
+| [`engineering-workspace-publication`](../../plugins/kai-engineering/skills/engineering-workspace-publication/SKILL.md) | `kai-engineering` | Use when an engineering role may retain or publish durable feature, architecture, decision, investigation, or release knowledge. |
+| [`creative-workspace-publication`](../../plugins/kai-creative/skills/creative-workspace-publication/SKILL.md) | `kai-creative` | Use when a creative role may retain or publish durable design, guidance, decision, report, or media material. |
+
+### Operating contracts & assets
+
+Shared operating, scope, communication, activity, completion, and durable asset lifecycle contracts.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`kai-core-operating-rules`](../../plugins/kai-core/skills/kai-core-operating-rules/SKILL.md) | `kai-core` | The universal rules every kai role follows: role kinds, staying in lane, test ownership, human-only gates, shipping honesty, and @operator. Load whenever acting as a kai role. |
-| [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Defines workspace resolution, the private .kai layout, publication, storage modes, and the artifact path convention. Use when resolving a root or choosing an artifact path. |
-| [`kai-core-workspace-initiative`](../../plugins/kai-core/skills/kai-core-workspace-initiative/SKILL.md) | `kai-core` | Defines initiative artifact layout, coordination and closure, personal state, and the schema-3 manifest. Use when working inside an initiative or validating a .kai manifest. |
-| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Initializes and validates kai workspaces, and guides explicit migration to the split pack install surface. Use when installing kai packs or creating or repairing workspace state. |
-| [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | `kai-core` | Defines fine-grained agent activity signals. Use when agents need append-only start, progress, stop, deadline, and silence reporting in .kai/activity.jsonl. |
+| [`kai-core-work-activity`](../../plugins/kai-core/skills/kai-core-work-activity/SKILL.md) | `kai-core` | Use when a coordinated role should emit optional append-only start, progress, stop, deadline, or silence signals. |
 | [`kai-core-fleet-observation`](../../plugins/kai-core/skills/kai-core-fleet-observation/SKILL.md) | `kai-core` | Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate. |
-| [`kai-core-definition-of-done`](../../plugins/kai-core/skills/kai-core-definition-of-done/SKILL.md) | `kai-core` | Release-readiness and production-completion gate. Use when deciding whether work can move to in-review, release-ready, or shipped. |
-| [`kai-core-scope-discipline`](../../plugins/kai-core/skills/kai-core-scope-discipline/SKILL.md) | `kai-core` | Use when a finding or proposed change may expand approved scope, or when a direct advisory request needs an unadopted proposal rather than implementation. |
+| [`kai-core-definition-of-done`](../../plugins/kai-core/skills/kai-core-definition-of-done/SKILL.md) | `kai-core` | Use when deciding whether implementation, review, evidence, publication, release readiness, or coordinated closure is complete. |
+| [`kai-core-scope-discipline`](../../plugins/kai-core/skills/kai-core-scope-discipline/SKILL.md) | `kai-core` | Use when a request, finding, or recommendation may expand approved scope, create durable work, or require adoption authority. |
 | [`kai-core-no-self-remediation`](../../plugins/kai-core/skills/kai-core-no-self-remediation/SKILL.md) | `kai-core` | Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review. |
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | `kai-core` | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
-| [`kai-core-initiative-stewardship`](../../plugins/kai-core/skills/kai-core-initiative-stewardship/SKILL.md) | `kai-core` | Initiative steward contract. Use when managing north-star state, proposals, priorities, item records, milestones, or closure for an initiative. |
-| [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Peer-question packet contract. Use when kai roles need a real QUESTION/ANSWER exchange over inline consult, peer transport, or durable item thread. |
+| [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | `kai-core` | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
-
-### Work coordination & artifacts
-
-How an acting agent claims, leases, and tracks a work item, and how it produces and closes the artifacts that work leaves behind.
-
-| Name | Package | What it owns |
-| ---- | ------- | ------------ |
-| [`kai-core-work-acting`](../../plugins/kai-core/skills/kai-core-work-acting/SKILL.md) | `kai-core` | Defines how a dispatched agent acts on work it already holds: verify-before-write, collision, handoff, question, and review-routing protocols. Use when acting on a granted item. |
-| [`kai-core-work-granting`](../../plugins/kai-core/skills/kai-core-work-granting/SKILL.md) | `kai-core` | Defines how the single lease grantor selects, claims, and reconciles work: leases, lifecycle, recovery, dispatch, backlog, board. Use when granting or reconciling work. |
-| [`kai-core-work-item`](../../plugins/kai-core/skills/kai-core-work-item/SKILL.md) | `kai-core` | Defines the durable work-item record: its schema, field rules, and Outcome/Acceptance/Evidence templates. Use when creating or updating a work item. |
-| [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | `kai-core` | Defines how a run produces and closes out a durable asset: pre-dispatch declaration, disposition and validity state, metadata, revision, supersession, and migration. |
-| [`kai-core-asset-closing`](../../plugins/kai-core/skills/kai-core-asset-closing/SKILL.md) | `kai-core` | Defines the verdicts over an existing asset: four-dimensional completion, acceptance authority, freshness, placement and promotion, and initiative closure. |
+| [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | `kai-core` | Use when a validated pack-owned artifact needs a private revision, acceptance binding, publication, provenance, or closure. |
+| [`kai-core-asset-closing`](../../plugins/kai-core/skills/kai-core-asset-closing/SKILL.md) | `kai-core` | Use when recording final asset disposition, validity, supersession, retraction, archival, or publication cleanup. |
 
 ### Engineering craft
 
@@ -184,7 +201,7 @@ Browser-run plumbing, content methods, and the claim safety creative content res
 | [`kai-core-web-evaluation`](../../plugins/kai-core/skills/kai-core-web-evaluation/SKILL.md) | `kai-core` | Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports. |
 | [`kai-core-web-content-extraction`](../../plugins/kai-core/skills/kai-core-web-content-extraction/SKILL.md) | `kai-core` | Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption. |
 | [`content-grounding`](../../plugins/kai-creative/skills/content-grounding/SKILL.md) | `kai-creative` | Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence. |
-| [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | `kai-core` | Defines weekly catch-up digest collection and output. Use when workflow-weekly-pulse needs source adapters, privacy rules, prioritization, and page shapes. |
+| [`kai-core-pulse-digest`](../../plugins/kai-core/skills/kai-core-pulse-digest/SKILL.md) | `kai-core` | Use when an explicitly requested weekly synthesis needs source weighting, narratable structure, coverage accounting, and private report output. |
 
 ### Operator signals
 
@@ -192,7 +209,7 @@ Core's own reading of what the team records need a human for, plus the runner-in
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`kai-core-proactive-scan`](../../plugins/kai-core/skills/kai-core-proactive-scan/SKILL.md) | `kai-core` | Owns operator-signal interpretation (decisions, replies, actions, release-ready items) for on-demand briefings, and defines runner-invoked proactive notifications. Use when interpreting team records for a requested briefing or scan, or when an external cadence scans workspaces for newly actionable items. |
+| [`kai-core-proactive-scan`](../../plugins/kai-core/skills/kai-core-proactive-scan/SKILL.md) | `kai-core` | Use when an explicitly requested read-only scan must classify, deduplicate, deliver, and acknowledge operator-relevant signals. |
 
 ---
 

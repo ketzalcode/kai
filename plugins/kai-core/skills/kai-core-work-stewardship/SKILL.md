@@ -19,8 +19,10 @@ authority**. Stewardship mutations use typed `epic.*`, `feature.*`, and
 | Prioritize Epics | operator or explicitly delegated Current Goal steward |
 | Propose a Feature | owning pack authority |
 | Activate or prioritize a Feature | Epic steward |
-| Propose or activate a Requirement | Feature scope authority |
-| Propose or promote a Task | Requirement scope authority |
+| Propose a Requirement | Feature owner or delegated pack/scope authority |
+| Activate a Requirement | Feature owner only |
+| Propose a Task | Requirement scope authority or delegated specialist |
+| Promote a Task to ready | Requirement scope authority |
 | Grant a Task | Chief of Staff or the authorized lone-actor route |
 | Close a parent | that record's completion authority |
 

@@ -11,7 +11,7 @@
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
-import { join, dirname, posix } from 'node:path';
+import { join, dirname, posix, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packPluginName, PACK_ORDER as SHIPPED_PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
 import { bundlePack } from './bundle.mjs';
@@ -20,6 +20,10 @@ import {
   KIND_AGENT_FAMILIES, ROLE_POSTURES, MODEL_POLICY_VERSION, AGENT_PROMPT_HARD_LIMIT,
   agentProfileModelErrors as profileModelErrors,
 } from '../../src/core/lib/agent-model-policy.mjs';
+import {
+  parseFrontmatter,
+  durableOutputProducerValue,
+} from '../../src/core/lib/loader-contract.mjs';
 
 // scripts/lib/ -> repo root is two levels up. Callers may pass an explicit root
 // (tests, or a generator run against a checkout) but default to this repo.
@@ -1570,7 +1574,19 @@ export function routedSkills(body) {
   return out;
 }
 
-export function publicationRoutingErrors({pack, id = '(unknown)', body}) {
+export function durableOutputProducerDeclaration({kind = 'agent', body, fm}) {
+  if (kind !== 'agent') return null;
+  if (fm && Object.hasOwn(fm, 'durable-output-producer')) {
+    return durableOutputProducerValue(fm);
+  }
+  const parsed = parseFrontmatter(body ?? '');
+  if (parsed.ok) return durableOutputProducerValue(parsed.fm);
+  const fallback = normalizeLF(body ?? '')
+    .match(/^durable-output-producer:\s*(true|false)\s*$/m);
+  return fallback ? fallback[1] === 'true' : null;
+}
+
+export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill', body, fm}) {
   const errors = [];
   const owner = publicationSkillForPack(pack);
   if (!owner) {
@@ -1585,6 +1601,27 @@ export function publicationRoutingErrors({pack, id = '(unknown)', body}) {
   for (const route of foreign) {
     errors.push(`cannot route publication skill owned by another pack: \`${route.id}\`; `
       + `${packPluginName(pack)} owns \`${owner}\``);
+  }
+
+  if (kind === 'agent') {
+    const declaredProducer = durableOutputProducerDeclaration({kind, body, fm});
+    if (declaredProducer === null) {
+      errors.push('agent must declare frontmatter `durable-output-producer: true|false`');
+      return [...new Set(errors)];
+    }
+    if (!declaredProducer) {
+      if (publicationRoutes.length > 0 || productionRoutes.length > 0) {
+        errors.push('declared non-producer must not route a workspace publication skill '
+          + 'or `kai-core-asset-producing`');
+      }
+      return [...new Set(errors)];
+    }
+    if (productionRoutes.length === 0
+      || !publicationRoutes.some(route => route.id === owner)) {
+      errors.push(`declared durable-output producer must route \`${owner}\` immediately before `
+        + '`kai-core-asset-producing`');
+      return [...new Set(errors)];
+    }
   }
 
   if (productionRoutes.length === 0) {
@@ -1616,6 +1653,22 @@ export function publicationRoutingErrors({pack, id = '(unknown)', body}) {
   return [...new Set(errors)];
 }
 
+export function agentDirectOutputErrors({body}) {
+  const errors = [];
+  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
+  if (!/Direct work may return only inline or repository-native output\./i.test(flat)) {
+    errors.push('direct work must be limited to inline or repository-native output');
+  }
+  if (!/durable Kai report or publication requires an existing typed hierarchy subject, its current version, an authorized artifact target, current acting authority, and named acceptance authority/i.test(flat)) {
+    errors.push('durable Kai output requires an existing typed hierarchy subject, current version, '
+      + 'authorized artifact target, acting authority, and acceptance authority');
+  }
+  if (!/never mint a subject or call `artifact\.register` from the direct branch/i.test(flat)) {
+    errors.push('the direct branch must never mint a subject or call artifact.register');
+  }
+  return errors;
+}
+
 const HISTORY_OPEN = '<!-- kai:schema4-history -->';
 const HISTORY_CLOSE = '<!-- /kai:schema4-history -->';
 
@@ -1637,6 +1690,38 @@ function activeContractText(body) {
   }
   if (historical) unclosed = true;
   return {text: kept.join('\n'), unclosed};
+}
+
+const ACTIVE_GUIDE_DECISION_EXCLUSIONS = [
+  /^docs\/proposals(?:\/|$)/,
+  /^docs\/superpowers(?:\/|$)/,
+  /^docs\/kai\/reports(?:\/|$)/,
+  /^docs\/reference\/skill-evaluation(?:\/|$)/,
+];
+
+export function activeGuideDecisionFiles(root = REPO_ROOT) {
+  const files = [];
+  const add = (path) => {
+    if (!existsSync(path)) return;
+    const fileRel = relative(root, path).replace(/\\/g, '/');
+    if (ACTIVE_GUIDE_DECISION_EXCLUSIONS.some(pattern => pattern.test(fileRel))) return;
+    files.push({path, rel: fileRel});
+  };
+  for (const name of ['AGENTS.md', 'README.md']) add(join(root, name));
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, {withFileTypes: true})
+      .sort((a, b) => a.name.localeCompare(b.name))) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(path);
+      } else if (entry.name.endsWith('.md')) {
+        add(path);
+      }
+    }
+  };
+  walk(join(root, 'docs'));
+  return files.sort((a, b) => a.rel.localeCompare(b.rel));
 }
 
 export function activeWorkspaceLanguageErrors({body}) {
@@ -1725,6 +1810,102 @@ export function chiefOfStaffContractErrors({body}) {
   }
   if (!/cannot invent[\s\S]{0,200}Epic[\s\S]{0,80}Feature[\s\S]{0,80}Requirement[\s\S]{0,160}scope[\s\S]{0,80}priority[\s\S]{0,80}authorit[\s\S]{0,80}acceptance/i.test(flat)) {
     errors.push('Chief of Staff cannot invent Epic/Feature/Requirement scope, priority, authority, or acceptance');
+  }
+  return errors;
+}
+
+export function workflowShipContractErrors({body}) {
+  const errors = [];
+  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
+  if (/\bitems?\b/i.test(flat)) {
+    errors.push('workflow-ship must name the executable hierarchy record as a Task, not a generic item');
+  }
+  if (!/failed deployment or production verification[\s\S]{0,500}blocked[\s\S]{0,200}resume_state/i.test(flat)) {
+    errors.push('workflow-ship failure must block while preserving the original state in resume_state');
+  }
+  if (!/evidence[\s\S]{0,240}operator[\s\S]{0,240}task\.restore/i.test(flat)
+    && !/task\.restore[\s\S]{0,240}evidence[\s\S]{0,240}operator/i.test(flat)) {
+    errors.push('workflow-ship recovery requires evidence/operator resolution before task.restore');
+  }
+  if (!/resumes the recorded allowed original state/i.test(flat)
+    || /returns?[^.]{0,240}(?:deploying|production-verification)[^.]{0,120}release-ready/i.test(flat)) {
+    errors.push('workflow-ship recovery must resume the recorded allowed original state '
+      + 'and never rewind to release-ready');
+  }
+  return errors;
+}
+
+export function stewardshipAuthorityErrors({body}) {
+  const errors = [];
+  const text = normalizeLF(body ?? '');
+  const rows = [
+    [
+      /(?:Propose|Create) a Requirement(?: proposal)?/,
+      /Feature owner or delegated pack\/scope authority/,
+      'Requirement proposal',
+    ],
+    [
+      /Activate a Requirement/,
+      /Feature owner(?: only)?/,
+      'Requirement activation',
+    ],
+    [
+      /(?:Propose|Create) a Task(?: proposal)?/,
+      /Requirement scope authority or delegated specialist/,
+      'Task proposal',
+    ],
+    [
+      /Promote a Task(?: to ready)?/,
+      /Requirement scope authority/,
+      'Task promotion',
+    ],
+  ];
+  const lines = text.split('\n').filter(line => /^\|.*\|$/.test(line));
+  for (const [action, authority, label] of rows) {
+    const row = lines.find(line => action.test(line));
+    if (!row || !authority.test(row)) {
+      errors.push(`${label} authority does not match the runtime/design contract`);
+    }
+  }
+  return errors;
+}
+
+export function webOutputContractErrors({id, body}) {
+  const errors = [];
+  const text = normalizeLF(body ?? '');
+  if (/<working-root>[\\/]qa|<working-root>\/qa/i.test(text)) {
+    errors.push(`${id}: web output must use the typed core report path, never <working-root>/qa`);
+  }
+  for (const required of [
+    '.kai/core/reports/<id>/{drafts,evidence,scratch}',
+    'docs/kai/core/reports/<id>/',
+  ]) {
+    if (!text.includes(required)) {
+      errors.push(`${id}: typed core report path must match the core private/public publication forms`);
+    }
+  }
+  const expectedPrefix = id === 'kai-core-web-content-extraction'
+    ? 'web-extract-<artifact-id>'
+    : 'web-evaluation-<artifact-id>';
+  if (!text.includes(expectedPrefix)
+    || !/artifact-id[\s\S]{0,220}(?:UUID|collision-safe)/i.test(text)
+    || /<NN>/.test(text)) {
+    errors.push(`${id}: reruns require a collision-safe typed ID backed by the artifact UUID, not <NN>`);
+  }
+  return [...new Set(errors)];
+}
+
+export function directModeContractErrors({body}) {
+  const errors = [];
+  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
+  if (!/scripts\/coordinate\.mjs"\s+direct\s+--root\s+"<workspace-root>"/i.test(flat)) {
+    errors.push('direct mode must invoke the `direct` runtime verb');
+  }
+  if (!/coordinationRequired:\s*false/.test(flat)) {
+    errors.push('direct mode must require `coordinationRequired: false` from the runtime');
+  }
+  if (/When `inspect` reports `coordinationRequired:\s*false`/i.test(flat)) {
+    errors.push('`inspect` cannot authorize direct mode');
   }
   return errors;
 }

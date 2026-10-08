@@ -2,6 +2,7 @@
 name: workflow-creative-demo-production
 description: "Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication."
 model: "claude-sonnet-5"
+durable-output-producer: true
 tools: ["execute", "read", "edit", "ask_user", "skill"]
 ---
 
@@ -13,6 +14,13 @@ bounded production operations; it does not invent the story or record the
 product.
 
 **Primary profile:** procedure
+
+Direct work may return only inline or repository-native output. It must not
+register a durable Kai artifact. Any durable Kai report or publication requires
+an existing typed hierarchy subject, its current version, an authorized
+artifact target, current acting authority, and named acceptance authority. If
+any is absent, stop; never mint a subject or call `artifact.register` from the
+direct branch.
 
 Invoke `kai-core-contract-v1` before the first other core skill in a session. If
 core is unavailable or incompatible, continue only with a bounded single-shot
@@ -126,8 +134,9 @@ acceptance.
 
 ## Persistent work
 
-Apply `kai-core-workspace-paths` before reading or writing workspace state.
-Apply `creative-workspace-publication`, then apply
+When the existing typed subject and authorities above are present, apply
+`kai-core-workspace-paths` before reading or writing workspace state. Apply
+`creative-workspace-publication`, then apply
 `kai-core-asset-producing` before creating or revising durable plans, reports,
 or final media so target, provenance, custody, completion authority, and
 validity are explicit. Raw media remains typed private evidence unless the

@@ -32,6 +32,13 @@ const requiredHelpers = [
   'directionContractErrors',
   'epicWorkflowContractErrors',
   'chiefOfStaffContractErrors',
+  'durableOutputProducerDeclaration',
+  'agentDirectOutputErrors',
+  'activeGuideDecisionFiles',
+  'workflowShipContractErrors',
+  'stewardshipAuthorityErrors',
+  'webOutputContractErrors',
+  'directModeContractErrors',
 ];
 for (const helper of requiredHelpers) {
   assert.equal(typeof packPlan[helper], 'function',
@@ -116,23 +123,33 @@ const sourceEntries = [
 assert.ok(sourceEntries.length >= 50,
   `expected a non-vacuous shipped source corpus, found ${sourceEntries.length}`);
 
+const agentEntries = sourceEntries.filter(entry => entry.kind === 'agent');
 let producers = 0;
 let nonProducers = 0;
 for (const entry of sourceEntries) {
-  const routes = packPlan.routedSkills(entry.body);
-  if (routes.includes('kai-core-asset-producing')) producers += 1;
-  else nonProducers += 1;
+  if (entry.kind === 'agent') {
+    const declared = packPlan.durableOutputProducerDeclaration(entry);
+    assert.equal(typeof declared, 'boolean',
+      `${entry.rel}: frontmatter must declare durable-output-producer true or false`);
+    if (declared) producers += 1;
+    else nonProducers += 1;
+    assert.deepEqual(
+      packPlan.agentDirectOutputErrors(entry),
+      [],
+      `${entry.rel}: direct output and durable Kai authority boundary`,
+    );
+  }
   assert.deepEqual(
     packPlan.publicationRoutingErrors(entry),
     [],
     `${entry.rel}: owning publication route and producer classification`,
   );
 }
-assert.ok(producers > 0, 'publication routing gate must inspect at least one producer');
-assert.ok(nonProducers > 0, 'publication routing gate must inspect at least one non-producer');
+assert.ok(producers > 0, 'publication routing gate must inspect at least one declared producer');
+assert.ok(nonProducers > 0, 'publication routing gate must inspect at least one declared non-producer');
 
-const producer = sourceEntries.find(entry =>
-  packPlan.routedSkills(entry.body).includes('kai-core-asset-producing'));
+const producer = agentEntries.find(entry =>
+  packPlan.durableOutputProducerDeclaration(entry) === true);
 const ownerPublication = publicationByPack[producer.pack];
 const withoutOwnerRoute = producer.body.replace(
   new RegExp(
@@ -145,6 +162,35 @@ assert.ok(
   packPlan.publicationRoutingErrors({...producer, body: withoutOwnerRoute})
     .some(message => message.includes(`must route \`${ownerPublication}\``)),
   'removing a producer publication route must fail by owning skill name',
+);
+
+const withoutBothRoutes = producer.body
+  .replace(
+    new RegExp(
+      `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\`[^.]*\\.\\s*`,
+      'gi',
+    ),
+    '',
+  )
+  .replace(
+    /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+    '',
+  );
+assert.ok(
+  packPlan.publicationRoutingErrors({...producer, body: withoutBothRoutes})
+    .some(message => message.includes('declared durable-output producer')),
+  'removing both production routes must still fail from the authoritative producer declaration',
+);
+
+assert.ok(
+  packPlan.publicationRoutingErrors({
+    ...producer,
+    body: producer.body.replace(
+      'durable-output-producer: true',
+      'durable-output-producer: false',
+    ),
+  }).some(message => message.includes('declared non-producer')),
+  'falsifying the producer declaration must fail while producer routes remain',
 );
 
 const wrongPublication = producer.pack === 'creative'
@@ -173,14 +219,32 @@ assert.ok(
   'inserting another routed contract between publication and production must fail order',
 );
 
-const nonProducer = sourceEntries.find(entry =>
-  !packPlan.routedSkills(entry.body).includes('kai-core-asset-producing'));
+const nonProducer = agentEntries.find(entry =>
+  packPlan.durableOutputProducerDeclaration(entry) === false);
 assert.ok(
   packPlan.publicationRoutingErrors({
     ...nonProducer,
-    body: `${nonProducer.body}\n\nApply \`${publicationByPack[nonProducer.pack]}\` for later use.\n`,
-  }).some(message => message.includes('non-producer')),
-  'adding a publication route to a non-producer must fail classification',
+    body: `${nonProducer.body}\n\nApply \`${publicationByPack[nonProducer.pack]}\`, then apply \`kai-core-asset-producing\`.\n`,
+  }).some(message => message.includes('declared non-producer')),
+  'adding both durable routes to a declared non-producer must fail classification',
+);
+
+assert.ok(
+  packPlan.agentDirectOutputErrors({
+    ...producer,
+    body: producer.body.replace('existing typed hierarchy subject', 'new report request'),
+  }).some(message => message.includes('existing typed hierarchy subject')),
+  'removing the typed-subject gate from a durable direct-output branch must fail',
+);
+assert.ok(
+  packPlan.agentDirectOutputErrors({
+    ...producer,
+    body: producer.body.replace(
+      'Direct work may return only inline or repository-native output.',
+      'Direct work may register a durable Kai report.',
+    ),
+  }).some(message => message.includes('inline or repository-native')),
+  'allowing direct work to register durable Kai output must fail',
 );
 
 const shippedLanguageErrors = sourceEntries.flatMap(entry =>
@@ -283,17 +347,115 @@ assert.ok(
   'letting Chief of Staff invent hierarchy scope must fail by boundary name',
 );
 
+const activeDocs = packPlan.activeGuideDecisionFiles(root)
+  .map(entry => ({...entry, body: read(entry.path)}));
+assert.ok(activeDocs.length >= 10,
+  `active guide/decision scan must be non-vacuous, found ${activeDocs.length}`);
+for (const required of [
+  'AGENTS.md',
+  'README.md',
+  'docs/reference/agent-authoring/README.md',
+  'docs/reference/agents-and-skills.md',
+  'docs/kai/decisions/workspace-schema-3.md',
+  'docs/kai/decisions/asset-lifecycle.md',
+]) {
+  assert.ok(activeDocs.some(entry => entry.rel === required),
+    `active guide/decision scan must include ${required}`);
+}
+for (const historical of [
+  'docs/superpowers/specs/2026-10-02-composable-workspace-design.md',
+  'docs/proposals/agent-contract-refactor.md',
+  'docs/kai/reports/releases/2026-08-24/01-ship-pack-split-generator-gates/ship-record.md',
+  'docs/reference/skill-evaluation/coding-foundation-authoring.md',
+]) {
+  assert.ok(existsSync(join(root, ...historical.split('/'))),
+    `historical exclusion fixture must exist: ${historical}`);
+  assert.ok(!activeDocs.some(entry => entry.rel === historical),
+    `active guide/decision scan must retain the historical exclusion for ${historical}`);
+}
+for (const entry of activeDocs) {
+  assert.deepEqual(packPlan.activeWorkspaceLanguageErrors(entry), [],
+    `${entry.rel}: active guide/decision must use schema-5 language`);
+  assert.deepEqual(packPlan.markdownCoordinationAuthorityErrors(entry), [],
+    `${entry.rel}: active guide/decision must keep SQLite authoritative`);
+}
+const activeDocMutation = {
+  ...activeDocs.find(entry => entry.rel === 'docs/reference/agent-authoring/README.md'),
+};
+assert.ok(packPlan.activeWorkspaceLanguageErrors({
+  ...activeDocMutation,
+  body: `${activeDocMutation.body}\nCreate a work item under \`.kai/state/items/demo.md\`.\n`,
+}).length >= 2,
+  'restoring schema-4 language in any active guide must fail the corpus-wide scan');
+
 const workspacesGuide = read(join(root, 'docs', 'workspaces.md'));
-assert.deepEqual(packPlan.activeWorkspaceLanguageErrors({
-  rel: 'docs/workspaces.md',
-  body: workspacesGuide,
-}), [], 'the current workspace guide must present schema 5 as the live contract');
 assert.match(workspacesGuide, /explicit[\s\S]{0,120}schema[- ]5 migration/i,
   'the current workspace guide routes old workspaces through explicit migration');
+const supersededWorkspaceDecision = read(
+  join(root, 'docs', 'kai', 'decisions', 'workspace-schema-3.md'),
+);
+assert.match(supersededWorkspaceDecision, /status:\s*superseded/i,
+  'the schema-3 decision must be explicitly superseded');
+assert.match(supersededWorkspaceDecision, /\.\.\/\.\.\/workspaces\.md/,
+  'the schema-3 decision must link to the current workspace contract');
+
+const workflowShip = read(agentPath('engineering', 'workflow-ship'));
+assert.deepEqual(packPlan.workflowShipContractErrors({body: workflowShip}), [],
+  'workflow-ship must block failures and restore the recorded original state');
+assert.ok(packPlan.workflowShipContractErrors({
+  body: workflowShip.replace(
+    /resumes the\s+recorded allowed original state/i,
+    'returns the Task to release-ready',
+  ),
+}).some(message => message.includes('never rewind to release-ready')),
+'workflow-ship mutation must reject a release-ready rewind claim');
+assert.ok(packPlan.workflowShipContractErrors({
+  body: workflowShip.replace('release Task', 'release item'),
+}).some(message => message.includes('generic item')),
+'workflow-ship mutation must reject generic executable-record language');
+
+const stewardship = read(skillPath('core', 'kai-core-work-stewardship'));
+assert.deepEqual(packPlan.stewardshipAuthorityErrors({body: stewardship}), [],
+  'stewardship authority table must match runtime and design');
+assert.ok(packPlan.stewardshipAuthorityErrors({
+  body: stewardship.replace(
+    'Feature owner or delegated pack/scope authority',
+    'Feature scope authority',
+  ),
+}).some(message => message.includes('Requirement proposal')),
+'stewardship mutation must reject the wrong Requirement proposal authority');
+
+for (const id of ['kai-core-web-evaluation', 'kai-core-web-content-extraction']) {
+  const body = read(skillPath('core', id));
+  assert.deepEqual(packPlan.webOutputContractErrors({id, body}), [],
+    `${id}: typed private/public path and collision-safe report ID`);
+}
+assert.ok(packPlan.webOutputContractErrors({
+  id: 'kai-core-web-evaluation',
+  body: read(skillPath('core', 'kai-core-web-evaluation'))
+    .replace('.kai/core/reports/<id>/', '<working-root>/qa/<id>/'),
+}).some(message => message.includes('typed core report path')),
+'web evaluation mutation must reject the retired QA working root');
+assert.ok(packPlan.webOutputContractErrors({
+  id: 'kai-core-web-content-extraction',
+  body: read(skillPath('core', 'kai-core-web-content-extraction'))
+    .replace('<artifact-id>', '<NN>'),
+}).some(message => message.includes('collision-safe typed ID')),
+'web extraction mutation must reject an unrepresented sequential run directory');
+
+const granting = read(skillPath('core', 'kai-core-work-granting'));
+assert.deepEqual(packPlan.directModeContractErrors({body: granting}), [],
+  'direct mode must use the direct runtime verb and require coordinationRequired:false');
+assert.ok(packPlan.directModeContractErrors({
+  body: granting.replace(' direct --root ', ' inspect --root '),
+}).some(message => message.includes('`direct` runtime verb')),
+'direct-mode mutation must reject inspect as authorization');
 
 const validator = read(join(root, 'tools', 'validate-plugin.mjs'));
 assert.match(validator, /publicationInventoryErrors/,
   'validate-plugin must run the publication inventory gate');
+assert.match(validator, /activeGuideDecisionFiles/,
+  'validate-plugin must scan the complete active guide/decision corpus');
 assert.doesNotMatch(validator, /fixture "storage_mode" must be "shared"/,
   'validate-plugin must not enforce retired shared placement as a live fixture');
 assert.doesNotMatch(validator, /could not locate the manifest "areas" list/,
@@ -301,6 +463,7 @@ assert.doesNotMatch(validator, /could not locate the manifest "areas" list/,
 
 console.log(
   `coordination source routing assertions passed `
-  + `(sources=${sourceEntries.length}, producers=${producers}, non-producers=${nonProducers}, `
+  + `(sources=${sourceEntries.length}, declared producers=${producers}, `
+  + `declared non-producers=${nonProducers}, active docs=${activeDocs.length}, `
   + `publication tables=${publicationSources.length}, authority sources=${authoritySources.length})`,
 );
