@@ -163,10 +163,11 @@ succeeded.
 Resolve:
 
 - absolute target project root;
-- storage mode: `external`, `repo-local`, or `shared`;
+- placement: `external` or `repo-local`;
 - durable absolute external workspace root when using `external`;
 - stable kebab-case project ID;
-- project-relative `publication_root`, defaulting to `docs/kai`;
+- the fixed project publication root `docs/kai`;
+- operator-supplied `docs/kai/DIRECTION.md`;
 - plugin version from `plugin.json`;
 - operator approval for moves, conflicts, and any non-empty target.
 
@@ -195,156 +196,83 @@ Show:
 
 Do not write into a non-empty target until the operator approves that plan.
 
-## Scaffold
+## Initialize
 
-Create missing private structure idempotently:
+There is one initializer. Before it runs, keep the approved manifest bytes and
+confirmation outside the not-yet-created workspace. Do not use native
+`coordinate.mjs request` / `authorize` / `init`; those commands must not create
+host, request, capability, or runtime files before workspace activation.
 
-```text
-.kai/
-  manifest.json
-  CONVENTIONS.md
-  state/
-    ACTIVE.md
-    BOARD.md
-    backlog.md
-    items/README.md
-    threads/README.md
-    initiatives/
-      README.md
-      INDEX.md
-  runs/
-  review/
-  archive/
-  personal/
-    README.md
-    inbox.md
-    agenda.md
-    workspaces.md
-    consultations/
-    decisions/
-    proactive/
-    identity/
-      README.md
-      voice.md
-      career-snapshot.md
-      skills-inventory.md
-      current-work.md
-      career-goals.md
-    lessons/
-    courses/
-    certs/
-    growth/
-```
-
-Do not create initiative slug directories. `workflow-initiative-init` owns
-them. Run area subdirectories are created on first use.
-
-For the publication root, create from
-`templates/publication/` only when the configured path is absent:
+The operator supplies `docs/kai/DIRECTION.md`. Then pass the exact approved
+schema-5 manifest on stdin to the standalone initializer:
 
 ```text
-<project-root>/<publication-root>/
-  README.md
-  decisions/
-  specs/
-  reports/
+node "<kai-plugin>/scripts/workspace-doctor.mjs" --initialize --root "<workspace-root>" --confirm
 ```
 
-Never overwrite a project-native index or create `docs/kai` when another
-publication root was selected.
+Activation is manifest-last and failure-clean. A successful initialization
+creates only:
+
+```text
+.kai/manifest.json
+.kai/core/runtime/coordination.sqlite
+docs/kai/README.md
+docs/kai/DIRECTION.md
+```
+
+`README.md` is created only when absent; existing bytes are preserved.
+Direction is verified, never invented or replaced. Do not create department,
+personal, learning, run, review, archive, or generic artifact directories.
+Validated first-write helpers create typed `<pack>/<type>/<id>/<lifecycle>`
+parents only when real work needs them.
 
 ## Manifest
 
-Write schema 4 for a new workspace. Schema 4 is what the coordination runtime
-requires; schema 3 remains inspect-only — readable through `inspect`,
-`status` and `legacy` only. Every other read (`detail`, `context`,
-`messages`, `export`, `hash`) refuses with `SCHEMA_MISMATCH`, and so does
-each coordinated write.
+Write schema 5 for a new workspace. Schema 3 and schema 4 are historical,
+read-only stores: `inspect`, `status` and `legacy` remain available, while
+every coordinated write refuses with `SCHEMA_MISMATCH` until an explicit
+schema-5 migration completes.
 
 ```json
 {
   "plugin": "kai-core",
   "version": "<plugin-version>",
-  "schema_version": 4,
+  "schema_version": 5,
   "scaffolded": "<YYYY-MM-DD>",
   "workspace_id": "<stable-id>",
-  "storage_mode": "<external|repo-local|shared>",
+  "placement": "<external|repo-local>",
   "workspace_root": "<absolute external root or '.'>",
-  "state": ".kai/state",
-  "runs": ".kai/runs",
-  "review": ".kai/review",
-  "archive": ".kai/archive",
-  "personal": ".kai/personal",
+  "private_root": ".kai",
+  "direction": "docs/kai/DIRECTION.md",
   "projects": [
     {
       "id": "<project-id>",
       "path": "<absolute external project path or '.'>",
       "publication_root": "docs/kai"
     }
-  ],
-  "areas": [
-    "qa", "eng", "product", "revenue", "support", "review",
-    "ship", "incident", "ai", "learn", "lessons", "pulse", "content"
   ]
 }
 ```
 
 Preserve `workspace_id` across re-runs and moves. Reconcile missing fixed keys
 without changing operator-selected project IDs, paths, publication roots, or
-storage mode.
+placement.
 
 ### Coordination store
 
-The manifest alone does not make a workspace coordinated. Nothing creates the
-store implicitly — not a read, not the doctor, not a scaffold. After the
-schema-4 manifest validates, create it explicitly:
+The schema-5 manifest and schema-2 store are one activation unit. Reads never
+create or repair either one. If either is absent or invalid, report the exact
+refusal and run the standalone initializer only for a genuinely new workspace.
 
-```text
-node "<kai-plugin>/scripts/coordinate.mjs" request --root "<workspace-root>"   # {"type":"maintenance","action":"init"}
-node "<kai-plugin>/scripts/coordinate.mjs" authorize --root "<workspace-root>" --request <nonce>
-node "<kai-plugin>/scripts/coordinate.mjs" init --root "<workspace-root>" --confirm --capability <uuid>
-```
+### Historical schema-3/4 migration
 
-**Host precondition for this ladder.** `authorize` does not trust a pasted
-answer: it re-reads the host's own event journal to find the matching `ask_user`
-interaction. That needs `COPILOT_AGENT_SESSION_ID` to be set **and**
-`~/.copilot/session-state/<id>/events.jsonl` to already exist in this context.
-Without both, `authorize` refuses with `UNSUPPORTED_HOST` — *this context has no
-standalone journal* — no capability is ever issued, and `init` therefore cannot
-run. A host without that journal (the Copilot coding agent today) stays
-**inspect-only**: `inspect` answers and every other verb refuses with
-`SCHEMA_MISMATCH`. Report that gap; do not look for another route to `init`,
-because there is none.
-
-`init --confirm --capability <uuid>` refuses to manufacture a manifest, rewrite
-a schema-3 workspace, overwrite an existing database, or repair a partial store.
-Confirm the result with `inspect`; a schema-4 manifest with no store is not a
-ready workspace. It is not a broken one either. The window between a validated
-schema-4 manifest and the authorized `init` is the **expected** intermediate
-state, not a broken workspace: `inspect` answers and reports the absent database
-as a condition, while every other verb refuses with `SCHEMA_MISMATCH`. Run
-`coordinate.mjs init`; do not re-scaffold or repair.
-
-### Schema-3 to schema-4 migration
-
-There is **no automatic upgrade**. An existing schema-3 workspace stays readable
-through `inspect`, `status` and `legacy` only, and keeps refusing coordinated
-writes until a human authorizes the offline migration:
-
-```text
-node "<kai-plugin>/scripts/coordinate.mjs" inspect  --root "<workspace-root>"
-node "<kai-plugin>/scripts/coordinate.mjs" request  --root "<workspace-root>"   # {"type":"maintenance","action":"migrate"}
-node "<kai-plugin>/scripts/coordinate.mjs" authorize --root "<workspace-root>" --request <nonce>
-node "<kai-plugin>/scripts/coordinate.mjs" migrate  --root "<workspace-root>" --confirm --capability <uuid>
-node "<kai-plugin>/scripts/coordinate.mjs" inspect  --root "<workspace-root>"
-```
-
-The migration is offline: no agent may act on the workspace while it runs. If it
-stops part-way, `inspect` reports the pending state and recovery is explicit —
-`recover --confirm --action activate|abandon --capability <uuid>`, or
-`rollback --confirm --capability <uuid>`, which never destroys new runtime work.
-Report the exact command and its refusal code; never edit a manifest by hand to
-make a refusal go away.
+There is **no automatic upgrade** and no schema-4 initialization path. Existing
+schema-3 and schema-4 workspaces remain inspect-only through `inspect`, `status`,
+and `legacy`. Do not invoke `init`, create a historical database, edit the
+manifest, or write through a lower-level store API. Route the operator to the
+explicit offline schema-5 migration. Until that migration surface is available
+and confirmed, report the workspace as read-only rather than inventing a
+schema-4 write path.
 
 For `external`, write or replace the one machine registry row that pairs the
 project root, workspace root, and manifest `workspace_id`. Use:
@@ -469,7 +397,7 @@ the visible paths `kai/coordination/`, `kai/initiatives/`, `kai/library/`, and
 
 Migration is consented and classified:
 
-1. choose `storage_mode`, project binding, and `publication_root`;
+1. choose schema-5 `placement`, project binding, and `docs/kai`;
 2. stop if both old and new destinations contain conflicting content;
 3. move coordination to `.kai/state/`;
 4. move initiative working records to `.kai/state/initiatives/`;
@@ -484,10 +412,10 @@ Migration is consented and classified:
 9. rewrite every workspace-relative reference and `artifact_targets` entry;
 10. install and verify the selected mode's ignore rules;
 11. register external project bindings when required;
-12. write schema-3 manifest keys and `schema_version: 3` last;
-13. run the workspace doctor;
-14. migrate schema 3 to schema 4 as a separate, separately authorized step
-    (see *Schema-3 to schema-4 migration*). Never chain the two automatically.
+12. preserve the legacy source bytes without activating writes;
+13. run the workspace doctor in inspection mode;
+14. migrate historical state to schema 5 as a separate, explicit offline step
+    (see *Historical schema-3/4 migration*). Never chain it automatically.
 
 Never bulk publish the old library. Never keep both layouts as aliases. Earlier
 root-level `coordination/`, `initiatives/`, `library/`, `personal/`,
@@ -507,7 +435,7 @@ node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 
 For external mode, require registry pairing. Confirm:
 
-- schema version, fixed roots, storage mode, workspace ID, and project bindings;
+- schema version, fixed roots, placement, workspace ID, and project bindings;
 - Git behavior for the selected mode;
 - coordination item and dependency integrity;
 - no split-brain legacy roots;
@@ -516,8 +444,8 @@ For external mode, require registry pairing. Confirm:
 - only accepted assets were published.
 
 `inspect` reports the resolved schema, whether the store exists, and its runtime
-cursor. A schema-4 manifest with no store, or a pending migration, is reported —
-never silently repaired.
+cursor. Historical schema-3/4 state and pending migrations are reported and
+remain read-only — never silently initialized or repaired.
 
 Before every publication write, resolve the real project root and every
 existing destination ancestor again. Refuse a symlink or junction that escapes
@@ -528,11 +456,11 @@ filesystem changes.
 
 ```text
 Workspace: ready | blocked | unknown
-Storage: external | repo-local | shared
+Placement: external | repo-local
 Workspace root: <absolute path>
 Project: <id and absolute path>
 Publication root: <project-relative path>
-Schema: 4 | 3 (inspect-only) | unknown
+Schema: 5 | 3/4 (inspect-only) | unknown
 Coordination store: present | absent | pending migration | unknown
 Registry: paired | n/a | blocked | unknown
 Git contract: verified | n/a | blocked | unknown
@@ -544,7 +472,7 @@ Conflicts: <paths or none>
 Next: <ready, or one exact blocking action>
 ```
 
-Ready requires a healthy doctor result, a present coordination store for a
-schema-4 workspace, and every applicable registry and Git check. A schema-3
-workspace can be `ready` only as an inspect-only workspace, and its next action
-is the explicit migration. Re-running a ready workspace is a no-op.
+Ready requires a healthy doctor result, the exact current coordination store
+for a schema-5 workspace, and every applicable registry and Git check.
+Schema-3/4 workspaces can be `ready` only for inspection, and their next action
+is explicit schema-5 migration. Re-running a ready workspace is a no-op.

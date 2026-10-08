@@ -22,11 +22,9 @@ import {taskStateSatisfies} from './engine.mjs';
 /**
  * Never opens with create/write mode, migrates, repairs, or reads views as state.
  *
- * `intent: 'inspect'` treats an absent schema-4 store as a reported condition
- * rather than a failure: a scaffolded schema-4 manifest legitimately has no
- * database until the authorized `init` runs, and inspecting that window is how
- * an operator confirms the scaffold before creating the store. `coordinate`
- * intent keeps refusing it, because a coordinated write has nowhere to land.
+ * Historical schema-3/4 stores are read-only. `intent: 'inspect'` reports an
+ * absent historical store without creating one; `coordinate` keeps refusing
+ * because only an explicit offline schema-5 migration may activate writes.
  */
 export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} = {}) {
   const result = {errors: [], warnings: [], migrations: [], runtime: null};
@@ -66,16 +64,16 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
       result.warnings.push('migration lock exists; coordinated writes are held');
     }
     if (manifest.schema_version === 3) {
-      result.migrations.push('schema 3 is inspect-only; explicit offline schema 4 migration required for coordination');
+      result.migrations.push('schema 3 is inspect-only; explicit offline schema 5 migration required for coordination');
       if (existsSync(safePath(root, DATABASE))) result.warnings.push('unactivated database is not authority; inspect migration recovery');
       return result;
     }
     result.errors.push(...privateAdmission(root).errors);
     if (!existsSync(safePath(root, DATABASE))) {
       if (intent === 'inspect') {
-        result.warnings.push('schema 4 coordination database does not exist yet; this is the expected state before the authorized init and inspection will not create it');
+        result.warnings.push('schema 4 coordination database is absent; this historical workspace remains read-only and inspection will not create it');
       } else {
-        result.errors.push('schema 4 coordination database is missing; inspection will not create it');
+        result.errors.push('schema 4 is read-only; explicit offline schema 5 migration is required and inspection will not create a database');
       }
       return result;
     }

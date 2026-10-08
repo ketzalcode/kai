@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {
-  readFileSync, rmSync, writeFileSync,
+  existsSync, mkdirSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
 import {dirname, isAbsolute, join, relative, sep} from 'node:path';
 import test from 'node:test';
@@ -20,6 +20,7 @@ import {
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import * as storeApi from '../src/core/lib/coordination-runtime/store.mjs';
 import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {migrateWorkspace} from '../src/core/lib/coordination-runtime/migration.mjs';
 import {
   allocateTemporaryRoot,
   command,
@@ -840,7 +841,7 @@ await withWorkspace(({root, store}) => {
   closeStore(store);
 
   const reopened = openStore({
-    path: join(root, '.kai', 'state', 'coordination.sqlite'),
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
     mode: 'write',
   });
   try {
@@ -886,7 +887,7 @@ await withWorkspace(({root, store}) => {
   seedTask(store);
   closeStore(store);
   const readOnly = openStore({
-    path: join(root, '.kai', 'state', 'coordination.sqlite'),
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
     mode: 'read',
   });
   try {
@@ -919,6 +920,75 @@ allocatedCase('schema', root => {
   raw.close();
   assert.throws(() => openStore({path, mode: 'write'}), error =>
     error.code === 'SCHEMA_MISMATCH');
+});
+
+await test('lower-level mutations fail closed for schema 3/4 and non-live database paths', async () => {
+  for (const schema of [3, 4]) {
+    allocatedCase(`historical-write-${schema}`, root => {
+      const state = join(root, '.kai', 'state');
+      mkdirSync(state, {recursive: true});
+      writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
+        plugin: 'kai-core',
+        version: 'test',
+        schema_version: schema,
+        scaffolded: '2026-10-02',
+        workspace_id: `historical-${schema}`,
+        storage_mode: 'repo-local',
+        workspace_root: '.',
+        state: '.kai/state',
+        runs: '.kai/runs',
+        review: '.kai/review',
+        archive: '.kai/archive',
+        personal: '.kai/personal',
+        projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+        areas: [],
+      }, null, 2)}\n`);
+      const store = openStore({
+        path: join(state, 'coordination.sqlite'),
+        mode: 'create',
+      });
+      try {
+        seedTask(store);
+        assert.throws(
+          () => applyOperation(
+            store,
+            command('task.update', {payload: {title: 'Forbidden historical write'}}),
+            current => ({...current.body, title: 'Forbidden historical write'}),
+          ),
+          error => error.code === 'SCHEMA_MISMATCH',
+        );
+        assert.equal(readRecord(store, 'task', primaryId).version, 1);
+        if (schema === 3) {
+          assert.throws(
+            () => migrateWorkspace({root, confirm: true}),
+            error => error.code === 'SCHEMA_MISMATCH',
+          );
+          assert.equal(existsSync(join(root, '.kai', 'migrations')), false);
+          assert.equal(existsSync(join(root, '.kai', 'state', 'migration.lock')), false);
+        }
+      } finally {
+        closeStore(store);
+      }
+    });
+  }
+
+  allocatedCase('foreign-write-path', root => {
+    const store = openStore({path: join(root, 'coordination.sqlite'), mode: 'create'});
+    try {
+      seedTask(store);
+      assert.throws(
+        () => applyOperation(
+          store,
+          command('task.update', {payload: {title: 'Forbidden foreign write'}}),
+          current => ({...current.body, title: 'Forbidden foreign write'}),
+        ),
+        error => error.code === 'SCHEMA_MISMATCH',
+      );
+      assert.equal(readRecord(store, 'task', primaryId).version, 1);
+    } finally {
+      closeStore(store);
+    }
+  });
 });
 
 await test('schema 1 stores open only through the read-only historical API', () => {
@@ -1165,7 +1235,7 @@ allocatedCase('modes', root => {
 
 await withWorkspace(async ({root, store}) => {
   seedTask(store);
-  const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
+  const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
   await withChildLock(databasePath, 'BEGIN IMMEDIATE', () => {
     const started = Date.now();
     assert.throws(() => applyOperation(
@@ -1181,7 +1251,7 @@ await withWorkspace(async ({root, store}) => {
 await test('read operations translate SQLite lock exhaustion to STORE_BUSY', async () => {
   await withWorkspace(async ({root, store}) => {
     seedTask(store);
-    const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
+    const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
     await withChildLock(databasePath, 'BEGIN EXCLUSIVE', () => {
       assert.throws(() => readRecord(store, 'task', primaryId), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
@@ -1226,7 +1296,7 @@ await test('receipt insertion failure rolls back the primary write and event', a
 await test('late receipt failure rolls back and exposes rollback uncertainty', async () => {
   await withWorkspace(({root, store}) => {
     seedTask(store);
-    const databasePath = join(root, '.kai', 'state', 'coordination.sqlite');
+    const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
     store.database.exec(`
       CREATE TRIGGER abort_receipt
       BEFORE INSERT ON operations

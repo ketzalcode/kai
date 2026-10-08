@@ -229,8 +229,8 @@ assert.match(source.contract, /never reports a value other than `1`/,
 assert.doesNotMatch(source.contract, RUNTIME_SCRIPT,
   'contract-v1: the discovery probe must not gain a runtime command');
 assert.match(source.contract,
-  /(?:not|never)[\s\S]{0,120}permission to (?:operate|read or write)[\s\S]{0,120}schema[- ]4/i,
-  'contract-v1: a successful probe is not permission to operate a schema-4 workspace');
+  /(?:not|never)[\s\S]{0,120}permission to (?:operate|read or write)[\s\S]{0,120}workspace/i,
+  'contract-v1: a successful probe is not permission to operate a workspace');
 assert.match(source.contract, /separate (?:runtime\/schema |schema )?preflight/i,
   'contract-v1: points at the separate runtime/schema preflight step');
 
@@ -294,12 +294,12 @@ for (const key of ['workGranting', 'workspaceInitiative', 'workspaceOnboarding']
     `${key}: schema 3 stays readable as inspect-only`);
 }
 
-assert.match(source.workspaceInitiative, /schema[- ]?4/i,
-  'workspace-initiative: documents schema 4 beside the retained schema-3 shape');
-assert.match(source.workspaceInitiative, /"schema_version": 3/,
-  'workspace-initiative: the schema-3 manifest shape stays readable');
-assert.match(source.workspaceOnboarding, /"schema_version": 4/,
-  'workspace-onboarding: new workspaces are scaffolded at schema 4');
+assert.match(source.workspaceInitiative, /historical schema 3\/4 beside schema 5/i,
+  'workspace-initiative: documents historical schema 3/4 beside schema 5');
+assert.match(source.workspaceInitiative, /"schema_version": 5/,
+  'workspace-initiative: the live manifest shape is schema 5');
+assert.match(source.workspaceOnboarding, /"schema_version": 5/,
+  'workspace-onboarding: new workspaces activate schema 5');
 
 // `scripts/lib/coordination-runtime/cli.mjs` refuses every schema-3 read other
 // than inspect/status/legacy ("schema 3 supports inspect/status/legacy only").
@@ -309,8 +309,8 @@ for (const key of ['workGranting', 'workspaceInitiative', 'workspaceOnboarding']
     `${key}: names the real schema-3 verb set enforced by cli.mjs`);
 }
 assert.match(source.workspaces,
-  /`schema_version: 3`[^|]*\|[^|]*`inspect`, `status`, `legacy` only/,
-  'docs/workspaces: the schema-3 read column names the real verb set');
+  /`schema_version: 3` or `4`[^|]*\|[^|]*`inspect`, `status`, `legacy` only/,
+  'docs/workspaces: the historical read column names the real verb set');
 
 // A vague "readable through every/any read verb" claim would slip past the
 // backticked-verb sentence scan below (it never names a forbidden verb, so
@@ -339,29 +339,13 @@ for (const [key, body] of Object.entries(source)) {
   }
 }
 
-// A schema-4 workspace with no store is narrower still: cli.mjs answers
-// `inspect` and refuses every other verb with SCHEMA_MISMATCH.
-assert.match(source.director,
-  /schema-4\s+workspace\s+with\s+no\s+store\s+answers\s+only\s+`inspect`/,
-  'director: a storeless schema-4 workspace supports only inspect');
-assert.doesNotMatch(source.director, /storeless workspace stays readable/i,
-  'director: must not claim a storeless workspace is generally readable');
-
-// `workflow-initiative-init` must carry the same corrected rule as the
-// director — it previously said a storeless schema-4 workspace "stays
-// readable" outright, conflating it with the narrower `inspect`-only answer.
-assert.match(source.initiativeInit,
-  /schema-4\s+workspace\s+with\s+no\s+store\s+answers\s+only\s+`inspect`/,
-  'initiative-init: a storeless schema-4 workspace supports only inspect');
-assert.doesNotMatch(source.initiativeInit,
-  /or has no store, it stays readable/i,
-  'initiative-init: must not claim a storeless workspace is generally readable');
-
-// The window between scaffolding a schema-4 manifest and running the
-// authorized `init` is expected, not a broken workspace.
-assert.match(source.workspaceOnboarding,
-  /expected[\s\S]{0,200}not a broken workspace/i,
-  'workspace-onboarding: the pre-init window is named as expected, not broken');
+for (const key of ['director', 'initiativeInit']) {
+  assert.match(source[key],
+    /schema[- ]?3\/4[\s\S]{0,160}(?:read-only|inspect-only)[\s\S]{0,200}schema[- ]?5\s+migration/i,
+    `${key}: historical schema 3/4 is read-only and routes only to schema-5 migration`);
+  assert.doesNotMatch(source[key], /authorized `init`|schema-4[\s\S]{0,120}(?:create|write)/i,
+    `${key}: historical schema 4 is never initialized or written`);
+}
 
 const noAutomaticUpgrade =
   /(?:never|not|no) (?:an )?automatic(?:ally)?[\s\S]{0,80}(?:upgrade|migrat)/i;
@@ -370,15 +354,18 @@ for (const key of ['workspaceOnboarding', 'workspaceInitiative']) {
     `${key}: migration is explicit, never an automatic upgrade`);
 }
 assert.match(source.workspaceOnboarding,
-  /coordinate\.mjs" migrate[\s\S]{0,80}--confirm --capability/,
-  'workspace-onboarding: the migration route is the real confirmed command');
+  /explicit[\s\S]{0,120}schema[- ]?5 migration/i,
+  'workspace-onboarding: historical stores route to explicit schema-5 migration');
 assert.match(source.workspaceOnboarding,
-  /coordinate\.mjs" init[\s\S]{0,80}--confirm --capability/,
-  'workspace-onboarding: store creation is the real confirmed command');
+  /workspace-doctor\.mjs" --initialize[\s\S]{0,100}--confirm/,
+  'workspace-onboarding: new workspaces use the confirmed standalone initializer');
+assert.doesNotMatch(source.workspaceOnboarding,
+  /coordinate\.mjs" init|schema[- ]?4 manifest[\s\S]{0,120}(?:create|initialize|write)/i,
+  'workspace-onboarding: never instructs schema-4 initialization or writes');
 assert.match(source.workspaces, /inspect-only/i,
-  'docs/workspaces: schema 3 is documented as inspect-only');
-assert.match(source.workspaces, /coordination\.sqlite/,
-  'docs/workspaces: names the authoritative store');
+  'docs/workspaces: historical schemas are documented as inspect-only');
+assert.match(source.workspaces, /\.kai\/core\/runtime\/coordination\.sqlite/,
+  'docs/workspaces: names the schema-5 authoritative store');
 
 // No command may quietly create the store.
 assert.match(source.workGranting,
@@ -639,11 +626,13 @@ assert.match(source.workGranting, /User responded: APPROVE <nonce>/,
 assert.match(source.workGranting,
   /(?:typed|typing)[\s\S]{0,160}chat|chat[\s\S]{0,160}(?:typed|typing)/i,
   'work-granting: a chat-typed approval produces nothing');
-for (const verb of ['init', 'migrate', 'recover', 'rollback', 'repair']) {
+for (const verb of ['migrate', 'recover', 'rollback', 'repair']) {
   assert.match(source.workGranting,
     new RegExp(`gate[\\s\\S]{0,400}\`${verb}\``),
     `work-granting: the human gate is named for ${verb}`);
 }
+assert.doesNotMatch(source.workGranting, /gate[\s\S]{0,400}`init`/,
+  'work-granting: native init is not a human-capability maintenance action');
 
 // ---------------------------------------------------------------------------
 // 11. `claim` is not a pure read. cli.mjs routes it through
@@ -658,28 +647,20 @@ assert.match(source.workGranting,
   'work-granting: `claim` names its Git-privacy precondition');
 
 // ---------------------------------------------------------------------------
-// 12. The cloud coding agent cannot create a coordination store: every write
-//     path needs a capability, the only issuers are `authorize` and
-//     `delegate`, and `authorize` -> matchHumanDecision -> readNativeTool ->
-//     nativeEvents requires COPILOT_AGENT_SESSION_ID plus an existing
-//     ~/.copilot/session-state/<id>/events.jsonl, else UNSUPPORTED_HOST.
+// 12. Workspace creation is outside native capability issuance. The standalone
+//     initializer is explicit and confirmed; native maintenance starts only
+//     after schema-5 activation.
 // ---------------------------------------------------------------------------
 
 assert.doesNotMatch(source.hostCapabilities,
-  /schema-4 store\)\s*\|\s*✅\s*\|\s*✅/,
-  'docs/host-capabilities: the cloud agent must not carry an unqualified checkmark for the runtime');
-assert.match(source.hostCapabilities, /events\.jsonl/,
-  'docs/host-capabilities: names the ask_user journal the gate depends on');
-assert.match(source.hostCapabilities, /`ask_user`/,
-  'docs/host-capabilities: names the tool whose receipt authorizes a store');
-assert.match(source.hostCapabilities, /UNSUPPORTED_HOST[\s\S]{0,400}SCHEMA_MISMATCH|SCHEMA_MISMATCH[\s\S]{0,400}UNSUPPORTED_HOST/,
-  'docs/host-capabilities: names the two refusals a journal-less host actually returns');
-assert.match(source.workspaceOnboarding, /COPILOT_AGENT_SESSION_ID/,
-  'workspace-onboarding: the init ladder names the required host session identity');
-assert.match(source.workspaceOnboarding, /events\.jsonl/,
-  'workspace-onboarding: the init ladder names the required ask_user journal');
-assert.match(source.workspaceOnboarding, /UNSUPPORTED_HOST/,
-  'workspace-onboarding: the init ladder names the refusal on a journal-less host');
+  /coordinate\.mjs[^|\n]*init|authorized `init`/i,
+  'docs/host-capabilities: native coordination no longer advertises initialization');
+assert.match(source.hostCapabilities,
+  /standalone initializer[\s\S]{0,200}(?:outside|before)[\s\S]{0,160}native/i,
+  'docs/host-capabilities: initialization precedes native coordination');
+assert.match(source.workspaceOnboarding,
+  /manifest-last|manifest last/i,
+  'workspace-onboarding: the sole initializer preserves manifest-last activation');
 
 // ---------------------------------------------------------------------------
 // 13. The acceptance record is reachable, and reads as a permanent document

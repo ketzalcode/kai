@@ -16,8 +16,8 @@ side lives in `kai-core-work-acting`; the item record is defined in
 
 ## Runtime routes
 
-Under workspace schema 4 the authoritative coordination record is the store at
-`.kai/state/coordination.sqlite`, and every coordinated read or write goes
+Under workspace schema 5 the authoritative coordination record is the store at
+`.kai/core/runtime/coordination.sqlite`, and every coordinated read or write goes
 through one executable route:
 
 ```text
@@ -34,7 +34,7 @@ than restating the verbs.
 |---|---|
 | `direct` | Declare single-shot work. Returns `{ok:true,mode:"direct",coordinationRequired:false}` and touches no workspace. |
 | `inspect` | Schema/runtime preflight. `--deep` also inspects backups, reports and the source inventory. |
-| `status` | Every item record under schema 4; the schema-3 status collector otherwise. |
+| `status` | Every typed hierarchy record under schema 5; historical status otherwise. |
 | `context` | The bounded projection for one item (`--item`, `--max-bytes`, `--recent-limit`). |
 | `detail` | One exact persisted record (`--kind`, `--id`). Historical inspection, never renewed acceptance. |
 | `messages` | A bounded message page (`--item`, `--before-seq`, `--limit`). |
@@ -51,7 +51,7 @@ than restating the verbs.
 | `authorize` | Issue a capability from an exactly matched human receipt. |
 | `receipt` | Look up that receipt without issuing anything. |
 | `capture` | Record a real executed command's exit code, time and result size. |
-| `init` / `migrate` / `recover` / `rollback` / `repair` | Explicit confirmed maintenance, each requiring `--confirm` and/or an issued `--capability`. |
+| `migrate` / `recover` / `rollback` / `repair` | Explicit confirmed maintenance, each requiring `--confirm` and/or an issued `--capability`. New workspace initialization is a separate standalone operation. |
 
 Read and maintenance results carry `ok`, `mode`, the resolved `root`, the
 workspace `schemaVersion` and `storeExists`. Recognized refusals are typed:
@@ -69,24 +69,19 @@ node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 
 Successfully loading `kai-core-contract-v1` proves only that the plugin is
 reachable. It is a separate step from this preflight and is never permission to
-operate a schema-4 workspace. Execute the `inspect` command and read its result:
+operate a workspace. Execute the `inspect` command and read its result:
 
-- `schema_version: 4` with an existing store — coordinated commands are
+- `schema_version: 5` with the exact schema-2 store — coordinated commands are
   available.
-- `schema_version: 3` — the workspace is **inspect-only**: it stays readable
+- `schema_version: 3` or `4` — the workspace is **inspect-only**: it stays readable
   through `inspect`, `status` and `legacy` only. Every other read refuses with
-  `SCHEMA_MISMATCH` — *schema 3 supports inspect/status/legacy only; explicitly
-  migrate for runtime detail* — and every write refuses with *schema 3 is
-  inspect-only; use explicit offline migration*.
+  `SCHEMA_MISMATCH`, and every write refuses.
   Do not work around that refusal. The migration path is the explicit offline
-  ladder in `kai-core-workspace-onboarding`; there is never an automatic upgrade.
+  schema-5 migration in `kai-core-workspace-onboarding`; there is never an
+  automatic upgrade or schema-4 initialization path.
 - a missing manifest — stop and report it.
-- `schema_version: 4` with no store — `inspect` answers, and every other verb
-  refuses with `SCHEMA_MISMATCH`. This is the expected window between scaffolding
-  a workspace and creating its store, not a broken workspace. No command
-  initializes the coordination database implicitly, and `inspect` will not
-  create it. Only `init --confirm --capability <uuid>` creates a store, and only
-  for an already-valid schema-4 manifest.
+- `schema_version: 5` with a missing or invalid store — stop and report the
+  partial activation. No command creates or repairs the coordination store.
 
 ### Writing: one command per operation
 
@@ -134,7 +129,7 @@ Unknown, ambiguous, reversed, duplicate, nested-agent, declined, conditional and
 expired interactions do not produce approval. A successful tool execution is not
 a human approval.
 
-This gate governs `init`, `migrate`, `recover`, `rollback`, `repair` and
+This gate governs `migrate`, `recover`, `rollback`, `repair` and
 `approval.record`. There is no other route to any of them.
 
 The middle step is a real host interaction, and the runtime matches it exactly:
@@ -202,7 +197,7 @@ resolving a workspace.
 
 ## Claiming work safely
 
-Under schema 4 the runtime supplies the compare-and-swap the Markdown surface
+Under schema 5 the runtime supplies the compare-and-swap the Markdown surface
 never had: `apply` takes an `expectedVersion`, performs the read, the check and
 the write inside one operation, and refuses with `VERSION_CONFLICT` or
 `LEASE_CONFLICT` rather than letting two writers each believe they hold the
@@ -231,9 +226,9 @@ serialized rather than raced.
 
 To reserve an item, the grantor:
 
-0. Runs the **preflight** above. `inspect` must report `schema_version: 4` and
-   an existing store before any grant. A schema-3 or manifest-less workspace is
-   inspect-only: report the explicit migration ladder in
+0. Runs the **preflight** above. `inspect` must report `schema_version: 5` and
+   the exact current store before any grant. A schema-3/4 or manifest-less
+   workspace is inspect-only: report the explicit schema-5 migration in
    `kai-core-workspace-onboarding` rather than claiming against state the
    contract cannot guarantee. The workspace doctor
    (`node "<kai-plugin>/scripts/workspace-doctor.mjs"`) still checks the
@@ -535,7 +530,7 @@ dependencies, waiting-on and updated time. Select work from it, then re-read the
 one item you intend to act on through `detail`/`context` before submitting a
 command.
 
-`.kai/state/BOARD.md` is a **retained historical import source**. Under schema 4
+`.kai/state/BOARD.md` is a **retained historical import source**. Under schema 5
 nothing writes it, so it is no longer updated: it is the pre-migration board
 text, kept because the migration imported from it, and it is never read as
 authority. A workspace that never held a schema-3 board simply has no such file.

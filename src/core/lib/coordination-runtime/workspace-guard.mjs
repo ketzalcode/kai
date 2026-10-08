@@ -1,7 +1,7 @@
-import {existsSync, readFileSync} from 'node:fs';
+import {existsSync, lstatSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
 import {RuntimeError} from './contract.mjs';
-import {pathHasLink} from '../workspace-path-safety.mjs';
+import {exactPath, pathHasLink} from '../workspace-path-safety.mjs';
 import {migrationManifest} from './migration-files.mjs';
 import {
   readWorkspaceManifest,
@@ -56,18 +56,23 @@ export function assertWorkspaceWrite(path, {
   const root = dirname(privateRoot);
   const expected = resolve(root, ...COORDINATION_DATABASE.split('/'));
   if ((process.platform === 'win32' ? path.toLowerCase() : path)
-    !== (process.platform === 'win32' ? expected.toLowerCase() : expected)) return;
+    !== (process.platform === 'win32' ? expected.toLowerCase() : expected)) {
+    fail('SCHEMA_MISMATCH',
+      'coordination writes require the exact schema-5 database; schema 3/4 and standalone stores are read-only');
+  }
   const manifest = join(root, '.kai', 'manifest.json');
   if (!existsSync(manifest)) fail('SCHEMA_MISMATCH', 'workspace coordination writes require a schema 5 manifest');
-  if (pathHasLink(root, manifest) || pathHasLink(root, path)) fail('INVALID_INPUT', 'coordination workspace paths cannot traverse links');
-  let parsed;
-  try { parsed = JSON.parse(readFileSync(manifest, 'utf8')); }
-  catch { fail('SCHEMA_MISMATCH', 'coordination manifest is unreadable'); }
-  if (parsed.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    fail('SCHEMA_MISMATCH', 'schema 3/4/future workspaces are inspect-only; coordinated writes require schema 5');
+  if (pathHasLink(root, manifest) || !exactPath(manifest) || !lstatSync(manifest).isFile()) {
+    fail('INVALID_INPUT', 'coordination manifest must be an exact unlinked regular file');
   }
-  const validation = validateSchema5Manifest(root, parsed, {env});
-  if (validation.errors.length) fail('INVALID_INPUT', validation.errors.join('; '));
+  const parsed = readWorkspaceContract(root, {
+    env,
+    versions: [WORKSPACE_SCHEMA_VERSION],
+  });
+  if (!existsSync(path)) fail('SCHEMA_MISMATCH', 'schema-5 coordination database is missing');
+  if (pathHasLink(root, path) || !exactPath(path) || !lstatSync(path).isFile()) {
+    fail('INVALID_INPUT', 'coordination database must be the exact unlinked schema-5 regular file');
+  }
   if (existsSync(join(runtime, 'migration.lock'))) {
     fail('RECOVERY_REQUIRED', 'offline migration/rollback lock prevents coordinated work');
   }

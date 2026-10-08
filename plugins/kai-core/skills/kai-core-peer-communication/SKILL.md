@@ -149,9 +149,9 @@ agent, a restricted runner) expose none. So:
   or its effects were observed — that capability returns `UNSUPPORTED_HOST`.
 - **No live transport?** Use **inline consult** for lane facts and the
   **durable record** for anything blocking or cross-session. Recording a
-  question needs only the core runtime and a schema-4 workspace, so the
+  question needs only the core runtime and an activated schema-5 workspace, so the
   protocol never depends on peer agents being present. Where the workspace is
-  schema 3 or absent, the coordinated write refuses with `SCHEMA_MISMATCH`:
+  schema 3/4 or absent, the coordinated write refuses with `SCHEMA_MISMATCH`:
   name that gap rather than inventing a fallback.
 
 ## Hard rules

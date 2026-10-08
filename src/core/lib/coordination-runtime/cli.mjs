@@ -135,7 +135,7 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
       fail('SCHEMA_MISMATCH', 'schema 3/4 supports inspect/status/legacy only; explicitly migrate for runtime detail');
     }
-    if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use explicit authorized init');
+    if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use the standalone workspace initializer');
     const store = openStore({path, mode: 'read'});
     try {
       const roles = ['status', 'context', 'plan'].includes(verb)
@@ -215,6 +215,16 @@ export async function execute({verb, options, body, host, cwd, env}) {
     fail('SCHEMA_MISMATCH', 'schema 3/4 workspaces are read-only; explicit schema-5 migration is required');
   }
   if (verb === 'apply') validateCommand(body);
+  if (verb === 'request' && body?.type === 'maintenance' && body.action === 'init') {
+    fail('INVALID_INPUT', 'native init is unsupported; use the explicit confirmed standalone workspace initializer');
+  }
+  if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use the standalone workspace initializer');
+  assertWorkspaceWrite(path, {requirePrivate: true, env});
+  if (['request', 'authorize', 'receipt', 'capture', 'capabilities', 'prepare',
+    'migrate', 'recover', 'rollback', 'repair'].includes(verb)) {
+    const admitted = openStore({path, mode: 'read'});
+    closeStore(admitted);
+  }
   if (!host) {
     const {createNativeHost} = await import('./native-host.mjs');
     host = createNativeHost({env});
@@ -222,13 +232,11 @@ export async function execute({verb, options, body, host, cwd, env}) {
   if (['request', 'authorize', 'receipt', 'capture', 'capabilities', 'prepare'].includes(verb)) {
     return {...base, ...await host[verb]({root, body, options})};
   }
-  if (['init', 'migrate', 'recover', 'rollback', 'repair'].includes(verb)) {
+  if (['migrate', 'recover', 'rollback', 'repair'].includes(verb)) {
     const result = await host.maintenance({root, verb, body, options, env});
     return {...base, ...result, schemaVersion: readWorkspaceContract(root, {env}).schema_version,
       storeExists: existsSync(path)};
   }
-  assertWorkspaceWrite(path, {requirePrivate: true, env});
-  if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use explicit authorized init');
   const store = openStore({path, mode: 'write'});
   try {
     if (verb === 'delegate') return {...base, ...await host.delegate({root, store, body, options})};

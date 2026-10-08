@@ -18,7 +18,7 @@ hand off, block, review, or finish work they were dispatched.
 
 ## Coordination surface
 
-Under workspace schema 4 the authoritative record is the runtime store. Read it
+Under workspace schema 5 the authoritative record is the runtime store. Read it
 with `status`, `detail`, `messages` and `export`; nothing writes the Markdown
 tree beside it back out:
 

@@ -58,7 +58,7 @@ dedup, notification-payload, and failure rules this procedure follows.
 2. **Scan (read-only).** Apply `kai-core-proactive-scan`'s **Operator signals**
    section to each fully-read root: open `@operator` `decision|reply|action`
    questions with no answered `ANSWER`, `release-ready` items, and overdue
-   `@operator` questions. Read a schema-4 workspace through the runtime's
+   `@operator` questions. Read a schema-5 workspace through the runtime's
    read-only verbs — `node "<kai-plugin>/scripts/coordinate.mjs" status --root
    "<workspace-root>"` for the item set, then `node
    "<kai-plugin>/scripts/coordinate.mjs" messages --item <item-id> --root

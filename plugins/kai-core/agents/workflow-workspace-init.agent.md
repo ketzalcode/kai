@@ -39,11 +39,10 @@ run actually installed or updated a pack.
 5. Never migrate legacy content or publish project knowledge without explicit
    approval.
 6. Stop on the first failed or unverified plugin-install step.
-7. A healthy coordinated workspace uses `schema_version: 4`, `storage_mode`, at
-   least one project binding with `publication_root`, `.kai/state`, and an
-   explicitly created coordination store. A `schema_version: 3` workspace stays
-   valid but inspect-only: coordinated writes refuse with `SCHEMA_MISMATCH`
-   until an explicit, separately authorized migration runs.
+7. A healthy coordinated workspace uses the exact schema-5 manifest and the
+   schema-2 store at `.kai/core/runtime/coordination.sqlite`. Schema-3/4
+   workspaces remain inspect-only: coordinated writes refuse with
+   `SCHEMA_MISMATCH` until explicit schema-5 migration.
 
 ## Workflow
 
@@ -64,19 +63,18 @@ project root:
 - detect an existing communication-style block in `AGENTS.md`;
 - run the workspace doctor when a manifest exists.
 
-### 2. Choose storage and publication
+### 2. Choose placement and publication
 
-Honor an existing valid `storage_mode`. Otherwise choose with the operator:
+Honor an existing valid schema-5 `placement`. Otherwise choose with the
+operator:
 
 | Mode | Use when |
 |---|---|
 | `external` | The project should carry no operational Kai footprint. |
 | `repo-local` | Kai state may live in the checkout but must remain ignored and untracked. |
-| `shared` | The team intentionally tracks manifest, conventions, and coordination state. |
 
-Resolve a stable project ID and one project-relative `publication_root`.
-Default to `docs/kai` only when the project has no established documentation
-root. Publication is independent of storage mode.
+Resolve a stable project ID, the fixed `docs/kai` publication root, and the
+operator-supplied `docs/kai/DIRECTION.md`.
 
 ### 3. Plan
 
@@ -95,26 +93,18 @@ applying any non-empty plan, conflict resolution, migration, or publication.
 
 ### 4. Apply
 
-Invoke `kai-core-work-acting` before writing durable state, then execute
-onboarding's scaffold:
+Invoke `kai-core-work-acting` before writing durable state, then execute the
+single confirmed standalone initializer with the approved schema-5 manifest on
+stdin:
 
 ```text
-<workspace-root>/.kai/
-  manifest.json
-  CONVENTIONS.md
-  state/{ACTIVE.md,BOARD.md,backlog.md,items/,threads/,initiatives/}
-  runs/
-  review/
-  archive/
-  personal/
+node "<kai-plugin>/scripts/workspace-doctor.mjs" --initialize --root "<workspace-root>" --confirm
 ```
 
-The scaffold creates no coordination store. After the schema-4 manifest
-validates, create it explicitly through onboarding's authorized route —
-`request` → `authorize` → `coordinate.mjs init --confirm --capability <uuid>` —
-and confirm with `inspect`. `BOARD.md`, `state/items/` and `state/threads/` are
-retained pre-schema-4 history, never authored by hand and never read as
-authority; `status`, `detail` and `messages` read the store.
+Activation is manifest-last. It creates only `.kai/manifest.json`,
+`.kai/core/runtime/coordination.sqlite`, `docs/kai/README.md` when absent, and
+the already operator-supplied `docs/kai/DIRECTION.md`. Never create department,
+personal, learning, run, review, archive, or generic artifact directories.
 
 For `external`, create no project `.kai/` tree and pair the project through:
 
@@ -123,13 +113,7 @@ node "<kai-plugin>/scripts/workspace-doctor.mjs" --adopt "<project-root>" --root
 ```
 
 For `repo-local`, ignore the whole project `/.kai/` and verify it is untracked.
-For `shared`, keep `.kai/manifest.json`, `.kai/CONVENTIONS.md`, and
-`.kai/state/` trackable while ignoring runs, review, archive, personal,
-activity, and observer files.
-
-Apply `kai-core-asset-producing` before creating the configured project
-publication root, and create it only from approved publication templates. Never
-create a second `docs/kai` root when another target was selected.
+Apply `kai-core-asset-producing` before creating later typed project assets.
 
 ### 5. Migrate when required
 
@@ -148,8 +132,8 @@ Load `kai-core-work-item` before moving coordination state, and load
   operational history to `.kai/archive/`;
 - rewrite references;
 - install Git rules and external registry pairing;
-- write `schema_version: 3` last, then run the separately authorized schema-3 →
-  schema-4 migration as its own step. Never chain the two automatically.
+- preserve historical schema-3/4 bytes read-only, then run explicit offline
+  schema-5 migration as its own step. Never chain it automatically.
 
 Never bulk publish or leave both layouts.
 <!-- /kai:allow-legacy-roots -->
@@ -165,11 +149,11 @@ node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 
 Confirm:
 
-- manifest schema and fixed roots — `4` for a coordinated workspace, `3` for a
-  readable inspect-only one;
-- the coordination store exists when the manifest says `4`; never create it
-  implicitly, and never chain the schema-3 migration automatically;
-- valid storage mode and project publication binding;
+- manifest schema and fixed roots — `5` for a coordinated workspace, `3` or
+  `4` for a readable inspect-only historical one;
+- the exact schema-2 coordination store exists for schema 5; never create it
+  implicitly outside the standalone initializer;
+- valid placement and project publication binding;
 - external registry pairing when applicable;
 - selected Git behavior;
 - coordination integrity;

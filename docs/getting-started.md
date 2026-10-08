@@ -336,15 +336,15 @@ healthy. Coordinated agents refuse to claim work in a workspace that fails the
 doctor, so the upgrade path is explicit rather than silent. Re-running a
 completed migration is a no-op.
 
-The **schema-3 to schema-4** step is the one exception to that flow. Schema 4
-moves coordinated work into a SQLite store, so it is a separate, separately
-authorized offline migration that `workflow-workspace-init` never chains
-automatically. Until it runs, a schema-3 workspace stays **inspect-only**:
-`inspect`, `status` and `legacy` read it, and coordinated writes are refused
-with `SCHEMA_MISMATCH`. See [workspaces](workspaces.md).
+Historical **schema-3/4 to schema-5** migration is the one exception to that
+flow. It is a separate explicit offline migration that
+`workflow-workspace-init` never chains automatically. Until it runs, schema-3
+and schema-4 workspaces stay **inspect-only**: `inspect`, `status`, and `legacy`
+read them, and coordinated writes are refused with `SCHEMA_MISMATCH`. Never
+initialize or write a schema-4 store. See [workspaces](workspaces.md).
 
 <!-- kai:allow-legacy-roots -->
-> **Upgrading from schema 2?** Choose `external`, `repo-local`, or `shared`,
+> **Upgrading from schema 2?** Choose `external` or `repo-local`,
 > then classify the former `kai/coordination/`, `kai/initiatives/`,
 > `kai/library/`, and `kai/personal/` content. Coordination and initiative work
 > become `.kai/state/`; personal state becomes `.kai/personal/`; only accepted

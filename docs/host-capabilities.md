@@ -14,7 +14,7 @@ capability is absent, and a few features simply require the richer host.
 | Capability | Copilot CLI | Copilot coding agent (cloud) |
 |---|---|---|
 | Agents + skills (the declarative core) | ✅ | ✅ |
-| Coordination runtime (`scripts/coordinate.mjs`, schema-4 store) | ✅ | ⚠️ read-only in practice — see the gap below |
+| Coordination runtime (`scripts/coordinate.mjs`, schema-5 store) | ✅ | ⚠️ capability-gated writes depend on host receipts — see below |
 | Live peer sub-agents (`agent` / `write_agent` / `read_agent`) | ✅ | ❌ — fall back to the durable record |
 | Peer model/effect observation | ❌ `UNSUPPORTED_HOST` | ❌ `UNSUPPORTED_HOST` |
 | Native session `resume` | ❌ not advertised | ❌ not advertised |
@@ -29,31 +29,28 @@ are richest in the **CLI**; single-agent review, design, and planning run well i
 the degraded mode and either takes the recorded fallback or fails fast naming
 what's missing — it never silently pretends the capability is present.
 
-## The coordination runtime's host gap
+## Initialization and the host receipt gap
 
-The runtime itself is plain local Node plus SQLite, not a service — but it
-cannot **create** a store on a host that has no `ask_user` journal, and the
-cloud coding agent is such a host.
+Workspace creation is an explicit confirmed standalone initializer outside the
+native coordination capability surface. It runs before native coordination,
+accepts the approved schema-5 manifest on stdin, and activates the manifest and
+schema-2 store as one manifest-last unit. It creates no request or capability
+files and does not depend on an `ask_user` journal.
 
-Every coordinated write requires an issued capability, and the only two issuers
-are `authorize` and `delegate`. `delegate` can only subdivide a capability that
-already exists, so the chain starts at `authorize`, which resolves a human
-decision by re-reading the host's own event journal: it requires
+After activation, human-gated coordinated actions still use issued
+capabilities. `authorize` resolves a human decision by re-reading the host's own
+event journal: it requires
 `COPILOT_AGENT_SESSION_ID` **and** an existing
 `~/.copilot/session-state/<id>/events.jsonl` containing the matching `ask_user`
 tool call. Without that journal the lookup fails with `UNSUPPORTED_HOST` — *this
 context has no standalone journal*.
 
-The consequence is concrete: `init` requires an authorized capability, so on a
-journal-less host it can never succeed, the store is never created, and every
-verb except `inspect` then refuses with `SCHEMA_MISMATCH` — *coordination store
-is missing; use explicit authorized init*. So on the cloud coding agent, treat
-the coordination runtime as **inspect-only**: schema reads work, coordinated
-work does not. A store created elsewhere and carried in is out of scope here —
-that has not been measured.
-
-This gap is a host-journal dependency, not a missing feature in kai, and it has
-not been closed on any host.
+The consequence is narrower than workspace creation: a journal-less host can
+inspect an already-activated schema-5 workspace, but cannot fabricate a human
+receipt for actions that require one. It must report `UNSUPPORTED_HOST` rather
+than treating typed chat as approval. Historical schema-3/4 workspaces remain
+read-only and require explicit schema-5 migration; no host may initialize or
+write them.
 
 ## What has actually been measured
 

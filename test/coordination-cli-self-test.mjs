@@ -194,6 +194,7 @@ test('read-only inspect reports schema without creating a missing database', asy
 
 test('strict parser rejects unknown flags, malformed identities, and every old --item selector', () => {
   for (const argv of [
+    ['init'],
     ['apply', '--operator'],
     ['context', '--kind', 'feature', '--id', fixtureIds.task],
     ['context', '--kind', 'unknown', '--id', fixtureIds.task],
@@ -235,7 +236,6 @@ test('schema 3 and 4 remain inspect/status-only and every write is SCHEMA_MISMAT
       for (const argv of [
         ['apply', '--root', root],
         ['request', '--root', root],
-        ['init', '--root', root, '--confirm', '--capability', randomUUID()],
         ['claim', '--root', root, '--task', fixtureIds.task],
       ]) {
         const input = argv[0] === 'apply'
@@ -259,6 +259,18 @@ test('schema 3 and 4 remain inspect/status-only and every write is SCHEMA_MISMAT
   assert.equal(direct.exitCode, 0);
   assert.equal(direct.result.coordinationRequired, false);
 });
+
+test('native maintenance cannot initialize or leave host authorization state before activation', async () =>
+  workspace(async ({root}) => {
+    const result = await runCLI(['request', '--root', root], {
+      input: JSON.stringify({type: 'maintenance', action: 'init'}),
+      env: {...process.env, COPILOT_AGENT_SESSION_ID: randomUUID()},
+    });
+    assert.equal(result.exitCode, 1);
+    assert.equal(result.result.code, 'INVALID_INPUT');
+    assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host')), false);
+    assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
+  }, {schema: 5}));
 
 test('typed status, context, detail, messages, export, and plan share the hierarchy surface', async () =>
   workspace(async ({root, store}) => {

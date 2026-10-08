@@ -28,11 +28,16 @@
 //
 // Node built-ins only; imported by checks CI runs with no install step.
 
-import { appendFileSync, readFileSync, existsSync, mkdirSync, renameSync, statSync } from 'node:fs';
+import {
+  appendFileSync, readFileSync, existsSync, lstatSync, mkdirSync, renameSync, statSync,
+} from 'node:fs';
 import { join, dirname } from 'node:path';
 import {readWorkspaceManifest} from './workspace-resolve.mjs';
-import {WORKSPACE_SCHEMA_VERSION} from './workspace-layout.mjs';
-import {escapesRoot, pathHasLink} from './workspace-path-safety.mjs';
+import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from './workspace-layout.mjs';
+import {escapesRoot, exactPath, pathHasLink} from './workspace-path-safety.mjs';
+import {inspectGitPrivacy} from './workspace-git-privacy.mjs';
+import {readWorkspaceContract} from './coordination-runtime/workspace-guard.mjs';
+import {closeStore, openStore} from './coordination-runtime/store.mjs';
 
 // Workspace-relative by contract: an absolute path must never be recorded.
 export const LOG_REL = '.kai/core/runtime/activity.jsonl';
@@ -165,6 +170,42 @@ export function logPath(root) {
   return join(root, LOG_REL);
 }
 
+export function activityWorkspaceAdmission(root, env = process.env) {
+  let store;
+  try {
+    const manifest = readWorkspaceContract(root, {
+      env,
+      versions: [WORKSPACE_SCHEMA_VERSION],
+    });
+    const privacy = inspectGitPrivacy(root, manifest.placement);
+    const errors = [
+      ...privacy.errors,
+      ...privacy.missing.map(path => `private workspace path must be ignored: ${path}`),
+    ];
+    if (manifest.placement === 'repo-local' && !privacy.gitRoot) {
+      errors.push('repo-local placement requires a readable Git work tree');
+    }
+    if (errors.length) return {ok: false, reason: errors.join('; ')};
+
+    const database = join(root, ...COORDINATION_DATABASE.split('/'));
+    if (!existsSync(database)) {
+      return {ok: false, reason: `coordination database is missing at ${COORDINATION_DATABASE}`};
+    }
+    if (pathHasLink(root, database) || !exactPath(database) || !lstatSync(database).isFile()) {
+      return {
+        ok: false,
+        reason: `coordination database must be an exact unlinked regular file at ${COORDINATION_DATABASE}`,
+      };
+    }
+    store = openStore({path: database, mode: 'read'});
+    return {ok: true, manifest};
+  } catch (error) {
+    return {ok: false, reason: `${error.code ?? 'INVALID_INPUT'}: ${error.message}`};
+  } finally {
+    closeStore(store);
+  }
+}
+
 // Rotation is best-effort and MAY run concurrently: every append from every
 // process calls it. Two processes past the bound will both try to rename, and
 // the loser's rename simply fails and is swallowed. Losing history is
@@ -181,9 +222,11 @@ function rotate(file) {
  * Append one record. Returns { ok, reason? }. Never throws: a failure to
  * report must not fail the work being reported.
  */
-export function append(root, input, now = Date.now()) {
+export function append(root, input, now = Date.now(), env = process.env) {
   const built = buildRecord(input, now);
   if (!built.ok) return built;
+  const admitted = activityWorkspaceAdmission(root, env);
+  if (!admitted.ok) return admitted;
   const file = logPath(root);
   if (escapesRoot(root, file) || pathHasLink(root, file)) {
     return {ok: false, reason: 'activity path traverses a link or escapes the workspace'};

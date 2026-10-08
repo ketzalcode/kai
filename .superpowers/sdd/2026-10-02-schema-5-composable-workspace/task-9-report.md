@@ -293,3 +293,97 @@ No open correctness finding remains from the direct review.
   rollback, and interrupted recovery.
 - Task 12 still owns pack regeneration, `19.0.0` release metadata, generated
   consumer execution, and the full `npm test` gate.
+
+## Fix round 1 — 2026-10-07
+
+All five review findings were addressed.
+
+### Changes
+
+1. `assertWorkspaceWrite` now fails closed unless the target is the exact
+   schema-5 database under an exact schema-5 manifest. Schema-3/4 and standalone
+   database paths return `SCHEMA_MISMATCH`. The existing migration entry points
+   now refuse before staging; Task 10 must introduce its distinct staging API.
+2. Native `init` was removed from the coordination CLI and native maintenance
+   request surface. New workspaces use the one confirmed standalone initializer:
+   `workspace-doctor.mjs --initialize --root <root> --confirm`, with the exact
+   manifest on stdin. It routes through the existing manifest-last
+   implementation. Unsupported native init requests create no host state.
+3. Root resolution rejects foreign absolute and network forms before native
+   resolution. Registry loading and discovery now share native, existence,
+   canonical, link, and junction admission.
+4. Declared and observed activity both require the exact regular live database
+   and successfully open store schema 2 read-only before writing a log or
+   consent-derived event.
+5. Runtime messages and shipped source guidance now describe schema 3/4 as
+   read-only and route only to explicit schema-5 migration. They no longer
+   instruct schema-4 initialization or writes.
+
+### RED evidence
+
+- lower-level schema-3/4 and foreign-store mutation tests initially completed a
+  write instead of returning `SCHEMA_MISMATCH`;
+- native maintenance accepted `init` and created host request state;
+- foreign explicit/environment roots resolved natively before refusal;
+- registry loading accepted non-native and alias paths that discovery rejected;
+- directory, corrupt, and schema-1 databases allowed activity and observation
+  log writes;
+- the standalone initializer accepted an unconfirmed call.
+
+### GREEN evidence
+
+Fresh final runs:
+
+```text
+node test/workspace-doctor-self-test.mjs
+all workspace and 33 migration-doctor scenario checks passed
+
+node test/workspace-layout-self-test.mjs
+9 passed, 0 failed
+
+node test/direction-self-test.mjs
+8 passed, 0 failed
+
+node test/activity-self-test.mjs
+all checks passed
+
+node test/observe-subagent-self-test.mjs
+all checks passed
+
+node test/observe-watch-self-test.mjs
+all checks passed
+
+node test/coordination-store-self-test.mjs
+21 passed, 0 failed
+
+node test/coordination-cli-self-test.mjs
+9 passed, 0 failed
+
+node test/coordination-host-self-test.mjs
+54 passed, 0 failed
+
+node test/work-status-self-test.mjs
+all checks passed
+
+node test/coordination-source-routing-self-test.mjs
+all checks passed
+
+npm run check-syntax
+74 JS/MJS helpers parsed cleanly
+```
+
+The 32-test native CLI lifecycle suite was run in six
+`--test-name-pattern` groups, including both complete engineering and creative
+real-process chains; all 32 tests passed. The grouped run avoids the command
+runner's single-call time limit without omitting any test.
+
+### Direct review
+
+The final diff was reviewed directly because subagent dispatch was prohibited.
+The review additionally removed duplicate observation admission, rejected
+foreign roots in direct doctor/search APIs, and kept privacy revalidation on
+the high-level write boundary without duplicating Git probes inside every store
+transaction.
+
+Generated packs, release metadata, and the full `npm test` gate remain assigned
+to Task 12 and were not run or refreshed here.

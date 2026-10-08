@@ -16,6 +16,7 @@ import {
 import {writeIssued, readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
 import {nativeEvents} from '../src/core/lib/coordination-runtime/native-receipts.mjs';
 import {cliEntrypoint as cli, withEntrypointEnv} from './helpers/coordination-cli-entrypoint.mjs';
+import {initializeWorkspace} from '../src/core/workspace-doctor.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');
 const scratch = join(checkout, '.superpowers', 'cli-tests');
@@ -66,6 +67,7 @@ export function workspace(fn, schema = 5) {
   }));
   // A separate real Git root keeps privacy admission independent of the checkout.
   spawnSync('git', ['init', '--quiet', root]);
+  writeFileSync(join(root, '.gitignore'), '/.kai/\n');
   try { return fn(root); } finally { rmSync(root, {recursive: true, force: true}); }
 }
 function databasePath(root) {
@@ -178,11 +180,15 @@ function authorize(root, body, runId = 'native-context-one') {
   return authorization.json.capability;
 }
 function initialize(root) {
-  const capability = authorize(root, {type: 'maintenance', action: 'init'});
-  const result = native(root, 'init', undefined, ['--confirm', '--capability', capability]);
-  assert.equal(result.status, 0, JSON.stringify(result.json));
-  assert.equal(result.json.storeExists, true, 'maintenance result must describe the resulting store');
-  return result;
+  if (existsSync(databasePath(root))) {
+    return {status: 0, json: {storeExists: true, initialized: false}};
+  }
+  const manifestPath = join(root, '.kai', 'manifest.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  rmSync(join(root, '.kai'), {recursive: true, force: true});
+  const result = initializeWorkspace({root, manifest, confirm: true});
+  assert.equal(result.ok, true, JSON.stringify(result));
+  return {status: 0, json: {storeExists: true, initialized: true}};
 }
 
 function commandReceipt(root, captureRequest, {exit, text, command = captureRequest.command,
@@ -204,27 +210,15 @@ function commandReceipt(root, captureRequest, {exit, text, command = captureRequ
   return toolCallId;
 }
 
-test('native explicit init requires a matched strict human response, not success or booleans', () => workspace(root => {
-  const result = native(root, 'request', {type: 'maintenance', action: 'init'});
-  assert.equal(result.status, 0, JSON.stringify(result.json));
-  const request = result.json.request;
-  assert.ok(request.message.includes(root));
-  assert.ok(request.message.includes(request.nonce));
-  for (const reply of ['yes', `APPROVE ${request.nonce} if safe`, `DECLINE ${request.nonce}`, `APPROVE ${randomUUID()}`]) {
-    const call = human(root, request, reply);
-    const refused = native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', call]);
-    assert.equal(refused.json.code, 'AUTHORITY_REQUIRED');
-    assert.equal(existsSync(databasePath(root)), false);
-  }
-  const failed = human(root, request, `APPROVE ${request.nonce}`, 'native-context-one', false);
-  assert.equal(native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', failed]).json.code, 'AUTHORITY_REQUIRED');
-  const approved = human(root, request);
-  const grant = native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', approved]);
-  assert.equal(grant.status, 0, JSON.stringify(grant.json));
-  assert.equal(native(root, 'init', undefined, ['--confirm']).json.code, 'AUTHORITY_REQUIRED');
-  assert.equal(native(root, 'init', undefined, ['--confirm', '--capability', grant.json.capability]).status, 0);
+test('native init is absent and leaves no authorization state before standalone activation', () => workspace(root => {
+  const requested = native(root, 'request', {type: 'maintenance', action: 'init'});
+  assert.equal(requested.json.code, 'INVALID_INPUT');
+  assert.equal(native(root, 'init', undefined, ['--confirm', '--capability', randomUUID()]).json.code, 'INVALID_INPUT');
+  assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host')), false);
+  assert.equal(existsSync(databasePath(root)), false);
+  initialize(root);
   assert.equal(invoke(root, 'inspect').json.storeExists, true);
-  assert.equal(native(root, 'init', undefined, ['--confirm', '--capability', grant.json.capability]).json.code, 'VERSION_CONFLICT');
+  assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host')), false);
 }));
 
 test('a prepared worker cannot backdate a lease to legitimize model work started before reservation', () => workspace(root => {
@@ -243,7 +237,8 @@ test('a prepared worker cannot backdate a lease to legitimize model work started
 }));
 
 test('native receipt lookup uses exact canonical request and nonce without exposing journal contents', () => workspace(root => {
-  const request = native(root, 'request', {type: 'maintenance', action: 'init'}).json.request;
+  initialize(root);
+  const request = native(root, 'request', {type: 'maintenance', action: 'rollback'}).json.request;
   human(root, {...request, message: `${request.message}\nDIFFERENT_SCOPE`});
   const call = human(root, request);
   const found = native(root, 'receipt', undefined, ['--request', request.nonce]);
@@ -259,14 +254,15 @@ test('native receipt lookup uses exact canonical request and nonce without expos
 }));
 
 test('native issuer rechecks private admission for every write and use after initial setup', () => workspace(root => {
-  const request = native(root, 'request', {type: 'maintenance', action: 'init'}).json.request;
+  initialize(root);
+  const request = native(root, 'request', {type: 'maintenance', action: 'rollback'}).json.request;
   const call = human(root, request);
   const grant = native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', call]).json.capability;
-  writeFileSync(join(root, '.git', 'info', 'exclude'), '');
+  writeFileSync(join(root, '.gitignore'), '');
   for (const [verb, body, args] of [
-    ['request', {type: 'maintenance', action: 'init'}, []],
+    ['request', {type: 'maintenance', action: 'rollback'}, []],
     ['authorize', undefined, ['--request', request.nonce, '--tool-call', call]],
-    ['init', undefined, ['--confirm', '--capability', grant]],
+    ['rollback', undefined, ['--confirm', '--capability', grant]],
   ]) {
     const result = native(root, verb, body, args);
     assert.equal(result.status, 1, `${verb}: private admission must not be bypassed by an existing key`);
@@ -413,7 +409,8 @@ test('synthetic actual-human completion in the producing CLI context has a disti
 }));
 
 test('native request expiry, manifest drift and reversed receipt order cannot create authority', () => workspace(root => {
-  const request = native(root, 'request', {type: 'maintenance', action: 'init'}).json.request;
+  initialize(root);
+  const request = native(root, 'request', {type: 'maintenance', action: 'rollback'}).json.request;
   const call = human(root, request);
   const journal = join(root, '.copilot', 'session-state', 'native-context-one', 'events.jsonl');
   const lines = readFileSync(journal, 'utf8').trim().split('\n');
@@ -424,7 +421,7 @@ test('native request expiry, manifest drift and reversed receipt order cannot cr
   const manifestPath = join(root, '.kai', 'manifest.json');
   const manifest = readFileSync(manifestPath, 'utf8');
   writeFileSync(manifestPath, JSON.stringify({...JSON.parse(manifest), version: 'changed'}));
-  assert.equal(native(root, 'init', undefined, ['--confirm', '--capability', cap]).json.code, 'AUTHORITY_REQUIRED');
+  assert.equal(native(root, 'rollback', undefined, ['--confirm', '--capability', cap]).json.code, 'AUTHORITY_REQUIRED');
   assert.equal(native(root, 'authorize', undefined, ['--request', request.nonce, '--tool-call', call]).json.code, 'AUTHORITY_REQUIRED');
   writeFileSync(manifestPath, manifest);
   const expired = {...request, nonce: randomUUID(), createdAt: new Date(Date.now() - 7200_000).toISOString(),
@@ -433,7 +430,7 @@ test('native request expiry, manifest drift and reversed receipt order cannot cr
   const expiredCap = {...readIssued(root, 'capabilities', cap), request: expired};
   writeIssued(root, 'capabilities', expired.nonce, expiredCap);
   assert.equal(native(root, 'authorize', undefined, ['--request', expired.nonce, '--tool-call', call]).json.code, 'AUTHORITY_REQUIRED');
-  assert.equal(native(root, 'init', undefined, ['--confirm', '--capability', expired.nonce]).json.code, 'AUTHORITY_REQUIRED');
+  assert.equal(native(root, 'rollback', undefined, ['--confirm', '--capability', expired.nonce]).json.code, 'AUTHORITY_REQUIRED');
 }));
 
 test('every issued coordination action is executable by the command contract', () => workspace(root => {
@@ -624,15 +621,15 @@ test('coordinator routing is renewed after implementation-subject or criteria ch
 }));
 
 test('worker without a standalone journal can request but cannot fabricate operator proof', () => workspace(root => {
+  initialize(root);
   const worker = 'worker-context-no-journal';
-  const result = native(root, 'request', {type: 'maintenance', action: 'init'}, [], worker);
+  const result = native(root, 'request', {type: 'maintenance', action: 'rollback'}, [], worker);
   assert.equal(result.status, 0, JSON.stringify(result.json));
   assert.equal(native(root, 'authorize', undefined, ['--request', result.json.request.nonce,
     '--tool-call', 'made-up'], worker).json.code, 'UNSUPPORTED_HOST');
   const call = human(root, result.json.request);
   const auth = native(root, 'authorize', undefined, ['--request', result.json.request.nonce, '--tool-call', call]);
   assert.equal(auth.status, 0, JSON.stringify(auth.json));
-  assert.equal(native(root, 'init', undefined, ['--confirm', '--capability', auth.json.capability], worker).status, 0);
 }));
 
 test('issued command capability cannot relabel the host context, widen action or alter command', () => workspace(root => {
@@ -689,9 +686,9 @@ test('status lists typed hierarchy Tasks without a selector', () => workspace(ro
 test('export remains read-only across private-policy drift', () => workspace(root => {
   const task = seededNativeTask(root);
   assert.equal(task.body.id, TASK_ID);
-  const exclude = join(root, '.git', 'info', 'exclude');
+  const exclude = join(root, '.gitignore');
   assert.match(readFileSync(exclude, 'utf8'), /\.kai\//,
-    'init admits the complete private workspace into Git metadata');
+    'standalone initialization preserves the complete private workspace exclusion');
   const exported = invoke(root, 'export', ['--kind', 'task', '--id', TASK_ID]);
   assert.equal(exported.status, 0, JSON.stringify(exported.json));
   assert.equal(existsSync(join(root, '.kai', 'review', 'coordination')), false);
@@ -1000,11 +997,14 @@ test('SQLite-disabled process is a precise host gap; context override cannot exc
 }));
 
 test('request decoders and missing recovery state fail with typed JSON, never raw exceptions', () => workspace(root => {
+  assert.equal(native(root, 'request',
+    {type: 'maintenance', action: 'init', operator: true}).json.code, 'INVALID_INPUT');
+  assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host')), false);
+  initialize(root);
   for (const request of [
     {type: 'repair', request: null}, {type: 'run', actor: null, taskId: TASK_ID, actions: []},
-    {type: 'maintenance', action: 'init', operator: true}, {type: 'command', command: {}},
+    {type: 'command', command: {}},
   ]) assert.equal(native(root, 'request', request).json.code, 'INVALID_INPUT');
-  initialize(root);
   const cap = authorize(root, {type: 'maintenance', action: 'recover-activate'});
   assert.equal(native(root, 'recover', undefined, ['--confirm', '--action', 'activate', '--capability', cap]).json.code, 'RECOVERY_REQUIRED');
 }));

@@ -78,6 +78,11 @@ export function registryPath(env = process.env) {
 }
 
 export function searchUpward(startDir) {
+  if (nativeAbsolutePathProblem(startDir, {
+    label: 'workspace search root',
+    requireExisting: true,
+    requireCanonical: true,
+  })) return null;
   let dir = resolvePath(startDir);
   for (let depth = 0; depth < MAX_SEARCH_DEPTH; depth++) {
     if (hasManifest(dir)) return dir;
@@ -134,6 +139,22 @@ function usesCanonicalPhysicalPath(value) {
   const canonical = canonicalPath(value);
   return (process.platform === 'win32' ? requested.toLowerCase() : requested)
     === (process.platform === 'win32' ? canonical.toLowerCase() : canonical);
+}
+
+export function nativeAbsolutePathProblem(value, {
+  label = 'path',
+  requireExisting = false,
+  requireCanonical = false,
+} = {}) {
+  if (typeof value !== 'string' || !value.trim()) return `${label} must be a native absolute path`;
+  const kind = portableAbsoluteKind(value);
+  if (kind === 'network') return `${label} cannot use a UNC, device, or network path`;
+  if (!kind || !isNativeAbsolute(value)) return `${label} must be a native absolute path`;
+  if (requireExisting && !existsSync(value)) return `${label} does not exist`;
+  if (requireCanonical && (!usesCanonicalPhysicalPath(value) || pathHasLink(value, value))) {
+    return `${label} cannot use links, junctions, or filesystem aliases`;
+  }
+  return null;
 }
 
 export function validateSchema5Manifest(root, manifest, {
@@ -308,12 +329,20 @@ export function loadWorkspaceRegistry(env = process.env) {
         return { ok: false, reason: `${path} workspaces[${index}] is missing string "${key}"` };
       }
     }
-    if (!isNativeAbsolute(entry.project_root) || !isNativeAbsolute(entry.workspace_root)
-      || portableAbsoluteKind(entry.project_root) === 'network'
-      || portableAbsoluteKind(entry.workspace_root) === 'network') {
+    const projectProblem = nativeAbsolutePathProblem(entry.project_root, {
+      label: `${path} workspaces[${index}].project_root`,
+      requireExisting: true,
+      requireCanonical: true,
+    });
+    const workspaceProblem = nativeAbsolutePathProblem(entry.workspace_root, {
+      label: `${path} workspaces[${index}].workspace_root`,
+      requireExisting: true,
+      requireCanonical: true,
+    });
+    if (projectProblem || workspaceProblem) {
       return {
         ok: false,
-        reason: `${path} workspaces[${index}] project_root and workspace_root must be native non-network absolute paths`,
+        reason: projectProblem ?? workspaceProblem,
       };
     }
   }
@@ -329,21 +358,20 @@ function validateRegisteredWorkspace(entry, projectRoot) {
       return { ok: false, reason: `workspace registry entry is missing "${key}"` };
     }
   }
-  if (!isNativeAbsolute(entry.project_root) || !isNativeAbsolute(entry.workspace_root)
-    || portableAbsoluteKind(entry.project_root) === 'network'
-    || portableAbsoluteKind(entry.workspace_root) === 'network') {
-    return { ok: false, reason: 'workspace registry paths must be native non-network absolute paths' };
-  }
+  const projectProblem = nativeAbsolutePathProblem(entry.project_root, {
+    label: 'workspace registry project_root',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  const workspaceProblem = nativeAbsolutePathProblem(entry.workspace_root, {
+    label: 'workspace registry workspace_root',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  if (projectProblem || workspaceProblem) return {ok: false, reason: projectProblem ?? workspaceProblem};
   if (normalized(entry.project_root) !== normalized(projectRoot)) {
     return { ok: false, reason: 'workspace registry project path changed during resolution' };
   }
-  if (!usesCanonicalPhysicalPath(entry.project_root)
-    || !usesCanonicalPhysicalPath(entry.workspace_root)
-    || pathHasLink(entry.project_root, entry.project_root)
-    || pathHasLink(entry.workspace_root, entry.workspace_root)) {
-    return {ok: false, reason: 'workspace registry paths cannot use links, junctions, or filesystem aliases'};
-  }
-
   const manifestResult = readWorkspaceManifest(entry.workspace_root);
   if (!manifestResult.ok) return manifestResult;
   const manifest = manifestResult.manifest;
@@ -384,10 +412,15 @@ function validateRegisteredWorkspace(entry, projectRoot) {
 }
 
 export function findRegisteredWorkspace(cwd, env = process.env) {
+  const cwdProblem = nativeAbsolutePathProblem(cwd, {
+    label: 'registry discovery cwd',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  if (cwdProblem) return {ok: false, reason: cwdProblem};
   const registry = loadWorkspaceRegistry(env);
   if (!registry.ok) return registry;
   const matches = registry.entries
-    .filter((entry) => typeof entry?.project_root === 'string' && isNativeAbsolute(entry.project_root))
     .filter((entry) => isWithin(entry.project_root, cwd))
     .sort((left, right) => normalized(right.project_root).length - normalized(left.project_root).length);
   if (!matches.length) return { ok: true, root: null, registryPath: registry.path };
@@ -417,6 +450,12 @@ export function resolveWorkspaceRoot(opts = {}) {
   const { explicitRoot, cwd = process.cwd(), env = process.env } = opts;
 
   if (explicitRoot) {
+    const problem = nativeAbsolutePathProblem(explicitRoot, {
+      label: 'explicit workspace root',
+      requireExisting: true,
+      requireCanonical: true,
+    });
+    if (problem) return {ok: false, reason: problem};
     const root = resolvePath(explicitRoot);
     if (hasManifest(root)) return { ok: true, root, source: 'explicit' };
     return {
@@ -427,9 +466,12 @@ export function resolveWorkspaceRoot(opts = {}) {
 
   const envRoot = env.KAI_WORKSPACE_ROOT;
   if (envRoot) {
-    if (!isAbsolute(envRoot)) {
-      return { ok: false, reason: `KAI_WORKSPACE_ROOT must be an absolute path, got "${envRoot}"` };
-    }
+    const problem = nativeAbsolutePathProblem(envRoot, {
+      label: 'KAI_WORKSPACE_ROOT',
+      requireExisting: true,
+      requireCanonical: true,
+    });
+    if (problem) return {ok: false, reason: problem};
     const root = resolvePath(envRoot);
     if (!hasManifest(root)) {
       return { ok: false, reason: `KAI_WORKSPACE_ROOT "${root}" has no ${MANIFEST_REL}` };
@@ -437,6 +479,12 @@ export function resolveWorkspaceRoot(opts = {}) {
     return { ok: true, root, source: 'env' };
   }
 
+  const cwdProblem = nativeAbsolutePathProblem(cwd, {
+    label: 'workspace discovery cwd',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  if (cwdProblem) return {ok: false, reason: cwdProblem};
   const found = searchUpward(cwd);
   if (found) return { ok: true, root: found, source: 'search' };
 

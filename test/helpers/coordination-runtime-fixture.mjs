@@ -1,5 +1,6 @@
 import {createHash, randomUUID} from 'node:crypto';
 import {mkdirSync, mkdtempSync, rmSync, writeFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {dirname, isAbsolute, join, relative, resolve, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -49,28 +50,26 @@ export function allocateTemporaryRoot(prefix, checkoutRoot = repoRoot) {
 
 export async function withWorkspace(fn) {
   const root = allocateTemporaryRoot('kai-coordination-runtime-fixture-');
-  const stateDirectory = join(root, '.kai', 'state');
-  mkdirSync(stateDirectory, {recursive: true});
+  const runtimeDirectory = join(root, '.kai', 'core', 'runtime');
+  mkdirSync(runtimeDirectory, {recursive: true});
   mkdirSync(join(root, 'docs', 'kai'), {recursive: true});
+  spawnSync('git', ['init', '--quiet', root], {windowsHide: true});
+  writeFileSync(join(root, '.gitignore'), '/.kai/\n');
   writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), directionBytes);
   writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
     plugin: 'kai-core',
     version: 'test',
-    schema_version: 4,
+    schema_version: 5,
     scaffolded: fixedNow,
     workspace_id: `test-${randomUUID()}`,
-    storage_mode: 'repo-local',
+    placement: 'repo-local',
     workspace_root: '.',
-    state: '.kai/state',
-    runs: '.kai/runs',
-    review: '.kai/review',
-    archive: '.kai/archive',
-    personal: '.kai/personal',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
     projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
-    areas: [],
   }, null, 2)}\n`);
   const store = openStore({
-    path: join(stateDirectory, 'coordination.sqlite'),
+    path: join(runtimeDirectory, 'coordination.sqlite'),
     mode: 'create',
   });
   try {

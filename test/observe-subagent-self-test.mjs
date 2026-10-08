@@ -13,6 +13,7 @@ import { join, dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {DatabaseSync} from 'node:sqlite';
 import { MAX_NOTE } from '../src/core/lib/activity.mjs';
 import {closeStore, openStore} from '../src/core/lib/coordination-runtime/store.mjs';
 import {
@@ -166,6 +167,28 @@ function selfTest() {
 
   mkdirSync(dirname(join(tmp, CONSENT_REL)), {recursive: true});
   writeFileSync(join(tmp, CONSENT_REL), 'enabled\n');
+  const databasePath = join(tmp, '.kai', 'core', 'runtime', 'coordination.sqlite');
+  for (const kind of ['missing', 'directory', 'corrupt', 'schema1']) {
+    rmSync(databasePath, {recursive: true, force: true});
+    if (kind === 'directory') mkdirSync(databasePath);
+    if (kind === 'corrupt') writeFileSync(databasePath, 'not a sqlite database');
+    if (kind === 'schema1') {
+      closeStore(openStore({path: databasePath, mode: 'create'}));
+      const raw = new DatabaseSync(databasePath);
+      raw.prepare("UPDATE metadata SET value='1' WHERE key='schema_version'").run();
+      raw.close();
+    }
+    rmSync(join(tmp, OBSERVED_REL), {force: true});
+    const rejected = main(
+      ['subagentStop'],
+      JSON.stringify(payload({agentId: 'invalid-store', response: 'Must not record.'})),
+    );
+    ok(!rejected.ok && !existsSync(join(tmp, OBSERVED_REL)),
+      `${kind} coordination database rejects observation without creating a log`,
+      [rejected.reason].filter(Boolean));
+  }
+  rmSync(databasePath, {recursive: true, force: true});
+  closeStore(openStore({path: databasePath, mode: 'create'}));
   const allowed = main(['subagentStop'], JSON.stringify(payload({ agentId: 'agent-1', response: 'Done.' })));
   ok(allowed.ok, 'with consent present the record is written');
   const written = readFileSync(join(tmp, OBSERVED_REL), 'utf8').trim();

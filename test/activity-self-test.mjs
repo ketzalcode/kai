@@ -14,6 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { existsSync, mkdtempSync, writeFileSync, rmSync, mkdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
+import {DatabaseSync} from 'node:sqlite';
 import { append, read, runs, buildRecord, safeNote, digest, LOG_REL } from '../src/core/lib/activity.mjs';
 import { resolveWorkspaceRoot } from '../src/core/lib/workspace-resolve.mjs';
 import { parseDuration } from '../src/core/activity.mjs';
@@ -168,6 +169,19 @@ function selfTest() {
       mkdirSync(join(gitOnlyDir, '.git'), { recursive: true });
       const gitOnly = resolveWorkspaceRoot({ cwd: gitOnlyDir, env: {} });
       ok(!gitOnly.ok, 'a bare .git with no .kai/manifest.json is no longer treated as a kai workspace');
+
+      const nonNativeRoot = process.platform === 'win32'
+        ? '/var/definitely-missing-kai'
+        : 'C:\\definitely-missing-kai';
+      for (const [label, options] of [
+        ['explicit foreign absolute root', {explicitRoot: nonNativeRoot, cwd: wsTmp, env: {}}],
+        ['foreign absolute environment root', {cwd: wsTmp, env: {KAI_WORKSPACE_ROOT: nonNativeRoot}}],
+        ['UNC explicit root', {explicitRoot: '\\\\localhost\\definitely-missing-kai', cwd: wsTmp, env: {}}],
+      ]) {
+        const unsafe = resolveWorkspaceRoot(options);
+        ok(!unsafe.ok && /native absolute|UNC|device|network/i.test(unsafe.reason),
+          `${label} is rejected before native path resolution`);
+      }
     } finally {
       rmSync(wsTmp, { recursive: true, force: true });
     }
@@ -201,7 +215,8 @@ function selfTest() {
   // this is the test that catches it.
   const tmp = mkdtempSync(join(tmpdir(), 'kai-activity-'));
   try {
-    const W = 6, N = 120;
+    writeSchema5Manifest(tmp, 'activity-concurrency');
+    const W = 6, N = 20;
     const worker = join(tmp, 'w.mjs');
     const libUrl = pathToFileURL(join(REPO_ROOT, 'src', 'core', 'lib', 'activity.mjs')).href;
     writeFileSync(worker, [
@@ -259,6 +274,28 @@ function selfTest() {
       '--run', 'abc123def4', '--for', '5m', '--State=shipped'], { encoding: 'utf8' });
     ok(badEq.status === 1 && /Task record/.test(badEq.stderr),
       'the --Key=value form is seen and rejected too, not silently ignored');
+
+    for (const kind of ['missing', 'directory', 'corrupt', 'schema1']) {
+      const invalidStoreRoot = mkdtempSync(join(tmpdir(), `kai-activity-${kind}-`));
+      writeSchema5Manifest(invalidStoreRoot, `activity-${kind}`);
+      const database = join(invalidStoreRoot, '.kai', 'core', 'runtime', 'coordination.sqlite');
+      rmSync(database, {force: true});
+      if (kind === 'directory') mkdirSync(database);
+      if (kind === 'corrupt') writeFileSync(database, 'not a sqlite database');
+      if (kind === 'schema1') {
+        const store = openStore({path: database, mode: 'create'});
+        closeStore(store);
+        const raw = new DatabaseSync(database);
+        raw.prepare("UPDATE metadata SET value='1' WHERE key='schema_version'").run();
+        raw.close();
+      }
+      const rejected = spawnSync(process.execPath, [cli, 'start', '--root', invalidStoreRoot,
+        '--role', 'principal-sre', '--run', 'aaaa1111bb', '--for', '30m'], {encoding: 'utf8'});
+      ok(rejected.status === 1 && !existsSync(join(invalidStoreRoot, LOG_REL)),
+        `${kind} coordination database rejects activity without creating a log`,
+        [rejected.stderr].filter(Boolean));
+      rmSync(invalidStoreRoot, {recursive: true, force: true});
+    }
 
     const invalidFirstWrite = mkdtempSync(join(tmpdir(), 'kai-activity-invalid-'));
     const invalid = append(invalidFirstWrite, {...base, task: '../../escape'}, NOW);

@@ -21,6 +21,10 @@ const json = (root, path) => JSON.parse(exactFile(root, path));
 function confirmed(confirm) {
   if (confirm !== true) fail('AUTHORITY_REQUIRED', 'confirm:true must explicitly acknowledge offline migration/recovery');
 }
+function stagingUnavailable() {
+  fail('SCHEMA_MISMATCH',
+    'schema 3/4 stores are read-only; Task 10 must use a distinct explicit schema-5 migration staging API');
+}
 function privateWorkspace(root, admit = false) {
   const privacy = privateAdmission(root, {admit});
   if (privacy.errors.length) fail('INVALID_INPUT', privacy.errors.join('; '));
@@ -127,6 +131,7 @@ function releaseLock(root, expected) {
 /** Explicit offline migration; no current grants, approvals or invented actors. */
 export function migrateWorkspace({root, confirm, roles = [], env = process.env} = {}) {
   confirmed(confirm);
+  stagingUnavailable();
   const manifest = migrationManifest(root, [3], env);
   if (!Array.isArray(roles) || roles.some(r => typeof r !== 'string')) fail('INVALID_INPUT', 'installed role identities must be supplied');
   if (inFlight.has(root) || existsSync(safePath(root, LOCK))) fail('RECOVERY_REQUIRED', 'incomplete or competing migration; inspect and explicitly recover');
@@ -217,6 +222,7 @@ export function canRollback(store) {
  */
 export function recoverMigration({root, confirm, action, env = process.env} = {}) {
   confirmed(confirm);
+  stagingUnavailable();
   migrationManifest(root, [3, 4], env);
   if (!['activate', 'abandon'].includes(action)) fail('INVALID_INPUT', 'recovery action must be activate or abandon');
   if (inFlight.has(root)) fail('STORE_BUSY', 'migration is active in this process');
@@ -276,6 +282,7 @@ export function verifyMigration(root, {env = process.env} = {}) {
 }
 export function rollbackMigration({root, confirm, env = process.env} = {}) {
   confirmed(confirm);
+  stagingUnavailable();
   const manifest = migrationManifest(root, [4], env);
   const {plan, ready} = activePlan(root, manifest);
   const activatedManifest = activatedManifestBytes(root, plan);
@@ -358,12 +365,14 @@ export function readLegacyRecords(store, {sourceId, includeRaw = false} = {}) {
  * source bytes and unknown historical actors remain untouched.
  */
 export function bindMigrationRepair(store, {root, roles, verify} = {}) {
+  stagingUnavailable();
   migrationManifest(root, [4]);
   if (store.closed || store.mode === 'read' || resolve(store.path) !== safePath(root, DATABASE)
     || !Array.isArray(roles) || typeof verify !== 'function') fail('AUTHORITY_REQUIRED', 'repair requires explicit store/root and trusted host verifier');
   repairs.set(store, {root, roles: [...roles], verify});
 }
 export function repairLegacyRecord(store, request) {
+  stagingUnavailable();
   const binding = repairs.get(store);
   if (!binding || store.closed) fail('AUTHORITY_REQUIRED', 'bind a trusted host repair verifier first');
   const input = JSON.parse(canonicalJson(request));

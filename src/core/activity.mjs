@@ -18,21 +18,14 @@
 // Node built-ins only; writes one gitignored file.
 
 import { resolve } from 'node:path';
-import {existsSync} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
-import { append, read, runs, LOG_REL, FORBIDDEN_FIELDS } from './lib/activity.mjs';
 import {
-  readWorkspaceManifest,
+  activityWorkspaceAdmission, append, read, runs, LOG_REL, FORBIDDEN_FIELDS,
+} from './lib/activity.mjs';
+import {
   resolveWorkspaceRoot,
-  validateSchema5Manifest,
 } from './lib/workspace-resolve.mjs';
-import {
-  COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
-} from './lib/workspace-layout.mjs';
-import {inspectGitPrivacy} from './lib/workspace-git-privacy.mjs';
-import {readDirection} from './lib/direction.mjs';
 
 const DUR = /^(\d+)(s|m|h)$/;
 
@@ -113,28 +106,9 @@ function main(argv) {
     return 1;
   }
 
-  const manifest = readWorkspaceManifest(root);
-  if (!manifest.ok || manifest.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    console.error('activity: SCHEMA_MISMATCH — schema 3/4 workspaces are read-only');
-    return 1;
-  }
-  const validation = validateSchema5Manifest(root, manifest.manifest);
-  const privacy = inspectGitPrivacy(root, manifest.manifest.placement);
-  const errors = [
-    ...validation.errors,
-    ...privacy.errors,
-    ...privacy.missing.map(path => `private workspace path must be ignored: ${path}`),
-  ];
-  if (manifest.manifest.placement === 'repo-local' && !privacy.gitRoot) {
-    errors.push('repo-local placement requires a readable Git work tree');
-  }
-  try { readDirection({workspaceRoot: root, manifest: manifest.manifest}); }
-  catch (error) { errors.push(error.message); }
-  if (!existsSync(resolve(root, ...COORDINATION_DATABASE.split('/')))) {
-    errors.push(`coordination database is missing at ${COORDINATION_DATABASE}`);
-  }
-  if (errors.length) {
-    console.error(`activity: not recorded — ${errors.join('; ')}`);
+  const admitted = activityWorkspaceAdmission(root);
+  if (!admitted.ok) {
+    console.error(`activity: not recorded — ${admitted.reason}`);
     return 1;
   }
 

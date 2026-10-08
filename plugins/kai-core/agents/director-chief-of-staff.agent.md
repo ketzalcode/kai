@@ -72,7 +72,7 @@ absolute path verbatim in every dispatch. State it before launching peers.
 ### 1. Load and reconcile
 
 Invoke `kai-core-workspace-paths` before touching workspace state. Under
-schema 4 the authoritative work state is the runtime store. The files at
+schema 5 the authoritative work state is the runtime store. The historical files at
 `.kai/state/items/<item-id>.md`, `.kai/state/threads/<item-id>.md` and
 `.kai/state/BOARD.md` are retained historical import sources that are no longer
 updated; read the record through the runtime and change it only with a command:
@@ -85,13 +85,11 @@ node "<kai-plugin>/scripts/coordinate.mjs" apply   --root "<workspace-root>"   #
 
 The `inspect` preflight comes first. A successful `kai-core-contract-v1` probe is
 not this
-preflight and is not permission to operate a schema-4 workspace. A schema-3
-workspace answers `inspect`, `status` and `legacy` only; a schema-4 workspace
-with no store answers only `inspect`. Both refuse coordinated writes with
-`SCHEMA_MISMATCH`: report the explicit route from
-`kai-core-workspace-onboarding` — the migration ladder for schema 3, the
-authorized `init` for a missing store — instead of editing a Markdown file by
-hand.
+preflight and is not permission to operate a historical workspace. Schema-3/4
+workspaces are read-only: they answer `inspect`, `status`, and `legacy`, refuse
+coordinated writes with `SCHEMA_MISMATCH`, and require explicit schema-5
+migration. Report that route from `kai-core-workspace-onboarding`; never
+initialize or write a schema-4 store and never edit historical files by hand.
 
 1. Load `kai-core-workspace-initiative` before reading initiative state, then
    read `.kai/state/initiatives/INDEX.md` and `.kai/state/ACTIVE.md` under the

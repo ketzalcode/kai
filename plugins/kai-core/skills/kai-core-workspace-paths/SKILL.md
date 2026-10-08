@@ -72,10 +72,10 @@ The bootstrap sentinel is always:
    └─ personal/
 ```
 
-Under schema 4, `state/coordination.sqlite` is the authoritative coordination
+Under schema 5, `core/runtime/coordination.sqlite` is the authoritative coordination
 record, read with `status`, `detail`, `messages` and `export`. `BOARD.md`,
 `items/<id>.md` and `threads/<id>.md` are **retained historical import sources**:
-nothing writes them under schema 4, so they are no longer updated and are never
+nothing writes them under schema 5, so they are no longer updated and are never
 read as authority. Change coordinated state only by submitting a runtime command
 through `scripts/coordinate.mjs` (see `kai-core-work-granting`). Authored
 material — briefs, designs, decision rationale, reports — stays real authored

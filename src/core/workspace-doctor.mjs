@@ -17,6 +17,7 @@
 //   node scripts/workspace-doctor.mjs --registry [--json]
 //   node scripts/workspace-doctor.mjs --adopt <project-dir> --root <external-workspace>
 //   node scripts/workspace-doctor.mjs --forget <project-dir>
+//   node scripts/workspace-doctor.mjs --initialize --root <dir> --confirm < manifest.json
 //   node scripts/workspace-doctor.mjs --migration-check [--rollback] [--home <dir>] [--root <dir>] [--json]
 //
 // Workspace exit code: 0 = healthy, 1 = invalid.
@@ -39,7 +40,7 @@ import {
 } from './lib/migration-doctor.mjs';
 import {
   defaultKaiHome, loadWorkspaceRegistry, readWorkspaceManifest, registryPath, resolveWorkspaceRoot,
-  validateSchema5Manifest,
+  nativeAbsolutePathProblem, validateSchema5Manifest,
 } from './lib/workspace-resolve.mjs';
 import {
   badPath, normalized, canonicalPath, resolvedProjectPath, escapesRoot, exactPath,
@@ -243,7 +244,21 @@ export function initializeWorkspace({
   root,
   manifest,
   env = process.env,
+  confirm = false,
 } = {}) {
+  if (confirm !== true) {
+    return {
+      ok: false,
+      code: 'AUTHORITY_REQUIRED',
+      reason: 'workspace initialization requires explicit confirmation',
+    };
+  }
+  const rootProblem = nativeAbsolutePathProblem(root, {
+    label: 'workspace initialization root',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  if (rootProblem) return {ok: false, code: 'INVALID_INPUT', reason: rootProblem};
   root = resolve(root);
   const manifestPath = join(root, '.kai', 'manifest.json');
   if (existsSync(manifestPath)) {
@@ -328,6 +343,12 @@ export function initializeWorkspace({
 
 // --- validation ------------------------------------------------------------
 export function checkWorkspace(root, options = {}) {
+  const rootProblem = nativeAbsolutePathProblem(root, {
+    label: 'workspace root',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  if (rootProblem) return {errors: [rootProblem], warnings: [], migrations: []};
   root = resolve(root);
   const errors = [];
   const warnings = [];
@@ -1043,6 +1064,17 @@ function sleepSync(milliseconds) {
 }
 
 export function adoptWorkspace({ root, projectRoot, env = process.env }) {
+  const rootProblem = nativeAbsolutePathProblem(root, {
+    label: 'external workspace root',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  const projectProblem = nativeAbsolutePathProblem(projectRoot, {
+    label: 'external project root',
+    requireExisting: true,
+    requireCanonical: true,
+  });
+  if (rootProblem || projectProblem) return {ok: false, reason: rootProblem ?? projectProblem};
   root = resolve(root);
   projectRoot = resolve(projectRoot);
   const checked = checkWorkspace(root, { allowUnregisteredExternal: true });
@@ -1081,6 +1113,12 @@ export function adoptWorkspace({ root, projectRoot, env = process.env }) {
 }
 
 export function forgetWorkspace({ projectRoot, env = process.env }) {
+  const projectProblem = nativeAbsolutePathProblem(projectRoot, {
+    label: 'external project root',
+    requireExisting: false,
+    requireCanonical: true,
+  });
+  if (projectProblem) return {ok: false, reason: projectProblem};
   projectRoot = resolve(projectRoot);
   return withRegistryLock(env, () => {
     const registry = loadWorkspaceRegistry(env);
@@ -1119,6 +1157,31 @@ if (isEntry) {
       json: argv.includes('--json'),
       rollback: argv.includes('--rollback'),
     }));
+  } else if (argv.includes('--initialize')) {
+    const root = value('--root');
+    if (!root || !argv.includes('--confirm')) {
+      console.error('--initialize requires --root <workspace> and --confirm');
+      process.exit(1);
+    }
+    let manifest;
+    try {
+      manifest = JSON.parse(readFileSync(0, 'utf8'));
+    } catch (error) {
+      console.error(`workspace initialization failed: stdin must contain one manifest JSON object (${error.message})`);
+      process.exit(1);
+    }
+    const result = initializeWorkspace({
+      root,
+      manifest,
+      env: process.env,
+      confirm: true,
+    });
+    if (!result.ok) {
+      console.error(`workspace initialization failed: ${result.code}: ${result.reason}`);
+      process.exit(1);
+    }
+    console.log(`workspace initialized at ${result.root}`);
+    process.exit(0);
   } else if (argv.includes('--registry')) {
     const env = value('--kai-home')
       ? { ...process.env, KAI_HOME: resolve(value('--kai-home')) }

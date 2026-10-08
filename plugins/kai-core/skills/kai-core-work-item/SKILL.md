@@ -12,10 +12,10 @@ its field rules, and the Outcome / Acceptance / Evidence templates every item
 carries. Acting on an item is defined in `kai-core-work-acting`; granting and
 reconciling it are defined in `kai-core-work-granting`.
 
-Under workspace schema 4 the authoritative record lives in the runtime store at
-`.kai/state/coordination.sqlite`, read with `detail --kind item --id <item-id>`,
+Under workspace schema 5 the authoritative record lives in the runtime store at
+`.kai/core/runtime/coordination.sqlite`, read with `detail --kind task --id <task-id>`,
 `status` and `export`. Any `.kai/state/items/<item-id>.md` beside it is a
-**retained historical import source** from a pre-schema-4 workspace: read it as
+**retained historical import source** from a pre-schema-5 workspace: read it as
 history, never hand-edit it to change coordinated state. The fields below are
 the record's schema whichever surface
 you are looking at, and every change to them is one `apply` command through

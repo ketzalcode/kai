@@ -36,18 +36,12 @@
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, statSync, renameSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { digest, looksAbsolute, safeNote, MAX_LINE, MAX_BYTES } from './lib/activity.mjs';
 import {
-  readWorkspaceManifest,
+  activityWorkspaceAdmission, digest, looksAbsolute, safeNote, MAX_LINE, MAX_BYTES,
+} from './lib/activity.mjs';
+import {
   resolveWorkspaceRoot,
-  validateSchema5Manifest,
 } from './lib/workspace-resolve.mjs';
-import {
-  COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
-} from './lib/workspace-layout.mjs';
-import {inspectGitPrivacy} from './lib/workspace-git-privacy.mjs';
-import {readDirection} from './lib/direction.mjs';
 import {escapesRoot, pathHasLink} from './lib/workspace-path-safety.mjs';
 
 export const OBSERVED_REL = '.kai/core/runtime/observed.jsonl';
@@ -84,28 +78,10 @@ export function findWorkspace(cwd, env = process.env) {
 }
 
 function writableWorkspace(root, env) {
-  const manifest = readWorkspaceManifest(root);
-  if (!manifest.ok || manifest.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    return {ok: false, reason: 'SCHEMA_MISMATCH: schema 3/4 workspaces are read-only'};
-  }
-  const validation = validateSchema5Manifest(root, manifest.manifest, {env});
-  const privacy = inspectGitPrivacy(root, manifest.manifest.placement);
-  const errors = [
-    ...validation.errors,
-    ...privacy.errors,
-    ...privacy.missing.map(path => `private workspace path must be ignored: ${path}`),
-  ];
-  if (manifest.manifest.placement === 'repo-local' && !privacy.gitRoot) {
-    errors.push('repo-local placement requires a readable Git work tree');
-  }
-  try { readDirection({workspaceRoot: root, manifest: manifest.manifest}); }
-  catch (error) { errors.push(error.message); }
-  const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
-  if (!existsSync(databasePath)) {
-    errors.push(`coordination database is missing at ${COORDINATION_DATABASE}`);
-  }
+  const admission = activityWorkspaceAdmission(root, env);
+  if (!admission.ok) return admission;
+  const errors = [];
   for (const path of [
-    databasePath,
     join(root, OBSERVED_REL),
     join(root, CONSENT_REL),
   ]) {
@@ -114,7 +90,7 @@ function writableWorkspace(root, env) {
       break;
     }
   }
-  return errors.length ? {ok: false, reason: errors.join('; ')} : {ok: true, manifest: manifest.manifest};
+  return errors.length ? {ok: false, reason: errors.join('; ')} : admission;
 }
 
 // ---------------------------------------------------------------------------
@@ -246,9 +222,11 @@ function rotate(file) {
   } catch { /* absent, or another process rotated it first */ }
 }
 
-export function appendObserved(root, event, payload, now = Date.now(), opts = {}) {
+export function appendObserved(root, event, payload, now = Date.now(), opts = {}, env = process.env) {
   const built = buildObserved(event, payload, now, opts);
   if (!built.ok) return built;
+  const admitted = writableWorkspace(root, env);
+  if (!admitted.ok) return admitted;
   const file = join(root, OBSERVED_REL);
   if (escapesRoot(root, file) || pathHasLink(root, file)) {
     return {ok: false, reason: 'observed activity path traverses a link or escapes the workspace'};
@@ -290,8 +268,6 @@ export function main(argv, stdinText, now = Date.now(), env = process.env) {
   delete resolverEnv.KAI_WORKSPACE_ROOT;
   const root = findWorkspace(payload && payload.cwd, resolverEnv);
   if (!root) return { ok: false, reason: 'no workspace root found' };
-  const writable = writableWorkspace(root, resolverEnv);
-  if (!writable.ok) return writable;
   if (!hasConsent(root)) return { ok: false, reason: 'observer not enabled for this workspace' };
   return appendObserved(
     root,
@@ -299,6 +275,7 @@ export function main(argv, stdinText, now = Date.now(), env = process.env) {
     payload,
     now,
     { summary: wantsSummary(root) },
+    resolverEnv,
   );
 }
 

@@ -58,12 +58,11 @@ node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 ```
 
 A successful `kai-core-contract-v1` probe is not this preflight and is not
-permission to operate a schema-4 workspace. A schema-3 workspace answers
-`inspect`, `status` and `legacy` only; a schema-4 workspace with no store
-answers only `inspect`. Both refuse coordinated writes with `SCHEMA_MISMATCH`:
-return that refusal and the explicit route from `kai-core-workspace-onboarding`
-— the migration ladder for schema 3, the authorized `init` for a missing store
-— and do not seed records by hand.
+permission to operate a historical workspace. Schema-3/4 workspaces are
+read-only: they answer `inspect`, `status`, and `legacy`, refuse coordinated
+writes with `SCHEMA_MISMATCH`, and require explicit schema-5 migration. Return
+that refusal and the route from `kai-core-workspace-onboarding`; never
+initialize or write a schema-4 store and do not seed records by hand.
 
 ## Output
 

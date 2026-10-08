@@ -93,6 +93,25 @@ function selfTest() {
     ...overrides,
   });
 
+  const unconfirmedRoot = mkdtempSync(join(tmpdir(), 'kai-schema5-unconfirmed-'));
+  try {
+    spawnSync('git', ['init', '--quiet', unconfirmedRoot], {windowsHide: true});
+    writeFileSync(join(unconfirmedRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(unconfirmedRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(unconfirmedRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+    const unconfirmed = initializeWorkspace({
+      root: unconfirmedRoot,
+      manifest: schema5Manifest({workspace_id: 'unconfirmed-init'}),
+    });
+    ok(!unconfirmed.ok
+      && unconfirmed.code === 'AUTHORITY_REQUIRED'
+      && !existsSync(join(unconfirmedRoot, '.kai')),
+    'the standalone initializer requires explicit confirmation before any workspace mutation',
+    [unconfirmed.reason, ...snapshotTree(unconfirmedRoot)]);
+  } finally {
+    rmSync(unconfirmedRoot, {recursive: true, force: true});
+  }
+
   const schema5Root = mkdtempSync(join(tmpdir(), 'kai-schema5-init-'));
   try {
     spawnSync('git', ['init', '--quiet', schema5Root], {windowsHide: true});
@@ -100,11 +119,20 @@ function selfTest() {
     mkdirSync(join(schema5Root, 'docs', 'kai'), {recursive: true});
     writeFileSync(join(schema5Root, 'docs', 'kai', 'DIRECTION.md'), direction);
 
-    const initialized = initializeWorkspace({
-      root: schema5Root,
-      manifest: schema5Manifest(),
+    const initialized = spawnSync(process.execPath, [
+      selfPath,
+      '--initialize',
+      '--root',
+      schema5Root,
+      '--confirm',
+    ], {
+      input: JSON.stringify(schema5Manifest()),
+      encoding: 'utf8',
+      windowsHide: true,
     });
-    ok(initialized.ok, 'schema-5 initialization succeeds from operator-supplied Direction', [initialized.reason]);
+    ok(initialized.status === 0,
+      'the explicit confirmed standalone initializer activates schema 5',
+      [initialized.stderr, initialized.stdout].filter(Boolean));
     const initializedFiles = snapshotTree(schema5Root)
       .filter(entry => !entry.startsWith('.git/'))
       .filter(entry => entry !== '.git/')
@@ -194,6 +222,7 @@ function selfTest() {
     const failedInit = initializeWorkspace({
       root: failedInitRoot,
       manifest: schema5Manifest({workspace_id: 'failed-init'}),
+      confirm: true,
     });
     ok(!failedInit.ok
       && !existsSync(join(failedInitRoot, '.kai', 'manifest.json'))
@@ -214,6 +243,7 @@ function selfTest() {
     const missingDirection = initializeWorkspace({
       root: missingDirectionRoot,
       manifest: schema5Manifest({workspace_id: 'no-direction'}),
+      confirm: true,
     });
     ok(!missingDirection.ok
       && /DIRECTION_REQUIRED|direction/i.test(`${missingDirection.code} ${missingDirection.reason}`)
@@ -235,6 +265,7 @@ function selfTest() {
     const linkedInit = initializeWorkspace({
       root: linkedInitRoot,
       manifest: schema5Manifest({workspace_id: 'linked-init'}),
+      confirm: true,
     });
     ok(!linkedInit.ok
       && !existsSync(join(linkedInitOutside, 'manifest.json'))
@@ -266,7 +297,7 @@ function selfTest() {
       workspace_root: workspaceRoot,
       workspace_id: manifest.workspace_id,
     }], env);
-    const initialized = initializeWorkspace({root: workspaceRoot, manifest, env});
+    const initialized = initializeWorkspace({root: workspaceRoot, manifest, env, confirm: true});
     ok(initialized.ok
       && existsSync(join(workspaceRoot, '.kai', 'core', 'runtime', 'coordination.sqlite'))
       && !existsSync(join(projectRoot, '.kai'))
@@ -463,10 +494,9 @@ function selfTest() {
       'public artifact targets cannot bypass project qualification',
       unqualifiedPublication.errors);
 
-    // A schema-4 manifest with no coordination store yet is the expected state
-    // between `workflow-workspace-init` scaffolding and the authorized `init`.
-    // Inspect intent reports it as a condition; coordinate intent still refuses,
-    // because a coordinated write has nowhere to land.
+    // A schema-4 manifest without a store is historical read-only state.
+    // Inspection reports it without creating anything; coordinate intent routes
+    // only to explicit offline schema-5 migration.
     const preInitWorkspace = join(tmpRoot, 'pre-init-schema4-workspace');
     cpSync(join(fx, 'repo-workspace'), preInitWorkspace, { recursive: true });
     const preInitManifestPath = join(preInitWorkspace, '.kai', 'manifest.json');
@@ -476,15 +506,16 @@ function selfTest() {
     const preInitInspect = checkWorkspace(preInitWorkspace, { intent: 'inspect' });
     ok(
       preInitInspect.errors.length === 0
-        && /coordination database does not exist yet/i.test(preInitInspect.warnings.join('\n')),
-      'a scaffolded schema-4 workspace with no store is an inspect condition, not an error',
+        && /historical workspace remains read-only/i.test(preInitInspect.warnings.join('\n')),
+      'a schema-4 workspace with no store remains a read-only inspection condition',
       [...preInitInspect.errors.map((e) => `error: ${e}`),
         ...preInitInspect.warnings.map((w) => `warning: ${w}`)],
     );
     const preInitCoordinate = checkWorkspace(preInitWorkspace, { intent: 'coordinate' });
     ok(
-      preInitCoordinate.errors.some((e) => /coordination database is missing/i.test(e)),
-      'coordinated writes still refuse a schema-4 workspace with no store',
+      preInitCoordinate.errors.some((e) =>
+        /schema 4 is read-only; explicit offline schema 5 migration is required/i.test(e)),
+      'coordinated writes refuse schema 4 and route to explicit schema-5 migration',
       preInitCoordinate.errors,
     );
 
@@ -710,9 +741,54 @@ function selfTest() {
         [resolvedCli.stderr, resolvedCli.stdout].filter(Boolean));
 
       const registeredEntries = loadWorkspaceRegistry(env).entries;
+      for (const [label, unsafePath] of [
+        ['UNC', '\\\\localhost\\definitely-missing-kai'],
+        ['Windows absolute', 'C:\\definitely-missing-kai'],
+        ['POSIX absolute', '/definitely-missing-kai'],
+      ]) {
+        writeFileSync(registryPath(env), `${JSON.stringify({
+          schema_version: 1,
+          workspaces: [{
+            project_root: unsafePath,
+            workspace_root: workspaceRoot,
+            workspace_id: manifest.workspace_id,
+          }],
+        }, null, 2)}\n`);
+        const loadedUnsafe = loadWorkspaceRegistry(env);
+        const discoveredUnsafe = resolveWorkspaceRoot({cwd: projectRoot, env});
+        ok(!loadedUnsafe.ok && !discoveredUnsafe.ok,
+          `registry validation and discovery both reject ${label} path forms`,
+          [loadedUnsafe.reason, discoveredUnsafe.reason].filter(Boolean));
+      }
+      writeRegistry(registeredEntries, env);
+
+      const aliasProject = join(tmpRoot, 'project-alias');
+      const aliasWorkspace = join(tmpRoot, 'workspace-alias');
+      symlinkSync(projectRoot, aliasProject, 'junction');
+      symlinkSync(workspaceRoot, aliasWorkspace, 'junction');
+      writeFileSync(registryPath(env), `${JSON.stringify({
+        schema_version: 1,
+        workspaces: [{
+          project_root: aliasProject,
+          workspace_root: aliasWorkspace,
+          workspace_id: manifest.workspace_id,
+        }],
+      }, null, 2)}\n`);
+      const loadedAlias = loadWorkspaceRegistry(env);
+      const discoveredAlias = resolveWorkspaceRoot({cwd: projectRoot, env});
+      ok(!loadedAlias.ok && !discoveredAlias.ok
+        && /alias|link|junction/i.test(`${loadedAlias.reason} ${discoveredAlias.reason}`),
+      'registry validation and discovery apply the same link and canonical-alias refusal',
+      [loadedAlias.reason, discoveredAlias.reason].filter(Boolean));
+      rmSync(aliasProject, {force: true});
+      rmSync(aliasWorkspace, {force: true});
+      writeRegistry(registeredEntries, env);
+
+      const duplicateWorkspace = join(tmpRoot, 'duplicate-workspace');
+      mkdirSync(duplicateWorkspace);
       writeRegistry([...registeredEntries, {
         project_root: registeredEntries[0].project_root,
-        workspace_root: join(tmpRoot, 'duplicate-workspace'),
+        workspace_root: duplicateWorkspace,
         workspace_id: 'duplicate-workspace',
       }], env);
       const duplicateBinding = checkWorkspace(workspaceRoot, { env });

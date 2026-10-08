@@ -87,7 +87,7 @@ For initiative work:
 
 An initiative's **operational** fields — an item's lifecycle state, owner,
 lease, version, review bindings and the cross-item summary of them — live in the
-runtime record under schema 4 and are read with `status`, `detail` and
+runtime record under schema 5 and are read with `status`, `detail` and
 `messages`. Its **authored** content — the north star, briefs, designs, decision
 rationale, the deliverables narrative — is real authored material that stays at
 its own path and is registered, never derived.
@@ -136,33 +136,25 @@ Personal content is never published automatically.
 
 ## Manifest
 
-A coordinated workspace carries `schema_version: 4`; schema 3 remains readable.
-Both use the same fixed key shape, shown here at schema 3:
+A coordinated workspace carries the exact schema-5 manifest:
 
 ```json
 {
   "plugin": "kai-core",
-  "version": "3.0.0",
-  "schema_version": 3,
+  "version": "<plugin-version>",
+  "schema_version": 5,
   "scaffolded": "<YYYY-MM-DD>",
   "workspace_id": "<stable-id>",
-  "storage_mode": "<external|repo-local|shared>",
+  "placement": "<external|repo-local>",
   "workspace_root": "<absolute external root or '.'>",
-  "state": ".kai/state",
-  "runs": ".kai/runs",
-  "review": ".kai/review",
-  "archive": ".kai/archive",
-  "personal": ".kai/personal",
+  "private_root": ".kai",
+  "direction": "docs/kai/DIRECTION.md",
   "projects": [
     {
       "id": "<kebab-id>",
       "path": "<absolute external project path or '.'>",
       "publication_root": "docs/kai"
     }
-  ],
-  "areas": [
-    "qa", "eng", "product", "revenue", "support", "review",
-    "ship", "incident", "ai", "learn", "lessons", "pulse", "content"
   ]
 }
 ```
@@ -170,25 +162,22 @@ Both use the same fixed key shape, shown here at schema 3:
 Root values are contract constants. `version` records the plugin build;
 `schema_version` independently controls workspace migration.
 
-### Schema 3 beside schema 4
+### Historical schema 3/4 beside schema 5
 
-Schema 3 stays **readable**, but only through `inspect`, `status` and `legacy`.
+Schema 3 and schema 4 stay **inspect-only** and readable through `inspect`, `status` and `legacy`.
 Every other read — `detail`, `context`, `messages`, `export`, `hash` — refuses
-with `SCHEMA_MISMATCH` (*schema 3 supports inspect/status/legacy only;
-explicitly migrate for runtime detail*), and so does every coordinated write
-(*schema 3 is inspect-only; use explicit offline migration*). Its records keep
-their meaning; the runtime simply will not project them.
+with `SCHEMA_MISMATCH`, and so does every coordinated write. Their records keep
+their historical meaning; the runtime simply will not project them as live
+schema-5 state.
 
-There is no automatic upgrade, and no command silently migrates a workspace. A
-schema-4 manifest carries `"schema_version": 4` plus the runtime's
-`coordination_migration` binding, and it is written only by the explicit,
-offline, human-authorized migration ladder in `kai-core-workspace-onboarding`.
-Report the refusal and the ladder; never work around it by editing a manifest
-or a state file by hand.
+There is no automatic upgrade and no schema-4 initialization or write path.
+Route only to the explicit offline schema-5 migration in
+`kai-core-workspace-onboarding`. Report the refusal; never work around it by
+editing a manifest or state file by hand.
 
 Markdown left under `.kai/state/items/`, `.kai/state/threads/` and
 `.kai/state/BOARD.md` after a migration is a **retained historical import
-source**. Nothing writes it under schema 4, so it is no longer updated and is
+source**. Nothing writes it under schema 5, so it is no longer updated and is
 never read as authority.
 
 <!-- kai:allow-legacy-roots -->
