@@ -337,6 +337,16 @@ function matchingSubjects(store, leftAlias, rightAlias) {
     AND ${leftAlias}.subject_id IS ${rightAlias}.subject_id`;
 }
 
+function readSubjectRecord(store, kind, id, subject) {
+  const filter = subjectFilter(store, subject);
+  const row = runSqlite(() => store.database.prepare(`
+    SELECT ${recordProjection(store)}
+    FROM records
+    WHERE kind = ? AND id = ? AND ${filter.sql}
+  `).get(kind, id, ...filter.params));
+  return decodeRecord(row);
+}
+
 function validateReceipt(receipt, operationId) {
   if (!receipt || typeof receipt !== 'object' || Array.isArray(receipt)
     || receipt.ok !== true
@@ -450,6 +460,17 @@ function validateSchema(database, expectedVersion) {
       'SCHEMA_MISMATCH',
       `coordination message schema ${JSON.stringify(messageMetadata.value)} is unsupported; expected ${MESSAGE_SCHEMA_VERSION}`,
     );
+  }
+  if (expectedVersion === HISTORICAL_SCHEMA_VERSION) {
+    const impossible = runSqlite(() => database.prepare(`
+      SELECT kind FROM records
+      WHERE kind IN ('epic', 'feature', 'requirement', 'task')
+      ORDER BY kind, id
+      LIMIT 1
+    `).get());
+    if (impossible) {
+      recovery(`historical schema 1 cannot contain ${impossible.kind} records`);
+    }
   }
 }
 
@@ -725,14 +746,19 @@ export function readSubjectView(store, options) {
     `).all(...questionFilter.params)).map(decodeRecord);
     const questionsById = new Map(questionRecords.map(record => [record.id, record]));
     for (const id of item.body.waiting_on_questions ?? []) {
-      if (!questionsById.has(id)) questionsById.set(id, readRecord(store, 'question', id));
+      if (!questionsById.has(id)) {
+        questionsById.set(id, readSubjectRecord(store, 'question', id, subject));
+      }
     }
     const questions = [...questionsById.values()].map(record => ({
       record,
       eventSeq: record ? chronology('message_id', record.body.opened_message_id) : null,
-      openedMessage: record ? readRecord(store, 'message', record.body.opened_message_id) : null,
+      openedMessage: record
+        ? readSubjectRecord(store, 'message', record.body.opened_message_id, subject)
+        : null,
       answerMessages: record
-        ? record.body.answer_message_ids.map(id => readRecord(store, 'message', id))
+        ? record.body.answer_message_ids.map(id =>
+            readSubjectRecord(store, 'message', id, subject))
         : [],
     }));
     const approvalFilter = subjectFilter(store, subject);
@@ -746,27 +772,30 @@ export function readSubjectView(store, options) {
     });
     const recoveryHoldId = item.body.recovery_hold ?? null;
     const recoveryHold = recoveryHoldId === null ? null : {
-      record: readRecord(store, 'attempt', recoveryHoldId),
+      record: readSubjectRecord(store, 'attempt', recoveryHoldId, subject),
       eventSeq: chronology('message_id', recoveryHoldId),
-      message: readRecord(store, 'message', recoveryHoldId),
+      message: readSubjectRecord(store, 'message', recoveryHoldId, subject),
     };
-    const recentMessages = messageRows(store, subject.id, throughSeq + 1, recentLimit)
+    const recentMessages = messageRows(store, subject.id, throughSeq + 1, recentLimit, subject)
       .map(row => ({eventSeq: Number(row.seq), record: decodeMessageRow(row)}))
       .reverse();
     const handoffFilter = subjectFilter(store, subject, 'e');
     const handoffRow = runSqlite(() => store.database.prepare(`
       SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
       FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
+        AND ${matchingSubjects(store, 'r', 'e')}
       WHERE ${handoffFilter.sql} AND e.event_kind = 'item.handoff' AND e.seq <= ?
       ORDER BY e.seq DESC LIMIT 1
     `).get(...handoffFilter.params, throughSeq));
     const latestHandoff = handoffRow ? {
       eventSeq: Number(handoffRow.seq), record: decodeMessageRow(handoffRow),
     } : null;
+    const messageCountFilter = subjectFilter(store, subject);
     const messageCount = Number(runSqlite(() => store.database.prepare(`
       SELECT COUNT(*) AS count FROM events
-      WHERE thread_id = ? AND message_id IS NOT NULL AND seq <= ?
-    `).get(subject.id, throughSeq)).count);
+      WHERE thread_id = ? AND ${messageCountFilter.sql}
+        AND message_id IS NOT NULL AND seq <= ?
+    `).get(subject.id, ...messageCountFilter.params, throughSeq)).count);
 
     const references = new Set(item.body.context_artifacts ?? []);
     for (const {record} of approvals) {
@@ -797,7 +826,7 @@ export function readSubjectView(store, options) {
       if (identity) {
         referencedDetails.push({
           reference,
-          record: readRecord(store, identity.kind, identity.id),
+          record: readSubjectRecord(store, identity.kind, identity.id, subject),
         });
       }
     }
@@ -817,13 +846,18 @@ export function readSubjectView(store, options) {
   });
 }
 
-function messageRows(store, threadId, beforeSeq, limit) {
+function messageRows(store, threadId, beforeSeq, limit, subject = undefined) {
+  const filter = subject === undefined
+    ? {sql: '1 = 1', params: []}
+    : subjectFilter(store, subject, 'e');
   return runSqlite(() => store.database.prepare(`
     SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-    WHERE e.thread_id = ? AND e.message_id IS NOT NULL AND e.seq < ?
+      AND ${matchingSubjects(store, 'r', 'e')}
+    WHERE e.thread_id = ? AND ${filter.sql}
+      AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT ?
-  `).all(threadId, beforeSeq, limit));
+  `).all(threadId, ...filter.params, beforeSeq, limit));
 }
 
 function decodeMessageRow(row) {

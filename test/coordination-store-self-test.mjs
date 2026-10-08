@@ -13,6 +13,7 @@ import {
   RuntimeError,
   canonicalJson,
   commandDigest,
+  criteriaRef,
   validateCommand,
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
@@ -83,6 +84,96 @@ function epicBody(id = 'epic:typed-store') {
     scope_fit: 'Changes only the persistence envelope and query boundary.',
     required_features: [],
     optional_features: [],
+  };
+}
+
+function legacyItemBody(id = 'historical-item') {
+  return {
+    schema_version: 1,
+    id,
+    title: 'Historical schema-4 item',
+    initiative: 'historical-initiative',
+    delivery_class: 'knowledge',
+    state: 'proposed',
+    resume_state: null,
+    scope_authority: 'eng-lead-architecture',
+    completion_authority: 'eng-reviewer-code',
+    producer_actor: null,
+    producing_actors: [],
+    acceptance_actor: null,
+    priority: 1,
+    next_role: 'eng-builder-software',
+    outcome: 'Released schema-1 records remain readable.',
+    acceptance: ['The historical item decodes without schema-5 reinterpretation.'],
+    artifact_expectation: 'none',
+    artifact_expectation_reason: 'The historical record is the test subject.',
+    artifact_class: null,
+    durability: null,
+    validity_owner: null,
+    artifact_targets: [],
+    context_artifacts: [],
+    touches: ['src/core/lib/coordination-runtime/store.mjs'],
+    depends_on: [],
+    lease: null,
+    recovery_hold: null,
+    waiting_on_questions: [],
+    required_for_milestone: true,
+    review_requirements: [],
+    change_ref: null,
+    updated_at: '2026-09-16T12:00:00.000Z',
+  };
+}
+
+function messageBody(id, {
+  kind = 'handoff',
+  artifactRefs = [],
+  evidenceRefs = [],
+} = {}) {
+  const payload = kind === 'question'
+    ? {
+        questionKind: 'fact',
+        blocking: false,
+        context: 'Typed-subject isolation.',
+        ask: 'Can a foreign subject enter this view?',
+        answerBy: 'before projection',
+      }
+    : kind === 'answer'
+      ? {
+          status: 'answered',
+          answer: 'No.',
+          lane: 'in-lane',
+        }
+      : kind === 'recovery'
+        ? {
+            observed: 'Foreign recovery record.',
+            disposition: 'conflicting-partial-work',
+            staleLeaseToken: 'foreign-stale-lease',
+            newLeaseToken: null,
+          }
+        : {
+            did: 'Persisted a foreign handoff.',
+            needs: 'Keep typed subjects isolated.',
+            assetState: 'none — product change',
+            authority: 'pending',
+            revalidation: 'not applicable',
+            questions: [],
+          };
+  return {
+    schema_version: 1,
+    message_id: id,
+    thread_id: 'demo',
+    item_id: 'demo',
+    parent_id: null,
+    sender_role: 'eng-builder-software',
+    sender_run: 'foreign-subject-run',
+    recipient: 'eng-reviewer-code',
+    kind,
+    created_at: '2026-09-16T12:00:00.000Z',
+    basis_version: 1,
+    payload,
+    artifact_refs: artifactRefs,
+    evidence_refs: evidenceRefs,
+    provenance: 'durable-thread',
   };
 }
 
@@ -441,6 +532,171 @@ await test('schema 2 stores root records and isolates typed hierarchy subjects',
   });
 });
 
+await test('readSubjectView rejects exact references owned by another typed subject', async () => {
+  await withWorkspace(({store}) => {
+    const foreignSubject = {kind: 'task', id: 'demo'};
+    const openingId = '00000000-0000-4000-8000-000000000101';
+    const answerId = '00000000-0000-4000-8000-000000000102';
+    const recoveryId = '00000000-0000-4000-8000-000000000103';
+    const artifactId = '00000000-0000-4000-8000-000000000104';
+    const evidenceId = '00000000-0000-4000-8000-000000000105';
+    const item = seedItem(store, {
+      state: 'blocked',
+      resume_state: 'in-progress',
+      next_role: 'operator',
+      waiting_on_questions: ['foreign-question'],
+      recovery_hold: recoveryId,
+      context_artifacts: [`artifact:${artifactId}`, `evidence:${evidenceId}`],
+    });
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: 'local-question',
+      subject: itemSubject('demo'),
+      version: 1,
+      body: {
+        ...questionBody('local-question', 'Do foreign messages stay excluded?'),
+        opened_message_id: openingId,
+        answer_message_ids: [answerId],
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: 'foreign-question',
+      subject: foreignSubject,
+      version: 1,
+      body: questionBody('foreign-question', 'Do foreign questions stay excluded?'),
+    }));
+    for (const [id, kind] of [[openingId, 'question'], [answerId, 'answer'], [recoveryId, 'recovery']]) {
+      seedRecord(store, validateRecord({
+        kind: 'message',
+        id,
+        subject: foreignSubject,
+        version: 1,
+        body: messageBody(id, {kind}),
+      }));
+    }
+    const staleLease = {
+      holder: {role: 'eng-builder-software', runId: 'foreign-subject-run'},
+      token: 'foreign-stale-lease',
+      version_at_grant: 1,
+      acquired_at: '2026-09-16T10:00:00.000Z',
+      expires_at: '2026-09-16T11:00:00.000Z',
+    };
+    seedRecord(store, validateRecord({
+      kind: 'attempt',
+      id: recoveryId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        attempt_id: recoveryId,
+        item_id: 'demo',
+        grantor: {role: 'eng-lead-architecture', runId: 'recovery-steward'},
+        stale_lease: staleLease,
+        observed: 'Foreign recovery record.',
+        disposition: 'conflicting-partial-work',
+        recovery_evidence_ids: [evidenceId],
+        new_lease: null,
+        created_at: '2026-09-16T12:00:00.000Z',
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'artifact',
+      id: artifactId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        artifact_id: artifactId,
+        item_id: 'demo',
+        producer: {role: 'eng-builder-software', runId: 'foreign-subject-run'},
+        subject: {kind: 'git', base: 'a'.repeat(40), head: 'b'.repeat(40)},
+        criteria_ref: criteriaRef(item.body),
+        project_id: null,
+        run_directory: '.kai/runs/foreign-subject',
+        snapshots: [],
+        manifest_path: null,
+        classification: 'internal',
+        media_type: 'text/plain',
+        title: 'Foreign artifact',
+        created_at: '2026-09-16T12:00:00.000Z',
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        evidence_id: evidenceId,
+        item_id: 'demo',
+        kind: 'recovery-reconciliation',
+        subject: null,
+        criteria_ref: null,
+        supersedes: [],
+        dimension: null,
+        outcome: 'passed',
+        evidence_refs: ['retained/foreign-recovery.txt'],
+        reason: 'Foreign evidence must not enter the item view.',
+        data: {
+          stale_lease_token: staleLease.token,
+          disposition: 'conflicting-partial-work',
+          observed: 'Foreign recovery record.',
+        },
+        created_at: '2026-09-16T12:00:00.000Z',
+      },
+    }));
+
+    const view = readSubjectView(store, {
+      subject: itemSubject('demo'),
+      recentLimit: 0,
+    });
+    const localQuestion = view.questions.find(entry => entry.record?.id === 'local-question');
+    assert.equal(view.questions.filter(entry => entry.record === null).length, 1);
+    assert.equal(localQuestion.openedMessage, null);
+    assert.deepEqual(localQuestion.answerMessages, [null]);
+    assert.equal(view.recoveryHold.record, null);
+    assert.equal(view.recoveryHold.message, null);
+    assert.deepEqual(
+      view.referencedDetails.map(entry => [entry.reference, entry.record]),
+      [
+        [`artifact:${artifactId}`, null],
+        [`evidence:${evidenceId}`, null],
+      ],
+    );
+  });
+});
+
+await test('readSubjectView recent messages and counts isolate same-ID typed threads', async () => {
+  await withWorkspace(({store}) => {
+    seedItem(store);
+    const messageId = '00000000-0000-4000-8000-000000000106';
+    seedRecord(store, validateRecord({
+      kind: 'message',
+      id: messageId,
+      subject: {kind: 'task', id: 'demo'},
+      version: 1,
+      body: messageBody(messageId),
+    }));
+    store.database.prepare(`
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+      VALUES (?, 'task', 'demo', ?)
+    `).run('foreign-thread-event', JSON.stringify({
+      kind: 'item.handoff',
+      payload: {messageId},
+    }));
+
+    const view = readSubjectView(store, {
+      subject: itemSubject('demo'),
+      recentLimit: 8,
+    });
+    assert.deepEqual(view.recentMessages, []);
+    assert.equal(view.messageCount, 0);
+    assert.equal(view.latestHandoff, null);
+  });
+});
+
 await test('readSubjectView holds one SQLite snapshot while a WAL writer advances', async () => {
   await withWorkspace(({store}) => {
     store.database.exec('PRAGMA journal_mode=WAL');
@@ -664,6 +920,13 @@ await test('schema 1 stores open only through the read-only historical API', () 
   allocatedCase('historical-schema', root => {
     const path = join(root, 'coordination.sqlite');
     createSchema1Store(path);
+    const database = new DatabaseSync(path);
+    const body = legacyItemBody();
+    database.prepare(`
+      INSERT INTO records (kind, id, item_id, version, body)
+      VALUES ('item', ?, ?, 1, ?)
+    `).run(body.id, body.id, JSON.stringify(body));
+    database.close();
     assert.throws(() => openStore({path, mode: 'read'}), error =>
       error.code === 'SCHEMA_MISMATCH');
     assert.throws(() => openHistoricalStore({
@@ -679,7 +942,13 @@ await test('schema 1 stores open only through the read-only historical API', () 
     try {
       assert.equal(historical.mode, 'read');
       assert.equal(historical.schemaVersion, 1);
-      assert.deepEqual(listRecords(historical, {kind: 'item'}), []);
+      assert.deepEqual(listRecords(historical, {kind: 'item'}), [{
+        kind: 'item',
+        id: body.id,
+        subject: {kind: 'item', id: body.id},
+        version: 1,
+        body,
+      }]);
       assert.throws(
         () => historical.database.prepare(`
           INSERT INTO metadata (key, value) VALUES ('forbidden', 'write')
@@ -693,6 +962,31 @@ await test('schema 1 stores open only through the read-only historical API', () 
           current => current.body,
         ),
         error => error.code === 'INVALID_INPUT',
+      );
+    } finally {
+      closeStore(historical);
+    }
+  });
+});
+
+await test('historical schema 1 rejects impossible schema-5 Task records', () => {
+  allocatedCase('historical-schema-task', root => {
+    const path = join(root, 'coordination.sqlite');
+    createSchema1Store(path);
+    const database = new DatabaseSync(path);
+    database.prepare(`
+      INSERT INTO records (kind, id, item_id, version, body)
+      VALUES ('task', 'core:task:impossible', NULL, 1, '{}')
+    `).run();
+    database.close();
+    let historical;
+    try {
+      assert.throws(
+        () => {
+          historical = openHistoricalStore({path, expectedStoreVersion: 1});
+        },
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /schema 1 cannot contain task records/i.test(error.message),
       );
     } finally {
       closeStore(historical);
