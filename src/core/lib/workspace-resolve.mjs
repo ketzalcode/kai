@@ -15,7 +15,7 @@ import {
   dirname, isAbsolute, join, parse as parsePath, relative, resolve as resolvePath, sep,
 } from 'node:path';
 import {
-  badPath, canonicalPath, escapesRoot, normalized, pathHasLink, resolvedProjectPath,
+  badPath, escapesRoot, exactPath, normalized, pathHasLink, resolvedProjectPath,
 } from './workspace-path-safety.mjs';
 
 export const MANIFEST_REL = join('.kai', 'manifest.json');
@@ -258,10 +258,6 @@ function selectConfiguredProject(manifest, projectId) {
   const defaults = manifest.projects.filter(project => project?.id === 'default');
   if (defaults.length === 1) return defaults[0];
   throw new TypeError('projectId is required when the manifest declares multiple projects');
-}
-
-function exactPath(path) {
-  return resolvePath(path) === canonicalPath(path);
 }
 
 function assertSafeProjectPath(project) {

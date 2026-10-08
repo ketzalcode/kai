@@ -1,9 +1,9 @@
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {basename, join, posix as path, resolve as resolvePath} from 'node:path';
+import {basename, join, posix as path} from 'node:path';
 import {directionPath} from './workspace-layout.mjs';
 import {resolveConfiguredProject} from './workspace-resolve.mjs';
-import {canonicalPath, pathHasLink} from './workspace-path-safety.mjs';
+import {exactPath, pathHasLink} from './workspace-path-safety.mjs';
 
 const SECTION_ORDER = [
   ['Vision', 'vision'],
@@ -22,10 +22,6 @@ function fail(code, message) {
 
 function exactDirectionFile(publicationRoot) {
   return path.join(publicationRoot, basename(directionPath()));
-}
-
-function exactPath(path) {
-  return resolvePath(path) === canonicalPath(path);
 }
 
 function parseTopLevelSections(markdown) {

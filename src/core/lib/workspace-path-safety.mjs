@@ -86,6 +86,10 @@ export function canonicalPath(path) {
   return resolve(canonical, ...tail);
 }
 
+export function exactPath(path) {
+  return resolve(path) === canonicalPath(path);
+}
+
 export function normalized(path) {
   const value = canonicalPath(path);
   return process.platform === 'win32' ? value.toLowerCase() : value;

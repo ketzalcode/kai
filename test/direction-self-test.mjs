@@ -220,6 +220,20 @@ test('hashes exact UTF-8 bytes without normalizing line endings', () => withWork
   assert.notEqual(result.hash, hash(lfBytes));
 }));
 
+test('invalid UTF-8 direction bytes are INVALID_DIRECTION', () => withWorkspace((root) => {
+  const malformedBytes = Buffer.concat([
+    Buffer.from('# Vision\n\nOne.\n\n# Mission\n\nTwo.\n\n# Current Goal\n\n', 'utf8'),
+    Buffer.from([0xc3, 0x28]),
+    Buffer.from('\n\n# Out of Scope\n\nFour.\n', 'utf8'),
+  ]);
+  write(root, 'docs/kai/DIRECTION.md', malformedBytes);
+
+  assert.throws(
+    () => readDirection({workspaceRoot: root, manifest: manifest()}),
+    code('INVALID_DIRECTION'),
+  );
+}));
+
 test('uses the configured project publication root and direction file', () => withWorkspace((root) => {
   write(root, 'apps/site/publication/DIRECTION.md', validDirection({goal: 'Ship the site direction binding.'}));
 
