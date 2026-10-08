@@ -1,6 +1,7 @@
 import {existsSync} from 'node:fs';
 import {resolveWorkspaceRoot} from '../workspace-resolve.mjs';
 import {
+  canonicalJson,
   RuntimeError,
   subjectRef,
   validateCommand,
@@ -12,6 +13,7 @@ import {
   sourceSnapshot,
   exactFile,
   hash,
+  schema5MigrationLockPath,
 } from './migration-files.mjs';
 import {
   assertWorkspaceWrite,
@@ -32,6 +34,7 @@ import {readDetail, readMessages} from './context.mjs';
 import {inspectRuntime} from './inspection.mjs';
 import {buildReport} from './report.mjs';
 import {readLegacyRecords} from './migration.mjs';
+import {buildMigrationWorksheet} from './migration-v5.mjs';
 import {hashArtifact} from './evidence.mjs';
 import {currentDirectionForStore} from './hierarchy-engine.mjs';
 import {
@@ -51,6 +54,7 @@ const reads = new Set([
   'legacy',
   'hash',
   'plan',
+  'migration-plan',
 ]);
 const required = (options, name) => options[name] ?? fail('INVALID_INPUT', `--${name} is required`);
 const hierarchySubject = options => validateHierarchySubject({
@@ -107,6 +111,22 @@ export async function execute({verb, options, body, host, cwd, env}) {
         runtime = inspectRuntime(root, {env, intent: 'inspect'}).runtime;
       }
       return {...base, runtime, ...(options.deep ? {inspection: inspectRuntime(root, {env, intent: 'inspect'})} : {})};
+    }
+    if (verb === 'migration-plan') {
+      if (manifest.schema_version !== 4) {
+        fail(
+          'SCHEMA_MISMATCH',
+          manifest.schema_version === 3
+            ? 'schema 3 must first use its explicit historical schema-4 migration'
+            : 'migration-plan is only available for a read-only schema-4 workspace',
+        );
+      }
+      const worksheet = buildMigrationWorksheet({root, env});
+      return {
+        ...base,
+        worksheet,
+        worksheetDigest: hash(canonicalJson(worksheet)),
+      };
     }
     if (manifest.schema_version < WORKSPACE_SCHEMA_VERSION) {
       if (verb === 'legacy') {
@@ -211,8 +231,74 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
     } finally { closeStore(store); }
   }
+  const interruptedSchema5 = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
+    && existsSync(schema5MigrationLockPath(root));
+  if (interruptedSchema5
+    && ['request', 'authorize', 'receipt', 'recover'].includes(verb)) {
+    if (verb === 'request'
+      && (body?.type !== 'maintenance'
+        || !new Set(['recover-activate', 'recover-abandon']).has(body.action))) {
+      fail('RECOVERY_REQUIRED', 'an interrupted schema-5 migration accepts only explicit recovery maintenance');
+    }
+    if (!host) {
+      const {createNativeHost} = await import('./native-host.mjs');
+      host = createNativeHost({env});
+    }
+    if (['request', 'authorize', 'receipt'].includes(verb)) {
+      return {...base, ...await host[verb]({root, body, options})};
+    }
+    const result = await host.maintenance({root, verb, body, options, env});
+    return {
+      ...base,
+      ...result,
+      schemaVersion: readWorkspaceContract(root, {env}).schema_version,
+      storeExists: existsSync(path),
+    };
+  }
   if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    fail('SCHEMA_MISMATCH', 'schema 3/4 workspaces are read-only; explicit schema-5 migration is required');
+    const maintenanceVerbs = new Set([
+      'request',
+      'authorize',
+      'receipt',
+      'migrate',
+      'recover',
+      'rollback',
+    ]);
+    if (!maintenanceVerbs.has(verb)) {
+      fail(
+        'SCHEMA_MISMATCH',
+        'schema 3/4 workspaces are read-only; use the explicit schema-3-to-4 step or schema-4 migration-plan as applicable',
+      );
+    }
+    if (verb === 'request') {
+      const supported = manifest.schema_version === 3
+        ? new Set(['migrate', 'recover-activate', 'recover-abandon'])
+        : new Set(['migrate-v5', 'recover-activate', 'recover-abandon', 'rollback']);
+      if (body?.type !== 'maintenance' || !supported.has(body.action)) {
+        fail(
+          'SCHEMA_MISMATCH',
+          `schema ${manifest.schema_version} accepts only its explicit offline migration maintenance requests`,
+        );
+      }
+    }
+    if (!host) {
+      const {createNativeHost} = await import('./native-host.mjs');
+      host = createNativeHost({env});
+    }
+    if (['request', 'authorize', 'receipt'].includes(verb)) {
+      return {...base, ...await host[verb]({root, body, options})};
+    }
+    const result = await host.maintenance({root, verb, body, options, env});
+    const next = readWorkspaceContract(root, {env});
+    const nextDatabase = next.schema_version === WORKSPACE_SCHEMA_VERSION
+      ? COORDINATION_DATABASE
+      : LEGACY_DATABASE;
+    return {
+      ...base,
+      ...result,
+      schemaVersion: next.schema_version,
+      storeExists: existsSync(safePath(root, nextDatabase)),
+    };
   }
   if (verb === 'apply') validateCommand(body);
   if (verb === 'request' && body?.type === 'maintenance' && body.action === 'init') {

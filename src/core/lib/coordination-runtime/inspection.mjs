@@ -1,6 +1,9 @@
 import {existsSync, readdirSync} from 'node:fs';
 import {basename} from 'node:path';
-import {migrationManifest, privateAdmission, safePath, exactFile, sourceSnapshot, DATABASE, LOCK} from './migration-files.mjs';
+import {
+  migrationManifest, privateAdmission, safePath, exactFile, sourceSnapshot,
+  schema5MigrationLockPath, DATABASE, LOCK,
+} from './migration-files.mjs';
 import {readWorkspaceManifest, validateSchema5Manifest} from '../workspace-resolve.mjs';
 import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from '../workspace-layout.mjs';
 import {inspectGitPrivacy} from '../workspace-git-privacy.mjs';
@@ -56,15 +59,26 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
       exactFile(root, COORDINATION_DATABASE);
       store = openStore({path: databasePath, mode: 'read'});
       result.runtime = readStoreSummary(store);
+      if (existsSync(schema5MigrationLockPath(root))) {
+        result.migrations.push('incomplete schema-5 migration; explicit recovery required');
+        result.warnings.push('schema-5 activation receipt is incomplete; runtime writes remain held');
+        if (intent === 'coordinate') {
+          result.errors.push('incomplete schema-5 migration prevents coordinated writes');
+        }
+      }
       return result;
     }
     const manifest = migrationManifest(root, [3, 4], env);
+    if (existsSync(schema5MigrationLockPath(root))) {
+      result.migrations.push('incomplete schema-5 migration; explicit offline recovery required');
+      result.warnings.push('schema-5 migration lock exists; coordinated writes remain held');
+    }
     if (existsSync(safePath(root, LOCK))) {
       result.migrations.push('incomplete/competing migration; explicit offline recovery required');
       result.warnings.push('migration lock exists; coordinated writes are held');
     }
     if (manifest.schema_version === 3) {
-      result.migrations.push('schema 3 is inspect-only; explicit offline schema 5 migration required for coordination');
+      result.migrations.push('schema 3 is inspect-only; first run its explicit historical schema-4 migration, then classify schema 4 for schema 5');
       if (existsSync(safePath(root, DATABASE))) result.warnings.push('unactivated database is not authority; inspect migration recovery');
       return result;
     }

@@ -20,7 +20,6 @@ import {
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import * as storeApi from '../src/core/lib/coordination-runtime/store.mjs';
 import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-files.mjs';
-import {migrateWorkspace} from '../src/core/lib/coordination-runtime/migration.mjs';
 import {
   allocateTemporaryRoot,
   command,
@@ -958,14 +957,7 @@ await test('lower-level mutations fail closed for schema 3/4 and non-live databa
           error => error.code === 'SCHEMA_MISMATCH',
         );
         assert.equal(readRecord(store, 'task', primaryId).version, 1);
-        if (schema === 3) {
-          assert.throws(
-            () => migrateWorkspace({root, confirm: true}),
-            error => error.code === 'SCHEMA_MISMATCH',
-          );
-          assert.equal(existsSync(join(root, '.kai', 'migrations')), false);
-          assert.equal(existsSync(join(root, '.kai', 'state', 'migration.lock')), false);
-        }
+        assert.equal(existsSync(join(root, '.kai', 'state', 'migration.lock')), false);
       } finally {
         closeStore(store);
       }

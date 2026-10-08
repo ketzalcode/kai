@@ -974,17 +974,26 @@ for (const domain of ['engineering', 'creative']) {
   }));
 }
 
-test('schema 3 migration and rollback writes remain disabled until explicit schema-5 migration exists', () => workspace(root => {
-  for (const result of [
-    native(root, 'request', {type: 'maintenance', action: 'migrate'}),
-    native(root, 'migrate', undefined, ['--confirm', '--capability', randomUUID()]),
-    native(root, 'rollback', undefined, ['--confirm', '--capability', randomUUID()]),
-  ]) {
-    assert.equal(result.status, 1, JSON.stringify(result.json));
-    assert.equal(result.json.code, 'SCHEMA_MISMATCH');
-  }
-  assert.equal(invoke(root, 'inspect').json.schemaVersion, 3);
-  assert.equal(existsSync(join(root, '.kai', 'core')), false);
+test('schema 3 uses its explicit historical migration before schema-4 classification', () => workspace(root => {
+  const migrateCapability = authorize(root, {type: 'maintenance', action: 'migrate'});
+  const migrated = native(root, 'migrate', undefined, [
+    '--confirm',
+    '--capability',
+    migrateCapability,
+  ]);
+  assert.equal(migrated.status, 0, JSON.stringify(migrated.json));
+  assert.equal(migrated.json.schemaVersion, 4);
+  const worksheet = invoke(root, 'migration-plan');
+  assert.equal(worksheet.status, 0, JSON.stringify(worksheet.json));
+  assert.equal(worksheet.json.worksheet.source_workspace_schema, 4);
+  const rollbackCapability = authorize(root, {type: 'maintenance', action: 'rollback'});
+  const rolledBack = native(root, 'rollback', undefined, [
+    '--confirm',
+    '--capability',
+    rollbackCapability,
+  ]);
+  assert.equal(rolledBack.status, 0, JSON.stringify(rolledBack.json));
+  assert.equal(rolledBack.json.schemaVersion, 3);
 }, 3));
 
 test('SQLite-disabled process is a precise host gap; context override cannot exceed 24 KiB', () => workspace(root => {

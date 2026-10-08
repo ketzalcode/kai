@@ -3,7 +3,7 @@ import {
   readFileSync, readdirSync, readSync, writeFileSync,
 } from 'node:fs';
 import {createHash} from 'node:crypto';
-import {dirname, isAbsolute, join, relative, resolve} from 'node:path';
+import {basename, dirname, isAbsolute, join, relative, resolve} from 'node:path';
 import {RuntimeError, canonicalJson} from './contract.mjs';
 import {durablePath} from './evidence-content.mjs';
 import {pathHasLink, escapesRoot, normalized, inspectPrivateLanes, canonicalPath} from '../workspace-path-safety.mjs';
@@ -12,6 +12,13 @@ import {inspectGitPrivacy, workspaceGit} from '../workspace-git-privacy.mjs';
 import {COORDINATION_DATABASE} from '../workspace-layout.mjs';
 
 export const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+export function schema5MigrationLockPath(root) {
+  const canonical = canonicalPath(root);
+  return join(
+    dirname(canonical),
+    `.${basename(canonical)}.${hash(canonical).slice(0, 12)}.schema5-migration.lock`,
+  );
+}
 export const fail = (code, message) => { throw new RuntimeError(code, message); };
 export const LOCK = '.kai/state/migration.lock';
 export const DATABASE = '.kai/state/coordination.sqlite';
@@ -42,6 +49,19 @@ export function logicalStoreDigest(store) {
     result.legacy_sources = database.prepare(
       'SELECT * FROM legacy_sources ORDER BY source_id',
     ).all();
+  }
+  for (const [table, order] of [
+    ['migration_id_map', 'source_kind, source_id'],
+    ['migration_sources', 'path'],
+    ['migration_legacy_metadata', 'source_key'],
+    ['migration_legacy_records', 'kind, id'],
+    ['migration_legacy_events', 'source_seq'],
+    ['migration_legacy_operations', 'source_id'],
+    ['migration_legacy_extra', 'table_name, row_index'],
+  ]) {
+    if (tables.has(table)) {
+      result[table] = database.prepare(`SELECT * FROM ${table} ORDER BY ${order}`).all();
+    }
   }
   result.metadata = database.prepare(`
     SELECT key, value FROM metadata
@@ -198,7 +218,10 @@ export function sourceSnapshot(root) {
   const files = [];
   function walk(name) {
     if (name === LOCK || name === MIGRATIONS || name === DATABASE || name.startsWith(`${DATABASE}-`)
-      || name.toLowerCase() === '.kai/state/host') return;
+      || name.toLowerCase() === '.kai/state/host'
+      || name.toLowerCase().startsWith('.kai/state/host/')
+      || name.toLowerCase() === '.kai/core/runtime/host'
+      || name.toLowerCase().startsWith('.kai/core/runtime/host/')) return;
     const path = safePath(root, name);
     const stat = lstatSync(path);
     if (stat.isDirectory()) {

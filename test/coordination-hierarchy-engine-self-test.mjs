@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
   RuntimeError,
@@ -304,27 +305,25 @@ function withSqliteTransaction(store, fn) {
 async function withHierarchyWorkspace(fn) {
   mkdirSync(scratchRoot, {recursive: true});
   const root = mkdtempSync(join(scratchRoot, 'hierarchy-'));
-  mkdirSync(join(root, '.kai', 'state'), {recursive: true});
+  spawnSync('git', ['init', '--quiet', root], {windowsHide: true});
+  writeFileSync(join(root, '.gitignore'), '/.kai/\n');
+  mkdirSync(join(root, '.kai', 'core', 'runtime'), {recursive: true});
   mkdirSync(join(root, 'docs', 'kai'), {recursive: true});
   writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), DIRECTION);
   writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
     plugin: 'kai-core',
     version: 'test',
-    schema_version: 4,
+    schema_version: 5,
     scaffolded: NOW,
     workspace_id: `hierarchy-${randomUUID()}`,
-    storage_mode: 'repo-local',
+    placement: 'repo-local',
     workspace_root: '.',
-    state: '.kai/state',
-    runs: '.kai/runs',
-    review: '.kai/review',
-    archive: '.kai/archive',
-    personal: '.kai/personal',
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
     projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
-    areas: [],
   }, null, 2)}\n`);
   const store = openStore({
-    path: join(root, '.kai', 'state', 'coordination.sqlite'),
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
     mode: 'create',
   });
   try {
@@ -332,6 +331,66 @@ async function withHierarchyWorkspace(fn) {
   } finally {
     closeStore(store);
     rmSync(root, {recursive: true, force: true});
+  }
+}
+
+async function withExternalHierarchyWorkspace(projectDefinitions, fn) {
+  mkdirSync(scratchRoot, {recursive: true});
+  const caseRoot = mkdtempSync(join(scratchRoot, 'hierarchy-external-'));
+  const root = join(caseRoot, 'workspace');
+  const home = join(caseRoot, 'home');
+  mkdirSync(join(root, '.kai', 'core', 'runtime'), {recursive: true});
+  const projects = projectDefinitions.map(definition => {
+    const projectRoot = join(caseRoot, definition.id);
+    const direction = join(
+      projectRoot,
+      ...definition.publication_root.split('/'),
+      'DIRECTION.md',
+    );
+    mkdirSync(dirname(direction), {recursive: true});
+    writeFileSync(direction, definition.direction);
+    return {
+      id: definition.id,
+      path: projectRoot,
+      publication_root: definition.publication_root,
+      projectRoot,
+    };
+  });
+  const workspaceId = `hierarchy-${randomUUID()}`;
+  writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
+    plugin: 'kai-core',
+    version: 'test',
+    schema_version: 5,
+    scaffolded: NOW,
+    workspace_id: workspaceId,
+    placement: 'external',
+    workspace_root: root,
+    private_root: '.kai',
+    direction: 'docs/kai/DIRECTION.md',
+    projects: projects.map(({projectRoot, ...project}) => project),
+  }, null, 2)}\n`);
+  mkdirSync(home, {recursive: true});
+  writeFileSync(join(home, 'workspaces.json'), JSON.stringify({
+    schema_version: 1,
+    workspaces: projects.map(project => ({
+      project_root: project.projectRoot,
+      workspace_root: root,
+      workspace_id: workspaceId,
+    })),
+  }));
+  const priorHome = process.env.KAI_HOME;
+  process.env.KAI_HOME = home;
+  const store = openStore({
+    path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
+    mode: 'create',
+  });
+  try {
+    return await fn({root, store, projects});
+  } finally {
+    closeStore(store);
+    if (priorHome === undefined) delete process.env.KAI_HOME;
+    else process.env.KAI_HOME = priorHome;
+    rmSync(caseRoot, {recursive: true, force: true});
   }
 }
 
@@ -706,96 +765,11 @@ test('Feature and Requirement proposal, activation, and priority follow parent o
   });
 });
 
-test('Direction validation selects the unique manifest project matching the Epic path', async () => {
-  await withHierarchyWorkspace(({root, store}) => {
-    const siteDirection = DIRECTION.replace(
-      'Ship schema 5 hierarchy governance.',
-      'Ship the site hierarchy.',
-    );
-    const siteReference = directionReference(siteDirection, {
-      path: 'publication/DIRECTION.md',
-      goal: 'Ship the site hierarchy.',
-    });
-    mkdirSync(join(root, 'apps', 'site', 'publication'), {recursive: true});
-    writeFileSync(join(root, 'apps', 'site', 'publication', 'DIRECTION.md'), siteDirection);
-    const manifestPath = join(root, '.kai', 'manifest.json');
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    manifest.projects.push({
-      id: 'site',
-      path: 'apps/site',
-      publication_root: 'publication',
-    });
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
-    let epic = applyParent(store, 'epic', 'create', steward, 0, {
-      body: epicBody({
-        id: 'epic:site',
-        direction_ref: siteReference,
-        required_features: ['engineering:feature:site'],
-      }),
-    });
-    writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), DIRECTION.replace(
-      'Ship schema 5 hierarchy governance.',
-      'Change only the default project Goal.',
-    ));
-    epic = applyParent(store, 'epic', 'activate', steward, epic.version, {
-      recordId: epic.id,
-      payload: {at: LATER},
-    });
-    let feature = applyParent(store, 'feature', 'create', packDelegate, 0, {
-      body: featureBody({
-        id: 'engineering:feature:site',
-        epic_id: epic.id,
-        required_requirements: ['engineering:requirement:site'],
-      }),
-    });
-    feature = applyParent(store, 'feature', 'activate', steward, feature.version, {
-      recordId: feature.id,
-      payload: {at: LATER},
-    });
-    assert.equal(feature.body.state, 'active');
-    const requirement = applyParent(store, 'requirement', 'create', packOwner, 0, {
-      body: requirementBody({
-        id: 'engineering:requirement:site',
-        feature_id: feature.id,
-      }),
-    });
-
-    writeFileSync(join(root, 'apps', 'site', 'publication', 'DIRECTION.md'),
-      siteDirection.replace('Ship the site hierarchy.', 'Change the site Goal.'));
-    const staleDescendant = command(
-      'requirement.activate',
-      packOwner,
-      'requirement',
-      requirement.id,
-      requirement.version,
-      {at: LATER},
-    );
-    assert.throws(
-      () => applyCommand(store, staleDescendant,
-        authority(
-          packOwner,
-          'requirement.activate',
-          'requirement',
-          requirement.id,
-          requirement.version,
-        )),
-      runtimeError('EVIDENCE_GAP', /Direction/i),
-    );
-  });
-
-  await withHierarchyWorkspace(({root, store}) => {
-    const manifestPath = join(root, '.kai', 'manifest.json');
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    mkdirSync(join(root, 'apps', 'mirror', 'docs', 'kai'), {recursive: true});
-    writeFileSync(join(root, 'apps', 'mirror', 'docs', 'kai', 'DIRECTION.md'), DIRECTION);
-    manifest.projects.push({
-      id: 'mirror',
-      path: 'apps/mirror',
-      publication_root: 'docs/kai',
-    });
-    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-
+test('Direction validation refuses an ambiguous multi-project Direction path', async () => {
+  await withExternalHierarchyWorkspace([
+    {id: 'default', publication_root: 'docs/kai', direction: DIRECTION},
+    {id: 'mirror', publication_root: 'docs/kai', direction: DIRECTION},
+  ], ({store}) => {
     const ambiguous = epicBody({id: 'epic:ambiguous-project'});
     const create = command('epic.create', steward, 'epic', ambiguous.id, 0, {
       body: ambiguous,

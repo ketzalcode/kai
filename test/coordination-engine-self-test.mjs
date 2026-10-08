@@ -27,6 +27,7 @@ import {
   seedRecord,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
+import {workspaceRootFromCoordinationDatabase} from '../src/core/lib/workspace-layout.mjs';
 
 const NOW = '2026-09-16T12:00:00.000Z';
 const LATER = '2099-09-16T13:00:00.000Z';
@@ -53,7 +54,7 @@ const criteriaFor = (store, taskIdValue) => {
 
 function retainedRefs(store, taskIdValue, artifactSubject = subject,
   binding = criteriaFor(store, taskIdValue)) {
-  const root = dirname(dirname(dirname(store.path)));
+  const root = workspaceRootFromCoordinationDatabase(store.path);
   bindEvidenceRuntime(store, {root, authority: {roles: [], grants: []}, runs: []});
   const id = randomUUID();
   const exactSubject = artifactSubject ?? subject;

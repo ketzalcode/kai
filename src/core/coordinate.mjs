@@ -12,6 +12,7 @@ const flags = {
   direct: [], inspect: ['deep'], status: [], context: ['kind', 'id', 'max-bytes', 'recent-limit'],
   detail: ['kind', 'id'], messages: ['kind', 'id', 'before-seq', 'limit'],
   export: ['kind', 'id'], legacy: ['source', 'raw'], hash: ['path'],
+  'migration-plan': [],
   migrate: ['confirm', 'capability'],
   recover: ['confirm', 'action', 'capability'], rollback: ['confirm', 'capability'],
   repair: ['capability'], apply: ['capability', 'capture'],

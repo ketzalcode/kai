@@ -6,10 +6,21 @@ import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef
 import {contextIdentity, matchHumanDecision, readNativeTool} from './native-receipts.mjs';
 import {capabilityId, readIssued, writeIssued} from './native-capabilities.mjs';
 import {createTrustedEmbedding} from './host-composition.mjs';
-import {safePath, exactFile, LOCK} from './migration-files.mjs';
+import {
+  safePath,
+  exactFile,
+  LOCK,
+  schema5MigrationLockPath,
+} from './migration-files.mjs';
 import {openStore, closeStore, readRecord, listRecords, readOperationReceipt} from './store.mjs';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {migrateWorkspace, recoverMigration, rollbackMigration, bindMigrationRepair, repairLegacyRecord} from './migration.mjs';
+import {
+  migrateWorkspaceV5,
+  recoverWorkspaceV5,
+  rollbackWorkspaceV5,
+  validateMigrationWorksheet,
+} from './migration-v5.mjs';
 import {planDispatch} from './host.mjs';
 import {sameActor} from './authority.mjs';
 import {captureInputBasis} from './input-basis.mjs';
@@ -24,6 +35,23 @@ const fail = (code, message) => { throw new RuntimeError(code, message); };
 const hash = value => createHash('sha256').update(canonicalJson(value)).digest('hex');
 const exact = (value, keys, label) => assertExactKeys(value, new Set(keys), label);
 const manifestHash = root => hash(JSON.parse(exactFile(root, '.kai/manifest.json')));
+function requireHistoricalMaintenance(root, request) {
+  const schema = JSON.parse(exactFile(root, '.kai/manifest.json')).schema_version;
+  if (schema >= 5) {
+    if (existsSync(schema5MigrationLockPath(root))
+      && (request.scope?.type !== 'maintenance'
+        || !new Set(['recover-activate', 'recover-abandon']).has(request.scope.action))) {
+      fail('RECOVERY_REQUIRED', 'interrupted schema-5 migration may authorize only explicit recovery maintenance');
+    }
+    return;
+  }
+  const actions = schema === 3
+    ? new Set(['migrate', 'recover-activate', 'recover-abandon'])
+    : new Set(['migrate-v5', 'recover-activate', 'recover-abandon', 'rollback']);
+  if (request.scope?.type !== 'maintenance' || !actions.has(request.scope.action)) {
+    fail('SCHEMA_MISMATCH', `schema ${schema} may authorize only explicit offline migration maintenance`);
+  }
+}
 const runActions = new Set([...COMMAND_KINDS].filter(k => !PARENT_COMMAND_KINDS.has(k)
   && !k.startsWith('attempt.')
   && !k.startsWith('effect.') && k !== 'task.create'));
@@ -73,8 +101,32 @@ function requestCommandBasis(root, command) {
 }
 function visibleRequest(payload) {
   const {nonce, createdAt, expiresAt, ...scope} = payload;
+  const displayedScope = payload.scope?.type === 'maintenance'
+    && payload.scope.action === 'migrate-v5'
+    ? {
+        ...scope,
+        scope: {
+          type: 'maintenance',
+          action: 'migrate-v5',
+          worksheet_digest: payload.worksheetDigest,
+          source_manifest_digest: payload.scope.worksheet.source_manifest_digest,
+          source_store_digest: payload.scope.worksheet.source_store_digest,
+          direction_ref: payload.scope.worksheet.direction_ref,
+          placement: payload.scope.worksheet.placement,
+          backup_root: payload.scope.worksheet.backup_root,
+          classifications: {
+            epics: payload.scope.worksheet.epics.length,
+            milestones: payload.scope.worksheet.milestones.length,
+            items: payload.scope.worksheet.items.length,
+            authored_files: payload.scope.worksheet.authored_files.length,
+            retained_publications: payload.scope.worksheet.retained_publications.length,
+            active_work: payload.scope.worksheet.active_work.length,
+          },
+        },
+      }
+    : scope;
   return {...payload,
-    message: `Kai operator authorization\nWorkspace: ${payload.root}\nNonce: ${nonce}\nScope (exact JSON):\n${canonicalJson(scope)}\n`
+    message: `Kai operator authorization\nWorkspace: ${payload.root}\nNonce: ${nonce}\nScope (exact canonical binding):\n${canonicalJson(displayedScope)}\n`
       + `Expires: ${expiresAt}\nApprove only this actor, workspace, subject, criteria and action. `
       + `Reply exactly APPROVE ${nonce} or DECLINE ${nonce}. Conditional/freeform replies do not authorize work.`,
     requestedSchema: {type: 'object', properties: {decision: {
@@ -259,8 +311,20 @@ export function createNativeHost({env = process.env, discover} = {}) {
         }
         Object.assign(payload, currentBasis(root, body.taskId), {action: body.actions});
       } else if (body.type === 'maintenance') {
-        exact(body, ['type', 'action'], 'maintenance request');
-        if (!['migrate', 'recover-activate', 'recover-abandon', 'rollback'].includes(body.action)) {
+        if (body.action === 'migrate-v5') {
+          exact(body, ['type', 'action', 'worksheet'], 'maintenance request');
+          const catalog = await discovery(root);
+          validateMigrationWorksheet({
+            root,
+            worksheet: body.worksheet,
+            roles: catalog.roster.map(entry => entry.role),
+            env,
+          });
+          payload.worksheetDigest = hash(body.worksheet);
+        } else {
+          exact(body, ['type', 'action'], 'maintenance request');
+        }
+        if (!['migrate', 'migrate-v5', 'recover-activate', 'recover-abandon', 'rollback'].includes(body.action)) {
           fail('INVALID_INPUT', 'unsupported maintenance action; workspace initialization uses the standalone initializer');
         }
         payload.subject = payload.workspaceManifest; payload.criteria = null; payload.action = body.action;
@@ -292,6 +356,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
     },
     async receipt({root, options}) {
       const request = readIssued(root, 'requests', options.request);
+      requireHistoricalMaintenance(root, request);
       if (request.root !== root || request.workspaceManifest !== manifestHash(root)
         || Date.parse(request.expiresAt) <= Date.now()) fail('AUTHORITY_REQUIRED', 'request expired or workspace changed');
       if (request.scope.type === 'capture') {
@@ -305,6 +370,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
     },
     async authorize({root, options}) {
       const request = readIssued(root, 'requests', options.request);
+      requireHistoricalMaintenance(root, request);
       if (request.scope.type === 'capture') fail('INVALID_INPUT', 'capture intents are not authorization requests');
       if (request.scope.type === 'coordination' && request.scope.actions.some(action => !routingActions.has(action))) {
         fail('INVALID_INPUT', 'coordination request contains unsupported routing actions; issue a new supported request');
@@ -345,15 +411,46 @@ export function createNativeHost({env = process.env, discover} = {}) {
           return repairLegacyRecord(store, body);
         } finally { closeStore(store); }
       }
-      if (options.confirm !== true || cap.request.scope.type !== 'maintenance' || cap.request.scope.action !== action) {
+      const actionMatches = verb === 'migrate'
+        ? new Set(['migrate', 'migrate-v5']).has(cap.request.scope.action)
+        : cap.request.scope.action === action;
+      if (options.confirm !== true || cap.request.scope.type !== 'maintenance' || !actionMatches) {
         fail('AUTHORITY_REQUIRED', 'maintenance requires --confirm and an issued capability for the exact action');
       }
-      if (verb === 'migrate') return migrateWorkspace({root, confirm: true, roles: cap.catalog.roster.map(e => e.role), env});
+      if (verb === 'migrate') {
+        if (cap.request.scope.action === 'migrate-v5') {
+          if (cap.request.worksheetDigest !== hash(cap.request.scope.worksheet)) {
+            fail('AUTHORITY_REQUIRED', 'migration capability worksheet digest does not match its bound object');
+          }
+          return migrateWorkspaceV5({
+            root,
+            confirm: true,
+            worksheet: cap.request.scope.worksheet,
+            roles: cap.catalog.roster.map(e => e.role),
+            env,
+          });
+        }
+        return migrateWorkspace({root, confirm: true, roles: cap.catalog.roster.map(e => e.role), env});
+      }
       if (verb === 'recover') {
+        if (existsSync(schema5MigrationLockPath(root))) {
+          return recoverWorkspaceV5({
+            root,
+            confirm: true,
+            action: options.action,
+            roles: cap.catalog.roster.map(e => e.role),
+            env,
+          });
+        }
         if (!existsSync(safePath(root, LOCK))) fail('RECOVERY_REQUIRED', 'no interrupted migration lock exists; recovery never initializes or retries work');
         return recoverMigration({root, confirm: true, action: options.action, env});
       }
-      if (verb === 'rollback') return rollbackMigration({root, confirm: true, env});
+      if (verb === 'rollback') {
+        const manifest = JSON.parse(exactFile(root, '.kai/manifest.json'));
+        return manifest.schema_version === 5
+          ? rollbackWorkspaceV5({root, confirm: true, env})
+          : rollbackMigration({root, confirm: true, env});
+      }
       fail('INVALID_INPUT', 'unsupported maintenance action');
     },
     async apply({root, store, command, options}) {

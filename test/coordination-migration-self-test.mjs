@@ -37,6 +37,9 @@ import {redactReport} from '../src/core/lib/coordination-runtime/report-safety.m
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const roles = ['eng-lead-architecture', 'eng-builder-software', 'eng-reviewer-code'];
+const retiredSchema4WriteTest = (name, fn) => test(name, {
+  skip: 'schema 4 runtime repair/write paths are retired; only explicit offline migration remains',
+}, fn);
 const stamp = '2026-09-16T12:00:00.000Z';
 const direction = `# Vision
 A composable workspace.
@@ -340,7 +343,10 @@ test('rollback preserves unrelated user edits but refuses new runtime events and
   assert.equal(fs.existsSync(receipt.backupPath), true);
   migrated(root);
   withStore(root, store => {
-    createTypedTask(store);
+    store.database.prepare(`
+      INSERT INTO events(operation_id,subject_kind,subject_id,payload)
+      VALUES(?,NULL,NULL,?)
+    `).run(randomUUID(), canonicalJson({kind: 'tampered.historical-write'}));
     assert.equal(canRollback(store), false);
   }, 'write');
   assert.throws(() => rollbackMigration({root, confirm: true}), /new|runtime|rollback/i);
@@ -477,40 +483,21 @@ Historical artifact, not newly accepted.
   });
 }));
 
-test('repair requires bound host authorization, retains history, and forbids reopening terminal work', () => fixture(root => {
+test('schema 4 repair APIs remain disabled while legacy history stays inspectable', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   put(root, '.kai/state/items/closed.md', legacyItem().replace('id: demo\n', 'id: closed\n').replace('state: proposed', 'state: shipped'));
   migrated(root);
   withStore(root, store => {
     const summary = readLegacyRecords(store).find(s => s.declaredId === 'demo');
     const source = readLegacyRecords(store, {sourceId: summary.sourceId, includeRaw: true})[0];
-    const request = {operationId: randomUUID(), sourceId: source.sourceId, expectedVersion: 1,
-      actor: {role: 'operator', runId: 'real-revalidation-run'}, reason: 'Explicitly accept supplied scope for a new attempt.',
-      body: seedBody()};
-    assert.throws(() => repairLegacyRecord(store, request), /bind|authority/i);
-    bindMigrationRepair(store, {root, roles, verify: () => false});
-    assert.throws(() => repairLegacyRecord(store, request), /verified|authority/i);
-    bindMigrationRepair(store, {root, roles, verify: ({request: r}) => r.actor.role === 'operator' && r.reason === request.reason});
-    const receipt = repairLegacyRecord(store, request);
-    assert.equal(receipt.data.record.body.state, 'proposed');
-    assert.equal(receipt.data.record.body.acceptance_actor, null);
     assert.deepEqual(readLegacyRecords(store, {sourceId: source.sourceId, includeRaw: true})[0].raw, source.raw);
     assert.equal(readLegacyRecords(store).find(s => s.sourceId === source.sourceId).parsed.declaredState, 'ready');
-    assert.deepEqual(repairLegacyRecord(store, request), receipt);
-    assert.equal(canRollback(store), false);
-    const closed = readLegacyRecords(store).find(s => s.declaredId === 'closed');
-    assert.throws(() => repairLegacyRecord(store, {...request, operationId: randomUUID(), sourceId: closed.sourceId, body: {...seedBody(), id: 'closed'}}), /reopen|historical/i);
-    // Repaired legacy records remain inspectable history; retired item commands cannot act on them.
-    const promote = command('item.promote', {
-      actor: request.actor,
-      expectedVersion: 7,
-      payload: {at: stamp},
-    });
     assert.throws(
-      () => applyCommand(store, promote, authority(promote.actor, 'item.promote', {version: 7})),
-      error => error.code === 'INVALID_INPUT',
+      () => bindMigrationRepair(store, {root, roles, verify: () => true}),
+      error => error.code === 'SCHEMA_MISMATCH',
     );
-    assert.equal(readRecord(store, 'item', 'demo').body.state, 'proposed');
+    assert.equal(readRecord(store, 'item', 'demo'), null);
+    assert.equal(canRollback(store), true);
   }, 'write');
 }));
 
@@ -583,7 +570,10 @@ test('tracked DB and preexisting partial SQLite refuse without replacing either 
   gitRun(root, ['add', '-f', '--', '.kai/state/coordination.sqlite']);
   assert.throws(() => migrateWorkspace({root, confirm: true, roles}), /tracked/i);
   assert.equal(fs.readFileSync(dbPath(root), 'utf8'), 'unactivated');
-  gitRun(root, ['rm', '--cached', '--quiet', '--', '.kai/state/coordination.sqlite']);
+}, {mode: 'shared'}));
+
+test('preexisting partial SQLite refuses without replacing the file', () => fixture(root => {
+  put(root, '.kai/state/coordination.sqlite', 'unactivated');
   assert.throws(() => migrateWorkspace({root, confirm: true, roles}), /incomplete|existing/i);
   assert.equal(fs.readFileSync(dbPath(root), 'utf8'), 'unactivated');
 }, {mode: 'shared'}));
@@ -647,7 +637,7 @@ test('incomplete backup failure can be abandoned without deleting new user files
   migrated(root);
 }));
 
-test('report live sequence and partial exports warn without blocking unrelated safe coordination', () => fixture(root => {
+test('report live sequence and partial exports remain inspectable in read-only schema 4', () => fixture(root => {
   migrated(root);
   let report;
   withStore(root, store => {
@@ -656,12 +646,20 @@ test('report live sequence and partial exports warn without blocking unrelated s
   put(root, `${relative(root, report.directory).replaceAll('\\', '/')}/snapshot-9-partial.html`,
     'partial output');
   withStore(root, store => {
-    updateTypedTask(store, {title: 'Changed runtime title'});
+    const task = readRecord(store, 'task', fixtureIds.task);
+    store.database.prepare(
+      "UPDATE records SET version=version+1,body=? WHERE kind='task' AND id=?",
+    ).run(canonicalJson({...task.body, title: 'Changed historical title'}), task.id);
+    store.database.prepare(`
+      INSERT INTO events(operation_id,subject_kind,subject_id,payload)
+      VALUES(?,?,?,?)
+    `).run(randomUUID(), 'task', task.id, canonicalJson({kind: 'historical.test-drift'}));
   }, 'write');
   const inspected = inspectRuntime(root);
   assert.ok(inspected.warnings.some(w => /stale derived report/.test(w)));
   assert.ok(inspected.warnings.some(w => /partial derived output/.test(w)));
-  assert.equal(checkWorkspace(root, {intent: 'coordinate'}).errors.length, 0);
+  assert.ok(checkWorkspace(root, {intent: 'coordinate'}).errors.some(error =>
+    /schema 4|read-only|migration/i.test(error)));
   assert.equal(collect(root).status.totals.tasks, 1);
 }));
 
@@ -675,12 +673,12 @@ test('other live SQLite files are refused rather than blindly copied with a WAL'
   } finally { database.close(); }
 }));
 
-test('shared privacy loss after activation blocks runtime writes without editing Git files', () => fixture(root => {
+test('schema 4 blocks runtime writes before shared privacy state can be used', () => fixture(root => {
   migrated(root);
   withStore(root, store => {
     seedTypedTask(store);
     gitRun(root, ['add', '-f', '--', '.kai/state/coordination.sqlite']);
-    assert.throws(() => updateTypedTask(store, {title: 'Unsafe write'}), /tracked|private/i);
+    assert.throws(() => updateTypedTask(store, {title: 'Unsafe write'}), /schema|read-only/i);
     assert.equal(readRecord(store, 'task', fixtureIds.task).version, 1);
   }, 'write');
 }, {mode: 'shared'}));
@@ -706,7 +704,7 @@ test('nonempty milestone/backlog conversion preserves original IDs', () => fixtu
   });
 }));
 
-test('repair checks fresh references and never accepts missing artifact bytes', () => fixture(root => {
+retiredSchema4WriteTest('repair checks fresh references and never accepts missing artifact bytes', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {
@@ -808,7 +806,7 @@ function repairRequest(store) {
     reason: 'Explicit fresh scope decision', body: seedBody()};
 }
 
-test('round1 repair obeys offline guard inside transaction including authorized verifier boundary', () => fixture(root => {
+retiredSchema4WriteTest('round1 repair obeys offline guard inside transaction including authorized verifier boundary', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {
@@ -835,7 +833,7 @@ test('round1 repair obeys offline guard inside transaction including authorized 
   }, 'write');
 }));
 
-test('round1 rollback cannot retire a concurrently authorized repair at manifest boundary', () => fixture(root => {
+retiredSchema4WriteTest('round1 rollback cannot retire a concurrently authorized repair at manifest boundary', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   let attempted = false;
@@ -875,9 +873,6 @@ for (const state of ['completed', 'shipped']) {
       assert.equal(source.declaredId, 'closed');
       assert.equal(source.parsed.fields.version, '9');
       assert.equal(source.parsed.declaredState, state);
-      bindMigrationRepair(store, {root, roles, verify: () => true});
-      assert.throws(() => repairLegacyRecord(store, {...repairRequest(store), sourceId: source.sourceId,
-        body: {...seedBody(), id: 'closed'}}), /historical|reopen/i);
       assert.equal(readRecord(store, 'item', 'closed'), null);
       assert.equal(readLegacyRecords(store, {sourceId: source.sourceId, includeRaw: true})[0].raw.toString(), raw);
     }, 'write');
@@ -922,18 +917,13 @@ for (const mode of ['repo-local', 'shared', 'external']) {
 
 test('round1 schema4 checks every existing private lane and storage mode without changing files', () => fixture(root => {
   migrated(root);
-  withStore(root, store => seedTypedTask(store), 'write');
   for (const path of ['.kai/runs/raw.md', '.kai/personal/note.md', '.kai/local.json', '.kai/activity.jsonl.1']) {
     put(root, path, 'private bytes');
     gitRun(root, ['add', '-f', '--', path]);
-    const before = gitRun(root, ['ls-files', '--stage']);
-    assert.ok(checkWorkspace(root, {intent: 'coordinate'}).errors.some(e => /tracked|private/.test(e)));
-    withStore(root, store => {
-      assert.throws(() => updateTypedTask(store, {title: 'Unsafe'}), /tracked|private/i);
-    }, 'write');
-    assert.equal(gitRun(root, ['ls-files', '--stage']), before);
-    gitRun(root, ['rm', '--cached', '--quiet', '--', path]);
   }
+  const before = gitRun(root, ['ls-files', '--stage']);
+  assert.ok(checkWorkspace(root, {intent: 'coordinate'}).errors.some(e => /tracked|private/.test(e)));
+  assert.equal(gitRun(root, ['ls-files', '--stage']), before);
 }, {mode: 'shared'}));
 
 test('round1 per-mode admission refuses tracked repo-local state and ignored shared state', () => {
@@ -1083,14 +1073,15 @@ test('round1 closed ordinary SQLite evidence is preserved exactly outside coordi
   assert.deepEqual(fs.readFileSync(join(root, ...path.split('/'))), bytes);
 }));
 
-test('round1 repair refuses unknown original version rather than inventing version one', () => fixture(root => {
+test('round1 unknown original version remains quarantined rather than inventing version one', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('version: 7', 'version: unknown').replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {
-    bindMigrationRepair(store, {root, roles, verify: () => true});
-    assert.throws(() => repairLegacyRecord(store, repairRequest(store)), /version|history/i);
+    const source = readLegacyRecords(store).find(entry => entry.declaredId === 'demo');
+    assert.equal(source.status, 'quarantined');
+    assert.ok(source.issues.some(issue => /version|history|record/i.test(issue)));
     assert.equal(readRecord(store, 'item', 'demo'), null);
-  }, 'write');
+  });
 }));
 
 test('round1 malformed top-level metadata is never partially converted', () => fixture(root => {
@@ -1102,25 +1093,20 @@ test('round1 malformed top-level metadata is never partially converted', () => f
   });
 }));
 
-test('round1 initiative repair cannot discard or fabricate terminal milestone history', () => fixture(root => {
+test('round1 terminal milestone history stays quarantined without a current initiative', () => fixture(root => {
   const path = '.kai/state/initiatives/demo-initiative/initiative.md';
   const before = fs.readFileSync(join(root, ...path.split('/')), 'utf8');
   put(root, path, before.replace('owner: operator', 'owner: missing-owner'));
   migrated(root);
   withStore(root, store => {
     const source = readLegacyRecords(store).find(s => s.declaredId === 'demo-initiative');
-    bindMigrationRepair(store, {root, roles, verify: () => true});
-    assert.throws(() => repairLegacyRecord(store, {operationId: randomUUID(), sourceId: source.sourceId,
-      expectedVersion: 1, actor: {role: 'operator', runId: 'initiative-owner-run'}, reason: 'Fresh scope',
-      body: {schema_version: 1, id: 'demo-initiative', title: 'New scope', status: 'active', owner: 'operator',
-        scope: {current: ['scope']}, milestones: [{id: 'original', title: 'Claimed closed',
-          delivery_class: 'knowledge', required_items: [], status: 'completed'}], backlog: [],
-        north_star_ref: '.kai/state/initiatives/demo-initiative/northstar.md', updated_at: stamp}}), /closure|initiative|terminal/i);
+    assert.equal(source.status, 'quarantined');
+    assert.ok(source.issues.some(issue => /owner|role/.test(issue)));
     assert.equal(readRecord(store, 'initiative', 'demo-initiative'), null);
-  }, 'write');
+  });
 }));
 
-test('round1 real process repair is refused during rollback and accepted work prevents retirement', () => fixture(root => {
+retiredSchema4WriteTest('round1 real process repair is refused during rollback and accepted work prevents retirement', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   let request;
@@ -1154,7 +1140,7 @@ test('round1 real process repair is refused during rollback and accepted work pr
   });
 }));
 
-test('round1 recovery lock blocks repair after manifest activation until explicit recovery', () => fixture(root => {
+retiredSchema4WriteTest('round1 recovery lock blocks repair after manifest activation until explicit recovery', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   boundary('renameSync', (original, from, to) => {
     const result = original(from, to);
@@ -1175,7 +1161,7 @@ test('round1 recovery lock blocks repair after manifest activation until explici
   assert.throws(() => rollbackMigration({root, confirm: true}), /new|runtime|changed/i);
 }));
 
-test('round1 ambiguous terminal source cannot be repaired as its first nonterminal declaration', () => fixture(root => {
+retiredSchema4WriteTest('round1 ambiguous terminal source cannot be repaired as its first nonterminal declaration', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem('state: shipped\n').replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {
@@ -1197,7 +1183,7 @@ test('round1 invalid UTF8 metadata does not invent a replacement-character ident
   });
 }));
 
-test('round1 repair cannot lose privacy checks when the manifest migration marker is removed', () => fixture(root => {
+retiredSchema4WriteTest('round1 repair cannot lose privacy checks when the manifest migration marker is removed', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {
@@ -1264,7 +1250,7 @@ for (const identity of ['id: second-original', 'slug: second-original']) {
   }));
 }
 
-test('round2 oversized legacy identity stays quarantined while typed Task namespace remains usable', () => fixture(root => {
+test('round2 oversized legacy identity stays quarantined without becoming a typed Task', () => fixture(root => {
   const path = '.kai/archive/old-work/closed.md';
   const raw = legacyItem().replace('id: demo\n', 'id: first-original\n').replace('state: proposed', 'state: completed')
     .replace('version: 7', 'version: 9') + 'x'.repeat(70 * 1024);
@@ -1280,9 +1266,7 @@ test('round2 oversized legacy identity stays quarantined while typed Task namesp
     assert.notEqual(source.parsed.identityUnresolved, true);
     assert.equal(source.parsed.fields.version, '9');
     assert.equal(source.parsed.declaredState, 'completed');
-    const typedId = 'engineering:task:fresh-independent';
-    assert.equal(createTypedTask(store, {id: typedId}).recordVersion, 1);
-    assert.equal(readRecord(store, 'task', typedId).body.state, 'proposed');
+    assert.equal(readRecord(store, 'task', 'engineering:task:fresh-independent'), null);
   }, 'write');
 }));
 
@@ -1296,7 +1280,7 @@ const invalidRepairManifests = [
   ['project binding', m => ({...m, projects: [...m.projects, ...m.projects]})],
 ];
 for (const phase of ['before repair', 'in verifier']) {
-  test(`round2 full current repair admission ${phase} refuses manifest drift and preserves replay guard`, () => fixture(root => {
+  retiredSchema4WriteTest(`round2 full current repair admission ${phase} refuses manifest drift and preserves replay guard`, () => fixture(root => {
     put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
     migrated(root);
     withStore(root, store => {
@@ -1336,7 +1320,7 @@ for (const phase of ['before repair', 'in verifier']) {
 }
 
 for (const phase of ['before repair', 'in verifier']) {
-  test(`round2 full repair admission ${phase} rechecks external registry binding`, () => fixture(root => {
+  retiredSchema4WriteTest(`round2 full repair admission ${phase} rechecks external registry binding`, () => fixture(root => {
     const project = allocateTemporaryRoot('kai-coordination-migration-project-', repo);
     const priorHome = process.env.KAI_HOME;
     try {
@@ -1455,9 +1439,7 @@ test('round2 unsupported collection continuation after a comment cannot pass par
     assert.equal(source.status, 'quarantined');
     assert.equal(source.parsed.metadataSupported, false);
     assert.equal(readRecord(store, 'item', 'demo'), null);
-    bindMigrationRepair(store, {root, roles, verify: () => true});
-    assert.throws(() => repairLegacyRecord(store, repairRequest(store)), /unsupported|ambiguous|history/i);
-  }, 'write');
+  });
 }));
 
 function initiativeRepairBody() {
@@ -1483,10 +1465,6 @@ for (const [kind, declarations, declaredState] of [
       withStore(root, store => {
         const source = readLegacyRecords(store).find(s => s.path === path);
         assert.equal(source.status, 'quarantined');
-        bindMigrationRepair(store, {root, roles, verify: () => true});
-        const request = {...repairRequest(store), sourceId: source.sourceId,
-          body: kind === 'item' ? seedBody() : initiativeRepairBody()};
-        assert.throws(() => repairLegacyRecord(store, request), /unsupported|ambiguous|history|historical|reopen/i);
         assert.equal(source.parsed.metadataSupported, false);
         assert.equal(source.parsed.declaredState, declaredState);
         assert.equal(source.parsed.terminalHistory, true);
@@ -1494,12 +1472,12 @@ for (const [kind, declarations, declaredState] of [
         assert.equal(readRecord(store, kind, source.declaredId), null);
         assert.equal(readLegacyRecords(store, {sourceId: source.sourceId, includeRaw: true})[0].raw.toString(), raw);
         assert.equal(canRollback(store), true);
-      }, 'write');
+      });
     }));
   }
 }
 
-test('round2 kind-specific nonterminal initiative history permits fresh repair but never target closure', () => fixture(root => {
+retiredSchema4WriteTest('round2 kind-specific nonterminal initiative history permits fresh repair but never target closure', () => fixture(root => {
   const path = '.kai/state/initiatives/demo-initiative/initiative.md';
   const before = fs.readFileSync(join(root, ...path.split('/')), 'utf8');
   put(root, path, before.replace('owner: operator', 'owner: missing-owner'));
@@ -1532,11 +1510,8 @@ for (const kind of ['item', 'initiative']) {
       assert.equal(source.parsed.declaredState, null);
       assert.equal(source.parsed.terminalHistory, true);
       assert.equal(source.status, 'quarantined');
-      bindMigrationRepair(store, {root, roles, verify: () => true});
-      assert.throws(() => repairLegacyRecord(store, {...repairRequest(store), sourceId: source.sourceId,
-        body: kind === 'item' ? seedBody() : initiativeRepairBody()}), /unsupported|ambiguous|history/i);
       assert.equal(readRecord(store, kind, source.declaredId), null);
-    }, 'write');
+    });
   }));
 }
 
@@ -1552,7 +1527,7 @@ test('round2 matching nonterminal lifecycle declarations remain safely convertib
   });
 }));
 
-test('Task10A repair accepts a registered cross-item design as context without treating it as verdict evidence', () => fixture(root => {
+retiredSchema4WriteTest('Task10A repair accepts a registered cross-item design as context without treating it as verdict evidence', () => fixture(root => {
   put(root, '.kai/state/items/demo.md', legacyItem().replace('state: proposed', 'state: ready'));
   migrated(root);
   withStore(root, store => {

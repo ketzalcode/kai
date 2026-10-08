@@ -2,7 +2,10 @@ import {existsSync, lstatSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
 import {RuntimeError} from './contract.mjs';
 import {exactPath, pathHasLink} from '../workspace-path-safety.mjs';
-import {migrationManifest} from './migration-files.mjs';
+import {
+  migrationManifest,
+  schema5MigrationLockPath,
+} from './migration-files.mjs';
 import {
   readWorkspaceManifest,
   validateSchema5Manifest,
@@ -75,6 +78,9 @@ export function assertWorkspaceWrite(path, {
   }
   if (existsSync(join(runtime, 'migration.lock'))) {
     fail('RECOVERY_REQUIRED', 'offline migration/rollback lock prevents coordinated work');
+  }
+  if (existsSync(schema5MigrationLockPath(root))) {
+    fail('RECOVERY_REQUIRED', 'incomplete schema-5 migration prevents coordinated work');
   }
   if (privateCheck && requirePrivate) {
     const privacy = inspectGitPrivacy(root, parsed.placement);

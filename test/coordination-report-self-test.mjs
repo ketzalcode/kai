@@ -731,10 +731,8 @@ test('round1 visible provenance and redaction notice include actual omitted bear
 
 test('round1 Git changes use registered bound immutable commits without diff or textconv helpers', async () => {
   await withWorkspace(({root, store}) => {
-    const project = join(root, 'project');
-    mkdirSync(project);
+    const project = root;
     const git = args => execFileSync('git', ['--no-pager', '-C', project, ...args], {encoding: 'utf8'}).trim();
-    git(['init', '--quiet']);
     git(['config', 'core.autocrlf', 'false']);
     git(['config', 'user.name', 'Synthetic fixture']);
     git(['config', 'user.email', 'fixture@example.invalid']);
@@ -749,7 +747,7 @@ test('round1 Git changes use registered bound immutable commits without diff or 
     const head = git(['rev-parse', 'HEAD']);
     const manifestPath = join(root, '.kai', 'manifest.json');
     const manifest = JSON.parse(readFileSync(manifestPath));
-    manifest.projects = [{id: 'bound', path: project, publication_root: 'docs'}];
+    manifest.projects[0].id = 'bound';
     writeFileSync(manifestPath, JSON.stringify(manifest));
     const {artifactId} = setupReport(root, store, {change_ref: {kind: 'git', base, head}});
     // setupReport registers a Git artifact only with an explicit project binding.

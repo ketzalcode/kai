@@ -1,5 +1,8 @@
-import {chmodSync, closeSync, constants, copyFileSync, existsSync, fsyncSync, mkdirSync, openSync, renameSync, unlinkSync} from 'node:fs';
-import {dirname, resolve} from 'node:path';
+import {
+  chmodSync, closeSync, constants, copyFileSync, existsSync, fsyncSync,
+  lstatSync, mkdirSync, openSync, readFileSync, renameSync, unlinkSync,
+} from 'node:fs';
+import {dirname, isAbsolute, relative, resolve, sep} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {openStore, closeStore, readSnapshot, readRecord} from './store.mjs';
 import {assertExactKeys, canonicalJson, validateRecord, validateActor} from './contract.mjs';
@@ -14,6 +17,12 @@ import {read as readActivity, runs} from '../activity.mjs';
 import {isNull, TERMINAL} from '../coordination.mjs';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {captureInputBasis} from './input-basis.mjs';
+import {
+  canonicalPath,
+  exactPath,
+  pathHasLink,
+} from '../workspace-path-safety.mjs';
+import {workspaceRootFromCoordinationDatabase} from '../workspace-layout.mjs';
 
 const inFlight = new Set();
 const repairs = new WeakMap();
@@ -23,7 +32,15 @@ function confirmed(confirm) {
 }
 function stagingUnavailable() {
   fail('SCHEMA_MISMATCH',
-    'schema 3/4 stores are read-only; Task 10 must use a distinct explicit schema-5 migration staging API');
+    'schema 3/4 live stores are read-only; only explicit offline migration staging may write');
+}
+export function createLegacyMigrationStagingStore({root, name, env = process.env}) {
+  migrationManifest(root, [3], env);
+  if (typeof name !== 'string'
+    || !new RegExp(`^${MIGRATIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[0-9a-f-]{36}/staged\\.sqlite$`, 'i').test(name)) {
+    fail('INVALID_INPUT', 'legacy migration staging store must use its exact private migration path');
+  }
+  return openStore({path: safePath(root, name), mode: 'create'});
 }
 function privateWorkspace(root, admit = false) {
   const privacy = privateAdmission(root, {admit});
@@ -131,7 +148,6 @@ function releaseLock(root, expected) {
 /** Explicit offline migration; no current grants, approvals or invented actors. */
 export function migrateWorkspace({root, confirm, roles = [], env = process.env} = {}) {
   confirmed(confirm);
-  stagingUnavailable();
   const manifest = migrationManifest(root, [3], env);
   if (!Array.isArray(roles) || roles.some(r => typeof r !== 'string')) fail('INVALID_INPUT', 'installed role identities must be supplied');
   if (inFlight.has(root) || existsSync(safePath(root, LOCK))) fail('RECOVERY_REQUIRED', 'incomplete or competing migration; inspect and explicitly recover');
@@ -164,7 +180,11 @@ export function migrateWorkspace({root, confirm, roles = [], env = process.env} 
     verifyBackup(root, plan);
     sameSnapshot(files, sourceSnapshot(root));
     exclusiveFile(root, `${directory}/staged.sqlite`, Buffer.alloc(0));
-    store = openStore({path: safePath(root, `${directory}/staged.sqlite`), mode: 'create'});
+    store = createLegacyMigrationStagingStore({
+      root,
+      name: `${directory}/staged.sqlite`,
+      env,
+    });
     store.database.exec(`BEGIN IMMEDIATE;
       CREATE TABLE legacy_sources (
         source_id TEXT PRIMARY KEY, path TEXT NOT NULL UNIQUE, digest TEXT NOT NULL,
@@ -222,7 +242,6 @@ export function canRollback(store) {
  */
 export function recoverMigration({root, confirm, action, env = process.env} = {}) {
   confirmed(confirm);
-  stagingUnavailable();
   migrationManifest(root, [3, 4], env);
   if (!['activate', 'abandon'].includes(action)) fail('INVALID_INPUT', 'recovery action must be activate or abandon');
   if (inFlight.has(root)) fail('STORE_BUSY', 'migration is active in this process');
@@ -282,7 +301,6 @@ export function verifyMigration(root, {env = process.env} = {}) {
 }
 export function rollbackMigration({root, confirm, env = process.env} = {}) {
   confirmed(confirm);
-  stagingUnavailable();
   const manifest = migrationManifest(root, [4], env);
   const {plan, ready} = activePlan(root, manifest);
   const activatedManifest = activatedManifestBytes(root, plan);
@@ -332,6 +350,98 @@ function canRollbackInTransaction(store, ready) {
  */
 export function readLegacyRecords(store, {sourceId, includeRaw = false} = {}) {
   if (includeRaw && typeof sourceId !== 'string') fail('INVALID_INPUT', 'raw legacy reads require a single sourceId');
+  const migrated = store.database.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='migration_sources'",
+  ).get();
+  if (migrated) {
+    let metadata;
+    try {
+      metadata = JSON.parse(store.database.prepare(
+        "SELECT value FROM metadata WHERE key='migration_v5'",
+      ).get()?.value ?? 'null');
+    } catch {
+      fail('EVIDENCE_GAP', 'schema-5 migration provenance metadata is invalid');
+    }
+    if (!metadata || typeof metadata.backup_path !== 'string'
+      || typeof metadata.receipt_path !== 'string'
+      || !isAbsolute(metadata.backup_path)
+      || resolve(metadata.receipt_path) !== resolve(metadata.backup_path, 'receipt.json')) {
+      fail('EVIDENCE_GAP', 'schema-5 migration provenance has an invalid external receipt binding');
+    }
+    const receiptPath = resolve(metadata.receipt_path);
+    if (pathHasLink(dirname(receiptPath), receiptPath) || !exactPath(receiptPath)) {
+      fail('EVIDENCE_GAP', 'schema-5 migration receipt is linked or aliased');
+    }
+    let receipt;
+    try {
+      receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+    } catch {
+      fail('EVIDENCE_GAP', 'schema-5 migration receipt is missing or invalid');
+    }
+    let workspaceRoot;
+    try {
+      workspaceRoot = workspaceRootFromCoordinationDatabase(store.path);
+    } catch {
+      fail('EVIDENCE_GAP', 'schema-5 migration provenance belongs to another store path');
+    }
+    if (receipt.activated !== true || receipt.digest !== metadata.receipt_digest
+      || hash(canonicalJson(receipt.payload)) !== receipt.digest
+      || typeof receipt.payload?.workspace_root !== 'string'
+      || !isAbsolute(receipt.payload.workspace_root)
+      || canonicalPath(receipt.payload.workspace_root) !== canonicalPath(workspaceRoot)
+      || receipt.payload.backup_path !== metadata.backup_path) {
+      fail('EVIDENCE_GAP', 'schema-5 migration receipt does not bind this workspace and backup');
+    }
+    const select = `SELECT source_id,path,digest,size,category,owner_hint,
+      classification,backup_relative FROM migration_sources`;
+    const rows = sourceId === undefined
+      ? store.database.prepare(`${select} ORDER BY path`).all()
+      : store.database.prepare(`${select} WHERE source_id=?`).all(sourceId);
+    return rows.map(row => {
+      if (row.source_id !== hash(row.path)
+        || row.backup_relative !== `private/${row.path}`) {
+        fail('EVIDENCE_GAP', 'schema-5 migration source identity is invalid');
+      }
+      let classification;
+      try {
+        classification = JSON.parse(row.classification);
+      } catch {
+        fail('EVIDENCE_GAP', 'schema-5 migration source classification is invalid');
+      }
+      const source = {
+        sourceId: row.source_id,
+        path: row.path,
+        digest: row.digest,
+        kind: row.category,
+        declaredId: null,
+        size: row.size,
+        backupPath: row.backup_relative,
+        parsed: {ownerHint: row.owner_hint, classification},
+        issues: [],
+        status: classification.action === 'migrate' ? 'migrated' : 'historical',
+        version: 1,
+      };
+      if (includeRaw) {
+        const absolute = resolve(metadata.backup_path, ...row.backup_relative.split('/'));
+        const rel = relative(canonicalPath(metadata.backup_path), canonicalPath(absolute));
+        if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)
+          || pathHasLink(metadata.backup_path, absolute) || !exactPath(absolute)) {
+          fail('EVIDENCE_GAP', 'schema-5 migration source backup escapes or aliases its verified root');
+        }
+        const stat = lstatSync(absolute);
+        const raw = readFileSync(absolute);
+        const after = lstatSync(absolute);
+        if (!stat.isFile() || stat.nlink !== 1 || raw.length !== row.size
+          || stat.dev !== after.dev || stat.ino !== after.ino
+          || stat.size !== after.size || stat.mtimeMs !== after.mtimeMs
+          || hash(raw) !== row.digest) {
+          fail('EVIDENCE_GAP', 'schema-5 migration source backup size or digest changed');
+        }
+        source.raw = raw;
+      }
+      return source;
+    });
+  }
   const table = store.database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='legacy_sources'").get();
   if (!table) return [];
   const columns = store.database.prepare('PRAGMA table_info(legacy_sources)').all().map(c => c.name);

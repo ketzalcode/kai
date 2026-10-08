@@ -58,6 +58,7 @@ import {
   closeStore,
   openStore,
 } from './lib/coordination-runtime/store.mjs';
+import {schema5MigrationLockPath} from './lib/coordination-runtime/migration-files.mjs';
 
 // --- Contract constants the current plugin generates -----------------------
 const CURRENT_SCHEMA_VERSION = WORKSPACE_SCHEMA_VERSION;
@@ -161,6 +162,9 @@ function schema5WorkspaceValidation(root, manifest, options = {}) {
   const privacy = inspectGitPrivacy(root, manifest.placement);
   errors.push(...privacy.errors);
   warnings.push(...privacy.warnings);
+  if (existsSync(schema5MigrationLockPath(root))) {
+    errors.push('RECOVERY_REQUIRED: incomplete schema-5 migration requires explicit recovery before coordinated work');
+  }
   if (manifest.placement === 'repo-local' && !privacy.gitRoot) {
     errors.push('repo-local placement requires a readable Git work tree so .kai privacy can be verified');
   }
@@ -394,15 +398,17 @@ export function checkWorkspace(root, options = {}) {
     if (intent === 'coordinate' && inspection.migrations.length) {
       inspection.errors.push('pending migration recovery prevents coordinated writes');
     }
-    inspection.migrations.push('schema 4 is inspect-only; explicit offline migration to schema 5 is required for coordination');
+    inspection.migrations.push('schema 4 is inspect-only; run migration-plan, authorize migrate-v5, then execute the confirmed offline migration');
     if (intent === 'coordinate') {
       inspection.errors.push('schema 4 coordinated writes are refused; explicitly migrate to schema 5 first');
     }
     return {errors: inspection.errors, warnings: inspection.warnings, migrations: inspection.migrations};
   }
   if (m.schema_version === 3) {
-    migrations.push('schema 3 is inspect-only; explicit offline migration to schema 5 is required for coordination');
-    if (intent === 'coordinate') err('schema 3 coordinated writes are refused; explicitly migrate to schema 5 first');
+    migrations.push('schema 3 is inspect-only; first run its explicit historical schema-4 migration, then classify schema 4 for schema 5');
+    if (intent === 'coordinate') {
+      err('schema 3 coordinated writes are refused; migrate explicitly to schema 4 before requesting schema-5 classification');
+    }
   }
 
   for (const k of LEGACY_REQUIRED_MANIFEST_KEYS) {
