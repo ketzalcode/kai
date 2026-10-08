@@ -26,6 +26,14 @@ function hostGrantMatches(grant, command, action) {
     && grant.basisRef === `${command.recordKind}/${command.recordId}@${command.expectedVersion}`;
 }
 
+function hostGrantMatchesBasis(grant, command, action, basisRef) {
+  return sameActor(grant.actor, command.actor)
+    && grant.actions.includes(action)
+    && grant.recordKind === command.recordKind
+    && grant.recordId === command.recordId
+    && grant.basisRef === basisRef;
+}
+
 function persistedGrantMatches(record, command, action) {
   const grant = record.body;
   return grant.status === 'active'
@@ -39,6 +47,12 @@ function persistedGrantMatches(record, command, action) {
 
 export function hasHostActionGrant(command, authority, action) {
   return authority.grants.some(grant => hostGrantMatches(grant, command, action));
+}
+
+export function hasHostActionGrantForBasis(command, authority, action, basisRef) {
+  return authority.grants.some(
+    grant => hostGrantMatchesBasis(grant, command, action, basisRef),
+  );
 }
 
 export function requireActionGrant(tx, command, authority, action) {

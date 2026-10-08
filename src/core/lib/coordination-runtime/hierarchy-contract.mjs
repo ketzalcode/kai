@@ -104,7 +104,6 @@ const PARENT_UPDATE_FIELDS = new Map([
     'scope_fit',
     'required_features',
     'optional_features',
-    'updated_at',
   ])],
   ['feature', new Set([
     'title',
@@ -117,7 +116,6 @@ const PARENT_UPDATE_FIELDS = new Map([
     'required_requirements',
     'optional_requirements',
     'depends_on_features',
-    'updated_at',
   ])],
   ['requirement', new Set([
     'title',
@@ -129,7 +127,6 @@ const PARENT_UPDATE_FIELDS = new Map([
     'acceptance',
     'required_tasks',
     'optional_tasks',
-    'updated_at',
   ])],
 ]);
 
@@ -525,7 +522,13 @@ function validateExistingParentCommand(command, parentKind) {
 
 function validateParentUpdate(command, parentKind) {
   validateExistingParentCommand(command, parentKind);
-  validateChangesPayload(command, PARENT_UPDATE_FIELDS.get(parentKind), command.kind);
+  assertExactKeys(command.payload, new Set(['at', 'changes']), `${command.kind} payload`);
+  assertTimestamp(command.payload.at, `${command.kind} payload.at`);
+  validateChangesPayload(
+    {...command, payload: {changes: command.payload.changes}},
+    PARENT_UPDATE_FIELDS.get(parentKind),
+    command.kind,
+  );
 }
 
 function validateAtPayload(command, parentKind, fields, required = fields) {
@@ -609,7 +612,11 @@ export function validateParentCommandMutation(command, current, nextBody) {
 
   const [, action] = command.kind.split('.');
   if (action === 'update') {
-    const expected = {...current.body, ...command.payload.changes};
+    const expected = {
+      ...current.body,
+      ...command.payload.changes,
+      updated_at: command.payload.at,
+    };
     if (canonicalJson(nextBody) !== canonicalJson(expected)) {
       invalid(`${command.kind} may only apply the changes in its payload`);
     }

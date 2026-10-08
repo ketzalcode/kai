@@ -368,7 +368,10 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
 
   const commands = [
     parentCommand('epic', 'create', epic.id, {body: epic.body}, 0),
-    parentCommand('epic', 'update', epic.id, {changes: {title: 'Refine epic title', updated_at: LATER}}),
+    parentCommand('epic', 'update', epic.id, {
+      at: LATER,
+      changes: {title: 'Refine epic title'},
+    }),
     parentCommand('epic', 'activate', epic.id, {at: NOW}),
     parentCommand('epic', 'hold', epic.id, {
       at: NOW,
@@ -390,7 +393,10 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
       basisRefs: ['approval:epic-completion'],
     }),
     parentCommand('feature', 'create', feature.id, {body: feature.body}, 0),
-    parentCommand('feature', 'update', feature.id, {changes: {title: 'Refine feature title', updated_at: LATER}}),
+    parentCommand('feature', 'update', feature.id, {
+      at: LATER,
+      changes: {title: 'Refine feature title'},
+    }),
     parentCommand('feature', 'activate', feature.id, {at: NOW}),
     parentCommand('feature', 'hold', feature.id, {
       at: NOW,
@@ -412,7 +418,10 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
       basisRefs: ['approval:feature-completion'],
     }),
     parentCommand('requirement', 'create', requirement.id, {body: requirement.body}, 0),
-    parentCommand('requirement', 'update', requirement.id, {changes: {title: 'Refine requirement title', updated_at: LATER}}),
+    parentCommand('requirement', 'update', requirement.id, {
+      at: LATER,
+      changes: {title: 'Refine requirement title'},
+    }),
     parentCommand('requirement', 'activate', requirement.id, {at: NOW}),
     parentCommand('requirement', 'hold', requirement.id, {
       at: NOW,
@@ -506,6 +515,30 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
   };
   assert.equal(validateRecord(legacyRecord), legacyRecord);
   assert.equal(validateCommand(legacyCommand), legacyCommand);
+});
+
+test('parent updates require an explicit mutation timestamp', () => {
+  const missingTimestamp = parentCommand(
+    'epic',
+    'update',
+    'epic:schema-five-cutover',
+    {changes: {title: 'No mutation time'}},
+  );
+  assert.throws(
+    () => validateParentCommand(missingTimestamp),
+    invalid(/payload.*at|missing.*at/i),
+  );
+
+  const embeddedTimestamp = parentCommand(
+    'epic',
+    'update',
+    'epic:schema-five-cutover',
+    {at: LATER, changes: {title: 'Wrong timestamp location', updated_at: LATER}},
+  );
+  assert.throws(
+    () => validateParentCommand(embeddedTimestamp),
+    invalid(/updated_at|cannot change/i),
+  );
 });
 
 test('parentClosureRef canonicalizes parent and required child ordering', () => {

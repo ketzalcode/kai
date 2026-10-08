@@ -1,5 +1,6 @@
-import {dirname} from 'node:path';
+import {basename, dirname, posix as path} from 'node:path';
 import {readDirection} from '../direction.mjs';
+import {directionPath} from '../workspace-layout.mjs';
 import {readWorkspaceManifest} from '../workspace-resolve.mjs';
 import {
   RuntimeError,
@@ -9,6 +10,7 @@ import {
 } from './contract.mjs';
 import {changedKeys} from './contract-primitives.mjs';
 import {
+  hasHostActionGrantForBasis,
   requireAnyNamedAuthority,
   requireHostActionGrant,
   requireNamedAuthority,
@@ -109,11 +111,9 @@ function directionBasis(direction) {
 }
 
 function eventTime(command, nextBody) {
-  return command.payload.at
-    ?? command.payload.createdAt
-    ?? command.payload.changes?.updated_at
-    ?? nextBody.created_at
-    ?? nextBody.updated_at;
+  return command.kind.endsWith('.create')
+    ? nextBody.created_at
+    : command.payload.at;
 }
 
 function eventReason(command) {
@@ -155,14 +155,49 @@ function workspaceRoot(store) {
   return dirname(dirname(dirname(store.path)));
 }
 
-export function currentDirectionForStore(store) {
+function configuredDirectionPath(project) {
+  if (typeof project?.publication_root !== 'string') return null;
+  const publicationRoot = project.publication_root
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '')
+    .replace(/\/+$/, '');
+  return path.join(publicationRoot, basename(directionPath()));
+}
+
+function projectIdForDirectionRef(manifest, directionRef) {
+  if (!directionRef || typeof directionRef.path !== 'string') {
+    fail('EVIDENCE_GAP', 'Epic Direction reference must name a configured project path');
+  }
+  const matches = Array.isArray(manifest.projects)
+    ? manifest.projects.filter(
+      project => configuredDirectionPath(project) === directionRef.path,
+    )
+    : [];
+  if (matches.length !== 1) {
+    fail(
+      'EVIDENCE_GAP',
+      `Epic Direction path "${directionRef.path}" must match exactly one configured project`,
+    );
+  }
+  if (typeof matches[0].id !== 'string' || !matches[0].id.trim()) {
+    fail('EVIDENCE_GAP', 'the configured project matching the Epic Direction path needs an id');
+  }
+  return matches[0].id;
+}
+
+export function currentDirectionForStore(store, directionRef) {
   const root = workspaceRoot(store);
   const result = readWorkspaceManifest(root);
   if (!result.ok) {
     fail('EVIDENCE_GAP', `current Direction cannot be resolved: ${result.reason}`);
   }
   try {
-    return readDirection({workspaceRoot: root, manifest: result.manifest});
+    const projectId = projectIdForDirectionRef(result.manifest, directionRef);
+    return readDirection({
+      workspaceRoot: root,
+      manifest: result.manifest,
+      projectId,
+    });
   } catch (error) {
     fail('EVIDENCE_GAP', `current Direction cannot be resolved: ${error.message}`);
   }
@@ -386,6 +421,26 @@ function parentContext(tx, record) {
   return [tx.get('feature', record.body.feature_id)].filter(Boolean);
 }
 
+function epicAncestor(tx, record) {
+  if (record.kind === 'epic') return record;
+  const feature = record.kind === 'feature'
+    ? record
+    : tx.get('feature', record.body.feature_id);
+  if (!feature) {
+    fail('EVIDENCE_GAP', `${record.kind}/${record.id} has no current Feature ancestor`);
+  }
+  const epic = tx.get('epic', feature.body.epic_id);
+  if (!epic) {
+    fail('EVIDENCE_GAP', `feature/${feature.id} has no current Epic ancestor`);
+  }
+  return epic;
+}
+
+function directionForRecord(tx, record, runtime) {
+  const epic = epicAncestor(tx, record);
+  return runtime.direction(epic.body.direction_ref);
+}
+
 export function assertAlignedAncestors(tx, record, direction) {
   validateHierarchyRecord(record);
   if (record.kind === 'epic') {
@@ -584,7 +639,7 @@ function handleEpicCreate(current, tx, command, authority, runtime) {
     ['operator', body.scope_authority],
     'epic.create requires the operator or delegated Epic scope authority',
   );
-  const direction = runtime.direction();
+  const direction = runtime.direction(body.direction_ref);
   const candidate = createCandidate(command);
   assertDirectionAligned(candidate, direction);
   const related = assertParentRelationships(tx, candidate);
@@ -625,8 +680,8 @@ function handleRequirementCreate(current, tx, command, authority) {
   requireAllowedAuthority(
     command,
     authority,
-    [feature.body.owner],
-    'requirement.create requires the Feature owner',
+    [feature.body.owner, feature.body.scope_authority],
+    'requirement.create requires the Feature owner or delegated pack authority',
   );
   const candidate = createCandidate(command);
   const related = assertParentRelationships(tx, candidate);
@@ -634,20 +689,37 @@ function handleRequirementCreate(current, tx, command, authority) {
   return body;
 }
 
-function requireParentUpdateAuthority(tx, current, command, authority, changes) {
-  const changed = new Set(Object.keys(changes).filter(key => key !== 'updated_at'));
+function requireParentUpdateAuthority(
+  tx,
+  current,
+  command,
+  authority,
+  changes,
+  runtime,
+) {
+  const changed = new Set(Object.keys(changes));
   const hasPriority = changed.delete('priority');
   const hasScope = [...changed].some(key => SCOPE_FIELDS[current.kind].has(key));
   const hasDescription = [...changed].some(key => key === 'title');
 
   if (current.kind === 'epic') {
     if (hasPriority) {
-      requireAllowedAuthority(
-        command,
-        authority,
-        ['operator', current.body.owner],
-        'Epic priority requires the operator or the Current Goal steward',
-      );
+      if (command.actor.role === 'operator') {
+        requireHostActionGrant(command, authority, command.kind);
+      } else {
+        const direction = runtime.direction(current.body.direction_ref);
+        if (!hasHostActionGrantForBasis(
+          command,
+          authority,
+          command.kind,
+          directionBasis(direction),
+        )) {
+          fail(
+            'AUTHORITY_REQUIRED',
+            'Epic priority requires the operator or an explicit Current Goal steward grant',
+          );
+        }
+      }
     }
     if (hasScope) {
       requireNamedAuthority(
@@ -678,10 +750,7 @@ function requireParentUpdateAuthority(tx, current, command, authority, changes) 
     }
   }
 
-  if (hasDescription && !hasScope && !hasPriority) {
-    requireNamedAuthority(tx, command, authority, command.kind, current.body.owner);
-  }
-  if (!hasDescription && !hasScope && !hasPriority) {
+  if (hasDescription) {
     requireNamedAuthority(tx, command, authority, command.kind, current.body.owner);
   }
 }
@@ -691,15 +760,22 @@ function handleParentUpdate(current, tx, command, authority, runtime) {
     fail('INVALID_INPUT', `${current.kind}/${current.id} is completed and immutable`);
   }
   const changes = command.payload.changes;
-  requireParentUpdateAuthority(tx, current, command, authority, changes);
-  const next = {...current.body, ...changes};
+  requireParentUpdateAuthority(tx, current, command, authority, changes, runtime);
+  const next = {
+    ...current.body,
+    ...changes,
+    updated_at: command.payload.at,
+  };
   requireKnownParentRoles(next, authority);
   const candidate = updateCandidate(current, next);
+  let basisRefs = [];
   if (current.kind === 'epic' && Object.hasOwn(changes, 'direction_ref')) {
-    assertDirectionAligned(candidate, runtime.direction());
+    const direction = runtime.direction(candidate.body.direction_ref);
+    assertDirectionAligned(candidate, direction);
+    basisRefs = [directionBasis(direction)];
   }
   const related = assertParentRelationships(tx, candidate);
-  appendMutationEvent(tx, current, next, command, related);
+  appendMutationEvent(tx, current, next, command, related, {basisRefs});
   return next;
 }
 
@@ -747,7 +823,7 @@ function handleParentActivate(current, tx, command, authority, runtime) {
     updated_at: command.payload.at,
   };
   const candidate = updateCandidate(current, next);
-  const direction = runtime.direction();
+  const direction = directionForRecord(tx, candidate, runtime);
   const related = [
     ...assertParentRelationships(tx, candidate),
     ...assertAlignedAncestors(tx, candidate, direction),
@@ -834,7 +910,7 @@ function handleParentComplete(current, tx, command, authority, runtime) {
 
   if (successful) {
     requireNoHold(current, `${current.kind}/${current.id}`);
-    const direction = runtime.direction();
+    const direction = directionForRecord(tx, current, runtime);
     related = [
       ...related,
       ...assertParentRelationships(tx, current),

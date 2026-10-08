@@ -54,6 +54,7 @@ const operator = actor('operator', 'operator-run');
 const steward = actor('eng-lead-architecture', 'steward-run');
 const packOwner = actor('eng-lead-software', 'pack-owner-run');
 const packDelegate = actor('eng-product-manager', 'pack-delegate-run');
+const goalSteward = actor('eng-product-strategy', 'goal-steward-run');
 const requirementOwner = actor('eng-builder-software', 'requirement-owner-run');
 const reviewer = actor('eng-reviewer-code', 'reviewer-run');
 const outsider = actor('eng-reviewer-quality', 'outsider-run');
@@ -68,12 +69,22 @@ function runtimeError(code, pattern = null) {
     && (pattern === null || pattern.test(error.message));
 }
 
-function directionReference(bytes = DIRECTION) {
+function directionReference(
+  bytes = DIRECTION,
+  {
+    path = 'docs/kai/DIRECTION.md',
+    goal = 'Ship schema 5 hierarchy governance.',
+  } = {},
+) {
   return {
-    path: 'docs/kai/DIRECTION.md',
+    path,
     hash: createHash('sha256').update(bytes).digest('hex'),
-    goal: 'Ship schema 5 hierarchy governance.',
+    goal,
   };
+}
+
+function directionBasis(reference = directionReference()) {
+  return `direction:${reference.path}@${reference.hash}`;
 }
 
 function epicBody(overrides = {}) {
@@ -206,12 +217,13 @@ function command(kind, actorValue, recordKind, recordId, expectedVersion, payloa
   };
 }
 
-function authority(actorValue, actions, recordKind, recordId, version) {
+function authority(actorValue, actions, recordKind, recordId, version, basisRef = null) {
   return {
     roles: [
       steward.role,
       packOwner.role,
       packDelegate.role,
+      goalSteward.role,
       requirementOwner.role,
       reviewer.role,
       outsider.role,
@@ -221,7 +233,7 @@ function authority(actorValue, actions, recordKind, recordId, version) {
       actions: Array.isArray(actions) ? actions : [actions],
       recordKind,
       recordId,
-      basisRef: `${recordKind}/${recordId}@${version}`,
+      basisRef: basisRef ?? `${recordKind}/${recordId}@${version}`,
     }],
   };
 }
@@ -426,7 +438,8 @@ test('Epic proposal, activation, priority, version, allowlist, and event gates u
     assert.equal(epic.body.state, 'active');
 
     const wrongPriority = command('epic.update', outsider, 'epic', epic.id, 2, {
-      changes: {priority: 2, updated_at: LATER},
+      at: LATER,
+      changes: {priority: 2},
     });
     assert.throws(
       () => applyCommand(store, wrongPriority,
@@ -434,29 +447,116 @@ test('Epic proposal, activation, priority, version, allowlist, and event gates u
       runtimeError('AUTHORITY_REQUIRED', /priority|steward|operator/i),
     );
 
-    epic = applyParent(store, 'epic', 'update', steward, 2, {
-      recordId: epic.id,
-      payload: {changes: {priority: 2, updated_at: LATER}},
+    const ownerPriority = command('epic.update', steward, 'epic', epic.id, 2, {
+      at: LATER,
+      changes: {priority: 2},
     });
-    epic = applyParent(store, 'epic', 'update', operator, 3, {
+    assert.throws(
+      () => applyCommand(store, ownerPriority,
+        authority(steward, 'epic.update', 'epic', epic.id, 2)),
+      runtimeError('AUTHORITY_REQUIRED', /Current Goal steward|operator/i),
+    );
+
+    const staleStewardPriority = command(
+      'epic.update',
+      goalSteward,
+      'epic',
+      epic.id,
+      2,
+      {at: LATER, changes: {priority: 2}},
+    );
+    assert.throws(
+      () => applyCommand(
+        store,
+        staleStewardPriority,
+        authority(
+          goalSteward,
+          'epic.update',
+          'epic',
+          epic.id,
+          2,
+          `direction:docs/kai/DIRECTION.md@${'f'.repeat(64)}`,
+        ),
+      ),
+      runtimeError('AUTHORITY_REQUIRED', /Current Goal steward|operator/i),
+    );
+
+    const overbroadStewardPriority = command(
+      'epic.update',
+      goalSteward,
+      'epic',
+      epic.id,
+      2,
+      {at: LATER, changes: {priority: 2, title: 'Steward cannot maintain the record'}},
+    );
+    assert.throws(
+      () => applyCommand(
+        store,
+        overbroadStewardPriority,
+        authority(
+          goalSteward,
+          'epic.update',
+          'epic',
+          epic.id,
+          2,
+          directionBasis(),
+        ),
+      ),
+      runtimeError('AUTHORITY_REQUIRED', /declared authority|owner/i),
+    );
+
+    const stewardPriority = command('epic.update', goalSteward, 'epic', epic.id, 2, {
+      at: LATER,
+      changes: {priority: 2},
+    });
+    epic = applyCommand(
+      store,
+      stewardPriority,
+      authority(
+        goalSteward,
+        'epic.update',
+        'epic',
+        epic.id,
+        2,
+        directionBasis(),
+      ),
+    ).data.record;
+    epic = applyParent(store, 'epic', 'update', steward, 3, {
       recordId: epic.id,
-      payload: {changes: {priority: 3, updated_at: LATER}},
+      payload: {at: LATER, changes: {title: 'Owner-maintained title'}},
+    });
+    assert.equal(epic.body.updated_at, LATER);
+    const ownerMaintenanceEvent = eventPayloads(store).at(-1);
+    assert.equal(ownerMaintenanceEvent.at, LATER);
+    epic = applyParent(store, 'epic', 'update', operator, 4, {
+      recordId: epic.id,
+      payload: {at: LATER, changes: {priority: 3}},
     });
     assert.equal(epic.body.priority, 3);
 
     const stale = command('epic.update', steward, 'epic', epic.id, 2, {
-      changes: {title: 'Stale title', updated_at: LATER},
+      at: LATER,
+      changes: {title: 'Stale title'},
     });
     assert.throws(
       () => applyCommand(store, stale, authority(steward, 'epic.update', 'epic', epic.id, 2)),
       runtimeError('VERSION_CONFLICT'),
     );
-    const disallowed = command('epic.update', steward, 'epic', epic.id, 4, {
+    const missingTimestamp = command('epic.update', steward, 'epic', epic.id, 5, {
+      changes: {title: 'Missing mutation time'},
+    });
+    assert.throws(
+      () => applyCommand(store, missingTimestamp,
+        authority(steward, 'epic.update', 'epic', epic.id, 5)),
+      runtimeError('INVALID_INPUT', /payload.*at|missing.*at/i),
+    );
+    const disallowed = command('epic.update', steward, 'epic', epic.id, 5, {
+      at: LATER,
       changes: {state: 'completed'},
     });
     assert.throws(
       () => applyCommand(store, disallowed,
-        authority(steward, 'epic.update', 'epic', epic.id, 4)),
+        authority(steward, 'epic.update', 'epic', epic.id, 5)),
       runtimeError('INVALID_INPUT', /cannot change "state"/i),
     );
 
@@ -484,7 +584,7 @@ test('Epic proposal, activation, priority, version, allowlist, and event gates u
   });
 });
 
-test('Feature and Requirement proposal, activation, and priority follow parent ownership', async () => {
+test('Feature and Requirement proposal, activation, and priority follow parent ownership and delegation', async () => {
   await withHierarchyWorkspace(({store}) => {
     seedActiveEpic(store, {
       required_features: [
@@ -499,7 +599,10 @@ test('Feature and Requirement proposal, activation, and priority follow parent o
     assert.equal(ownerCreated.body.state, 'proposed');
 
     const feature = featureBody({
-      required_requirements: ['engineering:requirement:governance'],
+      required_requirements: [
+        'engineering:requirement:governance',
+        'engineering:requirement:delegated',
+      ],
     });
     const wrongFeatureCreate = command(
       'feature.create', outsider, 'feature', feature.id, 0, {body: feature},
@@ -525,7 +628,8 @@ test('Feature and Requirement proposal, activation, and priority follow parent o
     });
 
     const wrongFeaturePriority = command('feature.update', packOwner, 'feature', feature.id, 2, {
-      changes: {priority: 2, updated_at: LATER},
+      at: LATER,
+      changes: {priority: 2},
     });
     assert.throws(
       () => applyCommand(store, wrongFeaturePriority,
@@ -534,7 +638,7 @@ test('Feature and Requirement proposal, activation, and priority follow parent o
     );
     savedFeature = applyParent(store, 'feature', 'update', steward, 2, {
       recordId: feature.id,
-      payload: {changes: {priority: 2, updated_at: LATER}},
+      payload: {at: LATER, changes: {priority: 2}},
     });
     assert.equal(savedFeature.body.priority, 2);
 
@@ -552,6 +656,15 @@ test('Feature and Requirement proposal, activation, and priority follow parent o
         authority(requirementOwner, 'requirement.create', 'requirement', requirement.id, 0)),
       runtimeError('AUTHORITY_REQUIRED', /Feature owner/i),
     );
+    const delegatedRequirement = applyParent(
+      store,
+      'requirement',
+      'create',
+      packDelegate,
+      0,
+      {body: requirementBody({id: 'engineering:requirement:delegated'})},
+    );
+    assert.equal(delegatedRequirement.body.state, 'proposed');
     let savedRequirement = applyParent(
       store, 'requirement', 'create', packOwner, 0, {body: requirement},
     );
@@ -590,6 +703,135 @@ test('Feature and Requirement proposal, activation, and priority follow parent o
     assert.ok(featurePriority.relationshipVersions.some(entry => entry.kind === 'epic'));
     assert.ok(requirementCreate.relationshipVersions.some(entry => entry.kind === 'feature'));
     assert.ok(requirementActivate.relationshipVersions.some(entry => entry.kind === 'feature'));
+  });
+});
+
+test('Direction validation selects the unique manifest project matching the Epic path', async () => {
+  await withHierarchyWorkspace(({root, store}) => {
+    const siteDirection = DIRECTION.replace(
+      'Ship schema 5 hierarchy governance.',
+      'Ship the site hierarchy.',
+    );
+    const siteReference = directionReference(siteDirection, {
+      path: 'publication/DIRECTION.md',
+      goal: 'Ship the site hierarchy.',
+    });
+    mkdirSync(join(root, 'apps', 'site', 'publication'), {recursive: true});
+    writeFileSync(join(root, 'apps', 'site', 'publication', 'DIRECTION.md'), siteDirection);
+    const manifestPath = join(root, '.kai', 'manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifest.projects.push({
+      id: 'site',
+      path: 'apps/site',
+      publication_root: 'publication',
+    });
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    let epic = applyParent(store, 'epic', 'create', steward, 0, {
+      body: epicBody({
+        id: 'epic:site',
+        direction_ref: siteReference,
+        required_features: ['engineering:feature:site'],
+      }),
+    });
+    writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), DIRECTION.replace(
+      'Ship schema 5 hierarchy governance.',
+      'Change only the default project Goal.',
+    ));
+    epic = applyParent(store, 'epic', 'activate', steward, epic.version, {
+      recordId: epic.id,
+      payload: {at: LATER},
+    });
+    let feature = applyParent(store, 'feature', 'create', packDelegate, 0, {
+      body: featureBody({
+        id: 'engineering:feature:site',
+        epic_id: epic.id,
+        required_requirements: ['engineering:requirement:site'],
+      }),
+    });
+    feature = applyParent(store, 'feature', 'activate', steward, feature.version, {
+      recordId: feature.id,
+      payload: {at: LATER},
+    });
+    assert.equal(feature.body.state, 'active');
+    const requirement = applyParent(store, 'requirement', 'create', packOwner, 0, {
+      body: requirementBody({
+        id: 'engineering:requirement:site',
+        feature_id: feature.id,
+      }),
+    });
+
+    writeFileSync(join(root, 'apps', 'site', 'publication', 'DIRECTION.md'),
+      siteDirection.replace('Ship the site hierarchy.', 'Change the site Goal.'));
+    const staleDescendant = command(
+      'requirement.activate',
+      packOwner,
+      'requirement',
+      requirement.id,
+      requirement.version,
+      {at: LATER},
+    );
+    assert.throws(
+      () => applyCommand(store, staleDescendant,
+        authority(
+          packOwner,
+          'requirement.activate',
+          'requirement',
+          requirement.id,
+          requirement.version,
+        )),
+      runtimeError('EVIDENCE_GAP', /Direction/i),
+    );
+  });
+
+  await withHierarchyWorkspace(({root, store}) => {
+    const manifestPath = join(root, '.kai', 'manifest.json');
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    mkdirSync(join(root, 'apps', 'mirror', 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(root, 'apps', 'mirror', 'docs', 'kai', 'DIRECTION.md'), DIRECTION);
+    manifest.projects.push({
+      id: 'mirror',
+      path: 'apps/mirror',
+      publication_root: 'docs/kai',
+    });
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+    const ambiguous = epicBody({id: 'epic:ambiguous-project'});
+    const create = command('epic.create', steward, 'epic', ambiguous.id, 0, {
+      body: ambiguous,
+    });
+    assert.throws(
+      () => applyCommand(store, create,
+        authority(steward, 'epic.create', 'epic', ambiguous.id, 0)),
+      runtimeError('EVIDENCE_GAP', /unique|exactly one|configured project/i),
+    );
+    assert.equal(readRecord(store, 'epic', ambiguous.id), null);
+  });
+});
+
+test('Direction realignment records the exact current Direction basis', async () => {
+  await withHierarchyWorkspace(({root, store}) => {
+    const epic = seedActiveEpic(store);
+    const changedDirection = DIRECTION.replace(
+      'Ship schema 5 hierarchy governance.',
+      'Ship the realigned hierarchy.',
+    );
+    writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), changedDirection);
+    const reference = directionReference(changedDirection, {
+      goal: 'Ship the realigned hierarchy.',
+    });
+    const realigned = applyParent(store, 'epic', 'update', steward, epic.version, {
+      recordId: epic.id,
+      payload: {
+        at: LATER,
+        changes: {direction_ref: reference},
+      },
+    });
+    assert.deepEqual(realigned.body.direction_ref, reference);
+    const event = eventPayloads(store).at(-1);
+    assert.equal(event.kind, 'epic.update');
+    assert.equal(event.at, LATER);
+    assert.deepEqual(event.basisRefs, [directionBasis(reference)]);
   });
 });
 
@@ -814,12 +1056,12 @@ test('Feature dependencies cross packs and Epics, require delivered, and reject 
     })));
     const cycle = command('feature.update', steward, 'feature',
       'engineering:feature:cycle-a', 1, {
+        at: LATER,
         changes: {
           depends_on_features: [{
             feature: 'creative:feature:cycle-b',
             requires: 'delivered',
           }],
-          updated_at: LATER,
         },
       });
     assert.throws(

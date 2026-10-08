@@ -1061,7 +1061,7 @@ export function applyCommand(store, command, authority) {
       bindEvidenceTransaction(store, tx);
       const handler = handlers.get(command.kind);
       return handler(current, tx, command, authority, {
-        direction: () => currentDirectionForStore(store),
+        direction: directionRef => currentDirectionForStore(store, directionRef),
       });
     });
   } catch (error) {
