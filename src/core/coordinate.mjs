@@ -1,22 +1,28 @@
 #!/usr/bin/env node
 import {pathToFileURL} from 'node:url';
 import {isAbsolute} from 'node:path';
-import {RuntimeError} from './lib/coordination-runtime/contract.mjs';
+import {
+  HIERARCHY_KINDS,
+  RECORD_KINDS,
+  RuntimeError,
+  validateHierarchySubject,
+} from './lib/coordination-runtime/contract.mjs';
 
 const flags = {
   direct: [], inspect: ['deep'], status: [], context: ['kind', 'id', 'max-bytes', 'recent-limit'],
-  detail: ['kind', 'id'], messages: ['kind', 'id', 'thread', 'basis-version', 'before-seq', 'limit'],
-  export: ['kind', 'id', 'target', 'accepted-hash'], legacy: ['source', 'raw'], hash: ['path'],
+  detail: ['kind', 'id'], messages: ['kind', 'id', 'before-seq', 'limit'],
+  export: ['kind', 'id'], legacy: ['source', 'raw'], hash: ['path'],
   init: ['confirm', 'capability'], migrate: ['confirm', 'capability'],
   recover: ['confirm', 'action', 'capability'], rollback: ['confirm', 'capability'],
   repair: ['capability'], apply: ['capability', 'capture'],
   request: [], authorize: ['request', 'tool-call'], capture: ['tool-call'],
   receipt: ['request', 'tool-call'],
-  prepare: [], delegate: ['capability'], claim: ['item', 'capability'],
-  capabilities: [], plan: ['item'],
+  prepare: [], delegate: ['capability'], claim: ['task', 'capability'],
+  capabilities: [], plan: ['kind', 'id'],
 };
 const booleans = new Set(['deep', 'raw', 'confirm']);
 const inputVerbs = new Set(['apply', 'repair', 'request', 'capture', 'prepare', 'delegate']);
+const hierarchyVerbs = new Set(['context', 'messages', 'export', 'plan']);
 const invalid = message => { throw new RuntimeError('INVALID_INPUT', message); };
 
 export function parseArguments(argv) {
@@ -34,7 +40,7 @@ export function parseArguments(argv) {
     }
   }
   if (options.root && !isAbsolute(options.root)) invalid('--root must be absolute');
-  for (const key of ['max-bytes', 'recent-limit', 'basis-version', 'before-seq', 'limit']) {
+  for (const key of ['max-bytes', 'recent-limit', 'before-seq', 'limit']) {
     if (options[key] !== undefined) {
       if (!/^\d+$/.test(options[key]) || !Number.isSafeInteger(Number(options[key]))) invalid(`--${key} requires an integer`);
       options[key] = Number(options[key]);
@@ -42,6 +48,25 @@ export function parseArguments(argv) {
   }
   if (options['max-bytes'] !== undefined && (options['max-bytes'] < 1 || options['max-bytes'] > 24 * 1024)) invalid('--max-bytes must be 1..24576');
   if (options['recent-limit'] !== undefined && options['recent-limit'] > 8) invalid('--recent-limit must be 0..8');
+  if (hierarchyVerbs.has(verb)) {
+    if (options.kind === undefined) invalid('--kind is required');
+    if (options.id === undefined) invalid('--id is required');
+    validateHierarchySubject({kind: options.kind, id: options.id}, `${verb} subject`);
+  }
+  if (verb === 'detail') {
+    if (options.kind === undefined) invalid('--kind is required');
+    if (options.id === undefined) invalid('--id is required');
+    if (!RECORD_KINDS.has(options.kind) || new Set(['initiative', 'item']).has(options.kind)) {
+      invalid('detail kind is unsupported');
+    }
+    if (HIERARCHY_KINDS.has(options.kind)) {
+      validateHierarchySubject({kind: options.kind, id: options.id}, 'detail subject');
+    }
+  }
+  if (verb === 'claim') {
+    if (options.task === undefined) invalid('--task is required');
+    validateHierarchySubject({kind: 'task', id: options.task}, 'claim Task');
+  }
   return {verb, options};
 }
 

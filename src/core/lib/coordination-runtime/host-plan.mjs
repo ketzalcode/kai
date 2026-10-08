@@ -1,5 +1,15 @@
 import {assertExactKeys, isPlainObject} from './contract.mjs';
 import {approvedProfileModel, clone, fail, text, validateCapabilities} from './host-schema.mjs';
+import {taskPlan} from './hierarchy-view.mjs';
+
+/**
+ * Advisory hierarchy planning. This traverses persisted scope and returns
+ * executable Tasks; it never discovers a host, dispatches work, or acquires a
+ * lease.
+ */
+export function planHierarchy({store, subject, direction, roles}) {
+  return taskPlan(store, {subject, direction, roles});
+}
 
 export function validateRoster(roster, profiles) {
   if (!Array.isArray(roster) || !isPlainObject(profiles)) fail('INVALID_INPUT', 'host roster/profiles are required');

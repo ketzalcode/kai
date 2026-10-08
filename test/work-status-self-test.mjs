@@ -9,9 +9,24 @@
 // contract — declared vs derived, and UNKNOWN rather than green — is asserted
 // against real records rather than hand-built objects.
 
+import {randomUUID} from 'node:crypto';
+import {
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collect, render, overlay } from '../src/core/work-status.mjs';
+import {
+  closeStore,
+  openStore,
+  readRecord,
+} from '../src/core/lib/coordination-runtime/store.mjs';
+import {
+  fixtureIds,
+  seedTask,
+} from './helpers/coordination-runtime-fixture.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -116,6 +131,86 @@ function selfTest() {
   }, NOW);
   ok(dupRuns.findings.length === 1 && /2 open runs/.test(dupRuns.findings[0].headline),
     'several overdue runs on one item collapse to one finding, not one each');
+
+  const hierarchyRoot = join(REPO_ROOT, '.superpowers', 'work-status-hierarchy', randomUUID());
+  mkdirSync(join(hierarchyRoot, '.kai', 'state'), {recursive: true});
+  mkdirSync(join(hierarchyRoot, 'docs', 'kai'), {recursive: true});
+  writeFileSync(join(hierarchyRoot, 'docs', 'kai', 'DIRECTION.md'), [
+    '# Vision',
+    'A composable workspace.',
+    '',
+    '# Mission',
+    'Coordinate exact work safely.',
+    '',
+    '# Current Goal',
+    'Exercise Task runtime behavior.',
+    '',
+    '# Out of Scope',
+    'Schema 5 workspace activation remains deferred.',
+    '',
+  ].join('\n'));
+  writeFileSync(join(hierarchyRoot, '.kai', 'manifest.json'), `${JSON.stringify({
+    plugin: 'kai-core',
+    version: 'test',
+    schema_version: 4,
+    scaffolded: '2026-09-16T12:00:00.000Z',
+    workspace_id: `work-status-${randomUUID()}`,
+    storage_mode: 'repo-local',
+    workspace_root: '.',
+    state: '.kai/state',
+    runs: '.kai/runs',
+    review: '.kai/review',
+    archive: '.kai/archive',
+    personal: '.kai/personal',
+    projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+    areas: [],
+  }, null, 2)}\n`);
+  let hierarchyStore;
+  try {
+    hierarchyStore = openStore({
+      path: join(hierarchyRoot, '.kai', 'state', 'coordination.sqlite'),
+      mode: 'create',
+    });
+    const task = seedTask(hierarchyStore, {
+      delivery_class: 'product-change',
+      state: 'release-ready',
+      next_role: 'workflow-ship',
+      change_ref: {
+        kind: 'sha256',
+        path: 'src/release-ready.mjs',
+        digest: 'a'.repeat(64),
+      },
+    });
+    const before = structuredClone(task);
+    closeStore(hierarchyStore);
+    hierarchyStore = null;
+    const hierarchy = collect(hierarchyRoot, NOW, {roles: [
+      'eng-lead-architecture',
+      'eng-builder-software',
+      'eng-reviewer-code',
+      'workflow-ship',
+    ]});
+    ok(hierarchy.ok && hierarchy.hierarchy && hierarchy.goal.text === 'Exercise Task runtime behavior.',
+      'schema 4 work-status uses the hierarchy Goal/Epic/pack projection');
+    ok(hierarchy.findings.some(finding =>
+      finding.section === 'needs-you' && finding.item === `task/${fixtureIds.task}`),
+    'a human-gated Task surfaces as NEEDS YOU in hierarchy work-status');
+    ok(/hierarchy record\(s\)/.test(render(hierarchy)),
+      'hierarchy rendering labels hierarchy records rather than legacy items');
+    const verify = openStore({
+      path: join(hierarchyRoot, '.kai', 'state', 'coordination.sqlite'),
+      mode: 'read',
+    });
+    try {
+      ok(JSON.stringify(readRecord(verify, 'task', fixtureIds.task)) === JSON.stringify(before),
+        'derived hierarchy status does not mutate the Task record');
+    } finally {
+      closeStore(verify);
+    }
+  } finally {
+    closeStore(hierarchyStore);
+    rmSync(hierarchyRoot, {recursive: true, force: true});
+  }
 
   console.log(failed === 0 ? '✓ work-status self-test: all checks passed' : `✗ work-status self-test: ${failed} failure(s)`);
   return failed === 0 ? 0 : 1;

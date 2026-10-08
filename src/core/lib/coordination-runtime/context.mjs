@@ -13,8 +13,8 @@ import {
   readRecord,
 } from './store.mjs';
 
-const DEFAULT_MAX_BYTES = 24 * 1024;
-const DEFAULT_RECENT_LIMIT = 8;
+export const DEFAULT_CONTEXT_MAX_BYTES = 24 * 1024;
+export const DEFAULT_CONTEXT_RECENT_LIMIT = 8;
 const MAX_RECENT_LIMIT = 8;
 const MAX_MESSAGE_PAGE = 100;
 const MAX_EXCERPT_BYTES = 512;
@@ -408,8 +408,8 @@ function packetFor(view, {
  */
 export function projectContext(store, {
   subject,
-  maxBytes = DEFAULT_MAX_BYTES,
-  recentLimit = DEFAULT_RECENT_LIMIT,
+  maxBytes = DEFAULT_CONTEXT_MAX_BYTES,
+  recentLimit = DEFAULT_CONTEXT_RECENT_LIMIT,
 }) {
   validateProjectionOptions(subject, maxBytes, recentLimit);
   const view = readSubjectView(store, {
