@@ -3,22 +3,27 @@ import {
   REQUIRES_STATES,
 } from '../coordination.mjs';
 import {
-  RuntimeError,
+  PACKS,
+  assertBoolean,
+  assertChangedOnly,
   assertExactKeys,
   assertNonEmptyString,
+  assertNullableString,
+  assertStringArray,
   assertTimestamp,
+  assertUuid,
   canonicalJson,
+  invalid,
   isPlainObject,
+  parseTypedId,
   validateActor,
-  validateSubjectRef,
-} from './contract.mjs';
+  validateChangesPayload,
+  validateNullableActor,
+  validateNullableSubject,
+} from './contract-primitives.mjs';
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
-const TYPED_ID = new RegExp(`^(?<pack>core|engineering|creative):(?<kind>feature|requirement|task):(?<slug>${SLUG})$`);
 const ITEM_DELIVERY_CLASSES = new Set(['knowledge', 'product-change', 'operational']);
 const PROVENANCE_KINDS = new Set(['live-peer', 'durable-thread', 'operator']);
-const TASK_PACKS = new Set(['core', 'engineering', 'creative']);
 
 const TASK_BODY_FIELDS = new Set([
   'schema_version',
@@ -150,46 +155,6 @@ export const LEGACY_ITEM_COMMAND_KINDS = new Set([
   'item.restore',
 ]);
 
-function invalid(message) {
-  throw new RuntimeError('INVALID_INPUT', message);
-}
-
-function assertNullableString(value, label) {
-  if (value !== null) assertNonEmptyString(value, label);
-}
-
-function assertBoolean(value, label) {
-  if (typeof value !== 'boolean') invalid(`${label} must be a boolean`);
-}
-
-function assertUuid(value, label) {
-  if (typeof value !== 'string' || !UUID.test(value)) invalid(`${label} must be a UUID`);
-}
-
-function assertStringArray(value, label, {nonEmpty = false} = {}) {
-  if (!Array.isArray(value) || (nonEmpty && value.length === 0)) {
-    invalid(`${label} must be ${nonEmpty ? 'a non-empty' : 'an'} array`);
-  }
-  for (const entry of value) assertNonEmptyString(entry, `${label} entry`);
-  if (new Set(value).size !== value.length) invalid(`${label} must not contain duplicates`);
-}
-
-function validateNullableActor(actor, label) {
-  if (actor !== null) validateActor(actor, label);
-}
-
-function validateNullableSubject(subject, label) {
-  if (subject !== null) validateSubjectRef(subject, label);
-}
-
-function parseTypedId(value, expectedKind, label) {
-  const match = typeof value === 'string' ? value.match(TYPED_ID) : null;
-  if (!match || match.groups.kind !== expectedKind) {
-    invalid(`${label} must match "<pack>:${expectedKind}:<slug>"`);
-  }
-  return match.groups;
-}
-
 function validateDependencies(value, label, {entryKey, typedKind = null} = {}) {
   if (!Array.isArray(value)) invalid(`${label} must be an array`);
   const seen = new Set();
@@ -262,7 +227,7 @@ function validateTaskLikeBody(body, label, {legacy = false} = {}) {
   }
 
   if (!legacy) {
-    if (!TASK_PACKS.has(body.pack)) invalid(`${label}.pack is unsupported`);
+    if (!PACKS.has(body.pack)) invalid(`${label}.pack is unsupported`);
     const taskId = parseTypedId(body.id, 'task', `${label}.id`);
     if (taskId.pack !== body.pack) invalid(`${label}.pack must match its typed id`);
     const featureId = parseTypedId(body.feature_id, 'feature', `${label}.feature_id`);
@@ -364,17 +329,6 @@ function validateCreate(command, expectedKind, bodyValidator) {
   bodyValidator(command.payload.body, `${command.kind} payload.body`);
   if (command.payload.body.id !== command.recordId) {
     invalid(`${command.kind} body id must match command.recordId`);
-  }
-}
-
-function validateChangesPayload(command, fields, label) {
-  assertExactKeys(command.payload, new Set(['changes']), `${label} payload`);
-  if (!isPlainObject(command.payload.changes)
-    || Object.keys(command.payload.changes).length === 0) {
-    invalid(`${label} payload.changes must be a non-empty object`);
-  }
-  for (const key of Object.keys(command.payload.changes)) {
-    if (!fields.has(key)) invalid(`${label} cannot change "${key}"`);
   }
 }
 
@@ -593,17 +547,6 @@ export function validateLegacyItemCommand(command) {
   }
   legacyItemCommandValidators.get(command.kind)(command);
   return command;
-}
-
-function changedKeys(before, after) {
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  return [...keys].filter(key => canonicalJson(before[key]) !== canonicalJson(after[key]));
-}
-
-function assertChangedOnly(current, nextBody, allowed, label) {
-  for (const key of changedKeys(current.body, nextBody)) {
-    if (!allowed.has(key)) invalid(`${label} may not change "${key}"`);
-  }
 }
 
 function validateTaskLikeCommandMutation(command, current, nextBody, {

@@ -1,7 +1,7 @@
 import {
   RuntimeError, assertExactKeys, assertNonEmptyString, assertTimestamp,
   canonicalJson, validateActor,
-} from './contract.mjs';
+} from './contract-primitives.mjs';
 import {ROLE_PROFILE_MODELS, agentProfileModelErrors} from '../agent-model-policy.mjs';
 
 export const MAX_OBSERVATIONS = 32;

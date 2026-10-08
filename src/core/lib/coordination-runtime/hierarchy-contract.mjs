@@ -1,19 +1,22 @@
 import {createHash} from 'node:crypto';
 import {
-  RuntimeError,
+  HEX_DIGEST,
+  assertBoolean,
+  assertChangedOnly,
   assertExactKeys,
   assertNonEmptyString,
+  assertNullableString,
+  assertStringArray,
   assertTimestamp,
   canonicalJson,
+  invalid,
   isPlainObject,
+  parseEpicId,
+  parseTypedId,
   validateActor,
-} from './contract.mjs';
+  validateChangesPayload,
+} from './contract-primitives.mjs';
 import {validateTaskBody} from './task-contract.mjs';
-
-const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
-const HEX_DIGEST = /^[0-9a-f]{64}$/i;
-const EPIC_ID = new RegExp(`^epic:(?<slug>${SLUG})$`);
-const TYPED_ID = new RegExp(`^(?<pack>core|engineering|creative):(?<kind>feature|requirement|task):(?<slug>${SLUG})$`);
 
 const COMMON_PARENT_FIELDS = [
   'schema_version',
@@ -33,6 +36,30 @@ const COMMON_PARENT_FIELDS = [
 ];
 
 const FEATURE_DEPENDENCY_REQUIRES = new Set(['delivered']);
+
+// Composition descends one kind at a time, so the directed graph cannot cycle
+// by construction. `singleParent` records which children one parent may claim:
+// a Task is composed by several Requirements inside its one Feature.
+const COMPOSITION_EDGES = Object.freeze({
+  epic: {
+    childKind: 'feature',
+    lists: ['required_features', 'optional_features'],
+    parentField: 'epic_id',
+    singleParent: true,
+  },
+  feature: {
+    childKind: 'requirement',
+    lists: ['required_requirements', 'optional_requirements'],
+    parentField: 'feature_id',
+    singleParent: true,
+  },
+  requirement: {
+    childKind: 'task',
+    lists: ['required_tasks', 'optional_tasks'],
+    parentField: null,
+    singleParent: false,
+  },
+});
 
 export const HIERARCHY_KINDS = new Set(['epic', 'feature', 'requirement', 'task']);
 export const PARENT_STATES = new Set(['proposed', 'active', 'completed']);
@@ -105,40 +132,6 @@ const PARENT_UPDATE_FIELDS = new Map([
     'updated_at',
   ])],
 ]);
-
-function invalid(message) {
-  throw new RuntimeError('INVALID_INPUT', message);
-}
-
-function assertBoolean(value, label) {
-  if (typeof value !== 'boolean') invalid(`${label} must be a boolean`);
-}
-
-function assertNullableString(value, label) {
-  if (value !== null) assertNonEmptyString(value, label);
-}
-
-function assertStringArray(value, label, {nonEmpty = false} = {}) {
-  if (!Array.isArray(value) || (nonEmpty && value.length === 0)) {
-    invalid(`${label} must be ${nonEmpty ? 'a non-empty' : 'an'} array`);
-  }
-  for (const entry of value) assertNonEmptyString(entry, `${label} entry`);
-  if (new Set(value).size !== value.length) invalid(`${label} must not contain duplicates`);
-}
-
-function parseEpicId(value, label) {
-  const match = typeof value === 'string' ? value.match(EPIC_ID) : null;
-  if (!match) invalid(`${label} must match "epic:<slug>"`);
-  return match.groups;
-}
-
-function parseTypedId(value, expectedKind, label) {
-  const match = typeof value === 'string' ? value.match(TYPED_ID) : null;
-  if (!match || match.groups.kind !== expectedKind) {
-    invalid(`${label} must match "<pack>:${expectedKind}:<slug>"`);
-  }
-  return match.groups;
-}
 
 function validateDirectionRef(value, label) {
   assertExactKeys(value, new Set(['path', 'hash', 'goal']), label);
@@ -383,61 +376,90 @@ function readHierarchy(index, kind, id) {
   return index.get(`${kind}\0${id}`) ?? null;
 }
 
-function detectDirectedCycle(records, getTargets, label) {
-  const byId = new Map(records.map(record => [record.id, record]));
+function nodeKey(kind, id) {
+  return `${kind}\0${id}`;
+}
+
+function describeNode(node) {
+  return node.replace('\0', '/');
+}
+
+function detectDirectedCycle(adjacency, label) {
   const visiting = new Set();
   const visited = new Set();
 
-  function walk(record) {
-    if (visited.has(record.id)) return;
-    if (visiting.has(record.id)) invalid(`${label} detected at ${record.kind}/${record.id}`);
-    visiting.add(record.id);
-    for (const id of getTargets(record)) {
-      const next = byId.get(id);
-      if (next) walk(next);
+  function walk(node) {
+    if (visited.has(node)) return;
+    if (visiting.has(node)) invalid(`${label} detected at ${describeNode(node)}`);
+    visiting.add(node);
+    for (const next of adjacency.get(node) ?? []) {
+      if (adjacency.has(next)) walk(next);
     }
-    visiting.delete(record.id);
-    visited.add(record.id);
+    visiting.delete(node);
+    visited.add(node);
   }
 
-  records.forEach(walk);
+  for (const node of adjacency.keys()) walk(node);
 }
 
-function detectCompositionCycle(requirements) {
-  const adjacency = new Map();
-  const addEdge = (left, right) => {
-    if (!adjacency.has(left)) adjacency.set(left, new Set());
-    if (!adjacency.has(right)) adjacency.set(right, new Set());
-    adjacency.get(left).add(right);
-    adjacency.get(right).add(left);
-  };
+function dependencyAdjacency(records, getTargets) {
+  return new Map(records.map(record => [
+    nodeKey(record.kind, record.id),
+    new Set(getTargets(record).map(id => nodeKey(record.kind, id))),
+  ]));
+}
 
-  for (const requirement of requirements) {
-    for (const taskId of [
-      ...requirement.body.required_tasks,
-      ...requirement.body.optional_tasks,
-    ]) {
-      addEdge(`requirement\0${requirement.id}`, `task\0${taskId}`);
-    }
-  }
+function compositionChildren(record) {
+  const edge = COMPOSITION_EDGES[record.kind];
+  if (!edge) return [];
+  return edge.lists.flatMap(list => record.body[list]);
+}
 
-  const visited = new Set();
-  const describe = node => node.replace('\0', '/');
-
-  function walk(node, parent) {
-    visited.add(node);
-    for (const next of adjacency.get(node) ?? []) {
-      if (next === parent) continue;
-      if (visited.has(next)) {
-        invalid(`composition cycle detected at ${describe(next)}`);
+function validateSingleCompositionParent(entries) {
+  const claims = new Map();
+  for (const record of entries) {
+    const edge = COMPOSITION_EDGES[record.kind];
+    if (!edge?.singleParent) continue;
+    const parentNode = nodeKey(record.kind, record.id);
+    for (const childId of compositionChildren(record)) {
+      const childNode = nodeKey(edge.childKind, childId);
+      const claimed = claims.get(childNode);
+      if (claimed !== undefined && claimed !== parentNode) {
+        invalid(`${edge.childKind}/${childId} must belong to exactly one ${record.kind}`);
       }
-      walk(next, node);
+      claims.set(childNode, parentNode);
+    }
+  }
+}
+
+function validateCompositionStructure(entries, resolve) {
+  validateSingleCompositionParent(entries);
+
+  const adjacency = new Map(entries.map(record => [nodeKey(record.kind, record.id), new Set()]));
+  for (const record of entries) {
+    const edge = COMPOSITION_EDGES[record.kind];
+    if (!edge) continue;
+    const children = adjacency.get(nodeKey(record.kind, record.id));
+    for (const childId of compositionChildren(record)) {
+      const child = resolve(edge.childKind, childId);
+      if (edge.parentField === null) {
+        if (!child) {
+          invalid(`${record.kind}/${record.id} references a missing ${edge.childKind} ${childId}`);
+        }
+        if (child.body.feature_id !== record.body.feature_id) {
+          invalid(`${edge.childKind}/${childId} must share ${record.kind}/${record.id} feature ${record.body.feature_id}`);
+        }
+        if (!child.body.satisfies.includes(record.id)) {
+          invalid('requirement-task edges must agree bidirectionally');
+        }
+      } else if (!child || child.body[edge.parentField] !== record.id) {
+        invalid(`${record.kind}/${record.id} references a missing or mismatched ${edge.childKind} ${childId}`);
+      }
+      children.add(nodeKey(edge.childKind, childId));
     }
   }
 
-  for (const node of adjacency.keys()) {
-    if (!visited.has(node)) walk(node, null);
-  }
+  detectDirectedCycle(adjacency, 'composition cycle');
 }
 
 export function validateHierarchyRelationships(records) {
@@ -447,43 +469,12 @@ export function validateHierarchyRelationships(records) {
 
   entries.forEach(record => validateHierarchyRecord(record, resolve));
 
-  for (const epic of entries.filter(record => record.kind === 'epic')) {
-    for (const featureId of [...epic.body.required_features, ...epic.body.optional_features]) {
-      const feature = resolve('feature', featureId);
-      if (!feature || feature.body.epic_id !== epic.id) {
-        invalid(`epic/${epic.id} references a missing or mismatched feature ${featureId}`);
-      }
-    }
-  }
+  validateCompositionStructure(entries, resolve);
 
   for (const feature of entries.filter(record => record.kind === 'feature')) {
-    for (const requirementId of [
-      ...feature.body.required_requirements,
-      ...feature.body.optional_requirements,
-    ]) {
-      const requirement = resolve('requirement', requirementId);
-      if (!requirement || requirement.body.feature_id !== feature.id) {
-        invalid(`feature/${feature.id} references a missing or mismatched requirement ${requirementId}`);
-      }
-    }
     for (const dependency of feature.body.depends_on_features) {
-      const upstream = resolve('feature', dependency.feature);
-      if (!upstream) invalid(`feature/${feature.id} references a missing dependency ${dependency.feature}`);
-      if (upstream.body.epic_id !== feature.body.epic_id) {
-        invalid(`feature/${feature.id} dependencies must stay within one epic`);
-      }
-    }
-  }
-
-  for (const requirement of entries.filter(record => record.kind === 'requirement')) {
-    for (const taskId of [...requirement.body.required_tasks, ...requirement.body.optional_tasks]) {
-      const task = resolve('task', taskId);
-      if (!task) invalid(`requirement/${requirement.id} references a missing task ${taskId}`);
-      if (task.body.feature_id !== requirement.body.feature_id) {
-        invalid(`task/${taskId} must share requirement/${requirement.id} feature ${requirement.body.feature_id}`);
-      }
-      if (!task.body.satisfies.includes(requirement.id)) {
-        invalid('requirement-task edges must agree bidirectionally');
+      if (!resolve('feature', dependency.feature)) {
+        invalid(`feature/${feature.id} references a missing dependency ${dependency.feature}`);
       }
     }
   }
@@ -500,30 +491,22 @@ export function validateHierarchyRelationships(records) {
     }
   }
 
-  detectCompositionCycle(entries.filter(record => record.kind === 'requirement'));
   detectDirectedCycle(
-    entries.filter(record => record.kind === 'feature'),
-    feature => feature.body.depends_on_features.map(dependency => dependency.feature),
+    dependencyAdjacency(
+      entries.filter(record => record.kind === 'feature'),
+      feature => feature.body.depends_on_features.map(dependency => dependency.feature),
+    ),
     'feature dependency cycle',
   );
   detectDirectedCycle(
-    entries.filter(record => record.kind === 'task'),
-    task => task.body.depends_on.map(dependency => dependency.task),
+    dependencyAdjacency(
+      entries.filter(record => record.kind === 'task'),
+      task => task.body.depends_on.map(dependency => dependency.task),
+    ),
     'task dependency cycle',
   );
 
   return entries;
-}
-
-function validateChangesPayload(command, fields, label) {
-  assertExactKeys(command.payload, new Set(['changes']), `${label} payload`);
-  if (!isPlainObject(command.payload.changes)
-    || Object.keys(command.payload.changes).length === 0) {
-    invalid(`${label} payload.changes must be a non-empty object`);
-  }
-  for (const key of Object.keys(command.payload.changes)) {
-    if (!fields.has(key)) invalid(`${label} cannot change "${key}"`);
-  }
 }
 
 function validateParentCreate(command, parentKind) {
@@ -616,17 +599,6 @@ export function validateParentCommand(command) {
   else if (action === 'release') validateParentRelease(command, parentKind);
   else validateParentComplete(command, parentKind);
   return command;
-}
-
-function changedKeys(before, after) {
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  return [...keys].filter(key => canonicalJson(before[key]) !== canonicalJson(after[key]));
-}
-
-function assertChangedOnly(current, nextBody, allowed, label) {
-  for (const key of changedKeys(current.body, nextBody)) {
-    if (!allowed.has(key)) invalid(`${label} may not change "${key}"`);
-  }
 }
 
 export function validateParentCommandMutation(command, current, nextBody) {

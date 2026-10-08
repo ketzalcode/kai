@@ -1,12 +1,56 @@
 import {createHash} from 'node:crypto';
 import {
-  LIFECYCLE,
-  REQUIRES_STATES,
-} from '../coordination.mjs';
+  HEX_DIGEST,
+  assertBoolean,
+  assertChangedOnly,
+  assertExactKeys,
+  assertNonEmptyString,
+  assertNullableString,
+  assertStringArray,
+  assertTimestamp,
+  assertUuid,
+  canonicalJson,
+  invalid,
+  isPlainObject,
+  validateActor,
+  validateChangesPayload,
+  validateNullableActor,
+  validateNullableSubject,
+  validateSubjectRef,
+} from './contract-primitives.mjs';
 import {
   validateHostCommand, validateHostMutation, validateHostRecord,
 } from './host-schema.mjs';
 import {
+  HIERARCHY_KINDS,
+  PARENT_COMMAND_KINDS,
+  validateHierarchyRecord,
+  validateParentCommand,
+  validateParentCommandMutation,
+} from './hierarchy-contract.mjs';
+import {
+  TASK_COMMAND_KINDS,
+  validateLegacyItemBody,
+  validateLegacyItemCommand,
+  validateLegacyItemCommandMutation,
+  validateTaskCommand,
+  validateTaskCommandMutation,
+} from './task-contract.mjs';
+
+export {
+  RuntimeError,
+  SUBJECT_KINDS,
+  assertExactKeys,
+  assertNonEmptyString,
+  assertTimestamp,
+  canonicalJson,
+  commandDigest,
+  isPlainObject,
+  validateActor,
+  validateSubjectRef,
+} from './contract-primitives.mjs';
+
+export {
   HIERARCHY_KINDS,
   PARENT_COMMAND_KINDS,
   PARENT_DISPOSITIONS,
@@ -17,7 +61,8 @@ import {
   validateParentCommand,
   validateParentCommandMutation,
 } from './hierarchy-contract.mjs';
-import {
+
+export {
   TASK_COMMAND_KINDS,
   validateLegacyItemBody,
   validateLegacyItemCommand,
@@ -100,7 +145,6 @@ export const RECORD_KINDS = new Set([
   'grant',
 ]);
 
-export const SUBJECT_KINDS = new Set(['git', 'sha256', 'bundle-sha256']);
 export const REVIEW_VERDICTS = new Set(['approved', 'changes-requested', 'blocked']);
 export const APPROVAL_KINDS = new Set([
   'scope',
@@ -124,9 +168,6 @@ export const DOD_DIMENSIONS = new Set([
   'coordination-closed',
 ]);
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const HEX_DIGEST = /^[0-9a-f]{64}$/i;
-const GIT_OBJECT = /^[0-9a-f]{7,40}$/i;
 const ITEM_DELIVERY_CLASSES = new Set(['knowledge', 'product-change', 'operational']);
 const INITIATIVE_STATES = new Set([
   'proposed', 'active', 'paused', 'completed', 'shipped', 'archived',
@@ -138,37 +179,6 @@ const RECOVERY_DISPOSITIONS = new Set([
   'safe-to-resume',
   'conflicting-partial-work',
 ]);
-const ITEM_DESCRIPTIVE_FIELDS = new Set([
-  'title',
-  'priority',
-  'next_role',
-  'outcome',
-  'acceptance',
-  'artifact_expectation',
-  'artifact_expectation_reason',
-  'artifact_class',
-  'durability',
-  'validity_owner',
-  'artifact_targets',
-  'context_artifacts',
-  'touches',
-  'depends_on',
-  'required_for_milestone',
-  'updated_at',
-]);
-
-export class RuntimeError extends Error {
-  constructor(code, message, retryable = false) {
-    super(message);
-    this.name = 'RuntimeError';
-    this.code = code;
-    this.retryable = retryable;
-  }
-}
-
-function invalid(message) {
-  throw new RuntimeError('INVALID_INPUT', message);
-}
 
 export function criteriaRef(item) {
   const fields = [
@@ -189,166 +199,9 @@ export function isProducingRun(item, actor) {
   return item.producing_actors.some(producer => producer.runId === actor.runId);
 }
 
-export function isPlainObject(value) {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-export function assertExactKeys(value, allowed, label, required = allowed) {
-  if (!isPlainObject(value)) invalid(`${label} must be an object`);
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) invalid(`${label} contains unknown field "${key}"`);
-  }
-  for (const key of required) {
-    if (!Object.hasOwn(value, key)) invalid(`${label} is missing "${key}"`);
-  }
-}
-
-export function assertNonEmptyString(value, label) {
-  if (typeof value !== 'string' || value.trim() === '') {
-    invalid(`${label} must be a non-empty string`);
-  }
-}
-
-function assertNullableString(value, label) {
-  if (value !== null) assertNonEmptyString(value, label);
-}
-
-function assertBoolean(value, label) {
-  if (typeof value !== 'boolean') invalid(`${label} must be a boolean`);
-}
-
-export function assertTimestamp(value, label) {
-  assertNonEmptyString(value, label);
-  if (Number.isNaN(Date.parse(value))) invalid(`${label} must be an ISO-compatible timestamp`);
-}
-
-function assertUuid(value, label) {
-  if (typeof value !== 'string' || !UUID.test(value)) invalid(`${label} must be a UUID`);
-}
-
-function assertStringArray(value, label, {nonEmpty = false} = {}) {
-  if (!Array.isArray(value) || (nonEmpty && value.length === 0)) {
-    invalid(`${label} must be ${nonEmpty ? 'a non-empty' : 'an'} array`);
-  }
-  for (const entry of value) assertNonEmptyString(entry, `${label} entry`);
-  if (new Set(value).size !== value.length) invalid(`${label} must not contain duplicates`);
-}
-
-export function validateActor(actor, label = 'actor') {
-  assertExactKeys(actor, new Set(['role', 'runId']), label);
-  assertNonEmptyString(actor.role, `${label}.role`);
-  assertNonEmptyString(actor.runId, `${label}.runId`);
-}
-
-function validateNullableActor(actor, label) {
-  if (actor !== null) validateActor(actor, label);
-}
-
 function validateStringMap(value, label) {
   if (!isPlainObject(value)) invalid(`${label} must be an object`);
   canonicalJson(value);
-}
-
-function encodeCanonical(value, ancestors) {
-  if (value === null) return 'null';
-  if (typeof value === 'string' || typeof value === 'boolean') return JSON.stringify(value);
-  if (typeof value === 'number') {
-    if (!Number.isFinite(value)) invalid('JSON numbers must be finite');
-    return JSON.stringify(value);
-  }
-  if (typeof value !== 'object') {
-    invalid(`unsupported JSON value type "${typeof value}"`);
-  }
-  if (ancestors.has(value)) invalid('cyclic JSON values are not supported');
-
-  ancestors.add(value);
-  try {
-    if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index += 1) {
-        if (!Object.hasOwn(value, index)) invalid('sparse arrays are not supported');
-      }
-      return `[${value.map(entry => encodeCanonical(entry, ancestors)).join(',')}]`;
-    }
-    if (!isPlainObject(value)) invalid('JSON objects must use a plain object prototype');
-    if (Object.getOwnPropertySymbols(value).length > 0) {
-      invalid('symbol-keyed JSON fields are not supported');
-    }
-    const keys = Object.keys(value).sort();
-    return `{${keys.map(key =>
-      `${JSON.stringify(key)}:${encodeCanonical(value[key], ancestors)}`).join(',')}}`;
-  } finally {
-    ancestors.delete(value);
-  }
-}
-
-export function canonicalJson(value) {
-  return encodeCanonical(value, new WeakSet());
-}
-
-export function commandDigest(command) {
-  return createHash('sha256').update(canonicalJson(command), 'utf8').digest('hex');
-}
-
-export function validateSubjectRef(subject, label = 'subject') {
-  if (!isPlainObject(subject)) invalid(`${label} must be an object`);
-  if (!SUBJECT_KINDS.has(subject.kind)) invalid(`${label}.kind is unsupported`);
-  if (subject.kind === 'git') {
-    assertExactKeys(subject, new Set(['kind', 'base', 'head']), label);
-    if (!GIT_OBJECT.test(subject.base) || !GIT_OBJECT.test(subject.head)) {
-      invalid(`${label} git base/head must be immutable git object IDs`);
-    }
-  } else if (subject.kind === 'sha256') {
-    assertExactKeys(subject, new Set(['kind', 'digest', 'path']), label);
-    if (!HEX_DIGEST.test(subject.digest)) invalid(`${label}.digest must be SHA-256`);
-    assertNonEmptyString(subject.path, `${label}.path`);
-  } else {
-    assertExactKeys(subject, new Set(['kind', 'digest', 'entries']), label);
-    if (!HEX_DIGEST.test(subject.digest)) invalid(`${label}.digest must be SHA-256`);
-    if (!Array.isArray(subject.entries) || subject.entries.length === 0) {
-      invalid(`${label}.entries must be a non-empty array`);
-    }
-    for (const [index, entry] of subject.entries.entries()) {
-      assertExactKeys(entry, new Set(['path', 'digest']), `${label}.entries[${index}]`);
-      assertNonEmptyString(entry.path, `${label}.entries[${index}].path`);
-      if (!HEX_DIGEST.test(entry.digest)) {
-        invalid(`${label}.entries[${index}].digest must be SHA-256`);
-      }
-    }
-  }
-  return subject;
-}
-
-function validateNullableSubject(subject, label) {
-  if (subject !== null) validateSubjectRef(subject, label);
-}
-
-function validateDependencies(value, label) {
-  if (!Array.isArray(value)) invalid(`${label} must be an array`);
-  const seen = new Set();
-  for (const [index, dependency] of value.entries()) {
-    assertExactKeys(dependency, new Set(['item', 'requires']), `${label}[${index}]`);
-    assertNonEmptyString(dependency.item, `${label}[${index}].item`);
-    if (!REQUIRES_STATES.has(dependency.requires)) {
-      invalid(`${label}[${index}].requires is unsupported`);
-    }
-    if (seen.has(dependency.item)) invalid(`${label} contains duplicate item "${dependency.item}"`);
-    seen.add(dependency.item);
-  }
-}
-
-function validateReviewRequirements(value, label) {
-  if (!Array.isArray(value)) invalid(`${label} must be an array`);
-  const seen = new Set();
-  for (const [index, requirement] of value.entries()) {
-    assertExactKeys(requirement, new Set(['role', 'kind']), `${label}[${index}]`);
-    assertNonEmptyString(requirement.role, `${label}[${index}].role`);
-    assertNonEmptyString(requirement.kind, `${label}[${index}].kind`);
-    const key = `${requirement.role}\0${requirement.kind}`;
-    if (seen.has(key)) invalid(`${label} contains a duplicate requirement`);
-    seen.add(key);
-  }
 }
 
 function validateLease(value, label) {
@@ -363,119 +216,6 @@ function validateLease(value, label) {
   }
   assertTimestamp(value.acquired_at, `${label}.acquired_at`);
   assertTimestamp(value.expires_at, `${label}.expires_at`);
-}
-
-function validateItemBody(body, label) {
-  assertExactKeys(body, new Set([
-    'schema_version',
-    'id',
-    'title',
-    'initiative',
-    'delivery_class',
-    'state',
-    'resume_state',
-    'scope_authority',
-    'completion_authority',
-    'producer_actor',
-    'producing_actors',
-    'acceptance_actor',
-    'priority',
-    'next_role',
-    'outcome',
-    'acceptance',
-    'artifact_expectation',
-    'artifact_expectation_reason',
-    'artifact_class',
-    'durability',
-    'validity_owner',
-    'artifact_targets',
-    'context_artifacts',
-    'touches',
-    'depends_on',
-    'lease',
-    'recovery_hold',
-    'waiting_on_questions',
-    'required_for_milestone',
-    'review_requirements',
-    'change_ref',
-    'updated_at',
-  ]), label);
-  if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
-  for (const key of ['id', 'title', 'initiative', 'scope_authority',
-    'completion_authority', 'outcome']) {
-    assertNonEmptyString(body[key], `${label}.${key}`);
-  }
-  if (!ITEM_DELIVERY_CLASSES.has(body.delivery_class)) {
-    invalid(`${label}.delivery_class is unsupported`);
-  }
-  if (!LIFECYCLE.has(body.state)) invalid(`${label}.state is unsupported`);
-  if (body.resume_state !== null && (!LIFECYCLE.has(body.resume_state)
-    || body.resume_state === 'blocked')) {
-    invalid(`${label}.resume_state is unsupported`);
-  }
-  validateNullableActor(body.producer_actor, `${label}.producer_actor`);
-  if (!Array.isArray(body.producing_actors)) invalid(`${label}.producing_actors must be an array`);
-  body.producing_actors.forEach((actor, index) =>
-    validateActor(actor, `${label}.producing_actors[${index}]`));
-  if (body.producer_actor && !body.producing_actors.some(actor =>
-    actor.role === body.producer_actor.role && actor.runId === body.producer_actor.runId)) {
-    invalid(`${label}.producing_actors must retain the current producer`);
-  }
-  validateNullableActor(body.acceptance_actor, `${label}.acceptance_actor`);
-  if (!Number.isSafeInteger(body.priority) || body.priority < 0) {
-    invalid(`${label}.priority must be a non-negative safe integer`);
-  }
-  assertNullableString(body.next_role, `${label}.next_role`);
-  assertStringArray(body.acceptance, `${label}.acceptance`, {nonEmpty: true});
-  if (!new Set(['owed', 'none']).has(body.artifact_expectation)) {
-    invalid(`${label}.artifact_expectation is unsupported`);
-  }
-  assertNullableString(body.artifact_expectation_reason,
-    `${label}.artifact_expectation_reason`);
-  for (const key of ['artifact_class', 'durability', 'validity_owner']) {
-    assertNullableString(body[key], `${label}.${key}`);
-  }
-  if (body.artifact_expectation === 'none' && body.artifact_expectation_reason === null) {
-    invalid(`${label}.artifact_expectation_reason is required when no artifact is owed`);
-  }
-  if (body.artifact_expectation === 'owed'
-    && [body.artifact_class, body.durability, body.validity_owner].includes(null)) {
-    invalid(`${label} requires artifact class, durability, and validity owner`);
-  }
-  for (const key of ['artifact_targets', 'context_artifacts', 'touches',
-    'waiting_on_questions']) {
-    assertStringArray(body[key], `${label}.${key}`);
-  }
-  validateDependencies(body.depends_on, `${label}.depends_on`);
-  validateLease(body.lease, `${label}.lease`);
-  if (body.recovery_hold !== null) {
-    assertUuid(body.recovery_hold, `${label}.recovery_hold`);
-    if (body.state !== 'blocked' && body.state !== 'dropped') {
-      invalid(`${label}.recovery_hold requires blocked or dropped state`);
-    }
-  }
-  assertBoolean(body.required_for_milestone, `${label}.required_for_milestone`);
-  validateReviewRequirements(body.review_requirements, `${label}.review_requirements`);
-  validateNullableSubject(body.change_ref, `${label}.change_ref`);
-  assertTimestamp(body.updated_at, `${label}.updated_at`);
-  if (body.acceptance_actor && body.producing_actors.some(actor =>
-    actor.runId === body.acceptance_actor.runId)) {
-    invalid(`${label} cannot name its producing run as acceptance actor`);
-  }
-  if (body.producer_actor
-    && body.producer_actor.role === body.completion_authority
-    && body.review_requirements.some(requirement =>
-      requirement.kind === 'product-design-acceptance')) {
-    invalid(`${label} producing designer cannot be its completion authority`);
-  }
-  if (body.state === 'blocked') {
-    if (body.resume_state === null) invalid(`${label}.resume_state is required while blocked`);
-  } else if (body.resume_state !== null) {
-    invalid(`${label}.resume_state is only valid while blocked`);
-  }
-  if (body.lease !== null && body.lease.version_at_grant >= Number.MAX_SAFE_INTEGER) {
-    invalid(`${label}.lease.version_at_grant is invalid`);
-  }
 }
 
 function validateMilestone(value, label) {
@@ -1089,27 +829,6 @@ function validateCreate(command, expectedKind, bodyValidator) {
   }
 }
 
-function validateChangesPayload(command, fields, label) {
-  assertExactKeys(command.payload, new Set(['changes']), `${label} payload`);
-  if (!isPlainObject(command.payload.changes)
-    || Object.keys(command.payload.changes).length === 0) {
-    invalid(`${label} payload.changes must be a non-empty object`);
-  }
-  for (const key of Object.keys(command.payload.changes)) {
-    if (!fields.has(key)) invalid(`${label} cannot change "${key}"`);
-  }
-}
-
-function validateItemUpdate(command) {
-  if (command.recordKind !== 'item') invalid('item.update requires recordKind "item"');
-  if (command.expectedVersion < 1) invalid('item.update requires an existing record version');
-  if (Object.keys(command.payload).length === 1 && Object.hasOwn(command.payload, 'title')) {
-    assertNonEmptyString(command.payload.title, 'item.update payload.title');
-    return;
-  }
-  validateChangesPayload(command, ITEM_DESCRIPTIVE_FIELDS, 'item.update');
-}
-
 function validateInitiativeUpdate(command) {
   if (command.recordKind !== 'initiative') {
     invalid('initiative.update requires recordKind "initiative"');
@@ -1126,57 +845,6 @@ function validateAtPayload(command, kind, keys) {
   if (command.recordKind !== 'item') invalid(`${kind} requires recordKind "item"`);
   if (command.expectedVersion < 1) invalid(`${kind} requires an existing record version`);
   assertExactKeys(command.payload, new Set(keys), `${kind} payload`);
-}
-
-function validateItemPromote(command) {
-  validateAtPayload(command, 'item.promote', ['at']);
-  assertTimestamp(command.payload.at, 'item.promote payload.at');
-}
-
-function validateItemGrant(command) {
-  validateAtPayload(command, 'item.grant', [
-    'holder', 'actions', 'acquiredAt', 'expiresAt',
-  ]);
-  validateActor(command.payload.holder, 'item.grant payload.holder');
-  assertStringArray(command.payload.actions, 'item.grant payload.actions', {nonEmpty: true});
-  for (const action of command.payload.actions) {
-    if (!new Set([
-      'item.update', 'item.transition', 'item.handoff', 'question.open',
-      'artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record',
-    ]).has(action)) {
-      invalid(`item.grant payload.actions contains unsupported action "${action}"`);
-    }
-  }
-  assertTimestamp(command.payload.acquiredAt, 'item.grant payload.acquiredAt');
-  assertTimestamp(command.payload.expiresAt, 'item.grant payload.expiresAt');
-  if (Date.parse(command.payload.expiresAt) <= Date.parse(command.payload.acquiredAt)) {
-    invalid('item.grant payload.expiresAt must be after acquiredAt');
-  }
-}
-
-function validateTransition(command) {
-  if (command.recordKind !== 'item') {
-    invalid('item.transition requires recordKind "item"');
-  }
-  if (command.expectedVersion < 1) {
-    invalid('item.transition requires an existing record version');
-  }
-  assertExactKeys(
-    command.payload,
-    new Set(['to', 'at', 'reason', 'subject']),
-    'item.transition payload',
-    new Set(['to', 'at', 'reason']),
-  );
-  if (!LIFECYCLE.has(command.payload.to)) invalid('item.transition payload.to is unsupported');
-  assertTimestamp(command.payload.at, 'item.transition payload.at');
-  assertNonEmptyString(command.payload.reason, 'item.transition payload.reason');
-  if (Object.hasOwn(command.payload, 'subject')) {
-    validateNullableSubject(command.payload.subject, 'item.transition payload.subject');
-  }
-  if (command.payload.to === 'in-review'
-    && (!Object.hasOwn(command.payload, 'subject') || command.payload.subject === null)) {
-    invalid('item.transition to in-review requires a subject');
-  }
 }
 
 function validateHandoffContent(content) {
@@ -1252,57 +920,6 @@ function validateAnswerContent(content) {
     assertStringArray(content.resolves, 'question.answer payload.content.resolves', {nonEmpty: true});
     for (const id of content.resolves) assertUuid(id, 'question.answer payload.content.resolves entry');
     if (content.lane !== 'in-lane') invalid('out-of-lane answers cannot resolve contradictions');
-  }
-}
-
-function validateItemHandoff(command) {
-  if (command.recordKind !== 'item') invalid('item.handoff requires recordKind "item"');
-  if (command.expectedVersion < 1) {
-    invalid('item.handoff requires an existing record version');
-  }
-  const required = new Set([
-    'toRole', 'state', 'createdAt', 'messageId', 'parentId', 'content',
-    'artifactRefs', 'evidenceRefs', 'provenance',
-  ]);
-  assertExactKeys(
-    command.payload,
-    new Set([...required, 'subject']),
-    'item.handoff payload',
-    required,
-  );
-  assertNonEmptyString(command.payload.toRole, 'item.handoff payload.toRole');
-  if (command.payload.state !== null && !LIFECYCLE.has(command.payload.state)) {
-    invalid('item.handoff payload.state is unsupported');
-  }
-  if (Object.hasOwn(command.payload, 'subject')) {
-    validateNullableSubject(command.payload.subject, 'item.handoff payload.subject');
-  }
-  if (command.payload.state === 'in-review'
-    && (!Object.hasOwn(command.payload, 'subject') || command.payload.subject === null)) {
-    invalid('item.handoff to in-review requires a subject');
-  }
-  assertTimestamp(command.payload.createdAt, 'item.handoff payload.createdAt');
-  assertUuid(command.payload.messageId, 'item.handoff payload.messageId');
-  if (command.payload.parentId !== null) {
-    assertUuid(command.payload.parentId, 'item.handoff payload.parentId');
-  }
-  validateHandoffContent(command.payload.content);
-  assertStringArray(command.payload.artifactRefs, 'item.handoff payload.artifactRefs');
-  assertStringArray(command.payload.evidenceRefs, 'item.handoff payload.evidenceRefs');
-  if (!PROVENANCE_KINDS.has(command.payload.provenance)) {
-    invalid('item.handoff payload.provenance is unsupported');
-  }
-}
-
-function validateRestore(command) {
-  if (command.recordKind !== 'item' || command.expectedVersion < 1) {
-    invalid('item.restore requires an existing item');
-  }
-  assertExactKeys(command.payload, new Set(['at', 'recoveryApprovalId']),
-    'item.restore payload', new Set(['at']));
-  assertTimestamp(command.payload.at, 'item.restore payload.at');
-  if (Object.hasOwn(command.payload, 'recoveryApprovalId')) {
-    assertUuid(command.payload.recoveryApprovalId, 'item.restore payload.recoveryApprovalId');
   }
 }
 
@@ -1426,17 +1043,6 @@ export function validateCommand(command) {
   return command;
 }
 
-function changedKeys(before, after) {
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  return [...keys].filter(key => canonicalJson(before[key]) !== canonicalJson(after[key]));
-}
-
-function assertChangedOnly(current, nextBody, allowed, label) {
-  for (const key of changedKeys(current.body, nextBody)) {
-    if (!allowed.has(key)) invalid(`${label} may not change "${key}"`);
-  }
-}
-
 export function validateCommandMutation(command, current, nextBody) {
   if (!isPlainObject(nextBody)) invalid(`${command.kind} must produce an object body`);
   if (HOST_COMMANDS.has(command.kind)) {
@@ -1463,15 +1069,7 @@ export function validateCommandMutation(command, current, nextBody) {
     return nextBody;
   }
   if (!current) invalid(`${command.kind} requires an existing record`);
-  if (command.kind === 'item.update') {
-    const changes = Object.hasOwn(command.payload, 'changes')
-      ? command.payload.changes
-      : {title: command.payload.title};
-    const expected = {...current.body, ...changes};
-    if (canonicalJson(nextBody) !== canonicalJson(expected)) {
-      invalid('item.update may only apply the descriptive changes in its payload');
-    }
-  } else if (command.kind === 'initiative.update') {
+  if (command.kind === 'initiative.update') {
     const expected = {...current.body, ...command.payload.changes};
     if (canonicalJson(nextBody) !== canonicalJson(expected)) {
       invalid('initiative.update may only apply the changes in its payload');
@@ -1480,19 +1078,6 @@ export function validateCommandMutation(command, current, nextBody) {
     const allowedByKind = new Map([
       ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
         .map(kind => [kind, new Set()]),
-      ['item.promote', new Set(['state', 'updated_at'])],
-      ['item.grant', new Set([
-        'state', 'resume_state', 'producer_actor', 'producing_actors', 'next_role', 'lease', 'updated_at',
-      ])],
-      ['item.transition', new Set([
-        'state', 'resume_state', 'acceptance_actor', 'next_role', 'lease',
-        'change_ref', 'updated_at',
-      ])],
-      ['item.handoff', new Set([
-        'state', 'resume_state', 'acceptance_actor', 'next_role', 'lease',
-        'change_ref', 'updated_at',
-      ])],
-      ['item.restore', new Set(['state', 'resume_state', 'next_role', 'recovery_hold', 'updated_at'])],
       ['question.open', new Set([
         'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
       ])],
@@ -1563,15 +1148,3 @@ export function validateRecord(record) {
   }
   return record;
 }
-
-export {
-  HIERARCHY_KINDS,
-  PARENT_DISPOSITIONS,
-  PARENT_STATES,
-  parentClosureRef,
-  validateHierarchyRecord,
-  validateHierarchyRelationships,
-  validateParentCommand,
-  validateTaskBody,
-  validateTaskCommand,
-};

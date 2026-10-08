@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {
   COMMAND_KINDS,
@@ -44,6 +46,20 @@ function invalid(messagePattern = null) {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function importProbe(moduleName, expectedExport) {
+  const moduleUrl = new URL(`../src/core/lib/coordination-runtime/${moduleName}`, import.meta.url).href;
+  const script = `import(${JSON.stringify(moduleUrl)}).then(module => {
+    if (typeof module[${JSON.stringify(expectedExport)}] !== 'function') {
+      throw new Error('missing export ${expectedExport}');
+    }
+    process.stdout.write('imported');
+  }).catch(error => {
+    process.stderr.write(String(error && error.message));
+    process.exit(1);
+  });`;
+  return execFileSync(process.execPath, ['-e', script], {encoding: 'utf8'});
 }
 
 function lookup(records) {
@@ -744,6 +760,43 @@ test('feature edges, task edges, and cycle classes stay distinct', () => {
     invalid(/task dependency cycle/i),
   );
 
+  const crossPackEpic = record('epic', epicBody({
+    id: 'epic:cross-pack-support',
+    required_features: ['engineering:feature:tooling'],
+  }));
+  const crossPackFeature = record('feature', featureBody({
+    id: 'engineering:feature:tooling',
+    pack: 'engineering',
+    epic_id: crossPackEpic.id,
+    required_requirements: ['engineering:requirement:tooling'],
+    depends_on_features: [{feature: feature.id, requires: 'delivered'}],
+  }));
+  const crossPackRequirement = record('requirement', requirementBody({
+    id: 'engineering:requirement:tooling',
+    pack: 'engineering',
+    feature_id: crossPackFeature.id,
+    required_tasks: ['engineering:task:tooling'],
+  }));
+  const crossPackTask = record('task', taskBody({
+    id: 'engineering:task:tooling',
+    pack: 'engineering',
+    feature_id: crossPackFeature.id,
+    satisfies: [crossPackRequirement.id],
+  }));
+  const crossPackRecords = [
+    epic,
+    feature,
+    requirement,
+    task,
+    crossPackEpic,
+    crossPackFeature,
+    crossPackRequirement,
+    crossPackTask,
+  ];
+  assert.deepEqual(validateHierarchyRelationships(crossPackRecords), crossPackRecords);
+});
+
+test('composition keeps parent integrity while several requirements share tasks', () => {
   const requirementOne = record('requirement', requirementBody({
     id: 'core:requirement:one',
     required_tasks: ['core:task:first', 'core:task:second'],
@@ -760,23 +813,61 @@ test('feature edges, task edges, and cycle classes stay distinct', () => {
     id: 'core:task:second',
     satisfies: [requirementOne.id, requirementTwo.id],
   }));
-  const cyclicalFeature = record('feature', featureBody({
+  const sharedFeature = record('feature', featureBody({
     required_requirements: [requirementOne.id, requirementTwo.id],
   }));
-  const compositionEpic = record('epic', epicBody({
-    required_features: [cyclicalFeature.id],
+  const sharedEpic = record('epic', epicBody({
+    required_features: [sharedFeature.id],
+  }));
+  const shared = [sharedEpic, sharedFeature, requirementOne, requirementTwo, firstTask, secondTask];
+
+  assert.deepEqual(validateHierarchyRelationships(shared), shared);
+
+  const rivalEpic = record('epic', epicBody({
+    id: 'epic:rival-claim',
+    required_features: [sharedFeature.id],
+  }));
+  assert.throws(
+    () => validateHierarchyRelationships([...shared, rivalEpic]),
+    invalid(/feature\/core:feature:hierarchy-contracts must belong to exactly one epic/i),
+  );
+
+  const rivalFeature = record('feature', featureBody({
+    id: 'core:feature:rival',
+    required_requirements: [requirementOne.id],
+  }));
+  const twoFeatureEpic = record('epic', epicBody({
+    required_features: [sharedFeature.id, rivalFeature.id],
   }));
   assert.throws(
     () => validateHierarchyRelationships([
-      compositionEpic,
-      cyclicalFeature,
+      twoFeatureEpic,
+      sharedFeature,
+      rivalFeature,
       requirementOne,
       requirementTwo,
       firstTask,
       secondTask,
     ]),
-    invalid(/composition cycle/i),
+    invalid(/requirement\/core:requirement:one must belong to exactly one feature/i),
   );
+});
+
+test('hierarchy and Task contract modules import without the shared contract', () => {
+  assert.equal(importProbe('hierarchy-contract.mjs', 'validateHierarchyRecord'), 'imported');
+  assert.equal(importProbe('task-contract.mjs', 'validateTaskBody'), 'imported');
+  assert.equal(importProbe('contract-primitives.mjs', 'canonicalJson'), 'imported');
+
+  for (const module of ['hierarchy-contract.mjs', 'task-contract.mjs', 'contract-primitives.mjs']) {
+    const source = readFileSync(new URL(
+      `../src/core/lib/coordination-runtime/${module}`,
+      import.meta.url,
+    ), 'utf8');
+    assert.ok(
+      !/from '\.\/contract\.mjs'/.test(source),
+      `${module} must not import the shared contract surface`,
+    );
+  }
 });
 
 console.log('coordination hierarchy contract self-test: all checks passed');
