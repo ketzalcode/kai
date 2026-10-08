@@ -1,6 +1,7 @@
 ---
 name: kai-core-peer-communication
 description: "Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message."
+durable-output-producer: false
 tools: [execute, read, search]
 ---
 

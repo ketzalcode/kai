@@ -1,6 +1,7 @@
 ---
 name: kai-core-work-granting
 description: "Use when a grantor plans executable Tasks, issues or reconciles grants and leases, prepares a native role, or handles recovery."
+durable-output-producer: false
 tools: [read, execute, search, ask_user, agent, read_agent, write_agent]
 ---
 

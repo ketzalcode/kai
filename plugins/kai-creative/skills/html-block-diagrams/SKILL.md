@@ -1,6 +1,7 @@
 ---
 name: html-block-diagrams
 description: "Use when a structural block diagram is requested for an HTML or image destination, or an established relationship would be materially clearer in that form."
+durable-output-producer: false
 user-invocable: true
 ---
 

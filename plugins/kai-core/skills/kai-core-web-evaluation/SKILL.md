@@ -1,6 +1,7 @@
 ---
 name: kai-core-web-evaluation
 description: "Provides safe Playwright live-product evaluation plumbing. Use when QA, UX, SEO, or product exploration needs login, evidence, screenshots, and reports."
+durable-output-producer: true
 tools: [playwright, execute, edit, read, ask_user]
 ---
 
@@ -67,7 +68,7 @@ force it into the QA/UX findings scaffold below.
 All output for a single evaluation lives in:
 
 ```
-.kai/core/reports/<report-id>/
+.kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/
   drafts/
     report.md
   evidence/
@@ -81,8 +82,8 @@ All output for a single evaluation lives in:
 The canonical forms are:
 
 ```text
-.kai/core/reports/<id>/{drafts,evidence,scratch}
-docs/kai/core/reports/<id>/
+.kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/{drafts,evidence,scratch}
+docs/kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/
 ```
 
 In evidence-only mode, the run folder contains only raw local evidence
@@ -95,17 +96,25 @@ validated Task `artifact_targets` entry.
   calling agent's repository/cwd for a different target workspace.
 - Load `kai-core-workspace-publication`, then Load `kai-core-asset-producing`
   before retaining a durable evaluation report.
-- For this skill, `<id>` is `<report-id>`, and `<report-id>` is
-  `web-evaluation-<artifact-id>`. Generate the `artifact-id` as
-  the UUID that the subject-bound `artifact.register` command will validate.
-  That UUID makes every rerun collision-safe without adding a directory shape
-  absent from the core publication table.
-- Store the local date, calling lens (`qa`, `explore`, `stress`, or another
-  short kebab slug), typed subject/version, and descriptive surface slug in
-  `report.md` metadata instead of path segments. Example surface slugs:
+- The exact report ID grammar is
+  `web-evaluation-<YYYYMMDD>-<NN>-<descriptor>`.
+  - `<YYYYMMDD>` is the local evaluation date in eight-digit `YYYYMMDD` form.
+  - `<NN>` is the next unused positive sequence for that date, zero-padded to
+    at least two digits.
+  - `<descriptor>` is a required lowercase kebab-case surface description,
+    limited to five short words.
+- Derive the descriptor from the evaluated surface:
   - `https://app.contoso.com/checkout` → `contoso-checkout`
   - User said "the new onboarding flow" → `onboarding-flow`
-  - When in doubt, use a short slug; the artifact UUID already locates the run.
+  - When in doubt, use a short factual slug; do not omit the descriptor.
+- Before writing, check that exact ID is absent from both the private and public
+  report roots, then create the private report root atomically. If another run
+  wins the collision, increment `<NN>` and retry.
+- Every rerun allocates a new `<NN>` and never reuses an earlier ID.
+- Store the calling lens (`qa`, `explore`, `stress`, or another short kebab
+  slug), local timezone, typed subject/version, and evaluated URL in
+  `report.md` metadata. The subject-bound `artifact.register` UUID remains
+  coordination provenance; it is not the typed report path ID.
 
 **Placement is mandatory — never write elsewhere.** Evaluation output lands
 under the validated typed core report path. Never write it to Copilot
@@ -266,8 +275,10 @@ If the agent is approaching any cap, it should:
 
 - ❌ Writing the report into the repo root, Copilot session-state, a temp
   directory, a retired generic QA root, or the calling agent's cwd. Always use the
-  validated `.kai/core/reports/<report-id>/` private path, even when a non-QA
-  agent or a browser/stress harness (`OUT`) drives the run.
+  validated
+  `.kai/core/reports/web-evaluation-<YYYYMMDD>-<NN>-<descriptor>/` private
+  path, even when a non-QA agent or a browser/stress harness (`OUT`) drives the
+  run.
 - ❌ Taking a screenshot per page just to "have coverage". Each
   screenshot must be referenced.
 - ❌ Reporting a finding without a viewport (QA flavor) or without

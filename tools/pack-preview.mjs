@@ -1435,52 +1435,78 @@ function selfTest() {
     ...sourceAgentFiles(ROOT),
     ...sourceSkillFiles(ROOT),
   ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
-  const routedAgents = routedSources.filter(entry => entry.kind === 'agent');
-  const liveProducers = routedAgents.filter(entry =>
-    durableOutputProducerDeclaration(entry) === true);
-  const liveNonProducers = routedAgents.filter(entry =>
-    durableOutputProducerDeclaration(entry) === false);
-  ok(liveProducers.length > 0 && liveNonProducers.length > 0
+  const declaredByKind = Object.fromEntries(['agent', 'skill'].map(kind => {
+    const entries = routedSources.filter(entry => entry.kind === kind);
+    return [kind, {
+      entries,
+      producers: entries.filter(entry =>
+        durableOutputProducerDeclaration(entry) === true),
+      nonProducers: entries.filter(entry =>
+        durableOutputProducerDeclaration(entry) === false),
+    }];
+  }));
+  const routedAgents = declaredByKind.agent.entries;
+  ok(Object.values(declaredByKind).every(corpus =>
+    corpus.producers.length > 0 && corpus.nonProducers.length > 0)
     && routedSources.every(entry =>
       publicationRoutingErrors(entry).length === 0)
     && routedAgents.every(entry => agentDirectOutputErrors(entry).length === 0),
-  `publication ordering inspects declared producers=${liveProducers.length} `
-    + `and declared non-producers=${liveNonProducers.length}`);
-  const routeMutation = liveProducers[0];
-  const routeOwner = publicationSkillForPack(routeMutation.pack);
-  ok(publicationRoutingErrors({
-    ...routeMutation,
-    body: routeMutation.body
-      .replace(
-        new RegExp(
-          `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
-          'gi',
+  `publication ordering inspects agent producers=${declaredByKind.agent.producers.length}, `
+    + `agent non-producers=${declaredByKind.agent.nonProducers.length}, `
+    + `skill producers=${declaredByKind.skill.producers.length}, `
+    + `skill non-producers=${declaredByKind.skill.nonProducers.length}`);
+  for (const [kind, corpus] of Object.entries(declaredByKind)) {
+    const routeMutation = corpus.producers[0];
+    const nonProducerMutation = corpus.nonProducers[0];
+    if (!routeMutation || !nonProducerMutation) continue;
+    const routeOwner = publicationSkillForPack(routeMutation.pack);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body
+        .replace(
+          new RegExp(
+            `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
+            'gi',
+          ),
+          '',
+        )
+        .replace(
+          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+          '',
         ),
-        '',
-      )
-      .replace(
-        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
-        '',
+    }).some(message => message.includes('declared durable-output producer')),
+    `removing both ${kind} producer routes fails from the authoritative declaration`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(
+        'durable-output-producer: true',
+        'durable-output-producer: false',
       ),
-  }).some(message => message.includes('declared durable-output producer')),
-  'removing both producer routes fails from the authoritative declaration');
-  ok(publicationRoutingErrors({
-    ...routeMutation,
-    body: routeMutation.body.replace(
-      'durable-output-producer: true',
-      'durable-output-producer: false',
-    ),
-  }).some(message => message.includes('declared non-producer')),
-  'falsifying a producer declaration fails while producer routes remain');
-  const nonProducerMutation = liveNonProducers[0];
-  ok(publicationRoutingErrors({
-    ...nonProducerMutation,
-    body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`, then apply \`kai-core-asset-producing\`.\n`,
-  }).some(message => /declared non-producer/.test(message)),
-  'adding producer routes to a declared non-producer fails by classification');
+    }).some(message => message.includes('declared non-producer')),
+    `falsifying a ${kind} producer declaration fails while producer routes remain`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(/^durable-output-producer:\s*true\s*$/m, ''),
+    }).some(message => /must declare frontmatter/.test(message)),
+    `removing a ${kind} producer declaration fails by declaration name`);
+    const wrongPublication = routeMutation.pack === 'creative'
+      ? 'engineering-workspace-publication'
+      : 'creative-workspace-publication';
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(routeOwner, wrongPublication),
+    }).some(message => /cannot route publication skill owned by another pack/.test(message)),
+    `routing a ${kind} producer through another pack publication skill fails`);
+    ok(publicationRoutingErrors({
+      ...nonProducerMutation,
+      body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`, then apply \`kai-core-asset-producing\`.\n`,
+    }).some(message => /declared non-producer/.test(message)),
+    `adding producer routes to a declared ${kind} non-producer fails by classification`);
+  }
+  const agentRouteMutation = declaredByKind.agent.producers[0];
   ok(agentDirectOutputErrors({
-    ...routeMutation,
-    body: routeMutation.body.replace('existing typed hierarchy subject', 'new report request'),
+    ...agentRouteMutation,
+    body: agentRouteMutation.body.replace('existing typed hierarchy subject', 'new report request'),
   }).some(message => /existing typed hierarchy subject/.test(message)),
   'removing the typed-subject gate from direct durable output fails');
 
@@ -1511,6 +1537,23 @@ function selfTest() {
     body: `${activeDocMutation.body}\nCreate a work item under \`.kai/state/items/demo.md\`.\n`,
   }).length >= 2,
   'restoring schema-4 language in an active guide fails the corpus-wide gate');
+  ok([
+    'Generated coordination state validates item schemas before use.',
+    'Release assessment requires a coordination item before transition.',
+    'Current coordination examples identify the item owners.',
+  ].every(phrase => activeWorkspaceLanguageErrors({
+    ...activeDocMutation,
+    body: `${activeDocMutation.body}\n${phrase}\n`,
+  }).some(message => /generic coordination item semantics/.test(message))),
+  'schema-4 semantic item phrases fail only in active coordination prose');
+  ok(activeWorkspaceLanguageErrors({
+    body: 'Catalog item owners maintain JSON item schemas for storefront imports.',
+  }).length === 0 && activeWorkspaceLanguageErrors({
+    body: '<!-- kai:schema4-history -->\n'
+      + 'Coordination item schemas and item owners are historical.\n'
+      + '<!-- /kai:schema4-history -->',
+  }).length === 0,
+  'ordinary non-coordination and explicit historical prose remain outside the semantic gate');
 
   const directionBody = readFileSync(skillPath('kai-core-workspace-paths'), 'utf8');
   ok(directionContractErrors({body: directionBody}).length === 0,
@@ -1570,14 +1613,31 @@ function selfTest() {
     id: 'kai-core-web-content-extraction', body: extractionBody,
   }).length === 0,
   'web contracts use typed private/public paths and collision-safe report IDs');
+  const evaluationIdGrammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
   ok(webOutputContractErrors({
     id: 'kai-core-web-evaluation',
     body: evaluationBody.replace(
-      '.kai/core/reports/<id>/',
-      '<working-root>/qa/<id>/',
+      `.kai/core/reports/${evaluationIdGrammar}/`,
+      `<working-root>/qa/${evaluationIdGrammar}/`,
     ),
   }).some(message => /typed core report path/.test(message)),
   'web evaluation QA-root mutation fails');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: evaluationBody.replace(
+      `.kai/core/reports/${evaluationIdGrammar}/{drafts,evidence,scratch}`,
+      '.kai/core/reports/web-evaluation-<artifact-id>/{drafts,evidence,scratch}',
+    ),
+  }).some(message => /exact web-evaluation ID grammar/.test(message)),
+  'web evaluation private/public grammar drift fails');
+  ok(webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: evaluationBody.replace(
+      'Every rerun allocates a new `<NN>` and never reuses an earlier ID.',
+      'Every rerun reuses the previous report ID.',
+    ),
+  }).some(message => /grammar\/prose drift/.test(message)),
+  'web evaluation rerun prose drift fails');
 
   const grantingBody = readFileSync(skillPath('kai-core-work-granting'), 'utf8');
   ok(directModeContractErrors({body: grantingBody}).length === 0,

@@ -1,6 +1,7 @@
 ---
 name: kai-core-no-self-remediation
 description: "Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review."
+durable-output-producer: false
 tools: [read, search]
 ---
 
@@ -100,7 +101,7 @@ When you find something you could obviously fix in ten seconds:
 2. If it blocks your own assessment from continuing, say so and stop that
    thread — a blocked review is a finding, not a license.
 3. If the fix is genuinely urgent, route it to the owning role through the
-   coordination item. Someone who is not the reviewer applies it, and the
+   current Task record. Someone who is not the reviewer applies it, and the
    finding stays on the record.
 
 ## Hard rules

@@ -1,6 +1,7 @@
 ---
 name: creative-workspace-publication
 description: "Use when a creative role may retain or publish durable design, guidance, decision, report, or media material."
+durable-output-producer: false
 tools: [read, edit, search]
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: engineering-workspace-publication
 description: "Use when an engineering role may retain or publish durable feature, architecture, decision, investigation, or release knowledge."
+durable-output-producer: false
 tools: [read, edit, search]
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: kai-core-workspace-publication
 description: "Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material."
+durable-output-producer: false
 tools: [read, edit, search]
 ---
 

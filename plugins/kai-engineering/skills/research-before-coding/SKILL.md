@@ -1,6 +1,7 @@
 ---
 name: research-before-coding
 description: "Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs."
+durable-output-producer: false
 tools: [read, search, execute]
 user-invocable: true
 argument-hint: "optional task or area description"

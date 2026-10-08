@@ -1,6 +1,7 @@
 ---
 name: pr-sizing
 description: "Use when an authorized change may need delivery decomposition into more than one ordered, reviewable increment."
+durable-output-producer: false
 tools: [read, search]
 user-invocable: true
 argument-hint: "optional feature description"

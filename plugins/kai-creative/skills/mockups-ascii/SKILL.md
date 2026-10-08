@@ -1,6 +1,7 @@
 ---
 name: mockups-ascii
 description: "Use when an ASCII wireframe is requested, or an unresolved layout, placement, grouping, or information-hierarchy decision needs a structural sketch."
+durable-output-producer: true
 user-invocable: true
 ---
 

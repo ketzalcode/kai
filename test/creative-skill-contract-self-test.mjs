@@ -80,8 +80,11 @@ function parseSkill(id) {
   const field = name =>
     frontmatter[1].match(new RegExp(`^${name}:\\s*(.+)$`, 'm'))?.[1].trim();
   const description = (field('description') ?? '').replace(/^["']|["']$/g, '');
+  const durableOutputProducer = field('durable-output-producer');
   expect(id, field('name') === id, `frontmatter name must be ${id}`);
   expect(id, /^Use when\b/.test(description), 'description must be trigger-only and start with "Use when"');
+  expect(id, /^(?:true|false)$/.test(durableOutputProducer ?? ''),
+    'frontmatter must declare durable-output-producer true or false');
   expectNoMatch(
     id,
     description,
@@ -124,6 +127,7 @@ function parseSkill(id) {
   return {
     body,
     description,
+    durableOutputProducer,
     normalized: normalize(body),
     path,
     routes,
@@ -379,26 +383,84 @@ for (const id of selectedIds) {
 }
 
 const parsedSelected = selectedIds.map(parseSkill).filter(Boolean);
-const durableProducer = parsedSelected.find(skill =>
-  skill.routes.includes('kai-core-asset-producing'));
+const durableProducers = parsedSelected.filter(skill =>
+  packPlan.durableOutputProducerDeclaration({
+    kind: 'skill',
+    body: skill.body,
+  }) === true);
+const nonProducers = parsedSelected.filter(skill =>
+  packPlan.durableOutputProducerDeclaration({
+    kind: 'skill',
+    body: skill.body,
+  }) === false);
 if (selected === 'all') {
-  expect('creative-publication-mutation', Boolean(durableProducer),
+  expect('creative-publication-mutation', durableProducers.length > 0,
     'expected at least one durable creative method producer');
+  expect('creative-publication-mutation', nonProducers.length > 0,
+    'expected at least one declared creative method non-producer');
+  const durableProducer = durableProducers[0];
   if (durableProducer) {
-    const mutationErrors = packPlan.publicationRoutingErrors({
+    let mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-publication-mutation',
+      kind: 'skill',
+      body: durableProducer.body
+        .replace(
+          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`[^.]*\.\s*/gi,
+          '',
+        )
+        .replace(
+          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+          '',
+        ),
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message => message.includes('declared durable-output producer')),
+      'removing both producer routes must fail from the skill declaration',
+    );
+    mutationErrors = packPlan.publicationRoutingErrors({
       pack: 'creative',
       id: 'creative-publication-mutation',
       kind: 'skill',
       body: durableProducer.body.replace(
-        /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`creative-workspace-publication`/i,
-        '',
+        'durable-output-producer: true',
+        'durable-output-producer: false',
+      ),
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message => message.includes('declared non-producer')),
+      'flipping a producer declaration must fail while routes remain',
+    );
+    mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-publication-mutation',
+      kind: 'skill',
+      body: durableProducer.body.replace(
+        'creative-workspace-publication',
+        'engineering-workspace-publication',
       ),
     });
     expect(
       'creative-publication-mutation',
       mutationErrors.some(message =>
-        message.includes('must route `creative-workspace-publication`')),
-      'removing the owning publication route must fail by skill name',
+        message.includes('cannot route publication skill owned by another pack')),
+      'routing a producer through the wrong pack publication skill must fail',
+    );
+  }
+  const nonProducer = nonProducers[0];
+  if (nonProducer) {
+    const mutationErrors = packPlan.publicationRoutingErrors({
+      pack: 'creative',
+      id: 'creative-nonproducer-mutation',
+      kind: 'skill',
+      body: `${nonProducer.body}\nLoad \`creative-workspace-publication\`, then Load \`kai-core-asset-producing\`.\n`,
+    });
+    expect(
+      'creative-publication-mutation',
+      mutationErrors.some(message => message.includes('declared non-producer')),
+      'adding both producer routes to a declared skill non-producer must fail',
     );
   }
 }
@@ -410,6 +472,6 @@ assert.deepEqual(
 );
 console.log(
   `creative skill contract assertions passed (${selected}; `
-  + `methods=${selectedIds.length}, durable producers=${parsedSelected.filter(skill =>
-    skill.routes.includes('kai-core-asset-producing')).length})`,
+  + `methods=${selectedIds.length}, declared producers=${durableProducers.length}, `
+  + `declared non-producers=${nonProducers.length})`,
 );

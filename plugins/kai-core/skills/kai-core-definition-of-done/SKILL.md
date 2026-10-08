@@ -1,6 +1,7 @@
 ---
 name: kai-core-definition-of-done
 description: "Use when deciding whether implementation, review, evidence, publication, release readiness, or coordinated closure is complete."
+durable-output-producer: false
 tools: [read, execute, search]
 ---
 

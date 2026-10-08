@@ -93,7 +93,7 @@ reviewer holds the grant and records its own revision-bound verdict and handoff;
 it does not ask its implementer or grantor to manufacture acceptance for it.
 
 PR preparation is distinct from release acceptance. Release assessment without
-a coordination item cannot claim a formal state transition. Production actions,
+a current Task record cannot claim a formal state transition. Production actions,
 merge, release/tag, risk acceptance, legal decisions and external incident
 communications retain their human gates. Incident command cannot turn an
 emergency into permission for unapproved persistent changes.
@@ -116,8 +116,8 @@ historical migration labels, not active invocation names.
 | Solutions architect | Single unchanged identity in kai-revenue; no engineering duplicate |
 
 The user explicitly deferred wiring between agents. Other packages, shared
-coordination examples/contracts and existing item owners may still name retired
-identities. They are not rewritten or silently aliased in this pass. Before
+coordination examples/contracts and owners of existing Task records may still
+name retired identities. They are not rewritten or silently aliased in this pass. Before
 coordinated use, resolve the actual owner and revision-bound review requirements;
 if routing cannot be resolved, report the gap instead of simulating a peer.
 

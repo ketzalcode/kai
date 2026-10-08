@@ -1574,8 +1574,7 @@ export function routedSkills(body) {
   return out;
 }
 
-export function durableOutputProducerDeclaration({kind = 'agent', body, fm}) {
-  if (kind !== 'agent') return null;
+export function durableOutputProducerDeclaration({body, fm}) {
   if (fm && Object.hasOwn(fm, 'durable-output-producer')) {
     return durableOutputProducerValue(fm);
   }
@@ -1603,37 +1602,24 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
       + `${packPluginName(pack)} owns \`${owner}\``);
   }
 
-  if (kind === 'agent') {
-    const declaredProducer = durableOutputProducerDeclaration({kind, body, fm});
-    if (declaredProducer === null) {
-      errors.push('agent must declare frontmatter `durable-output-producer: true|false`');
-      return [...new Set(errors)];
+  const declaredProducer = durableOutputProducerDeclaration({body, fm});
+  if (declaredProducer === null) {
+    errors.push(`${kind} must declare frontmatter \`durable-output-producer: true|false\``);
+    return [...new Set(errors)];
+  }
+  if (!declaredProducer) {
+    if (publicationRoutes.length > 0 || productionRoutes.length > 0) {
+      errors.push('declared non-producer must not route a workspace publication skill '
+        + 'or `kai-core-asset-producing`');
     }
-    if (!declaredProducer) {
-      if (publicationRoutes.length > 0 || productionRoutes.length > 0) {
-        errors.push('declared non-producer must not route a workspace publication skill '
-          + 'or `kai-core-asset-producing`');
-      }
-      return [...new Set(errors)];
-    }
-    if (productionRoutes.length === 0
-      || !publicationRoutes.some(route => route.id === owner)) {
-      errors.push(`declared durable-output producer must route \`${owner}\` immediately before `
-        + '`kai-core-asset-producing`');
-      return [...new Set(errors)];
-    }
+    return [...new Set(errors)];
   }
 
-  if (productionRoutes.length === 0) {
-    if (publicationRoutes.length > 0) {
-      errors.push(`non-producer must not route \`${owner}\` without \`kai-core-asset-producing\``);
-    }
-    return errors;
-  }
-
-  if (!publicationRoutes.some(route => route.id === owner)) {
-    errors.push(`durable producer must route \`${owner}\` immediately before \`kai-core-asset-producing\``);
-    return errors;
+  if (productionRoutes.length === 0
+    || !publicationRoutes.some(route => route.id === owner)) {
+    errors.push(`declared durable-output producer must route \`${owner}\` immediately before `
+      + '`kai-core-asset-producing`');
+    return [...new Set(errors)];
   }
 
   for (const production of productionRoutes) {
@@ -1749,6 +1735,12 @@ export function activeWorkspaceLanguageErrors({body}) {
   ];
   for (const [pattern, message] of checks) {
     if (pattern.test(text)) errors.push(message);
+  }
+  const semanticSentences = text.replace(/\r?\n/g, ' ').split(/(?<=[.!?])\s+/);
+  if (semanticSentences.some(sentence =>
+    /\bcoordination\b/i.test(sentence)
+    && /\b(?:item schemas?|coordination items?|item owners?)\b/i.test(sentence))) {
+    errors.push('presents retired generic coordination item semantics as live');
   }
   return errors;
 }
@@ -1876,6 +1868,31 @@ export function webOutputContractErrors({id, body}) {
   if (/<working-root>[\\/]qa|<working-root>\/qa/i.test(text)) {
     errors.push(`${id}: web output must use the typed core report path, never <working-root>/qa`);
   }
+  if (id === 'kai-core-web-evaluation') {
+    const grammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
+    const flat = text.replace(/\s+/g, ' ');
+    for (const required of [
+      `.kai/core/reports/${grammar}/{drafts,evidence,scratch}`,
+      `docs/kai/core/reports/${grammar}/`,
+    ]) {
+      if (!text.includes(required)) {
+        errors.push(`${id}: typed core report path must use the exact web-evaluation ID grammar`);
+      }
+    }
+    const proseMatchesGrammar = [
+      /`<YYYYMMDD>` is the local evaluation date in eight-digit `YYYYMMDD` form/i,
+      /`<NN>` is the next unused positive sequence for that date, zero-padded to at least two digits/i,
+      /`<descriptor>` is a required lowercase kebab-case surface description/i,
+      /check that exact ID is absent from both the private and public report roots[\s\S]{0,220}create the private report root atomically[\s\S]{0,160}increment `<NN>` and retry/i,
+      /Every rerun allocates a new `<NN>` and never reuses an earlier ID\./,
+    ].every(pattern => pattern.test(flat));
+    if (!proseMatchesGrammar
+      || /web-evaluation-<artifact-id>|artifact UUID makes every rerun/i.test(text)) {
+      errors.push(`${id}: web-evaluation ID grammar/prose drift; date, sequence, descriptor, and rerun allocation must agree`);
+    }
+    return [...new Set(errors)];
+  }
+
   for (const required of [
     '.kai/core/reports/<id>/{drafts,evidence,scratch}',
     'docs/kai/core/reports/<id>/',
@@ -1884,10 +1901,7 @@ export function webOutputContractErrors({id, body}) {
       errors.push(`${id}: typed core report path must match the core private/public publication forms`);
     }
   }
-  const expectedPrefix = id === 'kai-core-web-content-extraction'
-    ? 'web-extract-<artifact-id>'
-    : 'web-evaluation-<artifact-id>';
-  if (!text.includes(expectedPrefix)
+  if (!text.includes('web-extract-<artifact-id>')
     || !/artifact-id[\s\S]{0,220}(?:UUID|collision-safe)/i.test(text)
     || /<NN>/.test(text)) {
     errors.push(`${id}: reruns require a collision-safe typed ID backed by the artifact UUID, not <NN>`);

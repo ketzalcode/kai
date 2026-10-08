@@ -1,6 +1,7 @@
 ---
 name: kai-core-workspace-paths
 description: "Use when resolving a Kai workspace, project binding, Direction file, coordination database, or typed private/public artifact path."
+durable-output-producer: false
 tools: [read, execute, search]
 ---
 

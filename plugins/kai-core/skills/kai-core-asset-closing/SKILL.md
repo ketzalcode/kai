@@ -1,6 +1,7 @@
 ---
 name: kai-core-asset-closing
 description: "Use when recording final asset disposition, validity, supersession, retraction, archival, or publication cleanup."
+durable-output-producer: false
 tools: [read, edit, execute, search]
 ---
 

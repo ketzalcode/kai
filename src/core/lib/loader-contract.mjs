@@ -110,14 +110,10 @@ export function loaderErrors(kind, id, fm) {
 
   if (!stripQuotes(fm.description)) out.push('frontmatter `description` is missing or empty');
 
-  if (kind === 'agent') {
-    if (fm[DURABLE_OUTPUT_PRODUCER_KEY] === undefined) {
-      out.push(`kai agents require frontmatter \`${DURABLE_OUTPUT_PRODUCER_KEY}: true|false\``);
-    } else if (durableOutputProducerValue(fm) === null) {
-      out.push(`frontmatter \`${DURABLE_OUTPUT_PRODUCER_KEY}\` must be \`true\` or \`false\``);
-    }
-  } else if (fm[DURABLE_OUTPUT_PRODUCER_KEY] !== undefined) {
-    out.push(`frontmatter key \`${DURABLE_OUTPUT_PRODUCER_KEY}\` is agent-only and not valid on a skill`);
+  if (fm[DURABLE_OUTPUT_PRODUCER_KEY] === undefined) {
+    out.push(`kai ${kind}s require frontmatter \`${DURABLE_OUTPUT_PRODUCER_KEY}: true|false\``);
+  } else if (durableOutputProducerValue(fm) === null) {
+    out.push(`frontmatter \`${DURABLE_OUTPUT_PRODUCER_KEY}\` must be \`true\` or \`false\``);
   }
 
   // Custom agents use `tools` to control host capabilities. Agent Skills do not

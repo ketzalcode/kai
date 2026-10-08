@@ -1,6 +1,7 @@
 ---
 name: mockups-html
 description: "Use when an HTML mock is requested, or a UI choice depends on visual hierarchy, component appearance, or responsive layout."
+durable-output-producer: true
 user-invocable: true
 ---
 

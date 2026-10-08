@@ -124,15 +124,18 @@ assert.ok(sourceEntries.length >= 50,
   `expected a non-vacuous shipped source corpus, found ${sourceEntries.length}`);
 
 const agentEntries = sourceEntries.filter(entry => entry.kind === 'agent');
-let producers = 0;
-let nonProducers = 0;
+const skillEntries = sourceEntries.filter(entry => entry.kind === 'skill');
+const declarationCounts = {
+  agent: {producers: 0, nonProducers: 0},
+  skill: {producers: 0, nonProducers: 0},
+};
 for (const entry of sourceEntries) {
+  const declared = packPlan.durableOutputProducerDeclaration(entry);
+  assert.equal(typeof declared, 'boolean',
+    `${entry.rel}: frontmatter must declare durable-output-producer true or false`);
+  if (declared) declarationCounts[entry.kind].producers += 1;
+  else declarationCounts[entry.kind].nonProducers += 1;
   if (entry.kind === 'agent') {
-    const declared = packPlan.durableOutputProducerDeclaration(entry);
-    assert.equal(typeof declared, 'boolean',
-      `${entry.rel}: frontmatter must declare durable-output-producer true or false`);
-    if (declared) producers += 1;
-    else nonProducers += 1;
     assert.deepEqual(
       packPlan.agentDirectOutputErrors(entry),
       [],
@@ -145,89 +148,103 @@ for (const entry of sourceEntries) {
     `${entry.rel}: owning publication route and producer classification`,
   );
 }
-assert.ok(producers > 0, 'publication routing gate must inspect at least one declared producer');
-assert.ok(nonProducers > 0, 'publication routing gate must inspect at least one declared non-producer');
+for (const kind of ['agent', 'skill']) {
+  assert.ok(declarationCounts[kind].producers > 0,
+    `publication routing gate must inspect at least one declared ${kind} producer`);
+  assert.ok(declarationCounts[kind].nonProducers > 0,
+    `publication routing gate must inspect at least one declared ${kind} non-producer`);
+}
+
+for (const [kind, entries] of [
+  ['agent', agentEntries],
+  ['skill', skillEntries],
+]) {
+  const producer = entries.find(entry =>
+    packPlan.durableOutputProducerDeclaration(entry) === true);
+  const ownerPublication = publicationByPack[producer.pack];
+  const withoutOwnerRoute = producer.body.replace(
+    new RegExp(
+      `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\``,
+      'i',
+    ),
+    '',
+  );
+  assert.ok(
+    packPlan.publicationRoutingErrors({...producer, body: withoutOwnerRoute})
+      .some(message => message.includes(`must route \`${ownerPublication}\``)),
+    `removing a ${kind} producer publication route must fail by owning skill name`,
+  );
+
+  const withoutBothRoutes = producer.body
+    .replace(
+      new RegExp(
+        `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\`[^.]*\\.\\s*`,
+        'gi',
+      ),
+      '',
+    )
+    .replace(
+      /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+      '',
+    );
+  assert.ok(
+    packPlan.publicationRoutingErrors({...producer, body: withoutBothRoutes})
+      .some(message => message.includes('declared durable-output producer')),
+    `removing both ${kind} production routes must fail from the authoritative declaration`,
+  );
+
+  assert.ok(
+    packPlan.publicationRoutingErrors({
+      ...producer,
+      body: producer.body.replace(
+        'durable-output-producer: true',
+        'durable-output-producer: false',
+      ),
+    }).some(message => message.includes('declared non-producer')),
+    `falsifying the ${kind} producer declaration must fail while producer routes remain`,
+  );
+  assert.ok(
+    packPlan.publicationRoutingErrors({
+      ...producer,
+      body: producer.body.replace(/^durable-output-producer:\s*true\s*$/m, ''),
+    }).some(message => message.includes('must declare frontmatter')),
+    `removing the ${kind} producer declaration must fail by declaration name`,
+  );
+
+  const wrongPublication = producer.pack === 'creative'
+    ? publicationByPack.engineering
+    : publicationByPack.creative;
+  assert.ok(
+    packPlan.publicationRoutingErrors({
+      ...producer,
+      body: producer.body.replace(ownerPublication, wrongPublication),
+    }).some(message => message.includes('cannot route publication skill owned by')),
+    `routing a ${kind} producer through another pack vocabulary must fail`,
+  );
+
+  const separatedRoute = producer.body.replace(
+    /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`/i,
+    'Apply `kai-core-workspace-paths`, then Apply `kai-core-asset-producing`',
+  );
+  assert.ok(
+    packPlan.publicationRoutingErrors({...producer, body: separatedRoute})
+      .some(message => message.includes('immediately before')),
+    `inserting another route between ${kind} publication and production must fail order`,
+  );
+
+  const nonProducer = entries.find(entry =>
+    packPlan.durableOutputProducerDeclaration(entry) === false);
+  assert.ok(
+    packPlan.publicationRoutingErrors({
+      ...nonProducer,
+      body: `${nonProducer.body}\n\nApply \`${publicationByPack[nonProducer.pack]}\`, then apply \`kai-core-asset-producing\`.\n`,
+    }).some(message => message.includes('declared non-producer')),
+    `adding both durable routes to a declared ${kind} non-producer must fail classification`,
+  );
+}
 
 const producer = agentEntries.find(entry =>
   packPlan.durableOutputProducerDeclaration(entry) === true);
-const ownerPublication = publicationByPack[producer.pack];
-const withoutOwnerRoute = producer.body.replace(
-  new RegExp(
-    `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\`[^.]*\\.\\s*`,
-    'i',
-  ),
-  '',
-);
-assert.ok(
-  packPlan.publicationRoutingErrors({...producer, body: withoutOwnerRoute})
-    .some(message => message.includes(`must route \`${ownerPublication}\``)),
-  'removing a producer publication route must fail by owning skill name',
-);
-
-const withoutBothRoutes = producer.body
-  .replace(
-    new RegExp(
-      `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\`[^.]*\\.\\s*`,
-      'gi',
-    ),
-    '',
-  )
-  .replace(
-    /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
-    '',
-  );
-assert.ok(
-  packPlan.publicationRoutingErrors({...producer, body: withoutBothRoutes})
-    .some(message => message.includes('declared durable-output producer')),
-  'removing both production routes must still fail from the authoritative producer declaration',
-);
-
-assert.ok(
-  packPlan.publicationRoutingErrors({
-    ...producer,
-    body: producer.body.replace(
-      'durable-output-producer: true',
-      'durable-output-producer: false',
-    ),
-  }).some(message => message.includes('declared non-producer')),
-  'falsifying the producer declaration must fail while producer routes remain',
-);
-
-const wrongPublication = producer.pack === 'creative'
-  ? publicationByPack.engineering
-  : publicationByPack.creative;
-assert.ok(
-  packPlan.publicationRoutingErrors({
-    ...producer,
-    body: producer.body.replace(ownerPublication, wrongPublication),
-  }).some(message => message.includes('cannot route publication skill owned by')),
-  'routing a department or core producer through another pack vocabulary must fail',
-);
-
-const separatedRoute = producer.body.replace(
-  new RegExp(
-    `(Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\`([^.]*)\\.\\s*`
-    + `(Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`kai-core-asset-producing\``,
-    'i',
-  ),
-  `$1 \`${ownerPublication}\`$2. Apply \`kai-core-workspace-paths\`. `
-    + '$3 `kai-core-asset-producing`',
-);
-assert.ok(
-  packPlan.publicationRoutingErrors({...producer, body: separatedRoute})
-    .some(message => message.includes('immediately before')),
-  'inserting another routed contract between publication and production must fail order',
-);
-
-const nonProducer = agentEntries.find(entry =>
-  packPlan.durableOutputProducerDeclaration(entry) === false);
-assert.ok(
-  packPlan.publicationRoutingErrors({
-    ...nonProducer,
-    body: `${nonProducer.body}\n\nApply \`${publicationByPack[nonProducer.pack]}\`, then apply \`kai-core-asset-producing\`.\n`,
-  }).some(message => message.includes('declared non-producer')),
-  'adding both durable routes to a declared non-producer must fail classification',
-);
 
 assert.ok(
   packPlan.agentDirectOutputErrors({
@@ -387,6 +404,27 @@ assert.ok(packPlan.activeWorkspaceLanguageErrors({
   body: `${activeDocMutation.body}\nCreate a work item under \`.kai/state/items/demo.md\`.\n`,
 }).length >= 2,
   'restoring schema-4 language in any active guide must fail the corpus-wide scan');
+for (const phrase of [
+  'Generated coordination state validates item schemas before use.',
+  'Release assessment requires a coordination item before transition.',
+  'Current coordination examples identify the item owners.',
+]) {
+  assert.ok(
+    packPlan.activeWorkspaceLanguageErrors({
+      ...activeDocMutation,
+      body: `${activeDocMutation.body}\n${phrase}\n`,
+    }).some(message => message.includes('generic coordination item semantics')),
+    `active guide mutation must reject schema-4 semantic phrase: ${phrase}`,
+  );
+}
+assert.deepEqual(packPlan.activeWorkspaceLanguageErrors({
+  body: 'Catalog item owners maintain JSON item schemas for storefront imports.',
+}), [], 'ordinary non-coordination English must not trigger schema-4 semantic validation');
+assert.deepEqual(packPlan.activeWorkspaceLanguageErrors({
+  body: '<!-- kai:schema4-history -->\n'
+    + 'Generated coordination state used item schemas and a coordination item with item owners.\n'
+    + '<!-- /kai:schema4-history -->',
+}), [], 'explicit historical text must not trigger active schema-5 semantic validation');
 
 const workspacesGuide = read(join(root, 'docs', 'workspaces.md'));
 assert.match(workspacesGuide, /explicit[\s\S]{0,120}schema[- ]5 migration/i,
@@ -430,12 +468,35 @@ for (const id of ['kai-core-web-evaluation', 'kai-core-web-content-extraction'])
   assert.deepEqual(packPlan.webOutputContractErrors({id, body}), [],
     `${id}: typed private/public path and collision-safe report ID`);
 }
+const webEvaluation = read(skillPath('core', 'kai-core-web-evaluation'));
+const evaluationIdGrammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
+assert.ok(webEvaluation.includes(evaluationIdGrammar),
+  'web evaluation must declare the exact date/sequence/descriptor ID grammar');
 assert.ok(packPlan.webOutputContractErrors({
   id: 'kai-core-web-evaluation',
-  body: read(skillPath('core', 'kai-core-web-evaluation'))
-    .replace('.kai/core/reports/<id>/', '<working-root>/qa/<id>/'),
+  body: webEvaluation
+    .replace(
+      `.kai/core/reports/${evaluationIdGrammar}/`,
+      `<working-root>/qa/${evaluationIdGrammar}/`,
+    ),
 }).some(message => message.includes('typed core report path')),
 'web evaluation mutation must reject the retired QA working root');
+assert.ok(packPlan.webOutputContractErrors({
+  id: 'kai-core-web-evaluation',
+  body: webEvaluation.replace(
+    `.kai/core/reports/${evaluationIdGrammar}/{drafts,evidence,scratch}`,
+    '.kai/core/reports/web-evaluation-<artifact-id>/{drafts,evidence,scratch}',
+  ),
+}).some(message => message.includes('exact web-evaluation ID grammar')),
+'web evaluation mutation must reject private/public grammar drift');
+assert.ok(packPlan.webOutputContractErrors({
+  id: 'kai-core-web-evaluation',
+  body: webEvaluation.replace(
+    'Every rerun allocates a new `<NN>` and never reuses an earlier ID.',
+    'Every rerun reuses the previous report ID.',
+  ),
+}).some(message => message.includes('grammar/prose drift')),
+'web evaluation mutation must reject rerun prose that contradicts the ID grammar');
 assert.ok(packPlan.webOutputContractErrors({
   id: 'kai-core-web-content-extraction',
   body: read(skillPath('core', 'kai-core-web-content-extraction'))
@@ -463,7 +524,9 @@ assert.doesNotMatch(validator, /could not locate the manifest "areas" list/,
 
 console.log(
   `coordination source routing assertions passed `
-  + `(sources=${sourceEntries.length}, declared producers=${producers}, `
-  + `declared non-producers=${nonProducers}, active docs=${activeDocs.length}, `
+  + `(sources=${sourceEntries.length}, agent producers=${declarationCounts.agent.producers}, `
+  + `agent non-producers=${declarationCounts.agent.nonProducers}, `
+  + `skill producers=${declarationCounts.skill.producers}, `
+  + `skill non-producers=${declarationCounts.skill.nonProducers}, active docs=${activeDocs.length}, `
   + `publication tables=${publicationSources.length}, authority sources=${authoritySources.length})`,
 );

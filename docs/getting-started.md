@@ -323,7 +323,7 @@ node <kai-plugin>/scripts/workspace-doctor.mjs
 - verifies `.kai/manifest.json` is present, well-formed, and schema-compatible;
 - if `schema_version` is behind, identifies the migration required by
   `kai-core-workspace-onboarding`;
-- validates generated coordination state — item schemas, lifecycle states,
+- validates generated coordination state — Task record schemas, lifecycle states,
   `change_ref`-bound reviews, typed dependencies and cycles, lease shape/expiry,
   Direction, path containment, and private Git safety.
 

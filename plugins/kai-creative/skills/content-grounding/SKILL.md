@@ -1,6 +1,7 @@
 ---
 name: content-grounding
 description: "Claim-safety and provenance rules for product content. Use when creating external-facing LinkedIn posts, video scripts, or other content from product intelligence."
+durable-output-producer: false
 tools: [read, edit, search]
 ---
 
