@@ -26,9 +26,9 @@ Core does not enumerate department folders, and no generic `runs/`, `review/`,
 `artifacts/`, `misc/`, or fallback lane exists.
 
 Every coordinated workspace also carries one operator-owned
-`docs/kai/DIRECTION.md` with three current facts: Vision, Mission, and Current
-Goal. All coordinated roles read it before taking or proposing work. Ordinary
-direct requests do not require a workspace.
+`docs/kai/DIRECTION.md` with four current facts: Vision, Mission, Current Goal,
+and Out of Scope. All coordinated roles read it before taking or proposing
+work. Ordinary direct requests do not require a workspace.
 
 This design does not introduce a project-management plugin. Core owns neutral
 coordination and communication. A separate design will replace the current
@@ -110,8 +110,8 @@ were broad shared buckets rather than pack-owned typed paths.
 4. Private and public paths mirror one another where possible.
 5. An agent cannot use a generic fallback when placement is unknown.
 6. Direct coding and direct answers remain workspace-free.
-7. The project vision, mission, and current goal are small, explicit, and read
-   before coordinated decisions.
+7. The project vision, mission, current goal, and explicit scope exclusions are
+   small and read before coordinated decisions.
 8. Existing schema-3 and schema-4 workspaces remain inspectable and migrate
    only through an explicit, backup-first operation.
 
@@ -206,7 +206,7 @@ If that host gate cannot run, the workspace remains inspect-only; onboarding
 does not manufacture a database.
 
 `DIRECTION.md` is created only from operator-supplied content. Coordinated work
-is not ready until its three sections are non-empty. Initialization never
+is not ready until its four sections are non-empty. Initialization never
 invents project direction.
 
 No empty `core/decisions`, `engineering`, `creative`, `archive`, lifecycle, or
@@ -250,11 +250,16 @@ updated: <YYYY-MM-DD>
 
 # Current Goal
 
-<the present time-bounded focus>
+<one observable, time-bounded outcome>
+
+# Out of Scope
+
+- <an explicit exclusion that applies to every proposal>
 ```
 
 Git carries revision history. The file contains no task list, roadmap, backlog,
-or generated status. Those concerns belong to coordination records.
+or generated status. `Out of Scope` is a guardrail, not a parking lot for future
+work. Those concerns belong to coordination records.
 
 The manifest records:
 
@@ -502,8 +507,8 @@ artifact creates only its exact pack/type/ID/lifecycle path.
 ### Required scenarios
 
 - core initialization creates only the approved initial files;
-- `DIRECTION.md` is required for coordinated work and irrelevant to direct
-  work;
+- all four `DIRECTION.md` sections are required for coordinated work and
+  irrelevant to direct work;
 - a direct code change produces no `.kai/engineering/`;
 - one engineering artifact mirrors to one engineering publication path;
 - one creative artifact mirrors to one creative publication path;
