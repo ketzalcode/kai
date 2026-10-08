@@ -105,11 +105,15 @@ export function requireLease(task, command) {
   }
 }
 
+export function requireLeasedActingAuthority(tx, task, command, authority, action) {
+  requireLease(task, command);
+  requireActionGrant(tx, command, authority, action);
+}
+
 export function requireActingAuthority(tx, task, command, authority, action) {
   if (task.body.lease === null) {
     requireHostActionGrant(command, authority, action);
     return;
   }
-  requireLease(task, command);
-  requireActionGrant(tx, command, authority, action);
+  requireLeasedActingAuthority(tx, task, command, authority, action);
 }

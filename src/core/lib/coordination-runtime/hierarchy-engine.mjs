@@ -218,6 +218,17 @@ function assertDirectionAligned(epic, direction) {
   }
 }
 
+export function hasStaleDirection(tx, record, resolveDirection) {
+  try {
+    const epic = epicAncestor(tx, record);
+    const direction = resolveDirection(epic.body.direction_ref);
+    return canonicalJson(epic.body.direction_ref) !== canonicalJson(exactDirectionRef(direction));
+  } catch (error) {
+    if (error instanceof RuntimeError && error.code === 'EVIDENCE_GAP') return false;
+    throw error;
+  }
+}
+
 function requireActive(record, label) {
   if (record.body.state !== 'active') {
     fail('EVIDENCE_GAP', `${label} must be active`);

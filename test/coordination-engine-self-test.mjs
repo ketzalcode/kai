@@ -597,6 +597,13 @@ await test('Direction drift permits leased evidence and a safe handoff but block
       acceptance_actor: null,
       touches: ['src/grant/**'],
     });
+    seedTask(store, {
+      id: taskId('stale-drop'),
+      state: 'proposed',
+      producer_actor: null,
+      acceptance_actor: null,
+      touches: ['src/drop/**'],
+    });
     writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
       '# Vision',
       'A composable workspace.',
@@ -620,6 +627,23 @@ await test('Direction drift permits leased evidence and a safe handoff but block
       token,
     ), {roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role], grants: []}),
     error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    assert.throws(() => applyCommand(store, taskCommand(
+      'task.transition',
+      builder,
+      reserved.version,
+      {to: 'blocked', at: NOW, reason: 'Direction drift cannot change execution state.'},
+      token,
+    ), {roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role], grants: []}),
+    error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
+
+    const dropped = taskCommand('task.transition', steward, 1, {
+      to: 'dropped', at: NOW, reason: 'Direction drift cannot drop the Task.',
+    });
+    dropped.recordId = taskId('stale-drop');
+    assert.throws(() => applyCommand(store, dropped, grant(steward, 'task.transition', 1, {
+      recordId: dropped.recordId,
+    })), error => error.code === 'EVIDENCE_GAP' && /Direction/i.test(error.message));
 
     const promoted = taskCommand('task.promote', steward, 1, {
       at: NOW,
@@ -703,6 +727,177 @@ await test('Direction drift permits leased evidence and a safe handoff but block
     assert.equal(handedOff.body.next_role, steward.role);
     assert.equal(handedOff.body.lease, null);
   });
+});
+
+await test('Direction drift rejects fresh host grants for unleased evidence and handoff', async () => {
+  for (const action of ['evidence', 'handoff']) {
+    await withWorkspace(({root, store}) => {
+      seedTask(store, {
+        state: 'in-progress',
+        change_ref: subject,
+        next_role: builder.role,
+        lease: null,
+        touches: [`src/unleased-${action}/**`],
+      });
+      const evidenceRefs = retainedRefs(store, fixtureIds.task);
+      writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+        '# Vision',
+        'A composable workspace.',
+        '',
+        '# Mission',
+        'Coordinate exact work safely.',
+        '',
+        '# Current Goal',
+        'A changed Direction invalidates unleased exceptions.',
+        '',
+        '# Out of Scope',
+        'Schema 5 workspace activation remains deferred.',
+        '',
+      ].join('\n'));
+
+      if (action === 'evidence') {
+        bindEvidenceRuntime(store, {
+          root,
+          authority: grant(builder, 'evidence.register', 1),
+          runs: [],
+        });
+        assert.throws(() => registerEvidence(store, taskCommand(
+          'evidence.register',
+          builder,
+          1,
+          {
+            tier: 'declared',
+            body: {
+              schema_version: 1,
+              evidence_id: randomUUID(),
+              item_id: fixtureIds.task,
+              kind: 'dod-dimension',
+              subject,
+              criteria_ref: criteriaRef(readRecord(store, 'task', fixtureIds.task).body),
+              supersedes: [],
+              dimension: 'verified',
+              outcome: 'gap',
+              evidence_refs: evidenceRefs,
+              reason: null,
+              data: {},
+              created_at: NOW,
+            },
+          },
+        )), error => error.code === 'LEASE_CONFLICT');
+      } else {
+        assert.throws(() => applyCommand(store, taskCommand('task.handoff', builder, 1, {
+          toRole: steward.role,
+          state: null,
+          createdAt: NOW,
+          messageId: randomUUID(),
+          parentId: null,
+          content: {
+            did: 'No leased work exists.',
+            needs: 'Realign the Task.',
+            assetState: 'Preserved.',
+            authority: 'Direction changed.',
+            revalidation: 'Required before forward work.',
+            questions: [],
+          },
+          artifactRefs: [],
+          evidenceRefs: [],
+          provenance: 'durable-thread',
+        }), grant(builder, 'task.handoff', 1)),
+        error => error.code === 'LEASE_CONFLICT');
+      }
+    });
+  }
+});
+
+await test('Direction-stale leased handoff rejects state changes and unsafe owners', async () => {
+  for (const scenario of [
+    ...[
+      'proposed',
+      'ready',
+      'in-progress',
+      'in-review',
+      'completed',
+      'release-ready',
+      'deploying',
+      'production-verification',
+      'shipped',
+      'blocked',
+      'dropped',
+    ].map(state => ({
+      name: state,
+      holder: state === 'dropped' ? steward : builder,
+      state,
+      toRole: steward.role,
+    })),
+    {name: 'wrong-role', holder: builder, state: null, toRole: reviewer.role},
+  ]) {
+    await withWorkspace(({root, store}) => {
+      seedTask(store, {
+        state: 'ready',
+        producer_actor: null,
+        acceptance_actor: null,
+        change_ref: subject,
+        next_role: scenario.holder.role,
+        touches: [`src/stale-handoff-${scenario.name}/**`],
+      });
+      const reserved = applyCommand(store, taskCommand('task.grant', steward, 1, {
+        holder: scenario.holder,
+        actions: ['task.handoff', 'task.transition'],
+        acquiredAt: NOW,
+        expiresAt: LATER,
+      }), grant(steward, 'task.grant', 1)).data.record;
+      writeFileSync(join(root, 'docs', 'kai', 'DIRECTION.md'), [
+        '# Vision',
+        'A composable workspace.',
+        '',
+        '# Mission',
+        'Coordinate exact work safely.',
+        '',
+        '# Current Goal',
+        'A changed Direction permits only state-preserving safe handoff.',
+        '',
+        '# Out of Scope',
+        'Schema 5 workspace activation remains deferred.',
+        '',
+      ].join('\n'));
+
+      const payload = {
+        toRole: scenario.toRole,
+        state: scenario.state,
+        createdAt: NOW,
+        messageId: randomUUID(),
+        parentId: null,
+        content: {
+          did: 'Preserved the stale work.',
+          needs: 'Realign the Task.',
+          assetState: 'Preserved.',
+          authority: 'Direction changed.',
+          revalidation: 'Required before forward work.',
+          questions: [],
+        },
+        artifactRefs: [],
+        evidenceRefs: [],
+        provenance: 'durable-thread',
+        ...(scenario.state === 'in-review' ? {subject} : {}),
+      };
+      const actingAuthority = scenario.state === 'dropped'
+        ? grant(steward, 'task.transition', reserved.version)
+        : {
+          roles: [steward.role, builder.role, reviewer.role, quality.role, shipper.role],
+          grants: [],
+        };
+      assert.throws(() => applyCommand(store, taskCommand(
+        'task.handoff',
+        scenario.holder,
+        reserved.version,
+        payload,
+        reserved.body.lease.token,
+      ), actingAuthority), error => error.code === 'AUTHORITY_REQUIRED'
+        && (scenario.state === null
+          ? /safe owner/i.test(error.message)
+          : /preserve execution state/i.test(error.message)));
+    });
+  }
 });
 
 await test('ready items cannot bypass reservation with a direct transition', async () => {

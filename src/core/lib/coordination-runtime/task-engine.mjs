@@ -14,8 +14,9 @@ import {
 import {
   sameActor, requireRoleAvailable, requireActorAvailable, requireActionGrant,
   requireHostActionGrant, requireNamedAuthority, leaseIsLive, requireLease, requireActingAuthority,
+  requireLeasedActingAuthority,
 } from './authority.mjs';
-import {assertAlignedAncestors} from './hierarchy-engine.mjs';
+import {assertAlignedAncestors, hasStaleDirection} from './hierarchy-engine.mjs';
 import {
   TASK_NEEDS_CHANGE_REF,
   TASK_TERMINAL_STATES,
@@ -289,7 +290,8 @@ function requireTransition(tx, task, command, authority, to) {
 }
 
 function transitionBody(tx, task, command, authority, runtime, to, at) {
-  if (to !== 'blocked' && to !== 'dropped') {
+  if ((to !== 'blocked' && to !== 'dropped')
+    || hasStaleDirection(tx, task, runtime.direction)) {
     assertCurrentAlignment(tx, task, runtime);
   }
   const candidate = to === 'in-review'
@@ -560,7 +562,21 @@ function handleTaskTransition(current, tx, command, authority, runtime) {
 }
 
 function handleTaskHandoff(current, tx, command, authority, runtime) {
-  requireActingAuthority(tx, current, command, authority, 'task.handoff');
+  const staleDirection = hasStaleDirection(tx, current, runtime.direction);
+  if (staleDirection) {
+    requireLeasedActingAuthority(tx, current, command, authority, 'task.handoff');
+    if (command.payload.state !== null) {
+      fail('AUTHORITY_REQUIRED',
+        `Direction-stale task/${current.id} handoff must preserve execution state`);
+    }
+    if (!new Set([current.body.scope_authority, 'operator'])
+      .has(command.payload.toRole)) {
+      fail('AUTHORITY_REQUIRED',
+        `Direction-stale task/${current.id} may hand off only to a safe owner`);
+    }
+  } else {
+    requireActingAuthority(tx, current, command, authority, 'task.handoff');
+  }
   if (current.body.recovery_hold !== null) {
     fail('AUTHORITY_REQUIRED', 'operator resolution is required before handoff');
   }
@@ -576,9 +592,9 @@ function handleTaskHandoff(current, tx, command, authority, runtime) {
       command.payload.state,
       command.payload.createdAt,
     );
-  } else {
-    const stale = alignmentFailure(tx, current, runtime);
-    if (stale && !new Set([current.body.scope_authority, 'operator'])
+  } else if (!staleDirection) {
+    const alignment = alignmentFailure(tx, current, runtime);
+    if (alignment && !new Set([current.body.scope_authority, 'operator'])
       .has(command.payload.toRole)) {
       fail('AUTHORITY_REQUIRED',
         `Direction-stale task/${current.id} may hand off only to a safe owner`);

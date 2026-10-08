@@ -8,9 +8,10 @@ import {
 } from './acceptance.mjs';
 import {
   leaseIsLive, requireActingAuthority, requireActorAvailable, requireHostActionGrant,
-  requireNamedAuthority, requireRoleAvailable, sameActor,
+  requireLeasedActingAuthority, requireNamedAuthority, requireRoleAvailable, sameActor,
 } from './authority.mjs';
 import {applyOperation} from './store.mjs';
+import {currentDirectionForStore, hasStaleDirection} from './hierarchy-engine.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
 import {
   assertWorkspacePath, fail, pathPrivacy, retainSubject,
@@ -26,10 +27,18 @@ export {verifyReferences} from './evidence-integrity.mjs';
 
 const clone = value => JSON.parse(canonicalJson(value));
 
-function ordinaryAuthority(tx, item, command, authority) {
+function ordinaryAuthority(store, tx, item, command, authority) {
   if (item.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'operator recovery hold must be resolved first');
   if (item.body.lease === null && command.leaseToken !== null) fail('LEASE_CONFLICT', 'command carries a retired lease');
-  requireActingAuthority(tx, item, command, authority, command.kind);
+  if (item.kind === 'task' && hasStaleDirection(
+    tx,
+    item,
+    directionRef => currentDirectionForStore(store, directionRef),
+  )) {
+    requireLeasedActingAuthority(tx, item, command, authority, command.kind);
+  } else {
+    requireActingAuthority(tx, item, command, authority, command.kind);
+  }
 }
 
 function produce(store, command, kind, authority, action) {
@@ -106,7 +115,7 @@ export function registerArtifact(store, command) {
         fail('RECOVERY_REQUIRED', 'recovery artifacts require the exact expired lease and no acting lease');
       }
     } else {
-      ordinaryAuthority(tx, item, command, authority);
+      ordinaryAuthority(store, tx, item, command, authority);
     }
     if (tx.get('artifact', p.artifactId) || tx.get('asset', p.assetId)) fail('VERSION_CONFLICT', 'artifact and asset identities must be new');
     const run = context.runs.find(run => sameActor(run.actor, command.actor));
@@ -171,7 +180,7 @@ export function registerArtifact(store, command) {
 
 export function recordReview(store, command) {
   return produce(store, command, 'review.record', undefined, ({context, item, tx, command, authority}) => {
-    ordinaryAuthority(tx, item, command, authority);
+    ordinaryAuthority(store, tx, item, command, authority);
     const b = command.payload.body;
     if (!sameActor(b.reviewer, command.actor)) fail('AUTHORITY_REQUIRED', 'review actor must match the command');
     independent(item, command.actor);
@@ -226,7 +235,7 @@ export function recordApproval(store, command, authority) {
         if (command.leaseToken !== null) fail('LEASE_CONFLICT', 'operator decisions do not borrow an execution lease');
         requireHostActionGrant(command, authority, command.kind);
       } else {
-        ordinaryAuthority(tx, item, command, authority);
+        ordinaryAuthority(store, tx, item, command, authority);
       }
       currentBinding(b, item);
       subjectArtifact(context, tx, item, b.subject, decisionActor);
@@ -260,7 +269,7 @@ export function registerEvidence(store, command, capture) {
         fail('RECOVERY_REQUIRED', 'reconciliation must observe the exact expired lease');
       }
     } else {
-      ordinaryAuthority(tx, item, command, authority);
+      ordinaryAuthority(store, tx, item, command, authority);
     }
     currentBinding(b, item, {recovery});
     if (!recovery) subjectArtifact(context, tx, item, b.subject, b.outcome === 'waived' ? command.actor : null);
@@ -317,7 +326,7 @@ export function registerEvidence(store, command, capture) {
 
 export function transitionAsset(store, command, authority) {
   return produce(store, command, 'asset.transition', authority, ({context, item, tx, command, authority}) => {
-    ordinaryAuthority(tx, item, command, authority);
+    ordinaryAuthority(store, tx, item, command, authority);
     applyAssetTransition({context, item, tx, command, authority});
   });
 }
