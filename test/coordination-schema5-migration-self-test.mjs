@@ -723,6 +723,81 @@ function boundary(name, replacement, run) {
   }
 }
 
+function interruptReadyBeforeState(run) {
+  let stateWrites = 0;
+  return boundary('openSync', (original, path, ...args) => {
+    if (basename(String(path)) === 'state.json') {
+      stateWrites += 1;
+      if (stateWrites === 2) {
+        throw Object.assign(new Error('interrupt after ready before state'), {code: 'EIO'});
+      }
+    }
+    return original(path, ...args);
+  }, run);
+}
+
+function interruptPartialInstallBeforeState(root, run) {
+  let targetMoved = false;
+  let interrupted = false;
+  return boundary('renameSync', (original, from, to) => {
+    const result = original(from, to);
+    if (String(from).includes(`${sep}schema5-files${sep}.kai${sep}`)
+      && String(to).startsWith(`${root}${sep}.kai${sep}`)) {
+      targetMoved = true;
+    }
+    return result;
+  }, () => boundary('openSync', (original, path, ...args) => {
+    if (targetMoved && !interrupted && basename(String(path)) === 'state.json') {
+      interrupted = true;
+      throw Object.assign(new Error('interrupt after partial install before state'), {code: 'EIO'});
+    }
+    return original(path, ...args);
+  }, run));
+}
+
+function interruptManifestBeforeState(root, run) {
+  const manifestPath = join(root, '.kai', 'manifest.json');
+  let activated = false;
+  let interrupted = false;
+  return boundary('renameSync', (original, from, to) => {
+    const result = original(from, to);
+    if (String(to) === manifestPath) activated = true;
+    return result;
+  }, () => boundary('openSync', (original, path, ...args) => {
+    if (activated && !interrupted && basename(String(path)) === 'state.json') {
+      interrupted = true;
+      throw Object.assign(new Error('interrupt after manifest before state'), {code: 'EIO'});
+    }
+    return original(path, ...args);
+  }, run));
+}
+
+function interruptActivatedBeforeCleanup(root, run, message = 'interrupt after activated state') {
+  const stagePrefix = `.${basename(root)}.kai-stage-`;
+  let interrupted = false;
+  return boundary('rmSync', (original, path, options) => {
+    if (!interrupted
+      && dirname(String(path)) === dirname(root)
+      && basename(String(path)).startsWith(stagePrefix)) {
+      interrupted = true;
+      throw Object.assign(new Error(message), {code: 'EIO'});
+    }
+    return original(path, options);
+  }, run);
+}
+
+function interruptLockRelease(root, run, message = 'interrupt before lock release') {
+  const lockPath = v5MigrationLockPath(root);
+  let interrupted = false;
+  return boundary('unlinkSync', (original, path) => {
+    if (!interrupted && String(path) === lockPath) {
+      interrupted = true;
+      throw Object.assign(new Error(message), {code: 'EIO'});
+    }
+    return original(path);
+  }, run);
+}
+
 function launchModule(script, args, env = {}) {
   const child = spawn(process.execPath, [
     '--input-type=module',
@@ -1770,6 +1845,381 @@ test('interrupted phases remain schema 4 authoritative and recover only from ver
   }
 });
 
+test('ready.json is authoritative when its mutable state update crashes', async t => {
+  for (const action of ['activate', 'abandon']) {
+    await t.test(action, () => schema4Workspace(({root, backupRoot}) => {
+      const sourcePath = join(root, '.kai', 'engineering', 'old-draft.md');
+      const sourceBytes = readFileSync(sourcePath);
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      assert.throws(
+        () => interruptReadyBeforeState(() => migrateWorkspaceV5({
+          root,
+          confirm: true,
+          worksheet,
+          roles: ROLES,
+        })),
+        /interrupt after ready before state/,
+      );
+      const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+      const state = JSON.parse(readFileSync(join(lock.backup_path, 'state.json'), 'utf8'));
+      assert.equal(state.phase, 'locked');
+      assert.equal(state.ready_digest, null);
+      assert.equal(existsSync(join(lock.backup_path, 'ready.json')), true);
+      if (action === 'abandon') appendFileSync(sourcePath, 'concurrent source edit\n');
+
+      const recovered = recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action,
+        roles: ROLES,
+      });
+      assert.equal(recovered.activated, action === 'activate');
+      assert.equal(
+        JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8')).schema_version,
+        action === 'activate' ? 5 : 4,
+      );
+      if (action === 'abandon') {
+        assert.deepEqual(
+          readFileSync(sourcePath),
+          sourceBytes,
+          'abandon must restore the exact immutable schema-4 source',
+        );
+      }
+      assert.equal(existsSync(v5MigrationLockPath(root)), false);
+    }));
+  }
+});
+
+test('database metadata reconstructs missing external staging anchors', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => boundary('openSync', (original, path, ...args) => {
+        if (basename(String(path)) === 'activation-ready.json') {
+          throw Object.assign(new Error('interrupt before external staging anchors'), {code: 'EIO'});
+        }
+        return original(path, ...args);
+      }, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt before external staging anchors/,
+    );
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    assert.equal(existsSync(join(lock.backup_path, 'activation-ready.json')), false);
+    assert.equal(existsSync(join(lock.backup_path, 'receipt.json')), false);
+    assert.equal(
+      existsSync(join(lock.stage_path, '.kai', 'core', 'runtime', 'coordination.sqlite')),
+      true,
+    );
+
+    const recovered = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'activate',
+      roles: ROLES,
+    });
+    assert.equal(recovered.activated, true);
+    assert.equal(existsSync(v5MigrationLockPath(root)), false);
+  }));
+
+test('partial authored installation is derived from physical inventory, not mutable state', async t => {
+  for (const action of ['activate', 'abandon']) {
+    await t.test(action, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      const targets = worksheet.authored_files
+        .filter(entry => entry.classification.action === 'migrate')
+        .map(entry => entry.classification.target);
+      assert.throws(
+        () => interruptPartialInstallBeforeState(root, () => migrateWorkspaceV5({
+          root,
+          confirm: true,
+          worksheet,
+          roles: ROLES,
+        })),
+        /interrupt after partial install before state/,
+      );
+      const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+      const state = JSON.parse(readFileSync(join(lock.backup_path, 'state.json'), 'utf8'));
+      assert.equal(state.phase, 'sources-retired');
+      assert.equal(state.installed_targets.length, 0);
+      assert.equal(
+        targets.filter(path => existsSync(join(root, ...path.split('/')))).length,
+        1,
+      );
+
+      const recovered = recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action,
+        roles: ROLES,
+      });
+      assert.equal(recovered.activated, action === 'activate');
+      assert.equal(
+        JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8')).schema_version,
+        action === 'activate' ? 5 : 4,
+      );
+      for (const target of targets) {
+        assert.equal(
+          existsSync(join(root, ...target.split('/'))),
+          action === 'activate',
+        );
+      }
+      assert.equal(existsSync(v5MigrationLockPath(root)), false);
+    }));
+  }
+});
+
+test('manifest activation is authoritative when receipt advances before mutable state', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => interruptManifestBeforeState(root, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt after manifest before state/,
+    );
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    const state = JSON.parse(readFileSync(join(lock.backup_path, 'state.json'), 'utf8'));
+    const receipt = JSON.parse(readFileSync(join(lock.backup_path, 'receipt.json'), 'utf8'));
+    assert.equal(state.phase, 'db-moved');
+    assert.equal(state.receipt.activated, false);
+    assert.equal(receipt.activated, true);
+    assert.equal(
+      JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8')).schema_version,
+      5,
+    );
+
+    const recovered = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'activate',
+      roles: [],
+    });
+    assert.equal(recovered.activated, true);
+    assert.equal(existsSync(v5MigrationLockPath(root)), false);
+  }));
+
+test('activated mutable state resumes only cleanup and lock release', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => interruptActivatedBeforeCleanup(root, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt after activated state/,
+    );
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    const state = JSON.parse(readFileSync(join(lock.backup_path, 'state.json'), 'utf8'));
+    assert.equal(state.phase, 'activated');
+    assert.equal(state.receipt.activated, true);
+    assert.equal(existsSync(lock.stage_path), true);
+
+    const recovered = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'activate',
+      roles: ROLES,
+    });
+    assert.equal(recovered.activated, true);
+    assert.equal(existsSync(lock.stage_path), false);
+    assert.equal(existsSync(v5MigrationLockPath(root)), false);
+  }));
+
+test('repeated activate recovery is idempotent after another cleanup crash', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => interruptActivatedBeforeCleanup(root, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt after activated state/,
+    );
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    assert.throws(
+      () => interruptLockRelease(
+        root,
+        () => recoverWorkspaceV5({
+          root,
+          confirm: true,
+          action: 'activate',
+          roles: ROLES,
+        }),
+        'interrupt repeated recovery lock release',
+      ),
+      /interrupt repeated recovery lock release/,
+    );
+    assert.equal(existsSync(lock.stage_path), false);
+    assert.equal(existsSync(v5MigrationLockPath(root)), true);
+
+    const recovered = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'activate',
+      roles: ROLES,
+    });
+    assert.equal(recovered.activated, true);
+    assert.equal(existsSync(lock.stage_path), false);
+    assert.equal(existsSync(v5MigrationLockPath(root)), false);
+  }));
+
+test('activated abandon routes through baseline-only rollback', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const sourceDatabase = readFileSync(join(root, '.kai', 'state', 'coordination.sqlite'));
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => interruptActivatedBeforeCleanup(root, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt after activated state/,
+    );
+
+    const recovered = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'abandon',
+      roles: ROLES,
+    });
+    assert.equal(recovered.rolledBack, true);
+    assert.equal(recovered.schemaVersion, 4);
+    assert.deepEqual(
+      readFileSync(join(root, '.kai', 'state', 'coordination.sqlite')),
+      sourceDatabase,
+    );
+    assert.equal(existsSync(v5MigrationLockPath(root)), false);
+  }));
+
+test('activated abandon refuses rollback after the baseline advances', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => interruptActivatedBeforeCleanup(root, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt after activated state/,
+    );
+    const database = new DatabaseSync(
+      join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
+    );
+    try {
+      database.prepare(`
+        INSERT INTO events(operation_id,subject_kind,subject_id,payload)
+        VALUES(?,?,?,?)
+      `).run(
+        randomUUID(),
+        'task',
+        'engineering:task:build-api',
+        canonicalJson({kind: 'adversarial.post-activation-event'}),
+      );
+    } finally {
+      database.close();
+    }
+
+    assert.throws(
+      () => recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+      }),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /event|baseline|reconcil/i.test(error.message),
+    );
+    assert.equal(
+      JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8')).schema_version,
+      5,
+    );
+    assert.equal(existsSync(v5MigrationLockPath(root)), true);
+  }));
+
+test('contradictory staged and live anchors fail without deleting either authority', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => boundary('renameSync', (original, from, to) => {
+        if (String(from).includes(`${sep}schema5-files${sep}.kai${sep}`)
+          && String(to).startsWith(`${root}${sep}.kai${sep}`)) {
+          throw Object.assign(new Error('interrupt before target install'), {code: 'EIO'});
+        }
+        return original(from, to);
+      }, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /interrupt before target install/,
+    );
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    const target = worksheet.authored_files
+      .find(entry => entry.classification.action === 'migrate')
+      .classification.target;
+    const staged = join(lock.stage_path, 'schema5-files', ...target.split('/'));
+    const live = join(root, ...target.split('/'));
+    mkdirSync(dirname(live), {recursive: true});
+    writeFileSync(live, readFileSync(staged));
+    const liveBefore = tree(root);
+    const stageBefore = tree(lock.stage_path);
+
+    assert.throws(
+      () => recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+      }),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /ambiguous|anchor|authority|contradict/i.test(error.message),
+    );
+    assert.deepEqual(tree(root), liveBefore);
+    assert.deepEqual(tree(lock.stage_path), stageBefore);
+    assert.equal(existsSync(v5MigrationLockPath(root)), true);
+  }));
+
 test('staging uses only frozen verified bytes and live drift aborts before activation', () =>
   schema4Workspace(({root, backupRoot}) => {
     const sourcePath = join(root, '.kai', 'engineering', 'old-draft.md');
@@ -1819,7 +2269,11 @@ test('staging uses only frozen verified bytes and live drift aborts before activ
       roles: ROLES,
     });
     assert.equal(abandoned.abandoned, true);
-    assert.match(readFileSync(sourcePath, 'utf8'), /concurrent live edit/);
+    assert.deepEqual(
+      readFileSync(sourcePath),
+      original,
+      'abandon restores the exact immutable schema-4 source snapshot',
+    );
   }));
 
 test('backup verification rejects unlisted files even when listed bytes are intact', () =>
@@ -2134,7 +2588,7 @@ test('post-install abandon rejects jointly tampered state and receipt inventorie
   }
 });
 
-test('physical migration anchors reject mutable state downgraded to pre-ready', async t => {
+test('physical migration anchors recover safely when mutable state is downgraded', async t => {
   const scenarios = [
     {
       name: 'after source retirement',
@@ -2147,7 +2601,6 @@ test('physical migration anchors reject mutable state downgraded to pre-ready', 
           return original(from, to);
         }, run);
       },
-      manifestSchema: 4,
     },
     {
       name: 'after database install',
@@ -2159,7 +2612,6 @@ test('physical migration anchors reject mutable state downgraded to pre-ready', 
           return original(from, to);
         }, run);
       },
-      manifestSchema: 4,
     },
     {
       name: 'after manifest activation',
@@ -2175,7 +2627,6 @@ test('physical migration anchors reject mutable state downgraded to pre-ready', 
           return original(path, ...args);
         }, run);
       },
-      manifestSchema: 5,
     },
   ];
 
@@ -2208,9 +2659,6 @@ test('physical migration anchors reject mutable state downgraded to pre-ready', 
       const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
       const retiredRoot = join(lock.stage_path, 'retired');
       assert.equal(existsSync(retiredRoot), true);
-      const liveBefore = tree(root);
-      const stageBefore = tree(lock.stage_path);
-      const retiredBefore = tree(retiredRoot);
       const statePath = join(lock.backup_path, 'state.json');
       const state = JSON.parse(readFileSync(statePath, 'utf8'));
       state.phase = 'locked';
@@ -2220,25 +2668,19 @@ test('physical migration anchors reject mutable state downgraded to pre-ready', 
       state.database_installed = null;
       writeFileSync(statePath, canonicalJson(state));
 
-      assert.throws(
-        () => recoverWorkspaceV5({
-          root,
-          confirm: true,
-          action: 'abandon',
-          roles: ROLES,
-        }),
-        error => error.code === 'RECOVERY_REQUIRED'
-          && /activated|anchor|artifact|database|manifest|ready|receipt|retired|rollback|state/i
-            .test(error.message),
-      );
-      assert.deepEqual(tree(root), liveBefore);
-      assert.deepEqual(tree(lock.stage_path), stageBefore);
-      assert.deepEqual(tree(retiredRoot), retiredBefore);
-      assert.equal(existsSync(v5MigrationLockPath(root)), true);
+      const recovered = recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+      });
+      assert.equal(recovered.abandoned === true || recovered.rolledBack === true, true);
+      assert.equal(existsSync(v5MigrationLockPath(root)), false);
       assert.equal(
         JSON.parse(readFileSync(manifestPath, 'utf8')).schema_version,
-        scenario.manifestSchema,
+        4,
       );
+      assert.equal(existsSync(retiredRoot), false);
     }));
   }
 });
