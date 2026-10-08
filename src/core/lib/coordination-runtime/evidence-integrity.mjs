@@ -12,6 +12,17 @@ const contentEquals = (left, right) =>
   left !== null && right !== null && canonicalJson(left) === canonicalJson(right);
 const bindsSubject = (record, subject) => subjectEquals(record?.subject, subject);
 const lookup = tx => (kind, id) => tx.get(kind, id);
+const positiveEvidenceOutcomes = new Set(['clear', 'waived', 'passed']);
+
+function requirePositiveEffectiveEvidence(effective, record) {
+  const scoped = effective.filter(candidate =>
+    evidenceScope(candidate) === evidenceScope(record));
+  if (!effective.some(candidate => candidate.evidence_id === record.evidence_id)
+    || scoped.some(candidate => !positiveEvidenceOutcomes.has(candidate.outcome))) {
+    fail('EVIDENCE_GAP',
+      'superseded or negative evidence, including conflicting scoped evidence, cannot establish acceptance');
+  }
+}
 
 export function hasPublicationHistory(asset) {
   return asset.history.some(h => ['published', 'retracted'].includes(h.disposition)
@@ -127,6 +138,7 @@ export function verifyParentCompletionApproval(
       || !effective.some(candidate => candidate.evidence_id === id)) {
       fail('EVIDENCE_GAP', 'parent completion evidence is missing, stale, negative, or cross-subject');
     }
+    requirePositiveEffectiveEvidence(effective, record.body);
     for (const artifact of verifyParentCompletionEvidence(
       context,
       tx,
@@ -191,11 +203,7 @@ export function verifyReferences(context, tx, item, refs, {recovery = false, pos
           item,
           lookup(tx),
         );
-        const scoped = effective.filter(b => evidenceScope(b) === evidenceScope(record.body));
-        if (!effective.some(b => b.evidence_id === id)
-          || scoped.some(b => !new Set(['clear', 'waived', 'passed']).has(b.outcome))) {
-          fail('EVIDENCE_GAP', 'superseded or negative evidence cannot establish acceptance');
-        }
+        requirePositiveEffectiveEvidence(effective, record.body);
       }
       record.body.evidence_refs.forEach(child => visit(child, new Set([...seen, ref])));
     }

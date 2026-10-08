@@ -298,3 +298,57 @@ C:\src\kai\.worktrees\schema5-composable-workspace
 Full `npm test`, release metadata, generated packs, and final hierarchy CLI
 cutover remain deferred to their controller-owned later tasks. No subagents
 were dispatched.
+
+## Fix round 2/5 — 2026-10-06
+
+### Finding addressed
+
+Parent completion now applies the same scoped-negative rule as generic positive
+evidence verification. For the exact current parent subject, version, criteria,
+and `parent-completion` evidence scope:
+
+- every referenced positive record must remain effective;
+- any parallel effective `failed` or otherwise non-positive record blocks the
+  completion gate;
+- explicit same-scope supersession removes the failed record from the effective
+  set and restores completion when all remaining effective records are passed.
+
+The specialized parent verifier and generic reference verifier now share
+`requirePositiveEffectiveEvidence`, preventing the two acceptance paths from
+drifting again.
+
+### RED evidence
+
+```text
+node --test --test-name-pattern="parent completion requires" test/coordination-evidence-self-test.mjs
+```
+
+Exit 1: the new passed-plus-failed regression reported:
+
+```text
+Missing expected exception: parallel current passed and failed
+parent-completion evidence must block completion
+```
+
+This confirmed that the runtime completion gate accepted the referenced passed
+record while ignoring another effective failed record in the same scope.
+
+### GREEN verification
+
+All commands ran from:
+
+```text
+C:\src\kai\.worktrees\schema5-composable-workspace
+```
+
+| Command | Result |
+| --- | --- |
+| `node --test --test-name-pattern="parent completion requires|effective negative observed evidence persists|negative review/approval history" test/coordination-evidence-self-test.mjs` | Exit 0 — 3 passed |
+| `node --test --test-name-pattern="knowledge completion consumes|negative review is not erased|explicit supersession resolves" test/coordination-engine-self-test.mjs` | Exit 0 — 3 passed |
+| `node test/coordination-hierarchy-engine-self-test.mjs` | Exit 0 — 11 passed |
+| `node --test --test-name-pattern="transitive negative evidence|current approval cannot hide|private proof content" test/coordination-report-self-test.mjs` | Exit 0 — 3 passed |
+| `node --test --test-name-pattern="parent completion requires" test/coordination-evidence-self-test.mjs` | Exit 0 — passed-plus-failed conflict rejected; explicit supersession restored the existing completion approval |
+
+Full `npm test`, release metadata, generated packs, and final hierarchy CLI
+cutover remain deferred to their controller-owned later tasks. No subagents
+were dispatched.

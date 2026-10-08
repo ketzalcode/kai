@@ -1605,6 +1605,53 @@ test('parent completion requires exact accepted report artifact proof', async ()
     });
     assert.equal(reportView.inspection.artifactPreviews.length, 1);
     assert.match(reportView.inspection.artifactPreviews[0].content, /<h1>First<\/h1>/);
+
+    const failedEvidenceId = randomUUID();
+    assert.equal(registerEvidence(store, command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'declared', body: {
+        ...body,
+        evidence_id: failedEvidenceId,
+        outcome: 'failed',
+        reason: 'A current parent completion check failed.',
+      }},
+    }), {}).ok, true);
+    assert.throws(
+      () => completionApproval(txView(store), readRecord(store, 'feature', feature.id)),
+      error => error.code === 'EVIDENCE_GAP' && /negative|conflict/i.test(error.message),
+      'parallel current passed and failed parent-completion evidence must block completion',
+    );
+    assert.equal(buildReport(store, {
+      subject: {kind: 'feature', id: feature.id},
+    }).decisions.find(decision => decision.approval_id === featureApprovalId).integrity, 'gap');
+
+    const resolvingEvidenceId = randomUUID();
+    assert.equal(registerEvidence(store, command('evidence.register', {
+      actor: reviewer,
+      recordKind: 'feature',
+      recordId: feature.id,
+      expectedVersion: feature.version,
+      payload: {tier: 'observed', body: {
+        ...body,
+        evidence_id: resolvingEvidenceId,
+        supersedes: [failedEvidenceId],
+        reason: 'The failed parent completion check was rerun and passed.',
+      }},
+    }), {}).ok, true);
+    assert.equal(
+      completionApproval(txView(store), readRecord(store, 'feature', feature.id))
+        .approval_id,
+      featureApprovalId,
+      'explicit same-scope supersession restores parent completion',
+    );
+    assert.equal(buildReport(store, {
+      subject: {kind: 'feature', id: feature.id},
+    }).decisions.find(decision => decision.approval_id === featureApprovalId).integrity,
+    'verified');
+
     const other = seedTask(store, {id: 'engineering:task:other-parent-proof'});
     assert.throws(
       () => completionApproval(txView(store), readRecord(store, 'task', other.id)),
