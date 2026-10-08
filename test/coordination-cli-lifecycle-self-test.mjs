@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {spawnSync} from 'node:child_process';
 import {mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync, appendFileSync, readFileSync} from 'node:fs';
-import {dirname, join, delimiter} from 'node:path';
+import {dirname, join, delimiter, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID, createHash} from 'node:crypto';
 import {criteriaRef, COMMAND_KINDS} from '../src/core/lib/coordination-runtime/contract.mjs';
@@ -15,7 +15,7 @@ import {
 } from './helpers/coordination-runtime-fixture.mjs';
 import {writeIssued, readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
 import {nativeEvents} from '../src/core/lib/coordination-runtime/native-receipts.mjs';
-import {cliEntrypoint as cli, cliEntrypointLabel, withEntrypointEnv} from './helpers/coordination-cli-entrypoint.mjs';
+import {cliEntrypoint as cli, withEntrypointEnv} from './helpers/coordination-cli-entrypoint.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');
 const scratch = join(checkout, '.superpowers', 'cli-tests');
@@ -61,17 +61,22 @@ function invoke(root, verb, args = [], input, env = {}) {
   return {...result, json: JSON.parse(result.stdout)};
 }
 
-test(`read-only inspect reports schema without creating a missing database via ${cliEntrypointLabel}`, () => workspace(root => {
+test('read-only inspect reports the actual runtime entrypoint and ignores forged labels', () => workspace(root => {
   const result = invoke(root, 'inspect');
   assert.equal(result.status, 0);
-  assert.equal(result.json.entrypoint, cliEntrypointLabel);
+  assert.equal(result.json.entrypoint, resolve(cli));
   assert.equal(result.json.schemaVersion, 4);
   assert.equal(result.json.mode, 'inspect');
   assert.equal(result.json.storeExists, false);
   assert.equal(existsSync(join(root, '.kai', 'state', 'coordination.sqlite')), false);
   const nativeInspect = native(root, 'inspect');
   assert.equal(nativeInspect.status, 0, JSON.stringify(nativeInspect.json));
-  assert.equal(nativeInspect.json.entrypoint, cliEntrypointLabel);
+  assert.equal(nativeInspect.json.entrypoint, resolve(cli));
+  const forgedLabel = resolve(checkout, 'forged', 'generated-coordinate.mjs');
+  const forged = invoke(root, 'inspect', [], undefined, {KAI_TEST_COORDINATION_ENTRYPOINT_LABEL: forgedLabel});
+  assert.equal(forged.status, 0, JSON.stringify(forged.json));
+  assert.equal(forged.json.entrypoint, resolve(cli));
+  assert.notEqual(forged.json.entrypoint, forgedLabel);
 }));
 
 test('strict parser rejects raw authority, unknown flags and malformed input', () => workspace(root => {

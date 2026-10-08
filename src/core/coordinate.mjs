@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {fileURLToPath, pathToFileURL} from 'node:url';
-import {isAbsolute} from 'node:path';
+import {isAbsolute, resolve} from 'node:path';
 import {
   HIERARCHY_KINDS,
   RECORD_KINDS,
@@ -25,11 +25,22 @@ const inputVerbs = new Set(['apply', 'repair', 'request', 'capture', 'prepare', 
 const hierarchyVerbs = new Set(['context', 'messages', 'export', 'plan']);
 const invalid = message => { throw new RuntimeError('INVALID_INPUT', message); };
 
-function withEntrypointReport(result, env) {
+function runtimeEntrypointPath() {
+  const entrypoint = resolve(fileURLToPath(import.meta.url));
+  const argvEntry = process.argv[1];
+  if (!argvEntry) throw new Error('entrypoint verification requires process.argv[1]');
+  const invoked = resolve(argvEntry);
+  if (invoked !== entrypoint) {
+    throw new Error(`entrypoint mismatch: ${invoked} !== ${entrypoint}`);
+  }
+  return entrypoint;
+}
+
+function withEntrypointReport(result, env, entrypoint) {
   if (env?.KAI_TEST_REPORT_COORDINATION_ENTRYPOINT !== '1') return result;
   return {
     ...result,
-    entrypoint: env.KAI_TEST_COORDINATION_ENTRYPOINT_LABEL ?? fileURLToPath(import.meta.url),
+    entrypoint: entrypoint ?? resolve(fileURLToPath(import.meta.url)),
   };
 }
 
@@ -90,13 +101,13 @@ async function readInput(stream) {
 }
 
 /** Trusted host is an in-memory object, never a path, module or serialized flag. */
-export async function runCLI(argv, {host, input, stdin = process.stdin, cwd = process.cwd(), env = process.env} = {}) {
+export async function runCLI(argv, {host, input, stdin = process.stdin, cwd = process.cwd(), env = process.env, entrypoint} = {}) {
   try {
     const {verb, options} = parseArguments(argv);
     if (verb === 'direct') {
       return {
         exitCode: 0,
-        result: withEntrypointReport({ok: true, mode: verb, coordinationRequired: false}, env),
+        result: withEntrypointReport({ok: true, mode: verb, coordinationRequired: false}, env, entrypoint),
       };
     }
     let body;
@@ -112,21 +123,21 @@ export async function runCLI(argv, {host, input, stdin = process.stdin, cwd = pr
     }
     const {execute} = await import('./lib/coordination-runtime/cli.mjs');
     const result = await execute({verb, options, body, host, cwd, env});
-    return {exitCode: 0, result: withEntrypointReport(result, env)};
+    return {exitCode: 0, result: withEntrypointReport(result, env, entrypoint)};
   } catch (error) {
     if (!(error instanceof RuntimeError)) throw error;
     return {
       exitCode: error.retryable ? 2 : 1,
       result: withEntrypointReport({
         ok: false, code: error.code, message: error.message, retryable: error.retryable,
-      }, env),
+      }, env, entrypoint),
     };
   }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const {exitCode, result} = await runCLI(process.argv.slice(2));
+    const {exitCode, result} = await runCLI(process.argv.slice(2), {entrypoint: runtimeEntrypointPath()});
     process.stdout.write(`${JSON.stringify(result)}\n`);
     if (exitCode) process.stderr.write(`${result.code}: ${result.message}\n`);
     process.exitCode = exitCode;

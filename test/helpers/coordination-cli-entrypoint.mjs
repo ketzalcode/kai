@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs';
-import {dirname, join, relative, resolve} from 'node:path';
+import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 export const checkout = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -10,7 +10,6 @@ export const cliEntrypoint = configuredPath
 if (!existsSync(cliEntrypoint)) {
   throw new Error(`configured coordination entrypoint does not exist: ${cliEntrypoint}`);
 }
-export const cliEntrypointLabel = relative(checkout, cliEntrypoint).replaceAll('\\', '/');
 const cliModule = await import(pathToFileURL(cliEntrypoint).href);
 export const {parseArguments, runCLI} = cliModule;
 
@@ -18,6 +17,5 @@ export function withEntrypointEnv(env = {}) {
   return {
     ...env,
     KAI_TEST_REPORT_COORDINATION_ENTRYPOINT: '1',
-    KAI_TEST_COORDINATION_ENTRYPOINT_LABEL: cliEntrypointLabel,
   };
 }

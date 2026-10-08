@@ -361,3 +361,32 @@ npm run check-syntax
 
 No bundles or generated `plugins/` artifacts were regenerated in this task by
 design; that emitted-pack gate remains with Task 12.
+
+## Fix round 3/5 — 2026-10-07
+
+The entrypoint assertion now measures the real spawned module path instead of a
+forged label.
+
+### Entrypoint identity
+
+- Removed the trusted `KAI_TEST_COORDINATION_ENTRYPOINT_LABEL` path from the
+  reporting flow.
+- `src/core/coordinate.mjs` now reports a normalized absolute entrypoint path
+  only after checking that its direct `process.argv[1]` matches
+  `import.meta.url`.
+- The lifecycle matrix compares the spawned entrypoint path to the reported
+  actual path and includes a forged-label mutation that no longer changes the
+  result.
+
+### Verification
+
+```text
+node test/coordination-cli-lifecycle-self-test.mjs
+32 tests passed, 0 failed
+
+node test/coordination-cli-self-test.mjs
+8 tests passed, 0 failed
+
+npm run check-syntax
+74 JS/MJS helpers parsed cleanly
+```
