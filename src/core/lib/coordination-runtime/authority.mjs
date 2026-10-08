@@ -67,6 +67,15 @@ export function requireNamedAuthority(tx, command, authority, action, role) {
   requireHostActionGrant(command, authority, action);
 }
 
+export function requireAnyNamedAuthority(tx, command, authority, action, roles) {
+  const allowed = [...new Set(roles)];
+  if (!allowed.includes(command.actor.role)) {
+    fail('AUTHORITY_REQUIRED',
+      `${action} requires one of the declared authorities ${allowed.map(role => `"${role}"`).join(', ')}, not "${command.actor.role}"`);
+  }
+  requireHostActionGrant(command, authority, action);
+}
+
 export function leaseIsLive(lease) {
   return lease !== null && Date.parse(lease.expires_at) > Date.now();
 }

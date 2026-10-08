@@ -1,4 +1,9 @@
-import {RuntimeError, canonicalJson, criteriaRef} from './contract.mjs';
+import {
+  PARENT_COMMAND_KINDS,
+  RuntimeError,
+  canonicalJson,
+  criteriaRef,
+} from './contract.mjs';
 import {captureInputBasis} from './input-basis.mjs';
 import {readRecord} from './store.mjs';
 
@@ -7,6 +12,7 @@ export const routingActions = new Set([
   'question.open', 'question.answer',
 ]);
 export const delegatedActions = new Set(['question.answer', 'item.handoff']);
+export const parentGovernanceActions = new Set(PARENT_COMMAND_KINDS);
 const fail = message => { throw new RuntimeError('AUTHORITY_REQUIRED', message); };
 
 export function routingBasis(root, store, item) {

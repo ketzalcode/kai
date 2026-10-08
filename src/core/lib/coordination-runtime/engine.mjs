@@ -24,6 +24,10 @@ import {
   requireHostActionGrant, requireNamedAuthority, leaseIsLive, requireLease, requireActingAuthority,
 } from './authority.mjs';
 import {
+  currentDirectionForStore,
+  parentHandlers,
+} from './hierarchy-engine.mjs';
+import {
   NEEDS_CHANGE_REF,
   TERMINAL,
 } from '../coordination.mjs';
@@ -1011,6 +1015,7 @@ function handleAttemptRecover(current, tx, command, authority) {
 }
 
 const handlers = new Map([
+  ...parentHandlers,
   ['initiative.create', handleInitiativeCreate],
   ['initiative.update', handleInitiativeUpdate],
   ['item.create', handleItemCreate],
@@ -1055,7 +1060,9 @@ export function applyCommand(store, command, authority) {
     return applyOperation(store, command, (current, tx) => {
       bindEvidenceTransaction(store, tx);
       const handler = handlers.get(command.kind);
-      return handler(current, tx, command, authority);
+      return handler(current, tx, command, authority, {
+        direction: () => currentDirectionForStore(store),
+      });
     });
   } catch (error) {
     if (command.payload?.messageId
