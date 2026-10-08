@@ -408,6 +408,9 @@ for (const phrase of [
   'Generated coordination state validates item schemas before use.',
   'Release assessment requires a coordination item before transition.',
   'Current coordination examples identify the item owners.',
+  'Generated coordination state is current. Item schemas validate inputs before use.',
+  'Release assessment uses coordination. A coordination item is required before transition.',
+  'Current coordination examples are canonical. Item owners approve the transition.',
 ]) {
   assert.ok(
     packPlan.activeWorkspaceLanguageErrors({
@@ -497,6 +500,16 @@ assert.ok(packPlan.webOutputContractErrors({
   ),
 }).some(message => message.includes('grammar/prose drift')),
 'web evaluation mutation must reject rerun prose that contradicts the ID grammar');
+for (const contradiction of [
+  'Reruns reuse the previous ID.',
+  'The artifact UUID is the path ID.',
+]) {
+  assert.ok(packPlan.webOutputContractErrors({
+    id: 'kai-core-web-evaluation',
+    body: `${webEvaluation}\n${contradiction}\n`,
+  }).some(message => message.includes('grammar/prose drift')),
+  `web evaluation mutation must reject appended contradictory prose: ${contradiction}`);
+}
 assert.ok(packPlan.webOutputContractErrors({
   id: 'kai-core-web-content-extraction',
   body: read(skillPath('core', 'kai-core-web-content-extraction'))

@@ -1736,10 +1736,10 @@ export function activeWorkspaceLanguageErrors({body}) {
   for (const [pattern, message] of checks) {
     if (pattern.test(text)) errors.push(message);
   }
-  const semanticSentences = text.replace(/\r?\n/g, ' ').split(/(?<=[.!?])\s+/);
-  if (semanticSentences.some(sentence =>
-    /\bcoordination\b/i.test(sentence)
-    && /\b(?:item schemas?|coordination items?|item owners?)\b/i.test(sentence))) {
+  const semanticParagraphs = text.split(/\r?\n\s*\r?\n/);
+  if (semanticParagraphs.some(paragraph =>
+    /\bcoordination\b/i.test(paragraph)
+    && /\b(?:item schemas?|coordination items?|item owners?)\b/i.test(paragraph))) {
     errors.push('presents retired generic coordination item semantics as live');
   }
   return errors;
@@ -1886,8 +1886,11 @@ export function webOutputContractErrors({id, body}) {
       /check that exact ID is absent from both the private and public report roots[\s\S]{0,220}create the private report root atomically[\s\S]{0,160}increment `<NN>` and retry/i,
       /Every rerun allocates a new `<NN>` and never reuses an earlier ID\./,
     ].every(pattern => pattern.test(flat));
-    if (!proseMatchesGrammar
-      || /web-evaluation-<artifact-id>|artifact UUID makes every rerun/i.test(text)) {
+    const contradictoryProse =
+      /web-evaluation-<artifact-id>|artifact UUID makes every rerun/i.test(text)
+      || /\breruns?\s+(?:must\s+|may\s+|can\s+)?reuses?\s+(?:the\s+)?(?:previous|earlier|same)(?:\s+report)?\s+ID\b/i.test(text)
+      || /\bartifact UUID\s+(?:is|becomes|serves as)\s+(?:the\s+)?(?:report\s+)?path ID\b/i.test(text);
+    if (!proseMatchesGrammar || contradictoryProse) {
       errors.push(`${id}: web-evaluation ID grammar/prose drift; date, sequence, descriptor, and rerun allocation must agree`);
     }
     return [...new Set(errors)];
