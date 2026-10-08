@@ -3069,6 +3069,115 @@ test('interrupted rollback resumes after the authority switch or schema-5 deleti
   }
 });
 
+test('rollback host audit publishes only a complete durable copy', async t => {
+  for (const interruption of ['host copy', 'receipt creation']) {
+    await t.test(interruption, () => schema4Workspace(async ({
+      root,
+      backupRoot,
+      env,
+    }) => {
+      await migrateThroughNativeHost({root, backupRoot, env});
+      let interrupted = false;
+      const run = () => rollbackWorkspaceV5({root, confirm: true, env});
+      const operation = interruption === 'host copy'
+        ? () => boundary('copyFileSync', (original, from, to, ...args) => {
+          const result = original(from, to, ...args);
+          if (!interrupted
+            && String(to).includes('-rollback-')
+            && String(to).includes(`${sep}host${sep}`)) {
+            interrupted = true;
+            throw Object.assign(new Error('interrupt during rollback host copy'), {code: 'EIO'});
+          }
+          return result;
+        }, run)
+        : () => boundary('openSync', (original, path, ...args) => {
+          if (!interrupted
+            && basename(String(path)) === 'receipt.json'
+            && String(path).includes('-rollback-')) {
+            interrupted = true;
+            throw Object.assign(new Error('interrupt before rollback audit receipt'), {code: 'EIO'});
+          }
+          return original(path, ...args);
+        }, run);
+      assert.throws(
+        operation,
+        new RegExp(interruption === 'host copy'
+          ? 'interrupt during rollback host copy'
+          : 'interrupt before rollback audit receipt'),
+      );
+      const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+      const auditRoot = join(
+        dirname(lock.backup_path),
+        `${basename(lock.backup_path)}-rollback-${lock.operation.payload.rollback_id}`,
+      );
+      assert.equal(
+        existsSync(auditRoot),
+        false,
+        'an incomplete rollback audit must not appear at the final durable path',
+      );
+
+      const recovered = recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+        env,
+      });
+      assert.equal(recovered.rolledBack, true);
+      assert.equal(recovered.rollbackAuditPath, auditRoot);
+      assert.equal(existsSync(join(auditRoot, 'receipt.json')), true);
+      assert.equal(existsSync(`${auditRoot}.pending`), false);
+      assertSchema4Authoritative(root);
+    }));
+  }
+});
+
+test('recovery refuses corrupted operation journal fields and digests', async t => {
+  for (const corruption of ['unexpected field', 'digest']) {
+    await t.test(corruption, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      });
+      const manifestPath = join(root, '.kai', 'manifest.json');
+      assert.throws(
+        () => boundary('renameSync', (original, from, to) => {
+          if (String(to) === manifestPath && String(from).includes('rollback-')) {
+            throw Object.assign(new Error('interrupt before rollback manifest switch'), {code: 'EIO'});
+          }
+          return original(from, to);
+        }, () => rollbackWorkspaceV5({root, confirm: true})),
+        /interrupt before rollback manifest switch/,
+      );
+      const lockPath = v5MigrationLockPath(root);
+      const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
+      if (corruption === 'unexpected field') {
+        lock.operation.payload.unexpected = true;
+        lock.operation.digest = sha256(canonicalJson(lock.operation.payload));
+      } else {
+        lock.operation.digest = '0'.repeat(64);
+      }
+      writeFileSync(lockPath, canonicalJson(lock));
+      assert.throws(
+        () => recoverWorkspaceV5({
+          root,
+          confirm: true,
+          action: 'abandon',
+          roles: ROLES,
+        }),
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /operation journal is invalid/i.test(error.message),
+      );
+    }));
+  }
+});
+
 test('rollback holds its filesystem lock and exclusive SQLite barrier across authority switch', () =>
   schema4Workspace(({root, backupRoot}) => {
     const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {

@@ -10,7 +10,7 @@ import {
 import {
   buildMigrationWorksheet,
   planHierarchy
-} from "./chunk-TYARLG6J.mjs";
+} from "./chunk-PDYAMSXH.mjs";
 import {
   hierarchyContext,
   hierarchyStatus
@@ -737,7 +737,7 @@ var hierarchySubject = (options) => validateHierarchySubject({
 async function installedRoles(host, root, env) {
   let selected = host;
   if (!selected) {
-    const { createNativeHost } = await import("./chunk-RXD3WIRX.mjs");
+    const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
     selected = createNativeHost({ env });
   }
   if (!selected?.capabilities) return [];
@@ -905,7 +905,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
       fail("RECOVERY_REQUIRED", "an interrupted schema-5 migration accepts only explicit recovery maintenance");
     }
     if (!host) {
-      const { createNativeHost } = await import("./chunk-RXD3WIRX.mjs");
+      const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
       host = createNativeHost({ env });
     }
     if (["request", "authorize", "receipt"].includes(verb)) {
@@ -944,7 +944,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
       }
     }
     if (!host) {
-      const { createNativeHost } = await import("./chunk-RXD3WIRX.mjs");
+      const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
       host = createNativeHost({ env });
     }
     if (["request", "authorize", "receipt"].includes(verb)) {
@@ -982,7 +982,7 @@ async function execute({ verb, options, body, host, cwd, env }) {
     closeStore(admitted);
   }
   if (!host) {
-    const { createNativeHost } = await import("./chunk-RXD3WIRX.mjs");
+    const { createNativeHost } = await import("./chunk-3JX2K6GF.mjs");
     host = createNativeHost({ env });
   }
   if (["request", "authorize", "receipt", "capture", "capabilities", "prepare"].includes(verb)) {

@@ -1342,14 +1342,31 @@ function validateRecoveryOperation(lock) {
   if (lock.operation === void 0) return null;
   const operation = lock.operation;
   const payload = operation?.payload;
-  if (!payload || typeof payload !== "object" || Array.isArray(payload) || operation.digest !== digest(payload) || payload.schema_version !== 1 || payload.lock_id !== lock.id || !(/* @__PURE__ */ new Set(["abandon", "rollback"])).has(payload.kind) || payload.worksheet_digest !== lock.worksheet_digest || payload.backup_inventory_digest !== lock.backup_inventory_digest) {
+  if (!operation || typeof operation !== "object" || Array.isArray(operation) || canonicalJson(Object.keys(operation).sort()) !== canonicalJson(["digest", "payload"]) || !payload || typeof payload !== "object" || Array.isArray(payload) || operation.digest !== digest(payload) || payload.schema_version !== 1 || payload.lock_id !== lock.id || !(/* @__PURE__ */ new Set(["abandon", "rollback"])).has(payload.kind) || payload.worksheet_digest !== lock.worksheet_digest || payload.backup_inventory_digest !== lock.backup_inventory_digest) {
     fail3("RECOVERY_REQUIRED", "schema-5 recovery operation journal is invalid");
   }
   if (payload.kind === "abandon") {
-    if (lock.rollback === true || !Array.isArray(payload.installed_targets) || payload.installed_database !== null && typeof payload.installed_database !== "object") {
+    if (canonicalJson(Object.keys(payload).sort()) !== canonicalJson([
+      "backup_inventory_digest",
+      "installed_database",
+      "installed_targets",
+      "kind",
+      "lock_id",
+      "schema_version",
+      "worksheet_digest"
+    ]) || lock.rollback === true || !Array.isArray(payload.installed_targets) || payload.installed_database !== null && typeof payload.installed_database !== "object") {
       fail3("RECOVERY_REQUIRED", "schema-5 abandon operation journal is invalid");
     }
-  } else if (typeof payload.migration_id !== "string" || !/^[0-9a-f-]{36}$/i.test(payload.rollback_id) || !/^[a-f0-9]{64}$/.test(payload.receipt_digest)) {
+  } else if (canonicalJson(Object.keys(payload).sort()) !== canonicalJson([
+    "backup_inventory_digest",
+    "kind",
+    "lock_id",
+    "migration_id",
+    "receipt_digest",
+    "rollback_id",
+    "schema_version",
+    "worksheet_digest"
+  ]) || typeof payload.migration_id !== "string" || !/^[0-9a-f-]{36}$/i.test(payload.rollback_id) || !/^[a-f0-9]{64}$/.test(payload.receipt_digest)) {
     fail3("RECOVERY_REQUIRED", "schema-5 rollback operation journal is invalid");
   }
   return payload;
@@ -3671,10 +3688,11 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
     dirname(backupPath),
     `${basename(backupPath)}-rollback-${rollbackId}`
   );
-  const retainedRoot = join(auditRoot, "host");
-  const proofPath = join(auditRoot, "receipt.json");
-  if (existsSync(auditRoot)) {
-    const proof2 = readJson(proofPath, "rollback host audit receipt");
+  const pendingRoot = `${auditRoot}.pending`;
+  const publishedProof = () => {
+    const retainedRoot2 = join(auditRoot, "host");
+    const proofPath2 = join(auditRoot, "receipt.json");
+    const proof2 = readJson(proofPath2, "rollback host audit receipt");
     if (proof2.digest !== digest(proof2.payload) || proof2.payload?.schema_version !== 1 || proof2.payload.rollback_id !== rollbackId || proof2.payload.migration_receipt_digest !== receipt.digest || !Array.isArray(proof2.payload.live_inventory)) {
       fail3("RECOVERY_REQUIRED", "rollback host audit receipt binding is invalid");
     }
@@ -3684,7 +3702,7 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
     }));
     sameInventory(
       expectedRetained2,
-      actualInventory(retainedRoot),
+      actualInventory(retainedRoot2),
       "external rollback host audit copy changed"
     );
     return {
@@ -3692,8 +3710,23 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
       liveInventory: proof2.payload.live_inventory,
       auditRoot
     };
+  };
+  if (existsSync(auditRoot)) {
+    const published = lstatSync(auditRoot);
+    if (!published.isDirectory() || pathHasLink(dirname(auditRoot), auditRoot) || !exactPath(auditRoot)) {
+      fail3("RECOVERY_REQUIRED", "published rollback host audit changed type, link, or canonical identity");
+    }
+    if (existsSync(pendingRoot)) {
+      fail3("RECOVERY_REQUIRED", "published rollback host audit conflicts with an incomplete staging directory");
+    }
+    return publishedProof();
   }
-  if (!existsSync(hostRoot)) return null;
+  if (!existsSync(hostRoot)) {
+    if (existsSync(pendingRoot)) {
+      fail3("RECOVERY_REQUIRED", "incomplete rollback host audit has no live host inventory to rebuild");
+    }
+    return null;
+  }
   if (receipt.payload.authorization_digest === null) {
     fail3(
       "RECOVERY_REQUIRED",
@@ -3701,7 +3734,18 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
     );
   }
   const liveInventory = walkFiles(root, HOST_RUNTIME.slice(0, -1)).map((entry) => ({ ...entry, type: "file" }));
-  mkdirSync(auditRoot, { recursive: false });
+  if (existsSync(pendingRoot)) {
+    const pending = lstatSync(pendingRoot);
+    if (!pending.isDirectory() || pathHasLink(dirname(pendingRoot), pendingRoot) || !exactPath(pendingRoot)) {
+      fail3("RECOVERY_REQUIRED", "rollback host audit staging changed type, link, or canonical identity");
+    }
+    walkFiles(pendingRoot);
+    rmSync(pendingRoot, { recursive: true, force: false });
+    fsyncDirectory(dirname(pendingRoot));
+  }
+  const retainedRoot = join(pendingRoot, "host");
+  const proofPath = join(pendingRoot, "receipt.json");
+  mkdirSync(pendingRoot, { recursive: false });
   for (const entry of liveInventory) {
     durableCopy(
       join(root, ...entry.path.split("/")),
@@ -3729,6 +3773,9 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
     proofPath,
     canonicalJson(proof)
   );
+  fsyncDirectory(pendingRoot);
+  renameSync(pendingRoot, auditRoot);
+  fsyncDirectory(dirname(auditRoot));
   return { hostRoot, liveInventory, auditRoot };
 }
 function verifyLiveSchema5Files(root, receipt, plannedInventory, store = null) {

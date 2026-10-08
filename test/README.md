@@ -41,12 +41,13 @@ PR and push to `main` and must stay fast:
   `node:sqlite` experimental warning is left visible. They are slow by the
   standards of the guards above — the migration and CLI suites take minutes.
 - **Generated consumer composition** — `consumer-install-self-test.mjs` copies
-  only committed `plugins/kai-*` pack files into clean repositories with no
-  `node_modules`. Its four fixtures (`core-only`, `core-engineering`,
-  `core-creative`, and `all-packs`) execute bundled entry points and prove lazy
-  schema-5 initialization, first private/public writes, refusal paths, privacy,
-  uninstall preservation, self-contained imports, and equivalent Windows/POSIX
-  path decisions.
+  only committed `plugins/kai-*` pack files into clean repositories outside the
+  checkout ancestry, so Node cannot inherit repository `node_modules`. Its four
+  fixtures (`core-only`, `core-engineering`, `core-creative`, and `all-packs`)
+  execute bundled entry points and prove lazy schema-5 initialization, first
+  private/public writes, refusal paths, privacy, uninstall preservation,
+  `node:`-or-pack-local-only imports, and equivalent Windows/POSIX path
+  decisions.
 - **Shipped-command suites** — `activity-self-test.mjs`,
   `work-status-self-test.mjs`, `observe-subagent-self-test.mjs`,
   `observe-watch-self-test.mjs`, `demo-capture-self-test.mjs`,
