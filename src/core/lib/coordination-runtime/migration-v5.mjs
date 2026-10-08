@@ -342,6 +342,34 @@ function fsyncDirectory(path) {
   }
 }
 
+function fsyncFile(path) {
+  const mode = lstatSync(path).mode & 0o777;
+  let fd;
+  try {
+    chmodSync(path, 0o600);
+    fd = openSync(path, 'r+');
+    fsyncSync(fd);
+  } finally {
+    try {
+      if (fd !== undefined) closeSync(fd);
+    } finally {
+      chmodSync(path, mode);
+    }
+  }
+}
+
+function fsyncParents(path, boundary) {
+  let current = dirname(path);
+  const stop = normalized(boundary);
+  while (normalized(current).startsWith(stop)) {
+    fsyncDirectory(current);
+    if (normalized(current) === stop) break;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+}
+
 function durableWrite(path, bytes, {exclusive = false} = {}) {
   mkdirSync(dirname(path), {recursive: true});
   const fd = openSync(path, exclusive ? 'wx' : 'w', 0o600);
@@ -2773,13 +2801,30 @@ function restoreRetired(root, lock, state) {
     if (existsSync(retired)) {
       assertOwnedFile(retired, entry, `retired schema-4 source ${entry.path}`);
       renameSync(retired, live);
+      fsyncFile(live);
+      fsyncParents(live, root);
+      fsyncParents(retired, lock.stage_path);
     } else {
       const backup = join(lock.backup_path, 'private', ...entry.path.split('/'));
       assertOwnedFile(backup, entry, `backed-up schema-4 source ${entry.path}`);
       durableCopy(backup, live);
+      fsyncParents(live, root);
     }
+    assertOwnedFile(live, entry, `restored schema-4 source ${entry.path}`);
   }
-
+  for (const entry of sourceEntries) {
+    if (entry.path === '.kai/manifest.json' || entry.path.startsWith(HOST_RUNTIME)) continue;
+    assertOwnedFile(
+      join(root, ...entry.path.split('/')),
+      entry,
+      `restored schema-4 source ${entry.path}`,
+    );
+  }
+  const remaining = walkFiles(lock.stage_path, 'retired');
+  if (remaining.length !== 0) {
+    fail('RECOVERY_REQUIRED', 'retired schema-4 sources remain after restoration');
+  }
+  fsyncDirectory(join(root, '.kai'));
 }
 
 function assertRetiredRestorable(root, lock, state) {
@@ -2806,8 +2851,218 @@ function assertRetiredRestorable(root, lock, state) {
   }
 }
 
+function inspectAbandonArtifacts(root, lock, state = null) {
+  const current = readWorkspaceManifest(root);
+  if (!current.ok) fail('RECOVERY_REQUIRED', current.reason);
+  let retired = [];
+  try {
+    retired = walkFiles(join(lock.stage_path, 'retired'));
+  } catch (error) {
+    if (error?.code === 'INVALID_INPUT') {
+      fail('RECOVERY_REQUIRED', 'retired schema-4 source tree is linked or unsafe');
+    }
+    throw error;
+  }
+  const liveDatabase = safePath(root, COORDINATION_DATABASE);
+  const stagedDatabase = join(lock.stage_path, ...COORDINATION_DATABASE.split('/'));
+  const targetLocations = [];
+  for (const source of state?.worksheet?.authored_files ?? []) {
+    if (source.classification?.action !== 'migrate') continue;
+    const path = schema5InventoryPath(
+      source.classification.target,
+      `authored target ${source.classification.target}`,
+    );
+    targetLocations.push({
+      path,
+      live: existsSync(liveSchema5InventoryPath(
+        root,
+        path,
+        `migration target ${path}`,
+      )),
+      staged: existsSync(stagedSchema5InventoryPath(
+        lock,
+        path,
+        `staged migration target ${path}`,
+      )),
+    });
+  }
+  const ready = existsSync(join(lock.backup_path, 'ready.json'));
+  const receipt = existsSync(join(lock.backup_path, 'receipt.json'));
+  const activationReady = existsSync(join(lock.backup_path, ACTIVATION_READY_FILE));
+  const liveDatabaseExists = existsSync(liveDatabase);
+  const stagedDatabaseExists = existsSync(stagedDatabase);
+  const activeSchema5 = current.manifest.schema_version === 5;
+  const stagedManifest = existsSync(join(lock.stage_path, 'schema5-manifest.json'));
+  const hasLiveTarget = targetLocations.some(location => location.live);
+  const hasStagedTarget = targetLocations.some(location => location.staged);
+  const postReady = ready
+    || receipt
+    || activationReady
+    || liveDatabaseExists
+    || stagedDatabaseExists
+    || retired.length !== 0
+    || activeSchema5
+    || stagedManifest
+    || hasLiveTarget
+    || hasStagedTarget;
+  let phase = 'locked';
+  if (activeSchema5 || (liveDatabaseExists && !stagedDatabaseExists)) phase = 'db-moved';
+  else if (retired.length !== 0 || hasLiveTarget) phase = 'sources-retired';
+  else if (receipt || activationReady || stagedDatabaseExists || stagedManifest
+    || hasStagedTarget) phase = 'staged';
+  else if (ready) phase = 'backup-verified';
+  return {
+    current,
+    retired,
+    liveDatabase,
+    stagedDatabase,
+    ready,
+    receipt,
+    activationReady,
+    activeSchema5,
+    postReady,
+    phase,
+  };
+}
+
+function assertPreReadySchema4Authority(root, artifacts) {
+  if (artifacts.current.manifest.schema_version !== 4) {
+    fail('RECOVERY_REQUIRED', 'pre-ready abandon requires intact schema-4 authority');
+  }
+  for (const [path, label] of [
+    [safePath(root, '.kai/manifest.json'), 'schema-4 manifest'],
+    [safePath(root, LEGACY_DATABASE), 'schema-4 coordination database'],
+  ]) {
+    if (!existsSync(path)) {
+      fail('RECOVERY_REQUIRED', `${label} is missing`);
+    }
+    const stat = lstatSync(path);
+    if (!stat.isFile() || stat.nlink !== 1
+      || pathHasLink(dirname(path), path) || !exactPath(path)) {
+      fail('RECOVERY_REQUIRED', `${label} changed type or identity`);
+    }
+  }
+}
+
+function verifyPostReadyArtifacts(root, lock, state, artifacts) {
+  if (!artifacts.ready) {
+    fail(
+      'RECOVERY_REQUIRED',
+      'installed or retired migration artifacts have no physical ready record',
+    );
+  }
+  const ready = readJson(
+    join(lock.backup_path, 'ready.json'),
+    'schema-5 migration ready record',
+  );
+  if (ready.digest !== digest(ready.payload)
+    || ready.payload.migration_id !== lock.id
+    || ready.payload.worksheet_digest !== lock.worksheet_digest
+    || ready.payload.backup_inventory_digest !== lock.backup_inventory_digest) {
+    fail('RECOVERY_REQUIRED', 'physical migration ready record is not lock-bound');
+  }
+  verifyBackup(lock.backup_path, state.worksheet, ready, state.authorization);
+  if (!artifacts.receipt
+    && !artifacts.activationReady
+    && !existsSync(artifacts.liveDatabase)
+    && !existsSync(artifacts.stagedDatabase)
+    && artifacts.retired.length === 0
+    && !artifacts.activeSchema5) {
+    return;
+  }
+  if (!artifacts.receipt || !artifacts.activationReady) {
+    fail(
+      'RECOVERY_REQUIRED',
+      'installed or retired migration artifacts have no complete receipt authority',
+    );
+  }
+  const receipt = readJson(
+    join(lock.backup_path, 'receipt.json'),
+    'schema-5 migration receipt',
+  );
+  const databasePath = existsSync(artifacts.stagedDatabase)
+    ? artifacts.stagedDatabase
+    : artifacts.liveDatabase;
+  if (!existsSync(databasePath)) {
+    fail('RECOVERY_REQUIRED', 'installed or retired migration artifacts have no database anchor');
+  }
+  const anchoredState = {
+    ...state,
+    ready_digest: ready.digest,
+    receipt,
+  };
+  const anchored = verifyInstalledMigrationAnchor({
+    root,
+    lock,
+    state: anchoredState,
+    receipt,
+    databasePath,
+  });
+  const expectedSources = new Map(
+    state.worksheet.backup_inventory.private_files
+      .filter(entry =>
+        entry.path !== '.kai/manifest.json' && !entry.path.startsWith(HOST_RUNTIME))
+      .map(entry => [entry.path, entry]),
+  );
+  for (const retired of artifacts.retired) {
+    const expected = expectedSources.get(retired.path);
+    if (!expected) {
+      fail('RECOVERY_REQUIRED', `retired tree contains unbound bytes: ${retired.path}`);
+    }
+    assertOwnedFile(
+      retiredPath(lock, retired.path),
+      expected,
+      `retired schema-4 source ${retired.path}`,
+    );
+  }
+  for (const entry of anchored.installedFiles.authored_targets) {
+    const live = liveSchema5InventoryPath(
+      root,
+      entry.path,
+      `migration-owned target ${entry.path}`,
+    );
+    const staged = stagedSchema5InventoryPath(
+      lock,
+      entry.path,
+      `staged schema-5 target ${entry.path}`,
+    );
+    if (existsSync(live) === existsSync(staged)) {
+      fail('RECOVERY_REQUIRED', `schema-5 target authority is ambiguous: ${entry.path}`);
+    }
+    assertOwnedFile(
+      existsSync(live) ? live : staged,
+      entry,
+      `plan-bound schema-5 target ${entry.path}`,
+    );
+  }
+  if (artifacts.activeSchema5) {
+    assertOwnedFile(
+      safePath(root, '.kai/manifest.json'),
+      anchored.installedFiles.manifest,
+      'active schema-5 manifest',
+    );
+  }
+}
+
 function validateAbandonState(root, lock, state) {
-  if (!state || typeof state !== 'object' || Array.isArray(state)
+  if (state === null) {
+    const artifacts = inspectAbandonArtifacts(root, lock);
+    if (artifacts.postReady) {
+      fail(
+        'RECOVERY_REQUIRED',
+        'missing recovery state conflicts with installed or retired migration artifacts',
+      );
+    }
+    assertPreReadySchema4Authority(root, artifacts);
+    return {
+      phase: 'locked',
+      live: false,
+      targets: [],
+      database: null,
+      activeSchema5: false,
+    };
+  }
+  if (typeof state !== 'object' || Array.isArray(state)
     || canonicalJson(Object.keys(state).sort())
       !== canonicalJson([...MIGRATION_STATE_KEYS].sort())
     || state.schema_version !== 1
@@ -2817,22 +3072,46 @@ function validateAbandonState(root, lock, state) {
     || state.worksheet.backup_inventory_digest !== lock.backup_inventory_digest
     || (state.authorization?.digest ?? null) !== (lock.authorization_digest ?? null)
     || !Array.isArray(state.installed_targets)) {
-    fail('RECOVERY_REQUIRED', 'schema-5 abandon state binding is invalid');
+    fail(
+      'RECOVERY_REQUIRED',
+      'schema-5 recovery state no longer matches its lock or worksheet binding',
+    );
   }
+  const artifacts = inspectAbandonArtifacts(root, lock, state);
   if (state.ready_digest === null) {
+    if (artifacts.postReady) {
+      verifyPostReadyArtifacts(root, lock, state, artifacts);
+    }
     if (state.phase !== 'locked'
       || state.receipt !== null
       || state.installed_targets.length !== 0
-      || state.database_installed !== null) {
+      || state.database_installed !== null
+      || artifacts.postReady) {
       fail('RECOVERY_REQUIRED', 'pre-ready abandon state contains unbound live cleanup entries');
     }
-    return {live: false, targets: [], database: null};
+    assertPreReadySchema4Authority(root, artifacts);
+    return {
+      phase: 'locked',
+      live: false,
+      targets: [],
+      database: null,
+      activeSchema5: false,
+    };
+  }
+  if (!artifacts.ready) {
+    fail('RECOVERY_REQUIRED', 'post-ready abandon has no physical ready record');
   }
   verifyStateBinding(lock, state);
   const prelive = new Set(['backup-verified', 'staged']);
   const live = new Set(['sources-retired', 'db-moved']);
   if (!prelive.has(state.phase) && !live.has(state.phase)) {
     fail('RECOVERY_REQUIRED', `unsupported abandon phase ${state.phase}`);
+  }
+  if (artifacts.phase !== state.phase) {
+    fail(
+      'RECOVERY_REQUIRED',
+      `mutable abandon phase ${state.phase} conflicts with physical phase ${artifacts.phase}`,
+    );
   }
   if (state.phase === 'backup-verified') {
     if (state.receipt !== null) {
@@ -2887,7 +3166,13 @@ function validateAbandonState(root, lock, state) {
         'staged schema-5 database',
       );
     }
-    return {live: false, targets: [], database: null};
+    return {
+      phase: state.phase,
+      live: false,
+      targets: [],
+      database: null,
+      activeSchema5: false,
+    };
   }
 
   const liveDatabase = safePath(root, COORDINATION_DATABASE);
@@ -2903,6 +3188,47 @@ function validateAbandonState(root, lock, state) {
     databasePath: anchoredDatabase,
   });
   const files = anchored.installedFiles;
+  const manifestEntry = state.worksheet.backup_inventory.private_files
+    .find(entry => entry.path === '.kai/manifest.json');
+  if (!manifestEntry) {
+    fail('RECOVERY_REQUIRED', 'authorized schema-4 manifest inventory is missing');
+  }
+  if (artifacts.activeSchema5) {
+    assertOwnedFile(
+      safePath(root, '.kai/manifest.json'),
+      files.manifest,
+      'active schema-5 manifest',
+    );
+  } else {
+    if (artifacts.current.manifest.schema_version !== 4) {
+      fail('RECOVERY_REQUIRED', 'live migration manifest is neither schema 4 nor schema 5');
+    }
+    assertOwnedFile(
+      safePath(root, '.kai/manifest.json'),
+      manifestEntry,
+      'live schema-4 manifest',
+    );
+  }
+  const expectedRetired = new Map(
+    state.worksheet.backup_inventory.private_files
+      .filter(entry =>
+        entry.path !== '.kai/manifest.json' && !entry.path.startsWith(HOST_RUNTIME))
+      .map(entry => [entry.path, entry]),
+  );
+  if (artifacts.retired.length !== expectedRetired.size) {
+    fail('RECOVERY_REQUIRED', 'retired schema-4 source inventory is incomplete');
+  }
+  for (const retired of artifacts.retired) {
+    const expected = expectedRetired.get(retired.path);
+    if (!expected) {
+      fail('RECOVERY_REQUIRED', `retired tree contains unbound bytes: ${retired.path}`);
+    }
+    assertOwnedFile(
+      retiredPath(lock, retired.path),
+      expected,
+      `retired schema-4 source ${retired.path}`,
+    );
+  }
   const expectedTargets = new Map(files.authored_targets.map(entry => [entry.path, entry]));
   const stateTargets = new Map();
   for (const entry of state.installed_targets) {
@@ -2974,7 +3300,13 @@ function validateAbandonState(root, lock, state) {
       || installedTargets.length !== files.authored_targets.length)) {
     fail('RECOVERY_REQUIRED', 'db-moved phase lacks its complete immutable live inventory');
   }
-  return {live: true, targets: installedTargets, database: installedDatabase};
+  return {
+    phase: state.phase,
+    live: true,
+    targets: installedTargets,
+    database: installedDatabase,
+    activeSchema5: artifacts.activeSchema5,
+  };
 }
 
 function removeMigratedTargets(root, authority) {
@@ -2997,13 +3329,70 @@ function removeMigratedTargets(root, authority) {
     );
   }
   for (const entry of authority.targets) {
-    unlinkSync(liveSchema5InventoryPath(
+    const path = liveSchema5InventoryPath(
       root,
       entry.path,
       `migration-owned target ${entry.path}`,
-    ));
+    );
+    unlinkSync(path);
+    fsyncParents(path, root);
   }
-  if (authority.database) unlinkSync(safePath(root, COORDINATION_DATABASE));
+  if (authority.database) {
+    const path = safePath(root, COORDINATION_DATABASE);
+    unlinkSync(path);
+    fsyncParents(path, root);
+  }
+}
+
+function verifyAbandonRestoration(root, lock, state, authority) {
+  const current = readWorkspaceManifest(root);
+  if (!current.ok || current.manifest.schema_version !== 4) {
+    fail('RECOVERY_REQUIRED', current.ok
+      ? 'schema-4 authority was not restored'
+      : current.reason);
+  }
+  for (const entry of state.worksheet.backup_inventory.private_files) {
+    if (entry.path.startsWith(HOST_RUNTIME)) continue;
+    const live = join(root, ...entry.path.split('/'));
+    assertOwnedFile(live, entry, `restored schema-4 authority ${entry.path}`);
+    fsyncFile(live);
+    fsyncParents(live, root);
+  }
+  for (const entry of authority.targets) {
+    if (existsSync(liveSchema5InventoryPath(
+      root,
+      entry.path,
+      `migration-owned target ${entry.path}`,
+    ))) {
+      fail('RECOVERY_REQUIRED', `schema-5 target remains after abandon: ${entry.path}`);
+    }
+  }
+  if (authority.database && existsSync(safePath(root, COORDINATION_DATABASE))) {
+    fail('RECOVERY_REQUIRED', 'schema-5 database remains after abandon');
+  }
+  if (walkFiles(lock.stage_path, 'retired').length !== 0) {
+    fail('RECOVERY_REQUIRED', 'retired schema-4 bytes remain after abandon restoration');
+  }
+  fsyncDirectory(join(root, '.kai'));
+}
+
+function removeAbandonStage(lock, {restorationRequired, restorationVerified}) {
+  if (!existsSync(lock.stage_path)) return;
+  const stat = lstatSync(lock.stage_path);
+  if (!stat.isDirectory()
+    || pathHasLink(dirname(lock.stage_path), lock.stage_path)
+    || !exactPath(lock.stage_path)) {
+    fail('RECOVERY_REQUIRED', 'migration stage changed type, link, or canonical identity');
+  }
+  const retired = walkFiles(lock.stage_path, 'retired');
+  if (retired.length !== 0 || (restorationRequired && !restorationVerified)) {
+    fail(
+      'RECOVERY_REQUIRED',
+      'refusing to remove a migration stage before retired sources are durably restored',
+    );
+  }
+  rmSync(lock.stage_path, {recursive: true, force: false});
+  fsyncDirectory(dirname(lock.stage_path));
 }
 
 function abandonMigration(root, lock, state) {
@@ -3011,30 +3400,34 @@ function abandonMigration(root, lock, state) {
     || normalized(lock.stage_path) !== normalized(v5StagePath(root, lock.id))) {
     fail('RECOVERY_REQUIRED', 'abandon lock does not name the canonical migration stage');
   }
-  const current = readWorkspaceManifest(root);
-  if (!current.ok) fail('RECOVERY_REQUIRED', current.reason);
-  if (current.manifest.schema_version === 5) {
+  const authority = validateAbandonState(root, lock, state);
+  if (authority.activeSchema5) {
     fail('RECOVERY_REQUIRED', 'activated schema-5 migration requires rollback, not abandon');
   }
-  if (state) {
-    const authority = validateAbandonState(root, lock, state);
-    if (authority.live) {
-      assertRetiredRestorable(root, lock, state);
-      removeMigratedTargets(root, authority);
-      restoreRetired(root, lock, state);
-      const manifestBackup = join(lock.backup_path, 'private', '.kai', 'manifest.json');
-      const liveManifest = safePath(root, '.kai/manifest.json');
-      const manifestEntry = state.worksheet.backup_inventory.private_files
-        .find(entry => entry.path === '.kai/manifest.json');
-      if (!existsSync(liveManifest)) {
-        assertOwnedFile(manifestBackup, manifestEntry, 'backed-up schema-4 manifest');
-        durableCopy(manifestBackup, liveManifest);
-      } else {
-        assertOwnedFile(liveManifest, manifestEntry, 'live schema-4 manifest');
-      }
+  let restorationVerified = null;
+  if (authority.live) {
+    assertRetiredRestorable(root, lock, state);
+    removeMigratedTargets(root, authority);
+    restoreRetired(root, lock, state);
+    const manifestBackup = join(lock.backup_path, 'private', '.kai', 'manifest.json');
+    const liveManifest = safePath(root, '.kai/manifest.json');
+    const manifestEntry = state.worksheet.backup_inventory.private_files
+      .find(entry => entry.path === '.kai/manifest.json');
+    if (!existsSync(liveManifest)) {
+      assertOwnedFile(manifestBackup, manifestEntry, 'backed-up schema-4 manifest');
+      durableCopy(manifestBackup, liveManifest);
+    } else {
+      assertOwnedFile(liveManifest, manifestEntry, 'live schema-4 manifest');
     }
-    rmSync(lock.stage_path, {recursive: true, force: true});
+    fsyncFile(liveManifest);
+    fsyncParents(liveManifest, root);
+    verifyAbandonRestoration(root, lock, state, authority);
+    restorationVerified = true;
   }
+  removeAbandonStage(lock, {
+    restorationRequired: authority.live,
+    restorationVerified,
+  });
   releaseLock(v5MigrationLockPath(root), lock);
   return {
     id: lock.id,
@@ -3062,7 +3455,8 @@ export function recoverWorkspaceV5({
   const statePath = join(lock.backup_path, 'state.json');
   const state = existsSync(statePath) ? readState(lock) : null;
   if (action === 'abandon') return abandonMigration(root, lock, state);
-  if (!state || state.phase === 'locked') {
+  const authority = validateAbandonState(root, lock, state);
+  if (!state || authority.phase === 'locked') {
     fail('RECOVERY_REQUIRED', 'schema-5 migration backup was not verified; only abandon is safe');
   }
   verifyStateBinding(lock, state);

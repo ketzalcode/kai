@@ -2134,6 +2134,115 @@ test('post-install abandon rejects jointly tampered state and receipt inventorie
   }
 });
 
+test('physical migration anchors reject mutable state downgraded to pre-ready', async t => {
+  const scenarios = [
+    {
+      name: 'after source retirement',
+      interrupt({authoredTarget}, run) {
+        return boundary('renameSync', (original, from, to) => {
+          if (String(to) === authoredTarget
+            && String(from).includes(`${sep}schema5-files${sep}`)) {
+            throw Object.assign(new Error('stop after source retirement'), {code: 'EIO'});
+          }
+          return original(from, to);
+        }, run);
+      },
+      manifestSchema: 4,
+    },
+    {
+      name: 'after database install',
+      interrupt({manifestPath}, run) {
+        return boundary('renameSync', (original, from, to) => {
+          if (String(to) === manifestPath) {
+            throw Object.assign(new Error('stop after database install'), {code: 'EIO'});
+          }
+          return original(from, to);
+        }, run);
+      },
+      manifestSchema: 4,
+    },
+    {
+      name: 'after manifest activation',
+      interrupt(_paths, run) {
+        let receiptOpens = 0;
+        return boundary('openSync', (original, path, ...args) => {
+          if (typeof path === 'string' && path.endsWith('receipt.json')) {
+            receiptOpens += 1;
+            if (receiptOpens === 2) {
+              throw Object.assign(new Error('stop after manifest activation'), {code: 'EIO'});
+            }
+          }
+          return original(path, ...args);
+        }, run);
+      },
+      manifestSchema: 5,
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    await t.test(scenario.name, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      const manifestPath = join(root, '.kai', 'manifest.json');
+      const authoredTarget = join(
+        root,
+        '.kai',
+        'engineering',
+        'spec',
+        'migration-draft',
+        'drafts',
+        'old-draft.md',
+      );
+      assert.throws(
+        () => scenario.interrupt({manifestPath, authoredTarget}, () =>
+          migrateWorkspaceV5({
+            root,
+            confirm: true,
+            worksheet,
+            roles: ROLES,
+          })),
+        /stop after/,
+      );
+      const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+      const retiredRoot = join(lock.stage_path, 'retired');
+      assert.equal(existsSync(retiredRoot), true);
+      const liveBefore = tree(root);
+      const stageBefore = tree(lock.stage_path);
+      const retiredBefore = tree(retiredRoot);
+      const statePath = join(lock.backup_path, 'state.json');
+      const state = JSON.parse(readFileSync(statePath, 'utf8'));
+      state.phase = 'locked';
+      state.ready_digest = null;
+      state.receipt = null;
+      state.installed_targets = [];
+      state.database_installed = null;
+      writeFileSync(statePath, canonicalJson(state));
+
+      assert.throws(
+        () => recoverWorkspaceV5({
+          root,
+          confirm: true,
+          action: 'abandon',
+          roles: ROLES,
+        }),
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /activated|anchor|artifact|database|manifest|ready|receipt|retired|rollback|state/i
+            .test(error.message),
+      );
+      assert.deepEqual(tree(root), liveBefore);
+      assert.deepEqual(tree(lock.stage_path), stageBefore);
+      assert.deepEqual(tree(retiredRoot), retiredBefore);
+      assert.equal(existsSync(v5MigrationLockPath(root)), true);
+      assert.equal(
+        JSON.parse(readFileSync(manifestPath, 'utf8')).schema_version,
+        scenario.manifestSchema,
+      );
+    }));
+  }
+});
+
 test('atomic replacement is preflighted before any live schema-4 tree mutation', () =>
   schema4Workspace(({root, backupRoot}) => {
     const manifestPath = join(root, '.kai', 'manifest.json');
