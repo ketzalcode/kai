@@ -387,3 +387,76 @@ transaction.
 
 Generated packs, release metadata, and the full `npm test` gate remain assigned
 to Task 12 and were not run or refreshed here.
+
+## Fix round 2 — 2026-10-07
+
+All three remaining findings were addressed.
+
+### Changes
+
+1. Windows exact-identity checks now follow one platform-aware rule from
+   discovery through mutation. `exactPath()` accepts case-only aliases on
+   Windows while still rejecting junctions, symlinks, traversal, device/UNC,
+   and other non-canonical forms. Resolver discovery, registry validation,
+   activity admission, and live schema-5 write admission now agree on that
+   identity policy.
+2. `workflow-proactive-scan` now uses the typed runtime read:
+   `messages --kind task --id <task-id> --root <workspace-root>`. Its guidance
+   now describes schema-3/schema-4 fallback as historical read-only state only.
+3. Registry cleanup was split from strict discovery. Normal discovery still
+   requires existing canonical targets, but `forgetWorkspace()` now parses
+   registry rows lexically and can remove the requested binding even when the
+   bound target is gone or an unrelated stale row remains.
+
+### Evidence
+
+Fresh verification runs:
+
+```text
+node test/workspace-doctor-self-test.mjs
+all workspace and 33 migration-doctor scenario checks passed
+
+node test/workspace-layout-self-test.mjs
+9 passed, 0 failed
+
+node test/work-status-self-test.mjs
+all checks passed
+
+node test/activity-self-test.mjs
+all checks passed
+
+node test/observe-subagent-self-test.mjs
+all checks passed
+
+node test/observe-watch-self-test.mjs
+all checks passed
+
+node test/coordination-cli-self-test.mjs
+10 passed, 0 failed
+
+node test/coordination-source-routing-self-test.mjs
+all checks passed
+
+npm run check-syntax
+74 JS/MJS helpers parsed cleanly
+```
+
+New targeted coverage in those runs proves:
+
+- registry validation and registry-backed discovery accept Windows case aliases
+  consistently;
+- activity logging accepts a Windows case alias for the live workspace root;
+- schema-5 `claim` succeeds through a Windows case alias, proving resolver →
+  write admission end to end;
+- `forgetWorkspace()` removes the requested binding when the target directory is
+  missing and when unrelated stale registry rows remain;
+- shipped proactive-scan guidance no longer mentions `messages --item` and now
+  requires the typed task selector plus historical schema-3/schema-4 read-only
+  fallback text.
+
+### Direct review
+
+Subagent dispatch was prohibited, so the final diff was reviewed directly.
+That review confirmed strict discovery still fails closed for stale, linked, or
+non-native registry targets while cleanup alone accepts lexical stale rows for
+deletion.

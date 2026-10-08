@@ -582,11 +582,13 @@ for (const key of ['director', 'initiativeInit', 'workspaceInit']) {
 }
 assert.match(source.proactiveScan, /read-only|inspect/i,
   'proactive-scan: stays a read-only reader of coordinated state');
-// `messages` requires `--item`; cli.mjs fails INVALID_INPUT without it.
-assert.doesNotMatch(source.proactiveScan, /status\|messages\s*\n?\s*--root/,
-  'proactive-scan: must not show `messages` without its required --item');
-assert.match(source.proactiveScan, /messages --item/,
-  'proactive-scan: `messages` carries the required --item argument');
+assert.doesNotMatch(source.proactiveScan, /messages --item/,
+  'proactive-scan: no longer instructs the removed --item selector');
+assert.match(source.proactiveScan, /messages --kind task --id <task-id>[\s\S]{0,80}--root/,
+  'proactive-scan: `messages` uses the typed task selector');
+assert.match(source.proactiveScan,
+  /schema[- ]?3(?:\/schema[- ]?4|\/4)?[\s\S]{0,120}historical state files[\s\S]{0,80}read-only/i,
+  'proactive-scan: schema 3/4 fallback is historical and read-only');
 assert.match(source.weeklyPulse, /(?:read-only|does not (?:write|change))/i,
   'weekly-pulse: remains a reader of coordinated state');
 

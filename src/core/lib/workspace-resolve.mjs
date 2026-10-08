@@ -135,10 +135,7 @@ function isNativeAbsolute(value) {
 }
 
 function usesCanonicalPhysicalPath(value) {
-  const requested = resolvePath(value);
-  const canonical = canonicalPath(value);
-  return (process.platform === 'win32' ? requested.toLowerCase() : requested)
-    === (process.platform === 'win32' ? canonical.toLowerCase() : canonical);
+  return exactPath(value);
 }
 
 export function nativeAbsolutePathProblem(value, {
@@ -312,7 +309,10 @@ export function validateSchema5Manifest(root, manifest, {
   return {errors, projects};
 }
 
-export function loadWorkspaceRegistry(env = process.env) {
+function loadWorkspaceRegistryWithPolicy(env = process.env, {
+  requireExisting = true,
+  requireCanonical = true,
+} = {}) {
   const path = registryPath(env);
   if (!existsSync(path)) return { ok: true, path, entries: [] };
   const parsed = readJson(path);
@@ -331,13 +331,13 @@ export function loadWorkspaceRegistry(env = process.env) {
     }
     const projectProblem = nativeAbsolutePathProblem(entry.project_root, {
       label: `${path} workspaces[${index}].project_root`,
-      requireExisting: true,
-      requireCanonical: true,
+      requireExisting,
+      requireCanonical,
     });
     const workspaceProblem = nativeAbsolutePathProblem(entry.workspace_root, {
       label: `${path} workspaces[${index}].workspace_root`,
-      requireExisting: true,
-      requireCanonical: true,
+      requireExisting,
+      requireCanonical,
     });
     if (projectProblem || workspaceProblem) {
       return {
@@ -347,6 +347,20 @@ export function loadWorkspaceRegistry(env = process.env) {
     }
   }
   return { ok: true, path, entries: parsed.value.workspaces };
+}
+
+export function loadWorkspaceRegistry(env = process.env) {
+  return loadWorkspaceRegistryWithPolicy(env, {
+    requireExisting: true,
+    requireCanonical: true,
+  });
+}
+
+export function loadWorkspaceRegistryForCleanup(env = process.env) {
+  return loadWorkspaceRegistryWithPolicy(env, {
+    requireExisting: false,
+    requireCanonical: false,
+  });
 }
 
 function validateRegisteredWorkspace(entry, projectRoot) {

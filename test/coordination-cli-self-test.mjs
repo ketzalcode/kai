@@ -56,6 +56,14 @@ const roles = [
   'workflow-ship',
 ];
 
+function caseAlias(path) {
+  if (process.platform !== 'win32') return null;
+  const upper = path.toUpperCase();
+  if (upper !== path) return upper;
+  const lower = path.toLowerCase();
+  return lower !== path ? lower : null;
+}
+
 mkdirSync(scratch, {recursive: true});
 
 async function workspace(run, {schema = 5, createStore = false} = {}) {
@@ -271,6 +279,26 @@ test('native maintenance cannot initialize or leave host authorization state bef
     assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host')), false);
     assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
   }, {schema: 5}));
+
+test('schema-5 writes accept Windows case aliases that resolve to the live workspace', async () => {
+  if (process.platform !== 'win32') return;
+  await workspace(async ({root, store}) => {
+    seedTask(store, {
+      state: 'ready',
+      producer_actor: null,
+      producing_actors: [],
+      acceptance_actor: null,
+    });
+    closeStore(store);
+    const aliasedRoot = caseAlias(root);
+    assert.ok(aliasedRoot && aliasedRoot !== root);
+    const result = await runCLI(['claim', '--root', aliasedRoot, '--task', fixtureIds.task], {
+      host: host(),
+    });
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.result.claimed, fixtureIds.task);
+  }, {schema: 5, createStore: true});
+});
 
 test('typed status, context, detail, messages, export, and plan share the hierarchy surface', async () =>
   workspace(async ({root, store}) => {

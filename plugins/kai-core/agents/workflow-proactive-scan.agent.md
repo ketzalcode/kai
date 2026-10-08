@@ -61,10 +61,10 @@ dedup, notification-payload, and failure rules this procedure follows.
    `@operator` questions. Read a schema-5 workspace through the runtime's
    read-only verbs — `node "<kai-plugin>/scripts/coordinate.mjs" status --root
    "<workspace-root>"` for the item set, then `node
-   "<kai-plugin>/scripts/coordinate.mjs" messages --item <item-id> --root
-   "<workspace-root>"` per item (`messages` requires `--item`) — rather than
-   parsing a Markdown file, and fall back to reading retained state files only
-   when the workspace is schema 3 or has no store.
+   "<kai-plugin>/scripts/coordinate.mjs" messages --kind task --id <task-id>
+   --root "<workspace-root>"` per task — rather than parsing a Markdown file,
+   and fall back to retained schema-3/schema-4 historical state files read-only
+   only when the workspace is schema 3, schema 4, or has no store.
    Compute each signal's deterministic `key` and `hash`
    per `kai-core-proactive-scan`. Change no record; this workflow submits no
    command and holds no lease.

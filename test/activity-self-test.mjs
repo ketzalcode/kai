@@ -22,6 +22,14 @@ import {closeStore, openStore} from '../src/core/lib/coordination-runtime/store.
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+function caseAlias(path) {
+  if (process.platform !== 'win32') return null;
+  const upper = path.toUpperCase();
+  if (upper !== path) return upper;
+  const lower = path.toLowerCase();
+  return lower !== path ? lower : null;
+}
+
 function writeSchema5Manifest(root, workspaceId) {
   spawnSync('git', ['init', '--quiet', root], {windowsHide: true});
   writeFileSync(join(root, '.gitignore'), '/.kai/\n');
@@ -249,6 +257,20 @@ function selfTest() {
     const e2e = read(e2eRoot);
     ok(e2e.present && e2e.records.length === 2, 'both records land in the log');
     ok(runs(e2e.records).every((r) => !r.open), 'the run pairs and closes');
+
+    const aliasedRoot = caseAlias(e2eRoot);
+    if (aliasedRoot) {
+      const caseStart = spawnSync(process.execPath, [cli, 'start', '--root', aliasedRoot,
+        '--role', 'principal-swe-backend', '--run', 'abc123def5',
+        '--task', 'engineering:task:export-audit', '--for', '30m'], { encoding: 'utf8' });
+      const caseStop = spawnSync(process.execPath, [cli, 'stop', '--root', aliasedRoot,
+        '--role', 'principal-swe-backend', '--run', 'abc123def5',
+        '--outcome', 'handoff'], { encoding: 'utf8' });
+      const caseRecords = read(e2eRoot).records.filter((record) => record.run === 'abc123def5');
+      ok(caseStart.status === 0 && caseStop.status === 0 && caseRecords.length === 2,
+        'resolver and activity admission accept Windows case aliases for the live workspace root',
+        [caseStart.stderr, caseStop.stderr].filter(Boolean));
+    }
 
     // Unit regression: fabricated records in a test can silently certify a unit
     // the real writer never emits. These assertions go through the actual

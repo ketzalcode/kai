@@ -49,6 +49,14 @@ function sleepSync(milliseconds) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 }
 
+function caseAlias(path) {
+  if (process.platform !== 'win32') return null;
+  const upper = path.toUpperCase();
+  if (upper !== path) return upper;
+  const lower = path.toLowerCase();
+  return lower !== path ? lower : null;
+}
+
 function selfTest() {
   const fx = join(REPO_ROOT, 'test', 'fixtures');
   let failed = 0;
@@ -784,6 +792,26 @@ function selfTest() {
       rmSync(aliasWorkspace, {force: true});
       writeRegistry(registeredEntries, env);
 
+      const aliasedProjectRoot = caseAlias(projectRoot);
+      const aliasedWorkspaceRoot = caseAlias(workspaceRoot);
+      if (aliasedProjectRoot && aliasedWorkspaceRoot) {
+        writeFileSync(registryPath(env), `${JSON.stringify({
+          schema_version: 1,
+          workspaces: [{
+            project_root: aliasedProjectRoot,
+            workspace_root: aliasedWorkspaceRoot,
+            workspace_id: manifest.workspace_id,
+          }],
+        }, null, 2)}\n`);
+        const loadedCaseAlias = loadWorkspaceRegistry(env);
+        const discoveredCaseAlias = resolveWorkspaceRoot({cwd: aliasedProjectRoot, env});
+        ok(loadedCaseAlias.ok && discoveredCaseAlias.ok
+          && normalized(discoveredCaseAlias.root) === normalized(workspaceRoot),
+        'registry validation and discovery accept Windows case aliases consistently',
+        [loadedCaseAlias.reason, discoveredCaseAlias.reason].filter(Boolean));
+        writeRegistry(registeredEntries, env);
+      }
+
       const duplicateWorkspace = join(tmpRoot, 'duplicate-workspace');
       mkdirSync(duplicateWorkspace);
       writeRegistry([...registeredEntries, {
@@ -863,6 +891,47 @@ function selfTest() {
       const mismatched = checkWorkspace(workspaceRoot, { env });
       ok(/not paired|not registered/i.test(mismatched.errors.join('\n')),
         'registry and manifest workspace ids cannot drift silently', mismatched.errors);
+
+      writeRegistry([{
+        project_root: projectRoot,
+        workspace_root: workspaceRoot,
+        workspace_id: manifest.workspace_id,
+      }], env);
+      const staleProjectRoot = join(tmpRoot, 'stale-project');
+      const staleWorkspaceRoot = join(tmpRoot, 'stale-workspace');
+      writeRegistry([
+        {
+          project_root: projectRoot,
+          workspace_root: workspaceRoot,
+          workspace_id: manifest.workspace_id,
+        },
+        {
+          project_root: staleProjectRoot,
+          workspace_root: staleWorkspaceRoot,
+          workspace_id: 'stale-workspace',
+        },
+      ], env);
+      const forgottenWithUnrelatedStale = forgetWorkspace({ projectRoot, env });
+      const staleRetained = JSON.parse(readFileSync(registryPath(env), 'utf8'));
+      ok(forgottenWithUnrelatedStale.ok
+        && staleRetained.workspaces.length === 1
+        && staleRetained.workspaces[0].project_root === staleProjectRoot,
+      'forget removes the requested binding even when unrelated stale rows remain',
+      [forgottenWithUnrelatedStale.reason].filter(Boolean));
+
+      writeRegistry([{
+        project_root: staleProjectRoot,
+        workspace_root: staleWorkspaceRoot,
+        workspace_id: 'stale-workspace',
+      }], env);
+      const forgottenMissingTarget = forgetWorkspace({
+        projectRoot: caseAlias(staleProjectRoot) || staleProjectRoot,
+        env,
+      });
+      const emptiedStaleRegistry = JSON.parse(readFileSync(registryPath(env), 'utf8'));
+      ok(forgottenMissingTarget.ok && emptiedStaleRegistry.workspaces.length === 0,
+        'forget removes a missing-target binding by lexical path validation only',
+        [forgottenMissingTarget.reason].filter(Boolean));
 
       writeRegistry([{
         project_root: projectRoot,

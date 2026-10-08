@@ -39,7 +39,8 @@ import {
   defaultHome, migrationReport,
 } from './lib/migration-doctor.mjs';
 import {
-  defaultKaiHome, loadWorkspaceRegistry, readWorkspaceManifest, registryPath, resolveWorkspaceRoot,
+  defaultKaiHome, loadWorkspaceRegistry, loadWorkspaceRegistryForCleanup,
+  readWorkspaceManifest, registryPath, resolveWorkspaceRoot,
   nativeAbsolutePathProblem, validateSchema5Manifest,
 } from './lib/workspace-resolve.mjs';
 import {
@@ -1120,11 +1121,14 @@ export function forgetWorkspace({ projectRoot, env = process.env }) {
   });
   if (projectProblem) return {ok: false, reason: projectProblem};
   projectRoot = resolve(projectRoot);
+  const projectKey = process.platform === 'win32' ? projectRoot.toLowerCase() : projectRoot;
   return withRegistryLock(env, () => {
-    const registry = loadWorkspaceRegistry(env);
+    const registry = loadWorkspaceRegistryForCleanup(env);
     if (!registry.ok) return registry;
     const retained = registry.entries.filter(
-      (entry) => normalized(entry.project_root) !== normalized(projectRoot),
+      (entry) => (process.platform === 'win32'
+        ? resolve(entry.project_root).toLowerCase()
+        : resolve(entry.project_root)) !== projectKey,
     );
     if (retained.length === registry.entries.length) {
       return { ok: false, reason: `project "${projectRoot}" is not registered` };
