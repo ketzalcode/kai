@@ -3,6 +3,7 @@ import {dirname} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {
+  HIERARCHY_KINDS,
   RECORD_KINDS,
   RuntimeError,
   canonicalJson,
@@ -13,14 +14,18 @@ import {
   validateRecord,
 } from './contract.mjs';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
+const HISTORICAL_SCHEMA_VERSION = 1;
 const MESSAGE_SCHEMA_VERSION = 1;
 const STORE_MODES = new Set(['create', 'read', 'write']);
+const STORE_SUBJECT_KINDS = new Set([...HIERARCHY_KINDS, 'item']);
 const EVENTS_TABLE_SQL = `CREATE TABLE events (
   seq INTEGER PRIMARY KEY AUTOINCREMENT,
-  operation_id TEXT NOT NULL, item_id TEXT,
+  operation_id TEXT NOT NULL,
+  subject_kind TEXT,
+  subject_id TEXT,
   payload TEXT NOT NULL CHECK (json_valid(payload)),
-  event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED,
+  event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED NOT NULL,
   message_id TEXT GENERATED ALWAYS AS (
     CASE json_extract(payload, '$.kind')
       WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
@@ -37,16 +42,17 @@ const EVENTS_TABLE_SQL = `CREATE TABLE events (
     CASE WHEN json_extract(payload, '$.kind') = 'question.open'
       THEN json_extract(payload, '$.payload.questionId') END
   ) STORED,
-  thread_id TEXT
+  thread_id TEXT,
+  CHECK ((subject_kind IS NULL) = (subject_id IS NULL))
 )`;
 const REQUIRED_INDEX_SQL = [
-  'CREATE INDEX records_by_item ON records(kind, item_id)',
-  `CREATE INDEX records_by_question_status ON records(item_id, json_extract(body, '$.status'))
+  'CREATE INDEX records_by_subject ON records(kind, subject_kind, subject_id)',
+  `CREATE INDEX records_by_question_status ON records(subject_kind, subject_id, json_extract(body, '$.status'))
     WHERE kind = 'question'`,
-  `CREATE INDEX records_by_criteria ON records(kind, item_id, json_extract(body, '$.criteria_ref'))`,
+  `CREATE INDEX records_by_criteria ON records(kind, subject_kind, subject_id, json_extract(body, '$.criteria_ref'))`,
   `CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL`,
   `CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL`,
-  `CREATE INDEX events_by_item_kind ON events(item_id, event_kind, seq, question_id)`,
+  `CREATE INDEX events_by_subject_kind ON events(subject_kind, subject_id, event_kind, seq, question_id)`,
   `CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL`,
 ];
 // Capture thread identity while the message exists, so deleting detail cannot
@@ -57,7 +63,7 @@ const REQUIRED_TRIGGER_SQL = [
     BEGIN
       UPDATE events SET thread_id = COALESCE(
         (SELECT json_extract(body, '$.thread_id') FROM records
-          WHERE kind = 'message' AND id = NEW.message_id), NEW.item_id)
+          WHERE kind = 'message' AND id = NEW.message_id), NEW.subject_id)
       WHERE seq = NEW.seq;
     END`,
   `CREATE TRIGGER messages_capture_thread AFTER INSERT ON records
@@ -82,16 +88,18 @@ const REQUIRED_COLUMNS = new Map([
   ['records', [
     ['kind', 'TEXT', 1, null, 1],
     ['id', 'TEXT', 1, null, 2],
-    ['item_id', 'TEXT', 0, null, 0],
+    ['subject_kind', 'TEXT', 0, null, 0],
+    ['subject_id', 'TEXT', 0, null, 0],
     ['version', 'INTEGER', 1, null, 0],
     ['body', 'TEXT', 1, null, 0],
   ]],
   ['events', [
     ['seq', 'INTEGER', 0, null, 1],
     ['operation_id', 'TEXT', 1, null, 0],
-    ['item_id', 'TEXT', 0, null, 0],
+    ['subject_kind', 'TEXT', 0, null, 0],
+    ['subject_id', 'TEXT', 0, null, 0],
     ['payload', 'TEXT', 1, null, 0],
-    ['event_kind', 'TEXT', 0, null, 0, 3],
+    ['event_kind', 'TEXT', 1, null, 0, 3],
     ['message_id', 'TEXT', 0, null, 0, 3],
     ['approval_id', 'TEXT', 0, null, 0, 3],
     ['question_id', 'TEXT', 0, null, 0, 3],
@@ -107,7 +115,7 @@ const REQUIRED_TABLE_SQL = new Map([
   ['metadata',
     'create table metadata(key text primary key,value text not null)'],
   ['records',
-    'create table records(kind text not null,id text not null,item_id text,version integer not null check(version>0),body text not null check(json_valid(body)),primary key(kind,id))'],
+    'create table records(kind text not null,id text not null,subject_kind text,subject_id text,version integer not null check(version>0),body text not null check(json_valid(body)),primary key(kind,id),check((subject_kind is null)=(subject_id is null)))'],
   ['events', normalizeSchemaSql(EVENTS_TABLE_SQL)],
   ['operations',
     'create table operations(id text primary key,payload_digest text not null,receipt text not null check(json_valid(receipt)))'],
@@ -116,10 +124,12 @@ const REQUIRED_TABLE_SQL = new Map([
 const SCHEMA = `
 CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE records (
-  kind TEXT NOT NULL, id TEXT NOT NULL, item_id TEXT,
+  kind TEXT NOT NULL, id TEXT NOT NULL,
+  subject_kind TEXT, subject_id TEXT,
   version INTEGER NOT NULL CHECK (version > 0),
   body TEXT NOT NULL CHECK (json_valid(body)),
-  PRIMARY KEY (kind, id)
+  PRIMARY KEY (kind, id),
+  CHECK ((subject_kind IS NULL) = (subject_id IS NULL))
 );
 ${EVENTS_TABLE_SQL};
 CREATE TABLE operations (
@@ -128,6 +138,80 @@ CREATE TABLE operations (
 );
 ${[...REQUIRED_INDEX_SQL, ...REQUIRED_TRIGGER_SQL].join(';\n')};
 `;
+
+const HISTORICAL_EVENTS_TABLE_SQL = `CREATE TABLE events (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  operation_id TEXT NOT NULL, item_id TEXT,
+  payload TEXT NOT NULL CHECK (json_valid(payload)),
+  event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED,
+  message_id TEXT GENERATED ALWAYS AS (
+    CASE json_extract(payload, '$.kind')
+      WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
+      WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
+      WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
+      WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
+    END
+  ) STORED,
+  approval_id TEXT GENERATED ALWAYS AS (
+    CASE WHEN json_extract(payload, '$.kind') = 'approval.record'
+      THEN json_extract(payload, '$.payload.body.approval_id') END
+  ) STORED,
+  question_id TEXT GENERATED ALWAYS AS (
+    CASE WHEN json_extract(payload, '$.kind') = 'question.open'
+      THEN json_extract(payload, '$.payload.questionId') END
+  ) STORED,
+  thread_id TEXT
+)`;
+const HISTORICAL_INDEX_SQL = [
+  'CREATE INDEX records_by_item ON records(kind, item_id)',
+  `CREATE INDEX records_by_question_status ON records(item_id, json_extract(body, '$.status'))
+    WHERE kind = 'question'`,
+  `CREATE INDEX records_by_criteria ON records(kind, item_id, json_extract(body, '$.criteria_ref'))`,
+  `CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL`,
+  `CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL`,
+  `CREATE INDEX events_by_item_kind ON events(item_id, event_kind, seq, question_id)`,
+  `CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL`,
+];
+const HISTORICAL_TRIGGER_SQL = [
+  `CREATE TRIGGER events_capture_thread AFTER INSERT ON events
+    WHEN NEW.message_id IS NOT NULL
+    BEGIN
+      UPDATE events SET thread_id = COALESCE(
+        (SELECT json_extract(body, '$.thread_id') FROM records
+          WHERE kind = 'message' AND id = NEW.message_id), NEW.item_id)
+      WHERE seq = NEW.seq;
+    END`,
+  ...REQUIRED_TRIGGER_SQL.slice(1),
+];
+const HISTORICAL_COLUMNS = new Map([
+  ['metadata', REQUIRED_COLUMNS.get('metadata')],
+  ['records', [
+    ['kind', 'TEXT', 1, null, 1],
+    ['id', 'TEXT', 1, null, 2],
+    ['item_id', 'TEXT', 0, null, 0],
+    ['version', 'INTEGER', 1, null, 0],
+    ['body', 'TEXT', 1, null, 0],
+  ]],
+  ['events', [
+    ['seq', 'INTEGER', 0, null, 1],
+    ['operation_id', 'TEXT', 1, null, 0],
+    ['item_id', 'TEXT', 0, null, 0],
+    ['payload', 'TEXT', 1, null, 0],
+    ['event_kind', 'TEXT', 0, null, 0, 3],
+    ['message_id', 'TEXT', 0, null, 0, 3],
+    ['approval_id', 'TEXT', 0, null, 0, 3],
+    ['question_id', 'TEXT', 0, null, 0, 3],
+    ['thread_id', 'TEXT', 0, null, 0],
+  ]],
+  ['operations', REQUIRED_COLUMNS.get('operations')],
+]);
+const HISTORICAL_TABLE_SQL = new Map([
+  ['metadata', REQUIRED_TABLE_SQL.get('metadata')],
+  ['records',
+    'create table records(kind text not null,id text not null,item_id text,version integer not null check(version>0),body text not null check(json_valid(body)),primary key(kind,id))'],
+  ['events', normalizeSchemaSql(HISTORICAL_EVENTS_TABLE_SQL)],
+  ['operations', REQUIRED_TABLE_SQL.get('operations')],
+]);
 
 function invalid(message) {
   throw new RuntimeError('INVALID_INPUT', message);
@@ -175,12 +259,32 @@ function parseJson(text, label) {
   }
 }
 
+function validateStoreSubject(subject, label, {allowNull = true, allowUndefined = false} = {}) {
+  if (subject === undefined && allowUndefined) return subject;
+  if (subject === null && allowNull) return subject;
+  if (!subject || typeof subject !== 'object' || Array.isArray(subject)) {
+    invalid(`${label} must be a typed subject${allowNull ? ' or null' : ''}`);
+  }
+  if (canonicalJson(Object.keys(subject).sort()) !== '["id","kind"]') {
+    invalid(`${label} must contain only kind and id`);
+  }
+  if (!STORE_SUBJECT_KINDS.has(subject.kind)) {
+    invalid(`${label}.kind is unsupported`);
+  }
+  if (typeof subject.id !== 'string' || subject.id === '') {
+    invalid(`${label}.id must be a non-empty string`);
+  }
+  return subject;
+}
+
 function decodeRecord(row) {
   if (!row) return null;
   const record = {
     kind: row.kind,
     id: row.id,
-    itemId: row.item_id,
+    subject: row.subject_kind === null
+      ? null
+      : {kind: row.subject_kind, id: row.subject_id},
     version: row.version,
     body: parseJson(row.body, `record ${row.kind}/${row.id}`),
   };
@@ -192,6 +296,45 @@ function decodeRecord(row) {
     }
     throw error;
   }
+}
+
+function recordProjection(store, alias = '') {
+  const prefix = alias ? `${alias}.` : '';
+  if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
+    return `${prefix}kind, ${prefix}id,
+      CASE WHEN ${prefix}item_id IS NULL THEN NULL ELSE 'item' END AS subject_kind,
+      ${prefix}item_id AS subject_id, ${prefix}version, ${prefix}body`;
+  }
+  return `${prefix}kind, ${prefix}id, ${prefix}subject_kind, ${prefix}subject_id,
+    ${prefix}version, ${prefix}body`;
+}
+
+function subjectFilter(store, subject, alias = '') {
+  validateStoreSubject(subject, 'record subject');
+  const prefix = alias ? `${alias}.` : '';
+  if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
+    if (subject === null) return {sql: `${prefix}item_id IS NULL`, params: []};
+    if (subject.kind !== 'item') return {sql: '0 = 1', params: []};
+    return {sql: `${prefix}item_id = ?`, params: [subject.id]};
+  }
+  if (subject === null) {
+    return {
+      sql: `${prefix}subject_kind IS NULL AND ${prefix}subject_id IS NULL`,
+      params: [],
+    };
+  }
+  return {
+    sql: `${prefix}subject_kind = ? AND ${prefix}subject_id = ?`,
+    params: [subject.kind, subject.id],
+  };
+}
+
+function matchingSubjects(store, leftAlias, rightAlias) {
+  if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
+    return `${leftAlias}.item_id IS ${rightAlias}.item_id`;
+  }
+  return `${leftAlias}.subject_kind IS ${rightAlias}.subject_kind
+    AND ${leftAlias}.subject_id IS ${rightAlias}.subject_id`;
 }
 
 function validateReceipt(receipt, operationId) {
@@ -221,8 +364,13 @@ function normalizeSchemaSql(sql) {
     .replace(/@literal(\d+)@/g, (_, index) => literals[Number(index)]);
 }
 
-function validatePhysicalSchema(database) {
-  for (const [table, expectedColumns] of REQUIRED_COLUMNS) {
+function validatePhysicalSchema(database, {
+  columns,
+  tableSql,
+  indexSql,
+  triggerSql,
+}) {
+  for (const [table, expectedColumns] of columns) {
     const columns = runSqlite(() =>
       database.prepare(`PRAGMA table_xinfo(${table})`).all());
     const actualColumns = columns.map(column => [
@@ -242,12 +390,12 @@ function validatePhysicalSchema(database) {
       SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?
     `).get(table));
     const normalizedSql = normalizeSchemaSql(row?.sql ?? '');
-    if (normalizedSql !== REQUIRED_TABLE_SQL.get(table)) {
+    if (normalizedSql !== tableSql.get(table)) {
       recovery(`coordination database table "${table}" has unsupported constraints`);
     }
   }
 
-  for (const definition of [...REQUIRED_INDEX_SQL, ...REQUIRED_TRIGGER_SQL]) {
+  for (const definition of [...indexSql, ...triggerSql]) {
     const [, type, name] = /^CREATE (INDEX|TRIGGER) (\w+)/.exec(definition);
     const row = runSqlite(() => database.prepare(
       'SELECT sql FROM sqlite_master WHERE type = ? AND name = ?',
@@ -258,7 +406,7 @@ function validatePhysicalSchema(database) {
   }
 }
 
-function validateSchema(database) {
+function validateSchema(database, expectedVersion) {
   const quickCheck = runSqlite(() => database.prepare('PRAGMA quick_check').get());
   if (!quickCheck || quickCheck.quick_check !== 'ok') {
     recovery('coordination database integrity check failed');
@@ -270,17 +418,29 @@ function validateSchema(database) {
   for (const table of REQUIRED_TABLES) {
     if (!tables.has(table)) recovery(`coordination database is missing table "${table}"`);
   }
-  validatePhysicalSchema(database);
   const metadata = runSqlite(() => database.prepare(
     "SELECT value FROM metadata WHERE key = 'schema_version'",
   ).get());
   if (!metadata) recovery('coordination database has no schema version');
-  if (metadata.value !== String(SCHEMA_VERSION)) {
+  if (metadata.value !== String(expectedVersion)) {
     throw new RuntimeError(
       'SCHEMA_MISMATCH',
-      `coordination database schema ${JSON.stringify(metadata.value)} is unsupported; expected ${SCHEMA_VERSION}`,
+      `coordination database schema ${JSON.stringify(metadata.value)} is unsupported; expected ${expectedVersion}`,
     );
   }
+  validatePhysicalSchema(database, expectedVersion === HISTORICAL_SCHEMA_VERSION
+    ? {
+        columns: HISTORICAL_COLUMNS,
+        tableSql: HISTORICAL_TABLE_SQL,
+        indexSql: HISTORICAL_INDEX_SQL,
+        triggerSql: HISTORICAL_TRIGGER_SQL,
+      }
+    : {
+        columns: REQUIRED_COLUMNS,
+        tableSql: REQUIRED_TABLE_SQL,
+        indexSql: REQUIRED_INDEX_SQL,
+        triggerSql: REQUIRED_TRIGGER_SQL,
+      });
   const messageMetadata = runSqlite(() => database.prepare(
     "SELECT value FROM metadata WHERE key = 'message_schema_version'",
   ).get());
@@ -310,28 +470,33 @@ function initializeSchema(database) {
   }
 }
 
-export function openStore({path, mode}) {
+function openStoreConnection({
+  path,
+  mode,
+  expectedVersion,
+  initialize = false,
+}) {
   if (typeof path !== 'string' || path.trim() === '') invalid('store path must be a string');
-  if (!STORE_MODES.has(mode)) invalid(`unsupported store mode "${mode}"`);
 
   const existed = existsSync(path);
-  if (mode !== 'create' && !existed) {
+  if (!initialize && !existed) {
     recovery(`coordination database does not exist at ${path}`);
   }
-  if (mode === 'create') mkdirSync(dirname(path), {recursive: true});
+  if (initialize) mkdirSync(dirname(path), {recursive: true});
 
   let database;
   try {
     database = new DatabaseSync(path, {readOnly: mode === 'read'});
     runSqlite(() => database.exec('PRAGMA busy_timeout=1000'));
-    const shouldInitialize = mode === 'create'
+    const shouldInitialize = initialize
       && (!existed || statSync(path).size === 0);
     if (shouldInitialize) initializeSchema(database);
-    validateSchema(database);
+    validateSchema(database, expectedVersion);
     return {
       database,
       path,
       mode,
+      schemaVersion: expectedVersion,
       closed: false,
     };
   } catch (error) {
@@ -349,6 +514,32 @@ export function openStore({path, mode}) {
   }
 }
 
+export function openStore({path, mode}) {
+  if (!STORE_MODES.has(mode)) invalid(`unsupported store mode "${mode}"`);
+  return openStoreConnection({
+    path,
+    mode,
+    expectedVersion: SCHEMA_VERSION,
+    initialize: mode === 'create',
+  });
+}
+
+export function openHistoricalStore({
+  path,
+  expectedStoreVersion,
+  mode = 'read',
+}) {
+  if (mode !== 'read') invalid('historical coordination stores are read-only');
+  if (expectedStoreVersion !== HISTORICAL_SCHEMA_VERSION) {
+    invalid(`unsupported historical store schema "${expectedStoreVersion}"`);
+  }
+  return openStoreConnection({
+    path,
+    mode,
+    expectedVersion: expectedStoreVersion,
+  });
+}
+
 export function closeStore(store) {
   if (!store || typeof store !== 'object' || store.closed) return;
   try {
@@ -363,42 +554,48 @@ export function readRecord(store, kind, id) {
   if (!RECORD_KINDS.has(kind)) invalid(`unsupported record kind "${kind}"`);
   if (typeof id !== 'string' || id === '') invalid('record id must be a string');
   const row = runSqlite(() => store.database.prepare(`
-    SELECT kind, id, item_id, version, body
+    SELECT ${recordProjection(store)}
     FROM records
     WHERE kind = ? AND id = ?
   `).get(kind, id));
   return decodeRecord(row);
 }
 
-export function listRecords(store, {kind, itemId}) {
+export function listRecords(store, options) {
   assertStore(store);
-  if (!RECORD_KINDS.has(kind)) invalid(`unsupported record kind "${kind}"`);
-  if (itemId !== null && typeof itemId !== 'string') {
-    invalid('record itemId must be a string or null');
+  if (!options || typeof options !== 'object' || Array.isArray(options)
+    || Object.keys(options).some(key => !['kind', 'subject'].includes(key))) {
+    invalid('record list options must contain only kind and subject');
   }
+  const {kind, subject = undefined} = options;
+  if (!RECORD_KINDS.has(kind)) invalid(`unsupported record kind "${kind}"`);
+  validateStoreSubject(subject, 'record subject', {
+    allowNull: true,
+    allowUndefined: true,
+  });
 
-  const rows = runSqlite(() => itemId === null
-    ? store.database.prepare(`
-      SELECT kind, id, item_id, version, body
+  const rows = runSqlite(() => {
+    if (subject === undefined) {
+      return store.database.prepare(`
+        SELECT ${recordProjection(store)}
+        FROM records
+        WHERE kind = ?
+        ORDER BY id
+      `).all(kind);
+    }
+    const filter = subjectFilter(store, subject);
+    return store.database.prepare(`
+      SELECT ${recordProjection(store)}
       FROM records
-      WHERE kind = ? AND item_id IS NULL
+      WHERE kind = ? AND ${filter.sql}
       ORDER BY id
-    `).all(kind)
-    : store.database.prepare(`
-      SELECT kind, id, item_id, version, body
-      FROM records
-      WHERE kind = ? AND item_id = ?
-      ORDER BY id
-    `).all(kind, itemId));
+    `).all(kind, ...filter.params);
+  });
   return rows.map(decodeRecord);
 }
 
 export function listAllRecords(store, {kind}) {
-  assertStore(store);
-  if (!RECORD_KINDS.has(kind)) invalid(`unsupported record kind "${kind}"`);
-  return runSqlite(() => store.database.prepare(`
-    SELECT kind, id, item_id, version, body FROM records WHERE kind = ? ORDER BY id
-  `).all(kind)).map(decodeRecord);
+  return listRecords(store, {kind});
 }
 
 export function readStoreSummary(store) {
@@ -459,9 +656,14 @@ function referencedRecordId(reference) {
  * their exact references, the latest handoff, and the bounded recent tail.
  * One covering-index count supplies the initial cursor, never later pages.
  */
-export function readContextView(store, {itemId, recentLimit}) {
+export function readSubjectView(store, options) {
   assertStore(store);
-  if (typeof itemId !== 'string' || itemId === '') invalid('context itemId must be a string');
+  if (!options || typeof options !== 'object' || Array.isArray(options)
+    || Object.keys(options).some(key => !['subject', 'recentLimit'].includes(key))) {
+    invalid('subject view options must contain only subject and recentLimit');
+  }
+  const {subject, recentLimit} = options;
+  validateStoreSubject(subject, 'context subject', {allowNull: false});
   if (!Number.isSafeInteger(recentLimit) || recentLimit < 0 || recentLimit > 8) {
     invalid('context recentLimit must be an integer from 0 through 8');
   }
@@ -470,7 +672,7 @@ export function readContextView(store, {itemId, recentLimit}) {
     const throughSeq = Number(runSqlite(() => store.database.prepare(
       'SELECT COALESCE(MAX(seq), 0) AS seq FROM events',
     ).get()).seq);
-    const item = readRecord(store, 'item', itemId);
+    const item = readRecord(store, subject.kind, subject.id);
     if (!item) {
       return {
         throughSeq,
@@ -486,35 +688,43 @@ export function readContextView(store, {itemId, recentLimit}) {
       };
     }
 
-    const dependencies = item.body.depends_on.map(dependency => ({
+    const dependencies = (item.body.depends_on ?? []).map(dependency => ({
       dependency,
-      record: readRecord(store, 'item', dependency.item),
+      record: readRecord(store, subject.kind, dependency.item),
     }));
     const chronology = (column, id) => {
+      const filter = subjectFilter(store, subject);
       const row = runSqlite(() => store.database.prepare(`
-        SELECT seq FROM events WHERE ${column} = ? AND item_id = ? AND seq <= ?
+        SELECT seq FROM events WHERE ${column} = ? AND ${filter.sql} AND seq <= ?
         ORDER BY seq DESC LIMIT 1
-      `).get(id, itemId, throughSeq));
+      `).get(id, ...filter.params, throughSeq));
       return row ? Number(row.seq) : null;
     };
     // A missing nonblocking question is not present in waiting_on_questions.
     // Validate retained opening identities without loading event/question bodies.
+    const eventFilter = subjectFilter(store, subject, 'e');
     const missingQuestion = runSqlite(() => store.database.prepare(`
       SELECT e.question_id FROM events e
-      LEFT JOIN records r ON r.kind = 'question' AND r.id = e.question_id AND r.item_id = e.item_id
-      WHERE e.item_id = ? AND e.event_kind = 'question.open' AND e.seq <= ?
+      LEFT JOIN records r ON r.kind = 'question' AND r.id = e.question_id
+        AND ${matchingSubjects(store, 'r', 'e')}
+      WHERE ${eventFilter.sql} AND e.event_kind = 'question.open' AND e.seq <= ?
         AND e.question_id IS NOT NULL AND r.id IS NULL
       LIMIT 1
-    `).get(itemId, throughSeq));
+    `).get(...eventFilter.params, throughSeq));
     if (missingQuestion) {
       throw new RuntimeError('EVIDENCE_GAP', `question/${missingQuestion.question_id} referenced by an opening event is missing`);
     }
+    const questionFilter = subjectFilter(store, subject);
+    const questionIndex = store.schemaVersion === HISTORICAL_SCHEMA_VERSION
+      ? 'records_by_question_status'
+      : 'records_by_question_status';
     const questionRecords = runSqlite(() => store.database.prepare(`
-      SELECT kind, id, item_id, version, body FROM records INDEXED BY records_by_question_status
-      WHERE kind = 'question' AND item_id = ? AND json_extract(body, '$.status') = 'open'
-    `).all(itemId)).map(decodeRecord);
+      SELECT ${recordProjection(store)} FROM records INDEXED BY ${questionIndex}
+      WHERE kind = 'question' AND ${questionFilter.sql}
+        AND json_extract(body, '$.status') = 'open'
+    `).all(...questionFilter.params)).map(decodeRecord);
     const questionsById = new Map(questionRecords.map(record => [record.id, record]));
-    for (const id of item.body.waiting_on_questions) {
+    for (const id of item.body.waiting_on_questions ?? []) {
       if (!questionsById.has(id)) questionsById.set(id, readRecord(store, 'question', id));
     }
     const questions = [...questionsById.values()].map(record => ({
@@ -525,36 +735,40 @@ export function readContextView(store, {itemId, recentLimit}) {
         ? record.body.answer_message_ids.map(id => readRecord(store, 'message', id))
         : [],
     }));
+    const approvalFilter = subjectFilter(store, subject);
     const approvals = runSqlite(() => store.database.prepare(`
-      SELECT kind, id, item_id, version, body FROM records
-      WHERE kind = 'approval' AND item_id = ? AND json_extract(body, '$.criteria_ref') = ?
-    `).all(itemId, criteriaRef(item.body))).map(row => {
+      SELECT ${recordProjection(store)} FROM records
+      WHERE kind = 'approval' AND ${approvalFilter.sql}
+        AND json_extract(body, '$.criteria_ref') = ?
+    `).all(...approvalFilter.params, criteriaRef(item.body))).map(row => {
       const record = decodeRecord(row);
       return {record, eventSeq: chronology('approval_id', record.id)};
     });
-    const recoveryHold = item.body.recovery_hold === null ? null : {
-      record: readRecord(store, 'attempt', item.body.recovery_hold),
-      eventSeq: chronology('message_id', item.body.recovery_hold),
-      message: readRecord(store, 'message', item.body.recovery_hold),
+    const recoveryHoldId = item.body.recovery_hold ?? null;
+    const recoveryHold = recoveryHoldId === null ? null : {
+      record: readRecord(store, 'attempt', recoveryHoldId),
+      eventSeq: chronology('message_id', recoveryHoldId),
+      message: readRecord(store, 'message', recoveryHoldId),
     };
-    const recentMessages = messageRows(store, itemId, throughSeq + 1, recentLimit)
+    const recentMessages = messageRows(store, subject.id, throughSeq + 1, recentLimit)
       .map(row => ({eventSeq: Number(row.seq), record: decodeMessageRow(row)}))
       .reverse();
+    const handoffFilter = subjectFilter(store, subject, 'e');
     const handoffRow = runSqlite(() => store.database.prepare(`
-      SELECT e.seq, e.message_id, r.kind, r.id, r.item_id, r.version, r.body
+      SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
       FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-      WHERE e.item_id = ? AND e.event_kind = 'item.handoff' AND e.seq <= ?
+      WHERE ${handoffFilter.sql} AND e.event_kind = 'item.handoff' AND e.seq <= ?
       ORDER BY e.seq DESC LIMIT 1
-    `).get(itemId, throughSeq));
+    `).get(...handoffFilter.params, throughSeq));
     const latestHandoff = handoffRow ? {
       eventSeq: Number(handoffRow.seq), record: decodeMessageRow(handoffRow),
     } : null;
     const messageCount = Number(runSqlite(() => store.database.prepare(`
       SELECT COUNT(*) AS count FROM events
       WHERE thread_id = ? AND message_id IS NOT NULL AND seq <= ?
-    `).get(itemId, throughSeq)).count);
+    `).get(subject.id, throughSeq)).count);
 
-    const references = new Set(item.body.context_artifacts);
+    const references = new Set(item.body.context_artifacts ?? []);
     for (const {record} of approvals) {
       record.body.evidence_refs.forEach(reference => references.add(reference));
     }
@@ -605,7 +819,7 @@ export function readContextView(store, {itemId, recentLimit}) {
 
 function messageRows(store, threadId, beforeSeq, limit) {
   return runSqlite(() => store.database.prepare(`
-    SELECT e.seq, e.message_id, r.kind, r.id, r.item_id, r.version, r.body
+    SELECT e.seq, e.message_id, ${recordProjection(store, 'r')}
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
     WHERE e.thread_id = ? AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT ?
@@ -705,12 +919,13 @@ function writeRecord(database, record) {
       );
     }
     runSqlite(() => database.prepare(`
-      INSERT INTO records (kind, id, item_id, version, body)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+      VALUES (?, ?, ?, ?, ?, ?)
     `).run(
       record.kind,
       record.id,
-      record.itemId,
+      record.subject?.kind ?? null,
+      record.subject?.id ?? null,
       record.version,
       canonicalJson(record.body),
     ));
@@ -724,10 +939,11 @@ function writeRecord(database, record) {
   }
   const outcome = runSqlite(() => database.prepare(`
     UPDATE records
-    SET item_id = ?, version = ?, body = ?
+    SET subject_kind = ?, subject_id = ?, version = ?, body = ?
     WHERE kind = ? AND id = ? AND version = ?
   `).run(
-    record.itemId,
+    record.subject?.kind ?? null,
+    record.subject?.id ?? null,
     record.version,
     canonicalJson(record.body),
     record.kind,
@@ -826,10 +1042,18 @@ export function applyOperation(store, command, mutate) {
     const callbackCurrent = primaryBaseline === null
       ? null
       : snapshotJson(primaryBaseline);
-    const operationItemId = primaryBaseline?.itemId
-      ?? (internalCommand.recordKind === 'item' ? internalCommand.recordId
+    const primarySubject = primaryBaseline?.subject
+      ?? (internalCommand.recordKind === 'item'
+        ? {kind: 'item', id: internalCommand.recordId}
+        : HIERARCHY_KINDS.has(internalCommand.recordKind)
+          || internalCommand.recordKind === 'initiative'
+          ? null
         : ['attempt.start', 'effect.intent'].includes(internalCommand.kind)
-          ? internalCommand.payload.itemId : null);
+          ? {kind: 'item', id: internalCommand.payload.itemId}
+          : null);
+    const eventSubject = HIERARCHY_KINDS.has(internalCommand.recordKind)
+      ? {kind: internalCommand.recordKind, id: internalCommand.recordId}
+      : primarySubject;
 
     let eventSeq = 0;
     let appendedEvents = 0;
@@ -844,11 +1068,12 @@ export function applyOperation(store, command, mutate) {
         invalid('event payload must be an object');
       }
       const outcome = runSqlite(() => store.database.prepare(`
-        INSERT INTO events (operation_id, item_id, payload)
-        VALUES (?, ?, ?)
+        INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+        VALUES (?, ?, ?, ?)
       `).run(
         internalCommand.operationId,
-        operationItemId,
+        eventSubject?.kind ?? null,
+        eventSubject?.id ?? null,
         canonicalJson(payload),
       ));
       appendedEvents += 1;
@@ -860,37 +1085,9 @@ export function applyOperation(store, command, mutate) {
         requireTransaction();
         return readRecord(store, kind, id);
       },
-      list(kind, itemId = undefined) {
+      list(kind, subject = undefined) {
         requireTransaction();
-        if (!RECORD_KINDS.has(kind)) invalid(`unsupported record kind "${kind}"`);
-        if (itemId !== undefined && itemId !== null && typeof itemId !== 'string') {
-          invalid('record itemId must be a string, null, or undefined');
-        }
-        const rows = runSqlite(() => {
-          if (itemId === undefined) {
-            return store.database.prepare(`
-              SELECT kind, id, item_id, version, body
-              FROM records
-              WHERE kind = ?
-              ORDER BY id
-            `).all(kind);
-          }
-          if (itemId === null) {
-            return store.database.prepare(`
-              SELECT kind, id, item_id, version, body
-              FROM records
-              WHERE kind = ? AND item_id IS NULL
-              ORDER BY id
-            `).all(kind);
-          }
-          return store.database.prepare(`
-            SELECT kind, id, item_id, version, body
-            FROM records
-            WHERE kind = ? AND item_id = ?
-            ORDER BY id
-          `).all(kind, itemId);
-        });
-        return rows.map(decodeRecord);
+        return listRecords(store, {kind, subject});
       },
       put(record) {
         requireTransaction();
@@ -920,7 +1117,7 @@ export function applyOperation(store, command, mutate) {
     const primary = validateRecord({
       kind: internalCommand.recordKind,
       id: internalCommand.recordId,
-      itemId: operationItemId,
+      subject: primarySubject,
       version: internalCommand.expectedVersion + 1,
       body: nextBody,
     });

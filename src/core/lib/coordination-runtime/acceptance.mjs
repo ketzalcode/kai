@@ -14,7 +14,7 @@ function fail(code, message) {
 }
 
 function bodies(tx, kind, item) {
-  return tx.list(kind, item.id).map(record => record.body);
+  return tx.list(kind, {kind: 'item', id: item.id}).map(record => record.body);
 }
 
 export function requireReviews(tx, item) {
@@ -104,7 +104,7 @@ export function recoveryResolution(tx, item, approvalId) {
   const attempt = tx.get('attempt', item.body.recovery_hold);
   if (!approval || approvals.some(candidate => candidate.decision !== 'approved')
     || new Set(approvals.map(candidate => canonicalJson(candidate.recovery))).size !== 1
-    || !attempt || attempt.itemId !== item.id
+    || attempt?.subject?.kind !== 'item' || attempt.subject.id !== item.id
     || attempt.body.disposition !== 'conflicting-partial-work'
     || attempt.body.stale_lease.token !== approval.recovery.stale_lease_token) {
     fail('AUTHORITY_REQUIRED', 'conflicting partial work requires exact persisted operator resolution');

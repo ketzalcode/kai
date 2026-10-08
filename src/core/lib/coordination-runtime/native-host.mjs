@@ -128,7 +128,8 @@ export function createNativeHost({env = process.env, discover} = {}) {
     const item = readRecord(store, 'item', itemId);
     const lease = item?.body.lease;
     const grant = lease && lease.token === token && sameActor(lease.holder, actor)
-      && Date.parse(lease.expires_at) > Date.now() && listRecords(store, {kind: 'grant', itemId})
+      && Date.parse(lease.expires_at) > Date.now()
+      && listRecords(store, {kind: 'grant', subject: {kind: 'item', id: itemId}})
         .find(r => sameActor(r.body.actor, actor) && r.body.lease_token === token
           && r.body.status === 'active' && Date.parse(r.body.expires_at) > Date.now());
     if (!grant) fail('AUTHORITY_REQUIRED', 'the actual actor must hold a live persisted lease or bounded delegation');
@@ -179,7 +180,8 @@ export function createNativeHost({env = process.env, discover} = {}) {
       preparation(root, prepared.actor);
       if (prepared.requesterContext !== identity()) fail('AUTHORITY_REQUIRED', 'only the preparing coordinator can delegate this context');
       const question = body.questionId === null ? null : readRecord(store, 'question', body.questionId);
-      if (body.actions.includes('question.answer') && (!question || question.itemId !== body.itemId
+      if (body.actions.includes('question.answer')
+        && (question?.subject?.kind !== 'item' || question.subject.id !== body.itemId
         || question.body.recipient !== prepared.actor.role || prepared.actor.role === 'operator')) {
         fail('AUTHORITY_REQUIRED', 'answer delegation must bind the actual addressed role and question');
       }

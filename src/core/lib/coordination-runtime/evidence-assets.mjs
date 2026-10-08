@@ -24,13 +24,18 @@ const VALIDITY = new Map([
 function artifactFor(context, tx, asset, verify = true) {
   if (verify) return verifyAssetContent(context, tx, asset);
   const artifact = tx.get('artifact', asset.artifact_id);
-  if (!artifact || artifact.itemId !== asset.item_id) fail('EVIDENCE_GAP', 'asset has no registered artifact');
+  if (artifact?.subject?.kind !== 'item' || artifact.subject.id !== asset.item_id) {
+    fail('EVIDENCE_GAP', 'asset has no registered artifact');
+  }
   return artifact.body;
 }
 
 function accepted(tx, item, asset, artifact, approvalId) {
   requireReviews(tx, item);
-  const approvals = effectiveApprovals(tx.list('approval', item.id).map(r => r.body), item.body)
+  const approvals = effectiveApprovals(
+    tx.list('approval', {kind: 'item', id: item.id}).map(r => r.body),
+    item.body,
+  )
     .filter(a => a.kind === 'completion' && a.authority.role === item.body.completion_authority);
   const decision = approvals.find(a => a.approval_id === approvalId);
   if (!decision || approvals.some(a => a.decision !== 'approved')
@@ -70,7 +75,9 @@ function moved(record, changes, reason, at, itemVersion) {
 export function applyAssetTransition({context, tx, item, command, authority}) {
   const p = command.payload;
   const record = tx.get('asset', p.assetId);
-  if (!record || record.itemId !== item.id) fail('EVIDENCE_GAP', 'asset transition must bind the owning item');
+  if (record?.subject?.kind !== 'item' || record.subject.id !== item.id) {
+    fail('EVIDENCE_GAP', 'asset transition must bind the owning item');
+  }
   const asset = record.body;
   if ((p.disposition !== asset.disposition && !DISPOSITION.get(asset.disposition).includes(p.disposition))
     || (p.validity !== asset.validity && !VALIDITY.get(asset.validity).includes(p.validity))) {
@@ -84,7 +91,10 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
     fail('INVALID_INPUT', 'accepted or team-facing working assets cannot be discarded');
   }
   if (personalDiscard) {
-    const decisions = effectiveApprovals(tx.list('approval', item.id).map(r => r.body), item.body)
+    const decisions = effectiveApprovals(
+      tx.list('approval', {kind: 'item', id: item.id}).map(r => r.body),
+      item.body,
+    )
       .filter(a => a.kind === 'scope' && a.authority.role === 'operator');
     const consent = decisions.find(a => a.approval_id === p.approvalId);
     if (command.actor.role !== 'operator' || !consent?.provenance
@@ -172,9 +182,11 @@ export function applyAssetTransition({context, tx, item, command, authority}) {
       || new Set(['retracted', 'discarded']).has(previous.body.disposition)) {
       fail('EVIDENCE_GAP', 'predecessor cannot be superseded or already has a conflicting successor');
     }
-    const predecessorItem = tx.get('item', previous.itemId);
+    const predecessorItem = previous.subject?.kind === 'item'
+      ? tx.get('item', previous.subject.id)
+      : null;
     if (!predecessorItem || predecessorItem.body.recovery_hold !== null) fail('RECOVERY_REQUIRED', 'predecessor is under recovery hold');
-    if (previous.itemId !== item.id) {
+    if (previous.subject.id !== item.id) {
       requireActingAuthority(tx, predecessorItem, {
         ...command, recordId: predecessorItem.id, expectedVersion: predecessorItem.version, leaseToken: null,
       }, authority, command.kind);

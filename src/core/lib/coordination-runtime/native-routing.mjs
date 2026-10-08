@@ -34,7 +34,8 @@ export function requireRoutingScope(root, store, cap, command = null) {
   }
   if (command.kind === 'question.answer') {
     const question = readRecord(store, 'question', command.payload.questionId);
-    if (!question || question.itemId !== item.id || question.body.recipient !== command.actor.role
+    if (question?.subject?.kind !== 'item' || question.subject.id !== item.id
+      || question.body.recipient !== command.actor.role
       || command.actor.role === 'operator' || command.payload.content.resolves
       || (scope.type === 'delegation' && command.payload.questionId !== scope.questionId)) {
       fail('bounded answer requires the exact addressed non-operator question; conflict resolution needs separate authority');

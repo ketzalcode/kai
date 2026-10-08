@@ -15,6 +15,40 @@ export const fail = (code, message) => { throw new RuntimeError(code, message); 
 export const LOCK = '.kai/state/migration.lock';
 export const DATABASE = '.kai/state/coordination.sqlite';
 export const MIGRATIONS = '.kai/archive/coordination-migrations';
+export function logicalStoreDigest(store) {
+  const database = store?.database;
+  if (!database || typeof database.prepare !== 'function') {
+    fail('INVALID_INPUT', 'logical store digest requires an open coordination store');
+  }
+  const tables = new Set(database.prepare(
+    "SELECT name FROM sqlite_master WHERE type = 'table'",
+  ).all().map(row => row.name));
+  const result = {
+    records: database.prepare(`
+      SELECT kind, id, subject_kind, subject_id, version, body
+      FROM records ORDER BY kind, id
+    `).all(),
+    events: database.prepare(`
+      SELECT seq, operation_id, subject_kind, subject_id, event_kind, payload,
+        message_id, approval_id, question_id, thread_id
+      FROM events ORDER BY seq
+    `).all(),
+    operations: database.prepare(`
+      SELECT id, payload_digest, receipt FROM operations ORDER BY id
+    `).all(),
+  };
+  if (tables.has('legacy_sources')) {
+    result.legacy_sources = database.prepare(
+      'SELECT * FROM legacy_sources ORDER BY source_id',
+    ).all();
+  }
+  result.metadata = database.prepare(`
+    SELECT key, value FROM metadata
+    WHERE key != 'migration_baseline'
+    ORDER BY key
+  `).all();
+  return hash(canonicalJson(result));
+}
 export function safePath(root, name) {
   const path = durablePath(name);
   if (!path.startsWith('.kai/') || path.startsWith('project:')) fail('INVALID_INPUT', 'migration paths must be private workspace paths');

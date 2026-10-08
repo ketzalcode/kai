@@ -279,7 +279,13 @@ function parseSource(root, entry, roles) {
   }
   const version = kind === 'item' ? Number(fields.version) : Number(fields.version ?? 1);
   try {
-    source.record = validateRecord({kind, id: source.declaredId, itemId: kind === 'item' ? source.declaredId : null, version, body});
+    source.record = validateRecord({
+      kind,
+      id: source.declaredId,
+      subject: kind === 'item' ? {kind: 'item', id: source.declaredId} : null,
+      version,
+      body,
+    });
   } catch (error) { source.issues.push(error.message); source.record = null; }
   if (!source.issues.length) source.status = 'converted';
   return source;

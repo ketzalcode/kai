@@ -302,25 +302,20 @@ function contains(listA, listB, id) {
 
 export function validateHierarchyRecord(record, lookup = null) {
   if (!isPlainObject(record)) invalid('record must be an object');
-  assertExactKeys(record, new Set(['kind', 'id', 'itemId', 'version', 'body']), 'record');
+  assertExactKeys(record, new Set(['kind', 'id', 'subject', 'version', 'body']), 'record');
   if (!HIERARCHY_KINDS.has(record.kind)) {
     invalid(`unsupported hierarchy record kind "${record.kind}"`);
   }
   assertNonEmptyString(record.id, 'record.id');
-  if (record.itemId !== null) assertNonEmptyString(record.itemId, 'record.itemId');
+  if (record.subject !== null) {
+    invalid(`${record.kind} record envelope must have null subject`);
+  }
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
     invalid('record.version must be a positive safe integer');
   }
 
   bodyValidator(record.kind)(record.body, `record ${record.kind}/${record.id} body`);
   if (record.id !== record.body.id) invalid(`${record.kind} record envelope must match body.id`);
-  if (record.kind === 'task') {
-    if (record.itemId !== record.id) {
-      invalid('task record envelope must match body.id and have itemId equal to body.id');
-    }
-  } else if (record.itemId !== null) {
-    invalid(`${record.kind} record envelope must match body.id and have null itemId`);
-  }
 
   const resolve = (kind, id) => resolveLookup(lookup, kind, id);
 

@@ -6,7 +6,8 @@ import {artifactPreviewLimits, hash, knownGap} from './report-safety.mjs';
 /** Human export only. Indexed exclusive keysets, no OFFSET or suffix recount. */
 export function captureHistory(store, itemId, throughSeq, addGap) {
   const statement = store.database.prepare(`
-    SELECT e.seq, e.message_id, r.kind, r.id, r.item_id, r.version, r.body
+    SELECT e.seq, e.message_id, r.kind, r.id, r.subject_kind, r.subject_id,
+      r.version, r.body
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
     WHERE e.thread_id = ? AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT 50
@@ -22,9 +23,17 @@ export function captureHistory(store, itemId, throughSeq, addGap) {
       if (row.id === null) {
         entry.gap = 'Message referenced by this event is missing; no payload invented.';
       } else {
-        const record = validateRecord({kind: row.kind, id: row.id, itemId: row.item_id,
-          version: row.version, body: JSON.parse(row.body)});
-        if (record.itemId !== itemId || record.body.thread_id !== itemId) {
+        const record = validateRecord({
+          kind: row.kind,
+          id: row.id,
+          subject: row.subject_kind === null
+            ? null
+            : {kind: row.subject_kind, id: row.subject_id},
+          version: row.version,
+          body: JSON.parse(row.body),
+        });
+        if (record.subject?.kind !== 'item' || record.subject.id !== itemId
+          || record.body.thread_id !== itemId) {
           entry.gap = 'Message item/thread mismatches captured scope; content withheld.';
         } else entry.record = record;
       }

@@ -316,7 +316,16 @@ test('runtime commands cannot bypass schema 3 or recreate a quarantined original
 function seedBody() {
   const database = new DatabaseSync(':memory:');
   try {
-    database.exec('CREATE TABLE records (kind TEXT, id TEXT, item_id TEXT, version INTEGER, body TEXT)');
+    database.exec(`
+      CREATE TABLE records (
+        kind TEXT,
+        id TEXT,
+        subject_kind TEXT,
+        subject_id TEXT,
+        version INTEGER,
+        body TEXT
+      )
+    `);
     return seedItem({database}, {state: 'proposed', producer_actor: null, producing_actors: [], acceptance_actor: null,
       scope_authority: 'operator', completion_authority: 'eng-reviewer-code', next_role: 'eng-builder-software'}).body;
   } finally { database.close(); }

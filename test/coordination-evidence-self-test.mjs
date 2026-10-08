@@ -37,7 +37,7 @@ function file(root, path, bytes = '<h1>First</h1>') {
 }
 function txView(store) {
   return bindEvidenceTransaction(store, {
-    list: (kind, itemId) => listRecords(store, {kind, itemId}),
+    list: (kind, subject) => listRecords(store, {kind, subject}),
     get: (kind, id) => readRecord(store, kind, id),
   });
 }
@@ -941,7 +941,10 @@ test('paid media cannot be accepted without independently verified operator cons
       registerEvidence(store, bad, {});
       runtime(root, store, builder, {verifyCapture: captureFor});
       registerEvidence(store, evidenceCommand(store, a.artifactId), {});
-      assert.equal(listRecords(store, {kind: 'evidence', itemId: 'demo'}).length, 2);
+      assert.equal(listRecords(store, {
+        kind: 'evidence',
+        subject: {kind: 'item', id: 'demo'},
+      }).length, 2);
       const corrected = evidenceCommand(store, a.artifactId, {supersedes: [bad.payload.body.evidence_id]});
       runtime(root, store, builder, {verifyCapture: captureFor});
       registerEvidence(store, corrected, {});

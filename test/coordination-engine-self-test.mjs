@@ -50,7 +50,7 @@ function retainedRefs(store, itemId, artifactSubject = subject, binding = criter
   writeFileSync(absolute, exactSubject.digest === subject.digest ? subjectBytes : 'Other immutable revision.');
   const retained = retainSubject(root, exactSubject, null, runDirectory, id);
   seedRecord(store, {
-    kind: 'artifact', id, itemId, version: 1,
+    kind: 'artifact', id, subject: {kind: 'item', id: itemId}, version: 1,
     body: {
       schema_version: 1, artifact_id: id, item_id: itemId, producer: builder,
       subject: exactSubject, criteria_ref: binding, project_id: null, run_directory: runDirectory,
@@ -89,7 +89,7 @@ function seedReview(store, {
   return seedRecord(store, {
     kind: 'review',
     id,
-    itemId,
+    subject: {kind: 'item', id: itemId},
     version: 1,
     body: {
       schema_version: 1,
@@ -125,7 +125,7 @@ function seedApproval(store, {
   return seedRecord(store, {
     kind: 'approval',
     id,
-    itemId,
+    subject: {kind: 'item', id: itemId},
     version: 1,
     body: {
       schema_version: 1,
@@ -166,7 +166,7 @@ function seedEvidence(store, {
   return seedRecord(store, {
     kind: 'evidence',
     id,
-    itemId,
+    subject: {kind: 'item', id: itemId},
     version: 1,
     body: {
       schema_version: 1,
@@ -267,7 +267,7 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   assert.throws(() => validateRecord({
     kind: 'review',
     id: randomUUID(),
-    itemId: 'demo',
+    subject: {kind: 'item', id: 'demo'},
     version: 1,
     body: {
       schema_version: 1,
@@ -287,7 +287,7 @@ await test('command and domain validation are closed over Task4 shapes', () => {
   assert.throws(() => validateRecord({
     kind: 'review',
     id: randomUUID(),
-    itemId: 'demo',
+    subject: {kind: 'item', id: 'demo'},
     version: 1,
     body: {
       schema_version: 1,
@@ -512,7 +512,7 @@ await test('granting rejects pending dependencies without calling them blocked',
     seedRecord(store, {
       kind: 'item',
       id: 'upstream',
-      itemId: 'upstream',
+      subject: {kind: 'item', id: 'upstream'},
       version: 1,
       body: seedItemBody({
         id: 'upstream',
@@ -561,7 +561,7 @@ await test('granting converts a failed dependency into a truthful blocked resume
     seedRecord(store, {
       kind: 'item',
       id: 'upstream',
-      itemId: 'upstream',
+      subject: {kind: 'item', id: 'upstream'},
       version: 1,
       body: seedItemBody({id: 'upstream', state: 'dropped'}),
     });
@@ -624,7 +624,7 @@ await test('granting rejects same-role regrant, stale tokens, unavailable roles,
     seedRecord(store, {
       kind: 'item',
       id: 'active-item',
-      itemId: 'active-item',
+      subject: {kind: 'item', id: 'active-item'},
       version: 1,
       body: seedItemBody({
         id: 'active-item',
@@ -665,7 +665,8 @@ await test('review-state grants preserve state and issue persisted lease authori
     assert.equal(result.data.record.body.lease.holder.role, reviewer.role);
     assert.notEqual(result.data.record.body.lease.token, null);
     const persistedGrant = store.database.prepare(`
-      SELECT id FROM records WHERE kind = 'grant' AND item_id = 'demo'
+      SELECT id FROM records
+      WHERE kind = 'grant' AND subject_kind = 'item' AND subject_id = 'demo'
     `).get();
     assert.equal(readRecord(store, 'grant', persistedGrant.id).body.lease_token,
       result.data.record.body.lease.token);
@@ -716,7 +717,7 @@ await test('dependency cycles are rejected on create and update', async () => {
     seedRecord(store, {
       kind: 'item',
       id: 'b',
-      itemId: 'b',
+      subject: {kind: 'item', id: 'b'},
       version: 1,
       body: seedItemBody({id: 'b', depends_on: []}),
     });
@@ -833,7 +834,7 @@ function seedQuestion(store, id, recipient) {
   seedRecord(store, {
     kind: 'message',
     id: messageId,
-    itemId: 'demo',
+    subject: {kind: 'item', id: 'demo'},
     version: 1,
     body: {
       schema_version: 1,
@@ -862,7 +863,7 @@ function seedQuestion(store, id, recipient) {
   seedRecord(store, {
     kind: 'question',
     id,
-    itemId: 'demo',
+    subject: {kind: 'item', id: 'demo'},
     version: 1,
     body: {
       schema_version: 1,

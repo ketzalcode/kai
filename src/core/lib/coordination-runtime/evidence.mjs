@@ -50,7 +50,13 @@ function produce(store, command, kind, authority, action) {
 
 function putNew(tx, kind, id, item, body) {
   if (tx.get(kind, id)) fail('VERSION_CONFLICT', `${kind}/${id} already exists; history is immutable`);
-  tx.put(validateRecord({kind, id, itemId: item.id, version: 1, body}));
+  tx.put(validateRecord({
+    kind,
+    id,
+    subject: {kind: 'item', id: item.id},
+    version: 1,
+    body,
+  }));
 }
 
 function currentBinding(body, item, {recovery = false} = {}) {
@@ -177,7 +183,10 @@ export function recordReview(store, command) {
     }
     subjectArtifact(context, tx, item, b.subject, command.actor);
     verifyReferences(context, tx, item, [...b.evidence_refs, ...b.finding_refs], {positive: b.verdict === 'approved'});
-    effectiveReviews([...tx.list('review', item.id).map(r => r.body), b], item.body);
+    effectiveReviews([
+      ...tx.list('review', {kind: 'item', id: item.id}).map(r => r.body),
+      b,
+    ], item.body);
     putNew(tx, 'review', b.review_id, item, b);
   });
 }
@@ -203,7 +212,8 @@ export function recordApproval(store, command, authority) {
       requireNamedAuthority(tx, command, authority, command.kind, 'operator');
       const attempt = tx.get('attempt', b.recovery.attempt_id);
       if (b.criteria_ref !== criteriaRef(item.body) || item.body.recovery_hold !== b.recovery.attempt_id
-        || !attempt || attempt.itemId !== item.id || attempt.body.disposition !== 'conflicting-partial-work'
+        || attempt?.subject?.kind !== 'item' || attempt.subject.id !== item.id
+        || attempt.body.disposition !== 'conflicting-partial-work'
         || attempt.body.stale_lease.token !== b.recovery.stale_lease_token) {
         fail('AUTHORITY_REQUIRED', 'operator recovery resolution requires the exact current conflicting attempt');
       }
@@ -226,7 +236,10 @@ export function recordApproval(store, command, authority) {
     }
     verifyReferences(context, tx, item, b.evidence_refs, {recovery, positive: b.decision === 'approved'});
     const body = {...b, authority: decisionActor, recorded_at_item_version: command.expectedVersion, ...(provenance ? {provenance} : {})};
-    const effective = effectiveApprovals([...tx.list('approval', item.id).map(r => r.body), body], item.body);
+    const effective = effectiveApprovals([
+      ...tx.list('approval', {kind: 'item', id: item.id}).map(r => r.body),
+      body,
+    ], item.body);
     const deployments = effective.filter(a => a.deployment !== null && a.decision === 'approved');
     if (new Set(deployments.map(a => canonicalJson(a.deployment))).size > 1) {
       fail('AUTHORITY_REQUIRED', 'operator confirmations disagree about the production deployment');
@@ -292,7 +305,12 @@ export function registerEvidence(store, command, capture) {
       }
     }
     const body = {...b, provenance: {tier: command.payload.tier, capture: observation}};
-    if (!recovery) effectiveEvidence([...tx.list('evidence', item.id).map(r => r.body), body], item.body);
+    if (!recovery) {
+      effectiveEvidence([
+        ...tx.list('evidence', {kind: 'item', id: item.id}).map(r => r.body),
+        body,
+      ], item.body);
+    }
     putNew(tx, 'evidence', b.evidence_id, item, body);
   });
 }

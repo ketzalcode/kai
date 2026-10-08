@@ -18,6 +18,8 @@ const bindings = new WeakMap();
 const equal = (left, right) => canonicalJson(left) === canonicalJson(right);
 // Declared risk flags cannot prove an unresolved effect is safe to repeat.
 const uncertainEffect = body => ['unknown', 'conflicting'].includes(body.outcome);
+const bindsItem = (record, itemId) =>
+  record?.subject?.kind === 'item' && record.subject.id === itemId;
 
 /**
  * Trusted in-process composition, never a JSON/CLI authority endpoint.
@@ -90,7 +92,8 @@ function actingItem(tx, command, context, target) {
 }
 
 function noUnresolvedEffects(tx, itemId) {
-  if (tx.list('effect', itemId).some(record => uncertainEffect(record.body))) {
+  if (tx.list('effect', {kind: 'item', id: itemId})
+    .some(record => uncertainEffect(record.body))) {
     fail('RECOVERY_REQUIRED', 'effect outcome is unresolved; never automatically replay');
   }
 }
@@ -108,7 +111,7 @@ function resumeContext(tx, context, command, item, planned, previous) {
     || prior.profile !== p.profile || prior.agent_id !== planned.agentId
     || prior.requested_model !== p.requestedModel || prior.requested_effort !== p.effort
     || prior.independence_key !== p.independenceKey || !sameActor(prior.target, p.target)
-    || sameRun.some(record => record.itemId !== item.id || record.body.profile !== p.profile
+    || sameRun.some(record => !bindsItem(record, item.id) || record.body.profile !== p.profile
       || record.body.target.role !== p.target.role || record.body.independence_key !== p.independenceKey)) {
     fail('RECOVERY_REQUIRED', 'resume cannot cross item, role, profile, run or independence boundaries');
   }
@@ -145,7 +148,7 @@ export function recordAttempt(store, command) {
     }
     if (p.resumeFrom !== null && !context.capabilities.resume) fail('UNSUPPORTED_HOST', 'host resume is unsupported');
     noUnresolvedEffects(tx, item.id);
-    const previous = tx.list('host-attempt', item.id);
+    const previous = tx.list('host-attempt', {kind: 'item', id: item.id});
     if (previous.length >= context.maxAttempts
       || previous.some(record => ['intent', 'uncertain', 'conflicting', 'mismatched'].includes(record.body.status)
         || (record.body.status === 'completed' && record.body.item_version === item.version))) {
@@ -201,7 +204,7 @@ function recordObservation(store, command, handle, effect) {
   const receipt = applyOperation(store, cmd, (current, tx) => {
     if (!current) fail('EVIDENCE_GAP', 'observation requires a persisted intent');
     if (effect && (current.body.attempt_id !== cmd.payload.attemptId
-      || tx.get('host-attempt', current.body.attempt_id)?.itemId !== current.itemId)) {
+      || !bindsItem(tx.get('host-attempt', current.body.attempt_id), current.subject?.id))) {
       fail('EVIDENCE_GAP', 'effect result must bind its exact persisted attempt');
     }
     const retained = current.body.observations.find(o => o.observationId === observation.observationId);
@@ -221,7 +224,9 @@ function conflictingSessions(tx, current, observation) {
   if (observation.source !== 'host' || observation.facts.sessionId === null) return [];
   return tx.list('host-attempt').filter(record => record.id !== current.id
     && record.body.observations.some(o => o.source === 'host' && o.facts.sessionId === observation.facts.sessionId)
-    && (current.body.context === 'fresh-single-shot' || record.itemId !== current.itemId
+    && (current.body.context === 'fresh-single-shot'
+      || record.subject?.kind !== current.subject?.kind
+      || record.subject?.id !== current.subject?.id
       || !sameActor(record.body.target, current.body.target)
       || record.body.profile !== current.body.profile
       || record.body.independence_key !== current.body.independence_key))
@@ -246,13 +251,15 @@ export function recordEffect(store, command, observation) {
   return applyOperation(store, cmd, (_current, tx) => {
     const p = cmd.payload;
     const attempt = tx.get('host-attempt', p.attemptId);
-    if (!attempt || attempt.itemId !== p.itemId) fail('EVIDENCE_GAP', 'effect intent requires the exact persisted host attempt');
+    if (!bindsItem(attempt, p.itemId)) {
+      fail('EVIDENCE_GAP', 'effect intent requires the exact persisted host attempt');
+    }
     const item = actingItem(tx, cmd, context, attempt.body.target);
     if (attempt.body.item_version !== item.version || attempt.body.status !== 'intent') {
       fail('RECOVERY_REQUIRED', 'effect intent requires a current, unresolved execution intent');
     }
     noUnresolvedEffects(tx, item.id);
-    if (tx.list('effect', item.id).some(record => p.idempotencyKey !== null
+    if (tx.list('effect', {kind: 'item', id: item.id}).some(record => p.idempotencyKey !== null
       && record.body.idempotency_key === p.idempotencyKey)) {
       fail('OPERATION_CONFLICT', 'effect idempotency key is already retained; reconcile its result');
     }

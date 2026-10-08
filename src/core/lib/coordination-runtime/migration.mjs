@@ -7,7 +7,8 @@ import {assertWorkspacePath, exactBytes} from './evidence-content.mjs';
 import {parseLegacySources, roleKnown} from './migration-legacy.mjs';
 import {
   DATABASE, LOCK, MIGRATIONS, hash, fail, safePath, exactFile, exclusiveFile,
-  migrationManifest, privateAdmission, sourceSnapshot, sameSnapshot, fileFingerprint,
+  logicalStoreDigest, migrationManifest, privateAdmission, sourceSnapshot,
+  sameSnapshot, fileFingerprint,
 } from './migration-files.mjs';
 import {read as readActivity, runs} from '../activity.mjs';
 import {isNull, TERMINAL} from '../coordination.mjs';
@@ -24,16 +25,6 @@ function privateWorkspace(root, admit = false) {
   const privacy = privateAdmission(root, {admit});
   if (privacy.errors.length) fail('INVALID_INPUT', privacy.errors.join('; '));
   return privacy;
-}
-function logicalDigest(store) {
-  const db = store.database;
-  const result = {};
-  for (const table of ['records', 'events', 'operations', 'legacy_sources']) {
-    result[table] = db.prepare(`SELECT * FROM ${table} ORDER BY 1, 2`).all().map(row =>
-      Object.fromEntries(Object.entries(row).map(([key, v]) => [key, v instanceof Uint8Array ? Buffer.from(v).toString('hex') : v])));
-  }
-  result.metadata = db.prepare("SELECT * FROM metadata WHERE key != 'migration_baseline' ORDER BY key").all();
-  return hash(canonicalJson(result));
 }
 function finishStore(store) {
   const result = store.database.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get();
@@ -83,7 +74,7 @@ function readyPlan(root, directory) {
 function validateStagedStore(root, plan, ready, name) {
   const store = openStore({path: safePath(root, name), mode: 'read'});
   try {
-    if (!canRollback(store) || logicalDigest(store) !== ready.stateDigest) fail('RECOVERY_REQUIRED', 'staged store changed or contains new runtime work');
+    if (!canRollback(store) || logicalStoreDigest(store) !== ready.stateDigest) fail('RECOVERY_REQUIRED', 'staged store changed or contains new runtime work');
     for (const row of store.database.prepare('SELECT kind,id FROM records').all()) readRecord(store, row.kind, row.id);
     const identity = JSON.parse(store.database.prepare("SELECT value FROM metadata WHERE key='migration'").get().value);
     if (identity.id !== plan.id || identity.root !== resolve(root) || identity.workspaceId !== plan.workspaceId) {
@@ -181,15 +172,28 @@ export function migrateWorkspace({root, confirm, roles = [], env = process.env} 
         source.size, `${directory}/backup/${source.path}`, JSON.stringify(source.parsed), canonicalJson(source.issues), source.status, source.version);
       if (source.status === 'converted') {
         const r = source.record;
-        store.database.prepare('INSERT INTO records VALUES (?,?,?,?,?)').run(r.kind, r.id, r.itemId, r.version, canonicalJson(r.body));
+        store.database.prepare(`
+          INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          r.kind,
+          r.id,
+          r.subject?.kind ?? null,
+          r.subject?.id ?? null,
+          r.version,
+          canonicalJson(r.body),
+        );
       }
     }
-    store.database.prepare('INSERT INTO events(operation_id,item_id,payload) VALUES(?,NULL,?)').run(id,
+    store.database.prepare(`
+      INSERT INTO events(operation_id, subject_kind, subject_id, payload)
+      VALUES (?, NULL, NULL, ?)
+    `).run(id,
       canonicalJson({kind: 'workspace.migrate', actor: null, sourceSchema: 3, migrationId: id,
         sourceCount: sources.length, provenance: 'legacy-declared', timestamp: null}));
     store.database.prepare('INSERT INTO metadata VALUES (?,?)').run('migration',
       canonicalJson({id, root: resolve(root), workspaceId: manifest.workspace_id, directory}));
-    const stateDigest = logicalDigest(store);
+    const stateDigest = logicalStoreDigest(store);
     store.database.prepare('INSERT INTO metadata VALUES (?,?)').run('migration_baseline', stateDigest);
     store.database.exec('COMMIT');
     finishStore(store);
@@ -204,7 +208,7 @@ export function migrateWorkspace({root, confirm, roles = [], env = process.env} 
 export function canRollback(store) {
   return readSnapshot(store, () => {
     const baseline = store.database.prepare("SELECT value FROM metadata WHERE key='migration_baseline'").get();
-    return !!baseline && logicalDigest(store) === baseline.value;
+    return !!baseline && logicalStoreDigest(store) === baseline.value;
   });
 }
 
@@ -313,7 +317,7 @@ export function rollbackMigration({root, confirm, env = process.env} = {}) {
   } finally { closeStore(store); }
 }
 function canRollbackInTransaction(store, ready) {
-  return logicalDigest(store) === ready.stateDigest;
+  return logicalStoreDigest(store) === ready.stateDigest;
 }
 
 /** Lists expose bounded metadata only. Raw history is an explicit single-source
@@ -400,8 +404,15 @@ export function repairLegacyRecord(store, request) {
     if (typeof originalVersion !== 'string' || !/^[1-9]\d*$/.test(originalVersion) || !Number.isSafeInteger(Number(originalVersion))) {
       fail('INVALID_INPUT', 'unknown or unsupported original version history cannot be revalidated');
     }
-    const record = validateRecord({kind: source.kind, id: source.declaredId, itemId: source.kind === 'item' ? source.declaredId : null,
-      version: Number(originalVersion), body: input.body});
+    const record = validateRecord({
+      kind: source.kind,
+      id: source.declaredId,
+      subject: source.kind === 'item'
+        ? {kind: 'item', id: source.declaredId}
+        : null,
+      version: Number(originalVersion),
+      body: input.body,
+    });
     if (record.kind === 'item') {
       const b = record.body;
       if (b.state !== 'proposed' || b.lease !== null || b.change_ref !== null || b.producer_actor !== null
@@ -429,12 +440,32 @@ export function repairLegacyRecord(store, request) {
     // A host decision may change storage admission or yield to an offline owner.
     migrationManifest(binding.root, [4]);
     assertWorkspaceWrite(store.path, {requirePrivate: true});
-    store.database.prepare('INSERT INTO records VALUES (?,?,?,?,?)').run(record.kind, record.id, record.itemId, record.version, canonicalJson(record.body));
+    store.database.prepare(`
+      INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      record.kind,
+      record.id,
+      record.subject?.kind ?? null,
+      record.subject?.id ?? null,
+      record.version,
+      canonicalJson(record.body),
+    );
     store.database.prepare("UPDATE legacy_sources SET status='revalidated',version=version+1 WHERE source_id=?").run(source.sourceId);
-    const event = store.database.prepare('INSERT INTO events(operation_id,item_id,payload) VALUES(?,?,?)').run(input.operationId, record.itemId,
+    const eventSubject = record.kind === 'item'
+      ? {kind: 'item', id: record.id}
+      : record.subject;
+    const event = store.database.prepare(`
+      INSERT INTO events(operation_id, subject_kind, subject_id, payload)
+      VALUES (?, ?, ?, ?)
+    `).run(
+      input.operationId,
+      eventSubject?.kind ?? null,
+      eventSubject?.id ?? null,
       canonicalJson({kind: 'legacy.revalidate', actor: input.actor, sourceId: source.sourceId, sourceDigest: source.digest,
         sourcePath: source.path, sourceSize: source.size, sourceBackupPath: source.backupPath,
-        reason: input.reason, recordKind: record.kind, recordId: record.id, body: record.body}));
+        reason: input.reason, recordKind: record.kind, recordId: record.id, body: record.body}),
+    );
     const receipt = {ok: true, operationId: input.operationId, recordVersion: record.version, eventSeq: Number(event.lastInsertRowid), data: {record}};
     store.database.prepare('INSERT INTO operations VALUES(?,?,?)').run(input.operationId, digest, canonicalJson(receipt));
     store.database.exec('COMMIT');

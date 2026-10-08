@@ -347,7 +347,7 @@ function putMessage(tx, item, command, {
   tx.put({
     kind: 'message',
     id: messageId,
-    itemId: item.id,
+    subject: {kind: 'item', id: item.id},
     version: 1,
     body,
   });
@@ -468,7 +468,7 @@ function createPersistedGrant(tx, item, command, holder, actions, acquiredAt, ex
   tx.put({
     kind: 'grant',
     id: grantId,
-    itemId: item.id,
+    subject: {kind: 'item', id: item.id},
     version: 1,
     body: {
       schema_version: 1,
@@ -491,7 +491,7 @@ function createPersistedGrant(tx, item, command, holder, actions, acquiredAt, ex
 
 function retireLeaseGrants(tx, item, status) {
   if (item.body.lease === null) return;
-  for (const record of tx.list('grant', item.id)) {
+  for (const record of tx.list('grant', {kind: 'item', id: item.id})) {
     if (record.body.lease_token === item.body.lease.token && record.body.status === 'active') {
       tx.put({...record, version: record.version + 1, body: {...record.body, status}});
     }
@@ -706,7 +706,7 @@ function handleQuestionOpen(current, tx, command, authority) {
   tx.put({
     kind: 'question',
     id: command.payload.questionId,
-    itemId: current.id,
+    subject: {kind: 'item', id: current.id},
     version: 1,
     body: {
       schema_version: 1,
@@ -748,7 +748,7 @@ function effectiveAnswers(tx, question, answerIds) {
   const answers = answerIds
     .map(id => tx.get('message', id)?.body)
     .filter(candidate => candidate?.kind === 'answer'
-      && candidate.item_id === question.itemId
+      && candidate.item_id === question.subject.id
       && candidate.sender_role === question.body.recipient
       && candidate.recipient === question.body.asker.role
       && candidate.parent_id === question.body.opened_message_id
@@ -763,7 +763,7 @@ function handleQuestionAnswer(current, tx, command, authority) {
     fail('INVALID_INPUT', 'question.answer message kind must be "answer"');
   }
   const question = tx.get('question', command.payload.questionId);
-  if (!question || question.itemId !== current.id) {
+  if (question?.subject?.kind !== 'item' || question.subject.id !== current.id) {
     fail('INVALID_INPUT',
       `question/${command.payload.questionId} does not belong to item/${current.id}`);
   }
@@ -860,7 +860,7 @@ function recoveryEvidence(tx, item, command) {
   }
   for (const id of command.payload.recoveryEvidenceIds) {
     const record = tx.get('evidence', id);
-    if (!record || record.itemId !== item.id
+    if (record?.subject?.kind !== 'item' || record.subject.id !== item.id
       || record.body.kind !== 'recovery-reconciliation'
       || record.body.outcome !== 'passed'
       || record.body.data.stale_lease_token !== item.body.lease.token
@@ -965,7 +965,7 @@ function handleAttemptRecover(current, tx, command, authority) {
   tx.put({
     kind: 'attempt',
     id: command.payload.attemptId,
-    itemId: current.id,
+    subject: {kind: 'item', id: current.id},
     version: 1,
     body: {
       schema_version: 1,

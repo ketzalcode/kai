@@ -361,7 +361,8 @@ test('round2 aggregate budget omits previews not integrity checks or full requir
       body.kind = 'question';
       body.payload = {questionKind: 'decision', blocking: true, context: full, ask: full, answerBy: 'before work'};
     });
-    seedRecord(store, {kind: 'question', id: 'budget-question', itemId: 'demo', version: 1, body: {
+    seedRecord(store, {kind: 'question', id: 'budget-question',
+      subject: {kind: 'item', id: 'demo'}, version: 1, body: {
       schema_version: 1, question_id: 'budget-question', item_id: 'demo',
       asker: {role: 'eng-builder-software', runId: 'producer-run'},
       recipient: 'eng-reviewer-code', kind: 'decision', blocking: true, status: 'open',
@@ -443,7 +444,10 @@ test('round1 mismatched item thread messages are withheld from summaries as well
     message.body.item_id = 'other';
     message.body.thread_id = 'other';
     message.body.payload.did = 'OUT-OF-SCOPE-CONTENT';
-    store.database.prepare("UPDATE records SET item_id='other', body=? WHERE kind='message' AND id=?")
+    store.database.prepare(`
+      UPDATE records SET subject_id = 'other', body = ?
+      WHERE kind = 'message' AND id = ?
+    `)
       .run(JSON.stringify(message.body), message.id);
     store.database.prepare("UPDATE events SET thread_id='demo' WHERE message_id=?").run(message.id);
     const view = buildReport(store, {itemId: 'demo'});
@@ -727,7 +731,8 @@ test('host uncertainty and unresolved effects are visible with the outcome, not 
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const attempt = seedHostAttempt(store, [{status: 'timeout', liveness: 'unknown'}]);
     const effectId = randomUUID();
-    seedRecord(store, {kind: 'effect', id: effectId, itemId: 'demo', version: 1, body: {
+    seedRecord(store, {kind: 'effect', id: effectId,
+      subject: {kind: 'item', id: 'demo'}, version: 1, body: {
       schema_version: 1, effect_id: effectId, attempt_id: attempt.id, item_id: 'demo', item_version: 1,
       actor: {role: 'eng-builder-software', runId: 'producer-run'}, intended_action: 'Synthetic effect only',
       idempotency_key: null, external: false, paid: false, created_at: NOW, observations: [],
@@ -1126,7 +1131,7 @@ test('answered questions retain complete resolution and missing resolution-messa
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const id = 'addressed-question';
     seedRecord(store, {
-      kind: 'question', id, itemId: 'demo', version: 1, body: {
+      kind: 'question', id, subject: {kind: 'item', id: 'demo'}, version: 1, body: {
         schema_version: 1, question_id: id, item_id: 'demo', asker: {role: 'eng-builder-software', runId: 'producer-run'},
         recipient: 'eng-reviewer-code', kind: 'decision', blocking: true, status: 'answered',
         context: 'Do not lose the original issue.', ask: 'Can we narrow scope?', answer_by: 'before work',
@@ -1159,7 +1164,8 @@ test('transitive negative evidence invalidates an apparently approved review', a
     const {artifactId} = setupReport(root, store);
     const item = readRecord(store, 'item', 'demo').body;
     const id = randomUUID();
-    seedRecord(store, {kind: 'evidence', id, itemId: 'demo', version: 1, body: {
+    seedRecord(store, {kind: 'evidence', id,
+      subject: {kind: 'item', id: 'demo'}, version: 1, body: {
       schema_version: 1, evidence_id: id, item_id: 'demo', kind: 'dod-dimension',
       subject: item.change_ref, criteria_ref: criteriaRef(item), supersedes: [], dimension: 'verified',
       outcome: 'gap', evidence_refs: [`artifact:${artifactId}`], reason: 'Known failed check',
@@ -1232,14 +1238,16 @@ test('a readable open question without persisted chronology is a gap, not health
     seedItem(store, {state: 'ready', acceptance_actor: null});
     const messageId = randomUUID();
     const id = 'imported-open-question';
-    seedRecord(store, {kind: 'message', id: messageId, itemId: 'demo', version: 1, body: {
+    seedRecord(store, {kind: 'message', id: messageId,
+      subject: {kind: 'item', id: 'demo'}, version: 1, body: {
       schema_version: 1, message_id: messageId, thread_id: 'demo', item_id: 'demo',
       parent_id: null, sender_role: 'eng-builder-software', sender_run: 'producer-run',
       recipient: 'eng-reviewer-code', kind: 'question', created_at: NOW, basis_version: 1,
       payload: {questionKind: 'decision', blocking: false, context: 'Scope', ask: 'Can scope narrow?', answerBy: 'next'},
       artifact_refs: [], evidence_refs: [], provenance: 'durable-thread',
     }});
-    seedRecord(store, {kind: 'question', id, itemId: 'demo', version: 1, body: {
+    seedRecord(store, {kind: 'question', id,
+      subject: {kind: 'item', id: 'demo'}, version: 1, body: {
       schema_version: 1, question_id: id, item_id: 'demo', asker: {role: 'eng-builder-software', runId: 'producer-run'},
       recipient: 'eng-reviewer-code', kind: 'decision', blocking: false, status: 'open',
       context: 'Scope', ask: 'Can scope narrow?', answer_by: 'next',

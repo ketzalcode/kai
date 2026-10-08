@@ -16,21 +16,28 @@ import {
   validateCommand,
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
-import {
-  applyOperation,
-  closeStore,
-  listRecords,
-  openStore,
-  readRecord,
-} from '../src/core/lib/coordination-runtime/store.mjs';
+import * as storeApi from '../src/core/lib/coordination-runtime/store.mjs';
+import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-files.mjs';
 import {
   allocateTemporaryRoot,
   command,
   seedItem,
+  seedRecord,
   withWorkspace,
 } from './helpers/coordination-runtime-fixture.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const {
+  applyOperation,
+  closeStore,
+  listRecords,
+  openHistoricalStore,
+  openStore,
+  readRecord,
+  readSubjectView,
+} = storeApi;
+const {logicalStoreDigest} = migrationFiles;
+const itemSubject = id => ({kind: 'item', id});
 
 function questionBody(id, ask) {
   return {
@@ -49,6 +56,105 @@ function questionBody(id, ask) {
     answer_message_ids: [],
     resolution: null,
   };
+}
+
+function epicBody(id = 'epic:typed-store') {
+  return {
+    schema_version: 1,
+    id,
+    title: 'Exercise typed SQLite subjects',
+    state: 'active',
+    completion_disposition: null,
+    owner: 'operator',
+    scope_authority: 'operator',
+    completion_authority: 'operator',
+    priority: 1,
+    outcome: 'The coordination store persists typed hierarchy subjects.',
+    acceptance: ['Typed subjects remain isolated and durable.'],
+    hold: null,
+    created_at: '2026-09-16T12:00:00.000Z',
+    updated_at: '2026-09-16T12:00:00.000Z',
+    direction_ref: {
+      path: 'docs/kai/DIRECTION.md',
+      hash: 'b'.repeat(64),
+      goal: 'Ship typed coordination subjects.',
+    },
+    contribution: 'Generalizes the store before the semantic Task cutover.',
+    scope_fit: 'Changes only the persistence envelope and query boundary.',
+    required_features: [],
+    optional_features: [],
+  };
+}
+
+function createSchema1Store(path) {
+  const database = new DatabaseSync(path);
+  database.exec(`
+    CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE records (
+      kind TEXT NOT NULL, id TEXT NOT NULL, item_id TEXT,
+      version INTEGER NOT NULL CHECK (version > 0),
+      body TEXT NOT NULL CHECK (json_valid(body)),
+      PRIMARY KEY (kind, id)
+    );
+    CREATE TABLE events (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT,
+      operation_id TEXT NOT NULL, item_id TEXT,
+      payload TEXT NOT NULL CHECK (json_valid(payload)),
+      event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED,
+      message_id TEXT GENERATED ALWAYS AS (
+        CASE json_extract(payload, '$.kind')
+          WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
+          WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
+          WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
+          WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
+        END
+      ) STORED,
+      approval_id TEXT GENERATED ALWAYS AS (
+        CASE WHEN json_extract(payload, '$.kind') = 'approval.record'
+          THEN json_extract(payload, '$.payload.body.approval_id') END
+      ) STORED,
+      question_id TEXT GENERATED ALWAYS AS (
+        CASE WHEN json_extract(payload, '$.kind') = 'question.open'
+          THEN json_extract(payload, '$.payload.questionId') END
+      ) STORED,
+      thread_id TEXT
+    );
+    CREATE TABLE operations (
+      id TEXT PRIMARY KEY, payload_digest TEXT NOT NULL,
+      receipt TEXT NOT NULL CHECK (json_valid(receipt))
+    );
+    CREATE INDEX records_by_item ON records(kind, item_id);
+    CREATE INDEX records_by_question_status ON records(item_id, json_extract(body, '$.status'))
+      WHERE kind = 'question';
+    CREATE INDEX records_by_criteria ON records(kind, item_id, json_extract(body, '$.criteria_ref'));
+    CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL;
+    CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL;
+    CREATE INDEX events_by_item_kind ON events(item_id, event_kind, seq, question_id);
+    CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL;
+    CREATE TRIGGER events_capture_thread AFTER INSERT ON events
+      WHEN NEW.message_id IS NOT NULL
+      BEGIN
+        UPDATE events SET thread_id = COALESCE(
+          (SELECT json_extract(body, '$.thread_id') FROM records
+            WHERE kind = 'message' AND id = NEW.message_id), NEW.item_id)
+        WHERE seq = NEW.seq;
+      END;
+    CREATE TRIGGER messages_capture_thread AFTER INSERT ON records
+      WHEN NEW.kind = 'message'
+      BEGIN
+        UPDATE events SET thread_id = json_extract(NEW.body, '$.thread_id')
+        WHERE message_id = NEW.id;
+      END;
+    CREATE TRIGGER messages_update_thread AFTER UPDATE OF body ON records
+      WHEN NEW.kind = 'message'
+      BEGIN
+        UPDATE events SET thread_id = json_extract(NEW.body, '$.thread_id')
+        WHERE message_id = NEW.id;
+      END;
+  `);
+  database.prepare("INSERT INTO metadata VALUES ('schema_version', '1')").run();
+  database.prepare("INSERT INTO metadata VALUES ('message_schema_version', '1')").run();
+  database.close();
 }
 
 function allocatedCase(prefix, fn) {
@@ -214,7 +320,7 @@ assert.throws(() => validateCommand({
 assert.throws(() => validateRecord({
   kind: 'item',
   id: 'demo',
-  itemId: 'demo',
+  subject: itemSubject('demo'),
   version: 1,
   body: [],
 }), error => error.code === 'INVALID_INPUT');
@@ -226,7 +332,7 @@ await withWorkspace(({store}) => {
       .map(({key, value}) => ({key, value})),
     [
       {key: 'message_schema_version', value: '1'},
-      {key: 'schema_version', value: '1'},
+      {key: 'schema_version', value: '2'},
     ],
   );
   const op = command('item.update', {payload: {title: 'Revised'}});
@@ -235,6 +341,12 @@ await withWorkspace(({store}) => {
   assert.deepEqual(applyOperation(store, op, mutate), first);
   assert.equal(first.recordVersion, 2);
   assert.equal(readRecord(store, 'item', 'demo').version, 2);
+  assert.deepEqual(
+    {...store.database.prepare(`
+      SELECT subject_kind, subject_id FROM events WHERE seq = ?
+    `).get(first.eventSeq)},
+    {subject_kind: 'item', subject_id: 'demo'},
+  );
   assert.throws(() => applyOperation(store,
     {...op, payload: {title: 'Different'}}, mutate),
   error => error.code === 'OPERATION_CONFLICT');
@@ -244,6 +356,129 @@ await withWorkspace(({store}) => {
       payload: {title: 'Stale'},
     }), mutate),
   error => error.code === 'VERSION_CONFLICT');
+});
+
+await test('schema 2 stores root records and isolates typed hierarchy subjects', async () => {
+  await withWorkspace(({store}) => {
+    const columns = store.database.prepare('PRAGMA table_xinfo(records)').all()
+      .map(column => column.name);
+    assert.deepEqual(columns, [
+      'kind',
+      'id',
+      'subject_kind',
+      'subject_id',
+      'version',
+      'body',
+    ]);
+
+    const epic = {
+      kind: 'epic',
+      id: 'epic:typed-store',
+      subject: null,
+      version: 1,
+      body: epicBody(),
+    };
+    seedRecord(store, epic);
+    assert.deepEqual(readRecord(store, epic.kind, epic.id).subject, null);
+
+    const subjects = [
+      {kind: 'epic', id: 'epic:typed-store'},
+      {kind: 'feature', id: 'core:feature:typed-store'},
+      {kind: 'requirement', id: 'core:requirement:typed-store'},
+      {kind: 'task', id: 'core:task:typed-store'},
+    ];
+    for (const [index, subject] of subjects.entries()) {
+      const id = `typed-question-${index}`;
+      seedRecord(store, {
+        kind: 'question',
+        id,
+        subject,
+        version: 1,
+        body: questionBody(id, `Question for ${subject.kind}`),
+      });
+    }
+
+    assert.equal(listRecords(store, {kind: 'question'}).length, subjects.length);
+    assert.deepEqual(
+      listRecords(store, {kind: 'question', subject: subjects[0]})
+        .map(record => record.subject),
+      [subjects[0]],
+    );
+    assert.deepEqual(listRecords(store, {kind: 'question', subject: null}), []);
+
+    assert.throws(
+      () => listRecords(store, {
+        kind: 'question',
+        subject: {kind: 'epic', id: null},
+      }),
+      error => error.code === 'INVALID_INPUT',
+    );
+    assert.throws(
+      () => validateRecord({
+        kind: 'question',
+        id: 'invalid-subject',
+        subject: {kind: 'epic'},
+        version: 1,
+        body: questionBody('invalid-subject', 'Invalid subject'),
+      }),
+      error => error.code === 'INVALID_INPUT',
+    );
+    assert.throws(() => store.database.prepare(`
+      INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+      VALUES ('question', 'sql-mismatch', 'epic', NULL, 1, '{}')
+    `).run(), error => error.code === 'ERR_SQLITE_ERROR');
+    assert.throws(() => store.database.prepare(`
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+      VALUES ('sql-mismatch', NULL, 'epic:typed-store', '{"kind":"mismatch"}')
+    `).run(), error => error.code === 'ERR_SQLITE_ERROR');
+
+    const before = logicalStoreDigest(store);
+    store.database.prepare(`
+      UPDATE records SET subject_id = 'epic:other'
+      WHERE kind = 'question' AND id = 'typed-question-0'
+    `).run();
+    assert.notEqual(logicalStoreDigest(store), before);
+  });
+});
+
+await test('readSubjectView holds one SQLite snapshot while a WAL writer advances', async () => {
+  await withWorkspace(({store}) => {
+    store.database.exec('PRAGMA journal_mode=WAL');
+    seedItem(store);
+    const writer = openStore({path: store.path, mode: 'write'});
+    const prepare = store.database.prepare;
+    let advanced = false;
+    try {
+      store.database.prepare = function(sql) {
+        if (!advanced && /\bFROM records\b/i.test(sql)) {
+          advanced = true;
+          applyOperation(
+            writer,
+            command('item.update', {payload: {title: 'Writer advanced'}}),
+            current => ({...current.body, title: 'Writer advanced'}),
+          );
+        }
+        return prepare.call(this, sql);
+      };
+      const view = readSubjectView(store, {
+        subject: itemSubject('demo'),
+        recentLimit: 0,
+      });
+      assert.equal(advanced, true);
+      assert.equal(view.throughSeq, 0);
+      assert.equal(view.item.body.title, 'Demo knowledge item');
+    } finally {
+      store.database.prepare = prepare;
+      closeStore(writer);
+    }
+    assert.equal(
+      readSubjectView(store, {
+        subject: itemSubject('demo'),
+        recentLimit: 0,
+      }).item.body.title,
+      'Writer advanced',
+    );
+  });
 });
 
 await withWorkspace(({store}) => {
@@ -256,7 +491,7 @@ await withWorkspace(({store}) => {
   assert.equal(readRecord(store, 'item', 'demo').body.state, 'completed');
   assert.throws(() => readRecord(store, 'unknown', 'demo'), error =>
     error.code === 'INVALID_INPUT');
-  assert.throws(() => listRecords(store, {kind: 'unknown', itemId: 'demo'}), error =>
+  assert.throws(() => listRecords(store, {kind: 'unknown', subject: itemSubject('demo')}), error =>
     error.code === 'INVALID_INPUT');
 });
 
@@ -332,7 +567,7 @@ await withWorkspace(({root, store}) => {
     tx.put({
       kind: 'question',
       id: 'question-1',
-      itemId: 'demo',
+      subject: itemSubject('demo'),
       version: 1,
       body: questionBody('question-1', 'Persisted?'),
     });
@@ -340,7 +575,7 @@ await withWorkspace(({root, store}) => {
     return {...current.body, title: 'Persisted'};
   });
   assert.ok(result.eventSeq > 0);
-  assert.equal(listRecords(store, {kind: 'question', itemId: 'demo'}).length, 1);
+  assert.equal(listRecords(store, {kind: 'question', subject: itemSubject('demo')}).length, 1);
   closeStore(store);
 
   const reopened = openStore({
@@ -366,7 +601,7 @@ await withWorkspace(({store}) => {
     tx.put({
       kind: 'question',
       id: 'rolled-back-question',
-      itemId: 'demo',
+      subject: itemSubject('demo'),
       version: 1,
       body: questionBody('rolled-back-question', 'Must disappear'),
     });
@@ -407,8 +642,8 @@ await withWorkspace(({root, store}) => {
 
 await withWorkspace(({store}) => {
   store.database.prepare(`
-    INSERT INTO records (kind, id, item_id, version, body)
-    VALUES ('item', 'malformed', 'malformed', 1, '[]')
+    INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+    VALUES ('item', 'malformed', 'item', 'malformed', 1, '[]')
   `).run();
   assert.throws(() => readRecord(store, 'item', 'malformed'), error =>
     error.code === 'RECOVERY_REQUIRED');
@@ -425,11 +660,51 @@ allocatedCase('schema', root => {
     error.code === 'SCHEMA_MISMATCH');
 });
 
+await test('schema 1 stores open only through the read-only historical API', () => {
+  allocatedCase('historical-schema', root => {
+    const path = join(root, 'coordination.sqlite');
+    createSchema1Store(path);
+    assert.throws(() => openStore({path, mode: 'read'}), error =>
+      error.code === 'SCHEMA_MISMATCH');
+    assert.throws(() => openHistoricalStore({
+      path,
+      expectedStoreVersion: 1,
+      mode: 'write',
+    }), error => error.code === 'INVALID_INPUT');
+
+    const historical = openHistoricalStore({
+      path,
+      expectedStoreVersion: 1,
+    });
+    try {
+      assert.equal(historical.mode, 'read');
+      assert.equal(historical.schemaVersion, 1);
+      assert.deepEqual(listRecords(historical, {kind: 'item'}), []);
+      assert.throws(
+        () => historical.database.prepare(`
+          INSERT INTO metadata (key, value) VALUES ('forbidden', 'write')
+        `).run(),
+        error => error.code === 'ERR_SQLITE_ERROR',
+      );
+      assert.throws(
+        () => applyOperation(
+          historical,
+          command('item.update', {payload: {title: 'Denied'}}),
+          current => current.body,
+        ),
+        error => error.code === 'INVALID_INPUT',
+      );
+    } finally {
+      closeStore(historical);
+    }
+  });
+});
+
 await test('open rejects a schema missing its required index', () => {
   allocatedCase('schema-index', root => {
     const path = join(root, 'coordination.sqlite');
     const store = openStore({path, mode: 'create'});
-    store.database.exec('DROP INDEX records_by_item');
+    store.database.exec('DROP INDEX records_by_subject');
     closeStore(store);
     let reopened;
     try {
@@ -442,11 +717,11 @@ await test('open rejects a schema missing its required index', () => {
   });
 });
 
-await test('v1 indexed chronology is physical schema, never an implicit read/write migration', () => {
+await test('v2 indexed chronology is physical schema, never an implicit read/write migration', () => {
   const objects = [
     ['index', 'events_by_thread'],
     ['index', 'events_by_message'],
-    ['index', 'events_by_item_kind'],
+    ['index', 'events_by_subject_kind'],
     ['index', 'events_by_approval'],
     ['index', 'records_by_question_status'],
     ['index', 'records_by_criteria'],
@@ -476,7 +751,7 @@ await test('v1 indexed chronology is physical schema, never an implicit read/wri
   }
 });
 
-await test('v1 rejects replaced chronology indexes, triggers and generated-column expressions', () => {
+await test('v2 rejects replaced chronology indexes, triggers and generated-column expressions', () => {
   const changeMessagePath = path => database => {
     const schema = database.prepare(`
       SELECT type, name, sql FROM sqlite_master
@@ -611,7 +886,7 @@ await test('read operations translate SQLite lock exhaustion to STORE_BUSY', asy
     await withChildLock(databasePath, 'BEGIN EXCLUSIVE', () => {
       assert.throws(() => readRecord(store, 'item', 'demo'), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
-      assert.throws(() => listRecords(store, {kind: 'item', itemId: 'demo'}), error =>
+      assert.throws(() => listRecords(store, {kind: 'item', subject: itemSubject('demo')}), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
     });
   });

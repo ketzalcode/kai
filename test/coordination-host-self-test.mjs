@@ -28,6 +28,10 @@ const model = 'claude-sonnet-5';
 const qualifiedId = 'kai-engineering:eng-builder-software';
 const actor = {role, runId: 'host-recorder'};
 const roster = [{id: qualifiedId, role, model}];
+const itemRecords = (store, kind, itemId = 'demo') => listRecords(store, {
+  kind,
+  subject: {kind: 'item', id: itemId},
+});
 const profiles = {[role]: 'execution'};
 const capabilities = {
   peerDispatch: false, resume: false, modelOverride: false, usage: true,
@@ -171,7 +175,7 @@ for (const state of ['release-ready', 'deploying', 'production-verification']) {
         });
         assert.equal(recordAttempt(store, host.authorize(cmd)).ok, true);
         assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-        assert.equal(listRecords(store, {kind: 'grant', itemId: 'demo'}).length, 1);
+        assert.equal(itemRecords(store, 'grant').length, 1);
         assert.throws(() => recordAttempt(store, host.authorize(start({
           leaseToken: item.body.lease.token, payload: {itemVersion: item.version},
         }))), code('AUTHORITY_REQUIRED'));
@@ -185,7 +189,7 @@ for (const state of ['release-ready', 'deploying', 'production-verification']) {
             code('AUTHORITY_REQUIRED'));
         }
         assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-        assert.deepEqual(listRecords(store, {kind: 'approval', itemId: 'demo'}), []);
+        assert.deepEqual(itemRecords(store, 'approval'), []);
       }));
   }
 }
@@ -201,7 +205,7 @@ check('round1 shipping operator routing cannot be replaced by a host attempt', (
       payload: {target: {role: 'operator', runId: 'operator-run'}, profile: 'procedure'},
     }))), code('AUTHORITY_REQUIRED'));
     assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(listRecords(store, {kind: 'host-attempt', itemId: 'demo'}).length, 0);
+    assert.equal(itemRecords(store, 'host-attempt').length, 0);
   }));
 
 check('missing exact role and ambiguous qualified IDs fail rather than alias matching', () => {
@@ -275,13 +279,18 @@ check('host intent persists separately from recovery attempts without changing t
     assert.equal(receipt.ok, true);
     assert.equal(receipt.recordVersion, 1);
     const persisted = readDetail(store, {kind: 'host-attempt', id: cmd.recordId});
-    assert.equal(persisted.itemId, 'demo');
+    assert.deepEqual(persisted.subject, {kind: 'item', id: 'demo'});
     assert.equal(persisted.body.status, 'intent');
     assert.equal(persisted.body.requested_model, model);
     assert.equal(persisted.body.agent_id, qualifiedId);
     assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.deepEqual(listRecords(store, {kind: 'attempt', itemId: 'demo'}), []);
-    assert.equal(store.database.prepare('SELECT item_id FROM events WHERE seq = ?').get(receipt.eventSeq).item_id, 'demo');
+    assert.deepEqual(itemRecords(store, 'attempt'), []);
+    assert.deepEqual(
+      {...store.database.prepare(`
+        SELECT subject_kind, subject_id FROM events WHERE seq = ?
+      `).get(receipt.eventSeq)},
+      {subject_kind: 'item', subject_id: 'demo'},
+    );
     observe(host, store, result(cmd), {status: 'completed', liveness: 'stopped', actualModel: model});
     assert.deepEqual(readRecord(store, 'item', 'demo'), item);
     assert.equal(JSON.parse(projectContext(store, {itemId: 'demo'}).text).item.state, 'in-progress');
@@ -303,7 +312,9 @@ check('unknown model, effort, usage, cost and timings survive actual persisted h
     assert.ok(body.gaps.includes('MODEL_UNKNOWN'));
     assert.equal(body.requested_model, model);
     assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    for (const kind of ['approval', 'evidence', 'review']) assert.equal(listRecords(store, {kind, itemId: 'demo'}).length, 0);
+    for (const kind of ['approval', 'evidence', 'review']) {
+      assert.equal(itemRecords(store, kind).length, 0);
+    }
   }));
 
 check('unbound and unauthorized recording, forged JSON observation and mismatched attestations fail closed', () =>
@@ -396,7 +407,7 @@ function assertRetryBlocked(host, store, attempt) {
   assert.throws(() => recordAttempt(store, host.authorize(start({
     payload: {resumeFrom: attempt.recordId, target: attempt.payload.target},
   }))), code('RECOVERY_REQUIRED'));
-  assert.equal(listRecords(store, {kind: 'host-attempt', itemId: 'demo'}).length, 1);
+  assert.equal(itemRecords(store, 'host-attempt').length, 1);
 }
 
 for (const {name, captures} of [
@@ -427,7 +438,7 @@ for (const {name, captures} of [
         history.find(o => o.facts.liveness === 'stopped').observationId);
       assert.deepEqual(readRecord(store, 'item', 'demo'), item);
       for (const kind of ['attempt', 'effect', 'approval', 'evidence']) {
-        assert.equal(listRecords(store, {kind, itemId: 'demo'}).length, 0, kind);
+        assert.equal(itemRecords(store, kind).length, 0, kind);
       }
     }));
 }
@@ -464,12 +475,12 @@ for (const resume of [false, true]) {
       assert.equal(body.observations.length, 3);
       assert.equal(body.observations[1].facts.liveness, 'running');
       assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-      assert.equal(listRecords(store, {kind: 'host-attempt', itemId: 'demo'}).length, 1);
+      assert.equal(itemRecords(store, 'host-attempt').length, 1);
       const retry = start(resume ? {payload: {resumeFrom: attempt.recordId, target: attempt.payload.target}} : {});
       const receipt = recordAttempt(store, host.authorize(retry));
       assert.equal(receipt.ok, true);
       assert.equal(receipt.data.record.body.context, resume ? 'resume' : 'fresh-single-shot');
-      assert.equal(listRecords(store, {kind: 'effect', itemId: 'demo'}).length, 0);
+      assert.equal(itemRecords(store, 'effect').length, 0);
       assert.deepEqual(readRecord(store, 'item', 'demo'), item);
     }));
 }
@@ -519,7 +530,7 @@ for (const newerVerified of [false, true]) {
         assert.equal(recordAttempt(store, resumed).data.record.body.resume_session_id, 'session-a');
       } else {
         assert.throws(() => recordAttempt(store, resumed), code('RECOVERY_REQUIRED'));
-        assert.equal(listRecords(store, {kind: 'host-attempt', itemId: 'demo'}).length, 1);
+        assert.equal(itemRecords(store, 'host-attempt').length, 1);
       }
     }));
 }
@@ -542,7 +553,7 @@ check('failed and mismatched model or effort observations remain explicit gaps, 
     }
     assert.equal(body.observations[0].facts.response, 'I approve this work');
     assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(listRecords(store, {kind: 'approval', itemId: 'demo'}).length, 0);
+    assert.equal(itemRecords(store, 'approval').length, 0);
   }));
 
 check('allowlisted telemetry keeps premium/nano-AIU cumulative checkpoints, not fabricated dollars or internals', () =>
@@ -597,7 +608,7 @@ check('unsupported resume, uncertain liveness and attempt bounds prevent redispa
     recordAttempt(store, host.authorize(second));
     observe(host, store, result(second), {...stopped, sessionId: 'session-b'});
     assert.throws(() => recordAttempt(store, host.authorize(start())), code('RECOVERY_REQUIRED'));
-    assert.equal(listRecords(store, {kind: 'host-attempt', itemId: 'demo'}).length, 2);
+    assert.equal(itemRecords(store, 'host-attempt').length, 2);
   }));
 
 check('timeout is unknown liveness even with elapsed local timing, and a later host fact may resolve it', () =>
@@ -663,7 +674,7 @@ check('stale item versions and blocked lifecycle cannot create executable intent
     const changed = {...item.body, state: 'completed'};
     store.database.prepare("UPDATE records SET body = ? WHERE kind = 'item' AND id = 'demo'").run(JSON.stringify(changed));
     assert.throws(() => recordAttempt(store, host.authorize(start())), code('RECOVERY_REQUIRED'));
-    assert.equal(listRecords(store, {kind: 'host-attempt', itemId: 'demo'}).length, 0);
+    assert.equal(itemRecords(store, 'host-attempt').length, 0);
   }));
 
 check('unresolved external/paid intent blocks replay, survives uncertain results and never changes lifecycle', () =>
@@ -674,7 +685,7 @@ check('unresolved external/paid intent blocks replay, survives uncertain results
     recordAttempt(store, host.authorize(attempt));
     const intent = effect(attempt, {paid: true, idempotencyKey: 'invoice-42'});
     const receipt = recordEffect(store, host.authorize(intent));
-    assert.equal(receipt.data.record.itemId, 'demo');
+    assert.deepEqual(receipt.data.record.subject, {kind: 'item', id: 'demo'});
     assert.equal(receipt.data.record.body.outcome, 'unknown');
     assert.equal(receipt.data.record.body.attempt_id, attempt.recordId);
     assert.deepEqual(recordEffect(store, intent), receipt);
@@ -685,7 +696,7 @@ check('unresolved external/paid intent blocks replay, survives uncertain results
     recordEffect(store, end, host.capture(end, {outcome: 'unknown'}));
     assert.throws(() => recordAttempt(store, host.authorize(start())), code('RECOVERY_REQUIRED'));
     assert.deepEqual(readRecord(store, 'item', 'demo'), item);
-    assert.equal(listRecords(store, {kind: 'approval', itemId: 'demo'}).length, 0);
+    assert.equal(itemRecords(store, 'approval').length, 0);
   }));
 
 check('verified not-applied effects permit an explicit bounded retry; conflicting effects stay uncertain', () =>

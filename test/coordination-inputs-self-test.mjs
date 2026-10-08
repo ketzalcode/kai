@@ -174,7 +174,10 @@ for (const inputKind of ['artifact', 'asset', 'evidence', 'file', 'recursive', '
     if (inputKind === 'evidence') {
       // Legacy supported evidence whose public metadata points at personal content.
       const evidenceId = randomUUID();
-      store.database.prepare('INSERT INTO records (kind,id,item_id,version,body) VALUES (?,?,?,?,?)')
+      store.database.prepare(`
+        INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+        VALUES (?, ?, 'item', ?, ?, ?)
+      `)
         .run('evidence', evidenceId, 'personal-input', 1, JSON.stringify({
           schema_version: 1, evidence_id: evidenceId, item_id: 'personal-input',
           kind: 'dod-dimension', subject: source,
@@ -234,7 +237,10 @@ for (const alias of personalAliases) {
       let reference = alias;
       if (via === 'evidence') {
         const evidenceId = randomUUID();
-        store.database.prepare('INSERT INTO records (kind,id,item_id,version,body) VALUES (?,?,?,?,?)')
+        store.database.prepare(`
+          INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+          VALUES (?, ?, 'item', ?, ?, ?)
+        `)
           .run('evidence', evidenceId, 'demo', 1, JSON.stringify({
             schema_version: 1, evidence_id: evidenceId, item_id: 'demo',
             kind: 'dod-dimension', subject: hashArtifact({root, relativePath: outputFile}),

@@ -198,7 +198,10 @@ test('coordinated engineering worker reads bounded context and produces the cont
       rehearseWorker(workerEnv.USERPROFILE, root, prepared.preparation,
         [contextRequest.command, proofRequest.command]);
     }
-    const before = listRecords(store, {kind: 'evidence', itemId: 'demo'}).length;
+    const before = listRecords(store, {
+      kind: 'evidence',
+      subject: {kind: 'item', id: 'demo'},
+    }).length;
     const contextCapture = invoke('capture', {requestId: contextRequest.nonce}, [], workerEnv);
     const proofCapture = invoke('capture', {requestId: proofRequest.nonce}, [], workerEnv);
     const saved = id => {
@@ -218,7 +221,10 @@ test('coordinated engineering worker reads bounded context and produces the cont
     const recomputed = JSON.parse(proofResult.output);
     evidence.proofRead = {digest: recomputed.subject.digest, reference: proofResult.issued.proof.reference};
     assert.deepEqual(recomputed.subject, subject);
-    assert.equal(before, listRecords(store, {kind: 'evidence', itemId: 'demo'}).length);
+    assert.equal(before, listRecords(store, {
+      kind: 'evidence',
+      subject: {kind: 'item', id: 'demo'},
+    }).length);
     evidence.workerWroteNoRecords = true;
 
     // The worker cannot pipe a command body through its own shell, so the harness

@@ -70,15 +70,22 @@ export function verdict(store, kind, artifactId, overrides = {}) {
     ...overrides,
   };
   return validateRecord({
-    kind, id: body[`${kind}_id`], itemId: item.id, version: 1, body,
+    kind,
+    id: body[`${kind}_id`],
+    subject: {kind: 'item', id: item.id},
+    version: 1,
+    body,
   });
 }
 
 export function appendVerdict(store, record) {
   seedRecord(store, record);
-  store.database.prepare('INSERT INTO events (operation_id, item_id, payload) VALUES (?, ?, ?)')
-    .run(randomUUID(), record.itemId, JSON.stringify({
-      kind: `${record.kind}.record`, recordKind: 'item', recordId: record.itemId,
+  store.database.prepare(`
+    INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+    VALUES (?, ?, ?, ?)
+  `)
+    .run(randomUUID(), record.subject.kind, record.subject.id, JSON.stringify({
+      kind: `${record.kind}.record`, recordKind: 'item', recordId: record.subject.id,
       payload: {body: record.body},
     }));
   return record;
@@ -101,7 +108,7 @@ export function acceptReport(root, store, artifactId) {
 export function appendMessage(store, index, {threadId = 'demo', refs = [], long = false} = {}) {
   const id = randomUUID();
   const record = validateRecord({
-    kind: 'message', id, itemId: 'demo', version: 1,
+    kind: 'message', id, subject: {kind: 'item', id: 'demo'}, version: 1,
     body: {
       schema_version: 1, message_id: id, item_id: 'demo', thread_id: threadId,
       parent_id: null, sender_role: builder.role, sender_run: builder.runId,
@@ -115,8 +122,11 @@ export function appendMessage(store, index, {threadId = 'demo', refs = [], long 
     },
   });
   seedRecord(store, record);
-  store.database.prepare('INSERT INTO events (operation_id, item_id, payload) VALUES (?, ?, ?)')
-    .run(randomUUID(), record.itemId, JSON.stringify({
+  store.database.prepare(`
+    INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+    VALUES (?, ?, ?, ?)
+  `)
+    .run(randomUUID(), record.subject.kind, record.subject.id, JSON.stringify({
       kind: 'item.handoff', recordKind: 'item', recordId: 'demo', payload: {messageId: id},
     }));
   return record;
@@ -149,5 +159,11 @@ export function seedHostAttempt(store, observations = [], overrides = {}) {
     ...overrides,
   };
   Object.assign(body, attemptSummary(body));
-  return seedRecord(store, validateRecord({kind: 'host-attempt', id, itemId: 'demo', version: 1, body}));
+  return seedRecord(store, validateRecord({
+    kind: 'host-attempt',
+    id,
+    subject: {kind: 'item', id: 'demo'},
+    version: 1,
+    body,
+  }));
 }

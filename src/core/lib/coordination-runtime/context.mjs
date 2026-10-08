@@ -5,7 +5,7 @@ import {
 } from './contract.mjs';
 import {effectiveApprovals} from './acceptance-verdicts.mjs';
 import {
-  readContextView,
+  readSubjectView,
   readMessagePage,
   readRecord,
 } from './store.mjs';
@@ -16,6 +16,8 @@ const MAX_RECENT_LIMIT = 8;
 const MAX_MESSAGE_PAGE = 100;
 const MAX_EXCERPT_BYTES = 512;
 const TERMINAL = new Set(['completed', 'shipped', 'dropped']);
+const bindsItem = (record, itemId) =>
+  record?.subject?.kind === 'item' && record.subject.id === itemId;
 
 function invalid(message) {
   throw new RuntimeError('INVALID_INPUT', message);
@@ -121,7 +123,7 @@ function unresolvedQuestions(view) {
   return view.questions.map(entry => {
     const question = entry.record;
     if (!question) gap('item references a missing question');
-    if (question.itemId !== view.item.id
+    if (!bindsItem(question, view.item.id)
       || (!terminal && question.body.status !== 'open')
       || (!terminal && waiting.has(question.id) && question.body.blocking !== true)) {
       gap(`question/${question.id} is not an unresolved question for item/${view.item.id}`);
@@ -130,13 +132,13 @@ function unresolvedQuestions(view) {
       gap(`question/${question.id} has no persisted opening-message chronology`);
     }
     if (!entry.openedMessage
-      || entry.openedMessage.itemId !== view.item.id
+      || !bindsItem(entry.openedMessage, view.item.id)
       || entry.openedMessage.body.message_id !== question.body.opened_message_id
       || entry.openedMessage.body.kind !== 'question') {
       gap(`question/${question.id} references a missing opening message`);
     }
     for (const message of entry.answerMessages) {
-      if (!message || message.itemId !== view.item.id || message.body.kind !== 'answer') {
+      if (!bindsItem(message, view.item.id) || message.body.kind !== 'answer') {
         gap(`question/${question.id} references a missing answer message`);
       }
     }
@@ -167,13 +169,13 @@ function recoveryHold(view) {
   if (view.item.body.recovery_hold === null) return null;
   const entry = view.recoveryHold;
   const attempt = entry?.record;
-  if (!attempt || attempt.itemId !== view.item.id
+  if (!bindsItem(attempt, view.item.id)
     || attempt.id !== view.item.body.recovery_hold
     || attempt.body.disposition !== 'conflicting-partial-work') {
     gap(`item/${view.item.id} references a missing or mismatched recovery attempt`);
   }
   if (!entry.message || entry.eventSeq === null
-    || entry.message.itemId !== view.item.id || entry.message.body.kind !== 'recovery') {
+    || !bindsItem(entry.message, view.item.id) || entry.message.body.kind !== 'recovery') {
     gap(`attempt/${attempt.id} references a missing recovery message or event`);
   }
   return {
@@ -388,7 +390,10 @@ export function projectContext(store, {
   recentLimit = DEFAULT_RECENT_LIMIT,
 }) {
   validateProjectionOptions(itemId, maxBytes, recentLimit);
-  const view = readContextView(store, {itemId, recentLimit});
+  const view = readSubjectView(store, {
+    subject: {kind: 'item', id: itemId},
+    recentLimit,
+  });
   if (!view.item) gap(`item/${itemId} does not exist`);
 
   const questionEntries = unresolvedQuestions(view);

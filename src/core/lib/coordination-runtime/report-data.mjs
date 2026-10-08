@@ -1,5 +1,11 @@
 import {dirname, join} from 'node:path';
-import {RuntimeError, criteriaRef, isProducingRun, subjectEquals} from './contract.mjs';
+import {
+  RuntimeError,
+  canonicalJson,
+  criteriaRef,
+  isProducingRun,
+  subjectEquals,
+} from './contract.mjs';
 import {
   completionApproval, effectiveApprovals, effectiveEvidence, effectiveReviews,
   matchesAcceptance, recoveryResolution, requireDeploymentEvidence,
@@ -11,8 +17,11 @@ import {itemStateSatisfies} from './engine.mjs';
 import {captureArtifacts, captureChanges, captureHistory} from './report-capture.mjs';
 import {artifactBasisCurrent, verifyAssetContent, verifyReferences, verifyVerdict} from './evidence-integrity.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
-import {listRecords, readContextView, readRecord, readSnapshot} from './store.mjs';
+import {listRecords, readRecord, readSnapshot, readSubjectView} from './store.mjs';
 import {artifactPreviewLimits, knownGap, redactReport, snapshotWarning} from './report-safety.mjs';
+
+const bindsItem = (record, itemId) =>
+  record?.subject?.kind === 'item' && record.subject.id === itemId;
 
 const terminal = new Set(['completed', 'shipped', 'dropped']);
 const positive = value => ['approved', 'clear', 'waived', 'passed'].includes(value);
@@ -64,7 +73,10 @@ export function buildReport(store, {itemId}) {
         return {ok: false};
       }
     };
-    const contextRead = check(`item:${itemId}`, () => readContextView(store, {itemId, recentLimit: 8}));
+    const contextRead = check(`item:${itemId}`, () => readSubjectView(store, {
+      subject: {kind: 'item', id: itemId},
+      recentLimit: 8,
+    }));
     const context = contextRead.value;
     const item = context?.item ?? readRecord(store, 'item', itemId);
     if (!item) throw new RuntimeError('EVIDENCE_GAP', `item/${itemId} does not exist`);
@@ -72,10 +84,11 @@ export function buildReport(store, {itemId}) {
       'SELECT COALESCE(MAX(seq), 0) AS seq FROM events').get().seq);
     const cache = new Map();
     const recordsById = new Map();
-    const list = (kind, id) => {
-      const key = `${kind}\0${id}`;
+    const itemSubject = {kind: 'item', id: itemId};
+    const list = (kind, subject = undefined) => {
+      const key = `${kind}\0${subject === undefined ? '*' : canonicalJson(subject)}`;
       if (!cache.has(key)) {
-        const records = listRecords(store, {kind, itemId: id});
+        const records = listRecords(store, {kind, subject});
         cache.set(key, records);
         records.forEach(r => recordsById.set(`${kind}\0${r.id}`, r));
       }
@@ -90,12 +103,12 @@ export function buildReport(store, {itemId}) {
       },
     }, {root});
     const body = item.body;
-    const artifacts = list('artifact', itemId).map(record => ({
+    const artifacts = list('artifact', itemSubject).map(record => ({
       id: record.id, ref: `artifact:${record.id}`, version: record.version, ...record.body,
       status: matchesAcceptance(record.body, body) ? 'current' : 'historical',
       integrity: 'not-rechecked', assets: [],
     }));
-    const assets = list('asset', itemId);
+    const assets = list('asset', itemSubject);
     const assetsByArtifact = new Map();
     for (const asset of assets) {
       const entries = assetsByArtifact.get(asset.body.artifact_id) ?? [];
@@ -138,7 +151,7 @@ export function buildReport(store, {itemId}) {
     const approvalChronology = new Map((context?.approvals ?? []).map(a => [a.record.id, a.eventSeq]));
     const verdicts = {};
     for (const [kind, idKey, effectiveFn] of groups) {
-      const records = list(kind, itemId);
+      const records = list(kind, itemSubject);
       const result = check(`${kind}s`, () => effectiveFn(records.map(r => r.body), body));
       const effectiveIds = result.ok ? new Set(result.value.map(b => b[idKey])) : null;
       verdicts[kind] = records.map(record => {
@@ -244,7 +257,7 @@ export function buildReport(store, {itemId}) {
       if (!match) addGap(reference, 'Reference is not a registered artifact/evidence identity; not linked.');
       else if (!tx.get(match[1].toLowerCase(), match[2])) addGap(reference, 'Referenced record is missing.');
     }
-    const questions = list('question', itemId).map(record => ({
+    const questions = list('question', itemSubject).map(record => ({
       id: record.id, ref: `question:${record.id}`, version: record.version, ...record.body,
       disposition: terminal.has(body.state) ? 'historical-follow-up'
         : record.body.status === 'answered' ? 'addressed'
@@ -268,12 +281,12 @@ export function buildReport(store, {itemId}) {
     }
     for (const question of questions) {
       const opening = tx.get('message', question.opened_message_id);
-      if (!opening || opening.itemId !== itemId || opening.body.kind !== 'question') {
+      if (!bindsItem(opening, itemId) || opening.body.kind !== 'question') {
         addGap(question.ref, 'Question opening message is missing or mismatched.');
       }
       for (const id of question.answer_message_ids) {
         const answer = tx.get('message', id);
-        if (!answer || answer.itemId !== itemId || answer.body.kind !== 'answer') {
+        if (!bindsItem(answer, itemId) || answer.body.kind !== 'answer') {
           addGap(question.ref, 'Question answer message is missing or mismatched.');
         }
       }
@@ -287,7 +300,8 @@ export function buildReport(store, {itemId}) {
     }
     if (body.recovery_hold) {
       const attempt = tx.get('attempt', body.recovery_hold);
-      if (!attempt || attempt.itemId !== itemId || attempt.body.disposition !== 'conflicting-partial-work') {
+      if (!bindsItem(attempt, itemId)
+        || attempt.body.disposition !== 'conflicting-partial-work') {
         addGap(`attempt:${body.recovery_hold}`, 'Recovery hold attempt is missing or mismatched.');
       }
     }
@@ -311,10 +325,10 @@ export function buildReport(store, {itemId}) {
       if (!terminal.has(body.state)) blockers.push({ref, kind: 'dependency', status: dependency.status, ask});
     }
     const attempts = [
-      ...list('host-attempt', itemId).map(r => ({id: r.id, ref: `host-attempt:${r.id}`, type: 'host', version: r.version, ...r.body})),
-      ...list('attempt', itemId).map(r => ({id: r.id, ref: `attempt:${r.id}`, type: 'recovery', version: r.version, ...r.body})),
+      ...list('host-attempt', itemSubject).map(r => ({id: r.id, ref: `host-attempt:${r.id}`, type: 'host', version: r.version, ...r.body})),
+      ...list('attempt', itemSubject).map(r => ({id: r.id, ref: `attempt:${r.id}`, type: 'recovery', version: r.version, ...r.body})),
     ];
-    const effects = list('effect', itemId).map(r => ({id: r.id, ref: `effect:${r.id}`, version: r.version, ...r.body}));
+    const effects = list('effect', itemSubject).map(r => ({id: r.id, ref: `effect:${r.id}`, version: r.version, ...r.body}));
     for (const attempt of attempts.filter(a => a.type === 'host')) {
       if (['intent', 'uncertain', 'conflicting', 'mismatched'].includes(attempt.status)) {
         const message = `Host attempt is ${attempt.status}; reconcile liveness, model and outcome before further execution.`;
@@ -330,7 +344,7 @@ export function buildReport(store, {itemId}) {
       }
     }
     const rawMessages = (context?.recentMessages ?? []).filter(({record}) => {
-      const inScope = record.itemId === itemId && record.body.thread_id === itemId;
+      const inScope = bindsItem(record, itemId) && record.body.thread_id === itemId;
       if (!inScope) addGap(`message:${record.id}`, 'Message item/thread mismatches captured scope; content withheld.');
       return inScope;
     }).map(({record, eventSeq}) => ({

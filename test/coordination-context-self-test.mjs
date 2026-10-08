@@ -60,7 +60,7 @@ function messageRecord({
   return validateRecord({
     kind: 'message',
     id,
-    itemId,
+    subject: {kind: 'item', id: itemId},
     version: 1,
     body: {
       schema_version: 1,
@@ -98,15 +98,15 @@ function appendMessage(store, record, operationId = `message-${record.id}`, ques
       runId: record.body.sender_run,
     },
     recordKind: 'item',
-    recordId: record.itemId,
+    recordId: record.subject.id,
     payload: record.body.kind === 'recovery'
       ? {attemptId: record.id}
       : {messageId: record.id, ...(questionId ? {questionId} : {})},
   };
   return Number(store.database.prepare(`
-    INSERT INTO events (operation_id, item_id, payload)
-    VALUES (?, ?, ?)
-  `).run(operationId, record.itemId, JSON.stringify(payload)).lastInsertRowid);
+    INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+    VALUES (?, 'item', ?, ?)
+  `).run(operationId, record.subject.id, JSON.stringify(payload)).lastInsertRowid);
 }
 
 function appendApproval(store, item, {
@@ -120,7 +120,7 @@ function appendApproval(store, item, {
   const record = validateRecord({
     kind: 'approval',
     id,
-    itemId: item.id,
+    subject: {kind: 'item', id: item.id},
     version: 1,
     body: {
       schema_version: 1,
@@ -148,8 +148,8 @@ function appendApproval(store, item, {
     payload: {body: record.body},
   };
   const eventSeq = Number(store.database.prepare(`
-    INSERT INTO events (operation_id, item_id, payload)
-    VALUES (?, ?, ?)
+    INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+    VALUES (?, 'item', ?, ?)
   `).run(`approval-${id}`, item.id, JSON.stringify(event)).lastInsertRowid);
   return {...record, eventSeq};
 }
@@ -176,7 +176,7 @@ function seedBlockingQuestion(store, itemId = 'demo', {
   seedRecord(store, validateRecord({
     kind: 'question',
     id: questionId,
-    itemId,
+    subject: {kind: 'item', id: itemId},
     version: 1,
     body: {
       schema_version: 1,
@@ -209,7 +209,7 @@ function seedRecoveryHold(store, {observed = 'Conflicting edits need an exact op
     expires_at: '2026-09-15T11:00:00.000Z',
   };
   const attempt = validateRecord({
-    kind: 'attempt', id, itemId: 'demo', version: 1,
+    kind: 'attempt', id, subject: {kind: 'item', id: 'demo'}, version: 1,
     body: {
       schema_version: 1, attempt_id: id, item_id: 'demo',
       grantor: {role: 'eng-lead-architecture', runId: 'recovery-steward'},
@@ -219,7 +219,8 @@ function seedRecoveryHold(store, {observed = 'Conflicting edits need an exact op
   });
   seedRecord(store, attempt);
   seedRecord(store, validateRecord({
-    kind: 'evidence', id: evidenceId, itemId: 'demo', version: 1,
+    kind: 'evidence', id: evidenceId,
+    subject: {kind: 'item', id: 'demo'}, version: 1,
     body: {
       schema_version: 1, evidence_id: evidenceId, item_id: 'demo',
       kind: 'recovery-reconciliation', subject: null, criteria_ref: null,
@@ -516,12 +517,12 @@ await test('all mandatory obligation, hold, question and reference bytes overflo
 
 function insertMessageHistory(store, count, {threadId = 'demo', itemId = 'demo'} = {}) {
   const insertRecord = store.database.prepare(`
-    INSERT INTO records (kind, id, item_id, version, body)
-    VALUES ('message', ?, ?, 1, ?)
+    INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+    VALUES ('message', ?, 'item', ?, 1, ?)
   `);
   const insertEvent = store.database.prepare(`
-    INSERT INTO events (operation_id, item_id, payload)
-    VALUES (?, ?, ?)
+    INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+    VALUES (?, 'item', ?, ?)
   `);
   store.database.exec('BEGIN');
   try {
@@ -701,7 +702,7 @@ await test('projection holds one SQLite snapshot while a WAL writer advances', a
           const secondApproval = validateRecord({
             kind: 'approval',
             id: secondApprovalId,
-            itemId: item.id,
+            subject: {kind: 'item', id: item.id},
             version: 1,
             body: {
               ...readDetail(writer, {kind: 'approval', id: firstApproval.id}).body,
@@ -870,7 +871,7 @@ await test('1,000-message projection selects a bounded snapshot without event pa
     assert.ok(rows <= 40, `bounded snapshot must not materialize history: ${rows} rows`);
     assert.ok(calls.every(call => !/\bSELECT\s+seq,\s*payload/i.test(call.sql)));
     assert.ok(calls.some(call => call.plan.some(detail =>
-      /records_by_question_status.*item_id=\?.*<expr>=\?/.test(detail))),
+      /records_by_question_status.*subject_kind=\?.*subject_id=\?.*<expr>=\?/.test(detail))),
     'select open questions through the status index, not all historical question bodies');
   });
 });
@@ -879,7 +880,8 @@ await test('thread identity survives missing cross-item detail and late insertio
   await withWorkspace(({store}) => {
     const id = uuidFor(990001);
     const eventSeq = Number(store.database.prepare(`
-      INSERT INTO events(operation_id, item_id, payload) VALUES (?, ?, ?)
+      INSERT INTO events(operation_id, subject_kind, subject_id, payload)
+      VALUES (?, 'item', ?, ?)
     `).run('late-message', 'other-item', JSON.stringify({
       kind: 'item.handoff', payload: {messageId: id},
     })).lastInsertRowid);
@@ -929,8 +931,8 @@ await test('message pagination scopes and validates thread cursors and limits', 
     assert.throws(() => projectContext(store, {itemId: 'demo', recentLimit: 9}),
       error => error.code === 'INVALID_INPUT');
     store.database.prepare(`
-      INSERT INTO events (operation_id, item_id, payload)
-      VALUES (?, ?, ?)
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+      VALUES (?, 'item', ?, ?)
     `).run('missing-message-event', 'demo', JSON.stringify({
       kind: 'item.handoff',
       actor: {role: 'eng-builder-software', runId: 'missing-message'},

@@ -4,6 +4,9 @@ import {contextFor} from './evidence-context.mjs';
 import {fail, verifyArtifact, verifyTarget} from './evidence-content.mjs';
 import {verifyInputBasis, inputBasisCurrent} from './input-basis.mjs';
 
+const bindsItem = (record, itemId) =>
+  record?.subject?.kind === 'item' && record.subject.id === itemId;
+
 export function hasPublicationHistory(asset) {
   return asset.history.some(h => ['published', 'retracted'].includes(h.disposition)
     || (h.target.startsWith('project:') && !h.target.endsWith(':@git') && h.validity === 'current'));
@@ -11,7 +14,7 @@ export function hasPublicationHistory(asset) {
 
 export function verifyAssetContent(context, tx, asset) {
   const artifact = tx.get('artifact', asset.artifact_id);
-  if (!artifact || artifact.itemId !== asset.item_id) fail('EVIDENCE_GAP', 'asset has no registered artifact');
+  if (!bindsItem(artifact, asset.item_id)) fail('EVIDENCE_GAP', 'asset has no registered artifact');
   verifyArtifact(context.root, artifact.body);
   verifyInputBasis(context, tx, artifact.body.input_basis ?? []);
   // Initial bundle retention manifests and Git object refs are not publication targets.
@@ -25,7 +28,8 @@ export function verifyAssetContent(context, tx, asset) {
 
 function verifyRegisteredArtifact(context, tx, record) {
   verifyInputBasis(context, tx, record.body.input_basis ?? []);
-  const assets = tx.list('asset', record.itemId).filter(asset => asset.body.artifact_id === record.id);
+  const assets = tx.list('asset', record.subject)
+    .filter(asset => asset.body.artifact_id === record.id);
   if (assets.length === 0) verifyArtifact(context.root, record.body);
   else assets.forEach(asset => verifyAssetContent(context, tx, asset.body));
 }
@@ -37,7 +41,8 @@ export function artifactBasisCurrent(context, tx, item, artifact) {
 }
 
 export function subjectArtifact(context, tx, item, subject, acceptingActor = null) {
-  const history = tx.list('artifact', item.id).filter(record => subjectEquals(record.body.subject, subject));
+  const history = tx.list('artifact', {kind: 'item', id: item.id})
+    .filter(record => subjectEquals(record.body.subject, subject));
   if (acceptingActor && (isProducingRun(item.body, acceptingActor)
     || history.some(record => record.body.producer.runId === acceptingActor.runId))) {
     fail('AUTHORITY_REQUIRED', 'a producing run cannot independently accept its exact subject');
@@ -54,7 +59,7 @@ export function verifyReferences(context, tx, item, refs, {recovery = false, pos
     if (!match || seen.has(ref)) fail('EVIDENCE_GAP', 'references must name registered acyclic artifact/evidence records');
     const [, kind, id] = match;
     const record = tx.get(kind, id);
-    if (!record || record.itemId !== item.id) fail('EVIDENCE_GAP', 'referenced evidence is missing or belongs to another item');
+    if (!bindsItem(record, item.id)) fail('EVIDENCE_GAP', 'referenced evidence is missing or belongs to another item');
     if (kind === 'artifact') {
       if (record.body.criteria_ref !== criteriaRef(item.body)) fail('EVIDENCE_GAP', 'artifact criteria changed');
       verifyRegisteredArtifact(context, tx, record);
@@ -62,7 +67,10 @@ export function verifyReferences(context, tx, item, refs, {recovery = false, pos
     } else {
       if (!recovery && !matchesAcceptance(record.body, item.body)) fail('EVIDENCE_GAP', 'referenced evidence is not current');
       if (!recovery && positive) {
-        const effective = effectiveEvidence(tx.list('evidence', item.id).map(r => r.body), item.body);
+        const effective = effectiveEvidence(
+          tx.list('evidence', {kind: 'item', id: item.id}).map(r => r.body),
+          item.body,
+        );
         const scoped = effective.filter(b => evidenceScope(b) === evidenceScope(record.body));
         if (!effective.some(b => b.evidence_id === id)
           || scoped.some(b => !new Set(['clear', 'waived', 'passed']).has(b.outcome))) {

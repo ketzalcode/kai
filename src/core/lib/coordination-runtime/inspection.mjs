@@ -1,7 +1,13 @@
 import {existsSync, readdirSync} from 'node:fs';
 import {basename} from 'node:path';
 import {migrationManifest, privateAdmission, safePath, exactFile, sourceSnapshot, DATABASE, LOCK} from './migration-files.mjs';
-import {openStore, closeStore, readRecord, readSnapshot} from './store.mjs';
+import {
+  closeStore,
+  openHistoricalStore,
+  openStore,
+  readRecord,
+  readSnapshot,
+} from './store.mjs';
 import {readLegacyRecords, verifyMigration} from './migration.mjs';
 import {inspectReportIndex, reportPaths} from './report-paths.mjs';
 import {TERMINAL} from '../coordination.mjs';
@@ -45,7 +51,16 @@ export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} 
       return result;
     }
     exactFile(root, DATABASE);
-    store = openStore({path: safePath(root, DATABASE), mode: 'read'});
+    const databasePath = safePath(root, DATABASE);
+    try {
+      store = openStore({path: databasePath, mode: 'read'});
+    } catch (error) {
+      if (error?.code !== 'SCHEMA_MISMATCH') throw error;
+      store = openHistoricalStore({
+        path: databasePath,
+        expectedStoreVersion: 1,
+      });
+    }
     readSnapshot(store, () => {
       const throughSeq = Number(store.database.prepare('SELECT COALESCE(MAX(seq),0) AS seq FROM events').get().seq);
       const items = [];

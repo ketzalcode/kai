@@ -97,27 +97,31 @@ export function seedItem(store, overrides = {}) {
   seedRecord(store, {
     kind: 'item',
     id: body.id,
-    itemId: body.id,
+    subject: {kind: 'item', id: body.id},
     version: 1,
     body,
   });
   return {
     kind: 'item',
     id: body.id,
-    itemId: body.id,
+    subject: {kind: 'item', id: body.id},
     version: 1,
     body,
   };
 }
 
 export function seedRecord(store, record) {
+  if (!Object.hasOwn(record, 'subject')) {
+    throw new Error('seedRecord requires an explicit typed subject or null');
+  }
   store.database.prepare(`
-    INSERT INTO records (kind, id, item_id, version, body)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
+    VALUES (?, ?, ?, ?, ?, ?)
   `).run(
     record.kind,
     record.id,
-    record.itemId,
+    record.subject?.kind ?? null,
+    record.subject?.id ?? null,
     record.version ?? 1,
     JSON.stringify(record.body),
   );
@@ -141,7 +145,7 @@ export function seedInitiative(store, overrides = {}) {
   return seedRecord(store, {
     kind: 'initiative',
     id: body.id,
-    itemId: null,
+    subject: null,
     version: 1,
     body,
   });

@@ -230,7 +230,7 @@ function record(kind, body, version = 1) {
   return {
     kind,
     id: body.id,
-    itemId: kind === 'task' || kind === 'item' ? body.id : null,
+    subject: kind === 'item' ? {kind: 'item', id: body.id} : null,
     version,
     body,
   };

@@ -74,7 +74,8 @@ export {
 
 /**
  * @typedef {{role: string, runId: string}} Actor
- * @typedef {{kind: string, id: string, itemId: string|null,
+ * @typedef {{kind: string, id: string}} HierarchySubject
+ * @typedef {{kind: string, id: string, subject: HierarchySubject|null,
  *   version: number, body: object}} Record
  * @typedef {{operationId: string, kind: string, actor: Actor,
  *   recordKind: string, recordId: string, expectedVersion: number,
@@ -1099,7 +1100,7 @@ export function validateRecord(record) {
   assertExactKeys(record, new Set([
     'kind',
     'id',
-    'itemId',
+    'subject',
     'version',
     'body',
   ]), 'record');
@@ -1111,23 +1112,34 @@ export function validateRecord(record) {
     return record;
   }
   assertNonEmptyString(record.id, 'record.id');
-  if (record.itemId !== null) assertNonEmptyString(record.itemId, 'record.itemId');
+  if (record.subject !== null) {
+    if (!isPlainObject(record.subject)) invalid('record.subject must be an object or null');
+    assertExactKeys(record.subject, new Set(['kind', 'id']), 'record.subject');
+    if (!new Set([...HIERARCHY_KINDS, 'item']).has(record.subject.kind)) {
+      invalid('record.subject.kind is unsupported');
+    }
+    assertNonEmptyString(record.subject.id, 'record.subject.id');
+  }
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
     invalid('record.version must be a positive safe integer');
   }
   const validator = recordBodyValidators.get(record.kind);
   validator(record.body, `record ${record.kind}/${record.id} body`);
-  if (record.kind === 'item' && (record.id !== record.body.id || record.itemId !== record.id)) {
+  if (record.kind === 'item'
+    && (record.id !== record.body.id
+      || record.subject?.kind !== 'item'
+      || record.subject.id !== record.id)) {
     invalid('item record envelope must match body.id');
   }
   if (record.kind === 'initiative'
-    && (record.id !== record.body.id || record.itemId !== null)) {
-    invalid('initiative record envelope must match body.id and have null itemId');
+    && (record.id !== record.body.id || record.subject !== null)) {
+    invalid('initiative record envelope must match body.id and have null subject');
   }
   if (new Set(['question', 'attempt', 'host-attempt', 'effect', 'evidence', 'review', 'approval', 'artifact', 'asset',
     'message', 'grant']).has(record.kind)
-    && record.itemId !== record.body.item_id) {
-    invalid(`${record.kind} record itemId must match body.item_id`);
+    && (record.subject === null
+      || (record.subject.kind === 'item' && record.subject.id !== record.body.item_id))) {
+    invalid(`${record.kind} record subject must bind body.item_id during the schema-4 transition`);
   }
   const identityKeys = new Map([
     ['artifact', 'artifact_id'],
