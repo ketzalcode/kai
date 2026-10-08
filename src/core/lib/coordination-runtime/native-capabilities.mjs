@@ -1,7 +1,13 @@
 import {createHmac, randomBytes, timingSafeEqual} from 'node:crypto';
-import {existsSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import {canonicalJson, RuntimeError} from './contract.mjs';
-import {safePath, exactFile, exclusiveFile, privateAdmission} from './migration-files.mjs';
+import {
+  safePath,
+  exactFile,
+  exclusiveFile,
+  privateAdmission,
+  schema5MigrationLockPath,
+} from './migration-files.mjs';
 
 const lane = '.kai/core/runtime/host';
 const fail = (code, message) => { throw new RuntimeError(code, message); };
@@ -30,7 +36,21 @@ function key(root, create) {
 function signature(root, payload, create = false) {
   return createHmac('sha256', key(root, create)).update(canonicalJson(payload)).digest('hex');
 }
+function assertIssuerWriteAllowed(root) {
+  const path = schema5MigrationLockPath(root);
+  if (!existsSync(path)) return;
+  let lock;
+  try {
+    lock = JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    fail('RECOVERY_REQUIRED', 'offline migration/rollback lock is invalid');
+  }
+  if (lock.rollback === true) {
+    fail('RECOVERY_REQUIRED', 'offline rollback lock prevents native host authority writes');
+  }
+}
 export function writeIssued(root, kind, id, payload) {
+  assertIssuerWriteAllowed(root);
   requireKind(kind);
   capabilityId(id);
   const value = {payload, mac: signature(root, payload, true)};

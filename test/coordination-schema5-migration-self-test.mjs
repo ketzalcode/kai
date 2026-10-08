@@ -695,7 +695,14 @@ function completeWorksheet(input, {
     for (const entry of worksheet.active_work) {
       entry.resolution = {
         status: 'reconciled',
+        state: entry.reasons.some(reason => /state|producer|question/i.test(reason))
+          ? 'quiesced'
+          : 'none',
         lease: 'released',
+        grants: entry.reasons.some(reason => /grant/i.test(reason)) ? 'revoked' : 'none',
+        recovery: entry.reasons.some(reason => /recovery/i.test(reason))
+          ? 'resolved'
+          : 'none',
         production: 'abandoned',
         reason: 'Operator reconciled the legacy lease and production action offline.',
       };
@@ -733,6 +740,8 @@ test('migration-plan is canonical, complete, and read-only', async () =>
       'source_workspace_schema',
       'source_manifest_digest',
       'source_store_digest',
+      'backup_inventory',
+      'backup_inventory_digest',
       'direction_ref',
       'placement',
       'backup_root',
@@ -748,6 +757,18 @@ test('migration-plan is canonical, complete, and read-only', async () =>
     assert.equal(worksheet.source_workspace_schema, 4);
     assert.match(worksheet.source_manifest_digest, /^[a-f0-9]{64}$/);
     assert.match(worksheet.source_store_digest, /^[a-f0-9]{64}$/);
+    assert.equal(worksheet.backup_inventory.schema_version, 1);
+    assert.ok(worksheet.backup_inventory.private_files.some(entry =>
+      entry.path === '.kai/manifest.json'
+      && entry.type === 'file'
+      && /^[a-f0-9]{64}$/.test(entry.digest)));
+    assert.ok(worksheet.backup_inventory.private_files.some(entry =>
+      entry.path === '.kai/state/coordination.sqlite'
+      && entry.type === 'file'));
+    assert.equal(
+      worksheet.backup_inventory_digest,
+      sha256(canonicalJson(worksheet.backup_inventory)),
+    );
     assert.deepEqual(worksheet.placement, {target: null, project_binding: null});
     assert.equal(worksheet.backup_root, null);
     assert.ok(worksheet.epics.some(entry => entry.source.id === 'demo-initiative'));
@@ -800,6 +821,72 @@ test('migration-plan includes transitional typed hierarchy records without alias
     assert.ok(worksheet.milestones.some(entry => entry.source.kind === 'feature'));
     assert.ok(worksheet.milestones.some(entry => entry.source.kind === 'requirement'));
     assert.ok(worksheet.items.some(entry => entry.source.kind === 'task'));
+  }));
+
+test('typed Task dependencies migrate from dependency.task without weakening relationship checks', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const initial = buildMigrationWorksheet({root});
+    const classified = completeWorksheet(initial, {root, backupRoot});
+    const taskTemplate = structuredClone(
+      sourceEntry(classified, 'items', 'foundation').classification.records[0],
+    );
+    const dependentTemplate = structuredClone(
+      sourceEntry(classified, 'items', 'build-api').classification.records[0],
+    );
+    const sourceFoundationId = 'engineering:task:typed-source-foundation';
+    const sourceDependentId = 'engineering:task:typed-source-dependent';
+    taskTemplate.id = sourceFoundationId;
+    taskTemplate.body.id = sourceFoundationId;
+    taskTemplate.body.depends_on = [];
+    dependentTemplate.id = sourceDependentId;
+    dependentTemplate.body.id = sourceDependentId;
+    dependentTemplate.body.depends_on = [{
+      task: sourceFoundationId,
+      requires: 'completed',
+    }];
+    dependentTemplate.body.state = 'proposed';
+    dependentTemplate.body.resume_state = null;
+    dependentTemplate.body.lease = null;
+    dependentTemplate.body.producer_actor = null;
+    dependentTemplate.body.producing_actors = [];
+    dependentTemplate.body.recovery_hold = null;
+
+    const store = openStore({
+      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      mode: 'write',
+    });
+    try {
+      seedRecord(store, taskTemplate);
+      seedRecord(store, dependentTemplate);
+    } finally {
+      closeStore(store);
+    }
+
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    const typedFoundation = sourceEntry(worksheet, 'items', sourceFoundationId);
+    const typedDependent = sourceEntry(worksheet, 'items', sourceDependentId);
+    typedFoundation.classification = mapped(taskTemplate);
+    typedDependent.classification = mapped(dependentTemplate);
+    const requirement = sourceEntry(worksheet, 'milestones', 'requirement')
+      .classification.records[0];
+    requirement.body.required_tasks.push(sourceFoundationId, sourceDependentId);
+
+    assert.doesNotThrow(() => validateMigrationWorksheet({
+      root,
+      worksheet,
+      roles: ROLES,
+    }));
+    typedDependent.classification.records[0].body.depends_on = [{
+      task: 'engineering:task:missing',
+      requires: 'completed',
+    }];
+    assert.throws(
+      () => validateMigrationWorksheet({root, worksheet, roles: ROLES}),
+      /unresolved dependency|missing dependency|relationship/i,
+    );
   }));
 
 test('schema-1 physical stores stage into schema 2 without rewriting their preserved rows', () =>
@@ -968,8 +1055,9 @@ test('complete classification blocks every ambiguity, stale binding, unsafe back
 test('active leases and in-flight production require an explicit offline reconciliation', () =>
   schema4Workspace(({root, backupRoot}) => {
     const plan = buildMigrationWorksheet({root});
-    assert.equal(plan.active_work.length, 1);
-    assert.ok(plan.active_work[0].reasons.some(reason => /lease|deploy/i.test(reason)));
+    const buildApi = plan.active_work.find(entry => entry.source.id === 'build-api');
+    assert.ok(buildApi);
+    assert.ok(buildApi.reasons.some(reason => /lease|deploy/i.test(reason)));
     assert.equal(canonicalJson(plan).includes('active-lease'), false);
     assert.match(
       sourceEntry(plan, 'items', 'build-api').source.body.lease.token_digest,
@@ -1013,6 +1101,116 @@ test('active leases and in-flight production require an explicit offline reconci
       closeStore(store);
     }
   }, {active: true}));
+
+test('quiescence inventories every nonterminal state plus grants, leases, and recovery', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const store = openStore({
+      path: join(root, '.kai', 'state', 'coordination.sqlite'),
+      mode: 'write',
+    });
+    const recoveryId = randomUUID();
+    try {
+      for (const state of [
+        'ready',
+        'in-progress',
+        'in-review',
+        'release-ready',
+        'deploying',
+        'production-verification',
+        'blocked',
+      ]) {
+        seedItem(store, {
+          id: `state-${state}`,
+          title: `State ${state}`,
+          initiative: 'demo-initiative',
+          state,
+          resume_state: state === 'blocked' ? 'in-progress' : null,
+          producer_actor: null,
+          producing_actors: [],
+          acceptance_actor: null,
+          next_role: 'eng-builder-software',
+          updated_at: NOW,
+        });
+      }
+      seedItem(store, {
+        id: 'recovery-task',
+        title: 'Recovery task',
+        initiative: 'demo-initiative',
+        state: 'blocked',
+        resume_state: 'in-progress',
+        producer_actor: null,
+        producing_actors: [],
+        acceptance_actor: null,
+        recovery_hold: recoveryId,
+        updated_at: NOW,
+      });
+      seedRecord(store, {
+        kind: 'grant',
+        id: randomUUID(),
+        subject: {kind: 'item', id: 'build-api'},
+        version: 1,
+        body: {
+          status: 'active',
+        },
+      });
+    } finally {
+      closeStore(store);
+    }
+
+    const plan = buildMigrationWorksheet({root});
+    for (const state of [
+      'proposed',
+      'ready',
+      'in-progress',
+      'in-review',
+      'release-ready',
+      'deploying',
+      'production-verification',
+      'blocked',
+    ]) {
+      assert.ok(plan.active_work.some(entry =>
+        entry.reasons.some(reason => reason.includes(state))),
+      `missing quiescence entry for ${state}`);
+    }
+    assert.ok(plan.active_work.some(entry =>
+      entry.source.kind === 'grant'
+      && entry.reasons.some(reason => /grant/i.test(reason))));
+    assert.ok(plan.active_work.some(entry =>
+      entry.source.id === 'recovery-task'
+      && entry.reasons.some(reason => /recovery/i.test(reason))));
+
+    const unresolved = completeWorksheet(plan, {
+      root,
+      backupRoot,
+      reconcileActive: false,
+    });
+    for (const entry of unresolved.items) {
+      if (entry.classification === null) {
+        entry.classification = historical(
+          'Additional nonterminal source is reconciled offline and retained as provenance.',
+        );
+      }
+    }
+    assert.throws(
+      () => validateMigrationWorksheet({root, worksheet: unresolved, roles: ROLES}),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /active|quies|reconcil|state|grant|recovery/i.test(error.message),
+    );
+
+    const reconciled = completeWorksheet(plan, {root, backupRoot});
+    for (const entry of reconciled.items) {
+      if (entry.classification === null) {
+        entry.classification = historical(
+          'Additional nonterminal source is reconciled offline and retained as provenance.',
+        );
+      }
+    }
+    assert.doesNotThrow(() => validateMigrationWorksheet({
+      root,
+      worksheet: reconciled,
+      roles: ROLES,
+    }));
+  }));
 
 test('tracked private sources stop with exact operator guidance and require a fresh worksheet', () =>
   schema4Workspace(({root, project, backupRoot}) => {
@@ -1106,6 +1304,19 @@ test('backup-first activation preserves source truth, maps every source, and lea
     );
     assert.equal(receipt.digest, sha256(canonicalJson(receipt.payload)));
     assert.equal(existsSync(receipt.backupPath), true);
+    assert.equal(
+      receipt.payload.backup_inventory_digest,
+      worksheet.backup_inventory_digest,
+    );
+    const ready = JSON.parse(
+      readFileSync(join(receipt.backupPath, 'ready.json'), 'utf8'),
+    );
+    assert.equal(ready.digest, sha256(canonicalJson(ready.payload)));
+    assert.equal(
+      ready.payload.backup_inventory_digest,
+      worksheet.backup_inventory_digest,
+    );
+    assert.equal(receipt.payload.ready_digest, ready.digest);
     assert.deepEqual(
       readFileSync(join(receipt.backupPath, 'private', '.kai', 'state', 'coordination.sqlite')),
       sourceBytes,
@@ -1226,6 +1437,10 @@ test('capability binds the exact canonical worksheet and migrate ignores any sec
     const persisted = readIssued(root, 'requests', requested.request.nonce);
     assert.equal(persisted.worksheetDigest, sha256(canonicalJson(worksheet)));
     assert.equal(canonicalJson(persisted.scope.worksheet), canonicalJson(worksheet));
+    assert.equal(
+      persisted.scope.worksheet.backup_inventory_digest,
+      worksheet.backup_inventory_digest,
+    );
     writeIssued(root, 'capabilities', requested.request.nonce, {
       request: persisted,
       receipt: {
@@ -1236,6 +1451,18 @@ test('capability binds the exact canonical worksheet and migrate ignores any sec
         roster: ROLES.map(role => ({id: `fixture:${role}`, role, model: null})),
       },
     });
+    const hostRoot = join(root, '.kai', 'core', 'runtime', 'host');
+    const requestBytes = readFileSync(join(
+      hostRoot,
+      'requests',
+      `${requested.request.nonce}.json`,
+    ));
+    const capabilityBytes = readFileSync(join(
+      hostRoot,
+      'capabilities',
+      `${requested.request.nonce}.json`,
+    ));
+    const issuerKey = readFileSync(join(hostRoot, 'key'));
     const changed = structuredClone(worksheet);
     sourceEntry(changed, 'items', 'build-api').classification.primary.id =
       'engineering:task:not-authorized';
@@ -1247,6 +1474,37 @@ test('capability binds the exact canonical worksheet and migrate ignores any sec
       env,
     });
     assert.equal(receipt.activated, true);
+    assert.equal(
+      receipt.payload.backup_inventory_digest,
+      worksheet.backup_inventory_digest,
+    );
+    assert.match(receipt.payload.authorization_digest, /^[a-f0-9]{64}$/);
+    assert.deepEqual(
+      readFileSync(join(receipt.backupPath, 'authorization', 'request.json')),
+      requestBytes,
+    );
+    assert.deepEqual(
+      readFileSync(join(receipt.backupPath, 'authorization', 'capability.json')),
+      capabilityBytes,
+    );
+    assert.deepEqual(
+      readFileSync(join(receipt.backupPath, 'authorization', 'issuer-key')),
+      issuerKey,
+    );
+    const authorization = JSON.parse(readFileSync(
+      join(receipt.backupPath, 'authorization.json'),
+      'utf8',
+    ));
+    assert.equal(
+      authorization.digest,
+      sha256(canonicalJson(authorization.payload)),
+    );
+    assert.equal(authorization.payload.capability_id, requested.request.nonce);
+    assert.equal(authorization.payload.signing.algorithm, 'hmac-sha256');
+    assert.equal(
+      authorization.payload.signing.key_digest,
+      sha256(issuerKey),
+    );
     const store = openStore({
       path: join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'),
       mode: 'read',
@@ -1257,6 +1515,13 @@ test('capability binds the exact canonical worksheet and migrate ignores any sec
     } finally {
       closeStore(store);
     }
+    const rolledBack = rollbackWorkspaceV5({root, confirm: true, env});
+    assert.equal(rolledBack.rolledBack, true);
+    assert.equal(existsSync(hostRoot), false);
+    assert.deepEqual(
+      readFileSync(join(receipt.backupPath, 'authorization', 'request.json')),
+      requestBytes,
+    );
   }));
 
 test('interrupted phases remain schema 4 authoritative and recover only from verified state', async t => {
@@ -1344,6 +1609,90 @@ test('interrupted phases remain schema 4 authoritative and recover only from ver
   }
 });
 
+test('staging uses only frozen verified bytes and live drift aborts before activation', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const sourcePath = join(root, '.kai', 'engineering', 'old-draft.md');
+    const original = readFileSync(sourcePath);
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    let drifted = false;
+    assert.throws(
+      () => boundary('mkdirSync', (originalMkdir, path, options) => {
+        const result = originalMkdir(path, options);
+        if (!drifted && String(path).includes('.kai-stage-')) {
+          drifted = true;
+          appendFileSync(sourcePath, 'concurrent live edit\n');
+        }
+        return result;
+      }, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /source|drift|changed|snapshot/i.test(error.message),
+    );
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    assert.deepEqual(
+      readFileSync(join(
+        lock.stage_path,
+        'schema5-files',
+        '.kai',
+        'engineering',
+        'spec',
+        'migration-draft',
+        'drafts',
+        'old-draft.md',
+      )),
+      original,
+      'staging must use the frozen backup, not mutable live bytes',
+    );
+    assertSchema4Authoritative(root);
+    const abandoned = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'abandon',
+      roles: ROLES,
+    });
+    assert.equal(abandoned.abandoned, true);
+    assert.match(readFileSync(sourcePath, 'utf8'), /concurrent live edit/);
+  }));
+
+test('backup verification rejects unlisted files even when listed bytes are intact', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(() => boundary('mkdirSync', (original, path, options) => {
+      if (String(path).includes('.kai-stage-')) {
+        throw Object.assign(new Error('interrupt after backup'), {code: 'EIO'});
+      }
+      return original(path, options);
+    }, () => migrateWorkspaceV5({
+      root,
+      confirm: true,
+      worksheet,
+      roles: ROLES,
+    })), /interrupt after backup/);
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    put(lock.backup_path, 'private/.kai/unlisted-injection.txt', 'not in the plan\n');
+    assert.throws(
+      () => recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'activate',
+        roles: ROLES,
+      }),
+      error => error.code === 'RECOVERY_REQUIRED'
+        && /backup|extra|inventory|unlisted/i.test(error.message),
+    );
+    assertSchema4Authoritative(root);
+  }));
+
 test('tampered or unverified external backup cannot activate', () =>
   schema4Workspace(({root, backupRoot}) => {
     const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
@@ -1375,6 +1724,57 @@ test('tampered or unverified external backup cannot activate', () =>
     );
     assertSchema4Authoritative(root);
   }));
+
+test('rollback trusts the capability-bound inventory, not mutable snapshot metadata', async t => {
+  for (const attack of ['missing listed file', 'extra unlisted file']) {
+    await t.test(attack, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      const receipt = migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      });
+      const snapshotPath = join(receipt.backupPath, 'snapshot.json');
+      if (attack === 'missing listed file') {
+        const victim = '.kai/state/items/build-api.md';
+        if (existsSync(snapshotPath)) {
+          const mutable = JSON.parse(readFileSync(snapshotPath, 'utf8'));
+          mutable.private_files = mutable.private_files.filter(entry => entry.path !== victim);
+          writeFileSync(snapshotPath, canonicalJson(mutable));
+        } else {
+          writeFileSync(snapshotPath, canonicalJson({
+            schema_version: 1,
+            private_files: [],
+            public_files: [],
+            registry: null,
+            git_tracking: [],
+          }));
+        }
+        rmSync(join(receipt.backupPath, 'private', ...victim.split('/')));
+      } else {
+        put(
+          receipt.backupPath,
+          'private/.kai/state/items/unlisted-injection.md',
+          '# not authorized by the plan\n',
+        );
+      }
+      assert.throws(
+        () => rollbackWorkspaceV5({root, confirm: true}),
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /backup|inventory|missing|extra|unlisted|digest/i.test(error.message),
+      );
+      assert.equal(
+        JSON.parse(readFileSync(join(root, '.kai', 'manifest.json'), 'utf8'))
+          .schema_version,
+        5,
+      );
+    }));
+  }
+});
 
 test('tampered recovery state cannot replace the capability-bound worksheet', () =>
   schema4Workspace(({root, backupRoot}) => {
@@ -1409,6 +1809,81 @@ test('tampered recovery state cannot replace the capability-bound worksheet', ()
         && /state.*worksheet|lock.*worksheet/i.test(error.message),
     );
     assertSchema4Authoritative(root);
+  }));
+
+test('atomic replacement is preflighted before any live schema-4 tree mutation', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const manifestPath = join(root, '.kai', 'manifest.json');
+    const sourcePath = join(root, '.kai', 'engineering', 'old-draft.md');
+    const manifestBytes = readFileSync(manifestPath);
+    const sourceBytes = readFileSync(sourcePath);
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    assert.throws(
+      () => boundary('renameSync', (original, from, to) => {
+        if (existsSync(to)) {
+          throw Object.assign(new Error('atomic replacement unavailable'), {code: 'EPERM'});
+        }
+        return original(from, to);
+      }, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /atomic replacement unavailable/,
+    );
+    assert.deepEqual(readFileSync(manifestPath), manifestBytes);
+    assert.deepEqual(readFileSync(sourcePath), sourceBytes);
+    assert.equal(
+      existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')),
+      false,
+    );
+    recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'abandon',
+      roles: ROLES,
+    });
+  }));
+
+test('manifest activation attempts one atomic replacement and never renames old authority away', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const manifestPath = join(root, '.kai', 'manifest.json');
+    const manifestBytes = readFileSync(manifestPath);
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    let replacementAttempts = 0;
+    assert.throws(
+      () => boundary('renameSync', (original, from, to) => {
+        if (String(to) === manifestPath) {
+          replacementAttempts += 1;
+          throw Object.assign(new Error('manifest replacement failure'), {code: 'EPERM'});
+        }
+        return original(from, to);
+      }, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /manifest replacement failure/,
+    );
+    assert.equal(replacementAttempts, 1);
+    assert.deepEqual(readFileSync(manifestPath), manifestBytes);
+    const lock = JSON.parse(readFileSync(v5MigrationLockPath(root), 'utf8'));
+    assert.equal(existsSync(join(lock.stage_path, 'schema4-manifest.json')), false);
+    recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'abandon',
+      roles: ROLES,
+    });
+    assert.deepEqual(readFileSync(manifestPath), manifestBytes);
   }));
 
 test('manifest activation without the final receipt remains recoverable and never claims success early', async () =>
@@ -1525,6 +2000,73 @@ test('abandon preserves concurrent authored targets and an unowned schema-5 data
   }
 });
 
+test('abandon refuses to delete migration-owned targets replaced by digest or type', async t => {
+  for (const kind of ['authored digest', 'authored type', 'database digest']) {
+    await t.test(kind, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      const authoredTarget = join(
+        root,
+        '.kai',
+        'engineering',
+        'spec',
+        'migration-draft',
+        'drafts',
+        'old-draft.md',
+      );
+      const database = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
+      const manifestPath = join(root, '.kai', 'manifest.json');
+      assert.throws(
+        () => boundary('renameSync', (original, from, to) => {
+          if (String(to) === manifestPath) {
+            throw Object.assign(new Error('stop before activation'), {code: 'EIO'});
+          }
+          return original(from, to);
+        }, () => migrateWorkspaceV5({
+          root,
+          confirm: true,
+          worksheet,
+          roles: ROLES,
+        })),
+        /stop before activation/,
+      );
+      const replaced = kind.startsWith('authored') ? authoredTarget : database;
+      rmSync(replaced, {recursive: true, force: true});
+      if (kind === 'authored type') {
+        mkdirSync(replaced, {recursive: true});
+        put(replaced, 'concurrent.txt', 'concurrent directory replacement\n');
+      } else {
+        writeFileSync(replaced, `concurrent ${kind} replacement\n`);
+      }
+      assert.throws(
+        () => recoverWorkspaceV5({
+          root,
+          confirm: true,
+          action: 'abandon',
+          roles: ROLES,
+        }),
+        error => error.code === 'RECOVERY_REQUIRED'
+          && /owned|target|database|digest|type|changed|replace/i.test(error.message),
+      );
+      if (kind === 'authored type') {
+        assert.equal(fs.lstatSync(replaced).isDirectory(), true);
+        assert.equal(
+          readFileSync(join(replaced, 'concurrent.txt'), 'utf8'),
+          'concurrent directory replacement\n',
+        );
+      } else {
+        assert.equal(
+          readFileSync(replaced, 'utf8'),
+          `concurrent ${kind} replacement\n`,
+        );
+      }
+      assertSchema4Authoritative(root);
+    }));
+  }
+});
+
 test('rollback restores schema 4 only at the activation event baseline', () =>
   schema4Workspace(({root, backupRoot}) => {
     const sourceDatabase = readFileSync(join(root, '.kai', 'state', 'coordination.sqlite'));
@@ -1549,6 +2091,72 @@ test('rollback restores schema 4 only at the activation event baseline', () =>
       sourceDatabase,
     );
     assert.equal(existsSync(receipt.backupPath), true);
+  }));
+
+test('rollback holds its filesystem lock and exclusive SQLite barrier across authority switch', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    migrateWorkspaceV5({
+      root,
+      confirm: true,
+      worksheet,
+      roles: ROLES,
+    });
+    const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
+    const manifestPath = join(root, '.kai', 'manifest.json');
+    let switchObserved = false;
+    let filesystemLockObserved = false;
+    let hostWriterLockObserved = false;
+    let sqliteBarrierObserved = false;
+    const result = boundary('renameSync', (original, from, to) => {
+      if (String(to) === manifestPath && String(from).includes('rollback-')) {
+        switchObserved = true;
+        assert.throws(
+          () => assertWorkspaceWrite(databasePath),
+          error => {
+            filesystemLockObserved = error.code === 'RECOVERY_REQUIRED';
+            return filesystemLockObserved;
+          },
+        );
+        assert.throws(
+          () => writeIssued(root, 'requests', randomUUID(), {
+            kind: 'adversarial-host-write',
+          }),
+          error => {
+            hostWriterLockObserved = error.code === 'RECOVERY_REQUIRED';
+            return hostWriterLockObserved;
+          },
+        );
+        const contender = new DatabaseSync(databasePath);
+        try {
+          contender.exec('PRAGMA busy_timeout=50');
+          try {
+            contender.prepare(`
+              INSERT INTO events(operation_id,subject_kind,subject_id,payload)
+              VALUES(?,?,?,?)
+            `).run(
+              randomUUID(),
+              'task',
+              'engineering:task:build-api',
+              canonicalJson({kind: 'adversarial.concurrent-write'}),
+            );
+          } catch (error) {
+            sqliteBarrierObserved = /busy|locked/i.test(error.message);
+          }
+        } finally {
+          contender.close();
+        }
+      }
+      return original(from, to);
+    }, () => rollbackWorkspaceV5({root, confirm: true}));
+    assert.equal(result.rolledBack, true);
+    assert.equal(switchObserved, true);
+    assert.equal(filesystemLockObserved, true);
+    assert.equal(hostWriterLockObserved, true);
+    assert.equal(sqliteBarrierObserved, true);
   }));
 
 test('rollback returns RECOVERY_REQUIRED after the first schema-5 event', () =>

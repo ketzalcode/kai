@@ -17,6 +17,7 @@ import {assertWorkspaceWrite} from './workspace-guard.mjs';
 import {migrateWorkspace, recoverMigration, rollbackMigration, bindMigrationRepair, repairLegacyRecord} from './migration.mjs';
 import {
   migrateWorkspaceV5,
+  migrationAuthorizationDescriptor,
   recoverWorkspaceV5,
   rollbackWorkspaceV5,
   validateMigrationWorksheet,
@@ -111,6 +112,7 @@ function visibleRequest(payload) {
           worksheet_digest: payload.worksheetDigest,
           source_manifest_digest: payload.scope.worksheet.source_manifest_digest,
           source_store_digest: payload.scope.worksheet.source_store_digest,
+          backup_inventory_digest: payload.scope.worksheet.backup_inventory_digest,
           direction_ref: payload.scope.worksheet.direction_ref,
           placement: payload.scope.worksheet.placement,
           backup_root: payload.scope.worksheet.backup_root,
@@ -428,6 +430,10 @@ export function createNativeHost({env = process.env, discover} = {}) {
             worksheet: cap.request.scope.worksheet,
             roles: cap.catalog.roster.map(e => e.role),
             env,
+            authorization: migrationAuthorizationDescriptor(
+              root,
+              options.capability,
+            ),
           });
         }
         return migrateWorkspace({root, confirm: true, roles: cap.catalog.roster.map(e => e.role), env});
