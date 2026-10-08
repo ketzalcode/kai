@@ -45,7 +45,8 @@
     "pack-preview:check": "node tools/pack-preview.mjs --check",
     "creative-screenplay:self-test": "node test/creative-screenplay-self-test.mjs",
     "workspace-layout:self-test": "node test/workspace-layout-self-test.mjs",
-    "direction:self-test": "node test/direction-self-test.mjs"
+    "direction:self-test": "node test/direction-self-test.mjs",
+    "coordination:hierarchy-contract-self-test": "node test/coordination-hierarchy-contract-self-test.mjs"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

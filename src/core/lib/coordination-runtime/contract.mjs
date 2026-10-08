@@ -6,6 +6,26 @@ import {
 import {
   validateHostCommand, validateHostMutation, validateHostRecord,
 } from './host-schema.mjs';
+import {
+  HIERARCHY_KINDS,
+  PARENT_COMMAND_KINDS,
+  PARENT_DISPOSITIONS,
+  PARENT_STATES,
+  parentClosureRef,
+  validateHierarchyRecord,
+  validateHierarchyRelationships,
+  validateParentCommand,
+  validateParentCommandMutation,
+} from './hierarchy-contract.mjs';
+import {
+  TASK_COMMAND_KINDS,
+  validateLegacyItemBody,
+  validateLegacyItemCommand,
+  validateLegacyItemCommandMutation,
+  validateTaskBody,
+  validateTaskCommand,
+  validateTaskCommandMutation,
+} from './task-contract.mjs';
 
 /**
  * @typedef {{role: string, runId: string}} Actor
@@ -41,6 +61,7 @@ export const ERROR_CODES = new Set([
 const HOST_COMMANDS = new Set(['attempt.start', 'attempt.result', 'effect.intent', 'effect.result']);
 
 export const COMMAND_KINDS = new Set([
+  ...PARENT_COMMAND_KINDS,
   'initiative.create',
   'initiative.update',
   'item.create',
@@ -50,6 +71,7 @@ export const COMMAND_KINDS = new Set([
   'item.transition',
   'item.handoff',
   'item.restore',
+  ...TASK_COMMAND_KINDS,
   'question.open',
   'question.answer',
   'attempt.recover',
@@ -62,6 +84,7 @@ export const COMMAND_KINDS = new Set([
 ]);
 
 export const RECORD_KINDS = new Set([
+  ...HIERARCHY_KINDS,
   'initiative',
   'item',
   'question',
@@ -1039,7 +1062,7 @@ function validateProducerCommand(command) {
 
 const recordBodyValidators = new Map([
   ['initiative', validateInitiativeBody],
-  ['item', validateItemBody],
+  ['item', validateLegacyItemBody],
   ['question', validateQuestionBody],
   ['attempt', validateAttemptBody],
   ['host-attempt', validateHostRecord],
@@ -1320,18 +1343,20 @@ function validateRecover(command) {
 
 const commandValidators = new Map([
   ...[...HOST_COMMANDS].map(kind => [kind, validateHostCommand]),
+  ...[...PARENT_COMMAND_KINDS].map(kind => [kind, validateParentCommand]),
+  ...[...TASK_COMMAND_KINDS].map(kind => [kind, validateTaskCommand]),
   ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
     .map(kind => [kind, validateProducerCommand]),
   ['initiative.create', command =>
     validateCreate(command, 'initiative', validateInitiativeBody)],
   ['initiative.update', validateInitiativeUpdate],
-  ['item.create', command => validateCreate(command, 'item', validateItemBody)],
-  ['item.update', validateItemUpdate],
-  ['item.promote', validateItemPromote],
-  ['item.grant', validateItemGrant],
-  ['item.transition', validateTransition],
-  ['item.handoff', validateItemHandoff],
-  ['item.restore', validateRestore],
+  ['item.create', validateLegacyItemCommand],
+  ['item.update', validateLegacyItemCommand],
+  ['item.promote', validateLegacyItemCommand],
+  ['item.grant', validateLegacyItemCommand],
+  ['item.transition', validateLegacyItemCommand],
+  ['item.handoff', validateLegacyItemCommand],
+  ['item.restore', validateLegacyItemCommand],
   ['question.open', command =>
     validateMessagePayload(command, 'question.open', validateQuestionContent)],
   ['question.answer', command =>
@@ -1418,6 +1443,18 @@ export function validateCommandMutation(command, current, nextBody) {
     validateHostMutation(command, current, nextBody);
     return nextBody;
   }
+  if (PARENT_COMMAND_KINDS.has(command.kind)) {
+    validateParentCommandMutation(command, current, nextBody);
+    return nextBody;
+  }
+  if (TASK_COMMAND_KINDS.has(command.kind)) {
+    validateTaskCommandMutation(command, current, nextBody);
+    return nextBody;
+  }
+  if (command.kind.startsWith('item.')) {
+    validateLegacyItemCommandMutation(command, current, nextBody);
+    return nextBody;
+  }
   if (command.kind.endsWith('.create')) {
     if (current) invalid(`${command.kind} requires a missing record`);
     if (canonicalJson(nextBody) !== canonicalJson(command.payload.body)) {
@@ -1484,6 +1521,10 @@ export function validateRecord(record) {
   if (!RECORD_KINDS.has(record.kind)) {
     invalid(`unsupported record kind "${record.kind}"`);
   }
+  if (HIERARCHY_KINDS.has(record.kind)) {
+    validateHierarchyRecord(record);
+    return record;
+  }
   assertNonEmptyString(record.id, 'record.id');
   if (record.itemId !== null) assertNonEmptyString(record.itemId, 'record.itemId');
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
@@ -1522,3 +1563,15 @@ export function validateRecord(record) {
   }
   return record;
 }
+
+export {
+  HIERARCHY_KINDS,
+  PARENT_DISPOSITIONS,
+  PARENT_STATES,
+  parentClosureRef,
+  validateHierarchyRecord,
+  validateHierarchyRelationships,
+  validateParentCommand,
+  validateTaskBody,
+  validateTaskCommand,
+};
