@@ -1,56 +1,71 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  migrateWorkspaceV5,
+  migrationAuthorizationDescriptor,
+  planDispatch,
   recordApproval,
   recordReview,
+  recoverWorkspaceV5,
   registerArtifact,
   registerEvidence,
-  transitionAsset
-} from "./chunk-3BGQN7RV.mjs";
+  rollbackWorkspaceV5,
+  transitionAsset,
+  validateMigrationWorksheet,
+  validateRoster
+} from "./chunk-TYARLG6J.mjs";
+import "./chunk-K3LPE7V7.mjs";
 import {
-  DATABASE,
   GRANTABLE_STATES,
-  LOCK,
   SHIP_STATES,
   applyCommand,
-  applyOperation,
-  assertWorkspacePath,
-  assertWorkspaceWrite,
+  assertAlignedAncestors,
   bindEvidenceRuntime,
   bindMigrationRepair,
   captureInputBasis,
-  closeStore,
-  exactFile,
-  exclusiveFile,
-  listRecords,
+  currentDirectionForStore,
   migrateWorkspace,
-  migrationManifest,
-  normalized,
-  openStore,
-  pathHasLink,
-  privateAdmission,
-  readOperationReceipt,
-  readRecord,
   recoverMigration,
   repairLegacyRecord,
   requireActorAvailable,
   requireHostActionGrant,
   requireLease,
   rollbackMigration,
+  sameActor
+} from "./chunk-AVOAKVOX.mjs";
+import {
+  LOCK,
+  applyOperation,
+  assertWorkspacePath,
+  assertWorkspaceWrite,
+  closeStore,
+  exactFile,
+  exclusiveFile,
+  listRecords,
+  nativeWriterTokenPath,
+  openStore,
+  privateAdmission,
+  readOperationReceipt,
+  readRecord,
   safePath,
-  sameActor,
+  schema5MigrationLockPath,
   workspaceManifest
-} from "./chunk-N2OMFFGC.mjs";
-import "./chunk-7QZFFPOT.mjs";
-import "./chunk-VTZRFV57.mjs";
+} from "./chunk-RVMY63WZ.mjs";
+import {
+  COORDINATION_DATABASE,
+  LEGACY_COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+  normalized,
+  pathHasLink
+} from "./chunk-KUPTE65K.mjs";
 import {
   copilotLaunch
-} from "./chunk-MZ7YRIJ3.mjs";
+} from "./chunk-EYAI7HIN.mjs";
 import {
   CLASSIFICATIONS,
   COMMAND_KINDS,
   MAX_OBSERVATIONS,
+  PARENT_COMMAND_KINDS,
   RuntimeError,
-  approvedProfileModel,
   assertExactKeys,
   attemptSummary,
   canonicalJson,
@@ -59,20 +74,20 @@ import {
   criteriaRef,
   effectSummary,
   fail,
-  isPlainObject,
   latestTerminalObservations,
   sanitizeFacts,
-  text,
+  subjectRef,
   validateActor,
   validateAuthority,
   validateCapabilities,
   validateCommand,
   validateHostObservation,
   validateRecord
-} from "./chunk-VP4QXWCX.mjs";
+} from "./chunk-XLDNBMDG.mjs";
+import "./chunk-ITUOITH3.mjs";
 
 // src/core/lib/coordination-runtime/native-host.mjs
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID as randomUUID2, createHash } from "node:crypto";
 import { existsSync as existsSync3 } from "node:fs";
 
 // src/core/lib/coordination-runtime/native-receipts.mjs
@@ -229,9 +244,19 @@ decision: ${reply}` || Date.parse(receipt.start.timestamp) < Date.parse(request.
 }
 
 // src/core/lib/coordination-runtime/native-capabilities.mjs
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync as existsSync2 } from "node:fs";
-var lane = ".kai/state/host";
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import {
+  closeSync as closeSync2,
+  existsSync as existsSync2,
+  fsyncSync,
+  lstatSync as lstatSync2,
+  openSync as openSync2,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync
+} from "node:fs";
+var lane = ".kai/core/runtime/host";
 var fail3 = (code, message) => {
   throw new RuntimeError(code, message);
 };
@@ -265,16 +290,82 @@ function key(root, create) {
 function signature(root, payload, create = false) {
   return createHmac("sha256", key(root, create)).update(canonicalJson(payload)).digest("hex");
 }
+function assertIssuerWriteAllowed(root) {
+  const path = schema5MigrationLockPath(root);
+  if (!existsSync2(path)) return;
+  let lock;
+  try {
+    lock = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    fail3("RECOVERY_REQUIRED", "offline migration/rollback lock is invalid");
+  }
+  if (lock.rollback === true) {
+    fail3("RECOVERY_REQUIRED", "offline rollback lock prevents native host authority writes");
+  }
+}
+function releaseWriterToken(token) {
+  if (!existsSync2(token.path)) {
+    fail3("RECOVERY_REQUIRED", "native writer admission token disappeared");
+  }
+  const stat = lstatSync2(token.path);
+  if (!stat.isFile() || stat.nlink !== 1 || readFileSync(token.path, "utf8") !== canonicalJson(token.value)) {
+    fail3("RECOVERY_REQUIRED", "native writer admission token changed");
+  }
+  unlinkSync(token.path);
+}
+function acquireWriterToken(root) {
+  const id = randomUUID();
+  const path = nativeWriterTokenPath(root, id);
+  const pending = `${path}.pending-${randomUUID()}`;
+  const value = {
+    schema_version: 1,
+    id,
+    root,
+    pid: process.pid,
+    created_at: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const fd = openSync2(pending, "wx", 384);
+  try {
+    writeFileSync(fd, canonicalJson(value));
+    fsyncSync(fd);
+  } finally {
+    closeSync2(fd);
+  }
+  try {
+    renameSync(pending, path);
+    const token = { path, value };
+    try {
+      assertIssuerWriteAllowed(root);
+      return token;
+    } catch (error) {
+      releaseWriterToken(token);
+      throw error;
+    }
+  } catch (error) {
+    if (existsSync2(pending)) unlinkSync(pending);
+    throw error;
+  }
+}
+function withWriterAdmission(root, write) {
+  const token = acquireWriterToken(root);
+  try {
+    return write();
+  } finally {
+    releaseWriterToken(token);
+  }
+}
 function writeIssued(root, kind, id, payload) {
   requireKind(kind);
   capabilityId(id);
-  const value = { payload, mac: signature(root, payload, true) };
-  const name = `${lane}/${kind}/${id}.json`;
-  if (existsSync2(safePath(root, name))) {
-    if (canonicalJson(readIssued(root, kind, id)) !== canonicalJson(payload)) fail3("OPERATION_CONFLICT", "issued identity already has different content");
-    return;
-  }
-  exclusiveFile(root, name, canonicalJson(value));
+  return withWriterAdmission(root, () => {
+    const value = { payload, mac: signature(root, payload, true) };
+    const name = `${lane}/${kind}/${id}.json`;
+    if (existsSync2(safePath(root, name))) {
+      if (canonicalJson(readIssued(root, kind, id)) !== canonicalJson(payload)) fail3("OPERATION_CONFLICT", "issued identity already has different content");
+      return;
+    }
+    exclusiveFile(root, name, canonicalJson(value));
+  });
 }
 function readIssued(root, kind, id) {
   requireKind(kind);
@@ -297,66 +388,10 @@ function readIssued(root, kind, id) {
 
 // src/core/lib/coordination-runtime/host.mjs
 import { isAbsolute as isAbsolute2, join as join2 } from "node:path";
-
-// src/core/lib/coordination-runtime/host-plan.mjs
-function validateRoster(roster, profiles) {
-  if (!Array.isArray(roster) || !isPlainObject(profiles)) fail("INVALID_INPUT", "host roster/profiles are required");
-  const ids = /* @__PURE__ */ new Set();
-  for (const entry of roster) {
-    assertExactKeys(entry, /* @__PURE__ */ new Set(["id", "role", "model"]), "roster entry");
-    text(entry.id, "qualified host id");
-    text(entry.role, "roster role");
-    if (entry.model !== null) text(entry.model, "roster model");
-    if (ids.has(entry.id)) fail("INVALID_INPUT", "duplicate host agent id");
-    ids.add(entry.id);
-  }
-}
-function planDispatch({ item, roster, profiles, capabilities, request = {} }) {
-  if (!item || typeof item.next_role !== "string") fail("ROLE_UNAVAILABLE", "item has no next role");
-  if (!Array.isArray(roster) || roster.some((entry2) => !isPlainObject(entry2))) {
-    fail("INVALID_INPUT", "roster must be an array of entries");
-  }
-  const entries = roster.filter((entry2) => entry2.role === item.next_role);
-  if (entries.length !== 1) fail("ROLE_UNAVAILABLE", "exact next role must resolve to one qualified host ID");
-  validateRoster(roster, profiles);
-  validateCapabilities(capabilities);
-  assertExactKeys(request, /* @__PURE__ */ new Set(["role", "profile", "model", "fallbackModel", "effort"]), "dispatch request", /* @__PURE__ */ new Set());
-  const profile = profiles[item.next_role];
-  const requiredModel = approvedProfileModel(item.next_role, profile);
-  if (request.role !== void 0 && request.role !== item.next_role || request.profile !== void 0 && request.profile !== profile) {
-    fail("INVALID_INPUT", "requested role/profile is inconsistent with the installed role");
-  }
-  if (request.model !== void 0 && request.model !== requiredModel || request.fallbackModel !== void 0 && request.fallbackModel !== requiredModel || !capabilities.models.includes(requiredModel)) {
-    fail("MODEL_UNAVAILABLE", "required model is unavailable or requested fallback is outside approved policy");
-  }
-  const [entry] = entries;
-  if (!capabilities.modelOverride && entry.model !== requiredModel) {
-    fail("MODEL_UNAVAILABLE", "host cannot guarantee the pinned model without a supported override");
-  }
-  const settings = {};
-  if (capabilities.modelOverride) settings.model = requiredModel;
-  if (request.effort !== void 0 && request.effort !== null) {
-    if (!capabilities.efforts.includes(request.effort)) fail("UNSUPPORTED_HOST", "requested effort override is unsupported");
-    settings.effort = request.effort;
-  }
-  return {
-    mode: capabilities.peerDispatch ? "peer-available" : "ordered-queue",
-    automatic: false,
-    queue: [{
-      agentId: entry.id,
-      role: item.next_role,
-      profile,
-      requestedModel: requiredModel,
-      settings: clone(settings),
-      context: "fresh-single-shot"
-    }]
-  };
-}
-
-// src/core/lib/coordination-runtime/host.mjs
 var bindings = /* @__PURE__ */ new WeakMap();
 var equal = (left, right) => canonicalJson(left) === canonicalJson(right);
 var uncertainEffect = (body) => ["unknown", "conflicting"].includes(body.outcome);
+var bindsTask = (record, taskId) => record?.subject?.kind === "task" && record.subject.id === taskId;
 function bindHostRuntime(store, options) {
   assertExactKeys(options, /* @__PURE__ */ new Set([
     "root",
@@ -367,11 +402,12 @@ function bindHostRuntime(store, options) {
     "maxAttempts",
     "verifyObservation"
   ]), "host runtime", /* @__PURE__ */ new Set(["root", "authority", "roster", "profiles", "capabilities", "maxAttempts"]));
-  workspaceManifest(options.root);
-  if (!store || store.closed || !isAbsolute2(store.path) || normalized(store.path) !== normalized(join2(options.root, ".kai", "state", "coordination.sqlite"))) {
+  const manifest = workspaceManifest(options.root);
+  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION ? COORDINATION_DATABASE : LEGACY_COORDINATION_DATABASE;
+  if (!store || store.closed || !isAbsolute2(store.path) || normalized(store.path) !== normalized(join2(options.root, ...database.split("/")))) {
     fail("INVALID_INPUT", "host workspace must be explicitly bound to this store");
   }
-  assertWorkspacePath(options.root, ".kai/state/coordination.sqlite");
+  assertWorkspacePath(options.root, database);
   validateAuthority(options.authority);
   validateRoster(options.roster, options.profiles);
   validateCapabilities(options.capabilities);
@@ -395,33 +431,37 @@ function contextFor(store, command, kinds2) {
   requireHostActionGrant(cmd, context.authority, cmd.kind);
   return { context, cmd };
 }
-function actingItem(tx, command, context, target) {
+function actingTask(store, tx, command, context, target) {
   const p = command.payload;
-  const item = tx.get("item", p.itemId);
-  if (!item) fail("EVIDENCE_GAP", "host intent requires an existing work item");
-  if (item.version !== p.itemVersion) fail("VERSION_CONFLICT", "host intent item version is stale");
-  if (!GRANTABLE_STATES.has(item.body.state) || item.body.recovery_hold !== null || item.body.waiting_on_questions.length > 0) {
-    fail("RECOVERY_REQUIRED", "work item is not available for host execution");
+  const task = tx.get("task", p.taskId);
+  if (!task) fail("EVIDENCE_GAP", "host intent requires an existing Task");
+  if (task.version !== p.taskVersion) fail("VERSION_CONFLICT", "host intent Task version is stale");
+  const feature = tx.get("feature", task.body.feature_id);
+  const epic = feature && tx.get("epic", feature.body.epic_id);
+  if (!epic) fail("EVIDENCE_GAP", "host intent requires current Task ancestors");
+  assertAlignedAncestors(tx, task, currentDirectionForStore(store, epic.body.direction_ref));
+  if (!GRANTABLE_STATES.has(task.body.state) || task.body.recovery_hold !== null || task.body.waiting_on_questions.length > 0) {
+    fail("RECOVERY_REQUIRED", "Task is not available for host execution");
   }
-  if (target.role === "operator" || SHIP_STATES.has(item.body.state) && target.role !== "workflow-ship") {
+  if (target.role === "operator" || SHIP_STATES.has(task.body.state) && target.role !== "workflow-ship") {
     fail("AUTHORITY_REQUIRED", "host execution cannot replace the shipping role or the operator");
   }
   requireHostActionGrant({
     ...command,
-    recordKind: "item",
-    recordId: item.id,
-    expectedVersion: item.version
+    recordKind: "task",
+    recordId: task.id,
+    expectedVersion: task.version
   }, context.authority, command.kind);
-  if (item.body.lease !== null) requireLease(item, { ...command, actor: target });
+  if (task.body.lease !== null) requireLease(task, { ...command, actor: target });
   else if (command.leaseToken !== null) fail("LEASE_CONFLICT", "host intent supplied a lease that no longer exists");
-  return item;
+  return task;
 }
-function noUnresolvedEffects(tx, itemId) {
-  if (tx.list("effect", itemId).some((record) => uncertainEffect(record.body))) {
+function noUnresolvedEffects(tx, taskId) {
+  if (tx.list("effect", { kind: "task", id: taskId }).some((record) => uncertainEffect(record.body))) {
     fail("RECOVERY_REQUIRED", "effect outcome is unresolved; never automatically replay");
   }
 }
-function resumeContext(tx, context, command, item, planned, previous) {
+function resumeContext(tx, context, command, task, planned, previous) {
   const p = command.payload;
   const sameRun = tx.list("host-attempt").filter((record) => record.body.target.runId === p.target.runId);
   if (p.resumeFrom === null) {
@@ -430,8 +470,8 @@ function resumeContext(tx, context, command, item, planned, previous) {
   }
   if (!context.capabilities.resume) fail("UNSUPPORTED_HOST", "host resume is unsupported");
   const prior = previous.find((record) => record.id === p.resumeFrom)?.body;
-  if (!prior || prior.status !== "failed" || prior.item_version !== item.version || prior.profile !== p.profile || prior.agent_id !== planned.agentId || prior.requested_model !== p.requestedModel || prior.requested_effort !== p.effort || prior.independence_key !== p.independenceKey || !sameActor(prior.target, p.target) || sameRun.some((record) => record.itemId !== item.id || record.body.profile !== p.profile || record.body.target.role !== p.target.role || record.body.independence_key !== p.independenceKey)) {
-    fail("RECOVERY_REQUIRED", "resume cannot cross item, role, profile, run or independence boundaries");
+  if (!prior || prior.status !== "failed" || prior.subject_version !== task.version || prior.profile !== p.profile || prior.agent_id !== planned.agentId || prior.requested_model !== p.requestedModel || prior.requested_effort !== p.effort || prior.independence_key !== p.independenceKey || !sameActor(prior.target, p.target) || sameRun.some((record) => !bindsTask(record, task.id) || record.body.profile !== p.profile || record.body.target.role !== p.target.role || record.body.independence_key !== p.independenceKey)) {
+    fail("RECOVERY_REQUIRED", "resume cannot cross Task, role, profile, run or independence boundaries");
   }
   const latest = latestTerminalObservations(prior);
   if (!latest.length || latest.some(({ facts }) => facts.status !== "failed" || !facts.sessionId || facts.actualModel !== p.requestedModel || p.effort !== null && facts.actualEffort !== p.effort)) {
@@ -443,30 +483,30 @@ function recordAttempt(store, command) {
   const { context, cmd } = contextFor(store, command, ["attempt.start"]);
   return applyOperation(store, cmd, (_current, tx) => {
     const p = cmd.payload;
-    const item = actingItem(tx, cmd, context, p.target);
-    if (p.target.role !== item.body.next_role) fail("INVALID_INPUT", "target must be the item next role");
+    const task = actingTask(store, tx, cmd, context, p.target);
+    if (p.target.role !== task.body.next_role) fail("INVALID_INPUT", "target must be the Task next role");
     const planned = planDispatch({
-      item: item.body,
+      task: task.body,
       roster: context.roster,
       profiles: context.profiles,
       capabilities: context.capabilities,
       request: { role: p.target.role, profile: p.profile, model: p.requestedModel, effort: p.effort }
     }).queue[0];
-    if (["review", "technical-review"].includes(p.profile) && item.body.producing_actors.some((producer) => producer.runId === p.target.runId)) {
+    if (["review", "technical-review"].includes(p.profile) && task.body.producing_actors.some((producer) => producer.runId === p.target.runId)) {
       fail("RECOVERY_REQUIRED", "independent review cannot reuse a producing run");
     }
     if (p.resumeFrom !== null && !context.capabilities.resume) fail("UNSUPPORTED_HOST", "host resume is unsupported");
-    noUnresolvedEffects(tx, item.id);
-    const previous = tx.list("host-attempt", item.id);
-    if (previous.length >= context.maxAttempts || previous.some((record) => ["intent", "uncertain", "conflicting", "mismatched"].includes(record.body.status) || record.body.status === "completed" && record.body.item_version === item.version)) {
+    noUnresolvedEffects(tx, task.id);
+    const previous = tx.list("host-attempt", { kind: "task", id: task.id });
+    if (previous.length >= context.maxAttempts || previous.some((record) => ["intent", "uncertain", "conflicting", "mismatched"].includes(record.body.status) || record.body.status === "completed" && record.body.subject_version === task.version)) {
       fail("RECOVERY_REQUIRED", "attempt is unresolved, already completed or bounded attempts exhausted; no automatic redispatch");
     }
-    const resume = resumeContext(tx, context, cmd, item, planned, previous);
+    const resume = resumeContext(tx, context, cmd, task, planned, previous);
     return {
       schema_version: 1,
       attempt_id: cmd.recordId,
-      item_id: item.id,
-      item_version: item.version,
+      subject: { kind: "task", id: task.id },
+      subject_version: task.version,
       actor: cmd.actor,
       target: p.target,
       agent_id: planned.agentId,
@@ -527,7 +567,7 @@ function recordObservation(store, command, handle, effect) {
   const observation = verifiedObservation(context, cmd, handle);
   const receipt = applyOperation(store, cmd, (current, tx) => {
     if (!current) fail("EVIDENCE_GAP", "observation requires a persisted intent");
-    if (effect && (current.body.attempt_id !== cmd.payload.attemptId || tx.get("host-attempt", current.body.attempt_id)?.itemId !== current.itemId)) {
+    if (effect && (current.body.attempt_id !== cmd.payload.attemptId || !bindsTask(tx.get("host-attempt", current.body.attempt_id), current.subject?.id))) {
       fail("EVIDENCE_GAP", "effect result must bind its exact persisted attempt");
     }
     const retained2 = current.body.observations.find((o) => o.observationId === observation.observationId);
@@ -542,7 +582,7 @@ function recordObservation(store, command, handle, effect) {
 }
 function conflictingSessions(tx, current, observation) {
   if (observation.source !== "host" || observation.facts.sessionId === null) return [];
-  return tx.list("host-attempt").filter((record) => record.id !== current.id && record.body.observations.some((o) => o.source === "host" && o.facts.sessionId === observation.facts.sessionId) && (current.body.context === "fresh-single-shot" || record.itemId !== current.itemId || !sameActor(record.body.target, current.body.target) || record.body.profile !== current.body.profile || record.body.independence_key !== current.body.independence_key)).map((record) => record.id).sort();
+  return tx.list("host-attempt").filter((record) => record.id !== current.id && record.body.observations.some((o) => o.source === "host" && o.facts.sessionId === observation.facts.sessionId) && (current.body.context === "fresh-single-shot" || record.subject?.kind !== current.subject?.kind || record.subject?.id !== current.subject?.id || !sameActor(record.body.target, current.body.target) || record.body.profile !== current.body.profile || record.body.independence_key !== current.body.independence_key)).map((record) => record.id).sort();
 }
 function recordHostResult(store, command, observation) {
   return recordObservation(store, command, observation, false);
@@ -553,21 +593,23 @@ function recordEffect(store, command, observation) {
   return applyOperation(store, cmd, (_current, tx) => {
     const p = cmd.payload;
     const attempt = tx.get("host-attempt", p.attemptId);
-    if (!attempt || attempt.itemId !== p.itemId) fail("EVIDENCE_GAP", "effect intent requires the exact persisted host attempt");
-    const item = actingItem(tx, cmd, context, attempt.body.target);
-    if (attempt.body.item_version !== item.version || attempt.body.status !== "intent") {
+    if (!bindsTask(attempt, p.taskId)) {
+      fail("EVIDENCE_GAP", "effect intent requires the exact persisted host attempt");
+    }
+    const task = actingTask(store, tx, cmd, context, attempt.body.target);
+    if (attempt.body.subject_version !== task.version || attempt.body.status !== "intent") {
       fail("RECOVERY_REQUIRED", "effect intent requires a current, unresolved execution intent");
     }
-    noUnresolvedEffects(tx, item.id);
-    if (tx.list("effect", item.id).some((record) => p.idempotencyKey !== null && record.body.idempotency_key === p.idempotencyKey)) {
+    noUnresolvedEffects(tx, task.id);
+    if (tx.list("effect", { kind: "task", id: task.id }).some((record) => p.idempotencyKey !== null && record.body.idempotency_key === p.idempotencyKey)) {
       fail("OPERATION_CONFLICT", "effect idempotency key is already retained; reconcile its result");
     }
     const body = {
       schema_version: 1,
       effect_id: cmd.recordId,
       attempt_id: p.attemptId,
-      item_id: item.id,
-      item_version: item.version,
+      subject: { kind: "task", id: task.id },
+      subject_version: task.version,
       actor: cmd.actor,
       intended_action: p.intendedAction,
       idempotency_key: p.idempotencyKey,
@@ -675,90 +717,111 @@ async function verifyNativeContext({ env, root, preparation, reservedAt }) {
 
 // src/core/lib/coordination-runtime/native-routing.mjs
 var routingActions = /* @__PURE__ */ new Set([
-  "item.grant",
-  "item.promote",
-  "item.update",
-  "item.handoff",
+  "task.grant",
+  "task.promote",
+  "task.update",
+  "task.handoff",
   "question.open",
   "question.answer"
 ]);
-var delegatedActions = /* @__PURE__ */ new Set(["question.answer", "item.handoff"]);
+var delegatedActions = /* @__PURE__ */ new Set(["question.answer", "task.handoff"]);
+var parentGovernanceActions = new Set(PARENT_COMMAND_KINDS);
 var fail5 = (message) => {
   throw new RuntimeError("AUTHORITY_REQUIRED", message);
 };
-function routingBasis(root, store, item) {
+function routingBasis(root, store, task) {
   return {
-    criteria: criteriaRef(item.body),
+    criteria: criteriaRef(task, (kind, id) => readRecord(store, kind, id)),
     inputs: captureInputBasis(
       { root },
       { get: (kind, id) => readRecord(store, kind, id) },
-      item.body.context_artifacts
+      task.body.context_artifacts
     ),
-    initiative: item.body.initiative,
-    scopeAuthority: item.body.scope_authority,
-    touches: item.body.touches,
-    dependencies: item.body.depends_on
+    feature: task.body.feature_id,
+    requirements: task.body.satisfies,
+    scopeAuthority: task.body.scope_authority,
+    touches: task.body.touches,
+    dependencies: task.body.depends_on
   };
 }
 function requireRoutingScope(root, store, cap, command = null) {
   const scope = cap.request.scope;
-  const item = readRecord(store, "item", scope.itemId);
-  if (!item || canonicalJson(routingBasis(root, store, item)) !== canonicalJson(cap.request.routingBasis)) {
+  const task = readRecord(store, "task", scope.taskId);
+  if (!task || canonicalJson(routingBasis(root, store, task)) !== canonicalJson(cap.request.routingBasis)) {
     fail5("coordinator/delegation criteria, inputs or work scope changed");
   }
-  if (!command) return item;
-  if (command.recordKind !== "item" || command.recordId !== scope.itemId || !scope.actions.includes(command.kind) || !routingActions.has(command.kind)) fail5("bounded routing does not grant this domain action");
-  if (command.kind === "item.handoff" && (command.payload.state !== null || command.payload.subject !== void 0)) {
+  if (!command) return task;
+  if (command.recordKind !== "task" || command.recordId !== scope.taskId || !scope.actions.includes(command.kind) || !routingActions.has(command.kind)) fail5("bounded routing does not grant this domain action");
+  if (command.kind === "task.handoff" && (command.payload.state !== null || command.payload.subject !== void 0)) {
     fail5("bounded routing cannot supply a new subject or domain/acceptance transition");
   }
-  if (command.kind === "item.update" && Object.keys(command.payload.changes ?? command.payload).some((k) => !["next_role", "priority", "title", "updated_at"].includes(k))) {
+  if (command.kind === "task.update" && Object.keys(command.payload.changes ?? command.payload).some((k) => !["next_role", "priority", "title", "updated_at"].includes(k))) {
     fail5("bounded routing cannot change requirements, inputs or product scope");
   }
   if (command.kind === "question.answer") {
     const question = readRecord(store, "question", command.payload.questionId);
-    if (!question || question.itemId !== item.id || question.body.recipient !== command.actor.role || command.actor.role === "operator" || command.payload.content.resolves || scope.type === "delegation" && command.payload.questionId !== scope.questionId) {
+    if (question?.subject?.kind !== "task" || question.subject.id !== task.id || question.body.recipient !== command.actor.role || command.actor.role === "operator" || command.payload.content.resolves || scope.type === "delegation" && command.payload.questionId !== scope.questionId) {
       fail5("bounded answer requires the exact addressed non-operator question; conflict resolution needs separate authority");
     }
   }
-  return item;
+  return task;
 }
 
 // src/core/lib/coordination-runtime/native-host.mjs
+var DATABASE = COORDINATION_DATABASE;
 var fail6 = (code, message) => {
   throw new RuntimeError(code, message);
 };
 var hash = (value) => createHash("sha256").update(canonicalJson(value)).digest("hex");
 var exact = (value, keys, label) => assertExactKeys(value, new Set(keys), label);
 var manifestHash = (root) => hash(JSON.parse(exactFile(root, ".kai/manifest.json")));
-var runActions = new Set([...COMMAND_KINDS].filter((k) => !k.startsWith("initiative.") && !k.startsWith("attempt.") && !k.startsWith("effect.") && k !== "item.create"));
-var commandActions = (command) => [command.kind, ...command.kind === "item.handoff" && command.payload.state !== null ? ["item.transition"] : []];
+function requireHistoricalMaintenance(root, request) {
+  const schema = JSON.parse(exactFile(root, ".kai/manifest.json")).schema_version;
+  if (schema >= 5) {
+    if (existsSync3(schema5MigrationLockPath(root)) && (request.scope?.type !== "maintenance" || !(/* @__PURE__ */ new Set(["recover-activate", "recover-abandon"])).has(request.scope.action))) {
+      fail6("RECOVERY_REQUIRED", "interrupted schema-5 migration may authorize only explicit recovery maintenance");
+    }
+    return;
+  }
+  const actions = schema === 3 ? /* @__PURE__ */ new Set(["migrate", "recover-activate", "recover-abandon"]) : /* @__PURE__ */ new Set(["migrate-v5", "recover-activate", "recover-abandon", "rollback"]);
+  if (request.scope?.type !== "maintenance" || !actions.has(request.scope.action)) {
+    fail6("SCHEMA_MISMATCH", `schema ${schema} may authorize only explicit offline migration maintenance`);
+  }
+}
+var runActions = new Set([...COMMAND_KINDS].filter((k) => !PARENT_COMMAND_KINDS.has(k) && !k.startsWith("attempt.") && !k.startsWith("effect.") && k !== "task.create"));
+var commandActions = (command) => [command.kind, ...command.kind === "task.handoff" && command.payload.state !== null ? ["task.transition"] : []];
 function currentBasis(root, id) {
   const store = openStore({ path: safePath(root, DATABASE), mode: "read" });
   try {
-    const item = readRecord(store, "item", id) ?? fail6("EVIDENCE_GAP", "run scope requires an existing item");
-    return itemBasis(root, store, item);
+    const task = readRecord(store, "task", id) ?? fail6("EVIDENCE_GAP", "run scope requires an existing Task");
+    return taskBasis(root, store, task);
   } finally {
     closeStore(store);
   }
 }
-function itemBasis(root, store, item) {
+function taskBasis(root, store, task) {
   return {
-    subject: item.body.change_ref,
-    criteria: criteriaRef(item.body),
-    inputs: captureInputBasis({ root }, { get: (kind, id) => readRecord(store, kind, id) }, item.body.context_artifacts)
+    subject: task.body.change_ref,
+    criteria: criteriaRef(task, (kind, id) => readRecord(store, kind, id)),
+    inputs: captureInputBasis({ root }, { get: (kind, id) => readRecord(store, kind, id) }, task.body.context_artifacts)
   };
 }
 function commandBasis(root, store, command) {
-  const item = readRecord(store, "item", command.recordId) ?? fail6("EVIDENCE_GAP", "command scope requires an existing item");
-  const changes = command.kind === "item.update" ? command.payload.changes : null;
-  if (!changes || !Object.hasOwn(changes, "context_artifacts")) return itemBasis(root, store, item);
-  if (command.actor.role !== item.body.scope_authority) {
+  const task = readRecord(store, "task", command.recordId) ?? fail6("EVIDENCE_GAP", "command scope requires an existing Task");
+  const changes = command.kind === "task.update" ? command.payload.changes : null;
+  if (!changes || !Object.hasOwn(changes, "context_artifacts")) return taskBasis(root, store, task);
+  if (command.actor.role !== task.body.scope_authority) {
     fail6("AUTHORITY_REQUIRED", "prospective context replacement requires the actual scope owner decision");
   }
-  const prospective = validateRecord({ ...item, body: { ...item.body, ...changes } });
+  const prospective = validateRecord({ ...task, body: { ...task.body, ...changes } });
   const tx = { get: (kind, id) => readRecord(store, kind, id) };
-  const priorBasis = { subject: item.body.change_ref, criteria: criteriaRef(item.body), inputs: [], gaps: [] };
-  for (const reference of [...new Set(item.body.context_artifacts)].sort()) {
+  const priorBasis = {
+    subject: task.body.change_ref,
+    criteria: criteriaRef(task, (kind, id) => readRecord(store, kind, id)),
+    inputs: [],
+    gaps: []
+  };
+  for (const reference of [...new Set(task.body.context_artifacts)].sort()) {
     try {
       priorBasis.inputs.push(...captureInputBasis({ root }, tx, [reference]));
     } catch (error) {
@@ -766,7 +829,7 @@ function commandBasis(root, store, command) {
       priorBasis.gaps.push({ reference, code: error.code, message: error.message });
     }
   }
-  return { priorBasis, prospectiveBasis: itemBasis(root, store, prospective) };
+  return { priorBasis, prospectiveBasis: taskBasis(root, store, prospective) };
 }
 function requestCommandBasis(root, command) {
   const store = openStore({ path: safePath(root, DATABASE), mode: "read" });
@@ -778,13 +841,35 @@ function requestCommandBasis(root, command) {
 }
 function visibleRequest(payload) {
   const { nonce, createdAt, expiresAt, ...scope } = payload;
+  const displayedScope = payload.scope?.type === "maintenance" && payload.scope.action === "migrate-v5" ? {
+    ...scope,
+    scope: {
+      type: "maintenance",
+      action: "migrate-v5",
+      worksheet_digest: payload.worksheetDigest,
+      source_manifest_digest: payload.scope.worksheet.source_manifest_digest,
+      source_store_digest: payload.scope.worksheet.source_store_digest,
+      backup_inventory_digest: payload.scope.worksheet.backup_inventory_digest,
+      direction_ref: payload.scope.worksheet.direction_ref,
+      placement: payload.scope.worksheet.placement,
+      backup_root: payload.scope.worksheet.backup_root,
+      classifications: {
+        epics: payload.scope.worksheet.epics.length,
+        milestones: payload.scope.worksheet.milestones.length,
+        items: payload.scope.worksheet.items.length,
+        authored_files: payload.scope.worksheet.authored_files.length,
+        retained_publications: payload.scope.worksheet.retained_publications.length,
+        active_work: payload.scope.worksheet.active_work.length
+      }
+    }
+  } : scope;
   return {
     ...payload,
     message: `Kai operator authorization
 Workspace: ${payload.root}
 Nonce: ${nonce}
-Scope (exact JSON):
-${canonicalJson(scope)}
+Scope (exact canonical binding):
+${canonicalJson(displayedScope)}
 Expires: ${expiresAt}
 Approve only this actor, workspace, subject, criteria and action. Reply exactly APPROVE ${nonce} or DECLINE ${nonce}. Conditional/freeform replies do not authorize work.`,
     requestedSchema: { type: "object", properties: { decision: {
@@ -807,7 +892,7 @@ async function captureReceipt(env, request, toolCallId) {
 }
 function createNativeHost({ env = process.env, discover } = {}) {
   const identity = () => contextIdentity(env);
-  const discovery = async (root, role) => discover ? discover({ root, role }) : (await import("./chunk-7OKIIWCH.mjs")).discoverCopilot({ root, env, role });
+  const discovery = async (root, role) => discover ? discover({ root, role }) : (await import("./chunk-Z2WA5QMJ.mjs")).discoverCopilot({ root, env, role });
   const ensureIdentity = (actor) => {
     validateActor(actor);
     if (actor.runId !== identity()) fail6("AUTHORITY_REQUIRED", "actor runId must match COPILOT_AGENT_SESSION_ID; role relabeling does not create independence");
@@ -828,7 +913,7 @@ function createNativeHost({ env = process.env, discover } = {}) {
   async function delegatedContext(root, store, cap, command) {
     const scope = cap.request.scope;
     const parent = capability(root, cap.parentCapability, false);
-    if (parent.request.scope.type !== "coordination" || parent.request.scope.itemId !== scope.itemId || scope.actions.some((a) => !delegatedActions.has(a) || !parent.request.scope.actions.includes(a))) {
+    if (parent.request.scope.type !== "coordination" || parent.request.scope.taskId !== scope.taskId || scope.actions.some((a) => !delegatedActions.has(a) || !parent.request.scope.actions.includes(a))) {
       fail6("AUTHORITY_REQUIRED", "delegation is not a bounded subset of an actual coordinator grant");
     }
     requireRoutingScope(root, store, parent);
@@ -837,13 +922,13 @@ function createNativeHost({ env = process.env, discover } = {}) {
     const context = await verifyNativeContext({ env, root, preparation: prepared, reservedAt: cap.request.createdAt });
     return { prepared, context };
   }
-  async function leaseContext(root, store, actor, itemId, token) {
-    const item = readRecord(store, "item", itemId);
-    const lease = item?.body.lease;
-    const grant = lease && lease.token === token && sameActor(lease.holder, actor) && Date.parse(lease.expires_at) > Date.now() && listRecords(store, { kind: "grant", itemId }).find((r) => sameActor(r.body.actor, actor) && r.body.lease_token === token && r.body.status === "active" && Date.parse(r.body.expires_at) > Date.now());
+  async function leaseContext(root, store, actor, taskId, token) {
+    const task = readRecord(store, "task", taskId);
+    const lease = task?.body.lease;
+    const grant = lease && lease.token === token && sameActor(lease.holder, actor) && Date.parse(lease.expires_at) > Date.now() && listRecords(store, { kind: "grant", subject: { kind: "task", id: taskId } }).find((r) => sameActor(r.body.actor, actor) && r.body.lease_token === token && r.body.status === "active" && Date.parse(r.body.expires_at) > Date.now());
     if (!grant) fail6("AUTHORITY_REQUIRED", "the actual actor must hold a live persisted lease or bounded delegation");
     const reserved = readIssued(root, "reservations", token);
-    if (reserved.itemId !== itemId || !sameActor(reserved.actor, actor) || reserved.leaseToken !== token) {
+    if (reserved.taskId !== taskId || !sameActor(reserved.actor, actor) || reserved.leaseToken !== token) {
       fail6("AUTHORITY_REQUIRED", "native reservation is not bound to this persisted lease");
     }
     const prepared = preparation(root, actor);
@@ -882,29 +967,29 @@ function createNativeHost({ env = process.env, discover } = {}) {
         preparation: prepared,
         discovery: catalog,
         launch: { executable: launch.executable, arguments: [`--session-id=${id}`, `--agent=${prepared.agentId}`, ...launch.pluginArguments] },
-        instruction: "Metadata only; not permission to start model work. First persist item.grant or delegate to this actor. Then launch this standalone context in this workspace using these identity arguments and existing host permissions. Its first command should be claim. Native ACP metadata-only sessions are not promised to survive transport closure."
+        instruction: "Metadata only; not permission to start model work. First persist task.grant or delegate to this actor. Then launch this standalone context in this workspace using these identity arguments and existing host permissions. Its first command should be claim. Native ACP metadata-only sessions are not promised to survive transport closure."
       };
     },
     async delegate({ root, store, body, options }) {
-      exact(body, ["actor", "itemId", "preparation", "actions", "questionId"], "role delegation");
+      exact(body, ["actor", "taskId", "preparation", "actions", "questionId"], "role delegation");
       ensureIdentity(body.actor);
       const parent = capability(root, options.capability);
-      if (parent.request.scope.type !== "coordination" || !sameActor(parent.request.scope.actor, body.actor) || parent.request.scope.itemId !== body.itemId || !Array.isArray(body.actions) || !body.actions.length || new Set(body.actions).size !== body.actions.length || body.actions.some((a) => !delegatedActions.has(a) || !parent.request.scope.actions.includes(a))) {
+      if (parent.request.scope.type !== "coordination" || !sameActor(parent.request.scope.actor, body.actor) || parent.request.scope.taskId !== body.taskId || !Array.isArray(body.actions) || !body.actions.length || new Set(body.actions).size !== body.actions.length || body.actions.some((a) => !delegatedActions.has(a) || !parent.request.scope.actions.includes(a))) {
         fail6("AUTHORITY_REQUIRED", "delegation requires an already-authorized coordinator and explicit bounded role-owned actions");
       }
-      const item = requireRoutingScope(root, store, parent);
+      const task = requireRoutingScope(root, store, parent);
       const prepared = readIssued(root, "preparations", body.preparation);
       preparation(root, prepared.actor);
       if (prepared.requesterContext !== identity()) fail6("AUTHORITY_REQUIRED", "only the preparing coordinator can delegate this context");
       const question = body.questionId === null ? null : readRecord(store, "question", body.questionId);
-      if (body.actions.includes("question.answer") && (!question || question.itemId !== body.itemId || question.body.recipient !== prepared.actor.role || prepared.actor.role === "operator")) {
+      if (body.actions.includes("question.answer") && (question?.subject?.kind !== "task" || question.subject.id !== body.taskId || question.body.recipient !== prepared.actor.role || prepared.actor.role === "operator")) {
         fail6("AUTHORITY_REQUIRED", "answer delegation must bind the actual addressed role and question");
       }
       if (!body.actions.includes("question.answer") && body.questionId !== null) fail6("INVALID_INPUT", "question binding is only for an answer delegation");
-      if (!question && ![item.body.next_role, item.body.scope_authority].includes(prepared.actor.role)) {
+      if (!question && ![task.body.next_role, task.body.scope_authority].includes(prepared.actor.role)) {
         fail6("AUTHORITY_REQUIRED", "handoff delegation must be assigned to the current routed role or scope owner");
       }
-      const nonce = randomUUID();
+      const nonce = randomUUID2();
       const request = {
         nonce,
         root,
@@ -919,7 +1004,7 @@ function createNativeHost({ env = process.env, discover } = {}) {
         scope: {
           type: "delegation",
           actor: prepared.actor,
-          itemId: body.itemId,
+          taskId: body.taskId,
           actions: body.actions,
           questionId: body.questionId
         }
@@ -932,18 +1017,18 @@ function createNativeHost({ env = process.env, discover } = {}) {
       preparation(root, prepared.actor);
       if (options.capability) {
         const cap = capability(root, options.capability);
-        if (cap.request.scope.type !== "delegation" || cap.request.scope.itemId !== options.item || !sameActor(cap.request.scope.actor, prepared.actor)) fail6("AUTHORITY_REQUIRED", "claim requires this prepared actor and exact delegated item");
+        if (cap.request.scope.type !== "delegation" || cap.request.scope.taskId !== options.task || !sameActor(cap.request.scope.actor, prepared.actor)) fail6("AUTHORITY_REQUIRED", "claim requires this prepared actor and exact delegated Task");
         const { context } = await delegatedContext(root, store, cap);
         return { actor: prepared.actor, context, actions: cap.request.scope.actions, leaseToken: null };
       }
-      const lease = readRecord(store, "item", options.item)?.body.lease;
-      const bound = await leaseContext(root, store, prepared.actor, options.item, lease?.token);
+      const lease = readRecord(store, "task", options.task)?.body.lease;
+      const bound = await leaseContext(root, store, prepared.actor, options.task, lease?.token);
       return { actor: prepared.actor, context: bound.context, actions: bound.grant.body.actions, leaseToken: bound.leaseToken };
     },
     async request({ root, body }) {
       const requesterContext = identity();
       const payload = {
-        nonce: randomUUID(),
+        nonce: randomUUID2(),
         root,
         workspaceManifest: manifestHash(root),
         requesterContext,
@@ -958,33 +1043,47 @@ function createNativeHost({ env = process.env, discover } = {}) {
         payload.subject = body.command.payload.body?.subject ?? body.command.payload.subject ?? null;
         payload.criteria = body.command.payload.body?.criteria_ref ?? null;
         payload.action = body.command.kind;
-        if (body.command.recordKind === "item" && body.command.expectedVersion > 0) {
+        if (body.command.recordKind === "task" && body.command.expectedVersion > 0) {
           Object.assign(payload, requestCommandBasis(root, body.command));
         }
       } else if (body.type === "coordination") {
-        exact(body, ["type", "actor", "itemId", "actions"], "coordination request");
+        exact(body, ["type", "actor", "taskId", "actions"], "coordination request");
         ensureIdentity(body.actor);
         if (body.actor.role === "operator" || !Array.isArray(body.actions) || !body.actions.length || new Set(body.actions).size !== body.actions.length || body.actions.some((a) => !routingActions.has(a))) {
           fail6("INVALID_INPUT", "coordination actions must be explicit non-operator routing actions, not acceptance");
         }
         const store = openStore({ path: safePath(root, DATABASE), mode: "read" });
         try {
-          const item = readRecord(store, "item", body.itemId) ?? fail6("EVIDENCE_GAP", "coordination requires an existing item");
-          payload.routingBasis = routingBasis(root, store, item);
+          const task = readRecord(store, "task", body.taskId) ?? fail6("EVIDENCE_GAP", "coordination requires an existing Task");
+          payload.routingBasis = routingBasis(root, store, task);
         } finally {
           closeStore(store);
         }
         payload.action = body.actions;
       } else if (body.type === "run") {
-        exact(body, ["type", "actor", "itemId", "actions"], "run request");
+        exact(body, ["type", "actor", "taskId", "actions"], "run request");
         ensureIdentity(body.actor);
         if (body.actor.role === "operator" || !Array.isArray(body.actions) || !body.actions.length || new Set(body.actions).size !== body.actions.length || body.actions.some((a) => !runActions.has(a))) {
-          fail6("INVALID_INPUT", "run actions must be explicit supported item actions for a non-operator");
+          fail6("INVALID_INPUT", "run actions must be explicit supported Task actions for a non-operator");
         }
-        Object.assign(payload, currentBasis(root, body.itemId), { action: body.actions });
+        Object.assign(payload, currentBasis(root, body.taskId), { action: body.actions });
       } else if (body.type === "maintenance") {
-        exact(body, ["type", "action"], "maintenance request");
-        if (!["init", "migrate", "recover-activate", "recover-abandon", "rollback"].includes(body.action)) fail6("INVALID_INPUT", "unsupported maintenance action");
+        if (body.action === "migrate-v5") {
+          exact(body, ["type", "action", "worksheet"], "maintenance request");
+          const catalog = await discovery(root);
+          validateMigrationWorksheet({
+            root,
+            worksheet: body.worksheet,
+            roles: catalog.roster.map((entry) => entry.role),
+            env
+          });
+          payload.worksheetDigest = hash(body.worksheet);
+        } else {
+          exact(body, ["type", "action"], "maintenance request");
+        }
+        if (!["migrate", "migrate-v5", "recover-activate", "recover-abandon", "rollback"].includes(body.action)) {
+          fail6("INVALID_INPUT", "unsupported maintenance action; workspace initialization uses the standalone initializer");
+        }
         payload.subject = payload.workspaceManifest;
         payload.criteria = null;
         payload.action = body.action;
@@ -996,12 +1095,12 @@ function createNativeHost({ env = process.env, discover } = {}) {
         payload.criteria = null;
         payload.action = "repair";
       } else if (body.type === "capture") {
-        exact(body, ["type", "actor", "itemId", "command", "checks", "classification"], "capture request");
+        exact(body, ["type", "actor", "taskId", "command", "checks", "classification"], "capture request");
         ensureIdentity(body.actor);
-        if (typeof body.command !== "string" || !body.command.trim() || Buffer.byteLength(body.command) > 32 * 1024 || !Array.isArray(body.checks) || body.checks.length > 64 || body.checks.some((c) => typeof c !== "string" || !c.trim() || c.length > 256) || new Set(body.checks).size !== body.checks.length || !CLASSIFICATIONS.has(body.classification) || body.itemId !== null && (typeof body.itemId !== "string" || !body.itemId)) {
-          fail6("INVALID_INPUT", "capture needs an exact PowerShell command, bounded check labels, classification and itemId|null");
+        if (typeof body.command !== "string" || !body.command.trim() || Buffer.byteLength(body.command) > 32 * 1024 || !Array.isArray(body.checks) || body.checks.length > 64 || body.checks.some((c) => typeof c !== "string" || !c.trim() || c.length > 256) || new Set(body.checks).size !== body.checks.length || !CLASSIFICATIONS.has(body.classification) || body.taskId !== null && (typeof body.taskId !== "string" || !body.taskId)) {
+          fail6("INVALID_INPUT", "capture needs an exact PowerShell command, bounded check labels, classification and taskId|null");
         }
-        if (body.itemId !== null) Object.assign(payload, currentBasis(root, body.itemId));
+        if (body.taskId !== null) Object.assign(payload, currentBasis(root, body.taskId));
         else {
           payload.subject = null;
           payload.criteria = null;
@@ -1022,6 +1121,7 @@ ${body.command}`,
     },
     async receipt({ root, options }) {
       const request = readIssued(root, "requests", options.request);
+      requireHistoricalMaintenance(root, request);
       if (request.root !== root || request.workspaceManifest !== manifestHash(root) || Date.parse(request.expiresAt) <= Date.now()) fail6("AUTHORITY_REQUIRED", "request expired or workspace changed");
       if (request.scope.type === "capture") {
         if (request.requesterContext !== identity()) fail6("AUTHORITY_REQUIRED", "capture receipt belongs to another context");
@@ -1039,6 +1139,7 @@ ${body.command}`,
     },
     async authorize({ root, options }) {
       const request = readIssued(root, "requests", options.request);
+      requireHistoricalMaintenance(root, request);
       if (request.scope.type === "capture") fail6("INVALID_INPUT", "capture intents are not authorization requests");
       if (request.scope.type === "coordination" && request.scope.actions.some((action) => !routingActions.has(action))) {
         fail6("INVALID_INPUT", "coordination request contains unsupported routing actions; issue a new supported request");
@@ -1049,7 +1150,7 @@ ${body.command}`,
       const receipt = await matchHumanDecision({ env, request, toolCallId: options["tool-call"] });
       const actor = request.scope.command?.actor ?? request.scope.actor ?? request.scope.request?.actor;
       let catalog;
-      if (existsSync3(safePath(root, `.kai/state/host/capabilities/${request.nonce}.json`))) {
+      if (existsSync3(safePath(root, `.kai/core/runtime/host/capabilities/${request.nonce}.json`))) {
         const existing = readIssued(root, "capabilities", request.nonce);
         if (canonicalJson(existing.request) !== canonicalJson(request) || canonicalJson(existing.receipt) !== canonicalJson(receipt)) {
           fail6("OPERATION_CONFLICT", "this nonce already has a different issued decision receipt");
@@ -1075,37 +1176,60 @@ ${body.command}`,
           fail6("AUTHORITY_REQUIRED", "repair requires a matched decision for the exact repair request");
         }
         ensureIdentity(body.actor);
-        assertWorkspaceWrite(safePath(root, DATABASE), { requirePrivate: true });
-        const store2 = openStore({ path: safePath(root, DATABASE), mode: "write" });
+        assertWorkspaceWrite(safePath(root, DATABASE), { requirePrivate: true, env });
+        const store = openStore({ path: safePath(root, DATABASE), mode: "write" });
         try {
-          bindMigrationRepair(store2, {
+          bindMigrationRepair(store, {
             root,
             roles: cap.catalog.roster.map((e) => e.role),
             verify: ({ request }) => canonicalJson(request) === canonicalJson(body)
           });
-          return repairLegacyRecord(store2, body);
+          return repairLegacyRecord(store, body);
         } finally {
-          closeStore(store2);
+          closeStore(store);
         }
       }
-      if (options.confirm !== true || cap.request.scope.type !== "maintenance" || cap.request.scope.action !== action) {
+      const actionMatches = verb === "migrate" ? (/* @__PURE__ */ new Set(["migrate", "migrate-v5"])).has(cap.request.scope.action) : cap.request.scope.action === action;
+      if (options.confirm !== true || cap.request.scope.type !== "maintenance" || !actionMatches) {
         fail6("AUTHORITY_REQUIRED", "maintenance requires --confirm and an issued capability for the exact action");
       }
-      if (verb === "migrate") return migrateWorkspace({ root, confirm: true, roles: cap.catalog.roster.map((e) => e.role), env });
+      if (verb === "migrate") {
+        if (cap.request.scope.action === "migrate-v5") {
+          if (cap.request.worksheetDigest !== hash(cap.request.scope.worksheet)) {
+            fail6("AUTHORITY_REQUIRED", "migration capability worksheet digest does not match its bound object");
+          }
+          return migrateWorkspaceV5({
+            root,
+            confirm: true,
+            worksheet: cap.request.scope.worksheet,
+            roles: cap.catalog.roster.map((e) => e.role),
+            env,
+            authorization: migrationAuthorizationDescriptor(
+              root,
+              options.capability
+            )
+          });
+        }
+        return migrateWorkspace({ root, confirm: true, roles: cap.catalog.roster.map((e) => e.role), env });
+      }
       if (verb === "recover") {
+        if (existsSync3(schema5MigrationLockPath(root))) {
+          return recoverWorkspaceV5({
+            root,
+            confirm: true,
+            action: options.action,
+            roles: cap.catalog.roster.map((e) => e.role),
+            env
+          });
+        }
         if (!existsSync3(safePath(root, LOCK))) fail6("RECOVERY_REQUIRED", "no interrupted migration lock exists; recovery never initializes or retries work");
         return recoverMigration({ root, confirm: true, action: options.action, env });
       }
-      if (verb === "rollback") return rollbackMigration({ root, confirm: true, env });
-      migrationManifest(root, [4], env);
-      const path = safePath(root, DATABASE);
-      if (existsSync3(path)) fail6("VERSION_CONFLICT", "store already exists; init never replaces or repairs it");
-      const privacy = privateAdmission(root, { admit: true });
-      if (privacy.errors.length) fail6("INVALID_INPUT", privacy.errors.join("; "));
-      assertWorkspaceWrite(path, { requirePrivate: true });
-      const store = openStore({ path, mode: "create" });
-      closeStore(store);
-      return { initialized: true, databasePath: path, privateAdmission: privacy.admitted };
+      if (verb === "rollback") {
+        const manifest = JSON.parse(exactFile(root, ".kai/manifest.json"));
+        return manifest.schema_version === 5 ? rollbackWorkspaceV5({ root, confirm: true, env }) : rollbackMigration({ root, confirm: true, env });
+      }
+      fail6("INVALID_INPUT", "unsupported maintenance action");
     },
     async apply({ root, store, command, options }) {
       ensureIdentity(command.actor);
@@ -1123,20 +1247,20 @@ ${body.command}`,
               prospectiveBasis: cap.request.prospectiveBasis
             })) fail6("EVIDENCE_GAP", "prospective replacement or explicit prior basis gaps changed after decision");
           } else if (cap.request.inputs) {
-            const current = readRecord(store, "item", command.recordId);
-            const basis = current && itemBasis(root, store, current);
+            const current = readRecord(store, "task", command.recordId);
+            const basis = current && taskBasis(root, store, current);
             if (!basis || canonicalJson(basis.inputs) !== canonicalJson(cap.request.inputs)) fail6("EVIDENCE_GAP", "command capability applicable input basis changed");
           }
         } else if (scope.type === "run") {
-          const item = readRecord(store, "item", scope.itemId);
-          if (!sameActor(scope.actor, command.actor) || command.recordKind !== "item" || command.recordId !== scope.itemId || commandActions(command).some((action) => !scope.actions.includes(action)) || !item || canonicalJson(itemBasis(root, store, item)) !== canonicalJson({
+          const task = readRecord(store, "task", scope.taskId);
+          if (!sameActor(scope.actor, command.actor) || command.recordKind !== "task" || command.recordId !== scope.taskId || commandActions(command).some((action) => !scope.actions.includes(action)) || !task || canonicalJson(taskBasis(root, store, task)) !== canonicalJson({
             subject: cap.request.subject,
             criteria: cap.request.criteria,
             inputs: cap.request.inputs
           })) {
             fail6("AUTHORITY_REQUIRED", "run capability does not cover the actor, action, subject and current input criteria");
           }
-          if (command.kind === "approval.record" && item.body.artifact_class === "paid-media") {
+          if (command.kind === "approval.record" && task.body.artifact_class === "paid-media") {
             fail6("AUTHORITY_REQUIRED", "paid-media approval requires a command-specific actual human decision");
           }
         } else if (scope.type === "coordination" || scope.type === "delegation") {
@@ -1155,16 +1279,16 @@ ${body.command}`,
         if (["attempt.start", "effect.intent"].includes(command.kind)) grants.push({
           actor: command.actor,
           actions: [command.kind],
-          recordKind: "item",
-          recordId: command.payload.itemId,
-          basisRef: `item/${command.payload.itemId}@${command.payload.itemVersion}`
+          recordKind: "task",
+          recordId: command.payload.taskId,
+          basisRef: subjectRef({ kind: "task", id: command.payload.taskId }, command.payload.taskVersion)
         });
       } else {
         const bound = await leaseContext(root, store, command.actor, command.recordId, command.leaseToken);
         if (commandActions(command).some((a) => !bound.grant.body.actions.includes(a))) fail6("AUTHORITY_REQUIRED", "lease does not authorize the complete command");
         catalog = bound.prepared.catalog;
       }
-      if (command.kind === "item.grant") preparation(root, command.payload.holder);
+      if (command.kind === "task.grant") preparation(root, command.payload.holder);
       let capture;
       if (options.capture) capture = readIssued(root, "captures", options.capture);
       const decision = () => {
@@ -1172,16 +1296,23 @@ ${body.command}`,
         const { source, reference, attributed_to, captured_at } = cap.receipt;
         const b = command.payload.body;
         return { source, reference, attributed_to, captured_at, ...Object.fromEntries(
-          ["item_id", "subject", "criteria_ref", "kind", "decision", "deployment", "recovery"].map((k) => [k, b[k]])
+          ["subject", "content_ref", "criteria_ref", "kind", "decision", "deployment", "recovery"].map((k) => [k, b[k]])
         ) };
       };
       const embedding = createTrustedEmbedding({
         identity,
         authorize: () => ({ roles: catalog.roster.map((e) => e.role), grants }),
-        runs: ({ actor }) => [{ actor, directory: `.kai/runs/native/${actor.runId}` }],
+        runs: ({ actor }) => {
+          const taskId = command.recordKind === "task" ? command.recordId : command.payload.taskId ?? readRecord(store, command.recordKind, command.recordId)?.subject?.id;
+          const task = taskId ? readRecord(store, "task", taskId) : null;
+          return [{
+            actor,
+            directory: `.kai/${task?.body.pack ?? "core"}/reports/native-${hash(actor).slice(0, 16)}/scratch`
+          }];
+        },
         verifyCapture: (c) => {
-          if (!capture || capture.type !== "command" || !sameActor(capture.actor, c.actor) || capture.root !== root || capture.itemId !== c.recordId || canonicalJson(capture.subject) !== canonicalJson(c.payload.body.subject) || capture.criteria !== c.payload.body.criteria_ref || canonicalJson(capture.inputs) !== canonicalJson(itemBasis(root, store, readRecord(store, "item", c.recordId)).inputs)) {
-            fail6("EVIDENCE_GAP", "no host-owned capture for this actor, item, subject and current input criteria");
+          if (!capture || capture.type !== "command" || !sameActor(capture.actor, c.actor) || capture.root !== root || capture.taskId !== c.recordId || canonicalJson(capture.subject) !== canonicalJson(c.payload.body.content_ref) || capture.criteria !== c.payload.body.criteria_ref || canonicalJson(capture.inputs) !== canonicalJson(taskBasis(root, store, readRecord(store, "task", c.recordId)).inputs)) {
+            fail6("EVIDENCE_GAP", "no host-owned capture for this actor, Task, subject and current input criteria");
           }
           return { ...capture.proof, command_digest: commandDigest(c) };
         },
@@ -1194,11 +1325,11 @@ ${body.command}`,
         capabilities: catalog.capabilities
       });
       const result = await embedding.apply({ root, store, command, options });
-      const lease = command.kind === "item.grant" && result.data.record.body.lease;
+      const lease = command.kind === "task.grant" && result.data.record.body.lease;
       if (lease) {
-        const name = `.kai/state/host/reservations/${lease.token}.json`;
+        const name = `.kai/core/runtime/host/reservations/${lease.token}.json`;
         if (!existsSync3(safePath(root, name))) writeIssued(root, "reservations", lease.token, {
-          itemId: command.recordId,
+          taskId: command.recordId,
           actor: lease.holder,
           leaseToken: lease.token,
           operationId: command.operationId,
@@ -1208,12 +1339,12 @@ ${body.command}`,
       }
       return result;
     },
-    async plan({ root, store, itemId }) {
+    async plan({ root, store, taskId }) {
       const catalog = await discovery(root);
-      const item = readRecord(store, "item", itemId) ?? fail6("EVIDENCE_GAP", "item does not exist");
+      const task = readRecord(store, "task", taskId) ?? fail6("EVIDENCE_GAP", "Task does not exist");
       return {
-        ...planDispatch({ item: item.body, ...catalog }),
-        gap: "No automatic peer dispatch or effect replay. For each queued native role: prepare, persist item.grant or delegate, then launch the standalone --session-id context with existing host permissions. Inspect claim before acting; metadata preparation alone does not authorize model work."
+        ...planDispatch({ task: task.body, ...catalog }),
+        gap: "No automatic peer dispatch or effect replay. For each queued native role: prepare, persist task.grant or delegate, then launch the standalone --session-id context with existing host permissions. Inspect claim before acting; metadata preparation alone does not authorize model work."
       };
     },
     async capture({ root, body, options }) {
@@ -1252,7 +1383,7 @@ ${body.command}`,
         type: "command",
         root,
         actor: request.scope.actor,
-        itemId: request.scope.itemId,
+        taskId: request.scope.taskId,
         subject: request.subject,
         criteria: request.criteria,
         inputs: request.inputs,

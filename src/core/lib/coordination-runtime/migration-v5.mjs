@@ -1441,6 +1441,62 @@ function lockMigration(root, state) {
   return path;
 }
 
+function recoveryOperation(payload) {
+  return {payload, digest: digest(payload)};
+}
+
+function validateRecoveryOperation(lock) {
+  if (lock.operation === undefined) return null;
+  const operation = lock.operation;
+  const payload = operation?.payload;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)
+    || operation.digest !== digest(payload)
+    || payload.schema_version !== 1
+    || payload.lock_id !== lock.id
+    || !new Set(['abandon', 'rollback']).has(payload.kind)
+    || payload.worksheet_digest !== lock.worksheet_digest
+    || payload.backup_inventory_digest !== lock.backup_inventory_digest) {
+    fail('RECOVERY_REQUIRED', 'schema-5 recovery operation journal is invalid');
+  }
+  if (payload.kind === 'abandon') {
+    if (lock.rollback === true
+      || !Array.isArray(payload.installed_targets)
+      || (payload.installed_database !== null
+        && typeof payload.installed_database !== 'object')) {
+      fail('RECOVERY_REQUIRED', 'schema-5 abandon operation journal is invalid');
+    }
+  } else if (typeof payload.migration_id !== 'string'
+    || !/^[0-9a-f-]{36}$/i.test(payload.rollback_id)
+    || !/^[a-f0-9]{64}$/.test(payload.receipt_digest)) {
+    fail('RECOVERY_REQUIRED', 'schema-5 rollback operation journal is invalid');
+  }
+  return payload;
+}
+
+function bindRecoveryOperation(path, lock, payload) {
+  if (lock.operation !== undefined) {
+    const existing = validateRecoveryOperation(lock);
+    if (canonicalJson(existing) !== canonicalJson(payload)) {
+      fail('RECOVERY_REQUIRED', 'schema-5 recovery operation journal changed');
+    }
+    return existing;
+  }
+  if (canonicalJson(readJson(path, 'schema-5 migration lock')) !== canonicalJson(lock)) {
+    fail('RECOVERY_REQUIRED', 'schema-5 migration lock changed before recovery intent was recorded');
+  }
+  const next = {...lock, operation: recoveryOperation(payload)};
+  const staged = `${path}.operation-${randomUUID()}`;
+  try {
+    durableWrite(staged, canonicalJson(next), {exclusive: true});
+    renameSync(staged, path);
+    fsyncDirectory(dirname(path));
+  } finally {
+    rmSync(staged, {force: true});
+  }
+  lock.operation = next.operation;
+  return payload;
+}
+
 function drainNativeWriterTokens(root, {timeoutMs = 30_000} = {}) {
   const canonical = canonicalPath(root);
   const parent = dirname(canonical);
@@ -1527,6 +1583,7 @@ function readLock(root) {
       if (error.code !== 'ESRCH') throw error;
     }
   }
+  validateRecoveryOperation(lock);
   return {path, lock};
 }
 
@@ -3643,35 +3700,77 @@ function continueActivation(root, validated, lock, recovery) {
   return finalizeActivatedRecovery(root, lock, current, validated.env);
 }
 
-function removeMigratedTargets(root, recovery) {
-  for (const entry of recovery.installedTargets) {
-    assertOwnedFile(
-      liveSchema5InventoryPath(root, entry.path, `migration-owned target ${entry.path}`),
-      entry,
-      `migration-owned target ${entry.path}`,
-    );
+function abandonRecoveryFromOperation(root, lock, state, operation) {
+  const immutable = immutableRecoveryPlan(root, lock, state);
+  const expectedTargets = new Map(
+    immutable.installedInventory.authored_targets.map(entry => [entry.path, entry]),
+  );
+  const seen = new Set();
+  for (const entry of operation.installed_targets) {
+    const expected = expectedTargets.get(entry?.path);
+    if (!expected || seen.has(entry.path)
+      || canonicalJson(entry) !== canonicalJson(expected)) {
+      fail('RECOVERY_REQUIRED', 'abandon operation target inventory is outside the migration plan');
+    }
+    seen.add(entry.path);
   }
-  if (recovery.installedDatabase) {
-    assertOwnedDatabase(
-      safePath(root, COORDINATION_DATABASE),
-      recovery.installedDatabase,
-      'migration-owned schema-5 database',
-    );
+  const installedDatabase = operation.installed_database;
+  if (installedDatabase !== null
+    && (installedDatabase.path !== immutable.installedInventory.database.path
+      || installedDatabase.type !== 'sqlite'
+      || !/^[a-f0-9]{64}$/.test(installedDatabase.digest))) {
+    fail('RECOVERY_REQUIRED', 'abandon operation database inventory is outside the migration plan');
   }
+  return {
+    ...immutable,
+    installedTargets: operation.installed_targets,
+    installedDatabase,
+    sources: [],
+  };
+}
+
+function preflightJournalRestoration(root, recovery) {
+  for (const entry of recovery.worksheet.backup_inventory.private_files) {
+    if (entry.path.startsWith(HOST_RUNTIME)) continue;
+    const backup = join(
+      recovery.lock.backup_path,
+      'private',
+      ...entry.path.split('/'),
+    );
+    assertOwnedFile(backup, entry, `backed-up schema-4 authority ${entry.path}`);
+    const live = safePath(root, entry.path);
+    if (existsSync(live)) {
+      const stat = lstatSync(live);
+      if (!stat.isFile() || stat.nlink !== 1
+        || pathHasLink(dirname(live), live) || !exactPath(live)) {
+        fail('RECOVERY_REQUIRED', `schema-4 restore target changed type or identity: ${entry.path}`);
+      }
+    }
+  }
+}
+
+function removeJournaledSchema5Files(root, recovery) {
   for (const entry of recovery.installedTargets) {
     const path = liveSchema5InventoryPath(
       root,
       entry.path,
       `migration-owned target ${entry.path}`,
     );
+    if (!existsSync(path)) continue;
+    assertOwnedFile(path, entry, `migration-owned target ${entry.path}`);
     unlinkSync(path);
     fsyncParents(path, root);
   }
-  if (recovery.installedDatabase) {
-    const path = safePath(root, COORDINATION_DATABASE);
-    unlinkSync(path);
-    fsyncParents(path, root);
-  }
+  if (!recovery.installedDatabase) return;
+  const path = safePath(root, COORDINATION_DATABASE);
+  if (!existsSync(path)) return;
+  assertOwnedDatabase(
+    path,
+    recovery.installedDatabase,
+    'migration-owned schema-5 database',
+  );
+  unlinkSync(path);
+  fsyncParents(path, root);
 }
 
 function preflightSchema4Restoration(root, lock, recovery) {
@@ -3765,6 +3864,31 @@ function removeAbandonStage(lock, {restorationRequired, restorationVerified}) {
   fsyncDirectory(dirname(lock.stage_path));
 }
 
+function resumeAbandonOperation(root, lock, lockPath, state, operation) {
+  const journaled = abandonRecoveryFromOperation(
+    root,
+    lock,
+    state,
+    operation,
+  );
+  journaled.lock = lock;
+  preflightJournalRestoration(root, journaled);
+  removeJournaledSchema5Files(root, journaled);
+  restoreExactSchema4(root, lock, journaled);
+  verifyAbandonRestoration(root, journaled);
+  removeAbandonStage(lock, {
+    restorationRequired: true,
+    restorationVerified: true,
+  });
+  releaseLock(lockPath, lock);
+  return {
+    id: lock.id,
+    activated: false,
+    abandoned: true,
+    backupPath: lock.backup_path,
+  };
+}
+
 function abandonMigration(root, lock, recovery, env) {
   if (lock.rollback === true
     || normalized(lock.stage_path) !== normalized(v5StagePath(root, lock.id))) {
@@ -3772,15 +3896,18 @@ function abandonMigration(root, lock, recovery, env) {
   }
   if (recovery.activeSchema5) {
     const verified = verifyActivatedRecovery(root, lock, recovery, env);
+    const lockPath = v5MigrationLockPath(root);
+    const rollbackId = randomUUID();
+    bindRecoveryOperation(
+      lockPath,
+      lock,
+      rollbackOperationPayload(lock, verified.receipt, rollbackId),
+    );
     return rollbackActivatedWorkspace({
       root,
       lock,
-      lockPath: v5MigrationLockPath(root),
-      rollbackId: randomUUID(),
-      manifest: verified.manifest,
-      migration: verified.migration,
-      receipt: verified.receipt,
-      authority: verified.authority,
+      lockPath,
+      rollbackId,
     });
   }
   if (recovery.phase === 'locked') {
@@ -3798,20 +3925,23 @@ function abandonMigration(root, lock, recovery, env) {
   }
   assertAtomicReplacementSupported(lock);
   preflightSchema4Restoration(root, lock, recovery);
-  removeMigratedTargets(root, recovery);
-  restoreExactSchema4(root, lock, recovery);
-  verifyAbandonRestoration(root, recovery);
-  removeAbandonStage(lock, {
-    restorationRequired: true,
-    restorationVerified: true,
+  const lockPath = v5MigrationLockPath(root);
+  const operation = bindRecoveryOperation(lockPath, lock, {
+    schema_version: 1,
+    kind: 'abandon',
+    lock_id: lock.id,
+    worksheet_digest: lock.worksheet_digest,
+    backup_inventory_digest: lock.backup_inventory_digest,
+    installed_targets: recovery.installedTargets,
+    installed_database: recovery.installedDatabase,
   });
-  releaseLock(v5MigrationLockPath(root), lock);
-  return {
-    id: lock.id,
-    activated: false,
-    abandoned: true,
-    backupPath: lock.backup_path,
-  };
+  return resumeAbandonOperation(
+    root,
+    lock,
+    lockPath,
+    existsSync(join(lock.backup_path, 'state.json')) ? readState(lock) : null,
+    operation,
+  );
 }
 
 export function recoverWorkspaceV5({
@@ -3828,9 +3958,24 @@ export function recoverWorkspaceV5({
   if (!new Set(['activate', 'abandon']).has(action)) {
     fail('INVALID_INPUT', 'schema-5 recovery action must be activate or abandon');
   }
-  const {lock} = readLock(root);
+  const {path: lockPath, lock} = readLock(root);
   const statePath = join(lock.backup_path, 'state.json');
   const state = existsSync(statePath) ? readState(lock) : null;
+  const operation = validateRecoveryOperation(lock);
+  if (operation) {
+    if (action !== 'abandon') {
+      fail('RECOVERY_REQUIRED', 'an interrupted abandon or rollback may only resume through recover --action abandon');
+    }
+    if (operation.kind === 'abandon') {
+      return resumeAbandonOperation(root, lock, lockPath, state, operation);
+    }
+    return rollbackActivatedWorkspace({
+      root,
+      lock,
+      lockPath,
+      rollbackId: operation.rollback_id,
+    });
+  }
   const recovery = deriveRecoveryAuthority(root, lock, state);
   if (action === 'abandon') return abandonMigration(root, lock, recovery, env);
   if (recovery.phase === 'locked') {
@@ -3945,7 +4090,12 @@ function stageRollbackInventory(backupPath, stagePath, inventory) {
   for (const entry of inventory.private_files) {
     const source = join(backupPath, 'private', ...entry.path.split('/'));
     assertOwnedFile(source, entry, `backed-up schema-4 source ${entry.path}`);
-    durableCopy(source, join(restoreRoot, ...entry.path.split('/')));
+    const target = join(restoreRoot, ...entry.path.split('/'));
+    if (existsSync(target)) {
+      assertOwnedFile(target, entry, `staged rollback source ${entry.path}`);
+    } else {
+      durableCopy(source, target);
+    }
   }
   sameInventory(
     inventory.private_files,
@@ -3957,6 +4107,36 @@ function stageRollbackInventory(backupPath, stagePath, inventory) {
 
 function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
   const hostRoot = join(root, ...HOST_RUNTIME.slice(0, -1).split('/'));
+  const auditRoot = join(
+    dirname(backupPath),
+    `${basename(backupPath)}-rollback-${rollbackId}`,
+  );
+  const retainedRoot = join(auditRoot, 'host');
+  const proofPath = join(auditRoot, 'receipt.json');
+  if (existsSync(auditRoot)) {
+    const proof = readJson(proofPath, 'rollback host audit receipt');
+    if (proof.digest !== digest(proof.payload)
+      || proof.payload?.schema_version !== 1
+      || proof.payload.rollback_id !== rollbackId
+      || proof.payload.migration_receipt_digest !== receipt.digest
+      || !Array.isArray(proof.payload.live_inventory)) {
+      fail('RECOVERY_REQUIRED', 'rollback host audit receipt binding is invalid');
+    }
+    const expectedRetained = proof.payload.live_inventory.map(entry => ({
+      ...entry,
+      path: entry.path.slice(HOST_RUNTIME.length),
+    }));
+    sameInventory(
+      expectedRetained,
+      actualInventory(retainedRoot),
+      'external rollback host audit copy changed',
+    );
+    return {
+      hostRoot,
+      liveInventory: proof.payload.live_inventory,
+      auditRoot,
+    };
+  }
   if (!existsSync(hostRoot)) return null;
   if (receipt.payload.authorization_digest === null) {
     fail(
@@ -3966,12 +4146,7 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
   }
   const liveInventory = walkFiles(root, HOST_RUNTIME.slice(0, -1))
     .map(entry => ({...entry, type: 'file'}));
-  const auditRoot = join(
-    dirname(backupPath),
-    `${basename(backupPath)}-rollback-${rollbackId}`,
-  );
   mkdirSync(auditRoot, {recursive: false});
-  const retainedRoot = join(auditRoot, 'host');
   for (const entry of liveInventory) {
     durableCopy(
       join(root, ...entry.path.split('/')),
@@ -3996,7 +4171,7 @@ function preserveRollbackHost(root, backupPath, rollbackId, receipt) {
   };
   const proof = {payload, digest: digest(payload)};
   durableWrite(
-    join(auditRoot, 'receipt.json'),
+    proofPath,
     canonicalJson(proof),
   );
   return {hostRoot, liveInventory, auditRoot};
@@ -4044,27 +4219,18 @@ function verifyLiveSchema5Files(root, receipt, plannedInventory, store = null) {
 }
 
 function installRollbackFiles(root, restoreRoot, inventory) {
-  const installed = [];
   for (const entry of inventory.private_files) {
     if (entry.path === '.kai/manifest.json') continue;
     const staged = join(restoreRoot, ...entry.path.split('/'));
     const live = join(root, ...entry.path.split('/'));
     if (existsSync(live)) {
-      fail('RECOVERY_REQUIRED', `schema-4 rollback target already exists: ${entry.path}`);
+      assertOwnedFile(live, entry, `restored schema-4 source ${entry.path}`);
+      if (existsSync(staged)) unlinkSync(staged);
+      continue;
     }
     mkdirSync(dirname(live), {recursive: true});
     renameSync(staged, live);
     assertOwnedFile(live, entry, `restored schema-4 source ${entry.path}`);
-    installed.push({path: live, entry});
-  }
-  return installed;
-}
-
-function removeInstalledRollbackFiles(installed) {
-  for (const {path, entry} of [...installed].reverse()) {
-    if (!existsSync(path)) continue;
-    assertOwnedFile(path, entry, `partially restored schema-4 source ${entry.path}`);
-    unlinkSync(path);
   }
 }
 
@@ -4075,33 +4241,110 @@ function finishSchema5Cleanup(root, installedFiles, hostProof) {
       entry.path,
       `migration-owned schema-5 target ${entry.path}`,
     );
-    assertOwnedFile(target, entry, `migration-owned schema-5 target ${entry.path}`);
+    if (existsSync(target)) {
+      assertOwnedFile(target, entry, `migration-owned schema-5 target ${entry.path}`);
+    }
   }
   const database = safePath(root, COORDINATION_DATABASE);
-  assertOwnedDatabase(
-    database,
-    installedFiles.database,
-    'migration-owned schema-5 database',
-  );
-  if (hostProof) {
-    const currentHost = walkFiles(root, HOST_RUNTIME.slice(0, -1))
-      .map(entry => ({...entry, type: 'file'}));
-    sameInventory(
-      hostProof.liveInventory,
-      currentHost,
-      'schema-5 host runtime changed after external audit preservation',
+  if (existsSync(database)) {
+    assertOwnedDatabase(
+      database,
+      installedFiles.database,
+      'migration-owned schema-5 database',
     );
   }
+  if (hostProof && existsSync(hostProof.hostRoot)) {
+    const currentHost = walkFiles(root, HOST_RUNTIME.slice(0, -1))
+      .map(entry => ({...entry, type: 'file'}));
+    const expected = new Map(hostProof.liveInventory.map(entry => [entry.path, entry]));
+    for (const entry of currentHost) {
+      const owned = expected.get(entry.path);
+      if (!owned || canonicalJson(entry) !== canonicalJson(owned)) {
+        fail('RECOVERY_REQUIRED', 'schema-5 host runtime changed after external audit preservation');
+      }
+    }
+  }
   for (const entry of installedFiles.authored_targets) {
-    unlinkSync(liveSchema5InventoryPath(
+    const path = liveSchema5InventoryPath(
       root,
       entry.path,
       `migration-owned schema-5 target ${entry.path}`,
-    ));
+    );
+    if (existsSync(path)) unlinkSync(path);
   }
-  unlinkSync(database);
-  if (hostProof) rmSync(hostProof.hostRoot, {recursive: true, force: false});
+  if (existsSync(database)) unlinkSync(database);
+  if (hostProof && existsSync(hostProof.hostRoot)) {
+    rmSync(hostProof.hostRoot, {recursive: true, force: false});
+  }
   removeEmptyDirectories(root);
+}
+
+function rollbackOperationPayload(lock, receipt, rollbackId = lock.id) {
+  return {
+    schema_version: 1,
+    kind: 'rollback',
+    lock_id: lock.id,
+    rollback_id: rollbackId,
+    migration_id: receipt.payload.migration_id,
+    receipt_digest: receipt.digest,
+    worksheet_digest: lock.worksheet_digest,
+    backup_inventory_digest: lock.backup_inventory_digest,
+  };
+}
+
+function rollbackAuthorityFromOperation(root, lock, operation) {
+  const receipt = readJson(
+    join(lock.backup_path, 'receipt.json'),
+    'schema-5 migration receipt',
+  );
+  if (receipt.digest !== operation.receipt_digest
+    || digest(receipt.payload) !== receipt.digest
+    || receipt.payload.migration_id !== operation.migration_id
+    || receipt.payload.worksheet_digest !== lock.worksheet_digest
+    || receipt.payload.backup_inventory_digest !== lock.backup_inventory_digest) {
+    fail('RECOVERY_REQUIRED', 'rollback operation receipt binding is invalid');
+  }
+  const authority = backupAuthority(lock.backup_path, receipt);
+  const sourceManifest = readJson(
+    join(lock.backup_path, 'private', '.kai', 'manifest.json'),
+    'backed-up schema-4 manifest',
+  );
+  const candidate = candidateManifest(root, sourceManifest, authority.worksheet.placement);
+  const plannedInventory = schema5InstalledInventory(authority.worksheet, candidate);
+  const installedFiles = {
+    ...plannedInventory,
+    database: {
+      ...plannedInventory.database,
+      digest: receipt.payload.schema5_files?.database?.digest,
+    },
+  };
+  if (canonicalJson(receipt.payload.schema5_files) !== canonicalJson(installedFiles)) {
+    fail('RECOVERY_REQUIRED', 'rollback operation file inventory is outside the migration plan');
+  }
+  return {
+    authority,
+    candidate,
+    installedFiles,
+    plannedInventory,
+    receipt,
+    sourceManifest,
+  };
+}
+
+function inspectRollbackManifest(root, authority) {
+  const path = safePath(root, '.kai/manifest.json');
+  const schema4 = authority.authority.worksheet.backup_inventory.private_files
+    .find(entry => entry.path === '.kai/manifest.json');
+  if (!schema4) fail('RECOVERY_REQUIRED', 'rollback backup omits the schema-4 manifest');
+  const historical = inspectRecoveryFile(path, schema4, 'rollback schema-4 manifest');
+  if (historical.owned) return {kind: 'schema4', entry: schema4};
+  const active = inspectRecoveryFile(
+    path,
+    authority.installedFiles.manifest,
+    'rollback schema-5 manifest',
+  );
+  if (active.owned) return {kind: 'schema5', entry: authority.installedFiles.manifest};
+  fail('RECOVERY_REQUIRED', 'rollback manifest is neither the bound schema-5 nor schema-4 authority');
 }
 
 function rollbackActivatedWorkspace({
@@ -4109,46 +4352,63 @@ function rollbackActivatedWorkspace({
   lock,
   lockPath,
   rollbackId,
-  manifest,
-  migration,
-  receipt,
-  authority,
 }) {
-  const rollbackInventory = schema5InstalledInventory(
-    authority.worksheet,
-    manifest,
-  );
+  const operation = validateRecoveryOperation(lock);
+  if (!operation || operation.kind !== 'rollback') {
+    fail('RECOVERY_REQUIRED', 'rollback requires a durable operation journal');
+  }
+  const journaled = rollbackAuthorityFromOperation(root, lock, operation);
   let barrier = null;
-  let installed = [];
-  let manifestSwitched = false;
   try {
     drainNativeWriterTokens(root);
     const restoreRoot = stageRollbackInventory(
-      migration.backup_path,
+      lock.backup_path,
       lock.stage_path,
-      authority.worksheet.backup_inventory,
+      journaled.authority.worksheet.backup_inventory,
     );
     assertAtomicReplacementSupported(lock);
-    const installedFiles = verifyLiveSchema5Files(
-      root,
-      receipt,
-      rollbackInventory,
-    );
-    barrier = beginRollbackBarrier(root, migration.receipt_digest);
+    const currentManifest = inspectRollbackManifest(root, journaled);
+    if (currentManifest.kind === 'schema5') {
+      verifyLiveSchema5Files(
+        root,
+        journaled.receipt,
+        journaled.plannedInventory,
+      );
+      barrier = beginRollbackBarrier(root, journaled.receipt.digest);
+    } else {
+      for (const entry of journaled.installedFiles.authored_targets) {
+        const path = liveSchema5InventoryPath(
+          root,
+          entry.path,
+          `migration-owned schema-5 target ${entry.path}`,
+        );
+        if (existsSync(path)) {
+          assertOwnedFile(path, entry, `migration-owned schema-5 target ${entry.path}`);
+        }
+      }
+      const database = safePath(root, COORDINATION_DATABASE);
+      if (existsSync(database)) {
+        assertOwnedDatabase(
+          database,
+          journaled.installedFiles.database,
+          'migration-owned schema-5 database',
+        );
+      }
+    }
     const hostProof = preserveRollbackHost(
       root,
-      migration.backup_path,
+      lock.backup_path,
       rollbackId,
-      receipt,
+      journaled.receipt,
     );
-    installed = installRollbackFiles(
+    installRollbackFiles(
       root,
       restoreRoot,
-      authority.worksheet.backup_inventory,
+      journaled.authority.worksheet.backup_inventory,
     );
     const stagedManifest = join(restoreRoot, '.kai', 'manifest.json');
     const liveManifest = safePath(root, '.kai/manifest.json');
-    for (const entry of authority.worksheet.backup_inventory.private_files) {
+    for (const entry of journaled.authority.worksheet.backup_inventory.private_files) {
       if (entry.path === '.kai/manifest.json') {
         assertOwnedFile(stagedManifest, entry, 'staged schema-4 manifest');
       } else {
@@ -4159,18 +4419,26 @@ function rollbackActivatedWorkspace({
         );
       }
     }
-    verifyLiveSchema5Files(
-      root,
-      receipt,
-      rollbackInventory,
-      barrier.store,
-    );
-    renameSync(stagedManifest, liveManifest);
-    manifestSwitched = true;
-    closeRollbackBarrier(barrier, true);
-    barrier = null;
-    finishSchema5Cleanup(root, installedFiles, hostProof);
-    for (const entry of authority.worksheet.backup_inventory.private_files) {
+    if (currentManifest.kind === 'schema5') {
+      verifyLiveSchema5Files(
+        root,
+        journaled.receipt,
+        journaled.plannedInventory,
+        barrier.store,
+      );
+      renameSync(stagedManifest, liveManifest);
+      closeRollbackBarrier(barrier, true);
+      barrier = null;
+    } else {
+      assertOwnedFile(
+        liveManifest,
+        currentManifest.entry,
+        'restored schema-4 manifest',
+      );
+      unlinkSync(stagedManifest);
+    }
+    finishSchema5Cleanup(root, journaled.installedFiles, hostProof);
+    for (const entry of journaled.authority.worksheet.backup_inventory.private_files) {
       assertOwnedFile(
         join(root, ...entry.path.split('/')),
         entry,
@@ -4180,9 +4448,9 @@ function rollbackActivatedWorkspace({
     rmSync(lock.stage_path, {recursive: true, force: true});
     releaseLock(lockPath, lock);
     return {
-      id: receipt.payload.migration_id,
+      id: journaled.receipt.payload.migration_id,
       rolledBack: true,
-      backupPath: migration.backup_path,
+      backupPath: lock.backup_path,
       rollbackAuditPath: hostProof?.auditRoot ?? null,
       schemaVersion: 4,
     };
@@ -4194,16 +4462,6 @@ function rollbackActivatedWorkspace({
         error.cause = new AggregateError(
           [error, barrierError],
           'rollback failure also failed to release the SQLite barrier',
-        );
-      }
-    }
-    if (!manifestSwitched) {
-      try {
-        removeInstalledRollbackFiles(installed);
-      } catch (cleanupError) {
-        error.cause = new AggregateError(
-          [error, cleanupError],
-          'rollback failed and partially restored schema-4 files require recovery',
         );
       }
     }
@@ -4245,9 +4503,10 @@ export function rollbackWorkspaceV5({
     fail('RECOVERY_REQUIRED', 'schema-5 manifest changed after activation');
   }
   const authority = backupAuthority(migration.backup_path, receipt);
+  const rollbackId = randomUUID();
   const lock = {
     schema_version: 1,
-    id: randomUUID(),
+    id: rollbackId,
     root: canonicalPath(root),
     pid: process.pid,
     backup_path: migration.backup_path,
@@ -4257,15 +4516,12 @@ export function rollbackWorkspaceV5({
     authorization_digest: receipt.payload.authorization_digest,
     rollback: true,
   };
+  lock.operation = recoveryOperation(rollbackOperationPayload(lock, receipt));
   const lockPath = lockMigration(root, lock);
   return rollbackActivatedWorkspace({
     root,
     lock,
     lockPath,
-    rollbackId: lock.id,
-    manifest,
-    migration,
-    receipt,
-    authority,
+    rollbackId,
   });
 }

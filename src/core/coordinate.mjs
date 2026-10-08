@@ -126,7 +126,13 @@ export async function runCLI(argv, {host, input, stdin = process.stdin, cwd = pr
     const result = await execute({verb, options, body, host, cwd, env});
     return {exitCode: 0, result: withEntrypointReport(result, env, entrypoint)};
   } catch (error) {
-    if (!(error instanceof RuntimeError)) throw error;
+    const runtimeError = error instanceof RuntimeError
+      || (error?.name === 'RuntimeError'
+        && typeof error.code === 'string'
+        && /^[A-Z][A-Z_]+$/.test(error.code)
+        && typeof error.message === 'string'
+        && typeof error.retryable === 'boolean');
+    if (!runtimeError) throw error;
     return {
       exitCode: error.retryable ? 2 : 1,
       result: withEntrypointReport({

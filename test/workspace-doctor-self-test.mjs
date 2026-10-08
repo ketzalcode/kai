@@ -358,9 +358,9 @@ function selfTest() {
     fm: frontmatter(readFileSync(join(REPO_ROOT, 'plugins', 'kai-core', 'templates', 'publication', name), 'utf8')),
   }));
   ok(
-    publicationTemplates.every(({ fm }) => fm && scalar(fm, 'item') === '<work-item-id>'),
-    'publication templates declare the owning work item',
-    publicationTemplates.filter(({ fm }) => !fm || scalar(fm, 'item') !== '<work-item-id>').map(({ name }) => name),
+    publicationTemplates.every(({ fm }) => fm && scalar(fm, 'task') === '<typed-task-id>'),
+    'publication templates declare the owning typed Task',
+    publicationTemplates.filter(({ fm }) => !fm || scalar(fm, 'task') !== '<typed-task-id>').map(({ name }) => name),
   );
 
   const tmpRoot = mkdtempSync(join(tmpdir(), 'kai-schema3-'));

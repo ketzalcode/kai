@@ -1,184 +1,441 @@
-// The test that would have caught the lectoria bug.
-//
-// Every other check in this repository inspects a tree in place, with the whole
-// checkout — and therefore `node_modules/`, sibling source, and the repository
-// root — sitting right there. A consumer has none of that. The host copies a
-// plugin directory into `~/.copilot/installed-plugins/<marketplace>/<plugin>`
-// and runs commands out of it. Nothing installs anything.
-//
-// That gap is not hypothetical. A runtime npm dependency shipped for multiple
-// releases and could never have resolved on a single consumer machine, because
-// no check ever ran a command the way a consumer runs it. This one does: copy a
-// built pack somewhere else, delete nothing back in, and execute every shipped
-// entry point.
-//
-// What this proves: each entry point LOADS and runs standalone. It does not
-// prove the command does the right thing — the suites own that. A load failure
-// is the class of bug this exists to catch, because it is invisible everywhere
-// else and total for the user.
+// Prove committed generated packs work after being copied into a clean
+// consumer repository. Source modules and repository node_modules are
+// deliberately unavailable from every executed entrypoint.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdtempSync, readdirSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { materializePacks, moduleSpecifiers, PACK_ORDER, packPluginName } from '../tools/lib/pack-plan.mjs';
-import { discoveryRoots } from '../src/core/lib/coordination-runtime/native-discovery.mjs';
+import {execFileSync, spawnSync} from 'node:child_process';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import {dirname, join, resolve} from 'node:path';
+import {pathToFileURL, fileURLToPath} from 'node:url';
+import {moduleSpecifiers, PACK_ORDER, packPluginName} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const scratch = mkdtempSync(join(tmpdir(), 'kai-consumer-install-'));
-
-// Deny by default. An allowlist of known-bad messages was the first attempt and
-// it was wrong in exactly the direction that matters: it named the failures raw
-// copying could produce and missed the ones bundling introduces. An ESM chunk
-// cycle ("Cannot access 'X' before initialization"), esbuild's CJS interop shim
-// ("Dynamic require of \"x\" is not supported") and an interop `TypeError` all
-// crash on load for every consumer, and none of them matched. So any uncaught
-// throw counts as a load failure unless the command printed it itself.
-//
-// A command may legitimately exit non-zero on an unrecognised argument, and may
-// print its own `Error: ...` line while doing so. What it may not do is die with
-// a stack trace, so that — not the word "Error" — is the signal. Node prints a
-// stack frame for every uncaught throw, including a parse error in a chunk.
+const fixtureRoot = join(root, 'test', 'fixtures', 'schema5-consumer');
+const scratchRoot = join(root, '.superpowers', 'consumer-tests');
+const fixtureNames = ['core-only', 'core-engineering', 'core-creative', 'all-packs'];
+const publicationSkills = {
+  core: 'kai-core-workspace-publication',
+  engineering: 'engineering-workspace-publication',
+  creative: 'creative-workspace-publication',
+};
+const direction = [
+  '# Vision',
+  'A composable consumer workspace.',
+  '',
+  '# Mission',
+  'Prove generated packs operate without the Kai checkout.',
+  '',
+  '# Current Goal',
+  'Exercise lazy schema-5 composition.',
+  '',
+  '# Out of Scope',
+  '- Eager department directories.',
+  '',
+].join('\n');
 const LOAD_FAILURE = /^\s+at\s+\S/m;
 let failures = 0;
-const ok = (condition, message) => {
-  if (condition) { console.log(`  ok ${message}`); return; }
+const ok = (condition, message, detail = '') => {
+  if (condition) {
+    console.log(`  ok ${message}`);
+    return true;
+  }
   failures += 1;
-  console.log(`  FAIL ${message}`);
+  console.log(`  FAIL ${message}${detail ? `\n      ${detail}` : ''}`);
+  return false;
 };
 
-try {
-  // 1. Materialise the packs exactly as the generator would, and write them out
-  //    the way the host copies them — nothing else comes along.
-  const files = materializePacks({ root, version: '0.0.0-consumer-install' });
-  for (const [key, text] of files) {
-    const target = join(scratch, ...key.split('/'));
-    mkdirSync(dirname(target), { recursive: true });
-    writeFileSync(target, text);
-  }
+function nativePath(base, relativePath) {
+  return join(base, ...relativePath.split('/'));
+}
 
-  // 2. Nothing installs dependencies for a consumer, so nothing may be present.
-  let inspected = 0;
-  for (const pack of PACK_ORDER) {
-    const dir = join(scratch, packPluginName(pack));
-    assert.ok(existsSync(dir), `${packPluginName(pack)}: expected a materialised pack to copy`);
-    inspected += 1;
-    assert.equal(existsSync(join(dir, 'node_modules')), false,
-      `${packPluginName(pack)}: a copied pack must not contain node_modules`);
-    for (const manifest of ['package.json', 'package-lock.json']) {
-      assert.equal(existsSync(join(dir, manifest)), false,
-        `${packPluginName(pack)}: a copied pack must not contain ${manifest}`);
-    }
-  }
-  // Counted, because "no pack had a package.json" is also true of no packs.
-  assert.equal(inspected, PACK_ORDER.length, 'every shipped pack must be inspected');
-  ok(true, `${inspected} copied pack(s) carry no npm manifest and no installed dependencies`);
+function stripCell(value) {
+  const trimmed = value.trim();
+  return trimmed.startsWith('`') && trimmed.endsWith('`')
+    ? trimmed.slice(1, -1)
+    : trimmed;
+}
 
-  // 3. Run every shipped entry point from the copy. Entry points are the files a
-  //    shipped instruction names; chunks are implementation and are only loaded
-  //    through them, so a chunk that fails to resolve surfaces here too.
-  let executed = 0;  for (const pack of PACK_ORDER) {
-    const scriptsDir = join(scratch, packPluginName(pack), 'scripts');
+function parsePublicationContract(installedRoot, pack) {
+  const skill = publicationSkills[pack];
+  const path = join(installedRoot, packPluginName(pack), 'skills', skill, 'SKILL.md');
+  const body = readFileSync(path, 'utf8');
+  const lines = body.split(/\r?\n/);
+  const headerIndex = lines.findIndex(line => /^\|\s*Namespace\s*\|\s*Type\s*\|/i.test(line));
+  assert.notEqual(headerIndex, -1, `${pack}: canonical vocabulary table is missing`);
+  const headers = lines[headerIndex].split('|').slice(1, -1).map(value => value.trim().toLowerCase());
+  const rows = [];
+  for (const line of lines.slice(headerIndex + 2)) {
+    if (!line.trim().startsWith('|')) break;
+    const cells = line.split('|').slice(1, -1).map(stripCell);
+    rows.push(Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ''])));
+  }
+  assert.ok(rows.length > 0, `${pack}: canonical vocabulary table must contain live rows`);
+  return {body, rows};
+}
+
+function selectRoute(contract, {pack, type, subtype}) {
+  return contract.rows.find(row =>
+    row.namespace === pack
+    && row.type === type
+    && (row.subtype === '-' ? subtype == null : row.subtype === subtype)) ?? null;
+}
+
+function privateDirectory(row, id, lifecycle) {
+  return row['private form']
+    .replace('<id>', id)
+    .replace('{drafts,evidence,scratch}', lifecycle);
+}
+
+function publicationDirectory(row, id) {
+  return row['public form'].replace('<id>', id).replace(/\/$/, '');
+}
+
+function createPrivateArtifact({projectRoot, contract, artifact, lifecycle, file, content}) {
+  const row = selectRoute(contract, artifact);
+  if (!row || !new Set(['drafts', 'evidence', 'scratch']).has(lifecycle)) {
+    return {ok: false, row};
+  }
+  const directory = privateDirectory(row, artifact.id, lifecycle);
+  const path = nativePath(projectRoot, `${directory}/${file}`);
+  mkdirSync(dirname(path), {recursive: true});
+  writeFileSync(path, content);
+  return {ok: true, row, directory, path};
+}
+
+function publishArtifact({projectRoot, contract, artifact, source, lifecycle, accepted, file}) {
+  const row = selectRoute(contract, artifact);
+  if (!row) return {ok: false, reason: 'unknown route'};
+  if (lifecycle === 'scratch' && /scratch can never publish/i.test(contract.body)) {
+    return {ok: false, reason: 'scratch'};
+  }
+  if (lifecycle === 'evidence' && /never publish/i.test(row['privacy rule'])) {
+    return {ok: false, reason: 'private evidence'};
+  }
+  if (!accepted && /unaccepted draft can never publish/i.test(contract.body)) {
+    return {ok: false, reason: 'unaccepted'};
+  }
+  const directory = publicationDirectory(row, artifact.id);
+  const target = nativePath(projectRoot, `${directory}/${file}`);
+  mkdirSync(dirname(target), {recursive: true});
+  cpSync(source, target);
+  return {ok: true, directory, target};
+}
+
+function copyGeneratedPacks(installedRoot, packs) {
+  for (const pack of packs) {
+    cpSync(
+      join(root, 'plugins', packPluginName(pack)),
+      join(installedRoot, packPluginName(pack)),
+      {recursive: true},
+    );
+  }
+}
+
+function probeGeneratedImports(installedRoot, packs) {
+  for (const pack of packs) {
+    const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
     if (!existsSync(scriptsDir)) continue;
-    const entryPoints = readdirSync(scriptsDir)
-      .filter((name) => name.endsWith('.mjs') && !name.startsWith('chunk-'))
-      .sort();
-    assert.ok(entryPoints.length > 0, `${packPluginName(pack)}: expected shipped entry points`);
-    for (const name of entryPoints) {
+    const present = new Set(readdirSync(scriptsDir).filter(name => name.endsWith('.mjs')));
+    const referenced = new Set();
+    let dangling = 0;
+    let checkoutRelative = 0;
+    for (const name of present) {
+      const text = readFileSync(join(scriptsDir, name), 'utf8');
+      for (const specifier of moduleSpecifiers(text)) {
+        if (specifier.startsWith('../') || specifier.startsWith('file:')) checkoutRelative += 1;
+        if (!specifier.startsWith('./')) continue;
+        const target = specifier.slice(2);
+        referenced.add(target);
+        if (!present.has(target)) dangling += 1;
+      }
+    }
+    ok(checkoutRelative === 0,
+      `${packPluginName(pack)}: generated bundles contain no checkout-relative imports`);
+    ok(dangling === 0,
+      `${packPluginName(pack)}: every generated local import resolves inside the copied pack`);
+    const orphans = [...present].filter(name => name.startsWith('chunk-') && !referenced.has(name));
+    ok(orphans.length === 0,
+      `${packPluginName(pack)}: no unreferenced generated chunk ships`,
+      orphans.join(', '));
+  }
+}
+
+function probeEntrypoints(installedRoot, packs, consumerRoot) {
+  let executed = 0;
+  for (const pack of packs) {
+    const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
+    if (!existsSync(scriptsDir)) continue;
+    for (const name of readdirSync(scriptsDir)
+      .filter(value => value.endsWith('.mjs') && !value.startsWith('chunk-'))
+      .sort()) {
       const path = join(scriptsDir, name);
       let output = '';
       let loadFailed = false;
       try {
-        // `--help` is not universally supported; what matters is that the module
-        // graph resolves. A non-zero exit from the command's own argument
-        // handling is fine — an unresolved import is not.
         execFileSync(process.execPath, [path, '--kai-consumer-install-probe'], {
-          encoding: 'utf8', stdio: 'pipe', timeout: 120_000, cwd: scratch,
+          encoding: 'utf8',
+          stdio: 'pipe',
+          timeout: 120_000,
+          cwd: consumerRoot,
         });
       } catch (error) {
         output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
         loadFailed = LOAD_FAILURE.test(output);
       }
       ok(!loadFailed,
-        `${packPluginName(pack)}/scripts/${name} loads from a copied pack with no node_modules`
-        + (loadFailed ? `\n      ${output.split('\n').find((line) => /Error/.test(line)) ?? ''}` : ''));
+        `${packPluginName(pack)}/scripts/${name} loads from copied generated files`,
+        output.split('\n').find(line => /Error/.test(line)) ?? '');
       executed += 1;
     }
   }
-  ok(executed > 0, `executed ${executed} shipped entry point(s) from the copy`);
+  ok(executed > 0, `executed ${executed} generated entry point(s) from copied packs`);
+}
 
-  // 4. Execution only proves what execution reaches. A chunk imported lazily —
-  //    `coordinate.mjs` defers its CLI implementation this way — is never
-  //    resolved by a probe run, so deleting it passes step 3 and still breaks
-  //    the command in a consumer's hands. Verified: removing an eagerly
-  //    imported chunk is caught by all five of its importers; removing a lazily
-  //    imported one is caught by none.
-  //
-  //    So the import graph is checked structurally as well. Every local
-  //    specifier any shipped file names must exist in the copy, and every
-  //    emitted chunk must be reachable — an unreferenced chunk is dead weight
-  //    that a consumer downloads and never runs.
-  //
-  //    `moduleSpecifiers` is reused rather than re-expressed, because a second,
-  //    narrower regex is how this check would quietly stop seeing things:
-  //    esbuild emits bare side-effect imports (`import "./chunk-X.mjs";`) that a
-  //    `from`-anchored pattern cannot match at all.
-  for (const pack of PACK_ORDER) {
-    const scriptsDir = join(scratch, packPluginName(pack), 'scripts');
-    if (!existsSync(scriptsDir)) continue;
-    const present = new Set(readdirSync(scriptsDir).filter((n) => n.endsWith('.mjs')));
-    const referenced = new Set();
-    let dangling = 0;
-    for (const name of present) {
-      const text = readFileSync(join(scriptsDir, name), 'utf8');
-      for (const specifier of moduleSpecifiers(text)) {
-        if (!specifier.startsWith('./')) continue;
-        const target = specifier.slice(2);
-        referenced.add(target);
-        if (!present.has(target)) {
-          dangling += 1;
-          console.log(`  FAIL ${packPluginName(pack)}/scripts/${name} imports ${specifier}, absent from the copy`);
-        }
-      }
+function generatedDirect(coordinate, projectRoot) {
+  const result = spawnSync(process.execPath, [coordinate, 'direct'], {
+    cwd: projectRoot,
+    encoding: 'utf8',
+    env: {...process.env, KAI_TEST_REPORT_COORDINATION_ENTRYPOINT: '1'},
+  });
+  let json = null;
+  try {
+    json = JSON.parse(result.stdout);
+  } catch {
+    // Report the malformed output through the ordinary matrix assertion.
+  }
+  return {result, json};
+}
+
+function git(projectRoot, args) {
+  return spawnSync('git', args, {cwd: projectRoot, encoding: 'utf8'});
+}
+
+function assertPathMutationParity({doctor, projectRoot}) {
+  const manifestPath = join(projectRoot, '.kai', 'manifest.json');
+  const original = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const decisions = [];
+  for (const candidate of ['C:\\definitely-missing-kai', '/definitely-missing-kai']) {
+    writeFileSync(manifestPath, `${JSON.stringify({
+      ...original,
+      projects: [{...original.projects[0], path: candidate}],
+    }, null, 2)}\n`);
+    const report = doctor.checkWorkspace(projectRoot);
+    decisions.push({
+      accepted: report.errors.length === 0,
+      pathRefusal: /must be "\."|absolute|UNC|device|network/i.test(report.errors.join('\n')),
+    });
+  }
+  writeFileSync(manifestPath, `${JSON.stringify(original, null, 2)}\n`);
+  ok(decisions.every(decision => !decision.accepted && decision.pathRefusal)
+    && decisions[0].accepted === decisions[1].accepted,
+  'Windows and POSIX absolute project-path mutations return equivalent refusal decisions',
+  JSON.stringify(decisions));
+}
+
+async function runFixture(fixtureName) {
+  const fixture = JSON.parse(readFileSync(join(fixtureRoot, fixtureName, 'fixture.json'), 'utf8'));
+  const caseRoot = mkdtempSync(join(scratchRoot, `${fixtureName}-`));
+  const projectRoot = join(caseRoot, 'project');
+  const installedRoot = join(caseRoot, 'installed-plugins');
+  mkdirSync(projectRoot, {recursive: true});
+  mkdirSync(installedRoot, {recursive: true});
+  console.log(`\n${fixture.name}:`);
+  try {
+    copyGeneratedPacks(installedRoot, fixture.packs);
+    ok(!existsSync(join(projectRoot, 'node_modules')),
+      'clean consumer repository has no node_modules');
+    for (const pack of fixture.packs) {
+      ok(!existsSync(join(installedRoot, packPluginName(pack), 'node_modules')),
+        `${packPluginName(pack)} has no installed dependencies`);
     }
-    ok(dangling === 0,
-      `${packPluginName(pack)}: every local import resolves inside the copied pack (${referenced.size} checked)`);
+    probeGeneratedImports(installedRoot, fixture.packs);
+    probeEntrypoints(installedRoot, fixture.packs, projectRoot);
 
-    const orphans = [...present].filter((n) => n.startsWith('chunk-') && !referenced.has(n));
-    ok(orphans.length === 0,
-      `${packPluginName(pack)}: no unreferenced chunk ships${orphans.length ? ` (${orphans.join(', ')})` : ''}`);
+    const coordinate = join(installedRoot, 'kai-core', 'scripts', 'coordinate.mjs');
+    const direct = generatedDirect(coordinate, projectRoot);
+    ok(direct.result.status === 0
+      && direct.json?.coordinationRequired === false
+      && resolve(direct.json?.entrypoint ?? '') === resolve(coordinate),
+    'direct generated Core work needs no workspace and reports its executing entrypoint',
+    `${direct.result.stderr}${direct.result.stdout}`);
+    ok(!existsSync(join(projectRoot, '.kai'))
+      && !existsSync(join(projectRoot, 'docs', 'kai')),
+    'direct code work creates no pack directory');
+
+    git(projectRoot, ['init', '--quiet']);
+    writeFileSync(join(projectRoot, '.gitignore'), '/.kai/\n');
+    mkdirSync(join(projectRoot, 'docs', 'kai'), {recursive: true});
+    writeFileSync(join(projectRoot, 'docs', 'kai', 'DIRECTION.md'), direction);
+
+    const doctorPath = join(installedRoot, 'kai-core', 'scripts', 'workspace-doctor.mjs');
+    const doctor = await import(`${pathToFileURL(doctorPath).href}?fixture=${fixtureName}`);
+    if (!ok(typeof doctor.initializeWorkspace === 'function',
+      'generated Core exports the schema-5 standalone initializer',
+      `exports: ${Object.keys(doctor).sort().join(', ')}`)) {
+      return;
+    }
+    const plugin = JSON.parse(readFileSync(join(installedRoot, 'kai-core', 'plugin.json'), 'utf8'));
+    const initialized = doctor.initializeWorkspace({
+      root: projectRoot,
+      confirm: true,
+      manifest: {
+        plugin: 'kai-core',
+        version: plugin.version,
+        schema_version: 5,
+        scaffolded: '2026-10-02',
+        workspace_id: `consumer-${fixtureName}`,
+        placement: 'repo-local',
+        workspace_root: '.',
+        private_root: '.kai',
+        direction: 'docs/kai/DIRECTION.md',
+        projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
+      },
+    });
+    if (!ok(initialized.ok === true,
+      'generated Core initializes a schema-5 consumer workspace',
+      JSON.stringify(initialized))) {
+      return;
+    }
+    ok(existsSync(join(projectRoot, '.kai', 'core', 'runtime', 'coordination.sqlite')),
+      'initialization creates only the fixed Core runtime store');
+    ok(!existsSync(join(projectRoot, '.kai', 'engineering'))
+      && !existsSync(join(projectRoot, '.kai', 'creative')),
+    'initialization creates no department directories');
+    assertPathMutationParity({doctor, projectRoot});
+
+    const contract = parsePublicationContract(installedRoot, fixture.artifact.pack);
+    const row = selectRoute(contract, fixture.artifact);
+    if (!ok(Boolean(row), 'installed pack exposes the fixture publication route')) return;
+    ok(privateDirectory(row, fixture.artifact.id, 'drafts') === fixture.artifact.privateDirectory,
+      'canonical private route matches the hand-checked fixture path');
+    ok(publicationDirectory(row, fixture.artifact.id) === fixture.artifact.publicationDirectory,
+      'canonical publication route mirrors the hand-checked fixture path');
+    if (fixture.artifact.pack === 'creative' && fixture.artifact.type === 'media') {
+      ok(/Markdown destination record/i.test(row.formats),
+        'creative media accepts an approved external-destination record');
+    }
+
+    const created = createPrivateArtifact({
+      projectRoot,
+      contract,
+      artifact: fixture.artifact,
+      lifecycle: 'drafts',
+      file: fixture.artifact.file,
+      content: fixture.artifact.pack === 'creative'
+        ? '# Approved durable destination\n\nhttps://example.invalid/media/consumer-media\n'
+        : `# ${fixture.name} accepted artifact\n`,
+    });
+    ok(created.ok && created.directory === fixture.artifact.privateDirectory,
+      'first private write creates only the selected pack/type/id/drafts path');
+    for (const pack of PACK_ORDER.filter(pack => pack !== fixture.artifact.pack && pack !== 'core')) {
+      ok(!existsSync(join(projectRoot, '.kai', pack)),
+        `${pack}: installed but unused pack stays absent after first write`);
+    }
+
+    const beforeInvalid = existsSync(join(projectRoot, '.kai', fixture.artifact.pack, 'misc'));
+    const invalidType = createPrivateArtifact({
+      projectRoot,
+      contract,
+      artifact: {...fixture.artifact, type: 'misc', subtype: null},
+      lifecycle: 'drafts',
+      file: 'invalid.md',
+      content: 'must not exist',
+    });
+    const invalidSubtype = createPrivateArtifact({
+      projectRoot,
+      contract,
+      artifact: {...fixture.artifact, subtype: 'invalid-subtype'},
+      lifecycle: 'drafts',
+      file: 'invalid.md',
+      content: 'must not exist',
+    });
+    ok(!beforeInvalid && !invalidType.ok && !invalidSubtype.ok
+      && !existsSync(join(projectRoot, '.kai', fixture.artifact.pack, 'misc')),
+    'invalid type and subtype create nothing and have no fallback');
+
+    const scratch = createPrivateArtifact({
+      projectRoot,
+      contract,
+      artifact: fixture.artifact,
+      lifecycle: 'scratch',
+      file: 'scratch.md',
+      content: 'disposable',
+    });
+    const rejectedScratch = publishArtifact({
+      projectRoot,
+      contract,
+      artifact: fixture.artifact,
+      source: scratch.path,
+      lifecycle: 'scratch',
+      accepted: true,
+      file: 'scratch.md',
+    });
+    const rejectedDraft = publishArtifact({
+      projectRoot,
+      contract,
+      artifact: fixture.artifact,
+      source: created.path,
+      lifecycle: 'drafts',
+      accepted: false,
+      file: 'unaccepted.md',
+    });
+    ok(!rejectedScratch.ok && !rejectedDraft.ok
+      && !existsSync(nativePath(projectRoot, `${fixture.artifact.publicationDirectory}/scratch.md`))
+      && !existsSync(nativePath(projectRoot, `${fixture.artifact.publicationDirectory}/unaccepted.md`)),
+    'scratch and unaccepted drafts cannot publish');
+
+    const evidence = createPrivateArtifact({
+      projectRoot,
+      contract,
+      artifact: fixture.artifact,
+      lifecycle: 'evidence',
+      file: 'private-evidence.txt',
+      content: 'consumer-private-evidence',
+    });
+    const ignored = git(projectRoot, ['check-ignore', '--quiet', '--',
+      `${privateDirectory(row, fixture.artifact.id, 'evidence')}/private-evidence.txt`]);
+    const status = git(projectRoot, ['status', '--porcelain', '--untracked-files=all']);
+    ok(evidence.ok && ignored.status === 0 && !status.stdout.includes('.kai/'),
+      'private evidence stays ignored and untracked',
+      status.stdout);
+
+    const published = publishArtifact({
+      projectRoot,
+      contract,
+      artifact: fixture.artifact,
+      source: created.path,
+      lifecycle: 'drafts',
+      accepted: true,
+      file: fixture.artifact.file,
+    });
+    ok(published.ok
+      && published.directory === fixture.artifact.publicationDirectory
+      && readFileSync(published.target, 'utf8') === readFileSync(created.path, 'utf8'),
+    'first accepted publication mirrors only the selected artifact');
+
+    const privateManifest = join(projectRoot, '.kai', 'manifest.json');
+    const publicArtifact = published.target;
+    rmSync(installedRoot, {recursive: true, force: true});
+    ok(existsSync(privateManifest) && existsSync(publicArtifact),
+      'uninstall simulation leaves both .kai and docs/kai content intact');
+  } finally {
+    rmSync(caseRoot, {recursive: true, force: true});
   }
+}
 
-  // 5. The hook is the one command the HOST runs on its own, on every subagent,
-  //    without an agent in the loop. If its path is wrong nobody finds out from
-  //    a failing test — subagents just silently stop being observed. So its
-  //    absence is a failure, not a skip: "no hooks.json" is indistinguishable
-  //    from "hooks.json stopped being emitted", and the second is the bug.
-  const hooksPath = join(scratch, packPluginName('core'), 'hooks.json');
-  assert.ok(existsSync(hooksPath), 'kai-core must ship hooks.json to the copied pack');
-  const hooks = JSON.parse(readFileSync(hooksPath));
-  const commands = JSON.stringify(hooks).match(/\$\{PLUGIN_ROOT\}\/[A-Za-z0-9_\-./]+/g) ?? [];
-  assert.ok(commands.length > 0, 'hooks.json must invoke at least one plugin-relative command');
-  for (const command of commands) {
-    const relative = command.replace('${PLUGIN_ROOT}/', '');
-    assert.ok(existsSync(join(scratch, packPluginName('core'), ...relative.split('/'))),
-      `hooks.json points at ${relative}, which is absent from the copied pack`);
-  }
-  ok(true, `every hooks.json command resolves inside the copied pack (${commands.length})`);
-
-  // 6. The shipped layout the coordination runtime resolves its agent roster
-  //    against. Bundling moved that code from `scripts/lib/coordination-runtime/`
-  //    up to `scripts/`, which silently invalidated level-counting path
-  //    arithmetic — a missed agent profile leaves the model unset and nothing
-  //    reports it. Pinned against the real copied tree rather than trusted.
-  const coreScripts = join(scratch, packPluginName('core'), 'scripts');
-  const { pluginRoot } = discoveryRoots(coreScripts);
-  assert.equal(pluginRoot, join(scratch, packPluginName('core')),
-    'the coordination runtime must resolve the plugin root from its shipped location');
-  ok(true, 'agent profiles resolve against the copied pack root, not an ancestor of it');
+mkdirSync(scratchRoot, {recursive: true});
+try {
+  for (const fixtureName of fixtureNames) await runFixture(fixtureName);
 } finally {
-  rmSync(scratch, { recursive: true, force: true });
+  rmSync(scratchRoot, {recursive: true, force: true});
 }
 
 console.log(`\nconsumer-install self-test: ${failures ? `${failures} FAILED` : 'all checks passed'}`);

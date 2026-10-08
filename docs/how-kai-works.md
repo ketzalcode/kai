@@ -27,6 +27,46 @@ Scope, design acceptance, independent assessment and release approval remain
 with their real owners. The shipped surface is 21 agents / 38 skills across
 core, engineering, and creative; retired install names have no aliases.
 
+## Schema-5 authority and workspace boundaries
+
+Direction is the root contract for coordinated work. The operator owns the
+accepted bytes in `docs/kai/DIRECTION.md`: Vision, Mission, one Current Goal,
+and Out of Scope. The runtime hashes that complete revision. Open Epics whose
+binding becomes stale derive attention and stop new promotion or grants until
+their named authority carries, holds, cancels, or supersedes them.
+
+```text
+Direction Current Goal
+└─ Epic                         cross-pack outcome
+   └─ pack Feature              Core, Engineering, or Creative outcome
+      └─ Requirement            verifiable obligation
+         └─ Task                executable, leased work
+```
+
+`.kai/core/runtime/coordination.sqlite` is the authority for Epic, Feature,
+Requirement, Task, events, messages, evidence, grants, and leases. Parent
+records use the small `proposed → active → completed` lifecycle and derive
+attention; Tasks retain the detailed execution, review, deployment, recovery,
+and shipping gates. Child completion never closes a parent automatically.
+
+The filesystem boundary is equally strict:
+
+```text
+.kai/<pack>/<type>/<id>/{drafts,evidence,scratch}   private, ignored state
+docs/kai/<pack>/<type>/<id>/...                     accepted publication
+```
+
+Pack directories appear only on the first valid write. Publication copies one
+authority-accepted revision; scratch, unaccepted drafts, and private evidence
+cannot publish. Engineering code, tests, configuration, migrations, and normal
+repository documentation stay at repository-native paths.
+
+Direct work remains outside this system. A directly authorized answer or code
+change reads no Direction, initializes no workspace, creates no hierarchy
+record, and claims no lease. If the request expands into durable multi-role
+coordination, Kai presents the proposed hierarchy and waits for authority
+instead of backfilling records silently.
+
 ## Interaction scenarios
 
 These agents are **not a fixed pipeline** — they're a *triggered graph*.

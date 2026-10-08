@@ -1,0 +1,13 @@
+{
+  "name": "all packs",
+  "packs": ["core", "engineering", "creative"],
+  "artifact": {
+    "pack": "core",
+    "type": "decisions",
+    "subtype": null,
+    "id": "consumer-composition",
+    "file": "decision.md",
+    "privateDirectory": ".kai/core/decisions/consumer-composition/drafts",
+    "publicationDirectory": "docs/kai/core/decisions/consumer-composition"
+  }
+}

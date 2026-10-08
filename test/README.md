@@ -40,6 +40,13 @@ PR and push to `main` and must stay fast:
   supported Node version (`22.22.2`, `24.15.0`, `26.0.0`); Node 22's documented
   `node:sqlite` experimental warning is left visible. They are slow by the
   standards of the guards above — the migration and CLI suites take minutes.
+- **Generated consumer composition** — `consumer-install-self-test.mjs` copies
+  only committed `plugins/kai-*` pack files into clean repositories with no
+  `node_modules`. Its four fixtures (`core-only`, `core-engineering`,
+  `core-creative`, and `all-packs`) execute bundled entry points and prove lazy
+  schema-5 initialization, first private/public writes, refusal paths, privacy,
+  uninstall preservation, self-contained imports, and equivalent Windows/POSIX
+  path decisions.
 - **Shipped-command suites** — `activity-self-test.mjs`,
   `work-status-self-test.mjs`, `observe-subagent-self-test.mjs`,
   `observe-watch-self-test.mjs`, `demo-capture-self-test.mjs`,
@@ -181,6 +188,23 @@ Fixtures are self-contained and committed with **no** machine-specific paths or
 secrets (repository-mode roots are relative). The broken fixture's one
 deliberate machine-absolute path lives inside a value the doctor is expected to
 reject, not in a shipped manifest.
+
+### Schema-5 clean consumers — `fixtures/schema5-consumer/`
+
+Each fixture declares one literal pack set and one hand-checked first artifact
+route. The consumer test copies the committed generated packs, runs Core's
+bundled direct command and standalone initializer, interprets the copied
+pack-owned publication table, and mutates a real Git repository. The matrix
+proves installation creates no department paths; only the selected
+pack/type/ID/lifecycle appears on first write; scratch, private evidence, and
+unaccepted drafts do not publish; `.kai` stays ignored; and deleting the
+installed packs does not delete private or accepted content.
+
+`coordination-schema5-migration-self-test.mjs` also injects process-boundary
+failures after abandon/rollback target deletion and after the authority
+manifest switch. A durable lock-bound operation journal makes repeated
+`recover --action abandon` idempotent while retaining exact backup, ownership,
+event-baseline, and collision checks.
 
 ### Pack migration — `workspace-doctor.mjs --migration-check`
 

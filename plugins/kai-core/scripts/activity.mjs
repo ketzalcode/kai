@@ -3,13 +3,16 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import {
   FORBIDDEN_FIELDS,
   LOG_REL,
+  activityWorkspaceAdmission,
   append,
   read,
   runs
-} from "./chunk-7QZFFPOT.mjs";
+} from "./chunk-RVMY63WZ.mjs";
 import {
   resolveWorkspaceRoot
-} from "./chunk-VTZRFV57.mjs";
+} from "./chunk-KUPTE65K.mjs";
+import "./chunk-XLDNBMDG.mjs";
+import "./chunk-ITUOITH3.mjs";
 
 // src/core/activity.mjs
 import { resolve } from "node:path";
@@ -57,7 +60,7 @@ function main(argv) {
       `  writes ${LOG_REL} (gitignored, append-only)`,
       "",
       "  --for <30m|2h|90s>   when this run will report next (required for start/progress)",
-      "  --item <item-id>     the coordination item this run serves",
+      "  --task <typed-id>    the coordination Task this run serves",
       "  --outcome <handoff|done|blocked|abandoned>   required for stop",
       '  --note "<text>"      one short bounded line; paths are rejected',
       "  --new-run            print a fresh run id and exit"
@@ -87,7 +90,7 @@ function main(argv) {
     }
     for (const r2 of open) {
       const flag = r2.overdue ? " OVERDUE" : "";
-      console.log(`  ${r2.role}${r2.item ? ` on ${r2.item}` : ""} \u2014 run ${r2.run}, silent ${Math.round((r2.silent_for || 0) / 60)}m${flag}`);
+      console.log(`  ${r2.role}${r2.task ? ` on ${r2.task}` : ""} \u2014 run ${r2.run}, silent ${Math.round((r2.silent_for || 0) / 60)}m${flag}`);
     }
     return 0;
   }
@@ -95,7 +98,12 @@ function main(argv) {
     console.error(`activity: unknown command "${cmd}"`);
     return 1;
   }
-  const input = { e: cmd, role: args.role, run: args.run, item: args.item, note: args.note };
+  const admitted = activityWorkspaceAdmission(root);
+  if (!admitted.ok) {
+    console.error(`activity: not recorded \u2014 ${admitted.reason}`);
+    return 1;
+  }
+  const input = { e: cmd, role: args.role, run: args.run, task: args.task, note: args.note };
   for (const k of Object.keys(args)) {
     if (FORBIDDEN_FIELDS.has(k.toLowerCase().replace(/-/g, "_"))) input[k.toLowerCase().replace(/-/g, "_")] = args[k];
   }

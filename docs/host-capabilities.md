@@ -52,6 +52,39 @@ than treating typed chat as approval. Historical schema-3/4 workspaces remain
 read-only and require explicit schema-5 migration; no host may initialize or
 write them.
 
+## Typed capabilities, hierarchy reads, and migration
+
+Schema 5 binds every write capability to the exact action it can authorize:
+
+| Scope | Binding |
+| --- | --- |
+| `command` | Exact canonical command bytes, actor, typed record, expected version, subject, criteria, and current inputs |
+| `run` | One Task, one actor, an explicit subset of supported Task actions, and the Task's current basis |
+| `coordination` | One Task, its current routing basis, one coordinator identity, and explicit routing actions |
+| `delegation` | A bounded subset of an existing coordination capability for one prepared role and Task |
+| `maintenance` | One exact migration, recovery, rollback, or repair action |
+
+Capabilities do not grant authority by role name alone. Task grants and claims
+re-read the current Task, lease, grant, dependencies, Direction binding, and
+input basis before accepting a command.
+
+Read surfaces are typed but do not need write authority:
+
+- `status` returns the Goal-rooted Epic/Feature roll-up and attention reasons;
+- `detail --kind --id` reads one exact record;
+- `context --kind --id` returns the bounded parent/child chain, authorities,
+  evidence, and next allowed action;
+- `plan --kind --id` returns executable Tasks only and remains
+  `automatic: false`;
+- `export --kind --id` produces a report, never authority.
+
+Schema-4 migration starts with the read-only `migration-plan` worksheet. The
+operator-facing `migrate-v5` capability embeds that complete canonical
+worksheet and displays its worksheet, source-manifest, source-store, backup
+inventory, Direction, placement, and classification bindings. Execution uses
+the capability-bound worksheet; it does not accept a second mutable plan.
+Recovery and rollback require their own exact maintenance scopes.
+
 ## What has actually been measured
 
 Metadata-only ACP discovery was exercised against a real Copilot CLI **1.0.85**:
@@ -100,8 +133,8 @@ paragraph as its core route — a loose vocabulary-and-placement check that
 accepts any of several verbs, not one fixed phrase. What the refusal says in the
 agent's own words, and that it narrows the agent to bounded direct work, is
 judged in review rather than by CI. Because a skill loads on demand rather
-than automatically, each route sits at the step whose rule it carries. All
-eight current packages use task-local routes, without eager declarations or
+than automatically, each route sits at the step whose rule it carries. All three
+shipped packages use task-local routes, without eager declarations or
 dependency-guard blocks. The current refactor was inspected at source level;
 effective tool grants, skill execution and degraded-mode behavior have not
 been rerun in either host.

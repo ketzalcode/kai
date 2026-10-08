@@ -2941,6 +2941,58 @@ test('abandon refuses to delete migration-owned targets replaced by digest or ty
   }
 });
 
+test('interrupted abandon resumes after migration-owned target and database deletion', () =>
+  schema4Workspace(({root, backupRoot}) => {
+    const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+      root,
+      backupRoot,
+    });
+    const manifestPath = join(root, '.kai', 'manifest.json');
+    const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
+    assert.throws(
+      () => boundary('renameSync', (original, from, to) => {
+        if (String(to) === manifestPath) {
+          throw Object.assign(new Error('stop before activation for abandon recovery'), {code: 'EIO'});
+        }
+        return original(from, to);
+      }, () => migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      })),
+      /stop before activation for abandon recovery/,
+    );
+    assert.equal(existsSync(databasePath), true);
+    assert.throws(
+      () => boundary('unlinkSync', (original, path) => {
+        const result = original(path);
+        if (String(path) === databasePath) {
+          throw Object.assign(new Error('interrupt abandon after database deletion'), {code: 'EIO'});
+        }
+        return result;
+      }, () => recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+      })),
+      /interrupt abandon after database deletion/,
+    );
+    assert.equal(existsSync(databasePath), false);
+    assert.equal(existsSync(v5MigrationLockPath(root)), true);
+
+    const recovered = recoverWorkspaceV5({
+      root,
+      confirm: true,
+      action: 'abandon',
+      roles: ROLES,
+    });
+    assert.equal(recovered.abandoned, true);
+    assertSchema4Authoritative(root);
+    assert.equal(existsSync(v5MigrationLockPath(root)), false);
+  }));
+
 test('rollback restores schema 4 only at the activation event baseline', () =>
   schema4Workspace(({root, backupRoot}) => {
     const sourceDatabase = readFileSync(join(root, '.kai', 'state', 'coordination.sqlite'));
@@ -2966,6 +3018,56 @@ test('rollback restores schema 4 only at the activation event baseline', () =>
     );
     assert.equal(existsSync(receipt.backupPath), true);
   }));
+
+test('interrupted rollback resumes after the authority switch or schema-5 deletion', async t => {
+  for (const interruption of ['manifest switch', 'database deletion']) {
+    await t.test(interruption, () => schema4Workspace(({root, backupRoot}) => {
+      const worksheet = completeWorksheet(buildMigrationWorksheet({root}), {
+        root,
+        backupRoot,
+      });
+      migrateWorkspaceV5({
+        root,
+        confirm: true,
+        worksheet,
+        roles: ROLES,
+      });
+      const manifestPath = join(root, '.kai', 'manifest.json');
+      const databasePath = join(root, '.kai', 'core', 'runtime', 'coordination.sqlite');
+      const operation = interruption === 'manifest switch'
+        ? () => boundary('renameSync', (original, from, to) => {
+          const result = original(from, to);
+          if (String(to) === manifestPath && String(from).includes('rollback-')) {
+            throw Object.assign(new Error('interrupt rollback after manifest switch'), {code: 'EIO'});
+          }
+          return result;
+        }, () => rollbackWorkspaceV5({root, confirm: true}))
+        : () => boundary('unlinkSync', (original, path) => {
+          const result = original(path);
+          if (String(path) === databasePath) {
+            throw Object.assign(new Error('interrupt rollback after database deletion'), {code: 'EIO'});
+          }
+          return result;
+        }, () => rollbackWorkspaceV5({root, confirm: true}));
+      assert.throws(operation, new RegExp(`interrupt rollback after ${interruption}`));
+      assert.equal(
+        JSON.parse(readFileSync(manifestPath, 'utf8')).schema_version,
+        4,
+      );
+      assert.equal(existsSync(v5MigrationLockPath(root)), true);
+
+      const recovered = recoverWorkspaceV5({
+        root,
+        confirm: true,
+        action: 'abandon',
+        roles: ROLES,
+      });
+      assert.equal(recovered.rolledBack, true);
+      assertSchema4Authoritative(root);
+      assert.equal(existsSync(v5MigrationLockPath(root)), false);
+    }));
+  }
+});
 
 test('rollback holds its filesystem lock and exclusive SQLite barrier across authority switch', () =>
   schema4Workspace(({root, backupRoot}) => {

@@ -4,6 +4,27 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [19.0.0] - 2026-10-02
+
+### Changed
+
+- Replaced schema-4 initiative/item coordination with the Direction-aligned
+  Epic/Feature/Requirement/Task hierarchy.
+- Made `.kai/` private-only and moved runtime state to
+  `.kai/core/runtime/coordination.sqlite`.
+- Added lazy, pack-owned typed publication contracts for Core, Engineering,
+  and Creative.
+
+### Removed
+
+- Removed shared workspace mode, eager department folders, generic
+  run/review/personal lanes, and initiative/item compatibility aliases.
+
+### Migration
+
+- Schema 3 and 4 remain inspectable. Schema-4 activation requires the explicit
+  operator-approved classification and backup-first schema-5 migration.
+
 ## [18.0.0] - 2026-09-29
 
 One release for four changes that share a purpose: reduce what a consumer
@@ -4413,6 +4434,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[19.0.0]: https://github.com/ketzalcode/kai/compare/v18.0.0...v19.0.0
 [18.0.0]: https://github.com/ketzalcode/kai/compare/v17.0.0...v18.0.0
 [17.0.0]: https://github.com/ketzalcode/kai/compare/v16.0.1...v17.0.0
 [16.0.1]: https://github.com/ketzalcode/kai/compare/v16.0.0...v16.0.1

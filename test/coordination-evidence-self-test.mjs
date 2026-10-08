@@ -374,26 +374,20 @@ test('fix1 F7 waiver excludes exact artifact producer outside item producing his
   });
 });
 
-test('fix1 F8 same immutable Git subject cannot be relabeled public across project aliases', async () => {
+test('fix1 F8 duplicate project aliases fail before immutable Git evidence can be relabeled', async () => {
   await withWorkspace(({root, store}) => {
-    const project = join(root, 'project');
-    mkdirSync(project);
-    const git = args => execFileSync('git', ['-C', project, ...args], {encoding: 'utf8'}).trim();
-    git(['init', '--quiet']);
-    file(project, 'a.txt', 'private code');
-    git(['add', 'a.txt']);
-    git(['-c', 'user.name=Evidence Test', '-c', 'user.email=evidence@example.invalid',
-      '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture']);
-    const head = git(['rev-parse', 'HEAD']);
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
-    manifest.projects = ['app', 'alias'].map(id => ({id, path: 'project', publication_root: 'docs/kai'}));
+    manifest.projects = ['app', 'alias'].map(id => ({id, path: '.', publication_root: 'docs/kai'}));
     file(root, '.kai/manifest.json', JSON.stringify(manifest));
-    setup(root, store, {change_ref: {kind: 'git', base: head, head}});
-    register(root, store, {projectId: 'app', classification: 'confidential'});
-    runtime(root, store);
-    assert.throws(() => registerArtifact(store, artifactCommand(store, {
-      projectId: 'alias', classification: 'public',
-    })), code('INVALID_INPUT'));
+    file(root, source);
+    file(root, workingTarget);
+    seedTask(store, {
+      state: 'in-review',
+      acceptance_actor: null,
+      change_ref: {kind: 'sha256', digest: digest('<h1>First</h1>'), path: source},
+      artifact_targets: [workingTarget],
+    });
+    assert.throws(() => runtime(root, store), code('INVALID_INPUT'));
   });
 });
 
@@ -602,17 +596,14 @@ test('bundles retain exact sorted manifest and reject later snapshot or manifest
 
 test('Git evidence resolves full immutable objects only within declared selected project', async () => {
   await withWorkspace(({root, store}) => {
-    const project = join(root, 'project');
-    mkdirSync(project);
-    const git = args => execFileSync('git', ['-C', project, ...args], {encoding: 'utf8'}).trim();
-    git(['init', '--quiet']);
-    file(project, 'a.txt', 'a');
+    const git = args => execFileSync('git', ['-C', root, ...args], {encoding: 'utf8'}).trim();
+    file(root, 'a.txt', 'a');
     git(['add', 'a.txt']);
     git(['-c', 'user.name=Evidence Test', '-c', 'user.email=evidence@example.invalid',
       '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture']);
     const head = git(['rev-parse', 'HEAD']);
     const manifest = JSON.parse(readFileSync(join(root, '.kai', 'manifest.json')));
-    manifest.projects = [{id: 'app', path: 'project', publication_root: 'docs/kai'}];
+    manifest.projects = [{id: 'app', path: '.', publication_root: 'docs/kai'}];
     file(root, '.kai/manifest.json', JSON.stringify(manifest));
     setup(root, store, {change_ref: {kind: 'git', base: head, head}});
     const c = artifactCommand(store, {projectId: 'app'});
@@ -1307,12 +1298,11 @@ test('declared project bindings reject drive-relative roots rather than consulti
     bind('.');
     assert.doesNotThrow(() => assertWorkspacePath(root, 'project:app:docs/kai/x'),
       'a workspace-relative binding stays accepted on every platform');
-    // An absolute binding on the host's own semantics stays accepted: an
-    // `external` workspace legitimately points at a project elsewhere on the
-    // machine that registered it.
+    // A repo-local schema-5 workspace admits only ".". Registered external
+    // workspace bindings are exercised by workspace-doctor-self-test.
     bind(join(root, 'project'));
-    assert.doesNotThrow(() => assertWorkspacePath(root, 'project:app:docs/kai/x'),
-      'a host-absolute binding stays accepted — external workspaces depend on it');
+    assert.throws(() => assertWorkspacePath(root, 'project:app:docs/kai/x'), code('INVALID_INPUT'),
+      'repo-local workspaces refuse host-absolute project bindings');
   });
 });
 
@@ -1536,7 +1526,7 @@ test('parent completion requires exact accepted report artifact proof', async ()
       },
     );
     bindEvidenceRuntime(store, {
-      root: dirname(dirname(dirname(store.path))),
+      root,
       authority: parentAuthority,
       runs: [],
       verifyCapture: candidate => captureFor(candidate, {classification: 'public'}),

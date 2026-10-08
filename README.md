@@ -28,12 +28,10 @@ Three packages. That is the entire shipped surface.
    kai-engineering                      kai-creative
   +--------------------------------+   +--------------------------------+
   | 13 agents                      |   |  3 agents                      |
-  |  6 skills                      |   |  6 skills                      |
+  |  7 skills                      |   |  7 skills                      |
   |  0 executable entry points     |   |  3 executable entry points     |
-  |                                |   |    + 1 shared chunk            |
   | implementation, architecture,  |   | UI/UX, visual identity,        |
   | independent review, delivery   |   | video and demo production      |
-  | ~123 KB installed              |   | ~140 KB installed              |
   +--------------------------------+   +--------------------------------+
                   |                                    |
                   |             depends on             |
@@ -41,11 +39,11 @@ Three packages. That is the entire shipped surface.
                                     |
                                     v
   +----------------------------------------------------------------------+
-  | kai-core                                           ~939 KB installed |
+  | kai-core                                                            |
   |                                                                      |
   |  5 agents                                                            |
-  | 23 skills                                                            |
-  |  6 executable entry points + 11 shared chunks                        |
+  | 24 skills                                                            |
+  |  6 executable entry points                                           |
   | hooks.json (subagent observation)                                    |
   | templates/ (decision, spec, report, publication)                     |
   |                                                                      |
@@ -62,9 +60,9 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 5 / 23 | Shared contracts, workspace machinery, requested coordination |
-| `kai-engineering` | 13 / 6 | Implementation, architecture, independent review, delivery |
-| `kai-creative` | 3 / 6 | UI/UX, visual identity, design assets, supported media production |
+| `kai-core` | 5 / 24 | Shared contracts, workspace machinery, requested coordination |
+| `kai-engineering` | 13 / 7 | Implementation, architecture, independent review, delivery |
+| `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
 Counts come from `plugins/` and are checked against the generated
 **[agents & skills catalog](docs/reference/agents-and-skills.md)** by `npm test`.
@@ -169,10 +167,10 @@ across several roles, resumed across sessions, needs somewhere to live:
 Initialize this repository as a kai workspace.
 ```
 
-`workflow-workspace-init` asks where state goes: **external** (no kai files in
-your repository), **repo-local** (an ignored `.kai/`), or **shared** (tracked,
-team-visible). Accepted project knowledge publishes separately, under a root
-that defaults to `docs/kai/`.
+`workflow-workspace-init` asks where private state goes: **external** (no
+`.kai/` in the repository) or **repo-local** (the whole `.kai/` tree is ignored
+and untracked). Those are the only private placements. Accepted project
+knowledge publishes separately under `docs/kai/`.
 
 **4. For coordinated delivery**, ask `director-chief-of-staff`. It sequences
 approved Tasks and handoffs; it does not take any specialist's acceptance authority,
@@ -180,6 +178,59 @@ and it is not a prerequisite for ordinary direct work.
 
 **[Full walkthrough →](docs/getting-started.md)** ·
 **[See a finished feature →](examples/e2e-feature-delivery/)**
+
+## Workspace and coordination model
+
+Schema 5 separates private operations from accepted project knowledge:
+
+```text
+project/
+├─ .kai/                                      # always private
+│  ├─ manifest.json
+│  ├─ core/runtime/coordination.sqlite        # authoritative coordination store
+│  └─ <pack>/<type>/<id>/
+│     ├─ drafts/                              # created on first valid write
+│     ├─ evidence/                            # private and never published
+│     └─ scratch/                             # disposable; cannot publish
+└─ docs/kai/                                  # accepted, Git-suitable knowledge
+   ├─ README.md
+   ├─ DIRECTION.md
+   └─ <pack>/<type>/<id>/...                  # exact accepted revision only
+```
+
+Installing or initializing a pack creates no empty department or artifact
+directories. Core, Engineering, and Creative each own a fixed publication
+vocabulary. A valid first write creates only its exact pack/type/ID/lifecycle
+path; unknown types have no fallback lane. Repository-native code, tests,
+configuration, migrations, and ordinary documentation stay where the
+repository already keeps them.
+
+`docs/kai/DIRECTION.md` is operator-owned and contains Vision, Mission, one
+Current Goal, and Out of Scope. Coordinated work binds to its exact revision:
+
+```text
+Direction Current Goal
+└─ Epic
+   └─ Core / Engineering / Creative Feature
+      └─ Requirement
+         └─ Task
+```
+
+That is the five-level alignment chain. Epic, Feature, and Requirement express
+outcomes and authority; Task is the only executable, leased work kind. Direct
+single-shot work creates none of these records, reads no Direction, and
+initializes no workspace.
+
+Schema-3 and schema-4 workspaces stay inspectable. For schema 4, start with the
+read-only classification worksheet:
+
+```text
+node <kai-core>/scripts/coordinate.mjs migration-plan --root <absolute-workspace-root>
+```
+
+Then use `workflow-workspace-init` for the explicit operator-approved,
+backup-first migration. Kai does not infer hierarchy ownership or activate a
+partially classified workspace.
 
 ## What you actually get
 
@@ -254,7 +305,7 @@ Read this before installing, not after.
 
 ## Status
 
-`v18.0.0` is this checkout's prepared metadata version — not a tag, a release,
+`v19.0.0` is this checkout's prepared metadata version — not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |

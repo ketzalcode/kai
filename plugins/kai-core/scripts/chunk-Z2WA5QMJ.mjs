@@ -3,8 +3,9 @@ import {
   copilotLaunch,
   discoverCopilot,
   discoveryRoots
-} from "./chunk-MZ7YRIJ3.mjs";
-import "./chunk-VP4QXWCX.mjs";
+} from "./chunk-EYAI7HIN.mjs";
+import "./chunk-XLDNBMDG.mjs";
+import "./chunk-ITUOITH3.mjs";
 export {
   copilotLaunch,
   discoverCopilot,
