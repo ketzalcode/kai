@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import {randomUUID} from 'node:crypto';
 import {
+  cpSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -11,6 +13,7 @@ import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {
   PACK_ORDER,
+  PUBLISHED_PACKS,
   collectReferences,
   generatedRuntimeErrors,
   materializePacks,
@@ -74,6 +77,70 @@ test('package metadata uses package.json as the version authority', () => {
   assert.equal(marketplace.metadata.version, packageJson.version);
   for (const plugin of marketplace.plugins) {
     assert.equal(plugin.version, packageJson.version);
+  }
+  assert.deepEqual(
+    marketplace.plugins.map(plugin => plugin.name),
+    PUBLISHED_PACKS.map(packPluginName),
+  );
+});
+
+test('marketplace generation repairs missing and duplicate scratch entries', async () => {
+  const {buildPlan} = await import('../tools/build.mjs');
+  const sourceMarketplace = JSON.parse(readFileSync(
+    join(root, '.github', 'plugin', 'marketplace.json'),
+    'utf8',
+  ));
+  const scratch = join(root, 'test', `.package-build-marketplace-${randomUUID()}`);
+  mkdirSync(join(scratch, '.github', 'plugin'), {recursive: true});
+  cpSync(join(root, 'plugins'), join(scratch, 'plugins'), {recursive: true});
+  cpSync(join(root, 'src'), join(scratch, 'src'), {recursive: true});
+  cpSync(join(root, 'hooks.json'), join(scratch, 'hooks.json'));
+  cpSync(join(root, 'package.json'), join(scratch, 'package.json'));
+  cpSync(join(root, 'plugin.json'), join(scratch, 'plugin.json'));
+
+  const expectedNames = PUBLISHED_PACKS.map(packPluginName);
+  const cases = [
+    ['missing', sourceMarketplace.plugins.slice(0, -1)],
+    ['duplicate', [
+      ...sourceMarketplace.plugins,
+      structuredClone(sourceMarketplace.plugins[0]),
+    ]],
+  ];
+  try {
+    for (const [label, plugins] of cases) {
+      writeFileSync(
+        join(scratch, '.github', 'plugin', 'marketplace.json'),
+        `${JSON.stringify({...sourceMarketplace, plugins}, null, 2)}\n`,
+      );
+      const planned = JSON.parse(
+        buildPlan(scratch).get('.github/plugin/marketplace.json'),
+      );
+      assert.deepEqual(
+        planned.plugins.map(plugin => plugin.name),
+        expectedNames,
+        `${label} scratch inventory is replaced by the published package declarations`,
+      );
+    }
+  } finally {
+    rmSync(scratch, {recursive: true, force: true});
+  }
+});
+
+test('retired pack-preview ownership modes fail with migration guidance', () => {
+  const cli = join(root, 'tools', 'pack-preview.mjs');
+  for (const [flag, replacement] of [
+    ['--write', 'npm run build'],
+    ['--check', 'npm run build:check'],
+  ]) {
+    const result = spawnSync(process.execPath, [cli, flag], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    assert.notEqual(result.status, 0, `${flag} must fail`);
+    assert.match(
+      `${result.stdout}${result.stderr}`,
+      new RegExp(`use ${replacement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+    );
   }
 });
 

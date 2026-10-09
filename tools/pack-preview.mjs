@@ -499,8 +499,16 @@ function runGates(name) {
 
 const args = process.argv.slice(2);
 const flag = (n, d) => { const i = args.indexOf(n); return i === -1 ? d : args[i + 1]; };
+const retiredOwnershipMode = [
+  ['--write', 'npm run build'],
+  ['--check', 'npm run build:check'],
+].find(([mode]) => args.includes(mode));
 
-if (args.includes('--self-test')) {
+if (retiredOwnershipMode) {
+  const [mode, replacement] = retiredOwnershipMode;
+  console.error(`pack-preview ${mode} is no longer supported; use ${replacement}`);
+  process.exit(1);
+} else if (args.includes('--self-test')) {
   process.exit(selfTest() ? 0 : 1);
 } else if (args.includes('--gate')) {
   process.exit(runGates(flag('--gate', 'all')) ? 0 : 1);

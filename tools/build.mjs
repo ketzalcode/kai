@@ -15,6 +15,7 @@ import {
   COMMITTED_PACKS,
   HOOKS_FILE,
   PACKS_DIR,
+  PUBLISHED_PACKS,
   materializePacks,
   normalizeLF,
   packPluginName,
@@ -28,6 +29,19 @@ import {
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const MARKETPLACE = '.github/plugin/marketplace.json';
 const CATALOG = 'docs/reference/agents-and-skills.md';
+const MARKETPLACE_REPOSITORY = 'https://github.com/ketzalcode/kai';
+const MARKETPLACE_KEYWORDS = Object.freeze({
+  core: ['saas', 'engineering', 'workflow-automation'],
+  engineering: ['engineering', 'security', 'reliability'],
+  creative: ['design', 'creative', 'media'],
+});
+const COMMON_MARKETPLACE_KEYWORDS = Object.freeze([
+  'copilot',
+  'copilot-cli',
+  'copilot-plugin',
+  'agents',
+  'skills',
+]);
 
 const json = value => `${JSON.stringify(value, null, 2)}\n`;
 const repoPath = path => path.replace(/\\/g, '/');
@@ -55,21 +69,26 @@ function marketplacePlan(root, version) {
   const manifests = new Map(planManifests({
     root,
     version,
-    packs: COMMITTED_PACKS,
-  }).map(entry => [entry.name, entry.manifest]));
+    packs: PUBLISHED_PACKS,
+  }).map(entry => [entry.pack, entry.manifest]));
   return {
     ...marketplace,
     metadata: {...marketplace.metadata, version},
-    plugins: marketplace.plugins.map(plugin => {
-      const manifest = manifests.get(plugin.name);
-      if (!manifest) {
-        throw new Error(`${MARKETPLACE} names unknown generated plugin ${plugin.name}`);
-      }
+    plugins: PUBLISHED_PACKS.map((pack) => {
+      const manifest = manifests.get(pack);
       return {
-        ...plugin,
-        source: `./${PACKS_DIR}/${plugin.name}`,
+        name: manifest.name,
+        source: `./${PACKS_DIR}/${manifest.name}`,
         description: manifest.description,
         version,
+        author: {...marketplace.owner},
+        homepage: MARKETPLACE_REPOSITORY,
+        repository: MARKETPLACE_REPOSITORY,
+        license: 'MIT',
+        keywords: [
+          ...COMMON_MARKETPLACE_KEYWORDS,
+          ...MARKETPLACE_KEYWORDS[pack],
+        ],
       };
     }),
   };
