@@ -61,7 +61,7 @@ import {
   extractRepositoryInstructions,
   OPEN_REPOSITORY_INSTRUCTIONS,
 } from './lib/repository-instructions.mjs';
-import { MARKETPLACE } from '../src/core/lib/migration-doctor.mjs';
+const MARKETPLACE = 'kai-plugins';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const errors = [];

@@ -11,8 +11,6 @@ import {assertWorkspacePath, workspaceManifest} from './evidence-content.mjs';
 import {planDispatch, validateRoster} from './host-plan.mjs';
 import {
   COORDINATION_DATABASE,
-  LEGACY_COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
 } from '../workspace-layout.mjs';
 import {
   MAX_OBSERVATIONS, attemptSummary, clone, effectSummary, fail, latestTerminalObservations, sanitizeFacts,
@@ -46,10 +44,8 @@ export function bindHostRuntime(store, options) {
   assertExactKeys(options, new Set([
     'root', 'authority', 'roster', 'profiles', 'capabilities', 'maxAttempts', 'verifyObservation',
   ]), 'host runtime', new Set(['root', 'authority', 'roster', 'profiles', 'capabilities', 'maxAttempts']));
-  const manifest = workspaceManifest(options.root);
-  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
-    ? COORDINATION_DATABASE
-    : LEGACY_COORDINATION_DATABASE;
+  workspaceManifest(options.root);
+  const database = COORDINATION_DATABASE;
   if (!store || store.closed || !isAbsolute(store.path)
     || normalized(store.path) !== normalized(join(options.root, ...database.split('/')))) {
     fail('INVALID_INPUT', 'host workspace must be explicitly bound to this store');

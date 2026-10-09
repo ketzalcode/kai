@@ -19,8 +19,6 @@ import {artifactBasisCurrent, verifyAssetContent, verifyReferences, verifyVerdic
 import {normalized} from '../workspace-path-safety.mjs';
 import {
   COORDINATION_DATABASE,
-  LEGACY_COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
   workspaceRootFromCoordinationDatabase,
 } from '../workspace-layout.mjs';
 import {listRecords, readRecord, readSnapshot, readSubjectView} from './store.mjs';
@@ -60,9 +58,7 @@ export function buildReport(store, {subject}) {
   if (!subject || typeof subject !== 'object') throw new RuntimeError('INVALID_INPUT', 'report subject is required');
   const root = workspaceRootFromCoordinationDatabase(store.path);
   const manifest = workspaceManifest(root);
-  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
-    ? COORDINATION_DATABASE
-    : LEGACY_COORDINATION_DATABASE;
+  const database = COORDINATION_DATABASE;
   if (normalized(store.path) !== normalized(join(root, ...database.split('/')))) {
     throw new RuntimeError('INVALID_INPUT', 'report store must belong to the explicit workspace');
   }

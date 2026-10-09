@@ -21,7 +21,6 @@ import {
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
 import * as storeApi from '../src/core/lib/coordination-runtime/store.mjs';
-import * as migrationFiles from '../src/core/lib/coordination-runtime/migration-files.mjs';
 import {exactPath} from '../src/core/lib/workspace-path-safety.mjs';
 import {
   allocateTemporaryRoot,
@@ -37,12 +36,10 @@ const {
   applyOperation,
   closeStore,
   listRecords,
-  openHistoricalStore,
   openStore,
   readRecord,
   readSubjectView,
 } = storeApi;
-const {logicalStoreDigest} = migrationFiles;
 const taskSubject = id => ({kind: 'task', id});
 const primaryId = fixtureIds.task;
 
@@ -90,43 +87,6 @@ function epicBody(id = 'epic:typed-store') {
     scope_fit: 'Changes only the persistence envelope and query boundary.',
     required_features: [],
     optional_features: [],
-  };
-}
-
-function legacyItemBody(id = 'historical-item') {
-  return {
-    schema_version: 1,
-    id,
-    title: 'Historical schema-4 item',
-    initiative: 'historical-initiative',
-    delivery_class: 'knowledge',
-    state: 'proposed',
-    resume_state: null,
-    scope_authority: 'eng-lead-architecture',
-    completion_authority: 'eng-reviewer-code',
-    producer_actor: null,
-    producing_actors: [],
-    acceptance_actor: null,
-    priority: 1,
-    next_role: 'eng-builder-software',
-    outcome: 'Released schema-1 records remain readable.',
-    acceptance: ['The historical item decodes without schema-5 reinterpretation.'],
-    artifact_expectation: 'none',
-    artifact_expectation_reason: 'The historical record is the test subject.',
-    artifact_class: null,
-    durability: null,
-    validity_owner: null,
-    artifact_targets: [],
-    context_artifacts: [],
-    touches: ['src/core/lib/coordination-runtime/store.mjs'],
-    depends_on: [],
-    lease: null,
-    recovery_hold: null,
-    waiting_on_questions: [],
-    required_for_milestone: true,
-    review_requirements: [],
-    change_ref: null,
-    updated_at: '2026-09-16T12:00:00.000Z',
   };
 }
 
@@ -182,77 +142,6 @@ function messageBody(id, {
     evidence_refs: evidenceRefs,
     provenance: 'durable-thread',
   };
-}
-
-function createSchema1Store(path) {
-  const database = new DatabaseSync(path);
-  database.exec(`
-    CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-    CREATE TABLE records (
-      kind TEXT NOT NULL, id TEXT NOT NULL, item_id TEXT,
-      version INTEGER NOT NULL CHECK (version > 0),
-      body TEXT NOT NULL CHECK (json_valid(body)),
-      PRIMARY KEY (kind, id)
-    );
-    CREATE TABLE events (
-      seq INTEGER PRIMARY KEY AUTOINCREMENT,
-      operation_id TEXT NOT NULL, item_id TEXT,
-      payload TEXT NOT NULL CHECK (json_valid(payload)),
-      event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED,
-      message_id TEXT GENERATED ALWAYS AS (
-        CASE json_extract(payload, '$.kind')
-          WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
-          WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
-          WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
-          WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
-        END
-      ) STORED,
-      approval_id TEXT GENERATED ALWAYS AS (
-        CASE WHEN json_extract(payload, '$.kind') = 'approval.record'
-          THEN json_extract(payload, '$.payload.body.approval_id') END
-      ) STORED,
-      question_id TEXT GENERATED ALWAYS AS (
-        CASE WHEN json_extract(payload, '$.kind') = 'question.open'
-          THEN json_extract(payload, '$.payload.questionId') END
-      ) STORED,
-      thread_id TEXT
-    );
-    CREATE TABLE operations (
-      id TEXT PRIMARY KEY, payload_digest TEXT NOT NULL,
-      receipt TEXT NOT NULL CHECK (json_valid(receipt))
-    );
-    CREATE INDEX records_by_item ON records(kind, item_id);
-    CREATE INDEX records_by_question_status ON records(item_id, json_extract(body, '$.status'))
-      WHERE kind = 'question';
-    CREATE INDEX records_by_criteria ON records(kind, item_id, json_extract(body, '$.criteria_ref'));
-    CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL;
-    CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL;
-    CREATE INDEX events_by_item_kind ON events(item_id, event_kind, seq, question_id);
-    CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL;
-    CREATE TRIGGER events_capture_thread AFTER INSERT ON events
-      WHEN NEW.message_id IS NOT NULL
-      BEGIN
-        UPDATE events SET thread_id = COALESCE(
-          (SELECT json_extract(body, '$.thread_id') FROM records
-            WHERE kind = 'message' AND id = NEW.message_id), NEW.item_id)
-        WHERE seq = NEW.seq;
-      END;
-    CREATE TRIGGER messages_capture_thread AFTER INSERT ON records
-      WHEN NEW.kind = 'message'
-      BEGIN
-        UPDATE events SET thread_id = json_extract(NEW.body, '$.thread_id')
-        WHERE message_id = NEW.id;
-      END;
-    CREATE TRIGGER messages_update_thread AFTER UPDATE OF body ON records
-      WHEN NEW.kind = 'message'
-      BEGIN
-        UPDATE events SET thread_id = json_extract(NEW.body, '$.thread_id')
-        WHERE message_id = NEW.id;
-      END;
-  `);
-  database.prepare("INSERT INTO metadata VALUES ('schema_version', '1')").run();
-  database.prepare("INSERT INTO metadata VALUES ('message_schema_version', '1')").run();
-  database.close();
 }
 
 function allocatedCase(prefix, fn) {
@@ -469,7 +358,7 @@ assert.throws(() => canonicalJson({bad: undefined}), error =>
   error instanceof RuntimeError && error.code === 'INVALID_INPUT');
 
 assert.ok(COMMAND_KINDS.has('task.update'));
-assert.ok(RECORD_KINDS.has('item'));
+assert.equal(RECORD_KINDS.has('item'), false);
 assert.throws(() => validateCommand(command('unknown.command')), error =>
   error.code === 'INVALID_INPUT');
 assert.throws(() => validateCommand(command('task.update', {
@@ -594,12 +483,14 @@ await test('schema 2 stores root records and isolates typed hierarchy subjects',
       VALUES ('sql-mismatch', NULL, 'epic:typed-store', '{"kind":"mismatch"}')
     `).run(), error => error.code === 'ERR_SQLITE_ERROR');
 
-    const before = logicalStoreDigest(store);
     store.database.prepare(`
       UPDATE records SET subject_id = 'epic:other'
       WHERE kind = 'question' AND id = 'typed-question-0'
     `).run();
-    assert.notEqual(logicalStoreDigest(store), before);
+    assert.throws(
+      () => readRecord(store, 'question', 'typed-question-0'),
+      error => error.code === 'RECOVERY_REQUIRED',
+    );
   });
 });
 
@@ -968,15 +859,6 @@ await withWorkspace(({root, store}) => {
   }
 });
 
-await withWorkspace(({store}) => {
-  store.database.prepare(`
-    INSERT INTO records (kind, id, subject_kind, subject_id, version, body)
-    VALUES ('item', 'malformed', 'item', 'malformed', 1, '[]')
-  `).run();
-  assert.throws(() => readRecord(store, 'item', 'malformed'), error =>
-    error.code === 'RECOVERY_REQUIRED');
-});
-
 allocatedCase('schema', root => {
   const path = join(root, 'coordination.sqlite');
   const store = openStore({path, mode: 'create'});
@@ -988,49 +870,7 @@ allocatedCase('schema', root => {
     error.code === 'SCHEMA_MISMATCH');
 });
 
-await test('lower-level mutations fail closed for schema 3/4 and non-live database paths', async () => {
-  for (const schema of [3, 4]) {
-    allocatedCase(`historical-write-${schema}`, root => {
-      const state = join(root, '.kai', 'state');
-      mkdirSync(state, {recursive: true});
-      writeFileSync(join(root, '.kai', 'manifest.json'), `${JSON.stringify({
-        plugin: 'kai-core',
-        version: 'test',
-        schema_version: schema,
-        scaffolded: '2026-10-02',
-        workspace_id: `historical-${schema}`,
-        storage_mode: 'repo-local',
-        workspace_root: '.',
-        state: '.kai/state',
-        runs: '.kai/runs',
-        review: '.kai/review',
-        archive: '.kai/archive',
-        personal: '.kai/personal',
-        projects: [{id: 'default', path: '.', publication_root: 'docs/kai'}],
-        areas: [],
-      }, null, 2)}\n`);
-      const store = openStore({
-        path: join(state, 'coordination.sqlite'),
-        mode: 'create',
-      });
-      try {
-        seedTask(store);
-        assert.throws(
-          () => applyOperation(
-            store,
-            command('task.update', {payload: {title: 'Forbidden historical write'}}),
-            current => ({...current.body, title: 'Forbidden historical write'}),
-          ),
-          error => error.code === 'SCHEMA_MISMATCH',
-        );
-        assert.equal(readRecord(store, 'task', primaryId).version, 1);
-        assert.equal(existsSync(join(root, '.kai', 'state', 'migration.lock')), false);
-      } finally {
-        closeStore(store);
-      }
-    });
-  }
-
+await test('lower-level mutations fail closed for non-live database paths', async () => {
   allocatedCase('foreign-write-path', root => {
     const store = openStore({path: join(root, 'coordination.sqlite'), mode: 'create'});
     try {
@@ -1046,84 +886,6 @@ await test('lower-level mutations fail closed for schema 3/4 and non-live databa
       assert.equal(readRecord(store, 'task', primaryId).version, 1);
     } finally {
       closeStore(store);
-    }
-  });
-});
-
-await test('schema 1 stores open only through the read-only historical API', () => {
-  allocatedCase('historical-schema', root => {
-    const path = join(root, 'coordination.sqlite');
-    createSchema1Store(path);
-    const database = new DatabaseSync(path);
-    const body = legacyItemBody();
-    database.prepare(`
-      INSERT INTO records (kind, id, item_id, version, body)
-      VALUES ('item', ?, ?, 1, ?)
-    `).run(body.id, body.id, JSON.stringify(body));
-    database.close();
-    assert.throws(() => openStore({path, mode: 'read'}), error =>
-      error.code === 'SCHEMA_MISMATCH');
-    assert.throws(() => openHistoricalStore({
-      path,
-      expectedStoreVersion: 1,
-      mode: 'write',
-    }), error => error.code === 'INVALID_INPUT');
-
-    const historical = openHistoricalStore({
-      path,
-      expectedStoreVersion: 1,
-    });
-    try {
-      assert.equal(historical.mode, 'read');
-      assert.equal(historical.schemaVersion, 1);
-      assert.deepEqual(listRecords(historical, {kind: 'item'}), [{
-        kind: 'item',
-        id: body.id,
-        subject: {kind: 'item', id: body.id},
-        version: 1,
-        body,
-      }]);
-      assert.throws(
-        () => historical.database.prepare(`
-          INSERT INTO metadata (key, value) VALUES ('forbidden', 'write')
-        `).run(),
-        error => error.code === 'ERR_SQLITE_ERROR',
-      );
-      assert.throws(
-        () => applyOperation(
-          historical,
-          command('task.update', {payload: {title: 'Denied'}}),
-          current => current.body,
-        ),
-        error => error.code === 'INVALID_INPUT',
-      );
-    } finally {
-      closeStore(historical);
-    }
-  });
-});
-
-await test('historical schema 1 rejects impossible schema-5 Task records', () => {
-  allocatedCase('historical-schema-task', root => {
-    const path = join(root, 'coordination.sqlite');
-    createSchema1Store(path);
-    const database = new DatabaseSync(path);
-    database.prepare(`
-      INSERT INTO records (kind, id, item_id, version, body)
-      VALUES ('task', 'core:task:impossible', NULL, 1, '{}')
-    `).run();
-    database.close();
-    let historical;
-    try {
-      assert.throws(
-        () => {
-          historical = openHistoricalStore({path, expectedStoreVersion: 1});
-        },
-        error => error.code === 'RECOVERY_REQUIRED'
-          && /schema 1 cannot contain task records/i.test(error.message),
-      );
-    } finally {
-      closeStore(historical);
     }
   });
 });
@@ -1314,7 +1076,7 @@ await test('read operations translate SQLite lock exhaustion to STORE_BUSY', asy
     await withChildLock(databasePath, 'BEGIN EXCLUSIVE', () => {
       assert.throws(() => readRecord(store, 'task', primaryId), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
-      assert.throws(() => listRecords(store, {kind: 'item', subject: taskSubject(primaryId)}), error =>
+      assert.throws(() => listRecords(store, {kind: 'question', subject: taskSubject(primaryId)}), error =>
         error.code === 'STORE_BUSY' && error.retryable === true);
     });
   });

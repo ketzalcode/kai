@@ -26,7 +26,7 @@ import {
 } from './helpers/coordination-runtime-fixture.mjs';
 import {criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {readRecord, listRecords} from '../src/core/lib/coordination-runtime/store.mjs';
-import {privateAdmission} from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {privateAdmission} from '../src/core/lib/workspace-git-privacy.mjs';
 import {readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
 
 const checkout = join(dirname(fileURLToPath(import.meta.url)), '..');

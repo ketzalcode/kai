@@ -3,10 +3,6 @@ import {dirname, join, resolve} from 'node:path';
 import {RuntimeError} from './contract.mjs';
 import {exactPath, pathHasLink} from '../workspace-path-safety.mjs';
 import {
-  migrationManifest,
-  schema5MigrationLockPath,
-} from './migration-files.mjs';
-import {
   readWorkspaceManifest,
   validateSchema5Manifest,
 } from '../workspace-resolve.mjs';
@@ -21,17 +17,14 @@ const fail = (code, message) => { throw new RuntimeError(code, message); };
 
 export function readWorkspaceContract(root, {
   env = process.env,
-  versions = [3, 4, WORKSPACE_SCHEMA_VERSION],
 } = {}) {
   root = resolve(root);
   const result = readWorkspaceManifest(root);
   if (!result.ok) fail('INVALID_INPUT', result.reason);
   const manifest = result.manifest;
-  if (!versions.includes(manifest.schema_version)) {
-    fail('SCHEMA_MISMATCH', `unsupported workspace schema ${manifest.schema_version}`);
-  }
   if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    return migrationManifest(root, versions.filter(version => version !== WORKSPACE_SCHEMA_VERSION), env);
+    fail('SCHEMA_MISMATCH',
+      'workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard');
   }
   if (pathHasLink(root, result.path)) fail('INVALID_INPUT', 'workspace manifest cannot traverse links');
   const validation = validateSchema5Manifest(root, manifest, {env});
@@ -45,7 +38,7 @@ export function readWorkspaceContract(root, {
 }
 
 /** The store remains usable in isolation; the canonical live workspace store
- * must never mutate behind a historical manifest or a linked/private-policy gap.
+ * must never mutate behind an unsupported manifest or a linked/private-policy gap.
  */
 export function assertWorkspaceWrite(path, {
   privateCheck = true,
@@ -61,26 +54,17 @@ export function assertWorkspaceWrite(path, {
   if ((process.platform === 'win32' ? path.toLowerCase() : path)
     !== (process.platform === 'win32' ? expected.toLowerCase() : expected)) {
     fail('SCHEMA_MISMATCH',
-      'coordination writes require the exact schema-5 database; schema 3/4 and standalone stores are read-only');
+      'coordination writes require the exact current workspace database');
   }
   const manifest = join(root, '.kai', 'manifest.json');
   if (!existsSync(manifest)) fail('SCHEMA_MISMATCH', 'workspace coordination writes require a schema 5 manifest');
   if (pathHasLink(root, manifest) || !exactPath(manifest) || !lstatSync(manifest).isFile()) {
     fail('INVALID_INPUT', 'coordination manifest must be an exact unlinked regular file');
   }
-  const parsed = readWorkspaceContract(root, {
-    env,
-    versions: [WORKSPACE_SCHEMA_VERSION],
-  });
+  const parsed = readWorkspaceContract(root, {env});
   if (!existsSync(path)) fail('SCHEMA_MISMATCH', 'schema-5 coordination database is missing');
   if (pathHasLink(root, path) || !exactPath(path) || !lstatSync(path).isFile()) {
     fail('INVALID_INPUT', 'coordination database must be the exact unlinked schema-5 regular file');
-  }
-  if (existsSync(join(runtime, 'migration.lock'))) {
-    fail('RECOVERY_REQUIRED', 'offline migration/rollback lock prevents coordinated work');
-  }
-  if (existsSync(schema5MigrationLockPath(root))) {
-    fail('RECOVERY_REQUIRED', 'incomplete schema-5 migration prevents coordinated work');
   }
   if (privateCheck && requirePrivate) {
     const privacy = inspectGitPrivacy(root, parsed.placement);

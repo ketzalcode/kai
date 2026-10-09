@@ -31,7 +31,6 @@ import {
 } from './hierarchy-contract.mjs';
 import {
   TASK_COMMAND_KINDS,
-  validateLegacyItemBody,
   validateTaskCommand,
   validateTaskCommandMutation,
 } from './task-contract.mjs';
@@ -63,7 +62,6 @@ export {
 
 export {
   TASK_COMMAND_KINDS,
-  validateLegacyItemBody,
   validateTaskBody,
   validateTaskCommand,
   validateTaskCommandMutation,
@@ -119,8 +117,6 @@ export const COMMAND_KINDS = new Set([
 
 export const RECORD_KINDS = new Set([
   ...HIERARCHY_KINDS,
-  'initiative',
-  'item',
   'question',
   'attempt',
   'host-attempt',
@@ -158,10 +154,6 @@ export const DOD_DIMENSIONS = new Set([
   'coordination-closed',
 ]);
 
-const ITEM_DELIVERY_CLASSES = new Set(['knowledge', 'product-change', 'operational']);
-const INITIATIVE_STATES = new Set([
-  'proposed', 'active', 'paused', 'completed', 'shipped', 'archived',
-]);
 const QUESTION_KINDS = new Set(['fact', 'decision', 'reply', 'action']);
 const MESSAGE_KINDS = new Set(['question', 'answer', 'handoff', 'recovery']);
 const PROVENANCE_KINDS = new Set(['live-peer', 'durable-thread', 'operator']);
@@ -297,61 +289,6 @@ function validateLease(value, label) {
   }
   assertTimestamp(value.acquired_at, `${label}.acquired_at`);
   assertTimestamp(value.expires_at, `${label}.expires_at`);
-}
-
-function validateMilestone(value, label) {
-  assertExactKeys(value, new Set([
-    'id', 'title', 'delivery_class', 'required_items', 'status',
-  ]), label);
-  assertNonEmptyString(value.id, `${label}.id`);
-  assertNonEmptyString(value.title, `${label}.title`);
-  if (!ITEM_DELIVERY_CLASSES.has(value.delivery_class)) {
-    invalid(`${label}.delivery_class is unsupported`);
-  }
-  assertStringArray(value.required_items, `${label}.required_items`);
-  if (!new Set(['proposed', 'active', 'completed', 'shipped', 'dropped']).has(value.status)) {
-    invalid(`${label}.status is unsupported`);
-  }
-}
-
-function validateBacklogEntry(value, label) {
-  assertExactKeys(value, new Set(['id', 'title', 'status', 'item_id', 'reason']), label);
-  assertNonEmptyString(value.id, `${label}.id`);
-  assertNonEmptyString(value.title, `${label}.title`);
-  if (!new Set(['parked', 'promoted', 'dropped']).has(value.status)) {
-    invalid(`${label}.status is unsupported`);
-  }
-  assertNullableString(value.item_id, `${label}.item_id`);
-  assertNullableString(value.reason, `${label}.reason`);
-}
-
-function validateInitiativeBody(body, label) {
-  assertExactKeys(body, new Set([
-    'schema_version',
-    'id',
-    'title',
-    'status',
-    'owner',
-    'scope',
-    'milestones',
-    'backlog',
-    'north_star_ref',
-    'updated_at',
-  ]), label);
-  if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
-  for (const key of ['id', 'title', 'owner', 'north_star_ref']) {
-    assertNonEmptyString(body[key], `${label}.${key}`);
-  }
-  if (!INITIATIVE_STATES.has(body.status)) invalid(`${label}.status is unsupported`);
-  assertExactKeys(body.scope, new Set(['current']), `${label}.scope`);
-  assertStringArray(body.scope.current, `${label}.scope.current`, {nonEmpty: true});
-  if (!Array.isArray(body.milestones)) invalid(`${label}.milestones must be an array`);
-  body.milestones.forEach((entry, index) =>
-    validateMilestone(entry, `${label}.milestones[${index}]`));
-  if (!Array.isArray(body.backlog)) invalid(`${label}.backlog must be an array`);
-  body.backlog.forEach((entry, index) =>
-    validateBacklogEntry(entry, `${label}.backlog[${index}]`));
-  assertTimestamp(body.updated_at, `${label}.updated_at`);
 }
 
 function validateQuestionBody(body, label) {
@@ -920,8 +857,6 @@ function validateProducerCommand(command) {
 }
 
 const recordBodyValidators = new Map([
-  ['initiative', validateInitiativeBody],
-  ['item', validateLegacyItemBody],
   ['question', validateQuestionBody],
   ['attempt', validateAttemptBody],
   ['host-attempt', validateHostRecord],
@@ -1185,29 +1120,13 @@ export function validateRecord(record) {
   }
   assertNonEmptyString(record.id, 'record.id');
   if (record.subject !== null) {
-    if (record.subject.kind === 'item') {
-      if (!isPlainObject(record.subject)) invalid('record.subject must be an object or null');
-      assertExactKeys(record.subject, new Set(['kind', 'id']), 'record.subject');
-      assertNonEmptyString(record.subject.id, 'record.subject.id');
-    } else {
-      validateHierarchySubject(record.subject, 'record.subject');
-    }
+    validateHierarchySubject(record.subject, 'record.subject');
   }
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
     invalid('record.version must be a positive safe integer');
   }
   const validator = recordBodyValidators.get(record.kind);
   validator(record.body, `record ${record.kind}/${record.id} body`);
-  if (record.kind === 'item'
-    && (record.id !== record.body.id
-      || record.subject?.kind !== 'item'
-      || record.subject.id !== record.id)) {
-    invalid('item record envelope must match body.id');
-  }
-  if (record.kind === 'initiative'
-    && (record.id !== record.body.id || record.subject !== null)) {
-    invalid('initiative record envelope must match body.id and have null subject');
-  }
   if (new Set(['question', 'attempt', 'host-attempt', 'effect', 'evidence', 'review', 'approval', 'artifact', 'asset',
     'message', 'grant']).has(record.kind)
     && (record.subject === null || !subjectEquals(record.subject, record.body.subject))) {

@@ -1,6 +1,6 @@
 ---
 name: kai-core-workspace-onboarding
-description: "Use when installing Kai packs, initializing a schema-5 workspace, repairing its private binding, or explicitly migrating an older workspace."
+description: "Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding."
 durable-output-producer: false
 tools: [execute, read, edit, search, ask_user]
 ---
@@ -13,7 +13,7 @@ must not scaffold a partial workspace.
 
 ## Pack installation mode
 
-Use this mode only when the operator asks to install, select, update, or migrate
+Use this mode only when the operator asks to install, select, or update
 Kai plugins. It is guided and fail-closed, not transactional: inspect, show the
 exact plan, get explicit confirmation, execute one step at a time, and stop on
 the first failed or unverified step.
@@ -34,11 +34,7 @@ sibling install, fallback, or direct repository path.
 Core is always included. Never silently add a capability package. The supported
 baseline is core plus the selected active packages.
 
-<!-- kai:schema4-history -->
 `kai-gtm` and `kai-personal` are retired install names without aliases.
-Historical `.kai/personal/` data is preserved as migration input; plugin
-replacement is not data migration.
-<!-- /kai:schema4-history -->
 
 ### Inspect
 
@@ -46,18 +42,10 @@ Before showing an install plan:
 
 1. Resolve the current Kai plugin directory again before each command that uses
    it; never reuse a path into a plugin uninstalled or updated during this run.
-2. Run:
-
-   ```text
-   node "<kai-plugin>/scripts/workspace-doctor.mjs" --migration-check --root "<workspace-root>"
-   ```
-
-3. Read `copilot plugin marketplace list`, `copilot plugin list`, and the
-   migration check's JSON inventory; use its `plugins` inventory for enabled
-   state and provenance.
-4. Refuse installation when legacy `kai`, mixed provenance, unreadable host
-   state, disabled plugins, or version skew remains unresolved.
-5. Prove `kai-core` and every selected department exist at one marketplace
+2. Read `copilot plugin marketplace list` and `copilot plugin list`.
+3. Refuse installation when mixed provenance, unreadable host state, disabled
+   plugins, or version skew remains unresolved.
+4. Prove `kai-core` and every selected department exist at one marketplace
    version before recommending removal of the monolith or retired packs.
 
 Do not infer enabled state from `plugin list`. Never substitute a direct
@@ -102,7 +90,7 @@ monolith must not continue the migration.
    `copilot plugins enable` command.
 4. Install each selected department in catalog order. If one is disabled, tell
    the operator to open `/plugin`, enable `<name>@kai-plugins`, and start fresh.
-5. Re-run the migration check.
+5. Re-run the marketplace and plugin inventory checks.
 
 Stop on the first non-zero command or unverified result. Do not uninstall
 earlier successful steps to manufacture rollback.
@@ -121,9 +109,7 @@ Requested: <core plus selected departments>
 Verified installed: <name@version rows, or none>
 Failed: <command/check and observed result, or none>
 Not attempted: <selected plugins, or none>
-Legacy kai: absent and verified | present | unverified
 Retired packs: absent and verified | present | unverified
-Workspace provenance: kai-core | unchanged | not present | unverified
 Rollback: not attempted or verified
 Session: start a fresh session before invoking pack agents | no pack change
 Next: <ready, or one blocking action>
@@ -239,6 +225,7 @@ For `repo-local`, install and verify:
 # >>> kai workspace (managed by workflow-workspace-init) >>>
 # Kai operational state stays local to this checkout.
 /.kai/
+/.kai-retired-*/
 **/storageState*.json
 # <<< kai workspace <<<
 ```
@@ -255,34 +242,11 @@ preserve every user-authored byte outside the markers and
 replace only the marked Kai region. Never stage or commit the file without
 separate operator authorization.
 
-## Explicit migration
+## Unsupported workspace
 
-<!-- kai:schema4-history -->
-Schema 3 and schema 4 may contain shared placement, schema-4 manifests,
-`.kai/state/`, `.kai/runs/`, `.kai/review/`, `.kai/personal/`, initiatives,
-generic items, boards, backlogs, milestones, and threads. Schema 2 may also use
-visible `kai/coordination/`, `kai/initiatives/`, `kai/library/`, and
-`kai/personal/` roots. These are migration sources, never schema-5
-destinations.
-<!-- /kai:schema4-history -->
-
-There is no automatic upgrade and no old-schema initialization path. Old
-workspaces remain available only through version-appropriate `inspect`,
-`status`, and `legacy` reads. Every old-schema write returns `SCHEMA_MISMATCH`.
-
-Migration is explicit, offline, backup-first, and ownership-classified:
-
-1. execute the runtime's `migration-plan`;
-2. obtain operator-supplied Direction and the complete hierarchy/artifact map;
-3. verify a durable backup outside the live workspace;
-4. reconcile tracked private files and active leases;
-5. stage typed schema-5 records and pack-owned artifact paths;
-6. reject unknown ownership instead of creating a fallback lane;
-7. verify paths, privacy, provenance, hierarchy, and read views;
-8. move the database to `.kai/core/runtime/coordination.sqlite`;
-9. activate the schema-5 manifest last.
-
-Failure leaves the old workspace authoritative and the backup intact.
+If a manifest is not schema 5, stop and route the operator to
+`kai-core-workspace-reonboard`. Do not inspect, translate, migrate, or import
+its private records.
 
 ## Validate
 
@@ -304,13 +268,13 @@ Placement: external | repo-local
 Workspace root: <absolute path>
 Project: <id and absolute path>
 Publication root: <project-relative path>
-Schema: 5 | historical inspect-only | unknown
-Coordination store: present | absent | pending migration | unknown
+Schema: 5 | unsupported | unknown
+Coordination store: present | absent | unknown
 Registry: paired | n/a | blocked | unknown
 Git contract: verified | n/a | blocked | unknown
 Created: <paths or none>
 Kept: <paths or none>
-Migrated: <moves or none>
+Retired: <backup path or none>
 Published: <paths or none>
 Conflicts: <paths or none>
 Next: <ready, or one exact blocking action>

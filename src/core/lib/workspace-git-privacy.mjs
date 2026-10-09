@@ -1,5 +1,7 @@
 import {spawnSync} from 'node:child_process';
 import {canonicalPath} from './workspace-path-safety.mjs';
+import {readWorkspaceManifest} from './workspace-resolve.mjs';
+import {WORKSPACE_SCHEMA_VERSION} from './workspace-layout.mjs';
 
 export const PRIVATE_PREFIXES = ['.kai/'];
 export const PRIVATE_FILES = [
@@ -7,12 +9,6 @@ export const PRIVATE_FILES = [
   '.kai/core/runtime/observed.jsonl', '.kai/core/runtime/observed.jsonl.1',
   '.kai/core/runtime/observer-consent', '.kai/local.json',
 ];
-const LEGACY_PRIVATE_PREFIXES = ['.kai/runs/', '.kai/review/', '.kai/personal/', '.kai/archive/'];
-const LEGACY_PRIVATE_FILES = [
-  '.kai/activity.jsonl', '.kai/activity.jsonl.1', '.kai/observed.jsonl',
-  '.kai/observed.jsonl.1', '.kai/observer-consent', '.kai/local.json',
-];
-
 export function workspaceGit(root, args) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^GIT_/i.test(key)));
   return spawnSync('git', ['--no-pager', '-C', root, ...args], {
@@ -23,7 +19,7 @@ export function workspaceGit(root, args) {
 /** Missing ignores may be admitted separately. Tracked data and hidden shared
  * state are errors, never an instruction to untrack data or edit product files.
  */
-export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabases = false} = {}) {
+export function inspectGitPrivacy(root, mode) {
   const errors = [], warnings = [], missing = [];
   const git = args => workspaceGit(root, args);
   const top = git(['rev-parse', '--show-toplevel']);
@@ -37,15 +33,9 @@ export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabas
     return {errors, warnings, missing, gitRoot: canonicalPath(top.stdout.trim())};
   }
   const paths = tracked.stdout.split('\0').filter(Boolean);
-  const privatePaths = mode === 'shared'
-    ? [...LEGACY_PRIVATE_PREFIXES, ...LEGACY_PRIVATE_FILES, ...extraPrivate]
-    : [...PRIVATE_PREFIXES, ...PRIVATE_FILES, ...extraPrivate];
-  const isPrivate = path => privatePaths.some(p => p.endsWith('/') ? path.startsWith(p) : path === p);
-  const bad = mode === 'shared'
-    ? paths.filter(path => isPrivate(path)
-      || (privateDatabases && /\.(?:sqlite|sqlite3|db)(?:-(?:wal|shm|journal))?$/i.test(path)))
-    : paths;
-  if (bad.length) errors.push(`placement "${mode}" has tracked private .kai path(s); these must be untracked: ${bad.join(', ')}`);
+  if (paths.length) {
+    errors.push(`placement "${mode}" has tracked private .kai path(s); these must be untracked: ${paths.join(', ')}`);
+  }
   const ignored = path => {
     const result = git(['check-ignore', '--no-index', '-q', '--', path]);
     if (![0, 1].includes(result.status)) errors.push(`cannot inspect Git privacy for ${path}`);
@@ -53,13 +43,28 @@ export function inspectGitPrivacy(root, mode, {extraPrivate = [], privateDatabas
   };
   if (mode === 'repo-local' || mode === 'external') {
     if (!ignored('.kai/')) missing.push('.kai/');
-  } else if (mode === 'shared') {
-    if (ignored('.kai/manifest.json') || ignored('.kai/state/BOARD.md')) {
-      errors.push('legacy shared storage requires .kai/manifest.json and .kai/state/ to remain trackable');
-    }
-    for (const path of privatePaths) if (!ignored(path)) missing.push(path);
   } else {
     errors.push(`placement must be "repo-local" or "external" (found ${JSON.stringify(mode)})`);
   }
   return {errors, warnings, missing, gitRoot: canonicalPath(top.stdout.trim())};
+}
+
+export function privateAdmission(root) {
+  const result = readWorkspaceManifest(root);
+  if (!result.ok) return {errors: [result.reason], admitted: []};
+  if (result.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+    return {
+      errors: ['workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard'],
+      admitted: [],
+    };
+  }
+  const privacy = inspectGitPrivacy(root, result.manifest.placement);
+  const errors = [
+    ...privacy.errors,
+    ...privacy.missing.map(path => `private workspace path must be ignored: ${path}`),
+  ];
+  if (result.manifest.placement === 'repo-local' && !privacy.gitRoot) {
+    errors.push('repo-local placement requires a readable Git work tree');
+  }
+  return {errors, admitted: []};
 }

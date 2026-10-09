@@ -1,6 +1,6 @@
 // The pack names shipped code is allowed to know.
 //
-// `migration-doctor.mjs` needs exactly two things — the pack order and the
+// Core tooling needs exactly two things — the pack order and the
 // plugin name each pack publishes under — to tell a user which plugins are
 // installed. It used to import them from `pack-plan.mjs`, which meant 93 KB of
 // release machinery (migration baselines, retired-agent rosters, marketplace

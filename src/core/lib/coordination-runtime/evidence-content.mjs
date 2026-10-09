@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {
-  closeSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync,
+  closeSync, fstatSync, fsyncSync, mkdirSync, openSync, readFileSync, readSync, writeFileSync,
 } from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {dirname, isAbsolute, join, resolve} from 'node:path';
@@ -49,13 +49,9 @@ export function workspaceManifest(root) {
   const result = readWorkspaceManifest(root);
   if (!result.ok) fail('INVALID_INPUT', result.reason);
   const m = result.manifest;
-  if (m.schema_version === 4) {
-    if (!Array.isArray(m.projects)) fail('INVALID_INPUT', 'workspace projects must be declared');
-    if (m.state !== '.kai/state') fail('INVALID_INPUT', 'unsupported workspace state binding');
-    return m;
-  }
   if (m.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    fail('SCHEMA_MISMATCH', 'evidence requires workspace schema 4 or 5');
+    fail('SCHEMA_MISMATCH',
+      'workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard');
   }
   const validation = validateSchema5Manifest(root, m);
   if (validation.errors.length) fail('INVALID_INPUT', validation.errors.join('; '));
@@ -113,17 +109,15 @@ export function assertWorkspacePath(root, relativePath) {
     if (normalized(base) !== normalized(root) && !escapesRoot(join(root, '.kai'), base)) {
       fail('INVALID_INPUT', 'a project publication cannot alias private workspace state');
     }
-    if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
-      try {
-        if (parseTypedArtifactRoute(local).visibility !== 'public') {
-          fail('INVALID_INPUT', 'project publications require a typed public artifact route');
-        }
-      } catch (error) {
-        if (error instanceof RuntimeError) throw error;
-        fail('INVALID_INPUT', error.message);
+    try {
+      if (parseTypedArtifactRoute(local).visibility !== 'public') {
+        fail('INVALID_INPUT', 'project publications require a typed public artifact route');
       }
+    } catch (error) {
+      if (error instanceof RuntimeError) throw error;
+      fail('INVALID_INPUT', error.message);
     }
-  } else if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
+  } else {
     const runtimePath = path === COORDINATION_DATABASE
       || path.startsWith('.kai/core/runtime/');
     const personalPath = /^\.kai\/(core|engineering|creative)\/[^/]+\/[^/]+\/personal(?:\/|$)/.test(path);
@@ -137,8 +131,6 @@ export function assertWorkspacePath(root, relativePath) {
         fail('INVALID_INPUT', error.message);
       }
     }
-  } else if (!/^\.kai\/(?:state|core|engineering|creative)\//.test(path)) {
-    fail('INVALID_INPUT', 'private references require a typed .kai pack path; public paths must be project-qualified');
   }
   const absolute = resolve(base, ...local.split('/'));
   if (escapesRoot(base, absolute) || pathHasLink(base, absolute)) {
@@ -152,6 +144,8 @@ export function assertWorkspacePath(root, relativePath) {
   }
   return absolute;
 }
+
+export const safePath = assertWorkspacePath;
 
 export function pathPrivacy(root, path) {
   assertWorkspacePath(root, path);
@@ -186,6 +180,20 @@ export function exactBytes(root, path) {
     const bytes = readFileSync(fd);
     return {value: bytes, size: bytes.length};
   });
+}
+
+export const exactFile = exactBytes;
+
+export function exclusiveFile(root, path, bytes) {
+  const target = assertWorkspacePath(root, path);
+  mkdirSync(dirname(target), {recursive: true});
+  const fd = openSync(target, 'wx', 0o600);
+  try {
+    writeFileSync(fd, bytes);
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
 }
 
 /** Full-file identity with bounded reads. Consumers must copy any kept chunk. */

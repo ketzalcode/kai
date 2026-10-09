@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {fixtureIds, withWorkspace, seedTask} from './helpers/coordination-runtime-fixture.mjs';
 import {readRecord, readStoreSummary} from '../src/core/lib/coordination-runtime/store.mjs';
-import {privateAdmission} from '../src/core/lib/coordination-runtime/migration-files.mjs';
+import {privateAdmission} from '../src/core/lib/workspace-git-privacy.mjs';
 import {readIssued} from '../src/core/lib/coordination-runtime/native-capabilities.mjs';
 import {nativeEvents} from '../src/core/lib/coordination-runtime/native-receipts.mjs';
 

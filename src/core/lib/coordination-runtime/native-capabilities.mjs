@@ -1,4 +1,4 @@
-import {createHmac, randomBytes, randomUUID, timingSafeEqual} from 'node:crypto';
+import {createHash, createHmac, randomBytes, randomUUID, timingSafeEqual} from 'node:crypto';
 import {
   closeSync,
   existsSync,
@@ -10,20 +10,21 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
+import {basename, dirname, join} from 'node:path';
 import {canonicalJson, RuntimeError} from './contract.mjs';
-import {
-  safePath,
-  exactFile,
-  exclusiveFile,
-  nativeWriterTokenPath,
-  privateAdmission,
-  schema5MigrationLockPath,
-} from './migration-files.mjs';
+import {safePath, exactFile, exclusiveFile} from './evidence-content.mjs';
+import {privateAdmission} from '../workspace-git-privacy.mjs';
+import {canonicalPath} from '../workspace-path-safety.mjs';
 
 const lane = '.kai/core/runtime/host';
 const fail = (code, message) => { throw new RuntimeError(code, message); };
 const kinds = new Set(['requests', 'capabilities', 'captures', 'preparations', 'reservations']);
 const requireKind = kind => { if (!kinds.has(kind)) fail('INVALID_INPUT', 'unsupported native issuer record kind'); };
+function nativeWriterTokenPath(root, id) {
+  const canonical = canonicalPath(root);
+  const digest = createHash('sha256').update(canonical).digest('hex').slice(0, 12);
+  return join(dirname(canonical), `.${basename(canonical)}.${digest}.native-writer-${id}.lock`);
+}
 export function capabilityId(id) {
   if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
     fail('AUTHORITY_REQUIRED', 'an issued capability/request UUID is required');
@@ -47,20 +48,6 @@ function key(root, create) {
 function signature(root, payload, create = false) {
   return createHmac('sha256', key(root, create)).update(canonicalJson(payload)).digest('hex');
 }
-function assertIssuerWriteAllowed(root) {
-  const path = schema5MigrationLockPath(root);
-  if (!existsSync(path)) return;
-  let lock;
-  try {
-    lock = JSON.parse(readFileSync(path, 'utf8'));
-  } catch {
-    fail('RECOVERY_REQUIRED', 'offline migration/rollback lock is invalid');
-  }
-  if (lock.rollback === true) {
-    fail('RECOVERY_REQUIRED', 'offline rollback lock prevents native host authority writes');
-  }
-}
-
 function releaseWriterToken(token) {
   if (!existsSync(token.path)) {
     fail('RECOVERY_REQUIRED', 'native writer admission token disappeared');
@@ -93,14 +80,7 @@ function acquireWriterToken(root) {
   }
   try {
     renameSync(pending, path);
-    const token = {path, value};
-    try {
-      assertIssuerWriteAllowed(root);
-      return token;
-    } catch (error) {
-      releaseWriterToken(token);
-      throw error;
-    }
+    return {path, value};
   } catch (error) {
     if (existsSync(pending)) unlinkSync(pending);
     throw error;

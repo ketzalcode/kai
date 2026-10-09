@@ -33,6 +33,8 @@ Resolve the workspace before any coordinated read or write.
 Direct assistance needs no workspace, manifest, Direction, or database.
 Coordinated work refuses an absent or invalid workspace and routes explicit
 onboarding.
+An unsupported manifest routes to `kai-core-workspace-reonboard`; it is never
+opened through a historical compatibility path.
 
 ## Manifest
 
@@ -128,15 +130,8 @@ Drafts, evidence, scratch, runtime state, host capabilities, activity, and
 observation data never enter Git. Accepted collaboration happens through the
 configured `docs/kai/` publication root.
 
-## Explicit migration
+## Unsupported manifests
 
-<!-- kai:schema4-history -->
-Schema 3 and schema 4 may contain shared placement, `.kai/state/`,
-`.kai/runs/`, `.kai/review/`, `.kai/personal/`, initiatives, generic items,
-boards, milestones, and threads. Those are historical migration inputs only.
-<!-- /kai:schema4-history -->
-
-Old workspaces remain inspectable but not writable. Migration is explicit,
-offline, backup-first, ownership-classified, and manifest-last. Unknown or
-ambiguous ownership blocks activation; nothing enters a fallback lane. Failure
-leaves the old workspace authoritative and the verified backup intact.
+Only schema 5 is supported. Refuse every other manifest with
+`SCHEMA_MISMATCH` and route to `kai-core-workspace-reonboard`. Re-onboarding
+preserves `docs/kai/`, retires `.kai/`, and imports no records.

@@ -6,22 +6,9 @@ import {RuntimeError, assertExactKeys, canonicalJson, commandDigest, criteriaRef
 import {contextIdentity, matchHumanDecision, readNativeTool} from './native-receipts.mjs';
 import {capabilityId, readIssued, writeIssued} from './native-capabilities.mjs';
 import {createTrustedEmbedding} from './host-composition.mjs';
-import {
-  safePath,
-  exactFile,
-  LOCK,
-  schema5MigrationLockPath,
-} from './migration-files.mjs';
+import {safePath, exactFile} from './evidence-content.mjs';
 import {openStore, closeStore, readRecord, listRecords, readOperationReceipt} from './store.mjs';
 import {assertWorkspaceWrite} from './workspace-guard.mjs';
-import {migrateWorkspace, recoverMigration, rollbackMigration, bindMigrationRepair, repairLegacyRecord} from './migration.mjs';
-import {
-  migrateWorkspaceV5,
-  migrationAuthorizationDescriptor,
-  recoverWorkspaceV5,
-  rollbackWorkspaceV5,
-  validateMigrationWorksheet,
-} from './migration-v5.mjs';
 import {planDispatch} from './host.mjs';
 import {sameActor} from './authority.mjs';
 import {captureInputBasis} from './input-basis.mjs';
@@ -36,23 +23,6 @@ const fail = (code, message) => { throw new RuntimeError(code, message); };
 const hash = value => createHash('sha256').update(canonicalJson(value)).digest('hex');
 const exact = (value, keys, label) => assertExactKeys(value, new Set(keys), label);
 const manifestHash = root => hash(JSON.parse(exactFile(root, '.kai/manifest.json')));
-function requireHistoricalMaintenance(root, request) {
-  const schema = JSON.parse(exactFile(root, '.kai/manifest.json')).schema_version;
-  if (schema >= 5) {
-    if (existsSync(schema5MigrationLockPath(root))
-      && (request.scope?.type !== 'maintenance'
-        || !new Set(['recover-activate', 'recover-abandon']).has(request.scope.action))) {
-      fail('RECOVERY_REQUIRED', 'interrupted schema-5 migration may authorize only explicit recovery maintenance');
-    }
-    return;
-  }
-  const actions = schema === 3
-    ? new Set(['migrate', 'recover-activate', 'recover-abandon'])
-    : new Set(['migrate-v5', 'recover-activate', 'recover-abandon', 'rollback']);
-  if (request.scope?.type !== 'maintenance' || !actions.has(request.scope.action)) {
-    fail('SCHEMA_MISMATCH', `schema ${schema} may authorize only explicit offline migration maintenance`);
-  }
-}
 const runActions = new Set([...COMMAND_KINDS].filter(k => !PARENT_COMMAND_KINDS.has(k)
   && !k.startsWith('attempt.')
   && !k.startsWith('effect.') && k !== 'task.create'));
@@ -102,33 +72,8 @@ function requestCommandBasis(root, command) {
 }
 function visibleRequest(payload) {
   const {nonce, createdAt, expiresAt, ...scope} = payload;
-  const displayedScope = payload.scope?.type === 'maintenance'
-    && payload.scope.action === 'migrate-v5'
-    ? {
-        ...scope,
-        scope: {
-          type: 'maintenance',
-          action: 'migrate-v5',
-          worksheet_digest: payload.worksheetDigest,
-          source_manifest_digest: payload.scope.worksheet.source_manifest_digest,
-          source_store_digest: payload.scope.worksheet.source_store_digest,
-          backup_inventory_digest: payload.scope.worksheet.backup_inventory_digest,
-          direction_ref: payload.scope.worksheet.direction_ref,
-          placement: payload.scope.worksheet.placement,
-          backup_root: payload.scope.worksheet.backup_root,
-          classifications: {
-            epics: payload.scope.worksheet.epics.length,
-            milestones: payload.scope.worksheet.milestones.length,
-            items: payload.scope.worksheet.items.length,
-            authored_files: payload.scope.worksheet.authored_files.length,
-            retained_publications: payload.scope.worksheet.retained_publications.length,
-            active_work: payload.scope.worksheet.active_work.length,
-          },
-        },
-      }
-    : scope;
   return {...payload,
-    message: `Kai operator authorization\nWorkspace: ${payload.root}\nNonce: ${nonce}\nScope (exact canonical binding):\n${canonicalJson(displayedScope)}\n`
+    message: `Kai operator authorization\nWorkspace: ${payload.root}\nNonce: ${nonce}\nScope (exact canonical binding):\n${canonicalJson(scope)}\n`
       + `Expires: ${expiresAt}\nApprove only this actor, workspace, subject, criteria and action. `
       + `Reply exactly APPROVE ${nonce} or DECLINE ${nonce}. Conditional/freeform replies do not authorize work.`,
     requestedSchema: {type: 'object', properties: {decision: {
@@ -312,29 +257,6 @@ export function createNativeHost({env = process.env, discover} = {}) {
           fail('INVALID_INPUT', 'run actions must be explicit supported Task actions for a non-operator');
         }
         Object.assign(payload, currentBasis(root, body.taskId), {action: body.actions});
-      } else if (body.type === 'maintenance') {
-        if (body.action === 'migrate-v5') {
-          exact(body, ['type', 'action', 'worksheet'], 'maintenance request');
-          const catalog = await discovery(root);
-          validateMigrationWorksheet({
-            root,
-            worksheet: body.worksheet,
-            roles: catalog.roster.map(entry => entry.role),
-            env,
-          });
-          payload.worksheetDigest = hash(body.worksheet);
-        } else {
-          exact(body, ['type', 'action'], 'maintenance request');
-        }
-        if (!['migrate', 'migrate-v5', 'recover-activate', 'recover-abandon', 'rollback'].includes(body.action)) {
-          fail('INVALID_INPUT', 'unsupported maintenance action; workspace initialization uses the standalone initializer');
-        }
-        payload.subject = payload.workspaceManifest; payload.criteria = null; payload.action = body.action;
-      } else if (body.type === 'repair') {
-        exact(body, ['type', 'request'], 'repair decision request');
-        exact(body.request, ['operationId', 'sourceId', 'expectedVersion', 'actor', 'reason', 'body'], 'repair request');
-        ensureIdentity(body.request.actor);
-        payload.subject = hash(body.request); payload.criteria = null; payload.action = 'repair';
       } else if (body.type === 'capture') {
         exact(body, ['type', 'actor', 'taskId', 'command', 'checks', 'classification'], 'capture request');
         ensureIdentity(body.actor);
@@ -351,14 +273,13 @@ export function createNativeHost({env = process.env, discover} = {}) {
           instruction: 'Run this exact command once through the existing authorized native PowerShell tool. This request neither authorizes nor executes it. Then use receipt/capture with this request nonce; --tool-call is optional when known. Never replay an uncertain effect.'};
         writeIssued(root, 'requests', request.nonce, request);
         return {request};
-      } else fail('INVALID_INPUT', 'request type must be command, run, coordination, maintenance, repair or capture');
+      } else fail('INVALID_INPUT', 'request type must be command, run, coordination or capture');
       const request = visibleRequest(payload);
       writeIssued(root, 'requests', request.nonce, request);
       return {request};
     },
     async receipt({root, options}) {
       const request = readIssued(root, 'requests', options.request);
-      requireHistoricalMaintenance(root, request);
       if (request.root !== root || request.workspaceManifest !== manifestHash(root)
         || Date.parse(request.expiresAt) <= Date.now()) fail('AUTHORITY_REQUIRED', 'request expired or workspace changed');
       if (request.scope.type === 'capture') {
@@ -372,7 +293,6 @@ export function createNativeHost({env = process.env, discover} = {}) {
     },
     async authorize({root, options}) {
       const request = readIssued(root, 'requests', options.request);
-      requireHistoricalMaintenance(root, request);
       if (request.scope.type === 'capture') fail('INVALID_INPUT', 'capture intents are not authorization requests');
       if (request.scope.type === 'coordination' && request.scope.actions.some(action => !routingActions.has(action))) {
         fail('INVALID_INPUT', 'coordination request contains unsupported routing actions; issue a new supported request');
@@ -381,7 +301,7 @@ export function createNativeHost({env = process.env, discover} = {}) {
         fail('AUTHORITY_REQUIRED', 'request expired or workspace changed');
       }
       const receipt = await matchHumanDecision({env, request, toolCallId: options['tool-call']});
-      const actor = request.scope.command?.actor ?? request.scope.actor ?? request.scope.request?.actor;
+      const actor = request.scope.command?.actor ?? request.scope.actor;
       let catalog;
       if (existsSync(safePath(root, `.kai/core/runtime/host/capabilities/${request.nonce}.json`))) {
         const existing = readIssued(root, 'capabilities', request.nonce);
@@ -396,68 +316,6 @@ export function createNativeHost({env = process.env, discover} = {}) {
       writeIssued(root, 'capabilities', request.nonce, {request, receipt, catalog});
       return {capability: request.nonce, actor: actor ?? null, expiresAt: request.expiresAt,
         receipt: {reference: receipt.reference, captured_at: receipt.captured_at}};
-    },
-    async maintenance({root, verb, body, options}) {
-      const cap = capability(root, options.capability);
-      const action = verb === 'recover' ? `recover-${options.action}` : verb;
-      if (verb === 'repair') {
-        if (cap.request.scope.type !== 'repair' || canonicalJson(cap.request.scope.request) !== canonicalJson(body)) {
-          fail('AUTHORITY_REQUIRED', 'repair requires a matched decision for the exact repair request');
-        }
-        ensureIdentity(body.actor);
-        assertWorkspaceWrite(safePath(root, DATABASE), {requirePrivate: true, env});
-        const store = openStore({path: safePath(root, DATABASE), mode: 'write'});
-        try {
-          bindMigrationRepair(store, {root, roles: cap.catalog.roster.map(e => e.role),
-            verify: ({request}) => canonicalJson(request) === canonicalJson(body)});
-          return repairLegacyRecord(store, body);
-        } finally { closeStore(store); }
-      }
-      const actionMatches = verb === 'migrate'
-        ? new Set(['migrate', 'migrate-v5']).has(cap.request.scope.action)
-        : cap.request.scope.action === action;
-      if (options.confirm !== true || cap.request.scope.type !== 'maintenance' || !actionMatches) {
-        fail('AUTHORITY_REQUIRED', 'maintenance requires --confirm and an issued capability for the exact action');
-      }
-      if (verb === 'migrate') {
-        if (cap.request.scope.action === 'migrate-v5') {
-          if (cap.request.worksheetDigest !== hash(cap.request.scope.worksheet)) {
-            fail('AUTHORITY_REQUIRED', 'migration capability worksheet digest does not match its bound object');
-          }
-          return migrateWorkspaceV5({
-            root,
-            confirm: true,
-            worksheet: cap.request.scope.worksheet,
-            roles: cap.catalog.roster.map(e => e.role),
-            env,
-            authorization: migrationAuthorizationDescriptor(
-              root,
-              options.capability,
-            ),
-          });
-        }
-        return migrateWorkspace({root, confirm: true, roles: cap.catalog.roster.map(e => e.role), env});
-      }
-      if (verb === 'recover') {
-        if (existsSync(schema5MigrationLockPath(root))) {
-          return recoverWorkspaceV5({
-            root,
-            confirm: true,
-            action: options.action,
-            roles: cap.catalog.roster.map(e => e.role),
-            env,
-          });
-        }
-        if (!existsSync(safePath(root, LOCK))) fail('RECOVERY_REQUIRED', 'no interrupted migration lock exists; recovery never initializes or retries work');
-        return recoverMigration({root, confirm: true, action: options.action, env});
-      }
-      if (verb === 'rollback') {
-        const manifest = JSON.parse(exactFile(root, '.kai/manifest.json'));
-        return manifest.schema_version === 5
-          ? rollbackWorkspaceV5({root, confirm: true, env})
-          : rollbackMigration({root, confirm: true, env});
-      }
-      fail('INVALID_INPUT', 'unsupported maintenance action');
     },
     async apply({root, store, command, options}) {
       ensureIdentity(command.actor);

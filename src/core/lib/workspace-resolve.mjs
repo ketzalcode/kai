@@ -389,17 +389,16 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   const manifestResult = readWorkspaceManifest(entry.workspace_root);
   if (!manifestResult.ok) return manifestResult;
   const manifest = manifestResult.manifest;
-  if (![3, 4, 5].includes(manifest.schema_version)) {
+  if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
     return {
       ok: false,
-      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3, 4, or 5`,
+      reason: 'SCHEMA_MISMATCH: workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard',
     };
   }
-  const placement = manifest.schema_version === 5 ? manifest.placement : manifest.storage_mode;
-  if (placement !== 'external') {
+  if (manifest.placement !== 'external') {
     return {
       ok: false,
-      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(placement)}`,
+      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(manifest.placement)}`,
     };
   }
   if (manifest.workspace_id !== entry.workspace_id) {

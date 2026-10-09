@@ -229,19 +229,12 @@ test('strict parser rejects unknown flags, malformed identities, and every old -
   });
 });
 
-test('schema 3 and 4 remain inspect/status-only and every write is SCHEMA_MISMATCH', async () => {
+test('schema 3 and 4 are unsupported and route to re-onboarding', async () => {
   for (const schema of [3, 4]) {
-    await workspace(async ({root, store}) => {
-      if (store) {
-        seedTask(store, {
-          state: 'ready',
-          producer_actor: null,
-          producing_actors: [],
-          acceptance_actor: null,
-        });
-        closeStore(store);
-      }
+    await workspace(async ({root}) => {
       for (const argv of [
+        ['inspect', '--root', root],
+        ['status', '--root', root],
         ['apply', '--root', root],
         ['request', '--root', root],
         ['claim', '--root', root, '--task', fixtureIds.task],
@@ -254,13 +247,10 @@ test('schema 3 and 4 remain inspect/status-only and every write is SCHEMA_MISMAT
         const result = await runCLI(argv, {input});
         assert.equal(result.exitCode, 1, `${schema}: ${argv[0]}`);
         assert.equal(result.result.code, 'SCHEMA_MISMATCH', `${schema}: ${argv[0]}`);
+        assert.match(result.result.message, /kai-core-workspace-reonboard/);
       }
-      const inspect = await runCLI(['inspect', '--root', root]);
-      const status = await runCLI(['status', '--root', root]);
-      assert.equal(inspect.exitCode, 0, `${schema}: inspect`);
-      assert.equal(status.exitCode, 0, `${schema}: status`);
       assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
-    }, {schema, createStore: schema === 4});
+    }, {schema, createStore: false});
   }
 
   const direct = await runCLI(['direct']);
@@ -268,7 +258,7 @@ test('schema 3 and 4 remain inspect/status-only and every write is SCHEMA_MISMAT
   assert.equal(direct.result.coordinationRequired, false);
 });
 
-test('native maintenance cannot initialize or leave host authorization state before activation', async () =>
+test('unsupported maintenance requests cannot initialize or leave host authorization state', async () =>
   workspace(async ({root}) => {
     const result = await runCLI(['request', '--root', root], {
       input: JSON.stringify({type: 'maintenance', action: 'init'}),
@@ -277,8 +267,8 @@ test('native maintenance cannot initialize or leave host authorization state bef
     assert.equal(result.exitCode, 1);
     assert.equal(result.result.code, 'INVALID_INPUT');
     assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'host')), false);
-    assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
-  }, {schema: 5}));
+    assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), true);
+  }, {schema: 5, createStore: true}));
 
 test('schema-5 writes accept Windows case aliases that resolve to the live workspace', async () => {
   if (process.platform !== 'win32') return;
