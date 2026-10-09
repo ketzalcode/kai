@@ -17,7 +17,7 @@
     "release-notes": "node tools/release-notes.mjs",
     "check-syntax": "node tools/check-syntax.mjs",
     "consumer-install:self-test": "node test/consumer-install-self-test.mjs",
-    "test": "node --test test/repository-instructions-self-test.mjs test/release-automation-self-test.mjs test/workspace-current-self-test.mjs test/coordination-schema-self-test.mjs test/coordination-core-self-test.mjs test/publication-contract-self-test.mjs test/package-build-self-test.mjs test/consumer-install-self-test.mjs test/creative-screenplay-self-test.mjs",
+    "test": "npm run validate && node --test test/repository-instructions-self-test.mjs test/release-automation-self-test.mjs test/workspace-current-self-test.mjs test/coordination-schema-self-test.mjs test/coordination-core-self-test.mjs test/publication-contract-self-test.mjs test/package-build-self-test.mjs test/consumer-install-self-test.mjs test/creative-screenplay-self-test.mjs",
     "extract:path": "node tools/extract-learn-path.js",
     "extract:module": "node tools/extract-learn-path.js --module",
     "status": "node src/core/work-status.mjs",

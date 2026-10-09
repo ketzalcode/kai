@@ -86,3 +86,45 @@ test('current inspection responses expose no migration shim or initiative compat
   );
   assert.doesNotMatch(store, /recordKind === 'initiative'/);
 });
+
+test('workspace initialization loads acting immediately before mutation', () => {
+  const workflow = readFileSync(
+    new URL('../plugins/kai-core/agents/workflow-workspace-init.agent.md', import.meta.url),
+    'utf8',
+  );
+  const approval = workflow.indexOf('Obtain explicit approval');
+  const acting = workflow.indexOf('Apply `kai-core-work-acting`');
+  const mutation = workflow.indexOf('Run the confirmed standalone initializer');
+  assert.ok(approval !== -1, 'workflow must retain the approval gate');
+  assert.ok(acting > approval, 'acting must load after approval');
+  assert.ok(mutation > acting, 'acting must load immediately before the initializer mutation');
+});
+
+test('current runtime contains no executable historical compatibility branches', () => {
+  const workStatus = readFileSync(
+    new URL('../src/core/work-status.mjs', import.meta.url),
+    'utf8',
+  );
+  const coordination = readFileSync(
+    new URL('../src/core/lib/coordination.mjs', import.meta.url),
+    'utf8',
+  );
+  const reportCapture = readFileSync(
+    new URL('../src/core/lib/coordination-runtime/report-capture.mjs', import.meta.url),
+    'utf8',
+  );
+  const reportSafety = readFileSync(
+    new URL('../src/core/lib/coordination-runtime/report-safety.mjs', import.meta.url),
+    'utf8',
+  );
+  const granting = readFileSync(
+    new URL('../plugins/kai-core/skills/kai-core-work-granting/SKILL.md', import.meta.url),
+    'utf8',
+  );
+
+  assert.doesNotMatch(workStatus, /\.kai\/state\/items|function readItems|function readThread/);
+  assert.doesNotMatch(coordination, /Historical schema|Backward-compatible|function frontmatter|function parseThread/);
+  assert.doesNotMatch(reportCapture, /store\.schemaVersion|item_id/);
+  assert.doesNotMatch(reportSafety, /Legacy preview metadata/);
+  assert.doesNotMatch(granting, /\bmigrat(?:e|ion)\b/i);
+});

@@ -344,13 +344,6 @@ export function assetLocationErrors({ assets, index }) {
 
 
 
-export const GUARANTEE_REGION_OPEN =
-  '<!-- >>> kai core dependency guard (managed by pack-preview) >>> -->';
-export const GUARANTEE_REGION_CLOSE =
-  '<!-- <<< kai core dependency guard <<< -->';
-const LEGACY_GUARANTEE_REGION_OPEN =
-  '<!-- >>> kai core dependency guard (managed by pack-preview) >>>';
-
 // The host executes hooks.json itself, on every subagent, for everyone who
 // installs the plugin that ships it. Two installed packs carrying it means the
 // observer runs twice per subagent; none carrying it means it never runs. So it
@@ -381,8 +374,8 @@ export function packageAgentInventory(root = REPO_ROOT) {
   })));
 }
 
-// Compatibility inventory for callers operating on this checkout. Any caller
-// that accepts a root must use packageAgentInventory(root) instead.
+// Inventory for callers operating on this checkout. Any caller that accepts a
+// root must use packageAgentInventory(root) instead.
 export const PACKS = packageAgentInventory();
 export const SKILL_OWNER_OVERRIDES = Object.freeze({});
 
@@ -589,33 +582,16 @@ const listAgentIds = (root) => sourceAgentFiles(root).map((file) => file.id);
 
 const listSkillIds = (root) => sourceSkillFiles(root).map((file) => file.id).sort();
 
-// Every skill named on an agent's single `**Inherits:**` line, as written —
-// including one that does not exist, which is a reference miss rather than a
-// partition input.
-export function declaredInherits(body) {
-  const line = normalizeLF(body).match(/^\*\*Inherits:\*\*(.*)$/m);
-  if (!line) return [];
-  return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
-}
-
-// The partition input: the skills an agent loads — from its eager `**Inherits:**`
-// line and its inline routes both — filtered to those that exist on disk. A
-// named-but-absent skill is a reference miss that referenceErrors reports, not a
-// partition input; the filter keeps that distinction load-bearing instead of
-// collapsing the two concerns. `loadedSkills` (below) is the same union without
-// the filter, for the reference corpus that must see the miss.
+// The partition input: the inline-routed skills that exist on disk. A
+// named-but-absent skill is a reference miss that referenceErrors reports, not
+// a partition input.
 export function loadedSkillsOnDisk(root, body) {
   return [...loadedSkills(body)].filter((s) => skillFile(root, s) !== null);
 }
 
-// The one answer to "which contracts does this agent load". A migrated agent
-// routes them inline at the step that needs each one; an agent still on the
-// eager line declares them all up front. Both are the same question, so every
-// check that asks it reads this rather than picking a side and passing
-// vacuously on the other half of the repo. When the last pack migrates, the
-// eager arm disappears and this collapses to `routedSkills` alone.
+// The one answer to "which contracts does this agent load".
 export function loadedSkills(body) {
-  return new Set([...declaredInherits(body), ...routedSkills(body)]);
+  return new Set(routedSkills(body));
 }
 
 // Physical package directories are the ownership declaration for both agents
@@ -636,11 +612,6 @@ export function planPacks(root = REPO_ROOT) {
     core,
     local,
     packages,
-    // Compatibility diagnostics. Physical placement means every discovered
-    // entry already has an owner; no usage-derived orphan/override phase exists.
-    orphans: [],
-    unplaced: [],
-    unassigned: [],
   };
 }
 
@@ -739,39 +710,6 @@ export function materializePacks({
       normalizeLF(readFileSync(assetIndex.get(block).path, 'utf8')));
   }
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
-}
-
-// There is now one agent shape: every agent routes its contracts inline and
-// carries no copied dependency guard. Synchronising an agent therefore only ever
-// removes a stale managed region — one is never inserted. A malformed half-region
-// still fails, so a partially hand-deleted guard cannot slip through. Kept as the
-// single entry point the generator and preview call so a leftover region from the
-// legacy era is stripped on the next `--write`.
-export function syncGuaranteeRegion(body) {
-  return removeGuaranteeRegion(body);
-}
-
-export function removeGuaranteeRegion(body) {
-  const normalized = normalizeLF(body);
-  const markerLines = normalized.split('\n');
-  const openCount = markerLines.filter((line) =>
-    line === GUARANTEE_REGION_OPEN || line === LEGACY_GUARANTEE_REGION_OPEN).length;
-  const closeCount = markerLines.filter((line) => line === GUARANTEE_REGION_CLOSE).length;
-  if (openCount > 1 || closeCount > 1) {
-    throw new Error('agent has more than one core dependency guard region');
-  }
-  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
-  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
-  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
-  const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
-  if (openAt === -1 && closeAt === -1) return normalized;
-  if (openAt === -1 || closeAt === -1 || closeAt < openAt) {
-    throw new Error('agent has a malformed core dependency guard region');
-  }
-  const end = closeAt + GUARANTEE_REGION_CLOSE.length;
-  const before = normalized.slice(0, openAt).replace(/\n+$/, '');
-  const after = normalized.slice(end).replace(/^\n+/, '');
-  return `${before}\n\n${after}`;
 }
 
 // Every committed plugin manifest: the root monolith plus any plugin tree under
@@ -897,44 +835,22 @@ export function marketplaceConsistencyErrors({
   return errs;
 }
 
-// Which plugin names the published index must and must not carry. Both sets are
-// DERIVED from publication policy: `packs` serves only the selected default
-// packages, and `legacy-rollback` restores the monolith alone — so it forbids
-// every name `packPluginName` can emit, including packs published after this
-// code was written. A literal here would silently bless a rollback index that
-// restored the monolith beside a department pack.
+// Which plugin names the current published index must and must not carry.
 export function marketplaceSurfacePolicy({
-  mkt, canonicalVersion, monolithName,
+  mkt, monolithName,
   publishedPackNames = PUBLISHED_PACKS.map(packPluginName),
   publishablePackNames = PACK_ORDER.map(packPluginName),
 }) {
   const errors = [];
-  const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
-  const postOne = Number.isInteger(majorVersion) && majorVersion >= 1;
   const installSurface = mkt.metadata?.installSurface;
-
-  if (!postOne) {
-    if (installSurface) {
-      errors.push('metadata.installSurface is reserved for the 1.0.0-or-later pack publication surface');
-    }
-    return {
-      errors,
-      requiredPluginNames: [monolithName],
-      forbiddenPluginNames: [],
-    };
+  if (installSurface !== 'packs') {
+    errors.push('metadata.installSurface must be "packs"');
   }
-
-  if (!['packs', 'legacy-rollback'].includes(installSurface)) {
-    errors.push('metadata.installSurface must be "packs" or "legacy-rollback" at version 1.0.0 or later');
-  }
-  const legacyRollback = installSurface === 'legacy-rollback';
   const unpublished = publishablePackNames.filter((name) => !publishedPackNames.includes(name));
   return {
     errors,
-    requiredPluginNames: legacyRollback ? [monolithName] : publishedPackNames,
-    forbiddenPluginNames: legacyRollback
-      ? publishablePackNames
-      : [monolithName, ...unpublished],
+    requiredPluginNames: publishedPackNames,
+    forbiddenPluginNames: [monolithName, ...unpublished],
   };
 }
 
@@ -1016,15 +932,14 @@ const RETIRED_AGENT_IDS = new Set(
     .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
 );
 
-// The new grammar coexists with exact baseline ids while roles are migrated one
-// or two at a time. New ids in a provider-family namespace have their posture
-// and placement enforced immediately.
+// Exact declared ids remain valid. New durable-role ids use a provider-family
+// namespace with enforced posture and placement.
 export function agentTaxonomyErrors({ id, pack }) {
   const [family, posture, ...scope] = (id ?? '').split('-');
   if (RETIRED_AGENT_FAMILIES.includes(family)) {
     return RETIRED_AGENT_IDS.has(id)
       ? []
-      : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
+      : [`agent family \`${family}-*\` is closed; new agents must use a provider-family posture or a supported kind prefix`];
   }
   if (INACTIVE_AGENT_IDS.has(id)) return [];
   if (KIND_AGENT_FAMILIES.includes(family)) return [];
@@ -1463,11 +1378,8 @@ export function collectReferences(root = REPO_ROOT) {
     // only as real as the routing skill's own reachability, and the firing-path
     // check in validate-plugin.mjs answers that separate question from agents.
     for (const text of [raw, ...companionBodies]) {
-      // `routedSkills`, not `loadedSkills`: the latter also unions
-      // `declaredInherits`, which reads an agent's `**Inherits:**` line. That
-      // construct has no meaning in a skill, and it carries neither fence
-      // stripping nor an id charset — so a fenced authoring example in a skill
-      // body would become a live reference.
+      // `routedSkills` reads the route syntax directly and strips fenced
+      // authoring examples before treating a token as a live reference.
       for (const target of routedSkills(text)) {
         if (target === id) continue;
         // Same agent-versus-skill disambiguation the agent loop applies, and
@@ -1898,8 +1810,7 @@ export function namespaceErrors({ core = [], local = {}, prefix = CORE_SKILL_PRE
   for (const id of core) {
     if (id.startsWith(prefix)) continue;
     errs.push(`kai-core provides skill \`${id}\`, which does not carry the \`${prefix}*\` prefix — a `
-      + 'legacy `kai` install provides that same bare name, so provider ownership is ambiguous; '
-      + `rename it to \`${prefix}${id}\``);
+      + `bare core skill has ambiguous ownership; rename it to \`${prefix}${id}\``);
   }
   for (const [pack, ids] of Object.entries(local)) {
     for (const id of ids) {

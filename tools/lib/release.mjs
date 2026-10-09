@@ -1,4 +1,5 @@
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/;
+const CHANGELOG_REPOSITORY = 'https://github.com/ketzalcode/kai';
 
 export const BEHAVIOR_PREFIXES = Object.freeze([
   'plugins/', 'src/', 'tools/',
@@ -62,10 +63,16 @@ export function generatedVersionErrors(currentVersion, generatedVersions) {
 
 export function extractReleaseNotes(changelog, version) {
   const lines = changelog.replace(/\r\n/g, '\n').split('\n');
-  const start = lines.findIndex(line => line.startsWith(`## [${version}]`));
-  if (start === -1) throw new Error(`CHANGELOG.md has no ${version} section`);
+  const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const heading = new RegExp(`^## \\[${escaped}\\] - \\d{4}-\\d{2}-\\d{2}$`);
+  const start = lines.findIndex(line => heading.test(line));
+  if (start === -1) throw new Error(`CHANGELOG.md has no exact ${version} section`);
   const next = lines.findIndex((line, index) => index > start && /^## \[/.test(line));
   return lines.slice(start + 1, next === -1 ? lines.length : next).join('\n').trim();
+}
+
+export function expectedComparisonLink(latestTag, currentVersion) {
+  return `[${currentVersion}]: ${CHANGELOG_REPOSITORY}/compare/${latestTag}...v${currentVersion}`;
 }
 
 export function evaluateReleaseReadiness(input) {
@@ -82,6 +89,10 @@ export function evaluateReleaseReadiness(input) {
     notes = extractReleaseNotes(input.changelog, input.currentVersion);
   } catch (error) {
     errors.push(error.message);
+  }
+  const comparisonLink = expectedComparisonLink(input.latestTag, input.currentVersion);
+  if (!input.changelog.replace(/\r\n/g, '\n').split('\n').includes(comparisonLink)) {
+    errors.push(`CHANGELOG.md is missing exact comparison link: ${comparisonLink}`);
   }
   errors.push(...generatedVersionErrors(input.currentVersion, input.generatedVersions));
   return {

@@ -2,24 +2,19 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
   COORDINATION_DATABASE,
-  OPERATOR_GATED,
-  TERMINAL,
   WORKSPACE_SCHEMA_VERSION,
   closeStore,
   currentDirectionForStore,
   hierarchyStatus,
-  isNull,
   listAllRecords,
   openStore,
-  parseStamp,
   readSnapshot,
   readWorkspaceManifest,
-  resolveWorkspaceRoot,
-  runs
+  resolveWorkspaceRoot
 } from "./runtime-core.mjs";
 
 // src/core/work-status.mjs
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, resolve, basename, delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -29,194 +24,6 @@ var SECTIONS = [
   ["blocked", "BLOCKED", "work stopped on a dependency or an unanswered question"],
   ["unknown", "UNKNOWN", "cannot tell from the records alone \u2014 inspect before assuming"]
 ];
-function overlay(items, activity, now) {
-  const findings = [];
-  if (!activity.present) return { findings, live: null };
-  const open = runs(activity.records, now).filter((r) => r.open);
-  const known = new Set(items.filter((i) => !i.unparseable).map((i) => i.id));
-  const overdue = open.filter((r) => r.overdue);
-  const byTarget = /* @__PURE__ */ new Map();
-  for (const r of overdue) {
-    const key = r.task && known.has(r.task) ? r.task : `run:${r.run}`;
-    const prev = byTarget.get(key);
-    if (!prev || (r.deadline ?? 0) < (prev.deadline ?? 0)) byTarget.set(key, { ...r, n: (prev?.n || 0) + 1 });
-    else byTarget.set(key, { ...prev, n: prev.n + 1 });
-  }
-  for (const [key, r] of byTarget) {
-    const item = key.startsWith("run:") ? null : items.find((i) => i.id === key);
-    const late = Math.round((Math.floor(now / 1e3) - r.deadline) / 60);
-    findings.push({
-      section: "unknown",
-      item: key,
-      tier: "derived",
-      headline: `${r.role} declared it would report ${late}m ago and has not${r.n > 1 ? ` (${r.n} open runs)` : ""}`,
-      why: "The run set that deadline itself. It may still be working, or it may have stopped without recording it \u2014 this cannot tell which.",
-      path: item ? item.rel : ".kai/core/runtime/activity.jsonl"
-    });
-  }
-  return {
-    findings,
-    live: {
-      open: open.length,
-      overdue: open.filter((r) => r.overdue).length,
-      skipped: activity.skipped,
-      roles: [...new Set(open.map((r) => r.role))].sort()
-    }
-  };
-}
-function analyze(items, threads, now) {
-  const findings = [];
-  const byId = new Map(items.map((i) => [i.id, i]));
-  const add = (section, item, tier, headline, why) => findings.push({ section, item: item.id, tier, headline, why, path: item.rel });
-  for (const it of items) {
-    if (it.unparseable) {
-      add(
-        "integrity",
-        it,
-        "derived",
-        "item record has no readable frontmatter",
-        "It cannot be counted, claimed, or trusted; every other number here excludes it."
-      );
-      continue;
-    }
-    const terminal = TERMINAL.has(it.state);
-    const thread = threads.get(it.id);
-    const qs = thread ? thread.questions : null;
-    for (const q of qs || []) {
-      if (!/^@?operator$/i.test(q.to)) continue;
-      if (q.status && q.status !== "open") continue;
-      add(
-        "needs-you",
-        it,
-        "declared",
-        `open ${q.kind || "question"} for the operator: ${q.id}`,
-        `Asked by ${q.from || "an agent"}${q.blocking === "yes" ? ", and it is blocking" : ""}.`
-      );
-    }
-    if (OPERATOR_GATED.has(it.state)) {
-      add(
-        "needs-you",
-        it,
-        "declared",
-        `state "${it.state}" waits on a human`,
-        "Deployment and production verification are operator acts; no kai role can advance this."
-      );
-    }
-    if (it.questionIds.length && !terminal) {
-      const seen = new Set((qs || []).map((q) => q.id));
-      const missing = it.questionIds.filter((q) => !seen.has(q));
-      if (missing.length) {
-        add(
-          "unknown",
-          it,
-          "derived",
-          `waiting_on_questions names ${missing.length} question(s) with no packet in the thread`,
-          `Missing: ${missing.join(", ")}. Either the thread was not updated or the ID is wrong \u2014 the block cannot be verified or cleared.`
-        );
-      }
-    }
-    if (it.questionIds.length && !terminal && it.state !== "blocked") {
-      add(
-        "unknown",
-        it,
-        "derived",
-        `waiting_on_questions is set but the state is "${it.state}", not blocked`,
-        `Named: ${it.questionIds.join(", ")}. Either the block was cleared without clearing the field, or the item is running while it should be waiting.`
-      );
-    }
-    for (const d of thread ? thread.diagnostics : []) {
-      add(
-        "integrity",
-        it,
-        "derived",
-        `thread packet ${d.id} does not reconcile (${d.type.replace(/-/g, " ")})`,
-        d.message
-      );
-    }
-    if (it.state === "blocked") {
-      const openQ = (qs || []).filter((q) => !q.status || q.status === "open");
-      add(
-        "blocked",
-        it,
-        "declared",
-        "state is blocked",
-        openQ.length ? `Open question(s): ${openQ.map((q) => `${q.id} -> @${q.to}`).join(", ")}.` : "No open question packet found in the thread, so the blocker is not recorded where a reader can act on it."
-      );
-    }
-    for (const d of it.dependsOn) {
-      if (terminal) break;
-      const dep = byId.get(d.item);
-      if (!dep) {
-        add(
-          "integrity",
-          it,
-          "derived",
-          `depends on unknown item "${d.item}"`,
-          "The dependency cannot be satisfied because no such record exists."
-        );
-        continue;
-      }
-      if (d.requires && dep.state !== d.requires && !(d.requires === "completed" && TERMINAL.has(dep.state))) {
-        add(
-          "blocked",
-          it,
-          "derived",
-          `waits for "${d.item}" to reach ${d.requires}`,
-          `That item is currently "${dep.state}".`
-        );
-      }
-    }
-    const fresh = new Set(it.completed.filter((r) => r.change_ref === it.changeRef).map((r) => `${r.role}|${r.kind}`));
-    for (const r of it.completed) {
-      if (!r.change_ref || isNull(r.change_ref) || !it.changeRef || isNull(it.changeRef)) continue;
-      if (fresh.has(`${r.role}|${r.kind}`)) continue;
-      if (r.change_ref !== it.changeRef) {
-        add(
-          "integrity",
-          it,
-          "derived",
-          `${r.role || "a review"} approved ${r.change_ref}, but the item is now at ${it.changeRef}`,
-          "The implementation changed after the review, so that sign-off no longer certifies what would ship."
-        );
-      }
-    }
-    if (TERMINAL.has(it.state) && it.required.length) {
-      const done = new Set(it.completed.filter((r) => !it.changeRef || isNull(it.changeRef) || r.change_ref === it.changeRef).map((r) => `${r.role}|${r.kind}`));
-      const unmet = it.required.filter((r) => !done.has(`${r.role}|${r.kind}`));
-      if (unmet.length) {
-        add(
-          "integrity",
-          it,
-          "derived",
-          `state "${it.state}" but ${unmet.length} required review(s) unmet at the current ref`,
-          `Unmet: ${unmet.map((r) => `${r.role} (${r.kind})`).join(", ")}.`
-        );
-      }
-    }
-    if (!isNull(it.lease.holder) && !isNull(it.lease.expires)) {
-      const exp = parseStamp(it.lease.expires);
-      if (exp !== null && exp < now) {
-        add(
-          "unknown",
-          it,
-          "derived",
-          `lease held by ${it.lease.holder} expired at ${it.lease.expires}`,
-          "The holder may still be working, may have crashed, or may have abandoned it. Reconcile before reclaiming."
-        );
-      }
-    }
-    if (!terminal && it.state !== "proposed" && it.state !== "blocked" && !OPERATOR_GATED.has(it.state) && isNull(it.nextRole) && isNull(it.lease.holder)) {
-      add(
-        "unknown",
-        it,
-        "derived",
-        `state "${it.state}" with no next_role and no lease holder`,
-        "Nothing identifies who acts next, so this will sit until someone notices."
-      );
-    }
-  }
-  return findings;
-}
 function gitContext(root) {
   const run = (args) => {
     try {
@@ -382,8 +189,6 @@ if (isEntry) {
   process.exit(status.findings.some((f) => f.section === "integrity") ? 1 : 0);
 }
 export {
-  analyze,
   collect,
-  overlay,
   render
 };

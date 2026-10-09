@@ -73,7 +73,7 @@ state, plugins, or workspace provenance.
 When replacement requires uninstalling an old package, prove `kai-core` and
 every requested department are listed at one common version, show the re-entry
 sequence. End the current run; a session still carrying the removed
-monolith must not continue the migration.
+monolith must not continue the replacement.
 
 ### Execute
 

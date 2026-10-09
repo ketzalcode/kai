@@ -52,27 +52,11 @@ var TASK_DEPENDENCY_STATES = /* @__PURE__ */ new Set([
   "shipped"
 ]);
 var TASK_TERMINAL_STATES = /* @__PURE__ */ new Set(["shipped", "completed", "dropped"]);
-var TASK_OPERATOR_GATED_STATES = /* @__PURE__ */ new Set([
-  "release-ready",
-  "deploying",
-  "production-verification"
-]);
-var TERMINAL = TASK_TERMINAL_STATES;
-var OPERATOR_GATED = TASK_OPERATOR_GATED_STATES;
 var isNull = (v) => v === void 0 || v === "" || v === "null" || v === "~" || v === "\u2014";
 var unquote = (s) => {
   const t = (s ?? "").trim();
   return t.startsWith('"') && t.endsWith('"') || t.startsWith("'") && t.endsWith("'") ? t.slice(1, -1) : t;
 };
-function parseStamp(s) {
-  const t = unquote(s);
-  let mm = t.match(/^(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})$/);
-  if (mm) return Date.UTC(+mm[1], +mm[2] - 1, +mm[3], +mm[4], +mm[5]);
-  mm = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (mm) return Date.UTC(+mm[1], +mm[2] - 1, +mm[3]);
-  const d = Date.parse(t);
-  return Number.isNaN(d) ? null : d;
-}
 
 // src/core/lib/workspace-path-safety.mjs
 var SHIPPED_PACK_NAMESPACES = /* @__PURE__ */ new Set(["core", "engineering", "creative"]);
@@ -955,10 +939,10 @@ var KIND_AGENT_FAMILIES = Object.freeze([
   "persona",
   "instructor"
 ]);
-function agentProfileModelErrors({ id, body, fm = {} }, legacyIds = /* @__PURE__ */ new Set()) {
+function agentProfileModelErrors({ id, body, fm = {} }) {
   const [family, posture] = (id ?? "").split("-");
-  const isDurableRole = family in ROLE_FAMILY_PACK && !legacyIds.has(id);
-  const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !legacyIds.has(id);
+  const isDurableRole = family in ROLE_FAMILY_PACK;
+  const isNewKind = KIND_AGENT_FAMILIES.includes(family);
   if (!isDurableRole && !isNewKind) return [];
   const errors = [];
   const profiles = [...(body ?? "").matchAll(
@@ -8885,7 +8869,7 @@ var DEFAULT_CONTEXT_RECENT_LIMIT = 8;
 var MAX_RECENT_LIMIT = 8;
 var MAX_MESSAGE_PAGE = 100;
 var MAX_EXCERPT_BYTES = 512;
-var TERMINAL2 = /* @__PURE__ */ new Set(["completed", "shipped", "dropped"]);
+var TERMINAL = /* @__PURE__ */ new Set(["completed", "shipped", "dropped"]);
 var bindsSubject2 = (record2, subject) => subjectEquals(record2?.subject, subject);
 function invalid4(message) {
   throw new RuntimeError("INVALID_INPUT", message);
@@ -8978,7 +8962,7 @@ function currentDecisions(view, get) {
 function unresolvedQuestions(view) {
   const subject = { kind: view.record.kind, id: view.record.id };
   const waiting = new Set(view.record.body.waiting_on_questions ?? []);
-  const terminal2 = TERMINAL2.has(view.record.body.state);
+  const terminal2 = TERMINAL.has(view.record.body.state);
   return view.questions.map((entry) => {
     const question = entry.record;
     if (!question) gap("hierarchy subject references a missing question");
@@ -9003,7 +8987,7 @@ function unresolvedQuestions(view) {
         event_seq: entry.eventSeq,
         kind: question.body.kind,
         blocking: question.body.blocking,
-        disposition: TERMINAL2.has(view.record.body.state) ? "historical-follow-up" : question.body.blocking ? "blocking" : "nonblocking",
+        disposition: TERMINAL.has(view.record.body.state) ? "historical-follow-up" : question.body.blocking ? "blocking" : "nonblocking",
         status: question.body.status,
         asker: question.body.asker,
         recipient: question.body.recipient,
@@ -9044,7 +9028,7 @@ function recoveryHold(view) {
       stale_lease_token: attempt.body.stale_lease.token,
       criteria_ref: view.criteriaRef,
       disposition: "safe-to-resume",
-      scope: TERMINAL2.has(view.record.body.state) ? "before-restoration" : "before-resumption",
+      scope: TERMINAL.has(view.record.body.state) ? "before-restoration" : "before-resumption",
       release: "persist exact operator approval, then separately authorized task.restore",
       evidence_verification: "not_performed"
     }
@@ -9209,7 +9193,7 @@ function packetFor(view, {
     recovery_hold: recovery2,
     blockers: [
       ...questionEntries.filter(({ summary }) => summary.disposition === "blocking").map(({ summary }) => summary),
-      ...recovery2 && !TERMINAL2.has(record2.body.state) ? [{ kind: "recovery-hold", ref: recovery2.ref, required_authority: "operator" }] : []
+      ...recovery2 && !TERMINAL.has(record2.body.state) ? [{ kind: "recovery-hold", ref: recovery2.ref, required_authority: "operator" }] : []
     ],
     decisions: decisionEntries.map(({ summary }) => summary),
     latest_handoff: latestHandoff ? messageSummary(latestHandoff) : null,
@@ -11268,14 +11252,11 @@ import { join as join12 } from "node:path";
 // src/core/lib/coordination-runtime/report-capture.mjs
 import { execFileSync as execFileSync2 } from "node:child_process";
 function captureHistory(store, subject, version, throughSeq2, addGap) {
-  const subjectColumn = store.schemaVersion === 1 ? "item_id" : "subject_id";
-  const subjectKind = store.schemaVersion === 1 ? null : subject.kind;
-  const subjectFilter2 = store.schemaVersion === 1 ? `e.${subjectColumn} = ?` : `e.subject_kind = ? AND e.${subjectColumn} = ?`;
   const statement = store.database.prepare(`
     SELECT e.seq, e.message_id, r.kind, r.id, r.subject_kind, r.subject_id,
       r.version, r.body
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-    WHERE e.thread_id = ? AND ${subjectFilter2}
+    WHERE e.thread_id = ? AND e.subject_kind = ? AND e.subject_id = ?
       AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT 50
   `);
@@ -11285,7 +11266,8 @@ function captureHistory(store, subject, version, throughSeq2, addGap) {
   for (; ; ) {
     const rows = statement.all(
       threadId,
-      ...subjectKind === null ? [subject.id] : [subjectKind, subject.id],
+      subject.kind,
+      subject.id,
       beforeSeq
     );
     if (!rows.length) break;
@@ -12242,10 +12224,6 @@ export {
   currentDirectionForStore,
   hierarchyStatus,
   cli_exports,
-  TERMINAL,
-  OPERATOR_GATED,
-  isNull,
-  parseStamp,
   exactPath,
   escapesRoot,
   inspectPrivateLanes,

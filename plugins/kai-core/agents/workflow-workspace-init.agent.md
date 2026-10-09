@@ -63,7 +63,9 @@ pack.
    - <explicit exclusion>
    ```
 
-5. Run the confirmed standalone initializer. A successful new workspace creates
+5. Apply `kai-core-work-acting` after approval and immediately before the first
+   filesystem or registry mutation.
+6. Run the confirmed standalone initializer. A successful new workspace creates
    only:
 
    ```text
@@ -73,14 +75,14 @@ pack.
    docs/kai/DIRECTION.md
    ```
 
-6. For `repo-local`, install the managed `/.kai/` ignore block and verify no
+7. For `repo-local`, install the managed `/.kai/` ignore block and verify no
    private file is tracked. For `external`, register the exact project/workspace
    pair and ensure the project contains no `.kai/`.
-7. Offer once to install `scripts/lib/repository-instructions-block.md` in the
+8. Offer once to install `scripts/lib/repository-instructions-block.md` in the
    project's `AGENTS.md`. Create the file when absent; otherwise preserve every
    user-authored byte outside the markers and replace only the marked Kai
    region. Never stage or commit it without separate operator authorization.
-8. Validate with the doctor and runtime `inspect`. Do not create empty pack,
+9. Validate with the doctor and runtime `inspect`. Do not create empty pack,
    type, subtype, lifecycle, or archive directories.
 
 SQLite at `.kai/core/runtime/coordination.sqlite` is the **only coordination

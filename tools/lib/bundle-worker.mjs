@@ -68,6 +68,7 @@ const banner = "import{createRequire as __cr}from'node:module';"
 let result;
 try {
   result = await build({
+    absWorkingDir: root,
     entryPoints: names.map(name => join(sourceRoot, name)),
     outdir: sourceRoot,
     bundle: true,

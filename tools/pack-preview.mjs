@@ -55,8 +55,7 @@ export {
 };
 
 // The two-plugin preview defaults to learning, a capability with a real local
-// method. It selects the canonical partition, never a second roster or a
-// compatibility alias for the retired personal plugin.
+// method. It selects the canonical partition.
 
 const readAgent = (id) => readFileSync(agentSourceFile(ROOT, id), 'utf8');
 const skillPath = (id) => skillSourceFile(ROOT, id);
@@ -74,10 +73,6 @@ const declaredTools = (body) => {
 
 const frontmatter = (body) => normalizeLF(body).match(/^---\n[\s\S]*?\n---/)?.[0] ?? null;
 
-
-// Legacy agents still carry a preflight in their own bodies; every agent now
-// routes the probe just before its first core skill. This evaluator keeps the
-// core-absent and version-skew behavior deterministic during staged migration.
 
 // Deterministic evaluation of the preflight's own rule against a built preview:
 // read what `kai-core-contract-v1` would return from the built core, if any, and
@@ -499,16 +494,7 @@ function runGates(name) {
 
 const args = process.argv.slice(2);
 const flag = (n, d) => { const i = args.indexOf(n); return i === -1 ? d : args[i + 1]; };
-const retiredOwnershipMode = [
-  ['--write', 'npm run build'],
-  ['--check', 'npm run build:check'],
-].find(([mode]) => args.includes(mode));
-
-if (retiredOwnershipMode) {
-  const [mode, replacement] = retiredOwnershipMode;
-  console.error(`pack-preview ${mode} is no longer supported; use ${replacement}`);
-  process.exit(1);
-} else if (args.includes('--self-test')) {
+if (args.includes('--self-test')) {
   process.exit(selfTest() ? 0 : 1);
 } else if (args.includes('--gate')) {
   process.exit(runGates(flag('--gate', 'all')) ? 0 : 1);
@@ -542,8 +528,9 @@ if (retiredOwnershipMode) {
   console.log(`pack: ${r.packDir}`);
   reportPreflight(out);
 } else {
-  console.log('usage: node tools/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
-  console.log('       node tools/pack-preview.mjs --all --out <dir>');
-  console.log('       node tools/pack-preview.mjs --self-test');
-  console.log(`       node tools/pack-preview.mjs --gate <${[...GATES.keys()].join('|')}|all>`);
+  console.error('usage: node tools/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
+  console.error('       node tools/pack-preview.mjs --all --out <dir>');
+  console.error('       node tools/pack-preview.mjs --self-test');
+  console.error(`       node tools/pack-preview.mjs --gate <${[...GATES.keys()].join('|')}|all>`);
+  process.exit(1);
 }

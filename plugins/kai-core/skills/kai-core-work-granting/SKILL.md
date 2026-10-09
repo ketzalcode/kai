@@ -14,8 +14,8 @@ node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"
 ```
 
 No command silently creates or initializes the database. A missing schema-5
-workspace routes explicit onboarding. Older workspaces are inspect-only and
-route explicit migration.
+workspace routes explicit onboarding. An unsupported workspace routes
+`kai-core-workspace-reonboard`; never inspect or transform its old database.
 
 ## Direct mode
 
@@ -105,8 +105,8 @@ A recovery approval uses the runtime's exact human-decision flow. When
 verbatim. Only `User responded: APPROVE <nonce>` matches the issued request.
 A chat-typed approval creates no receipt.
 
-The same native maintenance gate protects `migrate`, `recover`, `rollback`,
-and `repair`. Failure remains failure; no broad catch converts it to success.
+The same native maintenance gate protects `recover`, `rollback`, and `repair`.
+Failure remains failure; no broad catch converts it to success.
 
 ## Review and completion routing
 

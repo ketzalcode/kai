@@ -73,6 +73,7 @@ export function bundlePack({ root, srcDir, shippedDir, pack }) {
     WORKER,
     JSON.stringify({root, srcDir, shippedDir, pack}),
   ], {
+    cwd: root,
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
   });

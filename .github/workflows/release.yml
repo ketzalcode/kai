@@ -22,10 +22,15 @@ jobs:
         shell: bash
         run: |
           current="$(git rev-parse HEAD)"
-          nightly="$(gh run list --workflow nightly.yml --branch main --status success \
-            --limit 1 --json headSha --jq '.[0].headSha // ""')"
-          test -n "$nightly"
-          test "$current" = "$nightly"
+          nightly="$(gh run list --workflow nightly.yml --branch main \
+            --limit 1 --json status,conclusion,headSha)"
+          test "$(jq -r 'length' <<< "$nightly")" = "1"
+          status="$(jq -r '.[0].status // ""' <<< "$nightly")"
+          conclusion="$(jq -r '.[0].conclusion // ""' <<< "$nightly")"
+          head_sha="$(jq -r '.[0].headSha // ""' <<< "$nightly")"
+          test "$status" = "completed"
+          test "$conclusion" = "success"
+          test "$current" = "$head_sha"
       - name: Read release version
         id: version
         shell: bash

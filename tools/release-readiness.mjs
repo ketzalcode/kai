@@ -94,7 +94,8 @@ function printResult(result, json) {
 const options = parseArgs(process.argv.slice(2));
 
 try {
-  const base = options.base ?? latestTag();
+  const releaseTag = latestTag();
+  const base = options.base ?? releaseTag;
   const changedFiles = git([
     'diff',
     '--name-only',
@@ -105,7 +106,8 @@ try {
   const result = evaluateReleaseReadiness({
     changedFiles,
     currentVersion,
-    latestVersion: versionFromTag(base),
+    latestVersion: versionFromTag(releaseTag),
+    latestTag: releaseTag,
     changelog: readAtRef(options.head, 'CHANGELOG.md'),
     generatedVersions: generatedVersions(options.head),
   });

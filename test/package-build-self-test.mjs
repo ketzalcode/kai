@@ -16,6 +16,7 @@ import {
   PUBLISHED_PACKS,
   collectReferences,
   generatedRuntimeErrors,
+  marketplaceSurfacePolicy,
   materializePacks,
   packPluginName,
   planManifests,
@@ -126,22 +127,47 @@ test('marketplace generation repairs missing and duplicate scratch entries', asy
   }
 });
 
-test('retired pack-preview ownership modes fail with migration guidance', () => {
+test('npm test runs the repository validator first', () => {
+  assert.match(packageJson.scripts.test, /^npm run validate && /);
+});
+
+test('unknown pack-preview build ownership flags fail without compatibility guidance', () => {
   const cli = join(root, 'tools', 'pack-preview.mjs');
-  for (const [flag, replacement] of [
-    ['--write', 'npm run build'],
-    ['--check', 'npm run build:check'],
-  ]) {
+  for (const flag of ['--write', '--check']) {
     const result = spawnSync(process.execPath, [cli, flag], {
       cwd: root,
       encoding: 'utf8',
     });
     assert.notEqual(result.status, 0, `${flag} must fail`);
-    assert.match(
-      `${result.stdout}${result.stderr}`,
-      new RegExp(`use ${replacement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
-    );
+    assert.doesNotMatch(`${result.stdout}${result.stderr}`, /migrat|retired|no longer supported/i);
   }
+});
+
+test('marketplace policy and pack planning expose only the current package surface', () => {
+  const source = readFileSync(join(root, 'tools', 'lib', 'pack-plan.mjs'), 'utf8');
+  assert.doesNotMatch(source, /legacy-rollback|LEGACY_GUARANTEE_REGION_OPEN|declaredInherits/);
+  assert.doesNotMatch(source, /orphans:\s*\[\]|unplaced:\s*\[\]|unassigned:\s*\[\]/);
+  const policy = marketplaceSurfacePolicy({
+    mkt: {metadata: {installSurface: 'legacy-rollback'}},
+    monolithName: 'kai',
+  });
+  assert.deepEqual(policy.requiredPluginNames, ['kai-core', 'kai-engineering', 'kai-creative']);
+  assert.ok(policy.forbiddenPluginNames.includes('kai'));
+  assert.match(policy.errors.join('\n'), /must be "packs"/);
+});
+
+test('absolute build check is independent of the caller working directory', () => {
+  const cli = join(root, 'tools', 'build.mjs');
+  const result = spawnSync(process.execPath, [cli, '--check'], {
+    cwd: dirname(root),
+    encoding: 'utf8',
+  });
+  assert.equal(
+    result.status,
+    0,
+    `absolute build check failed from parent cwd:\n${result.stdout}${result.stderr}`,
+  );
+  assert.match(result.stdout, /generated consumer and release artifacts are current/);
 });
 
 test('Core-only install is closed and loadable', () => {

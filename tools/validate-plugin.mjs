@@ -255,7 +255,7 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
 // answering the wrong question consistently. All three failures here are silent
 // in a host: an agent in no pack ships nowhere, an agent or skill in two packs
 // has ambiguous provider ownership, and a core-provided skill without the
-// `kai-core-*` prefix collides with the legacy monolith.
+// `kai-core-*` is reserved for the core package.
 // ---------------------------------------------------------------------------
 const PARTITION_SOURCE = 'scripts/lib/pack-plan.mjs';
 {
