@@ -33,15 +33,20 @@ maintainability.
   keep single-use types local, and place shared or domain types in the
   repository's established model or type boundary.
 - Handle errors explicitly. Avoid silent catches and broad fallbacks. Make
-  errors, logs, and telemetry useful without exposing sensitive data.
+  error messages and logs actionable without exposing sensitive data.
+- Treat telemetry as a compatibility contract. Preserve existing event names,
+  fields, meaning, and emission behavior unless changing telemetry is part of
+  the task; account for affected dashboards, alerts, and other consumers. For
+  new telemetry, follow repository patterns and emit useful, non-sensitive
+  signals.
 - Extract code when a boundary improves clarity, responsibility, real reuse, or
   independent testing. Keep cohesive, single-use logic local when extraction
   would hide context or add indirection. Prefer pure helpers for reusable
   transformations and decision logic.
 - Avoid speculative abstractions, unnecessary components, generic frameworks,
   and lookup tables that do not simplify the current requirement.
-- Preserve public behavior, accessibility, localization, logging, and
-  telemetry during refactors unless the task intentionally changes them.
+- Preserve public behavior, accessibility, and localization during refactors
+  unless the task intentionally changes them.
 - Test observable behavior on the changed path, including relevant priorities,
   exclusivity, fallbacks, invalid inputs, and concurrency. Run the focused
   tests, formatting, linting, and type checks that cover the affected surface.
