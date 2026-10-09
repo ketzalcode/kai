@@ -1,4 +1,46 @@
 const frozen = value => Object.freeze(value);
+const mutationRefused = () => {
+  throw new TypeError('coordination schema collections are read-only');
+};
+const readonlyMap = entries => {
+  const data = new Map(entries);
+  return frozen({
+    get size() {
+      return data.size;
+    },
+    get: key => data.get(key),
+    has: key => data.has(key),
+    keys: () => data.keys(),
+    values: () => data.values(),
+    entries: () => data.entries(),
+    forEach(callback, thisArg) {
+      data.forEach((value, key) => callback.call(thisArg, value, key, this));
+    },
+    set: mutationRefused,
+    delete: mutationRefused,
+    clear: mutationRefused,
+    [Symbol.iterator]: () => data[Symbol.iterator](),
+  });
+};
+const readonlySet = values => {
+  const data = new Set(values);
+  return frozen({
+    get size() {
+      return data.size;
+    },
+    has: value => data.has(value),
+    keys: () => data.keys(),
+    values: () => data.values(),
+    entries: () => data.entries(),
+    forEach(callback, thisArg) {
+      data.forEach(value => callback.call(thisArg, value, value, this));
+    },
+    add: mutationRefused,
+    delete: mutationRefused,
+    clear: mutationRefused,
+    [Symbol.iterator]: () => data[Symbol.iterator](),
+  });
+};
 const record = validator => frozen({validator});
 const command = (subjectKind, authority, validator, handler, allowedMutations = []) =>
   frozen({
@@ -69,7 +111,7 @@ const taskUpdateFields = [
   'updated_at',
 ];
 
-const records = new Map([
+const records = readonlyMap([
   ['epic', record('hierarchy')],
   ['feature', record('hierarchy')],
   ['requirement', record('hierarchy')],
@@ -87,60 +129,60 @@ const records = new Map([
   ['grant', record('contract')],
 ]);
 
-const commands = new Map();
+const commandEntries = new Map();
 for (const kind of ['epic', 'feature', 'requirement']) {
-  commands.set(`${kind}.create`,
+  commandEntries.set(`${kind}.create`,
     command(kind, ['host'], 'hierarchy', `${kind}.create`));
-  commands.set(`${kind}.update`,
+  commandEntries.set(`${kind}.update`,
     command(kind, ['host', 'named'], 'hierarchy', `${kind}.update`, parentUpdateFields.get(kind)));
-  commands.set(`${kind}.activate`,
+  commandEntries.set(`${kind}.activate`,
     command(kind, ['host'], 'hierarchy', `${kind}.activate`, ['state', 'updated_at']));
-  commands.set(`${kind}.hold`,
+  commandEntries.set(`${kind}.hold`,
     command(kind, ['named'], 'hierarchy', `${kind}.hold`, ['hold', 'updated_at']));
-  commands.set(`${kind}.release`,
+  commandEntries.set(`${kind}.release`,
     command(kind, ['named'], 'hierarchy', `${kind}.release`, ['hold', 'updated_at']));
-  commands.set(`${kind}.complete`,
+  commandEntries.set(`${kind}.complete`,
     command(kind, ['host'], 'hierarchy', `${kind}.complete`,
       ['state', 'completion_disposition', 'updated_at']));
 }
 
-commands.set('task.create',
+commandEntries.set('task.create',
   command('task', ['grant'], 'task', 'task.create'));
-commands.set('task.update',
+commandEntries.set('task.update',
   command('task', ['acting'], 'task', 'task.update', taskUpdateFields));
-commands.set('task.promote',
+commandEntries.set('task.promote',
   command('task', ['named'], 'task', 'task.promote', ['state', 'updated_at']));
-commands.set('task.grant',
+commandEntries.set('task.grant',
   command('task', ['grant'], 'task', 'task.grant',
     ['state', 'resume_state', 'producer_actor', 'producing_actors', 'next_role', 'lease', 'updated_at']));
-commands.set('task.transition',
+commandEntries.set('task.transition',
   command('task', ['acting', 'named'], 'task', 'task.transition',
     ['state', 'resume_state', 'acceptance_actor', 'next_role', 'lease', 'change_ref', 'updated_at']));
-commands.set('task.handoff',
+commandEntries.set('task.handoff',
   command('task', ['acting', 'leased', 'named'], 'task', 'task.handoff',
     ['state', 'resume_state', 'acceptance_actor', 'next_role', 'lease', 'change_ref', 'updated_at']));
-commands.set('task.restore',
+commandEntries.set('task.restore',
   command('task', ['host'], 'task', 'task.restore',
     ['state', 'resume_state', 'next_role', 'recovery_hold', 'updated_at']));
-commands.set('question.open',
+commandEntries.set('question.open',
   command('hierarchy', ['acting', 'grant'], 'message', 'question.open',
     ['state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at']));
-commands.set('question.answer',
+commandEntries.set('question.answer',
   command('hierarchy', ['actor', 'grant', 'host'], 'message', 'question.answer',
     ['state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at']));
-commands.set('attempt.recover',
+commandEntries.set('attempt.recover',
   command('task', ['grant', 'host'], 'recovery', 'attempt.recover',
     ['state', 'resume_state', 'next_role', 'lease', 'producer_actor',
       'producing_actors', 'recovery_hold', 'updated_at']));
 
-commands.set('attempt.start',
+commandEntries.set('attempt.start',
   command('task', ['host'], 'host', 'attempt.start'));
-commands.set('attempt.result',
+commandEntries.set('attempt.result',
   command('task', ['host'], 'host', 'attempt.result',
     ['observations', 'gaps', 'status']));
-commands.set('effect.intent',
+commandEntries.set('effect.intent',
   command('task', ['host'], 'host', 'effect.intent'));
-commands.set('effect.result',
+commandEntries.set('effect.result',
   command('task', ['host'], 'host', 'effect.result',
     ['observations', 'gaps', 'outcome']));
 for (const kind of [
@@ -150,31 +192,32 @@ for (const kind of [
   'review.record',
   'approval.record',
 ]) {
-  commands.set(kind, command('hierarchy',
+  commandEntries.set(kind, command('hierarchy',
     ['acting', 'leased', 'named', 'host'], 'producer', kind));
 }
+const commands = readonlyMap(commandEntries);
 
 export const COORDINATION_SCHEMA = frozen({records, commands});
 
-export const RECORD_KINDS = frozen(new Set(records.keys()));
-export const COMMAND_KINDS = frozen(new Set(commands.keys()));
-export const HIERARCHY_KINDS = frozen(new Set(
+export const RECORD_KINDS = readonlySet(records.keys());
+export const COMMAND_KINDS = readonlySet(commands.keys());
+export const HIERARCHY_KINDS = readonlySet(
   [...records].filter(([, declaration]) =>
     declaration.validator === 'hierarchy' || declaration.validator === 'task')
     .map(([kind]) => kind),
-));
-export const PARENT_COMMAND_KINDS = frozen(new Set(
+);
+export const PARENT_COMMAND_KINDS = readonlySet(
   [...commands].filter(([, declaration]) => declaration.validator === 'hierarchy')
     .map(([kind]) => kind),
-));
-export const TASK_COMMAND_KINDS = frozen(new Set(
+);
+export const TASK_COMMAND_KINDS = readonlySet(
   [...commands].filter(([, declaration]) => declaration.validator === 'task')
     .map(([kind]) => kind),
-));
-export const HOST_COMMAND_KINDS = frozen(new Set(
+);
+export const HOST_COMMAND_KINDS = readonlySet(
   [...commands].filter(([, declaration]) => declaration.validator === 'host')
     .map(([kind]) => kind),
-));
+);
 
 export function recordKind(kind) {
   return records.get(kind) ?? null;

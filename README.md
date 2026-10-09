@@ -42,7 +42,7 @@ Three packages. That is the entire shipped surface.
   | kai-core                                                            |
   |                                                                      |
   |  5 agents                                                            |
-  | 24 skills                                                            |
+  | 25 skills                                                            |
   |  6 executable entry points                                           |
   | hooks.json (subagent observation)                                    |
   | templates/ (decision, spec, report, publication)                     |
@@ -60,7 +60,7 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 5 / 24 | Shared contracts, workspace machinery, requested coordination |
+| `kai-core` | 5 / 25 | Shared contracts, workspace machinery, requested coordination |
 | `kai-engineering` | 13 / 7 | Implementation, architecture, independent review, delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
@@ -311,7 +311,7 @@ a publication, or a host-verification claim.
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **21 agents and 38 skills** |
+| Surface | **21 agents and 39 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 

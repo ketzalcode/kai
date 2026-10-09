@@ -159,21 +159,21 @@ export const INCUBATED_AGENT_IDS = Object.freeze(
   [...incubatedIds(REPO_ROOT, 'agent')].sort(),
 );
 
-export const PACKS = Object.freeze(Object.fromEntries(PACK_ORDER.map((pack) => {
-  const dir = join(REPO_ROOT, PACKS_DIR, packPluginName(pack), 'agents');
-  const agents = existsSync(dir)
-    ? readdirSync(dir).filter(name => name.endsWith('.agent.md'))
-      .map(name => name.replace(/\.agent\.md$/, '')).sort()
-    : [];
-  return [pack, Object.freeze(agents)];
-})));
+export function packageAgentInventory(root = REPO_ROOT) {
+  return Object.freeze(Object.fromEntries(PACK_ORDER.map((pack) => {
+    const dir = join(root, PACKS_DIR, packPluginName(pack), 'agents');
+    const agents = existsSync(dir)
+      ? readdirSync(dir).filter(name => name.endsWith('.agent.md'))
+        .map(name => name.replace(/\.agent\.md$/, '')).sort()
+      : [];
+    return [pack, Object.freeze(agents)];
+  })));
+}
 
-// Skills with no loaded firing path still need one explicit provider. These
-// dispositions were ratified in the partition lock; keeping them here makes the
-// generator use the reviewed decision instead of silently defaulting to core.
-export const SKILL_OWNER_OVERRIDES = {
-  'kai-core-fleet-observation': 'core',
-};
+// Compatibility inventory for callers operating on this checkout. Any caller
+// that accepts a root must use packageAgentInventory(root) instead.
+export const PACKS = packageAgentInventory();
+export const SKILL_OWNER_OVERRIDES = Object.freeze({});
 
 // Retained source and validation cover every active package. Publication is a
 // separate decision, but the active partition and the default index are now the
@@ -620,61 +620,29 @@ export function loadedSkills(body) {
   return new Set([...declaredInherits(body), ...routedSkills(body)]);
 }
 
-// Assign every skill on disk to exactly one provider. The mechanical rule handles
-// inherited skills; SKILL_OWNER_OVERRIDES carries the reviewed disposition for
-// user-invocable and orchestrated skills that inheritance alone cannot place.
+// Physical package directories are the ownership declaration for both agents
+// and skills. References may validate whether one package can use another
+// package's skill, but usage never changes who provides it.
 export function planPacks(root = REPO_ROOT) {
-  const packOf = new Map();
-  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) packOf.set(id, pack);
+  const packages = packageAgentInventory(root);
+  const byPack = Object.fromEntries(PACK_ORDER.map(pack => [pack, []]));
+  for (const skill of sourceSkillFiles(root)) byPack[skill.pack].push(skill.id);
+  for (const skills of Object.values(byPack)) skills.sort();
 
-  const allAgents = listAgentIds(root);
-  const unassigned = allAgents.filter((id) => !packOf.has(id));
-
-  const usedBy = new Map();
-  for (const id of allAgents) {
-    for (const s of loadedSkillsOnDisk(root, readAgentBody(root, id))) {
-      if (!usedBy.has(s)) usedBy.set(s, new Set());
-      usedBy.get(s).add(packOf.get(id) ?? '?');
-    }
-  }
-
-  const onDisk = listSkillIds(root);
-
-  const inheritedCore = [];
-  const inheritedLocal = Object.fromEntries(Object.keys(PACKS).map((p) => [p, []]));
-  const orphans = [];
-  for (const s of onDisk) {
-    const packs = usedBy.get(s);
-    if (!packs) { orphans.push(s); continue; }
-    // A `kai-core-*` name is core's own declaration of ownership, and
-    // namespaceErrors rejects any other provider for it. Usage can narrow to a
-    // single department — as it does whenever the other callers are retired or
-    // incubated — without transferring the contract out of core.
-    if (s.startsWith(CORE_SKILL_PREFIX) || packs.size > 1 || packs.has('core')) inheritedCore.push(s);
-    else inheritedLocal[[...packs][0]].push(s);
-  }
-
-  const core = [...inheritedCore];
-  const local = Object.fromEntries(
-    Object.entries(inheritedLocal).map(([pack, skills]) => [pack, [...skills]]),
-  );
-  const unplaced = [];
-  for (const skill of orphans) {
-    const owner = SKILL_OWNER_OVERRIDES[skill];
-    if (owner === 'core') core.push(skill);
-    else if (owner && local[owner]) local[owner].push(skill);
-    else unplaced.push(skill);
-  }
-  core.sort();
-  for (const skills of Object.values(local)) skills.sort();
+  const core = [...byPack.core];
+  const local = Object.fromEntries(PACK_ORDER.map(pack => [
+    pack,
+    pack === 'core' ? [] : [...byPack[pack]],
+  ]));
   return {
     core,
     local,
-    orphans,
-    unplaced,
-    inheritedCore: inheritedCore.sort(),
-    inheritedLocal,
-    unassigned,
+    packages,
+    // Compatibility diagnostics. Physical placement means every discovered
+    // entry already has an owner; no usage-derived orphan/override phase exists.
+    orphans: [],
+    unplaced: [],
+    unassigned: [],
   };
 }
 
@@ -685,12 +653,12 @@ export function planManifests({
 } = {}) {
   const plan = planPacks(root);
   const selected = [...new Set(packs)];
-  const unknown = selected.filter((pack) => !PACKS[pack]);
+  const unknown = selected.filter((pack) => !Object.hasOwn(plan.packages, pack));
   if (unknown.length) throw new Error(`unknown pack(s): ${unknown.join(', ')}`);
   return PACK_ORDER.filter((pack) => selected.includes(pack)).map((pack) => {
     const isCore = pack === 'core';
     const name = packPluginName(pack);
-    const agents = [...PACKS[pack]].sort();
+    const agents = [...plan.packages[pack]];
     const skills = (isCore ? [...plan.core] : [...plan.local[pack]]).sort();
 
     // Fixed key order for byte-stable JSON: name, version, description, agents, skills.
@@ -1773,10 +1741,11 @@ function skillOwners(plan) {
   return owners;
 }
 
-// agent id -> owning pack, straight from the locked partition.
-function agentOwners() {
+// agent id -> owning pack, straight from the selected root's physical package
+// directories.
+function agentOwners(packages = PACKS) {
   const owners = new Map();
-  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) owners.set(id, pack);
+  for (const [pack, ids] of Object.entries(packages)) for (const id of ids) owners.set(id, pack);
   return owners;
 }
 
@@ -1855,7 +1824,7 @@ export function packProviders(files, packs = PACK_ORDER) {
 export function collectReferences(root = REPO_ROOT) {
   const plan = planPacks(root);
   const skillOf = skillOwners(plan);
-  const agentOf = agentOwners();
+  const agentOf = agentOwners(plan.packages);
 
   const refs = [];
   const add = (from, fromPack, firing, kind, target) => {
@@ -1955,8 +1924,9 @@ export function referenceErrors({ refs, providers }) {
     if (!ref.fromPack) {
       errs.push({
         file: ref.from,
-        msg: `${label} comes from a file no pack owns — place it in PACKS or SKILL_OWNER_OVERRIDES `
-          + 'before its references can resolve to anything',
+        msg: `${label} comes from a file no pack owns — place it under exactly one `
+          + '`plugins/<pack>/agents` or `plugins/<pack>/skills` directory before its references '
+          + 'can resolve to anything',
       });
       continue;
     }
@@ -2291,11 +2261,10 @@ export function hooksAssignmentErrors({ owners, hookAssets = [], assets = new Ma
 // function over the live tree.
 // ---------------------------------------------------------------------------
 
-// Every agent in exactly one pack, every skill with exactly one provider, and
-// every reviewed override still pointing at a skill inheritance cannot place.
+// Every agent and skill has exactly one physical package provider.
 // Returns plain message strings.
 export function partitionErrors({
-  plan, agents = [], skills = [], packs = PACKS, overrides = SKILL_OWNER_OVERRIDES,
+  plan, agents = [], skills = [], packs = plan?.packages ?? PACKS,
 }) {
   const errs = [];
   const onDisk = new Set(agents);
@@ -2339,29 +2308,6 @@ export function partitionErrors({
   for (const [id, pack] of providerOf) {
     if (!skillSet.has(id)) {
       errs.push(`skill \`${id}\` is planned into ${packPluginName(pack)} but is not a skill on disk`);
-    }
-  }
-
-  const orphans = new Set(plan.orphans ?? []);
-  for (const [id, owner] of Object.entries(overrides)) {
-    if (!skillSet.has(id)) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, which is not a skill on disk — a reviewed `
-        + 'disposition for a renamed or deleted skill places nothing and says so nowhere');
-      continue;
-    }
-    if (owner !== 'core' && !packs[owner]) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\` in "${owner}", which is not a pack`);
-      continue;
-    }
-    if (!orphans.has(id)) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already loads it — loading `
-        + 'places it, so the override is a second truth about one skill');
-    }
-  }
-  for (const id of orphans) {
-    if (!(id in overrides)) {
-      errs.push(`skill \`${id}\` is loaded by no agent and has no reviewed provider in `
-        + 'SKILL_OWNER_OVERRIDES — it would ship in no pack at all');
     }
   }
   return errs;

@@ -36,7 +36,7 @@ import {
 } from '../src/core/lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  SKILL_OWNER_OVERRIDES, HOOKS_FILE, HOOKS_OWNER, CORE_SKILL_PREFIX,
+  HOOKS_FILE, HOOKS_OWNER, CORE_SKILL_PREFIX,
   packPluginName, sourceAssetIndex,
   planPacks, planManifests, materializePacks,
   manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
@@ -511,14 +511,13 @@ function selfTest() {
   const localAll = Object.values(plan.local).flat();
   ok(localAll.every((s) => !plan.core.includes(s)),
     'no skill is provided by both core and a pack: exactly one provider each');
-  ok(plan.orphans.length === Object.keys(SKILL_OWNER_OVERRIDES).length,
-    'skills no agent inherits remain visible as mechanical orphans before overrides');
+  ok(plan.orphans.length === 0,
+    'physical skill placement leaves no usage-derived ownership orphans');
   ok(plan.unplaced.length === 0,
-    'every mechanical orphan has an explicit reviewed provider');
+    'every skill directory provides its skill without an ownership override');
   ok(plan.core.includes('kai-core-fleet-observation')
-    && !Object.values(SKILL_OWNER_OVERRIDES).includes('creative')
     && plan.local.engineering.includes('onboard-to-codebase'),
-  'the generator applies the ratified core and engineering orphan dispositions without a creative override');
+  'core and engineering skills remain with their physical package providers');
 
   // The degraded-mode refusal is no longer a shared block validated by
   // degradedBlockErrors — every agent writes its own, and agentRoutingErrors
@@ -1028,7 +1027,6 @@ function selfTest() {
     agents: ['director-a', 'persona-b'],
     skills: ['kai-core-shared', 'personal-skill'],
     packs: { core: ['director-a'], personal: ['persona-b'] },
-    overrides: {},
     ...over,
   });
   const partitionMsgs = (over) => partitionErrors(world(over));
@@ -1056,18 +1054,6 @@ function selfTest() {
     plan: { ...cleanPlan, local: { core: [], personal: ['personal-skill', 'ghost-skill'] } },
   }).some((m) => /skill `ghost-skill` is planned into kai-personal but is not a skill on disk/.test(m)),
   'a planned skill that no longer exists on disk fails by name');
-  ok(partitionMsgs({ overrides: { 'gone-skill': 'core' } })
-    .some((m) => /places `gone-skill`, which is not a skill on disk/.test(m)),
-  'a reviewed disposition for a renamed or deleted skill fails instead of placing nothing');
-  ok(partitionMsgs({ overrides: { 'personal-skill': 'nope' } })
-    .some((m) => /places `personal-skill` in "nope", which is not a pack/.test(m)),
-  'an override naming a pack that does not exist fails by name');
-  ok(partitionMsgs({ overrides: { 'personal-skill': 'personal' } })
-    .some((m) => /but an agent already loads it/.test(m)),
-  'an override for a skill loading already places fails: one skill, one truth about its provider');
-  ok(partitionMsgs({ plan: { ...cleanPlan, orphans: ['personal-skill'] } })
-    .some((m) => /has no reviewed provider in SKILL_OWNER_OVERRIDES/.test(m)),
-  'an orphan with no reviewed disposition fails by name: it would ship in no pack at all');
   ok(sourceFileErrors({
     agents: [
       { id: 'persona-b', rel: 'plugins/kai-personal/agents/persona-b.agent.md' },
@@ -1732,9 +1718,9 @@ function selfTest() {
 // ---------------------------------------------------------------------------
 const GATE_VERSION = '0.0.0-gate';
 
-// Every agent in exactly one pack, every skill with exactly one provider, every
-// reviewed override still placing something, core's namespace respected in both
-// directions, and role availability still decided by roster membership.
+// Every agent and skill has exactly one physical package provider, core's
+// namespace is respected in both directions, and role availability is still
+// decided by roster membership.
 function gatePartition() {
   const plan = planPacks(ROOT);
   const errs = [
@@ -1911,15 +1897,9 @@ if (args.includes('--self-test')) {
   for (const b of r.built) {
     console.log(`  ${b.name.padEnd(28)} ${String(b.agents).padStart(2)} agents  ${b.dir}`);
   }
-  console.log(`\ncore skills: ${r.plan.core.length} (+${r.plan.orphans.length} loaded by nobody)`);
+  console.log(`\ncore skills: ${r.plan.core.length}`);
   for (const [p, l] of Object.entries(r.plan.local)) {
     if (l.length) console.log(`  ${p} owns ${l.length}: ${l.join(', ')}`);
-  }
-  if (r.plan.orphans.length) {
-    console.log(`\nexplicitly placed outside inheritance:`);
-    for (const skill of r.plan.orphans) {
-      console.log(`  ${skill} -> ${SKILL_OWNER_OVERRIDES[skill]}`);
-    }
   }
   reportPreflight(out);
 } else if (args.includes('--out')) {
