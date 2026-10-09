@@ -39,10 +39,13 @@ maintainability.
   the task; account for affected dashboards, alerts, and other consumers. For
   new telemetry, follow repository patterns and emit useful, non-sensitive
   signals.
-- Extract code when a boundary improves clarity, responsibility, real reuse, or
-  independent testing. Keep cohesive, single-use logic local when extraction
-  would hide context or add indirection. Prefer pure helpers for reusable
-  transformations and decision logic.
+- Give each unit one coherent responsibility. A UI component boundary earns
+  itself when it owns reusable behavior, independent state or lifecycle, or a
+  stable interface. Keep a one-off render branch with the component that owns
+  its state. Extract other code for clarity, real reuse, or independent
+  testing; keep cohesive, single-use logic local when extraction would hide
+  context or add indirection. Prefer pure helpers for reusable transformations
+  and decisions.
 - Avoid speculative abstractions, unnecessary components, generic frameworks,
   and lookup tables that do not simplify the current requirement.
 - Preserve public behavior, accessibility, and localization during refactors
