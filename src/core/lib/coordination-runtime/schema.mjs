@@ -4,42 +4,21 @@ const mutationRefused = () => {
 };
 const readonlyMap = entries => {
   const data = new Map(entries);
-  return frozen({
-    get size() {
-      return data.size;
-    },
-    get: key => data.get(key),
-    has: key => data.has(key),
-    keys: () => data.keys(),
-    values: () => data.values(),
-    entries: () => data.entries(),
-    forEach(callback, thisArg) {
-      data.forEach((value, key) => callback.call(thisArg, value, key, this));
-    },
-    set: mutationRefused,
-    delete: mutationRefused,
-    clear: mutationRefused,
-    [Symbol.iterator]: () => data[Symbol.iterator](),
+  Object.defineProperties(data, {
+    set: {value: mutationRefused},
+    delete: {value: mutationRefused},
+    clear: {value: mutationRefused},
   });
+  return frozen(data);
 };
 const readonlySet = values => {
   const data = new Set(values);
-  return frozen({
-    get size() {
-      return data.size;
-    },
-    has: value => data.has(value),
-    keys: () => data.keys(),
-    values: () => data.values(),
-    entries: () => data.entries(),
-    forEach(callback, thisArg) {
-      data.forEach(value => callback.call(thisArg, value, value, this));
-    },
-    add: mutationRefused,
-    delete: mutationRefused,
-    clear: mutationRefused,
-    [Symbol.iterator]: () => data[Symbol.iterator](),
+  Object.defineProperties(data, {
+    add: {value: mutationRefused},
+    delete: {value: mutationRefused},
+    clear: {value: mutationRefused},
   });
+  return frozen(data);
 };
 const record = validator => frozen({validator});
 const command = (subjectKind, authority, validator, handler, allowedMutations = []) =>

@@ -511,7 +511,7 @@ test('shared contract accepts explicit hierarchy records and Task commands', () 
     leaseToken: null,
     payload: {body: legacyRecord.body},
   };
-  assert.equal(validateRecord(legacyRecord), legacyRecord);
+  assert.throws(() => validateRecord(legacyRecord), invalid());
   assert.throws(() => validateCommand(legacyCommand), invalid());
 });
 

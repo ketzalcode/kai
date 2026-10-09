@@ -547,11 +547,11 @@ export function sourceFileErrors({
 }
 
 export function sourcePlacementErrors({
-  agents = sourceAgentFiles(), skills = sourceSkillFiles(), plan, packs = PACKS,
+  agents = sourceAgentFiles(), skills = sourceSkillFiles(), plan, packs,
 } = {}) {
   const errors = [];
   const expectedAgentPack = new Map();
-  for (const [pack, ids] of Object.entries(packs)) {
+  for (const [pack, ids] of Object.entries(packs ?? plan?.packages ?? PACKS)) {
     for (const id of ids) expectedAgentPack.set(id, pack);
   }
   for (const entry of agents) {

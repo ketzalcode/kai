@@ -130,6 +130,15 @@ test('coordination registry is the complete executable schema-5 declaration', ()
 });
 
 test('coordination registry views and declarations reject mutation', () => {
+  assert.ok(COORDINATION_SCHEMA.records instanceof Map);
+  assert.ok(COORDINATION_SCHEMA.commands instanceof Map);
+  assert.ok(RECORD_KINDS instanceof Set);
+  assert.ok(COMMAND_KINDS instanceof Set);
+  assert.deepEqual(COORDINATION_SCHEMA.records, new Map(COORDINATION_SCHEMA.records));
+  assert.deepEqual(COORDINATION_SCHEMA.commands, new Map(COORDINATION_SCHEMA.commands));
+  assert.deepEqual(RECORD_KINDS, new Set(expectedRecords));
+  assert.deepEqual(COMMAND_KINDS, new Set(expectedCommands));
+
   const expectRefusal = (mutate, restore) => {
     let error = null;
     try {
@@ -247,6 +256,16 @@ test('skill ownership follows the physical package directory without use inferen
       'Load `engineering-physical-skill`.',
       '',
     ].join('\n'));
+    write('plugins/kai-core/agents/eng-builder-software.agent.md', [
+      '---',
+      'name: eng-builder-software',
+      'description: "Alternate-root reuse of a checkout engineering id in core."',
+      'tools: [read, skill]',
+      '---',
+      '',
+      'Load `kai-core-physical-skill`.',
+      '',
+    ].join('\n'));
     write('plugins/kai-core/skills/kai-core-physical-skill/SKILL.md', [
       '---',
       'name: kai-core-physical-skill',
@@ -276,11 +295,16 @@ test('skill ownership follows the physical package directory without use inferen
     assert.deepEqual(plan.core, ['kai-core-physical-skill']);
     assert.deepEqual(plan.local.engineering, ['engineering-physical-skill']);
     assert.deepEqual(plan.local.creative, []);
+    assert.deepEqual(packPlan.sourcePlacementErrors({
+      agents: packPlan.sourceAgentFiles(root),
+      skills: packPlan.sourceSkillFiles(root),
+      plan,
+    }), []);
 
     const manifests = packPlan.planManifests({root});
     assert.deepEqual(
       manifests.find(entry => entry.pack === 'core').agents,
-      ['alt-core'],
+      ['alt-core', 'eng-builder-software'],
     );
     assert.deepEqual(
       manifests.find(entry => entry.pack === 'engineering').agents,
