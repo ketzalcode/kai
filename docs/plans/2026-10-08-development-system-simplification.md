@@ -479,7 +479,7 @@ git commit -m "refactor(release): replace PR gates with release readiness" `
 - Create: `.github/workflows/nightly.yml`
 - Create: `.github/workflows/release.yml`
 - Delete: `.github/workflows/validate.yml`
-- Delete: `.github/scripts/check-commit-metadata.mjs`
+- Delete: the obsolete GitHub commit-metadata guard script
 - Modify: `docs/development-process.md` if Task 10 has not created it yet; otherwise defer prose to Task 10
 
 **Interfaces:**
@@ -577,8 +577,8 @@ steps. Do not make an already released version a failed workflow.
 
 - [ ] **Step 3: Remove per-PR workflow and metadata guard**
 
-Delete `.github/workflows/validate.yml` and
-`.github/scripts/check-commit-metadata.mjs`.
+Delete `.github/workflows/validate.yml` and the obsolete GitHub
+commit-metadata guard script.
 
 Verify no workflow contains:
 
@@ -616,7 +616,8 @@ Do not modify branch protection until the new nightly workflow is merged.
 
 ```powershell
 git add .github\workflows\nightly.yml .github\workflows\release.yml
-git rm .github\workflows\validate.yml .github\scripts\check-commit-metadata.mjs
+git rm .github\workflows\validate.yml
+git add -u .github\scripts
 git commit -m "ci: replace PR validation with nightly releases" `
   -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 ```
