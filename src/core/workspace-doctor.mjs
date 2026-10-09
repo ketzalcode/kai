@@ -115,10 +115,10 @@ function schema5WorkspaceValidation(root, manifest, {
   const databasePath = join(root, ...COORDINATION_DATABASE.split('/'));
   let store;
   if (!existsSync(databasePath)) {
-    errors.push(`schema-5 workspace is missing required store "${COORDINATION_DATABASE}"`);
+    errors.push(`RECOVERY_REQUIRED: schema-5 workspace is missing required store "${COORDINATION_DATABASE}"`);
   } else if (pathHasLink(root, databasePath) || !exactPath(databasePath)
     || !lstatSync(databasePath).isFile()) {
-    errors.push(`schema-5 store "${COORDINATION_DATABASE}" must be an exact unlinked file`);
+    errors.push(`RECOVERY_REQUIRED: schema-5 store "${COORDINATION_DATABASE}" must be an exact unlinked file`);
   } else {
     try {
       store = openStore({path: databasePath, mode: 'read'});
@@ -442,26 +442,41 @@ function jsonText(value) {
       `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`);
 }
 
+function reportDiagnostics(errors) {
+  const diagnostics = errors.map(error => {
+    if (error.startsWith('SCHEMA_MISMATCH:') || error.startsWith('RECOVERY_REQUIRED:')
+      || error.startsWith('INVALID_INPUT:')) {
+      return error;
+    }
+    return `INVALID_INPUT: ${error}`;
+  });
+  const code = diagnostics.some(error => error.startsWith('SCHEMA_MISMATCH:'))
+    ? 'SCHEMA_MISMATCH'
+    : diagnostics.some(error => error.startsWith('RECOVERY_REQUIRED:'))
+      ? 'RECOVERY_REQUIRED'
+      : (diagnostics.length ? 'INVALID_INPUT' : null);
+  return {code, diagnostics};
+}
+
 function report(root, result, json = false) {
+  const {code, diagnostics} = reportDiagnostics(result.errors);
   if (json) {
     console.log(jsonText({
-      ok: result.errors.length === 0,
-      code: result.errors.some(error => error.startsWith('SCHEMA_MISMATCH:'))
-        ? 'SCHEMA_MISMATCH'
-        : (result.errors.length ? 'INVALID_INPUT' : null),
+      ok: diagnostics.length === 0,
+      code,
       root,
-      errors: result.errors,
+      errors: diagnostics,
       warnings: result.warnings,
     }));
-    return result.errors.length ? 1 : 0;
+    return diagnostics.length ? 1 : 0;
   }
   for (const warning of result.warnings) console.log(`  ! ${warning}`);
-  for (const error of result.errors) console.log(`  ✗ ${error}`);
-  if (!result.errors.length) {
+  for (const error of diagnostics) console.log(`  ✗ ${error}`);
+  if (!diagnostics.length) {
     console.log(`✓ workspace healthy — claimable (${root === process.cwd() ? '.' : root})`);
     return 0;
   }
-  console.log(`✗ workspace not claimable: ${result.errors.length} error(s)`);
+  console.log(`✗ workspace not claimable: ${diagnostics.length} error(s)`);
   return 1;
 }
 

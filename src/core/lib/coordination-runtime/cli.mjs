@@ -80,7 +80,7 @@ function hierarchyDirection(store) {
 
 export async function execute({verb, options, body, host, cwd, env}) {
   const resolved = resolveWorkspaceRoot({explicitRoot: options.root, cwd, env});
-  if (!resolved.ok) fail('INVALID_INPUT', resolved.reason);
+  if (!resolved.ok) fail(resolved.code ?? 'INVALID_INPUT', resolved.reason);
   const {root} = resolved;
   const manifest = readWorkspaceContract(root, {env});
   const database = COORDINATION_DATABASE;

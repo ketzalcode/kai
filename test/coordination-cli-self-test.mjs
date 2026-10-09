@@ -261,6 +261,40 @@ test('schema 3 and 4 are unsupported and route to re-onboarding', async () => {
   assert.equal(direct.result.coordinationRequired, false);
 });
 
+test('registry discovery preserves unsupported external workspace schema taxonomy', async () => {
+  const root = mkdtempSync(join(scratch, 'external-schema-'));
+  const projectRoot = join(root, 'project');
+  const workspaceRoot = join(root, 'workspace');
+  const kaiHome = join(root, 'home');
+  const workspaceId = `external-${randomUUID()}`;
+  mkdirSync(projectRoot, {recursive: true});
+  mkdirSync(join(workspaceRoot, '.kai'), {recursive: true});
+  mkdirSync(kaiHome, {recursive: true});
+  writeFileSync(join(workspaceRoot, '.kai', 'manifest.json'), `${JSON.stringify({
+    schema_version: 4,
+    workspace_id: workspaceId,
+  })}\n`);
+  writeFileSync(join(kaiHome, 'workspaces.json'), `${JSON.stringify({
+    schema_version: 1,
+    workspaces: [{
+      project_root: projectRoot,
+      workspace_root: workspaceRoot,
+      workspace_id: workspaceId,
+    }],
+  })}\n`);
+  try {
+    const result = await runCLI(['inspect'], {
+      cwd: projectRoot,
+      env: {...process.env, KAI_HOME: kaiHome},
+    });
+    assert.equal(result.exitCode, 1);
+    assert.equal(result.result.code, 'SCHEMA_MISMATCH');
+    assert.match(result.result.message, /kai-core-workspace-reonboard/);
+  } finally {
+    rmSync(root, {recursive: true, force: true});
+  }
+});
+
 test('unsupported maintenance requests cannot initialize or leave host authorization state', async () =>
   workspace(async ({root}) => {
     const result = await runCLI(['request', '--root', root], {

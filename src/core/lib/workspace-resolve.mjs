@@ -392,7 +392,8 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
     return {
       ok: false,
-      reason: 'SCHEMA_MISMATCH: workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard',
+      code: 'SCHEMA_MISMATCH',
+      reason: 'workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard',
     };
   }
   if (manifest.placement !== 'external') {
@@ -457,7 +458,7 @@ export function findRegisteredWorkspace(cwd, env = process.env) {
  * Resolve the workspace root a CLI should operate against.
  *
  * @returns {{ok: true, root: string, source: 'explicit'|'env'|'search'|'registry', projectRoot?: string}
- *   | {ok: false, reason: string}}
+ *   | {ok: false, code?: string, reason: string}}
  */
 export function resolveWorkspaceRoot(opts = {}) {
   const { explicitRoot, cwd = process.cwd(), env = process.env } = opts;

@@ -4,10 +4,13 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {test} from 'node:test';
+import {fileURLToPath} from 'node:url';
 import {
   checkWorkspace,
   initializeWorkspace,
 } from '../src/core/workspace-doctor.mjs';
+
+const doctor = fileURLToPath(new URL('../src/core/workspace-doctor.mjs', import.meta.url));
 
 const direction = [
   '# Vision',
@@ -86,3 +89,48 @@ test('unsupported manifests route to re-onboarding', () => workspace(root => {
   assert.match(result.errors.join('\n'), /SCHEMA_MISMATCH/);
   assert.match(result.errors.join('\n'), /kai-core-workspace-reonboard/);
 }));
+
+test('doctor entrypoint preserves schema, recovery, and invalid-input taxonomy', () => {
+  const cases = [
+    {
+      code: 'SCHEMA_MISMATCH',
+      prepare(root) {
+        mkdirSync(join(root, '.kai'), {recursive: true});
+        writeFileSync(join(root, '.kai', 'manifest.json'), '{"schema_version":4}\n');
+      },
+    },
+    {
+      code: 'RECOVERY_REQUIRED',
+      prepare(root) {
+        const result = initializeWorkspace({root, manifest: manifest(), confirm: true});
+        assert.equal(result.ok, true, result.reason);
+        writeFileSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite'), 'not sqlite\n');
+      },
+    },
+    {
+      code: 'INVALID_INPUT',
+      prepare(root) {
+        const result = initializeWorkspace({root, manifest: manifest(), confirm: true});
+        assert.equal(result.ok, true, result.reason);
+        const path = join(root, '.kai', 'manifest.json');
+        const current = JSON.parse(readFileSync(path));
+        writeFileSync(path, `${JSON.stringify({...current, runs: '.kai/runs'}, null, 2)}\n`);
+      },
+    },
+  ];
+
+  for (const {code, prepare} of cases) {
+    workspace(root => {
+      prepare(root);
+      const json = spawnSync(process.execPath, [doctor, '--root', root, '--json'], {encoding: 'utf8'});
+      assert.notEqual(json.status, 0, code);
+      const result = JSON.parse(json.stdout);
+      assert.equal(result.code, code);
+      assert.match(result.errors.join('\n'), new RegExp(`^${code}:`, 'm'));
+
+      const human = spawnSync(process.execPath, [doctor, '--root', root], {encoding: 'utf8'});
+      assert.notEqual(human.status, 0, code);
+      assert.match(human.stdout, new RegExp(`${code}:`));
+    });
+  }
+});
