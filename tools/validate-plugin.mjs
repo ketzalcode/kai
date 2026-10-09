@@ -56,6 +56,11 @@ import {
 import {
   incubatedIds, incubatedPackageDirs, incubatedManifestPaths, documentationReferenceExists,
 } from './lib/incubation-contract.mjs';
+import {
+  CLOSE_REPOSITORY_INSTRUCTIONS,
+  extractRepositoryInstructions,
+  OPEN_REPOSITORY_INSTRUCTIONS,
+} from './lib/repository-instructions.mjs';
 import { MARKETPLACE } from '../src/core/lib/migration-doctor.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -299,19 +304,21 @@ const repositoryBlockAsset = 'scripts/lib/repository-instructions-block.md';
 const repositoryBlockIndex = sourceAssetIndex(ROOT);
 const repositoryBlockEntry = repositoryBlockIndex.get(repositoryBlockAsset);
 const repositoryBlock = repositoryBlockEntry
-  ? readFileSync(repositoryBlockEntry.path, 'utf8').replace(/\r\n/g, '\n').trim()
+  ? readFileSync(repositoryBlockEntry.path, 'utf8')
   : null;
 if (!repositoryBlock) {
   err(repositoryBlockAsset, 'missing (canonical repository-instructions block)');
 } else {
-  const OPEN = '<!-- >>> kai repository instructions (managed by workflow-workspace-init) >>> -->';
-  const CLOSE = '<!-- <<< kai repository instructions <<< -->';
-  if (!repositoryBlock.startsWith(OPEN) || !repositoryBlock.endsWith(CLOSE)) {
+  const hasExactCloseBoundary =
+    repositoryBlock.endsWith(CLOSE_REPOSITORY_INSTRUCTIONS) ||
+    repositoryBlock.endsWith(`${CLOSE_REPOSITORY_INSTRUCTIONS}\n`) ||
+    repositoryBlock.endsWith(`${CLOSE_REPOSITORY_INSTRUCTIONS}\r\n`);
+  if (!repositoryBlock.startsWith(OPEN_REPOSITORY_INSTRUCTIONS) || !hasExactCloseBoundary) {
     err(repositoryBlockAsset, 'must open and close with the exact managed-block markers, or onboarding cannot update or remove its own block without touching user text');
   }
   const ownAgents = join(ROOT, 'AGENTS.md');
-  const ownRaw = existsSync(ownAgents) ? readFileSync(ownAgents, 'utf8').replace(/\r\n/g, '\n') : '';
-  if (!ownRaw.includes(repositoryBlock)) {
+  const ownRaw = existsSync(ownAgents) ? readFileSync(ownAgents, 'utf8') : '';
+  if (extractRepositoryInstructions(ownRaw) !== repositoryBlock) {
     err('AGENTS.md', `missing the verbatim repository-instructions block from ${repositoryBlockAsset} (kai must use the instructions it ships)`);
   }
   // Onboarding is what installs the block in a consumer workspace; if it stops
