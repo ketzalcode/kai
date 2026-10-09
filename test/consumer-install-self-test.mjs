@@ -2,7 +2,7 @@
 // consumer repository. Source modules and repository node_modules are
 // deliberately unavailable from every executed entrypoint.
 import assert from 'node:assert/strict';
-import {execFileSync, spawnSync} from 'node:child_process';
+import {spawnSync} from 'node:child_process';
 import {
   cpSync,
   existsSync,
@@ -41,7 +41,6 @@ const direction = [
   '- Eager department directories.',
   '',
 ].join('\n');
-const LOAD_FAILURE = /^\s+at\s+\S/m;
 let failures = 0;
 const ok = (condition, message, detail = '') => {
   if (condition) {
@@ -155,30 +154,49 @@ function checkoutAncestorsWithNodeModules() {
 }
 
 function probeEntrypoints(installedRoot, packs, consumerRoot) {
+  const narrationPlan = join(consumerRoot, 'narration-plan.json');
+  const narrationVideo = join(consumerRoot, 'render.mp4');
+  const narrationOutput = join(consumerRoot, 'narrated.mp4');
+  writeFileSync(narrationPlan, JSON.stringify({
+    ok: true,
+    beats: [{path: 'clip.wav', start: 0}],
+  }));
+  writeFileSync(narrationVideo, '');
+  const invocations = new Map([
+    ['kai-core/scripts/activity.mjs', ['--help']],
+    ['kai-core/scripts/coordinate.mjs', ['direct']],
+    ['kai-core/scripts/observe-subagent.mjs', ['--status', '--root', consumerRoot]],
+    ['kai-core/scripts/observe-watch.mjs', ['--once', '--root', consumerRoot]],
+    ['kai-core/scripts/work-status.mjs', ['--root', consumerRoot, '--json']],
+    ['kai-core/scripts/workspace-doctor.mjs', ['--root', consumerRoot, '--json']],
+    ['kai-creative/scripts/demo-format.mjs', ['--placements']],
+    [
+      'kai-creative/scripts/demo-narrate.mjs',
+      ['--mix', narrationPlan, '--video', narrationVideo, '--out', narrationOutput],
+    ],
+    ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
+  ]);
   let executed = 0;
   for (const pack of packs) {
+    const pluginName = packPluginName(pack);
     const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
     if (!existsSync(scriptsDir)) continue;
     for (const name of readdirSync(scriptsDir)
       .filter(value => value.endsWith('.mjs') && !value.startsWith('chunk-'))
       .sort()) {
       const path = join(scriptsDir, name);
-      let output = '';
-      let loadFailed = false;
-      try {
-        execFileSync(process.execPath, [path, '--kai-consumer-install-probe'], {
-          encoding: 'utf8',
-          stdio: 'pipe',
-          timeout: 120_000,
-          cwd: consumerRoot,
-        });
-      } catch (error) {
-        output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
-        loadFailed = LOAD_FAILURE.test(output);
-      }
-      ok(!loadFailed,
-        `${packPluginName(pack)}/scripts/${name} loads from copied generated files`,
-        output.split('\n').find(line => /Error/.test(line)) ?? '');
+      const entrypoint = `${pluginName}/scripts/${name}`;
+      const args = invocations.get(entrypoint);
+      ok(Boolean(args), `${entrypoint} has a command-specific smoke invocation`);
+      if (!args) continue;
+      const result = spawnSync(process.execPath, [path, ...args], {
+        encoding: 'utf8',
+        timeout: 120_000,
+        cwd: consumerRoot,
+      });
+      ok(result.status === 0,
+        `${entrypoint} exits zero from copied generated files`,
+        `status=${result.status}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
       executed += 1;
     }
   }
@@ -247,7 +265,6 @@ async function runFixture(fixtureName) {
       ok(!existsSync(join(installedRoot, packPluginName(pack), 'node_modules')),
         `${packPluginName(pack)} has no installed dependencies`);
     }
-    probeEntrypoints(installedRoot, fixture.packs, projectRoot);
 
     const coordinate = join(installedRoot, 'kai-core', 'scripts', 'coordinate.mjs');
     const direct = generatedDirect(coordinate, projectRoot);
@@ -299,6 +316,7 @@ async function runFixture(fixtureName) {
     ok(!existsSync(join(projectRoot, '.kai', 'engineering'))
       && !existsSync(join(projectRoot, '.kai', 'creative')),
     'initialization creates no department directories');
+    probeEntrypoints(installedRoot, fixture.packs, projectRoot);
     assertPathMutationParity({doctor, projectRoot});
 
     const contract = parsePublicationContract(installedRoot, fixture.artifact.pack);

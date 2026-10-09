@@ -119,3 +119,71 @@ copied install outside the checkout and without `node_modules`.
   browser-backed test entrypoints. `npm install --package-lock-only` reported
   the current Node `24.14.0` is below the declared `^24.15.0` engine, but the
   measured suite passed on that machine.
+
+---
+
+## Review round 1/5 — 2026-10-08
+
+### Outcome
+
+- Replaced the list-only subject check with the recovered `readSubjectView`
+  regression. Foreign artifact and evidence inputs remain loadable, while
+  foreign questions, opening/answer messages, recent messages, message counts,
+  handoffs, and recovery obligations stay outside the local projection.
+- Replaced conflicting approval decisions with current positive and negative
+  completion evidence. Completion now proves the conflict is refused and that
+  an explicit same-scope superseding positive record restores acceptance.
+- Replaced the load-only copied-pack probe with command-specific smoke
+  invocations for all nine public entrypoints. Every process must exit `0`; a
+  failure reports its status, stdout, and stderr. The copied install and
+  consumer repository still contain no `node_modules`.
+
+### RED evidence
+
+The restored coordination cases were checked against temporary production
+mutants, then the mutants were reverted:
+
+```text
+readSubjectView waiting-question lookup without the subject guard:
+tests 1, pass 0, fail 1
+Expected local missing-question count 1, received 0.
+
+completion evidence validation checking only the cited positive record:
+tests 1, pass 0, fail 1
+Missing expected exception.
+```
+
+The initial exit-status assertion used the former generic probe argument:
+
+```text
+node test\consumer-install-self-test.mjs
+consumer-install self-test: 7 FAILED
+```
+
+The seven failures were `coordinate`, `observe-watch`, `work-status`,
+`workspace-doctor`, `demo-format`, `demo-narrate`, and `demo-zoom`; their real
+nonzero status and output are now test failures rather than ignored load
+results.
+
+### GREEN evidence
+
+```text
+node --test --test-reporter=spec test\coordination-core-self-test.mjs
+tests 10, pass 10, fail 0
+
+node test\consumer-install-self-test.mjs
+9 generated entrypoints executed with command-specific status-0 probes
+consumer-install self-test: all checks passed
+
+npm test
+tests 59, pass 59, fail 0
+ELAPSED_SECONDS=8.96
+TEST_FILES=9
+TEST_LINES=2141
+
+git diff --check
+clean
+```
+
+The suite remains within every Task 8 target: at most 15 entrypoints, at most
+8,000 test lines, and at most 60 seconds.

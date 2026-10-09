@@ -3,14 +3,17 @@ import {createHash, randomUUID} from 'node:crypto';
 import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import test from 'node:test';
-import {criteriaRef} from '../src/core/lib/coordination-runtime/contract.mjs';
+import {
+  criteriaRef,
+  subjectRef,
+  validateRecord,
+} from '../src/core/lib/coordination-runtime/contract.mjs';
 import {applyCommand} from '../src/core/lib/coordination-runtime/engine.mjs';
 import {bindEvidenceRuntime} from '../src/core/lib/coordination-runtime/evidence.mjs';
 import {retainSubject} from '../src/core/lib/coordination-runtime/evidence-content.mjs';
 import {
   applyOperation,
   closeStore,
-  listRecords,
   openStore,
   readRecord,
   readSubjectView,
@@ -66,6 +69,58 @@ function questionBody(id, subject) {
     opened_message_id: randomUUID(),
     answer_message_ids: [],
     resolution: null,
+  };
+}
+
+function messageBody(id, {
+  kind = 'handoff',
+  subject = taskSubject(fixtureIds.task),
+} = {}) {
+  const payload = kind === 'question'
+    ? {
+        questionKind: 'fact',
+        blocking: false,
+        context: 'Cross-subject isolation.',
+        ask: 'Can a foreign subject enter this view?',
+        answerBy: 'before projection',
+      }
+    : kind === 'answer'
+      ? {
+          status: 'answered',
+          answer: 'No.',
+          lane: 'in-lane',
+        }
+      : kind === 'recovery'
+        ? {
+            observed: 'Foreign recovery record.',
+            disposition: 'conflicting-partial-work',
+            staleLeaseToken: 'foreign-stale-lease',
+            newLeaseToken: null,
+          }
+        : {
+            did: 'Persisted a foreign handoff.',
+            needs: 'Keep typed subjects isolated.',
+            assetState: 'none — product change',
+            authority: 'pending',
+            revalidation: 'not applicable',
+            questions: [],
+          };
+  return {
+    schema_version: 1,
+    message_id: id,
+    subject,
+    thread_id: subjectRef(subject, 1),
+    parent_id: null,
+    sender_role: builder.role,
+    sender_run: builder.runId,
+    recipient: reviewer.role,
+    kind,
+    created_at: NOW,
+    basis_version: 1,
+    payload,
+    artifact_refs: [],
+    evidence_refs: [],
+    provenance: 'durable-thread',
   };
 }
 
@@ -249,7 +304,43 @@ function retainCompletionSubject(root, store, task, actor = builder) {
   return {artifactId, subject, task: currentTask};
 }
 
-function seedCompletionApproval(store, task, subject, artifactId, decision = 'approved') {
+function seedCompletionEvidence(store, task, artifactId, {
+  outcome,
+  supersedes = [],
+}) {
+  const id = randomUUID();
+  seedRecord(store, {
+    kind: 'evidence',
+    id,
+    subject: taskSubject(task.id),
+    version: 1,
+    body: {
+      schema_version: 1,
+      evidence_id: id,
+      subject: taskSubject(task.id),
+      kind: 'dod-dimension',
+      content_ref: task.body.change_ref,
+      criteria_ref: criteriaRef(task, (kind, recordId) => readRecord(store, kind, recordId)),
+      supersedes,
+      dimension: 'verified',
+      outcome,
+      evidence_refs: [`artifact:${artifactId}`],
+      reason: outcome === 'gap' ? 'A concurrent verification found an unresolved gap.' : null,
+      data: {},
+      created_at: NOW,
+    },
+  });
+  return id;
+}
+
+function seedCompletionApproval(
+  store,
+  task,
+  subject,
+  artifactId,
+  decision = 'approved',
+  evidenceIds = [],
+) {
   const id = randomUUID();
   seedRecord(store, {
     kind: 'approval',
@@ -268,7 +359,10 @@ function seedCompletionApproval(store, task, subject, artifactId, decision = 'ap
       deployment: null,
       recovery: null,
       decision,
-      evidence_refs: [`artifact:${artifactId}`],
+      evidence_refs: [
+        `artifact:${artifactId}`,
+        ...evidenceIds.map(evidenceId => `evidence:${evidenceId}`),
+      ],
       reason: decision === 'approved' ? 'The exact subject is accepted.' : 'The exact subject is rejected.',
       created_at: NOW,
     },
@@ -306,28 +400,162 @@ test('optimistic version conflict rejects a stale mutation', async () => {
   });
 });
 
-test('cross-subject records stay isolated by typed subject', async () => {
+test('readSubjectView loads foreign inputs without leaking local obligations', async () => {
   await withWorkspace(({store}) => {
-    const first = taskSubject(fixtureIds.task);
-    const second = taskSubject('engineering:task:other-subject');
-    seedTask(store);
-    seedTask(store, {id: second.id});
-    for (const [id, subject] of [['first-question', first], ['second-question', second]]) {
-      seedRecord(store, {
-        kind: 'question',
+    const localSubject = taskSubject(fixtureIds.task);
+    const foreignSubject = taskSubject('engineering:task:foreign-subject');
+    const openingId = '00000000-0000-4000-8000-000000000101';
+    const answerId = '00000000-0000-4000-8000-000000000102';
+    const recoveryId = '00000000-0000-4000-8000-000000000103';
+    const artifactId = '00000000-0000-4000-8000-000000000104';
+    const evidenceId = '00000000-0000-4000-8000-000000000105';
+    const handoffId = '00000000-0000-4000-8000-000000000106';
+    seedTask(store, {
+      state: 'blocked',
+      resume_state: 'in-progress',
+      next_role: 'operator',
+      waiting_on_questions: ['foreign-question'],
+      recovery_hold: recoveryId,
+      context_artifacts: [`artifact:${artifactId}`, `evidence:${evidenceId}`],
+    });
+    const foreignTask = seedTask(store, {id: foreignSubject.id});
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: 'local-question',
+      subject: localSubject,
+      version: 1,
+      body: {
+        ...questionBody('local-question', localSubject),
+        opened_message_id: openingId,
+        answer_message_ids: [answerId],
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'question',
+      id: 'foreign-question',
+      subject: foreignSubject,
+      version: 1,
+      body: questionBody('foreign-question', foreignSubject),
+    }));
+    for (const [id, kind] of [
+      [openingId, 'question'],
+      [answerId, 'answer'],
+      [recoveryId, 'recovery'],
+    ]) {
+      seedRecord(store, validateRecord({
+        kind: 'message',
         id,
-        subject,
+        subject: foreignSubject,
         version: 1,
-        body: questionBody(id, subject),
-      });
+        body: messageBody(id, {kind, subject: foreignSubject}),
+      }));
     }
-    assert.deepEqual(
-      listRecords(store, {kind: 'question', subject: first}).map(record => record.id),
-      ['first-question'],
+    seedRecord(store, validateRecord({
+      kind: 'message',
+      id: handoffId,
+      subject: localSubject,
+      version: 1,
+      body: messageBody(handoffId, {subject: localSubject}),
+    }));
+    const staleLease = {
+      holder: builder,
+      token: 'foreign-stale-lease',
+      version_at_grant: 1,
+      acquired_at: '2026-09-16T10:00:00.000Z',
+      expires_at: '2026-09-16T11:00:00.000Z',
+    };
+    seedRecord(store, validateRecord({
+      kind: 'attempt',
+      id: recoveryId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        attempt_id: recoveryId,
+        subject: foreignSubject,
+        grantor: steward,
+        stale_lease: staleLease,
+        observed: 'Foreign recovery record.',
+        disposition: 'conflicting-partial-work',
+        recovery_evidence_ids: [evidenceId],
+        new_lease: null,
+        created_at: NOW,
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'artifact',
+      id: artifactId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        artifact_id: artifactId,
+        subject: foreignSubject,
+        producer: builder,
+        content_ref: {kind: 'git', base: 'a'.repeat(40), head: 'b'.repeat(40)},
+        criteria_ref: criteriaRef(foreignTask, (kind, id) => readRecord(store, kind, id)),
+        project_id: null,
+        run_directory: '.kai/engineering/reports/foreign-subject/scratch',
+        snapshots: [],
+        manifest_path: null,
+        classification: 'internal',
+        media_type: 'text/plain',
+        title: 'Foreign artifact',
+        created_at: NOW,
+      },
+    }));
+    seedRecord(store, validateRecord({
+      kind: 'evidence',
+      id: evidenceId,
+      subject: foreignSubject,
+      version: 1,
+      body: {
+        schema_version: 1,
+        evidence_id: evidenceId,
+        subject: foreignSubject,
+        kind: 'recovery-reconciliation',
+        content_ref: null,
+        criteria_ref: null,
+        supersedes: [],
+        dimension: null,
+        outcome: 'passed',
+        evidence_refs: ['retained/foreign-recovery.txt'],
+        reason: 'Foreign evidence may load only as an explicit input.',
+        data: {
+          stale_lease_token: staleLease.token,
+          disposition: 'conflicting-partial-work',
+          observed: 'Foreign recovery record.',
+        },
+        created_at: NOW,
+      },
+    }));
+    store.database.prepare(`
+      INSERT INTO events (operation_id, subject_kind, subject_id, payload)
+      VALUES (?, ?, ?, ?)
+    `).run(
+      'foreign-thread-event',
+      foreignSubject.kind,
+      foreignSubject.id,
+      JSON.stringify({kind: 'task.handoff', payload: {messageId: handoffId}}),
     );
+
+    const view = readSubjectView(store, {subject: localSubject, recentLimit: 8});
+    const localQuestion = view.questions.find(entry => entry.record?.id === 'local-question');
+    assert.equal(view.questions.filter(entry => entry.record === null).length, 1);
+    assert.equal(view.questions.some(entry => entry.record?.id === 'foreign-question'), false);
+    assert.equal(localQuestion.openedMessage, null);
+    assert.deepEqual(localQuestion.answerMessages, [null]);
+    assert.deepEqual(view.recentMessages, []);
+    assert.equal(view.messageCount, 0);
+    assert.equal(view.latestHandoff, null);
+    assert.equal(view.recoveryHold.record, null);
+    assert.equal(view.recoveryHold.message, null);
     assert.deepEqual(
-      listRecords(store, {kind: 'question', subject: second}).map(record => record.id),
-      ['second-question'],
+      view.referencedDetails.map(entry => [entry.reference, entry.record?.subject]),
+      [
+        [`artifact:${artifactId}`, foreignSubject],
+        [`evidence:${evidenceId}`, foreignSubject],
+      ],
     );
   });
 });
@@ -508,8 +736,20 @@ test('conflicting current completion evidence refuses completion', async () => {
     const task = readRecord(store, 'task', fixtureIds.task);
     const retained = retainCompletionSubject(root, store, task);
     const current = retained.task;
-    seedCompletionApproval(store, current, retained.subject, retained.artifactId, 'approved');
-    seedCompletionApproval(store, current, retained.subject, retained.artifactId, 'rejected');
+    const positiveId = seedCompletionEvidence(store, current, retained.artifactId, {
+      outcome: 'clear',
+    });
+    seedCompletionApproval(
+      store,
+      current,
+      retained.subject,
+      retained.artifactId,
+      'approved',
+      [positiveId],
+    );
+    const negativeId = seedCompletionEvidence(store, current, retained.artifactId, {
+      outcome: 'gap',
+    });
 
     assert.throws(() => applyCommand(store, taskCommand(
       'task.transition',
@@ -518,8 +758,21 @@ test('conflicting current completion evidence refuses completion', async () => {
       {to: 'completed', at: NOW, reason: 'Conflicting evidence must not pass.'},
       'review-lease',
     ), grant(reviewer, 'task.transition', current.version)), error =>
-      error.code === 'EVIDENCE_GAP' && /rejects/i.test(error.message));
+      error.code === 'EVIDENCE_GAP' && /negative|conflict/i.test(error.message));
     assert.equal(readRecord(store, 'task', task.id).body.state, 'in-review');
+
+    seedCompletionEvidence(store, current, retained.artifactId, {
+      outcome: 'clear',
+      supersedes: [negativeId],
+    });
+    const completed = applyCommand(store, taskCommand(
+      'task.transition',
+      reviewer,
+      current.version,
+      {to: 'completed', at: NOW, reason: 'The negative evidence was explicitly superseded.'},
+      'review-lease',
+    ), grant(reviewer, 'task.transition', current.version)).data.record;
+    assert.equal(completed.body.state, 'completed');
   });
 });
 
