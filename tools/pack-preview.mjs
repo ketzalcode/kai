@@ -472,14 +472,30 @@ function selfTest() {
   'direct asset-producing bypass is rejected');
 
   const missingBase = join(ROOT, 'test', '.pack-preview-missing');
+  const missingVersion = '0.0.0-self-test';
+  const missingGeneratedPath = `${packPluginName('core')}/plugin.json`;
   rmSync(missingBase, {recursive: true, force: true});
-  const missingCheck = checkCommitted({
-    root: ROOT,
-    base: missingBase,
-    version: '0.0.0-self-test',
-  });
-  ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`),
-    'missing generated file surface is rejected');
+  try {
+    writeCommitted({root: ROOT, base: missingBase, version: missingVersion});
+    const pristineCheck = checkCommitted({
+      root: ROOT,
+      base: missingBase,
+      version: missingVersion,
+    });
+    rmSync(join(missingBase, ...missingGeneratedPath.split('/')));
+    const missingCheck = checkCommitted({
+      root: ROOT,
+      base: missingBase,
+      version: missingVersion,
+    });
+    ok(pristineCheck.ok
+      && !missingCheck.ok
+      && missingCheck.drift.length === 1
+      && missingCheck.drift.includes(`missing:    ${missingGeneratedPath}`),
+      'missing generated file surface is rejected');
+  } finally {
+    rmSync(missingBase, {recursive: true, force: true});
+  }
 
   ok(generatedRuntimeErrors(new Map([
     ['kai-core/plugin.json', '{}'],
@@ -580,9 +596,9 @@ function gatePartialInstall() {
   ].map((e) => `${e.file}: ${e.msg}`);
 }
 
-// The contract version wherever it is stated, and the one agent shape: every
-// agent must route the pinned probe first, load its required contracts inline,
-// and state its non-blocking single-shot fallback.
+// The contract version wherever it is stated, and the explicit agent route
+// shape: every agent routes the pinned probe first and loads its required
+// contracts inline.
 function gateSkew() {
   const errs = contractPinErrors({
     probe: existsSync(skillPath(CONTRACT_SKILL))

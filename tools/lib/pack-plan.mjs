@@ -707,16 +707,6 @@ export function removeGuaranteeRegion(body) {
   return `${before}\n\n${after}`;
 }
 
-// ---------------------------------------------------------------------------
-// The degraded refusal now belongs to each agent, not to a shared block. Every
-// agent writes its own core fallback in its own words, and agentRoutingErrors
-// checks that the three load-bearing facts are present (continue single-shot,
-// write no `.kai` state, tell the operator to install or update `kai-core`).
-// The old shared-block rules (a pinned degraded-block.txt validated by
-// degradedBlockErrors, plus coreContractLines / DEGRADED_BLOCK_MAX and friends)
-// are gone with the block they policed.
-// ---------------------------------------------------------------------------
-
 // Every committed plugin manifest: the root monolith plus any plugin tree under
 // plugins/. The validator applies version parity across the root monolith and
 // every committed generated pack it discovers here.

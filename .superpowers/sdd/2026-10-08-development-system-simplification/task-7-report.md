@@ -46,3 +46,21 @@ failed in the existing
 case. `native-host.mjs` passes `.kai/manifest.json` through the typed private
 artifact route validator. The failing runtime files and test are unchanged from
 base, so this is outside Task 7.
+
+## Review round 1/5 — 2026-10-08
+
+- Reworked the missing-generated-file mutation to write a drift-clean generated
+  tree, delete only `kai-core/plugin.json`, and require drift detection to report
+  that exact path as the sole drift.
+- Removed or corrected stale comments that claimed fallback or prose-semantic
+  validation in `pack-plan.mjs`, `pack-preview.mjs`, and `validate-plugin.mjs`.
+
+Evidence:
+
+- RED: the exact-path mutation failed against the prior whole-directory setup
+  (`12 checks passed, 1 FAILED`).
+- `node tools\pack-preview.mjs --self-test` — 13 checks passed.
+- `node tools\validate-plugin.mjs` — valid (21 agents, 39 skills).
+- `node tools\pack-preview.mjs --gate all` — all four gates clean.
+- `node tools\pack-preview.mjs --check` — committed plugins match the generator.
+- `node tools\check-syntax.mjs` — 74 JS/MJS helpers parse cleanly.

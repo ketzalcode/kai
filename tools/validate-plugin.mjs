@@ -4,8 +4,8 @@
 //     agent/skill and `inherit` references, and plugin.json paths;
 //   • release hygiene — plugin.json and package.json declare the same version;
 //   • host-tool allowlist — every declared `tools:` entry is a real host tool;
-//   • workspace-contract consistency — private schema-5 placement, Direction,
-//     typed pack publication, hierarchy authority, and explicit migration;
+//   • workspace integration — guided install order, the managed ignore block,
+//     and structured publication declarations and routes;
 //   • the partition — every agent in exactly one pack, every skill with exactly
 //     one provider, every reviewed override still placing a skill inheritance
 //     cannot, core's `kai-core-*` namespace held in both directions, no id
