@@ -73,6 +73,8 @@ const PUBLICATION_ENTRY_KEYS = Object.freeze([
 ]);
 const PUBLICATION_AUTHORITIES = new Set(['completion', 'operator']);
 const PUBLICATION_PRIVACY = new Set(['evidence-private']);
+const PUBLICATION_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const PUBLICATION_CONTROL = /[\u0000-\u001f\u007f]/;
 const PUBLICATION_FORMAT_LABELS = Object.freeze({
   markdown: 'Markdown',
   'markdown-single-file': 'Markdown single file',
@@ -87,6 +89,50 @@ const PUBLICATION_FORMAT_LABELS = Object.freeze({
 
 const exactKeys = (value, expected) =>
   Object.keys(value).sort().join('|') === [...expected].sort().join('|');
+
+function validatePublicationPath({entry, field, label, pack}) {
+  const value = entry[field];
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${label}.${field} must be a non-empty string`);
+  }
+  if (PUBLICATION_CONTROL.test(value)) {
+    throw new Error(`${label}.${field} must not contain control characters or newlines`);
+  }
+  if (value.includes('|')) {
+    throw new Error(`${label}.${field} must not contain a pipe`);
+  }
+  if (value.includes('`')) {
+    throw new Error(`${label}.${field} must not contain a backtick`);
+  }
+  if (value.includes('\\')) {
+    throw new Error(`${label}.${field} must use forward slashes and must not contain backslash traversal`);
+  }
+  if (value.split('/').includes('..')) {
+    throw new Error(`${label}.${field} must not contain path traversal`);
+  }
+
+  if (field === 'privateForm') {
+    const root = `.kai/${pack}/`;
+    if (!value.startsWith(root)) {
+      throw new Error(`${label}.privateForm must be under ${root}`);
+    }
+    return;
+  }
+
+  const coreDirection = pack === 'core'
+    && entry.type === 'direction'
+    && entry.subtype === null;
+  if (coreDirection) {
+    if (value !== 'docs/kai/DIRECTION.md') {
+      throw new Error(`${label}.publicForm for Core Direction must be exactly docs/kai/DIRECTION.md`);
+    }
+    return;
+  }
+  const root = `docs/kai/${pack}/`;
+  if (!value.startsWith(root)) {
+    throw new Error(`${label}.publicForm must be under ${root}`);
+  }
+}
 
 export function publicationContract(pack, root = REPO_ROOT) {
   const expectedSkill = publicationSkillForPack(pack);
@@ -123,18 +169,15 @@ export function publicationContract(pack, root = REPO_ROOT) {
       || !exactKeys(entry, PUBLICATION_ENTRY_KEYS)) {
       throw new Error(`${label} must contain exactly ${PUBLICATION_ENTRY_KEYS.join(', ')}`);
     }
-    if (typeof entry.type !== 'string' || !entry.type.trim()) {
-      throw new Error(`${label}.type must be a non-empty string`);
+    if (typeof entry.type !== 'string' || !PUBLICATION_SLUG.test(entry.type)) {
+      throw new Error(`${label}.type must be a safe slug using lowercase letters, digits, and hyphens`);
     }
     if (entry.subtype !== null
-      && (typeof entry.subtype !== 'string' || !entry.subtype.trim())) {
-      throw new Error(`${label}.subtype must be null or a non-empty string`);
+      && (typeof entry.subtype !== 'string' || !PUBLICATION_SLUG.test(entry.subtype))) {
+      throw new Error(`${label}.subtype must be null or a safe slug using lowercase letters, digits, and hyphens`);
     }
-    for (const field of ['privateForm', 'publicForm']) {
-      if (typeof entry[field] !== 'string' || !entry[field].trim()) {
-        throw new Error(`${label}.${field} must be a non-empty string`);
-      }
-    }
+    validatePublicationPath({entry, field: 'privateForm', label, pack});
+    validatePublicationPath({entry, field: 'publicForm', label, pack});
     if (!Array.isArray(entry.formats) || entry.formats.length === 0
       || entry.formats.some(format =>
         typeof format !== 'string' || !Object.hasOwn(PUBLICATION_FORMAT_LABELS, format))) {
@@ -425,137 +468,6 @@ export function publicationInventoryErrors(entries, packs = PACK_ORDER) {
   }
   return errors;
 }
-
-const PUBLICATION_TABLE_HEADERS = Object.freeze([
-  'namespace',
-  'type',
-  'subtype',
-  'private form',
-  'public form',
-  'formats',
-  'publication rule',
-  'privacy rule',
-]);
-
-const PUBLICATION_ROWS = Object.freeze({
-  core: Object.freeze([
-    Object.freeze({
-      type: 'direction',
-      subtype: '-',
-      privateForm: '.kai/core/direction/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/DIRECTION.md',
-    }),
-    Object.freeze({
-      type: 'features',
-      subtype: '-',
-      privateForm: '.kai/core/features/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/core/features/<id>/',
-    }),
-    Object.freeze({
-      type: 'decisions',
-      subtype: '-',
-      privateForm: '.kai/core/decisions/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/core/decisions/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: '-',
-      privateForm: '.kai/core/reports/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/core/reports/<id>/',
-    }),
-  ]),
-  engineering: Object.freeze([
-    Object.freeze({
-      type: 'features',
-      subtype: '-',
-      privateForm: '.kai/engineering/features/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/features/<id>/',
-    }),
-    Object.freeze({
-      type: 'documentation',
-      subtype: 'architecture',
-      privateForm: '.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/documentation/architecture/<id>/',
-    }),
-    Object.freeze({
-      type: 'decisions',
-      subtype: '-',
-      privateForm: '.kai/engineering/decisions/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/decisions/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: 'investigations',
-      privateForm: '.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/reports/investigations/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: 'releases',
-      privateForm: '.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/reports/releases/<id>/',
-    }),
-  ]),
-  creative: Object.freeze([
-    Object.freeze({
-      type: 'features',
-      subtype: '-',
-      privateForm: '.kai/creative/features/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/features/<id>/',
-    }),
-    Object.freeze({
-      type: 'documentation',
-      subtype: '-',
-      privateForm: '.kai/creative/documentation/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/documentation/<id>/',
-    }),
-    Object.freeze({
-      type: 'decisions',
-      subtype: '-',
-      privateForm: '.kai/creative/decisions/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/decisions/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: '-',
-      privateForm: '.kai/creative/reports/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/reports/<id>/',
-    }),
-    Object.freeze({
-      type: 'media',
-      subtype: '-',
-      privateForm: '.kai/creative/media/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/media/<id>/',
-    }),
-  ]),
-});
-
-const cleanTableCell = cell => cell.trim()
-  .replace(/^`|`$/g, '')
-  .replace(/\\\|/g, '|');
-
-function markdownTables(body) {
-  const lines = normalizeLF(body ?? '').split('\n');
-  const tables = [];
-  for (let index = 0; index < lines.length - 1; index += 1) {
-    if (!lines[index].trim().startsWith('|')) continue;
-    if (!/^\s*\|(?:\s*:?-+:?\s*\|)+\s*$/.test(lines[index + 1])) continue;
-    const cells = line => line.trim().replace(/^\||\|$/g, '').split('|').map(cleanTableCell);
-    const headers = cells(lines[index]).map(cell => cell.toLowerCase());
-    const rows = [];
-    let cursor = index + 2;
-    while (cursor < lines.length && lines[cursor].trim().startsWith('|')) {
-      rows.push(cells(lines[cursor]));
-      cursor += 1;
-    }
-    tables.push({headers, rows});
-    index = cursor - 1;
-  }
-  return tables;
-}
-
-const rowKey = row => `${row.type}/${row.subtype}`;
-const sorted = values => [...values].sort((left, right) => left.localeCompare(right));
 
 export function publicationContractErrors({pack, id, body, root = REPO_ROOT}) {
   const errors = [];
@@ -1490,6 +1402,13 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
   }
   if (!publicationRoutes.some(route => route.id === owner)) {
     errors.push(`declared publication entrypoint \`${owner}\` must be routed by this ${kind}`);
+  }
+  for (const productionRoute of productionRoutes) {
+    if (!publicationRoutes.some(route =>
+      route.id === owner && route.index < productionRoute.index)) {
+      errors.push(`each \`kai-core-asset-producing\` route must have an earlier `
+        + `\`${owner}\` route`);
+    }
   }
   return [...new Set(errors)];
 }

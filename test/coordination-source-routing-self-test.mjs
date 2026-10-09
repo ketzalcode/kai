@@ -32,7 +32,7 @@ const requiredHelpers = [
   'directionContractErrors',
   'epicWorkflowContractErrors',
   'chiefOfStaffContractErrors',
-  'durableOutputProducerDeclaration',
+  'publicationEntrypointDeclaration',
   'agentDirectOutputErrors',
   'activeGuideDecisionFiles',
   'workflowShipContractErrors',
@@ -69,8 +69,8 @@ assert.ok(
   packPlan.publicationContractErrors({
     ...corePublication,
     body: corePublication.body.replace('| `direction` |', '| `initiatives` |'),
-  }).some(message => message.includes('canonical type set')),
-  'changing a core vocabulary type must fail the canonical type-set gate',
+  }).some(message => message.includes('managed publication table')),
+  'changing a generated core type must fail the managed-region gate',
 );
 assert.ok(
   packPlan.publicationContractErrors({
@@ -79,8 +79,8 @@ assert.ok(
       '| `documentation` | `architecture` |',
       '| `documentation` | `security` |',
     ),
-  }).some(message => message.includes('canonical subtype set')),
-  'changing an engineering subtype must fail the canonical subtype-set gate',
+  }).some(message => message.includes('managed publication table')),
+  'changing a generated engineering subtype must fail the managed-region gate',
 );
 assert.ok(
   packPlan.publicationContractErrors({
@@ -89,31 +89,17 @@ assert.ok(
       '.kai/creative/media/<id>/{drafts,evidence,scratch}',
       '.kai/creative/misc/<id>/{drafts,evidence,scratch}',
     ),
-  }).some(message => message.includes('private form')),
-  'introducing a fallback lane must fail the private-form gate',
+  }).some(message => message.includes('managed publication table')),
+  'changing a generated private form must fail the managed-region gate',
 );
 
-for (const [label, phrase, expected] of [
-  ['unknown type/subtype', 'unknown type or subtype', 'unknown type or subtype'],
-  ['scratch publication', 'scratch can never publish', 'scratch'],
-  ['unaccepted draft', 'an unaccepted draft can never publish', 'unaccepted draft'],
-  ['private evidence', 'private evidence can never publish', 'private evidence'],
-  ['arbitrary root', 'an arbitrary root can never publish', 'arbitrary root'],
-]) {
-  assert.ok(
-    packPlan.publicationContractErrors({
-      ...corePublication,
-      body: corePublication.body.replace(new RegExp(phrase, 'i'), ''),
-    }).some(message => message.includes(expected)),
-    `removing the ${label} refusal must fail by refusal name`,
-  );
-}
-assert.ok(
+assert.deepEqual(
   packPlan.publicationContractErrors({
     ...creativePublication,
     body: creativePublication.body.replace('unsafe media destination', ''),
-  }).some(message => message.includes('unsafe media destination')),
-  'removing the unsafe-media refusal must fail by refusal name',
+  }),
+  [],
+  'human-authored refusal guidance is not parsed as publication schema',
 );
 
 const sourceEntries = [
@@ -130,10 +116,8 @@ const declarationCounts = {
   skill: {producers: 0, nonProducers: 0},
 };
 for (const entry of sourceEntries) {
-  const declared = packPlan.durableOutputProducerDeclaration(entry);
-  assert.equal(typeof declared, 'boolean',
-    `${entry.rel}: frontmatter must declare durable-output-producer true or false`);
-  if (declared) declarationCounts[entry.kind].producers += 1;
+  const entrypoint = packPlan.publicationEntrypointDeclaration(entry);
+  if (entrypoint) declarationCounts[entry.kind].producers += 1;
   else declarationCounts[entry.kind].nonProducers += 1;
   if (entry.kind === 'agent') {
     assert.deepEqual(
@@ -160,36 +144,38 @@ for (const [kind, entries] of [
   ['skill', skillEntries],
 ]) {
   const producer = entries.find(entry =>
-    packPlan.durableOutputProducerDeclaration(entry) === true);
+    packPlan.publicationEntrypointDeclaration(entry) !== null);
   const ownerPublication = publicationByPack[producer.pack];
   const withoutOwnerRoute = producer.body.replace(
     new RegExp(
-      `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\``,
+      `(?:Apply|Invoke|Load|Run|Use)\\s+(?:the\\s+)?\`${ownerPublication}\``,
       'i',
     ),
     '',
   );
   assert.ok(
     packPlan.publicationRoutingErrors({...producer, body: withoutOwnerRoute})
-      .some(message => message.includes(`must route \`${ownerPublication}\``)),
+      .some(message => message.includes(
+        `declared publication entrypoint \`${ownerPublication}\` must be routed`,
+      )),
     `removing a ${kind} producer publication route must fail by owning skill name`,
   );
 
   const withoutBothRoutes = producer.body
     .replace(
       new RegExp(
-        `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${ownerPublication}\`[^.]*\\.\\s*`,
+        `(?:Apply|Invoke|Load|Run|Use)\\s+(?:the\\s+)?\`${ownerPublication}\`[^.]*\\.\\s*`,
         'gi',
       ),
       '',
     )
     .replace(
-      /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+      /(?:Apply|Invoke|Load|Run|Use)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
       '',
     );
   assert.ok(
     packPlan.publicationRoutingErrors({...producer, body: withoutBothRoutes})
-      .some(message => message.includes('declared durable-output producer')),
+      .some(message => message.includes('declared publication entrypoint')),
     `removing both ${kind} production routes must fail from the authoritative declaration`,
   );
 
@@ -197,17 +183,19 @@ for (const [kind, entries] of [
     packPlan.publicationRoutingErrors({
       ...producer,
       body: producer.body.replace(
-        'durable-output-producer: true',
-        'durable-output-producer: false',
+        `publication-entrypoint: ${ownerPublication}`,
+        `publication-entrypoint: ${producer.pack === 'creative'
+          ? publicationByPack.engineering
+          : publicationByPack.creative}`,
       ),
-    }).some(message => message.includes('declared non-producer')),
-    `falsifying the ${kind} producer declaration must fail while producer routes remain`,
+    }).some(message => message.includes('belongs to another pack')),
+    `declaring a foreign ${kind} producer entrypoint must fail`,
   );
   assert.ok(
     packPlan.publicationRoutingErrors({
       ...producer,
-      body: producer.body.replace(/^durable-output-producer:\s*true\s*$/m, ''),
-    }).some(message => message.includes('must declare frontmatter')),
+      body: producer.body.replace(/^publication-entrypoint:\s*\S+\s*$/m, ''),
+    }).some(message => message.includes('requires frontmatter')),
     `removing the ${kind} producer declaration must fail by declaration name`,
   );
 
@@ -217,34 +205,47 @@ for (const [kind, entries] of [
   assert.ok(
     packPlan.publicationRoutingErrors({
       ...producer,
-      body: producer.body.replace(ownerPublication, wrongPublication),
+      body: producer.body.replace(
+        new RegExp(
+          `((?:Apply|Invoke|Load|Run|Use)\\s+(?:the\\s+)?\`)${ownerPublication}(\`)`,
+          'i',
+        ),
+        `$1${wrongPublication}$2`,
+      ),
     }).some(message => message.includes('cannot route publication skill owned by')),
     `routing a ${kind} producer through another pack vocabulary must fail`,
   );
 
   const separatedRoute = producer.body.replace(
-    /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`/i,
+    /(?:Apply|Invoke|Load|Run|Use)\s+(?:the\s+)?`kai-core-asset-producing`/i,
     'Apply `kai-core-workspace-paths`, then Apply `kai-core-asset-producing`',
   );
+  assert.deepEqual(
+    packPlan.publicationRoutingErrors({...producer, body: separatedRoute}),
+    [],
+    `a ${kind} producer may route other skills between publication and production`,
+  );
   assert.ok(
-    packPlan.publicationRoutingErrors({...producer, body: separatedRoute})
-      .some(message => message.includes('immediately before')),
-    `inserting another route between ${kind} publication and production must fail order`,
+    packPlan.publicationRoutingErrors({
+      ...producer,
+      body: `Apply \`kai-core-asset-producing\` before validation.\n${producer.body}`,
+    }).some(message => /earlier|before|precede/.test(message)),
+    `every ${kind} asset-production occurrence must follow its publication entrypoint`,
   );
 
   const nonProducer = entries.find(entry =>
-    packPlan.durableOutputProducerDeclaration(entry) === false);
+    packPlan.publicationEntrypointDeclaration(entry) === null);
   assert.ok(
     packPlan.publicationRoutingErrors({
       ...nonProducer,
       body: `${nonProducer.body}\n\nApply \`${publicationByPack[nonProducer.pack]}\`, then apply \`kai-core-asset-producing\`.\n`,
-    }).some(message => message.includes('declared non-producer')),
-    `adding both durable routes to a declared ${kind} non-producer must fail classification`,
+    }).some(message => /publication entrypoint|direct/.test(message)),
+    `adding durable routes to a ${kind} non-producer requires a positive declaration`,
   );
 }
 
 const producer = agentEntries.find(entry =>
-  packPlan.durableOutputProducerDeclaration(entry) === true);
+  packPlan.publicationEntrypointDeclaration(entry) !== null);
 
 assert.ok(
   packPlan.agentDirectOutputErrors({
