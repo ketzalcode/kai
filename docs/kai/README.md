@@ -1,13 +1,12 @@
 # Kai project knowledge
 
-This directory contains accepted, durable project knowledge that Kai
-contributors are expected to read.
+This directory demonstrates Kai's accepted-publication lane.
 
-- `decisions/` records settled choices and rationale.
-- `specs/` defines behavior or structure that implementation depends on.
-- `reports/` contains accepted findings, audits, and retrospectives.
-- `reports/releases/` preserves the accepted release records migrated from the
-  schema-2 workspace, including their historical coordination references.
+Only operator-accepted, Git-suitable project knowledge belongs under
+`docs/kai/`. Direction is operator-owned. Private coordination, drafts,
+evidence, scratch files, retired workspace backups, and archived operational
+records remain under ignored private workspace paths.
 
-Kai's live coordination, drafts, evidence, personal state, and archived
-operational records are private workspace data. They do not belong here.
+The repository's current architecture and development decisions live in the
+active documentation set under `docs/`; Git history is the archive for
+superseded decisions and release records.

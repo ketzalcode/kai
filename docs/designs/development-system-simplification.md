@@ -1,6 +1,6 @@
 # Kai development system simplification
 
-**Status:** Approved design; implementation plan pending review  
+**Status:** Approved; implemented for the prepared 20.0.0 release
 **Date:** 2026-10-08  
 **Scope:** Kai contributor workflow, validation, tests, generated artifacts,
 release automation, workspace compatibility, and active documentation

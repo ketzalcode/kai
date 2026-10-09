@@ -16,7 +16,7 @@ Capabilities parked under [`incubator/`](../../incubator/README.md) are
 deliberately absent from this catalog: they are not installed, not loaded,
 and not available through any install path.
 
-- **Not sure who to ask?** [How kai works](../how-kai-works.md) has the trigger table.
+- **Need the system boundaries?** [Architecture](../architecture.md) maps packages, authority, runtime, and hosts.
 - **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).
 
 ## Agents
@@ -27,7 +27,7 @@ Set a workspace up and keep its structure honest.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Use when installing Kai packs, initializing a private schema-5 workspace, repairing its binding, or running an explicit older-workspace migration. |
+| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Use when installing Kai packs, initializing or repairing a private schema-5 workspace, or re-onboarding an unsupported workspace without importing old records. |
 | [`workflow-epic-init`](../../plugins/kai-core/agents/workflow-epic-init.agent.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning. |
 
 ### Direction
@@ -214,5 +214,5 @@ Core's own reading of what the team records need a human for, plus the runner-in
 
 ---
 
-**Next:** [How kai works](../how-kai-works.md) · [Workspace model](../workspaces.md) ·
-[Getting started](../getting-started.md)
+**Next:** [Architecture](../architecture.md) · [Workspace model](../workspaces.md) ·
+[Development process](../development-process.md)

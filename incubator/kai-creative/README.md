@@ -8,11 +8,10 @@ is not part of the active source registrations or any newly generated pack.
 ## Why it is parked
 
 Live recording left the active creative base in **9.0.0** — the changelog's
-Removed section says so, `demo-capture` is in `RETIRED_CREATIVE_SKILL_IDS`, and
-the [creative skills foundation
-design](../../docs/superpowers/specs/2026-09-13-creative-skills-foundation-design.md)
-decided to "preserve inactive outside exported plugin sources; remove active
-routes. Preserve the helper/parser dependency needed by the remaining methods."
+Removed section says so, and `demo-capture` is in
+`RETIRED_CREATIVE_SKILL_IDS`. Git history retains the superseded design record
+that parked capture while preserving the parser dependency used by the
+remaining methods.
 
 What kept the file in the shipped pack until [#226] was the second half of that
 sentence. `demo-format`, `demo-narrate` and `demo-zoom` imported their

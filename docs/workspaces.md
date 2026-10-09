@@ -2,30 +2,27 @@
 
 # Workspaces
 
-Kai schema 5 separates private operational state from accepted project
-knowledge:
+Kai supports only the current workspace contract: schema 5. It may read an old
+manifest's schema number to reject it, but it does not decode, migrate, repair,
+or write historical records.
 
 ```text
 .kai/       private, ignored, untracked
-docs/kai/   committed accepted knowledge
+docs/kai/   accepted, Git-suitable project knowledge
 ```
 
-Installing a pack creates no workspace directory. Direct answers and direct
-code changes create no Kai state.
+Installing a package creates no workspace. Direct answers and ordinary code
+changes create no Kai state.
 
-## Placement
-
-Schema 5 supports:
+## Placement and manifest
 
 | Placement | Private workspace | Project behavior |
 | --- | --- | --- |
-| `repo-local` | `<project>/.kai/` | all of `/.kai/` is ignored and untracked |
-| `external` | registered durable directory outside the project | project contains no `.kai/` |
+| `repo-local` | `<project>\.kai\` | all of `\.kai\` is ignored and untracked |
+| `external` | registered durable directory outside the project | the project contains no `.kai/` |
 
-An external workspace uses the same private tree and publishes accepted
-knowledge into its bound project's configured `publication_root`.
-
-## Manifest
+Both modes publish accepted knowledge into the bound project's configured
+`publication_root`.
 
 ```json
 {
@@ -48,12 +45,12 @@ knowledge into its bound project's configured `publication_root`.
 }
 ```
 
-The manifest does not list installed packs or pre-create their folders.
+The manifest does not list installed packages or pre-create their folders.
 Directory presence records actual use.
 
-## Initial footprint
+## Onboarding
 
-A new ready workspace creates only:
+`workflow-workspace-init` creates only:
 
 ```text
 .kai/manifest.json
@@ -63,37 +60,35 @@ docs/kai/DIRECTION.md
 the managed /.kai/ ignore block for repo-local placement
 ```
 
-Initialization is confirmed, failure-clean, and manifest-last. It never invents
-Direction or seeds empty department trees.
+Initialization is explicit, failure-clean, and manifest-last. It asks before
+installing the canonical repository-instruction block. If the project has no
+`AGENTS.md`, onboarding creates it. If it exists, onboarding replaces only the
+marked Kai region and preserves every other byte. It never stages or commits
+the file without separate operator authorization.
 
-## Direction
+Direction is operator-owned and contains Vision, Mission, one observable and
+time-bounded Current Goal, and Out of Scope. Onboarding never invents it.
 
-Coordinated work requires one operator-owned file:
+## Re-onboarding unsupported workspaces
 
-```markdown
-# Vision
+An unsupported manifest or database stops current runtime operations with
+guidance to invoke `kai-core-workspace-reonboard`. Re-onboarding is an
+operator-controlled reset, not a converter:
 
-<enduring destination>
+1. confirm the project root and explicit reset intent;
+2. preserve `docs/kai/`, including Direction and accepted publications;
+3. ensure retired private backups are ignored;
+4. rename `.kai/` to an ignored timestamped `.kai-retired-*` backup;
+5. verify the backup is outside the new workspace and contains no tracked
+   files;
+6. reconcile installed packages when package state is uncertain;
+7. run current onboarding; and
+8. create current private paths lazily as coordinated work needs them.
 
-# Mission
+No record is imported from a retired database. The operator decides when to
+delete the retained backup.
 
-<who the repository serves and why>
-
-# Current Goal
-
-<one observable, time-bounded Current Goal>
-
-# Out of Scope
-
-- <explicit exclusion>
-```
-
-There is one observable, time-bounded Current Goal. Direction contains no task
-list, roadmap, generated status, or parking lot.
-
-## Private typed work
-
-The shared grammar is:
+## Typed private work
 
 ```text
 .kai/<pack>/<type>/<id>/{drafts,evidence,scratch}/
@@ -102,25 +97,16 @@ The shared grammar is:
 .kai/<pack>/archive/<type>/<subtype>/<id>/...
 ```
 
-Directories appear only on the first valid write. Unknown pack, type, subtype,
-ID, lifecycle, arbitrary root, link, junction, nested Git root, alias,
-collision, or path escape is a refusal.
+The package's `publication.json` owns allowed types, subtypes, formats,
+authority, and privacy. Directories appear only on the first valid write.
+Unknown packages, types, subtypes, IDs, lifecycle names, arbitrary roots,
+links, junctions, nested Git roots, aliases, collisions, and path escapes are
+refused.
 
-Each shipped pack owns exactly one publication vocabulary:
+## Publication and asset lifecycle
 
-| Pack | Publication contract |
-| --- | --- |
-| core | `kai-core-workspace-publication` |
-| engineering | `engineering-workspace-publication` |
-| creative | `creative-workspace-publication` |
-
-The owning contract defines allowed types, subtypes, formats, publication
-authority, and privacy. Core does not duplicate department vocabularies.
-
-## Publication
-
-Accepted project knowledge mirrors the validated private route under
-`docs/kai/` without the lifecycle segment:
+Accepted knowledge mirrors the validated private route without the lifecycle
+segment:
 
 ```text
 .kai/engineering/documentation/architecture/auth-boundary/drafts/adr.md
@@ -128,50 +114,36 @@ Accepted project knowledge mirrors the validated private route under
 ```
 
 Publication copies one exact accepted revision and records its hash, authority,
-subject version, provenance, and inputs. It never renames mutable private work.
+subject version, provenance, and inputs. Scratch, unaccepted drafts, private
+evidence, arbitrary roots, and unsafe media destinations cannot publish.
 
-Scratch, unaccepted drafts, private evidence, arbitrary roots, and unsafe media
-destinations cannot publish. Retained private drafts and evidence move to the
-typed archive path at closure.
+Execution, disposition, validity, and closure are independent. Finishing a Task
+does not freeze an asset's later validity. Current maintained assets name an
+owner and revalidation trigger; a stale or superseded asset is replaced through
+new authorized work. Parent closure checks required child states and required
+asset disposition and validity, never a Markdown board or backlog.
 
 ## Coordination
 
-SQLite at `.kai/core/runtime/coordination.sqlite` is the **only coordination
-authority**.
+`.kai/core/runtime/coordination.sqlite` is the only coordination authority:
 
 ```text
 Direction Current Goal
-└─ Epic
-   └─ <pack> Feature
-      └─ Requirement
-         └─ Task
+`-- Epic
+    `-- <pack> Feature
+        `-- Requirement
+            `-- Task
 ```
 
-Use the runtime:
+Use the generated runtime:
 
 ```text
 node "<kai-plugin>/scripts/coordinate.mjs" <verb> --root "<workspace-root>"
 ```
 
-`status`, `detail`, `context`, `messages`, `plan`, and `export` are read
-surfaces. `plan` returns executable Tasks only and reports `automatic: false`.
-Reports and exports are views, not authority.
-
-No Markdown board, backlog, milestone, thread, Task, or hierarchy log is
-authoritative or maintained in schema 5.
-
-## Direct work
-
-An ordinary directly authorized request:
-
-- requires no Direction read;
-- initializes no workspace;
-- creates no Epic, Feature, Requirement, or Task;
-- acquires no lease;
-- creates no pack directory.
-
-When direct work grows into coordinated multi-role execution, Kai presents the
-proposed hierarchy and obtains named authority before creating records.
+Read surfaces such as `status`, `detail`, `context`, `messages`, `plan`, and
+`export` do not create authority. `plan` returns executable Tasks only and
+reports `automatic: false`.
 
 ## Validate
 
@@ -180,38 +152,11 @@ node "<kai-plugin>/scripts/workspace-doctor.mjs" --root "<workspace-root>"
 node "<kai-plugin>/scripts/coordinate.mjs" inspect --root "<workspace-root>"
 ```
 
-For external placement, require exact registry pairing. Before every write,
-resolve real paths again and refuse changed aliases, links, junctions, nested
-Git roots, collisions, or escapes.
+External placement requires exact registry pairing. Every write re-resolves
+real paths and refuses changed aliases, links, junctions, nested Git roots,
+collisions, or escapes.
 
-## Explicit migration
+---
 
-<!-- kai:schema4-history -->
-Schema 3 and schema 4 may contain shared placement, `.kai/state/`,
-`.kai/runs/`, `.kai/review/`, `.kai/personal/`, initiatives, generic items,
-boards, backlogs, milestones, and threads. Schema 2 may also use visible
-`kai/coordination/`, `kai/initiatives/`, `kai/library/`, and `kai/personal/`
-roots. These are historical sources, not live destinations.
-<!-- /kai:schema4-history -->
-
-Older workspaces remain inspectable and read-only. They require an **explicit
-schema-5 migration**. Migration is offline, backup-first, ownership-classified,
-and manifest-last:
-
-1. inspect the old manifest, database, authored files, Git state, registry, and
-   publication tree;
-2. produce the complete hierarchy and artifact classification worksheet;
-3. obtain operator Direction and approval;
-4. verify a durable backup outside the live workspace;
-5. reconcile tracked private files and active leases;
-6. stage typed records and pack-owned artifact paths;
-7. reject unknown ownership instead of creating a fallback lane;
-8. validate hierarchy, privacy, paths, provenance, and read views;
-9. move the database to `.kai/core/runtime/coordination.sqlite`;
-10. activate the schema-5 manifest last.
-
-Failure leaves the older workspace authoritative and the verified backup
-available. There are no aliases or dual writes.
-
-The measured runtime acceptance record is
-[Coordination acceptance](reference/coordination-acceptance.md).
+**Related:** [Architecture](architecture.md) ·
+[Development process](development-process.md)

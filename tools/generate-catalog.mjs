@@ -255,7 +255,7 @@ function build(items) {
   out.push('deliberately absent from this catalog: they are not installed, not loaded,');
   out.push('and not available through any install path.');
   out.push('');
-  out.push('- **Not sure who to ask?** [How kai works](../how-kai-works.md) has the trigger table.');
+  out.push('- **Need the system boundaries?** [Architecture](../architecture.md) maps packages, authority, runtime, and hosts.');
   out.push('- **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).');
   out.push('');
 
@@ -285,8 +285,8 @@ function build(items) {
 
   out.push('---');
   out.push('');
-  out.push('**Next:** [How kai works](../how-kai-works.md) · [Workspace model](../workspaces.md) ·');
-  out.push('[Getting started](../getting-started.md)');
+  out.push('**Next:** [Architecture](../architecture.md) · [Workspace model](../workspaces.md) ·');
+  out.push('[Development process](../development-process.md)');
   out.push('');
   return out.join('\n');
 }

@@ -1,11 +1,10 @@
-[kai](../README.md) / Architecture
+[kai](../README.md) / [Docs](README.md) / Architecture
 
 # Shipped architecture
 
-This document describes the production surface of Kai. It covers only the
-three packages shipped from `plugins/`: Core, Engineering, and Creative.
-Everything under [`incubator/`](../incubator/README.md) is outside this
-architecture and is not part of the installable product.
+Kai ships three packages from `plugins/`. Everything under `incubator/` is
+inactive: it is not discovered, validated as a pack, generated, catalogued, or
+installable.
 
 ## Package topology
 
@@ -13,113 +12,96 @@ architecture and is not part of the installable product.
   kai-engineering                         kai-creative
   +-------------------------------+       +-------------------------------+
   | 13 agents                     |       | 3 agents                      |
-  |  7 skills                     |       | 7 skills                      |
-  |  0 JavaScript entry points    |       | 3 JavaScript entry points    |
-  |                               |       |                               |
-  | implementation               |       | UI and UX                     |
-  | architecture                 |       | visual identity               |
-  | independent review           |       | design and demo production    |
-  | delivery                     |       |                               |
+  | engineering judgment          |       | design and media judgment     |
+  | no JavaScript entry points    |       | 3 JavaScript entry points     |
   +---------------+---------------+       +---------------+---------------+
                   |                                       |
-                  |              depends on               |
                   +-------------------+-------------------+
                                       |
                                       v
   +-----------------------------------------------------------------------+
   | kai-core                                                              |
-  |                                                                       |
-  | 5 agents                                                              |
-  | 24 skills                                                             |
-  | 6 JavaScript entry points                                             |
-  | hooks.json and reusable templates                                     |
-  |                                                                       |
-  | shared operating contracts                                            |
-  | workspace and publication contracts                                   |
-  | requested coordination runtime                                        |
+  | 5 agents; shared contracts; workspace and coordination runtime         |
+  | 6 JavaScript entry points; hooks and reusable templates                |
   +-----------------------------------------------------------------------+
 ```
 
-Core has no dependency on a department package. Engineering and Creative can
-depend on Core, but cannot depend on each other. This keeps a Core-only install
-valid and lets consumers install only the departments they need.
+Core has no department dependency. Engineering and Creative may depend on
+Core, but not on each other. The build derives active ownership from the three
+package directories and rejects collisions or forbidden cross-package
+references.
 
-## Authoring, build, and consumption
+## One authority per fact
 
-Kai separates files contributors edit from files consumers execute:
+| Fact | Edited authority | Consumers |
+| --- | --- | --- |
+| Workspace schema and locations | `WORKSPACE_CONTRACT` in `src/core/lib/workspace-layout.mjs` | resolver, doctor, runtime, tests, generated scripts |
+| Path containment and link safety | `src/core/lib/workspace-path-safety.mjs` | private writes and publication |
+| Coordination records and commands | coordination registry in `src/core/lib/coordination-runtime/schema.mjs` | store, engines, evidence, views, host, CLI |
+| Publication vocabulary | `plugins/<pack>/publication.json` | publication skills, path validation, generated references |
+| Package ownership | `plugins/kai-{core,engineering,creative}/` | build, marketplace, catalog |
+| Release version | `package.json` | root/package manifests, locks, marketplace |
+| Consumer runtime | `src/core/` and `src/creative/` | committed bundled scripts |
+
+Markdown explains these contracts. It is not parsed as a second schema.
+
+## Build boundary
+
+Contributors edit source; consumers execute committed output:
 
 ```text
 AUTHORITATIVE SOURCE
 
-plugins/<pack>/agents/            agent definitions
-plugins/<pack>/skills/            skill definitions
-src/core/                         Core executable source
-src/creative/                     Creative executable source
+plugins/<pack>/agents/
+plugins/<pack>/skills/
+plugins/<pack>/publication.json
+src/core/
+src/creative/
+package.json
           |
-          | npm run pack-preview -- --write
-          | implemented by tools/pack-preview.mjs
+          | npm run build
           v
 COMMITTED CONSUMER ARTIFACTS
 
-plugins/kai-core/scripts/         19 generated JavaScript modules
-  +-- 6 executable entry points
-  +-- 13 shared chunks
-
-plugins/kai-engineering/          no JavaScript runtime
-
-plugins/kai-creative/scripts/      4 generated JavaScript modules
-  +-- 3 executable entry points
-  +-- 1 shared chunk
+plugin.json
+.github/plugin/marketplace.json
+plugins/<pack>/.claude-plugin/plugin.json
+plugins/<pack>/plugin-lock.json
+plugins/kai-core/scripts/
+plugins/kai-creative/scripts/
+docs/reference/agents-and-skills.md
 ```
 
-The generated scripts are native ESM bundles. They carry their runtime
-dependencies with the package and do not resolve code from the source checkout.
-Contributors edit `src/`, never generated chunks. `tools/pack-preview.mjs` is
-the single build boundary that refreshes and checks the committed artifacts.
-
-The public executable entry points are:
-
-| Package | Entry points |
-| --- | --- |
-| `kai-core` | `activity.mjs`, `coordinate.mjs`, `observe-subagent.mjs`, `observe-watch.mjs`, `work-status.mjs`, `workspace-doctor.mjs` |
-| `kai-engineering` | None |
-| `kai-creative` | `demo-format.mjs`, `demo-narrate.mjs`, `demo-zoom.mjs` |
+`tools/build.mjs` is the single build entry point. It validates structured
+sources, renders publication and catalog material, writes every version surface,
+and bundles stable ESM runtimes. `npm run build:check` proves the committed
+outputs match a fresh calculation. The clean-consumer test proves the generated
+packages run without checkout dependencies.
 
 ## Consumer workspace
 
-Kai creates workspace state only when a coordinated workflow needs it. Pack
-directories are lazy: installing a package does not create empty department
-trees.
+Kai creates state only for durable coordinated work:
 
 ```text
 project/
-|-- .kai/                                  private; ignored by Git
+|-- .kai/                                  private and ignored
 |   |-- manifest.json
-|   |-- core/
-|   |   `-- runtime/
-|   |       `-- coordination.sqlite       authoritative work record
+|   |-- core/runtime/coordination.sqlite  only coordination authority
 |   `-- <pack>/<type>/<id>/
-|       |-- drafts/                        work in progress
-|       |-- evidence/                      private verification material
-|       `-- scratch/                       disposable; never publishable
-|
-`-- docs/kai/                              accepted, Git-suitable knowledge
+|       |-- drafts/
+|       |-- evidence/
+|       `-- scratch/
+`-- docs/kai/                              accepted project knowledge
     |-- README.md
-    |-- DIRECTION.md                       operator-owned intent
-    `-- <pack>/<type>/<id>/...             exact accepted revision
+    |-- DIRECTION.md
+    `-- <pack>/<type>/<id>/...
 ```
 
-The split is deliberate:
+Pack directories are lazy. Direct answers and ordinary repository changes do
+not initialize Kai, read Direction, create hierarchy records, or acquire a
+lease.
 
-- `.kai/` contains private operations, drafts, evidence, and the SQLite source
-  of truth.
-- `docs/kai/` contains only explicitly accepted knowledge.
-- Repository-native code, tests, migrations, configuration, and ordinary
-  documentation stay in their existing project locations.
-- Each pack owns its publication vocabulary. Unknown types have no fallback
-  folder.
-
-## Work hierarchy
+## Coordination and assets
 
 ```text
 docs/kai/DIRECTION.md
@@ -130,26 +112,46 @@ docs/kai/DIRECTION.md
                 `-- Task
 ```
 
-Direction records Vision, Mission, one Current Goal, and Out of Scope. The
-operator owns it, and coordinated work binds to its exact revision.
+Task is the only executable and leased kind. The SQLite store owns durable
+state, transactions, optimistic versions, leases, messages, evidence, and
+events. Status, context, plans, reports, and exports are views.
 
-Epic, Feature, and Requirement define outcomes and authority. Task is the only
-executable and leased work kind. Ordinary single-shot work does not create this
-hierarchy, read Direction, or initialize a Kai workspace.
+Execution and asset lifecycle are independent. A completed Task remains
+terminal when a published asset later becomes stale or superseded. Revalidation
+requires new authorized work. A durable publication binds an existing hierarchy
+subject, acting authority, exact private revision, acceptance authority, hash,
+provenance, and a destination allowed by the owning package's
+`publication.json`. Producers do not self-accept team-facing publications.
 
-## Authority at a glance
+## Host capabilities
 
-```text
-operator intent       docs/kai/DIRECTION.md
-durable work state    .kai/core/runtime/coordination.sqlite
-private work files    .kai/<pack>/<type>/<id>/
-accepted knowledge    docs/kai/<pack>/<type>/<id>/
-agent and skill source plugins/<pack>/{agents,skills}/
-runtime source        src/{core,creative}/
-consumer JavaScript  plugins/<pack>/scripts/
-build boundary        tools/pack-preview.mjs
-```
+The declarative agents, skills, and contracts are the same on every host. Live
+tools differ:
 
-See [Workspace model](workspaces.md) for storage modes and publication details,
-and [Plugin structure](reference/plugin-structure.md) for contributor and
-release mechanics.
+| Capability | Copilot CLI | Copilot coding agent |
+| --- | --- | --- |
+| Agents and skills | Yes | Yes |
+| Local Node/SQLite runtime | Yes | Runner-dependent |
+| Live peer subagents | Yes | No; use the durable record |
+| Localhost browser automation | With a configured Playwright MCP server | Public URLs only when configured |
+| Web search and fetch | Built in | Repository-tool dependent |
+| Human-receipt journal for gated writes | Available in supported CLI sessions | Not assumed |
+
+Missing capabilities narrow the workflow or produce `UNSUPPORTED_HOST`; they
+never become inferred success. Browser skills require an MCP server registered
+under the `playwright` key. Windows runtime and path behavior is not covered by
+the Linux nightly.
+
+## Repository instructions
+
+An installed plugin's root `AGENTS.md` is not loaded into a consumer project.
+Shared product rules therefore ship as task-local skills. During workspace
+onboarding, the operator may separately install Kai's managed repository block
+into the project's own `AGENTS.md`. The installer preserves all bytes outside
+the markers and never stages the file without separate authorization.
+
+---
+
+**Related:** [Workspaces](workspaces.md) ·
+[Development process](development-process.md) ·
+[Plugin structure](reference/plugin-structure.md)

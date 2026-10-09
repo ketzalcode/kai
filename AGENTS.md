@@ -42,7 +42,8 @@ operator to install or update `kai-core` before resuming coordinated work.
 Every shipped package uses task-local routes. The retired
 go-to-market and personal plugins are not compatibility aliases; do not
 reintroduce their eager declarations or dependency guards. Schema 5 has no
-generic personal lane; older private data is handled only by explicit migration.
+generic personal lane. Unsupported workspaces are re-onboarded without
+importing historical private records.
 
 The install owners are `kai-core`, `kai-engineering`, and `kai-creative`.
 Keep each source in one owning package. A capability package's
@@ -108,47 +109,32 @@ keep it honest anyway.
 
 Any PR that changes shipped plugin behavior must, in the **same PR**:
 
-1. Bump the version in **`plugin.json`**, **`package.json`**, and
-   **`.github/plugin/marketplace.json`** (both `metadata.version` and
-   every `plugins[]` entry) together — `npm version <x.y.z> --no-git-tag-version`,
-   then set the other two to match. CI rejects a stale marketplace index,
-   because it installs fine while reporting the wrong version. Run
-   `npm install` if you touched dependencies so `package-lock.json` stays in
-   sync; version-only changes do not require an install. Regenerate every
-   package manifest/lock/script with `npm run pack-preview -- --write`.
-   Generating now **builds** the shipped executables with esbuild, so a clean
-   checkout needs `npm ci` before the generator will run at all. The build is
-   developer tooling only: nothing a consumer installs depends on it, and the
-   consumer-install acceptance test (`npm run consumer-install:self-test`) is
-   what keeps that true by running every shipped entry point from a copied
-   pack with no `node_modules`.
+1. Set the version only through
+   `npm version <x.y.z> --no-git-tag-version`. `package.json` is the edited
+   authority. In a clean checkout run `npm ci`, then `npm run build`; the build
+   writes `plugin.json`, every package manifest and lock, all marketplace
+   version fields, generated references, and bundled consumer scripts.
 2. Add a dated **`CHANGELOG.md`** entry under the new version
-   (Added / Changed / Fixed / Removed) **and its `[x.y.z]:` compare link**, and
-   refresh the README `## Status` stamp.
+   (Added / Changed / Fixed / Removed as relevant) **and its `[x.y.z]:`
+   comparison link**. Refresh the README `## Status` text.
 3. If you added, removed, or renamed an agent or skill, file it in `CATEGORIES`
-   in `tools/generate-catalog.mjs`, then run `npm run docs:generate` and
-   commit `docs/reference/agents-and-skills.md`. `npm test` fails until both are
-   done.
-4. Run `npm test`, then open the PR.
+   in `tools/generate-catalog.mjs`; `npm run build` regenerates
+   `docs/reference/agents-and-skills.md`.
+4. Run the agreed local validation and record the exact evidence and
+   unverified areas in the PR. Kai has no pull-request or push CI.
 
-CI **enforces** all of this: a behavior-sensitive change (`agents/`, `skills/`,
-`src/`, `tools/`, a committed `plugins/` tree, or the dependency manifests) that lacks a
-version bump plus changelog/README updates fails the `release-guard` gate, and the
-static checks reject a missing changelog section/link, a stale README stamp, a
-stale generated catalog, or a `package.json` ↔ `package-lock.json` mismatch. Docs-
-and test-only changes are exempt.
+The daily Linux/Node 24 nightly runs `npm test`, `npm run build:check`,
+`npm run consumer-install:self-test`, and release readiness. The Monday
+workflow tags and creates the GitHub release only from the exact successful
+nightly SHA. Do not tag or publish from a feature PR.
 
-After it merges to `main`, tag `vX.Y.Z` and cut the matching GitHub release from
-that changelog entry.
+If the expected previous tag is absent locally, fetch tags or use a
+deterministic merge-base ref for release-readiness. Never weaken the check to
+hide a missing ref. The changelog comparison link still names the documented
+previous released version.
 
 Pick the number by semver (full table in
-`docs/reference/plugin-structure.md` → **Versioning & releases**):
+`docs/reference/plugin-structure.md` → **Versioning**):
 while pre-1.0, both features and breaking changes are a **minor** bump and fixes
 are a **patch**; after 1.0, breaking changes are **major**, features **minor**,
 fixes **patch**. Docs- or test-only changes need no bump.
-
-The historical `1.0.0` milestone made packs the install surface (#29).
-Current changes follow the post-1.0 column. Incubating the five unfinished
-capability packages prepares `13.0.0` because it removes five package names
-from the shipped surface; prepared metadata is not a tag, release,
-publication, or host-verification claim.

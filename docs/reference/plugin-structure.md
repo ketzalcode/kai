@@ -2,317 +2,127 @@
 
 # Plugin structure
 
-The layout of this repository, and what to run before opening a PR. This page is
-for people changing kai itself. If you are *using* kai, you want
-[Getting started](../getting-started.md) instead.
+This page is for contributors changing Kai itself. Product installation and
+first-use instructions are in the root [README](../../README.md).
 
 ## Repository layout
 
-```
+```text
 kai/
-├── plugin.json         # temporary lockstep release metadata
-├── README.md           # the landing page
-├── AGENTS.md           # contributor rules for this repo only
-├── CHANGELOG.md        # every release
-├── LICENSE             # MIT
-├── plugins/            # authoritative installable plugin trees
-│   └── <plugin>/
-│       ├── agents/     # authoritative role profiles
-│       └── skills/     # authoritative skills and contracts
-├── scripts/            # dependency-free Node ESM: validators, doctor, generators
-├── docs/               # this documentation set
-├── examples/           # committed, CI-validated example workspaces
-└── test/fixtures/      # fixtures the validators and the doctor self-test against
+|-- AGENTS.md                         binding contributor instructions
+|-- package.json                      edited release-version authority
+|-- CHANGELOG.md                      manually authored release notes
+|-- plugins/
+|   |-- kai-core/
+|   |-- kai-engineering/
+|   `-- kai-creative/
+|-- src/core/                         Core runtime source
+|-- src/creative/                     Creative runtime source
+|-- tools/                            build and release tooling
+|-- test/                             lean behavioral suite
+|-- docs/                             active durable documentation
+|-- incubator/                        inactive, non-installable source
+|-- plugin.json                       generated root metadata
+`-- .github/plugin/marketplace.json   generated marketplace metadata
 ```
 
-kai is **declarative**: agents and skills are markdown prompts with YAML
-frontmatter. The only executable code is under `scripts/`, and it uses Node
-built-ins only, so CI runs it with no install step. Note that a plugin's own
-root `AGENTS.md` never loads in a consumer workspace — see
-[Host capabilities](../host-capabilities.md#how-shared-rules-reach-your-session)
-for why the shared rules ship as a skill instead.
+Agents and skills are declarative Markdown with YAML frontmatter. Their owning
+package directory is authoritative. Core may not depend on a department;
+Engineering and Creative may depend on Core but not on each other. Incubated
+source is excluded from discovery, validation, generation, and installation.
 
-Agent and skill files are edited only in their owning plugin. The three owners
-are `kai-core`, `kai-engineering` and `kai-creative`. Every current agent uses
-task-local contracts,
-not eager inheritance or a core-dependency guard. `npm run pack-preview -- --write`
-removes stale marked guards and refreshes derived files without replacing
-source bodies. Skill companions live beside `SKILL.md`; derived-file cleanup
-is restricted to manifests, locks, hooks and `scripts/`. Core also emits the
-canonical communication-style data file used by onboarding.
+## Authoring agents and skills
 
-`incubator/` holds source that is deliberately inactive — five parked
-capability packages and the document-review components held out of
-`kai-engineering`. Nothing there is discovered, validated as a pack, emitted,
-catalogued, or installable, and no `incubator/` tree may carry a plugin or
-package manifest. See [`incubator/README.md`](../../incubator/README.md).
+- Add an agent or skill only for a durable recurring responsibility.
+- Keep authority, refusal boundaries, tools, inputs, outputs, and handoffs
+  explicit.
+- Load shared contracts at the instruction that needs them; do not restore
+  eager inheritance lists or dependency-guard prose.
+- Give every skill a real firing path through an agent route or explicit user
+  invocation.
+- Durable producers declare their package-local publication entry point.
+- Put package publication vocabulary in `plugins/<pack>/publication.json`, not
+  in a validator that parses explanatory prose.
+- When an agent or skill is added, removed, or renamed, update `CATEGORIES` in
+  `tools/generate-catalog.mjs`; the build regenerates
+  `docs/reference/agents-and-skills.md`.
 
-All three manifests declare both `agents` and `skills`. Core alone
-owns `hooks.json` (host-discovered beside its manifest) and shared runtime
-utilities. Creative owns demo scripts and their module closure. No pack
-declares an npm dependency and no pack emits an npm manifest: the host copies
-plugin files and never runs npm, so a declared dependency could only resolve
-where someone ran npm into the install directory by hand — which the next
-update overwrites. Every shipped entry point runs on a bare Node install.
+New durable roles use `<provider>-<posture>-<scope>`, with the provider,
+posture, and scope chosen from the repository's current validator constants.
+Existing names remain stable unless the change explicitly breaks that surface.
 
-## Creating or refining an agent
+## Build boundary
 
-Work through [Agent authoring](agent-authoring/README.md) before adding a role.
-It classifies the need as a durable role, workflow, persona, instructor, or
-reusable skill; requires a permanent role to earn its slot; and defines
-authority, execution profile, host-specific tools, on-demand skills, handoffs,
-and acceptance cases before prose is written. It is contributor documentation,
-not a shipped skill — it only applies to this repository, so no package carries
-it.
+Use:
 
-New durable roles use `<provider-family>-<posture>-<scope>`. Provider families
-are `core`, `eng`, and `creative`; postures are `lead`, `builder`,
-`reviewer`, `operator`, `coordinator`, and `advisor`. Existing seniority-based
-identities remain valid during the staged migration, but they are not templates
-for new roles. The procedure handles one agent at a time; a fleet-wide identity
-migration belongs to a separate procedure.
-
-## How a skill reaches a session
-
-A skill is not loaded because it exists. It is loaded on demand through an agent
-route or a direct user invocation. What is not legitimate is a skill with no
-firing path, which ships and appears in the catalog while being unreachable.
-
-```
-  skills/<id>/SKILL.md
-          |
-          +-- 1. agent-routed -> named in the instruction that needs it, so the
-          |                      agent invokes it only at that workflow step.
-          |                      Not collected into a manifest section.
-          |
-          +-- 2. user-invoked -> `user-invocable: true` (+ `argument-hint`).
-          |                      The operator runs it directly. Use for a
-          |                      procedure a human starts on purpose.
+```powershell
+npm ci
+npm run build
+npm run build:check
 ```
 
-A skill can have more than one path. For example, an agent may route a skill
-that the operator can also invoke directly.
+`npm run build` validates structured source, renders publication and catalog
+material, writes all version metadata, and bundles committed consumer scripts.
+Generated files are outputs; edit `src/`, package declarations, or
+`package.json`, then rebuild. Stable runtime bundle names avoid content-hash
+churn.
 
-`npm run validate` fails on a skill with zero firing paths. The orchestrated
-form is matched by that declaration shape specifically, not by any backticked
-mention, so an incidental reference cannot pass an unreachable skill off as
-reachable. That check exists because its absence produced a filed issue
-asserting that user-invocable skills "never fire" — the counting method, not the
-plugin, was wrong. Inspect explicit task-local routes and user invocation;
-incidental prose does not establish a firing path or host execution.
+No installed package contains an npm manifest. The host copies files and never
+runs a lifecycle script. `npm run consumer-install:self-test` proves the copied
+packages execute without checkout `node_modules`.
 
-## Contributing
+## Contributor validation
 
-This is a personal open-source plugin, but issues and PRs are welcome.
-New skills should:
+The binding fast-ship and validation-agreement rules are in `AGENTS.md`. The
+usual Lean release preparation is:
 
-- Solve a real, recurring problem (not a "nice to have").
-- Be framework-agnostic unless explicitly scoped (e.g., `react-style`).
-- Cite their own conventions inside `SKILL.md` so the agent can apply them
-  without inventing rules.
-- Durable producers declare their pack-local `publication-entrypoint` in
-  frontmatter and route it before `kai-core-asset-producing`. Non-producers
-  declare no publication entrypoint.
+```powershell
+npm test
+npm run build:check
+npm run consumer-install:self-test
+node tools\release-readiness.mjs --base <available-tag-or-merge-base> --head HEAD --json
+git diff --check
+```
 
-The normal contribution path runs `npm test` — the dependency-free checks below,
-which also run in CI on every pull request.
+Kai runs no pull-request or push CI. A Linux/Node 24 nightly supplies scheduled
+repository confidence. See [Development process](../development-process.md) for
+the schedules, release guard, and evidence expectations.
 
-| Command | Checks |
-| ------- | ------ |
-| `npm run validate` | Source contract: valid agent/skill frontmatter, `name`-to-path agreement, resolvable cross-references, task-local skill routes, at least one firing path per skill, Kai tool-vocabulary lint, workspace-contract consistency, and release hygiene (semver, current-version changelog section + link, README status stamp, `package.json` ↔ `package-lock.json` consistency, git-dependency allowlist). |
-| `npm run docs:check` | The generated agent/skill catalog matches the shipped surface. |
-| `npm run doctor:self-test` | Generated-workspace contract, including the example workspaces, plus the pack-migration scenario matrix. |
-| `npm run host-contract` | Kai frontmatter acceptance heuristic — the expected discoverable inventory matches the golden snapshot and malformed frontmatter is rejected. |
-| `npm run release-guard:self-test` | The behavior-change-requires-a-bump decision core. |
-| `npm run activity:self-test` | The activity-log contract: the item/log boundary, privacy bounds, and concurrent-writer integrity. |
-| `npm run status:self-test` | The exception-report rules, against fixture workspaces. |
-| `npm run observe:self-test` | The subagent observer: consent gate, leak bounds, and the empty-stdout/exit-0 guarantee. |
-| `npm run observe:watch-self-test` | The ambient view: start/stop pairing, ambiguity labelling, and layout bounds. |
-| `npm run pack-preview:self-test` | Plugin-source planning: partition rules, managed guarantee regions, derived-file generation, and cross-plugin reference resolution, each failure proven by a mutation. |
-| `npm run pack-preview:gate` | The same rules over the live tree, as four named gates — partition, collision, partial-install, version-skew — which is how CI runs them. |
-| `npm run check-syntax` | `node --check` on shipped JS, plus a PowerShell parse. |
-| `node examples/proactive-runner/runner.mjs --self-test` | The kai-core-proactive-scan runner's decision, redaction, and retention core. |
+## Versioning
 
-On pull requests CI additionally runs `release-guard --base <sha> --head <sha>`
-to block a behavior-sensitive change that lacks a version bump plus
-changelog/README updates.
+Kai follows semantic versioning:
 
-**When you add, remove, or rename an agent or skill:**
+| Change | Version |
+| --- | --- |
+| Breaking consumed contract or removed public ID | major |
+| Additive public capability | minor |
+| Compatible fix | patch |
+| Documentation- or test-only | no bump required |
 
-1. File it under a category in `CATEGORIES` in `tools/generate-catalog.mjs` —
-   `npm test` fails until you do, so the catalog cannot silently omit it.
-2. Run `npm run docs:generate` and commit
-   `docs/reference/agents-and-skills.md`.
-3. Regenerate the host-loader golden with `npm run host-contract:update` and
-   commit `test/fixtures/inventory.json`.
-4. For a new skill, give it a firing path — route it at the relevant step, mark it
-   `user-invocable: true`, or have an agent dispatch it by name. `npm test`
-   fails until one exists.
+`package.json` is the only edited version source:
 
-**When you add a documentation page**, put it under `docs/` — the validator
-scans every `docs/**/*.md` for unresolvable agent references and for workspace
-paths written without their `kai/` parent, exactly as it scans the agents and
-skills themselves.
+```powershell
+npm version <x.y.z> --no-git-tag-version
+npm run build
+```
 
-## Versioning & releases
+The build updates the root and package manifests, locks, generated metadata,
+and every marketplace entry. Add the dated `CHANGELOG.md` section and
+comparison link manually.
 
-Source ownership and marketplace availability are now the same thing. Core,
-engineering and creative are the three shipping packages; product, marketing,
-revenue, assistant and learning are incubated under `incubator/` and are
-excluded from discovery, validation, generation and the index.
-See [Package availability](package-availability.md) for the re-entry boundary
-and existing-host precautions.
+## Release boundary
 
-All three source manifests and locks use the canonical prepared version
-together. A marketplace listing never means core's outstanding validation or
-wiring issues are fixed.
+After merge, the Monday workflow owns tagging and GitHub release creation. It
+uses the exact SHA validated by the latest successful nightly and skips when
+`main` moved, the version is already tagged, release facts are incomplete, or
+generated output was not clean.
 
-kai follows [semantic versioning](https://semver.org). Updates reach users via
-`copilot plugin update <pack>@kai-plugins` and a new session. Copilot loads the
-plugin from the repo, so the version is descriptive metadata, **not** an update
-gate. Keep it honest:
-any change to shipped plugin behavior bumps the version **in the same PR**. CI
-**enforces** this — a change under `agents/`, `skills/`, `scripts/`,
-`plugins/`, or the dependency manifests that lacks a version bump plus
-changelog/README updates fails the `release-guard` gate; docs- and test-only
-changes stay exempt.
-
-| Change | Pre-1.0 (`0.x`) | Post-1.0 |
-| ------ | --------------- | -------- |
-| Breaking (remove/rename an agent or skill, change a consumed contract) | minor (`0.Y.0`) | major (`X.0.0`) |
-| New feature (new agent/skill, additive capability) | minor (`0.Y.0`) | minor (`x.Y.0`) |
-| Fix / small tweak | patch (`0.x.Z`) | patch (`x.y.Z`) |
-| Docs- or test-only | no bump (or patch) | no bump (or patch) |
-
-The current change prepares `13.0.0`: incubating the five unfinished capability
-packages removes five package names from the shipped surface, which is a
-breaking inventory change under the post-1.0 column. The earlier coordination
-foundation prepared `12.0.0`, when `kai-core` gained an executable coordination
-runtime and workspace **schema 4** replaced schema 3 as the coordinated-write
-contract, so a schema-3 workspace becomes inspect-only until an explicit,
-separately authorized migration runs. The earlier engineering coding foundation
-prepared `8.0.0`: ten document-review
-skills and their dependent workflow left the active runtime surface while
-their source remained in the incubator. The earlier eight-package integration
-prepared `7.0.0`. Metadata does not mean the source is published or that
-runtime/release gates have passed.
-
-### Historical `1.0.0` milestone
-
-**`1.0.0` was reserved for packs becoming the install surface** — where
-`kai` stops being a single plugin and `kai-core` plus department plugins replace
-it (see [the pack architecture proposal](../proposals/pack-architecture.md) and
-issue #29). Nothing else takes the major.
-
-That split is breaking in the literal semver sense, which is why it earns the
-number rather than merely coinciding with it: install commands change, and core
-skills gain contract-versioned names because skill binding was measured to be
-**load-order dependent** — with two plugins providing the same skill name, the
-agent binds to whichever loaded first, and a preflight cannot detect it.
-
-Two consequences, both deliberate:
-
-- **Do not cut `1.0.0` early to signal maturity.** The version is a promise
-  about the install contract, not a maturity badge. Groundwork for the split —
-  harnesses, validators, metadata work — stays on `0.x` no matter how
-  substantial, because a consumer's install command has not changed.
-- **The measured gates must be green before the marketplace flips.** `1.0.0`
-  reads as a stability promise, so the Phase 3 host, partition, dependency, and
-  migration gates are release prerequisites rather than follow-up work.
-
-That milestone is history, not the current version rule. The post-1.0 column
-now applies, including major bumps for removed install names.
-
-### Release steps
-
-Also in `AGENTS.md` → **Releasing this plugin**:
-
-1. `npm version <x.y.z> --no-git-tag-version`, then set the matching version in
-   `plugin.json` **and in `.github/plugin/marketplace.json`** (both
-   `metadata.version` and all eight current `plugins[]` entries — CI rejects a stale index,
-   because it installs fine while reporting the wrong version).
-   Regenerate package manifests, locks and scripts with
-   `npm run pack-preview -- --write`; do not install dependencies for a
-   version-only change.
-2. Add a dated `CHANGELOG.md` entry (Added / Changed / Fixed / Removed) **and its
-   `[x.y.z]:` compare link**; refresh the README status stamp. (CI checks all
-   three for the current version.)
-3. `npm test`, open the PR, then **verify all three of these at the exact head you
-   are about to merge** — a later records-only commit does not inherit an earlier
-   head's evidence:
-   - `git merge-base --is-ancestor <reviewed-ref> HEAD` — every independent
-     approval was given on an ancestor of this head.
-   - `git diff --exit-code <reviewed-ref> HEAD -- . ':(exclude)kai/'` — nothing
-     outside the coordination records moved since that review, so the approvals
-     still describe the shipped change.
-   - a **fresh** CI run whose head SHA is this exact head, green on every required
-     job. Never merge on an attested equivalence, and never on a run a later
-     commit superseded.
-   Then merge on green.
-4. On the exact merge commit, register `ketzalcode/kai` in an isolated
-   `COPILOT_HOME`, browse `kai-plugins`, install every newly published pack,
-   run idempotent updates, and run the installed core migration doctor with
-   `--json`. Do not tag while names, versions, enabled state, provenance, or
-   install trees disagree.
-   Also run the doctor against a real direct-monolith host whose
-   `settings.json` has no plugin override; it must report `legacy-installed`
-   without `enabled-state-unverified`. That probe measures the *empty* override
-   map only: the `name@marketplace` override key is measured, but the bare-`name`
-   key the doctor assumes for a **direct** install has never been exercised on a
-   real host. It is documented as inferred, not gated — see the parked
-   measurement proposal and its revisit trigger in the pack-split research
-   backlog.
-5. Tag `vX.Y.Z` on `main` and cut the GitHub release from the changelog entry.
-
-### Emergency rollback of the pack marketplace
-
-The marketplace serves the default branch, so a broken pack flip must be
-restorable through an ordinary reviewed PR rather than an undocumented direct
-push.
-
-1. Get operator authorization and branch from the current `main`.
-2. Make a forward patch release (for example `1.0.1`), set
-   `metadata.installSurface` in `.github/plugin/marketplace.json` to
-   `legacy-rollback`, replace **every** pack entry with the root `kai` entry at
-   the same patch version, and add the required changelog and README notice.
-3. Run `npm test` and the exact release guard, then merge through normal branch
-   protection. The validator accepts `legacy-rollback` only at `1.0.0` or later
-   and requires the monolith while forbidding **every pack name the partition can
-   publish** — the set is derived from `PACKS` in `tools/lib/pack-plan.mjs`, not
-   listed here or there, so a pack published after this runbook was written is
-   forbidden by name without anyone remembering to add it. A rollback index that
-   restored the monolith beside a still-served department pack would be the exact
-   coexistence the migration doctor refuses on a host; it is refused in the index
-   too.
-4. From an isolated home, update the marketplace, browse it, install
-   `kai@kai-plugins`, and verify a fresh session before tagging the patch.
-   From an already-migrated home, first verify the replacement monolith is
-   available at the intended version in the selected source. Only then uninstall
-   every installed capability pack,
-   including `kai-assistant`, `kai-creative`, `kai-marketing`, `kai-learning`,
-   `kai-product`, `kai-engineering`, and `kai-revenue` first (also remove any
-   retired `kai-gtm` or `kai-personal` install still present), then uninstall
-   `kai-core` last.
-   Confirm `copilot plugin list` shows neither surface, then install
-   `kai@kai-plugins`, then start a fresh session. Never install the restored
-   monolith beside packs; the doctor correctly refuses that coexistence.
-5. Reverse the workspace provenance on every workspace already migrated. Run
-   `node <kai-plugin>/src/core/workspace-doctor.mjs --migration-check --rollback
-   --root <workspace-root>`: the explicit rollback intent first requires the
-   monolith to be one installed, enabled, identity-consistent copy whose
-   recorded config provenance agrees with its tree, every pack to be absent,
-   and both host evidence surfaces to be readable. Only then does it report
-   `workspace-provenance-ahead` and emits the one-key edit that sets
-   `.kai/manifest.json` `"plugin"` back to `kai`, plus the re-check that confirms
-   the workspace is healthy afterwards. The rollback plan never emits
-   `copilot plugin uninstall kai`; without the explicit mode or complete
-   evidence, no reverse edit is offered. Run the steps it prints; the doctor
-   itself changes nothing.
-6. Publish a forward plugin restoration in a later patch by returning
-   `metadata.installSurface` to `packs`; never leave both surfaces listed.
+Feature PRs must not tag, publish, or manually create the release. A missing
+local expected tag is not a reason to weaken release-readiness: fetch tags or
+use a deterministic merge-base ref, and report which base was actually used.
 
 ---
 
 **Next:** [Agents & skills](agents-and-skills.md) ·
-**Related:** [Host capabilities](../host-capabilities.md) ·
-[Workspace model](../workspaces.md)
+[Architecture](../architecture.md) ·
+[Development process](../development-process.md)

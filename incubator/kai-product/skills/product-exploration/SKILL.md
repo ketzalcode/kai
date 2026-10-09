@@ -5,7 +5,7 @@ tools: [playwright, read, edit, ask_user]
 ---
 
 > Live browser steps require a Playwright MCP server registered as `playwright`
-> in the host (see `docs/getting-started.md` → "Browser automation setup").
+> in the host (see `docs/architecture.md` → "Host capabilities").
 > Supplied-evidence mapping does not require browser access.
 
 # Product Exploration

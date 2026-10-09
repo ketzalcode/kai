@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from 'node:fs';
-import { join, posix } from 'node:path';
+import { join } from 'node:path';
 
 export const INCUBATOR_DIR = 'incubator';
 
@@ -56,16 +56,6 @@ export function incubatedIds(root, kind) {
   return ids;
 }
 
-export function documentationReferenceExists(id, sourcePath, activeIds, inactiveIds) {
-  if (activeIds.has(id)) return true;
-  const source = posix.normalize(sourcePath.replace(/\\/g, '/'));
-  const historical = [
-    'docs/proposals/', 'docs/superpowers/', 'docs/kai/reports/',
-    'docs/reference/skill-evaluation/research-before-coding/',
-  ].some(prefix => source.startsWith(prefix)) ||
-    [
-      'docs/reference/skill-evaluation/engineering-inventory.md',
-      'docs/reference/skill-evaluation/samples/diagrams/guide-current.md',
-    ].includes(source);
-  return historical && inactiveIds.has(id);
+export function documentationReferenceExists(id, _sourcePath, activeIds, _inactiveIds) {
+  return activeIds.has(id);
 }

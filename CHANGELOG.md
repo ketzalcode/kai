@@ -4,6 +4,24 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [20.0.0] - 2026-10-08
+
+### Changed
+
+- Replaced migration and historical workspace compatibility with explicit
+  current-schema re-onboarding.
+- Replaced per-PR and multi-platform CI with one Linux nightly and guarded
+  automatic Monday releases.
+- Added fast-ship repository instructions and human-selected validation levels.
+- Consolidated workspace, coordination, publication, build, and release
+  authorities.
+
+### Removed
+
+- Historical schema migration, recovery, and compatibility code.
+- Prose-as-contract validators and duplicate mutation gates.
+- Exhaustive historical tests, platform matrices, and superseded process docs.
+
 ## [19.0.0] - 2026-10-02
 
 ### Changed
@@ -4439,6 +4457,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[20.0.0]: https://github.com/ketzalcode/kai/compare/v19.0.0...v20.0.0
 [19.0.0]: https://github.com/ketzalcode/kai/compare/v18.0.0...v19.0.0
 [18.0.0]: https://github.com/ketzalcode/kai/compare/v17.0.0...v18.0.0
 [17.0.0]: https://github.com/ketzalcode/kai/compare/v16.0.1...v17.0.0

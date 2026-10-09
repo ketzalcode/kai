@@ -1,6 +1,6 @@
 {
   "name": "kai",
-  "version": "19.0.0",
+  "version": "20.0.0",
   "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; one build writes release metadata and consumer artifacts.",
   "private": true,
   "scripts": {
