@@ -1,0 +1,24 @@
+name: nightly
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:check
+      - run: npm run consumer-install:self-test
+      - run: npm run release-readiness -- --json
