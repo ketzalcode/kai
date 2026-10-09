@@ -4,18 +4,12 @@ import {
   MAX_LINE,
   activityWorkspaceAdmission,
   digest,
-  looksAbsolute,
-  safeNote
-} from "./chunk-CEFA2NA7.mjs";
-import "./chunk-S7AQGXMM.mjs";
-import {
-  resolveWorkspaceRoot
-} from "./chunk-L4TFCRET.mjs";
-import "./chunk-HMPQ32NA.mjs";
-import {
   escapesRoot,
-  pathHasLink
-} from "./chunk-VVVMKUAL.mjs";
+  looksAbsolute,
+  pathHasLink,
+  resolveWorkspaceRoot,
+  safeNote
+} from "./runtime-core.mjs";
 
 // src/core/observe-subagent.mjs
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, statSync, renameSync, rmSync } from "node:fs";

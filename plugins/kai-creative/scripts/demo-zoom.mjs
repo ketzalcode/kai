@@ -1,98 +1,16 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  cursorPng,
   parseScreenplay,
   parseTake
-} from "./chunk-Z5TLZBLV.mjs";
+} from "./runtime-creative.mjs";
 
 // src/creative/demo-zoom.mjs
 import { spawn, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync, readFileSync as read } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-// src/creative/lib/cursor-png.mjs
-import { deflateSync } from "node:zlib";
-var OUTLINE = [[0, 0], [0, 16.4], [3.6, 12.8], [6.1, 18.8], [8.7, 17.7], [6.2, 11.8], [11.2, 11.8]];
-var BODY = [[1.15, 2.4], [1.15, 13.7], [4, 10.9], [6.5, 16.7], [7.4, 16.3], [4.85, 10.3], [8.9, 10.3]];
-var GRID_W = 12;
-var GRID_H = 19;
-function inside(poly, px, py) {
-  let hit = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > py !== yj > py && px < (xj - xi) * (py - yi) / (yj - yi) + xi) hit = !hit;
-  }
-  return hit;
-}
-function crc32(buf) {
-  let c = ~0;
-  for (let i = 0; i < buf.length; i++) {
-    c ^= buf[i];
-    for (let k = 0; k < 8; k++) c = c >>> 1 ^ 3988292384 & -(c & 1);
-  }
-  return ~c >>> 0;
-}
-function chunk(type, data) {
-  const head = Buffer.alloc(8);
-  head.writeUInt32BE(data.length, 0);
-  head.write(type, 4, "ascii");
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])), 0);
-  return Buffer.concat([head, data, crc]);
-}
-function encodePng(width, height, rgba) {
-  const raw = Buffer.alloc((width * 4 + 1) * height);
-  for (let y = 0; y < height; y++) {
-    raw[y * (width * 4 + 1)] = 0;
-    rgba.copy(raw, y * (width * 4 + 1) + 1, y * width * 4, (y + 1) * width * 4);
-  }
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 6;
-  return Buffer.concat([
-    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    chunk("IHDR", ihdr),
-    chunk("IDAT", deflateSync(raw, { level: 9 })),
-    chunk("IEND", Buffer.alloc(0))
-  ]);
-}
-function cursorPng(scale = 2) {
-  const w = Math.ceil(GRID_W * scale);
-  const h = Math.ceil(GRID_H * scale);
-  const rgba = Buffer.alloc(w * h * 4);
-  const SUB = 3;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      let body = 0;
-      let outline = 0;
-      for (let sy = 0; sy < SUB; sy++) {
-        for (let sx = 0; sx < SUB; sx++) {
-          const gx = (x + (sx + 0.5) / SUB) / scale;
-          const gy = (y + (sy + 0.5) / SUB) / scale;
-          if (inside(BODY, gx, gy)) body++;
-          else if (inside(OUTLINE, gx, gy)) outline++;
-        }
-      }
-      const total = SUB * SUB;
-      const cover = (body + outline) / total;
-      if (cover === 0) continue;
-      const white = body / (body + outline);
-      const v = Math.round(255 * white + 26 * (1 - white));
-      const i = (y * w + x) * 4;
-      rgba[i] = v;
-      rgba[i + 1] = v;
-      rgba[i + 2] = v;
-      rgba[i + 3] = Math.round(255 * cover);
-    }
-  }
-  return { bytes: encodePng(w, h, rgba), width: w, height: h };
-}
-
-// src/creative/demo-zoom.mjs
 var MAX_ZOOM = 10;
 var MAX_FPS = 240;
 var MAX_SEGMENTS = 200;
@@ -229,12 +147,12 @@ var f = (n) => {
   return s.replace(/0+$/, "").replace(/\.$/, "");
 };
 function weightExpr(segment, T) {
-  const inside2 = `gte(${T},${f(segment.start)})*lt(${T},${f(segment.end)})`;
-  if (segment.ease === 0) return inside2;
+  const inside = `gte(${T},${f(segment.start)})*lt(${T},${f(segment.end)})`;
+  if (segment.ease === 0) return inside;
   const rampIn = `clip((${T}-${f(segment.start)})/${f(segment.ease)},0,1)`;
   const rampOut = `clip((${f(segment.end)}-${T})/${f(segment.ease)},0,1)`;
   const ss = (u) => `(${u})*(${u})*(3-2*(${u}))`;
-  return `${inside2}*min(${ss(rampIn)},${ss(rampOut)})`;
+  return `${inside}*min(${ss(rampIn)},${ss(rampOut)})`;
 }
 function normalizePrefix(plan, factor = 1) {
   const w = plan.size.w * factor;

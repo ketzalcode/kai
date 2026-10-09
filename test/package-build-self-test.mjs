@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {
-  cpSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -22,7 +21,8 @@ import {
 } from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const version = JSON.parse(readFileSync(join(root, 'plugin.json'), 'utf8')).version;
+const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const version = packageJson.version;
 const expectedPacks = ['core', 'creative', 'engineering'];
 const buildCache = new Map();
 
@@ -62,6 +62,19 @@ test('exactly three active packages are planned', () => {
     planManifests({root, version}).map(entry => entry.name).sort(),
     expectedPluginNames(expectedPacks),
   );
+});
+
+test('package metadata uses package.json as the version authority', () => {
+  const rootPlugin = JSON.parse(readFileSync(join(root, 'plugin.json'), 'utf8'));
+  const marketplace = JSON.parse(readFileSync(
+    join(root, '.github', 'plugin', 'marketplace.json'),
+    'utf8',
+  ));
+  assert.equal(rootPlugin.version, packageJson.version);
+  assert.equal(marketplace.metadata.version, packageJson.version);
+  for (const plugin of marketplace.plugins) {
+    assert.equal(plugin.version, packageJson.version);
+  }
 });
 
 test('Core-only install is closed and loadable', () => {
@@ -127,31 +140,51 @@ test('generated script filenames are stable for identical source', () => {
   const names = files => [...files.keys()]
     .filter(key => key.includes('/scripts/') && key.endsWith('.mjs'))
     .sort();
-  assert.deepEqual(names(second), names(first));
-  assert.ok(names(first).some(name => /\/scripts\/chunk-[A-Z0-9-]+\.mjs$/i.test(name)));
+  const firstNames = names(first);
+  assert.deepEqual(names(second), firstNames);
+  const chunkFiles = firstNames.filter(name => /\/scripts\/chunk-[A-Z0-9-]+\.mjs$/i.test(name));
+  const coreFiles = firstNames
+    .filter(name => name.startsWith('kai-core/'))
+    .map(name => name.slice('kai-core/'.length));
+  const creativeFiles = firstNames
+    .filter(name => name.startsWith('kai-creative/'))
+    .map(name => name.slice('kai-creative/'.length));
+  assert.deepEqual(chunkFiles, []);
+  assert.ok(coreFiles.includes('scripts/runtime-core.mjs'));
+  assert.ok(creativeFiles.includes('scripts/runtime-creative.mjs'));
 });
 
 test('generated drift detection reports a changed committed file', async () => {
-  const originalLog = console.log;
-  console.log = () => {};
-  let checkCommitted;
-  try {
-    ({checkCommitted} = await import('../tools/pack-preview.mjs'));
-  } finally {
-    console.log = originalLog;
+  const {buildPlan, checkPlan, writePlan} = await import('../tools/build.mjs');
+  const plan = buildPlan(root);
+  assert.equal(checkPlan(root, plan).ok, true);
+  assert.equal(JSON.parse(plan.get('plugin.json')).version, packageJson.version);
+  const plannedMarketplace = JSON.parse(
+    plan.get('.github/plugin/marketplace.json'),
+  );
+  assert.equal(plannedMarketplace.metadata.version, packageJson.version);
+  for (const plugin of plannedMarketplace.plugins) {
+    assert.equal(plugin.version, packageJson.version);
   }
-
   const scratch = join(root, 'test', `.package-build-${randomUUID()}`);
-  const copied = join(scratch, 'plugins');
   mkdirSync(scratch, {recursive: true});
   try {
-    cpSync(join(root, 'plugins'), copied, {recursive: true});
-    assert.equal(checkCommitted({root, base: copied, version}).ok, true);
-    const manifest = join(copied, 'kai-core', 'plugin.json');
+    writePlan(scratch, plan);
+    assert.equal(checkPlan(scratch, plan).ok, true);
+    const manifest = join(scratch, 'plugins', 'kai-core', 'plugin.json');
     writeFileSync(manifest, `${readFileSync(manifest, 'utf8')}\n`);
-    const drifted = checkCommitted({root, base: copied, version});
+    const drifted = checkPlan(scratch, plan);
     assert.equal(drifted.ok, false);
-    assert.ok(drifted.drift.some(entry => entry.includes('kai-core/plugin.json')));
+    assert.ok(drifted.drift.some(entry =>
+      entry.includes('plugins/kai-core/plugin.json')));
+
+    writePlan(scratch, plan);
+    const stale = join(scratch, 'plugins', 'kai-core', 'scripts', 'chunk-stale.mjs');
+    writeFileSync(stale, 'export {};\n');
+    const unexpected = checkPlan(scratch, plan);
+    assert.equal(unexpected.ok, false);
+    assert.ok(unexpected.drift.some(entry =>
+      entry.includes('unexpected: plugins/kai-core/scripts/chunk-stale.mjs')));
   } finally {
     rmSync(scratch, {recursive: true, force: true});
   }

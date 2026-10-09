@@ -1,29 +1,24 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
   closeStore,
-  inspectGitPrivacy,
-  openStore,
-  readDirection
-} from "./chunk-S7AQGXMM.mjs";
-import {
   defaultKaiHome,
+  exactPath,
+  inspectGitPrivacy,
+  inspectPrivateLanes,
   loadWorkspaceRegistry,
   loadWorkspaceRegistryForCleanup,
   nativeAbsolutePathProblem,
+  openStore,
+  pathHasLink,
+  readDirection,
   readWorkspaceManifest,
   registryPath,
   resolveWorkspaceRoot,
   validateSchema5Manifest
-} from "./chunk-L4TFCRET.mjs";
-import "./chunk-HMPQ32NA.mjs";
-import {
-  COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
-  exactPath,
-  inspectPrivateLanes,
-  pathHasLink
-} from "./chunk-VVVMKUAL.mjs";
+} from "./runtime-core.mjs";
 
 // src/core/workspace-doctor.mjs
 import {

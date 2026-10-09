@@ -52,6 +52,11 @@ export function publicationSkillForPack(pack) {
   return PUBLICATION_SKILLS[pack] ?? null;
 }
 
+export const PUBLICATION_TABLE_REGION_OPEN =
+  '<!-- >>> kai publication table (generated) >>>';
+export const PUBLICATION_TABLE_REGION_CLOSE =
+  '<!-- <<< kai publication table <<< -->';
+
 const PUBLICATION_CONTRACT_KEYS = Object.freeze([
   'pack',
   'skill',
@@ -81,6 +86,17 @@ const PUBLICATION_FORMATS = new Set([
   'media',
   'bundle',
 ]);
+const PUBLICATION_FORMAT_LABELS = Object.freeze({
+  markdown: 'Markdown',
+  'markdown-single-file': 'Markdown single file',
+  'markdown-destination-record': 'Markdown destination record',
+  json: 'JSON',
+  html: 'HTML',
+  diagram: 'diagram',
+  image: 'image',
+  media: 'media',
+  bundle: 'bundle',
+});
 
 const exactKeys = (value, expected) =>
   Object.keys(value).sort().join('|') === [...expected].sort().join('|');
@@ -194,6 +210,57 @@ export function publicationContract(pack, root = REPO_ROOT) {
     declarationPath,
     skillPath: sourcePath(root, pack, 'skills', parsed.skill, 'SKILL.md'),
   };
+}
+
+const publicationAuthorityLabel = authority => authority === 'operator'
+  ? 'Named operator authority accepts the exact revision and SHA-256 hash'
+  : 'Named completion authority accepts the exact revision and hash';
+
+export function renderPublicationTable(contract) {
+  const rows = contract.entries.map(entry => [
+    contract.pack,
+    entry.type,
+    entry.subtype ?? '-',
+    entry.privateForm,
+    entry.publicForm,
+    entry.formats.map(format => PUBLICATION_FORMAT_LABELS[format]).join(', '),
+    publicationAuthorityLabel(entry.authority),
+    'Private evidence never publishes',
+  ]);
+  return [
+    '| Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rows.map(row => `| ${row.map(cell => `\`${cell}\``)
+      .map((cell, index) => index < 5 ? cell : cell.slice(1, -1))
+      .join(' | ')} |`),
+  ].join('\n');
+}
+
+export function syncPublicationTableRegion(body, contract) {
+  const normalized = normalizeLF(body);
+  const openCount = normalized.split(PUBLICATION_TABLE_REGION_OPEN).length - 1;
+  const closeCount = normalized.split(PUBLICATION_TABLE_REGION_CLOSE).length - 1;
+  const region = `${PUBLICATION_TABLE_REGION_OPEN}\n${renderPublicationTable(contract)}\n`
+    + PUBLICATION_TABLE_REGION_CLOSE;
+
+  if (openCount === 0 && closeCount === 0) {
+    const anchor = '\n## Validation and refusal';
+    const at = normalized.indexOf(anchor);
+    if (at === -1) {
+      throw new Error(`publication skill ${contract.skill} is missing its validation section`);
+    }
+    return `${normalized.slice(0, at).trimEnd()}\n\n${region}\n${normalized.slice(at)}`;
+  }
+  if (openCount !== 1 || closeCount !== 1) {
+    throw new Error(`publication table region for ${contract.skill} must contain one open and one close marker`);
+  }
+  const start = normalized.indexOf(PUBLICATION_TABLE_REGION_OPEN);
+  const end = normalized.indexOf(PUBLICATION_TABLE_REGION_CLOSE);
+  if (end < start) {
+    throw new Error(`publication table region for ${contract.skill} is malformed`);
+  }
+  return `${normalized.slice(0, start)}${region}`
+    + normalized.slice(end + PUBLICATION_TABLE_REGION_CLOSE.length);
 }
 
 // The default committed-tree root. release-guard classifies changes under it as

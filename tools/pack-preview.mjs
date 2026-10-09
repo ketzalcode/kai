@@ -1,12 +1,8 @@
 #!/usr/bin/env node
-// The deterministic pack generator, and the host-behaviour preview it grew from.
+// Host-behaviour previews and structural pack gates.
 //
-// Two jobs, one partition (scripts/lib/pack-plan.mjs):
-//   • generate  — refresh derived files around the LIVE plugin-local roster,
-//     byte-stably, with a per-plugin plugin.json. `--write` also synchronises the
-//     marked dependency-guard region without replacing authoritative bodies;
-//     `--check` reports derived or managed-region drift.
-//   • preview   — a throwaway committed-slice or five-plugin build (`--out`/`--all`) that
+// Two jobs, one partition (tools/lib/pack-plan.mjs):
+//   • preview   — a throwaway committed-slice or multi-plugin build (`--out`/`--all`) that
 //     answers the host-behaviour questions gating the split: does a fail-closed
 //     preflight hold on a real agent, what happens when core is absent or
 //     version-skewed, which provider wins a name collision, and what a pack does
@@ -19,16 +15,13 @@
 //     (`--ci-runtime-binaries <pack>`), so publishing a pack never means editing
 //     the workflow to make that pack legal.
 //
-// Run: node scripts/pack-preview.mjs --check | --write
-//      node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N] | --all
-//      node scripts/pack-preview.mjs --self-test
-//      node scripts/pack-preview.mjs --gate <partition|collision|partial-install|version-skew|all>
-//      node scripts/pack-preview.mjs --ci-matrix | --ci-runtime-binaries <pack>
+// Run: node tools/pack-preview.mjs --out <dir> [--no-core] [--contract N] | --all
+//      node tools/pack-preview.mjs --self-test
+//      node tools/pack-preview.mjs --gate <partition|collision|partial-install|version-skew|all>
+//      node tools/pack-preview.mjs --ci-matrix | --ci-runtime-binaries <pack>
 //
-// Dependency-free (Node built-ins only), consistent with the rest of scripts/.
-
 import {
-  cpSync, readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync,
+  readFileSync, writeFileSync, mkdirSync, rmSync, existsSync,
 } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,7 +29,7 @@ import {
   parseFrontmatter, parseToolList,
 } from '../src/core/lib/loader-contract.mjs';
 import {
-  PACKS, PACKS_DIR, COMMITTED_PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
+  PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
   HOOKS_FILE, HOOKS_OWNER,
   packPluginName, sourceAssetIndex,
   planPacks, planManifests, materializePacks,
@@ -50,8 +43,6 @@ import {
   ACTIVITY_EXEMPT, ACTING_EXEMPT,
   hookAssetsIn, agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
-  syncGuaranteeRegion, removeGuaranteeRegion,
-  GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -226,161 +217,6 @@ export function build({ out, withCore = true, contract = 1, pack = 'learning' })
 }
 
 // ---------------------------------------------------------------------------
-// Committed pack trees — the deterministic generator (materialise + diff)
-//
-// Unlike the preview above, this path generates only derived plugin files:
-// manifests, dependency locks, routed non-markdown assets, and hooks. Agent and
-// skill bodies are authoritative in plugins/ and are never replaced wholesale.
-// `--write` may update only the explicitly marked core-dependency guard region
-// inside department agents and the publication table region inside each pack's
-// publication skill.
-// ---------------------------------------------------------------------------
-
-// Stamp generated packs in lockstep with the monolith. Falls back to the preview
-// version when plugin.json is unreadable, so the generator never hard-fails here.
-function committedVersion() {
-  try { return JSON.parse(readFileSync(join(ROOT, 'plugin.json'), 'utf8')).version || '0.0.0-preview'; }
-  catch { return '0.0.0-preview'; }
-}
-
-// Every file present under a committed tree, as pack-relative forward-slash keys
-// (never OS separators), so it compares directly against the generator's plan.
-function walkCommitted(base) {
-  const out = [];
-  const ignored = new Set(['.DS_Store', 'Thumbs.db']);
-  const walk = (dir, prefix) => {
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      if (ignored.has(e.name)) continue;
-      const key = prefix ? `${prefix}/${e.name}` : e.name;
-      if (e.isDirectory()) walk(join(dir, e.name), key);
-      else out.push(key);
-    }
-  };
-  walk(base, '');
-  return out;
-}
-
-const isSourceKey = (key) => {
-  const entry = parseGeneratedKey(key);
-  return entry?.kind === 'agent' || entry?.kind === 'skill' || entry?.kind === 'skill-companion';
-};
-
-const isDerivedOwnedKey = (key) => {
-  const entry = parseGeneratedKey(key);
-  if (!entry) return false;
-  if (['manifest', 'package', 'lock', 'hooks'].includes(entry.kind)) return true;
-  return entry.kind === 'other' && key.startsWith(`${entry.dir}/scripts/`);
-};
-
-const isSourceCompanionKey = (key, root) => {
-  const [dir, area, id, ...rest] = key.split('/');
-  if (area === 'publication.json' && id === undefined) {
-    return PACK_ORDER.some((pack) => packPluginName(pack) === dir);
-  }
-  if (area === 'templates' && rest.length > 0) {
-    return PACK_ORDER.some((pack) => packPluginName(pack) === dir);
-  }
-  if (area !== 'skills' || rest.length === 0) return false;
-  return sourceSkillFiles(root)
-    .some((entry) => packPluginName(entry.pack) === dir && entry.id === id);
-};
-
-const derivedFiles = (files) => new Map([...files].filter(([key]) => !isSourceKey(key)));
-
-function cleanStaleDerivedFiles(base, files) {
-  for (const key of walkCommitted(base)) {
-    if (files.has(key) || !isDerivedOwnedKey(key)) continue;
-    rmSync(join(base, ...key.split('/')), { force: true });
-  }
-}
-
-// Whether an agent still declares an eager `**Inherits:**` line. That single
-// fact — read from the agent's own text, with no pack allowlist or registry —
-// decides how its guard region is managed: an inheriting agent keeps the
-// region as its only core-dependency guard; a migrated agent on inline routes
-// must not carry one, so a stale region is stripped. The rule is correct for
-// every agent today and self-corrects as each remaining pack migrates.
-const declaresInherits = (body) => /^\*\*Inherits:\*\*/m.test(body);
-
-function managedAgentDrift(root) {
-  const drift = [];
-  for (const entry of sourceAgentFiles(root)) {
-    const raw = normalizeLF(readFileSync(entry.path, 'utf8'));
-    try {
-      if (declaresInherits(raw)) continue;
-      if (syncGuaranteeRegion(raw) !== raw) {
-        drift.push(`differs:    ${entry.rel} (managed core dependency guard)`);
-      }
-    } catch (e) {
-      drift.push(`differs:    ${entry.rel} (${e.message})`);
-    }
-  }
-  return drift;
-}
-
-// Materialize first, then write only derived paths beneath base. Source
-// synchronization is intentionally outside this helper.
-function writeDerivedTree({ root, base, version }) {
-  const files = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
-  for (const [relPath, content] of files) {
-    const abs = join(base, ...relPath.split('/'));
-    mkdirSync(dirname(abs), { recursive: true });
-    writeFileSync(abs, content);
-  }
-  cleanStaleDerivedFiles(base, files);
-  return files;
-}
-
-// Regenerate derived files and diff them against what is committed. Agent and
-// skill bodies are source. A configured tree that is absent fails with the
-// command that regenerates its derived surface.
-export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
-  if (!existsSync(base)) {
-    if (COMMITTED_PACKS.length === 0) {
-      return { ok: true, drift: [], note: `no committed packs configured — ${PACKS_DIR}/ is intentionally absent` };
-    }
-    return {
-      ok: false,
-      drift: [`missing:    ${PACKS_DIR}/`],
-      note: `committed packs are configured — regenerate with: node scripts/pack-preview.mjs --write`,
-    };
-  }
-  const expected = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
-  const drift = managedAgentDrift(root);
-  for (const [relPath, content] of expected) {
-    const abs = join(base, ...relPath.split('/'));
-    if (!existsSync(abs)) { drift.push(`missing:    ${relPath}`); continue; }
-    if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs:    ${relPath}`);
-  }
-  for (const key of walkCommitted(base)) {
-    if (!expected.has(key) && !isSourceKey(key) && !isSourceCompanionKey(key, root)) {
-      drift.push(`unexpected: ${key}`);
-    }
-  }
-  return { ok: drift.length === 0, drift };
-}
-
-// Update managed source regions, then materialise derived files without
-// deleting authoritative agent or skill sources.
-export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
-  if (COMMITTED_PACKS.length === 0) {
-    throw new Error('no committed packs configured; the extraction item must set COMMITTED_PACKS first');
-  }
-  let managed = 0;
-  for (const entry of sourceAgentFiles(root)) {
-    const raw = normalizeLF(readFileSync(entry.path, 'utf8'));
-    if (declaresInherits(raw)) continue;
-    const next = removeGuaranteeRegion(raw);
-    if (next !== raw) {
-      writeFileSync(entry.path, next);
-      managed += 1;
-    }
-  }
-  const files = writeDerivedTree({ root, base, version });
-  return { written: files.size, managed, dir: base };
-}
-
-// ---------------------------------------------------------------------------
 // Self-test
 // ---------------------------------------------------------------------------
 function selfTest() {
@@ -480,46 +316,6 @@ function selfTest() {
     fm: {},
   }).some(message => /direct `kai-core-asset-producing` route/.test(message)),
   'direct asset-producing bypass is rejected');
-
-  const missingBase = join(ROOT, 'test', '.pack-preview-missing');
-  const missingSource = join(missingBase, 'source');
-  const missingGenerated = join(missingBase, 'generated');
-  const missingVersion = '0.0.0-self-test';
-  const missingGeneratedPath = `${packPluginName('core')}/plugin.json`;
-  rmSync(missingBase, {recursive: true, force: true});
-  try {
-    cpSync(join(ROOT, PACKS_DIR), join(missingSource, PACKS_DIR), {recursive: true});
-    cpSync(join(ROOT, 'src'), join(missingSource, 'src'), {recursive: true});
-    cpSync(join(ROOT, HOOKS_FILE), join(missingSource, HOOKS_FILE));
-    const sourceAgent = sourceAgentFiles(missingSource)
-      .find(entry => !declaresInherits(readFileSync(entry.path, 'utf8')));
-    const originalSource = readFileSync(sourceAgent.path, 'utf8');
-    const sourceWithStaleGuard = `${originalSource.trimEnd()}\n\n`
-      + `${GUARANTEE_REGION_OPEN}\nstale guard\n${GUARANTEE_REGION_CLOSE}\n`;
-    writeFileSync(sourceAgent.path, sourceWithStaleGuard);
-    writeDerivedTree({root: missingSource, base: missingGenerated, version: missingVersion});
-    ok(readFileSync(sourceAgent.path, 'utf8') === sourceWithStaleGuard,
-      'missing-file preparation leaves source agent bytes unchanged');
-    writeFileSync(sourceAgent.path, originalSource);
-    const pristineCheck = checkCommitted({
-      root: missingSource,
-      base: missingGenerated,
-      version: missingVersion,
-    });
-    rmSync(join(missingGenerated, ...missingGeneratedPath.split('/')));
-    const missingCheck = checkCommitted({
-      root: missingSource,
-      base: missingGenerated,
-      version: missingVersion,
-    });
-    ok(pristineCheck.ok
-      && !missingCheck.ok
-      && missingCheck.drift.length === 1
-      && missingCheck.drift.includes(`missing:    ${missingGeneratedPath}`),
-      'missing generated file surface is rejected');
-  } finally {
-    rmSync(missingBase, {recursive: true, force: true});
-  }
 
   ok(generatedRuntimeErrors(new Map([
     ['kai-core/plugin.json', '{}'],
@@ -708,19 +504,6 @@ if (args.includes('--self-test')) {
   process.exit(selfTest() ? 0 : 1);
 } else if (args.includes('--gate')) {
   process.exit(runGates(flag('--gate', 'all')) ? 0 : 1);
-} else if (args.includes('--check')) {
-  const r = checkCommitted();
-  if (r.ok) {
-    console.log(`\u2713 pack-preview --check: ${r.note ?? `${PACKS_DIR}/ matches the generator`}`);
-    process.exit(0);
-  }
-  console.error(`\u2717 pack-preview --check: ${r.drift.length} drift(s) between ${PACKS_DIR}/ and the generator\n`);
-  for (const d of r.drift) console.error(`  ${d}`);
-  console.error('\n  regenerate with: node scripts/pack-preview.mjs --write');
-  process.exit(1);
-} else if (args.includes('--write')) {
-  const r = writeCommitted();
-  console.log(`pack-preview --write: ${r.written} derived file(s), ${r.managed} managed agent region(s) -> ${r.dir}`);
 } else if (args.includes('--all')) {
   const packsArg = flag('--packs', '');
   const out = flag('--out');
@@ -751,10 +534,8 @@ if (args.includes('--self-test')) {
   console.log(`pack: ${r.packDir}`);
   reportPreflight(out);
 } else {
-  console.log('usage: node scripts/pack-preview.mjs --check          (regenerate + diff committed plugins/)');
-  console.log('       node scripts/pack-preview.mjs --write          (materialise committed plugins/)');
-  console.log('       node scripts/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
-  console.log('       node scripts/pack-preview.mjs --all --out <dir>');
-  console.log('       node scripts/pack-preview.mjs --self-test');
-  console.log(`       node scripts/pack-preview.mjs --gate <${[...GATES.keys()].join('|')}|all>`);
+  console.log('usage: node tools/pack-preview.mjs --out <dir> [--no-core] [--contract N]');
+  console.log('       node tools/pack-preview.mjs --all --out <dir>');
+  console.log('       node tools/pack-preview.mjs --self-test');
+  console.log(`       node tools/pack-preview.mjs --gate <${[...GATES.keys()].join('|')}|all>`);
 }

@@ -4,12 +4,12 @@
 
 <!-- GENERATED FILE — do not edit by hand.
      Source: agent/skill frontmatter + the CATEGORIES table in
-     tools/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
-     `npm test` fails if this file drifts from the shipped surface. -->
+     tools/generate-catalog.mjs. Regenerate with `npm run build`;
+     `npm run build:check` fails if this file drifts. -->
 
-The repository ships **21 agents** and **38 skills**.
+The repository ships **21 agents** and **39 skills**.
 
-The default marketplace supplies **21 agents** and **38 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **21 agents** and **39 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -117,7 +117,8 @@ Resolve private schema-5 workspaces, initialize Direction, and validate core pub
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Use when resolving a Kai workspace, project binding, Direction file, coordination database, or typed private/public artifact path. |
-| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, repairing its private binding, or explicitly migrating an older workspace. |
+| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding. |
+| [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material. |
 
 ### Hierarchy & stewardship

@@ -1,12 +1,14 @@
 {
   "name": "kai",
   "version": "19.0.0",
-  "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; derived runtime files are refreshed by pack-preview.",
+  "description": "Kai plugin development tooling. Authoritative agents and skills live inside plugins/; one build writes release metadata and consumer artifacts.",
   "private": true,
   "scripts": {
     "validate": "node tools/validate-plugin.mjs",
-    "docs:generate": "node tools/generate-catalog.mjs",
-    "docs:check": "node tools/generate-catalog.mjs --check",
+    "build": "node tools/build.mjs --write",
+    "build:check": "node tools/build.mjs --check",
+    "docs:generate": "npm run build",
+    "docs:check": "npm run build:check",
     "doctor": "node src/core/workspace-doctor.mjs",
     "host-contract": "node tools/host-contract.mjs --self-test",
     "host-contract:update": "node tools/host-contract.mjs --update",
@@ -28,7 +30,6 @@
     "pack-preview": "node tools/pack-preview.mjs",
     "pack-preview:self-test": "node tools/pack-preview.mjs --self-test",
     "pack-preview:gate": "node tools/pack-preview.mjs --gate all",
-    "pack-preview:check": "node tools/pack-preview.mjs --check",
     "creative-screenplay:self-test": "node test/creative-screenplay-self-test.mjs"
   },
   "engines": {

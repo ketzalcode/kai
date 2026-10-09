@@ -2,8 +2,7 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
   resolveWorkspaceRoot
-} from "./chunk-L4TFCRET.mjs";
-import "./chunk-VVVMKUAL.mjs";
+} from "./runtime-core.mjs";
 
 // src/core/observe-watch.mjs
 import { readFileSync, existsSync, watch, statSync } from "node:fs";

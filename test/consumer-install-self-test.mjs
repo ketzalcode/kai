@@ -182,7 +182,10 @@ function probeEntrypoints(installedRoot, packs, consumerRoot) {
     const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
     if (!existsSync(scriptsDir)) continue;
     for (const name of readdirSync(scriptsDir)
-      .filter(value => value.endsWith('.mjs') && !value.startsWith('chunk-'))
+      .filter(value =>
+        value.endsWith('.mjs')
+        && !value.startsWith('chunk-')
+        && !value.startsWith('runtime-'))
       .sort()) {
       const path = join(scriptsDir, name);
       const entrypoint = `${pluginName}/scripts/${name}`;

@@ -6,14 +6,9 @@ import {
   activityWorkspaceAdmission,
   append,
   read,
+  resolveWorkspaceRoot,
   runs
-} from "./chunk-CEFA2NA7.mjs";
-import "./chunk-S7AQGXMM.mjs";
-import {
-  resolveWorkspaceRoot
-} from "./chunk-L4TFCRET.mjs";
-import "./chunk-HMPQ32NA.mjs";
-import "./chunk-VVVMKUAL.mjs";
+} from "./runtime-core.mjs";
 
 // src/core/activity.mjs
 import { resolve } from "node:path";
