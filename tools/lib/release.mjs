@@ -11,6 +11,17 @@ export const BEHAVIOR_FILES = new Set([
   '.github/plugin/marketplace.json',
 ]);
 
+export const EXPECTED_GENERATED_VERSION_KEYS = Object.freeze([
+  'plugin.json',
+  'marketplace.metadata',
+  'marketplace.kai-core',
+  'marketplace.kai-engineering',
+  'marketplace.kai-creative',
+  'plugins/kai-core/plugin.json',
+  'plugins/kai-engineering/plugin.json',
+  'plugins/kai-creative/plugin.json',
+]);
+
 export function isBehaviorPath(value) {
   const path = value.replace(/\\/g, '/');
   return BEHAVIOR_FILES.has(path)
@@ -38,9 +49,15 @@ export function isForwardVersion(latestVersion, currentVersion) {
 }
 
 export function generatedVersionErrors(currentVersion, generatedVersions) {
-  return Object.entries(generatedVersions)
-    .filter(([, version]) => version !== currentVersion)
-    .map(([file, version]) => `${file} has ${version}; expected ${currentVersion}`);
+  return EXPECTED_GENERATED_VERSION_KEYS.flatMap(file => {
+    if (!Object.hasOwn(generatedVersions, file)) {
+      return [`${file} is missing; expected ${currentVersion}`];
+    }
+    const version = generatedVersions[file];
+    return version === currentVersion
+      ? []
+      : [`${file} has ${version}; expected ${currentVersion}`];
+  });
 }
 
 export function extractReleaseNotes(changelog, version) {

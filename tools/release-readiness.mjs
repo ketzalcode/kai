@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import {execFileSync} from 'node:child_process';
-import {readFileSync} from 'node:fs';
-import {dirname, join} from 'node:path';
+import {dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {evaluateReleaseReadiness} from './lib/release.mjs';
 
@@ -38,8 +37,12 @@ function git(args) {
   return execFileSync('git', args, {cwd: ROOT, encoding: 'utf8'}).trim();
 }
 
-function readJson(path) {
-  return JSON.parse(readFileSync(join(ROOT, path), 'utf8'));
+function readAtRef(ref, path) {
+  return git(['show', `${ref}:${path}`]);
+}
+
+function readJsonAtRef(ref, path) {
+  return JSON.parse(readAtRef(ref, path));
 }
 
 function latestTag() {
@@ -54,17 +57,22 @@ function versionFromTag(tag) {
   return tag.startsWith('v') ? tag.slice(1) : tag;
 }
 
-function generatedVersions() {
-  const marketplace = readJson('.github/plugin/marketplace.json');
+function generatedVersions(ref) {
+  const marketplace = readJsonAtRef(ref, '.github/plugin/marketplace.json');
+  const marketplaceVersion = name =>
+    marketplace.plugins?.find(plugin => plugin.name === name)?.version;
   return {
-    'plugin.json': readJson('plugin.json').version,
+    'plugin.json': readJsonAtRef(ref, 'plugin.json').version,
     'marketplace.metadata': marketplace.metadata?.version,
-    ...Object.fromEntries(
-      (marketplace.plugins ?? []).map(plugin => [`marketplace.${plugin.name}`, plugin.version]),
-    ),
-    'plugins/kai-core/plugin.json': readJson('plugins/kai-core/plugin.json').version,
-    'plugins/kai-engineering/plugin.json': readJson('plugins/kai-engineering/plugin.json').version,
-    'plugins/kai-creative/plugin.json': readJson('plugins/kai-creative/plugin.json').version,
+    'marketplace.kai-core': marketplaceVersion('kai-core'),
+    'marketplace.kai-engineering': marketplaceVersion('kai-engineering'),
+    'marketplace.kai-creative': marketplaceVersion('kai-creative'),
+    'plugins/kai-core/plugin.json':
+      readJsonAtRef(ref, 'plugins/kai-core/plugin.json').version,
+    'plugins/kai-engineering/plugin.json':
+      readJsonAtRef(ref, 'plugins/kai-engineering/plugin.json').version,
+    'plugins/kai-creative/plugin.json':
+      readJsonAtRef(ref, 'plugins/kai-creative/plugin.json').version,
   };
 }
 
@@ -93,13 +101,13 @@ try {
     '--no-renames',
     `${base}...${options.head}`,
   ]).split(/\r?\n/).filter(Boolean);
-  const currentVersion = readJson('package.json').version;
+  const currentVersion = readJsonAtRef(options.head, 'package.json').version;
   const result = evaluateReleaseReadiness({
     changedFiles,
     currentVersion,
     latestVersion: versionFromTag(base),
-    changelog: readFileSync(join(ROOT, 'CHANGELOG.md'), 'utf8'),
-    generatedVersions: generatedVersions(),
+    changelog: readAtRef(options.head, 'CHANGELOG.md'),
+    generatedVersions: generatedVersions(options.head),
   });
   printResult(result, options.json);
   process.exit(result.ok ? 0 : 1);

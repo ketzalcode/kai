@@ -62,6 +62,18 @@ test('generated versions must all equal package.json', () => {
   assert.match(result.errors.join('\n'), /plugin\.json has 19\.0\.0/);
 });
 
+test('all expected generated version keys are required', () => {
+  for (const key of Object.keys(generatedVersions)) {
+    const missing = {...generatedVersions};
+    delete missing[key];
+    assert.match(
+      evaluate({generatedVersions: missing}).errors.join('\n'),
+      new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      `${key} must be required`,
+    );
+  }
+});
+
 test('release notes contain only the selected version section', () => {
   assert.equal(
     extractReleaseNotes(changelog, '20.0.0'),
