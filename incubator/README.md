@@ -16,13 +16,11 @@ Re-entry needs an independent review of the component's responsibility,
 triggers, inputs, output contract, consumer, stopping point, grounding rules,
 and focused evidence, plus operator sign-off.
 
-Inactive does not mean unexecuted. Almost everything parked here is markdown,
-which nothing could run, but a parked **executable** that imports active source
-keeps a test suite under `test/` wired into `npm test` and CI — see
-[`kai-creative/README.md`](kai-creative/README.md). That is not a crack in the
-isolation: the rules above are about the surfaces that make a capability real,
-and running a test is none of them. It is the only thing that parses such a
-file at all, since `tools/check-syntax.mjs` does not scan this directory.
+Inactive code is not automatically executed or syntax-checked.
+`tools/check-syntax.mjs` does not scan this directory, and the current test
+suite does not import the parked creative capture command. See
+[`kai-creative/README.md`](kai-creative/README.md) for its exact verification
+boundary and re-entry requirements.
 
 ## Incubated packages
 
@@ -70,6 +68,6 @@ package's directory.
    `tools/generate-catalog.mjs`.
 4. Re-establish the package's core-only dependencies: an incubated agent may
    name a role that no longer exists.
-5. Regenerate manifests and the catalog
-   (`npm run pack-preview -- --write`, `npm run docs:generate`,
-   `npm run host-contract:update`), then run `npm test`.
+5. Run `npm run build`, `npm test`, `npm run build:check`, and
+   `npm run consumer-install:self-test`. Run `npm run host-contract:update`
+   too when the host inventory or loader contract changes.

@@ -105,11 +105,12 @@ code says so.
 
 Nothing routed it. It reached a session only through `user-invocable: true`.
 
-The content is not deleted: it is contributor documentation at
-`docs/reference/agent-authoring/`, where the taxonomy and model tables stay
-pinned to the validator constants. `references/kai-repository.md` was dropped
-rather than moved — it duplicated `AGENTS.md` and had already drifted, still
-claiming "all eight packages" after the surface became three.
+The content is not deleted: the active taxonomy, slot criteria, prompt budgets,
+model mapping, and change checklist are retained in
+[plugin structure](docs/reference/plugin-structure.md).
+`references/kai-repository.md` was dropped rather than moved — it duplicated
+`AGENTS.md` and had already drifted, still claiming "all eight packages" after
+the surface became three.
 
 ### Creative parsers separated from the capture command
 
@@ -218,9 +219,12 @@ the incubator is a tree no gate reads. The fix at that point is to promote
 ### Also corrected
 
 Two live reference docs claimed **22 agents and 38 skills**; the shipped surface
-has been 21 and 36 since 13.0.0. Nothing checks those numbers — the README
-stamp is enforced, `docs/getting-started.md` and `docs/how-kai-works.md` are
-not — so they drifted silently through four releases.
+has been 21 and 36 since 13.0.0. Nothing checked those numbers — the README
+stamp was enforced, but the historical
+[getting-started guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md)
+and
+[how-kai-works guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/how-kai-works.md)
+were not — so they drifted silently through four releases.
 
 ### Verified
 
@@ -691,8 +695,11 @@ entry never uninstalls an already-installed package.
   capability has no installed successor (product discovery, in-voice drafting,
   promotion judgment, support triage), the work routes to `@operator` rather
   than to an invented substitute.
-- `docs/how-kai-works.md` and `docs/getting-started.md` describe the
-  three-package repository.
+- The historical
+  [how-kai-works guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/how-kai-works.md)
+  and
+  [getting-started guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md)
+  describe the three-package repository.
 
 ### Fixed
 
@@ -785,7 +792,7 @@ pre-existing pre-release validator failures described under *Known state*.
 - Live-host acceptance of the coordination runtime is **not** claimed here.
 - Every acceptance case carries one verdict — covered by test, measured against
   the installed host, or not verified — in
-  [the coordination acceptance record](docs/reference/coordination-acceptance.md),
+  [the coordination acceptance record](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/reference/coordination-acceptance.md),
   which also records the one installed-host scenario that **failed**.
 
 ## [11.0.0] - 2026-09-16
@@ -1146,8 +1153,8 @@ runtime and test/CI consolidation remain deferred. No green-build claim is made.
 - `kai-product`, `kai-gtm` and `kai-personal` — 29 agents — deliberately keep
   the eager declaration until they migrate. Their dangling references to the
   removed ids land with that work.
-- What this release does **not** prove is recorded in
-  `docs/superpowers/plans/2026-09-04-agent-contract-refactor-verification.md`:
+- What this release does **not** prove is recorded in the historical
+  [agent-contract verification plan](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/superpowers/plans/2026-09-04-agent-contract-refactor-verification.md):
   no automated check confirms an agent kept every rule it needs, and none
   confirms output quality improved. 32 drop records track where each rule went.
 
@@ -2032,7 +2039,9 @@ index still lists exactly one plugin. This release makes the migration
 
 ### Changed
 
-- `docs/proposals/pack-architecture.md` records the whole-roster results, which
+- The historical
+  [pack-architecture proposal](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/proposals/pack-architecture.md)
+  records the whole-roster results, which
   close the Phase 2 gate and add one design constraint:
   - **Enumeration is complete at 56 agents across five plugins.** Truncation was
     the wrong thing to fear — verified by diffing the returned ids against the
@@ -2082,7 +2091,9 @@ index still lists exactly one plugin. This release makes the migration
   segment in the name (classification is the most volatile attribute a skill
   has; forcing a four-way taxonomy onto the 22 produced 12 arguable cases).
 
-- `docs/proposals/pack-architecture.md` records the revision, since the earlier
+- The historical
+  [pack-architecture proposal](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/proposals/pack-architecture.md)
+  records the revision, since the earlier
   decision it had recorded — *contract-versioned* names for all core skills —
   was measured to be the more expensive and less stable choice.
 
@@ -2103,7 +2114,9 @@ index still lists exactly one plugin. This release makes the migration
 
 ### Changed
 
-- `docs/proposals/pack-architecture.md` records the Phase 1 and Phase 2 results,
+- The historical
+  [pack-architecture proposal](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/proposals/pack-architecture.md)
+  records the Phase 1 and Phase 2 results,
   which change two design decisions:
   - **Core skills must carry contract-versioned names.** With legacy `kai` and
     `kai-core-preview` both providing `team-operating-rules`, the agent bound to
@@ -2143,7 +2156,9 @@ index still lists exactly one plugin. This release makes the migration
   agent description, 180 per skill. Without a ratchet the prose grows back one
   reasonable-looking sentence at a time and nothing fails until someone
   re-measures. Verified to catch a violation at exactly one character over.
-- `docs/proposals/pack-architecture.md` — the measured assessment behind #29
+- The historical
+  [pack-architecture proposal](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/proposals/pack-architecture.md)
+  — the measured assessment behind #29
   (`kai-core` plus department packs), including the finding that an agent in one
   plugin *can* load a skill from another, so packs need no duplicated contracts.
 
@@ -2178,7 +2193,9 @@ index still lists exactly one plugin. This release makes the migration
   the marketplace does not move an existing install onto it, and installing over
   the top does **not** replace the old copy — it leaves both `kai` and
   `kai@kai-plugins` installed at once, which was measured, not assumed.
-  `docs/getting-started.md` now documents uninstalling first, notes that a
+  the historical
+  [getting-started guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md)
+  documents uninstalling first, notes that a
   workspace (`.kai/`, `kai/`) is untouched by either command, and says how to
   recover if you already ended up with both.
 
@@ -2207,8 +2224,9 @@ index still lists exactly one plugin. This release makes the migration
 
 ### Changed
 
-- Install instructions in `README.md` and `docs/getting-started.md` lead with
-  the marketplace form. Updating now documents **two** caches — refresh the
+- Install instructions in `README.md` and the historical
+  [getting-started guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md)
+  lead with the marketplace form. Updating now documents **two** caches — refresh the
   marketplace catalog (`marketplace update kai-plugins`) before updating the
   plugin, or the update has nothing new to find. The host's documented
   `autoUpdate` opt-in for self-added marketplaces is called out as **not
@@ -2217,8 +2235,9 @@ index still lists exactly one plugin. This release makes the migration
   plainly that it *loads* rather than *installs*, so the flag is needed every
   session. The previous instruction, `/plugin install .`, was itself a
   deprecated direct install.
-- `docs/getting-started.md` said kai ships 54 agents and 40 skills. It ships 56
-  and 49.
+- The historical
+  [getting-started guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md)
+  said kai ships 54 agents and 40 skills. It ships 56 and 49.
 
 ## [0.49.3] - 2026-08-13
 
@@ -3390,8 +3409,10 @@ pretend otherwise.
 ### Added
 
 - `docs/` — the README split into five task-oriented guides plus a reference:
-  [getting-started](docs/getting-started.md), [how-kai-works](docs/how-kai-works.md),
-  [workspaces](docs/workspaces.md), [host-capabilities](docs/host-capabilities.md),
+  [getting-started](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md),
+  [how-kai-works](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/how-kai-works.md),
+  [workspaces](docs/workspaces.md),
+  [host-capabilities](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/host-capabilities.md),
   `docs/reference/agents-and-skills.md`, and `docs/reference/plugin-structure.md`,
   indexed by `docs/README.md`. Every page opens with a breadcrumb and closes with
   a "Next / Related" row, so no page is reachable only by scrolling (#63).
@@ -3430,9 +3451,12 @@ pretend otherwise.
   exists; it now checks what generation cannot — that the editorial grouping in
   `scripts/generate-catalog.mjs` still matches what each agent does.
 - Five browser-driving skills pointed at a "Browser automation setup" section in
-  `README.md` that had moved to `docs/getting-started.md`.
-- `docs/host-capabilities.md` named `extract-learn-path` as a browser-driven
-  skill; the skill is `web-content-extraction` (`extract-learn-path` is a script).
+  `README.md` that had moved to the historical
+  [getting-started guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/getting-started.md).
+- The historical
+  [host-capabilities guide](https://github.com/ketzalcode/kai/blob/966ed76356f19c936b418d53faacdddf5c2f4ffe/docs/host-capabilities.md)
+  named `extract-learn-path` as a browser-driven skill; the skill is
+  `web-content-extraction` (`extract-learn-path` is a script).
 
 ## [0.29.0] - 2026-08-08
 

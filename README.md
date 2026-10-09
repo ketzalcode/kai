@@ -136,6 +136,49 @@ The cloud coding agent must be configured by its repository owner to load the
 same package directories. Host tooling differs; see
 [Architecture → Host capabilities](docs/architecture.md#host-capabilities).
 
+### Optional browser and media setup
+
+Most of Kai needs no external runtime. Browser inspection and applicable video
+operations need tools that Kai does not ship.
+
+**Playwright MCP.** `creative-lead-design`, `eng-reviewer-quality`,
+`kai-core-web-evaluation`, and `kai-core-web-content-extraction` expect an MCP
+server registered under the exact key `playwright`. For Copilot CLI, add this
+entry to `~/.copilot/mcp-config.json`:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium"],
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Restart the CLI, run `/mcp`, and confirm that `playwright` is listed.
+`npx` fetches `@playwright/mcp` on demand; no global install is required.
+GitHub documents Playwright MCP as enabled by default for the
+[Copilot coding agent and code review](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers),
+but those cloud hosts cannot inspect a local application.
+
+**ffmpeg and ffprobe.** Install an
+[FFmpeg distribution](https://ffmpeg.org/download.html) that provides both
+commands, put them on `PATH`, and verify:
+
+```text
+ffmpeg -version
+ffprobe -version
+```
+
+`video-render-zoom`, supplied-narration placement, duration/audio inspection,
+and final mix commands use these tools when that operation requires them.
+Missing tools are reported as an input gap; Kai does not install or assume
+them.
+
 ### Updating
 
 Two caches, and the order matters — refresh the catalog first or the update has
