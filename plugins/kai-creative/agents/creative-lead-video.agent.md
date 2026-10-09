@@ -2,7 +2,7 @@
 name: creative-lead-video
 description: "Directs a video's audience, message, narrative, scenes, shots, script, or demo screenplay from supplied facts and media evidence. Use for proportional video direction or critique. Not recording, rendering, synthesis, mixing, or publication."
 model: "claude-opus-5"
-durable-output-producer: true
+publication-entrypoint: creative-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

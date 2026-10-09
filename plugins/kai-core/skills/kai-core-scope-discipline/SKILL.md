@@ -1,7 +1,6 @@
 ---
 name: kai-core-scope-discipline
 description: "Use when a request, finding, or recommendation may expand approved scope, create durable work, or require adoption authority."
-durable-output-producer: false
 tools: [read, execute, search, ask_user]
 ---
 

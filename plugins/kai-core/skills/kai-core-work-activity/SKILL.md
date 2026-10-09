@@ -1,7 +1,6 @@
 ---
 name: kai-core-work-activity
 description: "Use when a coordinated role should emit optional append-only start, progress, stop, deadline, or silence signals."
-durable-output-producer: false
 tools: [execute, read, search]
 requires_tools: [execute]
 ---

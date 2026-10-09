@@ -1,7 +1,6 @@
 ---
 name: engineering-workspace-publication
 description: "Use when an engineering role may retain or publish durable feature, architecture, decision, investigation, or release knowledge."
-durable-output-producer: false
 tools: [read, edit, search]
 ---
 
@@ -14,13 +13,15 @@ repository-native paths and do not create Kai state.
 
 ## Canonical vocabulary
 
+<!-- >>> kai publication table (generated) >>>
 | Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `engineering` | `features` | `-` | `.kai/engineering/features/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/features/<id>/` | Markdown or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; repository secrets and raw review material stay private |
-| `engineering` | `documentation` | `architecture` | `.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` | Markdown, diagrams, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; internal topology and sensitive examples require minimization |
-| `engineering` | `decisions` | `-` | `.kai/engineering/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` | Markdown or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; only accepted rationale enters the public record |
-| `engineering` | `reports` | `investigations` | `.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` | Markdown, JSON, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; credentials, exploit detail, and raw telemetry stay private |
-| `engineering` | `reports` | `releases` | `.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` | Markdown, JSON, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; only approved delivery evidence enters the report |
+| `engineering` | `features` | `-` | `.kai/engineering/features/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/features/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `engineering` | `documentation` | `architecture` | `.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` | Markdown, diagram, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `engineering` | `decisions` | `-` | `.kai/engineering/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `engineering` | `reports` | `investigations` | `.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `engineering` | `reports` | `releases` | `.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+<!-- <<< kai publication table <<< -->
 
 ## Validation and refusal
 

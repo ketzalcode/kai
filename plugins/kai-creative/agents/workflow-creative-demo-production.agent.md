@@ -2,7 +2,7 @@
 name: workflow-creative-demo-production
 description: "Produces an authorized demo from supplied media and approved direction, using only requested alignment, focus, composition, and format operations. Runs when production inputs already exist. Not capture, invented direction, or publication."
 model: "claude-sonnet-5"
-durable-output-producer: true
+publication-entrypoint: creative-workspace-publication
 tools: ["execute", "read", "edit", "ask_user", "skill"]
 ---
 

@@ -2,7 +2,7 @@
 name: eng-builder-software
 description: "Implements a scoped software change end-to-end: frontend, APIs, persistence, data pipelines, or applied AI, with its tests. Use for features, fixes, and refactors. Not independent review, platform provisioning, or production deployment."
 model: "claude-sonnet-5"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 

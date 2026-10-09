@@ -44,7 +44,7 @@ import {
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
-  publicationInventoryErrors, publicationContractErrors, publicationRoutingErrors,
+  publicationContract, publicationInventoryErrors, publicationContractErrors, publicationRoutingErrors,
   activeWorkspaceLanguageErrors, markdownCoordinationAuthorityErrors,
   directionContractErrors, epicWorkflowContractErrors, chiefOfStaffContractErrors,
   agentDirectOutputErrors, activeGuideDecisionFiles, workflowShipContractErrors,
@@ -897,6 +897,13 @@ if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block te
   // gates apply to every shipped source, not a hard-coded producer roster.
   for (const msg of publicationInventoryErrors(skillFiles)) {
     err('plugins/', msg);
+  }
+  for (const pack of PACK_ORDER) {
+    try {
+      publicationContract(pack, ROOT);
+    } catch (error) {
+      err(`plugins/${packPluginName(pack)}/publication.json`, error.message);
+    }
   }
   for (const skill of skillFiles.filter(entry => entry.id.endsWith('workspace-publication'))) {
     const body = readFileSync(skill.path, 'utf8');

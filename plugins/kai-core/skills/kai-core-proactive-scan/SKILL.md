@@ -1,7 +1,6 @@
 ---
 name: kai-core-proactive-scan
 description: "Use when an explicitly requested read-only scan must classify, deduplicate, deliver, and acknowledge operator-relevant signals."
-durable-output-producer: false
 tools: [read, execute, search]
 ---
 

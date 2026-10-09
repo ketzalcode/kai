@@ -2,7 +2,7 @@
 name: eng-advisor-investigation
 description: "Investigates a bounded issue, codebase question, technical option, or AI research topic and returns cited findings and unknowns. Use when evidence is missing. Not implementation, independent acceptance, or automatic delivery planning."
 model: "gpt-5.6-sol"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 

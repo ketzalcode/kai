@@ -1,7 +1,6 @@
 ---
 name: kai-core-asset-producing
 description: "Use when a validated pack-owned artifact needs a private revision, acceptance binding, publication, provenance, or closure."
-durable-output-producer: false
 tools: [read, edit, execute, search]
 ---
 

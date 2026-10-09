@@ -1,7 +1,6 @@
 ---
 name: kai-core-no-self-remediation
 description: "Assessor write-boundary contract. Use when a review or assessment role must report findings without mutating the target under review."
-durable-output-producer: false
 tools: [read, search]
 ---
 

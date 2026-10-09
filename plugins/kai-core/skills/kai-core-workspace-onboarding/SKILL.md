@@ -1,7 +1,6 @@
 ---
 name: kai-core-workspace-onboarding
 description: "Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding."
-durable-output-producer: false
 tools: [execute, read, edit, search, ask_user]
 ---
 

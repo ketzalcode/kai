@@ -1,7 +1,7 @@
 ---
 name: video-align-narration
 description: "Use when measured narration clips need a fit assessment, placement plan, or authorized mix against an existing recorded demo."
-durable-output-producer: true
+publication-entrypoint: creative-workspace-publication
 user-invocable: true
 ---
 

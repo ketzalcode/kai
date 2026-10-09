@@ -1,7 +1,7 @@
 ---
 name: kai-core-web-content-extraction
 description: "Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption."
-durable-output-producer: true
+publication-entrypoint: kai-core-workspace-publication
 tools: [playwright, execute, edit, read, ask_user]
 ---
 

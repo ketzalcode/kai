@@ -1,7 +1,6 @@
 ---
 name: creative-workspace-publication
 description: "Use when a creative role may retain or publish durable design, guidance, decision, report, or media material."
-durable-output-producer: false
 tools: [read, edit, search]
 ---
 
@@ -13,13 +12,15 @@ feature they serve; reusable design-system or brand guidance is documentation.
 
 ## Canonical vocabulary
 
+<!-- >>> kai publication table (generated) >>>
 | Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `creative` | `features` | `-` | `.kai/creative/features/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/features/<id>/` | Markdown, HTML, images, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; source captures and rejected alternatives stay private |
-| `creative` | `documentation` | `-` | `.kai/creative/documentation/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/documentation/<id>/` | Markdown, HTML, images, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; unpublished brand and user material stay private |
-| `creative` | `decisions` | `-` | `.kai/creative/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/decisions/<id>/` | Markdown, images, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; only accepted rationale and approved examples publish |
-| `creative` | `reports` | `-` | `.kai/creative/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/reports/<id>/` | Markdown, JSON, images, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; raw research and production evidence stay private |
-| `creative` | `media` | `-` | `.kai/creative/media/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/media/<id>/` | Git-suitable media or Markdown destination record | Named completion authority accepts the exact revision, hash, and approved durable destination | Private evidence never publishes; large, sensitive, licensed, or unsafe media stays private |
+| `creative` | `features` | `-` | `.kai/creative/features/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/features/<id>/` | Markdown, HTML, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `documentation` | `-` | `.kai/creative/documentation/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/documentation/<id>/` | Markdown, HTML, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `decisions` | `-` | `.kai/creative/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/decisions/<id>/` | Markdown, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `reports` | `-` | `.kai/creative/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/reports/<id>/` | Markdown, JSON, image, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `creative` | `media` | `-` | `.kai/creative/media/<id>/{drafts,evidence,scratch}` | `docs/kai/creative/media/<id>/` | media, Markdown destination record | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+<!-- <<< kai publication table <<< -->
 
 ## Validation and refusal
 

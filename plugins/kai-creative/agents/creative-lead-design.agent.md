@@ -2,7 +2,7 @@
 name: creative-lead-design
 description: "Designs or critiques product interactions, visual hierarchy, applied design systems, and visual identity from approved needs and positioning. Use for UI, UX, brand-system, or revision-bound design review. Not product priority, positioning, frontend implementation, or unilateral brand adoption."
 model: "claude-opus-5"
-durable-output-producer: true
+publication-entrypoint: creative-workspace-publication
 tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

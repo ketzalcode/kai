@@ -48,10 +48,11 @@ import {
   availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
   agentTaxonomyErrors, requiresCoordinatedRunContracts, loadedSkills, agentRoutingErrors,
   publicationSkillForPack, publicationInventoryErrors, publicationContractErrors,
-  publicationRoutingErrors, activeWorkspaceLanguageErrors,
+  publicationContract, publicationEntrypointDeclaration, publicationRoutingErrors,
+  syncPublicationTableRegion, activeWorkspaceLanguageErrors,
   markdownCoordinationAuthorityErrors, directionContractErrors,
   epicWorkflowContractErrors, chiefOfStaffContractErrors,
-  durableOutputProducerDeclaration, agentDirectOutputErrors,
+  agentDirectOutputErrors,
   activeGuideDecisionFiles, workflowShipContractErrors,
   stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
   agentProfileModelErrors,
@@ -241,7 +242,8 @@ export function build({ out, withCore = true, contract = 1, pack = 'learning' })
 // manifests, dependency locks, routed non-markdown assets, and hooks. Agent and
 // skill bodies are authoritative in plugins/ and are never replaced wholesale.
 // `--write` may update only the explicitly marked core-dependency guard region
-// inside department agents.
+// inside department agents and the publication table region inside each pack's
+// publication skill.
 // ---------------------------------------------------------------------------
 
 // Stamp generated packs in lockstep with the monolith. Falls back to the preview
@@ -282,6 +284,9 @@ const isDerivedOwnedKey = (key) => {
 
 const isSourceCompanionKey = (key, root) => {
   const [dir, area, id, ...rest] = key.split('/');
+  if (area === 'publication.json' && id === undefined) {
+    return PACK_ORDER.some((pack) => packPluginName(pack) === dir);
+  }
   if (area === 'templates' && rest.length > 0) {
     return PACK_ORDER.some((pack) => packPluginName(pack) === dir);
   }
@@ -320,13 +325,25 @@ function managedAgentDrift(root) {
       drift.push(`differs:    ${entry.rel} (${e.message})`);
     }
   }
+  for (const pack of PACK_ORDER) {
+    try {
+      const contract = publicationContract(pack, root);
+      const raw = normalizeLF(readFileSync(contract.skillPath, 'utf8'));
+      if (syncPublicationTableRegion(raw, contract) !== raw) {
+        drift.push(`differs:    ${sourceSkillFiles(root)
+          .find(entry => entry.id === contract.skill)?.rel} (managed publication table)`);
+      }
+    } catch (e) {
+      drift.push(`differs:    ${packPluginName(pack)}/publication.json (${e.message})`);
+    }
+  }
   return drift;
 }
 
 // Regenerate derived files and diff them against what is committed. Agent and
-// skill bodies are source: only the department agents' marked guard region is
-// mechanically pinned. A configured tree that is absent fails with the command
-// that regenerates its derived surface.
+// skill bodies are source: only marked dependency guards and publication tables
+// are mechanically pinned. A configured tree that is absent fails with the
+// command that regenerates its derived surface.
 export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (!existsSync(base)) {
     if (COMMITTED_PACKS.length === 0) {
@@ -353,8 +370,8 @@ export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
   return { ok: drift.length === 0, drift };
 }
 
-// Update managed agent regions, then materialise derived files without deleting
-// authoritative agent or skill sources.
+// Update managed source regions, then materialise derived files without
+// deleting authoritative agent or skill sources.
 export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (COMMITTED_PACKS.length === 0) {
     throw new Error('no committed packs configured; the extraction item must set COMMITTED_PACKS first');
@@ -366,6 +383,15 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
     const next = removeGuaranteeRegion(raw);
     if (next !== raw) {
       writeFileSync(entry.path, next);
+      managed += 1;
+    }
+  }
+  for (const pack of PACK_ORDER) {
+    const contract = publicationContract(pack, root);
+    const raw = normalizeLF(readFileSync(contract.skillPath, 'utf8'));
+    const next = syncPublicationTableRegion(raw, contract);
+    if (next !== raw) {
+      writeFileSync(contract.skillPath, next);
       managed += 1;
     }
   }
@@ -1264,7 +1290,6 @@ function selfTest() {
   }).some((m) => /must not declare an eager `\*\*Inherits:\*\*` line/.test(m)),
   'an eager **Inherits:** line is rejected outright, with no opt-in marker gating the one-shape rule');
   const routingBody = [
-    'durable-output-producer: false',
     'Invoke `kai-core-contract-v1` before the first other core skill.',
     'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
     'State the limitation once and tell the operator to install or update `kai-core`.',
@@ -1408,14 +1433,14 @@ function selfTest() {
   ok(publicationContractErrors({
     ...corePublication,
     body: corePublication.body.replace('| `direction` |', '| `initiatives` |'),
-  }).some(message => /canonical type set/.test(message)),
-  'changing a canonical publication type fails the table gate');
+  }).some(message => /managed publication table/.test(message)),
+  'changing a generated publication row fails the managed-region gate');
   const creativePublication = publicationBodies.find(entry => entry.pack === 'creative');
   ok(publicationContractErrors({
     ...creativePublication,
     body: creativePublication.body.replace('unsafe media destination', ''),
-  }).some(message => /unsafe media destination/.test(message)),
-  'removing unsafe-media refusal fails the publication contract');
+  }).length === 0,
+  'human-authored refusal guidance is not parsed as publication schema');
 
   const routedSources = [
     ...sourceAgentFiles(ROOT),
@@ -1426,9 +1451,9 @@ function selfTest() {
     return [kind, {
       entries,
       producers: entries.filter(entry =>
-        durableOutputProducerDeclaration(entry) === true),
+        publicationEntrypointDeclaration(entry) !== null),
       nonProducers: entries.filter(entry =>
-        durableOutputProducerDeclaration(entry) === false),
+        publicationEntrypointDeclaration(entry) === null),
     }];
   }));
   const routedAgents = declaredByKind.agent.entries;
@@ -1446,48 +1471,48 @@ function selfTest() {
     const nonProducerMutation = corpus.nonProducers[0];
     if (!routeMutation || !nonProducerMutation) continue;
     const routeOwner = publicationSkillForPack(routeMutation.pack);
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body
-        .replace(
-          new RegExp(
-            `(?:Apply|Invoke|Load|Run)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
-            'gi',
-          ),
-          '',
-        )
-        .replace(
-          /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
-          '',
-        ),
-    }).some(message => message.includes('declared durable-output producer')),
-    `removing both ${kind} producer routes fails from the authoritative declaration`);
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body.replace(
-        'durable-output-producer: true',
-        'durable-output-producer: false',
-      ),
-    }).some(message => message.includes('declared non-producer')),
-    `falsifying a ${kind} producer declaration fails while producer routes remain`);
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body.replace(/^durable-output-producer:\s*true\s*$/m, ''),
-    }).some(message => /must declare frontmatter/.test(message)),
-    `removing a ${kind} producer declaration fails by declaration name`);
     const wrongPublication = routeMutation.pack === 'creative'
       ? 'engineering-workspace-publication'
       : 'creative-workspace-publication';
     ok(publicationRoutingErrors({
       ...routeMutation,
-      body: routeMutation.body.replace(routeOwner, wrongPublication),
+      body: routeMutation.body
+        .replace(
+          new RegExp(
+            `(?:Apply|Invoke|Load|Run|Use)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
+            'gi',
+          ),
+          '',
+        )
+        .replace(
+          /(?:Apply|Invoke|Load|Run|Use)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
+          '',
+        ),
+    }).some(message => /declared publication entrypoint/.test(message)),
+    `removing both ${kind} producer routes fails from the authoritative declaration`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(
+        `publication-entrypoint: ${routeOwner}`,
+        `publication-entrypoint: ${wrongPublication}`,
+      ),
+    }).some(message => /belongs to another pack/.test(message)),
+    `a ${kind} producer cannot declare another pack's publication entrypoint`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(/^publication-entrypoint:\s*\S+\s*$/m, ''),
+    }).some(message => /requires frontmatter/.test(message)),
+    `removing a ${kind} producer declaration fails by declaration name`);
+    ok(publicationRoutingErrors({
+      ...routeMutation,
+      body: routeMutation.body.replace(`\`${routeOwner}\``, `\`${wrongPublication}\``),
     }).some(message => /cannot route publication skill owned by another pack/.test(message)),
     `routing a ${kind} producer through another pack publication skill fails`);
     ok(publicationRoutingErrors({
       ...nonProducerMutation,
       body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`, then apply \`kai-core-asset-producing\`.\n`,
-    }).some(message => /declared non-producer/.test(message)),
-    `adding producer routes to a declared ${kind} non-producer fails by classification`);
+    }).some(message => /publication entrypoint|direct/.test(message)),
+    `adding producer routes to a ${kind} non-producer requires a positive declaration`);
   }
   const agentRouteMutation = declaredByKind.agent.producers[0];
   ok(agentDirectOutputErrors({

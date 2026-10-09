@@ -2,7 +2,6 @@
 name: workflow-workspace-init
 model: "claude-sonnet-5"
 description: "Use when installing Kai packs, initializing a private schema-5 workspace, repairing its binding, or running an explicit older-workspace migration."
-durable-output-producer: false
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

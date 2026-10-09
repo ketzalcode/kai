@@ -1,7 +1,6 @@
 ---
 name: kai-core-operating-rules
 description: "The universal rules every kai role follows: role kinds, staying in lane, test ownership, human-only gates, shipping honesty, and @operator. Load whenever acting as a kai role."
-durable-output-producer: false
 tools: [execute, read, search]
 ---
 

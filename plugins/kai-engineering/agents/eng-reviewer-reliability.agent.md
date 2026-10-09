@@ -2,7 +2,7 @@
 name: eng-reviewer-reliability
 description: "Independently reviews an exact service, change, or supplied operational evidence for customer reliability, recovery, capacity, observability, and readiness. Never performs production actions, commands incidents, or invents measured targets."
 model: "gpt-5.6-terra"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 

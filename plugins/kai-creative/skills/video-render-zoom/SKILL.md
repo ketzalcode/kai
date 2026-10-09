@@ -1,7 +1,7 @@
 ---
 name: video-render-zoom
 description: "Use when an explicit focus or zoom operation is requested for existing video footage, or an evidenced legibility problem needs a declared focus treatment."
-durable-output-producer: true
+publication-entrypoint: creative-workspace-publication
 user-invocable: true
 ---
 

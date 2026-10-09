@@ -1,7 +1,6 @@
 ---
 name: kai-core-fleet-observation
 description: "Kai subagent fleet observer guide. Use when the operator wants to launch or interpret the live watcher and inspect which roles did or did not participate."
-durable-output-producer: false
 tools: [execute, read, search]
 requires_tools: [execute]
 user-invocable: true

@@ -2,7 +2,7 @@
 name: eng-reviewer-quality
 description: "Independently reviews assembled acceptance across browser, API, CLI, and system surfaces for objective defects and requirement coverage. Preserves UI, accessibility, localization, and RTL checks when relevant. Never patches the product or owns regression tests."
 model: "gpt-5.6-terra"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["playwright", "execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

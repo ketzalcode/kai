@@ -23,7 +23,7 @@ import {
 } from '../../src/core/lib/agent-model-policy.mjs';
 import {
   parseFrontmatter,
-  durableOutputProducerValue,
+  PUBLICATION_ENTRYPOINT_KEY,
 } from '../../src/core/lib/loader-contract.mjs';
 
 // scripts/lib/ -> repo root is two levels up. Callers may pass an explicit root
@@ -50,6 +50,151 @@ export const PUBLICATION_SKILLS = Object.freeze({
 
 export function publicationSkillForPack(pack) {
   return PUBLICATION_SKILLS[pack] ?? null;
+}
+
+export const PUBLICATION_TABLE_REGION_OPEN =
+  '<!-- >>> kai publication table (generated) >>>';
+export const PUBLICATION_TABLE_REGION_CLOSE =
+  '<!-- <<< kai publication table <<< -->';
+
+const PUBLICATION_CONTRACT_KEYS = Object.freeze([
+  'pack',
+  'skill',
+  'entries',
+]);
+const PUBLICATION_ENTRY_KEYS = Object.freeze([
+  'type',
+  'subtype',
+  'privateForm',
+  'publicForm',
+  'formats',
+  'authority',
+  'privacy',
+]);
+const PUBLICATION_AUTHORITIES = new Set(['completion', 'operator']);
+const PUBLICATION_PRIVACY = new Set(['evidence-private']);
+const PUBLICATION_FORMAT_LABELS = Object.freeze({
+  markdown: 'Markdown',
+  'markdown-single-file': 'Markdown single file',
+  'markdown-destination-record': 'Markdown destination record',
+  json: 'JSON',
+  html: 'HTML',
+  diagram: 'diagram',
+  image: 'image',
+  media: 'media',
+  bundle: 'bundle',
+});
+
+const exactKeys = (value, expected) =>
+  Object.keys(value).sort().join('|') === [...expected].sort().join('|');
+
+export function publicationContract(pack, root = REPO_ROOT) {
+  const expectedSkill = publicationSkillForPack(pack);
+  if (!expectedSkill) throw new Error(`unknown publication pack ${JSON.stringify(pack)}`);
+  const declarationPath = sourcePath(root, pack, 'publication.json');
+  if (!existsSync(declarationPath)) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} is missing`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(declarationPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} is not valid JSON: ${error.message}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
+    || !exactKeys(parsed, PUBLICATION_CONTRACT_KEYS)) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} must contain exactly pack, skill, and entries`);
+  }
+  if (parsed.pack !== pack) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} pack must be ${JSON.stringify(pack)}`);
+  }
+  if (parsed.skill !== expectedSkill) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} skill must be ${JSON.stringify(expectedSkill)}`);
+  }
+  if (!Array.isArray(parsed.entries) || parsed.entries.length === 0) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} entries must be a non-empty array`);
+  }
+
+  const seen = new Set();
+  for (const [index, entry] of parsed.entries.entries()) {
+    const label = `${sourceRel(pack, 'publication.json')} entries[${index}]`;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)
+      || !exactKeys(entry, PUBLICATION_ENTRY_KEYS)) {
+      throw new Error(`${label} must contain exactly ${PUBLICATION_ENTRY_KEYS.join(', ')}`);
+    }
+    if (typeof entry.type !== 'string' || !entry.type.trim()) {
+      throw new Error(`${label}.type must be a non-empty string`);
+    }
+    if (entry.subtype !== null
+      && (typeof entry.subtype !== 'string' || !entry.subtype.trim())) {
+      throw new Error(`${label}.subtype must be null or a non-empty string`);
+    }
+    for (const field of ['privateForm', 'publicForm']) {
+      if (typeof entry[field] !== 'string' || !entry[field].trim()) {
+        throw new Error(`${label}.${field} must be a non-empty string`);
+      }
+    }
+    if (!Array.isArray(entry.formats) || entry.formats.length === 0
+      || entry.formats.some(format =>
+        typeof format !== 'string' || !Object.hasOwn(PUBLICATION_FORMAT_LABELS, format))) {
+      throw new Error(`${label}.formats must use known non-empty format identifiers`);
+    }
+    if (!PUBLICATION_AUTHORITIES.has(entry.authority)) {
+      throw new Error(`${label}.authority must be completion or operator`);
+    }
+    if (!PUBLICATION_PRIVACY.has(entry.privacy)) {
+      throw new Error(`${label}.privacy must be evidence-private`);
+    }
+    const key = `${entry.type}/${entry.subtype ?? '-'}`;
+    if (seen.has(key)) throw new Error(`${label} duplicates publication entry ${key}`);
+    seen.add(key);
+  }
+
+  return {
+    ...parsed,
+    declarationPath,
+    skillPath: sourcePath(root, pack, 'skills', parsed.skill, 'SKILL.md'),
+  };
+}
+
+const publicationAuthorityLabel = authority => authority === 'operator'
+  ? 'Named operator authority accepts the exact revision and SHA-256 hash'
+  : 'Named completion authority accepts the exact revision and hash';
+
+export function renderPublicationTable(contract) {
+  const rows = contract.entries.map(entry => [
+    contract.pack,
+    entry.type,
+    entry.subtype ?? '-',
+    entry.privateForm,
+    entry.publicForm,
+    entry.formats.map(format => PUBLICATION_FORMAT_LABELS[format]).join(', '),
+    publicationAuthorityLabel(entry.authority),
+    'Private evidence never publishes',
+  ]);
+  return [
+    '| Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rows.map(row => `| ${row.map(cell => `\`${cell}\``)
+      .map((cell, index) => index < 5 ? cell : cell.slice(1, -1))
+      .join(' | ')} |`),
+  ].join('\n');
+}
+
+export function syncPublicationTableRegion(body, contract) {
+  const normalized = normalizeLF(body);
+  const openCount = normalized.split(PUBLICATION_TABLE_REGION_OPEN).length - 1;
+  const closeCount = normalized.split(PUBLICATION_TABLE_REGION_CLOSE).length - 1;
+  if (openCount !== 1 || closeCount !== 1) {
+    throw new Error(`publication table region for ${contract.skill} must contain one open and one close marker`);
+  }
+  const start = normalized.indexOf(PUBLICATION_TABLE_REGION_OPEN);
+  const end = normalized.indexOf(PUBLICATION_TABLE_REGION_CLOSE);
+  if (end < start) throw new Error(`publication table region for ${contract.skill} is malformed`);
+  return `${normalized.slice(0, start)}${PUBLICATION_TABLE_REGION_OPEN}\n`
+    + `${renderPublicationTable(contract)}\n${PUBLICATION_TABLE_REGION_CLOSE}`
+    + normalized.slice(end + PUBLICATION_TABLE_REGION_CLOSE.length);
 }
 
 // The default committed-tree root. release-guard classifies changes under it as
@@ -412,90 +557,23 @@ function markdownTables(body) {
 const rowKey = row => `${row.type}/${row.subtype}`;
 const sorted = values => [...values].sort((left, right) => left.localeCompare(right));
 
-export function publicationContractErrors({pack, id, body}) {
+export function publicationContractErrors({pack, id, body, root = REPO_ROOT}) {
   const errors = [];
-  const expectedId = publicationSkillForPack(pack);
-  if (!expectedId) return [`${id ?? '(unknown)'} has no shipped publication namespace for ${pack}`];
-  if (id !== expectedId) {
-    errors.push(`${packPluginName(pack)} publication contract must use id \`${expectedId}\``);
+  let contract;
+  try {
+    contract = publicationContract(pack, root);
+  } catch (error) {
+    return [error.message];
   }
-
-  const canonical = markdownTables(body).filter(table =>
-    table.headers.join('|') === PUBLICATION_TABLE_HEADERS.join('|'));
-  if (canonical.length !== 1) {
-    errors.push('must contain exactly one canonical vocabulary table with namespace, type, subtype, '
-      + 'private form, public form, formats, publication rule, and privacy rule');
-    return errors;
+  if (id !== contract.skill) {
+    errors.push(`${packPluginName(pack)} publication contract must use id \`${contract.skill}\``);
   }
-
-  const expectedRows = PUBLICATION_ROWS[pack];
-  const actualRows = [];
-  for (const [index, cells] of canonical[0].rows.entries()) {
-    if (cells.length !== PUBLICATION_TABLE_HEADERS.length) {
-      errors.push(`canonical vocabulary row ${index + 1} must contain ${PUBLICATION_TABLE_HEADERS.length} fields`);
-      continue;
+  try {
+    if (syncPublicationTableRegion(body, contract) !== normalizeLF(body ?? '')) {
+      errors.push('managed publication table must match publication.json');
     }
-    const [
-      namespace,
-      type,
-      subtype,
-      privateForm,
-      publicForm,
-      formats,
-      publicationRule,
-      privacyRule,
-    ] = cells;
-    if (namespace !== pack) {
-      errors.push(`canonical vocabulary row ${index + 1} namespace must be \`${pack}\``);
-    }
-    if (!formats) errors.push(`canonical vocabulary row ${index + 1} formats must not be empty`);
-    if (!/accept/i.test(publicationRule)
-      || !/(?:authority|operator)/i.test(publicationRule)
-      || !/(?:hash|revision)/i.test(publicationRule)) {
-      errors.push(`canonical vocabulary row ${index + 1} publication rule must bind accepted revision/hash and authority`);
-    }
-    if (!/(?:private|never publish|must not publish)/i.test(privacyRule)
-      || !/evidence/i.test(privacyRule)) {
-      errors.push(`canonical vocabulary row ${index + 1} privacy rule must keep evidence private`);
-    }
-    actualRows.push({type, subtype, privateForm, publicForm});
-  }
-
-  const expectedTypes = sorted(new Set(expectedRows.map(row => row.type)));
-  const actualTypes = sorted(new Set(actualRows.map(row => row.type)));
-  if (expectedTypes.join('|') !== actualTypes.join('|')) {
-    errors.push(`canonical type set must be ${expectedTypes.join(', ')}; found ${actualTypes.join(', ') || '(none)'}`);
-  }
-  const expectedSubtypes = sorted(expectedRows.map(rowKey));
-  const actualSubtypes = sorted(actualRows.map(rowKey));
-  if (expectedSubtypes.join('|') !== actualSubtypes.join('|')) {
-    errors.push(`canonical subtype set must be ${expectedSubtypes.join(', ')}; found ${actualSubtypes.join(', ') || '(none)'}`);
-  }
-
-  const expectedByKey = new Map(expectedRows.map(row => [rowKey(row), row]));
-  for (const row of actualRows) {
-    const expected = expectedByKey.get(rowKey(row));
-    if (!expected) continue;
-    if (row.privateForm !== expected.privateForm) {
-      errors.push(`${rowKey(row)} private form must be \`${expected.privateForm}\``);
-    }
-    if (row.publicForm !== expected.publicForm) {
-      errors.push(`${rowKey(row)} public form must be \`${expected.publicForm}\``);
-    }
-  }
-
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ').toLowerCase();
-  for (const phrase of [
-    'unknown type or subtype',
-    'scratch can never publish',
-    'an unaccepted draft can never publish',
-    'private evidence can never publish',
-    'an arbitrary root can never publish',
-  ]) {
-    if (!flat.includes(phrase)) errors.push(`must explicitly refuse ${phrase}`);
-  }
-  if (pack === 'creative' && !flat.includes('unsafe media destination')) {
-    errors.push('must explicitly refuse an unsafe media destination');
+  } catch (error) {
+    errors.push(error.message);
   }
   return errors;
 }
@@ -1361,15 +1439,15 @@ export function routedSkills(body) {
   return out;
 }
 
-export function durableOutputProducerDeclaration({body, fm}) {
-  if (fm && Object.hasOwn(fm, 'durable-output-producer')) {
-    return durableOutputProducerValue(fm);
+export function publicationEntrypointDeclaration({body, fm}) {
+  if (fm && Object.hasOwn(fm, PUBLICATION_ENTRYPOINT_KEY)) {
+    return fm[PUBLICATION_ENTRYPOINT_KEY]?.trim() || null;
   }
   const parsed = parseFrontmatter(body ?? '');
-  if (parsed.ok) return durableOutputProducerValue(parsed.fm);
+  if (parsed.ok) return parsed.fm[PUBLICATION_ENTRYPOINT_KEY]?.trim() || null;
   const fallback = normalizeLF(body ?? '')
-    .match(/^durable-output-producer:\s*(true|false)\s*$/m);
-  return fallback ? fallback[1] === 'true' : null;
+    .match(/^publication-entrypoint:\s*(\S+)\s*$/m);
+  return fallback?.[1] ?? null;
 }
 
 export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill', body, fm}) {
@@ -1379,7 +1457,11 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
     return [`${id}: cannot derive an owning publication skill from source pack ${pack ?? '(missing)'}`];
   }
 
-  const occurrences = routedSkillOccurrences(body);
+  const publicationBody = normalizeLF(body ?? '').replace(
+    /\bUse(\s+(?:the\s+)?`[a-z0-9][a-z0-9-]*`)/gi,
+    'Load$1',
+  );
+  const occurrences = routedSkillOccurrences(publicationBody);
   const publicationIds = new Set(Object.values(PUBLICATION_SKILLS));
   const publicationRoutes = occurrences.filter(route => publicationIds.has(route.id));
   const productionRoutes = occurrences.filter(route => route.id === 'kai-core-asset-producing');
@@ -1389,39 +1471,25 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
       + `${packPluginName(pack)} owns \`${owner}\``);
   }
 
-  const declaredProducer = durableOutputProducerDeclaration({body, fm});
-  if (declaredProducer === null) {
-    errors.push(`${kind} must declare frontmatter \`durable-output-producer: true|false\``);
-    return [...new Set(errors)];
-  }
-  if (!declaredProducer) {
-    if (publicationRoutes.length > 0 || productionRoutes.length > 0) {
-      errors.push('declared non-producer must not route a workspace publication skill '
-        + 'or `kai-core-asset-producing`');
+  const entrypoint = publicationEntrypointDeclaration({body, fm});
+  if (!entrypoint) {
+    if (productionRoutes.length > 0) {
+      errors.push('direct `kai-core-asset-producing` route requires a declared publication entrypoint');
+    }
+    if (publicationRoutes.some(route => route.id === owner)) {
+      errors.push(`route to publication entrypoint \`${owner}\` requires frontmatter `
+        + `\`${PUBLICATION_ENTRYPOINT_KEY}: ${owner}\``);
     }
     return [...new Set(errors)];
   }
 
-  if (productionRoutes.length === 0
-    || !publicationRoutes.some(route => route.id === owner)) {
-    errors.push(`declared durable-output producer must route \`${owner}\` immediately before `
-      + '`kai-core-asset-producing`');
+  if (entrypoint !== owner) {
+    errors.push(`frontmatter publication entrypoint \`${entrypoint}\` belongs to another pack; `
+      + `${packPluginName(pack)} must declare \`${owner}\``);
     return [...new Set(errors)];
   }
-
-  for (const production of productionRoutes) {
-    const at = occurrences.indexOf(production);
-    const previous = occurrences[at - 1];
-    if (!previous || previous.id !== owner) {
-      errors.push(`must route \`${owner}\` immediately before each \`kai-core-asset-producing\` route`);
-    }
-  }
-  for (const publication of publicationRoutes.filter(route => route.id === owner)) {
-    const at = occurrences.indexOf(publication);
-    const next = occurrences[at + 1];
-    if (!next || next.id !== 'kai-core-asset-producing') {
-      errors.push(`\`${owner}\` is a producer-only route and must sit immediately before \`kai-core-asset-producing\``);
-    }
+  if (!publicationRoutes.some(route => route.id === owner)) {
+    errors.push(`declared publication entrypoint \`${owner}\` must be routed by this ${kind}`);
   }
   return [...new Set(errors)];
 }

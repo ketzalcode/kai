@@ -2,7 +2,7 @@
 name: eng-lead-architecture
 description: "Resolves expensive software decisions across components or services: boundaries, contracts, data ownership, and system trade-offs. Use when local implementation judgment is insufficient. Not delivery coordination, production code, or independent security/readiness approval."
 model: "gpt-5.6-sol"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "web", "skill"]
 ---
 

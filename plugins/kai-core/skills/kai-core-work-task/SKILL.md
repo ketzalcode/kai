@@ -1,7 +1,6 @@
 ---
 name: kai-core-work-task
 description: "Use when creating, promoting, granting, executing, handing off, reviewing, restoring, or closing a coordinated Task."
-durable-output-producer: false
 tools: [read, execute, search]
 ---
 

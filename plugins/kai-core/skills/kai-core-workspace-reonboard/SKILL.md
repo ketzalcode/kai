@@ -1,7 +1,6 @@
 ---
 name: kai-core-workspace-reonboard
 description: "Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records."
-durable-output-producer: false
 tools: [execute, read, edit, search, ask_user]
 ---
 
