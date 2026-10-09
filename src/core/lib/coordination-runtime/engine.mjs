@@ -5,6 +5,7 @@ import {
   validateAuthority,
   validateCommand,
 } from './contract.mjs';
+import {commandKind} from './schema.mjs';
 import {
   applyOperation,
   readMessageOperation,
@@ -52,7 +53,8 @@ function duplicateMessageReceipt(store, command) {
 
 export function applyCommand(store, command, authority) {
   validateCommand(command);
-  if (!handlers.has(command.kind)) {
+  const handlerKey = commandKind(command.kind).handler;
+  if (!handlers.has(handlerKey)) {
     fail('INVALID_INPUT', `${command.kind} requires its dedicated evidence producer`);
   }
   validateAuthority(authority);
@@ -62,7 +64,7 @@ export function applyCommand(store, command, authority) {
   try {
     return applyOperation(store, command, (current, tx) => {
       bindEvidenceTransaction(store, tx);
-      const handler = handlers.get(command.kind);
+      const handler = handlers.get(handlerKey);
       return handler(current, tx, command, authority, {
         direction: directionRef => currentDirectionForStore(store, directionRef),
       });

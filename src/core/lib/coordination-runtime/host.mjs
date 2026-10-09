@@ -16,6 +16,7 @@ import {
   MAX_OBSERVATIONS, attemptSummary, clone, effectSummary, fail, latestTerminalObservations, sanitizeFacts,
   validateCapabilities, validateHostObservation,
 } from './host-schema.mjs';
+import {commandKind} from './schema.mjs';
 
 export {planDispatch} from './host-plan.mjs';
 const bindings = new WeakMap();
@@ -67,7 +68,9 @@ export function bindHostRuntime(store, options) {
 function contextFor(store, command, kinds) {
   const cmd = clone(command);
   validateCommand(cmd);
-  if (!kinds.includes(cmd.kind)) fail('INVALID_INPUT', 'incorrect host recording API for command kind');
+  if (!kinds.includes(commandKind(cmd.kind).handler)) {
+    fail('INVALID_INPUT', 'incorrect host recording API for command kind');
+  }
   const context = bindings.get(store);
   if (!context || store.closed) fail('AUTHORITY_REQUIRED', 'bind the trusted host runtime before recording');
   workspaceManifest(context.root);

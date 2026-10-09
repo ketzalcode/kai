@@ -24,16 +24,20 @@ import {
 } from './host-schema.mjs';
 import {
   HIERARCHY_KINDS,
-  PARENT_COMMAND_KINDS,
   validateHierarchyRecord,
   validateParentCommand,
   validateParentCommandMutation,
 } from './hierarchy-contract.mjs';
 import {
-  TASK_COMMAND_KINDS,
   validateTaskCommand,
   validateTaskCommandMutation,
 } from './task-contract.mjs';
+import {
+  COMMAND_KINDS,
+  RECORD_KINDS,
+  commandKind,
+  recordKind,
+} from './schema.mjs';
 
 export {
   RuntimeError,
@@ -49,8 +53,6 @@ export {
 } from './contract-primitives.mjs';
 
 export {
-  HIERARCHY_KINDS,
-  PARENT_COMMAND_KINDS,
   PARENT_DISPOSITIONS,
   PARENT_STATES,
   parentClosureRef,
@@ -61,11 +63,21 @@ export {
 } from './hierarchy-contract.mjs';
 
 export {
-  TASK_COMMAND_KINDS,
   validateTaskBody,
   validateTaskCommand,
   validateTaskCommandMutation,
 } from './task-contract.mjs';
+
+export {
+  COORDINATION_SCHEMA,
+  COMMAND_KINDS,
+  HIERARCHY_KINDS,
+  PARENT_COMMAND_KINDS,
+  RECORD_KINDS,
+  TASK_COMMAND_KINDS,
+  commandKind,
+  recordKind,
+} from './schema.mjs';
 
 /**
  * @typedef {{role: string, runId: string}} Actor
@@ -97,37 +109,6 @@ export const ERROR_CODES = new Set([
   'STORE_BUSY',
   'RECOVERY_REQUIRED',
   'UNSUPPORTED_HOST',
-]);
-
-const HOST_COMMANDS = new Set(['attempt.start', 'attempt.result', 'effect.intent', 'effect.result']);
-
-export const COMMAND_KINDS = new Set([
-  ...PARENT_COMMAND_KINDS,
-  ...TASK_COMMAND_KINDS,
-  'question.open',
-  'question.answer',
-  'attempt.recover',
-  ...HOST_COMMANDS,
-  'artifact.register',
-  'asset.transition',
-  'evidence.register',
-  'review.record',
-  'approval.record',
-]);
-
-export const RECORD_KINDS = new Set([
-  ...HIERARCHY_KINDS,
-  'question',
-  'attempt',
-  'host-attempt',
-  'artifact',
-  'asset',
-  'evidence',
-  'review',
-  'approval',
-  'effect',
-  'message',
-  'grant',
 ]);
 
 export const REVIEW_VERDICTS = new Set(['approved', 'changes-requested', 'blocked']);
@@ -987,17 +968,22 @@ function validateRecover(command) {
   }
 }
 
+const commandValidatorKinds = new Map([
+  ['host', validateHostCommand],
+  ['hierarchy', validateParentCommand],
+  ['task', validateTaskCommand],
+  ['producer', validateProducerCommand],
+  ['message', command => command.kind === 'question.open'
+    ? validateMessagePayload(command, 'question.open', validateQuestionContent)
+    : validateMessagePayload(command, 'question.answer', validateAnswerContent)],
+  ['recovery', validateRecover],
+]);
+
 const commandValidators = new Map([
-  ...[...HOST_COMMANDS].map(kind => [kind, validateHostCommand]),
-  ...[...PARENT_COMMAND_KINDS].map(kind => [kind, validateParentCommand]),
-  ...[...TASK_COMMAND_KINDS].map(kind => [kind, validateTaskCommand]),
-  ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
-    .map(kind => [kind, validateProducerCommand]),
-  ['question.open', command =>
-    validateMessagePayload(command, 'question.open', validateQuestionContent)],
-  ['question.answer', command =>
-    validateMessagePayload(command, 'question.answer', validateAnswerContent)],
-  ['attempt.recover', validateRecover],
+  ...[...COMMAND_KINDS].map(kind => [
+    kind,
+    commandValidatorKinds.get(commandKind(kind).validator),
+  ]),
 ]);
 
 export function validateAuthority(authority) {
@@ -1064,15 +1050,16 @@ export function validateCommand(command) {
 
 export function validateCommandMutation(command, current, nextBody) {
   if (!isPlainObject(nextBody)) invalid(`${command.kind} must produce an object body`);
-  if (HOST_COMMANDS.has(command.kind)) {
+  const declaration = commandKind(command.kind);
+  if (declaration.validator === 'host') {
     validateHostMutation(command, current, nextBody);
     return nextBody;
   }
-  if (PARENT_COMMAND_KINDS.has(command.kind)) {
+  if (declaration.validator === 'hierarchy') {
     validateParentCommandMutation(command, current, nextBody);
     return nextBody;
   }
-  if (TASK_COMMAND_KINDS.has(command.kind)) {
+  if (declaration.validator === 'task') {
     validateTaskCommandMutation(command, current, nextBody);
     return nextBody;
   }
@@ -1084,21 +1071,12 @@ export function validateCommandMutation(command, current, nextBody) {
     return nextBody;
   }
   if (!current) invalid(`${command.kind} requires an existing record`);
-  const allowedByKind = new Map([
-    ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
-      .map(kind => [kind, new Set()]),
-    ['question.open', new Set([
-      'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
-    ])],
-    ['question.answer', new Set([
-      'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
-    ])],
-    ['attempt.recover', new Set([
-      'state', 'resume_state', 'next_role', 'lease', 'producer_actor',
-      'producing_actors', 'recovery_hold', 'updated_at',
-    ])],
-  ]);
-  assertChangedOnly(current, nextBody, allowedByKind.get(command.kind), command.kind);
+  assertChangedOnly(
+    current,
+    nextBody,
+    new Set(declaration.allowedMutations),
+    command.kind,
+  );
   return nextBody;
 }
 
@@ -1114,7 +1092,8 @@ export function validateRecord(record) {
   if (!RECORD_KINDS.has(record.kind)) {
     invalid(`unsupported record kind "${record.kind}"`);
   }
-  if (HIERARCHY_KINDS.has(record.kind)) {
+  const declaration = recordKind(record.kind);
+  if (declaration.validator === 'hierarchy' || declaration.validator === 'task') {
     validateHierarchyRecord(record);
     return record;
   }

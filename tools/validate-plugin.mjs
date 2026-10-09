@@ -49,9 +49,7 @@ import {
   directionContractErrors, epicWorkflowContractErrors, chiefOfStaffContractErrors,
   agentDirectOutputErrors, activeGuideDecisionFiles, workflowShipContractErrors,
   stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
-  RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
-  RETIRED_ENGINEERING_AGENT_IDS, RETIRED_DIRECTOR_AGENT_IDS, RETIRED_CORE_SKILL_IDS,
-  RETIRED_CORE_AGENT_IDS, sourceAssetIndex,
+  sourceAssetIndex,
 } from './lib/pack-plan.mjs';
 import {
   incubatedIds, incubatedPackageDirs, incubatedManifestPaths, documentationReferenceExists,
@@ -132,15 +130,9 @@ const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
 const inactiveAgentIds = new Set([
   ...incubatedIds(ROOT, 'agent'),
-  ...RETIRED_CREATIVE_AGENT_IDS,
-  ...RETIRED_ENGINEERING_AGENT_IDS,
-  ...RETIRED_DIRECTOR_AGENT_IDS,
-  ...RETIRED_CORE_AGENT_IDS,
 ]);
 const inactiveSkillIds = new Set([
   ...incubatedIds(ROOT, 'skill'),
-  ...RETIRED_CREATIVE_SKILL_IDS,
-  ...RETIRED_CORE_SKILL_IDS,
 ]);
 const componentIds = new Set([...agentIds, ...skillIds]);
 const inactiveComponentIds = new Set([...inactiveAgentIds, ...inactiveSkillIds]);

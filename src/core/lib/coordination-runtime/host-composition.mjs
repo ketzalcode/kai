@@ -3,6 +3,31 @@ import {applyCommand} from './engine.mjs';
 import {bindEvidenceRuntime, registerArtifact, registerEvidence, recordReview, recordApproval, transitionAsset} from './evidence.mjs';
 import {bindHostRuntime, recordAttempt, recordHostResult, recordEffect} from './host.mjs';
 import {sameActor} from './authority.mjs';
+import {commandKind} from './schema.mjs';
+
+const trustedHandlers = new Map([
+  ['artifact.register', {kind: 'evidence', apply: (store, command) => registerArtifact(store, command)}],
+  ['asset.transition', {kind: 'evidence', apply: (store, command) => transitionAsset(store, command)}],
+  ['evidence.register', {
+    kind: 'evidence',
+    apply: (store, command, options) => registerEvidence(store, command, options.capture),
+  }],
+  ['review.record', {kind: 'evidence', apply: (store, command) => recordReview(store, command)}],
+  ['approval.record', {kind: 'evidence', apply: (store, command) => recordApproval(store, command)}],
+  ['attempt.start', {kind: 'host', apply: (store, command) => recordAttempt(store, command)}],
+  ['attempt.result', {
+    kind: 'host',
+    apply: (store, command, options) => recordHostResult(store, command, options.capture),
+  }],
+  ['effect.intent', {
+    kind: 'host',
+    apply: (store, command, options) => recordEffect(store, command, options.capture),
+  }],
+  ['effect.result', {
+    kind: 'host',
+    apply: (store, command, options) => recordEffect(store, command, options.capture),
+  }],
+]);
 
 /**
  * Trusted embedding only. The caller owns identity, grants and opaque receipt
@@ -31,19 +56,11 @@ export function createTrustedEmbedding({
       bindEvidenceRuntime(store, {
         root, authority, runs: approvedRuns, verifyCapture, verifyOperatorDecision,
       });
-      const producer = {
-        'artifact.register': registerArtifact,
-        'asset.transition': transitionAsset,
-        'evidence.register': (s, c) => registerEvidence(s, c, options.capture),
-        'review.record': recordReview, 'approval.record': recordApproval,
-      }[command.kind];
-      if (producer) return producer(store, command);
-      if (['attempt.start', 'attempt.result', 'effect.intent', 'effect.result'].includes(command.kind)) {
+      const handler = trustedHandlers.get(commandKind(command.kind).handler);
+      if (handler?.kind === 'host') {
         bindHostRuntime(store, {root, authority, roster, profiles, capabilities, maxAttempts, verifyObservation});
-        if (command.kind === 'attempt.start') return recordAttempt(store, command);
-        if (command.kind === 'attempt.result') return recordHostResult(store, command, options.capture);
-        return recordEffect(store, command, options.capture);
       }
+      if (handler) return handler.apply(store, command, options);
       return applyCommand(store, command, authority);
     },
   };

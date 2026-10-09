@@ -1,14 +1,16 @@
 import {createHash} from 'node:crypto';
+import {WORKSPACE_CONTRACT} from '../workspace-layout.mjs';
 
 export const SUBJECT_KINDS = new Set(['git', 'sha256', 'bundle-sha256']);
-export const PACKS = new Set(['core', 'engineering', 'creative']);
+export const PACKS = new Set(WORKSPACE_CONTRACT.packs);
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export const HEX_DIGEST = /^[0-9a-f]{64}$/i;
 export const GIT_OBJECT = /^[0-9a-f]{7,40}$/i;
 export const SLUG = '[a-z0-9]+(?:-[a-z0-9]+)*';
 export const EPIC_ID = new RegExp(`^epic:(?<slug>${SLUG})$`);
-export const TYPED_ID = new RegExp(`^(?<pack>core|engineering|creative):(?<kind>feature|requirement|task):(?<slug>${SLUG})$`);
+const PACK_PATTERN = WORKSPACE_CONTRACT.packs.join('|');
+export const TYPED_ID = new RegExp(`^(?<pack>${PACK_PATTERN}):(?<kind>feature|requirement|task):(?<slug>${SLUG})$`);
 
 export class RuntimeError extends Error {
   constructor(code, message, retryable = false) {

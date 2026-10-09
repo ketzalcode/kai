@@ -13,7 +13,8 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { join, dirname, posix, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packPluginName, PACK_ORDER as SHIPPED_PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
+import { packPluginName, PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
+import {incubatedIds} from './incubation-contract.mjs';
 import { bundlePack } from './bundle.mjs';
 import {
   ROLE_FAMILY_PACK, ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
@@ -147,199 +148,25 @@ const LEGACY_GUARANTEE_REGION_OPEN =
 export const HOOKS_FILE = 'hooks.json';
 export const HOOKS_OWNER = 'core';
 
-// The migration baseline freezes every id that existed before the
-// provider-posture-scope taxonomy. New agents go in NEW_AGENT_IDS, including
-// new workflows/personas/instructors; adding a retired-family id there fails.
-// Keeping the baseline separate makes "no new principal/director agents"
-// enforceable without blocking one-at-a-time migration.
-export const RETIRED_CREATIVE_AGENT_IDS = [
-  'principal-product-designer', 'principal-brand-designer', 'creative-video-director',
-];
-export const RETIRED_CREATIVE_SKILL_IDS = [
-  'create-product-demo', 'demo-capture', 'demo-narrate',
-  'demo-zoom', 'ui-mockup', 'video-direction',
-];
-
-const MIGRATION_BASELINE_PACKS = {
-  core: [
-    'director-chief-of-staff', 'workflow-workspace-init',
-    'workflow-proactive-scan', 'workflow-weekly-pulse',
-    'workflow-initiative-init',
-  ],
-  assistant: ['persona-self'],
-  creative: [],
-  engineering: [
-    'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
-    'principal-swe-infra', 'principal-swe-manager',
-    'principal-sre', 'principal-security', 'principal-privacy-compliance',
-    'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
-    'principal-ai-researcher', 'workflow-pull-request',
-    'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
-    'workflow-localization',
-  ],
-  product: [
-    'principal-product-manager', 'principal-product-strategist',
-    'principal-data-analytics', 'workflow-customer-feedback',
-    'workflow-experiment-review', 'workflow-product-explore',
-    'persona-ux-first-time-user', 'principal-growth',
-    'persona-professional-nutritionist', 'persona-professional-trainer',
-  ],
-  marketing: [
-    'principal-product-marketing', 'principal-demand-generation',
-    'principal-linkedin-strategist', 'principal-seo',
-  ],
-  revenue: [
-    'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
-    'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
-    'principal-solutions-architect',
-  ],
-  learning: [
-    'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
-    'principal-engineer-career-mentor', 'workflow-course-to-audio',
-  ],
-};
-
-// Retired identities stay in the taxonomy baseline, not in active discovery or
-// emitted packs. This is an inventory change, not a runtime compatibility alias.
-export const RETIRED_ENGINEERING_AGENT_IDS = new Set([
-  'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
-  'principal-swe-infra', 'principal-swe-manager', 'principal-sre',
-  'principal-security', 'principal-privacy-compliance', 'principal-qa-ui',
-  'principal-data-engineer', 'principal-ai-applied-engineer', 'principal-ai-researcher',
-  'workflow-issue-analysis', 'workflow-localization',
-]);
-
-// Dropped before the taxonomy baseline was frozen, so it appears in no pack
-// roster. Its drop record and the ship records that predate it still name it;
-// listing it here keeps those historical pages resolvable without reviving it.
-export const RETIRED_DIRECTOR_AGENT_IDS = new Set([
-  'director-executive-assistant',
-]);
-
-// Core agents withdrawn from the shipped surface. `workflow-self-check` audited
-// kai's own plugin inventory and only meant anything inside this repository,
-// yet every consumer received it — and its prose reference to a developer
-// script dragged 113 KB of release tooling into `kai-core` with it.
-export const RETIRED_CORE_AGENT_IDS = new Set([
-  'workflow-self-check',
-  'workflow-initiative-init',
-]);
-
-// Core skills that were renamed or split. Historical plans and ship records
-// legitimately name them; no active body may.
-export const RETIRED_CORE_SKILL_IDS = new Set([
-  'kai-core-workspace-conventions',
-  'kai-core-workspace-initiative',
-  'kai-core-work-item',
-  'kai-core-initiative-stewardship',
-  // Moved to kai-creative as `content-grounding` in 17.0.0. Core never routed
-  // it — both shipped callers were creative — and a department may not hold a
-  // `kai-core-` name, so the move and the rename are one change.
-  //
-  // This set is documentation bookkeeping, not a gate: it relaxes the
-  // inherit-line reference check for dated records. A shipped body
-  // reintroducing the id is caught by `referenceErrors` instead.
-  //
-  // Reviving `kai-marketing` needs a decision: its three bodies now route a
-  // kai-creative id, and no department may depend on another.
-  'kai-core-content-grounding',
-  // Moved to kai-engineering as `pr-delivery` in the pr-delivery refactor. The
-  // catalog already filed it under Engineering craft, its own "Where it sits"
-  // table names only engineering skills, and three of its four routes were
-  // engineering agents. The fourth was `director-chief-of-staff`, which now
-  // invokes `workflow-pull-request` instead: packaging a branch, commits and a
-  // PR narrative is a principal's craft, and the director directs. A
-  // department may not hold a `kai-core-` name, so the move and the rename are
-  // one change.
-  //
-  // Same caveat as above: this set is documentation bookkeeping, not a gate.
-  // No incubated body routes the old id, so no parked package is affected.
-  'kai-core-pr-delivery',
-  // Withdrawn from the shipped surface in 18.0.0 for the reason recorded above
-  // `RETIRED_CORE_AGENT_IDS`: it was a procedure for authoring kai's own
-  // agents, and its repository checklist only meant anything inside this
-  // checkout, yet every consumer of core received it. No agent routed,
-  // inherited or dispatched it — `SKILL_OWNER_OVERRIDES` carried it and
-  // `user-invocable: true` was its only firing path — so the sole way it ever
-  // reached a session was an operator running contributor tooling by hand.
-  //
-  // The content is not deleted. It is contributor documentation now, at
-  // `docs/reference/agent-authoring/`, and the taxonomy and model tables there
-  // are still pinned to the validator constants by
-  // `agentAuthoringReferenceErrors`.
-  'kai-core-create-agent',
-]);
-
-export const NEW_AGENT_IDS = {
-  core: ['workflow-epic-init'],
-  assistant: ['personal-assistant'],
-  creative: [
-    'creative-lead-design', 'creative-lead-video',
-    'workflow-creative-demo-production',
-  ],
-  engineering: [
-    'eng-lead-technical-writing', 'eng-advisor-investigation', 'eng-lead-architecture',
-    'eng-builder-software', 'eng-builder-platform', 'eng-reviewer-code',
-    'eng-reviewer-quality', 'eng-reviewer-security', 'eng-reviewer-reliability',
-    'eng-reviewer-privacy-compliance',
-  ],
-  product: [],
-  marketing: [],
-  revenue: [],
-  learning: [],
-};
-
 // Whole packages moved into `incubator/` while development returns to core.
 // They are not discovered, not validated as packs and not emitted; their source
-// and ids are preserved on disk so re-entry is a move, not a rewrite. The
-// taxonomy baseline above deliberately still lists their agent ids, so a
-// reference to one is still *recognised* as an agent reference and classified
-// as inactive rather than silently becoming unmatched prose.
+// and ids are preserved on disk so re-entry is a move, not a rewrite.
 export const INCUBATED_PACKS = Object.freeze([
   'assistant', 'product', 'marketing', 'revenue', 'learning',
 ]);
 
-export const ACTIVE_PACKS = Object.freeze(
-  Object.keys(MIGRATION_BASELINE_PACKS).filter((pack) => !INCUBATED_PACKS.includes(pack)),
-);
-
-export const PACKS = Object.fromEntries(
-  ACTIVE_PACKS
-    .map((pack) => [pack, [
-      ...MIGRATION_BASELINE_PACKS[pack].filter(id =>
-        !RETIRED_ENGINEERING_AGENT_IDS.has(id) && !RETIRED_CORE_AGENT_IDS.has(id)),
-      ...NEW_AGENT_IDS[pack],
-    ]]),
-);
-
-// Agent ids carried out of the active partition by incubation. Derived from the
-// frozen baseline plus the new ids declared for those packages, so it cannot
-// drift from what was actually moved.
 export const INCUBATED_AGENT_IDS = Object.freeze(
-  INCUBATED_PACKS.flatMap((pack) => [
-    ...MIGRATION_BASELINE_PACKS[pack],
-    ...NEW_AGENT_IDS[pack],
-  ]).sort(),
+  [...incubatedIds(REPO_ROOT, 'agent')].sort(),
 );
 
-// Deterministic pack emission order: core first, then the departments in the
-// partition's declared order. Fixed so a generated tree and a validator walk
-// list the same packs in the same sequence every run.
-//
-// Derived from PACKS, then checked against the shipped list in
-// `src/core/lib/pack-names.mjs`. Shipped code cannot import this module — that
-// is the whole point of the boundary — so the list exists in two places, and
-// without this check a pack added here would silently never reach the migration
-// doctor's install inspection.
-export const PACK_ORDER = Object.keys(PACKS);
-
-if (PACK_ORDER.join(',') !== SHIPPED_PACK_ORDER.join(',')) {
-  throw new Error(
-    `pack partition drift: tools/lib/pack-plan.mjs derives [${PACK_ORDER.join(', ')}] `
-    + `but src/core/lib/pack-names.mjs ships [${SHIPPED_PACK_ORDER.join(', ')}] — `
-    + 'update the shipped list, which is what consumer code reads',
-  );
-}
+export const PACKS = Object.freeze(Object.fromEntries(PACK_ORDER.map((pack) => {
+  const dir = join(REPO_ROOT, PACKS_DIR, packPluginName(pack), 'agents');
+  const agents = existsSync(dir)
+    ? readdirSync(dir).filter(name => name.endsWith('.agent.md'))
+      .map(name => name.replace(/\.agent\.md$/, '')).sort()
+    : [];
+  return [pack, Object.freeze(agents)];
+})));
 
 // Skills with no loaded firing path still need one explicit provider. These
 // dispositions were ratified in the partition lock; keeping them here makes the
@@ -365,7 +192,7 @@ export const PUBLISHED_PACKS = Object.freeze(['core', 'engineering', 'creative']
 // Re-exported from the shipped module so there is exactly one definition. That
 // module is what consumer code imports; duplicating the name here would let the
 // two drift without anything failing.
-export { packPluginName };
+export { packPluginName, PACK_ORDER };
 
 // A functional, non-marketing manifest description. Published copy is refined at
 // the marketplace flip; scaffolding only needs to say what the plugin is. A pack
@@ -1186,9 +1013,10 @@ const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
 // resolves to nothing is a renamed or deleted role; a token that is not shaped
-// like one (`post-only`) is an output mode, not a reference. Baseline families
-// remain recognized during the staged migration. New durable roles use their
-// provider family plus a controlled posture and scope.
+// like one (`post-only`) is an output mode, not a reference. Current source and
+// incubated source provide the exact pre-taxonomy ids that remain recognizable.
+// New durable roles use their provider family plus a controlled posture and
+// scope.
 // Naming-policy families that map to an active install package. `personal`,
 // `prod` and `gtm` are retired namespace tokens whose owners were incubated;
 // they are not aliases and no active role may claim them.
@@ -1207,22 +1035,15 @@ export const AGENT_FAMILIES = [
   ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
 ];
 
-// Ids that must stay *recognisable* as agent references even though no active
-// pack provides them: the frozen migration baseline, the retired creative
-// roles, and everything carried out of the partition by incubation. Dropping an
-// id from here would not fix a stale reference — it would stop the scanner from
-// seeing it at all, turning a caught dangling reference into silent prose.
-const LEGACY_AGENT_IDS = new Set([
-  ...Object.values(MIGRATION_BASELINE_PACKS).flat(),
-  ...RETIRED_CREATIVE_AGENT_IDS,
-  ...INCUBATED_AGENT_IDS,
-]);
+const ACTIVE_AGENT_IDS = new Set(Object.values(PACKS).flat());
+const INACTIVE_AGENT_IDS = new Set(INCUBATED_AGENT_IDS);
+const DECLARED_AGENT_IDS = new Set([...ACTIVE_AGENT_IDS, ...INACTIVE_AGENT_IDS]);
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
 const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
 const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
 const ROLE_POSTURE_ALT = ROLE_POSTURES.join('|');
-const LEGACY_AGENT_ID_ALT = [...LEGACY_AGENT_IDS].sort().join('|');
-const AGENT_ID_SOURCE = `(?:${LEGACY_AGENT_ID_ALT}|(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
+const DECLARED_AGENT_ID_ALT = [...DECLARED_AGENT_IDS].sort().join('|');
+const AGENT_ID_SOURCE = `(?:${DECLARED_AGENT_ID_ALT}|(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
   + `|(?:${ROLE_FAMILY_ALT})-(?:${ROLE_POSTURE_ALT})-[a-z0-9-]+)`;
 const AGENT_CANDIDATE_SOURCE = `(?:(?:${AGENT_FAMILY_ALT})-[a-z0-9-]+)`;
 
@@ -1235,7 +1056,7 @@ export const agentRefPattern = () => new RegExp(`\`(${AGENT_ID_SOURCE})\``, 'g')
 const AGENT_SHAPED = agentShapedPattern();
 const AGENT_CANDIDATE = agentCandidatePattern();
 const RETIRED_AGENT_IDS = new Set(
-  [...Object.values(MIGRATION_BASELINE_PACKS).flat(), ...RETIRED_CREATIVE_AGENT_IDS]
+  [...DECLARED_AGENT_IDS]
     .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
 );
 
@@ -1249,7 +1070,7 @@ export function agentTaxonomyErrors({ id, pack }) {
       ? []
       : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
   }
-  if (LEGACY_AGENT_IDS.has(id)) return [];
+  if (INACTIVE_AGENT_IDS.has(id)) return [];
   if (KIND_AGENT_FAMILIES.includes(family)) return [];
   if (!(family in ROLE_FAMILY_PACK)) {
     return [`agent family \`${family || '(missing)'}-*\` is not supported`];
@@ -1407,10 +1228,8 @@ function paragraphContaining(body, skillId) {
 // agentIdentityContractErrors — the identity-marker half went with the marker,
 // but the profile/model binding has no other home, so it is preserved here,
 // keyed on the agent's family/posture rather than on any opt-in marker.
-// Delegates to the shipped policy, supplying this repository's frozen
-// pre-taxonomy baseline as the exempt set.
 export function agentProfileModelErrors({ id, body, fm = {} }) {
-  return profileModelErrors({ id, body, fm }, LEGACY_AGENT_IDS);
+  return profileModelErrors({ id, body, fm });
 }
 
 export function agentPromptLimitErrors(body) {

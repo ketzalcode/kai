@@ -20,6 +20,9 @@ import {
   validateNullableActor,
   validateNullableSubject,
 } from './contract-primitives.mjs';
+import {TASK_COMMAND_KINDS} from './schema.mjs';
+
+export {TASK_COMMAND_KINDS} from './schema.mjs';
 
 const ITEM_DELIVERY_CLASSES = new Set(['knowledge', 'product-change', 'operational']);
 const PROVENANCE_KINDS = new Set(['live-peer', 'durable-thread', 'operator']);
@@ -76,16 +79,6 @@ const TASK_UPDATE_FIELDS = new Set([
   'touches',
   'depends_on',
   'updated_at',
-]);
-
-export const TASK_COMMAND_KINDS = new Set([
-  'task.create',
-  'task.update',
-  'task.promote',
-  'task.grant',
-  'task.transition',
-  'task.handoff',
-  'task.restore',
 ]);
 
 function validateDependencies(value, label, {entryKey, typedKind = null} = {}) {
