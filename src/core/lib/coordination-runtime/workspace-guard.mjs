@@ -53,16 +53,16 @@ export function assertWorkspaceWrite(path, {
   const expected = resolve(root, ...COORDINATION_DATABASE.split('/'));
   if ((process.platform === 'win32' ? path.toLowerCase() : path)
     !== (process.platform === 'win32' ? expected.toLowerCase() : expected)) {
-    fail('SCHEMA_MISMATCH',
+    fail('INVALID_INPUT',
       'coordination writes require the exact current workspace database');
   }
   const manifest = join(root, '.kai', 'manifest.json');
-  if (!existsSync(manifest)) fail('SCHEMA_MISMATCH', 'workspace coordination writes require a schema 5 manifest');
+  if (!existsSync(manifest)) fail('RECOVERY_REQUIRED', 'workspace coordination writes require a schema 5 manifest');
   if (pathHasLink(root, manifest) || !exactPath(manifest) || !lstatSync(manifest).isFile()) {
     fail('INVALID_INPUT', 'coordination manifest must be an exact unlinked regular file');
   }
   const parsed = readWorkspaceContract(root, {env});
-  if (!existsSync(path)) fail('SCHEMA_MISMATCH', 'schema-5 coordination database is missing');
+  if (!existsSync(path)) fail('RECOVERY_REQUIRED', 'schema-5 coordination database is missing');
   if (pathHasLink(root, path) || !exactPath(path) || !lstatSync(path).isFile()) {
     fail('INVALID_INPUT', 'coordination database must be the exact unlinked schema-5 regular file');
   }

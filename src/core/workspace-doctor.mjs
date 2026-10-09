@@ -123,7 +123,7 @@ function schema5WorkspaceValidation(root, manifest, {
     try {
       store = openStore({path: databasePath, mode: 'read'});
     } catch (error) {
-      errors.push(`${error.code ?? 'SCHEMA_MISMATCH'}: ${error.message}`);
+      errors.push(`${error.code ?? 'RECOVERY_REQUIRED'}: ${error.message}`);
     } finally {
       closeStore(store);
     }
@@ -265,19 +265,19 @@ export function checkWorkspace(root, options = {}) {
     requireExisting: true,
     requireCanonical: true,
   });
-  if (rootProblem) return {errors: [rootProblem], warnings: [], migrations: []};
+  if (rootProblem) return {errors: [rootProblem], warnings: []};
   root = resolve(root);
   const result = readWorkspaceManifest(root);
-  if (!result.ok) return {errors: [result.reason], warnings: [], migrations: []};
+  if (!result.ok) return {errors: [result.reason], warnings: []};
   if (result.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    return {errors: [`SCHEMA_MISMATCH: ${UNSUPPORTED_SCHEMA}`], warnings: [], migrations: []};
+    return {errors: [`SCHEMA_MISMATCH: ${UNSUPPORTED_SCHEMA}`], warnings: []};
   }
   const checked = schema5WorkspaceValidation(root, result.manifest, {
     env: options.env ?? process.env,
     allowUnregisteredExternal: options.allowUnregisteredExternal ?? false,
     requireActivated: true,
   });
-  return {errors: checked.errors, warnings: checked.warnings, migrations: []};
+  return {errors: checked.errors, warnings: checked.warnings};
 }
 
 const registryWait = new Int32Array(new SharedArrayBuffer(4));

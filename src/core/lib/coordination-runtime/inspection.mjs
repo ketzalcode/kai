@@ -7,7 +7,7 @@ import {readDirection} from '../direction.mjs';
 import {closeStore, openStore, readStoreSummary} from './store.mjs';
 
 export function inspectRuntime(root, {env = process.env, intent = 'coordinate'} = {}) {
-  const result = {errors: [], warnings: [], migrations: [], runtime: null};
+  const result = {errors: [], warnings: [], runtime: null};
   if (!['inspect', 'coordinate'].includes(intent)) {
     result.errors.push('workspace intent must be inspect or coordinate');
     return result;

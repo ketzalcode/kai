@@ -197,6 +197,9 @@ test('read-only inspect reports schema without creating a missing database', asy
     assert.equal(result.exitCode, 0);
     assert.equal(result.result.schemaVersion, 5);
     assert.equal(result.result.storeExists, false);
+    const status = await runCLI(['status', '--root', root]);
+    assert.equal(status.exitCode, 1);
+    assert.equal(status.result.code, 'RECOVERY_REQUIRED');
     assert.equal(existsSync(join(root, '.kai', 'core', 'runtime', 'coordination.sqlite')), false);
   }, {schema: 5}));
 
@@ -469,7 +472,7 @@ test('ordinary inspect validates the existing SQLite schema and reports Task cou
     closeStore(writable);
     const unsupported = await runCLI(['inspect', '--root', root]);
     assert.equal(unsupported.exitCode, 1);
-    assert.equal(unsupported.result.code, 'SCHEMA_MISMATCH');
+    assert.equal(unsupported.result.code, 'RECOVERY_REQUIRED');
   }, {schema: 5, createStore: true}));
 
 test('SQLite-disabled process is a precise host gap', () =>

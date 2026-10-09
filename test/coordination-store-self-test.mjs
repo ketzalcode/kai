@@ -867,7 +867,18 @@ allocatedCase('schema', root => {
   raw.prepare("UPDATE metadata SET value = '999' WHERE key = 'schema_version'").run();
   raw.close();
   assert.throws(() => openStore({path, mode: 'write'}), error =>
-    error.code === 'SCHEMA_MISMATCH');
+    error.code === 'RECOVERY_REQUIRED');
+});
+
+allocatedCase('message-schema', root => {
+  const path = join(root, 'coordination.sqlite');
+  const store = openStore({path, mode: 'create'});
+  closeStore(store);
+  const raw = new DatabaseSync(path);
+  raw.prepare("UPDATE metadata SET value = '999' WHERE key = 'message_schema_version'").run();
+  raw.close();
+  assert.throws(() => openStore({path, mode: 'write'}), error =>
+    error.code === 'RECOVERY_REQUIRED');
 });
 
 await test('lower-level mutations fail closed for non-live database paths', async () => {
@@ -881,7 +892,7 @@ await test('lower-level mutations fail closed for non-live database paths', asyn
           command('task.update', {payload: {title: 'Forbidden foreign write'}}),
           current => ({...current.body, title: 'Forbidden foreign write'}),
         ),
-        error => error.code === 'SCHEMA_MISMATCH',
+        error => error.code === 'INVALID_INPUT',
       );
       assert.equal(readRecord(store, 'task', primaryId).version, 1);
     } finally {

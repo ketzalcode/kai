@@ -95,7 +95,7 @@ export async function execute({verb, options, body, host, cwd, env}) {
       }
       return {...base, runtime, ...(options.deep ? {inspection: inspectRuntime(root, {env, intent: 'inspect'})} : {})};
     }
-    if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use the standalone workspace initializer');
+    if (!base.storeExists) fail('RECOVERY_REQUIRED', 'coordination store is missing; use the standalone workspace initializer');
     const store = openStore({path, mode: 'read'});
     try {
       const roles = ['status', 'context', 'plan'].includes(verb)
@@ -169,7 +169,7 @@ export async function execute({verb, options, body, host, cwd, env}) {
     } finally { closeStore(store); }
   }
   if (verb === 'apply') validateCommand(body);
-  if (!base.storeExists) fail('SCHEMA_MISMATCH', 'coordination store is missing; use the standalone workspace initializer');
+  if (!base.storeExists) fail('RECOVERY_REQUIRED', 'coordination store is missing; use the standalone workspace initializer');
   assertWorkspaceWrite(path, {requirePrivate: true, env});
   if (['request', 'authorize', 'receipt', 'capture', 'capabilities', 'prepare'].includes(verb)) {
     const admitted = openStore({path, mode: 'read'});

@@ -355,8 +355,7 @@ function validateSchema(database, expectedVersion) {
   ).get());
   if (!metadata) recovery('coordination database has no schema version');
   if (metadata.value !== String(expectedVersion)) {
-    throw new RuntimeError(
-      'SCHEMA_MISMATCH',
+    recovery(
       `coordination database schema ${JSON.stringify(metadata.value)} is unsupported; expected ${expectedVersion}`,
     );
   }
@@ -371,8 +370,7 @@ function validateSchema(database, expectedVersion) {
   ).get());
   if (!messageMetadata) recovery('coordination database has no message schema version');
   if (messageMetadata.value !== String(MESSAGE_SCHEMA_VERSION)) {
-    throw new RuntimeError(
-      'SCHEMA_MISMATCH',
+    recovery(
       `coordination message schema ${JSON.stringify(messageMetadata.value)} is unsupported; expected ${MESSAGE_SCHEMA_VERSION}`,
     );
   }
@@ -985,7 +983,6 @@ export function applyOperation(store, command, mutate) {
       : snapshotJson(primaryBaseline);
     const primarySubject = primaryBaseline?.subject
       ?? (HIERARCHY_KINDS.has(internalCommand.recordKind)
-          || internalCommand.recordKind === 'initiative'
           ? null
         : ['attempt.start', 'effect.intent'].includes(internalCommand.kind)
           ? {kind: 'task', id: internalCommand.payload.taskId}
