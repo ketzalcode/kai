@@ -51,7 +51,7 @@ import {
   stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
   RETIRED_CREATIVE_AGENT_IDS, RETIRED_CREATIVE_SKILL_IDS,
   RETIRED_ENGINEERING_AGENT_IDS, RETIRED_DIRECTOR_AGENT_IDS, RETIRED_CORE_SKILL_IDS,
-  RETIRED_CORE_AGENT_IDS, sourceAssetIndex, sourceAssetPath,
+  RETIRED_CORE_AGENT_IDS, sourceAssetIndex,
 } from './lib/pack-plan.mjs';
 import {
   incubatedIds, incubatedPackageDirs, incubatedManifestPaths, documentationReferenceExists,
@@ -287,39 +287,40 @@ for (const p of refScanFiles) {
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Communication-style block
+// Repository-instructions block
 //
 // This block is the one thing kai ships that binds the MAIN CLI agent rather
 // than a kai agent: the host loads AGENTS.md from the user's repo, so a
 // consumer opts into it at onboarding. kai carries the same block in its own
-// AGENTS.md — a style shipped to users and not used here would be a
-// recommendation nobody tested. One canonical file, pinned byte for byte, is
-// what stops the shipped copy and the dogfooded copy from drifting.
+// AGENTS.md. One canonical file, pinned byte for byte, stops the shipped copy
+// and the dogfooded copy from drifting.
 // ---------------------------------------------------------------------------
-const stylePath = sourceAssetPath(ROOT, 'scripts/lib/communication-style-block.md');
-const styleBlock = existsSync(stylePath)
-  ? readFileSync(stylePath, 'utf8').replace(/\r\n/g, '\n').trim()
+const repositoryBlockAsset = 'scripts/lib/repository-instructions-block.md';
+const repositoryBlockIndex = sourceAssetIndex(ROOT);
+const repositoryBlockEntry = repositoryBlockIndex.get(repositoryBlockAsset);
+const repositoryBlock = repositoryBlockEntry
+  ? readFileSync(repositoryBlockEntry.path, 'utf8').replace(/\r\n/g, '\n').trim()
   : null;
-if (!styleBlock) {
-  err('scripts/lib/communication-style-block.md', 'missing (canonical communication-style block)');
+if (!repositoryBlock) {
+  err(repositoryBlockAsset, 'missing (canonical repository-instructions block)');
 } else {
-  const OPEN = '<!-- >>> kai communication style (managed by workflow-workspace-init) >>> -->';
-  const CLOSE = '<!-- <<< kai communication style <<< -->';
-  if (!styleBlock.startsWith(OPEN) || !styleBlock.endsWith(CLOSE)) {
-    err('scripts/lib/communication-style-block.md', 'must open and close with the exact managed-block markers, or onboarding cannot update or remove its own block without touching user text');
+  const OPEN = '<!-- >>> kai repository instructions (managed by workflow-workspace-init) >>> -->';
+  const CLOSE = '<!-- <<< kai repository instructions <<< -->';
+  if (!repositoryBlock.startsWith(OPEN) || !repositoryBlock.endsWith(CLOSE)) {
+    err(repositoryBlockAsset, 'must open and close with the exact managed-block markers, or onboarding cannot update or remove its own block without touching user text');
   }
   const ownAgents = join(ROOT, 'AGENTS.md');
   const ownRaw = existsSync(ownAgents) ? readFileSync(ownAgents, 'utf8').replace(/\r\n/g, '\n') : '';
-  if (!ownRaw.includes(styleBlock)) {
-    err('AGENTS.md', 'missing the verbatim communication-style block from scripts/lib/communication-style-block.md (kai must use the style it ships)');
+  if (!ownRaw.includes(repositoryBlock)) {
+    err('AGENTS.md', `missing the verbatim repository-instructions block from ${repositoryBlockAsset} (kai must use the instructions it ships)`);
   }
   // Onboarding is what installs the block in a consumer workspace; if it stops
   // naming the canonical file, the block ships to nobody.
   const onboarding = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
   if (onboarding && existsSync(onboarding)) {
     const ob = readFileSync(onboarding, 'utf8');
-    if (!ob.includes('scripts/lib/communication-style-block.md')) {
-      err(rel(onboarding), 'does not reference scripts/lib/communication-style-block.md, so the opt-in style block would never reach a consumer workspace');
+    if (!ob.includes(repositoryBlockAsset)) {
+      err(rel(onboarding), `does not reference ${repositoryBlockAsset}, so the opt-in repository instructions would never reach a consumer workspace`);
     }
   }
 }
@@ -351,6 +352,10 @@ for (const agent of agentFiles) {
 // and the cross-pack reference checks further down both resolve against the tree
 // a user would install, not against a plan that only adds up on paper.
 const generatedPacks = materializePacks({ root: ROOT, version: '0.0.0-validate' });
+const coreRepositoryBlock = `${packPluginName('core')}/${repositoryBlockAsset}`;
+if (!generatedPacks.has(coreRepositoryBlock)) {
+  err(repositoryBlockAsset, 'is not included in the generated kai-core source assets');
+}
 
 for (const e of generatedKeyErrors(generatedPacks)) err(e.file, e.msg);
 for (const e of generatedRuntimeErrors(generatedPacks)) err(e.file, e.msg);

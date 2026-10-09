@@ -941,7 +941,7 @@ export function materializePacks({
   }
   if (selected.has('core')) {
     // Onboarding reads this data file; executable/module routing cannot discover it.
-    const block = 'scripts/lib/communication-style-block.md';
+    const block = 'scripts/lib/repository-instructions-block.md';
     files.set(`${packPluginName('core')}/${block}`,
       normalizeLF(readFileSync(assetIndex.get(block).path, 'utf8')));
   }

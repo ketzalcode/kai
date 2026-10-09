@@ -247,12 +247,13 @@ Verify `git ls-files -- .kai` is empty and `.kai/` is ignored. If private files
 are tracked, report exact paths and stop. Never run `git rm --cached`, commit,
 or rewrite history without explicit authorization.
 
-## Communication style
+## Repository instructions
 
-Offer once to append the canonical managed block from
-`scripts/lib/communication-style-block.md` under the loaded core provider root
-to the project's `AGENTS.md`. The choice is opt-in. Append or replace only the
-marked Kai region; never rewrite, stage, or commit user-authored content.
+Offer once to install `scripts/lib/repository-instructions-block.md`.
+If `AGENTS.md` does not exist, create it with the managed block. If it exists,
+preserve every user-authored byte outside the markers and
+replace only the marked Kai region. Never stage or commit the file without
+separate operator authorization.
 
 ## Explicit migration
 

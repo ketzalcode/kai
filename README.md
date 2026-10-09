@@ -334,9 +334,9 @@ Everything is indexed in **[docs/](docs/README.md)**.
 ## Contributing
 
 Issues and PRs are welcome. The normal contribution path runs `npm test` and CI.
-Repository rules, the release checklist and the version policy are in
-[`AGENTS.md`](AGENTS.md) and
-**[Plugin structure](docs/reference/plugin-structure.md)**.
+[`AGENTS.md`](AGENTS.md), not this README, is the binding repository instruction
+for contributors. The release checklist and version policy are in `AGENTS.md`
+and **[Plugin structure](docs/reference/plugin-structure.md)**.
 
 ## License
 
