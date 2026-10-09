@@ -24,6 +24,12 @@ maintainability.
 - Choose names that express intent and business meaning. Keep parsing,
   transport, and storage details behind semantic predicates or domain-oriented
   interfaces when callers do not need those details.
+- Keep one authoritative definition for facts that must remain identical,
+  using the repository's established types, enums, constants, or other native
+  structures. Derive matching representations from that owner instead of
+  maintaining copies. Keep separate definitions when they represent different
+  decisions. Do not add validation layers or abstractions solely to centralize
+  a value.
 - Follow the codebase's response and error contract. Throw, return a result, or
   represent absence and empty values according to what callers need and nearby
   APIs establish. Do not add status wrappers when a simpler established shape
@@ -50,8 +56,5 @@ maintainability.
   and lookup tables that do not simplify the current requirement.
 - Preserve public behavior, accessibility, and localization during refactors
   unless the task intentionally changes them.
-- Test observable behavior on the changed path, including relevant priorities,
-  exclusivity, fallbacks, invalid inputs, and concurrency. Run the focused
-  tests, formatting, linting, and type checks that cover the affected surface.
 - Comment only when names and structure cannot make a non-obvious intent,
   constraint, or invariant clear.

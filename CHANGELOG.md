@@ -12,10 +12,11 @@ follow semantic versioning.
   rule set. The skill now applies whenever code is written, modified, or
   refactored, alongside repository context rather than only where local
   conventions are silent. The profile follows #241: readable and explicit
-  control flow, honest types and errors, right-sized extraction,
-  behavior-preserving refactors, and focused validation. Removed specialist
-  process sections that made the coding profile read like a second operating
-  contract.
+  control flow, honest types and errors, authoritative definitions,
+  right-sized extraction, and behavior-preserving refactors. Testing remains
+  owned by repository instructions or task-specific testing guidance rather
+  than loading with every coding task. Removed specialist process sections
+  that made the coding profile read like a second operating contract.
 
 ## [20.0.0] - 2026-10-08
 
