@@ -4,7 +4,6 @@
 import assert from 'node:assert/strict';
 import {execFileSync, spawnSync} from 'node:child_process';
 import {
-  appendFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -17,12 +16,12 @@ import {
 import {tmpdir} from 'node:os';
 import {dirname, isAbsolute, join, relative, resolve} from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
-import {moduleSpecifiers, PACK_ORDER, packPluginName} from '../tools/lib/pack-plan.mjs';
+import {PACK_ORDER, packPluginName} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixtureRoot = join(root, 'test', 'fixtures', 'schema5-consumer');
 const scratchRoot = mkdtempSync(join(tmpdir(), 'kai-consumer-install-'));
-const fixtureNames = ['core-only', 'core-engineering', 'core-creative', 'all-packs'];
+const fixtureNames = ['all-packs'];
 const publicationSkills = {
   core: 'kai-core-workspace-publication',
   engineering: 'engineering-workspace-publication',
@@ -138,40 +137,6 @@ function copyGeneratedPacks(installedRoot, packs) {
   }
 }
 
-function importPolicyProblems(text) {
-  return moduleSpecifiers(text)
-    .filter(specifier => !specifier.startsWith('node:') && !specifier.startsWith('./'));
-}
-
-function probeGeneratedImports(installedRoot, packs) {
-  for (const pack of packs) {
-    const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
-    if (!existsSync(scriptsDir)) continue;
-    const present = new Set(readdirSync(scriptsDir).filter(name => name.endsWith('.mjs')));
-    const referenced = new Set();
-    let dangling = 0;
-    let disallowedImports = 0;
-    for (const name of present) {
-      const text = readFileSync(join(scriptsDir, name), 'utf8');
-      disallowedImports += importPolicyProblems(text).length;
-      for (const specifier of moduleSpecifiers(text)) {
-        if (!specifier.startsWith('./')) continue;
-        const target = specifier.slice(2);
-        referenced.add(target);
-        if (!present.has(target)) dangling += 1;
-      }
-    }
-    ok(disallowedImports === 0,
-      `${packPluginName(pack)}: generated bundles import only node: modules or pack-local ./ files`);
-    ok(dangling === 0,
-      `${packPluginName(pack)}: every generated local import resolves inside the copied pack`);
-    const orphans = [...present].filter(name => name.startsWith('chunk-') && !referenced.has(name));
-    ok(orphans.length === 0,
-      `${packPluginName(pack)}: no unreferenced generated chunk ships`,
-      orphans.join(', '));
-  }
-}
-
 function pathContains(parent, candidate) {
   const rel = relative(parent, candidate);
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
@@ -187,21 +152,6 @@ function checkoutAncestorsWithNodeModules() {
     current = parent;
   }
   return ancestors;
-}
-
-function assertBareImportMutationRejected() {
-  const mutationRoot = mkdtempSync(join(scratchRoot, 'bare-import-'));
-  const installedRoot = join(mutationRoot, 'installed-plugins');
-  try {
-    copyGeneratedPacks(installedRoot, ['core']);
-    const coordinate = join(installedRoot, 'kai-core', 'scripts', 'coordinate.mjs');
-    appendFileSync(coordinate, '\nimport "review-only-bare-dependency";\n');
-    ok(importPolicyProblems(readFileSync(coordinate, 'utf8'))
-      .includes('review-only-bare-dependency'),
-    'generated import policy rejects a deliberate non-node bare import');
-  } finally {
-    rmSync(mutationRoot, {recursive: true, force: true});
-  }
 }
 
 function probeEntrypoints(installedRoot, packs, consumerRoot) {
@@ -297,7 +247,6 @@ async function runFixture(fixtureName) {
       ok(!existsSync(join(installedRoot, packPluginName(pack), 'node_modules')),
         `${packPluginName(pack)} has no installed dependencies`);
     }
-    probeGeneratedImports(installedRoot, fixture.packs);
     probeEntrypoints(installedRoot, fixture.packs, projectRoot);
 
     const coordinate = join(installedRoot, 'kai-core', 'scripts', 'coordinate.mjs');
@@ -473,7 +422,6 @@ async function runFixture(fixtureName) {
 }
 
 try {
-  assertBareImportMutationRejected();
   for (const fixtureName of fixtureNames) await runFixture(fixtureName);
 } finally {
   rmSync(scratchRoot, {recursive: true, force: true});

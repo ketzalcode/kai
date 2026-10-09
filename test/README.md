@@ -1,304 +1,33 @@
-# kai plugin tests
+# Kai behavioral tests
 
-Dependency-free, CI-enforced guards protect the plugin. All run on every
-PR and push to `main` and must stay fast:
+`npm test` runs nine product-critical entrypoints in one Node test process:
 
-- **Package availability**
-  (`test/package-availability-self-test.mjs`) — keeps the default marketplace
-  limited to core, engineering and creative, while retaining all eight packages
-  in source, emission and runtime validation. It rejects accidental pre-release
-  publication; it does not waive existing core or reference errors.
-- **Standalone engineering surface**
-  (`test/engineering-agents-self-test.mjs`) — exercises source discovery, host
-  frontmatter/model/tool validation, core-plus-engineering skill resolution,
-  emitted inventory and the single revenue owner of pre-sales solution fit.
-  This is structural coverage, not a live agent-behavior or performance test.
-- **Engineering foundation source contract**
-  (`test/engineering-foundation-self-test.mjs`) — keeps incubated review
-  components out of active discovery, packs, routes, and current documentation
-  while preserving narrowly scoped historical references and generic dispatch
-  collection coverage.
-- **Creative foundation contracts** — `creative-foundation-self-test.mjs`
-  checks the three-agent/six-skill surface, retired-ID references, callers, and
-  emitted helper closure. `creative-core-contract-self-test.mjs`,
-  `creative-agent-contract-self-test.mjs`, and
-  `creative-skill-contract-self-test.mjs` check the scoped source contracts.
-  These are focused source and parser checks, not live-host certification.
-- **Coordination source and emission contracts** —
-  `coordination-authority-self-test.mjs` and
-  `coordination-thread-self-test.mjs` check runtime authority and message
-  routing. `coordination-foundation-self-test.mjs` calls
-  the authoritative pack generator and checks that `kai-core` alone emits
-  `scripts/coordinate.mjs` and its full runtime closure, and that no department
-  pack emits a second copy. These are source and packaging contracts, not a
-  live coordinated workflow.
-- **Coordination runtime suites** — `coordination-inputs`, `-store`, `-engine`,
-  `-context`, `-evidence`, `-report`, `-host`, `-migration` and `-cli`
-  self-tests execute the runtime against a real `node:sqlite` database in a
-  temporary directory. They run in `npm test` and in a dedicated CI job on every
-  supported Node version (`22.22.2`, `24.15.0`, `26.0.0`); Node 22's documented
-  `node:sqlite` experimental warning is left visible. They are slow by the
-  standards of the guards above — the migration and CLI suites take minutes.
-- **Generated consumer composition** — `consumer-install-self-test.mjs` copies
-  only committed `plugins/kai-*` pack files into clean repositories outside the
-  checkout ancestry, so Node cannot inherit repository `node_modules`. Its four
-  fixtures (`core-only`, `core-engineering`, `core-creative`, and `all-packs`)
-  execute bundled entry points and prove lazy schema-5 initialization, first
-  private/public writes, refusal paths, privacy, uninstall preservation,
-  `node:`-or-pack-local-only imports, and equivalent Windows/POSIX path
-  decisions.
-- **Shipped-command suites** — `activity-self-test.mjs`,
-  `work-status-self-test.mjs`, `observe-subagent-self-test.mjs`,
-  `observe-watch-self-test.mjs`, `demo-capture-self-test.mjs`,
-  `demo-format-self-test.mjs`, `demo-narrate-self-test.mjs` and
-  `demo-zoom-self-test.mjs` cover the executable commands in
-  `src/core/` and `src/creative/`. They lived inside those commands behind a
-  `--self-test` flag until #225; the flag was a runtime argv string no build
-  could fold away, so the assertions shipped to every consumer. They run in
-  `npm test`, not in the `validate` workflow — the same reach they had before
-  the move.
-- **`npm run validate`** (`tools/validate-plugin.mjs`) — the plugin **source**
-  contract, including **release hygiene** (semver, current-version changelog
-  section + link, README status stamp, `package.json` ↔ `package-lock.json`
-  consistency, git-dependency allowlist).
-- **`npm run doctor:self-test`** (`test/workspace-doctor-self-test.mjs`) —
-  the generated **consumer-workspace** contract, exercised against committed
-  golden fixtures.
-- **`npm run host-contract`** (`tools/host-contract.mjs --self-test`) — the
-  **Kai frontmatter acceptance** heuristic: the expected discoverable inventory
-  matches a committed golden snapshot, and malformed frontmatter fixtures are
-  rejected.
-- **`npm run release-guard:self-test`** (`tools/release-guard.mjs --self-test`)
-  — the decision core of the release gate: a behavior-sensitive change must carry
-  a version bump plus changelog/README updates; docs/test-only changes are exempt.
-  On pull requests CI also runs `release-guard --base <sha> --head <sha>`, which
-  diffs the PR against its base and enforces the same rule for real.
-- **`npm run pack-preview:self-test`** (`tools/pack-preview.mjs --self-test`)
-  — the pack partition, generated surface, cross-pack references, and named
-  installation gates, with `--check` enforcing committed-output parity.
-- **`npm run check-syntax`** (`tools/check-syntax.mjs`) — `node --check` on
-  every shipped `.mjs`/`.js` helper and a PowerShell parse of `generate-audio.ps1`
-  (skipped cleanly where `pwsh` is unavailable).
+| Suite | Guarantee |
+| --- | --- |
+| `repository-instructions-self-test.mjs` | Managed repository instructions install and detect byte drift. |
+| `release-automation-self-test.mjs` | Release readiness and note extraction enforce the current release contract. |
+| `workspace-current-self-test.mjs` | Only schema 5 and the current workspace layout are accepted. |
+| `coordination-schema-self-test.mjs` | The executable coordination registry is complete and immutable. |
+| `coordination-core-self-test.mjs` | Transactions, authority, leases, hierarchy creation, completion evidence, Direction drift, and snapshots behave correctly. |
+| `publication-contract-self-test.mjs` | Package publication declarations route valid artifacts and reject unsafe paths. |
+| `package-build-self-test.mjs` | Three active packages build in supported combinations with closed imports, stable filenames, and drift detection. |
+| `consumer-install-self-test.mjs` | Every installed public executable loads outside the checkout without repository dependencies. |
+| `creative-screenplay-self-test.mjs` | Screenplay and take parsing preserve the current executable media contract. |
 
-`npm test` runs these guards and the declared runtime self-tests. A failing
-earlier command stops the chain; passing the targeted engineering guards does
-not imply the whole repository is release-ready. The coordination suites are
-placed **before** `validate-plugin.mjs` in the chain deliberately: that gate is
-known-red on pre-existing pre-release contract errors, and a suite ordered after
-it would never run.
+The suite intentionally excludes historical migrations, prose-only assertions,
+browser/demo matrices, native-host permutations, and duplicate command-level
+coverage. Package combinations are checked in memory by the package-build
+suite; the consumer suite uses one all-pack installation to execute every
+public generated entrypoint once.
 
-Three coordination checks stay out of the chain because CI cannot provision what
-they need, and a check that silently skips is worse than one you have to ask for:
+Additional developer commands remain separate:
 
-- `npm run coordination:report-browser-self-test` — renders the offline HTML
-  evidence report in a real browser. Needs an already provisioned Playwright
-  Chromium; it installs nothing.
-- `npm run coordination:native-discovery-self-test` and
-  `npm run coordination:native-handshake-self-test` — probe a real installed
-  Copilot CLI. Both are opt-in through their own environment variables
-  (`KAI_TEST_NATIVE_DISCOVERY`, `KAI_TEST_NATIVE_HANDSHAKE`) and assert nothing
-  about coordinated multi-role behavior on an unmeasured host.
+- `npm run validate` validates plugin source.
+- `npm run docs:check` checks generated catalog drift.
+- `npm run host-contract` checks the distinct frontmatter and golden-inventory
+  contract.
+- `npm run pack-preview:check` checks the committed generated package tree.
+- `npm run check-syntax` parses shipped JavaScript and PowerShell.
 
-`npm run diagram-layout:self-test` is an optional browser-backed check of the
-creative diagram reference. It uses an already provisioned Playwright Chromium
-or system Edge, without installing a browser. Synthetic long-label layouts are
-checked at 320px and 900px in light and dark modes. Missing browser capability
-fails explicitly. The check reads the current skill's catalog directly;
-it needs no archived guide or evaluation corpus. This is not a real artifact's
-visual review or accessibility certification, and is separate from dependency-free CI.
-
-## Deterministic checks (in CI)
-
-### Plugin source — `validate-plugin.mjs`
-
-Structural (original):
-
-- every agent/skill has valid frontmatter, and its `name` equals its path id;
-- every skill folder has a `SKILL.md`; no stray files under `agents/`;
-- backtick agent references and every `inherit`ed skill/agent resolve;
-- `plugin.json` exists and its `agents`/`skills` paths exist.
-
-Behavioral-contract and host compatibility:
-
-- **Kai tool-vocabulary lint.** Every declared `tools:` entry must be in
-  `SUPPORTED_TOOLS`, Kai's explicit least-privilege vocabulary. This is a lint
-  heuristic, not a claim about the live host parser.
-- **Routed-skill access.** Every agent that routes at least one skill must also
-  declare the `skill` tool. Delegated custom agents receive only declared tools,
-  so omitting it makes every routed contract unreachable.
-- **Frontmatter shape.** `argument-hint` must be a quoted scalar (never an inline
-  array — the CLI silently drops that); `user-invocable` must be boolean; the
-  skill-only keys `argument-hint`/`user-invocable`/`allowed-tools` are invalid on
-  an agent.
-- **Run-area usage.** Every concrete `.kai/runs/<area>/` literal in an agent or
-  skill must reference a registered area in the manifest.
-- **Workspace-contract consistency (drift detectors).** The workspace contract
-  is described in several files that must not diverge:
-  - the managed `.gitignore` block is byte-identical between the repo
-    `.gitignore` and the `kai-core-workspace-onboarding` template agents install;
-  - the `.kai/runs` **areas** match across the manifest schema
-    (`kai-core-workspace-initiative`), the onboarding scaffold, and
-    `workflow-workspace-init`;
-  - the initiative `artifacts/` directories match between
-    `kai-core-workspace-initiative` and `workflow-initiative-init`;
-  - the `library/<type>/` set matches across the conventions "Library types"
-    table and both library scaffolds.
-- **Fixture manifest schema.** `test/fixtures/repo-workspace/.kai/manifest.json`
-  must match the documented manifest schema (including an integer
-  `schema_version`) and canonical areas, contain no machine-specific absolute
-  paths, and use `workspace_root: "."` in repository mode.
-
-### Generated workspace — `workspace-doctor-self-test.mjs`
-
-Validates a scaffolded consumer workspace (not the plugin source). This suite
-asserts the committed golden fixtures behave:
-
-- `test/fixtures/repo-workspace/` — a **healthy** workspace the doctor passes:
-  a schema-compatible manifest plus a clean `coordination/` set (items, BOARD).
-  Includes `sample-downstream` — a `ready` item whose dependency is only
-  `in-review` (not its required `shipped`) — to prove the revised lifecycle from
-  #31: `ready` means committed with *declared* dependencies, not runnable, so
-  this item is healthy and simply waits for the derived `executable` predicate.
-- `test/fixtures/broken-workspace/` — a workspace the doctor **must reject**:
-  a pre-schema manifest (migration required), an `in-review` item with no
-  `change_ref`, an `in-review` item whose `change_ref` is a **non-SHA** label
-  (rejected per #31 — only a git commit/PR-head SHA is allowed), a dangling
-  dependency, and a machine-absolute `artifact_target`.
-- `test/fixtures/concurrency-workspace/` — a **lease-safety** fixture backing
-  the collision-safe lease contract from #30. Three item records exercise the
-  guard: a held lease with **no grant token / `version_at_grant`** (the racy
-  pre-token shape), a tokened grant whose **`version_at_grant` equals the item
-  `version`** (a grant that skipped the increment — the double-write shape), and
-  a well-formed tokened lease whose **expiry has passed** (surfaced as a
-  stale-work recovery signal, not silently reclaimed). `threads/stale-recovery.md`
-  narrates the full HANDOFF → `COLLISION` → `RECOVERY` flow and includes the
-  structured #31 `RECOVERY` and design-step `WAIVER` records, so the fixture
-  demonstrates the behavior, not only the static schema.
-
-The doctor checks manifest presence/JSON/keys, `schema_version` compatibility
-(emitting the migration ladder when behind), item `type`/`id`/lifecycle state,
-`change_ref`-bound review states, typed dependencies + cycles, lease shape —
-including that a held lease carries a unique `token` bound to a
-`version_at_grant` that is strictly less than the item `version` — expiry,
-durable-path containment, and `BOARD.md` drift.
-Run it against a real workspace with `npm run doctor` (or `node
-src/core/workspace-doctor.mjs --root <dir>`).
-
-Fixtures are self-contained and committed with **no** machine-specific paths or
-secrets (repository-mode roots are relative). The broken fixture's one
-deliberate machine-absolute path lives inside a value the doctor is expected to
-reject, not in a shipped manifest.
-
-### Schema-5 clean consumers — `fixtures/schema5-consumer/`
-
-Each fixture declares one literal pack set and one hand-checked first artifact
-route. The consumer test copies the committed generated packs, runs Core's
-bundled direct command and standalone initializer, interprets the copied
-pack-owned publication table, and mutates a real Git repository. The matrix
-proves installation creates no department paths; only the selected
-pack/type/ID/lifecycle appears on first write; scratch, private evidence, and
-unaccepted drafts do not publish; `.kai` stays ignored; and deleting the
-installed packs does not delete private or accepted content.
-
-`coordination-schema5-migration-self-test.mjs` also injects process-boundary
-failures after abandon/rollback target deletion and after the authority
-manifest switch. A durable lock-bound operation journal makes repeated
-`recover --action abandon` idempotent while retaining exact backup, ownership,
-event-baseline, and collision checks.
-
-### Pack migration — `workspace-doctor.mjs --migration-check`
-
-The same script carries the read-only pack-migration check (#29): what this
-**host** has installed, where each install came from, and whether a pack install
-may proceed. `test/workspace-doctor-self-test.mjs` runs it over a 33-scenario
-matrix and asserts each
-verdict exactly — `clear` (may proceed), `blocked` (refused), `unknown` (the
-evidence did not settle it). A case that must be `unknown` failing as `clear` is
-a test failure, because "unverified" reported as success is the bug this check
-exists to prevent.
-
-The matrix covers a clean legacy install, a clean pack set, legacy/pack
-coexistence, a department pack without `kai-core`, a stale install tree left by
-an uninstall, metadata left by an interrupted uninstall, the same pack installed
-from both a direct source and the marketplace, config/`plugin.json` identity
-disagreement, inferred and unknown provenance, a truncated config, junk config
-entries, missing/malformed install surfaces, symlinked install roots, foreign
-identities in kai-shaped trees, Windows/macOS cache-path normalization, an
-unreadable and a non-boolean `settings.json` enabled state, and each
-workspace-provenance state (current, stale, ahead, unrecognized, unreadable).
-One assertion snapshots every fixture file before and after and requires them
-byte-identical: the check is read-only, and that is proven rather than promised.
-
-The fixtures live in `test/fixtures/host-installs.json` as **data**, not
-directories: a host cache tree (`installed-plugins/_direct/…`) and an empty
-directory are things a git checkout cannot reproduce faithfully, so the
-self-test materializes them into a temp directory and removes it afterwards.
-Run the check against a real host with `npm run doctor:migration`. Add `-- --json`
-for automation; exit codes are `0` clear, `2` blocked, and `3` unknown.
-
-### Kai frontmatter acceptance — `host-contract.mjs`
-
-Applies Kai's deterministic authoring rules to the shipped inventory. The
-shared contract lives in `scripts/lib/loader-contract.mjs` and is imported by
-both this guard and `validate-plugin.mjs`, so Kai's two lint paths cannot drift.
-It does not claim to reproduce the live host parser. `--self-test` asserts:
-
-- **The expected discoverable inventory matches a golden snapshot.** Every
-  agent/skill must satisfy Kai's authoring rules. The resulting
-  inventory — agent roster, skill roster, and the user-invocable skill surface
-  (name + `argument-hint`) — is diffed against `test/fixtures/inventory.json`, so
-  a roster or invocation-surface change is explicit and reviewable in the PR.
-  Regenerate the golden with `npm run host-contract:update` when the change is
-  intended.
-- **Malformed frontmatter is rejected before release.** The fixtures under
-  `test/fixtures/host-loader/invalid/` each reproduce a real load-time failure
-  class — the #23 `argument-hint`-as-inline-array bug, a non-array `tools`, a
-  tool outside Kai's vocabulary, a skill-only key on an agent, and a name/id
-  mismatch — and the guard must reject each for the expected reason.
-- **The README quickstart mirrors a passing scenario.** The README status stamp
-  (`**N agents and M skills**`) must equal the live loadable inventory, and every
-  `npm run <script>` the README documents must exist in `package.json`.
-
-## Host-backed checks
-
-Kai's tool vocabulary was measured against a live Copilot CLI (1.0.79 and
-1.0.81, direct and delegated launches) and the result is recorded beside
-`SUPPORTED_TOOLS` in `scripts/lib/loader-contract.mjs`. The probe harness that
-produced it wrote to an uncommitted path, so it validated a parser for a report
-CI could never read; it was removed in favour of the durable note. Re-measure
-with a throwaway probe against the host you actually target, then update the
-list and its note together.
-
-Broader in-process inventory, degraded CLI/cloud, and fleet certification remain
-tracked in #33.
-
-## Manual-only coverage (needs a host)
-
-kai is a **declarative** plugin: its agents and skills are prompts, so the
-prompt-level behaviors below cannot be executed deterministically in a
-dependency-light CI check. They are verified by a manual smoke run inside a
-Copilot host (CLI or coding agent) against a scratch workspace:
-
-- current-workspace resolution and optional linked-workspace aggregation;
-- operator `decision`/`reply`/`action` detection, answered-question removal,
-  proposed-item exclusion, and release-ready inclusion in the agenda;
-- consultation packet/bridge sanitization and read-only boundaries;
-- setup/migration idempotence (`.persona-self/`, retired `.kai/local.json`,
-  manifest `workspace_kind`) without exposing private local paths;
-- workspace-scoped identity extraction and `status: stub` handling;
-- content-grounding claim-safety end to end on a real `product_context.json`.
-- support triage redaction, grounded deduplication, and incident-first routing;
-- growth/data metric-contract, causal-status, small-cell, and scope-boundary
-  behavior;
-- security/SRE non-mutating review, exact-`change_ref` evidence, and explicit
-  operator risk waivers;
-- incident SEV/lifecycle transitions, operator decision/action split, unsent
-  communication, recovery evidence, and release/incident separation.
-
-When adding a new run area, `library/` type, or host tool, update the manifest
-schema/scaffolds/allowlist together — the consistency checks above will fail
-until they agree. When changing the generated workspace contract, bump
-`schema_version`, append a migration step to the `kai-core-workspace-onboarding` ladder,
-and update the doctor + fixtures together. When adding, removing, or renaming an
-agent/skill (or changing a user-invocable skill's `argument-hint`), regenerate
-the golden inventory with `npm run host-contract:update` and commit it.
+These commands are not implied by `npm test` and must be run when their owned
+surface changes.
