@@ -1,0 +1,77 @@
+const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?$/;
+
+export const BEHAVIOR_PREFIXES = Object.freeze([
+  'plugins/', 'src/', 'tools/',
+]);
+
+export const BEHAVIOR_FILES = new Set([
+  'package.json',
+  'package-lock.json',
+  'plugin.json',
+  '.github/plugin/marketplace.json',
+]);
+
+export function isBehaviorPath(value) {
+  const path = value.replace(/\\/g, '/');
+  return BEHAVIOR_FILES.has(path)
+    || BEHAVIOR_PREFIXES.some(prefix => path.startsWith(prefix));
+}
+
+export function parseSemver(version) {
+  const match = SEMVER.exec(version ?? '');
+  return match
+    ? {core: match.slice(1, 4).map(Number), prerelease: match[4] ?? null}
+    : null;
+}
+
+export function isForwardVersion(latestVersion, currentVersion) {
+  const latest = parseSemver(latestVersion);
+  const current = parseSemver(currentVersion);
+  if (!current) return false;
+  if (!latest) return true;
+  for (let index = 0; index < 3; index += 1) {
+    if (latest.core[index] !== current.core[index]) {
+      return current.core[index] > latest.core[index];
+    }
+  }
+  return Boolean(latest.prerelease && !current.prerelease);
+}
+
+export function generatedVersionErrors(currentVersion, generatedVersions) {
+  return Object.entries(generatedVersions)
+    .filter(([, version]) => version !== currentVersion)
+    .map(([file, version]) => `${file} has ${version}; expected ${currentVersion}`);
+}
+
+export function extractReleaseNotes(changelog, version) {
+  const lines = changelog.replace(/\r\n/g, '\n').split('\n');
+  const start = lines.findIndex(line => line.startsWith(`## [${version}]`));
+  if (start === -1) throw new Error(`CHANGELOG.md has no ${version} section`);
+  const next = lines.findIndex((line, index) => index > start && /^## \[/.test(line));
+  return lines.slice(start + 1, next === -1 ? lines.length : next).join('\n').trim();
+}
+
+export function evaluateReleaseReadiness(input) {
+  const behaviorChanged = input.changedFiles.some(isBehaviorPath);
+  if (!behaviorChanged) {
+    return {ok: true, release: false, reason: 'no-release-needed', errors: [], notes: ''};
+  }
+  const errors = [];
+  if (!isForwardVersion(input.latestVersion, input.currentVersion)) {
+    errors.push(`behavior changed without a forward version: ${input.latestVersion} -> ${input.currentVersion}`);
+  }
+  let notes = '';
+  try {
+    notes = extractReleaseNotes(input.changelog, input.currentVersion);
+  } catch (error) {
+    errors.push(error.message);
+  }
+  errors.push(...generatedVersionErrors(input.currentVersion, input.generatedVersions));
+  return {
+    ok: errors.length === 0,
+    release: errors.length === 0,
+    reason: errors.length === 0 ? 'ready' : 'not-ready',
+    errors,
+    notes,
+  };
+}
