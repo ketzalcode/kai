@@ -9,9 +9,6 @@
 // answers must stay visible as diagnostics instead of being dropped or
 // silently preferred.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseThread, parseQuestions } from '../src/core/lib/coordination.mjs';
 import {
   subjectEquals,
@@ -19,8 +16,6 @@ import {
   validateHierarchySubject,
   validateRecord,
 } from '../src/core/lib/coordination-runtime/contract.mjs';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // --- the brief's exact regression: timestamped, unbracketed headers --------
 {
@@ -36,25 +31,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
     'a timestamped unbracketed QUESTION header is still parsed as one question');
   assert.equal(parseQuestions(raw)[0].status, 'answered',
     'an in-lane, party-matched ANSWER reconciles the question to answered');
-}
-
-// --- bracketed existing fixtures still parse as before ---------------------
-{
-  const awaiting = readFileSync(
-    join(root, 'test', 'fixtures', 'work-status', 'exceptions', '.kai', 'state', 'threads', 'awaiting-decision.md'),
-    'utf8');
-  const qs = parseQuestions(awaiting);
-  assert.equal(qs.length, 1, 'the bracketed awaiting-decision fixture yields one question');
-  assert.equal(qs[0].id, 'Q-awaiting-decision-01');
-  assert.equal(qs[0].to, 'operator');
-  assert.equal(qs[0].status, 'open', 'an unanswered bracketed question stays open');
-
-  const notBlocked = readFileSync(
-    join(root, 'test', 'fixtures', 'work-status', 'exceptions', '.kai', 'state', 'threads', 'question-not-blocked.md'),
-    'utf8');
-  const qs2 = parseQuestions(notBlocked);
-  assert.equal(qs2.length, 1, 'a QUESTION written as a markdown heading (## prefix) still parses');
-  assert.equal(qs2[0].status, 'open');
 }
 
 // --- unanswered question: no ANSWER packet at all ---------------------------

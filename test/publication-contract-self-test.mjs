@@ -11,8 +11,8 @@ import {fileURLToPath} from 'node:url';
 import {
   PACK_ORDER,
   publicationContract,
+  publicationDeclarationInventoryErrors,
   publicationRoutingErrors,
-  renderPublicationTable,
   sourceAgentFiles,
   sourceSkillFiles,
 } from '../tools/lib/pack-plan.mjs';
@@ -48,12 +48,14 @@ test('each shipped package has one valid publication declaration', () => {
   }
 });
 
-test('rendered tables match their managed skill region', () => {
-  for (const pack of PACK_ORDER) {
-    const contract = publicationContract(pack);
-    const body = readFileSync(contract.skillPath, 'utf8');
-    assert.equal(body.includes(renderPublicationTable(contract)), true);
-  }
+test('publication inventory follows structured declarations', () => {
+  const skills = sourceSkillFiles(root);
+  assert.deepEqual(publicationDeclarationInventoryErrors(skills), []);
+  assert.match(
+    publicationDeclarationInventoryErrors(skills.filter(entry =>
+      entry.id !== 'engineering-workspace-publication')).join('\n'),
+    /kai-engineering.*engineering-workspace-publication/i,
+  );
 });
 
 test('producer declarations must use their package entrypoint', () => {

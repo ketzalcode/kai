@@ -110,9 +110,9 @@ New skills should:
 - Be framework-agnostic unless explicitly scoped (e.g., `react-style`).
 - Cite their own conventions inside `SKILL.md` so the agent can apply them
   without inventing rules.
-- Declare `durable-output-producer: true|false` in frontmatter. A `true` skill
-  routes its owning pack publication skill immediately before
-  `kai-core-asset-producing`; a `false` skill routes neither.
+- Durable producers declare their pack-local `publication-entrypoint` in
+  frontmatter and route it before `kai-core-asset-producing`. Non-producers
+  declare no publication entrypoint.
 
 The normal contribution path runs `npm test` — the dependency-free checks below,
 which also run in CI on every pull request.

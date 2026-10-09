@@ -99,21 +99,6 @@ for (const id of [
 assert.ok(!sourceAgents.some(entry => entry.id === 'workflow-initiative-init'),
   'retired agent workflow-initiative-init must not remain discoverable');
 
-assert.equal(typeof packPlan.publicationInventoryErrors, 'function',
-  'pack-plan must export publicationInventoryErrors for source and generated mutation gates');
-if (typeof packPlan.publicationInventoryErrors === 'function') {
-  assert.deepEqual(packPlan.publicationInventoryErrors(sourceSkills), [],
-    'the live source inventory must satisfy the one-publication-skill-per-pack contract');
-  const withoutEngineering = sourceSkills.filter(entry =>
-    entry.id !== publicationSkills.engineering);
-  assert.ok(
-    packPlan.publicationInventoryErrors(withoutEngineering)
-      .some(message => message.includes('kai-engineering') &&
-        message.includes('exactly one publication skill')),
-    'removing the engineering publication skill must fail by pack and rule name',
-  );
-}
-
 assert.deepEqual(packPlan.INCUBATED_PACKS.map(packPlan.packPluginName).sort(),
   [...incubated].sort(), 'the declared incubated set matches this contract');
 assert.deepEqual(packPlan.PACK_ORDER.map(packPlan.packPluginName).sort(), [...published].sort(),

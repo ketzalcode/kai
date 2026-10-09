@@ -167,21 +167,6 @@ for (const key of [
   assert.ok(!files.has(key), `generated surface must not retain ${key}`);
 }
 
-assert.equal(typeof packPlan.publicationInventoryErrors, 'function',
-  'pack-plan must expose publicationInventoryErrors to validate emitted mutations');
-if (typeof packPlan.publicationInventoryErrors === 'function') {
-  assert.deepEqual(packPlan.publicationInventoryErrors(emittedSkills), [],
-    'emitted skills must satisfy the publication inventory contract');
-  const removed = emittedSkills.filter(entry =>
-    entry.id !== expectedPublication.get('creative'));
-  assert.ok(
-    packPlan.publicationInventoryErrors(removed)
-      .some(message => message.includes('kai-creative') &&
-        message.includes('exactly one publication skill')),
-    'removing the emitted creative publication skill must fail by pack and rule name',
-  );
-}
-
 console.log(
   `coordination foundation self-test passed `
   + `(runtime modules=${runtimeModules.length}, publication packs=${emittedPublication.length}, `

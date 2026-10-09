@@ -89,12 +89,10 @@ thread, Task, or hierarchy log.
 
 ### Explicit migration
 
-<!-- kai:schema4-history -->
 Older workspaces may contain shared placement, `.kai/state/`, `.kai/runs/`,
 `.kai/review/`, `.kai/personal/`, initiatives, generic items, boards,
 backlogs, milestones, and threads. Those are historical migration sources,
 never live schema-5 destinations.
-<!-- /kai:schema4-history -->
 
 Apply `kai-core-workspace-onboarding` for the offline backup-first procedure.
 Apply `kai-core-work-hierarchy`, `kai-core-work-stewardship`, and

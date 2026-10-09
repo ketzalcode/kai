@@ -58,29 +58,26 @@ function nativePath(base, relativePath) {
   return join(base, ...relativePath.split('/'));
 }
 
-function stripCell(value) {
-  const trimmed = value.trim();
-  return trimmed.startsWith('`') && trimmed.endsWith('`')
-    ? trimmed.slice(1, -1)
-    : trimmed;
-}
-
 function parsePublicationContract(installedRoot, pack) {
-  const skill = publicationSkills[pack];
-  const path = join(installedRoot, packPluginName(pack), 'skills', skill, 'SKILL.md');
-  const body = readFileSync(path, 'utf8');
-  const lines = body.split(/\r?\n/);
-  const headerIndex = lines.findIndex(line => /^\|\s*Namespace\s*\|\s*Type\s*\|/i.test(line));
-  assert.notEqual(headerIndex, -1, `${pack}: canonical vocabulary table is missing`);
-  const headers = lines[headerIndex].split('|').slice(1, -1).map(value => value.trim().toLowerCase());
-  const rows = [];
-  for (const line of lines.slice(headerIndex + 2)) {
-    if (!line.trim().startsWith('|')) break;
-    const cells = line.split('|').slice(1, -1).map(stripCell);
-    rows.push(Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ''])));
-  }
-  assert.ok(rows.length > 0, `${pack}: canonical vocabulary table must contain live rows`);
-  return {body, rows};
+  const path = join(installedRoot, packPluginName(pack), 'publication.json');
+  const declaration = JSON.parse(readFileSync(path, 'utf8'));
+  assert.equal(declaration.pack, pack, `${pack}: publication declaration pack mismatch`);
+  assert.equal(declaration.skill, publicationSkills[pack],
+    `${pack}: publication declaration entrypoint mismatch`);
+  assert.ok(declaration.entries.length > 0,
+    `${pack}: publication declaration must contain live entries`);
+  return {
+    declaration,
+    rows: declaration.entries.map(entry => ({
+      namespace: pack,
+      type: entry.type,
+      subtype: entry.subtype ?? '-',
+      'private form': entry.privateForm,
+      'public form': entry.publicForm,
+      formats: entry.formats,
+      privacy: entry.privacy,
+    })),
+  };
 }
 
 function selectRoute(contract, {pack, type, subtype}) {
@@ -115,13 +112,13 @@ function createPrivateArtifact({projectRoot, contract, artifact, lifecycle, file
 function publishArtifact({projectRoot, contract, artifact, source, lifecycle, accepted, file}) {
   const row = selectRoute(contract, artifact);
   if (!row) return {ok: false, reason: 'unknown route'};
-  if (lifecycle === 'scratch' && /scratch can never publish/i.test(contract.body)) {
+  if (lifecycle === 'scratch') {
     return {ok: false, reason: 'scratch'};
   }
-  if (lifecycle === 'evidence' && /never publish/i.test(row['privacy rule'])) {
+  if (lifecycle === 'evidence' && row.privacy === 'evidence-private') {
     return {ok: false, reason: 'private evidence'};
   }
-  if (!accepted && /unaccepted draft can never publish/i.test(contract.body)) {
+  if (!accepted) {
     return {ok: false, reason: 'unaccepted'};
   }
   const directory = publicationDirectory(row, artifact.id);
@@ -363,7 +360,7 @@ async function runFixture(fixtureName) {
     ok(publicationDirectory(row, fixture.artifact.id) === fixture.artifact.publicationDirectory,
       'canonical publication route mirrors the hand-checked fixture path');
     if (fixture.artifact.pack === 'creative' && fixture.artifact.type === 'media') {
-      ok(/Markdown destination record/i.test(row.formats),
+      ok(row.formats.includes('markdown-destination-record'),
         'creative media accepts an approved external-destination record');
     }
 

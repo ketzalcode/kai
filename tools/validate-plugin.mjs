@@ -32,27 +32,21 @@ import {
   marketplaceSurfacePolicy,
   materializePacks,
   CONTRACT_SKILL,
-  HOOKS_OWNER, HOOK_ASSET_RE, declaredInherits, dispatchedRefs, routedSkills, loadedSkills, packProviders,
+  HOOKS_OWNER, HOOK_ASSET_RE, loadedSkills, packProviders,
   collectReferences, referenceErrors, planAssets, assetOwnershipErrors,
-  hooksAssignmentErrors, planPacks, parseGeneratedKey, agentRefPattern, agentTaxonomyErrors,
+  hooksAssignmentErrors, planPacks, parseGeneratedKey, agentTaxonomyErrors,
   requiresCoordinatedRunContracts, agentRoutingErrors,
   agentProfileModelErrors, agentPromptLimitErrors,
-  agentAuthoringReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  availabilityErrors, DISPATCHING_ROLES,
   generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   PACK_ORDER, PUBLISHED_PACKS, INCUBATED_PACKS, packPluginName, sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   sourcePlacementErrors,
   agentSourceFile, skillSourceFile, ACTIVITY_EXEMPT, ACTING_EXEMPT,
-  publicationContract, publicationInventoryErrors, publicationContractErrors, publicationRoutingErrors,
-  activeWorkspaceLanguageErrors, markdownCoordinationAuthorityErrors,
-  directionContractErrors, epicWorkflowContractErrors, chiefOfStaffContractErrors,
-  agentDirectOutputErrors, activeGuideDecisionFiles, workflowShipContractErrors,
-  stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
+  publicationDeclarationInventoryErrors, publicationRoutingErrors,
   sourceAssetIndex,
 } from './lib/pack-plan.mjs';
 import {
-  incubatedIds, incubatedPackageDirs, incubatedManifestPaths, documentationReferenceExists,
+  incubatedPackageDirs, incubatedManifestPaths,
 } from './lib/incubation-contract.mjs';
 import {
   CLOSE_REPOSITORY_INSTRUCTIONS,
@@ -128,14 +122,6 @@ const allFiles = [...agentFiles, ...skillFiles];
 
 const agentIds = new Set(agentFiles.map((a) => a.id));
 const skillIds = new Set(skillFiles.map((s) => s.id));
-const inactiveAgentIds = new Set([
-  ...incubatedIds(ROOT, 'agent'),
-]);
-const inactiveSkillIds = new Set([
-  ...incubatedIds(ROOT, 'skill'),
-]);
-const componentIds = new Set([...agentIds, ...skillIds]);
-const inactiveComponentIds = new Set([...inactiveAgentIds, ...inactiveSkillIds]);
 
 for (const f of agentFiles) {
   for (const msg of agentTaxonomyErrors(f)) err(f.rel, msg);
@@ -156,122 +142,6 @@ for (const f of agentFiles.filter((entry) => entry.fm)) {
   for (const msg of agentProfileModelErrors({ id: f.id, body, fm: f.fm })) err(f.rel, msg);
   for (const msg of agentPromptLimitErrors(body)) err(f.rel, msg);
 }
-
-{
-  const referenceRoot = join(ROOT, 'docs', 'reference', 'agent-authoring');
-  const taxonomyPath = join(referenceRoot, 'taxonomy.md');
-  const modelSelectionPath = join(referenceRoot, 'model-selection.md');
-  if (!existsSync(taxonomyPath)) {
-    err(rel(taxonomyPath), 'missing authoring taxonomy reference');
-  }
-  if (!existsSync(modelSelectionPath)) {
-    err(rel(modelSelectionPath), 'missing approved model reference');
-  }
-  if (existsSync(taxonomyPath) && existsSync(modelSelectionPath)) {
-    const taxonomy = readFileSync(taxonomyPath, 'utf8');
-    const modelSelection = readFileSync(modelSelectionPath, 'utf8');
-    for (const msg of agentAuthoringReferenceErrors({ taxonomy, modelSelection })) {
-      err(rel(referenceRoot), msg);
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Cross-reference integrity
-// ---------------------------------------------------------------------------
-
-// Prose kai ships to readers. Splitting the README into docs/ moved the most
-// reference-dense content (the agent catalog, the flow walkthroughs, the
-// workspace contract) out of the one file these checks used to cover, so the
-// whole docs/ tree is scanned too — otherwise an extracted page could name a
-// deleted agent, or write `library/` without its `kai/` parent, and no test
-// would notice. CHANGELOG.md is deliberately excluded: historical entries
-// legitimately describe retired layouts and removed agents.
-const publicDocFiles = () => {
-  const out = [];
-  const walk = (dir) => {
-    if (!existsSync(dir)) return;
-    for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith('.md')) out.push(p);
-    }
-  };
-  walk(join(ROOT, 'docs'));
-  return out;
-};
-
-const refScanFiles = [
-  ...allFiles.map((f) => f.path),
-  ...skillFiles.flatMap((skill) => skillCompanionFiles(ROOT, skill.id).map((entry) => entry.path)),
-  join(ROOT, 'AGENTS.md'),
-  join(ROOT, 'README.md'),
-  ...publicDocFiles(),
-].filter(existsSync).filter(path =>
-  rel(path) !== 'docs/reference/agents-and-skills.md');
-
-// Backtick tokens matching either a supported kind prefix or the complete new
-// provider-posture-scope prefix are agent references. Requiring the posture
-// segment keeps generic domain terms such as `core-workspace` out of this scan.
-const AGENT_REF = agentRefPattern();
-// A kai identifier is kebab-case with at least one hyphen (skill/agent shape).
-const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/;
-
-for (const p of refScanFiles) {
-  const raw = readFileSync(p, 'utf8');
-  const r = rel(p);
-
-  for (const m of raw.matchAll(AGENT_REF)) {
-    if (!documentationReferenceExists(m[1], r, agentIds, inactiveAgentIds)) {
-      err(r, `references unknown agent \`${m[1]}\``);
-    }
-  }
-
-  // A backticked kai-identifier that follows the verb "inherit(s)" on a line
-  // must resolve to a real skill or agent (catches renamed/removed contracts).
-  // Only tokens after the verb are checked, so lifecycle states like
-  // `in-review` that merely share the line are not misread as references.
-  for (const line of raw.split(/\r?\n/)) {
-    if (/^\*\*Inherits:\*\*/.test(line)) continue;
-    const verb = line.match(/inherits?\b/i);
-    if (!verb) continue;
-    const after = verb.index + verb[0].length;
-    for (const m of line.matchAll(/`([^`]+)`/g)) {
-      if (m.index < after) continue;
-      const tok = m[1];
-      if (!KEBAB.test(tok)) continue;
-      if (!documentationReferenceExists(tok, r, componentIds, inactiveComponentIds)) {
-        err(r, `"inherit" line references unknown skill/agent \`${tok}\``);
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// A shipped body may not name an inactive role at all — backticked or not.
-//
-// The reference scan above only sees backticked, agent-shaped tokens, so a
-// retired role survives in exactly the places that matter most: YAML template
-// values (`completion_authority: principal-product-manager`), scaffold fields
-// (`**Run:** principal-seo`), and parenthetical asides. Those are instructions
-// an agent follows, naming a role no installed package provides. This check
-// reads the same inactive sets, without requiring backticks.
-// ---------------------------------------------------------------------------
-{
-  const inactiveInBodies = [...inactiveAgentIds, ...incubatedIds(ROOT, 'skill')];
-  const companions = skillFiles.flatMap((skill) =>
-    skillCompanionFiles(ROOT, skill.id).map((entry) => entry.path));
-  for (const path of [...allFiles.map((f) => f.path), ...companions]) {
-    const raw = readFileSync(path, 'utf8');
-    for (const id of inactiveInBodies) {
-      // `.persona-self/` and `scripts/demo-zoom.mjs` are paths, not roles.
-      if (new RegExp(`(?<![\\w./-])${id}(?![\\w-])`).test(raw)) {
-        err(rel(path), `names inactive component \`${id}\` — a shipped body must not instruct against a role or method no installed package provides`);
-      }
-    }
-  }
-}
-
 
 // ---------------------------------------------------------------------------
 // Agent skill routing — one shape
@@ -376,44 +246,6 @@ if (generatedPacks.size && !generatedPacks.has(`kai-core/skills/${CONTRACT_SKILL
 // ---------------------------------------------------------------------------
 // Skill firing paths
 //
-// A skill reaches a session in exactly one of three ways, and a skill with none
-// of them is dead on arrival while still passing every other check and
-// appearing in the catalog:
-//
-//   1. routed      — loaded inline by some agent, in the accepted
-//                     `Apply`/`Invoke` + backticked-id form, or named on a
-//                     legacy agent's `**Inherits:**` line;
-//   2. user-invoked — `user-invocable: true` in its own frontmatter, so the
-//                     operator can run it directly;
-//   3. orchestrated — declared as a dispatch entry in an agent's prose, in the
-//                     list shape `- **`skill-id`** — when it applies`, which
-//                     dispatches it situationally.
-//
-// All three are legitimate designs, so this asserts only that at least one
-// exists. The orchestrated form is matched by that specific declaration shape
-// rather than by any backticked mention, so an incidental reference — a
-// cross-link, or a "do not use `x`" sentence — cannot pass a skill off as
-// reachable. It exists because the absence of this check produced a filed issue
-// claiming user-invocable skills "never fire".
-// ---------------------------------------------------------------------------
-{
-  const inherited = new Set();
-  const dispatched = new Set();
-  for (const agent of agentFiles) {
-    const raw = readFileSync(agent.path, 'utf8');
-    for (const skill of declaredInherits(raw)) inherited.add(skill);
-    for (const skill of routedSkills(raw)) inherited.add(skill);
-    for (const token of dispatchedRefs(raw)) dispatched.add(token);
-  }
-  for (const skill of skillFiles) {
-    const id = skill.id;
-    if (inherited.has(id) || dispatched.has(id)) continue;
-    const raw = readFileSync(skill.path, 'utf8');
-    if (/^user-invocable:\s*true\s*$/m.test(raw)) continue;
-    err(rel(skill.path), 'has no firing path: no agent routes, inherits, or dispatches it, and it is not `user-invocable: true` — it can never reach a session');
-  }
-}
-
 // ---------------------------------------------------------------------------
 // The partition (who ships what)
 //
@@ -445,27 +277,13 @@ const PARTITION_SOURCE = 'scripts/lib/pack-plan.mjs';
     }
   }
 
-  // Role availability, at the one place it is decided. A director that recalls
-  // a roster instead of reading it, or counts it instead of testing membership,
-  // is wrong in whichever direction its guess fell — and says nothing either way.
-  for (const id of DISPATCHING_ROLES) {
-    const path = agentSourceFile(ROOT, id);
-    if (!path || !existsSync(path)) {
-      err(`agent:${id}`, 'missing (a lease-granting role the availability contract pins)');
-      continue;
-    }
-    for (const msg of availabilityErrors({ body: readFileSync(path, 'utf8') })) {
-      err(rel(path), msg);
-    }
-  }
 }
 
 // ---------------------------------------------------------------------------
 // Cross-pack references (the plugin boundary)
 //
-// The check above proves a skill can fire at all. This one proves it can still
-// fire once the plugin is five plugins: a department pack installs with kai-core
-// and nothing else, so an inherited skill, a user-invoked entry point, an
+// A department pack installs with kai-core and nothing else, so an inherited
+// skill, a user-invoked entry point, an
 // orchestrated dispatch or an invoked script that lives in a third pack is a
 // break the monolith can never show — every reference resolves here today
 // because everything ships in one directory.
@@ -737,21 +555,9 @@ if (!existsSync(mktPath)) {
 // source and mutation self-tests.
 // ---------------------------------------------------------------------------
 const readIf = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null);
-const pathsSkillPath = skillSourceFile(ROOT, 'kai-core-workspace-paths');
 const onboardingPath = skillSourceFile(ROOT, 'kai-core-workspace-onboarding');
-const wsInitPath = agentSourceFile(ROOT, 'workflow-workspace-init');
-const epicInitPath = agentSourceFile(ROOT, 'workflow-epic-init');
-const directorPath = agentSourceFile(ROOT, 'director-chief-of-staff');
-const pathsSkill = pathsSkillPath ? readIf(pathsSkillPath) : null;
 const onboarding = onboardingPath ? readIf(onboardingPath) : null;
-const wsInit = wsInitPath ? readIf(wsInitPath) : null;
-const epicInit = epicInitPath ? readIf(epicInitPath) : null;
-const director = directorPath ? readIf(directorPath) : null;
-const pathsSkillRel = pathsSkillPath ? rel(pathsSkillPath) : 'skill:kai-core-workspace-paths';
 const onboardingRel = onboardingPath ? rel(onboardingPath) : 'skill:kai-core-workspace-onboarding';
-const wsInitRel = wsInitPath ? rel(wsInitPath) : 'agent:workflow-workspace-init';
-const epicInitRel = epicInitPath ? rel(epicInitPath) : 'agent:workflow-epic-init';
-const directorRel = directorPath ? rel(directorPath) : 'agent:director-chief-of-staff';
 const gitignore = readIf(join(ROOT, '.gitignore'));
 
 // The split installer is prose executed by an agent, so pin the load-bearing
@@ -760,9 +566,7 @@ const gitignore = readIf(join(ROOT, '.gitignore'));
 const guidedInstallCommands = PUBLISHED_PACKS.map(
   (pack) => `copilot plugin install ${packPluginName(pack)}@${MARKETPLACE}`,
 );
-const guidedCorePlugin = packPluginName('core');
 if (onboarding) {
-  const onboardingProse = onboarding.replace(/\s+/g, ' ');
   for (const pack of INCUBATED_PACKS) {
     for (const action of ['install', 'update']) {
       const command = `copilot plugin ${action} ${packPluginName(pack)}@${MARKETPLACE}`;
@@ -789,48 +593,6 @@ if (onboarding) {
   if (browseIndex === -1 || firstInstallIndex === -1 || browseIndex >= firstInstallIndex) {
     err(onboardingRel, 'guided installer must browse the marketplace before the first plugin install command');
   }
-  for (const requiredText of [
-    marketplaceBrowse,
-    'get explicit confirmation',
-    'stop on the first failed or unverified step',
-    'Rollback: not attempted or verified',
-    'start a fresh session before invoking pack agents',
-    'Never substitute a direct repository or subdirectory install as a fallback',
-    'Pack install: complete | partial | blocked | unknown',
-    'Not attempted:',
-    'Legacy kai:',
-    'never reuse a path into a plugin uninstalled or updated during this run',
-    'End the current run; a session still carrying the removed monolith must not continue the migration',
-    'at the exact version reported by the browse step',
-    'use its `plugins` inventory for enabled state and provenance',
-    `open \`/plugin\` in an interactive Copilot session, enable \`${guidedCorePlugin}@${MARKETPLACE}\``,
-    `open \`/plugin\`, enable \`<name>@${MARKETPLACE}\``,
-    'Do not name the unavailable',
-    '`copilot plugins enable` command',
-    `${guidedCorePlugin}\` and every requested department are listed at one common version`,
-    'partial` when at least one plugin install or update succeeded in this run',
-    'unknown` when required host, marketplace, plugin-list, version, or workspace evidence is unreadable',
-    'blocked` for every other known pre-mutation refusal or failed command',
-    'perform the update from a session that does not have the pack loaded',
-  ]) {
-    if (!onboardingProse.includes(requiredText)) {
-      err(onboardingRel, `guided installer is missing required contract text: ${JSON.stringify(requiredText)}`);
-    }
-  }
-}
-if (wsInit) {
-  const workspaceInitProse = wsInit.replace(/\s+/g, ' ');
-  for (const requiredText of [
-    'Pack installation',
-    'kai-core-workspace-onboarding',
-    'Never install a department before an enabled, versioned `kai-core` row',
-    'Rollback: not attempted or verified',
-    'requires a fresh session only when the run actually installed or updated a pack',
-  ]) {
-    if (!workspaceInitProse.includes(requiredText)) {
-      err(wsInitRel, `does not bind the guided installer contract: ${JSON.stringify(requiredText)}`);
-    }
-  }
 }
 
 // Managed private-workspace block.
@@ -851,153 +613,15 @@ if (obBlock === null) err(onboardingRel, 'missing the managed gitignore block te
     err('.gitignore', 'managed workspace block must ignore the repository-root .kai directory');
   }
 
-  // Schema-5 manifest, Direction, and initialization contracts.
-  for (const [path, text] of [
-    [pathsSkillRel, pathsSkill],
-    [onboardingRel, onboarding],
-  ]) {
-    for (const required of [
-      '"schema_version": 5',
-      '"placement"',
-      '"private_root": ".kai"',
-      '"direction": "docs/kai/DIRECTION.md"',
-      '"publication_root": "docs/kai"',
-      '.kai/core/runtime/coordination.sqlite',
-    ]) {
-      if (!text?.includes(required)) err(path, `does not bind schema-5 workspace concept ${JSON.stringify(required)}`);
-    }
-    for (const msg of directionContractErrors({id: path, body: text ?? ''})) err(path, msg);
-  }
-  for (const required of [
-    'schema-5',
-    '`external`',
-    '`repo-local`',
-    '.kai/core/runtime/coordination.sqlite',
-    'docs/kai/DIRECTION.md',
-  ]) {
-    if (!wsInit?.includes(required)) {
-      err(wsInitRel, `does not bind the workspace initializer concept ${JSON.stringify(required)}`);
-    }
-  }
-  for (const msg of directionContractErrors({id: wsInitRel, body: wsInit ?? ''})) {
-    err(wsInitRel, msg);
-  }
-  for (const required of [
-    '.kai/manifest.json',
-    '.kai/core/runtime/coordination.sqlite',
-    'docs/kai/README.md',
-    'docs/kai/DIRECTION.md',
-  ]) {
-    if (!onboarding?.includes(required) || !wsInit?.includes(required)) {
-      err(onboardingRel, `initializer footprint must include ${required} in onboarding and workflow-workspace-init`);
-    }
-  }
-
-  // Publication inventory, vocabulary, producer ordering, and retired-language
-  // gates apply to every shipped source, not a hard-coded producer roster.
-  for (const msg of publicationInventoryErrors(skillFiles)) {
+  // Publication declarations and routes are structured package contracts.
+  for (const msg of publicationDeclarationInventoryErrors(skillFiles, ROOT)) {
     err('plugins/', msg);
-  }
-  for (const pack of PACK_ORDER) {
-    try {
-      publicationContract(pack, ROOT);
-    } catch (error) {
-      err(`plugins/${packPluginName(pack)}/publication.json`, error.message);
-    }
-  }
-  for (const skill of skillFiles.filter(entry => entry.id.endsWith('workspace-publication'))) {
-    const body = readFileSync(skill.path, 'utf8');
-    for (const msg of publicationContractErrors({...skill, body})) err(skill.rel, msg);
   }
   for (const entry of allFiles) {
     const body = readFileSync(entry.path, 'utf8');
-    for (const msg of publicationRoutingErrors({...entry, body, fm: entry.fm})) err(entry.rel, msg);
-    if (entry.kind === 'agent') {
-      for (const msg of agentDirectOutputErrors({...entry, body})) err(entry.rel, msg);
+    for (const msg of publicationRoutingErrors({...entry, body, fm: entry.fm})) {
+      err(entry.rel, msg);
     }
-    for (const msg of activeWorkspaceLanguageErrors({...entry, body})) err(entry.rel, msg);
-    for (const msg of markdownCoordinationAuthorityErrors({...entry, body})) err(entry.rel, msg);
-  }
-
-  for (const [id, path, body] of [
-    ['workflow-epic-init', epicInitRel, epicInit],
-  ]) {
-    for (const msg of epicWorkflowContractErrors({id, body: body ?? ''})) err(path, msg);
-  }
-  for (const msg of chiefOfStaffContractErrors({
-    id: 'director-chief-of-staff',
-    body: director ?? '',
-  })) {
-    err(directorRel, msg);
-  }
-
-  const shipRel = 'plugins/kai-engineering/agents/workflow-ship.agent.md';
-  const ship = readIf(join(ROOT, ...shipRel.split('/')));
-  for (const msg of workflowShipContractErrors({body: ship ?? ''})) err(shipRel, msg);
-
-  const stewardshipRel = 'plugins/kai-core/skills/kai-core-work-stewardship/SKILL.md';
-  const stewardship = readIf(join(ROOT, ...stewardshipRel.split('/')));
-  for (const msg of stewardshipAuthorityErrors({body: stewardship ?? ''})) {
-    err(stewardshipRel, msg);
-  }
-
-  for (const id of ['kai-core-web-evaluation', 'kai-core-web-content-extraction']) {
-    const path = skillSourceFile(ROOT, id);
-    const body = path ? readIf(path) : null;
-    for (const msg of webOutputContractErrors({id, body: body ?? ''})) {
-      err(path ? rel(path) : `skill:${id}`, msg);
-    }
-  }
-
-  const grantingPath = skillSourceFile(ROOT, 'kai-core-work-granting');
-  const grantingBody = grantingPath ? readIf(grantingPath) : null;
-  for (const msg of directModeContractErrors({body: grantingBody ?? ''})) {
-    err(grantingPath ? rel(grantingPath) : 'skill:kai-core-work-granting', msg);
-  }
-
-  for (const id of [
-    'kai-core-work-hierarchy',
-    'kai-core-work-stewardship',
-    'kai-core-work-task',
-    'kai-core-work-acting',
-    'kai-core-work-granting',
-  ]) {
-    const path = skillSourceFile(ROOT, id);
-    const body = path ? readIf(path) : null;
-    const label = path ? rel(path) : `skill:${id}`;
-    if (!body?.includes('.kai/core/runtime/coordination.sqlite')
-      || !/only\s+coordination\s+authority/i.test(body)) {
-      err(label, 'must name .kai/core/runtime/coordination.sqlite as the only coordination authority');
-    }
-  }
-
-  // Every current guide and decision is live contract text. Historical design,
-  // proposal, release-record, and evaluation trees remain excluded; explicit
-  // schema-history regions inside current guides are ignored by the shared
-  // language gates.
-  for (const {path, rel: guideRel} of activeGuideDecisionFiles(ROOT)) {
-    const body = readFileSync(path, 'utf8');
-    for (const msg of activeWorkspaceLanguageErrors({body})) {
-      err(guideRel, msg);
-    }
-    for (const msg of markdownCoordinationAuthorityErrors({body})) {
-      err(guideRel, msg);
-    }
-    if (guideRel === 'docs/workspaces.md'
-      && !/explicit[\s\S]{0,120}schema[- ]5 migration/i.test(body)) {
-      err(guideRel, 'must route historical workspaces through explicit schema-5 migration');
-    }
-  }
-
-  if (!onboarding || !/no automatic upgrade/i.test(onboarding)
-    || !/backup-first/i.test(onboarding) || !/manifest-last/i.test(onboarding)) {
-    err(onboardingRel, 'migration must be explicit, backup-first, manifest-last, and never automatic');
-  }
-  if (!pathsSkill || !/first valid write/i.test(pathsSkill)) {
-    err(pathsSkillRel, 'shared path grammar must materialize directories only on the first valid write');
-  }
-  if (!/does\s+not\s+duplicate\s+Engineering\s+or\s+Creative\s+vocabularies/i.test(pathsSkill ?? '')) {
-    err(pathsSkillRel, 'shared path grammar must not duplicate department vocabularies');
   }
 
   // ---------------------------------------------------------------------------

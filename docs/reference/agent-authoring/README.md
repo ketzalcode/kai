@@ -79,11 +79,9 @@ Complete the agent contract from the template:
 7. Platform tools and situational skills, each with an activation trigger.
 8. Behavioral acceptance cases.
 
-Every shipped agent and skill frontmatter declares
-`durable-output-producer: true` or `false`. Set it to `true` only when that
-source has an authorized branch that can retain a typed Kai artifact. A
-declared producer routes its owning pack publication skill immediately before
-`kai-core-asset-producing`; a declared non-producer routes neither.
+An agent or skill with an authorized durable-output branch declares its
+pack-local `publication-entrypoint` in frontmatter and routes that skill before
+`kai-core-asset-producing`. Non-producers declare no publication entrypoint.
 
 Direct work returns only inline or repository-native output. A durable Kai
 report or publication requires an existing typed hierarchy subject, its current

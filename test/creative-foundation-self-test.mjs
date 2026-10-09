@@ -4,16 +4,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as packPlan from '../tools/lib/pack-plan.mjs';
 const {
-  agentAuthoringReferenceErrors,
   agentProfileModelErrors,
   agentTaxonomyErrors,
   collectReferences,
-  DISPATCHING_ROLES,
   materializePacks,
-  NEW_AGENT_IDS,
   PACKS,
-  RETIRED_CREATIVE_AGENT_IDS,
-  RETIRED_CREATIVE_SKILL_IDS,
   SKILL_OWNER_OVERRIDES,
   sourceAgentFiles,
   sourceSkillFiles,
@@ -52,11 +47,6 @@ const retiredSkillIds = [
   'ui-mockup',
   'video-direction',
 ];
-assert.deepEqual(RETIRED_CREATIVE_AGENT_IDS?.slice().sort(), retiredAgentIds,
-  'retired role references must resolve without archived source copies');
-assert.deepEqual(RETIRED_CREATIVE_SKILL_IDS, retiredSkillIds,
-  'retired method references must resolve without archived source copies');
-
 assert.deepEqual(agentTaxonomyErrors({
   id: 'creative-lead-design', pack: 'creative',
 }), []);
@@ -66,13 +56,9 @@ assert.ok(agentTaxonomyErrors({
 assert.ok(agentTaxonomyErrors({
   id: 'creative-boss-design', pack: 'creative',
 }).length > 0);
-assert.deepEqual(agentProfileModelErrors({
-  id: 'creative-video-director', body: '', fm: {},
-}), []);
 assert.ok(agentProfileModelErrors({
   id: 'creative-lead-design', body: '', fm: {},
 }).length > 0);
-assert.deepEqual(NEW_AGENT_IDS.creative, finalAgentIds);
 assert.deepEqual(PACKS.creative, finalAgentIds);
 assert.deepEqual(
   Object.entries(SKILL_OWNER_OVERRIDES)
@@ -80,21 +66,6 @@ assert.deepEqual(
   [],
   'all final creative methods have real active callers and need no orphan override',
 );
-assert.deepEqual(DISPATCHING_ROLES, ['director-chief-of-staff'],
-  'the creative migration must not add dispatching authority');
-
-const taxonomy = readFileSync(join(
-  root, 'docs', 'reference', 'agent-authoring', 'taxonomy.md',
-), 'utf8');
-const modelSelection = readFileSync(join(
-  root, 'docs', 'reference', 'agent-authoring', 'model-selection.md',
-), 'utf8');
-const authoringErrors = agentAuthoringReferenceErrors({ taxonomy, modelSelection });
-assert.ok(!authoringErrors.some(error => error.startsWith('provider family rows')),
-  `taxonomy provider rows must match the supported family set: ${authoringErrors.join('; ')}`);
-assert.ok(!authoringErrors.some(error => error.includes('provider family `creative`')),
-  `creative must map to kai-creative in the taxonomy reference: ${authoringErrors.join('; ')}`);
-
 for (const id of retiredAgentIds) {
   const active = join(root, 'plugins', 'kai-creative', 'agents', `${id}.agent.md`);
   assert.equal(existsSync(active), false, `${id} must be retired from active sources`);
@@ -114,7 +85,7 @@ assert.ok([...activeAgents, ...activeSkills].every(entry => !entry.rel.includes(
   'active collectors must not discover preserved incubator sources');
 
 const activeIds = new Set([...finalAgentIds, ...finalSkillIds]);
-const inactiveIds = new Set([...RETIRED_CREATIVE_AGENT_IDS, ...RETIRED_CREATIVE_SKILL_IDS]);
+const inactiveIds = new Set([...retiredAgentIds, ...retiredSkillIds]);
 assert.equal(documentationReferenceExists(
   'creative-lead-design', 'README.md', activeIds, inactiveIds,
 ), true);

@@ -52,11 +52,6 @@ export function publicationSkillForPack(pack) {
   return PUBLICATION_SKILLS[pack] ?? null;
 }
 
-export const PUBLICATION_TABLE_REGION_OPEN =
-  '<!-- >>> kai publication table (generated) >>>';
-export const PUBLICATION_TABLE_REGION_CLOSE =
-  '<!-- <<< kai publication table <<< -->';
-
 const PUBLICATION_CONTRACT_KEYS = Object.freeze([
   'pack',
   'skill',
@@ -75,17 +70,17 @@ const PUBLICATION_AUTHORITIES = new Set(['completion', 'operator']);
 const PUBLICATION_PRIVACY = new Set(['evidence-private']);
 const PUBLICATION_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PUBLICATION_CONTROL = /[\u0000-\u001f\u007f]/;
-const PUBLICATION_FORMAT_LABELS = Object.freeze({
-  markdown: 'Markdown',
-  'markdown-single-file': 'Markdown single file',
-  'markdown-destination-record': 'Markdown destination record',
-  json: 'JSON',
-  html: 'HTML',
-  diagram: 'diagram',
-  image: 'image',
-  media: 'media',
-  bundle: 'bundle',
-});
+const PUBLICATION_FORMATS = new Set([
+  'markdown',
+  'markdown-single-file',
+  'markdown-destination-record',
+  'json',
+  'html',
+  'diagram',
+  'image',
+  'media',
+  'bundle',
+]);
 
 const exactKeys = (value, expected) =>
   Object.keys(value).sort().join('|') === [...expected].sort().join('|');
@@ -180,7 +175,7 @@ export function publicationContract(pack, root = REPO_ROOT) {
     validatePublicationPath({entry, field: 'publicForm', label, pack});
     if (!Array.isArray(entry.formats) || entry.formats.length === 0
       || entry.formats.some(format =>
-        typeof format !== 'string' || !Object.hasOwn(PUBLICATION_FORMAT_LABELS, format))) {
+        typeof format !== 'string' || !PUBLICATION_FORMATS.has(format))) {
       throw new Error(`${label}.formats must use known non-empty format identifiers`);
     }
     if (!PUBLICATION_AUTHORITIES.has(entry.authority)) {
@@ -199,45 +194,6 @@ export function publicationContract(pack, root = REPO_ROOT) {
     declarationPath,
     skillPath: sourcePath(root, pack, 'skills', parsed.skill, 'SKILL.md'),
   };
-}
-
-const publicationAuthorityLabel = authority => authority === 'operator'
-  ? 'Named operator authority accepts the exact revision and SHA-256 hash'
-  : 'Named completion authority accepts the exact revision and hash';
-
-export function renderPublicationTable(contract) {
-  const rows = contract.entries.map(entry => [
-    contract.pack,
-    entry.type,
-    entry.subtype ?? '-',
-    entry.privateForm,
-    entry.publicForm,
-    entry.formats.map(format => PUBLICATION_FORMAT_LABELS[format]).join(', '),
-    publicationAuthorityLabel(entry.authority),
-    'Private evidence never publishes',
-  ]);
-  return [
-    '| Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...rows.map(row => `| ${row.map(cell => `\`${cell}\``)
-      .map((cell, index) => index < 5 ? cell : cell.slice(1, -1))
-      .join(' | ')} |`),
-  ].join('\n');
-}
-
-export function syncPublicationTableRegion(body, contract) {
-  const normalized = normalizeLF(body);
-  const openCount = normalized.split(PUBLICATION_TABLE_REGION_OPEN).length - 1;
-  const closeCount = normalized.split(PUBLICATION_TABLE_REGION_CLOSE).length - 1;
-  if (openCount !== 1 || closeCount !== 1) {
-    throw new Error(`publication table region for ${contract.skill} must contain one open and one close marker`);
-  }
-  const start = normalized.indexOf(PUBLICATION_TABLE_REGION_OPEN);
-  const end = normalized.indexOf(PUBLICATION_TABLE_REGION_CLOSE);
-  if (end < start) throw new Error(`publication table region for ${contract.skill} is malformed`);
-  return `${normalized.slice(0, start)}${PUBLICATION_TABLE_REGION_OPEN}\n`
-    + `${renderPublicationTable(contract)}\n${PUBLICATION_TABLE_REGION_CLOSE}`
-    + normalized.slice(end + PUBLICATION_TABLE_REGION_CLOSE.length);
 }
 
 // The default committed-tree root. release-guard classifies changes under it as
@@ -444,48 +400,26 @@ export function sourceSkillFiles(root = REPO_ROOT) {
   return files;
 }
 
-export function publicationInventoryErrors(entries, packs = PACK_ORDER) {
+export function publicationDeclarationInventoryErrors(
+  entries,
+  root = REPO_ROOT,
+  packs = PACK_ORDER,
+) {
   const errors = [];
-  const publicationEntries = entries.filter(entry =>
-    typeof entry?.id === 'string' && entry.id.endsWith('workspace-publication'));
   for (const pack of packs) {
-    const expected = publicationSkillForPack(pack);
-    const owned = publicationEntries.filter(entry => entry.pack === pack);
-    if (owned.length !== 1) {
-      errors.push(`${packPluginName(pack)} must ship exactly one publication skill `
-        + `(expected \`${expected}\`, found ${owned.length})`);
+    let contract;
+    try {
+      contract = publicationContract(pack, root);
+    } catch (error) {
+      errors.push(error.message);
       continue;
     }
-    if (owned[0].id !== expected) {
-      errors.push(`${packPluginName(pack)} publication skill must be \`${expected}\`, `
-        + `not \`${owned[0].id}\``);
+    const matches = entries.filter(entry =>
+      entry?.kind === 'skill' && entry.pack === pack && entry.id === contract.skill);
+    if (matches.length !== 1) {
+      errors.push(`${packPluginName(pack)} declaration names publication skill `
+        + `\`${contract.skill}\`, but the active source inventory contains ${matches.length}`);
     }
-  }
-  for (const entry of publicationEntries) {
-    if (!packs.includes(entry.pack)) {
-      errors.push(`${entry.id} belongs to non-shipped pack ${packPluginName(entry.pack)}`);
-    }
-  }
-  return errors;
-}
-
-export function publicationContractErrors({pack, id, body, root = REPO_ROOT}) {
-  const errors = [];
-  let contract;
-  try {
-    contract = publicationContract(pack, root);
-  } catch (error) {
-    return [error.message];
-  }
-  if (id !== contract.skill) {
-    errors.push(`${packPluginName(pack)} publication contract must use id \`${contract.skill}\``);
-  }
-  try {
-    if (syncPublicationTableRegion(body, contract) !== normalizeLF(body ?? '')) {
-      errors.push('managed publication table must match publication.json');
-    }
-  } catch (error) {
-    errors.push(error.message);
   }
   return errors;
 }
@@ -520,6 +454,13 @@ export function sourceFileErrors({
 } = {}) {
   const errors = [];
   for (const [kind, files] of [['agent', agents], ['skill', skills]]) {
+    if (files.length === 0) {
+      errors.push({
+        file: 'plugins/',
+        msg: `active ${kind} source corpus is empty`,
+      });
+      continue;
+    }
     const byId = new Map();
     for (const file of files) {
       if (!byId.has(file.id)) byId.set(file.id, []);
@@ -1091,16 +1032,12 @@ export function agentRoutingErrors({
 
   // A skill is routed wherever the instruction that needs it lives. Hoisting
   // every route into one section reproduces the `**Inherits:**` manifest this
-  // contract removed, and forces a "do not preload" disclaimer that only exists
-  // to argue with its own list. So the checks below are semantic: the named
-  // skill must exist, the core probe and its fallback must be stated, and the
-  // agent must hold the tool that loads them. Where the sentence sits is the
-  // author's judgment. Line wrapping is an authoring choice, not a contract
-  // change, so the sentence checks run against a whitespace-collapsed copy.
-  const flat = text.replace(/\s+/g, ' ');
+  // contract removed. Validation therefore checks route identity, order, and
+  // tool access without compiling the surrounding explanation.
   const available = knownSkills instanceof Set ? knownSkills : new Set(knownSkills);
   const knownAgentSet = knownAgents instanceof Set ? knownAgents : new Set(knownAgents);
-  const routed = new Set(routedSkills(text));
+  const occurrences = routedSkillOccurrences(text);
+  const routed = new Set(occurrences.map(route => route.id));
   for (const skill of routed) {
     if (available.has(skill)) continue;
     // A route verb before an agent id ("invoke `principal-x`") is a lowercase
@@ -1112,9 +1049,9 @@ export function agentRoutingErrors({
     if (knownAgentSet.has(skill) || AGENT_CANDIDATE.test(skill)) continue;
     errors.push(`routes unknown skill \`${skill}\``);
   }
-  if (!/`kai-core-contract-v1`[\s\S]{0,160}?\bfirst\b[\s\S]{0,80}?\bcore\b/i.test(flat)
-    && !/\bbefore\b[\s\S]{0,120}?\bfirst\b[\s\S]{0,120}?`kai-core-contract-v1`/i.test(flat)) {
-    errors.push(`must state that \`${CONTRACT_SKILL}\` runs before the first other core skill`);
+  const firstCoreRoute = occurrences.find(route => route.id.startsWith(CORE_SKILL_PREFIX));
+  if (firstCoreRoute && firstCoreRoute.id !== CONTRACT_SKILL) {
+    errors.push(`must route \`${CONTRACT_SKILL}\` before every other core skill`);
   }
 
   const required = [CONTRACT_SKILL, 'kai-core-operating-rules'];
@@ -1145,39 +1082,7 @@ export function agentRoutingErrors({
   if (pack !== null) {
     errors.push(...publicationRoutingErrors({pack, id, kind: 'agent', body: text}));
   }
-  // The refusal belongs to the role, so its wording is the author's. This is
-  // not a structural check and does not pretend to be: it is a small vocabulary
-  // gate, deliberately loose. It confirms the refusal sits in the same
-  // paragraph as the core route, names `.kai` (a path, not a phrasing choice),
-  // and carries an install/update-style instruction that names the `kai-core`
-  // package — any of several verbs, not one fixed phrase, so a role-voiced
-  // "ask the operator to add the `kai-core` plugin" passes as readily as
-  // "install or update `kai-core`". What the role still does and refuses is the
-  // part the spec means by "its own words", and that — like the narrowing to
-  // bounded direct work — is prose about intent only a reader can judge. Review
-  // owns that; CI checks vocabulary and placement, nothing more.
-  const refusal = paragraphContaining(body, CONTRACT_SKILL) ?? '';
-  const missing = [];
-  if (!/`\.kai`/.test(refusal)) missing.push('what it will not write to `.kai`');
-  if (!/(install|reinstall|add|enable|restore|update|upgrade)[^.]{0,40}`kai-core`/i.test(refusal)) {
-    missing.push('that the operator should install or update `kai-core`');
-  }
-  if (missing.length) {
-    errors.push(`must state the core fallback in its own words, in the same paragraph as the \`${CONTRACT_SKILL}\` route so it is read where core is loaded, including ${missing.join(', and ')}`);
-  }
   return errors;
-}
-
-// The refusal is defined by where it sits, not by what it says: the paragraph
-// that carries the core route. Splitting on blank lines keeps that structural
-// rather than lexical, so an author may word the refusal however the role
-// demands as long as it stays next to the route it qualifies.
-function paragraphContaining(body, skillId) {
-  const needle = `\`${skillId}\``;
-  for (const para of normalizeLF(body ?? '').split(/\n\s*\n/)) {
-    if (para.includes(needle)) return para.replace(/\s+/g, ' ').trim();
-  }
-  return null;
 }
 
 // The only reader of `**Primary profile:** <profile>` and its mapping through
@@ -1195,89 +1100,6 @@ export function agentPromptLimitErrors(body) {
   return length > AGENT_PROMPT_HARD_LIMIT
     ? [`agent prompt is ${length} characters, over the ${AGENT_PROMPT_HARD_LIMIT}-character host limit`]
     : [];
-}
-
-const markdownTable = (text, heading) => {
-  const normalized = normalizeLF(text ?? '');
-  const start = normalized.indexOf(`## ${heading}\n`);
-  if (start === -1) return new Map();
-  const body = normalized.slice(start + heading.length + 4);
-  const end = body.search(/\n## /);
-  const section = end === -1 ? body : body.slice(0, end);
-  const clean = (cell) => cell.trim().replaceAll('`', '');
-  const lines = section.split('\n');
-  const tableStart = lines.findIndex((line) => /^\|.*\|$/.test(line));
-  const tableRest = tableStart === -1 ? [] : lines.slice(tableStart);
-  const tableEnd = tableRest.findIndex((line) => !/^\|.*\|$/.test(line));
-  const tableLines = tableEnd === -1 ? tableRest : tableRest.slice(0, tableEnd);
-  const rows = tableLines
-    .map((line) => line.slice(1, -1).split('|').map(clean))
-    .filter((row) => row.length > 1 && !/^[-:]+$/.test(row[0]));
-  return new Map(rows.slice(1).map((row) => [row[0], row.slice(1)]));
-};
-
-const commaValues = (value) => (value ?? '').split(',').map((item) => item.trim()).filter(Boolean).sort();
-const sameValues = (actual, expected) =>
-  actual.length === expected.length && actual.every((value, index) => value === expected[index]);
-
-export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
-  const errors = [];
-  const compareKeys = (label, rows, expected) => {
-    const actual = [...rows.keys()].sort();
-    const wanted = [...expected].sort();
-    if (!sameValues(actual, wanted)) {
-      errors.push(`${label} rows are [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
-    }
-  };
-
-  const providers = markdownTable(taxonomy, 'Provider families');
-  compareKeys('provider family', providers, Object.keys(ROLE_FAMILY_PACK));
-  for (const [family, pack] of Object.entries(ROLE_FAMILY_PACK)) {
-    const provider = providers.get(family)?.[0];
-    if (provider && provider !== packPluginName(pack)) {
-      errors.push(`provider family \`${family}\` names \`${provider}\`, expected \`${packPluginName(pack)}\``);
-    }
-  }
-
-  const postures = markdownTable(taxonomy, 'Durable-role postures');
-  compareKeys('durable-role posture', postures, ROLE_POSTURES);
-
-  const profiles = markdownTable(taxonomy, 'Execution profiles');
-  compareKeys('execution profile', profiles, Object.keys(ROLE_PROFILE_MODELS));
-  const expectedProfileKinds = new Map(Object.keys(ROLE_PROFILE_MODELS).map((profile) => [profile, []]));
-  for (const [posture, allowed] of Object.entries(ROLE_POSTURE_PROFILES)) {
-    for (const profile of allowed) expectedProfileKinds.get(profile).push(posture);
-  }
-  for (const [kind, allowed] of Object.entries(KIND_AGENT_PROFILES)) {
-    for (const profile of allowed) expectedProfileKinds.get(profile).push(kind);
-  }
-  for (const [profile, expected] of expectedProfileKinds) {
-    const actual = commaValues(profiles.get(profile)?.[0]);
-    const wanted = [...expected].sort();
-    if (!sameValues(actual, wanted)) {
-      errors.push(`execution profile \`${profile}\` applies to [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
-    }
-  }
-
-  const policyMarker = `**Policy version:** \`${MODEL_POLICY_VERSION}\``;
-  if (!(modelSelection ?? '').includes(policyMarker)) {
-    errors.push(`model selection reference must declare ${policyMarker}`);
-  }
-  const models = markdownTable(modelSelection, 'Approved models');
-  const expectedModels = [...new Set(Object.values(ROLE_PROFILE_MODELS))];
-  compareKeys('approved model', models, expectedModels);
-  for (const model of expectedModels) {
-    const actual = commaValues(models.get(model)?.[0]);
-    const wanted = Object.entries(ROLE_PROFILE_MODELS)
-      .filter(([, mapped]) => mapped === model)
-      .map(([profile]) => profile)
-      .sort();
-    if (!sameValues(actual, wanted)) {
-      errors.push(`approved model \`${model}\` covers [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
-    }
-  }
-
-  return errors;
 }
 
 // A non-markdown asset a shipped instruction invokes. Only top-level scripts/
@@ -1411,294 +1233,6 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
     }
   }
   return [...new Set(errors)];
-}
-
-export function agentDirectOutputErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/Direct work may return only inline or repository-native output\./i.test(flat)) {
-    errors.push('direct work must be limited to inline or repository-native output');
-  }
-  if (!/durable Kai report or publication requires an existing typed hierarchy subject, its current version, an authorized artifact target, current acting authority, and named acceptance authority/i.test(flat)) {
-    errors.push('durable Kai output requires an existing typed hierarchy subject, current version, '
-      + 'authorized artifact target, acting authority, and acceptance authority');
-  }
-  if (!/never mint a subject or call `artifact\.register` from the direct branch/i.test(flat)) {
-    errors.push('the direct branch must never mint a subject or call artifact.register');
-  }
-  return errors;
-}
-
-const HISTORY_OPEN = '<!-- kai:schema4-history -->';
-const HISTORY_CLOSE = '<!-- /kai:schema4-history -->';
-
-function activeContractText(body) {
-  const text = normalizeLF(body ?? '');
-  const kept = [];
-  let historical = false;
-  let unclosed = false;
-  for (const line of text.split('\n')) {
-    if (line.includes(HISTORY_OPEN)) {
-      historical = true;
-      continue;
-    }
-    if (line.includes(HISTORY_CLOSE)) {
-      historical = false;
-      continue;
-    }
-    if (!historical) kept.push(line);
-  }
-  if (historical) unclosed = true;
-  return {text: kept.join('\n'), unclosed};
-}
-
-const ACTIVE_GUIDE_DECISION_EXCLUSIONS = [
-  /^docs\/proposals(?:\/|$)/,
-  /^docs\/superpowers(?:\/|$)/,
-  /^docs\/kai\/reports(?:\/|$)/,
-  /^docs\/reference\/skill-evaluation(?:\/|$)/,
-];
-
-export function activeGuideDecisionFiles(root = REPO_ROOT) {
-  const files = [];
-  const add = (path) => {
-    if (!existsSync(path)) return;
-    const fileRel = relative(root, path).replace(/\\/g, '/');
-    if (ACTIVE_GUIDE_DECISION_EXCLUSIONS.some(pattern => pattern.test(fileRel))) return;
-    files.push({path, rel: fileRel});
-  };
-  for (const name of ['AGENTS.md', 'README.md']) add(join(root, name));
-  const walk = (dir) => {
-    if (!existsSync(dir)) return;
-    for (const entry of readdirSync(dir, {withFileTypes: true})
-      .sort((a, b) => a.name.localeCompare(b.name))) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walk(path);
-      } else if (entry.name.endsWith('.md')) {
-        add(path);
-      }
-    }
-  };
-  walk(join(root, 'docs'));
-  return files.sort((a, b) => a.rel.localeCompare(b.rel));
-}
-
-export function activeWorkspaceLanguageErrors({body}) {
-  const errors = [];
-  const active = activeContractText(body);
-  if (active.unclosed) errors.push(`unclosed ${HISTORY_OPEN} region`);
-  const text = active.text;
-  const checks = [
-    [
-      /workflow-initiative-init|kai-core-workspace-initiative|kai-core-work-item|kai-core-initiative-stewardship/i,
-      'references a removed schema-4 agent or skill contract',
-    ],
-    [/\.kai[\\/](?:runs|review|personal)(?:[\\/]|`|\b)/i,
-      'references a retired generic/private lane instead of a typed schema-5 pack path'],
-    [/\.kai[\\/]state(?:[\\/]|`|\b)/i,
-      'references the retired schema-4 state tree as a live path'],
-    [/(?:placement|storage_mode)["'`]?\s*[:=]\s*["'`]shared["'`]|shared\s+(?:placement|workspace|mode)/i,
-      'presents retired shared placement as live'],
-    [/\binitiatives?\b/i,
-      'presents retired initiative vocabulary as live'],
-    [
-      /`item`|\bitem\.(?:create|grant|update|transition|handoff|promote)\b|--kind\s+item\b|--item\b|work[- ]item|item record|coordinated item|granted item/i,
-      'presents retired generic item vocabulary as live',
-    ],
-  ];
-  for (const [pattern, message] of checks) {
-    if (pattern.test(text)) errors.push(message);
-  }
-  const semanticParagraphs = text.split(/\r?\n\s*\r?\n/);
-  if (semanticParagraphs.some(paragraph =>
-    /\bcoordination\b/i.test(paragraph)
-    && /\b(?:item schemas?|coordination items?|item owners?)\b/i.test(paragraph))) {
-    errors.push('presents retired generic coordination item semantics as live');
-  }
-  return errors;
-}
-
-export function markdownCoordinationAuthorityErrors({body}) {
-  const {text, unclosed} = activeContractText(body);
-  const errors = unclosed ? [`unclosed ${HISTORY_OPEN} region`] : [];
-  const subject =
-    /(?:`?BOARD\.md`?|Markdown\s+(?:board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index|record)|(?:board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index))/i;
-  const authority = /authoritative|coordination authority|source of truth/i;
-  const prohibition = /\b(?:no|not|never|cannot|can't|isn't|is not|forbid\w*|rather than|instead of)\b/i;
-  const sentences = text.replace(/\r?\n/g, ' ').split(/(?<=[.!?])\s+/);
-  for (const sentence of sentences) {
-    const claimsAuthority = (subject.test(sentence) && authority.test(sentence))
-      || /(?:authoritative|source of truth)[^.]{0,160}(?:BOARD\.md|board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index|record)/i.test(sentence);
-    if (claimsAuthority && !prohibition.test(sentence)) {
-      errors.push('Markdown coordination authority is forbidden; SQLite is the only coordination authority');
-      break;
-    }
-  }
-  return errors;
-}
-
-export function directionContractErrors({body}) {
-  const errors = [];
-  const text = normalizeLF(body ?? '');
-  for (const heading of ['Vision', 'Mission', 'Current Goal', 'Out of Scope']) {
-    if (!new RegExp(`^\\s*# ${heading}\\s*$`, 'm').test(text)) {
-      errors.push(`Direction contract must include the exact # ${heading} section`);
-    }
-  }
-  const flat = text.replace(/\s+/g, ' ');
-  if (!/one observable, time-bounded Current Goal/i.test(flat)) {
-    errors.push('Direction contract must require one observable, time-bounded Current Goal');
-  }
-  return errors;
-}
-
-export function epicWorkflowContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/starts? from (?:the )?current Direction/i.test(flat)) {
-    errors.push('Epic workflow must start from current Direction');
-  }
-  if (!/creates no record before named authority approval/i.test(flat)) {
-    errors.push('Epic workflow creates no record before named authority approval');
-  }
-  if (!/suggestion[\s\S]{0,160}conversational[\s\S]{0,160}named authority/i.test(flat)) {
-    errors.push('Epic suggestions without named authority approval must remain conversational');
-  }
-  return errors;
-}
-
-export function chiefOfStaffContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/grants Tasks only/i.test(flat) || !/task\.grant/.test(flat)) {
-    errors.push('Chief of Staff grants Tasks only through task.grant');
-  }
-  if (!/cannot invent[\s\S]{0,200}Epic[\s\S]{0,80}Feature[\s\S]{0,80}Requirement[\s\S]{0,160}scope[\s\S]{0,80}priority[\s\S]{0,80}authorit[\s\S]{0,80}acceptance/i.test(flat)) {
-    errors.push('Chief of Staff cannot invent Epic/Feature/Requirement scope, priority, authority, or acceptance');
-  }
-  return errors;
-}
-
-export function workflowShipContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (/\bitems?\b/i.test(flat)) {
-    errors.push('workflow-ship must name the executable hierarchy record as a Task, not a generic item');
-  }
-  if (!/failed deployment or production verification[\s\S]{0,500}blocked[\s\S]{0,200}resume_state/i.test(flat)) {
-    errors.push('workflow-ship failure must block while preserving the original state in resume_state');
-  }
-  if (!/evidence[\s\S]{0,240}operator[\s\S]{0,240}task\.restore/i.test(flat)
-    && !/task\.restore[\s\S]{0,240}evidence[\s\S]{0,240}operator/i.test(flat)) {
-    errors.push('workflow-ship recovery requires evidence/operator resolution before task.restore');
-  }
-  if (!/resumes the recorded allowed original state/i.test(flat)
-    || /returns?[^.]{0,240}(?:deploying|production-verification)[^.]{0,120}release-ready/i.test(flat)) {
-    errors.push('workflow-ship recovery must resume the recorded allowed original state '
-      + 'and never rewind to release-ready');
-  }
-  return errors;
-}
-
-export function stewardshipAuthorityErrors({body}) {
-  const errors = [];
-  const text = normalizeLF(body ?? '');
-  const rows = [
-    [
-      /(?:Propose|Create) a Requirement(?: proposal)?/,
-      /Feature owner or delegated pack\/scope authority/,
-      'Requirement proposal',
-    ],
-    [
-      /Activate a Requirement/,
-      /Feature owner(?: only)?/,
-      'Requirement activation',
-    ],
-    [
-      /(?:Propose|Create) a Task(?: proposal)?/,
-      /Requirement scope authority or delegated specialist/,
-      'Task proposal',
-    ],
-    [
-      /Promote a Task(?: to ready)?/,
-      /Requirement scope authority/,
-      'Task promotion',
-    ],
-  ];
-  const lines = text.split('\n').filter(line => /^\|.*\|$/.test(line));
-  for (const [action, authority, label] of rows) {
-    const row = lines.find(line => action.test(line));
-    if (!row || !authority.test(row)) {
-      errors.push(`${label} authority does not match the runtime/design contract`);
-    }
-  }
-  return errors;
-}
-
-export function webOutputContractErrors({id, body}) {
-  const errors = [];
-  const text = normalizeLF(body ?? '');
-  if (/<working-root>[\\/]qa|<working-root>\/qa/i.test(text)) {
-    errors.push(`${id}: web output must use the typed core report path, never <working-root>/qa`);
-  }
-  if (id === 'kai-core-web-evaluation') {
-    const grammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
-    const flat = text.replace(/\s+/g, ' ');
-    for (const required of [
-      `.kai/core/reports/${grammar}/{drafts,evidence,scratch}`,
-      `docs/kai/core/reports/${grammar}/`,
-    ]) {
-      if (!text.includes(required)) {
-        errors.push(`${id}: typed core report path must use the exact web-evaluation ID grammar`);
-      }
-    }
-    const proseMatchesGrammar = [
-      /`<YYYYMMDD>` is the local evaluation date in eight-digit `YYYYMMDD` form/i,
-      /`<NN>` is the next unused positive sequence for that date, zero-padded to at least two digits/i,
-      /`<descriptor>` is a required lowercase kebab-case surface description/i,
-      /check that exact ID is absent from both the private and public report roots[\s\S]{0,220}create the private report root atomically[\s\S]{0,160}increment `<NN>` and retry/i,
-      /Every rerun allocates a new `<NN>` and never reuses an earlier ID\./,
-    ].every(pattern => pattern.test(flat));
-    const contradictoryProse =
-      /web-evaluation-<artifact-id>|artifact UUID makes every rerun/i.test(text)
-      || /\breruns?\s+(?:must\s+|may\s+|can\s+)?reuses?\s+(?:(?:the\s+)?(?:previous|earlier|same)|a\s+prior)(?:\s+report)?\s+ID\b/i.test(text)
-      || /\bartifact UUID\s+(?:is|becomes|serves as)\s+(?:the\s+)?(?:report\s+)?path ID\b/i.test(text);
-    if (!proseMatchesGrammar || contradictoryProse) {
-      errors.push(`${id}: web-evaluation ID grammar/prose drift; date, sequence, descriptor, and rerun allocation must agree`);
-    }
-    return [...new Set(errors)];
-  }
-
-  for (const required of [
-    '.kai/core/reports/<id>/{drafts,evidence,scratch}',
-    'docs/kai/core/reports/<id>/',
-  ]) {
-    if (!text.includes(required)) {
-      errors.push(`${id}: typed core report path must match the core private/public publication forms`);
-    }
-  }
-  if (!text.includes('web-extract-<artifact-id>')
-    || !/artifact-id[\s\S]{0,220}(?:UUID|collision-safe)/i.test(text)
-    || /<NN>/.test(text)) {
-    errors.push(`${id}: reruns require a collision-safe typed ID backed by the artifact UUID, not <NN>`);
-  }
-  return [...new Set(errors)];
-}
-
-export function directModeContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/scripts\/coordinate\.mjs"\s+direct\s+--root\s+"<workspace-root>"/i.test(flat)) {
-    errors.push('direct mode must invoke the `direct` runtime verb');
-  }
-  if (!/coordinationRequired:\s*false/.test(flat)) {
-    errors.push('direct mode must require `coordinationRequired: false` from the runtime');
-  }
-  if (/When `inspect` reports `coordinationRequired:\s*false`/i.test(flat)) {
-    errors.push('`inspect` cannot authorize direct mode');
-  }
-  return errors;
 }
 
 // Situational dispatch targets declared in a body, in declaration order.
@@ -2368,27 +1902,4 @@ export function contractPinErrors({
       + 'here is invisible to the agents that trust it');
   }
   return errs;
-}
-
-// The roles that grant leases resolve which agents a session actually exposes
-// before dispatching. Once kai ships as packs the answer stops being "all of
-// them", and both failure directions are silent — claim a role is present and
-// the director answers in its voice; claim it is missing and it refuses work the
-// operator can staff. Membership is the only sound test, so the rules that say
-// so are pinned rather than trusted to survive an unrelated edit.
-export const DISPATCHING_ROLES = ['director-chief-of-staff'];
-
-export const AVAILABILITY_RULES = [
-  { rule: 'read the roster rather than recall it', pattern: /\*\*Read the roster; do not recall it\.\*\*/ },
-  { rule: 'test membership', pattern: /\*\*Test membership\.\*\*/ },
-  { rule: 'never compute or compare counts', pattern: /\*\*Never compute or compare counts\.\*\*/ },
-];
-
-export function availabilityErrors({ body, rules = AVAILABILITY_RULES }) {
-  const text = normalizeLF(body ?? '');
-  return rules
-    .filter((r) => !r.pattern.test(text))
-    .map((r) => `grants leases but no longer states "${r.rule}" — role availability is decided by `
-      + 'membership in the roster the session exposes, never by a count over it, and a director that '
-      + 'guesses either way fails silently');
 }

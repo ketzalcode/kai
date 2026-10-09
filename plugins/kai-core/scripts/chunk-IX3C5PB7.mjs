@@ -1,65 +1,44 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
-  migrateWorkspaceV5,
-  migrationAuthorizationDescriptor,
+  applyCommand,
   planDispatch,
   recordApproval,
   recordReview,
-  recoverWorkspaceV5,
   registerArtifact,
   registerEvidence,
-  rollbackWorkspaceV5,
   transitionAsset,
-  validateMigrationWorksheet,
   validateRoster
-} from "./chunk-HLIXNC7Y.mjs";
-import "./chunk-4P3U2F6L.mjs";
+} from "./chunk-XGFCMCLC.mjs";
 import {
   GRANTABLE_STATES,
   SHIP_STATES,
-  applyCommand,
   assertAlignedAncestors,
+  assertWorkspacePath,
   bindEvidenceRuntime,
-  bindMigrationRepair,
   captureInputBasis,
   currentDirectionForStore,
-  migrateWorkspace,
-  recoverMigration,
-  repairLegacyRecord,
+  exactFile,
+  exclusiveFile,
   requireActorAvailable,
   requireHostActionGrant,
   requireLease,
-  rollbackMigration,
-  sameActor
-} from "./chunk-6ABDJP5R.mjs";
+  safePath,
+  sameActor,
+  workspaceManifest
+} from "./chunk-CKXCYZWQ.mjs";
 import {
-  LOCK,
   applyOperation,
-  assertWorkspacePath,
-  assertWorkspaceWrite,
   closeStore,
-  exactFile,
-  exclusiveFile,
   listRecords,
-  nativeWriterTokenPath,
   openStore,
   privateAdmission,
   readOperationReceipt,
-  readRecord,
-  safePath,
-  schema5MigrationLockPath,
-  workspaceManifest
-} from "./chunk-S4A2HMCB.mjs";
-import {
-  COORDINATION_DATABASE,
-  LEGACY_COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
-  normalized,
-  pathHasLink
-} from "./chunk-2WT4K7YK.mjs";
+  readRecord
+} from "./chunk-S7AQGXMM.mjs";
+import "./chunk-L4TFCRET.mjs";
 import {
   copilotLaunch
-} from "./chunk-EYAI7HIN.mjs";
+} from "./chunk-5O3GYVUD.mjs";
 import {
   CLASSIFICATIONS,
   COMMAND_KINDS,
@@ -71,6 +50,7 @@ import {
   canonicalJson,
   clone,
   commandDigest,
+  commandKind,
   criteriaRef,
   effectSummary,
   fail,
@@ -83,11 +63,16 @@ import {
   validateCommand,
   validateHostObservation,
   validateRecord
-} from "./chunk-XLDNBMDG.mjs";
-import "./chunk-ITUOITH3.mjs";
+} from "./chunk-HMPQ32NA.mjs";
+import {
+  COORDINATION_DATABASE,
+  canonicalPath,
+  normalized,
+  pathHasLink
+} from "./chunk-VVVMKUAL.mjs";
 
 // src/core/lib/coordination-runtime/native-host.mjs
-import { randomUUID as randomUUID2, createHash } from "node:crypto";
+import { randomUUID as randomUUID2, createHash as createHash2 } from "node:crypto";
 import { existsSync as existsSync3 } from "node:fs";
 
 // src/core/lib/coordination-runtime/native-receipts.mjs
@@ -244,7 +229,7 @@ decision: ${reply}` || Date.parse(receipt.start.timestamp) < Date.parse(request.
 }
 
 // src/core/lib/coordination-runtime/native-capabilities.mjs
-import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import {
   closeSync as closeSync2,
   existsSync as existsSync2,
@@ -256,6 +241,7 @@ import {
   unlinkSync,
   writeFileSync
 } from "node:fs";
+import { basename, dirname, join as join2 } from "node:path";
 var lane = ".kai/core/runtime/host";
 var fail3 = (code, message) => {
   throw new RuntimeError(code, message);
@@ -264,6 +250,11 @@ var kinds = /* @__PURE__ */ new Set(["requests", "capabilities", "captures", "pr
 var requireKind = (kind) => {
   if (!kinds.has(kind)) fail3("INVALID_INPUT", "unsupported native issuer record kind");
 };
+function nativeWriterTokenPath(root, id) {
+  const canonical = canonicalPath(root);
+  const digest = createHash("sha256").update(canonical).digest("hex").slice(0, 12);
+  return join2(dirname(canonical), `.${basename(canonical)}.${digest}.native-writer-${id}.lock`);
+}
 function capabilityId(id) {
   if (typeof id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
     fail3("AUTHORITY_REQUIRED", "an issued capability/request UUID is required");
@@ -289,19 +280,6 @@ function key(root, create) {
 }
 function signature(root, payload, create = false) {
   return createHmac("sha256", key(root, create)).update(canonicalJson(payload)).digest("hex");
-}
-function assertIssuerWriteAllowed(root) {
-  const path = schema5MigrationLockPath(root);
-  if (!existsSync2(path)) return;
-  let lock;
-  try {
-    lock = JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    fail3("RECOVERY_REQUIRED", "offline migration/rollback lock is invalid");
-  }
-  if (lock.rollback === true) {
-    fail3("RECOVERY_REQUIRED", "offline rollback lock prevents native host authority writes");
-  }
 }
 function releaseWriterToken(token) {
   if (!existsSync2(token.path)) {
@@ -333,14 +311,7 @@ function acquireWriterToken(root) {
   }
   try {
     renameSync(pending, path);
-    const token = { path, value };
-    try {
-      assertIssuerWriteAllowed(root);
-      return token;
-    } catch (error) {
-      releaseWriterToken(token);
-      throw error;
-    }
+    return { path, value };
   } catch (error) {
     if (existsSync2(pending)) unlinkSync(pending);
     throw error;
@@ -387,7 +358,7 @@ function readIssued(root, kind, id) {
 }
 
 // src/core/lib/coordination-runtime/host.mjs
-import { isAbsolute as isAbsolute2, join as join2 } from "node:path";
+import { isAbsolute as isAbsolute2, join as join3 } from "node:path";
 var bindings = /* @__PURE__ */ new WeakMap();
 var equal = (left, right) => canonicalJson(left) === canonicalJson(right);
 var uncertainEffect = (body) => ["unknown", "conflicting"].includes(body.outcome);
@@ -402,9 +373,9 @@ function bindHostRuntime(store, options) {
     "maxAttempts",
     "verifyObservation"
   ]), "host runtime", /* @__PURE__ */ new Set(["root", "authority", "roster", "profiles", "capabilities", "maxAttempts"]));
-  const manifest = workspaceManifest(options.root);
-  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION ? COORDINATION_DATABASE : LEGACY_COORDINATION_DATABASE;
-  if (!store || store.closed || !isAbsolute2(store.path) || normalized(store.path) !== normalized(join2(options.root, ...database.split("/")))) {
+  workspaceManifest(options.root);
+  const database = COORDINATION_DATABASE;
+  if (!store || store.closed || !isAbsolute2(store.path) || normalized(store.path) !== normalized(join3(options.root, ...database.split("/")))) {
     fail("INVALID_INPUT", "host workspace must be explicitly bound to this store");
   }
   assertWorkspacePath(options.root, database);
@@ -423,7 +394,9 @@ function bindHostRuntime(store, options) {
 function contextFor(store, command, kinds2) {
   const cmd = clone(command);
   validateCommand(cmd);
-  if (!kinds2.includes(cmd.kind)) fail("INVALID_INPUT", "incorrect host recording API for command kind");
+  if (!kinds2.includes(commandKind(cmd.kind).handler)) {
+    fail("INVALID_INPUT", "incorrect host recording API for command kind");
+  }
   const context = bindings.get(store);
   if (!context || store.closed) fail("AUTHORITY_REQUIRED", "bind the trusted host runtime before recording");
   workspaceManifest(context.root);
@@ -623,6 +596,29 @@ function recordEffect(store, command, observation) {
 }
 
 // src/core/lib/coordination-runtime/host-composition.mjs
+var trustedHandlers = /* @__PURE__ */ new Map([
+  ["artifact.register", { kind: "evidence", apply: (store, command) => registerArtifact(store, command) }],
+  ["asset.transition", { kind: "evidence", apply: (store, command) => transitionAsset(store, command) }],
+  ["evidence.register", {
+    kind: "evidence",
+    apply: (store, command, options) => registerEvidence(store, command, options.capture)
+  }],
+  ["review.record", { kind: "evidence", apply: (store, command) => recordReview(store, command) }],
+  ["approval.record", { kind: "evidence", apply: (store, command) => recordApproval(store, command) }],
+  ["attempt.start", { kind: "host", apply: (store, command) => recordAttempt(store, command) }],
+  ["attempt.result", {
+    kind: "host",
+    apply: (store, command, options) => recordHostResult(store, command, options.capture)
+  }],
+  ["effect.intent", {
+    kind: "host",
+    apply: (store, command, options) => recordEffect(store, command, options.capture)
+  }],
+  ["effect.result", {
+    kind: "host",
+    apply: (store, command, options) => recordEffect(store, command, options.capture)
+  }]
+]);
 function createTrustedEmbedding({
   identity,
   authorize,
@@ -657,20 +653,11 @@ function createTrustedEmbedding({
         verifyCapture,
         verifyOperatorDecision
       });
-      const producer = {
-        "artifact.register": registerArtifact,
-        "asset.transition": transitionAsset,
-        "evidence.register": (s, c) => registerEvidence(s, c, options.capture),
-        "review.record": recordReview,
-        "approval.record": recordApproval
-      }[command.kind];
-      if (producer) return producer(store, command);
-      if (["attempt.start", "attempt.result", "effect.intent", "effect.result"].includes(command.kind)) {
+      const handler = trustedHandlers.get(commandKind(command.kind).handler);
+      if (handler?.kind === "host") {
         bindHostRuntime(store, { root, authority, roster, profiles, capabilities, maxAttempts, verifyObservation });
-        if (command.kind === "attempt.start") return recordAttempt(store, command);
-        if (command.kind === "attempt.result") return recordHostResult(store, command, options.capture);
-        return recordEffect(store, command, options.capture);
       }
+      if (handler) return handler.apply(store, command, options);
       return applyCommand(store, command, authority);
     }
   };
@@ -772,22 +759,9 @@ var DATABASE = COORDINATION_DATABASE;
 var fail6 = (code, message) => {
   throw new RuntimeError(code, message);
 };
-var hash = (value) => createHash("sha256").update(canonicalJson(value)).digest("hex");
+var hash = (value) => createHash2("sha256").update(canonicalJson(value)).digest("hex");
 var exact = (value, keys, label) => assertExactKeys(value, new Set(keys), label);
 var manifestHash = (root) => hash(JSON.parse(exactFile(root, ".kai/manifest.json")));
-function requireHistoricalMaintenance(root, request) {
-  const schema = JSON.parse(exactFile(root, ".kai/manifest.json")).schema_version;
-  if (schema >= 5) {
-    if (existsSync3(schema5MigrationLockPath(root)) && (request.scope?.type !== "maintenance" || !(/* @__PURE__ */ new Set(["recover-activate", "recover-abandon"])).has(request.scope.action))) {
-      fail6("RECOVERY_REQUIRED", "interrupted schema-5 migration may authorize only explicit recovery maintenance");
-    }
-    return;
-  }
-  const actions = schema === 3 ? /* @__PURE__ */ new Set(["migrate", "recover-activate", "recover-abandon"]) : /* @__PURE__ */ new Set(["migrate-v5", "recover-activate", "recover-abandon", "rollback"]);
-  if (request.scope?.type !== "maintenance" || !actions.has(request.scope.action)) {
-    fail6("SCHEMA_MISMATCH", `schema ${schema} may authorize only explicit offline migration maintenance`);
-  }
-}
 var runActions = new Set([...COMMAND_KINDS].filter((k) => !PARENT_COMMAND_KINDS.has(k) && !k.startsWith("attempt.") && !k.startsWith("effect.") && k !== "task.create"));
 var commandActions = (command) => [command.kind, ...command.kind === "task.handoff" && command.payload.state !== null ? ["task.transition"] : []];
 function currentBasis(root, id) {
@@ -841,35 +815,13 @@ function requestCommandBasis(root, command) {
 }
 function visibleRequest(payload) {
   const { nonce, createdAt, expiresAt, ...scope } = payload;
-  const displayedScope = payload.scope?.type === "maintenance" && payload.scope.action === "migrate-v5" ? {
-    ...scope,
-    scope: {
-      type: "maintenance",
-      action: "migrate-v5",
-      worksheet_digest: payload.worksheetDigest,
-      source_manifest_digest: payload.scope.worksheet.source_manifest_digest,
-      source_store_digest: payload.scope.worksheet.source_store_digest,
-      backup_inventory_digest: payload.scope.worksheet.backup_inventory_digest,
-      direction_ref: payload.scope.worksheet.direction_ref,
-      placement: payload.scope.worksheet.placement,
-      backup_root: payload.scope.worksheet.backup_root,
-      classifications: {
-        epics: payload.scope.worksheet.epics.length,
-        milestones: payload.scope.worksheet.milestones.length,
-        items: payload.scope.worksheet.items.length,
-        authored_files: payload.scope.worksheet.authored_files.length,
-        retained_publications: payload.scope.worksheet.retained_publications.length,
-        active_work: payload.scope.worksheet.active_work.length
-      }
-    }
-  } : scope;
   return {
     ...payload,
     message: `Kai operator authorization
 Workspace: ${payload.root}
 Nonce: ${nonce}
 Scope (exact canonical binding):
-${canonicalJson(displayedScope)}
+${canonicalJson(scope)}
 Expires: ${expiresAt}
 Approve only this actor, workspace, subject, criteria and action. Reply exactly APPROVE ${nonce} or DECLINE ${nonce}. Conditional/freeform replies do not authorize work.`,
     requestedSchema: { type: "object", properties: { decision: {
@@ -892,7 +844,7 @@ async function captureReceipt(env, request, toolCallId) {
 }
 function createNativeHost({ env = process.env, discover } = {}) {
   const identity = () => contextIdentity(env);
-  const discovery = async (root, role) => discover ? discover({ root, role }) : (await import("./chunk-Z2WA5QMJ.mjs")).discoverCopilot({ root, env, role });
+  const discovery = async (root, role) => discover ? discover({ root, role }) : (await import("./chunk-XKKIEAOL.mjs")).discoverCopilot({ root, env, role });
   const ensureIdentity = (actor) => {
     validateActor(actor);
     if (actor.runId !== identity()) fail6("AUTHORITY_REQUIRED", "actor runId must match COPILOT_AGENT_SESSION_ID; role relabeling does not create independence");
@@ -1067,33 +1019,6 @@ function createNativeHost({ env = process.env, discover } = {}) {
           fail6("INVALID_INPUT", "run actions must be explicit supported Task actions for a non-operator");
         }
         Object.assign(payload, currentBasis(root, body.taskId), { action: body.actions });
-      } else if (body.type === "maintenance") {
-        if (body.action === "migrate-v5") {
-          exact(body, ["type", "action", "worksheet"], "maintenance request");
-          const catalog = await discovery(root);
-          validateMigrationWorksheet({
-            root,
-            worksheet: body.worksheet,
-            roles: catalog.roster.map((entry) => entry.role),
-            env
-          });
-          payload.worksheetDigest = hash(body.worksheet);
-        } else {
-          exact(body, ["type", "action"], "maintenance request");
-        }
-        if (!["migrate", "migrate-v5", "recover-activate", "recover-abandon", "rollback"].includes(body.action)) {
-          fail6("INVALID_INPUT", "unsupported maintenance action; workspace initialization uses the standalone initializer");
-        }
-        payload.subject = payload.workspaceManifest;
-        payload.criteria = null;
-        payload.action = body.action;
-      } else if (body.type === "repair") {
-        exact(body, ["type", "request"], "repair decision request");
-        exact(body.request, ["operationId", "sourceId", "expectedVersion", "actor", "reason", "body"], "repair request");
-        ensureIdentity(body.request.actor);
-        payload.subject = hash(body.request);
-        payload.criteria = null;
-        payload.action = "repair";
       } else if (body.type === "capture") {
         exact(body, ["type", "actor", "taskId", "command", "checks", "classification"], "capture request");
         ensureIdentity(body.actor);
@@ -1114,14 +1039,13 @@ ${body.command}`,
         };
         writeIssued(root, "requests", request2.nonce, request2);
         return { request: request2 };
-      } else fail6("INVALID_INPUT", "request type must be command, run, coordination, maintenance, repair or capture");
+      } else fail6("INVALID_INPUT", "request type must be command, run, coordination or capture");
       const request = visibleRequest(payload);
       writeIssued(root, "requests", request.nonce, request);
       return { request };
     },
     async receipt({ root, options }) {
       const request = readIssued(root, "requests", options.request);
-      requireHistoricalMaintenance(root, request);
       if (request.root !== root || request.workspaceManifest !== manifestHash(root) || Date.parse(request.expiresAt) <= Date.now()) fail6("AUTHORITY_REQUIRED", "request expired or workspace changed");
       if (request.scope.type === "capture") {
         if (request.requesterContext !== identity()) fail6("AUTHORITY_REQUIRED", "capture receipt belongs to another context");
@@ -1139,7 +1063,6 @@ ${body.command}`,
     },
     async authorize({ root, options }) {
       const request = readIssued(root, "requests", options.request);
-      requireHistoricalMaintenance(root, request);
       if (request.scope.type === "capture") fail6("INVALID_INPUT", "capture intents are not authorization requests");
       if (request.scope.type === "coordination" && request.scope.actions.some((action) => !routingActions.has(action))) {
         fail6("INVALID_INPUT", "coordination request contains unsupported routing actions; issue a new supported request");
@@ -1148,7 +1071,7 @@ ${body.command}`,
         fail6("AUTHORITY_REQUIRED", "request expired or workspace changed");
       }
       const receipt = await matchHumanDecision({ env, request, toolCallId: options["tool-call"] });
-      const actor = request.scope.command?.actor ?? request.scope.actor ?? request.scope.request?.actor;
+      const actor = request.scope.command?.actor ?? request.scope.actor;
       let catalog;
       if (existsSync3(safePath(root, `.kai/core/runtime/host/capabilities/${request.nonce}.json`))) {
         const existing = readIssued(root, "capabilities", request.nonce);
@@ -1167,69 +1090,6 @@ ${body.command}`,
         expiresAt: request.expiresAt,
         receipt: { reference: receipt.reference, captured_at: receipt.captured_at }
       };
-    },
-    async maintenance({ root, verb, body, options }) {
-      const cap = capability(root, options.capability);
-      const action = verb === "recover" ? `recover-${options.action}` : verb;
-      if (verb === "repair") {
-        if (cap.request.scope.type !== "repair" || canonicalJson(cap.request.scope.request) !== canonicalJson(body)) {
-          fail6("AUTHORITY_REQUIRED", "repair requires a matched decision for the exact repair request");
-        }
-        ensureIdentity(body.actor);
-        assertWorkspaceWrite(safePath(root, DATABASE), { requirePrivate: true, env });
-        const store = openStore({ path: safePath(root, DATABASE), mode: "write" });
-        try {
-          bindMigrationRepair(store, {
-            root,
-            roles: cap.catalog.roster.map((e) => e.role),
-            verify: ({ request }) => canonicalJson(request) === canonicalJson(body)
-          });
-          return repairLegacyRecord(store, body);
-        } finally {
-          closeStore(store);
-        }
-      }
-      const actionMatches = verb === "migrate" ? (/* @__PURE__ */ new Set(["migrate", "migrate-v5"])).has(cap.request.scope.action) : cap.request.scope.action === action;
-      if (options.confirm !== true || cap.request.scope.type !== "maintenance" || !actionMatches) {
-        fail6("AUTHORITY_REQUIRED", "maintenance requires --confirm and an issued capability for the exact action");
-      }
-      if (verb === "migrate") {
-        if (cap.request.scope.action === "migrate-v5") {
-          if (cap.request.worksheetDigest !== hash(cap.request.scope.worksheet)) {
-            fail6("AUTHORITY_REQUIRED", "migration capability worksheet digest does not match its bound object");
-          }
-          return migrateWorkspaceV5({
-            root,
-            confirm: true,
-            worksheet: cap.request.scope.worksheet,
-            roles: cap.catalog.roster.map((e) => e.role),
-            env,
-            authorization: migrationAuthorizationDescriptor(
-              root,
-              options.capability
-            )
-          });
-        }
-        return migrateWorkspace({ root, confirm: true, roles: cap.catalog.roster.map((e) => e.role), env });
-      }
-      if (verb === "recover") {
-        if (existsSync3(schema5MigrationLockPath(root))) {
-          return recoverWorkspaceV5({
-            root,
-            confirm: true,
-            action: options.action,
-            roles: cap.catalog.roster.map((e) => e.role),
-            env
-          });
-        }
-        if (!existsSync3(safePath(root, LOCK))) fail6("RECOVERY_REQUIRED", "no interrupted migration lock exists; recovery never initializes or retries work");
-        return recoverMigration({ root, confirm: true, action: options.action, env });
-      }
-      if (verb === "rollback") {
-        const manifest = JSON.parse(exactFile(root, ".kai/manifest.json"));
-        return manifest.schema_version === 5 ? rollbackWorkspaceV5({ root, confirm: true, env }) : rollbackMigration({ root, confirm: true, env });
-      }
-      fail6("INVALID_INPUT", "unsupported maintenance action");
     },
     async apply({ root, store, command, options }) {
       ensureIdentity(command.actor);

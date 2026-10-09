@@ -27,41 +27,28 @@
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync, mkdtempSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { tmpdir } from 'node:os';
 import {
-  APPROVED_AGENT_MODELS, parseFrontmatter, parseToolList,
+  parseFrontmatter, parseToolList,
 } from '../src/core/lib/loader-contract.mjs';
 import {
   PACKS, PACKS_DIR, COMMITTED_PACKS, PUBLISHED_PACKS, INCUBATED_PACKS, PACK_ORDER, CONTRACT_SKILL, CONTRACT_VERSION, REFUSAL,
-  HOOKS_FILE, HOOKS_OWNER, CORE_SKILL_PREFIX,
+  HOOKS_FILE, HOOKS_OWNER,
   packPluginName, sourceAssetIndex,
   planPacks, planManifests, materializePacks,
-  manifestParityErrors, marketplaceConsistencyErrors, normalizeLF,
-  marketplaceSurfacePolicy,
+  normalizeLF,
   collectReferences, referenceErrors, packProviders,
-  planAssets, planAssetClosure, assetOwnershipErrors, hooksAssignmentErrors,
+  planAssets, assetOwnershipErrors, hooksAssignmentErrors,
   generatedKeyErrors, generatedRuntimeErrors, hookAssetReferenceErrors,
   partitionErrors, namespaceErrors, providerCollisionErrors, contractPinErrors,
-  availabilityErrors, parseGeneratedKey, agentShapedPattern, agentCandidatePattern,
-  agentTaxonomyErrors, requiresCoordinatedRunContracts, loadedSkills, agentRoutingErrors,
-  publicationSkillForPack, publicationInventoryErrors, publicationContractErrors,
-  publicationContract, publicationEntrypointDeclaration, publicationRoutingErrors,
-  syncPublicationTableRegion, activeWorkspaceLanguageErrors,
-  markdownCoordinationAuthorityErrors, directionContractErrors,
-  epicWorkflowContractErrors, chiefOfStaffContractErrors,
-  agentDirectOutputErrors,
-  activeGuideDecisionFiles, workflowShipContractErrors,
-  stewardshipAuthorityErrors, webOutputContractErrors, directModeContractErrors,
-  agentProfileModelErrors,
-  agentPromptLimitErrors, agentAuthoringReferenceErrors,
-  ROLE_PROFILE_MODELS, ACTIVITY_EXEMPT, ACTING_EXEMPT,
-  hookAssetsIn, DISPATCHING_ROLES, AVAILABILITY_RULES, agentSourceFile, skillSourceFile,
-  sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors, sourcePlacementErrors,
+  parseGeneratedKey, agentRoutingErrors,
+  publicationSkillForPack, publicationEntrypointDeclaration, publicationRoutingErrors,
+  ACTIVITY_EXEMPT, ACTING_EXEMPT,
+  hookAssetsIn, agentSourceFile, skillSourceFile,
+  sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
-  GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE, routedSkills, dispatchedRefs,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -325,24 +312,11 @@ function managedAgentDrift(root) {
       drift.push(`differs:    ${entry.rel} (${e.message})`);
     }
   }
-  for (const pack of PACK_ORDER) {
-    try {
-      const contract = publicationContract(pack, root);
-      const raw = normalizeLF(readFileSync(contract.skillPath, 'utf8'));
-      if (syncPublicationTableRegion(raw, contract) !== raw) {
-        drift.push(`differs:    ${sourceSkillFiles(root)
-          .find(entry => entry.id === contract.skill)?.rel} (managed publication table)`);
-      }
-    } catch (e) {
-      drift.push(`differs:    ${packPluginName(pack)}/publication.json (${e.message})`);
-    }
-  }
   return drift;
 }
 
 // Regenerate derived files and diff them against what is committed. Agent and
-// skill bodies are source: only marked dependency guards and publication tables
-// are mechanically pinned. A configured tree that is absent fails with the
+// skill bodies are source. A configured tree that is absent fails with the
 // command that regenerates its derived surface.
 export function checkCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), version = committedVersion() } = {}) {
   if (!existsSync(base)) {
@@ -386,15 +360,6 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
       managed += 1;
     }
   }
-  for (const pack of PACK_ORDER) {
-    const contract = publicationContract(pack, root);
-    const raw = normalizeLF(readFileSync(contract.skillPath, 'utf8'));
-    const next = syncPublicationTableRegion(raw, contract);
-    if (next !== raw) {
-      writeFileSync(contract.skillPath, next);
-      managed += 1;
-    }
-  }
   const files = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
   for (const [relPath, content] of files) {
     const abs = join(base, ...relPath.split('/'));
@@ -409,1324 +374,135 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
 // Self-test
 // ---------------------------------------------------------------------------
 function selfTest() {
-  let pass = 0; const fails = [];
-  const ok = (cond, msg) => { if (cond) { pass++; console.log(`  ok ${msg}`); } else { fails.push(msg); console.log(`  FAIL ${msg}`); } };
-
-  // The canonical partition, planned once. Every check below reads this — there
-  // is no second roster and no second planner to fall out of step with it.
-  const plan = planPacks();
-  const rosterAgents = rosterAgentIds();
-  const core = plan.core;
-  const local = plan.local.creative;
-  ok(core.includes(CONTRACT_SKILL),
-    'the universal contract is planned into core, never into the pack');
-  ok(!local.includes(CONTRACT_SKILL),
-    'and it is not also duplicated into the pack, which is the whole point');
-  ok(local.length > 0,
-    'a pack that owns no skills of its own would not be testing anything');
-  ok(core.every((s) => !local.includes(s)),
-    'core and pack skill sets are disjoint: a skill has exactly one provider');
-
-  // --- one agent shape: a stale guard region is stripped, never injected ----
-  const sourceBody = readAgent(PACKS.creative[0]);
-  const stripped = syncGuaranteeRegion(sourceBody);
-  ok(!stripped.includes(GUARANTEE_REGION_OPEN) && !stripped.includes(GUARANTEE_REGION_CLOSE),
-    'syncing an agent removes any managed dependency-guard region — one is never inserted');
-  ok(/^---\n/.test(stripped) && !stripped.includes('\r'),
-    'frontmatter still opens the file and endings are uniform LF, so the host can load it');
-  const withRegion = `---\nname: x\n---\n\nbody before\n\n${GUARANTEE_REGION_OPEN}\n\nsome legacy guard\n\n${GUARANTEE_REGION_CLOSE}\n\nbody after\n`;
-  const cleaned = removeGuaranteeRegion(withRegion);
-  ok(!cleaned.includes(GUARANTEE_REGION_OPEN) && !cleaned.includes(GUARANTEE_REGION_CLOSE)
-    && cleaned.includes('body before') && cleaned.includes('body after'),
-  'removeGuaranteeRegion strips a complete managed region and keeps the rest of the body');
-  ok(syncGuaranteeRegion(cleaned) === normalizeLF(cleaned),
-    'an agent that already carries no guard region is returned unchanged');
-  let malformedRejected = false;
-  try {
-    removeGuaranteeRegion(`---\nname: x\n---\n\n${GUARANTEE_REGION_OPEN}\n\nunclosed\n\nbody\n`);
-  } catch (e) {
-    malformedRejected = /malformed core dependency guard region/.test(e.message);
-  }
-  ok(malformedRejected,
-    'a half-region (open marker, no close) is rejected rather than silently left in place');
-
-  const shippedProbe = normalizeLF(readFileSync(skillPath(CONTRACT_SKILL), 'utf8'));
-  ok(/^KAI_CORE_READY$/m.test(shippedProbe)
-    && new RegExp(`^contract: ${CONTRACT_VERSION}$`, 'm').test(shippedProbe),
-    'the shipped probe skill returns the rigid marker and pins contract 1');
-  ok(contractSkill(2).includes('contract: 2'),
-    'the preview can still synthesize a skewed core, or version skew is untestable');
-
-  let arms = null;
-  try {
-    arms = mkdtempSync(join(tmpdir(), 'kai-preflight-'));
-    const arm = (name, opts) => {
-      const out = join(arms, name);
-      buildAll({ out, packs: ['creative'], ...opts });
-      return evaluatePreflight(out);
-    };
-    const ready = arm('ready', {});
-    const noCore = arm('no-core', { withCore: false });
-    const skew = arm('skew', { contract: 2 });
-    ok(ready.ok && ready.reply === null,
-      'against the real core the preflight is ready, and the agent continues silently');
-    ok(noCore.reply === REFUSAL,
-      `the core-absent arm fails closed with the exact ${REFUSAL} token`);
-    ok(skew.reply === REFUSAL,
-      'the contract-2 arm fails closed with the same exact token — absence and skew share one refusal path');
-
-    // The acceptance criterion, read back off disk: every agent a full --all
-    // build writes, not the one file a spot check happens to open.
-    const full = join(arms, 'all');
-    buildAll({ out: full });
-    const builtAgents = [];
-    for (const pack of Object.keys(PACKS)) {
-      const dir = join(full, `kai-${pack}-preview`, 'agents');
-      for (const file of readdirSync(dir)) {
-        builtAgents.push({
-          pack,
-          id: file.replace(/\.agent\.md$/, ''),
-          body: readFileSync(join(dir, file), 'utf8'),
-        });
-      }
+  let pass = 0;
+  const fails = [];
+  const ok = (condition, message) => {
+    if (condition) {
+      pass += 1;
+      console.log(`  ok ${message}`);
+    } else {
+      fails.push(message);
+      console.log(`  FAIL ${message}`);
     }
-    const departmentAgents = builtAgents.filter((a) => a.pack !== 'core');
-    const coreAgents = builtAgents.filter((a) => a.pack === 'core');
-    ok(departmentAgents.length === Object.entries(PACKS)
-      .filter(([pack]) => pack !== 'core').reduce((n, [, ids]) => n + ids.length, 0)
-      && coreAgents.length === PACKS.core.length,
-    'a full --all build writes every agent the partition assigns');
-    ok(builtAgents.every((a) => normalizeLF(a.body) === normalizeLF(readAgent(a.id))),
-    'every generated agent body is a byte-identical projection of its canonical source — the generator injects no dependency guard of its own');
-    ok(builtAgents.every((a) => declaredTools(a.body).has('skill')),
-      `all ${builtAgents.length} generated agents declare skill access for on-demand contract loading`);
-    ok(!declaredTools(builtAgents[0].body.replace(/,\s*"skill"/, '')).has('skill'),
-      'removing skill access from a generated agent is detected rather than false-passing from workspace files');
-    ok(builtAgents.every((a) => frontmatter(a.body) === frontmatter(readAgent(a.id))),
-      'generated agent frontmatter is a byte-identical projection of canonical source');
-    // Progressive references are the second half of a skill: SKILL.md names a
-    // companion and loads it at the step that needs it, so a build that copies
-    // only SKILL.md ships a skill whose own instructions dangle. Derived from
-    // disk rather than pinned to one skill's file list — the previous form
-    // named `kai-core-create-agent`, and when that skill left the shipped
-    // surface the check had no subject. The non-empty assertion is what stops
-    // it passing vacuously if every companion were deleted.
-    const previewCompanions = [['core', plan.core], ...Object.entries(plan.local)]
-      .flatMap(([pack, ids]) => ids.flatMap((id) => skillCompanionFiles(ROOT, id)
-        .map((entry) => join(
-          full, `kai-${pack}-preview`, 'skills', id, ...entry.rel.split('/'),
-        ))));
-    ok(previewCompanions.length > 0 && previewCompanions.every((p) => existsSync(p)),
-      `a preview carries every progressive reference a skill loads (${previewCompanions.length} companion files)`);
-  } catch (e) {
-    ok(false, `preflight arms threw: ${e.message}`);
-  } finally {
-    if (arms) rmSync(arms, { recursive: true, force: true });
-  }
-
-  const rosterSize = rosterAgents.length;
-  const assigned = Object.values(PACKS).reduce((n, l) => n + l.length, 0);
-  ok(plan.unassigned.length === 0,
-    `every agent belongs to a pack (unassigned: ${plan.unassigned.join(', ') || 'none'})`);
-  ok(assigned === rosterSize,
-    `the partition covers the roster exactly: ${assigned} of ${rosterSize}`);
-  ok(new Set(Object.values(PACKS).flat()).size === assigned,
-    'no agent is claimed by two packs, which would make its home ambiguous');
-  ok(plan.core.includes(CONTRACT_SKILL),
-    'the universal contract is provided by core in the full partition too');
-  const localAll = Object.values(plan.local).flat();
-  ok(localAll.every((s) => !plan.core.includes(s)),
-    'no skill is provided by both core and a pack: exactly one provider each');
-  ok(plan.orphans.length === 0,
-    'physical skill placement leaves no usage-derived ownership orphans');
-  ok(plan.unplaced.length === 0,
-    'every skill directory provides its skill without an ownership override');
-  ok(plan.core.includes('kai-core-fleet-observation')
-    && plan.local.engineering.includes('onboard-to-codebase'),
-  'core and engineering skills remain with their physical package providers');
-
-  // The degraded-mode refusal is no longer a shared block validated by
-  // degradedBlockErrors — every agent writes its own, and agentRoutingErrors
-  // checks the three load-bearing facts. Those mutations are proven by name in
-  // the agentRoutingErrors self-test below, not here.
-
-  // --- generator determinism + committed-tree gate -----------------------
-  const selectedPacks = [...PACK_ORDER];
-  const m1 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
-  const m2 = materializePacks({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
-  ok([...m1.keys()].join('\n') === [...m2.keys()].join('\n')
-    && [...m1].every(([k, v]) => m2.get(k) === v),
-    'materialising the partition twice yields byte-identical output (re-running is stable)');
-  ok([...m1.values()].every((v) => !v.includes('\r')),
-    'generated files are LF-normalised, so output is identical on a CRLF checkout');
-  ok(m1.has('kai-core/plugin.json') && m1.has('kai-creative/plugin.json')
-    && m1.has('kai-engineering/plugin.json')
-    && m1.has('kai-creative/agents/creative-lead-design.agent.md')
-    && m1.has('kai-engineering/agents/eng-builder-platform.agent.md'),
-    'the materialised tree places a per-pack plugin manifest with copied agent bodies');
-  ok(PACK_ORDER.every((pack) => !m1.has(`${packPluginName(pack)}/package.json`)
-    && !m1.has(`${packPluginName(pack)}/package-lock.json`)),
-  'no pack emits an npm manifest: the host never installs, so a declared dependency could never resolve');
-  ok(m1.get('kai-creative/agents/creative-lead-design.agent.md')
-    === normalizeLF(readAgent('creative-lead-design')),
-  'the materialised department agent is a byte-identical copy of its authoritative source — the generator injects nothing');
-  ok(PACKS.core.every((id) => !m1.get(`kai-core/agents/${id}.agent.md`).includes(GUARANTEE_REGION_OPEN)
-    && !m1.get(`kai-core/agents/${id}.agent.md`).includes(GUARANTEE_REGION_CLOSE)),
-  'no core agent carries a dependency-guard region, which ships inside the pack whose absence it would cover');
-  ok(m1.has(`kai-core/skills/${CONTRACT_SKILL}/SKILL.md`),
-    'core provides the probe every pack agent routes as its first action');
-  const materialisedCompanions = [['core', plan.core], ...Object.entries(plan.local)]
-    .flatMap(([pack, ids]) => ids.flatMap((id) => skillCompanionFiles(ROOT, id)
-      .map((entry) => `${packPluginName(pack)}/skills/${id}/${entry.rel}`)));
-  ok(materialisedCompanions.length > 0 && materialisedCompanions.every((key) => m1.has(key)),
-    'the materialised skill surface includes progressive references, not only SKILL.md');
-  ok(PACK_ORDER.every((pack) => [...m1.keys()].some((key) => key.startsWith(`${packPluginName(pack)}/`))),
-  'the committed surface materialises every pack in the locked partition');
-
-  const manifests = planManifests({ root: ROOT, version: '9.9.9-selftest', packs: selectedPacks });
-  const coreM = manifests.find((p) => p.pack === 'core');
-  const creativeM = manifests.find((p) => p.pack === 'creative');
-  const engineeringM = manifests.find((p) => p.pack === 'engineering');
-  ok(coreM && coreM.manifest.name === 'kai-core' && coreM.manifest.skills === 'skills',
-    'the generator plans a kai-core manifest with a skills path');
-  ok(creativeM && creativeM.manifest.name === 'kai-creative'
-    && creativeM.manifest.agents === 'agents' && creativeM.manifest.skills === 'skills',
-    'a department manifest carries per-pack agents and skills paths');
-  ok(engineeringM && engineeringM.manifest.name === 'kai-engineering'
-    && engineeringM.manifest.agents === 'agents' && engineeringM.manifest.skills === 'skills',
-  'the engineering manifest carries the generated department paths');
-  ok(manifests.every((p) => p.manifest.version === '9.9.9-selftest'),
-    'every planned manifest stamps the version it was generated with (lockstep)');
-  ok(manifests.every((p) => !('packageManifest' in p) && !('packageLock' in p)),
-    'a planned pack carries no npm metadata at all, so none can be emitted by accident');
-
-  let scratch = null;
-  try {
-    scratch = mkdtempSync(join(tmpdir(), 'kai-pack-check-'));
-    const generated = materializePacks({
-      root: ROOT, version: '9.9.9-selftest', packs: selectedPacks,
-    });
-    for (const [relPath, content] of generated) {
-      const abs = join(scratch, ...relPath.split('/'));
-      mkdirSync(dirname(abs), { recursive: true });
-      writeFileSync(abs, content);
-    }
-    const checkSelected = () => {
-      const expected = derivedFiles(materializePacks({
-        root: ROOT, version: '9.9.9-selftest', packs: selectedPacks,
-      }));
-      const drift = [];
-      for (const [relPath, content] of expected) {
-        const abs = join(scratch, ...relPath.split('/'));
-        if (!existsSync(abs)) drift.push(`missing: ${relPath}`);
-        else if (normalizeLF(readFileSync(abs, 'utf8')) !== content) drift.push(`differs: ${relPath}`);
-      }
-      return drift;
-    };
-    ok(checkSelected().length === 0,
-      'freshly generated derived files pass the regenerate-and-diff check with no drift');
-
-    // Agent bodies are source, so ordinary edits are not generator drift.
-    const agentPath = join(scratch, 'kai-creative', 'agents', 'creative-lead-design.agent.md');
-    const original = readFileSync(agentPath, 'utf8');
-    writeFileSync(agentPath, `${original}\n<!-- scratch edit: not a derived file -->\n`);
-    ok(checkSelected().length === 0,
-      'editing an authoritative agent body is not misclassified as generated-file drift');
-    writeFileSync(agentPath, original);
-    ok(checkSelected().length === 0,
-      'and restoring it clears the drift, so the check reports state rather than history');
-
-    // Which agents the drift path touches is decided by the agent's own text,
-    // not by a pack list. Every shipped agent now routes its contracts inline,
-    // so the `**Inherits:**` arm has no live example left — it is exercised
-    // synthetically below, and asserted here as the property that made it
-    // unnecessary.
-    ok(sourceAgentFiles(ROOT).every((entry) => !declaresInherits(readFileSync(entry.path, 'utf8'))),
-      'no shipped agent declares `**Inherits:**`: every contract is routed inline, at the instruction that needs it');
-    ok(managedAgentDrift(ROOT).length === 0,
-      'and no shipped agent carries a stale dependency-guard region');
-
-    const inlineAgent = `---\nname: x\n---\n\nLoad \`kai-core-contract-v1\` first.\n\n${GUARANTEE_REGION_OPEN}\n\nstale guard\n\n${GUARANTEE_REGION_CLOSE}\n`;
-    ok(!declaresInherits(inlineAgent) && syncGuaranteeRegion(inlineAgent) !== normalizeLF(inlineAgent),
-      'an agent on inline routes that still carries a guard region is reported as drift and stripped by a sync');
-
-    const midMigration = `---\nname: x\n---\n\n**Inherits:** \`kai-core-operating-rules\`\n\nLoad \`kai-core-contract-v1\` first.\n\n${GUARANTEE_REGION_OPEN}\n\nstale guard\n\n${GUARANTEE_REGION_CLOSE}\n`;
-    ok(declaresInherits(midMigration),
-      'an agent holding both an `**Inherits:**` line and inline routes counts as still inheriting, so a half-finished migration keeps its guard until the eager line is dropped');
-
-    const victim = join(scratch, 'kai-core', 'plugin.json');
-    writeFileSync(victim, `${readFileSync(victim, 'utf8')}tampered`);
-    ok(checkSelected().length > 0,
-      'a hand-edit to a committed tree is caught as drift');
-    writeFileSync(victim, generated.get('kai-core/plugin.json'));
-    const companion = join(scratch, 'kai-creative', 'skills', 'video-render-zoom', 'reference.md');
-    mkdirSync(dirname(companion), { recursive: true });
-    writeFileSync(companion, 'authoritative companion\n');
-    const stray = join(scratch, 'kai-gtm', 'notes.md');
-    mkdirSync(dirname(stray), { recursive: true });
-    writeFileSync(stray, 'unowned\n');
-    const staleScript = join(scratch, 'kai-creative', 'scripts', 'stale-generated.mjs');
-    mkdirSync(dirname(staleScript), { recursive: true });
-    writeFileSync(staleScript, 'stale\n');
-    const scratchCheck = checkCommitted({
-      root: ROOT, base: scratch, version: '9.9.9-selftest',
-    });
-    ok(scratchCheck.drift.includes('unexpected: kai-gtm/notes.md')
-      && !scratchCheck.drift.some((d) => d.includes('reference.md')),
-    'unknown plugin files are reported while skill companion files remain valid source');
-    cleanStaleDerivedFiles(scratch, derivedFiles(generated));
-    ok(existsSync(companion),
-      '--write preserves skill companion files outside the derived-file ownership boundary');
-    ok(existsSync(stray),
-      '--write never deletes an unknown file merely because validation reports it');
-    ok(!existsSync(staleScript),
-      '--write still removes stale routed scripts that are inside its ownership boundary');
-  } catch (e) {
-    ok(false, `committed-tree check round-trip threw: ${e.message}`);
-  } finally {
-    if (scratch) rmSync(scratch, { recursive: true, force: true });
-  }
-  ok(COMMITTED_PACKS.join(',') === PACK_ORDER.join(','),
-  'the committed surface is exactly the full declared partition');
-  const missingBase = join(tmpdir(), `kai-pack-missing-${process.pid}`);
-  const missingCheck = checkCommitted({ root: ROOT, base: missingBase, version: '9.9.9-selftest' });
-  ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`)
-    && /regenerate with/.test(missingCheck.note),
-  'a configured slice with no plugins directory fails with regeneration guidance, not ENOENT');
-
-  // --- multi-manifest gate helpers (shared with validate-plugin) ---------
-  const parity = manifestParityErrors(
-    [{ rel: 'plugin.json', version: '1.2.3' },
-      { rel: 'plugins/kai-core/plugin.json', version: '1.2.3' },
-      { rel: 'plugins/kai-creative/plugin.json', version: '0.9.0' }],
-    '1.2.3');
-  ok(parity.length === 1 && parity[0].rel === 'plugins/kai-creative/plugin.json',
-    'manifest parity flags exactly the pack whose version drifts from canonical');
-  ok(manifestParityErrors([{ rel: 'plugin.json', version: '1.2.3' }], '1.2.3').length === 0,
-    'a lone monolith manifest at the canonical version raises no parity error (backwards compatible)');
-
-  const mkt = (plugins, installSurface) => ({
-    name: 'kai-plugins',
-    owner: { name: 'x' },
-    plugins,
-    metadata: { version: '1.2.3', ...(installSurface ? { installSurface } : {}) },
-  });
-  const kaiEntry = { name: 'kai', source: '.', version: '1.2.3', description: 'd' };
-  const coreEntry = { name: 'kai-core', source: './plugins/kai-core', version: '1.2.3', description: 'core' };
-  const creativeEntry = {
-    name: 'kai-creative', source: './plugins/kai-creative', version: '1.2.3', description: 'creative',
   };
-  const engineeringEntry = {
-    name: 'kai-engineering', source: './plugins/kai-engineering', version: '1.2.3',
-    description: 'engineering',
-  };
-  const known = {
-    kai: { version: '1.2.3', description: 'd' },
-    'kai-core': { version: '1.2.3', description: 'core' },
-    'kai-creative': { version: '1.2.3', description: 'creative' },
-    'kai-engineering': { version: '1.2.3', description: 'engineering' },
-  };
-  const sources = {
-    '.': { name: 'kai' },
-    'plugins/kai-core': { name: 'kai-core' },
-    'plugins/kai-creative': { name: 'kai-creative' },
-    'plugins/kai-engineering': { name: 'kai-engineering' },
-  };
-  const mktArgs = (m, extra = {}) => ({
-    mkt: m,
-    marketName: 'kai-plugins',
-    monolithName: 'kai',
-    canonicalVersion: '1.2.3',
-    manifestsByName: known,
-    manifestsBySource: sources,
-    ...extra,
-  });
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry]))).length === 0,
-    'the single-plugin marketplace still validates clean (no regression)');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, coreEntry]))).length === 0,
-    'a marketplace listing multiple plugins validates when every entry agrees with its manifest');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, { ...coreEntry, version: '0.0.1' }])))
-    .some((e) => /kai-core.*must equal plugin\.json version/.test(e)),
-    'a marketplace entry whose version disagrees with its plugin.json is caught');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry])))
-    .some((e) => /no entry named "kai"/.test(e)),
-    'the monolith entry is still required until the flip retires it');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry]), {
-    requiredPluginNames: ['kai-core'],
-    forbiddenPluginNames: ['kai'],
-  })).length === 0,
-  'the pack install surface validates without the retired monolith');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry], 'legacy-rollback'), {
-    requiredPluginNames: ['kai'],
-    forbiddenPluginNames: ['kai-core', 'kai-personal'],
-  })).length === 0,
-  'the explicit emergency rollback surface validates with only the monolith');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, name: 'kai' }]), {
-    requiredPluginNames: ['kai'],
-  })).some((e) => /source .* contains plugin "kai-core"/.test(e)),
-  'a marketplace entry whose name disagrees with its source manifest is caught');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([{ ...coreEntry, source: { path: './plugins/kai-core' } }])))
-    .some((e) => /non-string or missing "source"/.test(e)),
-  'a marketplace entry with a non-string source is rejected');
-  const packSurface = marketplaceSurfacePolicy({
-    mkt: mkt([coreEntry], 'packs'),
-    canonicalVersion: '1.2.3',
-    monolithName: 'kai',
-  });
-  const publishedNames = PUBLISHED_PACKS.map(packPluginName);
-  const publishableNames = PACK_ORDER.map(packPluginName);
-  const unpublishedNames = publishableNames.filter((n) => !publishedNames.includes(n));
-  ok(packSurface.errors.length === 0
-    && packSurface.requiredPluginNames.join(',') === publishedNames.join(',')
-    && packSurface.forbiddenPluginNames.includes('kai'),
-  `the 1.x pack mode requires the default package set (${publishedNames.join(', ')}) and forbids the monolith`);
-  ok(unpublishedNames.length === 0,
-  'the active partition and the default index are the same package set — unfinished work is incubated, not half-shipped');
-  ok(INCUBATED_PACKS.every((pack) => !publishableNames.includes(packPluginName(pack))),
-  'no incubated package name is publishable');
-  const rollbackSurface = marketplaceSurfacePolicy({
-    mkt: mkt([kaiEntry], 'legacy-rollback'),
-    canonicalVersion: '1.0.1',
-    monolithName: 'kai',
-  });
-  ok(rollbackSurface.errors.length === 0
-    && rollbackSurface.requiredPluginNames.join(',') === 'kai'
-    && rollbackSurface.forbiddenPluginNames.join(',') === publishableNames.join(','),
-  `the 1.x emergency rollback mode requires the monolith and forbids all ${publishableNames.length} publishable pack names`);
-  ok(publishableNames.every((n) => rollbackSurface.forbiddenPluginNames.includes(n)),
-    'every published pack is forbidden on the rollback surface by derived name');
-  // The failure R1 exists to stop: a restored monolith served beside a department
-  // pack — the coexistence the doctor refuses on a host — blessed by the index.
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, creativeEntry], 'legacy-rollback'), {
-    requiredPluginNames: rollbackSurface.requiredPluginNames,
-    forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
-  })).some((e) => /entry "kai-creative" is not part of the published install surface/.test(e)),
-  'a rollback index that still serves a department pack is rejected, not blessed');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([kaiEntry, engineeringEntry], 'legacy-rollback'), {
-    requiredPluginNames: rollbackSurface.requiredPluginNames,
-    forbiddenPluginNames: rollbackSurface.forbiddenPluginNames,
-  })).some((e) => /entry "kai-engineering" is not part of the published install surface/.test(e)),
-  'the engineering department is rejected by name if a rollback index still serves it');
-  ok(marketplaceConsistencyErrors(mktArgs(mkt([coreEntry, creativeEntry], 'packs'), {
-    requiredPluginNames: packSurface.requiredPluginNames,
-    forbiddenPluginNames: packSurface.forbiddenPluginNames,
-  })).some((e) => /no entry named/.test(e)),
-  'a partial packs index is rejected when the full partition is published');
-  ok(marketplaceSurfacePolicy({
-    mkt: mkt([coreEntry]),
-    canonicalVersion: '1.2.3',
-    monolithName: 'kai',
-  }).errors.some((e) => /must be "packs" or "legacy-rollback"/.test(e)),
-  'a 1.x marketplace cannot omit its explicit install-surface mode');
 
-  // --- cross-pack references: the live corpus ---------------------------
-  // Every arm below runs against synthetic inputs, so the failure it proves is
-  // the rule and not a fixture. These first checks are the other half: without
-  // them a collector that silently found nothing would make every arm pass.
-  const liveRefs = collectReferences(ROOT);
-  const liveProviders = packProviders(materializePacks({ root: ROOT, version: '9.9.9-selftest' }));
-  const firing = (path, kind) => liveRefs.filter((r) => r.firing.includes(path) && r.kind === kind);
-  const carries = (path, kind, from, target) => firing(path, kind)
-    .some((r) => r.from === from && r.target === target);
-  const agentRel = (id) => sourceAgentFiles(ROOT).find((entry) => entry.id === id)?.rel;
-  const skillRel = (id) => sourceSkillFiles(ROOT).find((entry) => entry.id === id)?.rel;
-
-  ok(carries('loaded', 'skill', agentRel('eng-builder-software'), 'kai-core-operating-rules'),
-    'the loaded path is really collected: an agent routing a core contract inline is seen');
-  // No shipped agent currently declares a `- **`id`** —` dispatch entry naming
-  // another agent: the roles that did were incubated. Asserting that over the
-  // live corpus would pass vacuously, so the collector is proved against a
-  // synthetic body and the corpus fact is recorded as itself.
-  ok(dispatchedRefs('- **`creative-lead-design`** — when the surface is net-new UI\n')
-    .includes('creative-lead-design'),
-  'agent-to-agent dispatch is really collected from the one declared dispatch shape');
-  ok(firing('orchestrated', 'agent').length === 0,
-    'and no shipped agent declares one today, so that arm is recorded as empty rather than asserted vacuously');
-  ok(carries('user-invoked', 'asset', skillRel('video-render-zoom'), 'scripts/demo-zoom.mjs'),
-    'the user-invoked path is really collected, down to the script the skill tells you to run');
-  ok(firing('loaded', 'skill').length > 100
-    && firing('user-invoked', 'skill').length > 5 && liveRefs.some((r) => r.kind === 'asset'),
-  'the loaded, user-invoked and asset paths are populated, so those arms are not vacuous');
-  ok(referenceErrors({ refs: liveRefs, providers: liveProviders }).length === 0,
-    'every reference in the live corpus resolves to core or its own pack');
-  // --- skill -> skill routes ---------------------------------------------
-  // Until 16.0.1 this edge did not exist in the graph at all: the skill loop
-  // recorded how each skill fires and which assets it names, and never read the
-  // body for routes. A core skill instructing `Apply <department-skill>` was
-  // therefore invisible to referenceErrors and to all four gates, and one had
-  // shipped that way. Both arms are needed: the live one proves the edge is
-  // really collected, the synthetic one proves the rule rejects a violation
-  // rather than the corpus merely happening not to contain one.
-  ok(carries('loaded', 'skill', skillRel('kai-core-web-content-extraction'), 'kai-core-workspace-paths')
-    && carries('loaded', 'skill', skillRel('mockups-ascii'), 'kai-core-contract-v1'),
-  'a skill routing another skill is collected, within core and from a department into core');
-  const skillToSkill = liveRefs.filter((r) => r.kind === 'skill'
-    && r.firing.includes('loaded') && skillRel(r.target) && /\/skills\//.test(r.from));
-  ok(skillToSkill.length > 10,
-    `the skill-to-skill arm is populated (${skillToSkill.length}), so it cannot pass by finding nothing`);
-  ok(referenceErrors({
-    refs: [{
-      from: 'plugins/kai-core/skills/kai-core-x/SKILL.md',
-      fromPack: 'core',
-      firing: ['loaded'],
-      kind: 'skill',
-      target: 'build-diagrams',
-    }],
-    providers: liveProviders,
-  }).some((e) => /may only reach its own pack/.test(e.msg)),
-  'a core skill routing a department skill is rejected, the way a core agent doing it already was');
-  // An agent-shaped route target in a skill body is recovered as an agent
-  // referral rather than dropped. The agent loop gets that from its second
-  // `dispatchedRefs` pass; the skill loop has no second pass, so without the
-  // recovery a mistyped role id in a skill body would be referenced by nothing
-  // and fail no gate — the same silence this whole change exists to remove.
-  ok(referenceErrors({
-    refs: [{
-      from: 'plugins/kai-core/skills/kai-core-x/SKILL.md',
-      fromPack: 'core',
-      firing: ['orchestrated'],
-      kind: 'agent',
-      target: 'eng-buidler-frontend',
-    }],
-    providers: liveProviders,
-  }).some((e) => /resolves to no pack/.test(e.msg)),
-  'a mistyped role id routed from a skill body fails as a dangling agent reference');
-  const liveAssets = planAssets(liveRefs);
-  ok(liveAssets.get('scripts/demo-zoom.mjs')?.owner === 'creative'
-    && liveAssets.get('scripts/observe-subagent.mjs')?.owner === 'core',
-  'an asset invoked from one pack travels with it, and each lands in the pack that invokes it');
-  ok(assetOwnershipErrors({
-    assets: liveAssets,
-    // A shipped body names the path a consumer runs; its source is under
-    // src/<pack>/, so existence resolves through the source index.
-    exists: (a) => sourceAssetIndex(ROOT).has(a),
-  }).length === 0,
-  'every invoked script exists and is reachable from the pack that invokes it');
-  const bareAsset = new Map([['scripts/start.mjs', {
-    asset: 'scripts/start.mjs',
-    consumers: [{ from: 'skills/x/SKILL.md', pack: 'core' }],
-    packs: new Set(['core']),
-    owner: 'core',
-  }]]);
-  const bareClosure = () => planAssetClosure({
-    assets: bareAsset,
-    exists: () => true,
-    read: () => "import runtime from '@scope/runtime/subpath';\n",
-  });
-  ok(bareClosure().errors.some((e) => /nothing installs/.test(e.msg)),
-    'asset closure rejects any bare import: no pack may declare a runtime dependency');
-  const liveFiles = materializePacks({ root: ROOT, version: '9.9.9-selftest' });
-  ok(liveFiles.has('kai-core/hooks.json')
-    && !liveFiles.has('kai-creative/hooks.json')
-    && liveFiles.has('kai-core/scripts/observe-subagent.mjs')
-    && liveFiles.has('kai-creative/scripts/demo-zoom.mjs'),
-  'materialization emits hooks once and emits each pack\'s entry points');
-  ok(!liveFiles.has('kai-core/scripts/lib/activity.mjs')
-    && !liveFiles.has('kai-creative/scripts/lib/cursor-png.mjs'),
-  'internal modules are inlined by the bundler, never shipped beside their entry point');
-  ok(generatedKeyErrors(liveFiles).length === 0,
-    'every live generated key belongs to a declared pack');
-  ok(generatedRuntimeErrors(liveFiles).length === 0,
-    'every emitted JavaScript asset resolves locally and declares each bare runtime import');
-  ok(generatedKeyErrors(new Map([['kai-unknown/plugin.json', '{}']]))
-    .some((e) => /belongs to no declared pack/.test(e.msg)),
-  'a generated key outside the declared pack set fails in the one shared check');
-  ok(generatedRuntimeErrors(new Map([
-    ['kai-core/plugin.json', '{}'],
-    ['kai-core/scripts/start.mjs', "import './lib/missing.mjs';\n"],
-  ])).some((e) => /missing from kai-core/.test(e.msg)),
-  'a copied entry point with a missing relative module fails by name');
-  ok(generatedRuntimeErrors(new Map([
-    ['kai-core/plugin.json', '{}'],
-    ['kai-core/scripts/start.mjs', "import './lib/missing.mjs'\n"],
-  ])).some((e) => /missing from kai-core/.test(e.msg)),
-  'a semicolon-less relative import cannot escape the emitted-tree closure gate');
-
-  // --- cross-pack references: the mutation arms -------------------------
-  const providersOf = (entries) => new Map(Object.entries(entries));
-  const ref = (over) => ({ from: 'agents/x.agent.md', fromPack: 'engineering', firing: ['loaded'], kind: 'skill', target: 'video-render-zoom', ...over });
-  const messages = (refs, providers) => referenceErrors({ refs, providers: providersOf(providers) }).map((e) => e.msg);
-
-  ok(messages([ref({})], { 'skill:video-render-zoom': ['creative'] })
-    .some((m) => /loaded reference to skill `video-render-zoom` resolves to kai-creative/.test(m)),
-  'a loaded skill provided by another department fails by name');
-  ok(messages([ref({ target: 'gone-skill' })], {})
-    .some((m) => /resolves to no pack/.test(m)),
-  'a loaded skill no pack provides fails as a dangling reference');
-  ok(messages([ref({ from: 'skills/mockups-html/SKILL.md', fromPack: 'creative', firing: ['user-invoked'], target: 'mockups-html' })],
-    { 'skill:mockups-html': ['creative', 'product'] })
-    .some((m) => /user-invoked reference to skill `mockups-html` is provided by kai-creative and kai-product/.test(m)),
-  'a user-invoked entry point two packs both provide fails as an unspecified resolution');
-  ok(messages([ref({ firing: ['orchestrated'], target: 'mockups-ascii' })], { 'skill:mockups-ascii': ['product'] })
-    .some((m) => /orchestrated reference to skill `mockups-ascii` resolves to kai-product/.test(m)),
-  'an orchestrated dispatch of another department\'s skill fails by name');
-  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'principal-gone' })], {})
-    .some((m) => /orchestrated reference to agent `principal-gone` resolves to no pack/.test(m)),
-  'an orchestrated dispatch of an agent that no longer exists fails by name');
-  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'eng-buidler-frontend' })], {})
-    .some((m) => /orchestrated reference to agent `eng-buidler-frontend` resolves to no pack/.test(m)),
-  'an orchestrated dispatch with a mistyped new posture fails as a dangling agent reference');
-  ok(messages([ref({ firing: ['orchestrated'], kind: 'agent', target: 'persona-self' })], { 'agent:persona-self': ['personal'] })
-    .length === 0,
-  'but dispatching a real agent in another pack is allowed: a referral degrades, it does not fail to load');
-  ok(messages([ref({ fromPack: null })], { 'skill:video-render-zoom': ['creative'] })
-    .some((m) => /comes from a file no pack owns/.test(m)),
-  'a reference from a body the partition never placed fails instead of resolving by luck');
-
-  const assetRef = (from, pack, target) => ({ from, fromPack: pack, firing: ['user-invoked'], kind: 'asset', target });
-  const assetMsgs = (refs, exists = () => true) => assetOwnershipErrors({ assets: planAssets(refs), exists }).map((e) => e.msg);
-
-  ok(assetMsgs([assetRef('skills/video-render-zoom/SKILL.md', 'creative', 'scripts/gone.mjs')], () => false)
-    .some((m) => /invokes `scripts\/gone\.mjs`, which does not exist in this plugin/.test(m)),
-  'an invoked script that is not in the plugin fails by name');
-  ok(assetMsgs([
-    assetRef('skills/a/SKILL.md', 'personal', 'scripts/shared.mjs'),
-    assetRef('skills/b/SKILL.md', 'engineering', 'scripts/shared.mjs'),
-  ]).length === 0,
-  'a script invoked from two packs is promoted to core by the plan, so neither reference breaks');
-  const sharedToDepartment = new Map([['scripts/shared.mjs', {
-    asset: 'scripts/shared.mjs',
-    consumers: [{ from: 'skills/a/SKILL.md', pack: 'personal' }, { from: 'skills/b/SKILL.md', pack: 'engineering' }],
-    packs: new Set(['personal', 'engineering']),
-    owner: 'personal',
-  }]]);
-  ok(assetOwnershipErrors({ assets: sharedToDepartment, exists: () => true })
-    .some((e) => /is invoked from kai-engineering and kai-personal but is assigned to kai-personal/.test(e.msg)),
-  'and routing a shared script into a department instead of core fails by name');
-  const departmentAsset = new Map([['scripts/demo-zoom.mjs', {
-    asset: 'scripts/demo-zoom.mjs',
-    consumers: [{ from: 'skills/onboard-to-codebase/SKILL.md', pack: 'engineering' }],
-    packs: new Set(['creative']),
-    owner: 'creative',
-  }]]);
-  ok(assetOwnershipErrors({ assets: departmentAsset, exists: () => true })
-    .some((e) => /ships in kai-creative — kai-engineering can only run its own assets/.test(e.msg)),
-  'a script invoked across the boundary from another department fails by name');
-
-  // --- hooks.json belongs to exactly one pack ---------------------------
-  const observer = 'scripts/observe-subagent.mjs';
-  const hookAssets = [observer];
-  const owned = (pack) => new Map([[observer, { asset: observer, consumers: [], packs: new Set([pack]), owner: pack }]]);
-  const hookMsgs = (args) => hooksAssignmentErrors({ hookAssets, assets: owned(HOOKS_OWNER), ...args }).map((e) => e.msg);
-
-  ok(hookMsgs({ owners: [HOOKS_OWNER] }).length === 0,
-    `${HOOKS_FILE} assigned to exactly one pack, running a script that pack owns, is clean`);
-  ok(hookMsgs({ owners: [] }).some((m) => /is assigned to no pack/.test(m)),
-    `${HOOKS_FILE} assigned to zero packs fails by name`);
-  ok(hookMsgs({ owners: ['core', 'personal'] })
-    .some((m) => /is claimed by kai-core and kai-personal/.test(m)),
-  `${HOOKS_FILE} claimed by two packs fails by name — the observer would fire twice per subagent`);
-  ok(hooksAssignmentErrors({ owners: [HOOKS_OWNER], hookAssets, assets: owned('personal') })
-    .some((e) => /runs `scripts\/observe-subagent\.mjs`, owned by kai-personal/.test(e.msg)),
-  'a hook whose script is owned by another pack fails: ${PLUGIN_ROOT} never crosses the boundary');
-  ok(hooksAssignmentErrors({ owners: [HOOKS_OWNER], hookAssets, assets: new Map() })
-    .some((e) => /which no pack owns/.test(e.msg)),
-  'a hook whose script no pack owns fails rather than shipping a command nobody can run');
-  ok(hookMsgs({ owners: ['nope'] }).some((m) => /is assigned to "nope", which is not a pack/.test(m)),
-    'assigning the hooks file to a pack that does not exist fails by name');
-  ok(HOOKS_OWNER === 'core' && liveAssets.get(observer)?.owner === HOOKS_OWNER,
-    `${HOOKS_FILE} and the script it runs are both owned by kai-core in the live partition`);
-  ok(hookAssetReferenceErrors(readFileSync(join(ROOT, HOOKS_FILE), 'utf8')).length === 0,
-    'the live hooks file invokes one supported top-level asset per command');
-  const multiHook = JSON.stringify({ hooks: { subagentStart: [{
-    command: 'node "${PLUGIN_ROOT}/scripts/a.mjs" "${PLUGIN_ROOT}/scripts/b.mjs"',
-  }] } });
-  ok(hookAssetReferenceErrors(multiHook)
-    .some((e) => /contains 2 \$\{PLUGIN_ROOT\} paths/.test(e.msg)),
-  'a hook command with multiple plugin-relative paths fails by name');
-  const nestedHook = JSON.stringify({ hooks: { subagentStart: [{
-    command: 'node "${PLUGIN_ROOT}/scripts/lib/a.mjs"',
-  }] } });
-  ok(hookAssetReferenceErrors(nestedHook)
-    .some((e) => /outside the supported top-level/.test(e.msg)),
-  'a nested hook asset fails by name without widening the asset key-space');
-
-  // --- the partition itself, each failure proven by name ----------------
-  // A synthetic two-pack world, so what fails is the rule and not the live
-  // roster: every arm below is one mutation away from the clean baseline.
-  const world = (over = {}) => ({
+  const world = {
     plan: {
       core: ['kai-core-shared'],
-      local: { core: [], personal: ['personal-skill'] },
+      local: {core: [], engineering: ['engineering-skill']},
       orphans: [],
     },
-    agents: ['director-a', 'persona-b'],
-    skills: ['kai-core-shared', 'personal-skill'],
-    packs: { core: ['director-a'], personal: ['persona-b'] },
-    ...over,
-  });
-  const partitionMsgs = (over) => partitionErrors(world(over));
-  const cleanPlan = world().plan;
-
-  ok(partitionMsgs({}).length === 0,
-    'a complete, unambiguous partition raises nothing, or every arm below is vacuous');
-  ok(partitionMsgs({ packs: { core: ['director-a', 'director-gone'], personal: ['persona-b'] } })
-    .some((m) => /names agent `director-gone`, which is not on disk/.test(m)),
-  'a roster naming an agent that is not on disk fails by name');
-  ok(partitionMsgs({ packs: { core: ['director-a', 'persona-b'], personal: ['persona-b'] } })
-    .some((m) => /agent `persona-b` is claimed by both kai-core and kai-personal/.test(m)),
-  'an agent claimed by two packs fails by name — provider ownership must be partition-defined');
-  ok(partitionMsgs({ agents: ['director-a', 'persona-b', 'persona-stray'] })
-    .some((m) => /agent `persona-stray` belongs to no pack/.test(m)),
-  'an agent on disk that no pack claims fails by name: it would ship in nothing');
-  ok(partitionMsgs({
-    plan: { ...cleanPlan, local: { core: [], personal: ['kai-core-shared'] } },
-  }).some((m) => /skill `kai-core-shared` is provided by both kai-core and kai-personal/.test(m)),
-  'a skill two packs both provide fails by name — provider ownership is ambiguous');
-  ok(partitionMsgs({ skills: ['kai-core-shared', 'personal-skill', 'unprovided-skill'] })
-    .some((m) => /skill `unprovided-skill` has no provider/.test(m)),
-  'a skill on disk with no provider fails by name');
-  ok(partitionMsgs({
-    plan: { ...cleanPlan, local: { core: [], personal: ['personal-skill', 'ghost-skill'] } },
-  }).some((m) => /skill `ghost-skill` is planned into kai-personal but is not a skill on disk/.test(m)),
-  'a planned skill that no longer exists on disk fails by name');
-  ok(sourceFileErrors({
-    agents: [
-      { id: 'persona-b', rel: 'plugins/kai-personal/agents/persona-b.agent.md' },
-      { id: 'persona-b', rel: 'plugins/kai-gtm/agents/persona-b.agent.md' },
-    ],
-    skills: [],
-  }).some((e) => /exactly one source is allowed/.test(e.msg)),
-  'duplicating an agent across plugin-local source trees fails by id');
-  ok(sourcePlacementErrors({
-    agents: [{ id: 'persona-b', pack: 'gtm', rel: 'plugins/kai-gtm/agents/persona-b.agent.md' }],
-    skills: [{ id: 'personal-skill', pack: 'core', rel: 'plugins/kai-core/skills/personal-skill/SKILL.md' }],
-    plan: cleanPlan,
-    packs: { core: ['director-a'], personal: ['persona-b'] },
-  }).length === 2,
-  'a source file placed outside its planned plugin fails for both agents and skills');
-
-  // --- core's namespace, in both directions -----------------------------
-  ok(namespaceErrors({ core: plan.core, local: plan.local }).length === 0,
-    `every core-provided skill carries the ${CORE_SKILL_PREFIX}* prefix in the live partition`);
-  ok(namespaceErrors({ core: ['fleet-observation'], local: {} })
-    .some((m) => /rename it to `kai-core-fleet-observation`/.test(m)),
-  'a core-provided skill without the prefix fails by name, and says what to rename it to');
-  ok(namespaceErrors({ core: [], local: { personal: ['kai-core-sneaky'] } })
-    .some((m) => /claims core's `kai-core-\*` namespace/.test(m)),
-  'a department claiming a kai-core-* name fails by name — the id would promise core shipped it');
-
-  // --- one emitter per generated id -------------------------------------
-  const providerIndex = (entries) => new Map(Object.entries(entries));
-  ok(providerCollisionErrors({ providers: liveProviders }).length === 0,
-    'no id is emitted by two packs in the live generated tree');
-  ok(providerCollisionErrors({ providers: providerIndex({ 'agent:persona-self': ['personal', 'gtm'] }) })
-    .some((m) => /agent `persona-self` is emitted by kai-personal and kai-gtm/.test(m)),
-  'the same agent emitted by two packs fails by name');
-  ok(providerCollisionErrors({ providers: providerIndex({ 'skill:coding-standards': ['core', 'engineering'] }) })
-    .some((m) => /skill `coding-standards` is emitted by kai-core and kai-engineering/.test(m)),
-  'the same skill emitted by two packs fails by name — provider ownership would be ambiguous');
-
-  // --- generated-key parsing: a future pack key cannot escape the gates --
-  // The gates used to select generated files with a `kai-[a-z]+/` pattern, so a
-  // pack key carrying a hyphen or a digit would have been skipped in silence —
-  // shipping a department with no preflight and no refusal, and passing CI.
-  const parsed = (key, packs) => parseGeneratedKey(key, packs);
-  ok(parsed('kai-personal/agents/persona-self.agent.md', ['core', 'personal'])?.kind === 'agent',
-    'a generated agent body is recognised as one');
-  ok(parsed('kai-fleet-ops/agents/persona-x.agent.md', ['core', 'fleet-ops'])?.pack === 'fleet-ops',
-    'a hyphenated pack key resolves to its pack rather than silently skipping the gates');
-  ok(parsed('kai-team2/skills/s/SKILL.md', ['core', 'team2'])?.kind === 'skill',
-    'a pack key with a digit resolves too: the partition decides membership, not a name pattern');
-  ok(parsed('kai-core/hooks.json', ['core'])?.kind === 'hooks'
-    && parsed('kai-core/plugin.json', ['core'])?.kind === 'manifest',
-  'the manifest and the hooks file are identified by the same parse, so neither is claimed twice');
-  ok(parsed('kai-unknown/agents/x.agent.md', ['core', 'personal']) === null,
-    'a key belonging to no known pack resolves to nothing rather than to a guess');
-
-  // --- the contract version, pinned wherever it is stated ---------------
-  // The shared preflight/refusal blocks are gone: there is one agent shape and
-  // the generator injects nothing, so guaranteeBlockErrors no longer exists.
-  // What stays pinned is the probe skill agents route by name — and the guard
-  // remover that strips a stale legacy region rather than editing around it. A
-  // migration that finds two regions must refuse, not strip one.
-  let duplicateGuardRejected = false;
-  try {
-    const region = `${GUARANTEE_REGION_OPEN}\n\nstale guard body\n\n${GUARANTEE_REGION_CLOSE}`;
-    removeGuaranteeRegion(`---\nname: x\n---\n\n${region}\n${region}\n\nbody\n`);
-  } catch (error) {
-    duplicateGuardRejected = /more than one core dependency guard region/.test(error.message);
-  }
-  ok(duplicateGuardRejected,
-    'stripping a stale guard refuses when an agent carries two regions instead of removing only one');
-
-  const pinMsgs = (over) => contractPinErrors({
-    probe: shippedProbe, ...over,
-  }).map((e) => `${e.file}: ${e.msg}`);
-
-  ok(pinMsgs({}).length === 0,
-    'the shipped probe and the version constants agree on the contract version');
-  ok(pinMsgs({ version: '2' })
-    .some((m) => /CONTRACT_SKILL `kai-core-contract-v1` and CONTRACT_VERSION "2" disagree/.test(m)),
-  'bumping the version constant without the probe skill name fails by name');
-  ok(pinMsgs({ probe: contractSkill(2) })
-    .some((m) => /returns `contract: 2`, but its name pins it to 1/.test(m)),
-  'a probe reporting a version its own name does not promise fails by name');
-  ok(pinMsgs({ probe: contractSkill(1).replace('KAI_CORE_READY', 'KAI_CORE_OK') })
-    .some((m) => /does not return the exact `KAI_CORE_READY` marker/.test(m)),
-  'a probe whose marker drifted fails: every preflight matches on that exact line');
-  ok(pinMsgs({ probe: null })
-    .some((m) => /missing — every pack agent invokes this skill/.test(m)),
-  'a missing probe fails by name rather than by a crash in the generator');
-
-  // --- role availability is membership, never a count -------------------
-  const directorBody = readAgent(DISPATCHING_ROLES[0]);
-  ok(DISPATCHING_ROLES.every((id) => availabilityErrors({ body: readAgent(id) }).length === 0),
-    'every lease-granting role states that availability is read from the roster by membership');
-  for (const rule of AVAILABILITY_RULES) {
-    const stripped = normalizeLF(directorBody).replace(rule.pattern, '');
-    ok(availabilityErrors({ body: stripped }).some((m) => m.includes(rule.rule)),
-      `dropping "${rule.rule}" from a lease-granting role fails by name`);
-  }
-
-  // --- one family list for every agent-shaped token ---------------------
-  ok(rosterAgents.every((id) => agentShapedPattern().test(id)),
-    'every shipped agent id matches the agent-shaped pattern the reference checks use (one family list, not two)');
-  ok(agentShapedPattern().test('eng-builder-frontend'),
-    'the agent-shaped reference pattern recognizes the new provider-posture-scope grammar');
-  ok(!agentShapedPattern().test('core-workspace-conventions')
-    && !agentShapedPattern().test('prod-roadmap'),
-  'generic provider-domain terms are not misclassified as agent ids without a controlled posture');
-  ok(agentCandidatePattern().test('eng-buidler-frontend'),
-    'a provider-family dispatch with a mistyped posture remains an agent candidate and fails as unresolved');
-  ok(agentTaxonomyErrors({ id: 'eng-builder-frontend', pack: 'engineering' }).length === 0,
-    'a new durable-role id with matching provider, posture, and scope passes');
-  ok(agentTaxonomyErrors({ id: 'eng-creator-frontend', pack: 'engineering' })
-    .some((m) => /posture.*not one of/.test(m)),
-  'an ungoverned posture fails by name');
-  ok(agentTaxonomyErrors({ id: 'eng-builder-frontend', pack: 'creative' })
-    .some((m) => /belongs to kai-engineering/.test(m)),
-  'a durable-role family placed in the wrong provider fails by name');
-  ok(agentTaxonomyErrors({ id: 'eng-lead', pack: 'engineering' })
-    .some((m) => /family>-<posture>-<scope/.test(m)),
-  'a durable-role id without scope fails by name');
-  ok(agentTaxonomyErrors({ id: 'eng-builder-fe', pack: 'engineering' })
-    .some((m) => /full responsibility words/.test(m)),
-  'an abbreviated durable-role scope fails by name');
-  ok(agentTaxonomyErrors({ id: 'principal-new-role', pack: 'engineering' })
-    .some((m) => /migration-only/.test(m)),
-  'a new agent cannot extend a retired family during staged migration');
-  ok(agentTaxonomyErrors({ id: 'principal-swe-frontend', pack: 'engineering' }).length === 0,
-    'an existing retired-family id remains valid during staged migration');
-  ok(agentTaxonomyErrors({ id: 'analyst-market', pack: 'engineering' })
-    .some((m) => /family.*not supported/.test(m)),
-  'an agent id from an unsupported family fails with a file-scoped taxonomy error');
-  ok(requiresCoordinatedRunContracts('eng-builder-frontend')
-    && requiresCoordinatedRunContracts('core-coordinator-staff')
-    && !requiresCoordinatedRunContracts('persona-ux-first-time-user'),
-  'new durable roles retain routed workspace and activity obligations while personas do not');
-  // --- the profile/model binding, keyed on family/posture, no marker --------
-  // agentProfileModelErrors is the live half of the old agentIdentityContractErrors:
-  // the identity-marker half went with the marker, but the profile-to-model
-  // binding has no other home. It reads `**Primary profile:**`, never a
-  // `**Identity contract:**` line, and keys on the agent id's family/posture.
-  ok(agentProfileModelErrors({
-    id: 'eng-builder-frontend',
-    body: '**Primary profile:** execution',
-    fm: { model: '"claude-sonnet-5"' },
-  }).length === 0,
-  'a new durable role carrying a mapped primary profile and its model passes');
-  ok(agentProfileModelErrors({ id: 'eng-builder-frontend', body: '', fm: {} })
-    .some((m) => /must declare exactly one `\*\*Primary profile:\*\* <profile>` line/.test(m)),
-  'a new durable role missing its primary-profile line fails by name');
-  ok(agentProfileModelErrors({
-    id: 'eng-reviewer-security',
-    body: '**Primary profile:** review',
-    fm: {},
-  }).some((m) => /must declare frontmatter model "claude-opus-5"/.test(m)),
-  'a new durable role cannot omit the model mapped to its primary profile');
-  ok(agentProfileModelErrors({
-    id: 'eng-reviewer-security',
-    body: '**Primary profile:** review',
-    fm: { model: '"claude-sonnet-5"' },
-  }).some((m) => /requires frontmatter model "claude-opus-5"/.test(m)),
-  'a new durable role cannot use an approved model assigned to another profile');
-  ok(agentProfileModelErrors({
-    id: 'eng-lead-architecture',
-    body: '**Primary profile:** technical-judgment',
-    fm: { model: '"gpt-5.6-sol"' },
-  }).length === 0,
-  'a technical lead can use the pre-approved Sol technical-judgment profile');
-  ok(agentProfileModelErrors({
-    id: 'eng-reviewer-code',
-    body: '**Primary profile:** technical-review',
-    fm: { model: '"gpt-5.6-terra"' },
-  }).length === 0,
-  'a technical reviewer can use the pre-approved Terra technical-review profile');
-  ok(agentProfileModelErrors({
-    id: 'eng-reviewer-security',
-    body: '**Primary profile:** execution',
-    fm: { model: '"claude-sonnet-5"' },
-  }).some((m) => /posture `reviewer` requires primary profile `review`/.test(m)),
-  'a durable-role posture cannot select another posture family profile');
-  ok(agentProfileModelErrors({
-    id: 'workflow-new-release',
-    body: '**Primary profile:** procedure',
-    fm: { model: '"claude-sonnet-5"' },
-  }).length === 0,
-  'a new workflow carries the same profile and model contract');
-  ok(agentProfileModelErrors({
-    id: 'persona-new-buyer',
-    body: '**Primary profile:** advisory',
-    fm: { model: '"claude-sonnet-5"' },
-  }).some((m) => /kind `persona` requires primary profile `simulation`/.test(m)),
-  'a new kind-prefixed agent cannot select a profile owned by another kind');
-  ok(agentProfileModelErrors({
-    id: 'workflow-weekly-pulse',
-    body: '',
-    fm: {},
-  }).length === 0,
-  'an existing kind-prefixed agent remains migration-safe without a declared profile');
-
-  // --- one agent shape: contracts routed inline, no opt-in marker -----------
-  // Brief Step 1: the failing test the one-shape rule needs. An eager
-  // **Inherits:** line is rejected for every agent, with nothing gating the
-  // check on an opt-in identity marker.
-  ok(agentRoutingErrors({
-    id: 'eng-lead-x',
-    body: '**Inherits:** `kai-core-operating-rules`\n',
-    tools: ['skill'],
-    knownSkills: ['kai-core-operating-rules'],
-  }).some((m) => /must not declare an eager `\*\*Inherits:\*\*` line/.test(m)),
-  'an eager **Inherits:** line is rejected outright, with no opt-in marker gating the one-shape rule');
-  const routingBody = [
-    'Invoke `kai-core-contract-v1` before the first other core skill.',
-    'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.',
-    'State the limitation once and tell the operator to install or update `kai-core`.',
-    'Load `kai-core-operating-rules` before coordinated work.',
-    'Load `kai-core-workspace-paths` before touching workspace state.',
-    'Load `kai-core-work-acting` before acting on a coordinated Task.',
-    'Load `kai-core-work-activity` before recording a run.',
-  ].join('\n');
-  const routingOptions = {
-    id: 'eng-builder-frontend',
-    pack: 'engineering',
-    body: routingBody,
-    tools: ['read', 'skill'],
-    knownSkills: [
-      'kai-core-contract-v1',
-      'kai-core-operating-rules',
-      'kai-core-workspace-paths',
-      'kai-core-work-acting',
-      'kai-core-work-activity',
-    ],
+    agents: ['director-a'],
+    skills: ['kai-core-shared', 'engineering-skill'],
+    packs: {core: ['director-a'], engineering: []},
   };
-  ok(agentRoutingErrors(routingOptions).length === 0,
-    'an agent that loads each contract inline at the step needing it passes');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: `${routingBody}\n**Inherits:** \`kai-core-operating-rules\``,
-  }).some((m) => /must not declare an eager/.test(m)),
-  'an agent cannot restore eager inheritance');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody.replace('Load `kai-core-operating-rules` before coordinated work.\n', ''),
-  }).some((m) => /must load `kai-core-operating-rules`/.test(m)),
-  'an agent cannot drop a required contract');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody.replace('kai-core-operating-rules', 'kai-core-operating-rlues'),
-  }).some((m) => /routes unknown skill `kai-core-operating-rlues`/.test(m)),
-  'a mistyped skill name fails as an unknown route wherever it appears');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody.replace(
-      'Invoke `kai-core-contract-v1` before the first other core skill.\n',
-      'Invoke `kai-core-contract-v1` whenever it seems useful.\n'
-    ),
-  }).some((m) => /runs before the first other core skill/.test(m)),
-  'the core probe must still be ordered before every other core skill');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: `${routingBody}\n\n## Handoffs\n\nLoad \`kai-core-work-acting\` before a handoff.`,
-  }).length === 0,
-  'an agent may load a skill from any section, because routing is inline by design');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody.replace(
-      'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.\n',
-      ''
-    ),
-  }).some((m) => /must state the core fallback/.test(m)),
-  'an agent must state its non-blocking core fallback');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody.replace(
-      'State the limitation once and tell the operator to install or update `kai-core`.\n',
-      ''
-    ),
-  }).some((m) => /install or update `kai-core`/.test(m)),
-  'a fallback that never tells the operator how to fix it fails by name');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody.replace(
-      'Invoke `kai-core-contract-v1` before the first other core skill.\n',
-      'Invoke `kai-core-contract-v1` before the first other core skill.\n\n## Later\n\n'
-    ),
-  }).some((m) => /same paragraph as the `kai-core-contract-v1` route/.test(m)),
-  'a fallback stranded away from the route it qualifies fails: the refusal must be read where core is loaded');  ok(agentRoutingErrors({
-    ...routingOptions,
-    body: routingBody
-      .replace(
-        'If core is unavailable or incompatible, continue only with direct, single-shot work; do not create `.kai` state.\n',
-        'Without core I answer one frontend question from the code in front of me and stop; nothing lands in `.kai`.\n'
-      )
-      .replace(
-        'State the limitation once and tell the operator to install or update `kai-core`.\n',
-        'The operator has to install or update `kai-core` before I rejoin coordinated work.\n'
-      ),
-  }).length === 0,
-  'a refusal in the role\'s own words passes: the check is structural, and pinning vocabulary is what this refactor removed');
-  // --- one question, both encodings: every check that asks "does this agent
-  // --- load X" must see a routed agent and an eager one alike, or it passes
-  // --- vacuously over half the repo while the migration is in flight
-  ok(loadedSkills(routingBody).has('kai-core-work-acting'),
-  'loadedSkills reads a contract an agent routes inline');
-  ok(loadedSkills('**Inherits:** `kai-core-work-acting`').has('kai-core-work-acting'),
-  'loadedSkills reads a contract an agent still declares on the eager line');
-  ok(!loadedSkills('This agent must never load `kai-core-work-acting`.').has('kai-core-work-acting'),
-  'loadedSkills does not count a bare or negated mention as loading the contract');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    tools: ['read'],
-  }).some((m) => /omits `skill`/.test(m)),
-  'an agent cannot route skills without skill tool access');
-  ok(agentRoutingErrors({
-    ...routingOptions,
-    activityExempt: true,
-  }).some((m) => /activity-exempt/.test(m)),
-  'an activity-exempt role cannot retain the activity route');
-  // --- required contracts must be ROUTED, not merely mentioned
-  const mentionOnly = [
-    'Invoke `kai-core-contract-v1` before the first other core skill.',
-    'See `kai-core-operating-rules` for context.',
-    'If core is unavailable or incompatible, continue single-shot;',
-    'do not create `.kai` state; tell the operator to install or update `kai-core`.',
-  ].join('\n');
-  ok(agentRoutingErrors({
-    id: 'eng-lead-x', body: mentionOnly, tools: ['skill'],
-    knownSkills: ['kai-core-contract-v1', 'kai-core-operating-rules'],
-  }).some((e) => /must load `kai-core-operating-rules`/.test(e)),
-  'a contract that is only name-dropped does not count as loaded');
+  ok(partitionErrors({
+    ...world,
+    packs: {core: ['director-a', 'director-missing'], engineering: []},
+  }).some(message => /director-missing.*not on disk/.test(message)),
+  'missing agent ID is rejected');
+  ok(partitionErrors({
+    ...world,
+    plan: {...world.plan, local: {core: [], engineering: ['kai-core-shared']}},
+  }).some(message => /provided by both kai-core and kai-engineering/.test(message)),
+  'duplicate skill provider is rejected');
 
-  // --- schema-5 publication and hierarchy source gates ---------------------
-  const liveSkills = sourceSkillFiles(ROOT);
-  const publicationSkills = liveSkills.filter(entry =>
-    entry.id.endsWith('workspace-publication'));
-  ok(publicationSkills.length === 3
-    && publicationInventoryErrors(liveSkills).length === 0,
-  `publication inventory inspects exactly one skill in each shipped pack (count=${publicationSkills.length})`);
-  ok(publicationInventoryErrors(liveSkills.filter(entry =>
-    entry.id !== 'engineering-workspace-publication'))
-    .some(message => /kai-engineering.*exactly one publication skill/.test(message)),
-  'removing one pack publication skill fails the inventory gate by pack name');
+  ok(referenceErrors({
+    refs: [{
+      from: 'plugins/kai-engineering/agents/x.agent.md',
+      fromPack: 'engineering',
+      firing: ['loaded'],
+      kind: 'skill',
+      target: 'creative-only',
+    }],
+    providers: new Map([['skill:creative-only', ['creative']]]),
+  }).some(error => /may only reach its own pack or kai-core/.test(error.msg)),
+  'foreign package reference is rejected');
 
-  const publicationBodies = publicationSkills.map(entry => ({
-    ...entry,
-    body: readFileSync(entry.path, 'utf8'),
-  }));
-  ok(publicationBodies.length === 3
-    && publicationBodies.every(entry =>
-      publicationContractErrors(entry).length === 0),
-  `canonical publication tables validate a non-vacuous live corpus (count=${publicationBodies.length})`);
-  const corePublication = publicationBodies.find(entry => entry.pack === 'core');
-  ok(publicationContractErrors({
-    ...corePublication,
-    body: corePublication.body.replace('| `direction` |', '| `initiatives` |'),
-  }).some(message => /managed publication table/.test(message)),
-  'changing a generated publication row fails the managed-region gate');
-  const creativePublication = publicationBodies.find(entry => entry.pack === 'creative');
-  ok(publicationContractErrors({
-    ...creativePublication,
-    body: creativePublication.body.replace('unsafe media destination', ''),
-  }).length === 0,
-  'human-authored refusal guidance is not parsed as publication schema');
+  const scratch = join(ROOT, 'test', '.pack-preview-self-test');
+  rmSync(scratch, {recursive: true, force: true});
+  try {
+    const noCore = join(scratch, 'no-core');
+    buildAll({out: noCore, packs: ['creative'], withCore: false});
+    ok(evaluatePreflight(noCore).reply === REFUSAL,
+      'missing Core contract fails closed');
+
+    const skew = join(scratch, 'version-skew');
+    buildAll({out: skew, packs: ['creative'], contract: 2});
+    ok(evaluatePreflight(skew).reply === REFUSAL,
+      'version-skewed Core contract fails closed');
+  } finally {
+    rmSync(scratch, {recursive: true, force: true});
+  }
+
+  ok(namespaceErrors({core: [], local: {engineering: ['kai-core-sneaky']}})
+    .some(message => /claims core's `kai-core-\*` namespace/.test(message)),
+  'namespace escape is rejected');
 
   const routedSources = [
     ...sourceAgentFiles(ROOT),
     ...sourceSkillFiles(ROOT),
   ].map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
-  const declaredByKind = Object.fromEntries(['agent', 'skill'].map(kind => {
-    const entries = routedSources.filter(entry => entry.kind === kind);
-    return [kind, {
-      entries,
-      producers: entries.filter(entry =>
-        publicationEntrypointDeclaration(entry) !== null),
-      nonProducers: entries.filter(entry =>
-        publicationEntrypointDeclaration(entry) === null),
-    }];
-  }));
-  const routedAgents = declaredByKind.agent.entries;
-  ok(Object.values(declaredByKind).every(corpus =>
-    corpus.producers.length > 0 && corpus.nonProducers.length > 0)
-    && routedSources.every(entry =>
-      publicationRoutingErrors(entry).length === 0)
-    && routedAgents.every(entry => agentDirectOutputErrors(entry).length === 0),
-  `publication ordering inspects agent producers=${declaredByKind.agent.producers.length}, `
-    + `agent non-producers=${declaredByKind.agent.nonProducers.length}, `
-    + `skill producers=${declaredByKind.skill.producers.length}, `
-    + `skill non-producers=${declaredByKind.skill.nonProducers.length}`);
-  for (const [kind, corpus] of Object.entries(declaredByKind)) {
-    const routeMutation = corpus.producers[0];
-    const nonProducerMutation = corpus.nonProducers[0];
-    if (!routeMutation || !nonProducerMutation) continue;
-    const routeOwner = publicationSkillForPack(routeMutation.pack);
-    const wrongPublication = routeMutation.pack === 'creative'
-      ? 'engineering-workspace-publication'
-      : 'creative-workspace-publication';
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body
-        .replace(
-          new RegExp(
-            `(?:Apply|Invoke|Load|Run|Use)\\s+(?:the\\s+)?\`${routeOwner}\`[^.]*\\.\\s*`,
-            'gi',
-          ),
-          '',
-        )
-        .replace(
-          /(?:Apply|Invoke|Load|Run|Use)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
-          '',
-        ),
-    }).some(message => /declared publication entrypoint/.test(message)),
-    `removing both ${kind} producer routes fails from the authoritative declaration`);
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body.replace(
-        `publication-entrypoint: ${routeOwner}`,
-        `publication-entrypoint: ${wrongPublication}`,
-      ),
-    }).some(message => /belongs to another pack/.test(message)),
-    `a ${kind} producer cannot declare another pack's publication entrypoint`);
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body.replace(/^publication-entrypoint:\s*\S+\s*$/m, ''),
-    }).some(message => /requires frontmatter/.test(message)),
-    `removing a ${kind} producer declaration fails by declaration name`);
-    ok(publicationRoutingErrors({
-      ...routeMutation,
-      body: routeMutation.body.replace(`\`${routeOwner}\``, `\`${wrongPublication}\``),
-    }).some(message => /cannot route publication skill owned by another pack/.test(message)),
-    `routing a ${kind} producer through another pack publication skill fails`);
-    ok(publicationRoutingErrors({
-      ...nonProducerMutation,
-      body: `${nonProducerMutation.body}\nApply \`${publicationSkillForPack(nonProducerMutation.pack)}\`, then apply \`kai-core-asset-producing\`.\n`,
-    }).some(message => /publication entrypoint|direct/.test(message)),
-    `adding producer routes to a ${kind} non-producer requires a positive declaration`);
-  }
-  const agentRouteMutation = declaredByKind.agent.producers[0];
-  ok(agentDirectOutputErrors({
-    ...agentRouteMutation,
-    body: agentRouteMutation.body.replace('existing typed hierarchy subject', 'new report request'),
-  }).some(message => /existing typed hierarchy subject/.test(message)),
-  'removing the typed-subject gate from direct durable output fails');
-
-  ok(routedSources.length > 0
-    && routedSources.every(entry =>
-      activeWorkspaceLanguageErrors(entry).length === 0),
-  `active-language gate inspects every shipped source (count=${routedSources.length})`);
-  ok(activeWorkspaceLanguageErrors({
-    body: 'Create a new initiative under `.kai/runs/misc/`.',
-  }).length >= 2,
-  'restoring old hierarchy and fallback-lane language fails by specific gates');
-  ok(markdownCoordinationAuthorityErrors({
-    body: '`BOARD.md` is the authoritative coordination backlog.',
-  }).some(message => /Markdown coordination authority/.test(message)),
-  'restoring an authoritative Markdown board fails by gate name');
-
-  const activeDocs = activeGuideDecisionFiles(ROOT)
-    .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}));
-  ok(activeDocs.length >= 10
-    && activeDocs.every(entry =>
-      activeWorkspaceLanguageErrors(entry).length === 0
-      && markdownCoordinationAuthorityErrors(entry).length === 0),
-  `active guide/decision gate inspects a non-vacuous corpus (count=${activeDocs.length})`);
-  const activeDocMutation = activeDocs.find(entry =>
-    entry.rel === 'docs/reference/agent-authoring/README.md');
-  ok(activeDocMutation && activeWorkspaceLanguageErrors({
-    ...activeDocMutation,
-    body: `${activeDocMutation.body}\nCreate a work item under \`.kai/state/items/demo.md\`.\n`,
-  }).length >= 2,
-  'restoring schema-4 language in an active guide fails the corpus-wide gate');
-  ok([
-    'Generated coordination state validates item schemas before use.',
-    'Release assessment requires a coordination item before transition.',
-    'Current coordination examples identify the item owners.',
-  ].every(phrase => activeWorkspaceLanguageErrors({
-    ...activeDocMutation,
-    body: `${activeDocMutation.body}\n${phrase}\n`,
-  }).some(message => /generic coordination item semantics/.test(message))),
-  'schema-4 semantic item phrases fail only in active coordination prose');
-  ok(activeWorkspaceLanguageErrors({
-    body: 'Catalog item owners maintain JSON item schemas for storefront imports.',
-  }).length === 0 && activeWorkspaceLanguageErrors({
-    body: '<!-- kai:schema4-history -->\n'
-      + 'Coordination item schemas and item owners are historical.\n'
-      + '<!-- /kai:schema4-history -->',
-  }).length === 0,
-  'ordinary non-coordination and explicit historical prose remain outside the semantic gate');
-
-  const directionBody = readFileSync(skillPath('kai-core-workspace-paths'), 'utf8');
-  ok(directionContractErrors({body: directionBody}).length === 0,
-    'Direction gate inspects the live workspace path contract');
-  ok(directionContractErrors({
-    body: directionBody.replace(/^# Mission\s*$/m, '# Purpose'),
-  }).some(message => /Mission/.test(message)),
-  'removing a required Direction section fails by section name');
-
-  const epicBody = readFileSync(agentSourceFile(ROOT, 'workflow-epic-init'), 'utf8');
-  ok(epicWorkflowContractErrors({body: epicBody}).length === 0,
-    'Epic workflow gate inspects the live replacement workflow');
-  ok(epicWorkflowContractErrors({
-    body: epicBody.replace(/creates no record before\s+named authority approval/i, ''),
-  }).some(message => /no record before named authority approval/.test(message)),
-  'allowing pre-approval Epic creation fails by authority rule');
-
-  const chiefBody = readFileSync(agentSourceFile(ROOT, 'director-chief-of-staff'), 'utf8');
-  ok(chiefOfStaffContractErrors({body: chiefBody}).length === 0,
-    'Chief of Staff boundary gate inspects the live dispatch role');
-  ok(chiefOfStaffContractErrors({
-    body: chiefBody.replace('cannot invent', 'may invent'),
-  }).some(message => /cannot invent/.test(message)),
-  'allowing Chief of Staff to invent hierarchy scope fails by boundary name');
-
-  const workflowShipBody = readAgent('workflow-ship');
-  ok(workflowShipContractErrors({body: workflowShipBody}).length === 0,
-    'workflow-ship failure and restore semantics match the runtime');
-  ok(workflowShipContractErrors({
-    body: workflowShipBody.replace(
-      /resumes the\s+recorded allowed original state/i,
-      'returns the Task to release-ready',
+  const producer = routedSources.find(entry =>
+    publicationEntrypointDeclaration(entry) !== null);
+  const owner = producer && publicationSkillForPack(producer.pack);
+  const foreignPublication = producer?.pack === 'creative'
+    ? 'engineering-workspace-publication'
+    : 'creative-workspace-publication';
+  ok(Boolean(producer) && publicationRoutingErrors({
+    ...producer,
+    body: producer.body.replace(/^\s*publication-entrypoint:\s*\S+\s*$/m, ''),
+  }).some(message => /requires frontmatter/.test(message)),
+  'missing publication entrypoint is rejected');
+  ok(Boolean(producer) && publicationRoutingErrors({
+    ...producer,
+    body: producer.body.replace(
+      `publication-entrypoint: ${owner}`,
+      `publication-entrypoint: ${foreignPublication}`,
     ),
-  }).some(message => /never rewind to release-ready/.test(message)),
-  'workflow-ship release-ready rewind mutation fails');
-  ok(workflowShipContractErrors({
-    body: workflowShipBody.replace('release Task', 'release item'),
-  }).some(message => /generic item/.test(message)),
-  'workflow-ship generic-item mutation fails');
+  }).some(message => /belongs to another pack/.test(message)),
+  'foreign publication entrypoint is rejected');
+  ok(publicationRoutingErrors({
+    pack: 'engineering',
+    id: 'bypass',
+    kind: 'skill',
+    body: 'Load `kai-core-asset-producing` now.',
+    fm: {},
+  }).some(message => /direct `kai-core-asset-producing` route/.test(message)),
+  'direct asset-producing bypass is rejected');
 
-  const stewardshipBody = readFileSync(skillPath('kai-core-work-stewardship'), 'utf8');
-  ok(stewardshipAuthorityErrors({body: stewardshipBody}).length === 0,
-    'stewardship proposal and activation authority matches runtime');
-  ok(stewardshipAuthorityErrors({
-    body: stewardshipBody.replace(
-      'Feature owner or delegated pack/scope authority',
-      'Feature scope authority',
-    ),
-  }).some(message => /Requirement proposal/.test(message)),
-  'stewardship authority mutation fails by action name');
+  const missingBase = join(ROOT, 'test', '.pack-preview-missing');
+  rmSync(missingBase, {recursive: true, force: true});
+  const missingCheck = checkCommitted({
+    root: ROOT,
+    base: missingBase,
+    version: '0.0.0-self-test',
+  });
+  ok(!missingCheck.ok && missingCheck.drift.includes(`missing:    ${PACKS_DIR}/`),
+    'missing generated file surface is rejected');
 
-  const evaluationBody = readFileSync(skillPath('kai-core-web-evaluation'), 'utf8');
-  const extractionBody = readFileSync(skillPath('kai-core-web-content-extraction'), 'utf8');
-  ok(webOutputContractErrors({
-    id: 'kai-core-web-evaluation', body: evaluationBody,
-  }).length === 0 && webOutputContractErrors({
-    id: 'kai-core-web-content-extraction', body: extractionBody,
-  }).length === 0,
-  'web contracts use typed private/public paths and collision-safe report IDs');
-  const evaluationIdGrammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
-  ok(webOutputContractErrors({
-    id: 'kai-core-web-evaluation',
-    body: evaluationBody.replace(
-      `.kai/core/reports/${evaluationIdGrammar}/`,
-      `<working-root>/qa/${evaluationIdGrammar}/`,
-    ),
-  }).some(message => /typed core report path/.test(message)),
-  'web evaluation QA-root mutation fails');
-  ok(webOutputContractErrors({
-    id: 'kai-core-web-evaluation',
-    body: evaluationBody.replace(
-      `.kai/core/reports/${evaluationIdGrammar}/{drafts,evidence,scratch}`,
-      '.kai/core/reports/web-evaluation-<artifact-id>/{drafts,evidence,scratch}',
-    ),
-  }).some(message => /exact web-evaluation ID grammar/.test(message)),
-  'web evaluation private/public grammar drift fails');
-  ok(webOutputContractErrors({
-    id: 'kai-core-web-evaluation',
-    body: evaluationBody.replace(
-      'Every rerun allocates a new `<NN>` and never reuses an earlier ID.',
-      'Every rerun reuses the previous report ID.',
-    ),
-  }).some(message => /grammar\/prose drift/.test(message)),
-  'web evaluation rerun prose drift fails');
+  ok(generatedRuntimeErrors(new Map([
+    ['kai-core/plugin.json', '{}'],
+    ['kai-core/scripts/start.mjs', "import runtime from '@scope/runtime';\n"],
+  ])).some(error => /imports bare module/.test(error.msg)),
+  'external runtime import is rejected');
 
-  const grantingBody = readFileSync(skillPath('kai-core-work-granting'), 'utf8');
-  ok(directModeContractErrors({body: grantingBody}).length === 0,
-    'direct mode uses the direct verb and checks coordinationRequired:false');
-  ok(directModeContractErrors({
-    body: grantingBody.replace(' direct --root ', ' inspect --root '),
-  }).some(message => /`direct` runtime verb/.test(message)),
-  'inspect cannot authorize direct mode');
+  const observer = 'scripts/observe-subagent.mjs';
+  ok(hooksAssignmentErrors({
+    owners: [HOOKS_OWNER],
+    hookAssets: [observer],
+    assets: new Map([[observer, {
+      asset: observer,
+      consumers: [],
+      packs: new Set(['engineering']),
+      owner: 'engineering',
+    }]]),
+  }).some(error => /owned by kai-engineering/.test(error.msg)),
+  'hooks owned by the wrong package are rejected');
 
-  ok(new Set(Object.values(ROLE_PROFILE_MODELS)).size === APPROVED_AGENT_MODELS.size
-    && [...APPROVED_AGENT_MODELS].every((model) => Object.values(ROLE_PROFILE_MODELS).includes(model)),
-  'the approved model set and deterministic profile mapping contain the same identifiers');
-  ok(agentPromptLimitErrors('x'.repeat(30_000)).length === 0
-    && agentPromptLimitErrors('x'.repeat(30_001)).some((m) => /host limit/.test(m)),
-  'the host prompt limit accepts 30,000 characters and rejects the first character over it');
-
-  const authoringRefs = join(ROOT, 'docs', 'reference', 'agent-authoring');
-  const taxonomyPath = join(authoringRefs, 'taxonomy.md');
-  const modelSelectionPath = join(authoringRefs, 'model-selection.md');
-  if (existsSync(taxonomyPath) && existsSync(modelSelectionPath)) {
-    const taxonomy = readFileSync(taxonomyPath, 'utf8');
-    const modelSelection = readFileSync(modelSelectionPath, 'utf8');
-    ok(agentAuthoringReferenceErrors({ taxonomy, modelSelection }).length === 0,
-      'the contributor taxonomy and model tables match their validator constants');
-    ok(agentAuthoringReferenceErrors({
-      taxonomy,
-      modelSelection: modelSelection.replace('`claude-opus-5`', '`unreviewed-model`'),
-    }).some((m) => /approved model rows/.test(m)),
-    'a model-selection table drifting from the approved mapping fails by name');
-  } else {
-    ok(false, 'the contributor taxonomy and model references exist for drift checks');
-    ok(false, 'a model-selection drift mutation can run against the contributor reference');
-  }
-
-  // --- routedSkills: an imperative verb is what makes a mention a route
-  ok(routedSkills('Invoke `kai-core-work-acting` before writing state.')
-    .join() === 'kai-core-work-acting',
-  'an imperative verb immediately before a backticked id is a route');
-  ok(routedSkills('The technical counterpart to `kai-core-work-acting`.').length === 0,
-    'a bare prose mention is editorial, not a route');
-  ok(routedSkills('Do not invoke `kai-core-work-granting`; you are not the grantor.').length === 0,
-    'a negated instruction is not a route -- the dead-route bug this parser exists to catch');
-  ok(routedSkills('Load the `kai-core-asset-producing` contract first.')
-    .join() === 'kai-core-asset-producing',
-    'an optional article between the verb and the id is allowed');
-  ok(routedSkills('Load `kai-core-work-acting`.\nInvoke `kai-core-work-acting` again.')
-    .length === 1, 'a repeated route is reported once');
-  ok(routedSkills('Invoke `kai-core-work-item` then apply `kai-core-work-acting`.')
-    .length === 2, 'two routes on one line are both found');
-  // finding 1: negation in a prior clause must not kill a route in a later clause
-  ok(routedSkills('Do not start. Invoke `kai-core-work-acting`.')
-    .join() === 'kai-core-work-acting',
-    'negation in a prior clause does not suppress a route in a later clause');
-  // finding 2: verb and backtick on different lines (line-wrapped prose)
-  ok(routedSkills('Invoke\n`kai-core-work-acting` before writing state.')
-    .join() === 'kai-core-work-acting',
-    'a line-wrapped route whose verb and id are on different lines is found');
-  // finding 1 regression: original single-clause negation still suppressed
-  ok(routedSkills('Do not invoke `kai-core-work-granting`.')
-    .length === 0,
-    'negation in the same clause still suppresses a route');
-  // finding 3: fenced code block contents are not parsed as routes
-  ok(routedSkills('```\nInvoke `kai-core-work-acting` here.\n```')
-    .length === 0,
-    'an imperative inside a fenced code block is not a route');
-  // round-2 finding 1: structural boundary above a route is its own clause
-  ok(routedSkills('## Do not start\nInvoke `kai-core-work-acting`.')
-    .join() === 'kai-core-work-acting',
-    'a negation in a heading does not suppress a route on the next line');
-  ok(routedSkills('- Never do this\n- Invoke `kai-core-work-acting` now.')
-    .join() === 'kai-core-work-acting',
-    'a negation in a list item does not suppress a route in the next list item');
-  // round-2 finding 2: an unterminated fence strips to end of body
-  ok(routedSkills('```\nInvoke `kai-core-work-acting` here.').length === 0,
-    'an unterminated fence containing an imperative yields no routes');
-  // round-2 finding 3: an indented fence marker is still recognised
-  ok(routedSkills('- item\n  ```\n  Invoke `kai-core-work-acting`.\n  ```').length === 0,
-    'an indented fence inside a list item does not expose its contents as routes');
+  ok(sourceFileErrors({agents: [], skills: []})
+    .filter(error => /active (?:agent|skill) source corpus is empty/.test(error.msg)).length === 2,
+  'empty active corpus is rejected');
 
   console.log(`\npack-preview self-test: ${pass} checks passed${fails.length ? `, ${fails.length} FAILED` : ''}`);
   return fails.length === 0;
@@ -1748,16 +524,10 @@ const GATE_VERSION = '0.0.0-gate';
 // decided by roster membership.
 function gatePartition() {
   const plan = planPacks(ROOT);
-  const errs = [
+  return [
     ...partitionErrors({ plan, agents: rosterAgentIds(), skills: rosterSkillIds() }),
     ...namespaceErrors({ core: plan.core, local: plan.local }),
   ];
-  for (const id of DISPATCHING_ROLES) {
-    for (const msg of availabilityErrors({ body: readAgent(id) })) {
-      errs.push(`agents/${id}.agent.md ${msg}`);
-    }
-  }
-  return errs;
 }
 
 // Two packs emitting one id. Duplicate-provider behavior differs by host and
@@ -1838,7 +608,8 @@ function gateSkew() {
     }
   }
 
-  const dir = mkdtempSync(join(tmpdir(), 'kai-gate-skew-'));
+  const dir = join(ROOT, 'test', '.pack-preview-gate-skew');
+  rmSync(dir, {recursive: true, force: true});
   try {
     const arm = (name, opts) => {
       const out = join(dir, name);

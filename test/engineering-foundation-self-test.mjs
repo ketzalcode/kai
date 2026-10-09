@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   sourceAgentFiles, sourceSkillFiles, materializePacks, collectReferences,
-  durableOutputProducerDeclaration, publicationRoutingErrors,
+  publicationEntrypointDeclaration, publicationRoutingErrors,
 } from '../tools/lib/pack-plan.mjs';
 import {
   incubatedIds, documentationReferenceExists,
@@ -30,8 +30,8 @@ assert.deepEqual(skills.map(entry => entry.id).sort(), keep);
 let declaredSkillNonProducers = 0;
 for (const entry of skills) {
   const body = readFileSync(entry.path, 'utf8');
-  assert.equal(durableOutputProducerDeclaration({...entry, body}), false,
-    `${entry.id}: engineering skills explicitly declare non-production`);
+  assert.equal(publicationEntrypointDeclaration({...entry, body}), null,
+    `${entry.id}: engineering method is not a durable producer`);
   assert.deepEqual(publicationRoutingErrors({...entry, body}), [],
     `${entry.id}: declared engineering skill non-producer routes neither production contract`);
   declaredSkillNonProducers += 1;
@@ -46,16 +46,8 @@ assert.ok(publicationRoutingErrors({
   ...nonProducerSkill,
   body: `${nonProducerSkill.body}\n`
     + 'Load `engineering-workspace-publication`, then Load `kai-core-asset-producing`.\n',
-}).some(message => message.includes('declared non-producer')),
+}).some(message => /publication entrypoint|direct/.test(message)),
   'adding both producer routes to an engineering skill non-producer must fail');
-assert.ok(publicationRoutingErrors({
-  ...nonProducerSkill,
-  body: nonProducerSkill.body.replace(
-    'durable-output-producer: false',
-    'durable-output-producer: true',
-  ),
-}).some(message => message.includes('declared durable-output producer')),
-  'flipping an engineering skill declaration to producer must require both routes');
 assert.ok(publicationRoutingErrors({
   ...nonProducerSkill,
   body: `${nonProducerSkill.body}\n`

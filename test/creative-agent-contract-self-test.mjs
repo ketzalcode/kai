@@ -67,7 +67,6 @@ function parseAgent(id) {
       description: field('description'),
       model: field('model'),
       tools: JSON.parse(field('tools')),
-      durableOutputProducer: field('durable-output-producer'),
     },
   };
 }
@@ -100,8 +99,11 @@ function assertContract(agent, {
 }) {
   assert.equal(agent.fm.name, agent.id);
   assert.equal(agent.fm.model, `"${model}"`);
-  assert.equal(agent.fm.durableOutputProducer, 'true',
-    `${agent.id}: creative agents explicitly declare durable output production`);
+  assert.equal(
+    packPlan.publicationEntrypointDeclaration(agent),
+    'creative-workspace-publication',
+    `${agent.id}: creative agents declare their publication entrypoint`,
+  );
   assert.deepEqual(agent.fm.tools, tools, `${agent.id}: tools must stay least-privilege`);
   assert.ok(!agent.fm.tools.some(tool =>
     ['agent', 'read_agent', 'write_agent'].includes(tool)),
@@ -129,11 +131,6 @@ function assertContract(agent, {
     }),
     [],
     `${agent.id}: creative publication route must immediately precede asset production`,
-  );
-  assert.deepEqual(
-    packPlan.agentDirectOutputErrors({pack: 'creative', id: agent.id, body: agent.body}),
-    [],
-    `${agent.id}: direct output cannot become an unauthorized durable Kai artifact`,
   );
   assert.doesNotMatch(agent.body, /^\*\*Inherits:\*\*/m);
 
@@ -274,7 +271,7 @@ const productionContract = {
 assertContract(production, productionContract);
 
 const creativeProducers = [design, video, production].filter(agent =>
-  packPlan.durableOutputProducerDeclaration(agent) === true);
+  packPlan.publicationEntrypointDeclaration(agent) !== null);
 assert.ok(creativeProducers.length > 0,
   'creative publication routing must inspect at least one declared durable producer');
 assert.ok(
@@ -291,20 +288,8 @@ assert.ok(
         /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
         '',
       ),
-  }).some(message => message.includes('declared durable-output producer')),
+  }).some(message => message.includes('declared publication entrypoint')),
   'removing both creative production routes must fail from the producer declaration',
-);
-assert.ok(
-  packPlan.publicationRoutingErrors({
-    pack: 'creative',
-    id: creativeProducers[0].id,
-    kind: 'agent',
-    body: creativeProducers[0].body.replace(
-      'durable-output-producer: true',
-      'durable-output-producer: false',
-    ),
-  }).some(message => message.includes('declared non-producer')),
-  'falsifying a creative producer declaration must fail while routes remain',
 );
 
 assert.throws(

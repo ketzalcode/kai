@@ -68,10 +68,11 @@ for (const entry of agents) {
     id: entry.id, pack: entry.pack, body, tools, knownSkills: availableSkills,
     knownAgents: new Set(agents.map(agent => agent.id)),
   }), [], `${entry.id}: core routes and bounded fallback`);
-  assert.equal(packPlan.durableOutputProducerDeclaration({...entry, body}), true,
-    `${entry.id}: engineering agents explicitly declare durable output production`);
-  assert.deepEqual(packPlan.agentDirectOutputErrors({...entry, body}), [],
-    `${entry.id}: direct output cannot become an unauthorized durable Kai artifact`);
+  assert.equal(
+    packPlan.publicationEntrypointDeclaration({...entry, body}),
+    'engineering-workspace-publication',
+    `${entry.id}: engineering agents declare their publication entrypoint`,
+  );
   const publicationErrors = packPlan.publicationRoutingErrors({...entry, body});
   assert.deepEqual(publicationErrors, [],
     `${entry.id}: engineering publication route must immediately precede asset production`);
@@ -100,7 +101,7 @@ assert.ok(durableProducers > 0,
   'engineering publication routing must inspect at least one declared durable producer');
 const mutatedProducer = agents
   .map(entry => ({...entry, body: readFileSync(entry.path, 'utf8')}))
-  .find(entry => packPlan.durableOutputProducerDeclaration(entry) === true);
+  .find(entry => packPlan.publicationEntrypointDeclaration(entry) !== null);
 assert.ok(mutatedProducer, 'engineering mutation needs one declared durable producer');
 assert.ok(
   packPlan.publicationRoutingErrors({
@@ -114,18 +115,8 @@ assert.ok(
         /(?:Apply|Invoke|Load|Run)\s+(?:the\s+)?`kai-core-asset-producing`[^.]*\.\s*/gi,
         '',
       ),
-  }).some(message => message.includes('declared durable-output producer')),
+  }).some(message => message.includes('declared publication entrypoint')),
   'removing both engineering production routes must fail from the producer declaration',
-);
-assert.ok(
-  packPlan.publicationRoutingErrors({
-    ...mutatedProducer,
-    body: mutatedProducer.body.replace(
-      'durable-output-producer: true',
-      'durable-output-producer: false',
-    ),
-  }).some(message => message.includes('declared non-producer')),
-  'falsifying an engineering producer declaration must fail while routes remain',
 );
 for (const skill of [
   'coding-standards', 'research-before-coding', 'onboard-to-codebase', 'pr-sizing', 'build-diagrams',

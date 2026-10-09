@@ -13,15 +13,8 @@ repository-native paths and do not create Kai state.
 
 ## Canonical vocabulary
 
-<!-- >>> kai publication table (generated) >>>
-| Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| `engineering` | `features` | `-` | `.kai/engineering/features/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/features/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `engineering` | `documentation` | `architecture` | `.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/documentation/architecture/<id>/` | Markdown, diagram, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `engineering` | `decisions` | `-` | `.kai/engineering/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/decisions/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `engineering` | `reports` | `investigations` | `.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/investigations/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-| `engineering` | `reports` | `releases` | `.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}` | `docs/kai/engineering/reports/releases/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
-<!-- <<< kai publication table <<< -->
+Read the package-root `publication.json` declaration for the allowed types,
+paths, formats, authority, and privacy rules.
 
 ## Validation and refusal
 

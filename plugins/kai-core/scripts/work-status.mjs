@@ -1,44 +1,31 @@
 #!/usr/bin/env node
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
-  checkWorkspace
-} from "./chunk-IKN5OKAP.mjs";
-import "./chunk-XOIC64U7.mjs";
-import {
-  hierarchyStatus
-} from "./chunk-4P3U2F6L.mjs";
+  runs
+} from "./chunk-CEFA2NA7.mjs";
 import {
   currentDirectionForStore,
-  readLegacyRecords
-} from "./chunk-6ABDJP5R.mjs";
+  hierarchyStatus
+} from "./chunk-CKXCYZWQ.mjs";
 import {
   closeStore,
   listAllRecords,
   openStore,
-  read,
-  readSnapshot,
-  runs
-} from "./chunk-S4A2HMCB.mjs";
+  readSnapshot
+} from "./chunk-S7AQGXMM.mjs";
 import {
-  COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
   readWorkspaceManifest,
   resolveWorkspaceRoot
-} from "./chunk-2WT4K7YK.mjs";
-import "./chunk-XLDNBMDG.mjs";
+} from "./chunk-L4TFCRET.mjs";
+import "./chunk-HMPQ32NA.mjs";
 import {
+  COORDINATION_DATABASE,
   OPERATOR_GATED,
   TERMINAL,
-  dependsOn,
-  frontmatter,
+  WORKSPACE_SCHEMA_VERSION,
   isNull,
-  lease,
-  listBlock,
-  mapListBlock,
-  parseStamp,
-  parseThread,
-  scalar
-} from "./chunk-ITUOITH3.mjs";
+  parseStamp
+} from "./chunk-VVVMKUAL.mjs";
 
 // src/core/work-status.mjs
 import { readFileSync, existsSync, readdirSync } from "node:fs";
@@ -59,7 +46,7 @@ function overlay(items, activity, now) {
   const overdue = open.filter((r) => r.overdue);
   const byTarget = /* @__PURE__ */ new Map();
   for (const r of overdue) {
-    const key = r.item && known.has(r.item) ? r.item : `run:${r.run}`;
+    const key = r.task && known.has(r.task) ? r.task : `run:${r.run}`;
     const prev = byTarget.get(key);
     if (!prev || (r.deadline ?? 0) < (prev.deadline ?? 0)) byTarget.set(key, { ...r, n: (prev?.n || 0) + 1 });
     else byTarget.set(key, { ...prev, n: prev.n + 1 });
@@ -73,7 +60,7 @@ function overlay(items, activity, now) {
       tier: "derived",
       headline: `${r.role} declared it would report ${late}m ago and has not${r.n > 1 ? ` (${r.n} open runs)` : ""}`,
       why: "The run set that deadline itself. It may still be working, or it may have stopped without recording it \u2014 this cannot tell which.",
-      path: item ? item.rel : ".kai/activity.jsonl"
+      path: item ? item.rel : ".kai/core/runtime/activity.jsonl"
     });
   }
   return {
@@ -85,46 +72,6 @@ function overlay(items, activity, now) {
       roles: [...new Set(open.map((r) => r.role))].sort()
     }
   };
-}
-function readItems(coordRoot) {
-  const dir = join(coordRoot, "items");
-  if (!existsSync(dir)) return [];
-  const out = [];
-  for (const f of readdirSync(dir)) {
-    if (!f.endsWith(".md") || f === "README.md") continue;
-    const path = join(dir, f);
-    const raw = readFileSync(path, "utf8");
-    const fm = frontmatter(raw);
-    const rel = `.kai/state/items/${f}`;
-    if (!fm) {
-      out.push({ id: basename(f, ".md"), path, rel, unparseable: true });
-      continue;
-    }
-    out.push({
-      id: scalar(fm, "id") || basename(f, ".md"),
-      path,
-      rel,
-      title: scalar(fm, "title") || "",
-      state: scalar(fm, "state"),
-      owner: scalar(fm, "owner"),
-      nextRole: scalar(fm, "next_role"),
-      changeRef: scalar(fm, "change_ref"),
-      version: scalar(fm, "version"),
-      updated: scalar(fm, "updated"),
-      deliveryClass: scalar(fm, "delivery_class"),
-      lease: lease(fm),
-      dependsOn: dependsOn(fm),
-      questionIds: listBlock(fm, "waiting_on_questions"),
-      required: mapListBlock(fm, "review_requirements"),
-      completed: mapListBlock(fm, "completed_reviews")
-    });
-  }
-  return out;
-}
-function readThread(coordRoot, id) {
-  const p = join(coordRoot, "threads", `${id}.md`);
-  if (!existsSync(p)) return null;
-  return parseThread(readFileSync(p, "utf8"));
 }
 function analyze(items, threads, now) {
   const findings = [];
@@ -291,10 +238,6 @@ function gitContext(root) {
   if (rev === null) return { revision: null, dirty: null };
   return { revision: rev, dirty: run(["status", "--porcelain"]) !== "" };
 }
-function findCoordRoot(root) {
-  const stateRoot = join(root, ".kai", "state");
-  return existsSync(join(stateRoot, "items")) ? stateRoot : null;
-}
 function installedRoles(env = process.env) {
   const roles = /* @__PURE__ */ new Set();
   for (const pluginRoot of (env.KAI_COPILOT_PLUGIN_DIRS ?? "").split(delimiter).filter(Boolean)) {
@@ -322,7 +265,7 @@ function hierarchyNodes(status) {
   }
   return nodes.filter((node) => !node.missing);
 }
-function collectHierarchy(root, now, roles, database = ".kai/state/coordination.sqlite") {
+function collectHierarchy(root, now, roles, database) {
   const path = join(root, ...database.split("/"));
   if (!existsSync(path)) {
     return { ok: false, reason: `coordination database is missing at ${database}` };
@@ -360,16 +303,6 @@ function collectHierarchy(root, now, roles, database = ".kai/state/coordination.
         });
       }
     }
-    for (const source of readLegacyRecords(store).filter((source2) => source2.status === "quarantined")) {
-      findings.push({
-        section: "integrity",
-        item: source.declaredId ?? source.path,
-        tier: "derived",
-        headline: `quarantined legacy ${source.kind}`,
-        why: source.issues.join("; "),
-        path: source.path
-      });
-    }
     const hierarchyIds = new Set(nodes.map((node) => `${node.kind}/${node.id}`));
     const flagged = new Set(findings.map((finding) => finding.item).filter((item) => hierarchyIds.has(item)));
     return {
@@ -402,50 +335,9 @@ function collect(root, now = Date.now(), { roles = [] } = {}) {
   if (manifest.ok && manifest.manifest.schema_version === WORKSPACE_SCHEMA_VERSION) {
     return collectHierarchy(root, now, roles, COORDINATION_DATABASE);
   }
-  if (manifest.ok && manifest.manifest.schema_version === 4) {
-    return collectHierarchy(root, now, roles);
-  }
-  if (manifest.ok && manifest.manifest.schema_version !== 3) {
-    return { ok: false, reason: `unsupported workspace schema ${manifest.manifest.schema_version}; inspection refuses to guess` };
-  }
-  const coordRoot = findCoordRoot(root);
-  if (!coordRoot) return { ok: false, reason: "no .kai/state/items directory found under this root" };
-  const items = readItems(coordRoot);
-  const threads = /* @__PURE__ */ new Map();
-  for (const it of items) threads.set(it.id, readThread(coordRoot, it.id));
-  const findings = analyze(items, threads, now);
-  let live = null;
-  try {
-    const ov = overlay(items, read(root), now);
-    findings.push(...ov.findings);
-    live = ov.live;
-  } catch {
-    live = null;
-  }
-  let doctor = null;
-  try {
-    const r = checkWorkspace(root);
-    doctor = { errors: r.errors.length, warnings: r.warnings.length };
-  } catch {
-    doctor = null;
-  }
-  const flagged = new Set(findings.map((f) => f.item));
   return {
-    ok: true,
-    generated_at: new Date(now).toISOString(),
-    // Deliberately the folder name, not the absolute path: this output is meant
-    // to be pasted into issues, and the caller already knows where it ran.
-    workspace: basename(root),
-    git: gitContext(root),
-    totals: {
-      items: items.length,
-      flagged: flagged.size,
-      healthy: items.length - flagged.size,
-      terminal: items.filter((i) => !i.unparseable && TERMINAL.has(i.state)).length
-    },
-    doctor,
-    live,
-    findings
+    ok: false,
+    reason: manifest.ok ? "workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard" : manifest.reason
   };
 }
 function render(r) {

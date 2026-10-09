@@ -61,7 +61,6 @@ Use this shell:
 name: <agent-id>
 description: "<what it owns, when it applies, and the nearest routing distinction>"
 model: "<approved model id>"
-durable-output-producer: <true | false>
 tools: [read, search, skill]
 ---
 
@@ -116,9 +115,9 @@ form. Add one only where overlapping authority is genuinely ambiguous.
 Use the model mapped by `model-selection.md`. Add tools required by actual
 actions. Every Kai agent that dispatches skills includes `skill`.
 
-Set `durable-output-producer` to `true` only when the body has an authorized
-durable branch. That branch loads the source pack's publication contract
-immediately before `kai-core-asset-producing`. A `false` agent routes neither.
+When the body has an authorized durable branch, add the source pack's
+`publication-entrypoint` to frontmatter and load that publication skill before
+`kai-core-asset-producing`. A non-producer declares no publication entrypoint.
 
 `tools` is a GitHub custom-agent profile field, not an Agent Skills standard.
 Its aliases and fallback behavior are host-specific, and other catalogs use

@@ -25,10 +25,9 @@ PR and push to `main` and must stay fast:
   `creative-skill-contract-self-test.mjs` check the scoped source contracts.
   These are focused source and parser checks, not live-host certification.
 - **Coordination source and emission contracts** —
-  `coordination-authority-self-test.mjs`, `coordination-thread-self-test.mjs`
-  and `coordination-source-routing-self-test.mjs` read shipped source text and
-  check that the documents a host loads route coordinated work to the runtime
-  instead of hand-edited Markdown. `coordination-foundation-self-test.mjs` calls
+  `coordination-authority-self-test.mjs` and
+  `coordination-thread-self-test.mjs` check runtime authority and message
+  routing. `coordination-foundation-self-test.mjs` calls
   the authoritative pack generator and checks that `kai-core` alone emits
   `scripts/coordinate.mjs` and its full runtime closure, and that no department
   pack emits a second copy. These are source and packaging contracts, not a

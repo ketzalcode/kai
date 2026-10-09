@@ -6,14 +6,16 @@ import {
   digest,
   looksAbsolute,
   safeNote
-} from "./chunk-S4A2HMCB.mjs";
+} from "./chunk-CEFA2NA7.mjs";
+import "./chunk-S7AQGXMM.mjs";
+import {
+  resolveWorkspaceRoot
+} from "./chunk-L4TFCRET.mjs";
+import "./chunk-HMPQ32NA.mjs";
 import {
   escapesRoot,
-  pathHasLink,
-  resolveWorkspaceRoot
-} from "./chunk-2WT4K7YK.mjs";
-import "./chunk-XLDNBMDG.mjs";
-import "./chunk-ITUOITH3.mjs";
+  pathHasLink
+} from "./chunk-VVVMKUAL.mjs";
 
 // src/core/observe-subagent.mjs
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync, statSync, renameSync, rmSync } from "node:fs";

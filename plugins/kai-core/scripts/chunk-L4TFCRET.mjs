@@ -1,283 +1,30 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
-  isNull,
-  unquote
-} from "./chunk-ITUOITH3.mjs";
-
-// src/core/lib/workspace-path-safety.mjs
-import { existsSync, lstatSync, readdirSync, realpathSync } from "node:fs";
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-var SHIPPED_PACK_NAMESPACES = /* @__PURE__ */ new Set(["core", "engineering", "creative"]);
-var ACTIVE_ARTIFACT_LIFECYCLES = /* @__PURE__ */ new Set(["drafts", "evidence", "scratch"]);
-var RESERVED_DEVICE_SEGMENT = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i;
-var DRIVE_RELATIVE_SEGMENT = /^[A-Za-z]:(?![\\/])/;
-var DRIVE_ABSOLUTE_SEGMENT = /^[A-Za-z]:[\\/]/;
-function badPath(p) {
-  const t = unquote(p);
-  if (isNull(t) || t === "[]") return null;
-  const projectTarget = /^project:([a-z][a-z0-9-]*):(.*)$/i.exec(t);
-  const candidate = projectTarget ? projectTarget[2] : t;
-  if (projectTarget && !candidate.trim()) return "project target with no relative path";
-  const norm = candidate.replace(/\\/g, "/");
-  if (t.startsWith("\\\\") || norm.startsWith("//")) return "UNC / share path";
-  if (/^[A-Za-z]:\//.test(norm) || norm.startsWith("/")) return "machine-absolute path";
-  if (t.includes(".../")) return "abbreviated `.../` path";
-  if (norm.split("/").some((seg) => seg === "..")) return "path escaping the workspace root";
-  if (/session-state/i.test(t)) return "session-state-relative path";
-  return null;
-}
-function badWorkspaceSegment(value) {
-  if (typeof value !== "string") return "non-string segment";
-  if (value.length === 0) return "empty segment";
-  if (value === ".") return "dot segment";
-  if (value === "..") return "dot-dot segment";
-  const normalizedValue = value.replace(/\\/g, "/");
-  if (value.startsWith("\\\\") || normalizedValue.startsWith("//")) return "UNC / share segment";
-  if (DRIVE_RELATIVE_SEGMENT.test(value) || DRIVE_RELATIVE_SEGMENT.test(normalizedValue)) return "drive-relative segment";
-  if (value.startsWith("/") || value.startsWith("\\") || DRIVE_ABSOLUTE_SEGMENT.test(value) || DRIVE_ABSOLUTE_SEGMENT.test(normalizedValue)) {
-    return "absolute segment";
-  }
-  if (normalizedValue.includes("/")) return "mixed-separator segment";
-  if (/[:<>"|?*\x00-\x1f]/.test(value)) return "unsafe segment";
-  if (RESERVED_DEVICE_SEGMENT.test(value)) return "reserved-device segment";
-  if (/[. ]$/.test(value)) return "trailing-dot-space segment";
-  return null;
-}
-function assertWorkspaceSegment(value, label = "segment") {
-  const problem = badWorkspaceSegment(value);
-  if (problem) throw new TypeError(`${label} must be a safe workspace segment (${problem})`);
-  return value;
-}
-function assertShippedPackNamespace(value) {
-  const pack = assertWorkspaceSegment(value, "pack");
-  if (!SHIPPED_PACK_NAMESPACES.has(pack)) throw new TypeError(`unknown pack namespace "${pack}"`);
-  return pack;
-}
-function assertArtifactLifecycle(value) {
-  const lifecycle = assertWorkspaceSegment(value, "lifecycle");
-  if (!ACTIVE_ARTIFACT_LIFECYCLES.has(lifecycle)) {
-    throw new TypeError("lifecycle must be one of drafts, evidence, or scratch");
-  }
-  return lifecycle;
-}
-function canonicalPath(path2) {
-  let existing = resolve(path2);
-  const tail = [];
-  while (!existsSync(existing)) {
-    const parent = dirname(existing);
-    if (parent === existing) break;
-    tail.unshift(basename(existing));
-    existing = parent;
-  }
-  const canonical = existsSync(existing) ? realpathSync.native(existing) : existing;
-  return resolve(canonical, ...tail);
-}
-function exactPath(path2) {
-  const requested = resolve(path2);
-  const canonical = canonicalPath(path2);
-  return process.platform === "win32" ? requested.toLowerCase() === canonical.toLowerCase() : requested === canonical;
-}
-function normalized(path2) {
-  const value = canonicalPath(path2);
-  return process.platform === "win32" ? value.toLowerCase() : value;
-}
-function resolvedProjectPath(root, projectPath) {
-  return isAbsolute(projectPath) ? resolve(projectPath) : resolve(root, projectPath);
-}
-function escapesRoot(root, candidate) {
-  const rel = relative(canonicalPath(root), canonicalPath(candidate));
-  return rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel);
-}
-function inspectPrivateLanes(root, lanes = [".kai/runs", ".kai/review", ".kai/archive", ".kai/personal"]) {
-  const gitRoots = [];
-  const symbolicLinks = [];
-  const unreadable = [];
-  for (const lane of lanes) {
-    const laneRoot = join(root, ...lane.split("/"));
-    let laneStat;
-    try {
-      laneStat = lstatSync(laneRoot);
-    } catch (error) {
-      if (error.code === "ENOENT") continue;
-      unreadable.push(`${lane}: ${error.message}`);
-      continue;
-    }
-    if (laneStat.isSymbolicLink()) {
-      symbolicLinks.push(lane);
-      continue;
-    }
-    const pending = [laneRoot];
-    while (pending.length) {
-      const current = pending.pop();
-      let entries;
-      try {
-        entries = readdirSync(current, { withFileTypes: true });
-      } catch (error) {
-        unreadable.push(`${relative(root, current).replace(/\\/g, "/")}: ${error.message}`);
-        continue;
-      }
-      for (const entry of entries) {
-        const path2 = join(current, entry.name);
-        if (entry.name.toLowerCase() === ".git") {
-          gitRoots.push(relative(root, current).replace(/\\/g, "/") || ".");
-          continue;
-        }
-        if (entry.isSymbolicLink()) {
-          symbolicLinks.push(relative(root, path2).replace(/\\/g, "/"));
-          continue;
-        }
-        if (entry.isDirectory()) pending.push(path2);
-      }
-    }
-  }
-  return { gitRoots, symbolicLinks, unreadable };
-}
-function pathHasLink(root, candidate) {
-  let current = resolve(root);
-  const segments = relative(current, resolve(candidate)).split(sep).filter(Boolean);
-  for (const segment of ["", ...segments]) {
-    if (segment) current = join(current, segment);
-    try {
-      if (lstatSync(current).isSymbolicLink()) return true;
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
-    }
-  }
-  return false;
-}
-
-// src/core/lib/workspace-layout.mjs
-import { dirname as dirname2, posix as path, resolve as resolve2 } from "node:path";
-var WORKSPACE_SCHEMA_VERSION = 5;
-var PRIVATE_ROOT = ".kai";
-var PUBLICATION_ROOT = "docs/kai";
-var DIRECTION_PATH = "docs/kai/DIRECTION.md";
-var COORDINATION_DATABASE = ".kai/core/runtime/coordination.sqlite";
-var LEGACY_COORDINATION_DATABASE = ".kai/state/coordination.sqlite";
-function artifactRoute({ pack, type, subtype = null, id }) {
-  return [
-    assertShippedPackNamespace(pack),
-    assertWorkspaceSegment(type, "type"),
-    ...subtype == null ? [] : [assertWorkspaceSegment(subtype, "subtype")],
-    assertWorkspaceSegment(id, "id")
-  ];
-}
-function assertDerivedPath(relativePath, label) {
-  const problem = badPath(relativePath);
-  if (problem) throw new TypeError(`${label} must stay workspace-relative (${problem})`);
-  return relativePath;
-}
-function safeRouteSegments(relativePath) {
-  if (typeof relativePath !== "string" || relativePath.includes("\\")) {
-    throw new TypeError("typed artifact route must use a workspace-relative POSIX path");
-  }
-  const problem = badPath(relativePath);
-  if (problem) throw new TypeError(`typed artifact route must stay workspace-relative (${problem})`);
-  const segments = relativePath.split("/");
-  if (segments.some((segment) => segment.length === 0)) {
-    throw new TypeError("typed artifact route cannot contain empty segments");
-  }
-  return segments;
-}
-function parsedRoute({ pack, type, subtype = null, id, lifecycle = null, members = [] }) {
-  return {
-    pack: assertShippedPackNamespace(pack),
-    type: assertWorkspaceSegment(type, "type"),
-    subtype: subtype === null ? null : assertWorkspaceSegment(subtype, "subtype"),
-    id: assertWorkspaceSegment(id, "id"),
-    lifecycle,
-    members: members.map((member, index) => assertWorkspaceSegment(member, `member[${index}]`))
-  };
-}
-function parseTypedArtifactRoute(relativePath) {
-  const segments = safeRouteSegments(relativePath);
-  if (segments[0] === PRIVATE_ROOT) {
-    const route2 = segments.slice(1);
-    const routes2 = [];
-    if (ACTIVE_ARTIFACT_LIFECYCLES.has(route2[3])) {
-      routes2.push(parsedRoute({
-        pack: route2[0],
-        type: route2[1],
-        id: route2[2],
-        lifecycle: assertArtifactLifecycle(route2[3]),
-        members: route2.slice(4)
-      }));
-    }
-    if (ACTIVE_ARTIFACT_LIFECYCLES.has(route2[4])) {
-      routes2.push(parsedRoute({
-        pack: route2[0],
-        type: route2[1],
-        subtype: route2[2],
-        id: route2[3],
-        lifecycle: assertArtifactLifecycle(route2[4]),
-        members: route2.slice(5)
-      }));
-    }
-    if (routes2.length === 0) {
-      throw new TypeError(
-        "typed private artifact route must contain pack, type, optional subtype, id, and lifecycle"
-      );
-    }
-    return { path: relativePath, visibility: "private", routes: routes2 };
-  }
-  const publicRoot = PUBLICATION_ROOT.split("/");
-  if (segments[0] !== publicRoot[0] || segments[1] !== publicRoot[1]) {
-    throw new TypeError(`typed public artifact route must stay below ${PUBLICATION_ROOT}`);
-  }
-  const route = segments.slice(publicRoot.length);
-  if (route.length < 3) {
-    throw new TypeError("typed public artifact route must contain pack, type, optional subtype, and id");
-  }
-  const routes = [parsedRoute({
-    pack: route[0],
-    type: route[1],
-    id: route[2],
-    members: route.slice(3)
-  })];
-  if (route.length >= 4) {
-    routes.push(parsedRoute({
-      pack: route[0],
-      type: route[1],
-      subtype: route[2],
-      id: route[3],
-      members: route.slice(4)
-    }));
-  }
-  return { path: relativePath, visibility: "public", routes };
-}
-function privateArtifactDirectory({ pack, type, subtype = null, id, lifecycle }) {
-  return assertDerivedPath(
-    path.join(PRIVATE_ROOT, ...artifactRoute({ pack, type, subtype, id }), assertArtifactLifecycle(lifecycle)),
-    "private artifact path"
-  );
-}
-function directionPath() {
-  return assertDerivedPath(DIRECTION_PATH, "direction path");
-}
-function workspaceRootFromCoordinationDatabase(databasePath) {
-  const absolute = resolve2(databasePath);
-  for (const relativePath of [COORDINATION_DATABASE, LEGACY_COORDINATION_DATABASE]) {
-    let root = absolute;
-    for (const _segment of relativePath.split("/")) root = dirname2(root);
-    const candidate = resolve2(root, ...relativePath.split("/"));
-    if ((process.platform === "win32" ? candidate.toLowerCase() : candidate) === (process.platform === "win32" ? absolute.toLowerCase() : absolute)) return root;
-  }
-  throw new TypeError("coordination database path does not use a supported workspace location");
-}
+  DIRECTION_PATH,
+  PRIVATE_ROOT,
+  WORKSPACE_SCHEMA_VERSION,
+  badPath,
+  canonicalPath,
+  escapesRoot,
+  exactPath,
+  normalized,
+  pathHasLink,
+  resolvedProjectPath
+} from "./chunk-VVVMKUAL.mjs";
 
 // src/core/lib/workspace-resolve.mjs
-import { existsSync as existsSync2, readFileSync, realpathSync as realpathSync2 } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import {
-  dirname as dirname3,
-  isAbsolute as isAbsolute2,
-  join as join2,
+  dirname,
+  isAbsolute,
+  join,
   parse as parsePath,
-  relative as relative2,
+  relative,
   resolve as resolvePath,
-  sep as sep2
+  sep
 } from "node:path";
-var MANIFEST_REL = join2(".kai", "manifest.json");
+var MANIFEST_REL = join(".kai", "manifest.json");
 var REGISTRY_FILE = "workspaces.json";
 var SCHEMA5_MANIFEST_KEYS = Object.freeze([
   "plugin",
@@ -305,24 +52,24 @@ function fail(code, message) {
   throw error;
 }
 function isWithin(parent, candidate) {
-  const rel = relative2(normalized(parent), normalized(candidate));
-  return rel === "" || rel !== ".." && !rel.startsWith(`..${sep2}`) && !isAbsolute2(rel);
+  const rel = relative(normalized(parent), normalized(candidate));
+  return rel === "" || rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
 }
 function hasManifest(dir) {
-  return existsSync2(join2(dir, MANIFEST_REL));
+  return existsSync(join(dir, MANIFEST_REL));
 }
-function readJson(path2) {
+function readJson(path) {
   try {
-    return { ok: true, value: JSON.parse(readFileSync(path2, "utf8")) };
+    return { ok: true, value: JSON.parse(readFileSync(path, "utf8")) };
   } catch (error) {
-    return { ok: false, reason: `${path2} is not valid JSON: ${error.message}` };
+    return { ok: false, reason: `${path} is not valid JSON: ${error.message}` };
   }
 }
 function defaultKaiHome(env = process.env) {
-  return resolvePath(env.KAI_HOME || join2(homedir(), ".kai"));
+  return resolvePath(env.KAI_HOME || join(homedir(), ".kai"));
 }
 function registryPath(env = process.env) {
-  return join2(defaultKaiHome(env), REGISTRY_FILE);
+  return join(defaultKaiHome(env), REGISTRY_FILE);
 }
 function searchUpward(startDir) {
   if (nativeAbsolutePathProblem(startDir, {
@@ -333,23 +80,23 @@ function searchUpward(startDir) {
   let dir = resolvePath(startDir);
   for (let depth = 0; depth < MAX_SEARCH_DEPTH; depth++) {
     if (hasManifest(dir)) return dir;
-    const parent = dirname3(dir);
+    const parent = dirname(dir);
     if (parent === dir || parent === parsePath(dir).root) return null;
     dir = parent;
   }
   return null;
 }
 function readWorkspaceManifest(root) {
-  const path2 = join2(resolvePath(root), MANIFEST_REL);
-  if (!existsSync2(path2)) {
+  const path = join(resolvePath(root), MANIFEST_REL);
+  if (!existsSync(path)) {
     return { ok: false, reason: `no ${MANIFEST_REL} in workspace root "${resolvePath(root)}"` };
   }
-  const parsed = readJson(path2);
+  const parsed = readJson(path);
   if (!parsed.ok) return parsed;
   if (!parsed.value || typeof parsed.value !== "object" || Array.isArray(parsed.value)) {
-    return { ok: false, reason: `${path2} must contain a JSON object` };
+    return { ok: false, reason: `${path} must contain a JSON object` };
   }
-  return { ok: true, path: path2, manifest: parsed.value };
+  return { ok: true, path, manifest: parsed.value };
 }
 function exactKeys(value, required, label, errors) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -373,7 +120,7 @@ function portableAbsoluteKind(value) {
 }
 function isNativeAbsolute(value) {
   const kind = portableAbsoluteKind(value);
-  return isAbsolute2(value) && (process.platform === "win32" ? kind === "windows" : kind === "posix");
+  return isAbsolute(value) && (process.platform === "win32" ? kind === "windows" : kind === "posix");
 }
 function usesCanonicalPhysicalPath(value) {
   return exactPath(value);
@@ -387,7 +134,7 @@ function nativeAbsolutePathProblem(value, {
   const kind = portableAbsoluteKind(value);
   if (kind === "network") return `${label} cannot use a UNC, device, or network path`;
   if (!kind || !isNativeAbsolute(value)) return `${label} must be a native absolute path`;
-  if (requireExisting && !existsSync2(value)) return `${label} does not exist`;
+  if (requireExisting && !existsSync(value)) return `${label} does not exist`;
   if (requireCanonical && (!usesCanonicalPhysicalPath(value) || pathHasLink(value, value))) {
     return `${label} cannot use links, junctions, or filesystem aliases`;
   }
@@ -483,7 +230,7 @@ function validateSchema5Manifest(root, manifest, {
       }
       const projectRoot = resolvedProjectPath(root, project.path);
       const canonicalRoot = canonicalPath(projectRoot);
-      if (!existsSync2(projectRoot)) errors.push(`${label}.path does not exist: "${projectRoot}"`);
+      if (!existsSync(projectRoot)) errors.push(`${label}.path does not exist: "${projectRoot}"`);
       else if (pathHasLink(projectRoot, projectRoot) || !usesCanonicalPhysicalPath(projectRoot)) {
         errors.push(`${label}.path cannot use a symbolic link, junction, or filesystem alias`);
       }
@@ -493,12 +240,12 @@ function validateSchema5Manifest(root, manifest, {
       if (manifest.placement === "external" && (!escapesRoot(root, projectRoot) || !escapesRoot(projectRoot, root))) {
         errors.push(`${label}.path overlaps the external workspace root`);
       }
-      const projectPrivateRoot = join2(projectRoot, ".kai");
-      if (manifest.placement === "external" && (existsSync2(projectPrivateRoot) || pathHasLink(projectRoot, projectPrivateRoot))) {
+      const projectPrivateRoot = join(projectRoot, ".kai");
+      if (manifest.placement === "external" && (existsSync(projectPrivateRoot) || pathHasLink(projectRoot, projectPrivateRoot))) {
         errors.push(`${label}.path must not contain project-local .kai state for external placement`);
       }
       const publicationRootAbsolute = resolvePath(projectRoot, ...publicationRoot.split("/").filter(Boolean));
-      if (publicationRoot && (escapesRoot(projectRoot, publicationRootAbsolute) || pathHasLink(projectRoot, publicationRootAbsolute) || existsSync2(publicationRootAbsolute) && !usesCanonicalPhysicalPath(publicationRootAbsolute))) {
+      if (publicationRoot && (escapesRoot(projectRoot, publicationRootAbsolute) || pathHasLink(projectRoot, publicationRootAbsolute) || existsSync(publicationRootAbsolute) && !usesCanonicalPhysicalPath(publicationRootAbsolute))) {
         errors.push(`${label}.publication_root escapes the configured project through a link or alias`);
       }
       projects.push({
@@ -532,29 +279,29 @@ function loadWorkspaceRegistryWithPolicy(env = process.env, {
   requireExisting = true,
   requireCanonical = true
 } = {}) {
-  const path2 = registryPath(env);
-  if (!existsSync2(path2)) return { ok: true, path: path2, entries: [] };
-  const parsed = readJson(path2);
+  const path = registryPath(env);
+  if (!existsSync(path)) return { ok: true, path, entries: [] };
+  const parsed = readJson(path);
   if (!parsed.ok) return parsed;
   if (parsed.value?.schema_version !== 1 || !Array.isArray(parsed.value.workspaces)) {
-    return { ok: false, reason: `${path2} must contain schema_version 1 and a workspaces array` };
+    return { ok: false, reason: `${path} must contain schema_version 1 and a workspaces array` };
   }
   for (const [index, entry] of parsed.value.workspaces.entries()) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      return { ok: false, reason: `${path2} workspaces[${index}] must be an object` };
+      return { ok: false, reason: `${path} workspaces[${index}] must be an object` };
     }
     for (const key of ["project_root", "workspace_root", "workspace_id"]) {
       if (typeof entry[key] !== "string" || !entry[key].trim()) {
-        return { ok: false, reason: `${path2} workspaces[${index}] is missing string "${key}"` };
+        return { ok: false, reason: `${path} workspaces[${index}] is missing string "${key}"` };
       }
     }
     const projectProblem = nativeAbsolutePathProblem(entry.project_root, {
-      label: `${path2} workspaces[${index}].project_root`,
+      label: `${path} workspaces[${index}].project_root`,
       requireExisting,
       requireCanonical
     });
     const workspaceProblem = nativeAbsolutePathProblem(entry.workspace_root, {
-      label: `${path2} workspaces[${index}].workspace_root`,
+      label: `${path} workspaces[${index}].workspace_root`,
       requireExisting,
       requireCanonical
     });
@@ -565,7 +312,7 @@ function loadWorkspaceRegistryWithPolicy(env = process.env, {
       };
     }
   }
-  return { ok: true, path: path2, entries: parsed.value.workspaces };
+  return { ok: true, path, entries: parsed.value.workspaces };
 }
 function loadWorkspaceRegistry(env = process.env) {
   return loadWorkspaceRegistryWithPolicy(env, {
@@ -605,17 +352,17 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   const manifestResult = readWorkspaceManifest(entry.workspace_root);
   if (!manifestResult.ok) return manifestResult;
   const manifest = manifestResult.manifest;
-  if (![3, 4, 5].includes(manifest.schema_version)) {
+  if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
     return {
       ok: false,
-      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3, 4, or 5`
+      code: "SCHEMA_MISMATCH",
+      reason: "workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard"
     };
   }
-  const placement = manifest.schema_version === 5 ? manifest.placement : manifest.storage_mode;
-  if (placement !== "external") {
+  if (manifest.placement !== "external") {
     return {
       ok: false,
-      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(placement)}`
+      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(manifest.placement)}`
     };
   }
   if (manifest.workspace_id !== entry.workspace_id) {
@@ -638,7 +385,7 @@ function validateRegisteredWorkspace(entry, projectRoot) {
       reason: `workspace manifest "${manifestResult.path}" does not bind registered project "${projectRoot}"`
     };
   }
-  return { ok: true, root: realpathSync2.native(entry.workspace_root) };
+  return { ok: true, root: realpathSync.native(entry.workspace_root) };
 }
 function findRegisteredWorkspace(cwd, env = process.env) {
   const cwdProblem = nativeAbsolutePathProblem(cwd, {
@@ -651,7 +398,7 @@ function findRegisteredWorkspace(cwd, env = process.env) {
   if (!registry.ok) return registry;
   const matches = registry.entries.filter((entry) => isWithin(entry.project_root, cwd)).sort((left, right) => normalized(right.project_root).length - normalized(left.project_root).length);
   if (!matches.length) return { ok: true, root: null, registryPath: registry.path };
-  const projectRoot = realpathSync2.native(matches[0].project_root);
+  const projectRoot = realpathSync.native(matches[0].project_root);
   const duplicate = matches.filter(
     (entry) => normalized(entry.project_root) === normalized(projectRoot)
   );
@@ -753,7 +500,7 @@ function assertSafeProjectPath(project) {
     fail("PATH_ESCAPE", "project path is required");
   }
   if (/^(\\\\|\/\/)/.test(project.path)) fail("PATH_ESCAPE", "project path cannot use a network share");
-  if (/^[A-Za-z]:(?![\\/])/.test(project.path) || /^\\(?!\\)/.test(project.path) || process.platform === "win32" && isAbsolute2(project.path) && !/^[A-Za-z]:[\\/]/.test(project.path)) {
+  if (/^[A-Za-z]:(?![\\/])/.test(project.path) || /^\\(?!\\)/.test(project.path) || process.platform === "win32" && isAbsolute(project.path) && !/^[A-Za-z]:[\\/]/.test(project.path)) {
     fail("PATH_ESCAPE", "project path cannot depend on the current drive or working directory");
   }
 }
@@ -765,7 +512,7 @@ function resolveConfiguredProject({ workspaceRoot, manifest, projectId }) {
   if (pathHasLink(projectRoot, projectRoot) || !exactPath(projectRoot)) {
     fail("PATH_ESCAPE", `project "${project.id ?? "configured"}" must resolve to its exact canonical path`);
   }
-  if (normalized(projectRoot) !== normalized(root) && !escapesRoot(join2(root, ".kai"), projectRoot)) {
+  if (normalized(projectRoot) !== normalized(root) && !escapesRoot(join(root, ".kai"), projectRoot)) {
     fail("PATH_ESCAPE", "configured project cannot alias private workspace state");
   }
   const publicationRoot = normalizePublicationRoot(project.publication_root);
@@ -783,24 +530,6 @@ function resolveConfiguredProject({ workspaceRoot, manifest, projectId }) {
 }
 
 export {
-  ACTIVE_ARTIFACT_LIFECYCLES,
-  badPath,
-  canonicalPath,
-  exactPath,
-  normalized,
-  resolvedProjectPath,
-  escapesRoot,
-  inspectPrivateLanes,
-  pathHasLink,
-  WORKSPACE_SCHEMA_VERSION,
-  PRIVATE_ROOT,
-  DIRECTION_PATH,
-  COORDINATION_DATABASE,
-  LEGACY_COORDINATION_DATABASE,
-  parseTypedArtifactRoute,
-  privateArtifactDirectory,
-  directionPath,
-  workspaceRootFromCoordinationDatabase,
   defaultKaiHome,
   registryPath,
   readWorkspaceManifest,

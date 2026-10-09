@@ -1,20 +1,7 @@
 import{createRequire as __cr}from'node:module';const require=__cr(import.meta.url);
 import {
-  artifactPreviewLimits,
-  hash as hash2,
-  inspectRuntime,
-  knownGap,
-  redactReport,
-  snapshotWarning
-} from "./chunk-XOIC64U7.mjs";
-import {
-  buildMigrationWorksheet,
   planHierarchy
-} from "./chunk-HLIXNC7Y.mjs";
-import {
-  hierarchyContext,
-  hierarchyStatus
-} from "./chunk-4P3U2F6L.mjs";
+} from "./chunk-XGFCMCLC.mjs";
 import {
   artifactBasisCurrent,
   bindEvidenceReadView,
@@ -23,52 +10,48 @@ import {
   effectiveApprovals,
   effectiveEvidence,
   effectiveReviews,
+  exactFile,
+  hashArtifact,
+  hierarchyContext,
+  hierarchyStatus,
   matchesAcceptance,
+  projectBinding,
   readDetail,
-  readLegacyRecords,
   readMessages,
   recoveryResolution,
   requireDeploymentEvidence,
   requireOperatorApproval,
   requireReleaseEvidence,
   requireReviews,
+  safePath,
+  scanExactFile,
   taskStateSatisfies,
+  verifyArtifact,
   verifyAssetContent,
   verifyReferences,
-  verifyVerdict
-} from "./chunk-6ABDJP5R.mjs";
+  verifySubject,
+  verifyVerdict,
+  workspaceManifest
+} from "./chunk-CKXCYZWQ.mjs";
 import {
-  DATABASE,
   assertWorkspaceWrite,
   closeStore,
-  exactFile,
-  hash,
-  hashArtifact,
+  inspectGitPrivacy,
   listAllRecords,
   listRecords,
   openStore,
-  projectBinding,
+  readDirection,
   readRecord,
   readSnapshot,
   readStoreSummary,
   readSubjectView,
-  readWorkspaceContract,
-  safePath,
-  scanExactFile,
-  schema5MigrationLockPath,
-  sourceSnapshot,
-  verifyArtifact,
-  verifySubject,
-  workspaceManifest
-} from "./chunk-S4A2HMCB.mjs";
+  readWorkspaceContract
+} from "./chunk-S7AQGXMM.mjs";
 import {
-  COORDINATION_DATABASE,
-  LEGACY_COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
-  normalized,
+  readWorkspaceManifest,
   resolveWorkspaceRoot,
-  workspaceRootFromCoordinationDatabase
-} from "./chunk-2WT4K7YK.mjs";
+  validateSchema5Manifest
+} from "./chunk-L4TFCRET.mjs";
 import {
   RuntimeError,
   canonicalJson,
@@ -79,11 +62,197 @@ import {
   validateCommand,
   validateHierarchySubject,
   validateRecord
-} from "./chunk-XLDNBMDG.mjs";
-import "./chunk-ITUOITH3.mjs";
+} from "./chunk-HMPQ32NA.mjs";
+import {
+  COORDINATION_DATABASE,
+  WORKSPACE_SCHEMA_VERSION,
+  normalized,
+  workspaceRootFromCoordinationDatabase
+} from "./chunk-VVVMKUAL.mjs";
 
 // src/core/lib/coordination-runtime/cli.mjs
+import { existsSync as existsSync2 } from "node:fs";
+
+// src/core/lib/coordination-runtime/inspection.mjs
 import { existsSync } from "node:fs";
+function inspectRuntime(root, { env = process.env, intent = "coordinate" } = {}) {
+  const result = { errors: [], warnings: [], runtime: null };
+  if (!["inspect", "coordinate"].includes(intent)) {
+    result.errors.push("workspace intent must be inspect or coordinate");
+    return result;
+  }
+  let store;
+  try {
+    const current = readWorkspaceManifest(root);
+    if (!current.ok) {
+      result.errors.push(current.reason);
+      return result;
+    }
+    if (current.manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
+      result.errors.push(
+        "workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard"
+      );
+      return result;
+    }
+    const validation = validateSchema5Manifest(root, current.manifest, { env });
+    result.errors.push(...validation.errors);
+    const privacy = inspectGitPrivacy(root, current.manifest.placement);
+    result.errors.push(...privacy.errors, ...privacy.missing.map((path) => `private workspace path must be ignored: ${path}`));
+    if (current.manifest.placement === "repo-local" && !privacy.gitRoot) {
+      result.errors.push("repo-local placement requires a readable Git work tree");
+    }
+    result.warnings.push(...privacy.warnings);
+    try {
+      readDirection({ workspaceRoot: root, manifest: current.manifest });
+    } catch (error) {
+      result.errors.push(error.message);
+    }
+    if (result.errors.length) return result;
+    const databasePath = safePath(root, COORDINATION_DATABASE);
+    if (!existsSync(databasePath)) {
+      result.errors.push(`schema 5 coordination database is missing at ${COORDINATION_DATABASE}`);
+      return result;
+    }
+    exactFile(root, COORDINATION_DATABASE);
+    store = openStore({ path: databasePath, mode: "read" });
+    result.runtime = readStoreSummary(store);
+  } catch (error) {
+    result.errors.push(error.message);
+  } finally {
+    closeStore(store);
+  }
+  return result;
+}
+
+// src/core/lib/coordination-runtime/report-safety.mjs
+import { createHash } from "node:crypto";
+var hash = (value) => createHash("sha256").update(value).digest("hex");
+var knownGap = (error) => error instanceof RuntimeError && ["EVIDENCE_GAP", "AUTHORITY_REQUIRED", "INVALID_INPUT"].includes(error.code);
+var tokenKey = (key) => /^token$|lease.*token$/i.test(key);
+function possibleBearerSuffix(text, secret) {
+  const prefix = secret.slice(0, Math.min(text.length, secret.length - 1));
+  const fallback = new Uint32Array(prefix.length);
+  let matched = 0;
+  for (let i = 1; i < prefix.length; i++) {
+    while (matched && prefix[i] !== prefix[matched]) matched = fallback[matched - 1];
+    if (prefix[i] === prefix[matched]) matched++;
+    fallback[i] = matched;
+  }
+  matched = 0;
+  for (let i = text.length - prefix.length; i < text.length; i++) {
+    while (matched && text[i] !== prefix[matched]) matched = fallback[matched - 1];
+    if (text[i] === prefix[matched]) matched++;
+  }
+  return matched;
+}
+function redactPreview(preview, secrets, notice) {
+  const text = preview.content;
+  if (!secrets.size) return { content: text, boundaryWithheldBytes: 0 };
+  const patterns = new Set(secrets);
+  if (preview.encoding === "latin1") {
+    for (const secret of secrets) patterns.add(Buffer.from(secret.slice(0, text.length + 1)).toString("latin1"));
+  }
+  const masked = new Uint8Array(text.length);
+  const mark = (start, end, flag) => {
+    if (preview.encoding === "utf8") {
+      if (/[\uDC00-\uDFFF]/.test(text[start]) && /[\uD800-\uDBFF]/.test(text[start - 1])) start--;
+      if (/[\uD800-\uDBFF]/.test(text[end - 1]) && /[\uDC00-\uDFFF]/.test(text[end])) end++;
+    }
+    for (let i = start; i < end; i++) if (!masked[i]) masked[i] = flag;
+  };
+  let boundaryStart = text.length;
+  for (const secret of patterns) {
+    let markedThrough = 0;
+    for (let start = text.indexOf(secret); start !== -1; start = text.indexOf(secret, start + 1)) {
+      mark(Math.max(start, markedThrough), start + secret.length, 1);
+      markedThrough = start + secret.length;
+      notice.occurrences++;
+    }
+    if (preview.previewState === "limited") {
+      boundaryStart = Math.min(boundaryStart, text.length - possibleBearerSuffix(text, secret));
+    }
+  }
+  let boundaryWithheldBytes = 0;
+  if (boundaryStart < text.length) {
+    mark(boundaryStart, text.length, 2);
+    for (let start = 0; start < text.length; ) {
+      if (masked[start] !== 2) {
+        start++;
+        continue;
+      }
+      let end = start + 1;
+      while (masked[end] === 2) end++;
+      boundaryWithheldBytes += Buffer.byteLength(text.slice(start, end), preview.encoding);
+      start = end;
+    }
+    if (boundaryWithheldBytes) notice.boundaries++;
+  }
+  const parts = [];
+  for (let start = 0; start < text.length; ) {
+    let end = start;
+    let flags = 0;
+    const withheld = !!masked[start];
+    while (end < text.length && !!masked[end] === withheld) flags |= masked[end++];
+    parts.push(!withheld ? text.slice(start, end) : flags & 2 ? "[withheld possible bearer-boundary]" : "[redacted bearer]");
+    start = end;
+  }
+  return { content: parts.join(""), boundaryWithheldBytes };
+}
+function redaction(value) {
+  const secrets = /* @__PURE__ */ new Set();
+  const notice = { fields: 0, occurrences: 0, boundaries: 0 };
+  const previews = new Set(value?.inspection?.artifactPreviews ?? []);
+  function find(entry) {
+    if (!entry || typeof entry !== "object") return;
+    for (const [key, child] of Object.entries(entry)) {
+      if (tokenKey(key) && typeof child === "string" && child) secrets.add(child);
+      else find(child);
+    }
+  }
+  find(value);
+  function cleanText(entry, replaceKnown = true) {
+    if (replaceKnown) for (const secret of secrets) entry = entry.replaceAll(secret, () => {
+      notice.occurrences++;
+      return "[redacted bearer]";
+    });
+    entry = entry.replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, () => {
+      notice.occurrences++;
+      return "[redacted bearer]";
+    }).replace(/("(?:token|[^"]*lease[^"]*token)"\s*:\s*")([^"]+)(")/gi, (match, start, value2, end) => {
+      if (value2 === "[redacted bearer]") return match;
+      notice.occurrences++;
+      return `${start}[redacted bearer]${end}`;
+    });
+    return entry;
+  }
+  function clean(entry) {
+    if (typeof entry === "string") return cleanText(entry);
+    if (Array.isArray(entry)) return entry.map(clean);
+    if (!entry || typeof entry !== "object") return entry;
+    const preview = previews.has(entry) && typeof entry.content === "string" ? redactPreview(entry, secrets, notice) : null;
+    const result = Object.fromEntries(Object.entries(entry).filter(([key]) => {
+      if (!tokenKey(key)) return true;
+      notice.fields++;
+      return false;
+    }).map(([key, child]) => [key, preview && key === "content" ? cleanText(preview.content, false) : clean(child)]));
+    if (preview?.boundaryWithheldBytes) {
+      result.boundaryWithheldBytes = (entry.boundaryWithheldBytes ?? 0) + preview.boundaryWithheldBytes;
+    }
+    return result;
+  }
+  return { value: clean(value), notice };
+}
+function redactReport(value) {
+  const result = redaction(value);
+  const boundaries = (value.redactions?.boundaries ?? 0) + result.notice.boundaries;
+  return { ...result.value, redactions: {
+    fields: (value.redactions?.fields ?? 0) + result.notice.fields,
+    occurrences: (value.redactions?.occurrences ?? 0) + result.notice.occurrences,
+    ...boundaries || value.redactions?.boundaries !== void 0 ? { boundaries } : {}
+  } };
+}
+var artifactPreviewLimits = Object.freeze({ perArtifactBytes: 64 * 1024, aggregateBytes: 1024 * 1024 });
+var snapshotWarning = "Snapshot \u2014 not live. Recorded lifecycle is historical truth, not a new acceptance or shipping decision. Current proof checks and their gaps are listed; historical proof is not reaccepted. Files can change after generation.";
 
 // src/core/lib/coordination-runtime/report-data.mjs
 import { join } from "node:path";
@@ -144,7 +313,7 @@ function captureArtifacts(root, artifacts, addGap) {
     let artifactRemaining = artifactPreviewLimits.perArtifactBytes;
     let manifestError;
     try {
-      if (artifact.manifest_path !== `${artifact.run_directory}/.evidence/${artifact.artifact_id}/manifest.json` || scanExactFile(root, artifact.manifest_path).digest !== hash2(canonicalJson({
+      if (artifact.manifest_path !== `${artifact.run_directory}/.evidence/${artifact.artifact_id}/manifest.json` || scanExactFile(root, artifact.manifest_path).digest !== hash(canonicalJson({
         subject: artifact.content_ref,
         snapshots: artifact.snapshots
       }))) throw new RuntimeError("EVIDENCE_GAP", "Retained manifest/path does not match registered artifact.");
@@ -301,7 +470,7 @@ function buildReport(store, { subject }) {
   if (!subject || typeof subject !== "object") throw new RuntimeError("INVALID_INPUT", "report subject is required");
   const root = workspaceRootFromCoordinationDatabase(store.path);
   const manifest = workspaceManifest(root);
-  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION ? COORDINATION_DATABASE : LEGACY_COORDINATION_DATABASE;
+  const database = COORDINATION_DATABASE;
   if (normalized(store.path) !== normalized(join(root, ...database.split("/")))) {
     throw new RuntimeError("INVALID_INPUT", "report store must belong to the explicit workspace");
   }
@@ -724,10 +893,8 @@ var reads = /* @__PURE__ */ new Set([
   "detail",
   "messages",
   "export",
-  "legacy",
   "hash",
-  "plan",
-  "migration-plan"
+  "plan"
 ]);
 var required = (options, name) => options[name] ?? fail("INVALID_INPUT", `--${name} is required`);
 var hierarchySubject = (options) => validateHierarchySubject({
@@ -737,7 +904,7 @@ var hierarchySubject = (options) => validateHierarchySubject({
 async function installedRoles(host, root, env) {
   let selected = host;
   if (!selected) {
-    const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
+    const { createNativeHost } = await import("./chunk-IX3C5PB7.mjs");
     selected = createNativeHost({ env });
   }
   if (!selected?.capabilities) return [];
@@ -760,69 +927,26 @@ function hierarchyDirection(store) {
 }
 async function execute({ verb, options, body, host, cwd, env }) {
   const resolved = resolveWorkspaceRoot({ explicitRoot: options.root, cwd, env });
-  if (!resolved.ok) fail("INVALID_INPUT", resolved.reason);
+  if (!resolved.ok) fail(resolved.code ?? "INVALID_INPUT", resolved.reason);
   const { root } = resolved;
   const manifest = readWorkspaceContract(root, { env });
-  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION ? COORDINATION_DATABASE : DATABASE;
+  const database = COORDINATION_DATABASE;
   const path = safePath(root, database);
-  const base = { ok: true, mode: verb, root, schemaVersion: manifest.schema_version, storeExists: existsSync(path) };
+  const base = { ok: true, mode: verb, root, schemaVersion: manifest.schema_version, storeExists: existsSync2(path) };
   if (reads.has(verb)) {
     if (verb === "inspect") {
       let runtime = null;
-      if (manifest.schema_version === WORKSPACE_SCHEMA_VERSION && base.storeExists) {
+      if (base.storeExists) {
         const store3 = openStore({ path, mode: "read" });
         try {
           runtime = readStoreSummary(store3);
         } finally {
           closeStore(store3);
         }
-      } else if (manifest.schema_version < WORKSPACE_SCHEMA_VERSION) {
-        runtime = inspectRuntime(root, { env, intent: "inspect" }).runtime;
       }
       return { ...base, runtime, ...options.deep ? { inspection: inspectRuntime(root, { env, intent: "inspect" }) } : {} };
     }
-    if (verb === "migration-plan") {
-      if (manifest.schema_version !== 4) {
-        fail(
-          "SCHEMA_MISMATCH",
-          manifest.schema_version === 3 ? "schema 3 must first use its explicit historical schema-4 migration" : "migration-plan is only available for a read-only schema-4 workspace"
-        );
-      }
-      const worksheet = buildMigrationWorksheet({ root, env });
-      return {
-        ...base,
-        worksheet,
-        worksheetDigest: hash(canonicalJson(worksheet))
-      };
-    }
-    if (manifest.schema_version < WORKSPACE_SCHEMA_VERSION) {
-      if (verb === "legacy") {
-        if (options.raw && !options.source) fail("INVALID_INPUT", "raw legacy reads require one --source ID");
-        const sources = sourceSnapshot(root).map((source) => ({ ...source, sourceId: hash(source.path), status: "historical-unverified" })).filter((source) => !options.source || source.sourceId === options.source);
-        if (options.source && sources.length !== 1) fail("EVIDENCE_GAP", "legacy source identity does not exist");
-        return { ...base, sources: sources.map((source) => ({ ...source, ...options.raw ? {
-          raw: exactFile(root, source.path).toString("base64"),
-          rawEncoding: "base64"
-        } : {} })) };
-      }
-      if (verb === "status") {
-        const { collect } = await import("./work-status.mjs");
-        const status = collect(root);
-        if (status.ok || manifest.schema_version === 3) return { ...base, status };
-        const historical = inspectRuntime(root, { env, intent: "inspect" });
-        return { ...base, status: {
-          ok: historical.errors.length === 0,
-          historical: true,
-          schemaVersion: manifest.schema_version,
-          runtime: historical.runtime,
-          errors: historical.errors,
-          warnings: historical.warnings,
-          migrations: historical.migrations
-        } };
-      }
-      fail("SCHEMA_MISMATCH", "schema 3/4 supports inspect/status/legacy only; explicitly migrate for runtime detail");
-    }
-    if (!base.storeExists) fail("SCHEMA_MISMATCH", "coordination store is missing; use the standalone workspace initializer");
+    if (!base.storeExists) fail("RECOVERY_REQUIRED", "coordination store is missing; use the standalone workspace initializer");
     const store2 = openStore({ path, mode: "read" });
     try {
       const roles = ["status", "context", "plan"].includes(verb) ? await installedRoles(host, root, env) : [];
@@ -872,10 +996,6 @@ async function execute({ verb, options, body, host, cwd, env }) {
           };
         });
       }
-      if (verb === "legacy") return { ...base, sources: readLegacyRecords(store2, {
-        sourceId: options.source,
-        includeRaw: options.raw ?? false
-      }).map((source) => ({ ...source, ...source.raw ? { raw: source.raw.toString("base64"), rawEncoding: "base64" } : {} })) };
       if (verb === "hash") return { ...base, subject: hashArtifact({ root, relativePath: required(options, "path") }) };
       if (verb === "export") {
         const subject = hierarchySubject(options);
@@ -899,103 +1019,19 @@ async function execute({ verb, options, body, host, cwd, env }) {
       closeStore(store2);
     }
   }
-  const interruptedSchema5 = manifest.schema_version === WORKSPACE_SCHEMA_VERSION && existsSync(schema5MigrationLockPath(root));
-  if (interruptedSchema5 && ["request", "authorize", "receipt", "recover"].includes(verb)) {
-    if (verb === "request" && (body?.type !== "maintenance" || !(/* @__PURE__ */ new Set(["recover-activate", "recover-abandon"])).has(body.action))) {
-      fail("RECOVERY_REQUIRED", "an interrupted schema-5 migration accepts only explicit recovery maintenance");
-    }
-    if (!host) {
-      const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
-      host = createNativeHost({ env });
-    }
-    if (["request", "authorize", "receipt"].includes(verb)) {
-      return { ...base, ...await host[verb]({ root, body, options }) };
-    }
-    const result = await host.maintenance({ root, verb, body, options, env });
-    return {
-      ...base,
-      ...result,
-      schemaVersion: readWorkspaceContract(root, { env }).schema_version,
-      storeExists: existsSync(path)
-    };
-  }
-  if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
-    const maintenanceVerbs = /* @__PURE__ */ new Set([
-      "request",
-      "authorize",
-      "receipt",
-      "migrate",
-      "recover",
-      "rollback"
-    ]);
-    if (!maintenanceVerbs.has(verb)) {
-      fail(
-        "SCHEMA_MISMATCH",
-        "schema 3/4 workspaces are read-only; use the explicit schema-3-to-4 step or schema-4 migration-plan as applicable"
-      );
-    }
-    if (verb === "request") {
-      const supported = manifest.schema_version === 3 ? /* @__PURE__ */ new Set(["migrate", "recover-activate", "recover-abandon"]) : /* @__PURE__ */ new Set(["migrate-v5", "recover-activate", "recover-abandon", "rollback"]);
-      if (body?.type !== "maintenance" || !supported.has(body.action)) {
-        fail(
-          "SCHEMA_MISMATCH",
-          `schema ${manifest.schema_version} accepts only its explicit offline migration maintenance requests`
-        );
-      }
-    }
-    if (!host) {
-      const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
-      host = createNativeHost({ env });
-    }
-    if (["request", "authorize", "receipt"].includes(verb)) {
-      return { ...base, ...await host[verb]({ root, body, options }) };
-    }
-    const result = await host.maintenance({ root, verb, body, options, env });
-    const next = readWorkspaceContract(root, { env });
-    const nextDatabase = next.schema_version === WORKSPACE_SCHEMA_VERSION ? COORDINATION_DATABASE : DATABASE;
-    return {
-      ...base,
-      ...result,
-      schemaVersion: next.schema_version,
-      storeExists: existsSync(safePath(root, nextDatabase))
-    };
-  }
   if (verb === "apply") validateCommand(body);
-  if (verb === "request" && body?.type === "maintenance" && body.action === "init") {
-    fail("INVALID_INPUT", "native init is unsupported; use the explicit confirmed standalone workspace initializer");
-  }
-  if (!base.storeExists) fail("SCHEMA_MISMATCH", "coordination store is missing; use the standalone workspace initializer");
+  if (!base.storeExists) fail("RECOVERY_REQUIRED", "coordination store is missing; use the standalone workspace initializer");
   assertWorkspaceWrite(path, { requirePrivate: true, env });
-  if ([
-    "request",
-    "authorize",
-    "receipt",
-    "capture",
-    "capabilities",
-    "prepare",
-    "migrate",
-    "recover",
-    "rollback",
-    "repair"
-  ].includes(verb)) {
+  if (["request", "authorize", "receipt", "capture", "capabilities", "prepare"].includes(verb)) {
     const admitted = openStore({ path, mode: "read" });
     closeStore(admitted);
   }
   if (!host) {
-    const { createNativeHost } = await import("./chunk-3U53IKDR.mjs");
+    const { createNativeHost } = await import("./chunk-IX3C5PB7.mjs");
     host = createNativeHost({ env });
   }
   if (["request", "authorize", "receipt", "capture", "capabilities", "prepare"].includes(verb)) {
     return { ...base, ...await host[verb]({ root, body, options }) };
-  }
-  if (["migrate", "recover", "rollback", "repair"].includes(verb)) {
-    const result = await host.maintenance({ root, verb, body, options, env });
-    return {
-      ...base,
-      ...result,
-      schemaVersion: readWorkspaceContract(root, { env }).schema_version,
-      storeExists: existsSync(path)
-    };
   }
   const store = openStore({ path, mode: "write" });
   try {
