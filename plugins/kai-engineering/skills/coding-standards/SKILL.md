@@ -1,6 +1,6 @@
 ---
 name: coding-standards
-description: "Use when applying shared implementation defaults where repository conventions and task instructions leave appropriate details unspecified."
+description: "Use when writing, modifying, or refactoring code."
 tools: [read, search, edit]
 user-invocable: true
 argument-hint: "optional file or area to apply to"
@@ -8,16 +8,13 @@ argument-hint: "optional file or area to apply to"
 
 # Coding Standards
 
-Use these defaults while writing or refactoring code. They guide implementation
-choices; they do not add a separate planning, approval, or reporting process.
+Use these standards alongside task requirements and repository context. Task
+requirements define the intended outcome. Repository constraints define what
+must remain compatible. These standards guide implementation quality.
 
-## Precedence
-
-Explicit user requirements and repository-local conventions come first,
-including established APIs, formatters, linters, and patterns. Apply these
-rules only where that context is silent. Treat them as defaults, and depart
-from them when a specific correctness, safety, compatibility, or performance
-need makes another choice clearer.
+Start from established repository patterns, but improve them within the
+authorized scope when they conflict with correctness, clarity, safety, or
+maintainability.
 
 ## Rules
 
