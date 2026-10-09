@@ -24,12 +24,16 @@ maintainability.
 - Choose names that express intent and business meaning. Keep parsing,
   transport, and storage details behind semantic predicates or domain-oriented
   interfaces when callers do not need those details.
-- Keep types honest about absent, empty, and failed results. Prefer precise
-  models and safe refinement over assertions, broad casts, or other weak
-  type-system escape hatches.
-- Handle errors explicitly. Avoid silent catches, broad fallbacks, and results
-  that look successful when the operation failed. Make errors, logs, and
-  telemetry useful without exposing sensitive data.
+- Follow the codebase's response and error contract. Throw, return a result, or
+  represent absence and empty values according to what callers need and nearby
+  APIs establish. Do not add status wrappers when a simpler established shape
+  is correct, and never make a failure look like success.
+- Use precise types and narrow, justified casts rather than broad casts or
+  `any`. Before declaring a type in an implementation file, look for its owner:
+  keep single-use types local, and place shared or domain types in the
+  repository's established model or type boundary.
+- Handle errors explicitly. Avoid silent catches and broad fallbacks. Make
+  errors, logs, and telemetry useful without exposing sensitive data.
 - Extract code when a boundary improves clarity, responsibility, real reuse, or
   independent testing. Keep cohesive, single-use logic local when extraction
   would hide context or add indirection. Prefer pure helpers for reusable
