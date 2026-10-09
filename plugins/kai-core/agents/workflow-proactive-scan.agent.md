@@ -2,7 +2,7 @@
 name: workflow-proactive-scan
 model: "claude-sonnet-5"
 description: "Runs an explicitly requested read-only signal scan and writes a private typed core report payload without acting on findings."
-durable-output-producer: true
+publication-entrypoint: kai-core-workspace-publication
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 

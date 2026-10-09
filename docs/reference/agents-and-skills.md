@@ -4,19 +4,19 @@
 
 <!-- GENERATED FILE — do not edit by hand.
      Source: agent/skill frontmatter + the CATEGORIES table in
-     tools/generate-catalog.mjs. Regenerate with `npm run docs:generate`;
-     `npm test` fails if this file drifts from the shipped surface. -->
+     tools/generate-catalog.mjs. Regenerate with `npm run build`;
+     `npm run build:check` fails if this file drifts. -->
 
-The repository ships **21 agents** and **38 skills**.
+The repository ships **21 agents** and **39 skills**.
 
-The default marketplace supplies **21 agents** and **38 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **21 agents** and **39 skills** through core, engineering, and creative (10 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
 deliberately absent from this catalog: they are not installed, not loaded,
 and not available through any install path.
 
-- **Not sure who to ask?** [How kai works](../how-kai-works.md) has the trigger table.
+- **Need the system boundaries?** [Architecture](../architecture.md) maps packages, authority, runtime, and hosts.
 - **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).
 
 ## Agents
@@ -27,7 +27,7 @@ Set a workspace up and keep its structure honest.
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Use when installing Kai packs, initializing a private schema-5 workspace, repairing its binding, or running an explicit older-workspace migration. |
+| [`workflow-workspace-init`](../../plugins/kai-core/agents/workflow-workspace-init.agent.md) | `kai-core` | Use when installing Kai packs, initializing or repairing a private schema-5 workspace, or re-onboarding an unsupported workspace without importing old records. |
 | [`workflow-epic-init`](../../plugins/kai-core/agents/workflow-epic-init.agent.md) | `kai-core` | Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning. |
 
 ### Direction
@@ -117,7 +117,8 @@ Resolve private schema-5 workspaces, initialize Direction, and validate core pub
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
 | [`kai-core-workspace-paths`](../../plugins/kai-core/skills/kai-core-workspace-paths/SKILL.md) | `kai-core` | Use when resolving a Kai workspace, project binding, Direction file, coordination database, or typed private/public artifact path. |
-| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, repairing its private binding, or explicitly migrating an older workspace. |
+| [`kai-core-workspace-onboarding`](../../plugins/kai-core/skills/kai-core-workspace-onboarding/SKILL.md) | `kai-core` | Use when installing Kai packs, initializing a schema-5 workspace, or repairing its current private binding. |
+| [`kai-core-workspace-reonboard`](../../plugins/kai-core/skills/kai-core-workspace-reonboard/SKILL.md) | `kai-core` | Use when a Kai workspace manifest is unsupported and the operator wants a clean schema-5 workspace without importing historical records. |
 | [`kai-core-workspace-publication`](../../plugins/kai-core/skills/kai-core-workspace-publication/SKILL.md) | `kai-core` | Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material. |
 
 ### Hierarchy & stewardship
@@ -213,5 +214,5 @@ Core's own reading of what the team records need a human for, plus the runner-in
 
 ---
 
-**Next:** [How kai works](../how-kai-works.md) · [Workspace model](../workspaces.md) ·
-[Getting started](../getting-started.md)
+**Next:** [Architecture](../architecture.md) · [Workspace model](../workspaces.md) ·
+[Development process](../development-process.md)

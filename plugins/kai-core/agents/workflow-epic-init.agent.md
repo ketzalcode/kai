@@ -2,7 +2,6 @@
 name: workflow-epic-init
 model: "claude-sonnet-5"
 description: "Use when an approved outcome needs a Direction-aligned Epic proposal before any Feature, Requirement, or Task planning."
-durable-output-producer: false
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

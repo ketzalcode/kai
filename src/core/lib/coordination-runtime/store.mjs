@@ -17,7 +17,6 @@ import {
 } from './contract.mjs';
 
 const SCHEMA_VERSION = 2;
-const HISTORICAL_SCHEMA_VERSION = 1;
 const MESSAGE_SCHEMA_VERSION = 1;
 const STORE_MODES = new Set(['create', 'read', 'write']);
 const MESSAGE_COMMANDS = new Set([
@@ -151,80 +150,6 @@ CREATE TABLE operations (
 ${[...REQUIRED_INDEX_SQL, ...REQUIRED_TRIGGER_SQL].join(';\n')};
 `;
 
-const HISTORICAL_EVENTS_TABLE_SQL = `CREATE TABLE events (
-  seq INTEGER PRIMARY KEY AUTOINCREMENT,
-  operation_id TEXT NOT NULL, item_id TEXT,
-  payload TEXT NOT NULL CHECK (json_valid(payload)),
-  event_kind TEXT GENERATED ALWAYS AS (json_extract(payload, '$.kind')) STORED,
-  message_id TEXT GENERATED ALWAYS AS (
-    CASE json_extract(payload, '$.kind')
-      WHEN 'attempt.recover' THEN json_extract(payload, '$.payload.attemptId')
-      WHEN 'question.open' THEN json_extract(payload, '$.payload.messageId')
-      WHEN 'question.answer' THEN json_extract(payload, '$.payload.messageId')
-      WHEN 'item.handoff' THEN json_extract(payload, '$.payload.messageId')
-    END
-  ) STORED,
-  approval_id TEXT GENERATED ALWAYS AS (
-    CASE WHEN json_extract(payload, '$.kind') = 'approval.record'
-      THEN json_extract(payload, '$.payload.body.approval_id') END
-  ) STORED,
-  question_id TEXT GENERATED ALWAYS AS (
-    CASE WHEN json_extract(payload, '$.kind') = 'question.open'
-      THEN json_extract(payload, '$.payload.questionId') END
-  ) STORED,
-  thread_id TEXT
-)`;
-const HISTORICAL_INDEX_SQL = [
-  'CREATE INDEX records_by_item ON records(kind, item_id)',
-  `CREATE INDEX records_by_question_status ON records(item_id, json_extract(body, '$.status'))
-    WHERE kind = 'question'`,
-  `CREATE INDEX records_by_criteria ON records(kind, item_id, json_extract(body, '$.criteria_ref'))`,
-  `CREATE INDEX events_by_thread ON events(thread_id, seq) WHERE message_id IS NOT NULL`,
-  `CREATE INDEX events_by_message ON events(message_id, seq) WHERE message_id IS NOT NULL`,
-  `CREATE INDEX events_by_item_kind ON events(item_id, event_kind, seq, question_id)`,
-  `CREATE INDEX events_by_approval ON events(approval_id, seq) WHERE approval_id IS NOT NULL`,
-];
-const HISTORICAL_TRIGGER_SQL = [
-  `CREATE TRIGGER events_capture_thread AFTER INSERT ON events
-    WHEN NEW.message_id IS NOT NULL
-    BEGIN
-      UPDATE events SET thread_id = COALESCE(
-        (SELECT json_extract(body, '$.thread_id') FROM records
-          WHERE kind = 'message' AND id = NEW.message_id), NEW.item_id)
-      WHERE seq = NEW.seq;
-    END`,
-  ...REQUIRED_TRIGGER_SQL.slice(1),
-];
-const HISTORICAL_COLUMNS = new Map([
-  ['metadata', REQUIRED_COLUMNS.get('metadata')],
-  ['records', [
-    ['kind', 'TEXT', 1, null, 1],
-    ['id', 'TEXT', 1, null, 2],
-    ['item_id', 'TEXT', 0, null, 0],
-    ['version', 'INTEGER', 1, null, 0],
-    ['body', 'TEXT', 1, null, 0],
-  ]],
-  ['events', [
-    ['seq', 'INTEGER', 0, null, 1],
-    ['operation_id', 'TEXT', 1, null, 0],
-    ['item_id', 'TEXT', 0, null, 0],
-    ['payload', 'TEXT', 1, null, 0],
-    ['event_kind', 'TEXT', 0, null, 0, 3],
-    ['message_id', 'TEXT', 0, null, 0, 3],
-    ['approval_id', 'TEXT', 0, null, 0, 3],
-    ['question_id', 'TEXT', 0, null, 0, 3],
-    ['thread_id', 'TEXT', 0, null, 0],
-  ]],
-  ['operations', REQUIRED_COLUMNS.get('operations')],
-]);
-const HISTORICAL_TABLE_SQL = new Map([
-  ['metadata', REQUIRED_TABLE_SQL.get('metadata')],
-  ['records',
-    'create table records(kind text not null,id text not null,item_id text,version integer not null check(version>0),body text not null check(json_valid(body)),primary key(kind,id))'],
-  ['events', normalizeSchemaSql(HISTORICAL_EVENTS_TABLE_SQL)],
-  ['operations', REQUIRED_TABLE_SQL.get('operations')],
-]);
-
 function invalid(message) {
   throw new RuntimeError('INVALID_INPUT', message);
 }
@@ -274,7 +199,6 @@ function parseJson(text, label) {
 function validateStoreSubject(subject, label, {
   allowNull = true,
   allowUndefined = false,
-  allowLegacyItem = false,
 } = {}) {
   if (subject === undefined && allowUndefined) return subject;
   if (subject === null && allowNull) return subject;
@@ -284,41 +208,8 @@ function validateStoreSubject(subject, label, {
   if (canonicalJson(Object.keys(subject).sort()) !== '["id","kind"]') {
     invalid(`${label} must contain only kind and id`);
   }
-  if (allowLegacyItem && subject.kind === 'item') {
-    if (typeof subject.id !== 'string' || subject.id === '') {
-      invalid(`${label}.id must be a non-empty string`);
-    }
-  } else {
-    validateHierarchySubject(subject, label);
-  }
+  validateHierarchySubject(subject, label);
   return subject;
-}
-
-function validateHistoricalRecord(record) {
-  if (record.kind === 'item' || record.kind === 'initiative') return validateRecord(record);
-  if (!record.body || typeof record.body !== 'object' || Array.isArray(record.body)
-    || record.body.schema_version !== 1 || record.subject?.kind !== 'item'
-    || record.body.item_id !== record.subject.id) {
-    recovery(`historical record ${record.kind}/${record.id} has an invalid Item binding`);
-  }
-  const identityKeys = new Map([
-    ['artifact', 'artifact_id'],
-    ['asset', 'asset_id'],
-    ['question', 'question_id'],
-    ['attempt', 'attempt_id'],
-    ['host-attempt', 'attempt_id'],
-    ['effect', 'effect_id'],
-    ['evidence', 'evidence_id'],
-    ['review', 'review_id'],
-    ['approval', 'approval_id'],
-    ['message', 'message_id'],
-    ['grant', 'grant_id'],
-  ]);
-  const identityKey = identityKeys.get(record.kind);
-  if (!identityKey || record.body[identityKey] !== record.id) {
-    recovery(`historical record ${record.kind}/${record.id} has an invalid identity`);
-  }
-  return record;
 }
 
 function decodeRecord(row, store = null) {
@@ -333,9 +224,6 @@ function decodeRecord(row, store = null) {
     body: parseJson(row.body, `record ${row.kind}/${row.id}`),
   };
   try {
-    if (store?.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
-      return validateHistoricalRecord(record);
-    }
     return validateRecord(record);
   } catch (error) {
     if (error instanceof RuntimeError && error.code === 'INVALID_INPUT') {
@@ -347,25 +235,13 @@ function decodeRecord(row, store = null) {
 
 function recordProjection(store, alias = '') {
   const prefix = alias ? `${alias}.` : '';
-  if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
-    return `${prefix}kind, ${prefix}id,
-      CASE WHEN ${prefix}item_id IS NULL THEN NULL ELSE 'item' END AS subject_kind,
-      ${prefix}item_id AS subject_id, ${prefix}version, ${prefix}body`;
-  }
   return `${prefix}kind, ${prefix}id, ${prefix}subject_kind, ${prefix}subject_id,
     ${prefix}version, ${prefix}body`;
 }
 
 function subjectFilter(store, subject, alias = '') {
-  validateStoreSubject(subject, 'record subject', {
-    allowLegacyItem: store.schemaVersion === HISTORICAL_SCHEMA_VERSION,
-  });
+  validateStoreSubject(subject, 'record subject');
   const prefix = alias ? `${alias}.` : '';
-  if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
-    if (subject === null) return {sql: `${prefix}item_id IS NULL`, params: []};
-    if (subject.kind !== 'item') return {sql: '0 = 1', params: []};
-    return {sql: `${prefix}item_id = ?`, params: [subject.id]};
-  }
   if (subject === null) {
     return {
       sql: `${prefix}subject_kind IS NULL AND ${prefix}subject_id IS NULL`,
@@ -379,9 +255,6 @@ function subjectFilter(store, subject, alias = '') {
 }
 
 function matchingSubjects(store, leftAlias, rightAlias) {
-  if (store.schemaVersion === HISTORICAL_SCHEMA_VERSION) {
-    return `${leftAlias}.item_id IS ${rightAlias}.item_id`;
-  }
   return `${leftAlias}.subject_kind IS ${rightAlias}.subject_kind
     AND ${leftAlias}.subject_id IS ${rightAlias}.subject_id`;
 }
@@ -482,44 +355,24 @@ function validateSchema(database, expectedVersion) {
   ).get());
   if (!metadata) recovery('coordination database has no schema version');
   if (metadata.value !== String(expectedVersion)) {
-    throw new RuntimeError(
-      'SCHEMA_MISMATCH',
+    recovery(
       `coordination database schema ${JSON.stringify(metadata.value)} is unsupported; expected ${expectedVersion}`,
     );
   }
-  validatePhysicalSchema(database, expectedVersion === HISTORICAL_SCHEMA_VERSION
-    ? {
-        columns: HISTORICAL_COLUMNS,
-        tableSql: HISTORICAL_TABLE_SQL,
-        indexSql: HISTORICAL_INDEX_SQL,
-        triggerSql: HISTORICAL_TRIGGER_SQL,
-      }
-    : {
-        columns: REQUIRED_COLUMNS,
-        tableSql: REQUIRED_TABLE_SQL,
-        indexSql: REQUIRED_INDEX_SQL,
-        triggerSql: REQUIRED_TRIGGER_SQL,
-      });
+  validatePhysicalSchema(database, {
+    columns: REQUIRED_COLUMNS,
+    tableSql: REQUIRED_TABLE_SQL,
+    indexSql: REQUIRED_INDEX_SQL,
+    triggerSql: REQUIRED_TRIGGER_SQL,
+  });
   const messageMetadata = runSqlite(() => database.prepare(
     "SELECT value FROM metadata WHERE key = 'message_schema_version'",
   ).get());
   if (!messageMetadata) recovery('coordination database has no message schema version');
   if (messageMetadata.value !== String(MESSAGE_SCHEMA_VERSION)) {
-    throw new RuntimeError(
-      'SCHEMA_MISMATCH',
+    recovery(
       `coordination message schema ${JSON.stringify(messageMetadata.value)} is unsupported; expected ${MESSAGE_SCHEMA_VERSION}`,
     );
-  }
-  if (expectedVersion === HISTORICAL_SCHEMA_VERSION) {
-    const impossible = runSqlite(() => database.prepare(`
-      SELECT kind FROM records
-      WHERE kind IN ('epic', 'feature', 'requirement', 'task')
-      ORDER BY kind, id
-      LIMIT 1
-    `).get());
-    if (impossible) {
-      recovery(`historical schema 1 cannot contain ${impossible.kind} records`);
-    }
   }
 }
 
@@ -594,22 +447,6 @@ export function openStore({path, mode}) {
   });
 }
 
-export function openHistoricalStore({
-  path,
-  expectedStoreVersion,
-  mode = 'read',
-}) {
-  if (mode !== 'read') invalid('historical coordination stores are read-only');
-  if (expectedStoreVersion !== HISTORICAL_SCHEMA_VERSION) {
-    invalid(`unsupported historical store schema "${expectedStoreVersion}"`);
-  }
-  return openStoreConnection({
-    path,
-    mode,
-    expectedVersion: expectedStoreVersion,
-  });
-}
-
 export function closeStore(store) {
   if (!store || typeof store !== 'object' || store.closed) return;
   try {
@@ -642,7 +479,6 @@ export function listRecords(store, options) {
   validateStoreSubject(subject, 'record subject', {
     allowNull: true,
     allowUndefined: true,
-    allowLegacyItem: store.schemaVersion === HISTORICAL_SCHEMA_VERSION,
   });
 
   const rows = runSqlite(() => {
@@ -790,11 +626,8 @@ export function readSubjectView(store, options) {
       throw new RuntimeError('EVIDENCE_GAP', `question/${missingQuestion.question_id} referenced by an opening event is missing`);
     }
     const questionFilter = subjectFilter(store, subject);
-    const questionIndex = store.schemaVersion === HISTORICAL_SCHEMA_VERSION
-      ? 'records_by_question_status'
-      : 'records_by_question_status';
     const questionRecords = runSqlite(() => store.database.prepare(`
-      SELECT ${recordProjection(store)} FROM records INDEXED BY ${questionIndex}
+      SELECT ${recordProjection(store)} FROM records INDEXED BY records_by_question_status
       WHERE kind = 'question' AND ${questionFilter.sql}
         AND json_extract(body, '$.status') = 'open'
     `).all(...questionFilter.params)).map(row => decodeRecord(row, store));
@@ -1125,18 +958,6 @@ export function applyOperation(store, command, mutate) {
     runSqlite(() => store.database.exec('BEGIN IMMEDIATE'));
     inTransaction = true;
     assertWorkspaceWrite(store.path);
-    const legacy = store.database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='legacy_sources'").get();
-    if (legacy && store.database.prepare(
-      "SELECT source_id FROM legacy_sources WHERE kind=? AND declared_id=? AND status IN ('quarantined','archived') LIMIT 1",
-    ).get(internalCommand.recordKind, internalCommand.recordId)) {
-      throw new RuntimeError('EVIDENCE_GAP', 'legacy identity is quarantined; use explicit authorized revalidation, not a new runtime record');
-    }
-    if (legacy && internalCommand.expectedVersion === 0 && ['item', 'initiative'].includes(internalCommand.recordKind)
-      && store.database.prepare(`SELECT source_id FROM legacy_sources
-        WHERE status='quarantined' AND
-          ((kind=? AND declared_id IS NULL) OR json_extract(parsed,'$.identityUnresolved')=1) LIMIT 1`).get(internalCommand.recordKind)) {
-      throw new RuntimeError('EVIDENCE_GAP', 'unresolved legacy identity prevents new records until explicit source reconciliation');
-    }
 
     const receipt = readOperationReceipt(store, internalCommand);
     if (receipt) {
@@ -1162,7 +983,6 @@ export function applyOperation(store, command, mutate) {
       : snapshotJson(primaryBaseline);
     const primarySubject = primaryBaseline?.subject
       ?? (HIERARCHY_KINDS.has(internalCommand.recordKind)
-          || internalCommand.recordKind === 'initiative'
           ? null
         : ['attempt.start', 'effect.intent'].includes(internalCommand.kind)
           ? {kind: 'task', id: internalCommand.payload.taskId}

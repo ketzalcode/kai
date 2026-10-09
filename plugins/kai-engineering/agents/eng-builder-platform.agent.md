@@ -2,7 +2,7 @@
 name: eng-builder-platform
 description: "Implements CI/CD, IaC, containers, build tooling, runtime configuration, and observability with plan or dry-run evidence. Use for platform changes. Not application implementation, independent readiness approval, or production operations."
 model: "claude-sonnet-5"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 

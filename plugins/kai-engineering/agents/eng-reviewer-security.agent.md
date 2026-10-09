@@ -2,7 +2,7 @@
 name: eng-reviewer-security
 description: "Independently reviews an exact change, design, or supplied security evidence for credible threats, control adequacy, and residual risk. Use for defensive security assessment. Never exploits, remediates the product, certifies compliance, or accepts risk."
 model: "gpt-5.6-terra"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "web_search", "skill"]
 ---
 

@@ -1,0 +1,55 @@
+name: weekly-release
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require exact green nightly SHA
+        shell: bash
+        run: |
+          current="$(git rev-parse HEAD)"
+          nightly="$(gh run list --workflow nightly.yml --branch main \
+            --limit 1 --json status,conclusion,headSha)"
+          test "$(jq -r 'length' <<< "$nightly")" = "1"
+          status="$(jq -r '.[0].status // ""' <<< "$nightly")"
+          conclusion="$(jq -r '.[0].conclusion // ""' <<< "$nightly")"
+          head_sha="$(jq -r '.[0].headSha // ""' <<< "$nightly")"
+          test "$status" = "completed"
+          test "$conclusion" = "success"
+          test "$current" = "$head_sha"
+      - name: Read release version
+        id: version
+        shell: bash
+        run: echo "value=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Check for existing tag
+        id: tag
+        shell: bash
+        run: |
+          if test -n "$(git tag -l "v${{ steps.version.outputs.value }}")"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Verify release readiness
+        if: steps.tag.outputs.exists == 'false'
+        run: npm run release-readiness -- --json
+      - name: Extract release notes
+        if: steps.tag.outputs.exists == 'false'
+        run: npm run release-notes -- --version "${{ steps.version.outputs.value }}" > release-notes.md
+      - name: Create tag and release
+        if: steps.tag.outputs.exists == 'false'
+        run: gh release create "v${{ steps.version.outputs.value }}" --target "$GITHUB_SHA" --title "v${{ steps.version.outputs.value }}" --notes-file release-notes.md

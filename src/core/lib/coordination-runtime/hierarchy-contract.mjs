@@ -17,6 +17,15 @@ import {
   validateChangesPayload,
 } from './contract-primitives.mjs';
 import {validateTaskBody} from './task-contract.mjs';
+import {
+  HIERARCHY_KINDS,
+  PARENT_COMMAND_KINDS,
+} from './schema.mjs';
+
+export {
+  HIERARCHY_KINDS,
+  PARENT_COMMAND_KINDS,
+} from './schema.mjs';
 
 const COMMON_PARENT_FIELDS = [
   'schema_version',
@@ -61,34 +70,12 @@ const COMPOSITION_EDGES = Object.freeze({
   },
 });
 
-export const HIERARCHY_KINDS = new Set(['epic', 'feature', 'requirement', 'task']);
 export const PARENT_STATES = new Set(['proposed', 'active', 'completed']);
 export const PARENT_DISPOSITIONS = Object.freeze({
   epic: new Set(['achieved', 'cancelled', 'superseded']),
   feature: new Set(['delivered', 'cancelled', 'superseded']),
   requirement: new Set(['satisfied', 'cancelled', 'superseded']),
 });
-
-export const PARENT_COMMAND_KINDS = new Set([
-  'epic.create',
-  'epic.update',
-  'epic.activate',
-  'epic.hold',
-  'epic.release',
-  'epic.complete',
-  'feature.create',
-  'feature.update',
-  'feature.activate',
-  'feature.hold',
-  'feature.release',
-  'feature.complete',
-  'requirement.create',
-  'requirement.update',
-  'requirement.activate',
-  'requirement.hold',
-  'requirement.release',
-  'requirement.complete',
-]);
 
 const PARENT_UPDATE_FIELDS = new Map([
   ['epic', new Set([

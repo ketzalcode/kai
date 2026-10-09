@@ -13,7 +13,8 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import { join, dirname, posix, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packPluginName, PACK_ORDER as SHIPPED_PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
+import { packPluginName, PACK_ORDER } from '../../src/core/lib/pack-names.mjs';
+import {incubatedIds} from './incubation-contract.mjs';
 import { bundlePack } from './bundle.mjs';
 import {
   ROLE_FAMILY_PACK, ROLE_POSTURE_PROFILES, KIND_AGENT_PROFILES, ROLE_PROFILE_MODELS,
@@ -22,7 +23,7 @@ import {
 } from '../../src/core/lib/agent-model-policy.mjs';
 import {
   parseFrontmatter,
-  durableOutputProducerValue,
+  PUBLICATION_ENTRYPOINT_KEY,
 } from '../../src/core/lib/loader-contract.mjs';
 
 // scripts/lib/ -> repo root is two levels up. Callers may pass an explicit root
@@ -49,6 +50,217 @@ export const PUBLICATION_SKILLS = Object.freeze({
 
 export function publicationSkillForPack(pack) {
   return PUBLICATION_SKILLS[pack] ?? null;
+}
+
+export const PUBLICATION_TABLE_REGION_OPEN =
+  '<!-- >>> kai publication table (generated) >>>';
+export const PUBLICATION_TABLE_REGION_CLOSE =
+  '<!-- <<< kai publication table <<< -->';
+
+const PUBLICATION_CONTRACT_KEYS = Object.freeze([
+  'pack',
+  'skill',
+  'entries',
+]);
+const PUBLICATION_ENTRY_KEYS = Object.freeze([
+  'type',
+  'subtype',
+  'privateForm',
+  'publicForm',
+  'formats',
+  'authority',
+  'privacy',
+]);
+const PUBLICATION_AUTHORITIES = new Set(['completion', 'operator']);
+const PUBLICATION_PRIVACY = new Set(['evidence-private']);
+const PUBLICATION_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const PUBLICATION_CONTROL = /[\u0000-\u001f\u007f]/;
+const PUBLICATION_FORMATS = new Set([
+  'markdown',
+  'markdown-single-file',
+  'markdown-destination-record',
+  'json',
+  'html',
+  'diagram',
+  'image',
+  'media',
+  'bundle',
+]);
+const PUBLICATION_FORMAT_LABELS = Object.freeze({
+  markdown: 'Markdown',
+  'markdown-single-file': 'Markdown single file',
+  'markdown-destination-record': 'Markdown destination record',
+  json: 'JSON',
+  html: 'HTML',
+  diagram: 'diagram',
+  image: 'image',
+  media: 'media',
+  bundle: 'bundle',
+});
+
+const exactKeys = (value, expected) =>
+  Object.keys(value).sort().join('|') === [...expected].sort().join('|');
+
+function validatePublicationPath({entry, field, label, pack}) {
+  const value = entry[field];
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${label}.${field} must be a non-empty string`);
+  }
+  if (PUBLICATION_CONTROL.test(value)) {
+    throw new Error(`${label}.${field} must not contain control characters or newlines`);
+  }
+  if (value.includes('|')) {
+    throw new Error(`${label}.${field} must not contain a pipe`);
+  }
+  if (value.includes('`')) {
+    throw new Error(`${label}.${field} must not contain a backtick`);
+  }
+  if (value.includes('\\')) {
+    throw new Error(`${label}.${field} must use forward slashes and must not contain backslash traversal`);
+  }
+  if (value.split('/').includes('..')) {
+    throw new Error(`${label}.${field} must not contain path traversal`);
+  }
+
+  if (field === 'privateForm') {
+    const root = `.kai/${pack}/`;
+    if (!value.startsWith(root)) {
+      throw new Error(`${label}.privateForm must be under ${root}`);
+    }
+    return;
+  }
+
+  const coreDirection = pack === 'core'
+    && entry.type === 'direction'
+    && entry.subtype === null;
+  if (coreDirection) {
+    if (value !== 'docs/kai/DIRECTION.md') {
+      throw new Error(`${label}.publicForm for Core Direction must be exactly docs/kai/DIRECTION.md`);
+    }
+    return;
+  }
+  const root = `docs/kai/${pack}/`;
+  if (!value.startsWith(root)) {
+    throw new Error(`${label}.publicForm must be under ${root}`);
+  }
+}
+
+export function publicationContract(pack, root = REPO_ROOT) {
+  const expectedSkill = publicationSkillForPack(pack);
+  if (!expectedSkill) throw new Error(`unknown publication pack ${JSON.stringify(pack)}`);
+  const declarationPath = sourcePath(root, pack, 'publication.json');
+  if (!existsSync(declarationPath)) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} is missing`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(readFileSync(declarationPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} is not valid JSON: ${error.message}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
+    || !exactKeys(parsed, PUBLICATION_CONTRACT_KEYS)) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} must contain exactly pack, skill, and entries`);
+  }
+  if (parsed.pack !== pack) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} pack must be ${JSON.stringify(pack)}`);
+  }
+  if (parsed.skill !== expectedSkill) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} skill must be ${JSON.stringify(expectedSkill)}`);
+  }
+  if (!Array.isArray(parsed.entries) || parsed.entries.length === 0) {
+    throw new Error(`${sourceRel(pack, 'publication.json')} entries must be a non-empty array`);
+  }
+
+  const seen = new Set();
+  for (const [index, entry] of parsed.entries.entries()) {
+    const label = `${sourceRel(pack, 'publication.json')} entries[${index}]`;
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)
+      || !exactKeys(entry, PUBLICATION_ENTRY_KEYS)) {
+      throw new Error(`${label} must contain exactly ${PUBLICATION_ENTRY_KEYS.join(', ')}`);
+    }
+    if (typeof entry.type !== 'string' || !PUBLICATION_SLUG.test(entry.type)) {
+      throw new Error(`${label}.type must be a safe slug using lowercase letters, digits, and hyphens`);
+    }
+    if (entry.subtype !== null
+      && (typeof entry.subtype !== 'string' || !PUBLICATION_SLUG.test(entry.subtype))) {
+      throw new Error(`${label}.subtype must be null or a safe slug using lowercase letters, digits, and hyphens`);
+    }
+    validatePublicationPath({entry, field: 'privateForm', label, pack});
+    validatePublicationPath({entry, field: 'publicForm', label, pack});
+    if (!Array.isArray(entry.formats) || entry.formats.length === 0
+      || entry.formats.some(format =>
+        typeof format !== 'string' || !PUBLICATION_FORMATS.has(format))) {
+      throw new Error(`${label}.formats must use known non-empty format identifiers`);
+    }
+    if (!PUBLICATION_AUTHORITIES.has(entry.authority)) {
+      throw new Error(`${label}.authority must be completion or operator`);
+    }
+    if (!PUBLICATION_PRIVACY.has(entry.privacy)) {
+      throw new Error(`${label}.privacy must be evidence-private`);
+    }
+    const key = `${entry.type}/${entry.subtype ?? '-'}`;
+    if (seen.has(key)) throw new Error(`${label} duplicates publication entry ${key}`);
+    seen.add(key);
+  }
+
+  return {
+    ...parsed,
+    declarationPath,
+    skillPath: sourcePath(root, pack, 'skills', parsed.skill, 'SKILL.md'),
+  };
+}
+
+const publicationAuthorityLabel = authority => authority === 'operator'
+  ? 'Named operator authority accepts the exact revision and SHA-256 hash'
+  : 'Named completion authority accepts the exact revision and hash';
+
+export function renderPublicationTable(contract) {
+  const rows = contract.entries.map(entry => [
+    contract.pack,
+    entry.type,
+    entry.subtype ?? '-',
+    entry.privateForm,
+    entry.publicForm,
+    entry.formats.map(format => PUBLICATION_FORMAT_LABELS[format]).join(', '),
+    publicationAuthorityLabel(entry.authority),
+    'Private evidence never publishes',
+  ]);
+  return [
+    '| Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rows.map(row => `| ${row.map(cell => `\`${cell}\``)
+      .map((cell, index) => index < 5 ? cell : cell.slice(1, -1))
+      .join(' | ')} |`),
+  ].join('\n');
+}
+
+export function syncPublicationTableRegion(body, contract) {
+  const normalized = normalizeLF(body);
+  const openCount = normalized.split(PUBLICATION_TABLE_REGION_OPEN).length - 1;
+  const closeCount = normalized.split(PUBLICATION_TABLE_REGION_CLOSE).length - 1;
+  const region = `${PUBLICATION_TABLE_REGION_OPEN}\n${renderPublicationTable(contract)}\n`
+    + PUBLICATION_TABLE_REGION_CLOSE;
+
+  if (openCount === 0 && closeCount === 0) {
+    const anchor = '\n## Validation and refusal';
+    const at = normalized.indexOf(anchor);
+    if (at === -1) {
+      throw new Error(`publication skill ${contract.skill} is missing its validation section`);
+    }
+    return `${normalized.slice(0, at).trimEnd()}\n\n${region}\n${normalized.slice(at)}`;
+  }
+  if (openCount !== 1 || closeCount !== 1) {
+    throw new Error(`publication table region for ${contract.skill} must contain one open and one close marker`);
+  }
+  const start = normalized.indexOf(PUBLICATION_TABLE_REGION_OPEN);
+  const end = normalized.indexOf(PUBLICATION_TABLE_REGION_CLOSE);
+  if (end < start) {
+    throw new Error(`publication table region for ${contract.skill} is malformed`);
+  }
+  return `${normalized.slice(0, start)}${region}`
+    + normalized.slice(end + PUBLICATION_TABLE_REGION_CLOSE.length);
 }
 
 // The default committed-tree root. release-guard classifies changes under it as
@@ -132,13 +344,6 @@ export function assetLocationErrors({ assets, index }) {
 
 
 
-export const GUARANTEE_REGION_OPEN =
-  '<!-- >>> kai core dependency guard (managed by pack-preview) >>> -->';
-export const GUARANTEE_REGION_CLOSE =
-  '<!-- <<< kai core dependency guard <<< -->';
-const LEGACY_GUARANTEE_REGION_OPEN =
-  '<!-- >>> kai core dependency guard (managed by pack-preview) >>>';
-
 // The host executes hooks.json itself, on every subagent, for everyone who
 // installs the plugin that ships it. Two installed packs carrying it means the
 // observer runs twice per subagent; none carrying it means it never runs. So it
@@ -147,206 +352,32 @@ const LEGACY_GUARANTEE_REGION_OPEN =
 export const HOOKS_FILE = 'hooks.json';
 export const HOOKS_OWNER = 'core';
 
-// The migration baseline freezes every id that existed before the
-// provider-posture-scope taxonomy. New agents go in NEW_AGENT_IDS, including
-// new workflows/personas/instructors; adding a retired-family id there fails.
-// Keeping the baseline separate makes "no new principal/director agents"
-// enforceable without blocking one-at-a-time migration.
-export const RETIRED_CREATIVE_AGENT_IDS = [
-  'principal-product-designer', 'principal-brand-designer', 'creative-video-director',
-];
-export const RETIRED_CREATIVE_SKILL_IDS = [
-  'create-product-demo', 'demo-capture', 'demo-narrate',
-  'demo-zoom', 'ui-mockup', 'video-direction',
-];
-
-const MIGRATION_BASELINE_PACKS = {
-  core: [
-    'director-chief-of-staff', 'workflow-workspace-init',
-    'workflow-proactive-scan', 'workflow-weekly-pulse',
-    'workflow-initiative-init',
-  ],
-  assistant: ['persona-self'],
-  creative: [],
-  engineering: [
-    'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
-    'principal-swe-infra', 'principal-swe-manager',
-    'principal-sre', 'principal-security', 'principal-privacy-compliance',
-    'principal-qa-ui', 'principal-data-engineer', 'principal-ai-applied-engineer',
-    'principal-ai-researcher', 'workflow-pull-request',
-    'workflow-issue-analysis', 'workflow-incident-response', 'workflow-ship',
-    'workflow-localization',
-  ],
-  product: [
-    'principal-product-manager', 'principal-product-strategist',
-    'principal-data-analytics', 'workflow-customer-feedback',
-    'workflow-experiment-review', 'workflow-product-explore',
-    'persona-ux-first-time-user', 'principal-growth',
-    'persona-professional-nutritionist', 'persona-professional-trainer',
-  ],
-  marketing: [
-    'principal-product-marketing', 'principal-demand-generation',
-    'principal-linkedin-strategist', 'principal-seo',
-  ],
-  revenue: [
-    'principal-sales', 'principal-pricing-monetization', 'principal-partnerships',
-    'principal-revenue-operations', 'principal-customer-success', 'workflow-support-triage',
-    'principal-solutions-architect',
-  ],
-  learning: [
-    'instructor-tutor', 'instructor-teacher', 'instructor-path-mentor',
-    'principal-engineer-career-mentor', 'workflow-course-to-audio',
-  ],
-};
-
-// Retired identities stay in the taxonomy baseline, not in active discovery or
-// emitted packs. This is an inventory change, not a runtime compatibility alias.
-export const RETIRED_ENGINEERING_AGENT_IDS = new Set([
-  'principal-swe-architect', 'principal-swe-backend', 'principal-swe-frontend',
-  'principal-swe-infra', 'principal-swe-manager', 'principal-sre',
-  'principal-security', 'principal-privacy-compliance', 'principal-qa-ui',
-  'principal-data-engineer', 'principal-ai-applied-engineer', 'principal-ai-researcher',
-  'workflow-issue-analysis', 'workflow-localization',
-]);
-
-// Dropped before the taxonomy baseline was frozen, so it appears in no pack
-// roster. Its drop record and the ship records that predate it still name it;
-// listing it here keeps those historical pages resolvable without reviving it.
-export const RETIRED_DIRECTOR_AGENT_IDS = new Set([
-  'director-executive-assistant',
-]);
-
-// Core agents withdrawn from the shipped surface. `workflow-self-check` audited
-// kai's own plugin inventory and only meant anything inside this repository,
-// yet every consumer received it — and its prose reference to a developer
-// script dragged 113 KB of release tooling into `kai-core` with it.
-export const RETIRED_CORE_AGENT_IDS = new Set([
-  'workflow-self-check',
-  'workflow-initiative-init',
-]);
-
-// Core skills that were renamed or split. Historical plans and ship records
-// legitimately name them; no active body may.
-export const RETIRED_CORE_SKILL_IDS = new Set([
-  'kai-core-workspace-conventions',
-  'kai-core-workspace-initiative',
-  'kai-core-work-item',
-  'kai-core-initiative-stewardship',
-  // Moved to kai-creative as `content-grounding` in 17.0.0. Core never routed
-  // it — both shipped callers were creative — and a department may not hold a
-  // `kai-core-` name, so the move and the rename are one change.
-  //
-  // This set is documentation bookkeeping, not a gate: it relaxes the
-  // inherit-line reference check for dated records. A shipped body
-  // reintroducing the id is caught by `referenceErrors` instead.
-  //
-  // Reviving `kai-marketing` needs a decision: its three bodies now route a
-  // kai-creative id, and no department may depend on another.
-  'kai-core-content-grounding',
-  // Moved to kai-engineering as `pr-delivery` in the pr-delivery refactor. The
-  // catalog already filed it under Engineering craft, its own "Where it sits"
-  // table names only engineering skills, and three of its four routes were
-  // engineering agents. The fourth was `director-chief-of-staff`, which now
-  // invokes `workflow-pull-request` instead: packaging a branch, commits and a
-  // PR narrative is a principal's craft, and the director directs. A
-  // department may not hold a `kai-core-` name, so the move and the rename are
-  // one change.
-  //
-  // Same caveat as above: this set is documentation bookkeeping, not a gate.
-  // No incubated body routes the old id, so no parked package is affected.
-  'kai-core-pr-delivery',
-  // Withdrawn from the shipped surface in 18.0.0 for the reason recorded above
-  // `RETIRED_CORE_AGENT_IDS`: it was a procedure for authoring kai's own
-  // agents, and its repository checklist only meant anything inside this
-  // checkout, yet every consumer of core received it. No agent routed,
-  // inherited or dispatched it — `SKILL_OWNER_OVERRIDES` carried it and
-  // `user-invocable: true` was its only firing path — so the sole way it ever
-  // reached a session was an operator running contributor tooling by hand.
-  //
-  // The content is not deleted. It is contributor documentation now, at
-  // `docs/reference/agent-authoring/`, and the taxonomy and model tables there
-  // are still pinned to the validator constants by
-  // `agentAuthoringReferenceErrors`.
-  'kai-core-create-agent',
-]);
-
-export const NEW_AGENT_IDS = {
-  core: ['workflow-epic-init'],
-  assistant: ['personal-assistant'],
-  creative: [
-    'creative-lead-design', 'creative-lead-video',
-    'workflow-creative-demo-production',
-  ],
-  engineering: [
-    'eng-lead-technical-writing', 'eng-advisor-investigation', 'eng-lead-architecture',
-    'eng-builder-software', 'eng-builder-platform', 'eng-reviewer-code',
-    'eng-reviewer-quality', 'eng-reviewer-security', 'eng-reviewer-reliability',
-    'eng-reviewer-privacy-compliance',
-  ],
-  product: [],
-  marketing: [],
-  revenue: [],
-  learning: [],
-};
-
 // Whole packages moved into `incubator/` while development returns to core.
 // They are not discovered, not validated as packs and not emitted; their source
-// and ids are preserved on disk so re-entry is a move, not a rewrite. The
-// taxonomy baseline above deliberately still lists their agent ids, so a
-// reference to one is still *recognised* as an agent reference and classified
-// as inactive rather than silently becoming unmatched prose.
+// and ids are preserved on disk so re-entry is a move, not a rewrite.
 export const INCUBATED_PACKS = Object.freeze([
   'assistant', 'product', 'marketing', 'revenue', 'learning',
 ]);
 
-export const ACTIVE_PACKS = Object.freeze(
-  Object.keys(MIGRATION_BASELINE_PACKS).filter((pack) => !INCUBATED_PACKS.includes(pack)),
-);
-
-export const PACKS = Object.fromEntries(
-  ACTIVE_PACKS
-    .map((pack) => [pack, [
-      ...MIGRATION_BASELINE_PACKS[pack].filter(id =>
-        !RETIRED_ENGINEERING_AGENT_IDS.has(id) && !RETIRED_CORE_AGENT_IDS.has(id)),
-      ...NEW_AGENT_IDS[pack],
-    ]]),
-);
-
-// Agent ids carried out of the active partition by incubation. Derived from the
-// frozen baseline plus the new ids declared for those packages, so it cannot
-// drift from what was actually moved.
 export const INCUBATED_AGENT_IDS = Object.freeze(
-  INCUBATED_PACKS.flatMap((pack) => [
-    ...MIGRATION_BASELINE_PACKS[pack],
-    ...NEW_AGENT_IDS[pack],
-  ]).sort(),
+  [...incubatedIds(REPO_ROOT, 'agent')].sort(),
 );
 
-// Deterministic pack emission order: core first, then the departments in the
-// partition's declared order. Fixed so a generated tree and a validator walk
-// list the same packs in the same sequence every run.
-//
-// Derived from PACKS, then checked against the shipped list in
-// `src/core/lib/pack-names.mjs`. Shipped code cannot import this module — that
-// is the whole point of the boundary — so the list exists in two places, and
-// without this check a pack added here would silently never reach the migration
-// doctor's install inspection.
-export const PACK_ORDER = Object.keys(PACKS);
-
-if (PACK_ORDER.join(',') !== SHIPPED_PACK_ORDER.join(',')) {
-  throw new Error(
-    `pack partition drift: tools/lib/pack-plan.mjs derives [${PACK_ORDER.join(', ')}] `
-    + `but src/core/lib/pack-names.mjs ships [${SHIPPED_PACK_ORDER.join(', ')}] — `
-    + 'update the shipped list, which is what consumer code reads',
-  );
+export function packageAgentInventory(root = REPO_ROOT) {
+  return Object.freeze(Object.fromEntries(PACK_ORDER.map((pack) => {
+    const dir = join(root, PACKS_DIR, packPluginName(pack), 'agents');
+    const agents = existsSync(dir)
+      ? readdirSync(dir).filter(name => name.endsWith('.agent.md'))
+        .map(name => name.replace(/\.agent\.md$/, '')).sort()
+      : [];
+    return [pack, Object.freeze(agents)];
+  })));
 }
 
-// Skills with no loaded firing path still need one explicit provider. These
-// dispositions were ratified in the partition lock; keeping them here makes the
-// generator use the reviewed decision instead of silently defaulting to core.
-export const SKILL_OWNER_OVERRIDES = {
-  'kai-core-fleet-observation': 'core',
-};
+// Inventory for callers operating on this checkout. Any caller that accepts a
+// root must use packageAgentInventory(root) instead.
+export const PACKS = packageAgentInventory();
+export const SKILL_OWNER_OVERRIDES = Object.freeze({});
 
 // Retained source and validation cover every active package. Publication is a
 // separate decision, but the active partition and the default index are now the
@@ -365,7 +396,7 @@ export const PUBLISHED_PACKS = Object.freeze(['core', 'engineering', 'creative']
 // Re-exported from the shipped module so there is exactly one definition. That
 // module is what consumer code imports; duplicating the name here would let the
 // two drift without anything failing.
-export { packPluginName };
+export { packPluginName, PACK_ORDER };
 
 // A functional, non-marketing manifest description. Published copy is refined at
 // the marketplace flip; scaffolding only needs to say what the plugin is. A pack
@@ -429,246 +460,26 @@ export function sourceSkillFiles(root = REPO_ROOT) {
   return files;
 }
 
-export function publicationInventoryErrors(entries, packs = PACK_ORDER) {
+export function publicationDeclarationInventoryErrors(
+  entries,
+  root = REPO_ROOT,
+  packs = PACK_ORDER,
+) {
   const errors = [];
-  const publicationEntries = entries.filter(entry =>
-    typeof entry?.id === 'string' && entry.id.endsWith('workspace-publication'));
   for (const pack of packs) {
-    const expected = publicationSkillForPack(pack);
-    const owned = publicationEntries.filter(entry => entry.pack === pack);
-    if (owned.length !== 1) {
-      errors.push(`${packPluginName(pack)} must ship exactly one publication skill `
-        + `(expected \`${expected}\`, found ${owned.length})`);
+    let contract;
+    try {
+      contract = publicationContract(pack, root);
+    } catch (error) {
+      errors.push(error.message);
       continue;
     }
-    if (owned[0].id !== expected) {
-      errors.push(`${packPluginName(pack)} publication skill must be \`${expected}\`, `
-        + `not \`${owned[0].id}\``);
+    const matches = entries.filter(entry =>
+      entry?.kind === 'skill' && entry.pack === pack && entry.id === contract.skill);
+    if (matches.length !== 1) {
+      errors.push(`${packPluginName(pack)} declaration names publication skill `
+        + `\`${contract.skill}\`, but the active source inventory contains ${matches.length}`);
     }
-  }
-  for (const entry of publicationEntries) {
-    if (!packs.includes(entry.pack)) {
-      errors.push(`${entry.id} belongs to non-shipped pack ${packPluginName(entry.pack)}`);
-    }
-  }
-  return errors;
-}
-
-const PUBLICATION_TABLE_HEADERS = Object.freeze([
-  'namespace',
-  'type',
-  'subtype',
-  'private form',
-  'public form',
-  'formats',
-  'publication rule',
-  'privacy rule',
-]);
-
-const PUBLICATION_ROWS = Object.freeze({
-  core: Object.freeze([
-    Object.freeze({
-      type: 'direction',
-      subtype: '-',
-      privateForm: '.kai/core/direction/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/DIRECTION.md',
-    }),
-    Object.freeze({
-      type: 'features',
-      subtype: '-',
-      privateForm: '.kai/core/features/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/core/features/<id>/',
-    }),
-    Object.freeze({
-      type: 'decisions',
-      subtype: '-',
-      privateForm: '.kai/core/decisions/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/core/decisions/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: '-',
-      privateForm: '.kai/core/reports/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/core/reports/<id>/',
-    }),
-  ]),
-  engineering: Object.freeze([
-    Object.freeze({
-      type: 'features',
-      subtype: '-',
-      privateForm: '.kai/engineering/features/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/features/<id>/',
-    }),
-    Object.freeze({
-      type: 'documentation',
-      subtype: 'architecture',
-      privateForm: '.kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/documentation/architecture/<id>/',
-    }),
-    Object.freeze({
-      type: 'decisions',
-      subtype: '-',
-      privateForm: '.kai/engineering/decisions/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/decisions/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: 'investigations',
-      privateForm: '.kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/reports/investigations/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: 'releases',
-      privateForm: '.kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/engineering/reports/releases/<id>/',
-    }),
-  ]),
-  creative: Object.freeze([
-    Object.freeze({
-      type: 'features',
-      subtype: '-',
-      privateForm: '.kai/creative/features/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/features/<id>/',
-    }),
-    Object.freeze({
-      type: 'documentation',
-      subtype: '-',
-      privateForm: '.kai/creative/documentation/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/documentation/<id>/',
-    }),
-    Object.freeze({
-      type: 'decisions',
-      subtype: '-',
-      privateForm: '.kai/creative/decisions/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/decisions/<id>/',
-    }),
-    Object.freeze({
-      type: 'reports',
-      subtype: '-',
-      privateForm: '.kai/creative/reports/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/reports/<id>/',
-    }),
-    Object.freeze({
-      type: 'media',
-      subtype: '-',
-      privateForm: '.kai/creative/media/<id>/{drafts,evidence,scratch}',
-      publicForm: 'docs/kai/creative/media/<id>/',
-    }),
-  ]),
-});
-
-const cleanTableCell = cell => cell.trim()
-  .replace(/^`|`$/g, '')
-  .replace(/\\\|/g, '|');
-
-function markdownTables(body) {
-  const lines = normalizeLF(body ?? '').split('\n');
-  const tables = [];
-  for (let index = 0; index < lines.length - 1; index += 1) {
-    if (!lines[index].trim().startsWith('|')) continue;
-    if (!/^\s*\|(?:\s*:?-+:?\s*\|)+\s*$/.test(lines[index + 1])) continue;
-    const cells = line => line.trim().replace(/^\||\|$/g, '').split('|').map(cleanTableCell);
-    const headers = cells(lines[index]).map(cell => cell.toLowerCase());
-    const rows = [];
-    let cursor = index + 2;
-    while (cursor < lines.length && lines[cursor].trim().startsWith('|')) {
-      rows.push(cells(lines[cursor]));
-      cursor += 1;
-    }
-    tables.push({headers, rows});
-    index = cursor - 1;
-  }
-  return tables;
-}
-
-const rowKey = row => `${row.type}/${row.subtype}`;
-const sorted = values => [...values].sort((left, right) => left.localeCompare(right));
-
-export function publicationContractErrors({pack, id, body}) {
-  const errors = [];
-  const expectedId = publicationSkillForPack(pack);
-  if (!expectedId) return [`${id ?? '(unknown)'} has no shipped publication namespace for ${pack}`];
-  if (id !== expectedId) {
-    errors.push(`${packPluginName(pack)} publication contract must use id \`${expectedId}\``);
-  }
-
-  const canonical = markdownTables(body).filter(table =>
-    table.headers.join('|') === PUBLICATION_TABLE_HEADERS.join('|'));
-  if (canonical.length !== 1) {
-    errors.push('must contain exactly one canonical vocabulary table with namespace, type, subtype, '
-      + 'private form, public form, formats, publication rule, and privacy rule');
-    return errors;
-  }
-
-  const expectedRows = PUBLICATION_ROWS[pack];
-  const actualRows = [];
-  for (const [index, cells] of canonical[0].rows.entries()) {
-    if (cells.length !== PUBLICATION_TABLE_HEADERS.length) {
-      errors.push(`canonical vocabulary row ${index + 1} must contain ${PUBLICATION_TABLE_HEADERS.length} fields`);
-      continue;
-    }
-    const [
-      namespace,
-      type,
-      subtype,
-      privateForm,
-      publicForm,
-      formats,
-      publicationRule,
-      privacyRule,
-    ] = cells;
-    if (namespace !== pack) {
-      errors.push(`canonical vocabulary row ${index + 1} namespace must be \`${pack}\``);
-    }
-    if (!formats) errors.push(`canonical vocabulary row ${index + 1} formats must not be empty`);
-    if (!/accept/i.test(publicationRule)
-      || !/(?:authority|operator)/i.test(publicationRule)
-      || !/(?:hash|revision)/i.test(publicationRule)) {
-      errors.push(`canonical vocabulary row ${index + 1} publication rule must bind accepted revision/hash and authority`);
-    }
-    if (!/(?:private|never publish|must not publish)/i.test(privacyRule)
-      || !/evidence/i.test(privacyRule)) {
-      errors.push(`canonical vocabulary row ${index + 1} privacy rule must keep evidence private`);
-    }
-    actualRows.push({type, subtype, privateForm, publicForm});
-  }
-
-  const expectedTypes = sorted(new Set(expectedRows.map(row => row.type)));
-  const actualTypes = sorted(new Set(actualRows.map(row => row.type)));
-  if (expectedTypes.join('|') !== actualTypes.join('|')) {
-    errors.push(`canonical type set must be ${expectedTypes.join(', ')}; found ${actualTypes.join(', ') || '(none)'}`);
-  }
-  const expectedSubtypes = sorted(expectedRows.map(rowKey));
-  const actualSubtypes = sorted(actualRows.map(rowKey));
-  if (expectedSubtypes.join('|') !== actualSubtypes.join('|')) {
-    errors.push(`canonical subtype set must be ${expectedSubtypes.join(', ')}; found ${actualSubtypes.join(', ') || '(none)'}`);
-  }
-
-  const expectedByKey = new Map(expectedRows.map(row => [rowKey(row), row]));
-  for (const row of actualRows) {
-    const expected = expectedByKey.get(rowKey(row));
-    if (!expected) continue;
-    if (row.privateForm !== expected.privateForm) {
-      errors.push(`${rowKey(row)} private form must be \`${expected.privateForm}\``);
-    }
-    if (row.publicForm !== expected.publicForm) {
-      errors.push(`${rowKey(row)} public form must be \`${expected.publicForm}\``);
-    }
-  }
-
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ').toLowerCase();
-  for (const phrase of [
-    'unknown type or subtype',
-    'scratch can never publish',
-    'an unaccepted draft can never publish',
-    'private evidence can never publish',
-    'an arbitrary root can never publish',
-  ]) {
-    if (!flat.includes(phrase)) errors.push(`must explicitly refuse ${phrase}`);
-  }
-  if (pack === 'creative' && !flat.includes('unsafe media destination')) {
-    errors.push('must explicitly refuse an unsafe media destination');
   }
   return errors;
 }
@@ -703,6 +514,13 @@ export function sourceFileErrors({
 } = {}) {
   const errors = [];
   for (const [kind, files] of [['agent', agents], ['skill', skills]]) {
+    if (files.length === 0) {
+      errors.push({
+        file: 'plugins/',
+        msg: `active ${kind} source corpus is empty`,
+      });
+      continue;
+    }
     const byId = new Map();
     for (const file of files) {
       if (!byId.has(file.id)) byId.set(file.id, []);
@@ -720,11 +538,11 @@ export function sourceFileErrors({
 }
 
 export function sourcePlacementErrors({
-  agents = sourceAgentFiles(), skills = sourceSkillFiles(), plan, packs = PACKS,
+  agents = sourceAgentFiles(), skills = sourceSkillFiles(), plan, packs,
 } = {}) {
   const errors = [];
   const expectedAgentPack = new Map();
-  for (const [pack, ids] of Object.entries(packs)) {
+  for (const [pack, ids] of Object.entries(packs ?? plan?.packages ?? PACKS)) {
     for (const id of ids) expectedAgentPack.set(id, pack);
   }
   for (const entry of agents) {
@@ -764,90 +582,36 @@ const listAgentIds = (root) => sourceAgentFiles(root).map((file) => file.id);
 
 const listSkillIds = (root) => sourceSkillFiles(root).map((file) => file.id).sort();
 
-// Every skill named on an agent's single `**Inherits:**` line, as written —
-// including one that does not exist, which is a reference miss rather than a
-// partition input.
-export function declaredInherits(body) {
-  const line = normalizeLF(body).match(/^\*\*Inherits:\*\*(.*)$/m);
-  if (!line) return [];
-  return [...line[1].matchAll(/`([^`]+)`/g)].map((m) => m[1]);
-}
-
-// The partition input: the skills an agent loads — from its eager `**Inherits:**`
-// line and its inline routes both — filtered to those that exist on disk. A
-// named-but-absent skill is a reference miss that referenceErrors reports, not a
-// partition input; the filter keeps that distinction load-bearing instead of
-// collapsing the two concerns. `loadedSkills` (below) is the same union without
-// the filter, for the reference corpus that must see the miss.
+// The partition input: the inline-routed skills that exist on disk. A
+// named-but-absent skill is a reference miss that referenceErrors reports, not
+// a partition input.
 export function loadedSkillsOnDisk(root, body) {
   return [...loadedSkills(body)].filter((s) => skillFile(root, s) !== null);
 }
 
-// The one answer to "which contracts does this agent load". A migrated agent
-// routes them inline at the step that needs each one; an agent still on the
-// eager line declares them all up front. Both are the same question, so every
-// check that asks it reads this rather than picking a side and passing
-// vacuously on the other half of the repo. When the last pack migrates, the
-// eager arm disappears and this collapses to `routedSkills` alone.
+// The one answer to "which contracts does this agent load".
 export function loadedSkills(body) {
-  return new Set([...declaredInherits(body), ...routedSkills(body)]);
+  return new Set(routedSkills(body));
 }
 
-// Assign every skill on disk to exactly one provider. The mechanical rule handles
-// inherited skills; SKILL_OWNER_OVERRIDES carries the reviewed disposition for
-// user-invocable and orchestrated skills that inheritance alone cannot place.
+// Physical package directories are the ownership declaration for both agents
+// and skills. References may validate whether one package can use another
+// package's skill, but usage never changes who provides it.
 export function planPacks(root = REPO_ROOT) {
-  const packOf = new Map();
-  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) packOf.set(id, pack);
+  const packages = packageAgentInventory(root);
+  const byPack = Object.fromEntries(PACK_ORDER.map(pack => [pack, []]));
+  for (const skill of sourceSkillFiles(root)) byPack[skill.pack].push(skill.id);
+  for (const skills of Object.values(byPack)) skills.sort();
 
-  const allAgents = listAgentIds(root);
-  const unassigned = allAgents.filter((id) => !packOf.has(id));
-
-  const usedBy = new Map();
-  for (const id of allAgents) {
-    for (const s of loadedSkillsOnDisk(root, readAgentBody(root, id))) {
-      if (!usedBy.has(s)) usedBy.set(s, new Set());
-      usedBy.get(s).add(packOf.get(id) ?? '?');
-    }
-  }
-
-  const onDisk = listSkillIds(root);
-
-  const inheritedCore = [];
-  const inheritedLocal = Object.fromEntries(Object.keys(PACKS).map((p) => [p, []]));
-  const orphans = [];
-  for (const s of onDisk) {
-    const packs = usedBy.get(s);
-    if (!packs) { orphans.push(s); continue; }
-    // A `kai-core-*` name is core's own declaration of ownership, and
-    // namespaceErrors rejects any other provider for it. Usage can narrow to a
-    // single department — as it does whenever the other callers are retired or
-    // incubated — without transferring the contract out of core.
-    if (s.startsWith(CORE_SKILL_PREFIX) || packs.size > 1 || packs.has('core')) inheritedCore.push(s);
-    else inheritedLocal[[...packs][0]].push(s);
-  }
-
-  const core = [...inheritedCore];
-  const local = Object.fromEntries(
-    Object.entries(inheritedLocal).map(([pack, skills]) => [pack, [...skills]]),
-  );
-  const unplaced = [];
-  for (const skill of orphans) {
-    const owner = SKILL_OWNER_OVERRIDES[skill];
-    if (owner === 'core') core.push(skill);
-    else if (owner && local[owner]) local[owner].push(skill);
-    else unplaced.push(skill);
-  }
-  core.sort();
-  for (const skills of Object.values(local)) skills.sort();
+  const core = [...byPack.core];
+  const local = Object.fromEntries(PACK_ORDER.map(pack => [
+    pack,
+    pack === 'core' ? [] : [...byPack[pack]],
+  ]));
   return {
     core,
     local,
-    orphans,
-    unplaced,
-    inheritedCore: inheritedCore.sort(),
-    inheritedLocal,
-    unassigned,
+    packages,
   };
 }
 
@@ -858,12 +622,12 @@ export function planManifests({
 } = {}) {
   const plan = planPacks(root);
   const selected = [...new Set(packs)];
-  const unknown = selected.filter((pack) => !PACKS[pack]);
+  const unknown = selected.filter((pack) => !Object.hasOwn(plan.packages, pack));
   if (unknown.length) throw new Error(`unknown pack(s): ${unknown.join(', ')}`);
   return PACK_ORDER.filter((pack) => selected.includes(pack)).map((pack) => {
     const isCore = pack === 'core';
     const name = packPluginName(pack);
-    const agents = [...PACKS[pack]].sort();
+    const agents = [...plan.packages[pack]];
     const skills = (isCore ? [...plan.core] : [...plan.local[pack]]).sort();
 
     // Fixed key order for byte-stable JSON: name, version, description, agents, skills.
@@ -941,55 +705,12 @@ export function materializePacks({
   }
   if (selected.has('core')) {
     // Onboarding reads this data file; executable/module routing cannot discover it.
-    const block = 'scripts/lib/communication-style-block.md';
+    const block = 'scripts/lib/repository-instructions-block.md';
     files.set(`${packPluginName('core')}/${block}`,
       normalizeLF(readFileSync(assetIndex.get(block).path, 'utf8')));
   }
   return new Map([...files].sort((a, b) => a[0].localeCompare(b[0])));
 }
-
-// There is now one agent shape: every agent routes its contracts inline and
-// carries no copied dependency guard. Synchronising an agent therefore only ever
-// removes a stale managed region — one is never inserted. A malformed half-region
-// still fails, so a partially hand-deleted guard cannot slip through. Kept as the
-// single entry point the generator and preview call so a leftover region from the
-// legacy era is stripped on the next `--write`.
-export function syncGuaranteeRegion(body) {
-  return removeGuaranteeRegion(body);
-}
-
-export function removeGuaranteeRegion(body) {
-  const normalized = normalizeLF(body);
-  const markerLines = normalized.split('\n');
-  const openCount = markerLines.filter((line) =>
-    line === GUARANTEE_REGION_OPEN || line === LEGACY_GUARANTEE_REGION_OPEN).length;
-  const closeCount = markerLines.filter((line) => line === GUARANTEE_REGION_CLOSE).length;
-  if (openCount > 1 || closeCount > 1) {
-    throw new Error('agent has more than one core dependency guard region');
-  }
-  const canonicalOpenAt = normalized.indexOf(GUARANTEE_REGION_OPEN);
-  const legacyOpenAt = normalized.indexOf(LEGACY_GUARANTEE_REGION_OPEN);
-  const openAt = canonicalOpenAt !== -1 ? canonicalOpenAt : legacyOpenAt;
-  const closeAt = normalized.indexOf(GUARANTEE_REGION_CLOSE);
-  if (openAt === -1 && closeAt === -1) return normalized;
-  if (openAt === -1 || closeAt === -1 || closeAt < openAt) {
-    throw new Error('agent has a malformed core dependency guard region');
-  }
-  const end = closeAt + GUARANTEE_REGION_CLOSE.length;
-  const before = normalized.slice(0, openAt).replace(/\n+$/, '');
-  const after = normalized.slice(end).replace(/^\n+/, '');
-  return `${before}\n\n${after}`;
-}
-
-// ---------------------------------------------------------------------------
-// The degraded refusal now belongs to each agent, not to a shared block. Every
-// agent writes its own core fallback in its own words, and agentRoutingErrors
-// checks that the three load-bearing facts are present (continue single-shot,
-// write no `.kai` state, tell the operator to install or update `kai-core`).
-// The old shared-block rules (a pinned degraded-block.txt validated by
-// degradedBlockErrors, plus coreContractLines / DEGRADED_BLOCK_MAX and friends)
-// are gone with the block they policed.
-// ---------------------------------------------------------------------------
 
 // Every committed plugin manifest: the root monolith plus any plugin tree under
 // plugins/. The validator applies version parity across the root monolith and
@@ -1114,44 +835,22 @@ export function marketplaceConsistencyErrors({
   return errs;
 }
 
-// Which plugin names the published index must and must not carry. Both sets are
-// DERIVED from publication policy: `packs` serves only the selected default
-// packages, and `legacy-rollback` restores the monolith alone — so it forbids
-// every name `packPluginName` can emit, including packs published after this
-// code was written. A literal here would silently bless a rollback index that
-// restored the monolith beside a department pack.
+// Which plugin names the current published index must and must not carry.
 export function marketplaceSurfacePolicy({
-  mkt, canonicalVersion, monolithName,
+  mkt, monolithName,
   publishedPackNames = PUBLISHED_PACKS.map(packPluginName),
   publishablePackNames = PACK_ORDER.map(packPluginName),
 }) {
   const errors = [];
-  const majorVersion = Number.parseInt(canonicalVersion?.split('.')[0] ?? '', 10);
-  const postOne = Number.isInteger(majorVersion) && majorVersion >= 1;
   const installSurface = mkt.metadata?.installSurface;
-
-  if (!postOne) {
-    if (installSurface) {
-      errors.push('metadata.installSurface is reserved for the 1.0.0-or-later pack publication surface');
-    }
-    return {
-      errors,
-      requiredPluginNames: [monolithName],
-      forbiddenPluginNames: [],
-    };
+  if (installSurface !== 'packs') {
+    errors.push('metadata.installSurface must be "packs"');
   }
-
-  if (!['packs', 'legacy-rollback'].includes(installSurface)) {
-    errors.push('metadata.installSurface must be "packs" or "legacy-rollback" at version 1.0.0 or later');
-  }
-  const legacyRollback = installSurface === 'legacy-rollback';
   const unpublished = publishablePackNames.filter((name) => !publishedPackNames.includes(name));
   return {
     errors,
-    requiredPluginNames: legacyRollback ? [monolithName] : publishedPackNames,
-    forbiddenPluginNames: legacyRollback
-      ? publishablePackNames
-      : [monolithName, ...unpublished],
+    requiredPluginNames: publishedPackNames,
+    forbiddenPluginNames: [monolithName, ...unpublished],
   };
 }
 
@@ -1186,9 +885,10 @@ const PROSE_DISPATCH = /\b(?:Load|Invoke|Apply|Run)\s+(?:the\s+)?`([a-z0-9][a-z0
 
 // Role ids carry a family prefix. A dispatch entry shaped like one that
 // resolves to nothing is a renamed or deleted role; a token that is not shaped
-// like one (`post-only`) is an output mode, not a reference. Baseline families
-// remain recognized during the staged migration. New durable roles use their
-// provider family plus a controlled posture and scope.
+// like one (`post-only`) is an output mode, not a reference. Current source and
+// incubated source provide the exact pre-taxonomy ids that remain recognizable.
+// New durable roles use their provider family plus a controlled posture and
+// scope.
 // Naming-policy families that map to an active install package. `personal`,
 // `prod` and `gtm` are retired namespace tokens whose owners were incubated;
 // they are not aliases and no active role may claim them.
@@ -1207,22 +907,15 @@ export const AGENT_FAMILIES = [
   ...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES, ...Object.keys(ROLE_FAMILY_PACK),
 ];
 
-// Ids that must stay *recognisable* as agent references even though no active
-// pack provides them: the frozen migration baseline, the retired creative
-// roles, and everything carried out of the partition by incubation. Dropping an
-// id from here would not fix a stale reference — it would stop the scanner from
-// seeing it at all, turning a caught dangling reference into silent prose.
-const LEGACY_AGENT_IDS = new Set([
-  ...Object.values(MIGRATION_BASELINE_PACKS).flat(),
-  ...RETIRED_CREATIVE_AGENT_IDS,
-  ...INCUBATED_AGENT_IDS,
-]);
+const ACTIVE_AGENT_IDS = new Set(Object.values(PACKS).flat());
+const INACTIVE_AGENT_IDS = new Set(INCUBATED_AGENT_IDS);
+const DECLARED_AGENT_IDS = new Set([...ACTIVE_AGENT_IDS, ...INACTIVE_AGENT_IDS]);
 const RETIRED_OR_KIND_ALT = [...RETIRED_AGENT_FAMILIES, ...KIND_AGENT_FAMILIES].join('|');
 const AGENT_FAMILY_ALT = AGENT_FAMILIES.join('|');
 const ROLE_FAMILY_ALT = Object.keys(ROLE_FAMILY_PACK).join('|');
 const ROLE_POSTURE_ALT = ROLE_POSTURES.join('|');
-const LEGACY_AGENT_ID_ALT = [...LEGACY_AGENT_IDS].sort().join('|');
-const AGENT_ID_SOURCE = `(?:${LEGACY_AGENT_ID_ALT}|(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
+const DECLARED_AGENT_ID_ALT = [...DECLARED_AGENT_IDS].sort().join('|');
+const AGENT_ID_SOURCE = `(?:${DECLARED_AGENT_ID_ALT}|(?:${RETIRED_OR_KIND_ALT})-[a-z0-9-]+`
   + `|(?:${ROLE_FAMILY_ALT})-(?:${ROLE_POSTURE_ALT})-[a-z0-9-]+)`;
 const AGENT_CANDIDATE_SOURCE = `(?:(?:${AGENT_FAMILY_ALT})-[a-z0-9-]+)`;
 
@@ -1235,21 +928,20 @@ export const agentRefPattern = () => new RegExp(`\`(${AGENT_ID_SOURCE})\``, 'g')
 const AGENT_SHAPED = agentShapedPattern();
 const AGENT_CANDIDATE = agentCandidatePattern();
 const RETIRED_AGENT_IDS = new Set(
-  [...Object.values(MIGRATION_BASELINE_PACKS).flat(), ...RETIRED_CREATIVE_AGENT_IDS]
+  [...DECLARED_AGENT_IDS]
     .filter((id) => RETIRED_AGENT_FAMILIES.includes(id.split('-')[0])),
 );
 
-// The new grammar coexists with exact baseline ids while roles are migrated one
-// or two at a time. New ids in a provider-family namespace have their posture
-// and placement enforced immediately.
+// Exact declared ids remain valid. New durable-role ids use a provider-family
+// namespace with enforced posture and placement.
 export function agentTaxonomyErrors({ id, pack }) {
   const [family, posture, ...scope] = (id ?? '').split('-');
   if (RETIRED_AGENT_FAMILIES.includes(family)) {
     return RETIRED_AGENT_IDS.has(id)
       ? []
-      : [`agent family \`${family}-*\` is migration-only; new agents must use a provider-family posture or a supported kind prefix`];
+      : [`agent family \`${family}-*\` is closed; new agents must use a provider-family posture or a supported kind prefix`];
   }
-  if (LEGACY_AGENT_IDS.has(id)) return [];
+  if (INACTIVE_AGENT_IDS.has(id)) return [];
   if (KIND_AGENT_FAMILIES.includes(family)) return [];
   if (!(family in ROLE_FAMILY_PACK)) {
     return [`agent family \`${family || '(missing)'}-*\` is not supported`];
@@ -1312,16 +1004,12 @@ export function agentRoutingErrors({
 
   // A skill is routed wherever the instruction that needs it lives. Hoisting
   // every route into one section reproduces the `**Inherits:**` manifest this
-  // contract removed, and forces a "do not preload" disclaimer that only exists
-  // to argue with its own list. So the checks below are semantic: the named
-  // skill must exist, the core probe and its fallback must be stated, and the
-  // agent must hold the tool that loads them. Where the sentence sits is the
-  // author's judgment. Line wrapping is an authoring choice, not a contract
-  // change, so the sentence checks run against a whitespace-collapsed copy.
-  const flat = text.replace(/\s+/g, ' ');
+  // contract removed. Validation therefore checks route identity, order, and
+  // tool access without compiling the surrounding explanation.
   const available = knownSkills instanceof Set ? knownSkills : new Set(knownSkills);
   const knownAgentSet = knownAgents instanceof Set ? knownAgents : new Set(knownAgents);
-  const routed = new Set(routedSkills(text));
+  const occurrences = routedSkillOccurrences(text);
+  const routed = new Set(occurrences.map(route => route.id));
   for (const skill of routed) {
     if (available.has(skill)) continue;
     // A route verb before an agent id ("invoke `principal-x`") is a lowercase
@@ -1333,9 +1021,9 @@ export function agentRoutingErrors({
     if (knownAgentSet.has(skill) || AGENT_CANDIDATE.test(skill)) continue;
     errors.push(`routes unknown skill \`${skill}\``);
   }
-  if (!/`kai-core-contract-v1`[\s\S]{0,160}?\bfirst\b[\s\S]{0,80}?\bcore\b/i.test(flat)
-    && !/\bbefore\b[\s\S]{0,120}?\bfirst\b[\s\S]{0,120}?`kai-core-contract-v1`/i.test(flat)) {
-    errors.push(`must state that \`${CONTRACT_SKILL}\` runs before the first other core skill`);
+  const firstCoreRoute = occurrences.find(route => route.id.startsWith(CORE_SKILL_PREFIX));
+  if (firstCoreRoute && firstCoreRoute.id !== CONTRACT_SKILL) {
+    errors.push(`must route \`${CONTRACT_SKILL}\` before every other core skill`);
   }
 
   const required = [CONTRACT_SKILL, 'kai-core-operating-rules'];
@@ -1366,39 +1054,7 @@ export function agentRoutingErrors({
   if (pack !== null) {
     errors.push(...publicationRoutingErrors({pack, id, kind: 'agent', body: text}));
   }
-  // The refusal belongs to the role, so its wording is the author's. This is
-  // not a structural check and does not pretend to be: it is a small vocabulary
-  // gate, deliberately loose. It confirms the refusal sits in the same
-  // paragraph as the core route, names `.kai` (a path, not a phrasing choice),
-  // and carries an install/update-style instruction that names the `kai-core`
-  // package — any of several verbs, not one fixed phrase, so a role-voiced
-  // "ask the operator to add the `kai-core` plugin" passes as readily as
-  // "install or update `kai-core`". What the role still does and refuses is the
-  // part the spec means by "its own words", and that — like the narrowing to
-  // bounded direct work — is prose about intent only a reader can judge. Review
-  // owns that; CI checks vocabulary and placement, nothing more.
-  const refusal = paragraphContaining(body, CONTRACT_SKILL) ?? '';
-  const missing = [];
-  if (!/`\.kai`/.test(refusal)) missing.push('what it will not write to `.kai`');
-  if (!/(install|reinstall|add|enable|restore|update|upgrade)[^.]{0,40}`kai-core`/i.test(refusal)) {
-    missing.push('that the operator should install or update `kai-core`');
-  }
-  if (missing.length) {
-    errors.push(`must state the core fallback in its own words, in the same paragraph as the \`${CONTRACT_SKILL}\` route so it is read where core is loaded, including ${missing.join(', and ')}`);
-  }
   return errors;
-}
-
-// The refusal is defined by where it sits, not by what it says: the paragraph
-// that carries the core route. Splitting on blank lines keeps that structural
-// rather than lexical, so an author may word the refusal however the role
-// demands as long as it stays next to the route it qualifies.
-function paragraphContaining(body, skillId) {
-  const needle = `\`${skillId}\``;
-  for (const para of normalizeLF(body ?? '').split(/\n\s*\n/)) {
-    if (para.includes(needle)) return para.replace(/\s+/g, ' ').trim();
-  }
-  return null;
 }
 
 // The only reader of `**Primary profile:** <profile>` and its mapping through
@@ -1407,10 +1063,8 @@ function paragraphContaining(body, skillId) {
 // agentIdentityContractErrors — the identity-marker half went with the marker,
 // but the profile/model binding has no other home, so it is preserved here,
 // keyed on the agent's family/posture rather than on any opt-in marker.
-// Delegates to the shipped policy, supplying this repository's frozen
-// pre-taxonomy baseline as the exempt set.
 export function agentProfileModelErrors({ id, body, fm = {} }) {
-  return profileModelErrors({ id, body, fm }, LEGACY_AGENT_IDS);
+  return profileModelErrors({ id, body, fm });
 }
 
 export function agentPromptLimitErrors(body) {
@@ -1418,89 +1072,6 @@ export function agentPromptLimitErrors(body) {
   return length > AGENT_PROMPT_HARD_LIMIT
     ? [`agent prompt is ${length} characters, over the ${AGENT_PROMPT_HARD_LIMIT}-character host limit`]
     : [];
-}
-
-const markdownTable = (text, heading) => {
-  const normalized = normalizeLF(text ?? '');
-  const start = normalized.indexOf(`## ${heading}\n`);
-  if (start === -1) return new Map();
-  const body = normalized.slice(start + heading.length + 4);
-  const end = body.search(/\n## /);
-  const section = end === -1 ? body : body.slice(0, end);
-  const clean = (cell) => cell.trim().replaceAll('`', '');
-  const lines = section.split('\n');
-  const tableStart = lines.findIndex((line) => /^\|.*\|$/.test(line));
-  const tableRest = tableStart === -1 ? [] : lines.slice(tableStart);
-  const tableEnd = tableRest.findIndex((line) => !/^\|.*\|$/.test(line));
-  const tableLines = tableEnd === -1 ? tableRest : tableRest.slice(0, tableEnd);
-  const rows = tableLines
-    .map((line) => line.slice(1, -1).split('|').map(clean))
-    .filter((row) => row.length > 1 && !/^[-:]+$/.test(row[0]));
-  return new Map(rows.slice(1).map((row) => [row[0], row.slice(1)]));
-};
-
-const commaValues = (value) => (value ?? '').split(',').map((item) => item.trim()).filter(Boolean).sort();
-const sameValues = (actual, expected) =>
-  actual.length === expected.length && actual.every((value, index) => value === expected[index]);
-
-export function agentAuthoringReferenceErrors({ taxonomy, modelSelection }) {
-  const errors = [];
-  const compareKeys = (label, rows, expected) => {
-    const actual = [...rows.keys()].sort();
-    const wanted = [...expected].sort();
-    if (!sameValues(actual, wanted)) {
-      errors.push(`${label} rows are [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
-    }
-  };
-
-  const providers = markdownTable(taxonomy, 'Provider families');
-  compareKeys('provider family', providers, Object.keys(ROLE_FAMILY_PACK));
-  for (const [family, pack] of Object.entries(ROLE_FAMILY_PACK)) {
-    const provider = providers.get(family)?.[0];
-    if (provider && provider !== packPluginName(pack)) {
-      errors.push(`provider family \`${family}\` names \`${provider}\`, expected \`${packPluginName(pack)}\``);
-    }
-  }
-
-  const postures = markdownTable(taxonomy, 'Durable-role postures');
-  compareKeys('durable-role posture', postures, ROLE_POSTURES);
-
-  const profiles = markdownTable(taxonomy, 'Execution profiles');
-  compareKeys('execution profile', profiles, Object.keys(ROLE_PROFILE_MODELS));
-  const expectedProfileKinds = new Map(Object.keys(ROLE_PROFILE_MODELS).map((profile) => [profile, []]));
-  for (const [posture, allowed] of Object.entries(ROLE_POSTURE_PROFILES)) {
-    for (const profile of allowed) expectedProfileKinds.get(profile).push(posture);
-  }
-  for (const [kind, allowed] of Object.entries(KIND_AGENT_PROFILES)) {
-    for (const profile of allowed) expectedProfileKinds.get(profile).push(kind);
-  }
-  for (const [profile, expected] of expectedProfileKinds) {
-    const actual = commaValues(profiles.get(profile)?.[0]);
-    const wanted = [...expected].sort();
-    if (!sameValues(actual, wanted)) {
-      errors.push(`execution profile \`${profile}\` applies to [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
-    }
-  }
-
-  const policyMarker = `**Policy version:** \`${MODEL_POLICY_VERSION}\``;
-  if (!(modelSelection ?? '').includes(policyMarker)) {
-    errors.push(`model selection reference must declare ${policyMarker}`);
-  }
-  const models = markdownTable(modelSelection, 'Approved models');
-  const expectedModels = [...new Set(Object.values(ROLE_PROFILE_MODELS))];
-  compareKeys('approved model', models, expectedModels);
-  for (const model of expectedModels) {
-    const actual = commaValues(models.get(model)?.[0]);
-    const wanted = Object.entries(ROLE_PROFILE_MODELS)
-      .filter(([, mapped]) => mapped === model)
-      .map(([profile]) => profile)
-      .sort();
-    if (!sameValues(actual, wanted)) {
-      errors.push(`approved model \`${model}\` covers [${actual.join(', ')}], expected [${wanted.join(', ')}]`);
-    }
-  }
-
-  return errors;
 }
 
 // A non-markdown asset a shipped instruction invokes. Only top-level scripts/
@@ -1574,15 +1145,15 @@ export function routedSkills(body) {
   return out;
 }
 
-export function durableOutputProducerDeclaration({body, fm}) {
-  if (fm && Object.hasOwn(fm, 'durable-output-producer')) {
-    return durableOutputProducerValue(fm);
+export function publicationEntrypointDeclaration({body, fm}) {
+  if (fm && Object.hasOwn(fm, PUBLICATION_ENTRYPOINT_KEY)) {
+    return fm[PUBLICATION_ENTRYPOINT_KEY]?.trim() || null;
   }
   const parsed = parseFrontmatter(body ?? '');
-  if (parsed.ok) return durableOutputProducerValue(parsed.fm);
+  if (parsed.ok) return parsed.fm[PUBLICATION_ENTRYPOINT_KEY]?.trim() || null;
   const fallback = normalizeLF(body ?? '')
-    .match(/^durable-output-producer:\s*(true|false)\s*$/m);
-  return fallback ? fallback[1] === 'true' : null;
+    .match(/^publication-entrypoint:\s*(\S+)\s*$/m);
+  return fallback?.[1] ?? null;
 }
 
 export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill', body, fm}) {
@@ -1592,7 +1163,11 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
     return [`${id}: cannot derive an owning publication skill from source pack ${pack ?? '(missing)'}`];
   }
 
-  const occurrences = routedSkillOccurrences(body);
+  const publicationBody = normalizeLF(body ?? '').replace(
+    /\bUse(\s+(?:the\s+)?`[a-z0-9][a-z0-9-]*`)/gi,
+    'Load$1',
+  );
+  const occurrences = routedSkillOccurrences(publicationBody);
   const publicationIds = new Set(Object.values(PUBLICATION_SKILLS));
   const publicationRoutes = occurrences.filter(route => publicationIds.has(route.id));
   const productionRoutes = occurrences.filter(route => route.id === 'kai-core-asset-producing');
@@ -1602,329 +1177,34 @@ export function publicationRoutingErrors({pack, id = '(unknown)', kind = 'skill'
       + `${packPluginName(pack)} owns \`${owner}\``);
   }
 
-  const declaredProducer = durableOutputProducerDeclaration({body, fm});
-  if (declaredProducer === null) {
-    errors.push(`${kind} must declare frontmatter \`durable-output-producer: true|false\``);
-    return [...new Set(errors)];
-  }
-  if (!declaredProducer) {
-    if (publicationRoutes.length > 0 || productionRoutes.length > 0) {
-      errors.push('declared non-producer must not route a workspace publication skill '
-        + 'or `kai-core-asset-producing`');
+  const entrypoint = publicationEntrypointDeclaration({body, fm});
+  if (!entrypoint) {
+    if (productionRoutes.length > 0) {
+      errors.push('direct `kai-core-asset-producing` route requires a declared publication entrypoint');
+    }
+    if (publicationRoutes.some(route => route.id === owner)) {
+      errors.push(`route to publication entrypoint \`${owner}\` requires frontmatter `
+        + `\`${PUBLICATION_ENTRYPOINT_KEY}: ${owner}\``);
     }
     return [...new Set(errors)];
   }
 
-  if (productionRoutes.length === 0
-    || !publicationRoutes.some(route => route.id === owner)) {
-    errors.push(`declared durable-output producer must route \`${owner}\` immediately before `
-      + '`kai-core-asset-producing`');
+  if (entrypoint !== owner) {
+    errors.push(`frontmatter publication entrypoint \`${entrypoint}\` belongs to another pack; `
+      + `${packPluginName(pack)} must declare \`${owner}\``);
     return [...new Set(errors)];
   }
-
-  for (const production of productionRoutes) {
-    const at = occurrences.indexOf(production);
-    const previous = occurrences[at - 1];
-    if (!previous || previous.id !== owner) {
-      errors.push(`must route \`${owner}\` immediately before each \`kai-core-asset-producing\` route`);
-    }
+  if (!publicationRoutes.some(route => route.id === owner)) {
+    errors.push(`declared publication entrypoint \`${owner}\` must be routed by this ${kind}`);
   }
-  for (const publication of publicationRoutes.filter(route => route.id === owner)) {
-    const at = occurrences.indexOf(publication);
-    const next = occurrences[at + 1];
-    if (!next || next.id !== 'kai-core-asset-producing') {
-      errors.push(`\`${owner}\` is a producer-only route and must sit immediately before \`kai-core-asset-producing\``);
+  for (const productionRoute of productionRoutes) {
+    if (!publicationRoutes.some(route =>
+      route.id === owner && route.index < productionRoute.index)) {
+      errors.push(`each \`kai-core-asset-producing\` route must have an earlier `
+        + `\`${owner}\` route`);
     }
   }
   return [...new Set(errors)];
-}
-
-export function agentDirectOutputErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/Direct work may return only inline or repository-native output\./i.test(flat)) {
-    errors.push('direct work must be limited to inline or repository-native output');
-  }
-  if (!/durable Kai report or publication requires an existing typed hierarchy subject, its current version, an authorized artifact target, current acting authority, and named acceptance authority/i.test(flat)) {
-    errors.push('durable Kai output requires an existing typed hierarchy subject, current version, '
-      + 'authorized artifact target, acting authority, and acceptance authority');
-  }
-  if (!/never mint a subject or call `artifact\.register` from the direct branch/i.test(flat)) {
-    errors.push('the direct branch must never mint a subject or call artifact.register');
-  }
-  return errors;
-}
-
-const HISTORY_OPEN = '<!-- kai:schema4-history -->';
-const HISTORY_CLOSE = '<!-- /kai:schema4-history -->';
-
-function activeContractText(body) {
-  const text = normalizeLF(body ?? '');
-  const kept = [];
-  let historical = false;
-  let unclosed = false;
-  for (const line of text.split('\n')) {
-    if (line.includes(HISTORY_OPEN)) {
-      historical = true;
-      continue;
-    }
-    if (line.includes(HISTORY_CLOSE)) {
-      historical = false;
-      continue;
-    }
-    if (!historical) kept.push(line);
-  }
-  if (historical) unclosed = true;
-  return {text: kept.join('\n'), unclosed};
-}
-
-const ACTIVE_GUIDE_DECISION_EXCLUSIONS = [
-  /^docs\/proposals(?:\/|$)/,
-  /^docs\/superpowers(?:\/|$)/,
-  /^docs\/kai\/reports(?:\/|$)/,
-  /^docs\/reference\/skill-evaluation(?:\/|$)/,
-];
-
-export function activeGuideDecisionFiles(root = REPO_ROOT) {
-  const files = [];
-  const add = (path) => {
-    if (!existsSync(path)) return;
-    const fileRel = relative(root, path).replace(/\\/g, '/');
-    if (ACTIVE_GUIDE_DECISION_EXCLUSIONS.some(pattern => pattern.test(fileRel))) return;
-    files.push({path, rel: fileRel});
-  };
-  for (const name of ['AGENTS.md', 'README.md']) add(join(root, name));
-  const walk = (dir) => {
-    if (!existsSync(dir)) return;
-    for (const entry of readdirSync(dir, {withFileTypes: true})
-      .sort((a, b) => a.name.localeCompare(b.name))) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walk(path);
-      } else if (entry.name.endsWith('.md')) {
-        add(path);
-      }
-    }
-  };
-  walk(join(root, 'docs'));
-  return files.sort((a, b) => a.rel.localeCompare(b.rel));
-}
-
-export function activeWorkspaceLanguageErrors({body}) {
-  const errors = [];
-  const active = activeContractText(body);
-  if (active.unclosed) errors.push(`unclosed ${HISTORY_OPEN} region`);
-  const text = active.text;
-  const checks = [
-    [
-      /workflow-initiative-init|kai-core-workspace-initiative|kai-core-work-item|kai-core-initiative-stewardship/i,
-      'references a removed schema-4 agent or skill contract',
-    ],
-    [/\.kai[\\/](?:runs|review|personal)(?:[\\/]|`|\b)/i,
-      'references a retired generic/private lane instead of a typed schema-5 pack path'],
-    [/\.kai[\\/]state(?:[\\/]|`|\b)/i,
-      'references the retired schema-4 state tree as a live path'],
-    [/(?:placement|storage_mode)["'`]?\s*[:=]\s*["'`]shared["'`]|shared\s+(?:placement|workspace|mode)/i,
-      'presents retired shared placement as live'],
-    [/\binitiatives?\b/i,
-      'presents retired initiative vocabulary as live'],
-    [
-      /`item`|\bitem\.(?:create|grant|update|transition|handoff|promote)\b|--kind\s+item\b|--item\b|work[- ]item|item record|coordinated item|granted item/i,
-      'presents retired generic item vocabulary as live',
-    ],
-  ];
-  for (const [pattern, message] of checks) {
-    if (pattern.test(text)) errors.push(message);
-  }
-  const semanticParagraphs = text.split(/\r?\n\s*\r?\n/);
-  if (semanticParagraphs.some(paragraph =>
-    /\bcoordination\b/i.test(paragraph)
-    && /\b(?:item schemas?|coordination items?|item owners?)\b/i.test(paragraph))) {
-    errors.push('presents retired generic coordination item semantics as live');
-  }
-  return errors;
-}
-
-export function markdownCoordinationAuthorityErrors({body}) {
-  const {text, unclosed} = activeContractText(body);
-  const errors = unclosed ? [`unclosed ${HISTORY_OPEN} region`] : [];
-  const subject =
-    /(?:`?BOARD\.md`?|Markdown\s+(?:board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index|record)|(?:board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index))/i;
-  const authority = /authoritative|coordination authority|source of truth/i;
-  const prohibition = /\b(?:no|not|never|cannot|can't|isn't|is not|forbid\w*|rather than|instead of)\b/i;
-  const sentences = text.replace(/\r?\n/g, ' ').split(/(?<=[.!?])\s+/);
-  for (const sentence of sentences) {
-    const claimsAuthority = (subject.test(sentence) && authority.test(sentence))
-      || /(?:authoritative|source of truth)[^.]{0,160}(?:BOARD\.md|board|backlog|milestone|thread|item|initiative)\s+(?:file|log|index|record)/i.test(sentence);
-    if (claimsAuthority && !prohibition.test(sentence)) {
-      errors.push('Markdown coordination authority is forbidden; SQLite is the only coordination authority');
-      break;
-    }
-  }
-  return errors;
-}
-
-export function directionContractErrors({body}) {
-  const errors = [];
-  const text = normalizeLF(body ?? '');
-  for (const heading of ['Vision', 'Mission', 'Current Goal', 'Out of Scope']) {
-    if (!new RegExp(`^\\s*# ${heading}\\s*$`, 'm').test(text)) {
-      errors.push(`Direction contract must include the exact # ${heading} section`);
-    }
-  }
-  const flat = text.replace(/\s+/g, ' ');
-  if (!/one observable, time-bounded Current Goal/i.test(flat)) {
-    errors.push('Direction contract must require one observable, time-bounded Current Goal');
-  }
-  return errors;
-}
-
-export function epicWorkflowContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/starts? from (?:the )?current Direction/i.test(flat)) {
-    errors.push('Epic workflow must start from current Direction');
-  }
-  if (!/creates no record before named authority approval/i.test(flat)) {
-    errors.push('Epic workflow creates no record before named authority approval');
-  }
-  if (!/suggestion[\s\S]{0,160}conversational[\s\S]{0,160}named authority/i.test(flat)) {
-    errors.push('Epic suggestions without named authority approval must remain conversational');
-  }
-  return errors;
-}
-
-export function chiefOfStaffContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/grants Tasks only/i.test(flat) || !/task\.grant/.test(flat)) {
-    errors.push('Chief of Staff grants Tasks only through task.grant');
-  }
-  if (!/cannot invent[\s\S]{0,200}Epic[\s\S]{0,80}Feature[\s\S]{0,80}Requirement[\s\S]{0,160}scope[\s\S]{0,80}priority[\s\S]{0,80}authorit[\s\S]{0,80}acceptance/i.test(flat)) {
-    errors.push('Chief of Staff cannot invent Epic/Feature/Requirement scope, priority, authority, or acceptance');
-  }
-  return errors;
-}
-
-export function workflowShipContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (/\bitems?\b/i.test(flat)) {
-    errors.push('workflow-ship must name the executable hierarchy record as a Task, not a generic item');
-  }
-  if (!/failed deployment or production verification[\s\S]{0,500}blocked[\s\S]{0,200}resume_state/i.test(flat)) {
-    errors.push('workflow-ship failure must block while preserving the original state in resume_state');
-  }
-  if (!/evidence[\s\S]{0,240}operator[\s\S]{0,240}task\.restore/i.test(flat)
-    && !/task\.restore[\s\S]{0,240}evidence[\s\S]{0,240}operator/i.test(flat)) {
-    errors.push('workflow-ship recovery requires evidence/operator resolution before task.restore');
-  }
-  if (!/resumes the recorded allowed original state/i.test(flat)
-    || /returns?[^.]{0,240}(?:deploying|production-verification)[^.]{0,120}release-ready/i.test(flat)) {
-    errors.push('workflow-ship recovery must resume the recorded allowed original state '
-      + 'and never rewind to release-ready');
-  }
-  return errors;
-}
-
-export function stewardshipAuthorityErrors({body}) {
-  const errors = [];
-  const text = normalizeLF(body ?? '');
-  const rows = [
-    [
-      /(?:Propose|Create) a Requirement(?: proposal)?/,
-      /Feature owner or delegated pack\/scope authority/,
-      'Requirement proposal',
-    ],
-    [
-      /Activate a Requirement/,
-      /Feature owner(?: only)?/,
-      'Requirement activation',
-    ],
-    [
-      /(?:Propose|Create) a Task(?: proposal)?/,
-      /Requirement scope authority or delegated specialist/,
-      'Task proposal',
-    ],
-    [
-      /Promote a Task(?: to ready)?/,
-      /Requirement scope authority/,
-      'Task promotion',
-    ],
-  ];
-  const lines = text.split('\n').filter(line => /^\|.*\|$/.test(line));
-  for (const [action, authority, label] of rows) {
-    const row = lines.find(line => action.test(line));
-    if (!row || !authority.test(row)) {
-      errors.push(`${label} authority does not match the runtime/design contract`);
-    }
-  }
-  return errors;
-}
-
-export function webOutputContractErrors({id, body}) {
-  const errors = [];
-  const text = normalizeLF(body ?? '');
-  if (/<working-root>[\\/]qa|<working-root>\/qa/i.test(text)) {
-    errors.push(`${id}: web output must use the typed core report path, never <working-root>/qa`);
-  }
-  if (id === 'kai-core-web-evaluation') {
-    const grammar = 'web-evaluation-<YYYYMMDD>-<NN>-<descriptor>';
-    const flat = text.replace(/\s+/g, ' ');
-    for (const required of [
-      `.kai/core/reports/${grammar}/{drafts,evidence,scratch}`,
-      `docs/kai/core/reports/${grammar}/`,
-    ]) {
-      if (!text.includes(required)) {
-        errors.push(`${id}: typed core report path must use the exact web-evaluation ID grammar`);
-      }
-    }
-    const proseMatchesGrammar = [
-      /`<YYYYMMDD>` is the local evaluation date in eight-digit `YYYYMMDD` form/i,
-      /`<NN>` is the next unused positive sequence for that date, zero-padded to at least two digits/i,
-      /`<descriptor>` is a required lowercase kebab-case surface description/i,
-      /check that exact ID is absent from both the private and public report roots[\s\S]{0,220}create the private report root atomically[\s\S]{0,160}increment `<NN>` and retry/i,
-      /Every rerun allocates a new `<NN>` and never reuses an earlier ID\./,
-    ].every(pattern => pattern.test(flat));
-    const contradictoryProse =
-      /web-evaluation-<artifact-id>|artifact UUID makes every rerun/i.test(text)
-      || /\breruns?\s+(?:must\s+|may\s+|can\s+)?reuses?\s+(?:(?:the\s+)?(?:previous|earlier|same)|a\s+prior)(?:\s+report)?\s+ID\b/i.test(text)
-      || /\bartifact UUID\s+(?:is|becomes|serves as)\s+(?:the\s+)?(?:report\s+)?path ID\b/i.test(text);
-    if (!proseMatchesGrammar || contradictoryProse) {
-      errors.push(`${id}: web-evaluation ID grammar/prose drift; date, sequence, descriptor, and rerun allocation must agree`);
-    }
-    return [...new Set(errors)];
-  }
-
-  for (const required of [
-    '.kai/core/reports/<id>/{drafts,evidence,scratch}',
-    'docs/kai/core/reports/<id>/',
-  ]) {
-    if (!text.includes(required)) {
-      errors.push(`${id}: typed core report path must match the core private/public publication forms`);
-    }
-  }
-  if (!text.includes('web-extract-<artifact-id>')
-    || !/artifact-id[\s\S]{0,220}(?:UUID|collision-safe)/i.test(text)
-    || /<NN>/.test(text)) {
-    errors.push(`${id}: reruns require a collision-safe typed ID backed by the artifact UUID, not <NN>`);
-  }
-  return [...new Set(errors)];
-}
-
-export function directModeContractErrors({body}) {
-  const errors = [];
-  const flat = normalizeLF(body ?? '').replace(/\s+/g, ' ');
-  if (!/scripts\/coordinate\.mjs"\s+direct\s+--root\s+"<workspace-root>"/i.test(flat)) {
-    errors.push('direct mode must invoke the `direct` runtime verb');
-  }
-  if (!/coordinationRequired:\s*false/.test(flat)) {
-    errors.push('direct mode must require `coordinationRequired: false` from the runtime');
-  }
-  if (/When `inspect` reports `coordinationRequired:\s*false`/i.test(flat)) {
-    errors.push('`inspect` cannot authorize direct mode');
-  }
-  return errors;
 }
 
 // Situational dispatch targets declared in a body, in declaration order.
@@ -1954,10 +1234,11 @@ function skillOwners(plan) {
   return owners;
 }
 
-// agent id -> owning pack, straight from the locked partition.
-function agentOwners() {
+// agent id -> owning pack, straight from the selected root's physical package
+// directories.
+function agentOwners(packages = PACKS) {
   const owners = new Map();
-  for (const [pack, ids] of Object.entries(PACKS)) for (const id of ids) owners.set(id, pack);
+  for (const [pack, ids] of Object.entries(packages)) for (const id of ids) owners.set(id, pack);
   return owners;
 }
 
@@ -2036,7 +1317,7 @@ export function packProviders(files, packs = PACK_ORDER) {
 export function collectReferences(root = REPO_ROOT) {
   const plan = planPacks(root);
   const skillOf = skillOwners(plan);
-  const agentOf = agentOwners();
+  const agentOf = agentOwners(plan.packages);
 
   const refs = [];
   const add = (from, fromPack, firing, kind, target) => {
@@ -2097,11 +1378,8 @@ export function collectReferences(root = REPO_ROOT) {
     // only as real as the routing skill's own reachability, and the firing-path
     // check in validate-plugin.mjs answers that separate question from agents.
     for (const text of [raw, ...companionBodies]) {
-      // `routedSkills`, not `loadedSkills`: the latter also unions
-      // `declaredInherits`, which reads an agent's `**Inherits:**` line. That
-      // construct has no meaning in a skill, and it carries neither fence
-      // stripping nor an id charset — so a fenced authoring example in a skill
-      // body would become a live reference.
+      // `routedSkills` reads the route syntax directly and strips fenced
+      // authoring examples before treating a token as a live reference.
       for (const target of routedSkills(text)) {
         if (target === id) continue;
         // Same agent-versus-skill disambiguation the agent loop applies, and
@@ -2136,8 +1414,9 @@ export function referenceErrors({ refs, providers }) {
     if (!ref.fromPack) {
       errs.push({
         file: ref.from,
-        msg: `${label} comes from a file no pack owns — place it in PACKS or SKILL_OWNER_OVERRIDES `
-          + 'before its references can resolve to anything',
+        msg: `${label} comes from a file no pack owns — place it under exactly one `
+          + '`plugins/<pack>/agents` or `plugins/<pack>/skills` directory before its references '
+          + 'can resolve to anything',
       });
       continue;
     }
@@ -2472,11 +1751,10 @@ export function hooksAssignmentErrors({ owners, hookAssets = [], assets = new Ma
 // function over the live tree.
 // ---------------------------------------------------------------------------
 
-// Every agent in exactly one pack, every skill with exactly one provider, and
-// every reviewed override still pointing at a skill inheritance cannot place.
+// Every agent and skill has exactly one physical package provider.
 // Returns plain message strings.
 export function partitionErrors({
-  plan, agents = [], skills = [], packs = PACKS, overrides = SKILL_OWNER_OVERRIDES,
+  plan, agents = [], skills = [], packs = plan?.packages ?? PACKS,
 }) {
   const errs = [];
   const onDisk = new Set(agents);
@@ -2522,29 +1800,6 @@ export function partitionErrors({
       errs.push(`skill \`${id}\` is planned into ${packPluginName(pack)} but is not a skill on disk`);
     }
   }
-
-  const orphans = new Set(plan.orphans ?? []);
-  for (const [id, owner] of Object.entries(overrides)) {
-    if (!skillSet.has(id)) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, which is not a skill on disk — a reviewed `
-        + 'disposition for a renamed or deleted skill places nothing and says so nowhere');
-      continue;
-    }
-    if (owner !== 'core' && !packs[owner]) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\` in "${owner}", which is not a pack`);
-      continue;
-    }
-    if (!orphans.has(id)) {
-      errs.push(`SKILL_OWNER_OVERRIDES places \`${id}\`, but an agent already loads it — loading `
-        + 'places it, so the override is a second truth about one skill');
-    }
-  }
-  for (const id of orphans) {
-    if (!(id in overrides)) {
-      errs.push(`skill \`${id}\` is loaded by no agent and has no reviewed provider in `
-        + 'SKILL_OWNER_OVERRIDES — it would ship in no pack at all');
-    }
-  }
   return errs;
 }
 
@@ -2555,8 +1810,7 @@ export function namespaceErrors({ core = [], local = {}, prefix = CORE_SKILL_PRE
   for (const id of core) {
     if (id.startsWith(prefix)) continue;
     errs.push(`kai-core provides skill \`${id}\`, which does not carry the \`${prefix}*\` prefix — a `
-      + 'legacy `kai` install provides that same bare name, so provider ownership is ambiguous; '
-      + `rename it to \`${prefix}${id}\``);
+      + `bare core skill has ambiguous ownership; rename it to \`${prefix}${id}\``);
   }
   for (const [pack, ids] of Object.entries(local)) {
     for (const id of ids) {
@@ -2616,27 +1870,4 @@ export function contractPinErrors({
       + 'here is invisible to the agents that trust it');
   }
   return errs;
-}
-
-// The roles that grant leases resolve which agents a session actually exposes
-// before dispatching. Once kai ships as packs the answer stops being "all of
-// them", and both failure directions are silent — claim a role is present and
-// the director answers in its voice; claim it is missing and it refuses work the
-// operator can staff. Membership is the only sound test, so the rules that say
-// so are pinned rather than trusted to survive an unrelated edit.
-export const DISPATCHING_ROLES = ['director-chief-of-staff'];
-
-export const AVAILABILITY_RULES = [
-  { rule: 'read the roster rather than recall it', pattern: /\*\*Read the roster; do not recall it\.\*\*/ },
-  { rule: 'test membership', pattern: /\*\*Test membership\.\*\*/ },
-  { rule: 'never compute or compare counts', pattern: /\*\*Never compute or compare counts\.\*\*/ },
-];
-
-export function availabilityErrors({ body, rules = AVAILABILITY_RULES }) {
-  const text = normalizeLF(body ?? '');
-  return rules
-    .filter((r) => !r.pattern.test(text))
-    .map((r) => `grants leases but no longer states "${r.rule}" — role availability is decided by `
-      + 'membership in the roster the session exposes, never by a count over it, and a director that '
-      + 'guesses either way fails silently');
 }

@@ -2,7 +2,7 @@
 name: eng-reviewer-code
 description: "Independently reviews an exact code change for requirements, correctness, contracts, regressions, and test adequacy. Use for a diff, PR, or implementation review. Returns evidence-based findings; never repairs the code or substitutes for specialized risk acceptance."
 model: "gpt-5.6-terra"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 

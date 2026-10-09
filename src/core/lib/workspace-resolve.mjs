@@ -389,17 +389,17 @@ function validateRegisteredWorkspace(entry, projectRoot) {
   const manifestResult = readWorkspaceManifest(entry.workspace_root);
   if (!manifestResult.ok) return manifestResult;
   const manifest = manifestResult.manifest;
-  if (![3, 4, 5].includes(manifest.schema_version)) {
+  if (manifest.schema_version !== WORKSPACE_SCHEMA_VERSION) {
     return {
       ok: false,
-      reason: `registered workspace manifest uses schema ${JSON.stringify(manifest.schema_version)}, expected schema 3, 4, or 5`,
+      code: 'SCHEMA_MISMATCH',
+      reason: 'workspace schema is unsupported; reinstall Kai and run kai-core-workspace-reonboard',
     };
   }
-  const placement = manifest.schema_version === 5 ? manifest.placement : manifest.storage_mode;
-  if (placement !== 'external') {
+  if (manifest.placement !== 'external') {
     return {
       ok: false,
-      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(placement)}`,
+      reason: `registered workspace manifest placement must be "external", found ${JSON.stringify(manifest.placement)}`,
     };
   }
   if (manifest.workspace_id !== entry.workspace_id) {
@@ -458,7 +458,7 @@ export function findRegisteredWorkspace(cwd, env = process.env) {
  * Resolve the workspace root a CLI should operate against.
  *
  * @returns {{ok: true, root: string, source: 'explicit'|'env'|'search'|'registry', projectRoot?: string}
- *   | {ok: false, reason: string}}
+ *   | {ok: false, code?: string, reason: string}}
  */
 export function resolveWorkspaceRoot(opts = {}) {
   const { explicitRoot, cwd = process.cwd(), env = process.env } = opts;

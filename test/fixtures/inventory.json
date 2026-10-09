@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 21,
-    "skills": 38
+    "skills": 39
   },
   "agents": [
     "creative-lead-design",
@@ -57,6 +57,7 @@
     "kai-core-workspace-onboarding",
     "kai-core-workspace-paths",
     "kai-core-workspace-publication",
+    "kai-core-workspace-reonboard",
     "mockups-ascii",
     "mockups-html",
     "onboard-to-codebase",

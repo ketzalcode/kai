@@ -14,17 +14,16 @@
 // judgment, and coverage is enforced — a new agent or skill fails the build
 // until it is filed under exactly one heading.
 //
-// Run: `node tools/generate-catalog.mjs`          (write)
-//      `node tools/generate-catalog.mjs --check`  (fail on drift; used by npm test)
+// The unified build imports catalogContent(). It is the only command that writes
+// or checks the committed catalog.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, stripQuotes, isUserInvocable } from '../src/core/lib/loader-contract.mjs';
 import { sourceAgentFiles, sourceSkillFiles, PUBLISHED_PACKS } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(ROOT, 'docs', 'reference', 'agents-and-skills.md');
 
 // ---------------------------------------------------------------------------
 // Editorial grouping. Every agent and skill must appear exactly once.
@@ -101,6 +100,7 @@ const CATEGORIES = [
     members: [
       'kai-core-workspace-paths',
       'kai-core-workspace-onboarding',
+      'kai-core-workspace-reonboard',
       'kai-core-workspace-publication',
     ],
   },
@@ -178,18 +178,19 @@ const CATEGORIES = [
 // ---------------------------------------------------------------------------
 // Read the shipped surface
 // ---------------------------------------------------------------------------
-function readAll() {
+function readAll(root = ROOT) {
   const items = new Map();
-  for (const entry of sourceAgentFiles(ROOT)) {
+  for (const entry of sourceAgentFiles(root)) {
     const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
     if (!pf.ok) throw new Error(`${entry.rel}: ${pf.reason}`);
     items.set(entry.id, { id: entry.id, kind: 'agent', pack: entry.pack, fm: pf.fm, path: entry.rel });
   }
-  for (const entry of sourceSkillFiles(ROOT)) {
+  for (const entry of sourceSkillFiles(root)) {
     const pf = parseFrontmatter(readFileSync(entry.path, 'utf8'));
     if (!pf.ok) throw new Error(`${entry.rel}: ${pf.reason}`);
     items.set(entry.id, { id: entry.id, kind: 'skill', pack: entry.pack, fm: pf.fm, path: entry.rel });
   }
+
   return items;
 }
 
@@ -242,8 +243,8 @@ function build(items) {
   out.push('');
   out.push('<!-- GENERATED FILE — do not edit by hand.');
   out.push('     Source: agent/skill frontmatter + the CATEGORIES table in');
-  out.push('     tools/generate-catalog.mjs. Regenerate with `npm run docs:generate`;');
-  out.push('     `npm test` fails if this file drifts from the shipped surface. -->');
+  out.push('     tools/generate-catalog.mjs. Regenerate with `npm run build`;');
+  out.push('     `npm run build:check` fails if this file drifts. -->');
   out.push('');
   out.push(`The repository ships **${agents} agents** and **${skills} skills**.`);
   out.push('');
@@ -254,7 +255,7 @@ function build(items) {
   out.push('deliberately absent from this catalog: they are not installed, not loaded,');
   out.push('and not available through any install path.');
   out.push('');
-  out.push('- **Not sure who to ask?** [How kai works](../how-kai-works.md) has the trigger table.');
+  out.push('- **Need the system boundaries?** [Architecture](../architecture.md) maps packages, authority, runtime, and hosts.');
   out.push('- **Want to see it running?** [`examples/e2e-feature-delivery/`](../../examples/e2e-feature-delivery/).');
   out.push('');
 
@@ -284,36 +285,18 @@ function build(items) {
 
   out.push('---');
   out.push('');
-  out.push('**Next:** [How kai works](../how-kai-works.md) · [Workspace model](../workspaces.md) ·');
-  out.push('[Getting started](../getting-started.md)');
+  out.push('**Next:** [Architecture](../architecture.md) · [Workspace model](../workspaces.md) ·');
+  out.push('[Development process](../development-process.md)');
   out.push('');
   return out.join('\n');
 }
 
-// ---------------------------------------------------------------------------
-const check = process.argv.includes('--check');
-let content;
-try {
-  content = build(readAll());
-} catch (e) {
-  console.log(`\u2717 generate-catalog: ${e.message}`);
-  for (const p of e.problems || []) console.log(`    ${p}`);
-  process.exit(1);
+export function catalogContent(root = ROOT) {
+  return build(readAll(root));
 }
 
-const norm = (s) => s.replace(/\r\n/g, '\n');
-if (check) {
-  if (!existsSync(OUT)) {
-    console.log('\u2717 docs:check: docs/reference/agents-and-skills.md is missing (run `npm run docs:generate`)');
-    process.exit(1);
-  }
-  if (norm(readFileSync(OUT, 'utf8')) !== norm(content)) {
-    console.log('\u2717 docs:check: docs/reference/agents-and-skills.md is stale (run `npm run docs:generate` and commit the result)');
-    process.exit(1);
-  }
-  console.log('\u2713 docs:check: the generated agent/skill catalog matches the shipped surface');
-} else {
-  mkdirSync(dirname(OUT), { recursive: true });
-  writeFileSync(OUT, content.endsWith('\n') ? content : `${content}\n`);
-  console.log('\u2713 wrote docs/reference/agents-and-skills.md');
+// ---------------------------------------------------------------------------
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  console.error('catalog generation is owned by `npm run build` and `npm run build:check`');
+  process.exit(1);
 }

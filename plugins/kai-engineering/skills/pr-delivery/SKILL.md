@@ -1,7 +1,6 @@
 ---
 name: pr-delivery
 description: "PR delivery hygiene contract. Use when a finished change needs branch naming, conventional-commit title, PR body, verification, and protection-safe handoff."
-durable-output-producer: false
 tools: [execute, read, edit, search]
 ---
 
@@ -184,10 +183,11 @@ replaces a dev-design artifact, which has its own structure and home.
 ```text
 before                          after
 ------                          -----
-README.md  1,167 lines   ──►    README.md   ~150 lines (route map)
+README.md  1,167 lines   ──►    README.md   route map
   everything                     docs/
-                                   getting-started.md
-                                   how-kai-works.md
+                                   architecture.md
+                                   workspaces.md
+                                   development-process.md
                                    reference/agents-and-skills.md  (generated)
 ```
 

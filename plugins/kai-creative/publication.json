@@ -1,0 +1,51 @@
+{
+  "pack": "creative",
+  "skill": "creative-workspace-publication",
+  "entries": [
+    {
+      "type": "features",
+      "subtype": null,
+      "privateForm": ".kai/creative/features/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/creative/features/<id>/",
+      "formats": ["markdown", "html", "image", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "documentation",
+      "subtype": null,
+      "privateForm": ".kai/creative/documentation/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/creative/documentation/<id>/",
+      "formats": ["markdown", "html", "image", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "decisions",
+      "subtype": null,
+      "privateForm": ".kai/creative/decisions/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/creative/decisions/<id>/",
+      "formats": ["markdown", "image", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "reports",
+      "subtype": null,
+      "privateForm": ".kai/creative/reports/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/creative/reports/<id>/",
+      "formats": ["markdown", "json", "image", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "media",
+      "subtype": null,
+      "privateForm": ".kai/creative/media/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/creative/media/<id>/",
+      "formats": ["media", "markdown-destination-record"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    }
+  ]
+}

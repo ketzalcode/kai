@@ -8,8 +8,8 @@
 //
 // It lives under `src/` rather than in `tools/lib/pack-plan.mjs` because shipped
 // code is the consumer that cannot be broken. Importing it the other way round
-// is what used to drag 93 KB of release machinery — migration baselines,
-// retired-agent rosters, marketplace policy — into every consumer install so
+// is what used to drag 93 KB of release machinery — agent rosters and
+// marketplace policy — into every consumer install so
 // that a host could look up a model name.
 
 export const ROLE_FAMILY_PACK = Object.freeze({
@@ -58,14 +58,10 @@ export const KIND_AGENT_FAMILIES = Object.freeze([
   'workflow', 'persona', 'instructor',
 ]);
 
-// `legacyIds` are the frozen pre-taxonomy agent ids, which are exempt because
-// they predate the profile contract. The repository validator passes its full
-// baseline; the runtime passes none, because an actor naming a retired id is a
-// different failure that its own checks already report.
-export function agentProfileModelErrors({ id, body, fm = {} }, legacyIds = new Set()) {
+export function agentProfileModelErrors({ id, body, fm = {} }) {
   const [family, posture] = (id ?? '').split('-');
-  const isDurableRole = family in ROLE_FAMILY_PACK && !legacyIds.has(id);
-  const isNewKind = KIND_AGENT_FAMILIES.includes(family) && !legacyIds.has(id);
+  const isDurableRole = family in ROLE_FAMILY_PACK;
+  const isNewKind = KIND_AGENT_FAMILIES.includes(family);
   if (!isDurableRole && !isNewKind) return [];
   const errors = [];
 

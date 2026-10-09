@@ -1,7 +1,6 @@
 ---
 name: kai-core-pulse-digest
 description: "Use when an explicitly requested weekly synthesis needs source weighting, narratable structure, coverage accounting, and private report output."
-durable-output-producer: false
 tools: [read, execute, search]
 ---
 

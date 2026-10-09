@@ -1,7 +1,6 @@
 ---
 name: onboard-to-codebase
 description: "Use when the user explicitly requests orientation to a repository or subsystem."
-durable-output-producer: false
 tools: [read, search, execute, edit]
 user-invocable: true
 argument-hint: "optional focus, e.g. frontend only or auth subsystem"

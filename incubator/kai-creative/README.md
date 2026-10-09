@@ -8,11 +8,9 @@ is not part of the active source registrations or any newly generated pack.
 ## Why it is parked
 
 Live recording left the active creative base in **9.0.0** — the changelog's
-Removed section says so, `demo-capture` is in `RETIRED_CREATIVE_SKILL_IDS`, and
-the [creative skills foundation
-design](../../docs/superpowers/specs/2026-09-13-creative-skills-foundation-design.md)
-decided to "preserve inactive outside exported plugin sources; remove active
-routes. Preserve the helper/parser dependency needed by the remaining methods."
+Removed section says so. Git history retains the superseded design record that
+parked capture while preserving the parser dependency used by the remaining
+methods.
 
 What kept the file in the shipped pack until [#226] was the second half of that
 sentence. `demo-format`, `demo-narrate` and `demo-zoom` imported their
@@ -37,55 +35,20 @@ installable. Concretely, for this file:
 - `tools/check-syntax.mjs` scans `src/`, `tools/` and `examples/` only, so it is
   not syntax-gated.
 
-What it is **not** exempt from is execution. This file imports the shipped
-parsers from `../../../src/creative/lib/screenplay.mjs`, which makes it the one
-thing under `incubator/` with a live dependency on active source — everything
-else parked here is markdown. Its assertions therefore still run.
+The parked command currently has no execution coverage. It imports the shipped
+parsers from `../../../src/creative/lib/screenplay.mjs`, but no current test
+imports it. `test/creative-screenplay-self-test.mjs` covers the active parser
+contract only. No current capture-specific test, npm script, or workflow exists.
 
-Where they run changed twice. They began as a `--self-test` flag on this file;
-[#225] moves every such block out of shipped source into `test/`, and capture's
-41 checks land in **`test/demo-capture-self-test.mjs`**. After both changes,
-that suite imports across the seam this PR created:
+The daily `.github/workflows/nightly.yml` job runs `npm ci`, `npm test`,
+`npm run build:check`, `npm run consumer-install:self-test`, and release
+readiness on Linux/Node 24.15.0. The Monday
+`.github/workflows/release.yml` workflow releases only the exact SHA from the
+latest successful nightly. Neither workflow executes this parked file.
 
-```js
-import {
-  SCREENPLAY_SCHEMA, TAKE_SCHEMA,
-  parseScreenplay, parseTake, parseRegion, parseRect, parseTargets, missingTargets,
-  estimateDuration, QUIET_CAP,
-} from '../src/creative/lib/screenplay.mjs';
-import { emitDriver } from '../incubator/kai-creative/scripts/demo-capture.mjs';
-```
-
-Verified: with exactly that split, all 41 checks pass against this tree. The 25
-parser checks read shipped source; the 16 driver checks — ffmpeg preflight, the
-measured recording clock, pointer gliding, quiet-wait ordering — read the
-emitted PowerShell as text, because nothing may run a script that clicks and
-types into a live desktop.
-
-`npm run demo-capture:self-test` runs that suite, and
-`.github/workflows/validate.yml` runs it too, because CI executes a curated step
-list rather than `npm test`. `test/creative-screenplay-self-test.mjs` covers the
-parsers alone, without importing anything parked, and runs in both.
-
-Two mutations measure what the gate buys, both run against this tree:
-
-| Mutation | Caught by |
-| --- | --- |
-| Rename `parseTargets` in `src/creative/lib/screenplay.mjs` | the suite fails to load the module at all |
-| Emit `-draw_mouse 1` instead of `0` in the driver template | **only** this suite (40/41, exit 1). `check-syntax`, `creative-screenplay-self-test`, `validate-plugin` and `pack-preview --check` all still pass |
-
-The second is the load-bearing one: `tools/check-syntax.mjs` does not scan
-`incubator/`, so running this suite is the only thing in the repository that
-parses this file. Without the gate, a parser contract change or a defect
-introduced here would wait to be discovered by whoever re-enters it.
-
-Parked means not shipped, not untested. Running a test is not one of the things
-`incubator/README.md` forbids — those are manifests, marketplace entries,
-generated packs, agent rosters, catalog rows and skill routes, and
-`test/package-availability-self-test.mjs` still enforces every one of them
-against this directory.
-
-[#225]: https://github.com/RubenSaucedo/kai/issues/225
+Parked therefore means preserved historical source, not a currently verified
+or supported capability. Re-entry must restore focused coverage before the
+command can become active again.
 
 | Component | Kind | Original path | Status |
 | --- | --- | --- | --- |
@@ -97,14 +60,15 @@ Being here is not a queue position. Re-entry needs the review described in
 [`incubator/README.md`](../README.md), and then:
 
 1. `git mv incubator/kai-creative/scripts/demo-capture.mjs src/creative/`, and
-   change its parser import back to `./lib/screenplay.mjs`. Repoint
-   `test/demo-capture-self-test.mjs`'s `emitDriver` import at the new location.
+   change its parser import back to `./lib/screenplay.mjs`.
 2. Give it a real invocation: a shipped instruction, skill or `hooks.json` entry
    must name `scripts/demo-capture.mjs`, or it is an unreferenced entry point
    again.
-3. Update `test/creative-foundation-self-test.mjs`, which currently asserts that
-   the pack does **not** emit it.
-4. Decide what to do with `demo-capture` in `RETIRED_CREATIVE_SKILL_IDS`.
-5. Regenerate (`npm run pack-preview -- --write`) and run `npm test`.
+3. Add a focused test under `test/` for the emitted driver and safe preflight
+   behavior, add that file to the root `test` script, and update
+   `test/package-build-self-test.mjs` if the public entry-point expectation
+   changes.
+4. Run `npm run build`, `npm test`, `npm run build:check`, and
+   `npm run consumer-install:self-test`.
 
 [#226]: https://github.com/RubenSaucedo/kai/issues/226

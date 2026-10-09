@@ -1,7 +1,6 @@
 ---
 name: kai-core-workspace-publication
 description: "Use when a core role may retain or publish durable Direction, coordination feature, decision, or report material."
-durable-output-producer: false
 tools: [read, edit, search]
 ---
 
@@ -13,17 +12,22 @@ Engineering or Creative vocabularies.
 
 ## Canonical vocabulary
 
+Read the package-root `publication.json` declaration for the allowed types,
+paths, formats, authority, and privacy rules.
+
+<!-- >>> kai publication table (generated) >>>
 | Namespace | Type | Subtype | Private form | Public form | Formats | Publication rule | Privacy rule |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `core` | `direction` | `-` | `.kai/core/direction/<id>/{drafts,evidence,scratch}` | `docs/kai/DIRECTION.md` | Markdown single file | Named operator authority accepts the exact revision and SHA-256 hash | Private evidence never publishes; retain only the accepted Direction bytes |
-| `core` | `features` | `-` | `.kai/core/features/<id>/{drafts,evidence,scratch}` | `docs/kai/core/features/<id>/` | Markdown or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; redact sensitive inputs from accepted output |
-| `core` | `decisions` | `-` | `.kai/core/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/core/decisions/<id>/` | Markdown or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; decision rationale may publish only as accepted content |
-| `core` | `reports` | `-` | `.kai/core/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/core/reports/<id>/` | Markdown, JSON, or bounded Git-suitable bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes; reports contain only approved, minimized evidence |
+| `core` | `direction` | `-` | `.kai/core/direction/<id>/{drafts,evidence,scratch}` | `docs/kai/DIRECTION.md` | Markdown single file | Named operator authority accepts the exact revision and SHA-256 hash | Private evidence never publishes |
+| `core` | `features` | `-` | `.kai/core/features/<id>/{drafts,evidence,scratch}` | `docs/kai/core/features/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `core` | `decisions` | `-` | `.kai/core/decisions/<id>/{drafts,evidence,scratch}` | `docs/kai/core/decisions/<id>/` | Markdown, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+| `core` | `reports` | `-` | `.kai/core/reports/<id>/{drafts,evidence,scratch}` | `docs/kai/core/reports/<id>/` | Markdown, JSON, bundle | Named completion authority accepts the exact revision and hash | Private evidence never publishes |
+<!-- <<< kai publication table <<< -->
 
 ## Validation and refusal
 
 Before deriving a path, validate namespace, type, subtype, stable ID, lifecycle,
-format, target project, and destination ownership against the table.
+format, target project, and destination ownership against that declaration.
 
 - Refuse an **unknown type or subtype**. Do not create a fallback directory.
 - **Scratch can never publish.**

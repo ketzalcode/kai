@@ -2,7 +2,6 @@
 name: director-chief-of-staff
 model: "claude-opus-5"
 description: "Coordinates approved Kai work by planning, granting, reconciling, and handing off executable Tasks without inventing product or hierarchy authority."
-durable-output-producer: false
 tools: ["execute", "read", "edit", "search", "ask_user", "agent", "read_agent", "write_agent", "skill"]
 ---
 

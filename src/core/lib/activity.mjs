@@ -32,7 +32,6 @@ import {
   appendFileSync, readFileSync, existsSync, lstatSync, mkdirSync, renameSync, statSync,
 } from 'node:fs';
 import { join, dirname } from 'node:path';
-import {readWorkspaceManifest} from './workspace-resolve.mjs';
 import {COORDINATION_DATABASE, WORKSPACE_SCHEMA_VERSION} from './workspace-layout.mjs';
 import {escapesRoot, exactPath, pathHasLink} from './workspace-path-safety.mjs';
 import {inspectGitPrivacy} from './workspace-git-privacy.mjs';
@@ -41,7 +40,6 @@ import {closeStore, openStore} from './coordination-runtime/store.mjs';
 
 // Workspace-relative by contract: an absolute path must never be recorded.
 export const LOG_REL = '.kai/core/runtime/activity.jsonl';
-export const LEGACY_LOG_REL = '.kai/activity.jsonl';
 
 // Closed vocabulary. An unknown event is dropped rather than invented, on the
 // classifyGapReason precedent — a free-form event type is a free-form schema.
@@ -64,7 +62,6 @@ export const FORBIDDEN_FIELDS = new Set([
 // that is designed to be pasted into a public issue.
 const ROLE_RE = /^[a-z0-9-]{1,60}$/;
 const TASK_RE = /^(?:core|engineering|creative):task:[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const LEGACY_ITEM_RE = /^[a-z0-9-]{1,80}$/;
 const RUN_RE = /^[a-z0-9]{6,16}$/;
 
 export const MAX_NOTE = 120;
@@ -245,13 +242,13 @@ export function append(root, input, now = Date.now(), env = process.env) {
 // file, so a hand-edit, an external writer, or a partial line could otherwise
 // carry a path or a username into rendered output. A record that fails these
 // shapes is counted as skipped, exactly like a corrupt line.
-function readable(r, {legacy = false} = {}) {
+function readable(r) {
   if (!r || typeof r !== 'object') return false;
   if (!EVENTS.has(r.e)) return false;
   if (typeof r.run !== 'string' || !RUN_RE.test(r.run)) return false;
   if (typeof r.role !== 'string' || !ROLE_RE.test(r.role)) return false;
   if (r.task != null && !(typeof r.task === 'string' && TASK_RE.test(r.task))) return false;
-  if (r.item != null && (!legacy || typeof r.item !== 'string' || !LEGACY_ITEM_RE.test(r.item))) return false;
+  if (r.item != null) return false;
   if (r.next_report_by != null && !Number.isFinite(Number(r.next_report_by))) return false;
   if (r.outcome != null && !OUTCOMES.has(r.outcome)) return false;
   if (r.note != null && (typeof r.note !== 'string' || r.note.length > MAX_NOTE || looksAbsolute(r.note))) return false;
@@ -263,9 +260,7 @@ function readable(r, {legacy = false} = {}) {
  * must degrade to absent rather than break the report that consumes it.
  */
 export function read(root) {
-  const manifest = readWorkspaceManifest(root);
-  const legacy = manifest.ok && manifest.manifest.schema_version < WORKSPACE_SCHEMA_VERSION;
-  const file = legacy ? join(root, LEGACY_LOG_REL) : logPath(root);
+  const file = logPath(root);
   if (!existsSync(file)) return { present: false, records: [], skipped: 0 };
   let raw;
   try { raw = readFileSync(file, 'utf8'); } catch { return { present: false, records: [], skipped: 0 }; }
@@ -275,7 +270,7 @@ export function read(root) {
     if (!line.trim()) continue;
     try {
       const r = JSON.parse(line);
-      if (readable(r, {legacy})) records.push(r);
+      if (readable(r)) records.push(r);
       else skipped++;
     } catch { skipped++; }
   }
@@ -298,7 +293,6 @@ export function runs(records, now = Date.now()) {
         run: r.run,
         role: r.role,
         task: r.task || null,
-        item: r.item || null,
         started: null,
         last: null,
         deadline: null,
@@ -311,7 +305,6 @@ export function runs(records, now = Date.now()) {
     s.events++;
     if (r.role) s.role = r.role;
     if (r.task) s.task = r.task;
-    if (r.item) s.item = r.item;
     if (r.e === 'start') s.started = r.t;
     if (r.e === 'stop') { s.stopped = r.t; s.outcome = r.outcome || null; }
     if (s.last === null || r.t >= s.last) {

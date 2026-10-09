@@ -2,7 +2,7 @@
 name: workflow-ship
 description: "Assesses release readiness directly or, for authorized coordinated work, records PREPARE, deployment start, completion, production verification, rollback, and shipped transitions. Never deploys, merges, pushes, tags, migrates, triggers CI, or monitors continuously."
 model: "claude-sonnet-5"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

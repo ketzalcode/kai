@@ -1,7 +1,6 @@
 ---
 name: kai-core-work-hierarchy
 description: "Use when reading, proposing, or validating coordinated Epic, Feature, Requirement, or Task structure."
-durable-output-producer: false
 tools: [read, execute, search]
 ---
 

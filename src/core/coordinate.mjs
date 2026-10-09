@@ -11,18 +11,15 @@ import {
 const flags = {
   direct: [], inspect: ['deep'], status: [], context: ['kind', 'id', 'max-bytes', 'recent-limit'],
   detail: ['kind', 'id'], messages: ['kind', 'id', 'before-seq', 'limit'],
-  export: ['kind', 'id'], legacy: ['source', 'raw'], hash: ['path'],
-  'migration-plan': [],
-  migrate: ['confirm', 'capability'],
-  recover: ['confirm', 'action', 'capability'], rollback: ['confirm', 'capability'],
-  repair: ['capability'], apply: ['capability', 'capture'],
+  export: ['kind', 'id'], hash: ['path'],
+  apply: ['capability', 'capture'],
   request: [], authorize: ['request', 'tool-call'], capture: ['tool-call'],
   receipt: ['request', 'tool-call'],
   prepare: [], delegate: ['capability'], claim: ['task', 'capability'],
   capabilities: [], plan: ['kind', 'id'],
 };
-const booleans = new Set(['deep', 'raw', 'confirm']);
-const inputVerbs = new Set(['apply', 'repair', 'request', 'capture', 'prepare', 'delegate']);
+const booleans = new Set(['deep']);
+const inputVerbs = new Set(['apply', 'request', 'capture', 'prepare', 'delegate']);
 const hierarchyVerbs = new Set(['context', 'messages', 'export', 'plan']);
 const invalid = message => { throw new RuntimeError('INVALID_INPUT', message); };
 

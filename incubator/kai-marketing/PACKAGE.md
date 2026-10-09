@@ -1,6 +1,7 @@
 # kai-marketing
 
-Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../../docs/reference/package-availability.md).
+Pre-release / in progress source. This package is inactive and not part of the
+marketplace surface; see the [incubator index](../README.md).
 
 Positioning, campaigns, social content, and search visibility over kai-core.
 

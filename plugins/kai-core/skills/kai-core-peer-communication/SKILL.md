@@ -1,7 +1,6 @@
 ---
 name: kai-core-peer-communication
 description: "Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message."
-durable-output-producer: false
 tools: [execute, read, search]
 ---
 
@@ -61,10 +60,8 @@ A blocking question and its lifecycle effect are runtime commands. The answer
 does not restore work automatically; the lifecycle-authorized actor re-reads
 all blocking questions and performs the valid transition.
 
-<!-- kai:schema4-history -->
 Older retained Markdown threads and status-less ANSWER packets are historical
 read inputs only. New schema-5 communication is a typed message record.
-<!-- /kai:schema4-history -->
 
 ## Bias guard
 

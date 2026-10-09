@@ -4,7 +4,6 @@ import {
 } from '../coordination.mjs';
 import {
   PACKS,
-  assertBoolean,
   assertChangedOnly,
   assertExactKeys,
   assertNonEmptyString,
@@ -21,6 +20,9 @@ import {
   validateNullableActor,
   validateNullableSubject,
 } from './contract-primitives.mjs';
+import {TASK_COMMAND_KINDS} from './schema.mjs';
+
+export {TASK_COMMAND_KINDS} from './schema.mjs';
 
 const ITEM_DELIVERY_CLASSES = new Set(['knowledge', 'product-change', 'operational']);
 const PROVENANCE_KINDS = new Set(['live-peer', 'durable-thread', 'operator']);
@@ -61,41 +63,6 @@ const TASK_BODY_FIELDS = new Set([
   'updated_at',
 ]);
 
-const LEGACY_ITEM_BODY_FIELDS = new Set([
-  'schema_version',
-  'id',
-  'title',
-  'initiative',
-  'delivery_class',
-  'state',
-  'resume_state',
-  'scope_authority',
-  'completion_authority',
-  'producer_actor',
-  'producing_actors',
-  'acceptance_actor',
-  'priority',
-  'next_role',
-  'outcome',
-  'acceptance',
-  'artifact_expectation',
-  'artifact_expectation_reason',
-  'artifact_class',
-  'durability',
-  'validity_owner',
-  'artifact_targets',
-  'context_artifacts',
-  'touches',
-  'depends_on',
-  'lease',
-  'recovery_hold',
-  'waiting_on_questions',
-  'required_for_milestone',
-  'review_requirements',
-  'change_ref',
-  'updated_at',
-]);
-
 const TASK_UPDATE_FIELDS = new Set([
   'title',
   'priority',
@@ -112,16 +79,6 @@ const TASK_UPDATE_FIELDS = new Set([
   'touches',
   'depends_on',
   'updated_at',
-]);
-
-export const TASK_COMMAND_KINDS = new Set([
-  'task.create',
-  'task.update',
-  'task.promote',
-  'task.grant',
-  'task.transition',
-  'task.handoff',
-  'task.restore',
 ]);
 
 function validateDependencies(value, label, {entryKey, typedKind = null} = {}) {
@@ -176,13 +133,13 @@ function validateTaskSatisfies(value, label, pack) {
   }
 }
 
-function validateTaskLikeBody(body, label, {legacy = false} = {}) {
-  assertExactKeys(body, legacy ? LEGACY_ITEM_BODY_FIELDS : TASK_BODY_FIELDS, label);
+export function validateTaskBody(body, label = 'task') {
+  assertExactKeys(body, TASK_BODY_FIELDS, label);
   if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
 
-  for (const key of legacy
-    ? ['id', 'title', 'initiative', 'scope_authority', 'completion_authority', 'outcome']
-    : ['id', 'title', 'pack', 'feature_id', 'scope_authority', 'completion_authority', 'outcome']) {
+  for (const key of [
+    'id', 'title', 'pack', 'feature_id', 'scope_authority', 'completion_authority', 'outcome',
+  ]) {
     assertNonEmptyString(body[key], `${label}.${key}`);
   }
 
@@ -195,16 +152,14 @@ function validateTaskLikeBody(body, label, {legacy = false} = {}) {
     invalid(`${label}.resume_state is unsupported`);
   }
 
-  if (!legacy) {
-    if (!PACKS.has(body.pack)) invalid(`${label}.pack is unsupported`);
-    const taskId = parseTypedId(body.id, 'task', `${label}.id`);
-    if (taskId.pack !== body.pack) invalid(`${label}.pack must match its typed id`);
-    const featureId = parseTypedId(body.feature_id, 'feature', `${label}.feature_id`);
-    if (featureId.pack !== body.pack) {
-      invalid(`${label}.feature_id must stay within the task pack`);
-    }
-    validateTaskSatisfies(body.satisfies, `${label}.satisfies`, body.pack);
+  if (!PACKS.has(body.pack)) invalid(`${label}.pack is unsupported`);
+  const taskId = parseTypedId(body.id, 'task', `${label}.id`);
+  if (taskId.pack !== body.pack) invalid(`${label}.pack must match its typed id`);
+  const featureId = parseTypedId(body.feature_id, 'feature', `${label}.feature_id`);
+  if (featureId.pack !== body.pack) {
+    invalid(`${label}.feature_id must stay within the task pack`);
   }
+  validateTaskSatisfies(body.satisfies, `${label}.satisfies`, body.pack);
 
   validateNullableActor(body.producer_actor, `${label}.producer_actor`);
   if (!Array.isArray(body.producing_actors)) invalid(`${label}.producing_actors must be an array`);
@@ -239,19 +194,16 @@ function validateTaskLikeBody(body, label, {legacy = false} = {}) {
   for (const key of ['artifact_targets', 'context_artifacts', 'touches', 'waiting_on_questions']) {
     assertStringArray(body[key], `${label}.${key}`);
   }
-  validateDependencies(body.depends_on, `${label}.depends_on`, legacy
-    ? {entryKey: 'item'}
-    : {entryKey: 'task', typedKind: 'task'});
+  validateDependencies(body.depends_on, `${label}.depends_on`, {
+    entryKey: 'task',
+    typedKind: 'task',
+  });
   validateLease(body.lease, `${label}.lease`);
   if (body.recovery_hold !== null) {
     assertUuid(body.recovery_hold, `${label}.recovery_hold`);
     if (body.state !== 'blocked' && body.state !== 'dropped') {
       invalid(`${label}.recovery_hold requires blocked or dropped state`);
     }
-  }
-
-  if (legacy) {
-    assertBoolean(body.required_for_milestone, `${label}.required_for_milestone`);
   }
 
   validateReviewRequirements(body.review_requirements, `${label}.review_requirements`);
@@ -278,14 +230,7 @@ function validateTaskLikeBody(body, label, {legacy = false} = {}) {
   }
 
   return body;
-}
-
-export function validateTaskBody(body, label = 'task') {
-  return validateTaskLikeBody(body, label, {legacy: false});
-}
-
-export function validateLegacyItemBody(body, label = 'item') {
-  return validateTaskLikeBody(body, label, {legacy: true});
+  return body;
 }
 
 function validateCreate(command, expectedKind, bodyValidator) {

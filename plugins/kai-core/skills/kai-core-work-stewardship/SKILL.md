@@ -1,7 +1,6 @@
 ---
 name: kai-core-work-stewardship
 description: "Use when a named authority proposes, activates, prioritizes, holds, reprioritizes, or closes hierarchy scope."
-durable-output-producer: false
 tools: [read, execute, search, ask_user]
 ---
 

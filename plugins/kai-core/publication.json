@@ -1,0 +1,42 @@
+{
+  "pack": "core",
+  "skill": "kai-core-workspace-publication",
+  "entries": [
+    {
+      "type": "direction",
+      "subtype": null,
+      "privateForm": ".kai/core/direction/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/DIRECTION.md",
+      "formats": ["markdown-single-file"],
+      "authority": "operator",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "features",
+      "subtype": null,
+      "privateForm": ".kai/core/features/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/core/features/<id>/",
+      "formats": ["markdown", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "decisions",
+      "subtype": null,
+      "privateForm": ".kai/core/decisions/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/core/decisions/<id>/",
+      "formats": ["markdown", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "reports",
+      "subtype": null,
+      "privateForm": ".kai/core/reports/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/core/reports/<id>/",
+      "formats": ["markdown", "json", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    }
+  ]
+}

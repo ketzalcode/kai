@@ -1,7 +1,6 @@
 ---
 name: kai-core-work-acting
 description: "Use when an actor is about to read or mutate granted coordinated work, record evidence, ask a question, hand off, or submit review."
-durable-output-producer: false
 tools: [read, execute, search]
 ---
 

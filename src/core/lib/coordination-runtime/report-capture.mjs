@@ -7,16 +7,11 @@ import {artifactPreviewLimits, hash, knownGap} from './report-safety.mjs';
 
 /** Human export only. Indexed exclusive keysets, no OFFSET or suffix recount. */
 export function captureHistory(store, subject, version, throughSeq, addGap) {
-  const subjectColumn = store.schemaVersion === 1 ? 'item_id' : 'subject_id';
-  const subjectKind = store.schemaVersion === 1 ? null : subject.kind;
-  const subjectFilter = store.schemaVersion === 1
-    ? `e.${subjectColumn} = ?`
-    : `e.subject_kind = ? AND e.${subjectColumn} = ?`;
   const statement = store.database.prepare(`
     SELECT e.seq, e.message_id, r.kind, r.id, r.subject_kind, r.subject_id,
       r.version, r.body
     FROM events e LEFT JOIN records r ON r.kind = 'message' AND r.id = e.message_id
-    WHERE e.thread_id = ? AND ${subjectFilter}
+    WHERE e.thread_id = ? AND e.subject_kind = ? AND e.subject_id = ?
       AND e.message_id IS NOT NULL AND e.seq < ?
     ORDER BY e.seq DESC LIMIT 50
   `);
@@ -26,7 +21,8 @@ export function captureHistory(store, subject, version, throughSeq, addGap) {
   for (;;) {
     const rows = statement.all(
       threadId,
-      ...(subjectKind === null ? [subject.id] : [subjectKind, subject.id]),
+      subject.kind,
+      subject.id,
       beforeSeq,
     );
     if (!rows.length) break;

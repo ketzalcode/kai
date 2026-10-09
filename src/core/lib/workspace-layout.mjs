@@ -7,12 +7,21 @@ import {
   badPath,
 } from './workspace-path-safety.mjs';
 
-export const WORKSPACE_SCHEMA_VERSION = 5;
-export const PRIVATE_ROOT = '.kai';
-export const PUBLICATION_ROOT = 'docs/kai';
-export const DIRECTION_PATH = 'docs/kai/DIRECTION.md';
-export const COORDINATION_DATABASE = '.kai/core/runtime/coordination.sqlite';
-export const LEGACY_COORDINATION_DATABASE = '.kai/state/coordination.sqlite';
+export const WORKSPACE_CONTRACT = Object.freeze({
+  schemaVersion: 5,
+  privateRoot: '.kai',
+  publicationRoot: 'docs/kai',
+  directionPath: 'docs/kai/DIRECTION.md',
+  coordinationDatabase: '.kai/core/runtime/coordination.sqlite',
+  packs: Object.freeze(['core', 'creative', 'engineering']),
+  lifecycles: Object.freeze(['drafts', 'evidence', 'scratch']),
+});
+
+export const WORKSPACE_SCHEMA_VERSION = WORKSPACE_CONTRACT.schemaVersion;
+export const PRIVATE_ROOT = WORKSPACE_CONTRACT.privateRoot;
+export const PUBLICATION_ROOT = WORKSPACE_CONTRACT.publicationRoot;
+export const DIRECTION_PATH = WORKSPACE_CONTRACT.directionPath;
+export const COORDINATION_DATABASE = WORKSPACE_CONTRACT.coordinationDatabase;
 
 function artifactRoute({pack, type, subtype = null, id}) {
   return [
@@ -133,12 +142,10 @@ export function directionPath() {
 
 export function workspaceRootFromCoordinationDatabase(databasePath) {
   const absolute = resolve(databasePath);
-  for (const relativePath of [COORDINATION_DATABASE, LEGACY_COORDINATION_DATABASE]) {
-    let root = absolute;
-    for (const _segment of relativePath.split('/')) root = dirname(root);
-    const candidate = resolve(root, ...relativePath.split('/'));
-    if ((process.platform === 'win32' ? candidate.toLowerCase() : candidate) ===
-      (process.platform === 'win32' ? absolute.toLowerCase() : absolute)) return root;
-  }
-  throw new TypeError('coordination database path does not use a supported workspace location');
+  let root = absolute;
+  for (const _segment of COORDINATION_DATABASE.split('/')) root = dirname(root);
+  const candidate = resolve(root, ...COORDINATION_DATABASE.split('/'));
+  if ((process.platform === 'win32' ? candidate.toLowerCase() : candidate) ===
+    (process.platform === 'win32' ? absolute.toLowerCase() : absolute)) return root;
+  throw new TypeError('coordination database path does not use the current workspace location');
 }

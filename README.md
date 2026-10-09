@@ -42,7 +42,7 @@ Three packages. That is the entire shipped surface.
   | kai-core                                                            |
   |                                                                      |
   |  5 agents                                                            |
-  | 24 skills                                                            |
+  | 25 skills                                                            |
   |  6 executable entry points                                           |
   | hooks.json (subagent observation)                                    |
   | templates/ (decision, spec, report, publication)                     |
@@ -60,7 +60,7 @@ resolves, and why you can install just the departments you want.
 
 | Package | Agents / skills | Owns |
 | --- | --- | --- |
-| `kai-core` | 5 / 24 | Shared contracts, workspace machinery, requested coordination |
+| `kai-core` | 5 / 25 | Shared contracts, workspace machinery, requested coordination |
 | `kai-engineering` | 13 / 7 | Implementation, architecture, independent review, delivery |
 | `kai-creative` | 3 / 7 | UI/UX, visual identity, design assets, supported media production |
 
@@ -122,15 +122,62 @@ List the kai agents you can see.
 
 If nothing kai-related appears, the plugin loaded into the old session only.
 
-> The `copilot plugin …` commands on this page were **not executed** while this
-> page was written — they change host install state, which is an operator
-> action. They are transcribed from
-> [Getting started](docs/getting-started.md#install), which carries the same
-> forms. Treat a `browse` result, not this page, as proof of availability.
+> These commands change host install state and were not executed merely to
+> write this page. Treat the current `browse` result, not repository prose, as
+> proof of availability.
 
-[Getting started → Install](docs/getting-started.md#install) covers the local
-`--plugin-dir` loop, the deprecated direct-from-GitHub form, the cloud coding
-agent, and migrating off the retired `kai` monolith.
+For local development, load a checkout without installing it:
+
+```powershell
+copilot --plugin-dir plugins\kai-core --plugin-dir plugins\kai-engineering --plugin-dir plugins\kai-creative
+```
+
+The cloud coding agent must be configured by its repository owner to load the
+same package directories. Host tooling differs; see
+[Architecture → Host capabilities](docs/architecture.md#host-capabilities).
+
+### Optional browser and media setup
+
+Most of Kai needs no external runtime. Browser inspection and applicable video
+operations need tools that Kai does not ship.
+
+**Playwright MCP.** `creative-lead-design`, `eng-reviewer-quality`,
+`kai-core-web-evaluation`, and `kai-core-web-content-extraction` expect an MCP
+server registered under the exact key `playwright`. For Copilot CLI, add this
+entry to `~/.copilot/mcp-config.json`:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chromium"],
+      "tools": ["*"]
+    }
+  }
+}
+```
+
+Restart the CLI, run `/mcp`, and confirm that `playwright` is listed.
+`npx` fetches `@playwright/mcp` on demand; no global install is required.
+GitHub documents Playwright MCP as enabled by default for the
+[Copilot coding agent and code review](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers),
+but those cloud hosts cannot inspect a local application.
+
+**ffmpeg and ffprobe.** Install an
+[FFmpeg distribution](https://ffmpeg.org/download.html) that provides both
+commands, put them on `PATH`, and verify:
+
+```text
+ffmpeg -version
+ffprobe -version
+```
+
+`video-render-zoom`, supplied-narration placement, duration/audio inspection,
+and final mix commands use these tools when that operation requires them.
+Missing tools are reported as an input gap; Kai does not install or assume
+them.
 
 ### Updating
 
@@ -146,8 +193,8 @@ copilot plugin update kai-creative@kai-plugins
 
 Update only the packages you actually installed. Changes appear in **new**
 sessions. Retired and incubated names do not update into successors
-automatically. If an update changes the workspace contract, see
-[Upgrading a workspace](docs/getting-started.md#upgrading-a-workspace-after-a-plugin-update).
+automatically. If the current runtime rejects an old workspace, follow
+[Re-onboarding unsupported workspaces](docs/workspaces.md#re-onboarding-unsupported-workspaces).
 
 ## First five minutes
 
@@ -176,7 +223,7 @@ knowledge publishes separately under `docs/kai/`.
 approved Tasks and handoffs; it does not take any specialist's acceptance authority,
 and it is not a prerequisite for ordinary direct work.
 
-**[Full walkthrough →](docs/getting-started.md)** ·
+**[Workspace contract →](docs/workspaces.md)** ·
 **[See a finished feature →](examples/e2e-feature-delivery/)**
 
 ## Workspace and coordination model
@@ -221,16 +268,10 @@ outcomes and authority; Task is the only executable, leased work kind. Direct
 single-shot work creates none of these records, reads no Direction, and
 initializes no workspace.
 
-Schema-3 and schema-4 workspaces stay inspectable. For schema 4, start with the
-read-only classification worksheet:
-
-```text
-node <kai-core>/scripts/coordinate.mjs migration-plan --root <absolute-workspace-root>
-```
-
-Then use `workflow-workspace-init` for the explicit operator-approved,
-backup-first migration. Kai does not infer hierarchy ownership or activate a
-partially classified workspace.
+Kai supports only schema 5. An unsupported workspace is rejected and
+re-onboarded through `kai-core-workspace-reonboard`: accepted `docs/kai/`
+knowledge is preserved, the old `.kai/` becomes an ignored timestamped backup,
+and no historical database record is imported.
 
 ## What you actually get
 
@@ -268,7 +309,7 @@ on small work. See it end to end in
 **[`examples/e2e-feature-delivery/`](examples/e2e-feature-delivery/)**, a
 committed, CI-validated workspace.
 
-**[Every flow and the full trigger table →](docs/how-kai-works.md)**
+**[Current architecture and authority map →](docs/architecture.md)**
 
 ## Limits
 
@@ -278,8 +319,8 @@ Read this before installing, not after.
   a real browser through an MCP server you register yourself —
   `creative-lead-design`, `eng-reviewer-quality`, and the
   `kai-core-web-evaluation` and `kai-core-web-content-extraction` skills.
-  Everything else works without it. Setup is in
-  [Getting started](docs/getting-started.md#browser-automation-setup-optional).
+  Everything else works without it. Register that server under the
+  `playwright` key before invoking those components.
 - **No audio or speech synthesis.** Removed entirely in 14.0.0, together with
   the last npm runtime dependency. Supplied narration can still be placed and
   mixed by `video-align-narration`; kai does not generate speech.
@@ -287,8 +328,9 @@ Read this before installing, not after.
   human actions by design. An agent that cannot get a human gate says so instead
   of proceeding.
 - **The cloud coding agent is not a full host.** The coordination runtime cannot
-  *create* a store there, because that host has no `ask_user` journal. See
-  [Host capabilities](docs/host-capabilities.md).
+  assume local scripts, localhost browser access, peer subagents, or a human
+  receipt journal. See
+  [Architecture → Host capabilities](docs/architecture.md#host-capabilities).
 - **Nothing in `incubator/` is installable.** Five further capability packages —
   product, marketing, revenue, assistant, learning — plus ten document-review
   skills and the workflow agent that used them, are parked there. They are not
@@ -296,8 +338,7 @@ Read this before installing, not after.
   not catalogued, and were never in the marketplace index. Where an incubated
   package owned the only provider of a judgment, kai routes that work to
   `@operator` rather than to a substitute role that does not exist. See
-  [`incubator/README.md`](incubator/README.md) and
-  [package availability](docs/reference/package-availability.md).
+  [`incubator/README.md`](incubator/README.md).
 - **Kai holds no plan to compare a run against.** The fleet observer reports
   what a log actually recorded and never names roles that "should" have fired.
 - **Running the repository's own tests needs Node
@@ -305,13 +346,13 @@ Read this before installing, not after.
 
 ## Status
 
-`v19.0.0` is this checkout's prepared metadata version — not a tag, a release,
+`v20.0.0` is this checkout's prepared metadata version — not a tag, a release,
 a publication, or a host-verification claim.
 
 | | |
 | --- | --- |
 | Packages | `kai-core`, `kai-engineering`, `kai-creative` |
-| Surface | **21 agents and 38 skills** |
+| Surface | **21 agents and 39 skills** |
 | Catalog | [Agents & skills](docs/reference/agents-and-skills.md) |
 | Release history and reasoning | [CHANGELOG.md](CHANGELOG.md) |
 
@@ -319,24 +360,24 @@ a publication, or a host-verification claim.
 
 | I want to… | Go to |
 | ---------- | ----- |
-| **Install it and finish one real thing** | [Getting started](docs/getting-started.md) — install, initialize, first request |
+| **Install it and finish one real thing** | [Install](#install) and [First five minutes](#first-five-minutes) |
 | **See the shipped architecture** | [Architecture](docs/architecture.md) — package topology, generated JavaScript, workspace layout, and work hierarchy |
-| **Understand the model before I commit** | [How kai works](docs/how-kai-works.md) — which role fires when, and why |
 | **Know what it writes into my repo** | [Workspace model](docs/workspaces.md) — private `.kai/`, optional zero footprint, explicit `docs/kai/` publication |
 | **Find the role that owns a judgment** | [Agents & skills](docs/reference/agents-and-skills.md) — the full catalog of what the three packages supply |
 | **See what is parked and not shipping** | [Incubator](incubator/README.md) — the five capability packages and the components held out of the active tree |
-| **Pick between the CLI and the cloud agent** | [Host capabilities](docs/host-capabilities.md) — what differs, and how it degrades |
-| **See what the coordination runtime actually proves** | [Coordination acceptance record](docs/reference/coordination-acceptance.md) — one verdict per case, including what failed and what is unverified |
-| **Change kai itself** | [Plugin structure](docs/reference/plugin-structure.md) — layout, tests, release policy |
+| **Pick between the CLI and the cloud agent** | [Host capabilities](docs/architecture.md#host-capabilities) — what differs, and how it degrades |
+| **Change Kai itself** | [Development process](docs/development-process.md) and [Plugin structure](docs/reference/plugin-structure.md) |
 
 Everything is indexed in **[docs/](docs/README.md)**.
 
 ## Contributing
 
-Issues and PRs are welcome. The normal contribution path runs `npm test` and CI.
-Repository rules, the release checklist and the version policy are in
-[`AGENTS.md`](AGENTS.md) and
-**[Plugin structure](docs/reference/plugin-structure.md)**.
+Issues and PRs are welcome. The normal contribution path runs targeted local
+checks and `npm test`; Kai has no pull-request or push CI. One Linux nightly and
+the guarded Monday release workflow own scheduled repository confidence.
+[`AGENTS.md`](AGENTS.md), not this README, is the binding repository instruction
+for contributors. The release checklist and version policy are in `AGENTS.md`
+and **[Development process](docs/development-process.md)**.
 
 ## License
 

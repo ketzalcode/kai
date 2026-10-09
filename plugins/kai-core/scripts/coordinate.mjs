@@ -4,9 +4,9 @@ import {
   HIERARCHY_KINDS,
   RECORD_KINDS,
   RuntimeError,
+  cli_exports,
   validateHierarchySubject
-} from "./chunk-XLDNBMDG.mjs";
-import "./chunk-ITUOITH3.mjs";
+} from "./runtime-core.mjs";
 
 // src/core/coordinate.mjs
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -19,13 +19,7 @@ var flags = {
   detail: ["kind", "id"],
   messages: ["kind", "id", "before-seq", "limit"],
   export: ["kind", "id"],
-  legacy: ["source", "raw"],
   hash: ["path"],
-  "migration-plan": [],
-  migrate: ["confirm", "capability"],
-  recover: ["confirm", "action", "capability"],
-  rollback: ["confirm", "capability"],
-  repair: ["capability"],
   apply: ["capability", "capture"],
   request: [],
   authorize: ["request", "tool-call"],
@@ -37,8 +31,8 @@ var flags = {
   capabilities: [],
   plan: ["kind", "id"]
 };
-var booleans = /* @__PURE__ */ new Set(["deep", "raw", "confirm"]);
-var inputVerbs = /* @__PURE__ */ new Set(["apply", "repair", "request", "capture", "prepare", "delegate"]);
+var booleans = /* @__PURE__ */ new Set(["deep"]);
+var inputVerbs = /* @__PURE__ */ new Set(["apply", "request", "capture", "prepare", "delegate"]);
 var hierarchyVerbs = /* @__PURE__ */ new Set(["context", "messages", "export", "plan"]);
 var invalid = (message) => {
   throw new RuntimeError("INVALID_INPUT", message);
@@ -139,7 +133,7 @@ async function runCLI(argv, { host, input, stdin = process.stdin, cwd = process.
       if (error.code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw error;
       throw new RuntimeError("UNSUPPORTED_HOST", "node:sqlite unavailable; use Node ^22.22.2, ^24.15.0 or >=26");
     }
-    const { execute } = await import("./chunk-25O3Q24I.mjs");
+    const { execute } = await Promise.resolve(cli_exports);
     const result = await execute({ verb, options, body, host, cwd, env });
     return { exitCode: 0, result: withEntrypointReport(result, env, entrypoint) };
   } catch (error) {

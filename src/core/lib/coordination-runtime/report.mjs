@@ -3,7 +3,7 @@ import {
   RuntimeError, canonicalJson, subjectEquals, validateHierarchySubject,
 } from './contract.mjs';
 import {workspaceManifest} from './evidence-content.mjs';
-import {privateAdmission} from './migration-files.mjs';
+import {privateAdmission} from '../workspace-git-privacy.mjs';
 import {normalized} from '../workspace-path-safety.mjs';
 import {fileName, persistReportFiles, reportPaths} from './report-paths.mjs';
 import {hash, redactReport, snapshotWarning} from './report-safety.mjs';

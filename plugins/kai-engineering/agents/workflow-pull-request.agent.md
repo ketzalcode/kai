@@ -2,7 +2,7 @@
 name: workflow-pull-request
 description: "Packages one finished diff into an authorized branch, commits, push, and pull request, then reports live merge readiness. Works directly from a supplied change. Never merges, tags, releases, force-pushes, or bypasses protection."
 model: "claude-sonnet-5"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

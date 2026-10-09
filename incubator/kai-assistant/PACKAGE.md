@@ -2,7 +2,8 @@
 
 # Package: `kai-assistant`
 
-Pre-release / in progress source. This package is not part of the default marketplace surface; see [package availability](../../docs/reference/package-availability.md).
+Pre-release / in progress source. This package is inactive and not part of the
+marketplace surface; see the [incubator index](../README.md).
 
 Personal tasks, agendas, briefings, and user-voice drafts. Direct assistance
 over `kai-core` — **not** organization routing.
@@ -140,5 +141,6 @@ the contract this package is supposed to meet, not as evidence it does.
 
 ---
 
-**Next:** [Agents & skills](../../docs/reference/agents-and-skills.md) ·
-[Plugin structure](../../docs/reference/plugin-structure.md) · [How kai works](../../docs/how-kai-works.md)
+**Next:** [Incubator index](../README.md) ·
+[Plugin structure](../../docs/reference/plugin-structure.md) ·
+[Architecture](../../docs/architecture.md)

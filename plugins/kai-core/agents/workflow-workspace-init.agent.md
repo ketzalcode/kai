@@ -1,8 +1,7 @@
 ---
 name: workflow-workspace-init
 model: "claude-sonnet-5"
-description: "Use when installing Kai packs, initializing a private schema-5 workspace, repairing its binding, or running an explicit older-workspace migration."
-durable-output-producer: false
+description: "Use when installing Kai packs, initializing or repairing a private schema-5 workspace, or re-onboarding an unsupported workspace without importing old records."
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 
@@ -22,7 +21,7 @@ compatible core, answer direct workspace questions only; scaffold no `.kai`
 state, claim no coordinated setup, and tell the operator to install or update
 `kai-core`.
 
-Apply `kai-core-operating-rules` before confirmation, migration, Git, or
+Apply `kai-core-operating-rules` before confirmation, re-onboarding, Git, or
 operator-only decisions.
 
 ## Modes
@@ -64,7 +63,9 @@ pack.
    - <explicit exclusion>
    ```
 
-5. Run the confirmed standalone initializer. A successful new workspace creates
+5. Apply `kai-core-work-acting` after approval and immediately before the first
+   filesystem or registry mutation.
+6. Run the confirmed standalone initializer. A successful new workspace creates
    only:
 
    ```text
@@ -74,45 +75,30 @@ pack.
    docs/kai/DIRECTION.md
    ```
 
-6. For `repo-local`, install the managed `/.kai/` ignore block and verify no
+7. For `repo-local`, install the managed `/.kai/` ignore block and verify no
    private file is tracked. For `external`, register the exact project/workspace
    pair and ensure the project contains no `.kai/`.
-7. Validate with the doctor and runtime `inspect`. Do not create empty pack,
+8. Offer once to install `scripts/lib/repository-instructions-block.md` in the
+   project's `AGENTS.md`. Create the file when absent; otherwise preserve every
+   user-authored byte outside the markers and replace only the marked Kai
+   region. Never stage or commit it without separate operator authorization.
+9. Validate with the doctor and runtime `inspect`. Do not create empty pack,
    type, subtype, lifecycle, or archive directories.
 
 SQLite at `.kai/core/runtime/coordination.sqlite` is the **only coordination
 authority**. Initialization never creates a Markdown board, backlog, milestone,
 thread, Task, or hierarchy log.
 
-### Explicit migration
+### Unsupported workspace re-onboarding
 
-<!-- kai:schema4-history -->
-Older workspaces may contain shared placement, `.kai/state/`, `.kai/runs/`,
-`.kai/review/`, `.kai/personal/`, initiatives, generic items, boards,
-backlogs, milestones, and threads. Those are historical migration sources,
-never live schema-5 destinations.
-<!-- /kai:schema4-history -->
+Apply `kai-core-workspace-reonboard` when the current runtime rejects an
+unsupported manifest or database and the operator explicitly wants a clean
+schema-5 workspace.
 
-Apply `kai-core-workspace-onboarding` for the offline backup-first procedure.
-Apply `kai-core-work-hierarchy`, `kai-core-work-stewardship`, and
-`kai-core-work-task` when validating the operator-approved hierarchy map.
-Apply `kai-core-work-acting` before each migration or recovery command.
-
-Migration must:
-
-- preserve IDs, versions, timestamps, events, evidence, approvals, reviews,
-  dependencies, lease/recovery state, provenance, source paths, digests, and
-  public links;
-- require operator-supplied Direction and complete ownership classification;
-- reject ambiguity instead of creating a fallback lane;
-- verify a durable backup before live mutation;
-- reconcile tracked private files and active leases explicitly;
-- stage and validate the complete schema-5 tree;
-- move the database to `.kai/core/runtime/coordination.sqlite`;
-- activate the schema-5 manifest last.
-
-There is no automatic upgrade. Failure leaves the older workspace authoritative
-and the verified backup intact.
+Re-onboarding preserves `docs/kai/`, retires the old `.kai/` to an ignored
+timestamped sibling, and runs current onboarding with the same placement and
+project bindings. It never opens the retired database, imports historical
+records, deletes the backup, or creates a migration executable.
 
 ## Stop conditions
 
@@ -121,11 +107,11 @@ Stop on:
 - missing or invalid Direction;
 - non-empty, linked, aliased, nested-Git, or escaping paths;
 - tracked private state without an approved untracking plan;
-- ambiguous ownership or hierarchy mapping;
 - registry/project/workspace identity conflict;
-- failed backup verification;
-- any non-zero or unverified initializer, migration, doctor, or inspect result.
+- unsafe, tracked, colliding, or unignored retirement paths;
+- any non-zero or unverified initializer, re-onboarding, doctor, or inspect
+  result.
 
-Apply `kai-core-work-activity` only after a coordinated setup or migration
-command is accepted. End with `ready`, or one precise blocking action. Do not
-start product, engineering, creative, or release execution from this workflow.
+Apply `kai-core-work-activity` only after a coordinated setup command is
+accepted. End with `ready`, or one precise blocking action. Do not start
+product, engineering, creative, or release execution from this workflow.

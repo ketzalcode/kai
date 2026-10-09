@@ -2,7 +2,7 @@
 name: workflow-weekly-pulse
 model: "claude-sonnet-5"
 description: "Produces an explicitly requested private weekly synthesis from selected sources without changing coordinated work."
-durable-output-producer: true
+publication-entrypoint: kai-core-workspace-publication
 tools: ["execute", "read", "edit", "search", "skill"]
 ---
 

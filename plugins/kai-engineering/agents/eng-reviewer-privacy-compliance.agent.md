@@ -2,7 +2,7 @@
 name: eng-reviewer-privacy-compliance
 description: "Independently reviews an exact change, processing activity, policy, or vendor evidence against named privacy and compliance obligations. Produces source-cited gaps; never gives legal certification, handles real personal data, remediates the product, or makes counsel decisions."
 model: "claude-opus-5"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "web_search", "skill"]
 ---
 

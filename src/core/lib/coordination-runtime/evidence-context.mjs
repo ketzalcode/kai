@@ -4,8 +4,6 @@ import {normalized} from '../workspace-path-safety.mjs';
 import {assertWorkspacePath, durablePath, fail, workspaceManifest} from './evidence-content.mjs';
 import {
   COORDINATION_DATABASE,
-  LEGACY_COORDINATION_DATABASE,
-  WORKSPACE_SCHEMA_VERSION,
   parseTypedArtifactRoute,
 } from '../workspace-layout.mjs';
 
@@ -18,10 +16,8 @@ export function bindEvidenceRuntime(store, options) {
   assertExactKeys(options, new Set([
     'root', 'authority', 'runs', 'verifyCapture', 'verifyOperatorDecision',
   ]), 'evidence runtime', new Set(['root', 'authority', 'runs']));
-  const manifest = workspaceManifest(options.root);
-  const database = manifest.schema_version === WORKSPACE_SCHEMA_VERSION
-    ? COORDINATION_DATABASE
-    : LEGACY_COORDINATION_DATABASE;
+  workspaceManifest(options.root);
+  const database = COORDINATION_DATABASE;
   if (!store || store.closed || !isAbsolute(store.path)
     || normalized(store.path) !== normalized(join(options.root, ...database.split('/')))) {
     fail('INVALID_INPUT', 'evidence workspace must be explicitly bound to this store');

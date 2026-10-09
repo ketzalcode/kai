@@ -1,11 +1,11 @@
 ---
 name: kai-core-web-content-extraction
 description: "Extracts readable website content to markdown. Use when course modules, certification units, docs, or long articles need downstream consumption."
-durable-output-producer: true
+publication-entrypoint: kai-core-workspace-publication
 tools: [playwright, execute, edit, read, ask_user]
 ---
 
-> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/getting-started.md` → "Browser automation setup"). Without it, the browser steps here cannot run.
+> **Requires a Playwright MCP server** registered under the key `playwright` in your host's MCP config (see `docs/architecture.md` → "Host capabilities"). Without it, the browser steps here cannot run.
 
 # Web Content Extraction
 

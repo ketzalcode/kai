@@ -160,7 +160,6 @@ export const artifactPreviewLimits = Object.freeze({perArtifactBytes: 64 * 1024,
 export const artifactPreviewPolicy = 'Artifact preview budgets: 64 KiB per artifact (shared by bundle members), 1 MiB across this report, measured in source bytes before redaction/encoding. Full retained files, SHA-256 identities, required questions/criteria and full message history are not truncated by these budgets.';
 export function artifactPreviewNotice(preview) {
   if (preview.gap) return `Preview unavailable — evidence gap: ${preview.gap}`;
-  if (!preview.previewState) return 'Legacy preview metadata: byte budget and completeness unavailable; rebuild the report.';
   const count = `${preview.previewBytes} of ${preview.sourceSize} source bytes captured; ${preview.omittedBytes} bytes omitted.`
     + (preview.boundaryWithheldBytes ? ` Conservative boundary withholding: ${preview.boundaryWithheldBytes} captured source bytes replaced as a possible known-bearer prefix; the omitted continuation was not inspected. These bytes still spend the source-prefix budget.` : '');
   if (preview.previewState === 'complete') return `Complete preview. ${count}`;

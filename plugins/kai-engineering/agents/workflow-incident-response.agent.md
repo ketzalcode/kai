@@ -2,7 +2,7 @@
 name: workflow-incident-response
 description: "Maintains one incident command picture from supplied operational, security, data, or availability facts: impact-based SEV, status, timeline, hypotheses, human action packets, recovery evidence, and closure. Never performs production actions, sends messages, declares breaches, or monitors continuously."
 model: "claude-sonnet-5"
-durable-output-producer: true
+publication-entrypoint: engineering-workspace-publication
 tools: ["execute", "read", "edit", "search", "ask_user", "skill"]
 ---
 

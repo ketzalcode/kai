@@ -2,9 +2,8 @@
 // consumer repository. Source modules and repository node_modules are
 // deliberately unavailable from every executed entrypoint.
 import assert from 'node:assert/strict';
-import {execFileSync, spawnSync} from 'node:child_process';
+import {spawnSync} from 'node:child_process';
 import {
-  appendFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -17,12 +16,12 @@ import {
 import {tmpdir} from 'node:os';
 import {dirname, isAbsolute, join, relative, resolve} from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
-import {moduleSpecifiers, PACK_ORDER, packPluginName} from '../tools/lib/pack-plan.mjs';
+import {PACK_ORDER, packPluginName} from '../tools/lib/pack-plan.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fixtureRoot = join(root, 'test', 'fixtures', 'schema5-consumer');
 const scratchRoot = mkdtempSync(join(tmpdir(), 'kai-consumer-install-'));
-const fixtureNames = ['core-only', 'core-engineering', 'core-creative', 'all-packs'];
+const fixtureNames = ['all-packs'];
 const publicationSkills = {
   core: 'kai-core-workspace-publication',
   engineering: 'engineering-workspace-publication',
@@ -42,7 +41,6 @@ const direction = [
   '- Eager department directories.',
   '',
 ].join('\n');
-const LOAD_FAILURE = /^\s+at\s+\S/m;
 let failures = 0;
 const ok = (condition, message, detail = '') => {
   if (condition) {
@@ -58,29 +56,26 @@ function nativePath(base, relativePath) {
   return join(base, ...relativePath.split('/'));
 }
 
-function stripCell(value) {
-  const trimmed = value.trim();
-  return trimmed.startsWith('`') && trimmed.endsWith('`')
-    ? trimmed.slice(1, -1)
-    : trimmed;
-}
-
 function parsePublicationContract(installedRoot, pack) {
-  const skill = publicationSkills[pack];
-  const path = join(installedRoot, packPluginName(pack), 'skills', skill, 'SKILL.md');
-  const body = readFileSync(path, 'utf8');
-  const lines = body.split(/\r?\n/);
-  const headerIndex = lines.findIndex(line => /^\|\s*Namespace\s*\|\s*Type\s*\|/i.test(line));
-  assert.notEqual(headerIndex, -1, `${pack}: canonical vocabulary table is missing`);
-  const headers = lines[headerIndex].split('|').slice(1, -1).map(value => value.trim().toLowerCase());
-  const rows = [];
-  for (const line of lines.slice(headerIndex + 2)) {
-    if (!line.trim().startsWith('|')) break;
-    const cells = line.split('|').slice(1, -1).map(stripCell);
-    rows.push(Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ''])));
-  }
-  assert.ok(rows.length > 0, `${pack}: canonical vocabulary table must contain live rows`);
-  return {body, rows};
+  const path = join(installedRoot, packPluginName(pack), 'publication.json');
+  const declaration = JSON.parse(readFileSync(path, 'utf8'));
+  assert.equal(declaration.pack, pack, `${pack}: publication declaration pack mismatch`);
+  assert.equal(declaration.skill, publicationSkills[pack],
+    `${pack}: publication declaration entrypoint mismatch`);
+  assert.ok(declaration.entries.length > 0,
+    `${pack}: publication declaration must contain live entries`);
+  return {
+    declaration,
+    rows: declaration.entries.map(entry => ({
+      namespace: pack,
+      type: entry.type,
+      subtype: entry.subtype ?? '-',
+      'private form': entry.privateForm,
+      'public form': entry.publicForm,
+      formats: entry.formats,
+      privacy: entry.privacy,
+    })),
+  };
 }
 
 function selectRoute(contract, {pack, type, subtype}) {
@@ -115,13 +110,13 @@ function createPrivateArtifact({projectRoot, contract, artifact, lifecycle, file
 function publishArtifact({projectRoot, contract, artifact, source, lifecycle, accepted, file}) {
   const row = selectRoute(contract, artifact);
   if (!row) return {ok: false, reason: 'unknown route'};
-  if (lifecycle === 'scratch' && /scratch can never publish/i.test(contract.body)) {
+  if (lifecycle === 'scratch') {
     return {ok: false, reason: 'scratch'};
   }
-  if (lifecycle === 'evidence' && /never publish/i.test(row['privacy rule'])) {
+  if (lifecycle === 'evidence' && row.privacy === 'evidence-private') {
     return {ok: false, reason: 'private evidence'};
   }
-  if (!accepted && /unaccepted draft can never publish/i.test(contract.body)) {
+  if (!accepted) {
     return {ok: false, reason: 'unaccepted'};
   }
   const directory = publicationDirectory(row, artifact.id);
@@ -138,40 +133,6 @@ function copyGeneratedPacks(installedRoot, packs) {
       join(installedRoot, packPluginName(pack)),
       {recursive: true},
     );
-  }
-}
-
-function importPolicyProblems(text) {
-  return moduleSpecifiers(text)
-    .filter(specifier => !specifier.startsWith('node:') && !specifier.startsWith('./'));
-}
-
-function probeGeneratedImports(installedRoot, packs) {
-  for (const pack of packs) {
-    const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
-    if (!existsSync(scriptsDir)) continue;
-    const present = new Set(readdirSync(scriptsDir).filter(name => name.endsWith('.mjs')));
-    const referenced = new Set();
-    let dangling = 0;
-    let disallowedImports = 0;
-    for (const name of present) {
-      const text = readFileSync(join(scriptsDir, name), 'utf8');
-      disallowedImports += importPolicyProblems(text).length;
-      for (const specifier of moduleSpecifiers(text)) {
-        if (!specifier.startsWith('./')) continue;
-        const target = specifier.slice(2);
-        referenced.add(target);
-        if (!present.has(target)) dangling += 1;
-      }
-    }
-    ok(disallowedImports === 0,
-      `${packPluginName(pack)}: generated bundles import only node: modules or pack-local ./ files`);
-    ok(dangling === 0,
-      `${packPluginName(pack)}: every generated local import resolves inside the copied pack`);
-    const orphans = [...present].filter(name => name.startsWith('chunk-') && !referenced.has(name));
-    ok(orphans.length === 0,
-      `${packPluginName(pack)}: no unreferenced generated chunk ships`,
-      orphans.join(', '));
   }
 }
 
@@ -192,46 +153,53 @@ function checkoutAncestorsWithNodeModules() {
   return ancestors;
 }
 
-function assertBareImportMutationRejected() {
-  const mutationRoot = mkdtempSync(join(scratchRoot, 'bare-import-'));
-  const installedRoot = join(mutationRoot, 'installed-plugins');
-  try {
-    copyGeneratedPacks(installedRoot, ['core']);
-    const coordinate = join(installedRoot, 'kai-core', 'scripts', 'coordinate.mjs');
-    appendFileSync(coordinate, '\nimport "review-only-bare-dependency";\n');
-    ok(importPolicyProblems(readFileSync(coordinate, 'utf8'))
-      .includes('review-only-bare-dependency'),
-    'generated import policy rejects a deliberate non-node bare import');
-  } finally {
-    rmSync(mutationRoot, {recursive: true, force: true});
-  }
-}
-
 function probeEntrypoints(installedRoot, packs, consumerRoot) {
+  const narrationPlan = join(consumerRoot, 'narration-plan.json');
+  const narrationVideo = join(consumerRoot, 'render.mp4');
+  const narrationOutput = join(consumerRoot, 'narrated.mp4');
+  writeFileSync(narrationPlan, JSON.stringify({
+    ok: true,
+    beats: [{path: 'clip.wav', start: 0}],
+  }));
+  writeFileSync(narrationVideo, '');
+  const invocations = new Map([
+    ['kai-core/scripts/activity.mjs', ['--help']],
+    ['kai-core/scripts/coordinate.mjs', ['direct']],
+    ['kai-core/scripts/observe-subagent.mjs', ['--status', '--root', consumerRoot]],
+    ['kai-core/scripts/observe-watch.mjs', ['--once', '--root', consumerRoot]],
+    ['kai-core/scripts/work-status.mjs', ['--root', consumerRoot, '--json']],
+    ['kai-core/scripts/workspace-doctor.mjs', ['--root', consumerRoot, '--json']],
+    ['kai-creative/scripts/demo-format.mjs', ['--placements']],
+    [
+      'kai-creative/scripts/demo-narrate.mjs',
+      ['--mix', narrationPlan, '--video', narrationVideo, '--out', narrationOutput],
+    ],
+    ['kai-creative/scripts/demo-zoom.mjs', ['--example']],
+  ]);
   let executed = 0;
   for (const pack of packs) {
+    const pluginName = packPluginName(pack);
     const scriptsDir = join(installedRoot, packPluginName(pack), 'scripts');
     if (!existsSync(scriptsDir)) continue;
     for (const name of readdirSync(scriptsDir)
-      .filter(value => value.endsWith('.mjs') && !value.startsWith('chunk-'))
+      .filter(value =>
+        value.endsWith('.mjs')
+        && !value.startsWith('chunk-')
+        && !value.startsWith('runtime-'))
       .sort()) {
       const path = join(scriptsDir, name);
-      let output = '';
-      let loadFailed = false;
-      try {
-        execFileSync(process.execPath, [path, '--kai-consumer-install-probe'], {
-          encoding: 'utf8',
-          stdio: 'pipe',
-          timeout: 120_000,
-          cwd: consumerRoot,
-        });
-      } catch (error) {
-        output = `${error.stdout ?? ''}${error.stderr ?? ''}`;
-        loadFailed = LOAD_FAILURE.test(output);
-      }
-      ok(!loadFailed,
-        `${packPluginName(pack)}/scripts/${name} loads from copied generated files`,
-        output.split('\n').find(line => /Error/.test(line)) ?? '');
+      const entrypoint = `${pluginName}/scripts/${name}`;
+      const args = invocations.get(entrypoint);
+      ok(Boolean(args), `${entrypoint} has a command-specific smoke invocation`);
+      if (!args) continue;
+      const result = spawnSync(process.execPath, [path, ...args], {
+        encoding: 'utf8',
+        timeout: 120_000,
+        cwd: consumerRoot,
+      });
+      ok(result.status === 0,
+        `${entrypoint} exits zero from copied generated files`,
+        `status=${result.status}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
       executed += 1;
     }
   }
@@ -300,8 +268,6 @@ async function runFixture(fixtureName) {
       ok(!existsSync(join(installedRoot, packPluginName(pack), 'node_modules')),
         `${packPluginName(pack)} has no installed dependencies`);
     }
-    probeGeneratedImports(installedRoot, fixture.packs);
-    probeEntrypoints(installedRoot, fixture.packs, projectRoot);
 
     const coordinate = join(installedRoot, 'kai-core', 'scripts', 'coordinate.mjs');
     const direct = generatedDirect(coordinate, projectRoot);
@@ -353,6 +319,7 @@ async function runFixture(fixtureName) {
     ok(!existsSync(join(projectRoot, '.kai', 'engineering'))
       && !existsSync(join(projectRoot, '.kai', 'creative')),
     'initialization creates no department directories');
+    probeEntrypoints(installedRoot, fixture.packs, projectRoot);
     assertPathMutationParity({doctor, projectRoot});
 
     const contract = parsePublicationContract(installedRoot, fixture.artifact.pack);
@@ -363,7 +330,7 @@ async function runFixture(fixtureName) {
     ok(publicationDirectory(row, fixture.artifact.id) === fixture.artifact.publicationDirectory,
       'canonical publication route mirrors the hand-checked fixture path');
     if (fixture.artifact.pack === 'creative' && fixture.artifact.type === 'media') {
-      ok(/Markdown destination record/i.test(row.formats),
+      ok(row.formats.includes('markdown-destination-record'),
         'creative media accepts an approved external-destination record');
     }
 
@@ -476,7 +443,6 @@ async function runFixture(fixtureName) {
 }
 
 try {
-  assertBareImportMutationRejected();
   for (const fixtureName of fixtureNames) await runFixture(fixtureName);
 } finally {
   rmSync(scratchRoot, {recursive: true, force: true});

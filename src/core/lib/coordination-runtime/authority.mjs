@@ -1,4 +1,5 @@
-import {RuntimeError} from './contract.mjs';
+import {RuntimeError} from './contract-primitives.mjs';
+import {commandKind} from './schema.mjs';
 
 function fail(code, message) {
   throw new RuntimeError(code, message);
@@ -16,6 +17,14 @@ export function requireRoleAvailable(role, authority, label) {
 
 export function requireActorAvailable(command, authority) {
   requireRoleAvailable(command.actor.role, authority, 'actor');
+}
+
+function requirePolicy(command, policy) {
+  const declaration = commandKind(command.kind);
+  if (!declaration?.authority.includes(policy)) {
+    fail('INVALID_INPUT',
+      `${command.kind} does not declare the ${policy} authority mechanism`);
+  }
 }
 
 function hostGrantMatches(grant, command, action) {
@@ -56,6 +65,11 @@ export function hasHostActionGrantForBasis(command, authority, action, basisRef)
 }
 
 export function requireActionGrant(tx, command, authority, action) {
+  requirePolicy(command, 'grant');
+  requireActionGrantUnchecked(tx, command, authority, action);
+}
+
+function requireActionGrantUnchecked(tx, command, authority, action) {
   const allowed = hasHostActionGrant(command, authority, action)
     || (command.leaseToken !== null
       && tx.list('grant', {kind: 'task', id: command.recordId})
@@ -67,6 +81,11 @@ export function requireActionGrant(tx, command, authority, action) {
 }
 
 export function requireHostActionGrant(command, authority, action) {
+  requirePolicy(command, 'host');
+  requireHostActionGrantUnchecked(command, authority, action);
+}
+
+function requireHostActionGrantUnchecked(command, authority, action) {
   if (!hasHostActionGrant(command, authority, action)) {
     fail('AUTHORITY_REQUIRED',
       `${command.actor.role} lacks trusted host ${action} authority for ${command.recordKind}/${command.recordId}`);
@@ -74,20 +93,22 @@ export function requireHostActionGrant(command, authority, action) {
 }
 
 export function requireNamedAuthority(tx, command, authority, action, role) {
+  requirePolicy(command, 'named');
   if (command.actor.role !== role) {
     fail('AUTHORITY_REQUIRED',
       `${action} requires declared authority "${role}", not "${command.actor.role}"`);
   }
-  requireHostActionGrant(command, authority, action);
+  requireHostActionGrantUnchecked(command, authority, action);
 }
 
 export function requireAnyNamedAuthority(tx, command, authority, action, roles) {
+  requirePolicy(command, 'named');
   const allowed = [...new Set(roles)];
   if (!allowed.includes(command.actor.role)) {
     fail('AUTHORITY_REQUIRED',
       `${action} requires one of the declared authorities ${allowed.map(role => `"${role}"`).join(', ')}, not "${command.actor.role}"`);
   }
-  requireHostActionGrant(command, authority, action);
+  requireHostActionGrantUnchecked(command, authority, action);
 }
 
 export function leaseIsLive(lease) {
@@ -106,14 +127,17 @@ export function requireLease(task, command) {
 }
 
 export function requireLeasedActingAuthority(tx, task, command, authority, action) {
+  requirePolicy(command, 'leased');
   requireLease(task, command);
-  requireActionGrant(tx, command, authority, action);
+  requireActionGrantUnchecked(tx, command, authority, action);
 }
 
 export function requireActingAuthority(tx, task, command, authority, action) {
+  requirePolicy(command, 'acting');
   if (task.body.lease === null) {
-    requireHostActionGrant(command, authority, action);
+    requireHostActionGrantUnchecked(command, authority, action);
     return;
   }
-  requireLeasedActingAuthority(tx, task, command, authority, action);
+  requireLease(task, command);
+  requireActionGrantUnchecked(tx, command, authority, action);
 }

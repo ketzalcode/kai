@@ -24,17 +24,20 @@ import {
 } from './host-schema.mjs';
 import {
   HIERARCHY_KINDS,
-  PARENT_COMMAND_KINDS,
   validateHierarchyRecord,
   validateParentCommand,
   validateParentCommandMutation,
 } from './hierarchy-contract.mjs';
 import {
-  TASK_COMMAND_KINDS,
-  validateLegacyItemBody,
   validateTaskCommand,
   validateTaskCommandMutation,
 } from './task-contract.mjs';
+import {
+  COMMAND_KINDS,
+  RECORD_KINDS,
+  commandKind,
+  recordKind,
+} from './schema.mjs';
 
 export {
   RuntimeError,
@@ -50,8 +53,6 @@ export {
 } from './contract-primitives.mjs';
 
 export {
-  HIERARCHY_KINDS,
-  PARENT_COMMAND_KINDS,
   PARENT_DISPOSITIONS,
   PARENT_STATES,
   parentClosureRef,
@@ -62,12 +63,21 @@ export {
 } from './hierarchy-contract.mjs';
 
 export {
-  TASK_COMMAND_KINDS,
-  validateLegacyItemBody,
   validateTaskBody,
   validateTaskCommand,
   validateTaskCommandMutation,
 } from './task-contract.mjs';
+
+export {
+  COORDINATION_SCHEMA,
+  COMMAND_KINDS,
+  HIERARCHY_KINDS,
+  PARENT_COMMAND_KINDS,
+  RECORD_KINDS,
+  TASK_COMMAND_KINDS,
+  commandKind,
+  recordKind,
+} from './schema.mjs';
 
 /**
  * @typedef {{role: string, runId: string}} Actor
@@ -101,39 +111,6 @@ export const ERROR_CODES = new Set([
   'UNSUPPORTED_HOST',
 ]);
 
-const HOST_COMMANDS = new Set(['attempt.start', 'attempt.result', 'effect.intent', 'effect.result']);
-
-export const COMMAND_KINDS = new Set([
-  ...PARENT_COMMAND_KINDS,
-  ...TASK_COMMAND_KINDS,
-  'question.open',
-  'question.answer',
-  'attempt.recover',
-  ...HOST_COMMANDS,
-  'artifact.register',
-  'asset.transition',
-  'evidence.register',
-  'review.record',
-  'approval.record',
-]);
-
-export const RECORD_KINDS = new Set([
-  ...HIERARCHY_KINDS,
-  'initiative',
-  'item',
-  'question',
-  'attempt',
-  'host-attempt',
-  'artifact',
-  'asset',
-  'evidence',
-  'review',
-  'approval',
-  'effect',
-  'message',
-  'grant',
-]);
-
 export const REVIEW_VERDICTS = new Set(['approved', 'changes-requested', 'blocked']);
 export const APPROVAL_KINDS = new Set([
   'scope',
@@ -158,10 +135,6 @@ export const DOD_DIMENSIONS = new Set([
   'coordination-closed',
 ]);
 
-const ITEM_DELIVERY_CLASSES = new Set(['knowledge', 'product-change', 'operational']);
-const INITIATIVE_STATES = new Set([
-  'proposed', 'active', 'paused', 'completed', 'shipped', 'archived',
-]);
 const QUESTION_KINDS = new Set(['fact', 'decision', 'reply', 'action']);
 const MESSAGE_KINDS = new Set(['question', 'answer', 'handoff', 'recovery']);
 const PROVENANCE_KINDS = new Set(['live-peer', 'durable-thread', 'operator']);
@@ -297,61 +270,6 @@ function validateLease(value, label) {
   }
   assertTimestamp(value.acquired_at, `${label}.acquired_at`);
   assertTimestamp(value.expires_at, `${label}.expires_at`);
-}
-
-function validateMilestone(value, label) {
-  assertExactKeys(value, new Set([
-    'id', 'title', 'delivery_class', 'required_items', 'status',
-  ]), label);
-  assertNonEmptyString(value.id, `${label}.id`);
-  assertNonEmptyString(value.title, `${label}.title`);
-  if (!ITEM_DELIVERY_CLASSES.has(value.delivery_class)) {
-    invalid(`${label}.delivery_class is unsupported`);
-  }
-  assertStringArray(value.required_items, `${label}.required_items`);
-  if (!new Set(['proposed', 'active', 'completed', 'shipped', 'dropped']).has(value.status)) {
-    invalid(`${label}.status is unsupported`);
-  }
-}
-
-function validateBacklogEntry(value, label) {
-  assertExactKeys(value, new Set(['id', 'title', 'status', 'item_id', 'reason']), label);
-  assertNonEmptyString(value.id, `${label}.id`);
-  assertNonEmptyString(value.title, `${label}.title`);
-  if (!new Set(['parked', 'promoted', 'dropped']).has(value.status)) {
-    invalid(`${label}.status is unsupported`);
-  }
-  assertNullableString(value.item_id, `${label}.item_id`);
-  assertNullableString(value.reason, `${label}.reason`);
-}
-
-function validateInitiativeBody(body, label) {
-  assertExactKeys(body, new Set([
-    'schema_version',
-    'id',
-    'title',
-    'status',
-    'owner',
-    'scope',
-    'milestones',
-    'backlog',
-    'north_star_ref',
-    'updated_at',
-  ]), label);
-  if (body.schema_version !== 1) invalid(`${label}.schema_version must be 1`);
-  for (const key of ['id', 'title', 'owner', 'north_star_ref']) {
-    assertNonEmptyString(body[key], `${label}.${key}`);
-  }
-  if (!INITIATIVE_STATES.has(body.status)) invalid(`${label}.status is unsupported`);
-  assertExactKeys(body.scope, new Set(['current']), `${label}.scope`);
-  assertStringArray(body.scope.current, `${label}.scope.current`, {nonEmpty: true});
-  if (!Array.isArray(body.milestones)) invalid(`${label}.milestones must be an array`);
-  body.milestones.forEach((entry, index) =>
-    validateMilestone(entry, `${label}.milestones[${index}]`));
-  if (!Array.isArray(body.backlog)) invalid(`${label}.backlog must be an array`);
-  body.backlog.forEach((entry, index) =>
-    validateBacklogEntry(entry, `${label}.backlog[${index}]`));
-  assertTimestamp(body.updated_at, `${label}.updated_at`);
 }
 
 function validateQuestionBody(body, label) {
@@ -920,8 +838,6 @@ function validateProducerCommand(command) {
 }
 
 const recordBodyValidators = new Map([
-  ['initiative', validateInitiativeBody],
-  ['item', validateLegacyItemBody],
   ['question', validateQuestionBody],
   ['attempt', validateAttemptBody],
   ['host-attempt', validateHostRecord],
@@ -1052,17 +968,22 @@ function validateRecover(command) {
   }
 }
 
+const commandValidatorKinds = new Map([
+  ['host', validateHostCommand],
+  ['hierarchy', validateParentCommand],
+  ['task', validateTaskCommand],
+  ['producer', validateProducerCommand],
+  ['message', command => command.kind === 'question.open'
+    ? validateMessagePayload(command, 'question.open', validateQuestionContent)
+    : validateMessagePayload(command, 'question.answer', validateAnswerContent)],
+  ['recovery', validateRecover],
+]);
+
 const commandValidators = new Map([
-  ...[...HOST_COMMANDS].map(kind => [kind, validateHostCommand]),
-  ...[...PARENT_COMMAND_KINDS].map(kind => [kind, validateParentCommand]),
-  ...[...TASK_COMMAND_KINDS].map(kind => [kind, validateTaskCommand]),
-  ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
-    .map(kind => [kind, validateProducerCommand]),
-  ['question.open', command =>
-    validateMessagePayload(command, 'question.open', validateQuestionContent)],
-  ['question.answer', command =>
-    validateMessagePayload(command, 'question.answer', validateAnswerContent)],
-  ['attempt.recover', validateRecover],
+  ...[...COMMAND_KINDS].map(kind => [
+    kind,
+    commandValidatorKinds.get(commandKind(kind).validator),
+  ]),
 ]);
 
 export function validateAuthority(authority) {
@@ -1129,15 +1050,16 @@ export function validateCommand(command) {
 
 export function validateCommandMutation(command, current, nextBody) {
   if (!isPlainObject(nextBody)) invalid(`${command.kind} must produce an object body`);
-  if (HOST_COMMANDS.has(command.kind)) {
+  const declaration = commandKind(command.kind);
+  if (declaration.validator === 'host') {
     validateHostMutation(command, current, nextBody);
     return nextBody;
   }
-  if (PARENT_COMMAND_KINDS.has(command.kind)) {
+  if (declaration.validator === 'hierarchy') {
     validateParentCommandMutation(command, current, nextBody);
     return nextBody;
   }
-  if (TASK_COMMAND_KINDS.has(command.kind)) {
+  if (declaration.validator === 'task') {
     validateTaskCommandMutation(command, current, nextBody);
     return nextBody;
   }
@@ -1149,21 +1071,12 @@ export function validateCommandMutation(command, current, nextBody) {
     return nextBody;
   }
   if (!current) invalid(`${command.kind} requires an existing record`);
-  const allowedByKind = new Map([
-    ...['artifact.register', 'asset.transition', 'evidence.register', 'review.record', 'approval.record']
-      .map(kind => [kind, new Set()]),
-    ['question.open', new Set([
-      'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
-    ])],
-    ['question.answer', new Set([
-      'state', 'resume_state', 'lease', 'waiting_on_questions', 'updated_at',
-    ])],
-    ['attempt.recover', new Set([
-      'state', 'resume_state', 'next_role', 'lease', 'producer_actor',
-      'producing_actors', 'recovery_hold', 'updated_at',
-    ])],
-  ]);
-  assertChangedOnly(current, nextBody, allowedByKind.get(command.kind), command.kind);
+  assertChangedOnly(
+    current,
+    nextBody,
+    new Set(declaration.allowedMutations),
+    command.kind,
+  );
   return nextBody;
 }
 
@@ -1179,35 +1092,20 @@ export function validateRecord(record) {
   if (!RECORD_KINDS.has(record.kind)) {
     invalid(`unsupported record kind "${record.kind}"`);
   }
-  if (HIERARCHY_KINDS.has(record.kind)) {
+  const declaration = recordKind(record.kind);
+  if (declaration.validator === 'hierarchy' || declaration.validator === 'task') {
     validateHierarchyRecord(record);
     return record;
   }
   assertNonEmptyString(record.id, 'record.id');
   if (record.subject !== null) {
-    if (record.subject.kind === 'item') {
-      if (!isPlainObject(record.subject)) invalid('record.subject must be an object or null');
-      assertExactKeys(record.subject, new Set(['kind', 'id']), 'record.subject');
-      assertNonEmptyString(record.subject.id, 'record.subject.id');
-    } else {
-      validateHierarchySubject(record.subject, 'record.subject');
-    }
+    validateHierarchySubject(record.subject, 'record.subject');
   }
   if (!Number.isSafeInteger(record.version) || record.version < 1) {
     invalid('record.version must be a positive safe integer');
   }
   const validator = recordBodyValidators.get(record.kind);
   validator(record.body, `record ${record.kind}/${record.id} body`);
-  if (record.kind === 'item'
-    && (record.id !== record.body.id
-      || record.subject?.kind !== 'item'
-      || record.subject.id !== record.id)) {
-    invalid('item record envelope must match body.id');
-  }
-  if (record.kind === 'initiative'
-    && (record.id !== record.body.id || record.subject !== null)) {
-    invalid('initiative record envelope must match body.id and have null subject');
-  }
   if (new Set(['question', 'attempt', 'host-attempt', 'effect', 'evidence', 'review', 'approval', 'artifact', 'asset',
     'message', 'grant']).has(record.kind)
     && (record.subject === null || !subjectEquals(record.subject, record.body.subject))) {

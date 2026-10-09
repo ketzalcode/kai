@@ -1,0 +1,51 @@
+{
+  "pack": "engineering",
+  "skill": "engineering-workspace-publication",
+  "entries": [
+    {
+      "type": "features",
+      "subtype": null,
+      "privateForm": ".kai/engineering/features/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/engineering/features/<id>/",
+      "formats": ["markdown", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "documentation",
+      "subtype": "architecture",
+      "privateForm": ".kai/engineering/documentation/architecture/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/engineering/documentation/architecture/<id>/",
+      "formats": ["markdown", "diagram", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "decisions",
+      "subtype": null,
+      "privateForm": ".kai/engineering/decisions/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/engineering/decisions/<id>/",
+      "formats": ["markdown", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "reports",
+      "subtype": "investigations",
+      "privateForm": ".kai/engineering/reports/investigations/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/engineering/reports/investigations/<id>/",
+      "formats": ["markdown", "json", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    },
+    {
+      "type": "reports",
+      "subtype": "releases",
+      "privateForm": ".kai/engineering/reports/releases/<id>/{drafts,evidence,scratch}",
+      "publicForm": "docs/kai/engineering/reports/releases/<id>/",
+      "formats": ["markdown", "json", "bundle"],
+      "authority": "completion",
+      "privacy": "evidence-private"
+    }
+  ]
+}
