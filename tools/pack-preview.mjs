@@ -27,7 +27,9 @@
 //
 // Dependency-free (Node built-ins only), consistent with the rest of scripts/.
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import {
+  cpSync, readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync,
+} from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -49,6 +51,7 @@ import {
   hookAssetsIn, agentSourceFile, skillSourceFile,
   sourceAgentFiles, sourceSkillFiles, skillCompanionFiles, sourceFileErrors,
   syncGuaranteeRegion, removeGuaranteeRegion,
+  GUARANTEE_REGION_OPEN, GUARANTEE_REGION_CLOSE,
 } from './lib/pack-plan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -315,6 +318,19 @@ function managedAgentDrift(root) {
   return drift;
 }
 
+// Materialize first, then write only derived paths beneath base. Source
+// synchronization is intentionally outside this helper.
+function writeDerivedTree({ root, base, version }) {
+  const files = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
+  for (const [relPath, content] of files) {
+    const abs = join(base, ...relPath.split('/'));
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, content);
+  }
+  cleanStaleDerivedFiles(base, files);
+  return files;
+}
+
 // Regenerate derived files and diff them against what is committed. Agent and
 // skill bodies are source. A configured tree that is absent fails with the
 // command that regenerates its derived surface.
@@ -360,13 +376,7 @@ export function writeCommitted({ root = ROOT, base = join(ROOT, PACKS_DIR), vers
       managed += 1;
     }
   }
-  const files = derivedFiles(materializePacks({ root, version, packs: COMMITTED_PACKS }));
-  for (const [relPath, content] of files) {
-    const abs = join(base, ...relPath.split('/'));
-    mkdirSync(dirname(abs), { recursive: true });
-    writeFileSync(abs, content);
-  }
-  cleanStaleDerivedFiles(base, files);
+  const files = writeDerivedTree({ root, base, version });
   return { written: files.size, managed, dir: base };
 }
 
@@ -472,20 +482,34 @@ function selfTest() {
   'direct asset-producing bypass is rejected');
 
   const missingBase = join(ROOT, 'test', '.pack-preview-missing');
+  const missingSource = join(missingBase, 'source');
+  const missingGenerated = join(missingBase, 'generated');
   const missingVersion = '0.0.0-self-test';
   const missingGeneratedPath = `${packPluginName('core')}/plugin.json`;
   rmSync(missingBase, {recursive: true, force: true});
   try {
-    writeCommitted({root: ROOT, base: missingBase, version: missingVersion});
+    cpSync(join(ROOT, PACKS_DIR), join(missingSource, PACKS_DIR), {recursive: true});
+    cpSync(join(ROOT, 'src'), join(missingSource, 'src'), {recursive: true});
+    cpSync(join(ROOT, HOOKS_FILE), join(missingSource, HOOKS_FILE));
+    const sourceAgent = sourceAgentFiles(missingSource)
+      .find(entry => !declaresInherits(readFileSync(entry.path, 'utf8')));
+    const originalSource = readFileSync(sourceAgent.path, 'utf8');
+    const sourceWithStaleGuard = `${originalSource.trimEnd()}\n\n`
+      + `${GUARANTEE_REGION_OPEN}\nstale guard\n${GUARANTEE_REGION_CLOSE}\n`;
+    writeFileSync(sourceAgent.path, sourceWithStaleGuard);
+    writeDerivedTree({root: missingSource, base: missingGenerated, version: missingVersion});
+    ok(readFileSync(sourceAgent.path, 'utf8') === sourceWithStaleGuard,
+      'missing-file preparation leaves source agent bytes unchanged');
+    writeFileSync(sourceAgent.path, originalSource);
     const pristineCheck = checkCommitted({
-      root: ROOT,
-      base: missingBase,
+      root: missingSource,
+      base: missingGenerated,
       version: missingVersion,
     });
-    rmSync(join(missingBase, ...missingGeneratedPath.split('/')));
+    rmSync(join(missingGenerated, ...missingGeneratedPath.split('/')));
     const missingCheck = checkCommitted({
-      root: ROOT,
-      base: missingBase,
+      root: missingSource,
+      base: missingGenerated,
       version: missingVersion,
     });
     ok(pristineCheck.ok

@@ -64,3 +64,24 @@ Evidence:
 - `node tools\pack-preview.mjs --gate all` — all four gates clean.
 - `node tools\pack-preview.mjs --check` — committed plugins match the generator.
 - `node tools\check-syntax.mjs` — 74 JS/MJS helpers parse cleanly.
+
+## Review round 2/5 — 2026-10-08
+
+- Replaced the missing-file self-test's `writeCommitted` setup with a pure
+  derived-tree writer. The setup now materializes first and writes only beneath
+  its temporary generated directory; it cannot synchronize source agents.
+- Added a regression source fixture carrying a stale managed guard and asserted
+  that preparation preserves its bytes exactly before checking the deleted
+  generated file.
+
+Evidence:
+
+- RED: `node tools\pack-preview.mjs --self-test` reported
+  `missing-file preparation leaves source agent bytes unchanged` as the sole
+  failure (`13 checks passed, 1 FAILED`) while setup still used
+  `writeCommitted`.
+- GREEN: `node tools\pack-preview.mjs --self-test` — 14 checks passed.
+- `node tools\validate-plugin.mjs` — valid (21 agents, 39 skills).
+- `node tools\pack-preview.mjs --check` — committed plugins match the generator.
+- `node tools\check-syntax.mjs` — 74 JS/MJS helpers parse cleanly.
+- `git diff --check` — clean.
