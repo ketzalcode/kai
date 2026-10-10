@@ -4,6 +4,20 @@ All notable changes to the **kai** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions
 follow semantic versioning.
 
+## [20.0.1] - 2026-10-09
+
+### Changed
+
+- Simplified `coding-standards` into a collaborative overview and one concise
+  rule set. The skill now applies whenever code is written, modified, or
+  refactored, alongside repository context rather than only where local
+  conventions are silent. The profile follows #241: readable and explicit
+  control flow, honest types and errors, authoritative definitions,
+  right-sized extraction, and behavior-preserving refactors. Testing remains
+  owned by repository instructions or task-specific testing guidance rather
+  than loading with every coding task. Removed specialist process sections
+  that made the coding profile read like a second operating contract.
+
 ## [20.0.0] - 2026-10-08
 
 ### Changed
@@ -4481,6 +4495,7 @@ version pin is required.
   web-evaluation tracks, and the `workspace-conventions` + `workflow-workspace-init`
   workspace contract.
 
+[20.0.1]: https://github.com/ketzalcode/kai/compare/v20.0.0...v20.0.1
 [20.0.0]: https://github.com/ketzalcode/kai/compare/v2.1.0...v20.0.0
 [19.0.0]: https://github.com/ketzalcode/kai/compare/v18.0.0...v19.0.0
 [18.0.0]: https://github.com/ketzalcode/kai/compare/v17.0.0...v18.0.0
