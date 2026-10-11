@@ -120,10 +120,10 @@ CURRENT DIRECTION + APPROVED ENGINEERING SCOPE
          stacking policy, evidence, stop rules
                        |
                        v
-              immutable run envelope
+             lean immutable admission
                        |
                        v
-          choose next safe ready PR slice
+       eng-lead-software chooses one PR slice
                        |
                        v
         isolated worktree + standalone stages
@@ -146,10 +146,10 @@ CURRENT DIRECTION + APPROVED ENGINEERING SCOPE
       pr-sizing + pr-delivery
              |
              v
-      PR + evidence checkpoint
+       PR + append-only checkpoint
              |
              v
-        next safe ready slice
+        lead decides stop or next slice
              |
              v
              RECONCILE
@@ -161,7 +161,6 @@ The operator approves one run envelope containing only decisions that govern
 the night:
 
 - exact Engineering Feature and Requirement scope;
-- eligible Tasks or authority to prepare Tasks inside that accepted scope;
 - base repository and base branch;
 - permitted Git and GitHub side effects;
 - permitted filesystem, network, and secret references;
@@ -174,38 +173,41 @@ the night:
 
 Role and model selection do not belong in the envelope.
 
-`eng-nightshift.agent.md` owns workflow routing. Each selected agent
-profile owns its model, tools, and domain instructions, as other Kai agents do
-today. The runner invokes the selected profile without restating or overriding
-its model. A missing, ambiguous, or unsupported route is a blocker, not
-permission to choose a replacement.
+The admission contains no PR list, branches, or domain routes.
+`eng-lead-software` chooses one next slice from current Core and Git evidence.
+Each selected profile owns its model, tools, and domain instructions. The
+runner launches the lead's decision without restating or overriding its model.
+A missing, ambiguous, or unsupported route is a blocker, not permission to
+choose a replacement.
 
 The run envelope does not create Feature or Requirement authority. It binds
 the authority already present in the hierarchy to a limited execution window.
 
 ### Execute
 
-For each candidate slice, Nightshift:
+For each incremental cycle, Nightshift:
 
 1. re-reads Direction, hierarchy context, Task versions, dependencies,
-   questions, leases, and the run envelope;
-2. rejects work outside the approved scope or current base;
-3. claims or obtains the exact authorized Task;
-4. creates an isolated branch and worktree;
-5. starts fresh programmatic Copilot sessions for the routed builder, delivery
+   questions, leases, admission, and accumulated checkpoints;
+2. asks `eng-lead-software` to choose one next PR-sized slice, a blocker, or
+   completion;
+3. rejects a lead decision outside approved scope, limits, or valid base heads;
+4. appends the lead decision without rewriting admission;
+5. creates the selected isolated branch and worktree;
+6. starts fresh programmatic Copilot sessions for the routed builder, delivery
    lead, and any already-required reviewer, with autonomous continuation
    enabled, interactive questions disabled, and the run's permissions and
    limits;
-6. applies `software-development` and the relevant domain standards;
-7. implements only the required outcome and directly necessary correctness;
-8. runs proportionate focused validation and named manual scenarios;
-9. routes selective independent review only when the Task, repository,
+7. applies `software-development` and the relevant domain standards;
+8. implements only the required outcome and directly necessary correctness;
+9. runs proportionate focused validation and named manual scenarios;
+10. routes selective independent review only when the Task, repository,
    operator, or a concrete material risk requires it;
-10. applies `pr-sizing` to the completed integrated diff;
-11. applies `pr-delivery` and opens or updates the authorized pull request;
-12. binds evidence to the exact head revision; and
-13. checkpoints the Task, branch, worktree, pull request, evidence, remaining
-    budget, and next safe action.
+11. lets the lead apply `pr-sizing` to the completed integrated diff;
+12. lets the lead apply `pr-delivery` and open or update the authorized pull
+    request;
+13. binds evidence to the exact head revision; and
+14. appends the observed result before asking the lead for another decision.
 
 Programmatic Copilot sessions use the CLI's supported autopilot controls,
 bounded continuation count, no-interactive-question mode, and AI-credit limit.
@@ -218,7 +220,7 @@ destinations. Nightshift receives no production credentials or authority.
 
 ### Reconcile
 
-Reconciliation reads Core state and the private execution ledger, then produces
+Reconciliation reads Core state and the private append-only events, then produces
 one morning report. It does not infer completion from a process exit code or a
 PR existing.
 
@@ -393,28 +395,26 @@ Evidence scales with the change:
 Prose and diagrams explain a decision. Observable behavior proves it. Neither
 substitutes for the other.
 
-### Private execution ledger
+### Private execution history
 
-The engineering runner keeps one private, non-authoritative run ledger with:
+The engineering runner keeps one small immutable admission and an append-only,
+non-authoritative event log. Events accumulate:
 
-- run and envelope identifiers;
-- current Direction and hierarchy versions;
+- software-lead decisions;
 - slice, Task, branch, worktree, session, and PR identifiers;
-- stage and attempt state;
-- checkpoints and exact head revisions;
-- observed time and AI-credit use when the host exposes it;
-- retained log and evidence locations;
-- blocker and question references;
-- remaining run limits; and
+- observed stage outcomes and exact head revisions;
+- evidence, blocker, question, and suggestion references;
+- observed limits; and
 - terminal reason.
 
-This ledger supports resumption and report generation. It cannot grant work,
-change scope, answer questions, accept evidence, or close a Task.
+The event log supports resumption and report generation. It never rewrites the
+admission and cannot grant work, change scope, answer questions, accept
+evidence, or close a Task.
 
 ## Morning report
 
 Nightshift produces one private Markdown report as a human-readable projection
-of Core records and the run ledger:
+of Core records, admission, and event log:
 
 ```markdown
 # Nightshift <run-id>
@@ -468,16 +468,16 @@ drift enters recovery rather than being silently rebased.
 
 | Surface | Responsibility |
 | --- | --- |
-| `eng-nightshift.agent.md` | Explicit PREPARE and RECONCILE entry point, routing policy, delivery boundary, and hard authority limits. |
-| `nightshift-run` skill | Task selection, slice lifecycle, self-unblocking, evidence, blocker, and report procedure. |
-| Engineering runner | Durable serial orchestration of fresh programmatic Copilot sessions, isolated worktrees, run limits, checkpoints, and reconciliation. |
+| `eng-nightshift.agent.md` | Explicit PREPARE and RECONCILE entry point, admission boundary, and hard authority limits. |
+| `eng-lead-software.agent.md` | Incremental PR-slice choice, integration, delivery, and stop/continue judgment. |
+| `nightshift-run` skill | Lean shared lifecycle, delivery boundary, checkpoint minimum, and hard stops. |
+| Engineering runner | Deterministic event persistence, worktrees, profile launching, limit enforcement, and report rendering. |
 | Engineering publication vocabulary | Private Nightshift report and evidence route associated with the authorized hierarchy subject. |
 | Existing builder, reviewer, sizing, and delivery surfaces | Implementation, selective review, final diff sizing, and pull-request delivery. |
 
-The runner is orchestration code, not an agent that reasons about product scope.
-The workflow agent interprets approved context and selects existing routes.
-The selected builders make in-scope implementation decisions under their own
-profiles.
+The runner is infrastructure, not an agent that reasons about product scope.
+The software lead chooses each next slice. Selected builders make in-scope
+implementation decisions under their own profiles.
 
 ## V0 acceptance
 
@@ -485,20 +485,22 @@ Nightshift V0 is acceptable when a test workspace demonstrates that:
 
 1. one approved run can deliver more than one serial, isolated pull-request
    slice without changing Feature or Requirement scope;
-2. every implementation session applies the current software-development and
+2. the admission contains no up-front slice list and software-lead decisions
+   append one slice at a time;
+3. every implementation session applies the current software-development and
    domain standards through its routed agent profile;
-3. required work is implemented while broader or lower-confidence work appears
+4. required work is implemented while broader or lower-confidence work appears
    only in the morning suggestions;
-4. each pull request maps accepted criteria to revision-bound evidence and
+5. each pull request maps accepted criteria to revision-bound evidence and
    explicit limitations;
-5. a blocked slice preserves truthful Core state and a safe resume point while
+6. a blocked slice preserves truthful Core state and a safe resume point while
    independent ready work continues;
-6. collisions, lease loss, base or Direction drift, missing capabilities, and
+7. collisions, lease loss, base or Direction drift, missing capabilities, and
    exhausted limits stop affected work without fallback or overwrite;
-7. no unattended path merges, deploys, releases, or self-approves;
-8. the morning report can be regenerated from Core state and the private run
-   ledger; and
-9. ending early with no safe work is treated as a successful bounded stop, not
+8. no unattended path merges, deploys, releases, or self-approves;
+9. the morning report can be regenerated from Core state, admission, and
+   append-only events; and
+10. ending early with no safe work is treated as a successful bounded stop, not
    a workflow failure.
 
 ## Research grounding
@@ -531,19 +533,8 @@ systems:
 These sources inform the guardrails. Kai's authority, evidence, scope, and
 communication contracts remain the governing design.
 
-## Deferred decisions
+## Remaining host verification
 
-The implementation plan must still settle:
-
-- the smallest run-envelope and private-ledger representation;
-- the exact engineering publication entry for Nightshift reports;
-- the runner command surface and scheduler integration;
-- safe Copilot CLI permission and sandbox defaults on Windows, macOS, and
-  Linux;
-- default limits versus values that must be supplied during setup;
-- how observed AI-credit usage is collected when available;
-- cleanup policy for accepted, blocked, and abandoned worktrees; and
-- the focused acceptance harness for multi-PR and recovery scenarios.
-
-These are implementation decisions inside this approved architecture. They do
-not reopen the product boundary, ownership, delivery rule, or human-only gates.
+V0 still needs evidence from a real unattended Copilot run, nightly Linux, and
+release readiness at the eventual merge SHA. Those checks do not reopen the
+product boundary, lead/runner ownership, delivery rule, or human-only gates.

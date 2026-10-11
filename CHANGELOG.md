@@ -15,13 +15,16 @@ follow semantic versioning.
   blockers, revision-bound evidence, dependency-safe continuation, and a
   private morning report for delivered, blocked, skipped, and suggested work.
 - Added the dependency-free Engineering Nightshift runner for isolated
-  worktrees and fresh standalone builder, delivery, and required-review
-  sessions without model overrides.
+  worktrees, append-only checkpoints, and fresh standalone software-lead,
+  builder, delivery, and required-review sessions without model overrides.
 
 ### Changed
 
 - Added `reports/nightshift` to the Engineering publication vocabulary for
-  private plans, ledgers, evidence, and morning reports.
+  private admissions, append-only events, evidence, and morning reports.
+- Made `eng-lead-software` choose one next PR slice, blocker, or completion
+  after each checkpoint; the runner now only validates, persists, launches,
+  observes, and enforces deterministic limits.
 - Registered `eng-nightshift` as a named Engineering capability agent with the
   `technical-judgment` profile and GPT-5.6 Sol, keeping the user-facing name
   independent of workflow implementation terminology.

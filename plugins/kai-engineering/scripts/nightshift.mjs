@@ -5,6 +5,7 @@ import{createRequire as __cr}from'node:module';const require=__cr(import.meta.ur
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
+  appendFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -28,7 +29,7 @@ var PLAN_KEYS = /* @__PURE__ */ new Set([
   "limits",
   "permissions",
   "stacking",
-  "slices"
+  "evidenceExpectations"
 ]);
 var SLICE_KEYS = /* @__PURE__ */ new Set([
   "id",
@@ -40,7 +41,8 @@ var SLICE_KEYS = /* @__PURE__ */ new Set([
   "route",
   "reviewRequired",
   "branch",
-  "dependsOn"
+  "baseHead",
+  "pullRequestBase"
 ]);
 var RESULT_KEYS = /* @__PURE__ */ new Set([
   "status",
@@ -68,6 +70,13 @@ var BLOCKER_KEYS = /* @__PURE__ */ new Set([
   "answerBy",
   "questionRef"
 ]);
+var LEAD_DECISION_KEYS = /* @__PURE__ */ new Set([
+  "status",
+  "summary",
+  "slice",
+  "blocker",
+  "nextAction"
+]);
 var RESULT_STATUSES = /* @__PURE__ */ new Set(["delivered", "blocked", "failed"]);
 var STAGE_RESULT_KEYS = /* @__PURE__ */ new Set([
   "status",
@@ -87,6 +96,7 @@ var BLOCKER_KINDS = /* @__PURE__ */ new Set([
   "collision",
   "limit"
 ]);
+var LEAD_STATUSES = /* @__PURE__ */ new Set(["slice", "complete", "blocked"]);
 var SAFE_ID = /^[a-z0-9][a-z0-9-]{2,63}$/;
 var PROJECT_ID = /^[a-z][a-z0-9-]*$/;
 var TYPED_FEATURE_ID = /^engineering:feature:[a-z0-9][a-z0-9-]*$/;
@@ -225,7 +235,8 @@ function normalizeSlice(raw, index) {
     route,
     reviewRequired: raw.reviewRequired,
     branch: branch(raw.branch, `${label}.branch`),
-    dependsOn: strings(raw.dependsOn, `${label}.dependsOn`)
+    baseHead: fullSha(raw.baseHead, `${label}.baseHead`),
+    pullRequestBase: string(raw.pullRequestBase, `${label}.pullRequestBase`)
   };
 }
 function profilesForSlice(slice) {
@@ -236,24 +247,6 @@ function profilesForSlice(slice) {
     DELIVERY_PROFILE,
     ...slice.reviewRequired ? [REVIEW_PROFILE] : []
   ];
-}
-function assertAcyclic(slices) {
-  const byId = new Map(slices.map((slice) => [slice.id, slice]));
-  const visiting = /* @__PURE__ */ new Set();
-  const visited = /* @__PURE__ */ new Set();
-  const visit = (slice) => {
-    if (visiting.has(slice.id)) fail(`slice dependencies contain a cycle at ${slice.id}`);
-    if (visited.has(slice.id)) return;
-    visiting.add(slice.id);
-    for (const dependency of slice.dependsOn) {
-      const target = byId.get(dependency);
-      if (!target) fail(`slice ${slice.id} has unknown dependency ${dependency}`);
-      visit(target);
-    }
-    visiting.delete(slice.id);
-    visited.add(slice.id);
-  };
-  slices.forEach(visit);
 }
 function validatePlan(raw) {
   exactKeys(raw, PLAN_KEYS, "plan");
@@ -301,17 +294,6 @@ function validatePlan(raw) {
     fail("plan permissions must use booleans");
   }
   if (typeof raw.stacking !== "boolean") fail("plan.stacking must be boolean");
-  if (!Array.isArray(raw.slices) || raw.slices.length === 0) {
-    fail("plan.slices must be a non-empty array");
-  }
-  const slices = raw.slices.map(normalizeSlice);
-  if (new Set(slices.map((slice) => slice.id)).size !== slices.length) {
-    fail("plan.slices contains duplicate IDs");
-  }
-  if (new Set(slices.map((slice) => slice.branch.toLowerCase())).size !== slices.length) {
-    fail("plan.slices contains duplicate branches");
-  }
-  assertAcyclic(slices);
   return {
     schemaVersion: 1,
     runId: safeId(raw.runId, "plan.runId"),
@@ -362,8 +344,68 @@ function validatePlan(raw) {
       })
     },
     stacking: raw.stacking,
-    slices
+    evidenceExpectations: strings(
+      raw.evidenceExpectations,
+      "plan.evidenceExpectations",
+      { nonEmpty: true }
+    )
   };
+}
+function terminalSliceEvents(events) {
+  return events.filter((entry2) => (/* @__PURE__ */ new Set([
+    "slice.delivered",
+    "slice.blocked",
+    "slice.failed"
+  ])).has(entry2.type));
+}
+function validateLeadDecision(raw, { plan, events }) {
+  exactKeys(raw, LEAD_DECISION_KEYS, "lead decision");
+  const status = string(raw.status, "lead decision.status");
+  if (!LEAD_STATUSES.has(status)) fail("lead decision.status is unsupported");
+  const normalized = {
+    status,
+    summary: string(raw.summary, "lead decision.summary"),
+    slice: raw.slice === null ? null : normalizeSlice(raw.slice, 0),
+    blocker: raw.blocker === null ? null : blockerResult(raw.blocker, "lead decision.blocker"),
+    nextAction: string(raw.nextAction, "lead decision.nextAction")
+  };
+  if (status === "slice") {
+    if (!normalized.slice) fail("slice lead decision requires one slice");
+    if (normalized.blocker !== null) fail("slice lead decision blocker must be null");
+    const prior = terminalSliceEvents(events);
+    if (prior.some((entry2) => entry2.payload.slice.id === normalized.slice.id)) {
+      fail(`lead decision repeats slice ID ${normalized.slice.id}`);
+    }
+    if (prior.some((entry2) => entry2.payload.slice.branch.toLowerCase() === normalized.slice.branch.toLowerCase())) {
+      fail(`lead decision repeats branch ${normalized.slice.branch}`);
+    }
+    const delivered = prior.filter((entry2) => entry2.type === "slice.delivered");
+    const allowed = new Map([
+      [plan.base.sha, plan.base.branch],
+      ...delivered.map((entry2) => [
+        entry2.payload.result.headSha,
+        entry2.payload.slice.branch
+      ])
+    ]);
+    if (!allowed.has(normalized.slice.baseHead)) {
+      fail("lead decision slice.baseHead is neither the approved base nor a delivered head");
+    }
+    if (normalized.slice.baseHead !== plan.base.sha && !plan.stacking) {
+      fail("lead decision requires stacking permission for a delivered-head base");
+    }
+    if (allowed.get(normalized.slice.baseHead) !== normalized.slice.pullRequestBase) {
+      fail("lead decision slice.pullRequestBase does not match its base head");
+    }
+  } else {
+    if (normalized.slice !== null) fail(`${status} lead decision slice must be null`);
+    if (status === "complete" && normalized.blocker !== null) {
+      fail("complete lead decision blocker must be null");
+    }
+    if (status === "blocked" && normalized.blocker === null) {
+      fail("blocked lead decision requires blocker details");
+    }
+  }
+  return normalized;
 }
 function suggestion(raw, label) {
   exactKeys(raw, SUGGESTION_KEYS, label);
@@ -486,7 +528,7 @@ function runPaths(root, runId) {
     evidence: join(runRoot, "evidence"),
     scratch: join(runRoot, "scratch"),
     plan: join(runRoot, "drafts", "plan.json"),
-    ledger: join(runRoot, "drafts", "ledger.json"),
+    events: join(runRoot, "evidence", "events.jsonl"),
     report: join(runRoot, "drafts", "report.md")
   };
 }
@@ -536,8 +578,110 @@ function atomicWrite(path, bytes) {
     throw error;
   }
 }
-function writeLedger(path, ledger) {
-  atomicWrite(path, canonical(ledger));
+var EVENT_TYPES = /* @__PURE__ */ new Set([
+  "run.prepared",
+  "lead.decided",
+  "slice.started",
+  "slice.delivered",
+  "slice.blocked",
+  "slice.failed",
+  "run.completed",
+  "run.blocked",
+  "run.stopped"
+]);
+function readEvents(path, runId) {
+  if (!existsSync(path)) return [];
+  const text = readFileSync(path, "utf8");
+  if (!text.trim()) return [];
+  return text.trimEnd().split(/\r?\n/).map((line, index) => {
+    let event;
+    try {
+      event = JSON.parse(line);
+    } catch (error) {
+      fail(`Nightshift event ${index + 1} is not valid JSON: ${error.message}`);
+    }
+    exactKeys(event, /* @__PURE__ */ new Set([
+      "schemaVersion",
+      "eventId",
+      "runId",
+      "sequence",
+      "type",
+      "at",
+      "payload"
+    ]), `event[${index}]`);
+    if (event.schemaVersion !== 1) fail(`event[${index}].schemaVersion must be 1`);
+    if (event.runId !== runId) fail(`event[${index}] belongs to another run`);
+    if (event.sequence !== index + 1) fail(`event[${index}] has a non-contiguous sequence`);
+    if (!/^[0-9a-f-]{36}$/i.test(event.eventId)) fail(`event[${index}].eventId is invalid`);
+    if (!EVENT_TYPES.has(event.type)) fail(`event[${index}].type is unsupported`);
+    timestamp(event.at, `event[${index}].at`);
+    object(event.payload, `event[${index}].payload`);
+    return event;
+  });
+}
+function appendRunEvent({
+  path,
+  runId,
+  type,
+  payload,
+  at = (/* @__PURE__ */ new Date()).toISOString()
+}) {
+  if (!EVENT_TYPES.has(type)) fail(`Nightshift event type ${type} is unsupported`);
+  const events = readEvents(path, runId);
+  const event = {
+    schemaVersion: 1,
+    eventId: randomUUID(),
+    runId,
+    sequence: events.length + 1,
+    type,
+    at: timestamp(at, "event.at"),
+    payload: object(payload, "event.payload")
+  };
+  mkdirSync(dirname(path), { recursive: true });
+  appendFileSync(path, `${JSON.stringify(event)}
+`, { encoding: "utf8", flag: "a" });
+  return event;
+}
+function foldEvents(plan, events) {
+  const state = {
+    runId: plan.runId,
+    status: "prepared",
+    startedAt: events[0]?.at ?? null,
+    finishedAt: null,
+    terminalReason: null,
+    observedAiCredits: null,
+    slices: []
+  };
+  for (const event of events) {
+    if (event.type === "slice.started") {
+      state.slices.push({
+        slice: event.payload.slice,
+        status: "running",
+        result: null,
+        worktree: event.payload.worktree
+      });
+      state.status = "running";
+      continue;
+    }
+    if (event.type.startsWith("slice.") && event.type !== "slice.started") {
+      let sliceState = state.slices.find((entry2) => entry2.slice.id === event.payload.slice.id);
+      if (!sliceState) {
+        sliceState = { slice: event.payload.slice };
+        state.slices.push(sliceState);
+      }
+      sliceState.status = event.type.slice("slice.".length);
+      sliceState.result = event.payload.result;
+      sliceState.worktree = event.payload.worktree;
+      continue;
+    }
+    if (event.type === "run.completed" || event.type === "run.blocked" || event.type === "run.stopped") {
+      const statuses = state.slices.map((entry2) => entry2.status);
+      state.status = statuses.includes("failed") ? "completed-with-failures" : statuses.includes("blocked") || event.type !== "run.completed" ? "completed-with-blockers" : "completed";
+      state.finishedAt = event.at;
+      state.terminalReason = event.payload.reason;
+    }
+  }
+  return state;
 }
 function git(root, args, { allowFailure = false } = {}) {
   const result = spawnSync("git", ["--no-pager", "-C", root, ...args], {
@@ -615,28 +759,6 @@ function verifyBasis(projectRoot, plan) {
   verifyBase(projectRoot, plan);
   verifyDirection(projectRoot, plan);
 }
-function initialLedger(plan) {
-  return {
-    schemaVersion: 1,
-    runId: plan.runId,
-    status: "prepared",
-    startedAt: null,
-    finishedAt: null,
-    terminalReason: null,
-    observedAiCredits: null,
-    slices: Object.fromEntries(plan.slices.map((slice) => [slice.id, {
-      status: "pending",
-      baseHead: null,
-      headSha: null,
-      branch: slice.branch,
-      worktree: null,
-      result: null,
-      reason: null,
-      startedAt: null,
-      finishedAt: null
-    }]))
-  };
-}
 function prepareRun({ root, plan: rawPlan }) {
   const plan = validatePlan(rawPlan);
   workspace(root, plan, { verifyCurrentBase: true });
@@ -650,56 +772,34 @@ function prepareRun({ root, plan: rawPlan }) {
     if (canonical(existing) !== canonical(plan)) {
       fail(`Nightshift run ${plan.runId} already has a different immutable plan`);
     }
-    if (!existsSync(paths.ledger)) fail("retained Nightshift plan has no ledger");
-    return { plan, ledger: readJson(paths.ledger, "Nightshift ledger"), paths, created: false };
+    const events2 = readEvents(paths.events, plan.runId);
+    if (events2.length === 0) fail("retained Nightshift plan has no event history");
+    return { plan, events: events2, state: foldEvents(plan, events2), paths, created: false };
   }
   atomicWrite(paths.plan, canonical(plan));
-  const ledger = initialLedger(plan);
-  writeLedger(paths.ledger, ledger);
-  return { plan, ledger, paths, created: true };
+  appendRunEvent({
+    path: paths.events,
+    runId: plan.runId,
+    type: "run.prepared",
+    payload: { summary: "Nightshift admission approved" },
+    at: plan.approvedAt
+  });
+  const events = readEvents(paths.events, plan.runId);
+  return { plan, events, state: foldEvents(plan, events), paths, created: true };
 }
 function loadRun(root, runId) {
   const paths = runPaths(root, runId);
-  if (!existsSync(paths.plan) || !existsSync(paths.ledger)) {
+  if (!existsSync(paths.plan) || !existsSync(paths.events)) {
     fail(`Nightshift run ${runId} is not prepared`);
   }
   const plan = validatePlan(readJson(paths.plan, "Nightshift plan"));
   if (plan.runId !== runId) fail("Nightshift plan run ID does not match its path");
-  const ledger = readJson(paths.ledger, "Nightshift ledger");
-  if (ledger.schemaVersion !== 1 || ledger.runId !== runId || !ledger.slices) {
-    fail("Nightshift ledger is malformed");
+  const events = readEvents(paths.events, runId);
+  if (events.length === 0 || events[0].type !== "run.prepared") {
+    fail("Nightshift event history is missing run.prepared");
   }
   const resolved = workspace(root, plan);
-  return { plan, ledger, paths, ...resolved };
-}
-function classifySlices(plan, ledger) {
-  const ready = [];
-  const skipped = [];
-  for (const slice of plan.slices) {
-    const state = ledger.slices[slice.id];
-    if (!state || state.status !== "pending") continue;
-    let waiting = false;
-    let reason = null;
-    for (const dependency of slice.dependsOn) {
-      const dependencyState = ledger.slices[dependency]?.status;
-      if ((/* @__PURE__ */ new Set(["blocked", "failed", "skipped"])).has(dependencyState)) {
-        reason = `dependency ${dependency} is ${dependencyState}`;
-        break;
-      }
-      if (dependencyState !== "delivered") waiting = true;
-    }
-    if (reason) {
-      skipped.push({ id: slice.id, reason });
-    } else if (!waiting && slice.dependsOn.length > 0 && !plan.stacking) {
-      skipped.push({
-        id: slice.id,
-        reason: "dependency delivered but stacked pull requests are not approved"
-      });
-    } else if (!waiting) {
-      ready.push(slice);
-    }
-  }
-  return { ready, skipped };
+  return { plan, events, state: foldEvents(plan, events), paths, ...resolved };
 }
 function safePluginArguments(env = process.env) {
   const dirs = (env.KAI_COPILOT_PLUGIN_DIRS ?? "").split(delimiter).filter(Boolean);
@@ -776,6 +876,53 @@ function stageResultContract() {
     blocker: resultContract().blocker,
     nextAction: "<safe handoff or resume action>"
   };
+}
+function leadDecisionContract() {
+  return {
+    status: "slice | complete | blocked",
+    summary: "<why this is the next decision>",
+    slice: {
+      id: "<safe slice ID>",
+      task: { id: "<engineering Task ID>", version: 1 },
+      outcome: "<one required PR outcome>",
+      acceptance: ["<accepted criterion>"],
+      touches: ["<repository-relative area>"],
+      completionCheck: "<observable check>",
+      route: "frontend | backend",
+      reviewRequired: false,
+      branch: "<kai branch>",
+      baseHead: "<approved base or delivered head>",
+      pullRequestBase: "<matching base branch>"
+    },
+    blocker: resultContract().blocker,
+    nextAction: "<launch, morning decision, or report action>"
+  };
+}
+function leadHistory(events) {
+  return terminalSliceEvents(events).map((entry2) => ({
+    sliceId: entry2.payload.slice.id,
+    task: entry2.payload.slice.task,
+    status: entry2.type.slice("slice.".length),
+    branch: entry2.payload.slice.branch,
+    headSha: entry2.payload.result.headSha,
+    prUrl: entry2.payload.result.prUrl,
+    summary: entry2.payload.result.summary,
+    suggestions: entry2.payload.result.suggestions
+  }));
+}
+function leadPrompt(plan, events) {
+  return [
+    `Own the next incremental decision for Nightshift run ${plan.runId}.`,
+    `Approved admission: ${JSON.stringify(plan)}`,
+    `Accumulated terminal checkpoints: ${JSON.stringify(leadHistory(events))}`,
+    "Read current Core Direction, Feature/Requirement acceptance, Tasks, dependencies, questions, grants, and prior PR evidence.",
+    "Choose exactly one next frontend or backend PR-sized slice, return a blocker, or declare the approved outcome complete.",
+    "Do not pre-plan the rest of the night. Do not implement product code. Do not turn suggestions into scope.",
+    "A non-base baseHead is allowed only for a delivered prior slice and only when stacking was approved.",
+    "Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.",
+    JSON.stringify(leadDecisionContract(), null, 2),
+    "For slice, blocker must be null. For complete, slice and blocker must be null. For blocked, slice must be null and blocker populated."
+  ].join("\n\n");
 }
 function sharedPrompt(plan, slice, { baseHead, pullRequestBase }) {
   return [
@@ -902,18 +1049,6 @@ function failureResult(kind, summary, context, nextAction) {
     nextAction
   };
 }
-function baseForSlice(plan, ledger, slice) {
-  if (slice.dependsOn.length === 0) {
-    return { head: plan.base.sha, pullRequestBase: plan.base.branch };
-  }
-  const dependency = slice.dependsOn.at(-1);
-  const state = ledger.slices[dependency];
-  if (state?.status !== "delivered" || !state.headSha) {
-    fail(`slice ${slice.id} dependency ${dependency} is not delivered`);
-  }
-  const dependencySlice = plan.slices.find((candidate) => candidate.id === dependency);
-  return { head: state.headSha, pullRequestBase: dependencySlice.branch };
-}
 function runProfile({
   root,
   plan,
@@ -926,6 +1061,7 @@ function runProfile({
   aiCredits,
   env = process.env
 }) {
+  const sliceId = slice?.id ?? stage;
   const args = buildCopilotArgs({
     plan,
     slice,
@@ -944,7 +1080,7 @@ function runProfile({
       ...childEnv,
       KAI_WORKSPACE_ROOT: root,
       KAI_NIGHTSHIFT_RUN_ID: plan.runId,
-      KAI_NIGHTSHIFT_SLICE_ID: slice.id,
+      KAI_NIGHTSHIFT_SLICE_ID: sliceId,
       KAI_NIGHTSHIFT_STAGE: stage
     },
     encoding: "utf8",
@@ -952,8 +1088,8 @@ function runProfile({
     timeout,
     maxBuffer: MAX_CAPTURE_BYTES
   });
-  const stdoutPath = join(paths.evidence, `${slice.id}-${stage}-stdout.log`);
-  const stderrPath = join(paths.evidence, `${slice.id}-${stage}-stderr.log`);
+  const stdoutPath = join(paths.evidence, `${sliceId}-${stage}-stdout.log`);
+  const stderrPath = join(paths.evidence, `${sliceId}-${stage}-stderr.log`);
   const stdout = redactSecrets(child.stdout, plan.permissions.secretRefs, env);
   const stderr = redactSecrets(child.stderr, plan.permissions.secretRefs, env);
   writeCapture(stdoutPath, stdout);
@@ -969,7 +1105,7 @@ function runProfile({
         reason,
         [
           `Observation: ${reason}.`,
-          `Attempts: one bounded ${profile} session was launched for ${slice.id}.`,
+          `Attempts: one bounded ${profile} session was launched for ${sliceId}.`,
           "Boundary: no successful exact JSON result was observed.",
           "Recommendation: inspect the private session logs and host capability.",
           `Resume point: preserved worktree ${worktree}.`
@@ -998,6 +1134,73 @@ function invalidStageResult(error, { stage, stdoutPath, worktree, actualHead }) 
     ].join("\n"),
     "Resolve the invalid session result before resuming."
   );
+}
+function leadFailure(result) {
+  return {
+    status: "blocked",
+    summary: result.summary,
+    slice: null,
+    blocker: result.blocker,
+    nextAction: result.nextAction
+  };
+}
+function runLeadDecision({
+  root,
+  projectRoot,
+  plan,
+  events,
+  paths,
+  aiCredits,
+  env = process.env
+}) {
+  const decisionNumber = events.filter((entry2) => entry2.type === "lead.decided").length + 1;
+  const controlId = `lead-${decisionNumber}`;
+  const worktree = worktreePath(projectRoot, plan.runId, controlId);
+  if (existsSync(worktree)) fail(`lead decision worktree already exists: ${worktree}`);
+  mkdirSync(dirname(worktree), { recursive: true });
+  git(projectRoot, ["worktree", "add", "--detach", worktree, plan.base.sha]);
+  const stage = `lead-decision-${decisionNumber}`;
+  const observed = runProfile({
+    root,
+    plan,
+    slice: null,
+    paths,
+    worktree,
+    profile: DELIVERY_PROFILE,
+    stage,
+    prompt: leadPrompt(plan, events),
+    aiCredits,
+    env
+  });
+  const clean = gitText(worktree, ["status", "--porcelain"]) === "";
+  if (!observed.ok) return leadFailure(observed.result);
+  if (!clean) {
+    return leadFailure(failureResult(
+      "capability",
+      "software lead mutated the planning worktree",
+      [
+        "Observation: the lead decision session changed repository files.",
+        "Attempts: one bounded lead decision was requested.",
+        "Boundary: planning may not mutate the product.",
+        "Recommendation: inspect the preserved lead worktree.",
+        `Resume point: ${worktree}.`
+      ].join("\n"),
+      "Resolve the lead planning mutation before resuming."
+    ));
+  }
+  let decision;
+  try {
+    decision = validateLeadDecision(observed.raw, { plan, events });
+  } catch (error) {
+    return leadFailure(invalidStageResult(error, {
+      stage: "lead decision",
+      stdoutPath: observed.stdoutPath,
+      worktree,
+      actualHead: plan.base.sha
+    }));
+  }
+  git(projectRoot, ["worktree", "remove", worktree]);
+  return decision;
 }
 function runSession({
   root,
@@ -1157,56 +1360,30 @@ function runSession({
 function removeDeliveredWorktree(projectRoot, path) {
   git(projectRoot, ["worktree", "remove", path]);
 }
-function terminalStatus(ledger) {
-  const states = Object.values(ledger.slices).map((slice) => slice.status);
-  if (states.includes("failed")) return "completed-with-failures";
-  if (states.includes("blocked") || states.includes("skipped")) return "completed-with-blockers";
-  return "completed";
-}
-function markSkipped(ledger, skipped, now) {
-  for (const item of skipped) {
-    const state = ledger.slices[item.id];
-    if (state.status !== "pending") continue;
-    state.status = "skipped";
-    state.reason = item.reason;
-    state.finishedAt = now;
-  }
-}
-function skipPending(ledger, reason, now) {
-  for (const state of Object.values(ledger.slices)) {
-    if (state.status !== "pending") continue;
-    state.status = "skipped";
-    state.reason = reason;
-    state.finishedAt = now;
-  }
-}
-function retainedCount(ledger) {
-  return Object.values(ledger.slices).filter((slice) => slice.worktree?.retained === true).length;
-}
-function renderMorningReport(plan, ledger) {
+function renderMorningReport(plan, events) {
+  const state = foldEvents(plan, events);
   const safe = (value) => String(value ?? "unavailable").replace(/\r?\n/g, "<br>").replace(/\|/g, "\\|");
-  const rows = plan.slices.map((slice) => ({
-    slice,
-    state: ledger.slices[slice.id]
+  const rows = state.slices.map((sliceState) => ({
+    slice: sliceState.slice,
+    state: sliceState
   }));
-  const deliveredRows = rows.filter(({ state }) => state?.status === "delivered").map(({ slice, state }) => {
-    const evidence = state.result.evidence.length ? state.result.evidence.join("; ") : "No reviewer-facing evidence reported";
-    const deferred = state.result.suggestions.length ? state.result.suggestions.map((item) => item.summary).join("; ") : "None reported";
-    return `| ${safe(state.result.prUrl)} | ${safe(slice.outcome)} | ${safe(evidence)} | ${safe(deferred)} |`;
+  const deliveredRows = rows.filter(({ state: state2 }) => state2?.status === "delivered").map(({ slice, state: state2 }) => {
+    const evidence = state2.result.evidence.length ? state2.result.evidence.join("; ") : "No reviewer-facing evidence reported";
+    const deferred = state2.result.suggestions.length ? state2.result.suggestions.map((item) => item.summary).join("; ") : "None reported";
+    return `| ${safe(state2.result.prUrl)} | ${safe(slice.outcome)} | ${safe(evidence)} | ${safe(deferred)} |`;
   });
-  const blockedRows = rows.filter(({ state }) => state && (/* @__PURE__ */ new Set(["blocked", "failed"])).has(state.status)).map(({ slice, state }) => {
-    const blocker = state.result?.blocker;
+  const blockedRows = rows.filter(({ state: state2 }) => state2 && (/* @__PURE__ */ new Set(["blocked", "failed"])).has(state2.status)).map(({ slice, state: state2 }) => {
+    const blocker = state2.result?.blocker;
     const field = (prefix) => blocker?.context?.split(/\r?\n/).find((line) => line.startsWith(`${prefix}:`))?.slice(prefix.length + 1).trim() ?? "unavailable";
     const recommendation = [
       field("Recommendation"),
       blocker?.ask ? `Decision: ${blocker.ask}` : null
     ].filter(Boolean).join(" ");
-    return `| ${safe(slice.task.id)} | ${safe(state.result?.summary ?? state.reason)} | ${safe(field("Boundary"))} | ${safe(blocker?.owner)} | ${safe(recommendation)} | ${safe(field("Resume point"))} |`;
+    return `| ${safe(slice.task.id)} | ${safe(state2.result?.summary ?? state2.reason)} | ${safe(field("Boundary"))} | ${safe(blocker?.owner)} | ${safe(recommendation)} | ${safe(field("Resume point"))} |`;
   });
-  const skippedRows = rows.filter(({ state }) => state?.status === "skipped").map(({ slice, state }) => `| ${safe(slice.id)} | ${safe(state.reason)} | ${safe(slice.dependsOn.join(", ") || "run limit")} | Re-evaluate during morning reconciliation |`);
-  const suggestions = rows.flatMap(({ slice, state }) => (state?.result?.suggestions ?? []).map((item) => ({ slice, item })));
+  const suggestions = rows.flatMap(({ slice, state: state2 }) => (state2?.result?.suggestions ?? []).map((item) => ({ slice, item })));
   const suggestionRows = suggestions.map(({ item }) => `| ${safe(item.summary)} | ${safe(item.basis)} | ${safe(item.whyDeferred)} | ${safe(item.benefit)} | ${safe(item.costRisk)} | ${safe(item.priority)} |`);
-  const retained = rows.filter(({ state }) => state?.worktree?.retained).map(({ state }) => state.worktree.path);
+  const retained = rows.filter(({ state: state2 }) => state2?.worktree?.retained).map(({ state: state2 }) => state2.worktree.path);
   return `# Nightshift ${plan.runId}
 
 ## Goal and approved scope
@@ -1216,7 +1393,7 @@ ${plan.direction.goal}
 - Subject: ${plan.subject.id} version ${plan.subject.version}
 - Base: ${plan.base.remote}/${plan.base.branch} at ${plan.base.sha}
 - Deadline: ${plan.deadline}
-- Planned slices: ${plan.slices.length}
+- Attempted slices: ${rows.length}
 
 ## Delivered pull requests
 
@@ -1234,7 +1411,7 @@ ${blockedRows.length ? blockedRows.join("\n") : "| None | - | - | - | - | - |"}
 
 | Slice | Reason | Dependency or limit | Next action |
 | --- | --- | --- | --- |
-${skippedRows.length ? skippedRows.join("\n") : "| None | - | - | - |"}
+| None | - | - | - |
 
 ## Suggestions for the morning
 
@@ -1244,84 +1421,139 @@ ${suggestionRows.length ? suggestionRows.join("\n") : "| None | - | - | - | - | 
 
 ## Run limits
 
-- Status: ${safe(ledger.status)}
-- Started: ${safe(ledger.startedAt)}
-- Finished: ${safe(ledger.finishedAt)}
-- Terminal reason: ${safe(ledger.terminalReason)}
-- Pull requests: ${rows.filter(({ state }) => state?.status === "delivered").length}/${plan.limits.maxPullRequests}
-- AI credits: ${ledger.observedAiCredits === null ? "unavailable" : safe(ledger.observedAiCredits)} (approved soft ceiling ${plan.limits.maxAiCredits})
+- Status: ${safe(state.status)}
+- Started: ${safe(state.startedAt)}
+- Finished: ${safe(state.finishedAt)}
+- Terminal reason: ${safe(state.terminalReason)}
+- Pull requests: ${rows.filter(({ state: state2 }) => state2?.status === "delivered").length}/${plan.limits.maxPullRequests}
+- AI credits: unavailable (approved soft ceiling ${plan.limits.maxAiCredits})
 - Retained worktrees: ${retained.length ? retained.map(safe).join(", ") : "none"}
 `;
 }
-function writeReport(paths, plan, ledger) {
-  const report = renderMorningReport(plan, ledger);
+function writeReport(paths, plan, events) {
+  const report = renderMorningReport(plan, events);
   atomicWrite(paths.report, report);
   return report;
 }
 function reportRun({ root, runId }) {
-  const { plan, ledger, paths } = loadRun(root, runId);
-  return { report: writeReport(paths, plan, ledger), plan, ledger, paths };
+  const { plan, events, state, paths } = loadRun(root, runId);
+  return { report: writeReport(paths, plan, events), plan, events, state, paths };
 }
 function executeRun({
   root,
   runId,
   env = process.env,
   now = () => /* @__PURE__ */ new Date(),
+  decideNext = runLeadDecision,
   runSlice = runSession,
   removeWorktree = removeDeliveredWorktree,
   verifyRunBasis = verifyBasis
 }) {
   const loaded = loadRun(root, runId);
   const { plan, paths, projectRoot } = loaded;
-  const ledger = loaded.ledger;
-  if ((/* @__PURE__ */ new Set(["completed", "completed-with-blockers", "completed-with-failures"])).has(ledger.status)) {
-    writeReport(paths, plan, ledger);
-    return { plan, ledger, paths };
+  let events = loaded.events;
+  let state = foldEvents(plan, events);
+  if ((/* @__PURE__ */ new Set(["completed", "completed-with-blockers", "completed-with-failures"])).has(state.status)) {
+    writeReport(paths, plan, events);
+    return { plan, events, state, paths };
   }
-  if (ledger.status === "prepared") {
-    ledger.status = "running";
-    ledger.startedAt = now().toISOString();
-    writeLedger(paths.ledger, ledger);
-  } else if (ledger.status !== "running") {
-    fail(`Nightshift run cannot execute from ledger status ${ledger.status}`);
-  }
-  const sliceCredits = plan.limits.maxAiCredits / Math.min(
-    plan.slices.length,
-    plan.limits.maxPullRequests
-  );
+  const creditUnit = plan.limits.maxAiCredits / (plan.limits.maxPullRequests * 4 + 1);
   while (true) {
     verifyRunBasis(projectRoot, plan);
-    const classified = classifySlices(plan, ledger);
-    markSkipped(ledger, classified.skipped, now().toISOString());
-    writeLedger(paths.ledger, ledger);
-    const launchedCount = Object.values(ledger.slices).filter((slice2) => (/* @__PURE__ */ new Set(["delivered", "blocked", "failed"])).has(slice2.status)).length;
+    events = readEvents(paths.events, runId);
+    state = foldEvents(plan, events);
+    const launchedCount = state.slices.filter((slice2) => (/* @__PURE__ */ new Set(["delivered", "blocked", "failed"])).has(slice2.status)).length;
     if (launchedCount >= plan.limits.maxPullRequests) {
-      ledger.terminalReason = "pull-request/launch limit reached";
-      skipPending(ledger, ledger.terminalReason, now().toISOString());
+      appendRunEvent({
+        path: paths.events,
+        runId,
+        type: "run.stopped",
+        payload: { reason: "pull-request/launch limit reached" },
+        at: now().toISOString()
+      });
       break;
     }
-    if (Date.now() >= Date.parse(plan.deadline)) {
-      ledger.terminalReason = "deadline reached";
-      skipPending(ledger, ledger.terminalReason, now().toISOString());
+    if (now().getTime() >= Date.parse(plan.deadline)) {
+      appendRunEvent({
+        path: paths.events,
+        runId,
+        type: "run.stopped",
+        payload: { reason: "deadline reached" },
+        at: now().toISOString()
+      });
       break;
     }
-    if (retainedCount(ledger) > 0 && retainedCount(ledger) >= plan.limits.maxRetainedWorktrees) {
-      ledger.terminalReason = "retained-worktree limit reached";
-      skipPending(ledger, ledger.terminalReason, now().toISOString());
+    const retained = state.slices.filter((slice2) => slice2.worktree?.retained).length;
+    if (retained > 0 && retained >= plan.limits.maxRetainedWorktrees) {
+      appendRunEvent({
+        path: paths.events,
+        runId,
+        type: "run.stopped",
+        payload: { reason: "retained-worktree limit reached" },
+        at: now().toISOString()
+      });
       break;
     }
-    const refreshed = classifySlices(plan, ledger);
-    if (refreshed.ready.length === 0) {
-      ledger.terminalReason = "no safe ready slices remain";
+    let decision;
+    try {
+      decision = validateLeadDecision(decideNext({
+        root: resolve(root),
+        projectRoot,
+        plan,
+        events,
+        paths,
+        aiCredits: creditUnit,
+        env
+      }), { plan, events });
+    } catch (error) {
+      decision = leadFailure(failureResult(
+        "capability",
+        error.message,
+        [
+          `Observation: ${error.message}.`,
+          "Attempts: Nightshift requested one software-lead decision.",
+          "Boundary: the runner cannot invent the next product action.",
+          "Recommendation: inspect the lead decision evidence.",
+          "Resume point: no new slice was launched."
+        ].join("\n"),
+        "Resolve the lead decision failure before resuming."
+      ));
+    }
+    appendRunEvent({
+      path: paths.events,
+      runId,
+      type: "lead.decided",
+      payload: { decision },
+      at: now().toISOString()
+    });
+    if (decision.status === "complete") {
+      appendRunEvent({
+        path: paths.events,
+        runId,
+        type: "run.completed",
+        payload: { reason: decision.summary },
+        at: now().toISOString()
+      });
       break;
     }
-    const slice = refreshed.ready[0];
-    const state = ledger.slices[slice.id];
-    const base = baseForSlice(plan, ledger, slice);
-    state.status = "running";
-    state.baseHead = base.head;
-    state.startedAt = now().toISOString();
-    writeLedger(paths.ledger, ledger);
+    if (decision.status === "blocked") {
+      appendRunEvent({
+        path: paths.events,
+        runId,
+        type: "run.blocked",
+        payload: { reason: decision.summary, blocker: decision.blocker },
+        at: now().toISOString()
+      });
+      break;
+    }
+    const slice = decision.slice;
+    appendRunEvent({
+      path: paths.events,
+      runId,
+      type: "slice.started",
+      payload: { slice, worktree: null },
+      at: now().toISOString()
+    });
     let observed;
     try {
       observed = runSlice({
@@ -1330,52 +1562,51 @@ function executeRun({
         plan,
         slice,
         paths,
-        baseHead: base.head,
-        pullRequestBase: base.pullRequestBase,
-        aiCredits: sliceCredits,
+        baseHead: slice.baseHead,
+        pullRequestBase: slice.pullRequestBase,
+        aiCredits: creditUnit * 3,
         env
       });
     } catch (error) {
-      state.status = "failed";
-      state.finishedAt = now().toISOString();
-      state.reason = error.message;
       const candidate = worktreePath(projectRoot, plan.runId, slice.id);
-      if (existsSync(candidate)) state.worktree = { path: candidate, retained: true };
-      state.result = failureResult(
-        "capability",
-        error.message,
-        [
-          `Observation: ${error.message}.`,
-          "Attempts: Nightshift attempted to prepare or launch the slice once.",
-          "Boundary: the runner cannot prove a safe executable environment.",
-          "Recommendation: resolve the host or Git failure before resuming.",
-          "Resume point: no successful workflow result was observed."
-        ].join("\n"),
-        "Resolve the runner failure before resuming."
-      );
-      writeLedger(paths.ledger, ledger);
-      continue;
+      observed = {
+        worktree: candidate,
+        actualHead: null,
+        clean: false,
+        result: failureResult(
+          "capability",
+          error.message,
+          [
+            `Observation: ${error.message}.`,
+            "Attempts: Nightshift attempted to prepare or launch the slice once.",
+            "Boundary: the runner cannot prove a safe executable environment.",
+            "Recommendation: resolve the host or Git failure before resuming.",
+            "Resume point: no successful workflow result was observed."
+          ].join("\n"),
+          "Resolve the runner failure before resuming."
+        )
+      };
     }
-    state.headSha = observed.actualHead;
-    state.result = observed.result;
-    state.status = observed.result.status;
-    state.finishedAt = now().toISOString();
-    state.worktree = {
+    const worktree = {
       path: observed.worktree,
       retained: observed.result.status !== "delivered"
     };
     if (observed.result.status === "delivered") {
       removeWorktree(projectRoot, observed.worktree);
-      state.worktree.retained = false;
+      worktree.retained = false;
     }
-    writeLedger(paths.ledger, ledger);
+    appendRunEvent({
+      path: paths.events,
+      runId,
+      type: `slice.${observed.result.status}`,
+      payload: { slice, result: observed.result, worktree },
+      at: now().toISOString()
+    });
   }
-  ledger.status = terminalStatus(ledger);
-  ledger.finishedAt = now().toISOString();
-  ledger.terminalReason ??= "all approved slices reached terminal state";
-  writeLedger(paths.ledger, ledger);
-  writeReport(paths, plan, ledger);
-  return { plan, ledger, paths };
+  events = readEvents(paths.events, runId);
+  state = foldEvents(plan, events);
+  writeReport(paths, plan, events);
+  return { plan, events, state, paths };
 }
 function arg(argv, name) {
   const index = argv.indexOf(name);
@@ -1405,7 +1636,7 @@ async function main(argv = process.argv.slice(2)) {
     console.log(JSON.stringify({
       runId: result.plan.runId,
       created: result.created,
-      status: result.ledger.status,
+      status: result.state.status,
       runRoot: result.paths.runRoot
     }, null, 2));
     return 0;
@@ -1416,11 +1647,11 @@ async function main(argv = process.argv.slice(2)) {
     const result = executeRun({ root, runId });
     console.log(JSON.stringify({
       runId,
-      status: result.ledger.status,
-      terminalReason: result.ledger.terminalReason,
+      status: result.state.status,
+      terminalReason: result.state.terminalReason,
       report: result.paths.report
     }, null, 2));
-    return result.ledger.status === "completed-with-failures" ? 1 : 0;
+    return result.state.status === "completed-with-failures" ? 1 : 0;
   }
   if (command === "report") {
     const result = reportRun({ root, runId });
@@ -1428,8 +1659,8 @@ async function main(argv = process.argv.slice(2)) {
     return 0;
   }
   if (command === "status") {
-    const { ledger } = loadRun(root, runId);
-    console.log(JSON.stringify(ledger, null, 2));
+    const { state } = loadRun(root, runId);
+    console.log(JSON.stringify(state, null, 2));
     return 0;
   }
   fail(usage());
@@ -1447,9 +1678,10 @@ if (entry === fileURLToPath(import.meta.url)) {
   );
 }
 export {
+  appendRunEvent,
   buildCopilotArgs,
-  classifySlices,
   executeRun,
+  foldEvents,
   main,
   prepareRun,
   profilesForSlice,
@@ -1457,6 +1689,7 @@ export {
   renderMorningReport,
   reportRun,
   runPaths,
+  validateLeadDecision,
   validatePlan,
   validateSliceResult
 };

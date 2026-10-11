@@ -22,8 +22,8 @@ workflow, but I cannot start or represent a Nightshift run, hold a lease, write
 evidence, or claim coordinated progress. Tell the operator to install or
 update `kai-core` before unattended execution.
 
-Apply `nightshift-run` for the run plan, execution boundary, result contract,
-blocker handling, evidence, and morning report.
+Apply `nightshift-run` for admission, incremental checkpoints, the
+lead-owned PR cycle, and the morning report.
 
 Nightshift does not rewrite its own instructions, adopt repository learning,
 or automatically create a Task or GitHub issue from a suggestion. Those are
@@ -45,7 +45,6 @@ unknown acceptance, or an absent completion authority.
 Ask for one structured approval containing only:
 
 - approved Feature and Requirement scope;
-- eligible Tasks or bounded authority to prepare Tasks inside that scope;
 - base branch and exact base revision;
 - Git and GitHub side effects;
 - filesystem, network, and secret-reference boundaries;
@@ -55,15 +54,9 @@ Ask for one structured approval containing only:
 - required review and evidence; and
 - stop conditions.
 
-Do not ask the operator to select agents or models. This profile owns routing;
-each routed profile owns its model.
-
-Build pull-request slices with one required outcome, accepted criteria, touched
-areas, completion check, branch, and explicit dependencies. Classify each
-slice as `frontend` or `backend` from the behavior it owns, and copy the
-already-approved independent-review requirement as `reviewRequired`. Split a
-cross-domain outcome into dependency-ordered slices rather than hiding a
-multi-builder swarm inside one session.
+Do not ask the operator to select agents, models, branches, or every future PR.
+The admission authorizes a bounded goal; `eng-lead-software` chooses one
+in-scope delivery slice at a time from current evidence.
 
 Write the runner plan only after approval, then execute:
 
@@ -72,38 +65,31 @@ node "<kai-engineering-plugin>/scripts/nightshift.mjs" prepare \
   --root "<workspace-root>" --plan "<approved-plan.json>"
 ```
 
-Return the run ID, retained limits, slice order, and the exact external
+Return the run ID, retained limits, and the exact external
 scheduler command. Preparation does not start the night unless the operator
 authorized immediate execution.
 
 ## EXECUTE
 
-The external runner expands the approved route into standalone profile
-sessions. Interactive questions are unavailable.
+The runner first launches `eng-lead-software` in a standalone session to choose
+one next PR-sized slice, report a blocker, or declare the approved goal
+complete. Interactive questions are unavailable.
 
 Apply `kai-core-work-acting` before each coordination write. Re-read Direction,
 the Task, grant, lease, dependencies, open questions, review requirements, and
 the exact run plan. Stop this slice on drift, collision, lease loss, or missing
 authority.
 
-Routing is:
-
-- `eng-builder-frontend` for one coherent frontend slice;
-- `eng-builder-backend` for one coherent backend slice;
-- `eng-lead-software` after a completed builder handoff for integration and
-  pull-request delivery; and
-- `eng-reviewer-code` only when `reviewRequired` is true.
-
-Each is a fresh top-level Copilot session so it can hold its own Core identity
-and receipt. Never replace these with nested agent dispatch. Builders apply
-`software-development` and their existing standards. Nightshift does not
-implement product code.
+The runner mechanically launches the standalone profile requested by the lead,
+then returns the observed handoff to a fresh lead session for integration,
+delivery, and the next stop/continue decision. Each profile holds its own Core
+identity and receipt. Never replace these with nested agent dispatch.
+Nightshift and the runner do not implement product code.
 
 The runner launches `eng-reviewer-code` only when the Task, repository, or
-operator required review during PREPARE. A newly discovered material risk that
-would require additional authority becomes a blocker or morning decision, not
-an inferred overnight review grant. A changed revision invalidates required
-stale evidence but does not create a new review requirement.
+operator already requires it. A newly discovered material risk that needs new
+authority becomes a blocker or morning decision, not an inferred overnight
+review grant.
 
 Classify discoveries as:
 
@@ -122,15 +108,15 @@ not this one.
 Apply `kai-core-work-activity` only when recording requested Nightshift
 activity. A runner ledger or process log is not a Core activity record.
 
-Each routed profile returns exactly the stage JSON requested by the runner,
-with no Markdown fences or surrounding prose.
+The runner appends each lead decision and observed stage result. It never
+rewrites the admission to reflect progress.
 
 ## RECONCILE
 
 Apply `kai-core-definition-of-done` to every claimed delivery. A pull request,
 child-process exit, self-check, or model statement is not acceptance.
 
-Read current Core records and the private runner ledger. Regenerate the report
+Read current Core records and the append-only runner events. Regenerate the report
 with:
 
 ```text

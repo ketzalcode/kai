@@ -74,54 +74,64 @@ function plan(overrides = {}) {
       secretRefs: [],
     },
     stacking: false,
-    slices: [
-      {
-        id: 'api-contract',
-        task: {
-          id: 'engineering:task:api-contract',
-          version: 2,
-        },
-        outcome: 'Return the accepted API error contract.',
-        acceptance: ['Invalid input returns the repository-standard error.'],
-        touches: ['src/api', 'test/api'],
-        completionCheck: 'The focused API contract test passes.',
-        route: 'backend',
-        reviewRequired: false,
-        branch: 'kai/fix/api-contract',
-        dependsOn: [],
-      },
-      {
-        id: 'ui-error',
-        task: {
-          id: 'engineering:task:ui-error',
-          version: 1,
-        },
-        outcome: 'Render the accepted API error state.',
-        acceptance: ['The client renders the localized error state.'],
-        touches: ['src/ui', 'test/ui'],
-        completionCheck: 'The named UI error scenario is observed.',
-        route: 'frontend',
-        reviewRequired: false,
-        branch: 'kai/feat/ui-error',
-        dependsOn: ['api-contract'],
-      },
-      {
-        id: 'docs-note',
-        task: {
-          id: 'engineering:task:docs-note',
-          version: 1,
-        },
-        outcome: 'Document the supported error behavior.',
-        acceptance: ['The developer reference names the supported behavior.'],
-        touches: ['docs/api'],
-        completionCheck: 'The reference contains the accepted contract.',
-        route: 'backend',
-        reviewRequired: false,
-        branch: 'kai/docs/error-contract',
-        dependsOn: [],
-      },
+    evidenceExpectations: [
+      'Map each accepted criterion to an exact revision and observable result.',
     ],
     ...overrides,
+  };
+}
+
+function slice(overrides = {}) {
+  return {
+    id: 'api-contract',
+    task: {
+      id: 'engineering:task:api-contract',
+      version: 2,
+    },
+    outcome: 'Return the accepted API error contract.',
+    acceptance: ['Invalid input returns the repository-standard error.'],
+    touches: ['src/api', 'test/api'],
+    completionCheck: 'The focused API contract test passes.',
+    route: 'backend',
+    reviewRequired: false,
+    branch: 'kai/fix/api-contract',
+    baseHead: '1'.repeat(40),
+    pullRequestBase: 'main',
+    ...overrides,
+  };
+}
+
+function leadSlice(overrides = {}) {
+  return {
+    status: 'slice',
+    summary: 'The API contract is the next required outcome.',
+    slice: slice(),
+    blocker: null,
+    nextAction: 'Launch the backend builder.',
+    ...overrides,
+  };
+}
+
+function leadComplete(overrides = {}) {
+  return {
+    status: 'complete',
+    summary: 'The approved outcome is satisfied.',
+    slice: null,
+    blocker: null,
+    nextAction: 'Render the morning report.',
+    ...overrides,
+  };
+}
+
+function event(sequence, type, payload) {
+  return {
+    schemaVersion: 1,
+    eventId: `00000000-0000-4000-8000-${String(sequence).padStart(12, '0')}`,
+    runId: 'night-2026-10-10',
+    sequence,
+    type,
+    at: `2026-10-10T2${sequence}:00:00.000Z`,
+    payload,
   };
 }
 
@@ -250,12 +260,7 @@ test('Nightshift is an explicit manual workflow over current engineering roles',
   assert.match(workflow, /PREPARE/);
   assert.match(workflow, /EXECUTE/);
   assert.match(workflow, /RECONCILE/);
-  for (const role of [
-    'eng-builder-frontend',
-    'eng-builder-backend',
-    'eng-lead-software',
-    'eng-reviewer-code',
-  ]) {
+  for (const role of ['eng-lead-software', 'eng-reviewer-code']) {
     assert.match(workflow, new RegExp(role));
   }
   assert.match(workflow, /Never merge, deploy, tag, release/);
@@ -279,21 +284,31 @@ test('eng-nightshift is a named capability with technical-judgment model policy'
   }).join('\n'), /belongs to kai-engineering/i);
 });
 
+test('software lead owns each incremental Nightshift PR decision', () => {
+  const lead = readAgent('eng-lead-software');
+  assert.match(lead, /^## Nightshift cycle$/m);
+  assert.match(lead, /choose exactly one next PR-sized slice/);
+  assert.match(lead, /Do not pre-plan the whole night/);
+  assert.match(lead, /decide[\s\S]*whether another in-scope slice is required/);
+  assert.match(lead, /runner persists and launches[\s\S]*never chooses the\s+next product action/);
+});
+
 test('Nightshift skill protects required-first delivery and structured blockers', () => {
   const skill = readSkill('nightshift-run');
+  assert.ok(skill.split('\n').length <= 140, 'nightshift-run must stay lean');
   assert.doesNotMatch(skill, /^user-invocable:\s*true$/m);
-  assert.match(skill, /Unused time or budget does not create\s+more scope/);
+  assert.match(skill, /Unused time or budget does not create\s+more\s+scope/);
   assert.match(skill, /Required/);
   assert.match(skill, /Blocked/);
   assert.match(skill, /Suggested/);
   assert.match(skill, /question\.open/);
   assert.match(skill, /task\.handoff/);
-  assert.match(skill, /attempt\.recover/);
-  assert.match(skill, /Observation:/);
-  assert.match(skill, /Recommendation:/);
-  assert.match(skill, /Resume point:/);
+  assert.match(skill, /eng-lead-software.*owns delivery judgment/);
+  assert.match(skill, /runner never decomposes the goal/);
+  assert.match(skill, /Append one event/);
   assert.match(skill, /references\/morning-report\.md/);
   assert.match(skill, /scripts\/nightshift\.mjs/);
+  assert.doesNotMatch(skill, /"status":\s*"delivered/);
 });
 
 test('Engineering publication declares the private Nightshift report route', () => {
@@ -311,36 +326,32 @@ test('Engineering publication declares the private Nightshift report route', () 
       && entry.formats.includes('json')));
 });
 
-test('run plans are bounded, dependency-safe, and contain no routing policy', async () => {
+test('run admission is bounded and contains no up-front slice or routing policy', async () => {
   const {validatePlan} = await runner();
   const valid = validatePlan(plan());
   assert.equal(valid.runId, 'night-2026-10-10');
   assert.equal(Object.hasOwn(valid, 'agent'), false);
   assert.equal(Object.hasOwn(valid, 'model'), false);
+  assert.equal(Object.hasOwn(valid, 'slices'), false);
 
   assert.throws(
     () => validatePlan(plan({agent: 'eng-builder-backend'})),
     /unexpected.*agent|agent.*unexpected/i,
   );
-  const cyclic = plan();
-  cyclic.slices[0].dependsOn = ['ui-error'];
-  assert.throws(() => validatePlan(cyclic), /cycle/i);
   assert.throws(
-    () => validatePlan(plan({stacking: false, slices: [
-      {...plan().slices[0], dependsOn: ['missing-slice']},
-    ]})),
-    /unknown.*depend/i,
+    () => validatePlan(plan({slices: [slice()]})),
+    /unexpected.*slices|slices.*unexpected/i,
   );
 });
 
 test('Copilot launch is bounded and leaves agent model ownership intact', async () => {
   const {buildCopilotArgs, profilesForSlice} = await runner();
-  assert.deepEqual(profilesForSlice(plan().slices[0]), [
+  assert.deepEqual(profilesForSlice(slice()), [
     'eng-builder-backend',
     'eng-lead-software',
   ]);
   assert.deepEqual(profilesForSlice({
-    ...plan().slices[1],
+    ...slice({route: 'frontend'}),
     reviewRequired: true,
   }), [
     'eng-builder-frontend',
@@ -349,7 +360,7 @@ test('Copilot launch is bounded and leaves agent model ownership intact', async 
   ]);
   const args = buildCopilotArgs({
     plan: plan(),
-    slice: plan().slices[0],
+    slice: slice(),
     profile: 'eng-builder-backend',
     prompt: 'Execute the approved slice.',
     aiCredits: 10,
@@ -384,7 +395,7 @@ test('approved secret references are redacted and undeclared routing stays absen
   });
   const args = buildCopilotArgs({
     plan: withSecret,
-    slice: withSecret.slices[0],
+    slice: slice(),
     profile: 'eng-builder-backend',
     prompt: 'Execute the approved slice.',
     aiCredits: 10,
@@ -433,42 +444,51 @@ test('delivered results must match immutable Git state', async () => {
   );
 });
 
-test('blocked dependencies skip only affected slices', async () => {
-  const {classifySlices} = await runner();
-  const ledger = {
-    slices: {
-      'api-contract': {status: 'blocked', result: blocked()},
-      'ui-error': {status: 'pending', result: null},
-      'docs-note': {status: 'pending', result: null},
-    },
-  };
-  const classification = classifySlices(plan(), ledger);
-  assert.deepEqual(classification.ready.map(slice => slice.id), ['docs-note']);
-  assert.deepEqual(classification.skipped, [{
-    id: 'ui-error',
-    reason: 'dependency api-contract is blocked',
-  }]);
+test('software lead decisions append one slice at a time', async () => {
+  const {validateLeadDecision} = await runner();
+  const decision = validateLeadDecision(leadSlice(), {
+    plan: plan(),
+    events: [],
+  });
+  assert.equal(decision.status, 'slice');
+  assert.equal(decision.slice.id, 'api-contract');
+  assert.throws(
+    () => validateLeadDecision(leadSlice({
+      slice: slice({baseHead: '9'.repeat(40)}),
+    }), {plan: plan(), events: []}),
+    /baseHead.*approved base|unknown delivered head/i,
+  );
+  assert.equal(validateLeadDecision(leadComplete(), {
+    plan: plan(),
+    events: [],
+  }).status, 'complete');
 });
 
 test('morning report separates deliveries, blockers, and suggestions', async () => {
   const {renderMorningReport} = await runner();
   const apiResult = delivered();
   const uiResult = blocked();
-  const ledger = {
-    schemaVersion: 1,
-    runId: 'night-2026-10-10',
-    status: 'completed-with-blockers',
-    startedAt: '2026-10-10T20:05:00.000Z',
-    finishedAt: '2026-10-10T22:00:00.000Z',
-    terminalReason: 'no safe ready slices remain',
-    observedAiCredits: null,
-    slices: {
-      'api-contract': {status: 'delivered', result: apiResult},
-      'ui-error': {status: 'blocked', result: uiResult},
-      'docs-note': {status: 'skipped', result: null, reason: 'run limit'},
-    },
-  };
-  const report = renderMorningReport(plan(), ledger);
+  const events = [
+    event(1, 'run.prepared', {summary: 'Approved'}),
+    event(2, 'slice.delivered', {
+      slice: slice(),
+      result: apiResult,
+      worktree: {path: 'removed', retained: false},
+    }),
+    event(3, 'slice.blocked', {
+      slice: slice({
+        id: 'ui-error',
+        task: {id: 'engineering:task:ui-error', version: 1},
+        outcome: 'Render the accepted API error state.',
+        branch: 'kai/feat/ui-error',
+        route: 'frontend',
+      }),
+      result: uiResult,
+      worktree: {path: 'C:\\worktrees\\ui-error', retained: true},
+    }),
+    event(4, 'run.completed', {reason: 'approved outcome satisfied'}),
+  ];
+  const report = renderMorningReport(plan(), events);
   assert.match(report, /^# Nightshift night-2026-10-10$/m);
   assert.match(report, /^## Delivered pull requests$/m);
   assert.match(report, /pull\/42/);
@@ -477,7 +497,7 @@ test('morning report separates deliveries, blockers, and suggestions', async () 
   assert.match(report, /Which error presentation should be authoritative/);
   assert.match(report, /^## Suggestions for the morning$/m);
   assert.match(report, /^## Run limits$/m);
-  assert.match(report, /no safe ready slices remain/);
+  assert.match(report, /approved outcome satisfied/);
 });
 
 test('run paths stay inside the typed private Nightshift route', async () => {
@@ -488,7 +508,7 @@ test('run paths stay inside the typed private Nightshift route', async () => {
     '.kai/engineering/reports/nightshift/night-2026-10-10',
   );
   assert.ok(paths.plan.endsWith(join('drafts', 'plan.json')));
-  assert.ok(paths.ledger.endsWith(join('drafts', 'ledger.json')));
+  assert.ok(paths.events.endsWith(join('evidence', 'events.jsonl')));
   assert.ok(paths.report.endsWith(join('drafts', 'report.md')));
 });
 
@@ -509,7 +529,8 @@ test('prepare is idempotent and report regeneration replaces the same draft', as
     });
     const first = prepareRun({root: fixture.workspace, plan: approved});
     assert.equal(first.created, true);
-    assert.equal(first.ledger.status, 'prepared');
+    assert.equal(first.events.length, 1);
+    assert.equal(first.events[0].type, 'run.prepared');
     assert.equal(JSON.parse(readFileSync(first.paths.plan, 'utf8')).runId, approved.runId);
     const second = prepareRun({root: fixture.workspace, plan: approved});
     assert.equal(second.created, false);
@@ -540,10 +561,30 @@ test('serial execution continues independent work after a blocker', async () => 
     prepareRun({root: fixture.workspace, plan: approved});
     const launched = [];
     const removed = [];
+    const decisions = [
+      leadSlice({
+        slice: slice({baseHead: fixture.head}),
+      }),
+      leadSlice({
+        summary: 'Documentation remains required and is independent.',
+        slice: slice({
+          id: 'docs-note',
+          task: {id: 'engineering:task:docs-note', version: 1},
+          outcome: 'Document the supported error behavior.',
+          acceptance: ['The developer reference names the supported behavior.'],
+          touches: ['docs/api'],
+          completionCheck: 'The reference contains the accepted contract.',
+          branch: 'kai/docs/error-contract',
+          baseHead: fixture.head,
+        }),
+      }),
+      leadComplete(),
+    ];
     const result = executeRun({
       root: fixture.workspace,
       runId: approved.runId,
       now: () => new Date('2026-10-10T22:00:00.000Z'),
+      decideNext: () => decisions.shift(),
       runSlice: ({slice, baseHead}) => {
         launched.push(slice.id);
         if (slice.id === 'api-contract') {
@@ -567,14 +608,13 @@ test('serial execution continues independent work after a blocker', async () => 
       removeWorktree: (_projectRoot, path) => removed.push(path),
     });
     assert.deepEqual(launched, ['api-contract', 'docs-note']);
-    assert.equal(result.ledger.slices['api-contract'].status, 'blocked');
-    assert.equal(result.ledger.slices['api-contract'].worktree.retained, true);
-    assert.equal(result.ledger.slices['ui-error'].status, 'skipped');
-    assert.match(result.ledger.slices['ui-error'].reason, /dependency api-contract is blocked/);
-    assert.equal(result.ledger.slices['docs-note'].status, 'delivered');
-    assert.equal(result.ledger.status, 'completed-with-blockers');
+    assert.equal(result.state.slices.find(item => item.slice.id === 'api-contract').status, 'blocked');
+    assert.equal(result.state.slices.find(item => item.slice.id === 'api-contract').worktree.retained, true);
+    assert.equal(result.state.slices.find(item => item.slice.id === 'docs-note').status, 'delivered');
+    assert.equal(result.state.status, 'completed-with-blockers');
     assert.equal(removed.length, 1);
     assert.match(readFileSync(result.paths.report, 'utf8'), /completed-with-blockers/);
+    assert.ok(result.events.every((entry, index) => entry.sequence === index + 1));
   } finally {
     rmSync(fixture.workspace, {recursive: true, force: true});
   }
