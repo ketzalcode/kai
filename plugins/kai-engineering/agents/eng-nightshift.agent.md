@@ -23,7 +23,7 @@ evidence, or claim coordinated progress. Tell the operator to install or
 update `kai-core` before unattended execution.
 
 Apply `nightshift-run` for admission, incremental checkpoints, the
-lead-owned PR cycle, and the morning report.
+Nightshift-owned PR cycle, and the morning report.
 
 Nightshift does not rewrite its own instructions, adopt repository learning,
 or automatically create a Task or GitHub issue from a suggestion. Those are
@@ -71,20 +71,21 @@ authorized immediate execution.
 
 ## EXECUTE
 
-The runner first launches `eng-lead-software` in a standalone session to choose
-one next PR-sized slice, report a blocker, or declare the approved goal
-complete. Interactive questions are unavailable.
+The runner launches a fresh `eng-nightshift` judgment session to choose one
+next PR-sized slice, report a blocker, or declare the approved goal complete.
+Interactive questions are unavailable.
 
 Apply `kai-core-work-acting` before each coordination write. Re-read Direction,
 the Task, grant, lease, dependencies, open questions, review requirements, and
 the exact run plan. Stop this slice on drift, collision, lease loss, or missing
 authority.
 
-The runner mechanically launches the standalone profile requested by the lead,
-then returns the observed handoff to a fresh lead session for integration,
-delivery, and the next stop/continue decision. Each profile holds its own Core
-identity and receipt. Never replace these with nested agent dispatch.
-Nightshift and the runner do not implement product code.
+The runner mechanically launches the standalone builder requested by
+Nightshift. Nightshift then uses generic `eng-lead-software` to integrate and
+deliver that one complete change. The lead receives an ordinary bounded
+software-change handoff; its reusable contract has no Nightshift dependency.
+Each profile holds its own Core identity and receipt. Never replace these with
+nested agent dispatch. Nightshift and the runner do not implement product code.
 
 The runner launches `eng-reviewer-code` only when the Task, repository, or
 operator already requires it. A newly discovered material risk that needs new
@@ -108,7 +109,7 @@ not this one.
 Apply `kai-core-work-activity` only when recording requested Nightshift
 activity. A runner ledger or process log is not a Core activity record.
 
-The runner appends each lead decision and observed stage result. It never
+The runner appends each Nightshift decision and observed stage result. It never
 rewrites the admission to reflect progress.
 
 ## RECONCILE

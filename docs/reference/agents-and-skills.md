@@ -7,9 +7,9 @@
      tools/generate-catalog.mjs. Regenerate with `npm run build`;
      `npm run build:check` fails if this file drifts. -->
 
-The repository ships **14 agents** and **45 skills**.
+The repository ships **14 agents** and **46 skills**.
 
-The default marketplace supplies **14 agents** and **45 skills** through core, engineering, and creative (12 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
+The default marketplace supplies **14 agents** and **46 skills** through core, engineering, and creative (13 skills are directly user-invocable when their owning package is installed). A default listing is not a release or runtime-readiness certification.
 
 Each description is the source agent or skill's own `description:`.
 Capabilities parked under [`incubator/`](../../incubator/README.md) are
@@ -44,7 +44,7 @@ Implement bounded frontend and backend work, explicitly coordinate a complete ch
 
 | Name | Package | What it owns |
 | ---- | ------- | ------------ |
-| [`eng-lead-software`](../../plugins/kai-engineering/agents/eng-lead-software.agent.md) | `kai-engineering` | Coordinates an explicitly requested multi-builder change, owns incremental PR decisions inside an approved Nightshift, or packages a finished diff through integration, selective review, sizing, and delivery. Never implements product code, self-approves, merges, deploys, tags, or releases. |
+| [`eng-lead-software`](../../plugins/kai-engineering/agents/eng-lead-software.agent.md) | `kai-engineering` | Coordinates an explicitly requested multi-builder software change or packages a finished diff through integration, selective review, post-build PR sizing, and PR delivery. Never implements product code, self-approves, merges, deploys, tags, or releases. |
 | [`eng-builder-frontend`](../../plugins/kai-engineering/agents/eng-builder-frontend.agent.md) | `kai-engineering` | Implements scoped frontend UI and client behavior with repository-native composition, state, accessibility, localization, and tests. Use explicitly for frontend features, fixes, and refactors. Not backend implementation, independent review, or delivery. |
 | [`eng-builder-backend`](../../plugins/kai-engineering/agents/eng-builder-backend.agent.md) | `kai-engineering` | Implements scoped APIs, services, persistence, jobs, libraries, and server-side behavior with repository-native contracts and tests. Use explicitly for backend features, fixes, and refactors. Not frontend implementation, independent review, or delivery. |
 | [`eng-nightshift`](../../plugins/kai-engineering/agents/eng-nightshift.agent.md) | `kai-engineering` | Runs an explicitly approved Nightshift: prepares bounded engineering work, executes serial pull-request slices unattended, and returns PRs, blockers, evidence, and morning suggestions. Never expands scope, self-approves, merges, deploys, tags, or releases. |
@@ -136,6 +136,7 @@ Shared operating, scope, communication, activity, completion, and durable asset 
 | [`kai-core-issue-analysis`](../../plugins/kai-core/skills/kai-core-issue-analysis/SKILL.md) | `kai-core` | Issue-to-approach analysis. Use when grounding an issue, testing decisive assumptions, framing options, and stopping at the authorized decision owner. |
 | [`kai-core-peer-communication`](../../plugins/kai-core/skills/kai-core-peer-communication/SKILL.md) | `kai-core` | Use when a role needs a lane-specific question or answer through inline consultation, a live peer, or a durable typed message. |
 | [`kai-core-contract-v1`](../../plugins/kai-core/skills/kai-core-contract-v1/SKILL.md) | `kai-core` | Reports that kai-core is installed and which contract version it provides. Use just in time before a department agent invokes its first other kai-core skill. |
+| [`kai-core-create-skill`](../../plugins/kai-core/skills/kai-core-create-skill/SKILL.md) | `kai-core` | Use when creating or revising a Copilot skill so its boundary stays reusable, caller-agnostic, acyclic, and proportionate to the method it teaches. |
 | [`kai-core-asset-producing`](../../plugins/kai-core/skills/kai-core-asset-producing/SKILL.md) | `kai-core` | Use when a validated pack-owned artifact needs a private revision, acceptance binding, publication, provenance, or closure. |
 | [`kai-core-asset-closing`](../../plugins/kai-core/skills/kai-core-asset-closing/SKILL.md) | `kai-core` | Use when recording final asset disposition, validity, supersession, retraction, archival, or publication cleanup. |
 
@@ -149,7 +150,7 @@ Lean development, shared and domain coding standards, bounded evidence, explicit
 | [`coding-standards`](../../plugins/kai-engineering/skills/coding-standards/SKILL.md) | `kai-engineering` | Use when writing, modifying, or refactoring code. |
 | [`frontend-coding-standards`](../../plugins/kai-engineering/skills/frontend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring frontend UI or client behavior. |
 | [`backend-coding-standards`](../../plugins/kai-engineering/skills/backend-coding-standards/SKILL.md) | `kai-engineering` | Use with coding-standards when implementing or refactoring APIs, services, persistence, jobs, libraries, or server-side behavior. |
-| [`nightshift-run`](../../plugins/kai-engineering/skills/nightshift-run/SKILL.md) | `kai-engineering` | Use inside eng-nightshift for a bounded unattended engineering run whose software lead chooses one PR slice at a time and whose runner only persists, launches, and reports. |
+| [`nightshift-run`](../../plugins/kai-engineering/skills/nightshift-run/SKILL.md) | `kai-engineering` | Use inside eng-nightshift for a bounded unattended engineering run whose Nightshift agent chooses one PR slice at a time and whose runner only persists, launches, and reports. |
 | [`research-before-coding`](../../plugins/kai-engineering/skills/research-before-coding/SKILL.md) | `kai-engineering` | Use when a code or design decision depends on unresolved evidence about existing behavior, ownership, reuse, consumers, or tradeoffs. |
 | [`pr-sizing`](../../plugins/kai-engineering/skills/pr-sizing/SKILL.md) | `kai-engineering` | Use after a complete change or integrated diff exists and delivery may need one or more ordered, human-reviewable PRs. |
 | [`pr-delivery`](../../plugins/kai-engineering/skills/pr-delivery/SKILL.md) | `kai-engineering` | Use when an accepted delivery slice needs branch naming, title, version handling, a scenario-based PR description, verification evidence, and protection-safe handoff. |

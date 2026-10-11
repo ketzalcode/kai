@@ -1,7 +1,7 @@
 {
   "counts": {
     "agents": 14,
-    "skills": 45
+    "skills": 46
   },
   "agents": [
     "creative-lead-design",
@@ -31,6 +31,7 @@
     "kai-core-asset-closing",
     "kai-core-asset-producing",
     "kai-core-contract-v1",
+    "kai-core-create-skill",
     "kai-core-definition-of-done",
     "kai-core-design-grounding",
     "kai-core-fleet-observation",
@@ -74,6 +75,10 @@
     {
       "name": "html-block-diagrams",
       "argument_hint": ""
+    },
+    {
+      "name": "kai-core-create-skill",
+      "argument_hint": "skill purpose or existing skill path"
     },
     {
       "name": "kai-core-fleet-observation",

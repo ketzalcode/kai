@@ -123,7 +123,7 @@ CURRENT DIRECTION + APPROVED ENGINEERING SCOPE
              lean immutable admission
                        |
                        v
-       eng-lead-software chooses one PR slice
+          eng-nightshift chooses one PR slice
                        |
                        v
         isolated worktree + standalone stages
@@ -174,9 +174,10 @@ the night:
 Role and model selection do not belong in the envelope.
 
 The admission contains no PR list, branches, or domain routes.
-`eng-lead-software` chooses one next slice from current Core and Git evidence.
-Each selected profile owns its model, tools, and domain instructions. The
-runner launches the lead's decision without restating or overriding its model.
+`eng-nightshift` chooses one next slice from current Core and Git evidence,
+then uses generic engineering roles to implement and deliver it. Each selected
+profile owns its model, tools, and domain instructions. The runner launches
+Nightshift's decision without restating or overriding its model.
 A missing, ambiguous, or unsupported route is a blocker, not permission to
 choose a replacement.
 
@@ -189,10 +190,11 @@ For each incremental cycle, Nightshift:
 
 1. re-reads Direction, hierarchy context, Task versions, dependencies,
    questions, leases, admission, and accumulated checkpoints;
-2. asks `eng-lead-software` to choose one next PR-sized slice, a blocker, or
+2. asks `eng-nightshift` to choose one next PR-sized slice, a blocker, or
    completion;
-3. rejects a lead decision outside approved scope, limits, or valid base heads;
-4. appends the lead decision without rewriting admission;
+3. rejects a Nightshift decision outside approved scope, limits, or valid base
+   heads;
+4. appends the Nightshift decision without rewriting admission;
 5. creates the selected isolated branch and worktree;
 6. starts fresh programmatic Copilot sessions for the routed builder, delivery
    lead, and any already-required reviewer, with autonomous continuation
@@ -400,7 +402,7 @@ substitutes for the other.
 The engineering runner keeps one small immutable admission and an append-only,
 non-authoritative event log. Events accumulate:
 
-- software-lead decisions;
+- Nightshift decisions;
 - slice, Task, branch, worktree, session, and PR identifiers;
 - observed stage outcomes and exact head revisions;
 - evidence, blocker, question, and suggestion references;
@@ -469,15 +471,16 @@ drift enters recovery rather than being silently rebased.
 | Surface | Responsibility |
 | --- | --- |
 | `eng-nightshift.agent.md` | Explicit PREPARE and RECONCILE entry point, admission boundary, and hard authority limits. |
-| `eng-lead-software.agent.md` | Incremental PR-slice choice, integration, delivery, and stop/continue judgment. |
+| `eng-lead-software.agent.md` | Generic complete-change integration, sizing, and delivery used by Nightshift for each selected slice. |
 | `nightshift-run` skill | Lean shared lifecycle, delivery boundary, checkpoint minimum, and hard stops. |
 | Engineering runner | Deterministic event persistence, worktrees, profile launching, limit enforcement, and report rendering. |
 | Engineering publication vocabulary | Private Nightshift report and evidence route associated with the authorized hierarchy subject. |
 | Existing builder, reviewer, sizing, and delivery surfaces | Implementation, selective review, final diff sizing, and pull-request delivery. |
 
 The runner is infrastructure, not an agent that reasons about product scope.
-The software lead chooses each next slice. Selected builders make in-scope
-implementation decisions under their own profiles.
+`eng-nightshift` chooses each next slice and uses the generic software lead for
+one complete change. Selected builders make in-scope implementation decisions
+under their own profiles.
 
 ## V0 acceptance
 
@@ -485,7 +488,7 @@ Nightshift V0 is acceptable when a test workspace demonstrates that:
 
 1. one approved run can deliver more than one serial, isolated pull-request
    slice without changing Feature or Requirement scope;
-2. the admission contains no up-front slice list and software-lead decisions
+2. the admission contains no up-front slice list and Nightshift decisions
    append one slice at a time;
 3. every implementation session applies the current software-development and
    domain standards through its routed agent profile;

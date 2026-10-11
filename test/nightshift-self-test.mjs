@@ -101,7 +101,7 @@ function slice(overrides = {}) {
   };
 }
 
-function leadSlice(overrides = {}) {
+function nightshiftSliceDecision(overrides = {}) {
   return {
     status: 'slice',
     summary: 'The API contract is the next required outcome.',
@@ -112,7 +112,7 @@ function leadSlice(overrides = {}) {
   };
 }
 
-function leadComplete(overrides = {}) {
+function nightshiftComplete(overrides = {}) {
   return {
     status: 'complete',
     summary: 'The approved outcome is satisfied.',
@@ -284,13 +284,12 @@ test('eng-nightshift is a named capability with technical-judgment model policy'
   }).join('\n'), /belongs to kai-engineering/i);
 });
 
-test('software lead owns each incremental Nightshift PR decision', () => {
+test('software lead stays generic and caller-agnostic', () => {
   const lead = readAgent('eng-lead-software');
-  assert.match(lead, /^## Nightshift cycle$/m);
-  assert.match(lead, /choose exactly one next PR-sized slice/);
-  assert.match(lead, /Do not pre-plan the whole night/);
-  assert.match(lead, /decide[\s\S]*whether another in-scope slice is required/);
-  assert.match(lead, /runner persists and launches[\s\S]*never chooses the\s+next product action/);
+  assert.doesNotMatch(lead, /Nightshift|eng-nightshift/i);
+  assert.match(lead, /Own one complete authorized software change/);
+  assert.match(lead, /Apply `pr-sizing` after integration/);
+  assert.match(lead, /Apply `pr-delivery`/);
 });
 
 test('Nightshift skill protects required-first delivery and structured blockers', () => {
@@ -303,7 +302,8 @@ test('Nightshift skill protects required-first delivery and structured blockers'
   assert.match(skill, /Suggested/);
   assert.match(skill, /question\.open/);
   assert.match(skill, /task\.handoff/);
-  assert.match(skill, /eng-lead-software.*owns delivery judgment/);
+  assert.match(skill, /`eng-nightshift` owns run judgment/);
+  assert.match(skill, /generic `eng-lead-software`/);
   assert.match(skill, /runner never decomposes the goal/);
   assert.match(skill, /Append one event/);
   assert.match(skill, /references\/morning-report\.md/);
@@ -444,21 +444,21 @@ test('delivered results must match immutable Git state', async () => {
   );
 });
 
-test('software lead decisions append one slice at a time', async () => {
-  const {validateLeadDecision} = await runner();
-  const decision = validateLeadDecision(leadSlice(), {
+test('Nightshift decisions append one slice at a time', async () => {
+  const {validateNightshiftDecision} = await runner();
+  const decision = validateNightshiftDecision(nightshiftSliceDecision(), {
     plan: plan(),
     events: [],
   });
   assert.equal(decision.status, 'slice');
   assert.equal(decision.slice.id, 'api-contract');
   assert.throws(
-    () => validateLeadDecision(leadSlice({
+    () => validateNightshiftDecision(nightshiftSliceDecision({
       slice: slice({baseHead: '9'.repeat(40)}),
     }), {plan: plan(), events: []}),
     /baseHead.*approved base|unknown delivered head/i,
   );
-  assert.equal(validateLeadDecision(leadComplete(), {
+  assert.equal(validateNightshiftDecision(nightshiftComplete(), {
     plan: plan(),
     events: [],
   }).status, 'complete');
@@ -562,10 +562,10 @@ test('serial execution continues independent work after a blocker', async () => 
     const launched = [];
     const removed = [];
     const decisions = [
-      leadSlice({
+      nightshiftSliceDecision({
         slice: slice({baseHead: fixture.head}),
       }),
-      leadSlice({
+      nightshiftSliceDecision({
         summary: 'Documentation remains required and is independent.',
         slice: slice({
           id: 'docs-note',
@@ -578,7 +578,7 @@ test('serial execution continues independent work after a blocker', async () => 
           baseHead: fixture.head,
         }),
       }),
-      leadComplete(),
+      nightshiftComplete(),
     ];
     const result = executeRun({
       root: fixture.workspace,

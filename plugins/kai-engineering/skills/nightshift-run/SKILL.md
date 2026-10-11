@@ -1,6 +1,6 @@
 ---
 name: nightshift-run
-description: "Use inside eng-nightshift for a bounded unattended engineering run whose software lead chooses one PR slice at a time and whose runner only persists, launches, and reports."
+description: "Use inside eng-nightshift for a bounded unattended engineering run whose Nightshift agent chooses one PR slice at a time and whose runner only persists, launches, and reports."
 tools: [execute, read, edit, search, ask_user, skill]
 ---
 
@@ -10,8 +10,8 @@ Deliver the approved outcome first. Unused time or budget does not create more
 scope.
 
 This skill owns only the stable Nightshift lifecycle. Core owns work authority.
-`eng-lead-software` owns delivery judgment. The runner owns mechanical
-persistence and launching.
+`eng-nightshift` owns run judgment and uses generic engineering roles for each
+slice. The runner owns mechanical persistence and launching.
 
 ## Admit one bounded run
 
@@ -25,7 +25,7 @@ PREPARE fixes only what must remain stable for the night:
 - stacking permission; and
 - evidence expectations.
 
-Do not pre-author every PR, branch, route, or result shape. The software lead
+Do not pre-author every PR, branch, route, or result shape. `eng-nightshift`
 chooses the next slice from current Core state after each checkpoint.
 
 Retain the approved admission with:
@@ -42,16 +42,16 @@ in-scope slice does not.
 
 The unattended loop is:
 
-1. `eng-lead-software` reads the admission, Core state, and accumulated
+1. `eng-nightshift` reads the admission, Core state, and accumulated
    checkpoints.
-2. The lead chooses one next PR-sized slice, reports a blocker, or declares the
-   approved outcome complete.
+2. Nightshift chooses one next PR-sized slice, reports a blocker, or declares
+   the approved outcome complete.
 3. The runner appends that decision and launches the requested standalone
    builder.
-4. The lead integrates the builder handoff, applies final PR sizing, and
-   delivers the slice.
+4. Nightshift uses generic `eng-lead-software` to integrate the builder
+   handoff, apply final PR sizing, and deliver that one complete slice.
 5. A separately required reviewer runs only when already authorized.
-6. The runner appends the observed result and asks the lead for the next
+6. The runner appends the observed result and asks Nightshift for the next
    decision.
 
 The runner never decomposes the goal, selects a domain route, expands scope, or
@@ -74,13 +74,13 @@ node "<kai-engineering-plugin>/scripts/nightshift.mjs" run \
 | **Blocked** | Preserve and route because continuing needs authority, scope expansion, recovery, or an unavailable capability. |
 | **Suggested** | Do not implement; append the broader refactor, speculative edge case, cleanup, optimization, or lower-confidence idea for morning review. |
 
-The lead stops a slice when its accepted outcome is satisfied, directly
-affected behavior has proportionate evidence, and no introduced material
-regression or safety defect remains.
+Nightshift accepts the lead's delivered slice when its outcome is satisfied,
+directly affected behavior has proportionate evidence, and no introduced
+material regression or safety defect remains.
 
 ## Append checkpoints; do not rewrite the admission
 
-Append one event for each lead decision and observed stage result. A checkpoint
+Append one event for each Nightshift decision and observed stage result. A checkpoint
 needs only:
 
 - run and slice identity;
@@ -89,7 +89,7 @@ needs only:
 - PR and evidence references when present;
 - suggestions deliberately not implemented;
 - observed limits; and
-- the next lead decision.
+- the next Nightshift decision.
 
 The event log is execution history, not work authority. Core remains
 authoritative for Tasks, grants, leases, questions, handoffs, evidence, review,

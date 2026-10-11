@@ -22,13 +22,13 @@ silently adding them to pull requests.
 
 ## Implementation decisions
 
-### The software lead owns incremental routing
+### Nightshift owns incremental routing
 
-`eng-nightshift.agent.md` admits the bounded goal. `eng-lead-software` reads
-current Core state and accumulated checkpoints, then chooses one next slice, a
-blocker, or completion. The operator does not select an agent or model.
+`eng-nightshift.agent.md` admits the bounded goal, reads current Core state and
+accumulated checkpoints, then chooses one next slice, a blocker, or completion.
+The operator does not select an agent or model.
 
-The runner mechanically expands the lead's decision into standalone stages:
+The runner mechanically expands Nightshift's decision into standalone stages:
 
 ```text
 frontend -> eng-builder-frontend -> eng-lead-software -> optional eng-reviewer-code
@@ -36,21 +36,22 @@ backend  -> eng-builder-backend  -> eng-lead-software -> optional eng-reviewer-c
 ```
 
 Each selected profile keeps its own `model:` declaration and domain
-instructions. The runner passes no model override.
+instructions. `eng-lead-software` remains a generic integration/delivery
+resource with no Nightshift awareness. The runner passes no model override.
 
 Standalone stages are required because nested host agents do not own the
 standalone Core receipts needed to claim and mutate coordinated work.
 
 ### One fresh session per stage
 
-Each approved slice receives:
+Each Nightshift-selected slice receives:
 
 - one Git branch;
 - one linked worktree;
 - one fresh programmatic session per routed stage;
 - bounded autopilot continuation and AI-credit allowances;
 - one exact output contract; and
-- append-only lead-decision and terminal-result events.
+- append-only Nightshift-decision and terminal-result events.
 
 The runner performs no product decomposition or stop/continue judgment and
 never substitutes another profile.
@@ -80,7 +81,7 @@ V0 validates one small immutable admission:
 - evidence expectations.
 
 It contains no slice list, branches, routes, agents, or models. Each
-software-lead decision and observed stage result appends one event. The report
+Nightshift decision and observed stage result appends one event. The report
 folds those events into a projection without rewriting admission.
 
 ### Typed private run route
@@ -129,7 +130,7 @@ The builder stage returns `completed`, `blocked`, or `failed`, with exact head,
 evidence, suggestions, blocker, and next action. `completed` requires a clean
 committed worktree.
 
-The runner validates software-lead decisions and builder/delivery/review
+The runner validates Nightshift decisions and builder/delivery/review
 outputs internally. These shapes belong to code and focused tests, not the
 prompt-level skill. They do not become a second Core schema.
 
@@ -143,15 +144,15 @@ A delivered result additionally requires:
 Invalid output becomes a preserved failed slice, never a success-shaped
 fallback.
 
-### Lead-owned stopping
+### Nightshift-owned stopping
 
-The runner asks the software lead for one decision after every terminal slice.
+The runner asks `eng-nightshift` for one decision after every terminal slice.
 
-- The lead may choose an independent slice from the approved base.
-- The lead may choose a delivered head only when stacking was approved.
-- A blocked slice does not prevent the lead from choosing independent in-scope
-  work.
-- The lead declares completion or a real authority-bound blocker.
+- Nightshift may choose an independent slice from the approved base.
+- Nightshift may choose a delivered head only when stacking was approved.
+- A blocked slice does not prevent Nightshift from choosing independent
+  in-scope work.
+- Nightshift declares completion or a real authority-bound blocker.
 - Delivered clean worktrees are removed after checkpointing.
 - Blocked or failed worktrees are preserved up to the approved retention cap.
 - The runner itself stops only for deterministic limits, drift, invalid output,

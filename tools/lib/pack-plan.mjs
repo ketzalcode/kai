@@ -1462,6 +1462,60 @@ export function referenceErrors({ refs, providers }) {
   return errs;
 }
 
+function referenceNode(path) {
+  const normalized = path.replace(/\\/g, '/');
+  const agent = normalized.match(/\/agents\/([^/]+)\.agent\.md$/);
+  if (agent) return `agent:${agent[1]}`;
+  const skill = normalized.match(/\/skills\/([^/]+)\/SKILL\.md$/);
+  if (skill) return `skill:${skill[1]}`;
+  return null;
+}
+
+export function referenceCycleErrors(refs) {
+  const graph = new Map();
+  const files = new Map();
+  for (const ref of refs) {
+    if (ref.kind !== 'agent' && ref.kind !== 'skill') continue;
+    const from = referenceNode(ref.from);
+    const to = `${ref.kind}:${ref.target}`;
+    if (!from || from === to) continue;
+    if (!graph.has(from)) graph.set(from, new Set());
+    graph.get(from).add(to);
+    files.set(from, ref.from);
+  }
+
+  const visiting = new Set();
+  const visited = new Set();
+  const stack = [];
+  const reported = new Set();
+  const errors = [];
+  const visit = node => {
+    if (visiting.has(node)) {
+      const at = stack.indexOf(node);
+      const cycle = [...stack.slice(at), node];
+      const key = [...new Set(cycle.slice(0, -1))].sort().join('|');
+      if (!reported.has(key)) {
+        reported.add(key);
+        errors.push({
+          file: files.get(node) ?? node,
+          msg: `agent/skill dependency cycle: ${cycle.join(' -> ')} — higher-level callers `
+            + 'may depend on reusable resources, but a resource must not route back to its caller',
+        });
+      }
+      return;
+    }
+    if (visited.has(node)) return;
+    visiting.add(node);
+    stack.push(node);
+    for (const target of graph.get(node) ?? []) visit(target);
+    stack.pop();
+    visiting.delete(node);
+    visited.add(node);
+  };
+  for (const node of graph.keys()) visit(node);
+  return errors;
+}
+
 // Assign every referenced asset to one pack, by the ratified rule: an asset
 // travels with the sole pack that invokes it, and an asset invoked from more
 // than one pack promotes to core, the plugin every pack already requires.

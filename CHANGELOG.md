@@ -17,14 +17,19 @@ follow semantic versioning.
 - Added the dependency-free Engineering Nightshift runner for isolated
   worktrees, append-only checkpoints, and fresh standalone software-lead,
   builder, delivery, and required-review sessions without model overrides.
+- Added `kai-core-create-skill`, a lean authoring guide for reusable,
+  caller-agnostic skills with one-way dependency direction, incremental state,
+  and proportionate splitting.
+- Added validation that rejects circular agent/skill routes before they ship.
 
 ### Changed
 
 - Added `reports/nightshift` to the Engineering publication vocabulary for
   private admissions, append-only events, evidence, and morning reports.
-- Made `eng-lead-software` choose one next PR slice, blocker, or completion
-  after each checkpoint; the runner now only validates, persists, launches,
-  observes, and enforces deterministic limits.
+- Made `eng-nightshift` choose one next PR slice, blocker, or completion after
+  each checkpoint, while using the caller-agnostic `eng-lead-software` for one
+  complete integration/delivery cycle. The runner only validates, persists,
+  launches, observes, and enforces deterministic limits.
 - Registered `eng-nightshift` as a named Engineering capability agent with the
   `technical-judgment` profile and GPT-5.6 Sol, keeping the user-facing name
   independent of workflow implementation terminology.

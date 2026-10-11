@@ -94,6 +94,19 @@ A new durable role earns a permanent slot only when every row has evidence:
 If any row fails, strengthen an existing agent, add reusable method to a skill,
 or use a bounded workflow instead.
 
+### Dependency direction
+
+Keep references one-way:
+
+```text
+orchestrator agent -> domain agent -> reusable skill -> reference or script
+```
+
+The caller may know the resource; the resource must not know its caller. Before
+adding a route, search both directions. If A reaches B and B reaches A, keep
+orchestration in A or extract genuinely shared behavior into a lower-level
+skill C. `npm run validate` rejects circular agent/skill routes.
+
 ### Execution profiles and models
 
 Agent model policy is deterministic and versioned as

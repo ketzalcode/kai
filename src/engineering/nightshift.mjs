@@ -69,7 +69,7 @@ const BLOCKER_KEYS = new Set([
   'answerBy',
   'questionRef',
 ]);
-const LEAD_DECISION_KEYS = new Set([
+const NIGHTSHIFT_DECISION_KEYS = new Set([
   'status',
   'summary',
   'slice',
@@ -95,7 +95,7 @@ const BLOCKER_KINDS = new Set([
   'collision',
   'limit',
 ]);
-const LEAD_STATUSES = new Set(['slice', 'complete', 'blocked']);
+const NIGHTSHIFT_STATUSES = new Set(['slice', 'complete', 'blocked']);
 const SAFE_ID = /^[a-z0-9][a-z0-9-]{2,63}$/;
 const PROJECT_ID = /^[a-z][a-z0-9-]*$/;
 const TYPED_FEATURE_ID = /^engineering:feature:[a-z0-9][a-z0-9-]*$/;
@@ -111,6 +111,7 @@ const ROUTE_BUILDERS = Object.freeze({
 });
 const DELIVERY_PROFILE = 'eng-lead-software';
 const REVIEW_PROFILE = 'eng-reviewer-code';
+const DECISION_PROFILE = 'eng-nightshift';
 
 function fail(message) {
   throw new Error(message);
@@ -388,27 +389,27 @@ function terminalSliceEvents(events) {
   ]).has(entry.type));
 }
 
-export function validateLeadDecision(raw, {plan, events}) {
-  exactKeys(raw, LEAD_DECISION_KEYS, 'lead decision');
-  const status = string(raw.status, 'lead decision.status');
-  if (!LEAD_STATUSES.has(status)) fail('lead decision.status is unsupported');
+export function validateNightshiftDecision(raw, {plan, events}) {
+  exactKeys(raw, NIGHTSHIFT_DECISION_KEYS, 'Nightshift decision');
+  const status = string(raw.status, 'Nightshift decision.status');
+  if (!NIGHTSHIFT_STATUSES.has(status)) fail('Nightshift decision.status is unsupported');
   const normalized = {
     status,
-    summary: string(raw.summary, 'lead decision.summary'),
+    summary: string(raw.summary, 'Nightshift decision.summary'),
     slice: raw.slice === null ? null : normalizeSlice(raw.slice, 0),
-    blocker: raw.blocker === null ? null : blockerResult(raw.blocker, 'lead decision.blocker'),
-    nextAction: string(raw.nextAction, 'lead decision.nextAction'),
+    blocker: raw.blocker === null ? null : blockerResult(raw.blocker, 'Nightshift decision.blocker'),
+    nextAction: string(raw.nextAction, 'Nightshift decision.nextAction'),
   };
   if (status === 'slice') {
-    if (!normalized.slice) fail('slice lead decision requires one slice');
-    if (normalized.blocker !== null) fail('slice lead decision blocker must be null');
+    if (!normalized.slice) fail('slice Nightshift decision requires one slice');
+    if (normalized.blocker !== null) fail('slice Nightshift decision blocker must be null');
     const prior = terminalSliceEvents(events);
     if (prior.some(entry => entry.payload.slice.id === normalized.slice.id)) {
-      fail(`lead decision repeats slice ID ${normalized.slice.id}`);
+      fail(`Nightshift decision repeats slice ID ${normalized.slice.id}`);
     }
     if (prior.some(entry =>
       entry.payload.slice.branch.toLowerCase() === normalized.slice.branch.toLowerCase())) {
-      fail(`lead decision repeats branch ${normalized.slice.branch}`);
+      fail(`Nightshift decision repeats branch ${normalized.slice.branch}`);
     }
     const delivered = prior.filter(entry => entry.type === 'slice.delivered');
     const allowed = new Map([
@@ -419,21 +420,21 @@ export function validateLeadDecision(raw, {plan, events}) {
       ]),
     ]);
     if (!allowed.has(normalized.slice.baseHead)) {
-      fail('lead decision slice.baseHead is neither the approved base nor a delivered head');
+      fail('Nightshift decision slice.baseHead is neither the approved base nor a delivered head');
     }
     if (normalized.slice.baseHead !== plan.base.sha && !plan.stacking) {
-      fail('lead decision requires stacking permission for a delivered-head base');
+      fail('Nightshift decision requires stacking permission for a delivered-head base');
     }
     if (allowed.get(normalized.slice.baseHead) !== normalized.slice.pullRequestBase) {
-      fail('lead decision slice.pullRequestBase does not match its base head');
+      fail('Nightshift decision slice.pullRequestBase does not match its base head');
     }
   } else {
-    if (normalized.slice !== null) fail(`${status} lead decision slice must be null`);
+    if (normalized.slice !== null) fail(`${status} Nightshift decision slice must be null`);
     if (status === 'complete' && normalized.blocker !== null) {
-      fail('complete lead decision blocker must be null');
+      fail('complete Nightshift decision blocker must be null');
     }
     if (status === 'blocked' && normalized.blocker === null) {
-      fail('blocked lead decision requires blocker details');
+      fail('blocked Nightshift decision requires blocker details');
     }
   }
   return normalized;
@@ -627,7 +628,7 @@ function atomicWrite(path, bytes) {
 
 const EVENT_TYPES = new Set([
   'run.prepared',
-  'lead.decided',
+  'nightshift.decided',
   'slice.started',
   'slice.delivered',
   'slice.blocked',
@@ -944,7 +945,7 @@ function stageResultContract() {
   };
 }
 
-function leadDecisionContract() {
+function nightshiftDecisionContract() {
   return {
     status: 'slice | complete | blocked',
     summary: '<why this is the next decision>',
@@ -966,7 +967,7 @@ function leadDecisionContract() {
   };
 }
 
-function leadHistory(events) {
+function nightshiftHistory(events) {
   return terminalSliceEvents(events).map(entry => ({
     sliceId: entry.payload.slice.id,
     task: entry.payload.slice.task,
@@ -979,17 +980,17 @@ function leadHistory(events) {
   }));
 }
 
-function leadPrompt(plan, events) {
+function nightshiftDecisionPrompt(plan, events) {
   return [
-    `Own the next incremental decision for Nightshift run ${plan.runId}.`,
+    `Act as eng-nightshift and own the next incremental decision for run ${plan.runId}.`,
     `Approved admission: ${JSON.stringify(plan)}`,
-    `Accumulated terminal checkpoints: ${JSON.stringify(leadHistory(events))}`,
+    `Accumulated terminal checkpoints: ${JSON.stringify(nightshiftHistory(events))}`,
     'Read current Core Direction, Feature/Requirement acceptance, Tasks, dependencies, questions, grants, and prior PR evidence.',
     'Choose exactly one next frontend or backend PR-sized slice, return a blocker, or declare the approved outcome complete.',
     'Do not pre-plan the rest of the night. Do not implement product code. Do not turn suggestions into scope.',
     'A non-base baseHead is allowed only for a delivered prior slice and only when stacking was approved.',
     'Your final response must be exactly one JSON object with no Markdown fence or surrounding prose.',
-    JSON.stringify(leadDecisionContract(), null, 2),
+    JSON.stringify(nightshiftDecisionContract(), null, 2),
     'For slice, blocker must be null. For complete, slice and blocker must be null. For blocked, slice must be null and blocker populated.',
   ].join('\n\n');
 }
@@ -1225,7 +1226,7 @@ function invalidStageResult(error, {stage, stdoutPath, worktree, actualHead}) {
   );
 }
 
-function leadFailure(result) {
+function nightshiftDecisionFailure(result) {
   return {
     status: 'blocked',
     summary: result.summary,
@@ -1235,7 +1236,7 @@ function leadFailure(result) {
   };
 }
 
-function runLeadDecision({
+function runNightshiftDecision({
   root,
   projectRoot,
   plan,
@@ -1244,36 +1245,36 @@ function runLeadDecision({
   aiCredits,
   env = process.env,
 }) {
-  const decisionNumber = events.filter(entry => entry.type === 'lead.decided').length + 1;
-  const controlId = `lead-${decisionNumber}`;
+  const decisionNumber = events.filter(entry => entry.type === 'nightshift.decided').length + 1;
+  const controlId = `nightshift-${decisionNumber}`;
   const worktree = worktreePath(projectRoot, plan.runId, controlId);
-  if (existsSync(worktree)) fail(`lead decision worktree already exists: ${worktree}`);
+  if (existsSync(worktree)) fail(`Nightshift decision worktree already exists: ${worktree}`);
   mkdirSync(dirname(worktree), {recursive: true});
   git(projectRoot, ['worktree', 'add', '--detach', worktree, plan.base.sha]);
-  const stage = `lead-decision-${decisionNumber}`;
+  const stage = `nightshift-decision-${decisionNumber}`;
   const observed = runProfile({
     root,
     plan,
     slice: null,
     paths,
     worktree,
-    profile: DELIVERY_PROFILE,
+    profile: DECISION_PROFILE,
     stage,
-    prompt: leadPrompt(plan, events),
+    prompt: nightshiftDecisionPrompt(plan, events),
     aiCredits,
     env,
   });
   const clean = gitText(worktree, ['status', '--porcelain']) === '';
-  if (!observed.ok) return leadFailure(observed.result);
+  if (!observed.ok) return nightshiftDecisionFailure(observed.result);
   if (!clean) {
-    return leadFailure(failureResult(
+    return nightshiftDecisionFailure(failureResult(
       'capability',
       'software lead mutated the planning worktree',
       [
-        'Observation: the lead decision session changed repository files.',
-        'Attempts: one bounded lead decision was requested.',
+        'Observation: the Nightshift decision session changed repository files.',
+        'Attempts: one bounded Nightshift decision was requested.',
         'Boundary: planning may not mutate the product.',
-        'Recommendation: inspect the preserved lead worktree.',
+        'Recommendation: inspect the preserved Nightshift worktree.',
         `Resume point: ${worktree}.`,
       ].join('\n'),
       'Resolve the lead planning mutation before resuming.',
@@ -1281,10 +1282,10 @@ function runLeadDecision({
   }
   let decision;
   try {
-    decision = validateLeadDecision(observed.raw, {plan, events});
+    decision = validateNightshiftDecision(observed.raw, {plan, events});
   } catch (error) {
-    return leadFailure(invalidStageResult(error, {
-      stage: 'lead decision',
+    return nightshiftDecisionFailure(invalidStageResult(error, {
+      stage: 'Nightshift decision',
       stdoutPath: observed.stdoutPath,
       worktree,
       actualHead: plan.base.sha,
@@ -1562,7 +1563,7 @@ export function executeRun({
   runId,
   env = process.env,
   now = () => new Date(),
-  decideNext = runLeadDecision,
+  decideNext = runNightshiftDecision,
   runSlice = runSession,
   removeWorktree = removeDeliveredWorktree,
   verifyRunBasis = verifyBasis,
@@ -1617,7 +1618,7 @@ export function executeRun({
 
     let decision;
     try {
-      decision = validateLeadDecision(decideNext({
+      decision = validateNightshiftDecision(decideNext({
         root: resolve(root),
         projectRoot,
         plan,
@@ -1627,23 +1628,23 @@ export function executeRun({
         env,
       }), {plan, events});
     } catch (error) {
-      decision = leadFailure(failureResult(
+      decision = nightshiftDecisionFailure(failureResult(
         'capability',
         error.message,
         [
           `Observation: ${error.message}.`,
-          'Attempts: Nightshift requested one software-lead decision.',
+          'Attempts: the runner requested one Nightshift decision.',
           'Boundary: the runner cannot invent the next product action.',
-          'Recommendation: inspect the lead decision evidence.',
+          'Recommendation: inspect the Nightshift decision evidence.',
           'Resume point: no new slice was launched.',
         ].join('\n'),
-        'Resolve the lead decision failure before resuming.',
+        'Resolve the Nightshift decision failure before resuming.',
       ));
     }
     appendRunEvent({
       path: paths.events,
       runId,
-      type: 'lead.decided',
+      type: 'nightshift.decided',
       payload: {decision},
       at: now().toISOString(),
     });
