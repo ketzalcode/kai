@@ -59,6 +59,30 @@ test('builders stop at implementation evidence handoff', () => {
   }
 });
 
+test('software development scales process and stops at evidence handoff', () => {
+  const development = readSkill('software-development');
+  assert.match(development, /^user-invocable:\s*true$/m);
+  assert.match(
+    development,
+    /feature, fix, refactor, or behavior change/,
+  );
+  assert.match(development, /Do not use for review-only, PR merge/);
+  assert.match(development, /Apply `coding-standards`/);
+  assert.match(development, /Clear bounded change/);
+  assert.match(development, /Material ambiguity/);
+  assert.match(development, /Architecture or risky cross-cutting change/);
+  assert.match(development, /Defect with uncertain cause/);
+  assert.match(development, /strict red\/green/);
+  assert.match(development, /Stabilize uncertain design before expanding tests/);
+  assert.match(development, /named manual scenarios/);
+  assert.match(development, /targeted tests by default/);
+  assert.match(development, /evidence handoff/);
+  assert.match(
+    development,
+    /Do not automatically start review, PR delivery,\s+merge, release, or deployment/,
+  );
+});
+
 test('pr sizing uses the completed diff and reviewability boundaries', () => {
   const sizing = readSkill('pr-sizing');
   assert.match(sizing, /tools: \[execute, read, search\]/);

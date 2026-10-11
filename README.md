@@ -1,5 +1,15 @@
 # Kai
 
+Kai is a lean, quality-first suite of specialized agents and skills for
+agent-to-agent software collaboration. It combines repository-native coding
+standards, focused TDD, explicit coordination, and evidence-based handoffs
+without turning routine work into ceremony.
+
+Kai keeps direct work direct. It adds agents, process, and validation only when
+they materially improve correctness, context isolation, or delivery quality.
+The goal is a high-performing engineering system: small roles, relevant
+context, proportionate confidence, and fast shipping.
+
 Kai is an open-source plugin for the **GitHub Copilot CLI**. It adds a team of
 specialist agents — implementation, technical investigation, independent review,
 and delivery — that each own a piece of judgment, and a durable work record
